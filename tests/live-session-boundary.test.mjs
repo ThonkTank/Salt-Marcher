@@ -15,6 +15,7 @@ const ALLOWED_STATIC_IMPORTS = new Set([
   "./scene-aggregate",
   "./state",
   "./validation",
+  "../campaign/campaign-contracts",
 ]);
 
 function importsIn(source, file = "module.ts") {
@@ -80,6 +81,12 @@ function assertLocalStaticImports(source, file = "module.ts") {
       ALLOWED_STATIC_IMPORTS.has(dependency.specifier),
       `${file} imports forbidden dependency ${dependency.specifier}`,
     );
+    if (dependency.specifier === "../campaign/campaign-contracts")
+      assert.equal(
+        file,
+        "reference-owners.ts",
+        `${file} uses the narrowly allowed Campaign contract bridge`,
+      );
   }
 }
 

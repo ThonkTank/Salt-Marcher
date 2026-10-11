@@ -151,6 +151,7 @@ export {
   parseReferenceOwnerClosureReceipt,
   parseReferenceOwnerManifest,
   parseReferenceOwnerRegistryProjection,
+  referenceOwnerSurvivorProof,
   type CharacterDeletionTombstone,
   type ErasureSlotDefinition,
   type ErasureToken,
@@ -158,6 +159,8 @@ export {
   type ReferenceOwnerClosureReceipt,
   type ReferenceOwnerManifest,
   type ReferenceOwnerManifestEntry,
+  type ReferenceOwnerDigest,
   type ReferenceOwnerRegistryEntry,
   type ReferenceOwnerRegistryProjection,
+  type ReferenceOwnerSurvivorProof,
 } from "./reference-owners";

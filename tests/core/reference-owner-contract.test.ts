@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 import {
   parseCharacterDeletionTombstone,
@@ -6,9 +7,17 @@ import {
   parseReferenceOwnerClosureReceipt,
   parseReferenceOwnerManifest,
   parseReferenceOwnerRegistryProjection,
+  referenceOwnerSurvivorProof,
 } from "../../src/features/live-session";
 
 type Raw = Record<string, any>;
+
+const CAMPAIGN_A = "00000000-0000-4000-8000-000000000001";
+const CAMPAIGN_B = "00000000-0000-4000-8000-000000000002";
+const digest = (canonical: string): string =>
+  `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
+const evidence = (label: string): string =>
+  digest(JSON.stringify(["test", label]));
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -28,7 +37,7 @@ function rawRegistry(): Raw {
     kind: "reference-owner-registry-projection",
     version: 1,
     status: "complete",
-    campaignId: "campaign-a",
+    campaignId: CAMPAIGN_A,
     registryRevision: 4,
     owners: [
       {
@@ -41,7 +50,7 @@ function rawRegistry(): Raw {
           {
             kind: "erasure-slot-definition",
             version: 1,
-            campaignId: "campaign-a",
+            campaignId: CAMPAIGN_A,
             ownerId: "owner-party",
             payloadClass: "party-roster",
             slotId: "slot-party",
@@ -60,7 +69,7 @@ function rawRegistry(): Raw {
           {
             kind: "erasure-slot-definition",
             version: 1,
-            campaignId: "campaign-a",
+            campaignId: CAMPAIGN_A,
             ownerId: "owner-scenes",
             payloadClass: "live-scenes",
             slotId: "slot-scenes",
@@ -91,7 +100,7 @@ function rawToken(
     status: "opaque-non-executable",
     tokenId: `token-${slotId}`,
     deletionCommandId: "command-delete-character-a",
-    campaignId: "campaign-a",
+    campaignId: CAMPAIGN_A,
     characterId: "character-a",
     ownerId,
     ownerRevision,
@@ -117,9 +126,22 @@ function rawEntry(
   closureStatus: "removed" | "unavailable-quarantined",
 ): Raw {
   const erasureUnitId = `deleted-${suffix}`,
-    beforeHash = `hash-before-${suffix}`,
-    survivorSetHash = `hash-survivor-set-${suffix}`,
-    survivorRootHash = `hash-survivor-root-${suffix}`;
+    beforeHash = evidence(`before-${suffix}`),
+    expectedSurvivors = [
+      {
+        kind: "expected-survivor-binding",
+        version: 1,
+        ownerId,
+        payloadClass,
+        survivorId: `survivor-${suffix}`,
+        targetScopeId,
+        beforeHash: evidence(`survivor-before-${suffix}`),
+      },
+    ],
+    { survivorSetHash, survivorRootHash } = referenceOwnerSurvivorProof(
+      expectedSurvivors as any,
+      digest,
+    );
   return {
     kind: "reference-owner-manifest-entry",
     version: 1,
@@ -146,17 +168,7 @@ function rawEntry(
       survivorSetHash,
       survivorRootHash,
     ),
-    expectedSurvivors: [
-      {
-        kind: "expected-survivor-binding",
-        version: 1,
-        ownerId,
-        payloadClass,
-        survivorId: `survivor-${suffix}`,
-        targetScopeId,
-        beforeHash: `hash-survivor-before-${suffix}`,
-      },
-    ],
+    expectedSurvivors,
   };
 }
 
@@ -167,7 +179,7 @@ function rawManifest(): Raw {
     status: "closed",
     manifestId: "manifest-character-a",
     deletionCommandId: "command-delete-character-a",
-    campaignId: "campaign-a",
+    campaignId: CAMPAIGN_A,
     characterId: "character-a",
     registryRevision: 4,
     entries: [
@@ -195,6 +207,14 @@ function rawManifest(): Raw {
   };
 }
 
+function bindSurvivorProof(entry: Raw): void {
+  const proof = referenceOwnerSurvivorProof(entry.expectedSurvivors, digest);
+  entry.survivorSetHash = proof.survivorSetHash;
+  entry.survivorRootHash = proof.survivorRootHash;
+  entry.erasureToken.expectedSurvivorSetHash = proof.survivorSetHash;
+  entry.erasureToken.expectedSurvivorRootHash = proof.survivorRootHash;
+}
+
 function rawTombstone(): Raw {
   return {
     kind: "character-deletion-tombstone",
@@ -203,7 +223,7 @@ function rawTombstone(): Raw {
     tombstoneId: "tombstone-character-a",
     manifestId: "manifest-character-a",
     deletionCommandId: "command-delete-character-a",
-    campaignId: "campaign-a",
+    campaignId: CAMPAIGN_A,
     characterId: "character-a",
     registryRevision: 4,
   };
@@ -214,14 +234,19 @@ function rawReceipt(entry: Raw, outcome: "removed" | "quarantine-erased"): Raw {
     kind: "reference-owner-closure-receipt",
     version: 1,
     outcome,
+    manifestId: "manifest-character-a",
+    tombstoneId: "tombstone-character-a",
     deletionCommandId: "command-delete-character-a",
+    campaignId: CAMPAIGN_A,
     characterId: "character-a",
     ownerId: entry.ownerId,
     ownerRevision: entry.ownerRevision,
+    payloadClass: entry.payloadClass,
+    slotId: entry.slotId,
     slotRevision: entry.slotRevision,
     targetScopeId: entry.targetScopeId,
     beforeHash: entry.beforeHash,
-    afterHash: `hash-after-${entry.slotId}`,
+    afterHash: evidence(`after-${entry.slotId}`),
     survivorSetHash: entry.survivorSetHash,
     survivorRootHash: entry.survivorRootHash,
   };
@@ -229,7 +254,7 @@ function rawReceipt(entry: Raw, outcome: "removed" | "quarantine-erased"): Raw {
 
 function parseFixture() {
   const registry = parseReferenceOwnerRegistryProjection(rawRegistry());
-  const manifest = parseReferenceOwnerManifest(rawManifest(), registry);
+  const manifest = parseReferenceOwnerManifest(rawManifest(), registry, digest);
   const tombstone = parseCharacterDeletionTombstone(rawTombstone(), manifest);
   return { registry, manifest, tombstone };
 }
@@ -238,7 +263,7 @@ test("reference owner contract: parses immutable complete closure proof without 
   const registryInput = rawRegistry(),
     manifestInput = rawManifest(),
     registry = parseReferenceOwnerRegistryProjection(registryInput),
-    manifest = parseReferenceOwnerManifest(manifestInput, registry),
+    manifest = parseReferenceOwnerManifest(manifestInput, registry, digest),
     tombstone = parseCharacterDeletionTombstone(rawTombstone(), manifest),
     removed = parseReferenceOwnerClosureReceipt(
       rawReceipt(manifestInput.entries[0], "removed"),
@@ -249,19 +274,32 @@ test("reference owner contract: parses immutable complete closure proof without 
       rawReceipt(manifestInput.entries[1], "quarantine-erased"),
       manifest,
       tombstone,
+    ),
+    reconnected = parseReferenceOwnerClosureReceipt(
+      rawReceipt(manifestInput.entries[1], "removed"),
+      manifest,
+      tombstone,
     );
 
   assert.equal(registry.owners[1]?.availability, "unavailable");
   assert.equal(manifest.entries[1]?.closureStatus, "unavailable-quarantined");
   assert.equal(removed.outcome, "removed");
   assert.equal(quarantined.outcome, "quarantine-erased");
-  for (const value of [registry, manifest, tombstone, removed, quarantined])
+  assert.equal(reconnected.outcome, "removed");
+  for (const value of [
+    registry,
+    manifest,
+    tombstone,
+    removed,
+    quarantined,
+    reconnected,
+  ])
     assert.ok(frozenGraph(value));
 
   registryInput.owners[0].slots[0].slotRevision = 99;
   manifestInput.entries[0].beforeHash = "mutated";
   assert.equal(registry.owners[0]?.slots[0]?.slotRevision, 3);
-  assert.equal(manifest.entries[0]?.beforeHash, "hash-before-party");
+  assert.equal(manifest.entries[0]?.beforeHash, evidence("before-party"));
   assert.deepEqual(
     parseReferenceOwnerRegistryProjection(JSON.parse(JSON.stringify(registry))),
     registry,
@@ -272,6 +310,7 @@ test("reference owner contract: registry rejects unknown, stale-shaped, cross-ca
   const cases: Array<[string, (value: Raw) => void]> = [
     ["unknown projection status", (value) => (value.status = "unknown")],
     ["incomplete projection status", (value) => (value.status = "incomplete")],
+    ["legacy weak campaign id", (value) => (value.campaignId = "campaign-a")],
     [
       "unknown owner availability",
       (value) => (value.owners[0].availability = "unknown"),
@@ -280,7 +319,7 @@ test("reference owner contract: registry rejects unknown, stale-shaped, cross-ca
     ["empty slot enumeration", (value) => (value.owners[0].slots = [])],
     [
       "cross-campaign slot",
-      (value) => (value.owners[0].slots[0].campaignId = "campaign-b"),
+      (value) => (value.owners[0].slots[0].campaignId = CAMPAIGN_B),
     ],
     [
       "foreign owner slot",
@@ -311,7 +350,7 @@ test("reference owner contract: token is exact, opaque and non-executable", () =
 
 test("reference owner contract: manifest fails closed for foreign, stale, incomplete and overlapping closure", () => {
   const cases: Array<[string, (manifest: Raw, registry: Raw) => void]> = [
-    ["foreign campaign", (manifest) => (manifest.campaignId = "campaign-b")],
+    ["foreign campaign", (manifest) => (manifest.campaignId = CAMPAIGN_B)],
     ["stale registry", (manifest) => (manifest.registryRevision = 3)],
     ["missing registry slot", (manifest) => manifest.entries.pop()],
     [
@@ -347,6 +386,34 @@ test("reference owner contract: manifest fails closed for foreign, stale, incomp
         ),
     ],
     [
+      "survivor proof drift",
+      (manifest) =>
+        (manifest.entries[0].expectedSurvivors[0].beforeHash =
+          evidence("changed-survivor")),
+    ],
+    [
+      "forged survivor set proof",
+      (manifest) => {
+        const forged = evidence("forged-survivor-set");
+        manifest.entries[0].survivorSetHash = forged;
+        manifest.entries[0].erasureToken.expectedSurvivorSetHash = forged;
+      },
+    ],
+    [
+      "forged survivor root proof",
+      (manifest) => {
+        const forged = evidence("forged-survivor-root");
+        manifest.entries[0].survivorRootHash = forged;
+        manifest.entries[0].erasureToken.expectedSurvivorRootHash = forged;
+      },
+    ],
+    [
+      "duplicate token id",
+      (manifest) =>
+        (manifest.entries[1].erasureToken.tokenId =
+          manifest.entries[0].erasureToken.tokenId),
+    ],
+    [
       "registry changed after enumeration",
       (_manifest, registry) => (registry.registryRevision = 5),
     ],
@@ -355,8 +422,40 @@ test("reference owner contract: manifest fails closed for foreign, stale, incomp
     const manifest = rawManifest(),
       registry = rawRegistry();
     mutate(manifest, registry);
-    assert.throws(() => parseReferenceOwnerManifest(manifest, registry), name);
+    assert.throws(
+      () => parseReferenceOwnerManifest(manifest, registry, digest),
+      name,
+    );
   }
+});
+
+test("reference owner contract: survivor proofs are canonical and order independent", () => {
+  const manifest = rawManifest(),
+    entry = manifest.entries[0];
+  entry.expectedSurvivors.push({
+    kind: "expected-survivor-binding",
+    version: 1,
+    ownerId: entry.ownerId,
+    payloadClass: entry.payloadClass,
+    survivorId: "survivor-party-second",
+    targetScopeId: entry.targetScopeId,
+    beforeHash: evidence("survivor-before-party-second"),
+  });
+  bindSurvivorProof(entry);
+  const expectedProof = {
+    survivorSetHash: entry.survivorSetHash,
+    survivorRootHash: entry.survivorRootHash,
+  };
+  entry.expectedSurvivors.reverse();
+
+  const parsed = parseReferenceOwnerManifest(manifest, rawRegistry(), digest);
+  assert.deepEqual(
+    {
+      survivorSetHash: parsed.entries[0]?.survivorSetHash,
+      survivorRootHash: parsed.entries[0]?.survivorRootHash,
+    },
+    expectedProof,
+  );
 });
 
 test("reference owner contract: manifest requires exact token bindings", () => {
@@ -383,7 +482,7 @@ test("reference owner contract: manifest requires exact token bindings", () => {
         ? token[field] + 1
         : `${token[field]}-stale`;
     assert.throws(
-      () => parseReferenceOwnerManifest(manifest, rawRegistry()),
+      () => parseReferenceOwnerManifest(manifest, rawRegistry(), digest),
       field,
     );
   }
@@ -400,7 +499,7 @@ test("reference owner contract: tombstone is non-reconstructive and exactly mani
       (value: Raw) => (value.profile = { name: "recover me" }),
     ],
     ["foreign manifest", (value: Raw) => (value.manifestId = "manifest-other")],
-    ["foreign campaign", (value: Raw) => (value.campaignId = "campaign-b")],
+    ["foreign campaign", (value: Raw) => (value.campaignId = CAMPAIGN_B)],
     ["stale registry", (value: Raw) => (value.registryRevision = 3)],
   ] as const) {
     const value = rawTombstone();
@@ -417,23 +516,37 @@ test("reference owner contract: receipt proves slot, target, before, after and c
         "foreign command",
         (receipt) => (receipt.deletionCommandId = "command-other"),
       ],
+      ["foreign campaign", (receipt) => (receipt.campaignId = CAMPAIGN_B)],
+      [
+        "foreign manifest",
+        (receipt) => (receipt.manifestId = "manifest-other"),
+      ],
+      [
+        "foreign tombstone",
+        (receipt) => (receipt.tombstoneId = "tombstone-other"),
+      ],
       ["foreign character", (receipt) => (receipt.characterId = "character-b")],
       ["foreign owner", (receipt) => (receipt.ownerId = "owner-other")],
       ["stale owner", (receipt) => (receipt.ownerRevision = 6)],
+      [
+        "foreign payload class",
+        (receipt) => (receipt.payloadClass = "party-notes"),
+      ],
+      ["foreign slot", (receipt) => (receipt.slotId = "slot-other")],
       ["stale slot", (receipt) => (receipt.slotRevision = 2)],
       ["foreign target", (receipt) => (receipt.targetScopeId = "scope-other")],
-      ["wrong before", (receipt) => (receipt.beforeHash = "hash-wrong")],
+      ["wrong before", (receipt) => (receipt.beforeHash = evidence("wrong"))],
       [
         "unchanged target",
         (receipt) => (receipt.afterHash = receipt.beforeHash),
       ],
       [
         "wrong survivor set",
-        (receipt) => (receipt.survivorSetHash = "hash-wrong"),
+        (receipt) => (receipt.survivorSetHash = evidence("wrong-set")),
       ],
       [
         "wrong survivor root",
-        (receipt) => (receipt.survivorRootHash = "hash-wrong"),
+        (receipt) => (receipt.survivorRootHash = evidence("wrong-root")),
       ],
       ["wrong outcome", (receipt) => (receipt.outcome = "quarantine-erased")],
       [
@@ -451,35 +564,76 @@ test("reference owner contract: receipt proves slot, target, before, after and c
   }
 });
 
-test("reference owner contract: receipt rejects an ambiguous slot binding", () => {
-  const registryInput = rawRegistry(),
-    manifestInput = rawManifest(),
-    extraSlot = clone(registryInput.owners[0].slots[0]),
-    extraEntry = clone(manifestInput.entries[0]);
-  extraSlot.payloadClass = "party-notes";
-  extraSlot.slotId = "slot-party-notes";
-  registryInput.owners[0].slots.push(extraSlot);
-  extraEntry.payloadClass = "party-notes";
-  extraEntry.slotId = "slot-party-notes";
-  extraEntry.erasureUnitId = "deleted-party-notes";
-  extraEntry.erasureToken.tokenId = "token-slot-party-notes";
-  extraEntry.erasureToken.payloadClass = "party-notes";
-  extraEntry.erasureToken.slotId = "slot-party-notes";
-  extraEntry.erasureToken.erasureUnitId = "deleted-party-notes";
-  extraEntry.expectedSurvivors[0].payloadClass = "party-notes";
-  extraEntry.expectedSurvivors[0].survivorId = "survivor-party-notes";
-  manifestInput.entries.push(extraEntry);
+test("reference owner contract: receipt rejects sibling-manifest replay", () => {
+  const original = parseFixture(),
+    receipt = rawReceipt(rawManifest().entries[0], "removed"),
+    siblingManifestInput = rawManifest();
+  siblingManifestInput.manifestId = "manifest-character-a-sibling";
+  const siblingManifest = parseReferenceOwnerManifest(
+      siblingManifestInput,
+      rawRegistry(),
+      digest,
+    ),
+    siblingTombstoneInput = rawTombstone();
+  siblingTombstoneInput.manifestId = siblingManifestInput.manifestId;
+  siblingTombstoneInput.tombstoneId = "tombstone-character-a-sibling";
+  const siblingTombstone = parseCharacterDeletionTombstone(
+    siblingTombstoneInput,
+    siblingManifest,
+  );
 
-  const registry = parseReferenceOwnerRegistryProjection(registryInput),
-    manifest = parseReferenceOwnerManifest(manifestInput, registry),
-    tombstone = parseCharacterDeletionTombstone(rawTombstone(), manifest);
+  assert.doesNotThrow(() =>
+    parseReferenceOwnerClosureReceipt(
+      receipt,
+      original.manifest,
+      original.tombstone,
+    ),
+  );
   assert.throws(
     () =>
       parseReferenceOwnerClosureReceipt(
-        rawReceipt(manifestInput.entries[0], "removed"),
-        manifest,
-        tombstone,
+        receipt,
+        siblingManifest,
+        siblingTombstone,
       ),
-    "ambiguous receipt",
+    "sibling manifest replay",
+  );
+});
+
+test("reference owner contract: exact receipt slot identity disambiguates sibling slots", () => {
+  const registryInput = rawRegistry(),
+    manifestInput = rawManifest(),
+    extraSlot = clone(registryInput.owners[0].slots[0]);
+  extraSlot.payloadClass = "party-notes";
+  extraSlot.slotId = "slot-party-notes";
+  registryInput.owners[0].slots.push(extraSlot);
+  const extraEntry = rawEntry(
+    "owner-party",
+    7,
+    "party-notes",
+    "slot-party-notes",
+    3,
+    "scope-party",
+    "party-notes",
+    "removed",
+  );
+  manifestInput.entries.push(extraEntry);
+
+  const registry = parseReferenceOwnerRegistryProjection(registryInput),
+    manifest = parseReferenceOwnerManifest(manifestInput, registry, digest),
+    tombstone = parseCharacterDeletionTombstone(rawTombstone(), manifest);
+  assert.doesNotThrow(() =>
+    parseReferenceOwnerClosureReceipt(
+      rawReceipt(manifestInput.entries[0], "removed"),
+      manifest,
+      tombstone,
+    ),
+  );
+  assert.doesNotThrow(() =>
+    parseReferenceOwnerClosureReceipt(
+      rawReceipt(extraEntry, "removed"),
+      manifest,
+      tombstone,
+    ),
   );
 });

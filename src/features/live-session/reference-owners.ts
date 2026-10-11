@@ -1,11 +1,9 @@
 import {
-  campaignId,
   characterId,
   commandId,
   ownerId,
   referenceId,
   revision,
-  type CampaignId,
   type CharacterId,
   type CommandId,
   type OwnerId,
@@ -13,6 +11,11 @@ import {
   type Revision,
 } from "./ids";
 import { exactArray, exactRecord, uniqueBy } from "./validation";
+import {
+  campaignId,
+  payloadDigest,
+  type CampaignId,
+} from "../campaign/campaign-contracts";
 
 export interface ErasureSlotDefinition {
   readonly kind: "erasure-slot-definition";
@@ -73,6 +76,13 @@ export interface ExpectedSurvivorBinding {
   readonly beforeHash: string;
 }
 
+export type ReferenceOwnerDigest = (canonical: string) => string;
+
+export interface ReferenceOwnerSurvivorProof {
+  readonly survivorSetHash: string;
+  readonly survivorRootHash: string;
+}
+
 export interface ReferenceOwnerManifestEntry {
   readonly kind: "reference-owner-manifest-entry";
   readonly version: 1;
@@ -119,10 +129,15 @@ export interface ReferenceOwnerClosureReceipt {
   readonly kind: "reference-owner-closure-receipt";
   readonly version: 1;
   readonly outcome: "removed" | "quarantine-erased";
+  readonly manifestId: ReferenceId;
+  readonly tombstoneId: ReferenceId;
   readonly deletionCommandId: CommandId;
+  readonly campaignId: CampaignId;
   readonly characterId: CharacterId;
   readonly ownerId: OwnerId;
   readonly ownerRevision: Revision;
+  readonly payloadClass: string;
+  readonly slotId: ReferenceId;
   readonly slotRevision: Revision;
   readonly targetScopeId: ReferenceId;
   readonly beforeHash: string;
@@ -141,6 +156,80 @@ function opaqueText(value: unknown, label: string): string {
   )
     throw new Error(`${label} ist kein opaker Beleg.`);
   return value;
+}
+
+function canonicalCampaignId(value: unknown, label: string): CampaignId {
+  if (typeof value !== "string")
+    throw new Error(`${label} ist keine Campaign-ID.`);
+  try {
+    return campaignId(value);
+  } catch {
+    throw new Error(`${label} ist keine kanonische Campaign-ID.`);
+  }
+}
+
+function digestEvidence(value: unknown, label: string): string {
+  try {
+    return payloadDigest(opaqueText(value, label));
+  } catch {
+    throw new Error(`${label} ist kein kanonischer SHA-256-Beleg.`);
+  }
+}
+
+type SurvivorProofInput = Pick<
+  ExpectedSurvivorBinding,
+  "ownerId" | "payloadClass" | "survivorId" | "targetScopeId" | "beforeHash"
+>;
+
+export function referenceOwnerSurvivorProof(
+  survivors: readonly SurvivorProofInput[],
+  digest: ReferenceOwnerDigest,
+): ReferenceOwnerSurvivorProof {
+  if (typeof digest !== "function")
+    throw new Error("ReferenceOwnerDigest fehlt.");
+  const ordered = [...survivors].sort((left, right) => {
+      for (const field of [
+        "ownerId",
+        "payloadClass",
+        "survivorId",
+        "targetScopeId",
+      ] as const) {
+        const comparison = String(left[field]).localeCompare(
+          String(right[field]),
+        );
+        if (comparison !== 0) return comparison;
+      }
+      return String(left.beforeHash).localeCompare(String(right.beforeHash));
+    }),
+    setProjection = ordered.map((survivor) => [
+      survivor.ownerId,
+      survivor.payloadClass,
+      survivor.survivorId,
+      survivor.targetScopeId,
+    ]),
+    survivorSetHash = payloadDigest(
+      digest(
+        JSON.stringify(["reference-owner-survivor-set", 1, setProjection]),
+      ),
+    ),
+    rootProjection = ordered.map((survivor) => [
+      survivor.ownerId,
+      survivor.payloadClass,
+      survivor.survivorId,
+      survivor.targetScopeId,
+      survivor.beforeHash,
+    ]),
+    survivorRootHash = payloadDigest(
+      digest(
+        JSON.stringify([
+          "reference-owner-survivor-root",
+          1,
+          survivorSetHash,
+          rootProjection,
+        ]),
+      ),
+    );
+  return Object.freeze({ survivorSetHash, survivorRootHash });
 }
 
 function slotKey(value: {
@@ -191,7 +280,7 @@ export function parseErasureSlotDefinition(
   return Object.freeze({
     kind: "erasure-slot-definition",
     version: 1,
-    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+    campaignId: canonicalCampaignId(row.campaignId, `${label}.campaignId`),
     ownerId: ownerId(row.ownerId, `${label}.ownerId`),
     payloadClass: opaqueText(row.payloadClass, `${label}.payloadClass`),
     slotId: referenceId(row.slotId, `${label}.slotId`),
@@ -264,7 +353,7 @@ export function parseReferenceOwnerRegistryProjection(
     throw new Error(
       `${label} ist unbekannt, nicht verfügbar oder unvollständig.`,
     );
-  const campaign = campaignId(row.campaignId, `${label}.campaignId`),
+  const campaign = canonicalCampaignId(row.campaignId, `${label}.campaignId`),
     owners = Object.freeze(
       uniqueBy(
         exactArray(row.owners, `${label}.owners`).map((entry, index) =>
@@ -330,7 +419,7 @@ export function parseErasureToken(value: unknown): ErasureToken {
       row.deletionCommandId,
       `${label}.deletionCommandId`,
     ),
-    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+    campaignId: canonicalCampaignId(row.campaignId, `${label}.campaignId`),
     characterId: characterId(row.characterId, `${label}.characterId`),
     ownerId: ownerId(row.ownerId, `${label}.ownerId`),
     ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`),
@@ -339,15 +428,15 @@ export function parseErasureToken(value: unknown): ErasureToken {
     slotRevision: revision(row.slotRevision, `${label}.slotRevision`),
     erasureUnitId: referenceId(row.erasureUnitId, `${label}.erasureUnitId`),
     targetScopeId: referenceId(row.targetScopeId, `${label}.targetScopeId`),
-    expectedBeforeHash: opaqueText(
+    expectedBeforeHash: digestEvidence(
       row.expectedBeforeHash,
       `${label}.expectedBeforeHash`,
     ),
-    expectedSurvivorSetHash: opaqueText(
+    expectedSurvivorSetHash: digestEvidence(
       row.expectedSurvivorSetHash,
       `${label}.expectedSurvivorSetHash`,
     ),
-    expectedSurvivorRootHash: opaqueText(
+    expectedSurvivorRootHash: digestEvidence(
       row.expectedSurvivorRootHash,
       `${label}.expectedSurvivorRootHash`,
     ),
@@ -381,7 +470,7 @@ function parseExpectedSurvivor(
     payloadClass: opaqueText(row.payloadClass, `${label}.payloadClass`),
     survivorId: referenceId(row.survivorId, `${label}.survivorId`),
     targetScopeId: referenceId(row.targetScopeId, `${label}.targetScopeId`),
-    beforeHash: opaqueText(row.beforeHash, `${label}.beforeHash`),
+    beforeHash: digestEvidence(row.beforeHash, `${label}.beforeHash`),
   });
 }
 
@@ -422,6 +511,7 @@ function parseManifestEntry(
     readonly campaignId: CampaignId;
     readonly characterId: CharacterId;
   },
+  digest: ReferenceOwnerDigest,
 ): ReferenceOwnerManifestEntry {
   const label = `ReferenceOwnerManifest.entries[${index}]`,
     row = exactRecord(
@@ -465,12 +555,12 @@ function parseManifestEntry(
       slotRevision: revision(row.slotRevision, `${label}.slotRevision`),
       erasureUnitId: referenceId(row.erasureUnitId, `${label}.erasureUnitId`),
       targetScopeId: referenceId(row.targetScopeId, `${label}.targetScopeId`),
-      beforeHash: opaqueText(row.beforeHash, `${label}.beforeHash`),
-      survivorSetHash: opaqueText(
+      beforeHash: digestEvidence(row.beforeHash, `${label}.beforeHash`),
+      survivorSetHash: digestEvidence(
         row.survivorSetHash,
         `${label}.survivorSetHash`,
       ),
-      survivorRootHash: opaqueText(
+      survivorRootHash: digestEvidence(
         row.survivorRootHash,
         `${label}.survivorRootHash`,
       ),
@@ -489,9 +579,15 @@ function parseManifestEntry(
         survivorKey,
         `${label}.expectedSurvivors`,
       ),
-    );
+    ),
+    survivorProof = referenceOwnerSurvivorProof(expectedSurvivors, digest);
   if (!sameTokenBinding(erasureToken, manifest, base))
     throw new Error(`${label} besitzt keinen exakt gebundenen ErasureToken.`);
+  if (
+    base.survivorSetHash !== survivorProof.survivorSetHash ||
+    base.survivorRootHash !== survivorProof.survivorRootHash
+  )
+    throw new Error(`${label} besitzt keinen kanonischen Survivor-Beleg.`);
   if (
     expectedSurvivors.some(
       (survivor) =>
@@ -512,6 +608,7 @@ function parseManifestEntry(
 export function parseReferenceOwnerManifest(
   value: unknown,
   registryValue: unknown,
+  digest: ReferenceOwnerDigest,
 ): ReferenceOwnerManifest {
   const registry = parseReferenceOwnerRegistryProjection(registryValue),
     label = "ReferenceOwnerManifest",
@@ -537,7 +634,7 @@ export function parseReferenceOwnerManifest(
     row.status !== "closed"
   )
     throw new Error(`${label} ist nicht geschlossen.`);
-  const campaign = campaignId(row.campaignId, `${label}.campaignId`),
+  const campaign = canonicalCampaignId(row.campaignId, `${label}.campaignId`),
     registryRevision = revision(
       row.registryRevision,
       `${label}.registryRevision`,
@@ -553,12 +650,17 @@ export function parseReferenceOwnerManifest(
     entries = Object.freeze(
       uniqueBy(
         exactArray(row.entries, `${label}.entries`).map((entry, index) =>
-          parseManifestEntry(entry, index, binding),
+          parseManifestEntry(entry, index, binding, digest),
         ),
         slotKey,
         `${label}.entries`,
       ),
     );
+  if (
+    new Set(entries.map((entry) => entry.erasureToken.tokenId)).size !==
+    entries.length
+  )
+    throw new Error(`${label} enthält mehrfach verwendete ErasureToken.`);
   if (
     campaign !== registry.campaignId ||
     registryRevision !== registry.registryRevision
@@ -644,7 +746,7 @@ export function parseCharacterDeletionTombstone(
       row.deletionCommandId,
       `${label}.deletionCommandId`,
     ),
-    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+    campaignId: canonicalCampaignId(row.campaignId, `${label}.campaignId`),
     characterId: characterId(row.characterId, `${label}.characterId`),
     registryRevision: revision(
       row.registryRevision,
@@ -674,10 +776,15 @@ export function parseReferenceOwnerClosureReceipt(
         "kind",
         "version",
         "outcome",
+        "manifestId",
+        "tombstoneId",
         "deletionCommandId",
+        "campaignId",
         "characterId",
         "ownerId",
         "ownerRevision",
+        "payloadClass",
+        "slotId",
         "slotRevision",
         "targetScopeId",
         "beforeHash",
@@ -698,22 +805,27 @@ export function parseReferenceOwnerClosureReceipt(
       kind: "reference-owner-closure-receipt" as const,
       version: 1 as const,
       outcome: row.outcome as "removed" | "quarantine-erased",
+      manifestId: referenceId(row.manifestId, `${label}.manifestId`),
+      tombstoneId: referenceId(row.tombstoneId, `${label}.tombstoneId`),
       deletionCommandId: commandId(
         row.deletionCommandId,
         `${label}.deletionCommandId`,
       ),
+      campaignId: canonicalCampaignId(row.campaignId, `${label}.campaignId`),
       characterId: characterId(row.characterId, `${label}.characterId`),
       ownerId: ownerId(row.ownerId, `${label}.ownerId`),
       ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`),
+      payloadClass: opaqueText(row.payloadClass, `${label}.payloadClass`),
+      slotId: referenceId(row.slotId, `${label}.slotId`),
       slotRevision: revision(row.slotRevision, `${label}.slotRevision`),
       targetScopeId: referenceId(row.targetScopeId, `${label}.targetScopeId`),
-      beforeHash: opaqueText(row.beforeHash, `${label}.beforeHash`),
-      afterHash: opaqueText(row.afterHash, `${label}.afterHash`),
-      survivorSetHash: opaqueText(
+      beforeHash: digestEvidence(row.beforeHash, `${label}.beforeHash`),
+      afterHash: digestEvidence(row.afterHash, `${label}.afterHash`),
+      survivorSetHash: digestEvidence(
         row.survivorSetHash,
         `${label}.survivorSetHash`,
       ),
-      survivorRootHash: opaqueText(
+      survivorRootHash: digestEvidence(
         row.survivorRootHash,
         `${label}.survivorRootHash`,
       ),
@@ -722,25 +834,29 @@ export function parseReferenceOwnerClosureReceipt(
       (candidate) =>
         candidate.ownerId === result.ownerId &&
         candidate.ownerRevision === result.ownerRevision &&
+        candidate.payloadClass === result.payloadClass &&
+        candidate.slotId === result.slotId &&
         candidate.slotRevision === result.slotRevision &&
         candidate.targetScopeId === result.targetScopeId,
     ),
     entry = matchingEntries.length === 1 ? matchingEntries[0] : undefined;
   if (
     !entry ||
+    result.manifestId !== manifest.manifestId ||
+    result.tombstoneId !== tombstone.tombstoneId ||
     tombstone.manifestId !== manifest.manifestId ||
     tombstone.deletionCommandId !== manifest.deletionCommandId ||
     tombstone.campaignId !== manifest.campaignId ||
     tombstone.characterId !== manifest.characterId ||
     tombstone.registryRevision !== manifest.registryRevision ||
     result.deletionCommandId !== manifest.deletionCommandId ||
+    result.campaignId !== manifest.campaignId ||
     result.characterId !== manifest.characterId ||
     result.beforeHash !== entry.beforeHash ||
     result.afterHash === result.beforeHash ||
     result.survivorSetHash !== entry.survivorSetHash ||
     result.survivorRootHash !== entry.survivorRootHash ||
-    (result.outcome === "quarantine-erased") !==
-      (entry.closureStatus === "unavailable-quarantined")
+    (entry.closureStatus === "removed" && result.outcome !== "removed")
   )
     throw new Error(
       `${label} bindet Slot, Ziel, Before oder After nicht exakt.`,
