@@ -210,12 +210,12 @@ ausgeblendeter fremder Fraktion; beide Prozesse endeten normal. Rohbelege:
 Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
 `af5ddcbb`. Die vollständige World-Planner-/SMR-02-Abnahme bleibt offen.
 
-Ein weiterer #68-Kandidat erhält ungespeicherte Notizentwürfe beim tatsächlichen
+Der Entwurf PR #112 adressiert ungespeicherte Notizentwürfe beim
 Kampagnenwechsel A→B→A innerhalb derselben geöffneten Spielansicht. Er hält
 das World-Notes-Panel, widerruft alte Sessions und Eingaben und zeigt einen
 Entwurf erst nach bestätigter neuer Kampagnenbindung wieder an. Typecheck,
 Repositoryprüfung, 1011/1012 Tests (ein Skip) und Build bestanden. Eine neue
-native Probe erreichte den Wechsel wegen eines Testskript-Selektors nicht;
+native Probe erreichte den Wechsel wegen Fehlern im neuen Testskript nicht;
 native und unabhängige Abnahme dieses Beitrags stehen aus.
 
 ### SMR-03 – Party, Scene und Live Session
