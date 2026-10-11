@@ -125,18 +125,28 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
 
 #### Arbeitsstand #68
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/75
+[PR #83](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/83)
+ist in Shared integriert: Kampagnenwissen anlegen, suchen, bearbeiten und als
+native Note samt Campaignmanifest speichern. Der unabhängige
+[Host-R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103180580)
+schloss den Atlas-first-Restjournalfehler. Eigene isolierte Obsidianläufe
+belegten alle vier Notizarten, Beziehung, Tombstone und frisches Öffnen; die
+[freie GM-Probe](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103954556)
+bestätigte Anlegen, Suche, Bearbeiten und erneutes Öffnen unabhängig.
 
-Der Domänen-/Panel-Eingang ist kein nativer Speicher- oder GUI-Nachweis.
-Campaign/Data liefert im [besessenen Producer](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6102432435)
-den kanonischen Einzeldatei-/Owner-/Receipt-/Recoveryanschluss; Atlas-QA montiert
-dessen bestätigten Port für Save → frisches Öffnen. Keine zweite Übernahme.
+Auf Shared `ca290326` besteht zusätzlich ein isolierter echter Obsidianlauf
+mit Electron-Zoomfaktor 2: Hilfe per Tastatur, Suche per Tastatur, sichtbare
+Aktionen und Formularfelder im Viewport, Save und frischer Prozess. Der
+wiederholbare Aufruf `node tools/host-test.cjs --world-notes-zoom200` und danach
+derselbe Aufruf mit `--restart` verwenden einen ausdrücklich gesetzten eigenen
+`DUNGEON_QA_ROOT`; die zwei Läufe und Screenshots liegen unter
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-zoom200-flag-ca290/evidence/`.
+Das ist ein synthetischer GUI-/Save-/Reopen-Nachweis, keine physische
+Tastatur-, Crash- oder Gesamt-SMR-02-Freigabe.
 
-Nächster Beitrag: Atlas-QA stellt den ersten startbaren isolierten GUI-Weg
-Anlegen → Finden → Bearbeiten mit Build/Fixture/Host am [Paket](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68)
-zur GM-Nutzung bereit. Native Writes/Recovery und Fresh-Prozess bleiben offen;
-vor größerem abhängigem Ausbau frühe GM-Beobachtung konsumieren. Technische
-Reviewidentitäten stehen im PR; keine neue Fach-/Hostfreigabe aus diesem Einstieg.
+Offen bleiben unabhängige reale Fehler-/Recoveryqualifikation und die
+zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.
+Ortstags gegenüber Name-only-Anlage warten weiter auf die Zielregel in #44.
 
 ### SMR-03 – Party, Scene und Live Session
 

@@ -1,5 +1,5 @@
 // Isolated real Obsidian Save -> fresh-process World Notes probe on synthetic Campaign input.
-module.exports = ({ page, fs, path, assert, vault, out, checks }) => {
+module.exports = ({ page, fs, path, assert, vault, out, checks, worldNotesZoom200 }) => {
   const manifestPath = "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json";
   const open = async () => {
     await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:open-world-notes"));
@@ -12,6 +12,35 @@ module.exports = ({ page, fs, path, assert, vault, out, checks }) => {
   return {
     edit: async () => {
       const panel = await open();
+      if (worldNotesZoom200) {
+        const zoom = await page.evaluate(() => {
+          const electron = window.require?.("electron");
+          if (!electron?.webFrame) return { available: false };
+          electron.webFrame.setZoomFactor(2);
+          return { available: true, factor: electron.webFrame.getZoomFactor() };
+        });
+        assert.equal(zoom.available, true, "Obsidian webFrame zoom must be available");
+        assert.equal(zoom.factor, 2);
+        const help = panel.locator("details summary");
+        await help.focus();
+        await page.keyboard.press("Enter");
+        assert.equal(await panel.locator("details").evaluate((el) => el.open), true);
+        const layout = await panel.evaluate((el) => ({
+          viewport: window.innerWidth,
+          left: el.getBoundingClientRect().left,
+          right: el.getBoundingClientRect().right,
+          buttons: [...el.querySelectorAll(".dn-world-notes-actions button")].map((button) => ({
+            left: button.getBoundingClientRect().left,
+            right: button.getBoundingClientRect().right,
+          })),
+        }));
+        assert(layout.left >= 0 && layout.right <= layout.viewport, "World Notes panel fits 200% viewport");
+        assert(layout.buttons.every((button) => button.left >= 0 && button.right <= layout.viewport),
+          "World Notes actions fit 200% viewport");
+        fs.writeFileSync(path.join(out, "world-notes-zoom.json"), JSON.stringify({ zoom, layout }, null, 2));
+        await page.screenshot({ path: path.join(out, "world-notes-200-percent.png") });
+        checks.push("Real Obsidian webFrame at 200%: keyboard help and action layout PASS");
+      }
       await panel.getByRole("button", { name: "NPC anlegen" }).click();
       const form = panel.locator("form");
       await form.locator("label").filter({ hasText: "Name" }).locator("input").fill("Maris vom Hafen");
@@ -81,8 +110,34 @@ module.exports = ({ page, fs, path, assert, vault, out, checks }) => {
     },
     reopen: async () => {
       const panel = await open();
+      if (worldNotesZoom200) {
+        const zoom = await page.evaluate(() => {
+          const webFrame = window.require?.("electron")?.webFrame;
+          if (!webFrame) return null;
+          webFrame.setZoomFactor(2);
+          return webFrame.getZoomFactor();
+        });
+        assert.equal(zoom, 2);
+        const search = panel.getByRole("searchbox", { name: "Notizen durchsuchen" });
+        await search.focus();
+        await page.keyboard.type("Maris");
+        assert.equal(await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).count(), 1);
+        await search.fill("");
+      }
       await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).click();
       const form = panel.locator("form");
+      if (worldNotesZoom200) {
+        const layout = await form.evaluate((el) => ({
+          viewport: window.innerWidth,
+          right: el.getBoundingClientRect().right,
+          inputs: [...el.querySelectorAll("input, textarea, select, button")].map((item) =>
+            item.getBoundingClientRect().right),
+        }));
+        assert(layout.right <= layout.viewport && layout.inputs.every((right) => right <= layout.viewport),
+          "World Notes edit controls fit the 200% viewport");
+        fs.writeFileSync(path.join(out, "world-notes-reopen-zoom.json"), JSON.stringify({ zoom: 2, layout }, null, 2));
+        await page.screenshot({ path: path.join(out, "world-notes-reopen-200-percent.png") });
+      }
       assert.equal(await form.locator("label").filter({ hasText: "Vorlesetext" }).locator("textarea").inputValue(),
         "Sie hebt die Laterne.");
       assert.equal(await form.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea").inputValue(),

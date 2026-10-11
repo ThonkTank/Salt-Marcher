@@ -23,6 +23,28 @@
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
+    "smr02WorldNotes": {
+      "package": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68",
+      "state": "world_notes_host_integrated_early_gm_and_zoom200_pass_remaining_scope_open",
+      "integratedProduct": "3fc5518b5a5cd48d03e647e63ce474f127ddde34",
+      "independentHostRepair": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103180580",
+      "independentEarlyGm": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103954556",
+      "zoom200": {
+        "sharedSource": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "mainJsSha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "hostRunnerSha256": "c0d664cb1fd783d2e634450e360c1d0a808057637e5e5e3751001fa9477cdf51",
+        "scenarioSha256": "5c366d830f37f2bf9ef70344a3635310b3f26f280122447e39cff60e9c1991e7",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-zoom200-flag-ca290/evidence/",
+        "editResult": "1791680719320-world-notes-native-edit/result.json",
+        "editResultSha256": "4f651901e1291dc98cbd7cc043b2510d9542a97d2ceb7cc223250a1ed85a2116",
+        "reopenResult": "1791680734171-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "0b21dd7a17ba0987daee5fa06b0e7e6ceed494adad1fafb8912853e03406719a",
+        "result": "real Electron webFrame zoom factor 2; keyboard help and search, visible actions and edit fields inside viewport; native Save and fresh real Obsidian process passed on a synthetic vault"
+      },
+      "next": "Independent real failure and recovery qualification; retain broader Encounter constraint, NPC combat and World Planner requirements as open.",
+      "limits": "No physical keyboard, power-loss, user-vault, full SMR-02 or overall product acceptance."
+    },
     "smr03LiveScene": {
       "state": "i01a_implementation_review_passed_integration_pending",
       "plan": "docs/plans/runtime/smr03-live-scene-contract.md",
