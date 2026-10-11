@@ -307,9 +307,9 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-visible-focus-20261011
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
 
-Stadt führt den manuellen Planner fort. Kern/Panel/Preview, Plannamenerhalt,
-Post-Allocation-Schutz, Tastatur-Aktionsfokus und Draftidentitätsschutz sind
-integriert. PR142/R01 und Shared632c580 sind konsumiert; keine native Speicherung.
+Kern/Panel/Preview, Plannamenerhalt, Post-Allocation-Schutz, Tastatur-Aktionsfokus
+und Draftidentitätsschutz sind integriert (PR142/R01, Commit `632c580`).
+Native Speicherung fehlt.
 
 CloudGM-Nachtest6106915673 bestätigt sichtbare Tastaturfortsetzung bei Verwerfen,
 Verschieben und Rand-Fallback zum Szenentitel. Nach Enter→Übernehmen fehlte
@@ -317,13 +317,14 @@ unmittelbar die sichtbare Fokusumrandung; folgendes Tab war korrekt bedienbar.
 Die aktuelle enge Stilreparatur zeigt im Planner Fokus ausdrücklich mit :focus,
 auch wenn der Browser beim Ersatzcontrol :focus-visible nicht beibehält.
 Produktstylesheet und flüchtiger Preview nutzen dieselbe scoped Regelabsicht.
-Payload, Controls, Guards und Tests unverändert; kein neuer Gesamt-Plannerreview.
-Enger unabhängiger Apply→sichtbarer Fokus→Tab-Nachtest und Stilreview stehen aus.
+Payload, Controls, Guards und Tests sind unverändert. Der direkte
+Apply→sichtbarer Fokus→Tab-Nachtest und der Stilnachweis stehen aus.
 
 [PR86](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86)
-führt Dokumentcodec und konkreten Produceranschlussvorschlag. Campaign/Data
-entscheidet Dokumentinventar, Domainwrite/Bytebindung, Pfad und Retirement/
-Recovery; danach implementiert Stadt den Consumer. Kein zweiter Publisher.
+führt Dokumentcodec und konkreten Speicheranschlussvorschlag. Für den
+produktiven Consumer fehlen Dokumentinventar, Domainwrite/Bytebindung, Pfad
+und Retirement/Recovery im Campaign-Datenvertrag. Der vorhandene Publisher
+wird wiederverwendet.
 
 Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`.
 [Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).

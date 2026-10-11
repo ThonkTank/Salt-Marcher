@@ -2,11 +2,7 @@
 
 Abschnitte: [Normativer Lebenszyklus](#normativer-lebenszyklus) · [Mehrbesitzer-Commit und Recovery](#mehrbesitzer-commit-und-recovery) · [Party-Command-History und kausales Undo/Redo](#party-command-history-und-kausales-undoredo) · [Offene Produktanschlüsse](#offene-produktanschlüsse) · [Kernverträge und Umsetzung](#kernverträge-und-umsetzung)
 
-Status: **Lifecycle-/Zeit-, Ownership- und Host/Security/Platform-Re-reviews
-`PASS`; Passive-Display-Phasensplit auf Exact-SHA `PASS` und vom Source-Owner
-ratifiziert; Music/Weather/Shops-Consumer-Rekonfirmation auf Exact-SHA lokal
-dokumentiert; ohne
-Implementierungs-, Host- oder Persistenzfreigabe.**
+Lifecycle-/Zeit-, Datenbesitz- und Host-/Security-/Plattformverträge sowie die Trennung der passiven Anzeige besitzen begrenzte PASS-Nachweise. Diese Vertragsnachweise belegen allein weder Produktanschluss noch Hostpersistenz; der genaue Umfang steht in `acceptance.json`.
 
 ## Fachliche Quellen
 

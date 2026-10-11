@@ -2,7 +2,7 @@
 
 Abschnitte: [Scope](#scope) · [Campaign-Kontext](#campaign-kontext) · [Ownership und gemeinsame Commands](#ownership-und-gemeinsame-commands) · [Persistierte Quelle und Kampagneneinstieg](#persistierte-quelle-und-kampagneneinstieg)
 
-Status: Entwurf; keine Implementierungsfreigabe.
+Fachanforderungen und technische Anschlussverträge. Die tatsächlichen Implementierungs- und Abnahmestände stehen in `acceptance.json`.
 
 ## Scope
 
@@ -31,7 +31,7 @@ Die Renderer-UI erhält nur validierte, enge Capability-Ports, immutable Projekt
 
 ## Gemeinsame offene Verträge
 
-Campaign-ID↔LiveScene-ID, Campaign-History, Scene-Zeit, Running-Scene-/Encounter-/Travel-Recovery, Atlas-/Dungeon-Mehrdatei-Commit, Revisiontoken, beteiligte Lifecycle-Owner und Recovery über mehrere Besitzer werden mit den betroffenen Peers ratifiziert. Die Teilungs- und Konfliktregeln installationsweiter Definitionen, Manifest-Format, Host-Port-Verträge, stabile Audio-Source-IDs/Rebind und Delete-Retention werden ebenfalls gemeinsam ratifiziert. Bis dahin konsumiert SMR-01 nur stabile IDs und immutable Projektionen.
+Offen sind die konkreten Schnittstellen für Campaign-ID↔LiveScene-ID, Campaign-History, Scene-Zeit, Running-Scene-/Encounter-/Travel-Recovery, Atlas-/Dungeon-Mehrdatei-Commit, Revisiontoken, beteiligte Lifecycle-Datenbesitzer und Recovery über mehrere Datenbesitzer. Ebenso fehlen die Teilungs- und Konfliktregeln installationsweiter Definitionen, Manifest-Format, Host-Ports, Audio-Source-IDs/Rebind und Delete-Retention. Bis diese Schnittstellen definiert sind, verwendet SMR-01 ausschließlich stabile IDs und immutable Projektionen.
 
 ## Acceptance-Reihenfolge
 
@@ -49,11 +49,11 @@ Campaign-ID↔LiveScene-ID, Campaign-History, Scene-Zeit, Running-Scene-/Encount
 
 ## Gates
 
-Ein unabhängiger Peer- und Architekturreview prüft Lifecycle-Stufen/Receipts, fremde Owner-Grenzen, vollständiges Remapping einschließlich Audio-Rebind, Manifest- und Paketattacken, Konfliktfolgen, Löschretention, Fehlerisolation und fehlende Renderer-Privilegien. Implementierung, Host- und Acceptance-Freigabe folgen erst nach ratifiziertem Vertragscommit.
+Zu prüfen sind Lifecycle-Stufen/Receipts, Datenbesitzgrenzen, vollständiges Remapping einschließlich Audio-Rebind, Manifest- und Paketattacken, Konfliktfolgen, Löschretention, Fehlerisolation und fehlende Renderer-Privilegien. Der jeweilige Produktanschluss benötigt einen definierten technischen Vertrag und direkte Funktionsnachweise.
 
 ## Campaign-Kontext
 
-Status: Plan-Kandidat; unabhängiger Review erforderlich. Kein Produkt-, Host-, P02-, P04- oder E2E-01-PASS.
+Der folgende Fachvertrag allein belegt keinen Produkt-, Host-, P02-, P04- oder E2E-01-PASS; vorhandene Umsetzungen und Nachweise stehen im Abnahmeregister.
 
 Basis ist `active/installed-phase1` auf `6bfb1f393722cd469dc4fd5f15d8dea12a154f6b` mit dem ratifizierten Gatekatalog aus PR #16. Die fachliche Ausgangsgrenze ist `ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md`, deren semantischer Stand `11e256309d43bcd1c14db66ffc41945c9360aec8` unabhängig geprüft wurde.
 
@@ -65,7 +65,7 @@ Der Lauf startet keine LiveSession und erzeugt keine Party-, Preparation-, Scene
 
 ## Campaign-Kontext — Abgrenzung und Ownership
 
-- Campaign/Data besitzt die Typen, Laufzeitvalidierung, immutable Projektionen, Lifecycle-/Command-Zustandsmaschine, Revision-/Context-Guards, die Abdeckungskoordination und das hostneutrale Import-Remap-Modell.
+- Campaign/Data besitzt die Typen, Laufzeitvalidierung, immutable Projektionen, Lifecycle-/Command-Zustandsmaschine, Revision-/Context-Guards und das hostneutrale Import-Remap-Modell.
 - Hex besitzt den dünnen Adapter von einer bestätigten `CampaignContextProjection` zum Atlas. Der Adapter verwirft auf Contextwechsel seine ephemeral Selection/Camera/History-Bindung und lädt Ownerdaten neu; dieser Lauf implementiert den Adapter nicht.
 - Atlas/City/Dungeon, Katalog/Encounter, Music/Weather/Shops und alle weiteren tatsächlichen Domainowner behalten Payload-, Format-, History- und Snapshotbesitz. Dieser Lauf liest oder mutiert ihre internen Werte nicht. Jeder Owner liefert und bestätigt über seinen Port ein immutable Identitäts-/Referenzinventar, seine erwartete Owner-/Schema-/Snapshotrevision sowie Payload-Snapshots oder verifizierte Payloadbezüge; ein unbekannter oder unavailable Owner gilt nie als leer.
 - Der gemeinsame History-/Transaction-Port sowie P02-Save/Reopen und P04-Archiv/Checksum/Hostimport bleiben fremde, offene Eingänge. Eine injizierte In-Memory-Portgrenze beweist keine Dateidauerhaftigkeit.

@@ -63763,7 +63763,6 @@
       "uiCoverageRule": "Das vorhandene Originalinventar bleibt mit UI-/Fallkennungen und Belegen erhalten. Eigenständige fachliche Wirkungen besitzen eine Zielzuordnung; mehrere Eingabewege/Regler derselben Wirkung dürfen denselben eigenen Zugang verwenden. Historisches HEX-00-Inventartor und numerische Phasenliste sind keine aktuelle Produktlieferfolge.",
       "growthRule": "Neue fachliche Wirkungen im vorhandenen Register ergänzen; IDs und historische Beobachtungen nicht umnummerieren oder entfernen. Gleichartige Eingabewege zusammen zu bedienen ist kein Funktionsausschluss. Unerreichbare oder ungeklärte fachliche Kandidaten bleiben mit ihrer Zugangslücke offen; keine stillen Ausschlüsse.",
       "usabilityRule": "Benutzbare Zwischenstände nach ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel mit Work → Efficient → Beautiful und durchgehendem KISS. Einfache Vorbereitungsabläufe werden eigenständig nutzbar; funktionale Erweiterungen bleiben Pflicht und folgen ebenfalls diesen Stufen. Teilstände ersetzen keine fehlenden Originalpaare und erhalten keine pauschale Paritätsfreigabe.",
-      "reviewRule": "Originalaufnahme, Umsetzung, unabhängiger Review und Aufräumen sind getrennte Läufe; keine parallelen Agenten oder GUI-Testinstanzen.",
       "graphicsRule": "Ergebnisgleichwertigkeit gemäß ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel: eigene Darstellung zulässig, keine Pixelidentität. Form, räumliche Beziehungen, sichtbare Zustände, Bedientreffer und dauerhaft editierbare Daten bewerten; Pixelmessungen nur zur Diagnose.",
       "physicalRule": "Synthetische Eingaben, UI-Daten und Kerntests schließen keine physische Maus-/Touchpad-/Stiftabnahme.",
       "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-parity/",
@@ -153540,9 +153539,9 @@
               "new isolated DOM test for that component"
             ]
           },
-          "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
+          "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in the current dock. Atlas supplies actual native targets, validates Source/Context/Key guards, owns camera/history/persistence and mounts the component through the existing AtlasView/Editor/Renderer/Repository. No fake Registry or new view.",
           "state": "specific_Campaign_owned_save_lifetime_seam_missing_reproduced",
-          "gate": "Navigation code/cleanup, City independent code/owner cleanup/Hex reviewer cleanup P/I/R, Campaign provider R03/cleanup and media scoped R03 all consumed. Existing merged check/573 tests/clean build and City DOM8 remain exact product basis. Already-planned visible I01c host is next; no general new plan or review round.",
+          "gate": "Navigation, Campaign provider and media component checks are recorded. Existing merged check/573 tests/clean build and City DOM8 remain the product basis. The visible I01c host flow is the next missing product proof.",
           "confirmedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6094937416",
           "campaignDataSeam": {
             "state": "actual_qualified_provider_R03_and_cleanup_PASS_integrated_visible_host_open",
@@ -153775,7 +153774,7 @@
             "finding": "HEX-MANIFEST-I02-01",
             "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-20261010/finding.json",
             "evidenceSha256": "a36e567b48d4203d4ced44b09914885d1221b4c5b9885186e35ebaf02bad6772",
-            "after": "Actual host Save/Fresh/A-B-A; fresh explicit GUI-slot coordination and real Obsidian/fresh process; separate independent integrated review and own cleanup P/I/R.",
+            "after": "Actual host Save/Fresh/A-B-A and independent integrated review remain to be demonstrated.",
             "limits": "No source event suppression, private sourceCurrent mutation, second publish,automatic reactivation/new History or product/native/E2E claim. Existing scoped producer/Host reviews remain valid; this is the new concrete integration precondition."
           }
         },
@@ -153941,8 +153940,6 @@
           "native": {
             "ran": false,
             "freshProcess": false,
-            "slotGranted": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6095865694",
-            "slotReturnedUnused": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6095945837",
             "nativeManifestAuthorityAvailable": false,
             "reason": "Actual owner-confirmed Campaignmanifest fixture and qualified Manifest Save Participant absent; no productive substitute generated from DOM test authority."
           },
@@ -154300,7 +154297,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Promotion #39 is executed on Shared6a41f16; required separate own cleanup is complete with empty deletion list and preserved evidence. Next required entry is #40 direct Shared Location/Key GM-host flow with fresh process and re-coordinated GUI slot. P02/P04/CompleteImport and full E2E remain open.",
+        "gap": "Shared Location/Key host flows have their scoped records below. P02/P04, CompleteImport and full E2E remain open.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154647,7 +154644,6 @@
           "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
           "finding": "SHARED-LOCATION-H01-SAVE-01",
           "freshProcessStarted": false,
-          "guiSlotReturned": true,
           "productEdited": false,
           "independentAcceptance": "pending; no PASS"
         },
@@ -154671,7 +154667,6 @@
           "productEdited": false,
           "nativeRepeated": false,
           "freshProcessStarted": false,
-          "guiSlotUsed": false,
           "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
           "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01"
         },
@@ -154690,7 +154685,6 @@
           "productEdited": true,
           "nativeRepeated": false,
           "freshProcessStarted": false,
-          "guiSlotUsed": false,
           "originalH01AndD01Preserved": true,
           "independentReview": "pending separate exact-head review",
           "fullE2E": false,
@@ -154724,7 +154718,6 @@
           "productEdited": true,
           "nativeRepeated": false,
           "freshProcessStarted": false,
-          "guiSlotUsed": false,
           "independentRereview": "pending",
           "fullE2E": false,
           "latestComposition": {
@@ -154804,7 +154797,6 @@
           "productEdited": false,
           "nativeRepeated": false,
           "freshProcessStarted": false,
-          "guiSlotUsed": false,
           "fullE2E": false,
           "limits": "Review and integration establish only qualified source. H01 remains historical native FAIL. No native/physical/parity/large-map/installation/CITY/P02/P04/E2E02-04/full-gate PASS."
         },
@@ -154840,8 +154832,6 @@
           "noOpUndoSaveRedo": true,
           "oneCanvasCameraHistory": true,
           "allNineFreshFilesByteEqualSaved": true,
-          "guiSlotReturned": true,
-          "guiSlotReturn": 6101912782,
           "normalProcessEnds": true,
           "forcedTermination": false,
           "productEdited": false,
@@ -154899,8 +154889,7 @@
           "evidence": "docs/reference/atlas-shared-location-h02/metadata-repair.json",
           "sha256": "4776407068ec6654a7ff143874bc62ef6af97577c6c83fb65b6da809efb3fb32",
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
-          "nativeRepeated": false,
-          "guiSlotUsed": false
+          "nativeRepeated": false
         },
         "sharedLocationKeyNativeH02Qualification": {
           "id": "E2E-01-SHARED-LOCATION-KEY-H02-QUALIFICATION",
@@ -154968,8 +154957,7 @@
           "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
           "sha256": "71e3fef652677072a17eb4593d1a73b79f1d0292605d8028cbe493e7e893d4ba",
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
-          "nativeRepeated": false,
-          "guiSlotUsed": false
+          "nativeRepeated": false
         },
         "sharedLocationKeyNativeH02Cleanup": {
           "id": "E2E-01-SHARED-LOCATION-KEY-H02-OWN-CLEANUP",
@@ -155031,8 +155019,7 @@
           "evidence": "docs/reference/atlas-shared-location-h02/cleanup.json",
           "sha256": "85104415b1db06d3e6e5340f05c9fccde20c1a9911621ee8308ca90d48cc2a56",
           "productEdited": false,
-          "nativeRepeated": false,
-          "guiSlotUsed": false
+          "nativeRepeated": false
         },
         "detailBindingDiagnosticD01": {
           "id": "E2E-01-HEX04-DETAIL-BINDING-D01",
@@ -155215,7 +155202,7 @@
             "newDungeonCreation": false,
             "independentReview": "pending existing independent Dungeon/Atlas colleague"
           },
-          "reproduction": "Checkout the exact source; npm ci, npm run check, npm test, npm run build. No GUI slot is used by these tests. CI exposes portable full logs; local raw logs remain at the named QA root.",
+          "reproduction": "Checkout the exact source; npm ci, npm run check, npm test, npm run build. CI exposes portable full logs; local raw logs remain at the named QA root.",
           "finishedAt": "2026-10-10T22:14:26.436662+00:00",
           "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-i01.json",
           "sha256": "121121d8f7dd7e923eec492ea4673b9df2f44fed9b2d6b10bed279005b382d9f"
@@ -155319,9 +155306,9 @@
             "userVaultInstalled": false,
             "fullE2E": false,
             "newPlacementIdentityAuthority": false,
-            "independentReview": "Atlas-QA R02 pending; no self-integration"
+            "independentReview": "Atlas-QA R02 pending"
           },
-          "reproduction": "Checkout exact sourceCommit; npm ci; npm run check; npm test; npm run build. Core/DOM fresh models are distinct from actual Obsidian/Electron and require no GUI slot.",
+          "reproduction": "Checkout exact sourceCommit; npm ci; npm run check; npm test; npm run build. Core/DOM fresh models are distinct from actual Obsidian/Electron.",
           "finishedAt": "2026-10-10T22:29:57.555698+00:00",
           "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json",
           "sha256": "22f68235d1ce5cf2bfc716f78e172c6189d4ba957bf1a354bc37990dd1e6c715"
@@ -156121,7 +156108,6 @@
             "nextOwnStep": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
           },
           "nativeOutcome": "first helper partial/selector FAIL retained; second Room probe completed; two normal exits/all8 native files unchanged. Geometry finding confirmed, not a GUI product PASS.",
-          "slotReturned": true,
           "guiUsed": true,
           "productEdited": false,
           "phaseApproval": false,
@@ -156697,14 +156683,6 @@
             "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
             "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
           },
-          "slot": {
-            "peerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-            "freshExplicitPeerGrant": true,
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106110899",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106122720",
-            "held": false,
-            "nextLocalGuiRequiresFreshExplicitGrant": true
-          },
           "lifecycle": {
             "unit": "dungeon-native-3969202.service",
             "runnerPid": 3969202,
@@ -156967,17 +156945,6 @@
               "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
               "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
             }
-          },
-          "slot": {
-            "freshConfirmation": {
-              "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-              "receivedAt": "2026-10-11T06:22:28.136905+00:00",
-              "text": "Stadt bestätigt frisch den freien lokalen GUI-Slot ausschließlich für beschriebenen #80 IME-Save-H02 auf64b6eb58/Shared25e6155e, isolierter Spatial-V2-Fixture. Keine eigene GUI währenddessen. Guardbewertung nur bei belegtem komponierenden Save-keydown, normal beenden und ausdrücklich zurückgeben."
-            },
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106207052",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106219813",
-            "held": false,
-            "newExplicitCoordinationRequired": true
           },
           "processLifecycle": {
             "unit": "dungeon-native-3985776.service",
@@ -157366,16 +157333,6 @@
               "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
               "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
             }
-          },
-          "slot": {
-            "freshConfirmation": {
-              "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-              "text": "Stadt bestätigt lokalen GUI-Slot jetzt frisch frei ausschließlich für beschriebenen #80 IME-H03 auf697ff20d/Shareddbcecc79, eigene Spatial-V2-Fixture. Keine eigene GUI währenddessen. Normal beenden und ausdrücklich zurückgeben; kein City/physischer/Gesamtclaim."
-            },
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106322735",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106335310",
-            "held": false,
-            "newExplicitCoordinationRequired": true
           },
           "processLifecycle": {
             "unit": "dungeon-native-4013005.service",
@@ -157788,19 +157745,7 @@
             "runnerExit": 1,
             "all8NativeBytesUnchanged": true,
             "executedHelperPreserved": true,
-            "correction": "New helper removes only unsupported renderer require(obsidian) API-version diagnostic. Same source/build; no native action attempted in first launch. Fresh explicit slot before second launch.",
-            "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106422870",
-            "slotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106431068"
-          },
-          "slot": {
-            "freshConfirmation": {
-              "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-              "text": "Stadt bestätigt den lokalen GUI-Slot frisch für denselben begrenzten bestätigten, nicht komponierenden Ctrl+S-/sichtbaren Save-Kontrollnachweis auf sauberer Source12265c20/Shared25792fb in deiner isolierten Spatial-V2. Korrektur ausschließlich Entfernung des genannten QA-Diagnoseaufrufs; ursprünglichen Helfer/Fehlerbeleg erhalten. Keine Produktänderung oder neue IME-Variante. Stadt hält keine GUI und startet während dieses Laufs keine. Danach reguläres Appende und ausdrückliche Slotrückgabe."
-            },
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106437330",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106444447",
-            "held": false,
-            "futureNewExplicitCoordinationRequired": true
+            "correction": "New helper removes only unsupported renderer require(obsidian) API-version diagnostic. Same source/build; no native action attempted in first launch. Fresh explicit slot before second launch."
           },
           "processLifecycle": {
             "unit": "dungeon-native-4044720.service",
@@ -158205,16 +158150,6 @@
             "downstreamKeydownExpected": false,
             "nativeInput": "Actual synthetic trusted noncomposing Control+s in real isolated Obsidian at visible focused Ortsname; no direct product Save/model mutation to replace test action."
           },
-          "slot": {
-            "freshConfirmation": {
-              "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-              "text": "Stadt hält keine GUI. Frische ausdrückliche Slotbestätigung für genau deinen beschriebenen isolierten H04-Ctrl+S-Fixlauf #80 auf e1bda0a08e985ef74ba1777d1e1588d507f838b7 / Shared29e4ce68 / Spatial-V2, QAroot /home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011. Pending Ortsname, trusted nicht komponierendes Ctrl+S und benannte Native/History/Kamera/Foreign-Orakel; kein Freshzweiterstart oder weitere IME-Variante. Nutzervault schützen, normal app.quit/PIDs prüfen und Slot anschließend ausdrücklich zurückgeben. Stadt startet daneben keine GUI."
-            },
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106556206",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106563752",
-            "held": false,
-            "futureNewExplicitCoordinationRequired": true
-          },
           "processLifecycle": {
             "unit": "dungeon-native-4069831.service",
             "appPids": [
@@ -158614,12 +158549,6 @@
               "sha256": "b020dcd39ef982ef0d54eb95b89f081234e2b37f6785d71c4926ed84ca1f14af"
             }
           },
-          "slot": {
-            "freshConfirmationChat": "01a12022-b67b-7da2-bed5-8ebde169d475",
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106804252",
-            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106809303",
-            "held": false
-          },
           "limits": {
             "authorNativeProbe": true,
             "syntheticPointer": true,
@@ -158826,12 +158755,6 @@
               "ExecMainCode": "0",
               "ExecMainStatus": "0"
             }
-          },
-          "slot": {
-            "newExplicitConfirmationChat": "01a12022-b67b-7da2-bed5-8ebde169d475",
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106870937",
-            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106876891",
-            "held": false
           },
           "localEvidence": {
             "invocation.json": {
@@ -159069,13 +158992,6 @@
               "ExecMainStatus": "0"
             },
             "systemdCurrentAfterRunner": "ActiveState=inactive\nSubState=dead\nMainPID=0\nResult=success\nExecMainStatus=0\n"
-          },
-          "slot": {
-            "newExplicitConfirmationChat": "01a12022-b67b-7da2-bed5-8ebde169d475",
-            "confirmation": "Aktuelle ausdrückliche Slotbestätigung: Stadt hält keine GUI; Prozessprüfung ohne Obsidian/QA-Electron. Lokaler Slot ist für genau deine beschriebene F02-Neustartprobe nach R02 frei und reserviert. Stadt startet während F02 keine GUI.",
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106970113",
-            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106984319",
-            "held": false
           },
           "localEvidence": {
             "invocation.json": {
@@ -159379,8 +159295,6 @@
               "pidsGone": true,
               "allEightNativeHashesPreserved": true,
               "originalProtectedFilesUnchanged": true,
-              "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107106288",
-              "explicitSlotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107118513",
               "localEvidence": [
                 {
                   "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/invocation.json",
@@ -159506,8 +159420,6 @@
               "pidsGone": true,
               "allEightNativeHashesPreserved": true,
               "originalProtectedFilesUnchanged": true,
-              "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107167009",
-              "explicitSlotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107176703",
               "localEvidence": [
                 {
                   "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/invocation.json",
@@ -159630,8 +159542,6 @@
               "pidsGone": true,
               "allEightNativeHashesPreserved": true,
               "originalProtectedFilesUnchanged": true,
-              "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107189018",
-              "explicitSlotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107197126",
               "localEvidence": [
                 {
                   "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/invocation.json",
@@ -159888,13 +159798,6 @@
             "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
           },
           "allEightHashesEqualActualF02R02SavedInput": true,
-          "slot": {
-            "confirmationThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-            "confirmation": "Stadt expressly confirms exactly two sequential isolated R03 processes on clean f53/Shared9527 after remotecheck/cleanbuild; no competing GUI, normal quit/PIDs/draft/native hashes/explicit return; no Save/reseeding/hidden product handler or model writes/hard crash/user vault.",
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107303050",
-            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107343611",
-            "held": false
-          },
           "stages": [
             {
               "stage": "edit",
@@ -160305,12 +160208,7 @@
             "shutdownFailure": null,
             "errors": []
           },
-          "slot": {
-            "confirmationThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-            "confirmationScope": "Concrete C01 visible Copy/Cancel and sequential Fresh pair; Stadt explicitly confirmed, no City GUI until return",
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107574805",
-            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107594334",
-            "held": false,
+          "freshProcessOutcome": {
             "plannedFreshCancelledAfterFailure": true
           },
           "localEvidence": [
@@ -160526,7 +160424,7 @@
             "observed": "Renderer teardown now completes; AtlasCampaignServices.campaignHint rejects the legitimate copied world because any Campaignmanifest exists. View shows: Dieser Atlas gehört keinem bestätigten Kampagnenbestand. Bestand ergänzen oder reparieren. No new active editor.",
             "source": "src/ui/atlas-campaign-services.ts:95-109",
             "negativeGuardPreserved": "Existing damaged/foreign manifest must not fall through to an unguarded standalone Atlas. No whitelist, hidden mount or Campaign authority invented.",
-            "consumer": "Hex continues at #80; coordinate standalone Copy/fresh-entry contract with existing Campaign/Atlas authority owner. No new parallel claim."
+            "consumer": "Standalone Copy/fresh-entry requires an explicit Campaign/Atlas membership contract; the remaining product gap is tracked in #80."
           },
           "buildTriplet": {
             "main.js": {
@@ -160868,13 +160766,6 @@
             "freshStarted": false,
             "freshBlockedByFirstProbeFailure": true
           },
-          "slot": {
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108140816",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108158250",
-            "held": false,
-            "cityNext151GMFreshExplicitlyConfirmed": true,
-            "futureHexGuiWaitsCityExplicitReturnAndNewCoordination": true
-          },
           "portableEvidence": {
             "entry": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
             "files": [
@@ -161192,12 +161083,6 @@
                 "ExecMainStatus": "0"
               }
             }
-          },
-          "slot": {
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108302663",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108319297",
-            "held": false,
-            "newExplicitCoordinationBeforeAnyFutureGui": true
           },
           "portableEvidence": {
             "entry": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
@@ -161517,12 +161402,6 @@
                 "ExecMainStatus": "0"
               }
             }
-          },
-          "slot": {
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108497514",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108520121",
-            "held": false,
-            "futureGUIRequiresNewExplicitCoordination": true
           },
           "portableEvidence": {
             "entry": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md",
@@ -161876,12 +161755,6 @@
               }
             }
           },
-          "slot": {
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108632274",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108672539",
-            "held": false,
-            "futureGUIRequiresNewExplicitCoordination": true
-          },
           "portableEvidence": {
             "entry": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md",
             "files": [
@@ -162220,12 +162093,6 @@
               }
             }
           },
-          "slot": {
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108813768",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108827817",
-            "held": false,
-            "futureGUIRequiresNewExplicitCoordination": true
-          },
           "portableEvidence": {
             "entry": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
             "files": [
@@ -162554,12 +162421,6 @@
                 "ExecMainStatus": "0"
               }
             }
-          },
-          "slot": {
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108995776",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109012729",
-            "held": false,
-            "futureGUIRequiresNewExplicitCoordination": true
           },
           "portableEvidence": {
             "entry": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md",
@@ -162958,12 +162819,8 @@
               }
             }
           },
-          "slot": {
+          "processEnd": {
             "case": "#80 J03 prepared Room Save fault/Fresh",
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109288746",
-            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109309874",
-            "held": false,
-            "futureGUIRequiresNewExplicitCoordination": true,
             "allEightOwnAppPidsGone": true,
             "bothNormalExit0": true,
             "forcedTerminationPids": [],

@@ -32,10 +32,6 @@ Beide Prozesse normal beendet, alle dokumentierten eigenen PIDs weg, keine
 erzwungene Terminierung. [Edit-Ergebnis](raw/edit/result.json),
 [Fresh-Ergebnis](raw/fresh/result.json).
 
-Frische [Slotanfrage6101870675](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6101870675),
-[Stadtantwort6101884556](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6101884556),
-[Claim6101897159](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6101897159),
-[ausdrückliche Rückgabe6101912782](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6101912782).
 QA-Szenario und Preload verändern nur das Testskript zur Laufzeit;
 Produktcode und eingefrorener Sourcecheckout bleiben unverändert.
 [Preflight](preflight.json), [Buildlog](build.log) und [Erhaltungsbeleg](preservation.json).
@@ -44,5 +40,5 @@ Die ursprünglichen H01/D01/R01/N02-Belege und der H01-Draft bleiben unveränder
 H01 ist weiterhin ein historischer FAIL. H02 prüft keine neue Copy-/Discard-/Recovery-
 Fehlermatrix, Originalparität, Großkarte, Installation, P02/P04 oder Details/CITY.
 Bestehende Nachweise behalten ihren eigenen Source/Scope. Diese neue Orts-/Key-
-Save-/Fresh-Evidenz geht an das vorhandene #40-/E2E-01-Gate; unabhängige
-Host-/Gesamtqualifikation und eigener Aufräumlauf bleiben getrennt.
+Save-/Fresh-Evidenz belegt den begrenzten #40-/E2E-01-Ablauf;
+Host-/Gesamtqualifikation bleibt offen.

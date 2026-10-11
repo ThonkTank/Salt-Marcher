@@ -157,7 +157,7 @@ Neue Raum-Keys betten die `.dungeon`-Datei direkt ein. Editor, eingebettete Vors
 
 Ziele: ungefähr 60 Bilder/s bei Gesten, sichtbare Rückmeldung normalerweise unter 100 ms, gewöhnliche Änderungen/Undo unter 500 ms. Längere Arbeiten zeigen Fortschritt und Abbruch. Eingabeübermittlung, Verarbeitung und tatsächliche Präsentation getrennt messen. Physische Maus-/Touchpadabnahme nicht durch synthetische Ereignisse ersetzen. Langzeitsitzung mit Geschosswechseln, Undo und Speichern ohne fortgesetztes Speicherwachstum prüfen.
 
-Eine Testinstanz, normale CPU/GPU für Leistungsabnahme. Nutzerfreigabe vom 02.10.: feste Speicherobergrenzen und hohe Startreserve entfallen; normale Speicherverwaltung. Nur akuter systemweiter Speichermangel stoppt den Test (unter 256 MiB verfügbar oder über 50 Prozent Vollspeicherblockade während zwei Sekunden). Nutzerprogramme nicht schließen. Schutzstopp ist kein bestandener Test; keine unveränderten Kapazitätsschleifen. Nach zwei erfolglosen Versuchen oder 45 Minuten am selben Problem eine begründete Entscheidung treffen.
+Eine Testinstanz, normale CPU/GPU für Leistungsabnahme. Nutzerfreigabe vom 02.10.: feste Speicherobergrenzen und hohe Startreserve entfallen; normale Speicherverwaltung. Nur akuter systemweiter Speichermangel stoppt den Test (unter 256 MiB verfügbar oder über 50 Prozent Vollspeicherblockade während zwei Sekunden). Nutzerprogramme nicht schließen. Schutzstopp ist kein bestandener Test.
 
 ## Frühe Großkarte
 

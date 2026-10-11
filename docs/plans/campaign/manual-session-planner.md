@@ -38,7 +38,7 @@ Eigene technische Smokeprobe führt das erzeugte Browserbundle im DOM aus: Blank
 
 [Cloud-GM-Befund6102831310](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102831310): erfolgreicher Klick/Enter auf den Szeneneintrag ersetzt den Button beim Render und setzt den Fokus auf BODY zurück. Nächster Tab springt in die Toolbar; neun weitere Schritte bis zum Titelfeld. Nach erfolgreicher Auswahl fokussiert das Panel jetzt ausdrücklich das neu gerenderte Szenentitelfeld. Danach folgt im DOM direkt Notizen. Die gleiche Auswahlcallback wird von Klick und nativer Enteraktivierung verwendet.
 
-Fokus wird erst nach bestehender Displayguard-/Modellprüfung und erfolgreichem Render übertragen. Veraltete/fehlgeschlagene Auswahl erhält Payload, Draft, Inspector und Fokus ohne Umlenkung. Zwei neue gezielte DOM-Gegenproben: erfolgreicher Fokus vor Fix FAIL, stale-No-Focus bereits PASS; nach Fix beide PASS, gesamte Panelregression11/11 PASS. Dies prüft die Fokusübergabe, keine echte Browser-Tabsequenz. Enger unabhängiger Panel-Deltareview5481049475 und sichtbarer GM-Retest6102960484 sind auf59f04fe PASS; bestehende Codec-/Atomic-/Previewreviews bleiben qualifizierte Eingänge. Native Persistenz/Recovery und Zoom-/physische Abnahmen bleiben offen.
+Fokus wird erst nach bestehender Displayguard-/Modellprüfung und erfolgreichem Render übertragen. Veraltete/fehlgeschlagene Auswahl erhält Payload, Draft, Inspector und Fokus ohne Umlenkung. Zwei neue gezielte DOM-Gegenproben: erfolgreicher Fokus vor Fix FAIL, stale-No-Focus bereits PASS; nach Fix beide PASS, gesamte Panelregression11/11 PASS. Dies prüft die Fokusübergabe, keine echte Browser-Tabsequenz. Panelprüfung5481049475 und sichtbarer GM-Retest6102960484 sind auf `59f04fe` PASS; ihre Grenzen sowie die Codec-/Atomic-/Previewnachweise bleiben im Abnahmeregister erhalten. Native Persistenz/Recovery und Zoom-/physische Abnahmen bleiben offen.
 
 ## Atomare Umbenennung und Umordnung
 
@@ -58,8 +58,8 @@ bestätigt Auffindbarkeit und den sichtbaren Ablauf im synthetischen Browser;
 `Ansicht aktualisieren` erhält einen noch nicht übernommenen Plannamen nur,
 wenn weiterhin exakt dieselbe immutable Planbasis angezeigt wird. Der Refresh
 publiziert nichts; `Umbenennen` bleibt der einzige Aktionspfad. Externer
-Planwechsel oder eine neue Revision übernimmt den alten DOM-Wert nicht. Der
-unabhängige Deltareview
+Planwechsel oder eine neue Revision übernimmt den alten DOM-Wert nicht. Die
+unabhängige Prüfung
 [MANUAL-PLANNER-REFRESH-NAME-R03](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86#pullrequestreview-5482290972)
 bestand auf `ec9d7a4` mit 16 Panelregressionen.
 
@@ -81,9 +81,8 @@ externe Auswahl und externe Revision bleiben erhalten.
 
 Vor der Reparatur: fünf Gegenproben FAIL, neue-Plan-Isolation bereits PASS.
 Nachher: alle sechs PASS; gesamte Suite 1090 PASS, 0 FAIL, ein bestehender
-optionaler PDF-Skip. Typprüfung, Build und Repositoryprüfung PASS. Unabhängiger
-Deltareview6106571586 und reguläre PR133-Integration auf Shared6df23a7 sind konsumiert;
-diese Angaben enthalten keinen sichtbaren Browser-Retest dieser Änderung. Die Lieferung bleibt
+optionaler PDF-Skip. Typprüfung, Build und Repositoryprüfung PASS. Prüfung6106571586 und PR133 belegen die Integration auf `6df23a7`;
+ein sichtbarer Browser-Retest dieser Änderung ist dadurch nicht belegt. Die Lieferung bleibt
 UI-only; der offene Campaign/Data-Speichervertrag wird nicht vorweggenommen.
 
 ## Kontextschutz nach Plan-ID-Vergabe

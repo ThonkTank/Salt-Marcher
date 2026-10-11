@@ -567,64 +567,18 @@ Verwerfen validiert die neue Basis, bevor der alte Entwurf abgelöst wird.
 
 ## Inspector und native Speicherung — Verbleibende Umsetzung und Abnahme
 
-1. Notify-/City-Review und gezielter Cloud-GM-Save-Nachtest konsumiert.
-2. Post-Save-Fresh und sichtbares Apply/Discard konsumiert; direkter-Save-Fokusfall nativ offen.
-3. Physische und breite Recoveryabnahme nach dem Fachvertrag bleiben eigenständige offene Grenzen.
-
-DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,
-Gesamt-E2E- oder Paritätsfreigabe. Kein Eingriff in #80-H01-Belege.
+Belegt sind die unten verlinkten begrenzten Hausnamen-, Apply/Discard-, Save- und Frischprozessfälle. Offen bleiben der native Fokusnachtest für direkten Save mit fokussiertem Namenfeld, native IME-Eingabe, physische Bedienung, breite Recovery und vollständige Stadt-/Originalparität. DOM-/Repository-/Modellreopen ersetzen diese Abnahmen nicht. Bestehende #80-H01-Belege bleiben in ihrem nachgewiesenen Umfang gültig.
 
 ## Inspector und native Speicherung — Tatsächliche Hostprobe
 
-`tools/host/city-building-name.cjs` ergänzt den bestehenden isolierten Harness
-über `node tools/host-test.cjs --city-building-name` und separat `--restart`.
-Eigenes `DUNGEON_QA_ROOT`, eigener Debugport und synthetischer Source-Vault;
-Produktstand 0315b13, kein Nutzervault. Fixture-Entry/Citynavigation sind Bootstrap,
-Hausklick läuft anschließend ohne gepinnten Hit durch tatsächliche Szene/Picking.
-Haus B wird außerhalb seines Hofs selektiert. Invalider Name + Escape bleibt
-sichtbar, korrigierter Unicode-/LF-/Tabtext + Escape wird genau übernommen;
-Undo/Redo, cached Rückkehr/Zur Karte, Save mit vollständiger City-/Fremdbyteprüfung.
-Zweiter Prozess prüft gespeicherte Hashes, echte Hausauswahl, Namensfeld, alle
-Citydaten und leere frische History. Der bestehende Harness protokolliert Build,
-Screenshots und normales Quit; physische und unabhängige GM-Abnahme bleiben offen.
+Der vorhandene isolierte Prüfer läuft über `node tools/host-test.cjs --city-building-name` und separat `--restart` (`tools/host/city-building-name.cjs`). H01 auf Produktstand `0315b13` prüft tatsächliche Hausauswahl, ungültigen Namen/Escape, exakten Unicode-/LF-/Tabtext, Undo/Redo, Rückkehr zur Karte, Save und einen frischen Prozess mit gespeicherten Hashes, Namensfeld, allen Citydaten und leerer History. Sechs fremde räumliche Dateien bleiben unverändert; die Campaignbytes werden erst in H02 zusätzlich geprüft.
 
-[H01-Receipt](docs/reference/city-building-name-h01/receipt.json) bindet Rohresultate,
-Buildtripel, Lifecycle, gespeicherte Baseline und Screenshots mit SHA-256. Auch
-FehlerPNG/Resultat/Lifecycle des ersten Versuchs bleiben versioniert. Das ist eine
-enge native Producerqualifikation mit synthetischer Eingabe; unabhängige GM-,
-physische-, Recovery- und Gesamtparitätsfreigabe bleiben offen.
+[H01-Receipt](docs/reference/city-building-name-h01/receipt.json) bindet Resultate, Buildtripel, Prozessnachweise, gespeicherte Baseline, Bilder und den ersten Fehlversuch mit SHA-256. Das sind synthetische Eingaben in tatsächlichen Obsidianprozessen; unabhängige GM-, physische-, breite Recovery- und Gesamtparitätsabnahme bleiben offen.
 
 ## Inspector und native Speicherung — Direkter Save und City-Rollback (#92)
 
-Ein noch offener Hausname plus direkter sichtbarer Save scheiterte bereits vor
-Publish mit „Native Atlas-Erfassung ist veraltet“. Die Namensübernahme startet
-asynchron die bestehende Entwurfssicherung; Save erfasste parallel deren sich
-ändernden Repositoryepoch. Der gemeinsame Saveconsumer wartet jetzt nach
-Keyübernahme auf diese Sicherung und prüft anschließend den Context erneut.
-Keine neue Queue, History oder Persistenz und kein automatischer Retry.
+Ein offener Hausname plus direkter Save scheiterte vor Publish mit „Native Atlas-Erfassung ist veraltet“: Namensübernahme und Save überlappten die Entwurfssicherung. Der Saveconsumer wartet nun nach Keyübernahme auf diese Sicherung und prüft den Context erneut. Queue, History und Persistenz werden wiederverwendet; kein automatischer Retry.
 
-Neue gezielte DOM-/Vaultadapterregression: nach gelungenem Citywrite injizierter
-Campaignmanifest-CAS-Fehler; ursprüngliche native Bytes vollständig zurückgerollt,
-exakter Name/Geometrie/IDs und eine Historywirkung im selben Repository/Context
-für Retry erhalten. Zweiter sichtbarer Save speichert ohne zusätzliche History;
-frisches Hostmodell öffnet die exakten Citybytes mit History0. Vor Fix FAIL,
-danach PASS. Das erweitert den früheren H01-Beleg nicht auf diesen neuen Saveweg.
-Unabhängiger Save-R03 ist PASS (PR98/6104396047); der unveränderte
-Kandidat ist auf Shared73bfe22 unabhängig integriert. Die folgende H02-Probe qualifiziert den
-kontrollierten nativen direkten Save-/Fehlerweg; freie GM-, physische und breite Recoveryabnahme bleiben erhalten.
-S01-01 ist auf Shared0bebb85 unabhängig integriert und geschlossen.
+Die DOM-/Vaultadapterregression scheiterte vor dem Fix und besteht danach: Ein Campaignmanifest-CAS-Fehler nach Citywrite rollt sämtliche ursprünglichen nativen Bytes zurück. Exakter Name, Geometrie, IDs und eine Historywirkung bleiben im selben Repository/Context für sichtbaren Retry erhalten. Der zweite Save erzeugt keine zusätzliche History; frisches Öffnen erhält die exakten Citybytes mit History0. Save-R03 ist auf PR98/6104396047 PASS und auf `73bfe22` integriert; S01-01 ist auf `0bebb85` integriert und geschlossen. Dieser direkte Saveweg erweitert H01 nicht rückwirkend.
 
-Der vorhandene isolierte Hostprüfer bietet dafür `--city-building-name-rollback`
-und separat denselben Schalter mit `--restart`. Er tippt den exakten Namen
-ins sichtbare Feld und klickt direkt Save; erst nach dem tatsächlichen Citywrite
-wird einmal der Campaignmanifest-CAS im Testvault abgewiesen. Alle ursprünglichen
-Nativebytes und Journalbereinigung, genau eine erhaltene Historywirkung, Kamera,
-Context und sichtbarer Text werden geprüft. Der sichtbare Retry speichert die
-exakten Citydaten, der zweite Prozess verwendet deren Hashbaseline. Die
-Faultinjektion wird auch bei Prüferfehler zurückgenommen. H01 bleibt unverändert.
-Neue konkrete Hex-Slotantwort konsumiert: Edit2/Fresh1 PASS auf sauberer
-Prüfer-/Buildquelle1afac1d, Produktcode bytegleich Shared73bfe22. Beide Prozesse
-normal beendet (Exit0), keine erzwungenen PIDs; Slot ausdrücklich zurückgegeben.
-[H02-Rohquittung](docs/reference/city-building-name-h02/receipt.json) bindet
-Originalresultate, Builds, Lifecycle, Fehlzustand/Retry/Freshbilder und ganze
-Citybaseline. Sichtbarer Fehltext und exakter Name sind in den Bildern erkennbar.
+Der isolierte Hostprüfer verwendet `--city-building-name-rollback` und separat denselben Schalter mit `--restart`. [H02-Receipt](docs/reference/city-building-name-h02/receipt.json) belegt Edit2/Fresh1 PASS auf Prüfer-/Buildquelle `1afac1d`, Produktcode bytegleich `73bfe22`, sichtbaren Fehler/Retry, ganze City-/Campaignbaseline, unveränderte Fremdbytes, genau eine Historywirkung und erhaltene Kamera/Context. Beide Prozesse endeten normal mit Exit0; Faultinjektion wird auch bei Prüferfehler zurückgenommen. Freie GM-, physische und breite Recoveryabnahme bleiben offen.

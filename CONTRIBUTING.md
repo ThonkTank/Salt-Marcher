@@ -2,9 +2,9 @@
 
 Gemeinsamer Integrationsbranch: `active/installed-phase1`. Node.js 22 und npm verwenden; Repositoryzugang ist erforderlich.
 
-## Agenteneinstieg
+## Fachliche Quellen
 
-Der aktuelle Nutzerauftrag bestimmt die Arbeit. [AGENTS.md](AGENTS.md) enthält die Arbeitsgrenzen; [Dokumentationsindex](docs/INDEX.md) und [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) führen zu den fachlichen Quellen. Offene Produktissues und PRs bleiben als Anforderungen, Befunde und Kandidaten erhalten.
+[Dokumentationsindex](docs/INDEX.md) und [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) führen zu den fachlichen Quellen. [AGENTS.md](AGENTS.md) enthält die Arbeitsgrenzen.
 
 ## Lokal prüfen
 

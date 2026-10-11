@@ -203,10 +203,10 @@ produktiver Registry-/Lifecycleprovider. Kernprüfung und Build getrennt vom Hos
 
 ## I01c: Den ersten sichtbaren Einstieg montieren und früh im Host prüfen
 
-Eigene Änderungen in [AtlasView](src/ui/atlas-view.ts),
-[AtlasEditor](src/features/atlas/atlas-editor.ts) und erforderlichen schmalen
+Der Einstieg verbindet [AtlasView](src/ui/atlas-view.ts),
+[AtlasEditor](src/features/atlas/atlas-editor.ts) und die erforderlichen schmalen
 [Renderer](src/features/atlas/atlas-renderer.ts)-Kameramethoden. `AtlasView` erhält
-bestätigten Context und injizierte Provider vom tatsächlich besetzten
+bestätigten Context und injizierte Provider vom tatsächlichen
 Campaign-Hostanschluss. Der bestehende FileView bleibt derselbe Canvas; keine
 separate Campaign-/City-/Dungeon-Bearbeitungsview wird angelegt.
 
@@ -223,12 +223,12 @@ Früher sichtbarer Test mit **realem Context-/Bestandsprovider**, nicht allein
 Testports: Kampagne öffnen → Ort auswählen → Key ändern → Hex bearbeiten → zum
 Haus/Dungeon zoomen → Raum-Key ändern → herauszoomen → gemeinsames Undo/Redo →
 lokales Save → echter frischer Prozess. Anschließend A→B→A und absichtlich
-fehlender/doppelter/staler Zielbestand. Vor jeder GUI-Probe den einzigen lokalen
-Slot neu koordinieren. Native Bedienung und physische Eingabe bleiben getrennt.
+fehlender/doppelter/staler Zielbestand. Native Bedienung und physische Eingabe
+bleiben getrennte Nachweise.
 
-Fehlen reale Provider, sind I01a/I01b weiterhin eigene lieferbare Schritte. I01c
-meldet dann genau die fehlenden konkreten Objekte/Revisionen an die zuständigen
-Schnittstellen für Publish, Registry und Medien müssen tatsächlich verfügbar sein.
+Fehlen reale Provider, bleiben I01a/I01b separat umsetzbar. Für I01c müssen die
+konkreten Objekte und Revisionen über die Schnittstellen für Publish, Registry
+und Medien tatsächlich verfügbar sein.
 Keine GUI mit einer als produktiv dargestellten Testregistry und keine Änderung
 am Nutzervault. Full E2E-01 bleibt bis P02/P04/Complete-Import/Mehrbesitzer-Publish
 und unabhängiger Gate-/Hostprüfung offen.

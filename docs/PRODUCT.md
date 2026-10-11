@@ -41,6 +41,6 @@ Quellen, Lieferphasen und verbleibende Zuordnungslücken stehen in [SCOPE.md](SC
 
 Dungeonzeichnung, strukturierte Raum-Keys und zahlreiche Speicher-/Hostfälle sind bereits belegt, jeweils innerhalb ihres dokumentierten Scopes. Atlas-/City-/Campaign-Integration liegt teilweise auf Kandidatenbranches. Vollständige E2E-Freigaben, sämtliche Item-/Encounter-/Live-/Reise-/Displayfunktionen sind daraus nicht ableitbar.
 
-Obsidian ist aktuell Arbeits- und Testhost. Obsidian, Desktop oder Hybrid als endgültige Produktlinie bleibt in [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) offen und hängt an P01–P04 und den notwendigen OS-/Recovery-/Capability-Beweisen. Plattformwahl, Encounter-/Combat-/Loot-Implementierungsbesitz, Travel/Clock/Calendar und PlayerProjection benötigen ausdrücklich bestätigte Entscheidungen beziehungsweise Owner. Ein Bereichsreview besetzt diese Rollen nicht automatisch.
+Obsidian ist aktuell Arbeits- und Testhost. Obsidian, Desktop oder Hybrid als endgültige Produktlinie bleibt in [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) offen und hängt an P01–P04 und den notwendigen OS-/Recovery-/Capability-Beweisen. Offen sind die Zielplattform und die technischen Daten-/Schnittstellenverträge für Encounter/Combat/Loot, Travel/Clock/Calendar und PlayerProjection.
 
 Der erste Lieferfokus ist E2E-01; der vollständige Umfang einschließlich Planner, World Planner, Actor Autonomy, Erweiterungen und Tutorials bleibt in der SaltMarcher-Roadmap erhalten. Lieferreihenfolge und offene Eingänge: [Roadmap](ROADMAP.md).
