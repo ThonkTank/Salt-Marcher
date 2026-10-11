@@ -11086,13 +11086,13 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-NAME-GM-SAVE-FIX",
+      "id": "CITY-BUILDING-NAME-KEYBOARD-FOCUS",
       "issue": 92,
-      "state": "independent_review_integrated_and_targeted_gm_save_pass",
-      "branch": "city/building-name-reload-save-20261011",
+      "state": "implemented_targeted_regression_pass_review_pending",
+      "branch": "city/building-name-focus-20261011",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "GM6104735161 consumed. Managed native-adapter model-reopen/UndoRedo/directSave regression FAIL before Notify fix; five City inspector regressions PASS after. Typecheck/build/repo/diff PASS; suite1005 PASS/0 FAIL/1 existing skip before independent World-Notes upstream merge; affected City/History bytes unchanged. Independent PR106 review6104780165 PASS, integrated a4f20a553060ec84941b97cbb71bd105d5ca5a62; GM6105037427 PASS twice Apply/UndoRedo/direct inspector Save/navigation reuse on that installed Build. Tester-reported hashes preserve geometry/foreign files; runtime PNGs unavailable locally. No Post-Save-App-Reload/fresh-process claim.",
-      "next": "Within #92 qualify Post-Save reload/fresh reopen of corrected Notify path; do not repeat unchanged Apply/UndoRedo/Save or N03/H01/H02 checks.",
+      "verification": "Three Managed DOM focus regressions FAIL before/PASS after: Apply and Discard preserve replacement action focus, direct Save retains current textarea focus; toolbar focus stays external, detached old actions cannot publish or move focus. Typecheck/build/repo/diff PASS; suite1016 PASS/0 FAIL/1 existing skip. No new native/physical GUI proof. Existing PR106 integration and bounded GM Save/reuse evidence remain in the plan and acceptance.",
+      "next": "Independent narrow focus delta review; then targeted visible keyboard check. Existing Cloud GM Post-Save-Reopen on prior source continues separately; do not replay unchanged Save/UndoRedo paths.",
       "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {

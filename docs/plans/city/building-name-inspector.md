@@ -64,6 +64,18 @@ Status „Entwurf gesichert“ wird nicht als dauerhafter Save gezählt; dessen 
 ist der Inspector-Status „Gespeichert“ samt City-/Campaign-Dateiorakel.
 Physische Bedienung, breite Recovery und volle Stadtparität bleiben offen.
 
+**Aktueller Tastaturanschluss:** Beim Übernehmen/Verwerfen ersetzte der
+Inspector den fokussierten Button; direkter Save konnte das fokussierte
+Namenfeld ersetzen. Drei Managed-DOM-Gegenproben verlieren vor der Korrektur
+den Fokus an die abgetrennten Controls. Der Kandidat
+`city/building-name-focus-20261011` stellt ihn nach erfolgreichem Render nur
+am entsprechenden Control desselben Hauses und derselben CitySource wieder
+her, ohne Scrollsprung oder Fokusübernahme aus Karte/Toolbar. Alte Buttons
+können weiterhin weder veröffentlichen noch Fokus umlenken. Drei Gegenproben
+bestehen nach Fix; vorhandene Guards, Fachaktion und Persistenz bleiben erhalten.
+Enger unabhängiger Review und sichtbare Tastaturprüfung stehen aus. Der laufende
+Cloud-Reopen-Nachtest bleibt an seinen tatsächlich installierten Build gebunden.
+
 ## Inspector- und Fachaktionsbelege
 
 Branch city/building-name-inspector auf Shared ca29032. Erste Fachaktion
