@@ -67,14 +67,20 @@ Physische Bedienung, breite Recovery und volle Stadtparität bleiben offen.
 **Aktueller Tastaturanschluss:** Beim Übernehmen/Verwerfen ersetzte der
 Inspector den fokussierten Button; direkter Save konnte das fokussierte
 Namenfeld ersetzen. Drei Managed-DOM-Gegenproben verlieren vor der Korrektur
-den Fokus an die abgetrennten Controls. Der Kandidat
-`city/building-name-focus-20261011` stellt ihn nach erfolgreichem Render nur
+den Fokus an die abgetrennten Controls. Der integrierte Fix aus
+[PR117](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/117) stellt ihn nach erfolgreichem Render nur
 am entsprechenden Control desselben Hauses und derselben CitySource wieder
 her, ohne Scrollsprung oder Fokusübernahme aus Karte/Toolbar. Alte Buttons
 können weiterhin weder veröffentlichen noch Fokus umlenken. Drei Gegenproben
 bestehen nach Fix; vorhandene Guards, Fachaktion und Persistenz bleiben erhalten.
-Enger unabhängiger Review und sichtbare Tastaturprüfung stehen aus. Der laufende
-Cloud-Reopen-Nachtest bleibt an seinen tatsächlich installierten Build gebunden.
+[Unabhängiger enger R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/117#issuecomment-6105537557)
+ist auf `14729dc` PASS; [reguläre Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/117#issuecomment-6105543027)
+auf Shared `a4c2cb39aafdfb7abf5469e575a82e630ef41313` bestätigt.
+Exact-CI `38112395045` und Shared-Struktur `38112524672` sind SUCCESS.
+Offen bleibt die sichtbare Tastaturprüfung. Der laufende Cloud-Reopen-Nachtest
+bleibt an seinen tatsächlich installierten Build gebunden; anschließend kann
+der Tester den integrierten Fokusfix gezielt prüfen. Kein neuer DOM-, History-
+oder allgemeiner Save-Reviewauftrag.
 
 ## Inspector- und Fachaktionsbelege
 

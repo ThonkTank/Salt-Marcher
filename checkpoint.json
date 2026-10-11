@@ -11089,11 +11089,11 @@
     "currentRun": {
       "id": "CITY-BUILDING-NAME-KEYBOARD-FOCUS",
       "issue": 92,
-      "state": "implemented_targeted_regression_pass_review_pending",
+      "state": "integrated_native_keyboard_and_postsave_reopen_pending",
       "branch": "city/building-name-focus-20261011",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "Three Managed DOM focus regressions FAIL before/PASS after: Apply and Discard preserve replacement action focus, direct Save retains current textarea focus; toolbar focus stays external, detached old actions cannot publish or move focus. Typecheck/build/repo/diff PASS; suite1016 PASS/0 FAIL/1 existing skip. No new native/physical GUI proof. Existing PR106 integration and bounded GM Save/reuse evidence remain in the plan and acceptance.",
-      "next": "Independent narrow focus delta review; then targeted visible keyboard check. Existing Cloud GM Post-Save-Reopen on prior source continues separately; do not replay unchanged Save/UndoRedo paths.",
+      "verification": "Three Managed DOM focus regressions FAIL before/PASS after: Apply and Discard preserve replacement action focus, direct Save retains current textarea focus; toolbar focus stays external, detached old actions cannot publish or move focus. Typecheck/build/repo/diff PASS; suite1016 PASS/0 FAIL/1 existing skip. No new native/physical GUI proof. Existing PR106 integration and bounded GM Save/reuse evidence remain in the plan and acceptance. Independent focus R01 PASS6105537557 on14729dc429d9699998284b1ee7a3bb8ee3ebc8a3; regular Shared integration a4c2cb39aafdfb7abf5469e575a82e630ef41313 confirmed in6105543027. Exact-CI38112395045 and Shared-structure38112524672 SUCCESS. No new native keyboard claim.",
+      "next": "Cloud GM qualifies the pending Post-Save-Reopen on its begun source and then the targeted visible keyboard effect of integrated PR117. Code/delta review and integration are complete; no repeat of unchanged DOM, Save or UndoRedo checks.",
       "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {
