@@ -58,62 +58,63 @@ PR135 ist separat integriert; [R01](docs/reference/atlas-detail-binding-d01/insp
 belegt Ctrl+S im Ortsnamen ohne Komposition. F01/R02/F02 belegen saved Orts-/Raumtext
 und exakte Bytes/IDs in neuen Prozessen (PR140/142/144); D02-N02 tatsächlichen
 Discard mit neuen Sources/History0 (PR146). R03 auf f53a2667/Shared9527c2da belegt
-unsaved Raumtext im echten v3-Draft nach normalem Quit und sequenziellem Fresh:
-vollständiger Dungeon/Markdown/Geometrie exakt, History0/dirty/kein Redo,
-Original8/Draftbyteexakt/normale Enden. Kanonische Einzelreceipts bleiben in
-Acceptance; synthetische Eingabe, kein Hardcrash-/Kamera-/History-Fresh-PASS.
+unsaved Raumtext im echten v3-Draft nach normalem Quit/Fresh: voller Dungeon/
+Markdown/Geometrie exakt, History0/dirty/kein Redo, Original8/Draftbyteexakt.
+Kanonische Einzelreceipts bleiben in Acceptance; synthetische Eingabe,
+kein Hardcrash-/Kamera-/History-Fresh-PASS.
 
-**Nativer Copyfehler C01 bleibt erhalten:** dbde783a/Shared9527c2da, tatsächliches
-R03-Draftabbild: Abbrechen erhält Zustand; Kopie erstellt7 Dateien/23 frische
-native IDs/exakten unsaved Raumtext, Campaignmanifest bleibt Original. Leafwechsel
-scheitert mit `_cancelResize is not a function`/leerer Leinwand. Runner1, kein
-Copy/Fresh-PASS; normal Quit/PIDs weg. Fehlervault/Rohbelege/Helfer bleiben unverändert.
-
-**Konsumierte Reparaturen und Reviews:** [N01-PASS und Öffnungsvertrag](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6107831990)
+**Erhaltene Fehler und konsumierte Reparaturen:** C01 auf dbde783a erzeugt7
+Copydateien/23 frische IDs/exakten Raumtext; Leafwechsel scheitert mit
+`_cancelResize is not a function`, keine Freshprobe. [Unabhängiger N01-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6107831990)
 auf a416dac6 bestätigt managed Suspend/Retain/Dispose/einmalige Rendererfreigabe
-(Quellea07c274a). Der Folgefix N02 (Quelle `b6ec69d4290259e60e8acab61633b3b4a3ce2b69`,
-Sharedfcec3593) verwendet Pfad+World-ID für eindeutige Campaignzuordnung. Eine
-vollständige frische native Closure ohne World-/Ownerkollision öffnet unregistriert
-neben gültigen fremden Manifesten; keine Campaign-/Registry-/SaveParticipantbefugnis.
-Native Codecs/Closure/Draft/Journal werden vor Writes lesend geprüft; bis Open
-gepinnte Eingänge, gewonnene alte Journale dürfen ihre alten Pfade beenden,
-kein widerrufener Editor wird angehängt. Normaler Copy-Leaf und Fresh-Dateieinstieg
-verwenden denselben Vertrag. Drei Einstiege scheitern auf a416dac6;17 fokussierte
-Fälle/1157 Tests (1156 PASS/ein PDF-Skip), Typprüfung/sauberer Build bestehen.
+(Quellea07c274a). Folgefix N02 auf Quelle
+`b6ec69d4290259e60e8acab61633b3b4a3ce2b69`/Sharedfcec3593 verwendet Pfad+World-ID
+für eindeutige Campaignzuordnung. Frische vollständige Closure ohne World-/Owner-
+kollision öffnet unregistriert neben gültigen fremden Manifesten; keine Campaign-
+oder Registrybefugnis. Native Codecs/Closure/Draft/Journal lesend vor Writes,
+gepinnte Eingänge, gewonnene alte Journale dürfen alte Pfade beenden,
+kein widerrufener Editor wird angehängt. Copy-Leaf/Fresh-Dateieinstieg teilen Vertrag.
+Drei Einstiege scheitern auf a416dac6;17 fokussierte Fälle/1157 Tests
+(1156 PASS/ein PDF-Skip), Typprüfung/sauberer Build bestehen.
 [Gezielter unabhängiger N02-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6108108606)
-auf fb5266fc ist PASS ohne Pflichtbefund, kein eigener nativer Review daraus.
+auf fb5266fc PASS ohne Pflichtbefund; kein eigener nativer Review daraus.
+[C02](docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md)
+erreicht Copy/Raum-Key, scheitert danach am falschen QA-Vergleich von SpatialState
+mit vollem Overworld. Runner1/Fresh nicht gestartet; kein daraus belegter Produktverlust.
+C01/C02 ausgeführte Helfer/Vaults/Rohbelege bleiben bytegleich, FAIL bleibt erhalten.
 
-**C02: Copy sichtbar, QA-Orakel scheitert:** Neuer tatsächlicher R03-Draftvault,
-neu bestätigter Slot, sauberer fb5266fc/Produktquelleb6ec69d4. Modal-Abbrechen
-bewahrt Zustand/Draft. Kopie speichern öffnet unabhängige Kopie; Fit/Ctrl-Rad/
-Canvas-Raumklick zeigt exakten unsaved Raumtext. Sieben neue Dateien/23 frische
-native IDs und nicht identitätsbezogene Werte exakt. Original8/Campaignmanifest/
-Draft bleiben nach normalem Quit bytegenau. Danach vergleicht der eingefrorene
-Helper fälschlich `spatialState()` (nur version/detailPlacements) mit vollständigem
-Overworld. Runner1/errors[]; kein vollständiger Copy/Fresh-PASS oder daraus
-belegter Produktverlust. Fresh nicht gestartet, keine Wiederholung. Voller
-aufgezeichneter Dungeon/typisierter Teilzustand passen im readonly Nachvergleich.
-[Portable unveränderte C02-Rohbelege](docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md).
-Normal app.quit/inactive/dead/PIDs weg, [Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108158250).
-C01/C02-Helfer/Vaults/Rohbelege erhalten; keine neue Produktreparatur aus QA-Fehler.
+**Jetzt konsumierbarer nativer Copy-/Fresh-Eingang C03:** Neue vor Erstlauf
+eingefrorene Helfer korrigieren ausschließlich readonly Vollworld-Read
+`repository.spatialGraph.world()`/separaten typisierten SpatialState; kein Produktdelta.
+Neuer tatsächlicher R03-Draftvault, neu koordinierter Slot, sauberer fc835e81,
+Quelleb6ec69d4. Sichtbares Kartenmenü/Speichern unter/Abbrechen erhält ganzen
+Originalzustand/Draft. Kopie speichern öffnet unabhängige Kopie; Fit/Auswahl/
+Ctrl-Rad/Canvas-Raumklick zeigt exakten unsaved Raumtext. Nach normalem app.quit
+folgt genau ein neuer Obsidianprozess mit normalem Dateieinstieg derselben Kopie:
+dieselben7 Copydateien/23 frischen geschlossenen IDs, alle nicht identitätsbezogenen
+Werte/Geometrie/Markdown bytegenau. Vollworld/SpatialState/Dungeon passen;
+ein Repository/eine History, clean0/kein Redo/Draft/pending. Original8/
+Campaignmanifest/actual R03-Draft bytegleich; kein Copycallback/Save-Replay/Neuseed.
+Beide Runner0/PASS/errors[], normales Ende/inactive-dead/PIDs weg/keine forced PIDs.
+[Portable Originale und Bilder](docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md),
+[Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108319297).
 
 Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
 Kanonisch `acceptance.hexAtlas.requirements[30]`:
-`.dungeonAtLocationRoomDraftCopyMembershipN02` bindet Fix/Build/Regressionen;
-`.dungeonAtLocationRoomDraftCopyC02` bindet konsumierten Review/Teilbeobachtung/
-QA-FAIL/Erhaltungsnachweis. Historische Einzelreceipts bleiben unverändert.
+`.dungeonAtLocationRoomDraftCopyMembershipN02` bindet Fix/Build/Regressionen,
+`.dungeonAtLocationRoomDraftCopyC03` den jetzigen direkten Copy/Fresh-Nachweis;
+historische R03/C01/N01/N02/C02-Receipts bleiben unverändert.
 
-**Nächster Empfänger:** Hex korrigiert QA-Vollworld-Read im neu benannten Helper
-mit vorhandenem readonly `repository.spatialGraph.world()`/separatem SpatialState.
-Danach neu eingefrorenes Copy/Fresh-Paar auf neuem tatsächlichem R03-Abbild/neu
-koordiniertem Slot. [Stadt hat #151 normal zurückgegeben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108220293);
-der nächste Hex-GUI-Lauf braucht neue Abstimmung. Kein zusätzlicher Lifecycleclaim
-oder erneuter allgemeiner Review; Parent #80 bleibt offen.
+**Nächster Empfänger/Beitrag:** Bestehender Steward verwendet C03 am PR157
+für die N01/N02-Kandidatenqualifikation; beide gezielten Reviews sind konsumiert,
+kein neuer allgemeiner Review. Hex behält #80/Branch und schließt den verbleibenden
+konkreten nativen Journal-Unterbrechungs-/Recoveryeingang nach aktuellen Verträgen.
+Vor jedem neuen lokalen GUI-Lauf Slot neu koordinieren; dieser Lauf endet nach Lieferung.
 
-**Offen:** Vollständiges natives Copy/Fresh, unterbrochene Save-/Copyjournale,
-Komposition/Meta/physische IME, äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/
-Nutzervaultabnahme. Keine Selbstintegration; fremde Wurzeln/Rohbelege erhalten.
+**Offen:** Unterbrochene Save-/Copyjournale, Komposition/Meta/physische IME,
+äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme.
+Keine Selbstintegration; fremde Wurzeln und frühere Rohbelege erhalten.
 
 ## Historische Planbasis und Lieferbelege
 

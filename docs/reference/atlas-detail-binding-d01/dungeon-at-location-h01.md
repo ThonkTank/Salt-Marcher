@@ -6,6 +6,7 @@ Der [quellgebundene H01-Beleg](dungeon-at-location-h01.json) bestätigt ausschli
 die native synthetische Producerprobe; freie GM-Nutzung und gemeinsames E2E bleiben offen.
 
 Weiterer quellgebundener Copy-Nachweis: [C02 mit unveränderten Rohbelegen und QA-Orakelfehler](room-draft-copy-c02/README.md). Der aktuelle Folgeauftrag bleibt am verlinkten Arbeitsstand von #80.
+[C03](room-draft-copy-c03/README.md) belegt nun sichtbares Copy/Abbrechen und den normalen Frischeinstieg derselben Kopie; C02 bleibt unverändert.
 
 ## Startbarer Eingang
 
