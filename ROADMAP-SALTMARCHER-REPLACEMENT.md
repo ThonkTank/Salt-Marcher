@@ -303,29 +303,28 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 #### Arbeitsstand #69
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-keyboard-focus-20261011
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-draft-view-guard-20261011
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
 
-Stadt führt den manuellen Planner fort. Kern/Panel/Preview und die bisherigen
-Texterhalt-/Atomizitätsreparaturen sind integriert. PR133/R01 und sichtbarer
-GM-Retest6106619673 bestätigen den ausstehenden Plannamen im memory-only Browser;
-PR136/R01 und Sharedab41f04 bestätigen den Schutz nach ID-Vergabe.
-Native Speicherabnahme bleibt offen.
+Stadt führt den manuellen Planner fort. Kern/Panel/Preview, Plannamenerhalt
+(PR133 samt sichtbarem GM-Retest), Post-Allocation-Schutz (PR136) und
+Tastatur-Aktionsfokus (PR140/R01, Shared1580c39) sind integriert. Der echte
+Browser-Tastaturnachtest von PR140 läuft bei CloudGM; native Speicherung offen.
 
-Aktuelle enge Reparatur: Erfolgreiche Panelaktionen entfernen durch Neurendern
-auch die fokussierte Schaltfläche. Bei tatsächlich fokussierter Aktion wird
-jetzt deren neuer, aktiver Button fokussiert. Wird eine Verschiebeaktion am
-Listenrand deaktiviert, geht der Fokus zum Szenentitel. Auswahl behält ihren
-bestehenden Titel-Fokus; Fehler/stale Aktionen rendern nicht und behalten den
-ursprünglichen Fokus sowie Draft. Vier Fokusgegenproben FAIL vor/PASS nach Fix,
-28 Paneltests PASS einschließlich gleichnamigem Szenentitel. Echter Browser-Tastaturnachtest und unabhängiger Review
-stehen für dieses Delta aus; kein physischer Eingabebeleg.
+Aktuelle Erhaltungsreparatur: Ein extern ersetzter Draft bei gleicher
+Planrevision und Szenenauswahl wurde bislang durch alte sichtbare Controls
+überschrieben, veröffentlicht oder verworfen. Drei Gegenproben FAIL vor/PASS
+nach Fix. Controls prüfen nun die dargestellte Draftidentität zusätzlich.
+Erfolgreiche eigene Eingabe aktualisiert diese Basis, ohne Fokus/Caret-Neurendern;
+extern ersetzte Arbeit erfordert ausdrücklich Ansicht aktualisieren.
+31 Paneltests PASS einschließlich mehrfachem Weitertippen nach Refresh und
+exaktem CRLF-/Unicodeerhalt. Unabhängiger Review steht aus.
 
 [PR86](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86)
 führt den geprüften Dokumentcodec und konkreten Produceranschlussvorschlag.
-Campaign/Data entscheidet dort nicht räumliches Dokumentinventar,
-Domainwrite/Bytebindung, kanonischen Pfad und Delete-/Retirement-/Recoveryvertrag.
-Danach implementiert Stadt den Consumer; keine konkurrierende Speicherautorität.
+Campaign/Data entscheidet dort Dokumentinventar, Domainwrite/Bytebindung,
+kanonischen Pfad und Delete-/Retirement-/Recoveryvertrag; danach implementiert
+Stadt den Consumer. Keine konkurrierende Speicherautorität.
 
 Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`.
 [Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
