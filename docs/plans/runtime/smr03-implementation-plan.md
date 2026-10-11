@@ -478,12 +478,22 @@ Der providerneutrale Masken-Slice ist über PR #123 als Shared-Merge
 getrennten Architektur/Technik-, Campaign/Data- und Music/Weather/Shops-
 Reviews; auch der Shared-Integrationslauf ist grün.
 
-Innerhalb I01-B bleibt damit genau ein getrennt reviewbares Paket offen: der
-deterministische Invariant-Fuzzer und das nichtnormative Scale-/DTO-Orakel für
-20 Rosterfiguren, vier aktive Scenes, acht ownerqualifizierte Masken und exakt
-50 Masken-Teilnahmeinzidenzen. Die 50 sind ausdrücklich keine 50 eindeutigen
-CharacterIds. Laufzeit und serialisierte DTO-Größe werden nur diagnostisch
-ausgegeben und bilden keine Host-, Plattform- oder Produktgrenze.
+Der deterministische Invariant-Fuzzer und das nichtnormative Scale-/DTO-Orakel
+sind über PR #134 als Shared-Merge
+`7953019cd2121c3d56bc7350ed6256d54c2f5029` integriert. Der Exact-SHA
+`12ecb93c13ca025f58c4aa287e48b6130787648e` bestand Candidate-CI sowie die
+getrennten Architektur/Technik-, Campaign/Data/Party- und
+Music/Weather/Shops/Consumer-Reviews; auch der Shared-Integrationslauf ist
+grün. Das Orakel bindet 20 Rosterfiguren, vier aktive Scenes, acht
+ownerqualifizierte Masken und exakt 50 Masken-Teilnahmeinzidenzen. Die 50 sind
+ausdrücklich keine 50 eindeutigen CharacterIds. Laufzeit und serialisierte
+DTO-Größe werden nur diagnostisch ausgegeben und bilden keine Host-,
+Plattform- oder Produktgrenze.
+
+Damit sind alle für I01-B geplanten reinen Aggregate-, Masken-, Fuzzer- und
+Scale-Pakete in Shared integriert. Dieser Arbeitsstand schließt nur den
+I01-B-Modellscope; er ist kein Host-, Persistenz-, Durable-, UI-, Acceptance-
+oder Gesamtprodukt-PASS.
 
 Der Masken-Slice bewahrt vollständige owner-/scenegebundene Prepared-Beiträge
 als modelllokale Append-/Replay-Evidenz und validiert Projektionen direkt gegen
@@ -499,4 +509,4 @@ Vor Masken-Produktcode ist die offene Encounter-/Chase-Ownergrenze für
 konkrete Maskenidentität, Teilnahmeprojektion und Pending-Reconciliation zu
 schließen. Permanente Löschung, History und Coordinator gehören vollständig
 zu I01-C; Host, Persistenz, Durability und UI bleiben I02/I03. Kein bisheriger
-Checkpoint behauptet einen I01-B- oder Produkt-Gesamtpass.
+Checkpoint behauptet einen Produkt-Gesamtpass.
