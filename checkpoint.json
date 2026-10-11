@@ -129,37 +129,38 @@
       "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
     "smr03LiveScene": {
-      "state": "i01a_integrated_i01b_scene_lifecycle_checkpoint",
+      "state": "i01c_lifecycle_candidate_review_pending",
       "plan": "docs/plans/runtime/smr03-live-scene-contract.md",
       "implementationPlan": "docs/plans/runtime/smr03-implementation-plan.md",
       "implementationPlanState": "exact_sha_repair_pass",
       "implementationPlanCandidateCommit": "c03217a4c755844b921b963c42b4da9e5ae32477",
       "implementationPlanReview": "Cloud Architecture/Technical exact-SHA review 6089122945 required three bounded repairs: bind an unpublished Clock participant contribution to the same Rejoin command and publish decision; model Prepared Runtime as an independent immutable PreparationSnapshot copy with provenance and a separate participant move; and map all 22 acceptance cases to I01 model oracles plus their remaining I02/I03/SMR-10/SMR-11 real gates. Campaign/Data directly confirmed the PreparationSnapshot and model-versus-durable evidence boundaries in 6089129141. Repair c03217a4c755844b921b963c42b4da9e5ae32477 closes all three; Cloud Architecture/Technical exact-SHA re-review 6089170030 is PASS in the plan-repair scope. Each implementation slice and all real adapters retain separate review and proof gates.",
       "coordinationIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/6",
-      "candidateBranch": "codex/smr-03-i01b-aggregates",
-      "baseline": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
-      "integratedShared": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
+      "candidateBranch": "codex/smr-03-i01c-lifecycle",
+      "baseline": "9527c2da76b674934827bb3bf3773eebc453b45f",
+      "integratedShared": "9527c2da76b674934827bb3bf3773eebc453b45f",
       "planCandidateCommit": "0254d575e61df130b3f85dbcef810faef54ce0d5",
       "reviewedCandidate": "0254d575e61df130b3f85dbcef810faef54ce0d5",
       "review": "Cloud Architecture/Technical exact-SHA re-review PASS on 4d1a50b580dee9df8e2553b51395d26a0a6b19c8 is recorded in Issue comment 6088512190 with both SMR03-ARCH-01/02 findings closed and no remaining mandatory gap in the reviewed repair/regression scope. Direct renewed Scene/Time/Travel Owner RATIFY is recorded in 6088524890. Chronik's existing ownership of the complete SMR-03 Party/LiveScene/LiveSession contract is clarified and the separately scoped Party Owner RATIFY is recorded in 6088571459. Campaign/Data RATIFY 6088373177 remains evidence only for its unchanged named scope. Direct replies 6088646744 and 6088647477 establish that Kartograph/Dungeon owns neither Preparation/Session Planner nor runtime Encounter/Chase masks and that Katalog owns no runtime Encounter/Chase masks; neither identifies another confirmed owner. Campaign/Data directly ACCEPTS the narrowly bounded Preparation/Session-Planner ownership extension in 6088689623 without taking Party, LiveScene, runtime mask, Encounter, host or persistence authority. Cloud Architecture/Technical boundary review 6088706922 passes both proposed ownership boundaries without acting as an owner. Chronik directly ACCEPTS and RATIFIES the generic runtime Encounter/Chase mask lifecycle on 4d1a50b in 6088718665, excluding catalog, generation, rules, combat resolution, rewards, effects and physical host recovery. Separate Host/Security/Platform feasibility review 6088759311 required durable cancellation semantics; Campaign/Data ratified the repair design in 6088774539. Candidate f5b9c558ca4377b8674c7689505f42e1363c3784 binds Cancel and Publish to one durable decision, closes stale generations, preserves truthful post-Publish roll-forward, adds TN-22 cleanup limits and extends Acceptance 19. Campaign/Data exact-SHA review 6088805451 is PASS and Host/Security/Platform exact-SHA re-review 6088815708 is HOST-FEASIBILITY PASS with SMR03-HOST-01 fully closed in the reviewed plan scope. Passive Display source-versus-consumer phase split receives independent PHASE-SPLIT PASS in Issue #6 comment 6088899872 and direct SMR-03 Source-Owner acceptance in 6088919292. Candidate 0254d575e61df130b3f85dbcef810faef54ce0d5 makes the internal projection explicitly non-player-safe, keeps the consumer absent/default-deny, and moves full consumer ownership and TN-21/TN-24/TN-31/AC-L10/AC-T07 activation to SMR-10. Cloud Architecture/Technical exact-SHA re-review 6088985728 is PASS with no remaining finding in that phase-split scope; Chronik directly RATIFIES the exact Source scope in 6088996383. Music/Weather/Shops self-documents its exact-SHA ratification on 0254d575e61df130b3f85dbcef810faef54ce0d5 in an isolated local commit: immutable Focus/LiveScene consumer only; active-only source data; none/pending/unavailable/stale/foreign/damaged fail-closed; no Scene internals. It explicitly grants no Passive Display, Host, persistence or implementation approval.",
-      "implementation": "I01-A is integrated in Shared. I01-B now provides strict immutable aggregate state and commands plus pure Initialize, Prepared Runtime, Focus and revision-bound participant Move/cleanup decisions. Repairs through a83a74f close reviewed provenance, pending-membership and owner-bound reconciliation gaps. Party checkpoint 2d563fc adds explicit-ID name-only creation, duplicate names, full profile replacement, explicit progress correction and selected Short/Long Rest without Scene mutation.",
-      "implementationCandidate": "2d563fc8ae0d356133cb6b65ad649587aab8b86b",
-      "testedIntegratedCandidate": "2d563fc8ae0d356133cb6b65ad649587aab8b86b",
+      "implementation": "I01-A and I01-B are integrated in Shared. I01-C01 is integrated through PR #146. Exact source SHA 0ad5bd68b08ee8615e5c669af9a6fec46561bd0b implements C02-C05 as one lifecycle package: source-bound retained quarantine and Complete/Salvage/Evidentiary portability decisions; bounded 100-step causal PartyHistory with revisioned Undo/Redo and deletion seals; permanent Character deletion with Party/Scene/Focus cleanup and receipt-complete closure assessment; and the Stage/Validate/Publish/Verify/Finalize in-memory fault model across every coordinated command kind. Its Golden Master composes Preparation, Move, Rejoin, History, coordinator publication and permanent Closure.",
+      "implementationCandidate": "0ad5bd68b08ee8615e5c669af9a6fec46561bd0b",
+      "testedIntegratedCandidate": "0ad5bd68b08ee8615e5c669af9a6fec46561bd0b",
+      "i01cLifecycleReview": "Independent exact-SHA Architecture/Technical and Campaign/Data boundary reviews are pending on 0ad5bd68b08ee8615e5c669af9a6fec46561bd0b. No review PASS is claimed yet.",
       "i01bCheckpointReview": "Campaign/Data narrow re-review PASS on fdf6271 closes Prepared content-pin and pending-assignment findings. Music/Weather/Shops Consumer R04 PASS on a83a74f closes cumulative duties and generic/mask owner revision binding. Cloud Architecture/Technical narrow re-review PASS on a83a74f closes its three state-order, pending-cleanup and owner-qualified mask lookup findings. Campaign/Data and Cloud Architecture/Technical both PASS the exact Party checkpoint 2d563fc in their requested narrow scopes. No I01-B completion review is claimed.",
       "implementationReview": "Cloud Architecture/Technical found three mandatory gaps on d66350b: unchecked intermediate projections, contradictory Focus evidence and an ineffective negative import guard. Repair f941ce4 strictly reparses and independently deep-copies projection inputs and binds active Scene focus to the exact current FocusRevision; Music/Weather/Shops Consumer R02 and Campaign/Data revalidation PASS that exact source. Test-only repair 4bc8864 replaces the import regex with a TypeScript-AST local dependency allowlist and controlled negative cases; Cloud Architecture/Technical delta re-review 6103460812 closes ARCH-03 and confirms ARCH-01/02 remain closed. No mandatory finding remains in the reviewed I01-A scope.",
       "verification": {
         "check": "passed",
         "tests": {
-          "passed": 1010,
+          "passed": 1135,
           "failed": 0,
           "skipped": 1,
-          "focusedCoreBoundaryPassed": 591
+          "focusedCoreBoundaryPassed": 15
         },
         "repository": "passed",
         "build": "passed"
       },
-      "next": "Continue issue #90 with activation/deactivation cleanup, Split/Rejoin and Clock contribution, mask reconciliation and deterministic invariant/scale oracles; complete the running Party checkpoint reviews first.",
-      "limits": "I01-B remains incomplete. This checkpoint does not implement Party activation/deactivation, Split/Rejoin, Clock merge, the complete mask reconciliation surface or the invariant/scale harness. No History, coordinator, persistence, migration, host, IPC, UI, Clock mutation, consumer adapter, Passive Display or product acceptance is claimed."
+      "next": "Publish the exact candidate, obtain independent Architecture/Technical and Campaign/Data reviews for source SHA 0ad5bd68b08ee8615e5c669af9a6fec46561bd0b, repair any mandatory findings, pass exact-SHA candidate CI and Shared integration CI, then close #147 and select the next large unowned product package.",
+      "limits": "This is a host-neutral in-memory decision model. It does not implement physical erasure, durable History/receipts, Campaign persistence, import/export bytes, crash recovery, IPC, UI, provider execution, Passive Display or overall product acceptance; those remain I02/I03 or their owning packages."
     },
     "smr01CampaignData": {
       "state": "e2e01_campaign_context_i01_n02_checked_re_review_pending",
