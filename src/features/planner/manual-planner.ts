@@ -168,14 +168,29 @@ export class ManualPlanner {
       );
     return p;
   }
+  /** Allocation may invoke a host callback: reject revoked or replaced work before publication. */
+  private workspaceGuard(): () => void {
+    const baseline = new Map(this.plans);
+    const active = this.activeId, selection = this.sceneId, draft = this.draftValue;
+    return () => {
+      this.assertCurrent();
+      if (
+        this.activeId !== active || this.sceneId !== selection || this.draftValue !== draft ||
+        this.plans.size !== baseline.size ||
+        [...baseline].some(([id, plan]) => this.plans.get(id) !== plan)
+      ) throw new Error("Plan geändert. Entwurf behalten.");
+    };
+  }
   create(): ManualPlan {
     this.assertCurrent();
+    const assertWorkspace = this.workspaceGuard();
     // Flush the old draft before changing selection. Collision/factory failure writes nothing.
     const next = newManualPlan(this.makeId());
     const prospective = new Map(this.plans);
     if (prospective.has(next.id)) throw new Error("Kennung bereits belegt.");
     prospective.set(next.id, next);
     this.assertUniqueScenes(prospective);
+    assertWorkspace();
     this.commitDraft();
     this.plans.set(next.id, next);
     this.activeId = next.id;
@@ -253,6 +268,7 @@ export class ManualPlanner {
   }
   deletePlan(binding: PlanBinding): void {
     const p = this.current(binding);
+    const assertWorkspace = this.workspaceGuard();
     const next = new Map(this.plans);
     next.delete(p.id);
     let fallback = next.keys().next().value ?? null;
@@ -263,6 +279,7 @@ export class ManualPlanner {
       fallback = replacement.id;
     }
     this.assertUniqueScenes(next);
+    assertWorkspace();
     this.plans = next;
     if (this.activeId === p.id) {
       this.activeId = fallback;

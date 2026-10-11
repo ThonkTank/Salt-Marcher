@@ -13259,18 +13259,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY69-PLAN-NAME-SCENE-I01",
+      "id": "CITY69-ALLOCATION-CONTEXT-I01",
       "issue": 69,
-      "state": "ui_repair_verified_independent_review_pending",
-      "branch": "city/planner-name-scene-retention-20261011",
+      "state": "core_repair_verified_review_pending",
+      "branch": "city/planner-allocation-context-20261011",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "verification": "Five real panel regressions FAIL before/PASS after; typed name retained exactly through successful same-plan scene add/apply/discard/move/select, no implicit rename. New-plan isolation and existing external-basis refresh guards PASS. Full suite1090 PASS/0 FAIL/1 existing optional PDF skip; type/build/repository PASS.",
-      "next": "Publish narrow UI repair for independent review and regular integration; supply browser GM retest. Campaign/Data native storage contract remains open.",
+      "verification": "Four core countercases FAIL before repair: create/delete reject context revocation or newer workspace after allocation; valid retry and protected text/selection tested. Full suite1094 PASS/0 FAIL/1 existing optional PDF skip; type/build/repo PASS. PR133 independent R01/ExactCI PASS and Shared6df23a7 integration consumed; browser retest running.",
+      "next": "Publish verified core repair for independent narrow review and regular integration. Campaign/Data native storage contract remains open.",
       "limits": "DOM UI proof only; no native Planner storage, plugin activation, Save/Fresh/Recovery or physical/overall acceptance. City127 product PR132 and QA PR130 consumed on Shared29e4ce6; free GM remains open."
     },
     "nextRun": {
-      "id": "CITY69-PLAN-NAME-SCENE-REVIEW",
-      "focus": "Independent review and browser retest of exact same-plan name retention repair; native storage depends on Campaign/Data contract."
+      "id": "CITY69-ALLOCATION-CONTEXT-REVIEW",
+      "focus": "Independent core review of post-allocation context/workspace protection; native storage depends on Campaign/Data contract."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -303,7 +303,7 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 #### Arbeitsstand #69
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-name-scene-retention-20261011
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-allocation-context-20261011
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
 
 Stadt führt das bestehende Paket fort. Kern/Panel/Preview, atomare Compoundaktionen
@@ -321,7 +321,16 @@ exakten Feldwert bei erfolgreicher Aktion innerhalb desselben Plans; der
 Modellname ändert sich erst mit ausdrücklichem Umbenennen. Neue Pläne und
 externe Refreshbasis erhalten keinen alten Text. Alle sechs neuen Gegenproben
 PASS, Vollsuite1090 PASS/0 FAIL/1 bestehender optionaler PDF-Skip, Typ/Build/Repo PASS.
-Unabhängiger Deltareview und sichtbarer Browser-Retest stehen aus.
+Unabhängiger Deltareview6106571586 und PR133-Integration auf Shared6df23a7
+sind konsumiert; der sichtbare Browser-Retest läuft.
+
+Aktuelle Reparatur: Plananlage und letzter Planersatz prüfen nach ID-Vergabe
+Contextautorität und vollständige Workspacebasis vor Veröffentlichung. Vier
+Kerngegenproben zu Widerruf/neuerer bestätigter Änderung FAIL vor Fix.
+Originalpayload/Draft/Auswahl beziehungsweise neuere Fremdänderung bleiben
+erhalten; gültiger Retry funktioniert. Vier neue Fälle PASS, Vollsuite1094 PASS/
+0 FAIL/1 bestehender optionaler PDF-Skip; Typ/Build/Repo PASS.
+Enger unabhängiger Review steht aus.
 
 Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`,
 danach `.build/manual-planner-preview/index.html` öffnen.
