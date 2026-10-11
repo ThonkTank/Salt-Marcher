@@ -292,6 +292,28 @@ test("switching records or campaigns does not silently discard an authored draft
   f.panel.destroy();
 });
 
+test("suspended Campaign mount keeps each draft and rejects detached editor input", () => {
+  const f = fixture(); f.click("Fraktion anlegen"); f.input("Name", "Nebelbund");
+  f.input("GM-Notizen", "A-Entwurf");
+  const staleInput = f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]!;
+  const a = f.snapshot(), b = { ...a,
+    campaignId: campaignId("00000000-0000-4000-8000-000000000099"),
+    namespace: campaignNamespace("00000000-0000-4000-8000-000000000098") };
+  f.panel.suspend();
+  assert.equal(f.host.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  f.panel.update(b);
+  assert.equal(f.host.querySelector("form"), null);
+  f.click("Quest anlegen"); f.input("Name", "B-Entwurf");
+  staleInput.value = "Überschrieben";
+  staleInput.dispatchEvent(new f.window.Event("input", { bubbles: true }));
+  f.panel.suspend(); f.panel.update(a);
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "A-Entwurf");
+  f.panel.suspend(); f.panel.update(b);
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "B-Entwurf");
+  f.panel.destroy();
+});
+
 test("unrelated higher commit revision cannot acknowledge a requested record or erase its draft", async () => {
   const f = fixture(); f.click("Quest anlegen"); f.input("Name", "Requested");
   f.input("GM-Notizen", "Nur mein Entwurf");
@@ -318,6 +340,11 @@ test("older and same-revision divergent host projections cannot roll back visibl
   f.panel.update({ ...f.snapshot(), records: [{ ...f.snapshot().records[0]!, title: "Divergent" }] });
   assert.match(f.host.querySelector("ul")!.textContent!, /Newest/);
   assert.doesNotMatch(f.host.querySelector("ul")!.textContent!, /Divergent/);
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
+  f.panel.suspend();
+  assert.equal(f.panel.update(old), false);
+  assert.equal(f.host.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  assert.equal(f.panel.update(f.snapshot()), true);
   assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
   f.panel.destroy();
 });

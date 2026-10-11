@@ -1127,6 +1127,7 @@
 .dn-campaign-entry ul { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 4px; list-style: none; }
 .dn-campaign-entry li { display: flex; align-items: center; gap: 6px; }
 .dn-world-notes { display: flex; flex-direction: column; gap: 8px; min-width: 0; max-width: 100%; overflow: auto; }
+.dn-world-notes[hidden] { display: none; }
 .dn-world-notes h2, .dn-world-notes h3, .dn-world-notes h4, .dn-world-notes p { margin: 0; }
 .dn-world-notes-actions, .dn-world-notes-editor form { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .dn-world-notes-actions button { flex: 1 1 9rem; white-space: normal; }

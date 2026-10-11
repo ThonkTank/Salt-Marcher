@@ -193,6 +193,15 @@ if (test) await build({
   bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
 });
 if (test) await build({
+  entryPoints: ["tests/world-notes-view.entry.ts"], outfile: ".build/world-notes-view.cjs",
+  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
+  plugins: [{ name: "obsidian-world-notes-view-test-stub", setup(builder) {
+    builder.onResolve({ filter: /^obsidian$/ }, () => ({
+      path: new URL("./tests/fixtures/obsidian-view-stub.ts", import.meta.url).pathname,
+    }));
+  } }],
+});
+if (test) await build({
   entryPoints: ["tests/atlas-campaign-host.entry.ts"], outfile: ".build/atlas-campaign-host.cjs",
   bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
   plugins: [{ name: "obsidian-atlas-host-test-stub", setup(builder) {
