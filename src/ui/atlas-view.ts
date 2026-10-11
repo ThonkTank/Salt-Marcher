@@ -30,6 +30,8 @@ import { sameSnapshot } from "../features/campaign/campaign-contracts";
 import { parseLocationDocument } from "../features/location/location-schema";
 import { newLocationPath } from "../features/atlas/location-owners";
 import type { RelativeAtlasCamera } from "../features/atlas/relative-frame";
+import { parseSpatialWorld } from "../features/atlas/spatial-schema";
+import { inspectStandaloneAtlas, type AtlasStandaloneEntry } from "../features/atlas/atlas-standalone-entry";
 
 export const ATLAS_VIEW = "dungeon-native-atlas";
 export class AtlasView extends FileView {
@@ -102,7 +104,9 @@ export class AtlasView extends FileView {
         throw error;
       }
       if (unregistered) unregistered.revoke(false);
-      else this.editor?.destroy();
+      // The campaign mount owns suspension/retention and disposal of its editor.
+      // Destroying it here would erase retained Keys and release the renderer twice.
+      else if (!this.managed) this.editor?.destroy();
     }
     unregistered?.revoke(false);
     this.editor = undefined;
@@ -262,6 +266,8 @@ export class AtlasView extends FileView {
   ): Promise<void> {
     this.contentEl.replaceChildren();
     this.canvasHost = this.contentEl;
+    const vault = new VaultStore(this.app);
+    let standalone: AtlasStandaloneEntry | undefined, standaloneCurrent = () => {};
     if (this.campaigns) {
       this.contentEl.classList.add("dn-atlas-host");
       this.pickerHost = this.contentEl.createDiv({ cls: "dn-atlas-campaign-dock" });
@@ -278,16 +284,28 @@ export class AtlasView extends FileView {
       try { await this.campaignHost.refresh(); }
       catch (error) { this.statusHost.textContent = "Kampagnenbestand konnte nicht gelesen werden. " + String(error); return; }
       if (generation !== this.generation) return;
-      try { if (await this.campaignHost.openFile(file.path)) return; }
+      try {
+        const raw = await vault.read(file.path);
+        if (raw === null) throw new Error("Atlasdatei fehlt.");
+        const worldId = parseSpatialWorld(raw).id;
+        if (await this.campaignHost.openFile(file.path, worldId, async (current) => {
+          standaloneCurrent = current;
+          standalone = await inspectStandaloneAtlas(vault, file.path, this.spatialOptions(), standaloneCurrent);
+          if (generation !== this.generation) throw new Error("Atlasöffnung wurde abgelöst.");
+          if (standalone.worldId !== worldId) throw new FileConflict(file.path);
+          return standalone.identities;
+        })) return;
+      }
       catch (error) { this.statusHost.textContent = "Kampagne konnte nicht geöffnet werden. " + String(error); return; }
     }
     this.canvasHost.createEl("p", { text: "Atlas wird geöffnet …" });
-    // Native atlases before the first manifest have a host lifetime, without Campaign authority.
+    // Checked independent native atlases have a host lifetime, without Campaign authority.
     let alive = true, mounted = false, editor: AtlasEditor | undefined, nativeRepository: AtlasRepository | undefined;
     let unsubscribeClosed: () => void = () => {};
     const root = this.contentEl.ownerDocument.createElement("div");
     const lease = () => {
       this.campaigns?.assertOpen?.();
+      standaloneCurrent();
       if (!alive || (!mounted && generation !== this.generation))
         throw new Error("Die Atlasansicht dieses Entwurfs wurde widerrufen.");
     };
@@ -315,13 +333,14 @@ export class AtlasView extends FileView {
     try {
       lease();
       const repository = new AtlasRepository(
-        new VaultStore(this.app),
+        standalone?.store ?? vault,
         file.path,
         this.app.vault,
         { ...this.spatialOptions(), assertCurrent: lease },
       );
       nativeRepository = repository;
       const source = await repository.open();
+      await standalone?.finishOpen();
       lease();
       this.repository = repository;
       this.editor = editor = new AtlasEditor(root, source.world, source, {

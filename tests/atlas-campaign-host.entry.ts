@@ -24,6 +24,9 @@ import { CitySource } from "../src/features/city/commands";
 import { CityDraft } from "../src/features/city/draft";
 import { serializeCityDocument } from "../src/features/city/codec";
 import { cityBuildingOutline } from "../src/features/city/geometry";
+import { menus } from "./fixtures/obsidian-atlas-host-stub";
+
+const actualRendererInit = AtlasRenderer.prototype.init;
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const seed = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -1106,13 +1109,13 @@ test("actual managed Save button publishes a new H01 Location closure across pen
   services.close();
 });
 
-test("bad or foreign manifest membership cannot fall through into an unguarded standalone atlas", async () => {
+test("malformed manifest cannot fall through into an unguarded standalone atlas", async () => {
   const f = await fixture();
   const path = seed.campaign.path as string;
   await f.vault.process(f.vault.files.get(path)!, () => "{damaged");
   await f.view.onLoadFile(f.vault.files.get(aPath)!);
   assert.equal(f.editor(), undefined);
-  assert.match(f.content.textContent!, /keinem bestätigten Kampagnenbestand/);
+  assert.match(f.content.textContent!, /Campaignmanifest.*gültiges JSON/);
   await f.close();
 });
 
@@ -1914,4 +1917,295 @@ test('City rotation retains a pending name, rejects detached actions and turns l
     assert.equal(source.read().buildings.find(b => b.id === uuid(106))!.rotationRadians, -Math.PI / 2);
     assert.equal(active(f).history.undoDepth, depth + 1);
   } finally { await f.close(); }
+});
+
+test('Copy opens an independent native atlas alongside confirmed campaigns and preserves the dirty managed Room Key', async () => {
+  const f = await fixture(true), old = active(f), editor = f.editor()!;
+  try {
+    await f.host().navigate(locationTarget);
+    const room = f.host().details(uuid(11)).entries.find(e => e.target.kind === 'room')!;
+    await f.host().navigate(room.target);
+    const text = '## Eingang\nUngesicherter Raumtext bleibt in der Kopie.  \n\n',
+      field = f.input('[aria-label="Raumtext 1"]', text),
+      oldRoot = f.content.querySelector<HTMLElement>('.dn-atlas')!;
+    await editor.flush();
+    await old.repository.persistDraft();
+    const originalBytes = new Map(f.vault.bytes);
+    let releases = 0;
+    const release = editor.renderer.destroy.bind(editor.renderer);
+    editor.renderer.destroy = () => { releases++; release(); };
+    let opened: Promise<void> | undefined;
+    f.view.leaf.openFile = file => {
+      opened = f.view.onLoadFile(file);
+      return opened;
+    };
+    f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas-Kartenmenü"]')!);
+    menus.at(-1)!.items.find(item => item.title === 'Speichern unter …')!.click();
+    const modal = f.document.querySelector<HTMLElement>('.modal')!,
+      name = modal.querySelector<HTMLInputElement>('[aria-label="Kopiename"]')!;
+    name.value = 'Raumdraft Lebenszyklus';
+    name.dispatchEvent(new f.window.Event('input', { bubbles: true }));
+    f.click([...modal.querySelectorAll<HTMLButtonElement>('button')]
+      .find(button => button.textContent === 'Kopie speichern')!);
+    await settled(() => !!opened, () => modal.textContent ?? '');
+    await opened;
+    assert.equal(releases, 1, 'the campaign mount must release the old renderer exactly once');
+    const copyEditor = f.editor()!, copyRepository = (f.view as any).repository as AtlasRepository;
+    assert.ok(copyEditor, f.content.textContent!);
+    assert.notEqual(copyEditor, editor);
+    assert.notEqual(copyRepository.terrainSource.history, old.history);
+    assert.equal((copyRepository as any).options.campaignSave, undefined);
+    assert.equal(f.host().state.kind, 'unavailable');
+    assert.equal(f.content.querySelector('.dn-atlas-host-status')!.textContent, '');
+    assert.equal(f.content.querySelector('.dn-campaign-active-error'), null);
+    assert.equal(oldRoot.inert, true);
+    assert.equal(field.value, text);
+    assert.ok(oldRoot.contains(field), 'retained Room Key must remain inspectable');
+    assert.ok(f.services.retainedDrafts!.some(d => d.element === oldRoot));
+    assert.ok(f.vault.files.has('Atlanten/Raumdraft Lebenszyklus.overworld'));
+    const copies = [...f.vault.bytes].filter(([path]) => path.endsWith('.dungeon') && !originalBytes.has(path));
+    assert.equal(copies.length, 1);
+    assert.ok(JSON.parse(copies[0]![1]).entities.some((entity: any) =>
+      entity.key?.sections.some((section: any) => section.markdown === text)));
+    for (const [path, bytes] of originalBytes) assert.equal(f.vault.bytes.get(path), bytes, path);
+    const writes = f.vault.writes.length;
+    assert.throws(() => old.history.undo(), /widerrufen/);
+    await assert.rejects(old.repository.save(), /widerrufen/);
+    assert.equal(f.vault.writes.length, writes);
+    const copied = copyRepository.terrainSource.world;
+    await f.close();
+    // Ordinary file entry in a new host: no Copy callback, transient whitelist or inherited Context.
+    const app = { document: f.document, vault: f.vault } as any,
+      services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha),
+      view = new AtlasView({ app, contentEl: f.content, openFile: async () => {} } as any, services);
+    try {
+      await view.onLoadFile(f.vault.files.get('Atlanten/Raumdraft Lebenszyklus.overworld')!);
+      const fresh = (view as any).repository as AtlasRepository;
+      assert.ok((view as any).editor, f.content.textContent!);
+      assert.equal(services.provider.currentContext(), null);
+      assert.equal((fresh as any).options.campaignSave, undefined);
+      assert.equal(fresh.terrainSource.world.id, copied.id);
+      assert.notEqual(fresh.terrainSource.history, copyRepository.terrainSource.history);
+      const dungeon = JSON.parse(copies[0]![1]);
+      await fresh.ensureDetail('dungeon', dungeon.id);
+      assert.ok((fresh.detail('dungeon', dungeon.id) as any).read().document.entities.some((entity: any) =>
+        entity.key?.sections.some((section: any) => section.markdown === text)));
+      assert.equal(fresh.dirty, false);
+      assert.equal(fresh.hasDraft, false);
+      for (const [path, bytes] of originalBytes) assert.equal(f.vault.bytes.get(path), bytes, path);
+    } finally { await view.onUnloadFile(); services.close(); }
+  } finally { await f.close(); }
+});
+
+async function independentCopy(f: Awaited<ReturnType<typeof fixture>>, name = 'Unabhängiger Atlas') {
+  const path = `Atlanten/${name}.overworld`;
+  await active(f).repository.copy(path, crypto.randomUUID(), name);
+  return { path, world: JSON.parse(f.vault.bytes.get(path)!) };
+}
+for (const state of ['prepared', 'committed'] as const) {
+  test(`independent atlas entry validates and recovers ${state} native journals beside an unrelated campaign`, async () => {
+    const f = await fixture(true);
+    try {
+      const copy = await independentCopy(f), id = copy.world.placements[0].locationId,
+        path = `Orte/${id}.location`, before = f.vault.bytes.get(path)!,
+        changed = { ...JSON.parse(before), name: 'Erhaltene unabhängige Kopie' },
+        after = JSON.stringify(changed), journalPath = copy.path + '.journal';
+      await f.vault.cas(path, before, after);
+      await f.vault.create(journalPath, JSON.stringify({ kind: 'atlas-file-transaction', version: 1,
+        journalPath, transactionId: crypto.randomUUID(), state,
+        writes: [{ path, before, after }] }));
+      const originals = new Map([...f.vault.bytes].filter(([path]) => seed.input.some((r: any) => r.path === path) ||
+        path === seed.campaign.path));
+      await f.view.onLoadFile(f.vault.files.get(copy.path)!);
+      assert.ok(f.editor(), f.content.textContent!);
+      const repository = (f.view as any).repository as AtlasRepository;
+      assert.equal((repository as any).options.campaignSave, undefined);
+      assert.equal(f.vault.bytes.has(journalPath), false);
+      const doc = (await repository.ensureLocation(id)).read()!;
+      assert.equal(doc.name, state === 'prepared' ? JSON.parse(before).name : changed.name);
+      repository.editLocation({ ...doc, name: 'Unabhängiger Entwurf' });
+      const history = repository.terrainSource.history;
+      assert.equal(history.undo(), true);
+      assert.equal(repository.location(id).read()!.name, doc.name);
+      assert.equal(history.redo(), true);
+      await repository.persistDraft();
+      await f.view.onUnloadFile();
+      await f.view.onLoadFile(f.vault.files.get(copy.path)!);
+      const restored = (f.view as any).repository as AtlasRepository;
+      assert.ok(f.editor(), f.content.textContent!);
+      assert.notEqual(restored.terrainSource.history, history);
+      assert.equal((await restored.ensureLocation(id)).read()!.name, 'Unabhängiger Entwurf');
+      assert.equal(restored.hasDraft, true);
+      f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!);
+      await f.editor()!.flush();
+      assert.equal(restored.hasDraft, false);
+      assert.equal(JSON.parse(f.vault.bytes.get(path)!).name, 'Unabhängiger Entwurf');
+      const saved = restored.location(id).read()!;
+      restored.editLocation({ ...saved, name: 'Verworfener Entwurf' });
+      await restored.persistDraft();
+      await restored.discard();
+      assert.equal((await restored.ensureLocation(id)).read()!.name, saved.name);
+      assert.equal(restored.hasDraft, false);
+      for (const [path, raw] of originals) assert.equal(f.vault.bytes.get(path), raw, path);
+    } finally { await f.close(); }
+  });
+}
+test('manifest change during standalone closure validation cannot attach an obsolete copy or write Recovery', async () => {
+  const f = await fixture(true);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let entered!: () => void;
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  try {
+    const copy = await independentCopy(f), locationPath = `Orte/${copy.world.placements[0].locationId}.location`;
+    f.vault.readHook = async path => { if (path === locationPath) { entered(); await gate; } };
+    const opening = f.view.onLoadFile(f.vault.files.get(copy.path)!);
+    await started;
+    await f.vault.process(f.vault.files.get(seed.campaign.path)!, raw => raw + ' ');
+    const writes = f.vault.writes.length;
+    release(); await opening;
+    assert.equal(f.editor(), undefined);
+    assert.equal(f.vault.writes.length, writes);
+    assert.match(f.content.textContent!, /während der Atlasöffnung geändert/);
+  } finally { release(); f.vault.readHook = undefined; await f.close(); }
+});
+test('external native change between standalone inspection and Recovery preserves the journal without writing', async () => {
+  const f = await fixture(true);
+  try {
+    const copy = await independentCopy(f), path = `Orte/${copy.world.placements[0].locationId}.location`,
+      before = f.vault.bytes.get(path)!, after = JSON.stringify({ ...JSON.parse(before), name: 'Journal After' }),
+      journalPath = copy.path + '.journal';
+    await f.vault.cas(path, before, after);
+    await f.vault.create(journalPath, JSON.stringify({ kind: 'atlas-file-transaction', version: 1,
+      journalPath, transactionId: crypto.randomUUID(), state: 'prepared', writes: [{ path, before, after }] }));
+    let reads = 0;
+    const external = JSON.stringify({ ...JSON.parse(before), name: 'Externe Änderung' }), writes = f.vault.writes.length;
+    f.vault.readHook = async p => {
+      if (p === journalPath && ++reads === 3) f.vault.bytes.set(path, external);
+    };
+    await f.view.onLoadFile(f.vault.files.get(copy.path)!);
+    assert.equal(f.editor(), undefined);
+    assert.equal(f.vault.writes.length, writes);
+    assert.equal(f.vault.bytes.get(path), external);
+    assert.equal(f.vault.bytes.has(journalPath), true);
+  } finally { f.vault.readHook = undefined; await f.close(); }
+});
+test('standalone Recovery finishes its won old journal on service closure and never attaches an editor', async () => {
+  const f = await fixture(true);
+  try {
+    const copy = await independentCopy(f), path = `Orte/${copy.world.placements[0].locationId}.location`,
+      before = f.vault.bytes.get(path)!, after = JSON.stringify({ ...JSON.parse(before), name: 'Journal After' }),
+      journalPath = copy.path + '.journal';
+    await f.vault.cas(path, before, after);
+    await f.vault.create(journalPath, JSON.stringify({ kind: 'atlas-file-transaction', version: 1,
+      journalPath, transactionId: crypto.randomUUID(), state: 'prepared', writes: [{ path, before, after }] }));
+    f.vault.writeHook = (p, raw) => { if (p === path && raw === before) f.services.close(); };
+    await f.view.onLoadFile(f.vault.files.get(copy.path)!);
+    assert.equal(f.editor(), undefined);
+    assert.equal(f.vault.bytes.get(path), before);
+    assert.equal(f.vault.bytes.has(journalPath), false);
+  } finally { f.vault.writeHook = undefined; await f.close(); }
+});
+test('a fresh World ID with a Campaign-owned section in its native draft is rejected before mounting', async () => {
+  const f = await fixture(true);
+  try {
+    const copy = await independentCopy(f), id = copy.world.placements[0].locationId,
+      path = `Orte/${id}.location`, before = f.vault.bytes.get(path)!, doc = JSON.parse(before);
+    doc.sections[0].id = uuid(15);
+    const baseline = f.vault.bytes.get(copy.path)!;
+    await f.vault.create(copy.path + '.draft', JSON.stringify({ kind: 'overworld-draft', version: 3,
+      worldId: copy.world.id, baselineWorld: baseline, currentWorld: baseline, chunks: [],
+      locations: [{ id, path, before, after: JSON.stringify(doc) }], details: [] }));
+    const bytes = new Map(f.vault.bytes), writes = f.vault.writes.length;
+    await f.view.onLoadFile(f.vault.files.get(copy.path)!);
+    assert.equal(f.editor(), undefined);
+    assert.match(f.content.textContent!, /kollidiert.*Kampagnenowner/);
+    assert.equal(f.vault.writes.length, writes);
+    assert.deepEqual(f.vault.bytes, bytes);
+  } finally { await f.close(); }
+});
+for (const damage of ['same-world', 'path-world-mismatch', 'owner-collision', 'missing-location',
+  'missing-detail', 'missing-terrain', 'duplicate-detail', 'malformed-unrelated-manifest', 'unreadable-manifest'] as const) {
+  test(`standalone native entry fails closed before writes for ${damage}`, async () => {
+    const f = await fixture(true);
+    try {
+      const copy = await independentCopy(f);
+      let path = copy.path;
+      if (damage === 'same-world') {
+        f.vault.bytes.set(copy.path, f.vault.bytes.get(aPath)!);
+      } else if (damage === 'path-world-mismatch') {
+        f.vault.bytes.set(aPath, f.vault.bytes.get(copy.path)!); path = aPath;
+      } else if (damage === 'owner-collision') {
+        // Keep the copied native document valid, but reuse an actual Campaign-owned Room ID.
+        const file = [...f.vault.bytes].find(([p]) => p.endsWith('.dungeon') && !seed.input.some((r: any) => r.path === p) &&
+          JSON.parse(f.vault.bytes.get(p)!).id === copy.world.detailPlacements.find((p: any) => p.kind === 'dungeon').documentId)!;
+        const doc = JSON.parse(file[1]), room = doc.entities.find((r: any) => r.key?.sections);
+        assert.ok(room);
+        const oldId = room.id;
+        f.vault.bytes.set(file[0], file[1].replaceAll(oldId, uuid(31)));
+        f.vault.bytes.set(copy.path, f.vault.bytes.get(copy.path)!.replaceAll(oldId, uuid(31)));
+        for (const [p, raw] of [...f.vault.bytes]) if (p.endsWith('.location') &&
+          copy.world.placements.some((placement: any) => raw.includes(placement.locationId)))
+          f.vault.bytes.set(p, raw.replaceAll(oldId, uuid(31)));
+      } else if (damage === 'missing-location') {
+        await f.vault.trash(f.vault.files.get(`Orte/${copy.world.placements[0].locationId}.location`)!);
+      } else if (damage === 'missing-terrain') {
+        await f.vault.trash(f.vault.files.get(`Atlasdaten/${copy.world.id}/${copy.world.chunks[0].file}`)!);
+      } else if (damage === 'missing-detail' || damage === 'duplicate-detail') {
+        const id = copy.world.detailPlacements.find((p: any) => p.kind === 'dungeon').documentId,
+          file = f.vault.getFiles().find(file => file.extension === 'dungeon' && JSON.parse(f.vault.bytes.get(file.path)!).id === id)!;
+        if (damage === 'missing-detail') await f.vault.trash(file);
+        else await f.vault.create('Dungeons/Doppelter Owner/Karte.dungeon', f.vault.bytes.get(file.path)!);
+      } else if (damage === 'malformed-unrelated-manifest') {
+        await f.vault.create('Kampagnen/SaltMarcher/damaged.campaign.json', '{damaged');
+      } else {
+        f.vault.readHook = async path => { if (path === seed.campaign.path) throw new Error('Manifest nicht lesbar'); };
+      }
+      const before = new Map(f.vault.bytes), writes = f.vault.writes.length;
+      await f.view.onLoadFile(f.vault.files.get(path)!);
+      assert.equal(f.editor(), undefined, damage);
+      assert.equal(f.content.querySelector('.dn-atlas-canvas-host .dn-atlas'), null);
+      assert.equal(f.vault.writes.length, writes, 'rejected entry must not perform Recovery or write drafts');
+      assert.deepEqual(f.vault.bytes, before);
+      if (damage === 'owner-collision') assert.match(f.content.textContent!, /kollidiert.*Kampagnenowner/);
+    } finally { f.vault.readHook = undefined; await f.close(); }
+  });
+}
+
+test('clean managed leaf replacement and unload each release their renderer once', async () => {
+  const f = await fixture(true), old = active(f), editor = f.editor()!, bytes = new Map(f.vault.bytes);
+  let oldReleases = 0, nextReleases = 0;
+  const release = editor.renderer.destroy.bind(editor.renderer);
+  editor.renderer.destroy = () => { oldReleases++; release(); };
+  try {
+    await f.view.onLoadFile(f.vault.files.get(aPath)!);
+    assert.equal(oldReleases, 1);
+    const next = f.editor()!;
+    assert.notEqual(next, editor);
+    const releaseNext = next.renderer.destroy.bind(next.renderer);
+    next.renderer.destroy = () => { nextReleases++; releaseNext(); };
+    assert.throws(() => old.history.undo(), /widerrufen/);
+    assert.equal(f.services.retainedDrafts!.length, 0);
+    await f.view.onUnloadFile();
+    await f.view.onUnloadFile();
+    assert.equal(nextReleases, 1);
+    assert.deepEqual(f.vault.bytes, bytes);
+  } finally { await f.close(); }
+});
+
+test('renderer finishing initialization after leaf unload releases its Application once', async () => {
+  const f = await fixture(true), renderer = f.editor()!.renderer;
+  let ready!: () => void, releases = 0;
+  const wait = new Promise<void>(resolve => { ready = resolve; });
+  // Exercise the actual async renderer lifecycle; the Application adapter excludes GPU startup only.
+  renderer.application.init = async () => { await wait; };
+  renderer.application.destroy = () => { releases++; };
+  const initializing = actualRendererInit.call(renderer);
+  try {
+    await f.view.onUnloadFile();
+    assert.equal(releases, 0);
+    ready(); await initializing;
+    renderer.destroy();
+    assert.equal(releases, 1);
+  } finally { ready(); await initializing; await f.close(); }
 });

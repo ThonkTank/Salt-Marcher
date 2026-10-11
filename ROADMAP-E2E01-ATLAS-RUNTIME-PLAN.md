@@ -39,67 +39,82 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Hex besitzt Dungeon-am-Ort und Orts-/Raum-Inspector im gemeinsamen Canvas,
-Repository und History (E2E-01 Nutzerzeile13, E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001).
-Stadt besitzt City/#92. Parent #80 bleibt offen. Arbeitsbranch:
-`hex/dungeon-at-location-inspector-n01-20261011`; historische Belege sind keine Aufträge.
+Hex besitzt Dungeon-am-Ort und Orts-/Raum-Inspector in Canvas, Repository und
+History: E2E-01 Nutzerzeile13, E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001.
+Stadt besitzt City. Parent #80 bleibt offen; Branch
+`hex/dungeon-at-location-inspector-n01-20261011`. Historische Belege sind keine Aufträge.
 
-**Konsumierter Nutzerweg:** Verorten, Raum/Key und Rückkehr aus PR81/87/78 sind
-integriert. Escape/Scroll/Fit aus PR91/100/110 bleiben quellgebunden;
-[N04](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
-belegt horizontalen Dock-Fit100/131%, vertikales Scrollen bleibt nötig.
+**Konsumierter Nutzerweg:** PR81/87/78 liefern Verorten/Raum-Key/Rückkehr;
+PR91/100/110 Escape/Scroll/Fit. [N04](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
+belegt horizontalen Dock-Fit100/131%; vertikales Scrollen bleibt nötig.
 [GM-Same-session](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
 und [FreshReuse](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
-belegen Torheim → Suche Torraum → vollständigen Eingangstext auf Produkt87ccdb2.
-S01 integrierte Beleghead6d03e5a in3af22a1. Bilder/Hashes gelesen; Testerberichte
-zu PIDs/Install-/Payloadorakeln sind kein eigener aktueller-Shared-Host-PASS.
-Nur PR115 belegt131%-Fit; Suche/Aktivierung100%.
+belegen Torheim/Suche Torraum/Eingangstext auf87ccdb2;131%-Fit nur PR115.
+S01 konsumierte6d03e5a in3af22a1; fremde Tester-PIDs sind kein Hex-Host-PASS.
 
-**Erhaltene IME-/Fehlerbelege:** Qualifizierter PR126 schützt Location/Room ×
-Ctrl/Meta+S mit `isComposing`; vier Baseline-FAIL/50 Adapterfälle PASS sind
-DOM-/Modellschutz, kein nativer IME-PASS. [H01](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json),
-[H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json) und
-[H03](docs/reference/atlas-detail-binding-d01/inspector-ime-handler-h03.json)
-bleiben samt fehlenden Downstreamkeydowns/Rohfehlern erhalten. H03 identifiziert
-Obsidian e.onKeyEvent als Abfangcallback; innere Scope-Rückgabe nicht gemessen.
-[H04](docs/reference/atlas-detail-binding-d01/inspector-confirmed-save-h04.json)
-belegt HEX80-H04-01 auf12265c20/Shared25792fb: bestätigtes Ctrl+S lässt Ortsnamen
-pending/History0/alle8 Bytes gleich; sichtbarer Save speichert exakt. Dieser
-historische RunnerExit1 wird durch die Nachbesserung nicht umgedeutet.
+**Erhaltene Save-/Fresh-/Discard-/Resume-Belege:** PR126 schützt Location/Room ×
+Ctrl/Meta+S mit isComposing im DOM; H01–H04/Fehler bleiben, kein nativer IME-/Meta-PASS.
+PR135 ist separat integriert; [R01](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
+belegt Ctrl+S im Ortsnamen ohne Komposition. F01/R02/F02 belegen saved Orts-/Raumtext
+und exakte Bytes/IDs in neuen Prozessen (PR140/142/144); D02-N02 tatsächlichen
+Discard mit neuen Sources/History0 (PR146). R03 auf f53a2667/Shared9527c2da belegt
+unsaved Raumtext im echten v3-Draft nach normalem Quit/Fresh: voller Dungeon/
+Markdown/Geometrie exakt, History0/dirty/kein Redo, Original8/Draftbyteexakt.
+Kanonische Einzelreceipts bleiben in Acceptance; synthetische Eingabe,
+kein Hardcrash-/Kamera-/History-Fresh-PASS.
 
-**Aktueller Routingfix und direkte Nachprobe:**
-[R01-Quittung](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
-bindet saubere Sourcee1bda0a08e985ef74ba1777d1e1588d507f838b7, qualifizierten
-Shared29e4ce68, Spatial-V2 und Obsidian1.14.4. AtlasView registriert supported
-View.scope/Mod+S mit Parentfallback; aktueller fokussierter Atlaseditor nutzt
-bestehenden seriellen Save mit Bindungs-/Kompositions-/Pending-Keyguards.
-Bereits konsumiertes Mod+S löst am nachfolgenden Windowlistener keinen zweiten
-Save aus. Keine Handlerersetzung/-umgehung, bestehenden Orts-/Raumguards erhalten.
+**Erhaltene Fehler und konsumierte Reparaturen:** C01 auf dbde783a erzeugt7
+Copydateien/23 frische IDs/exakten Raumtext; Leafwechsel scheitert mit
+`_cancelResize is not a function`, keine Freshprobe. [Unabhängiger N01-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6107831990)
+auf a416dac6 bestätigt managed Suspend/Retain/Dispose/einmalige Rendererfreigabe
+(Quellea07c274a). Folgefix N02 auf Quelle
+`b6ec69d4290259e60e8acab61633b3b4a3ce2b69`/Sharedfcec3593 verwendet Pfad+World-ID
+für eindeutige Campaignzuordnung. Frische vollständige Closure ohne World-/Owner-
+kollision öffnet unregistriert neben gültigen fremden Manifesten; keine Campaign-
+oder Registrybefugnis. Native Codecs/Closure/Draft/Journal lesend vor Writes,
+gepinnte Eingänge, gewonnene alte Journale dürfen alte Pfade beenden,
+kein widerrufener Editor wird angehängt. Copy-Leaf/Fresh-Dateieinstieg teilen Vertrag.
+Drei Einstiege scheitern auf a416dac6;17 fokussierte Fälle/1157 Tests
+(1156 PASS/ein PDF-Skip), Typprüfung/sauberer Build bestehen.
+[Gezielter unabhängiger N02-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6108108606)
+auf fb5266fc PASS ohne Pflichtbefund; kein eigener nativer Review daraus.
+[C02](docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md)
+erreicht Copy/Raum-Key, scheitert danach am falschen QA-Vergleich von SpatialState
+mit vollem Overworld. Runner1/Fresh nicht gestartet; kein daraus belegter Produktverlust.
+C01/C02 ausgeführte Helfer/Vaults/Rohbelege bleiben bytegleich, FAIL bleibt erhalten.
 
-Vier Scopeadapterfälle scheitern auf alter Basis; zusätzlicher Duplicatefall
-belegt zwei Saves ohne Windowguard. Alle fünf Regressionen und volle Suite
-1090/1089PASS/1bestehenderSkip, Typprüfung und sauberer Produktbuild PASS.
-Direkte synthetische trusted **nicht komponierende** Ctrl+S-Eingabe im sichtbaren
-Ortsnamen speichert exakt „R01 Gespeicherter Ortsname“ mit einer gemeinsamen
-History, pending=false/clean/kein Draft, Kamera/Owners/Dungeon erhalten.
-Sechs fremde Spatialdateien bytegleich. Vollständige Campaign nur in neun
-Location-/Owner-/Registrydigest-Revisionsfeldern geändert; Locationdigests an
-nativem Bytehash geprüft, übrige Ableitungen formgeprüft, nicht recomputiert.
-Beleg auch nach normalem app.quit bytegleich; RunnerExit0, alle4 PIDs weg,
-keine Zwangstermination, frisch koordinierter Slot ausdrücklich zurückgegeben.
-Nutzervault/fremde lokale Dateien und alle früheren Hex-/Fremdwurzeln erhalten.
+**Jetzt konsumierbarer nativer Copy-/Fresh-Eingang C03:** Neue vor Erstlauf
+eingefrorene Helfer korrigieren ausschließlich readonly Vollworld-Read
+`repository.spatialGraph.world()`/separaten typisierten SpatialState; kein Produktdelta.
+Neuer tatsächlicher R03-Draftvault, neu koordinierter Slot, sauberer fc835e81,
+Quelleb6ec69d4. Sichtbares Kartenmenü/Speichern unter/Abbrechen erhält ganzen
+Originalzustand/Draft. Kopie speichern öffnet unabhängige Kopie; Fit/Auswahl/
+Ctrl-Rad/Canvas-Raumklick zeigt exakten unsaved Raumtext. Nach normalem app.quit
+folgt genau ein neuer Obsidianprozess mit normalem Dateieinstieg derselben Kopie:
+dieselben7 Copydateien/23 frischen geschlossenen IDs, alle nicht identitätsbezogenen
+Werte/Geometrie/Markdown bytegenau. Vollworld/SpatialState/Dungeon passen;
+ein Repository/eine History, clean0/kein Redo/Draft/pending. Original8/
+Campaignmanifest/actual R03-Draft bytegleich; kein Copycallback/Save-Replay/Neuseed.
+Beide Runner0/PASS/errors[], normales Ende/inactive-dead/PIDs weg/keine forced PIDs.
+[Portable Originale und Bilder](docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md),
+[Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108319297).
 
-**Nächster Empfänger:** Contributor prüft unabhängig genau diesen konkreten
-Routingfix, Guards/Lifecycle und quellgebundenen Nachweis am veröffentlichten
-Kandidaten im bestehenden #80. Hex konsumiert den qualifizierten Review oder
-konkrete Pflichtbefunde; Integration bleibt beim Steward. Kein Selfmerge,
-allgemeine Reviewrunde, konkurrierender City-Savefix oder abhängiger Detailausbau.
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157
+Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
+Kanonisch `acceptance.hexAtlas.requirements[30]`:
+`.dungeonAtLocationRoomDraftCopyMembershipN02` bindet Fix/Build/Regressionen,
+`.dungeonAtLocationRoomDraftCopyC03` den jetzigen direkten Copy/Fresh-Nachweis;
+historische R03/C01/N01/N02/C02-Receipts bleiben unverändert.
 
-**Offen:** nativer Kompositionsguard, Room/Meta, physische IME, frischer Prozess
-des Routingfixes, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
-Original-/Großkarten-/Nutzervaultabnahme bleiben getrennte Nachweise. Alte
-N04/FreshReuse/R01-Belege ersetzen diese nicht. Jeder weitere lokale GUI-Start
-braucht eine neue ausdrückliche Slotabstimmung.
+**Nächster Empfänger/Beitrag:** Bestehender Steward verwendet C03 am PR157
+für die N01/N02-Kandidatenqualifikation; beide gezielten Reviews sind konsumiert,
+kein neuer allgemeiner Review. Hex behält #80/Branch und schließt den verbleibenden
+konkreten nativen Journal-Unterbrechungs-/Recoveryeingang nach aktuellen Verträgen.
+Vor jedem neuen lokalen GUI-Lauf Slot neu koordinieren; dieser Lauf endet nach Lieferung.
+
+**Offen:** Unterbrochene Save-/Copyjournale, Komposition/Meta/physische IME,
+äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme.
+Keine Selbstintegration; fremde Wurzeln und frühere Rohbelege erhalten.
 
 ## Historische Planbasis und Lieferbelege
 

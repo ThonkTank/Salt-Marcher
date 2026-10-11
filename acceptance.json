@@ -158452,6 +158452,2971 @@
             "HexRuntimePanelsRunnerAndFixtureManifestBlobsUnchanged": true,
             "scope": "ManualPlanner same-plan pending name retention only; City roots and working sections retained."
           }
+        },
+        "dungeonAtLocationInspectorSaveRoutingQualification": {
+          "id": "E2E-01-HEX04-SAVE-ROUTING-R01-QUALIFICATION",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "independent_technical_review_and_regular_Shared_integration_consumed_native_fresh_pending",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135",
+          "candidate": "5ba947a968b4947e2331c0d6c2029746f0706d95",
+          "mergeCommit": "af945671d6a2b1d68ecdd301a0b1e24b08950f80",
+          "currentSharedConsumed": "6ee40d834d23bc24412f0ecf78e80869a734f749",
+          "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133",
+          "stewardReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127",
+          "independentScope": "Technical routing/Scope lifecycle/focus/flush/composition/binding/duplicate guards and receipt claim boundaries; 5/5 focused regressions plus type/repository/build/JSON/hash/diff checks. No independent native GUI/raw/physical proof.",
+          "headCi": 38120905132,
+          "mergeCi": 38121101517,
+          "currentSharedCi": 38121790069,
+          "directlyVerifiedCi": "All three SUCCESS on their exact stated SHAs.",
+          "authorNativeSource": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
+          "authorNativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json",
+          "nativeReceiptUnchanged": true,
+          "relevantNativeSourceBlobsUnchanged": {
+            "src/ui/atlas-view.ts": "add61220c8cc3d1a16004f99aae6255e8658244e",
+            "src/features/atlas/atlas-editor.ts": "6260d61ade859c43b46746c94bdeb3db5a86617c",
+            "src/ui/location-key-panel.ts": "ec9509329480a1920a3d76e2bf36a022f5025cbf",
+            "src/ui/atlas-room-key-panel.ts": "a35052449c69d2b20ebc90d919250f4cdbc924f7",
+            "tools/host-test.cjs": "9f09e48a564e2b272aee61cf7b64dd7d66fbb4c9",
+            "tools/host/hex04-dungeon-at-location.cjs": "07ab80f147c092010e761133c8df0be63ecf3cdb",
+            "tests/fixtures/atlas-e2e-spatial-v2/manifest.json": "7bec9054218b4c957ae0e9f3cd3d3497f3b63559"
+          },
+          "incomingConsumed": [
+            {
+              "pullRequest": 134,
+              "head": "12ecb93c13ca025f58c4aa287e48b6130787648e",
+              "merge": "7953019cd2121c3d56bc7350ed6256d54c2f5029",
+              "independentReviews": [
+                6106614472,
+                6106620377,
+                6106634660
+              ],
+              "integrationReceipt": 6106646681,
+              "headCi": 38120895037,
+              "mergeCi": 38121194470,
+              "scope": "Live-session tests only; no Atlas product change."
+            },
+            {
+              "pullRequest": 136,
+              "head": "af8a847f4975e70d36a9da097e16b93fbfb3907b",
+              "merge": "ab41f047936f41f024bcb334bd9a3100664b7322",
+              "independentReview": 6106641611,
+              "stewardReceipt": 6106645746,
+              "headCi": 38120979046,
+              "mergeCi": 38121216850,
+              "scope": "ManualPlanner allocation context guard; City roots preserved. PR137 typo in S01 parent prose does not change directly verified merge/parent identity."
+            },
+            {
+              "pullRequest": 138,
+              "head": "d0ab6e68594f7050dcca7d0e05f6ea5c44b13fb1",
+              "merge": "5a7d352241719710d552777bf8c43d17e378f9c2",
+              "independentReview": 6106666772,
+              "integrationReceipt": 6106672060,
+              "headCi": 38121324001,
+              "mergeCi": 38121404973,
+              "scope": "SMR03 plan reconciliation only."
+            },
+            {
+              "pullRequest": 137,
+              "head": "106130afa6a240659f10d9c90dd6bf83f27fc7db",
+              "merge": "6ee40d834d23bc24412f0ecf78e80869a734f749",
+              "independentReview": 6106717975,
+              "stewardReceipt": 6106722917,
+              "headCi": 38121024778,
+              "mergeCi": 38121790069,
+              "scope": "GM Planner memory-only UI evidence; gmProductTesting and portable images/manifests retained. No Atlas product/GUI qualification."
+            }
+          ],
+          "limits": "No new GUI, build, full-suite rerun, composing-panel/RoomMeta/fresh/physical/CopyDiscardRecovery/original/large-map/install/fullE2E claim. No user-vault touch or selfintegration. Prior source-bound author raw evidence remains historical and unmodified.",
+          "next": "Hex: reopen the actually R01-saved isolated Spatial-V2 payload in a fresh Obsidian process on a clean build of the current qualified source. Verify visible exact Location key and retained native hashes/foreign payload; no fixture reseeding or Save replay as substitute for restart. Coordinate a fresh local GUI slot before launching, normal app.quit/PIDs and explicit return; remaining cases stay separate.",
+          "finishedAt": "2026-10-11T07:33:57.647673+00:00"
+        },
+        "dungeonAtLocationInspectorSaveRoutingFreshF01": {
+          "id": "E2E-01-HEX04-SAVE-ROUTING-FRESH-F01",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "actual_R01_saved_Location_key_native_fresh_process_PASS_remaining_scope_open",
+          "sourceCommit": "840f6f1f8bdaa61005588c19499171b7d4a46ec4",
+          "qualifiedShared": "6ee40d834d23bc24412f0ecf78e80869a734f749",
+          "sourceBuildTriplet": {
+            "main.js": {
+              "bytes": 1683332,
+              "sha256": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32087,
+              "sha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+            }
+          },
+          "installedTripletMatches": true,
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "actualSavedInput": {
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/vault",
+            "sourceAfterNormalQuitHashes": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/after-normal-quit-hashes.json",
+            "sourceProbe": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/evidence/1791702748667-atlas-spatial-edit/save-routing-probe.json",
+            "sourceCommit": "840f6f1f8bdaa61005588c19499171b7d4a46ec4",
+            "currentShared": "6ee40d834d23bc24412f0ecf78e80869a734f749",
+            "fixtureReseeded": false,
+            "savedName": "R01 Gespeicherter Ortsname"
+          },
+          "nativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "223b6e597eb595f21b5848330b794b85b368c1e6d7fe783ccd7c896d3bf9efe7",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "ff89566356640c5337e2cb6b5a96bd4c12af30874e39dcbc6012902b86a1f9bc"
+          },
+          "observed": {
+            "freshProcessStartedAt": "2026-10-11T07:45:11.397Z",
+            "Obsidian": "1.14.4",
+            "Electron": "43.7.7",
+            "Chromium": "150.0.7871.250",
+            "visibleLocationId": "00000000-0000-4000-8000-000000000011",
+            "visibleName": "R01 Gespeicherter Ortsname",
+            "visibleSections": [
+              {
+                "title": "Beschreibung",
+                "markdown": "Torheim am Fluss.\n"
+              },
+              {
+                "title": "Notizen",
+                "markdown": "  **Feste Notiz**\n\n"
+              }
+            ],
+            "completeRuntimeLocationEqualsActualSavedFile": true,
+            "sectionIdsAndCRLFRetainedNatively": true,
+            "htmlTextareaCRLFNormalization": "Visible textarea normalizes CRLF to LF; native/runtime exact payload and byte hashes remain unchanged.",
+            "managedCampaignActive": true,
+            "sharedRepositoryAndHistory": true,
+            "historyDepth": 0,
+            "pendingKey": false,
+            "dirty": false,
+            "draft": false,
+            "cameraAndPlacementsAndDungeonUnchangedDuringSelection": true,
+            "allEightNativeFilesEqualR01BeforeAndAfterSelectionAndNormalQuit": true,
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "originalForeignLocalFilesPreserved": true,
+            "userVaultTouched": false
+          },
+          "lifecycle": {
+            "unit": "dungeon-native-4115775.service",
+            "pids": [
+              4115802,
+              4115880,
+              4115887,
+              4115891
+            ],
+            "allGone": true,
+            "normalAppQuit": true,
+            "forcedTerminationPids": [],
+            "exitStatus": 0,
+            "unitFinal": {
+              "Id": "dungeon-native-4115775.service",
+              "ActiveState": "inactive",
+              "SubState": "dead",
+              "InvocationID": "",
+              "MainPID": "0",
+              "ControlPID": "0",
+              "Result": "success",
+              "ExecMainCode": "0",
+              "ExecMainStatus": "0"
+            }
+          },
+          "localEvidence": {
+            "invocation.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/invocation.json",
+              "sha256": "1b4c4ba3fc7d3f0c59e0da39c0a0e4b4940d5d26b07a38d805fffeb56d1e8967"
+            },
+            "input-native-hashes.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/input-native-hashes.json",
+              "sha256": "971f1b7ce57a63b6f649336da18eec61b11a851eae4821cbebc06ebd2b233190"
+            },
+            "after-normal-quit-hashes.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/after-normal-quit-hashes.json",
+              "sha256": "971f1b7ce57a63b6f649336da18eec61b11a851eae4821cbebc06ebd2b233190"
+            },
+            "runner-result.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/runner-result.json",
+              "sha256": "02a21305130bf11ebe0b9a0d2f17414c9796f0e987414aed2b2d27c463ba8db9"
+            },
+            "source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/source-build.log",
+              "sha256": "607b2cc20ce70c688e2d9680f727b7bed99f6111605726dd31a40854a8ecc7ab"
+            },
+            "fresh-probe.cjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/fresh-probe.cjs",
+              "sha256": "c023ad8b0c54e93cc09b4f1d9670e5c049376d6be9e62e96c0adc6f4bd650987"
+            },
+            "fresh-preload.cjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/fresh-preload.cjs",
+              "sha256": "3b5bbebe69ec5f01bf00be133520e1cf9a50e74bb62f3520eeb823f14f8ab587"
+            },
+            "evidence/1791704711303-atlas-spatial-reopen/build.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/evidence/1791704711303-atlas-spatial-reopen/build.json",
+              "sha256": "43e99c1f990deb3bd23d7c533e43eac2e665afd4c3754eb49fb3d4a915960d67"
+            },
+            "evidence/1791704711303-atlas-spatial-reopen/fresh-probe.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/evidence/1791704711303-atlas-spatial-reopen/fresh-probe.json",
+              "sha256": "371f77ebf7a4427f4a425072dd4ad2efb7078f682b2f3632484591e08aa8268a"
+            },
+            "evidence/1791704711303-atlas-spatial-reopen/fresh-process-location-key.png": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/evidence/1791704711303-atlas-spatial-reopen/fresh-process-location-key.png",
+              "sha256": "0f44960bea6756a30687fd00fe4117859ec3c1d4cb2731ddf3feee5f93de6e21"
+            },
+            "evidence/1791704711303-atlas-spatial-reopen/result.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/evidence/1791704711303-atlas-spatial-reopen/result.json",
+              "sha256": "b97933b7304f23602223583540a2058c8736624074ff395b1e07daf515c84017"
+            },
+            "evidence/1791704711303-atlas-spatial-reopen/process-lifecycle.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-fresh-f01-20261011/evidence/1791704711303-atlas-spatial-reopen/process-lifecycle.json",
+              "sha256": "b020dcd39ef982ef0d54eb95b89f081234e2b37f6785d71c4926ed84ca1f14af"
+            }
+          },
+          "slot": {
+            "freshConfirmationChat": "01a12022-b67b-7da2-bed5-8ebde169d475",
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106804252",
+            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106809303",
+            "held": false
+          },
+          "limits": {
+            "authorNativeProbe": true,
+            "syntheticPointer": true,
+            "independentNativeReview": false,
+            "physicalInput": false,
+            "nativeComposingShortcutGuard": false,
+            "RoomOrMetaSaveRouting": false,
+            "CopyDiscardRecovery": false,
+            "cameraPersistenceAcrossRestartClaim": false,
+            "OriginalParity": false,
+            "largeMap": false,
+            "userVaultInstall": false,
+            "fullE2E": false,
+            "rawAccess": "Raw QA paths available on local host; not assumed accessible to Cloud reviewers. Screenshot directly inspected by Hex."
+          },
+          "finishedAt": "2026-10-11T07:47:42.895866+00:00"
+        },
+        "dungeonAtLocationRoomScopeSaveR02": {
+          "id": "E2E-01-HEX04-ROOM-SCOPE-SAVE-R02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_confirmed_Room_CtrlS_Save_PASS_Room_fresh_pending",
+          "sourceCommit": "e98f394fef2d105ee097e638b6712db6cb284ca7",
+          "qualifiedShared": "6ee40d834d23bc24412f0ecf78e80869a734f749",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-n02-native-20261011/vault",
+            "savedOracle": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-n02-native-20261011/inspector-n02-baseline.json",
+            "savedOracleSha256": "bdd9360d37be5237bf9c5b0258d61d8873a1fa2d8b1a520c5137319c58740f04",
+            "canonicalReceipt": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
+            "noFixtureReseeding": true,
+            "existingLocatedDungeonAndRoom": true
+          },
+          "cleanSourceBuildTriplet": {
+            "main.js": {
+              "bytes": 1683332,
+              "sha256": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32087,
+              "sha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+            }
+          },
+          "installedTripletMatches": true,
+          "host": {
+            "Obsidian": "1.14.4",
+            "Electron": "43.7.7",
+            "Chromium": "150.0.7871.250"
+          },
+          "actualAction": {
+            "visibleRoute": "Existing saved N02 Location11 marker -> existing located Room31 entry -> Raumtext1 -> valid fill -> one Control+s",
+            "roomTarget": {
+              "kind": "room",
+              "documentId": "00000000-0000-4000-8000-000000000030",
+              "recordId": "00000000-0000-4000-8000-000000000031",
+              "roomId": null
+            },
+            "exactSavedMarkdown": "## Eingang\nR02: Strg+S speichert den Raumtext exakt.  \n\n",
+            "observedShortcutEvents": [
+              {
+                "type": "keydown",
+                "key": "Control",
+                "code": "ControlLeft",
+                "isTrusted": true,
+                "isComposing": false,
+                "ctrlKey": true,
+                "metaKey": false,
+                "label": "Raumtext 1",
+                "defaultPrevented": false,
+                "defaultPreventedAfter": false
+              },
+              {
+                "type": "keydown",
+                "key": "s",
+                "code": "KeyS",
+                "isTrusted": true,
+                "isComposing": false,
+                "ctrlKey": true,
+                "metaKey": false,
+                "label": "Raumtext 1",
+                "defaultPrevented": true,
+                "defaultPreventedAfter": true
+              }
+            ],
+            "syntheticTrustedKeyboard": true,
+            "physicalInput": false,
+            "isComposing": false,
+            "historyBefore": 0,
+            "historyAfter": 1,
+            "pendingFalseAfter": true,
+            "dirtyFalseAfter": true,
+            "draftFalseAfter": true,
+            "sameRepositoryHistoryRendererToken": true,
+            "sameCameraWorldAndBothLocationPayloads": true,
+            "completeNativeDungeonExpectedOnlyOneRoomMarkdownChanged": true,
+            "sixForeignNativeByteHashesPreserved": true,
+            "fullCampaignElevenFieldOracle": [
+              {
+                "path": "/registry/registryRevision",
+                "before": "registry:44d29b50d39870f3e111ce629a3130a1b823084a5f35c7e979b280e6e52e3420",
+                "after": "registry:cfb25a2eebdf0e9f4243db44a0dd7e619042c2f1b88a19b445a4d1690d7f64d1"
+              },
+              {
+                "path": "/registry/owners/2/ownerRevision",
+                "before": "owner:ebb853231c0ad759928b1eb67242e45a0a28865de2cbbf00c2ca93fdcf58a52c",
+                "after": "owner:14fe7d9721fa4bf0035989d2d59dcc97e730499c163bac916a37a448d9375586"
+              },
+              {
+                "path": "/registry/owners/2/snapshotRevision",
+                "before": "snapshot:ebb853231c0ad759928b1eb67242e45a0a28865de2cbbf00c2ca93fdcf58a52c",
+                "after": "snapshot:14fe7d9721fa4bf0035989d2d59dcc97e730499c163bac916a37a448d9375586"
+              },
+              {
+                "path": "/registry/owners/2/source/generation",
+                "before": "source:ebb853231c0ad759928b1eb67242e45a0a28865de2cbbf00c2ca93fdcf58a52c",
+                "after": "source:14fe7d9721fa4bf0035989d2d59dcc97e730499c163bac916a37a448d9375586"
+              },
+              {
+                "path": "/registry/owners/2/records/0/payloadDigest",
+                "before": "sha256:4d2f3b14f6a2daf6935461882e19471e050b27d07c191f560efbb0e518744bce",
+                "after": "sha256:cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b"
+              },
+              {
+                "path": "/registry/owners/2/records/1/payloadDigest",
+                "before": "sha256:4d2f3b14f6a2daf6935461882e19471e050b27d07c191f560efbb0e518744bce",
+                "after": "sha256:cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b"
+              },
+              {
+                "path": "/registry/owners/2/records/2/payloadDigest",
+                "before": "sha256:4d2f3b14f6a2daf6935461882e19471e050b27d07c191f560efbb0e518744bce",
+                "after": "sha256:cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b"
+              },
+              {
+                "path": "/registry/owners/2/records/3/payloadDigest",
+                "before": "sha256:4d2f3b14f6a2daf6935461882e19471e050b27d07c191f560efbb0e518744bce",
+                "after": "sha256:cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b"
+              },
+              {
+                "path": "/registry/owners/2/records/4/payloadDigest",
+                "before": "sha256:4d2f3b14f6a2daf6935461882e19471e050b27d07c191f560efbb0e518744bce",
+                "after": "sha256:cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b"
+              },
+              {
+                "path": "/registry/registryContentDigest",
+                "before": "sha256:15414b82a676ad45fb4003aacfcbe9e07a1cc7e9f2a7403a4c20d3ef3d4ebaad",
+                "after": "sha256:492c4f5eb18fd0394699f1bcdc1fbe6cc93877fc5ada8d7ea4bad008c1de3be6"
+              },
+              {
+                "path": "/atlas/files/2/savedDigest",
+                "before": "sha256:4d2f3b14f6a2daf6935461882e19471e050b27d07c191f560efbb0e518744bce",
+                "after": "sha256:cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b"
+              }
+            ],
+            "digestQualification": "All five Dungeon payload digests and native savedDigest equal actual Dungeon byte hash; other new revision/digest fields format-checked, not independently recomputed."
+          },
+          "beforeNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "4d2f3b14f6a2daf6935461882e19471e050b27d07c191f560efbb0e518744bce",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "776e9779b2623b63ecb98b9789e88a27d5360f88a4965a4ce927e816a4ebc530"
+          },
+          "afterNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "normalQuitNativeHashesEqualAfterSave": true,
+          "lifecycle": {
+            "unit": "dungeon-native-4132495.service",
+            "pids": [
+              4132523,
+              4132596,
+              4132603,
+              4132613
+            ],
+            "allGone": true,
+            "normalAppQuit": true,
+            "forcedTerminationPids": [],
+            "exitStatus": 0,
+            "unitFinal": {
+              "Id": "dungeon-native-4132495.service",
+              "ActiveState": "inactive",
+              "SubState": "dead",
+              "InvocationID": "",
+              "MainPID": "0",
+              "ControlPID": "0",
+              "Result": "success",
+              "ExecMainCode": "0",
+              "ExecMainStatus": "0"
+            }
+          },
+          "slot": {
+            "newExplicitConfirmationChat": "01a12022-b67b-7da2-bed5-8ebde169d475",
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106870937",
+            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106876891",
+            "held": false
+          },
+          "localEvidence": {
+            "invocation.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/invocation.json",
+              "sha256": "8f6237876c231408e941108e0acff870a8d0a779d46a53329780e079ac870a3f"
+            },
+            "input-native-hashes.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/input-native-hashes.json",
+              "sha256": "48d464949985341a7bbc15dddd79969606f6329adc23afaaeb07ee42f604c296"
+            },
+            "after-normal-quit-hashes.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/after-normal-quit-hashes.json",
+              "sha256": "0851d86ff6b3650551215461c498bfc2f9d585b337e40393feabc6668417c46a"
+            },
+            "runner-result.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/runner-result.json",
+              "sha256": "0bbe4d502312863fc75311d1b93dedd191bfa0f2e80060586faf47048962d71c"
+            },
+            "source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/source-build.log",
+              "sha256": "6c5aea12f89e67b797a6a07e97f5a27be812f5670680c8076810268ea927b0c7"
+            },
+            "room-probe.cjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/room-probe.cjs",
+              "sha256": "ced2b01cff116ab3ed67290d4cab202010197055a2777282f181ea617de3dbd4"
+            },
+            "room-preload.cjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/room-preload.cjs",
+              "sha256": "8cc50efafaea84388805bd0c55ed5959711304312ba0920679a509ad82d4b548"
+            },
+            "evidence/1791705243597-atlas-spatial-reopen/build.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/evidence/1791705243597-atlas-spatial-reopen/build.json",
+              "sha256": "24c3a6b23ccc6b5858daffb8e5e4f9aa4dfd1473d6705b0e50d3eda8ffbeb571"
+            },
+            "evidence/1791705243597-atlas-spatial-reopen/room-probe.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/evidence/1791705243597-atlas-spatial-reopen/room-probe.json",
+              "sha256": "b4bbbfbbaaa07653bad46e3040f6ce56461eaa648231fb88480fe69000ee12ec"
+            },
+            "evidence/1791705243597-atlas-spatial-reopen/room-before-shortcut.png": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/evidence/1791705243597-atlas-spatial-reopen/room-before-shortcut.png",
+              "sha256": "88a90c81da1fd1b4075d179ce609dc28e78a9ce356135ec983ce054cead0272b"
+            },
+            "evidence/1791705243597-atlas-spatial-reopen/room-after-shortcut.png": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/evidence/1791705243597-atlas-spatial-reopen/room-after-shortcut.png",
+              "sha256": "a39c7aa91df3f3511c9ba255fa5b2b8c39137d96c96520e9a852c9218c81486a"
+            },
+            "evidence/1791705243597-atlas-spatial-reopen/result.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/evidence/1791705243597-atlas-spatial-reopen/result.json",
+              "sha256": "9ff15f63d848d4c3a999b209f28a573c6f5992885a0d52671652ff7b1d03ba26"
+            },
+            "evidence/1791705243597-atlas-spatial-reopen/process-lifecycle.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/evidence/1791705243597-atlas-spatial-reopen/process-lifecycle.json",
+              "sha256": "83d9ab0e6fe7899d17c1e21341c2b5227129ed891342402679b93636956d7c8b"
+            }
+          },
+          "limits": {
+            "authorNativeProbe": true,
+            "independentNativeReview": false,
+            "physicalInput": false,
+            "nativeComposingGuard": false,
+            "MetaShortcut": false,
+            "freshAfterRoomSave": false,
+            "CopyDiscardRecovery": false,
+            "OriginalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false,
+            "rawAccess": "Local QA raw files and directly inspected image; Cloud access not assumed. Existing --restart reused prior N02-saved input and does not prove reopening the new R02 Save."
+          },
+          "preservation": {
+            "originalForeignLocalFiles": true,
+            "foreignCheckpointAcceptanceRoots": true,
+            "historicalReceipts": true,
+            "userVaultTouched": false
+          },
+          "finishedAt": "2026-10-11T07:56:06.756815+00:00",
+          "publicationIncoming": {
+            "pullRequest": 140,
+            "exactHead": "32213271543d58a831c3c4504ae671d10367f8d8",
+            "mergeCommit": "1580c39a6c3e1d15962d44e0ace2a19d21871e24",
+            "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/140#issuecomment-6106872273",
+            "stewardReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/140#issuecomment-6106876696",
+            "exactHeadCI": 38122793937,
+            "mergeCI": 38122939774,
+            "directlyVerifiedCI": "Both SUCCESS on exact stated SHAs",
+            "scope": "Planner focus restoration and its tests, City-owned checkpoint/plan; relevant Atlas/Panel/Host/fixture paths unchanged. Actual R02 GUI source remains e98f394f, not the later merge."
+          }
+        },
+        "dungeonAtLocationRoomScopeSaveFreshF02": {
+          "id": "E2E-01-HEX04-ROOM-SCOPE-SAVE-FRESH-F02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_actual_R02_saved_Room_fresh_process_PASS",
+          "sourceCommit": "019f7a7dd2844edc615977a21c90673aad477db5",
+          "qualifiedShared": "632c580377366af66ab05efcefa3910564f8af48",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/vault",
+            "sourceAfterNormalQuitHashes": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/after-normal-quit-hashes.json",
+            "sourceSavedProbe": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-r02-20261011/evidence/1791705243597-atlas-spatial-reopen/room-probe.json",
+            "sourceNativeSaveCommit": "e98f394fef2d105ee097e638b6712db6cb284ca7",
+            "canonicalSaveReceipt": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveR02",
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "sourceAfterNormalQuitHashesSha256": "0851d86ff6b3650551215461c498bfc2f9d585b337e40393feabc6668417c46a",
+            "sourceSavedProbeSha256": "b4bbbfbbaaa07653bad46e3040f6ce56461eaa648231fb88480fe69000ee12ec",
+            "copiedEntireActualR02SavedVault": true
+          },
+          "cleanSourceBuildTriplet": {
+            "main.js": {
+              "bytes": 1683332,
+              "sha256": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32087,
+              "sha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+            }
+          },
+          "installedTripletMatches": true,
+          "consumedIncomingBeforeNative": {
+            "pr": 142,
+            "exactHead": "839a2545e485b67982bc86e91807d72a93a638ec",
+            "merge": "632c580377366af66ab05efcefa3910564f8af48",
+            "independentPass": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/142#issuecomment-6106934036",
+            "steward": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/142#issuecomment-6106938706",
+            "exactCI": 38123278631,
+            "mergeCI": 38123414493,
+            "relevantAtlasPathsUnchanged": true
+          },
+          "host": {
+            "browserVersion": {
+              "protocolVersion": "1.3",
+              "product": "Chrome/150.0.7871.250",
+              "revision": "@07ee2042224499f634596843f209356586214e26",
+              "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+              "jsVersion": "15.0.245.31"
+            },
+            "viewport": {
+              "width": 1024,
+              "height": 800
+            },
+            "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011",
+            "rawDirectory": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/evidence/1791706022916-atlas-spatial-reopen",
+            "newAppPids": [
+              4153614,
+              4153693,
+              4153700,
+              4153705
+            ],
+            "previousR02PidsGone": true,
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-md.obsidian.Obsidian-1370672366.scope"
+          },
+          "actualAction": {
+            "visibleRoute": "Entry existing saved Atlas -> visible Fit/select -> Location11 marker -> existing located Room31 button -> read Raumname/Raumnummer/Raumtext1; no write control invoked",
+            "roomTarget": {
+              "kind": "room",
+              "documentId": "00000000-0000-4000-8000-000000000030",
+              "recordId": "00000000-0000-4000-8000-000000000031",
+              "roomId": null
+            },
+            "visibleName": "N02 Torraum — exakt",
+            "visibleNumber": "1",
+            "exactVisibleMarkdown": "## Eingang\nR02: Strg+S speichert den Raumtext exakt.  \n\n",
+            "fullRuntimeDungeonEqualsActualSavedNativePayload": true,
+            "allNativeIdsAndGeometryRetained": true,
+            "sameRepositoryHistoryRendererContextTokenWithinNewProcess": true,
+            "worldAndBothLocationPayloadsPreserved": true,
+            "historyDepth": 0,
+            "dirty": false,
+            "draft": false,
+            "pending": false,
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "syntheticPointer": true,
+            "physicalInput": false
+          },
+          "beforeNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "afterNavigationNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "afterNormalQuitNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "allEightHashesEqualActualR02AfterSave": true,
+          "lifecycle": {
+            "unit": "dungeon-native-4153586.service",
+            "normalQuitRequested": true,
+            "normalExitObserved": true,
+            "forcedTerminationPids": [],
+            "pidsGone": true,
+            "runnerExit": 0,
+            "resultPassed": true,
+            "errors": [],
+            "failure": null,
+            "shutdownFailure": null,
+            "systemdAfterCleanup": {
+              "Id": "dungeon-native-4153586.service",
+              "ActiveState": "inactive",
+              "SubState": "dead",
+              "InvocationID": "",
+              "MainPID": "0",
+              "ControlPID": "0",
+              "Result": "success",
+              "ExecMainCode": "0",
+              "ExecMainStatus": "0"
+            },
+            "systemdCurrentAfterRunner": "ActiveState=inactive\nSubState=dead\nMainPID=0\nResult=success\nExecMainStatus=0\n"
+          },
+          "slot": {
+            "newExplicitConfirmationChat": "01a12022-b67b-7da2-bed5-8ebde169d475",
+            "confirmation": "Aktuelle ausdrückliche Slotbestätigung: Stadt hält keine GUI; Prozessprüfung ohne Obsidian/QA-Electron. Lokaler Slot ist für genau deine beschriebene F02-Neustartprobe nach R02 frei und reserviert. Stadt startet während F02 keine GUI.",
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106970113",
+            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106984319",
+            "held": false
+          },
+          "localEvidence": {
+            "invocation.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/invocation.json",
+              "sha256": "0a984a05c47598f1e904265754f0d1f5f124f4553693510052b32045129aba98",
+              "bytes": 2072
+            },
+            "input-lineage.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/input-lineage.json",
+              "sha256": "7626a5d0585501d73fe7750e7a3771c10f76ff080aa2cd42b6b1fe21902ba0f4",
+              "bytes": 623
+            },
+            "input-native-hashes.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/input-native-hashes.json",
+              "sha256": "0851d86ff6b3650551215461c498bfc2f9d585b337e40393feabc6668417c46a",
+              "bytes": 1014
+            },
+            "after-normal-quit-hashes.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/after-normal-quit-hashes.json",
+              "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+              "bytes": 1011
+            },
+            "original-protection.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/original-protection.json",
+              "sha256": "484814c68990c0b3319c29409dace7f61fe2d122b5000431e93aa4c96f89f12d",
+              "bytes": 430
+            },
+            "runner-result.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/runner-result.json",
+              "sha256": "d9e1eeed87d14861af644b7c2f5ab3ad44a8bd20985b85c2dc998b728ff52079",
+              "bytes": 571
+            },
+            "current-source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/current-source-build.log",
+              "sha256": "d0a92a249646fa479c8c749efafe74f9c988dc7b5354b93ae830d9e681eddddd",
+              "bytes": 740
+            },
+            "fresh-room-probe.cjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/fresh-room-probe.cjs",
+              "sha256": "c3e30a46c63524a80d44f543cc4452559280b1ea3c4e0dec0b70af46926fe5ca",
+              "bytes": 7097
+            },
+            "fresh-room-preload.cjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/fresh-room-preload.cjs",
+              "sha256": "fb77f75752fc1eb6258b61d7911ae126adb42d50a3f3384eb4157926f10f61a8",
+              "bytes": 372
+            },
+            "host.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/host.log",
+              "sha256": "d1951390d20e57ecf128b5e236ecc61eebe6a8c82ecc63a63b785079af1ad19a",
+              "bytes": 525
+            },
+            "fresh-room-probe.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/evidence/1791706022916-atlas-spatial-reopen/fresh-room-probe.json",
+              "sha256": "e9898cb69dc19936e4a35c9cc546328258ead762b1b5f64c7706706b83ff38fb",
+              "bytes": 17581
+            },
+            "fresh-process-saved-room-key.png": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/evidence/1791706022916-atlas-spatial-reopen/fresh-process-saved-room-key.png",
+              "sha256": "9825292574d9bc6c6f55471fdedc4d3712bbce654b50893e3fdd6e8fba0e17d6",
+              "bytes": 71599,
+              "directlyInspected": true
+            },
+            "result.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/evidence/1791706022916-atlas-spatial-reopen/result.json",
+              "sha256": "a8a2402bbd8eb5044b7c046ab8f92f6b001c257f85d990b0155b47d7cc0a4213",
+              "bytes": 464
+            },
+            "process-lifecycle.json": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/evidence/1791706022916-atlas-spatial-reopen/process-lifecycle.json",
+              "sha256": "77ada1ad2c1bfa6c94ea54b8d31928291f1c6550c8ecc4060c64a888dda8f48e",
+              "bytes": 7130
+            }
+          },
+          "limits": {
+            "authorNativeProbe": true,
+            "freshAfterActualRoomSave": true,
+            "independentNativeReview": false,
+            "physicalInput": false,
+            "nativeComposingGuard": false,
+            "MetaShortcut": false,
+            "CopyDiscardRecovery": false,
+            "OriginalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false,
+            "crossProcessCameraPersistenceAsserted": false,
+            "rawAccess": "Local QA raw files and directly inspected image; Cloud access not assumed."
+          },
+          "preservation": {
+            "originalForeignLocalFiles": true,
+            "foreignCheckpointAcceptanceRoots": true,
+            "historicalReceipts": true,
+            "userVaultTouched": false
+          },
+          "finishedAt": "2026-10-11T08:12:27.566285+00:00",
+          "publicationIncoming": {
+            "shared": "88a14b59bff3175e413895e97931b1e63693612f",
+            "plannerFocusStyle": {
+              "pullRequest": 144,
+              "exactHead": "9d50a8f138c3bc0ac53abefb45e5625435cf110d",
+              "merge": "a5a91028c64d85efeb54538f174ac752e1ee500e",
+              "independentPass": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/144#issuecomment-6106994762",
+              "steward": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/144#issuecomment-6106998349",
+              "exactCI": 38123733455,
+              "mergeCI": 38123869257,
+              "styleScope": "Only .dn-manual-planner interactive controls:focus; no Atlas style change"
+            },
+            "decisionContract": {
+              "commit": "9a1c7f61ee67c39dda8907f779890eb57768bd03",
+              "currentSharedCI": 38123882656,
+              "ciConclusion": "SUCCESS",
+              "consumed": "Updated common/contributor and Repository decision paths read; own #80 scope and next action retained"
+            },
+            "nativeEvidenceSourceUnchanged": "019f7a7dd2844edc615977a21c90673aad477db5",
+            "qualification": "Relevant Atlas/View/Room/Location/Host/fixture paths unchanged; no new native GUI/build/full-suite run solely for later SHA."
+          }
+        },
+        "dungeonAtLocationRoomDiscardD02": {
+          "id": "E2E-01-HEX04-ROOM-DISCARD-D02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_Room_Cancel_preserves_draft_confirmed_Discard_restores_saved_key_PASS",
+          "sourceCommit": "e1d1b73a5a10268c49bbae5337df570f85c42542",
+          "nativeMetadataCheckout": "3b5e2be8f31ac6fd83deaf91adc750a02c4823a0",
+          "qualifiedShared": "eb3652d32966e010ed1ac5b96d0ede179c6e3550",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/vault",
+            "sourceAfterNormalQuitHashes": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/after-normal-quit-hashes.json",
+            "sourceAfterNormalQuitHashesSha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+            "canonicalFreshReceipt": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveFreshF02",
+            "canonicalSaveReceipt": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveR02",
+            "sourceNativeSaveCommit": "e98f394fef2d105ee097e638b6712db6cb284ca7",
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "preparedAt": "2026-10-11T08:22:45.935117+00:00"
+          },
+          "cleanBuildTriplet": {
+            "main.js": {
+              "bytes": 1683332,
+              "sha256": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32394,
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7"
+            }
+          },
+          "reusedCleanBuild": {
+            "buildSource": "e1d1b73a5a10268c49bbae5337df570f85c42542",
+            "buildLog": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/source-build.log",
+            "buildLogSha256": "335e353f242490d4ed6dc0a51ea590da3edda6d2a82c06204aad64b368477e4c",
+            "sourceBuildFixtureHostDiffFromBuildSource": [],
+            "incoming": "PR145 GM focus-test receipt only; metadata/images, no product/build/fixture/host delta",
+            "sharedCI": "38124834450 SUCCESS"
+          },
+          "installedTripletMatches": true,
+          "host": {
+            "browserVersion": {
+              "protocolVersion": "1.3",
+              "product": "Chrome/150.0.7871.250",
+              "revision": "@07ee2042224499f634596843f209356586214e26",
+              "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+              "jsVersion": "15.0.245.31"
+            },
+            "viewport": {
+              "width": 1024,
+              "height": 800
+            },
+            "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011",
+            "newAppPids": [
+              4190724,
+              4190801,
+              4190809,
+              4190822
+            ],
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-md.obsidian.Obsidian-467381168.scope"
+          },
+          "actualAction": {
+            "visibleRoute": "Saved Atlas -> Fit/select -> Location11 -> existing Room31 -> Raumtext1 edit -> Karte/Entwurf verwerfen -> Abbrechen -> same dialog confirmed -> visible Location11/Room31 re-entry",
+            "roomTarget": {
+              "kind": "room",
+              "documentId": "00000000-0000-4000-8000-000000000030",
+              "recordId": "00000000-0000-4000-8000-000000000031",
+              "roomId": null
+            },
+            "editedExactText": "## Eingang\nD02: Ungespeicherter Raumtext — Abbrechen erhält ihn exakt.  \n\n",
+            "menuFocusoutAppliedOneNormalHistoryCommand": true,
+            "CancelPreservesExactRuntimeAndVisibleText": true,
+            "draftSha256BeforeAndAfterCancel": "43daa8b5b19e7f9ea1a6ff241274f90b11e62c99a7210c9877c4e2e08a26c199",
+            "confirmedDiscardInstallsFreshGuardedSourcesAndHistory": true,
+            "singleCurrentRepositoryAndHistory": true,
+            "cameraRetained": true,
+            "worldAndFullSavedDungeonIncludingIdsGeometryRetained": true,
+            "visibleRestoredName": "N02 Torraum — exakt",
+            "visibleRestoredNumber": "1",
+            "visibleRestoredExactMarkdown": "## Eingang\nR02: Strg+S speichert den Raumtext exakt.  \n\n",
+            "afterDiscard": {
+              "undoDepth": 0,
+              "canRedo": false,
+              "dirty": false,
+              "hasDraft": false,
+              "pending": false,
+              "locationsLoaded": {
+                "a": true,
+                "b": false
+              }
+            },
+            "requiredLocation11ReopenedVisiblyAndPayloadExact": true,
+            "unloadedNeighborLocation12NativeBytesFullyPreserved": true,
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "syntheticPointer": true,
+            "syntheticText": true,
+            "physicalInput": false
+          },
+          "beforeNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "afterDiscardAndNavigationNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "afterNormalQuitNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "allEightHashesEqualActualF02R02SavedInput": true,
+          "lifecycle": {
+            "unit": "dungeon-native-4190696.service",
+            "normalQuitRequested": true,
+            "normalExitObserved": true,
+            "forcedTerminationPids": [],
+            "pidsGone": true,
+            "runnerExit": 0,
+            "resultPassed": true,
+            "errors": [],
+            "failure": null,
+            "shutdownFailure": null,
+            "systemdAfterCleanup": {
+              "Id": "dungeon-native-4190696.service",
+              "ActiveState": "inactive",
+              "SubState": "dead",
+              "InvocationID": "",
+              "MainPID": "0",
+              "ControlPID": "0",
+              "Result": "success",
+              "ExecMainCode": "0",
+              "ExecMainStatus": "0"
+            },
+            "systemdCurrentAfterRunner": "ActiveState=inactive\nSubState=dead\nMainPID=0\nExecMainStatus=0\n"
+          },
+          "attempts": [
+            {
+              "id": "D02",
+              "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011",
+              "rawDirectory": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen",
+              "runnerExit": 1,
+              "resultPassed": false,
+              "failure": {
+                "name": "Error",
+                "message": "page.evaluate: Error: Ortsdatei ist noch nicht geladen.\n    at fm.get (plugin:dungeon-editor:1052:6592)\n    at Ia.location (plugin:dungeon-editor:1052:37675)\n    at eval (eval at evaluate (:311:30), <anonymous>:10:128)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+                "stack": "page.evaluate: Error: Ortsdatei ist noch nicht geladen.\n    at fm.get (plugin:dungeon-editor:1052:6592)\n    at Ia.location (plugin:dungeon-editor:1052:37675)\n    at eval (eval at evaluate (:311:30), <anonymous>:10:128)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at state (/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/discard-room-probe.cjs:22:23)\n    at Object.reopen (/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/discard-room-probe.cjs:81:29)\n    at async workflow (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:969:16)\n    at async main (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:796:3)\n    at async /home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:2918:5"
+              },
+              "shutdownFailure": null,
+              "errors": [],
+              "completedStages": [
+                "before",
+                "pending",
+                "beforeCancel",
+                "afterCancel",
+                "beforeConfirm"
+              ],
+              "normalQuit": true,
+              "pidsGone": true,
+              "allEightNativeHashesPreserved": true,
+              "originalProtectedFilesUnchanged": true,
+              "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107106288",
+              "explicitSlotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107118513",
+              "localEvidence": [
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/invocation.json",
+                  "sha256": "44cab2f8fb97fd3969df4ca491531164c0a8a3950e8fb6a69c647ace22b87900",
+                  "bytes": 1597
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/input-lineage.json",
+                  "sha256": "003d7f5d32fc2647af974844ac093534e75dee4f5a0a899012c444947b1c9fe2",
+                  "bytes": 743
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/input-native-hashes.json",
+                  "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+                  "bytes": 1011
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/after-normal-quit-hashes.json",
+                  "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+                  "bytes": 1011
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/original-protection.json",
+                  "sha256": "faefbbdf6a62f9a1f83ea964cedf03afd0fa39dd6296324c09fd80c93aaebe5d",
+                  "bytes": 431
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/runner-result.json",
+                  "sha256": "21db13f5ebd70e2e0f497ecd1c7370fd6006551d1892f2611bbf01381a98a230",
+                  "bytes": 1802
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/discard-room-probe.cjs",
+                  "sha256": "e0e68c6e0664c271065265290330beec56fcd81bdd062076a352c30c95e4f44a",
+                  "bytes": 11351
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/discard-room-preload.cjs",
+                  "sha256": "304d72dbe16764033f6bc5fb340ca06cb05ec84acefab78213c4f1b2651cf05c",
+                  "bytes": 373
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/host.log",
+                  "sha256": "b314294d48717de91a37375d9a20c79fd8ff27b6b7d6013347142f5bb1fbde8f",
+                  "bytes": 2424
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/slot-claim.md",
+                  "sha256": "daadf4f2cd082832158401f2ab4876814db876425152c3c949367c298d6df030",
+                  "bytes": 976
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/slot-return.md",
+                  "sha256": "e63eced516de726d82fad2f508ab8fb1c1b22c923c25b71cfec3bed6db575885",
+                  "bytes": 936
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/discard-room-probe.json",
+                  "sha256": "17f2897d78bcbc6d14e6fe8316b58f17da447b2677514dbeeaeb837abbeebdec",
+                  "bytes": 34267
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/result.json",
+                  "sha256": "701038d242bd0ee5611a9245943ba92180ef856cdac99071b30c08081f076d59",
+                  "bytes": 1463
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/process-lifecycle.json",
+                  "sha256": "ede937abf3a72df6bb6dc26ef94d2197923ea7db43e0a238e6ef10956ae972f0",
+                  "bytes": 7088
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/build.json",
+                  "sha256": "3e9b59e09590d9765af0473e19d4cd0b65439dd7af80610773036eaf1364e1c9",
+                  "bytes": 582
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/room-pending-before-discard.png",
+                  "sha256": "ac25dcb7ea13d715cf21a57ae4c563cdda3866790a5b0eb099da1bc1adf7ac65",
+                  "bytes": 73537
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/discard-confirmation-before-cancel.png",
+                  "sha256": "9c95f9edbe8784321da05d583107e9fd44dfb4b0d54c55ba424f9f77439ab890",
+                  "bytes": 84793
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/room-after-cancel.png",
+                  "sha256": "ad887136805a265c663bfd20ed64e5a39449971a74cbadf7ef6a1bbb2a2a0668",
+                  "bytes": 72696,
+                  "directlyInspected": true
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/failure.png",
+                  "sha256": "9123781d4a553468575ba47d9f14b0931a934e0a39213051f92e8432bc0bbf4a",
+                  "bytes": 58614,
+                  "directlyInspected": true
+                }
+              ]
+            },
+            {
+              "id": "D02-N01",
+              "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011",
+              "rawDirectory": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen",
+              "runnerExit": 1,
+              "resultPassed": false,
+              "failure": {
+                "name": "AssertionError",
+                "message": "Expected values to be strictly equal:\n\nundefined !== 0\n",
+                "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\nundefined !== 0\n\n    at Object.reopen (/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/discard-room-probe.cjs:88:10)\n    at async workflow (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:969:16)\n    at async main (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:796:3)\n    at async /home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:2918:5"
+              },
+              "shutdownFailure": null,
+              "errors": [],
+              "completedStages": [
+                "before",
+                "pending",
+                "beforeCancel",
+                "afterCancel",
+                "beforeConfirm",
+                "afterDiscard"
+              ],
+              "normalQuit": true,
+              "pidsGone": true,
+              "allEightNativeHashesPreserved": true,
+              "originalProtectedFilesUnchanged": true,
+              "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107167009",
+              "explicitSlotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107176703",
+              "localEvidence": [
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/invocation.json",
+                  "sha256": "7919a97b8620c59a5ad18df5f2fd09a4b95c1ccd4eff0e9e8d066318c34a44da",
+                  "bytes": 2864
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/input-lineage.json",
+                  "sha256": "003d7f5d32fc2647af974844ac093534e75dee4f5a0a899012c444947b1c9fe2",
+                  "bytes": 743
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/input-native-hashes.json",
+                  "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+                  "bytes": 1011
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/after-normal-quit-hashes.json",
+                  "sha256": "c5197abf8ea73b55a3e37b6f2bf7167d733848d02a460334b9d877267a9c19bc",
+                  "bytes": 1015
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/original-protection.json",
+                  "sha256": "faefbbdf6a62f9a1f83ea964cedf03afd0fa39dd6296324c09fd80c93aaebe5d",
+                  "bytes": 431
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/runner-result.json",
+                  "sha256": "ad871797b3d86036930a963ac724f74f2b22ea9079c742f7c0ea86d71d84466d",
+                  "bytes": 1688
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/discard-room-probe.cjs",
+                  "sha256": "1a0323933e3c67470d62b65c83378d7404e4c7320fae1737c67e3308383e34d8",
+                  "bytes": 12402
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/discard-room-preload.cjs",
+                  "sha256": "304d72dbe16764033f6bc5fb340ca06cb05ec84acefab78213c4f1b2651cf05c",
+                  "bytes": 373
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/host.log",
+                  "sha256": "7098ba3ebdff0d557ee26e13cf3ad329ca456d347c034627c9a77a98a662de31",
+                  "bytes": 1595
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/slot-claim.md",
+                  "sha256": "b3a381eb20739494f2e7cdb8c6f6605c72e1eb017ca2c254cb6d87d7980ba92c",
+                  "bytes": 1281
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/slot-return.md",
+                  "sha256": "b158242e4132592c6470d91c1b60266e528ee9b4d13434cde1119d05da63838e",
+                  "bytes": 1091
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/discard-room-probe.json",
+                  "sha256": "b9e9d06e0f75b4fdd345e1c8c389a5d051b2164ad6dd240c5872ad22f405d7e8",
+                  "bytes": 39796
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/result.json",
+                  "sha256": "e347d3fd73c7ea691c6f3a7b1b2fd12a6a0c30dfa4b45a38da7bba498735654a",
+                  "bytes": 857
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/process-lifecycle.json",
+                  "sha256": "db951ce643c3cbe45e7e084684310999bb399ae776c36101e43fa009ec01ab4c",
+                  "bytes": 7113
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/build.json",
+                  "sha256": "7d28a3cc8180f326533c35867fc1cfcf8a5e6a0f3b64ab131ef1772016a15fd9",
+                  "bytes": 582
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/room-pending-before-discard.png",
+                  "sha256": "ac25dcb7ea13d715cf21a57ae4c563cdda3866790a5b0eb099da1bc1adf7ac65",
+                  "bytes": 73537
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/discard-confirmation-before-cancel.png",
+                  "sha256": "9c95f9edbe8784321da05d583107e9fd44dfb4b0d54c55ba424f9f77439ab890",
+                  "bytes": 84793
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/room-after-cancel.png",
+                  "sha256": "ad887136805a265c663bfd20ed64e5a39449971a74cbadf7ef6a1bbb2a2a0668",
+                  "bytes": 72696,
+                  "directlyInspected": true
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/failure.png",
+                  "sha256": "9123781d4a553468575ba47d9f14b0931a934e0a39213051f92e8432bc0bbf4a",
+                  "bytes": 58614,
+                  "directlyInspected": true
+                }
+              ]
+            },
+            {
+              "id": "D02-N02",
+              "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011",
+              "rawDirectory": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen",
+              "runnerExit": 0,
+              "resultPassed": true,
+              "failure": null,
+              "shutdownFailure": null,
+              "errors": [],
+              "completedStages": [
+                "before",
+                "pending",
+                "beforeCancel",
+                "afterCancel",
+                "beforeConfirm",
+                "afterDiscard",
+                "reopened"
+              ],
+              "normalQuit": true,
+              "pidsGone": true,
+              "allEightNativeHashesPreserved": true,
+              "originalProtectedFilesUnchanged": true,
+              "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107189018",
+              "explicitSlotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107197126",
+              "localEvidence": [
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/invocation.json",
+                  "sha256": "be167464434127624b708dee4614bfdb664e826bf0d3306c63d2a98c9fd87e16",
+                  "bytes": 3746
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/input-lineage.json",
+                  "sha256": "003d7f5d32fc2647af974844ac093534e75dee4f5a0a899012c444947b1c9fe2",
+                  "bytes": 743
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/input-native-hashes.json",
+                  "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+                  "bytes": 1011
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/after-normal-quit-hashes.json",
+                  "sha256": "c5197abf8ea73b55a3e37b6f2bf7167d733848d02a460334b9d877267a9c19bc",
+                  "bytes": 1015
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/original-protection.json",
+                  "sha256": "faefbbdf6a62f9a1f83ea964cedf03afd0fa39dd6296324c09fd80c93aaebe5d",
+                  "bytes": 431
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/runner-result.json",
+                  "sha256": "6dfc4a682eea99ce243cf18dea65ef000a0748ea52926646aeba5e22b350863a",
+                  "bytes": 924
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/discard-room-probe.cjs",
+                  "sha256": "a2f9934a9dc99e76db94c1c659b6e0f6480e22df5a67be364e60ba9e685e9c12",
+                  "bytes": 12402
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/discard-room-preload.cjs",
+                  "sha256": "304d72dbe16764033f6bc5fb340ca06cb05ec84acefab78213c4f1b2651cf05c",
+                  "bytes": 373
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/host.log",
+                  "sha256": "da30a73f0d37096fa36c829b51da80bf292779b2600784491c3115d291a09faf",
+                  "bytes": 636
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/slot-claim.md",
+                  "sha256": "66d7a1e6244349b37607ec6b3211e143ea97e0291e0a9d41dcb1116723a85919",
+                  "bytes": 994
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/slot-return.md",
+                  "sha256": "0bb0904872c53510f45778bd41ae5f1b08fd00c4f47b12829cec57410eb191a8",
+                  "bytes": 1370
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/discard-room-probe.json",
+                  "sha256": "36fb2c22762f7c89c099dbdbb387e1b1026f0fabd688924d49c1b9675a89df45",
+                  "bytes": 46110
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/result.json",
+                  "sha256": "6a6df91e9763130dd937bc1cff23b2ab6f7e5cadbd8dbb6d0a8184222430e584",
+                  "bytes": 575
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/process-lifecycle.json",
+                  "sha256": "69a525c3a6b187e40830467275681991897d2a16216dd39654248b29347582f2",
+                  "bytes": 7098
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/build.json",
+                  "sha256": "7d28a3cc8180f326533c35867fc1cfcf8a5e6a0f3b64ab131ef1772016a15fd9",
+                  "bytes": 582
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/room-pending-before-discard.png",
+                  "sha256": "ac25dcb7ea13d715cf21a57ae4c563cdda3866790a5b0eb099da1bc1adf7ac65",
+                  "bytes": 73537
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/discard-confirmation-before-cancel.png",
+                  "sha256": "9c95f9edbe8784321da05d583107e9fd44dfb4b0d54c55ba424f9f77439ab890",
+                  "bytes": 84793,
+                  "directlyInspected": true
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/room-after-cancel.png",
+                  "sha256": "ad887136805a265c663bfd20ed64e5a39449971a74cbadf7ef6a1bbb2a2a0668",
+                  "bytes": 72696,
+                  "directlyInspected": true
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/room-restored-after-confirmed-discard.png",
+                  "sha256": "9825292574d9bc6c6f55471fdedc4d3712bbce654b50893e3fdd6e8fba0e17d6",
+                  "bytes": 71599,
+                  "directlyInspected": true
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/readonly-oracle-preflight.json",
+                  "sha256": "a9ddb137b0cff05bcd99190e41d1ad3ecc32faee6903b654fc924d9017c9c6ad",
+                  "bytes": 701
+                }
+              ]
+            }
+          ],
+          "corrections": {
+            "plan": "Native Room name/number/Markdown accept arbitrary strings; empty name is valid. Text controls cannot create structural/ID invalidity; no invalid Room case or model injection claimed. Real negative case is Cancel preserving unsaved work.",
+            "D02": "Readonly oracle incorrectly assumed both Locations loaded immediately after fresh Discard mount; raw RunnerExit1 retained.",
+            "D02N01": "Extra QA redoDepth assertion used a nonexistent History API; raw RunnerExit1 retained. Offline partial checks identified saved payload/camera restoration.",
+            "D02N02": "Actual canRedo/undoDepth API and all available predicates checked against source/N01 captures before one final newly confirmed run. Optional lazy neighbor explicitly represented; required Room loaded visibly. No product repair or automatic retries."
+          },
+          "publicationIncoming": {
+            "shared": "9527c2da76b674934827bb3bf3773eebc453b45f",
+            "consumedCheckoutBeforeRecord": "1fd54db03176413fdfc4553a5c20cb927899ea8a",
+            "pr": 146,
+            "candidate": "781c3a65b54323160343e73fdd7382f1772cee1c",
+            "exactCI": "38125271124 SUCCESS",
+            "sharedCI": "38125416662 SUCCESS",
+            "directQualification": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6107197464",
+            "delta": "Live-session reference-owner kernel; no Atlas/Room-panel/host/fixture/build-input delta. Actual native buildsource remains e1d1b73; no GUI replay solely for unrelated incoming source."
+          },
+          "limits": {
+            "authorNativeProbe": true,
+            "independentNativeReview": false,
+            "physicalInput": false,
+            "nativeComposingGuard": false,
+            "MetaShortcut": false,
+            "nativeInvalidStructuralRoomCase": false,
+            "freshHostProcessAfterDiscard": false,
+            "Copy": false,
+            "Recovery": false,
+            "OriginalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false,
+            "rawAccess": "Local QA paths and directly read images; independent Cloud raw access not assumed."
+          },
+          "preservation": {
+            "originalForeignLocalFiles": true,
+            "foreignCheckpointAcceptanceRoots": true,
+            "historicalReceipts": true,
+            "failedRawReceiptsUnchanged": true,
+            "userVaultTouched": false
+          },
+          "finishedAt": "2026-10-11T08:40:34.831774+00:00"
+        },
+        "dungeonAtLocationRoomDraftRecoveryR03": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-RECOVERY-R03",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_Room_unsaved_draft_fresh_process_recovery_PASS",
+          "sourceCommit": "f53a2667c3d471ea47e16bd1e3c4ff7eadf4758c",
+          "qualifiedShared": "9527c2da76b674934827bb3bf3773eebc453b45f",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/vault",
+            "sourceAfterNormalQuitHashes": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-scope-save-fresh-f02-20261011/after-normal-quit-hashes.json",
+            "sourceAfterNormalQuitHashesSha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+            "canonicalFreshReceipt": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveFreshF02",
+            "canonicalSaveReceipt": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveR02",
+            "sourceNativeSaveCommit": "e98f394fef2d105ee097e638b6712db6cb284ca7",
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "preparedAt": "2026-10-11T08:48:37.186622+00:00"
+          },
+          "cleanBuildTriplet": {
+            "main.js": {
+              "bytes": 1683332,
+              "sha256": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32394,
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7"
+            }
+          },
+          "buildExecutedThisRun": true,
+          "bothCleanSourceBuildsAndInstalledTripletsMatch": true,
+          "host": {
+            "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011",
+            "vault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/vault",
+            "profile": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/config",
+            "viewport": {
+              "width": 1024,
+              "height": 800
+            },
+            "exactlyTwoSequentialProcesses": true,
+            "distinctAppPids": true
+          },
+          "actualAction": {
+            "editRoute": "Actual saved F02/R02 Atlas -> Fit/select -> Location11 -> existing Room31 -> Raumtext1 edit -> visible Uebernehmen -> normal app.quit without Save",
+            "freshRoute": "Same actual draft vault/profile in second fresh Obsidian process -> normal file entry -> visible Fit/select -> Location11 -> Room31; no reseeding or Save replay",
+            "roomTarget": {
+              "kind": "room",
+              "documentId": "00000000-0000-4000-8000-000000000030",
+              "recordId": "00000000-0000-4000-8000-000000000031",
+              "roomId": null
+            },
+            "editedExactText": "## Eingang\nR03: Ungespeicherter Raumtext lebt nach regulärem Neustart.  \n\n",
+            "visibleRecoveredName": "N02 Torraum — exakt",
+            "visibleRecoveredNumber": "1",
+            "visibleRecoveredExactMarkdown": "## Eingang\nR03: Ungespeicherter Raumtext lebt nach regulärem Neustart.  \n\n",
+            "firstHistoryDepthBeforeApply": 0,
+            "firstHistoryDepthAfterApply": 1,
+            "firstCanRedoAfterApply": false,
+            "freshHistoryDepth": 0,
+            "freshCanRedo": false,
+            "freshDirty": true,
+            "freshHasDraft": true,
+            "freshPending": false,
+            "singleCurrentRepositoryHistoryRendererAndTokenWithinEachProcess": true,
+            "cameraRetainedWithinEditProcess": true,
+            "fullDungeonIncludingAllIdsAndGeometryEqualsExactSavedDocumentWithOnlyOneMarkdownFieldChanged": true,
+            "worldAndRequiredLocation11Retained": true,
+            "unloadedNeighborLocation12RepresentedExplicitlyAndNativeBytesPreserved": true,
+            "draftVersion": 3,
+            "draftOnlyOneDetailDelta": true,
+            "noLocationOrTerrainDelta": true,
+            "draftSha256AcrossApplyBothNormalQuitsAndFreshEntry": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+            "actualDraftBytesExactlyPreserved": true,
+            "syntheticPointer": true,
+            "syntheticText": true,
+            "physicalInput": false,
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "directProductModelOrHandlerWrites": false
+          },
+          "beforeNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "afterBothNormalQuitsNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "allEightHashesEqualActualF02R02SavedInput": true,
+          "slot": {
+            "confirmationThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+            "confirmation": "Stadt expressly confirms exactly two sequential isolated R03 processes on clean f53/Shared9527 after remotecheck/cleanbuild; no competing GUI, normal quit/PIDs/draft/native hashes/explicit return; no Save/reseeding/hidden product handler or model writes/hard crash/user vault.",
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107303050",
+            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107343611",
+            "held": false
+          },
+          "stages": [
+            {
+              "stage": "edit",
+              "outcome": "visible_Room_draft_applied_without_Save_PASS_normal_quit_checked_after_runner",
+              "browserVersion": {
+                "protocolVersion": "1.3",
+                "product": "Chrome/150.0.7871.250",
+                "revision": "@07ee2042224499f634596843f209356586214e26",
+                "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+                "jsVersion": "15.0.245.31"
+              },
+              "newAppPids": [
+                17442,
+                17519,
+                17526,
+                17548
+              ],
+              "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-md.obsidian.Obsidian-2916195730.scope",
+              "rawDirectory": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen",
+              "lifecycle": {
+                "unit": "dungeon-native-17414.service",
+                "normalQuitRequested": true,
+                "normalExitObserved": true,
+                "forcedTerminationPids": [],
+                "pidsGone": true,
+                "runnerExit": 0,
+                "resultPassed": true,
+                "failure": null,
+                "shutdownFailure": null,
+                "errors": [],
+                "systemdCurrentAfterRunner": "ActiveState=inactive\nSubState=dead\nMainPID=0\nExecMainStatus=0\n"
+              },
+              "localEvidence": [
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/recovery-room-edit-probe.json",
+                  "sha256": "5f3d83a4e52875dfdefa5252b30ee1916a49822fe1bd2b1e8c08c25e67b12043",
+                  "bytes": 24023
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/result.json",
+                  "sha256": "88055378e7272b5faf5a2bf4b78477c07b1f0794dc0c24b261ea2fa58aa61ee8",
+                  "bytes": 401
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/process-lifecycle.json",
+                  "sha256": "9e05a344f65b7a3da93c1149c988eebff69aabef785d4a89b9ae1287727b5199",
+                  "bytes": 7099
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/build.json",
+                  "sha256": "b017bab5c6df7a3b540aeac36b9df3d897ed0195c589dd7f4af5732ab8caa01d",
+                  "bytes": 582
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/startup.json",
+                  "sha256": "fa00af5412b688cea953e6a1b8a6d425498f0cf1e40e46f54fb2e405bac369bc",
+                  "bytes": 855
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/plugin-state.json",
+                  "sha256": "c2520d8673c57fd96f10b6a7afe00980cbfcaa4590ff5a87cb9cb9a86c3f14ce",
+                  "bytes": 1041
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/memory.jsonl",
+                  "sha256": "99b456edc394c5cea2a1937191b909df1de1dcd8eb7722012e8df706c2d321ac",
+                  "bytes": 1822
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708687618-atlas-spatial-reopen/room-applied-unsaved-draft.png",
+                  "sha256": "108e6e2be29da2d435a40405639d1591740d4ffe1a634ee3173e09405c89d438",
+                  "bytes": 73654,
+                  "directlyInspected": true
+                }
+              ]
+            },
+            {
+              "stage": "fresh",
+              "outcome": "native_Room_unsaved_draft_fresh_process_recovery_PASS",
+              "browserVersion": {
+                "protocolVersion": "1.3",
+                "product": "Chrome/150.0.7871.250",
+                "revision": "@07ee2042224499f634596843f209356586214e26",
+                "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+                "jsVersion": "15.0.245.31"
+              },
+              "newAppPids": [
+                22281,
+                22357,
+                22369,
+                22386
+              ],
+              "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-md.obsidian.Obsidian-2441173410.scope",
+              "rawDirectory": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen",
+              "lifecycle": {
+                "unit": "dungeon-native-22253.service",
+                "normalQuitRequested": true,
+                "normalExitObserved": true,
+                "forcedTerminationPids": [],
+                "pidsGone": true,
+                "runnerExit": 0,
+                "resultPassed": true,
+                "failure": null,
+                "shutdownFailure": null,
+                "errors": [],
+                "systemdCurrentAfterRunner": "ActiveState=inactive\nSubState=dead\nMainPID=0\nExecMainStatus=0\n"
+              },
+              "localEvidence": [
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/recovery-room-fresh-probe.json",
+                  "sha256": "083adff5144521d589275e2613e81cc064f32ca1099f746aba265a901b0e0708",
+                  "bytes": 15181
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/result.json",
+                  "sha256": "d7bf548f1f3b24594d1a51c5beeaaef19b7349ef51358f2ab424c0193bec08d8",
+                  "bytes": 511
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/process-lifecycle.json",
+                  "sha256": "405a04706e11d0e29b085194481da35d83769ccfd89614a0066473eb5b261e0e",
+                  "bytes": 7105
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/build.json",
+                  "sha256": "b017bab5c6df7a3b540aeac36b9df3d897ed0195c589dd7f4af5732ab8caa01d",
+                  "bytes": 582
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/startup.json",
+                  "sha256": "9e0608c64215f0391668b7a5dca15edbede47158c283766cb49e81c1a9b0db6a",
+                  "bytes": 592
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/plugin-state.json",
+                  "sha256": "c2520d8673c57fd96f10b6a7afe00980cbfcaa4590ff5a87cb9cb9a86c3f14ce",
+                  "bytes": 1041
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/memory.jsonl",
+                  "sha256": "a8e799b178a2cef3ddb9f642d345ad53dc6baf3a12fda99f4e1dbe5fcee5e611",
+                  "bytes": 1145
+                },
+                {
+                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/evidence/1791708922350-atlas-spatial-reopen/fresh-process-recovered-room-draft.png",
+                  "sha256": "7bf0c70d41507bc9c0303783203da9e71e5cfbf0c11f5bce1f84b4cd5b6a7be0",
+                  "bytes": 72985,
+                  "directlyInspected": true
+                }
+              ]
+            }
+          ],
+          "sourcePreflight": [
+            "AtlasRepository.open parses matching baselineWorld and version3 details into fresh Sources/History",
+            "managed mount storage.changed persists draft; closeEditor flushes/persists without native Save",
+            "AtlasHistory exposes undoDepth/canRedo, no redoDepth",
+            "readonly Location probes explicitly represent unloaded neighbor; required Location11/Room31 loaded via visible navigation",
+            "Apply uses existing visible Room control; draft/state captured; saved native payload untouched"
+          ],
+          "localEvidence": [
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/invocation.json",
+              "sha256": "82ab3903dbb2ebc47f7c5836df5b2e80b9e369fd9394dca62fb6ca38c1a19237",
+              "bytes": 2234
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/input-lineage.json",
+              "sha256": "daddf22b02540f908ff169622e54f36a942ce479f2fc0e08446c3c0852315270",
+              "bytes": 743
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/input-native-hashes.json",
+              "sha256": "c5197abf8ea73b55a3e37b6f2bf7167d733848d02a460334b9d877267a9c19bc",
+              "bytes": 1015
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/original-protection.json",
+              "sha256": "faefbbdf6a62f9a1f83ea964cedf03afd0fa39dd6296324c09fd80c93aaebe5d",
+              "bytes": 431
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/source-build.log",
+              "sha256": "37eefdf2f275dc0367067bc43da5996d233f12317584528d5b9fb20a40c9f00a",
+              "bytes": 740
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/recovery-room-probe.cjs",
+              "sha256": "2f36564e2f122a95eea25aac44f7199519a693da60afdc78e8b02f89f08e9e68",
+              "bytes": 10461
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/recovery-room-preload.cjs",
+              "sha256": "702c228e78253d6bfb4976c83c81e3c6941bb84f1603dc846543a375849c3a6a",
+              "bytes": 362
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/edit-host.log",
+              "sha256": "00ca142a3841a92678cb4b69b550c13c3de578f5c0a0dd95a0cb1ba5f91fe242",
+              "bytes": 460
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/fresh-host.log",
+              "sha256": "c47344ab832fbe928d7df8243b957167fd96bd3cf89c667d8b7e25067062a945",
+              "bytes": 570
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/edit-after-normal-quit.json",
+              "sha256": "d25fe40a1291795c5b7a9af83d60e1dc62420be9015ae5f1546fbb9117911a7d",
+              "bytes": 2156
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/edit-after-normal-quit-draft.txt",
+              "sha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+              "bytes": 9824
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/fresh-after-normal-quit.json",
+              "sha256": "e397ac5677020db1be62be916a84b4e58ed027b710da4a80305e127149370209",
+              "bytes": 2053
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/after-normal-quit-hashes.json",
+              "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+              "bytes": 1011
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/runner-result.json",
+              "sha256": "510f29d4322a5479928232892c093df42b7be5e8184aad3dce64b6512c739ca7",
+              "bytes": 4876
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/slot-claim.md",
+              "sha256": "25c2bac54475419d925d22cd38361a8c9df6835fc7eab4713fc9a724bcc8ec24",
+              "bytes": 1227
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/slot-return.md",
+              "sha256": "a90b3b694cb49f697abae025af8331127c2470730a7d406df1ca185583cbf2ba",
+              "bytes": 1665
+            }
+          ],
+          "publicationIncoming": {
+            "shared": "9527c2da76b674934827bb3bf3773eebc453b45f",
+            "ownUpstream": "f53a2667c3d471ea47e16bd1e3c4ff7eadf4758c",
+            "qualifiedSharedCI": "38125416662 SUCCESS",
+            "incomingBeforeBothHostProcessesAndRecord": true,
+            "newUnqualifiedSMRBranchNotIntegrated": true,
+            "productDeltaThisRun": false
+          },
+          "limits": {
+            "authorNativeProbe": true,
+            "independentNativeReview": false,
+            "physicalInput": false,
+            "nativeComposingGuard": false,
+            "MetaShortcut": false,
+            "hardCrash": false,
+            "interruptedSaveOrCopyJournalRecovery": false,
+            "crossProcessHistoryOrCameraPersistence": false,
+            "nativeCopy": false,
+            "OriginalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false,
+            "rawAccess": "Local QA paths and directly inspected screenshots; independent Cloud raw access not assumed."
+          },
+          "preservation": {
+            "originalForeignLocalFiles": true,
+            "foreignCheckpointAcceptanceRoots": true,
+            "historicalReceipts": true,
+            "executedHelpersUnchanged": true,
+            "userVaultTouched": false
+          },
+          "finishedAt": "2026-10-11T09:00:45.930454+00:00"
+        },
+        "dungeonAtLocationRoomDraftCopyC01": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-COPY-C01",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_Copy_transition_FAILED_renderer_teardown_repair_pending",
+          "sourceCommit": "dbde783add9df635ba6184c16ac11254bb0ad7d8",
+          "qualifiedShared": "9527c2da76b674934827bb3bf3773eebc453b45f",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "input": "actual_R03_Draft_vault_after_both_normal_quits",
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/vault",
+            "record": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftRecoveryR03",
+            "receiptHead": "dbde783add9df635ba6184c16ac11254bb0ad7d8",
+            "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6107412267",
+            "inputSource": "f53a2667c3d471ea47e16bd1e3c4ff7eadf4758c",
+            "actualDraftSha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+            "priorNormalQuit": true,
+            "reseeded": false,
+            "saveReplayed": false,
+            "preparedAt": "2026-10-11T09:18:10.115928+00:00"
+          },
+          "cleanBuildTriplet": {
+            "main.js": {
+              "sha256": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc",
+              "bytes": 1683332
+            },
+            "manifest.json": {
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+              "bytes": 237
+            },
+            "styles.css": {
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7",
+              "bytes": 32394
+            }
+          },
+          "buildExecutedThisRun": true,
+          "sourceAndInstalledTripletsMatch": true,
+          "host": {
+            "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011",
+            "vault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/vault",
+            "profile": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/config",
+            "viewport": {
+              "width": 1024,
+              "height": 800
+            },
+            "actualProcessCount": 1,
+            "plannedFreshNotStarted": true
+          },
+          "actualAction": {
+            "route": "Actual R03 draft vault -> normal Atlas file entry -> visible Fit/select/Location11/Room31 -> Karte/Speichern unter -> fill Kopiename -> Abbrechen -> reopen modal -> Kopie speichern",
+            "copyPath": "Atlanten/R03 Raumdraft Kopie C01.overworld",
+            "copyName": "R03 Raumdraft Kopie C01",
+            "cancelPreservedEntireRuntimeAndOriginalNativeFilesAndActualDraft": true,
+            "visibleOriginalRoomExactMarkdown": "## Eingang\nR03: Ungespeicherter Raumtext lebt nach regulärem Neustart.  \n\n",
+            "observed": "Copy materializes seven new native files then normal leaf switch fails; original tab/Atlas title remains and visible canvas is empty. Probe times out waiting for mounted copied Atlas. No visible copied Room or fresh-process result.",
+            "syntheticPointer": true,
+            "syntheticText": true,
+            "physicalInput": false,
+            "fixtureReseeded": false,
+            "saveReplayed": false,
+            "directProductModelOrHandlerWrites": false
+          },
+          "failure": {
+            "nativeException": "TypeError: this._cancelResize is not a function",
+            "consoleStack": "TypeError: this._cancelResize is not a function\n    at nx.destroy (plugin:dungeon-editor:999:8366)\n    at eval (plugin:dungeon-editor:999:9768)\n    at Array.forEach (<anonymous>)\n    at nx.destroy (plugin:dungeon-editor:999:9746)\n    at am.destroy (plugin:dungeon-editor:1051:33033)\n    at Dd.suspend (plugin:dungeon-editor:1051:54965)\n    at Object.suspend (plugin:dungeon-editor:1052:88989)\n    at wm.retire (plugin:dungeon-editor:1052:67584)\n    at wm.dispose (plugin:dungeon-editor:1052:77524)\n    at Sm.destroy (plugin:dungeon-editor:1052:83855)\n",
+            "probeFailure": {
+              "name": "TimeoutError",
+              "message": "page.waitForFunction: Timeout 15000ms exceeded.",
+              "stack": "page.waitForFunction: Timeout 15000ms exceeded.\n    at Object.reopen (/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-room-probe.cjs:79:15)\n    at async workflow (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:969:16)\n    at async main (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:796:3)\n    at async /home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:2918:5"
+            },
+            "failureScreenshotDirectlyInspected": true,
+            "cancelScreenshotDirectlyInspected": true,
+            "diagnosis": "Source corroborates repeated renderer teardown: AtlasView.onLoadFile closes Editor via closeEditor/editor.destroy, then campaignHost.destroy/navigation.dispose/retire suspends the same dirty mount. AtlasEditor.suspend calls AtlasRenderer.destroy again; renderer has no destroyed/initialized reset guard, while Pixi ResizePlugin.destroy nulls _cancelResize. This is the repair hypothesis, not an implemented or independently qualified fix.",
+            "sourcePaths": [
+              "src/ui/atlas-view.ts",
+              "src/features/atlas/atlas-editor.ts",
+              "src/features/atlas/atlas-renderer.ts",
+              "src/ui/atlas-campaign-host.ts",
+              "src/features/atlas/atlas-campaign-navigation.ts"
+            ],
+            "noAutomaticRetry": true
+          },
+          "readonlyNativeFileOracle": {
+            "scope": "Postfailure file oracle only; does not establish visible copied Room/Fresh PASS",
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-output-file-oracle.json",
+            "sha256": "0f4ac4998317e87d06cb8e937d873eeab924b3946fb0e582dee12a221c9c95a4",
+            "copiedNativeFileCount": 7,
+            "freshLocalIdsRemapped": 23,
+            "fullClosedBindingsAndNonidentityGeometryTextExact": true,
+            "copyJournalAbsent": true,
+            "copyDraftAbsent": true,
+            "copyNativeHashes": {
+              "Atlanten/R03 Raumdraft Kopie C01.overworld": "27e6c15f82a15a1006eecc1bae977a4400f128e188311a0a04aa0e223147e7f7",
+              "Orte/e3c3a4f9-bb32-4010-865a-20f2625b94dd.location": "d72d19d537459af39376aa23562a4ea2c927f62c98428fe10648a0a47f49e194",
+              "Orte/88685d57-5668-4a8e-a763-802905bbfdf4.location": "a649154c2e4d7086f0166b4ca73e1b47fd4a763bf80a353f77f18c274cd1fc02",
+              "Städte/f5f3001e-0d3f-4f7b-897f-05ac5d89fef7.city": "97e7d0eecea4f5faa0af1d22345ca48fb38be089fd818f0fdadd88f35c11bb7e",
+              "Dungeons/71a20ccc-247a-45f5-831b-595d223f4817/Karte.dungeon": "fb5b76ac8590dbe5f0d231ba0f84e8c807bf2c36ac45c09f9c13577cf9419504",
+              "Atlasdaten/dac56527-fda7-4c9c-a3d7-2ea0d113f214/terrain/0_-1_0.json": "ab279d5fe3768cdbb8f534fc3f5c966962164adb19b5853cafb695e2d316eadd",
+              "Atlasdaten/dac56527-fda7-4c9c-a3d7-2ea0d113f214/terrain/0_0_0.json": "002906850fd9adc82cfbd5d5ec9a8372aee09b8a6c80161fd8aee6f3fc5e8088"
+            },
+            "campaignManifestCloned": false
+          },
+          "originalNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "originalEightNativeFilesPreserved": true,
+          "actualR03DraftSha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+          "actualDraftBytesPreserved": true,
+          "lifecycle": {
+            "unit": "dungeon-native-72922.service",
+            "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-md.obsidian.Obsidian-867967752.scope",
+            "appPids": [
+              72950,
+              73029,
+              73036,
+              73050
+            ],
+            "runnerExit": 1,
+            "normalQuitRequested": true,
+            "normalExitObserved": true,
+            "forcedTerminationPids": [],
+            "pidsGone": true,
+            "systemdCurrent": "ActiveState=inactive\nSubState=dead\nMainPID=0\nExecMainStatus=0\n",
+            "shutdownFailure": null,
+            "errors": []
+          },
+          "slot": {
+            "confirmationThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+            "confirmationScope": "Concrete C01 visible Copy/Cancel and sequential Fresh pair; Stadt explicitly confirmed, no City GUI until return",
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107574805",
+            "explicitReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107594334",
+            "held": false,
+            "plannedFreshCancelledAfterFailure": true
+          },
+          "localEvidence": [
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/copy-room-copy-probe.json",
+              "sha256": "0d9a0418b3c7c30b8d75cc15a2adb8a7ab65dc7beca03a46d3b4b588af038119",
+              "bytes": 13558
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/failure-state.json",
+              "sha256": "b88b5b977e46ab374c4ae27ba6a6deb618642065cae3c4d71dbb2b11c364e1b0",
+              "bytes": 744
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/result.json",
+              "sha256": "d49c55a319f527db2771bfa855c1ee6de77473bbb4ed0e0267a353bea0abe05b",
+              "bytes": 797
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/process-lifecycle.json",
+              "sha256": "1749ed1b30200a48ec6f4d064659fbe783163855bfe8360e63053590ccc12b63",
+              "bytes": 7077
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/build.json",
+              "sha256": "e671c892edffe1d68e7df01d12a8f241725ec86ed76e70cc434a8b7a492f9688",
+              "bytes": 582
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/startup.json",
+              "sha256": "fa00af5412b688cea953e6a1b8a6d425498f0cf1e40e46f54fb2e405bac369bc",
+              "bytes": 855
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/plugin-state.json",
+              "sha256": "c2520d8673c57fd96f10b6a7afe00980cbfcaa4590ff5a87cb9cb9a86c3f14ce",
+              "bytes": 1041
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/console.log",
+              "sha256": "dd5563261e8a93ec4b1c813758e34db5f1e2999954dec960f2fc6bd2a39464a9",
+              "bytes": 551
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/memory.jsonl",
+              "sha256": "6797d3c320fd83a06dda9078744c8301418884c62cb90966917ced06dee14226",
+              "bytes": 5870
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/copy-modal-before-cancel.png",
+              "sha256": "80d7e715ca685510c05568e098550ef28ad3d4dc24bf0b792278fe0158e30762",
+              "bytes": 90169,
+              "directlyInspected": true
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/evidence/1791710812310-atlas-spatial-reopen/failure.png",
+              "sha256": "770eca7aede969b37816cb51d2912e632c0e0012f1bc26b577b7d02aeb53e921",
+              "bytes": 54777,
+              "directlyInspected": true
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/invocation.json",
+              "sha256": "9d93bc1947a92e015099b1edf16fae84743f69ea12cb9c0ca4b5dcff553393f3",
+              "bytes": 2237
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/input-lineage.json",
+              "sha256": "39581b40b1b6987a7a8eedac8146b90d08a029d896bd8eb43c8391df06fe1ac8",
+              "bytes": 711
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/input-native-hashes.json",
+              "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+              "bytes": 1011
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/original-protection.json",
+              "sha256": "faefbbdf6a62f9a1f83ea964cedf03afd0fa39dd6296324c09fd80c93aaebe5d",
+              "bytes": 431
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/source-build.log",
+              "sha256": "81fb0c944efab7036b5a780e8e212af86188778328bd5ad18e357854899a7731",
+              "bytes": 740
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-room-probe.cjs",
+              "sha256": "77c30931806cb609082a96f754209034a4bb2d8acdaa2355457fd671bdf5038e",
+              "bytes": 16270
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-room-preload.cjs",
+              "sha256": "6a94b7ad763d0116b24de93abc44dba7da5eaae08106125fb0975a1aa2ab166c",
+              "bytes": 353
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-host.log",
+              "sha256": "bb4d4ba161326c83b42ff002b64bff84a42895862fa0b88f088326f52ff69465",
+              "bytes": 1392
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-after-normal-quit.json",
+              "sha256": "842ece611604a4cd2acc827c75c1013886e778699fcdb4713658dd25cb3a8ec1",
+              "bytes": 4075
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/runner-result.json",
+              "sha256": "842ece611604a4cd2acc827c75c1013886e778699fcdb4713658dd25cb3a8ec1",
+              "bytes": 4075
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-output-file-oracle.json",
+              "sha256": "0f4ac4998317e87d06cb8e937d873eeab924b3946fb0e582dee12a221c9c95a4",
+              "bytes": 13810
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-claim-body.md",
+              "sha256": "07be94f3eab07d4c1135e95fb7c76f30b1a27f3be41fc24d083067f0ca831194",
+              "bytes": 1992
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-claim-readback.json",
+              "sha256": "8b4ad86dd6f721109be4e19ea43c84bc65b7e48b6bacb5ef2a35e44d7ed676dd",
+              "bytes": 3701
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-return-body.md",
+              "sha256": "a4460a34b9f8aa6a4626450ddb7daf44bdaab0f24509d2f759bfc52a8e6a66f5",
+              "bytes": 1522
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-return-readback.json",
+              "sha256": "879dbbdbea795469eb8c26eb80a17a23b7c7631faea60ed6c825609ea7a6caae",
+              "bytes": 3229
+            }
+          ],
+          "publicationIncoming": {
+            "shared": "9527c2da76b674934827bb3bf3773eebc453b45f",
+            "ownUpstream": "dbde783add9df635ba6184c16ac11254bb0ad7d8",
+            "currentSharedUnchanged": true,
+            "qualifiedIncomingReadBeforeNativeAndMetadata": true,
+            "unqualifiedCityAndSMRBranchesNotSelfIntegrated": true,
+            "productEditedThisRun": false
+          },
+          "limits": {
+            "authorNativeFailureProbe": true,
+            "visibleCopiedRoomPass": false,
+            "nativeCopyPass": false,
+            "freshProcessCopyPass": false,
+            "independentNativeReview": false,
+            "physicalInput": false,
+            "nativeComposingGuard": false,
+            "MetaShortcut": false,
+            "hardCrash": false,
+            "interruptedSaveOrCopyJournalRecovery": false,
+            "copiedCampaignManifest": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false,
+            "rawAccess": "Local QA paths/directly read screenshots; independent Cloud raw access not assumed."
+          },
+          "preservation": {
+            "originalForeignLocalFiles": true,
+            "foreignCheckpointAcceptanceRoots": true,
+            "historicalReceipts": true,
+            "executedHelpersUnchanged": true,
+            "fullFailedVaultRetained": true,
+            "userVaultTouched": false
+          },
+          "nextConsumer": "Hex in the existing #80/branch: repair managed Atlas leaf-change teardown without weakening retained draft/revocation guards. Add meaningful double-close/suspend regression and requalify visible Copy/Fresh with a newly coordinated slot; no parallel repair claim or new plan/review round. City owner informed of potential same-leaf Create-City overlap.",
+          "finishedAt": "2026-10-11T09:32:31.117225+00:00"
+        },
+        "dungeonAtLocationRoomDraftCopyTeardownN01": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-COPY-C01-N01",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "managed_leaf_teardown_DOM_PASS_independent_review_and_Copy_membership_followup_pending",
+          "sourceCommit": "a07c274a6f9c83ac5d472148e7f3de5b68940c49",
+          "qualifiedSharedConsumed": "fcec359381d1a84f9d65b628ccdb0172c9cec2c7",
+          "baselineCommit": "8d8ff3aefc94e594cc74c94b138ccb2f38457471",
+          "nativeInput": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftCopyC01",
+          "diagnosis": "AtlasView.closeEditor destroyed the managed editor before AtlasCampaignNavigation.retire suspended/disposed the same instance. Actual C01 Pixi ResizePlugin._cancelResize failure and three baseline regressions demonstrate double release; late renderer initialization could also release Application twice.",
+          "implemented": "Campaign mounts exclusively own managed editor suspension, readonly draft retention and disposal after the View flushes/persists. AtlasRenderer consumes the initialized Application once, including initialization resolving after closure. Unregistered mount revocation, old write leases, pending/invalid drafts and Campaign membership guards remain.",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "checks": {
+            "baselineCasesFailed": 3,
+            "focusedCasesPassed": 3,
+            "fullSuite": {
+              "tests": 1142,
+              "pass": 1141,
+              "fail": 0,
+              "skip": 1,
+              "skipScope": "Existing optional external PDF fixture"
+            },
+            "typecheck": "PASS",
+            "cleanSourceBuild": "PASS",
+            "scenarios": [
+              "Actual Copy menu/modal and normal leaf callback retain unsaved Room Key/native original/draft, release renderer once and revoke stale writers even when membership rejects the copy.",
+              "Clean managed leaf replacement/unload/repeated unload release each renderer once and preserve native bytes.",
+              "Actual renderer async init resolving after leaf unload releases its Application once."
+            ],
+            "evidenceBoundary": "Linkedom Obsidian host adapter; GPU initialization excluded. Not a native Obsidian retest or fresh process.",
+            "repository": "PASS",
+            "diff": "PASS"
+          },
+          "newRequiredFinding": {
+            "kind": "reproduced_DOM_Copy_open_membership_gap",
+            "trigger": "Existing Campaignmanifest + normal Karte/Speichern unter/Kopie speichern creates standalone Atlas with fresh closure IDs, then actual leaf.openFile invokes AtlasView.onLoadFile.",
+            "expected": "Saved independent copy opens and can be reused after fresh process, without pretending to be a Campaign member.",
+            "observed": "Renderer teardown now completes; AtlasCampaignServices.campaignHint rejects the legitimate copied world because any Campaignmanifest exists. View shows: Dieser Atlas gehört keinem bestätigten Kampagnenbestand. Bestand ergänzen oder reparieren. No new active editor.",
+            "source": "src/ui/atlas-campaign-services.ts:95-109",
+            "negativeGuardPreserved": "Existing damaged/foreign manifest must not fall through to an unguarded standalone Atlas. No whitelist, hidden mount or Campaign authority invented.",
+            "consumer": "Hex continues at #80; coordinate standalone Copy/fresh-entry contract with existing Campaign/Atlas authority owner. No new parallel claim."
+          },
+          "buildTriplet": {
+            "main.js": {
+              "bytes": 1683340,
+              "sha256": "e85e9dfb211a19b3ae022ed56d3d34d048f1ac4349e020ebc9abf3c71c32ac1f"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32394,
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7"
+            }
+          },
+          "sourceFilesSha256": {
+            "src/ui/atlas-view.ts": "0314fedcaf66b5f6639d90e4181af1c4c3ac715fcbe6bd0480ccb0829c1abcf4",
+            "src/features/atlas/atlas-renderer.ts": "5fbf6d3e7b15ac838a33fe8e69e97eea13a9f46d1f00d388bc16118d758dc520",
+            "tests/atlas-campaign-host.entry.ts": "90b8f00a2b760432d77f6a69678f551c8d5ee179d24fdd87b0427d54d71fe015"
+          },
+          "localEvidence": {
+            "regression-final-baseline.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/regression-final-baseline.log",
+              "sha256": "5ee0d6301205c1f63c5cb8a98ccfd3dd496f4a20adcb7de0f54e731c39e3d7b7"
+            },
+            "regression-after.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/regression-after.log",
+              "sha256": "ea76d21a4e30ff21127192260a5378717d1134bb3ec4d0ed5f228a8dcbf800b5"
+            },
+            "typecheck.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/typecheck.log",
+              "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+            },
+            "full-tests.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/full-tests.log",
+              "sha256": "f04992119d41061f2bf2e2744d0c2c5b065a2a669fc6df2190281690eb2bfea8"
+            },
+            "source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/source-build.log",
+              "sha256": "6413d8dfbd66e495c17369063c2c475a567baa6689928467d75057425b2ff759"
+            },
+            "baseline-regressions.mjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/baseline-regressions.mjs",
+              "sha256": "8003d3babfe31ecda59fe63b80d43362bdc40d0e7bc937aa6837b113a5fb336d"
+            },
+            "repository.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/repository.log",
+              "sha256": "4d8c433d73d5f7f911409a9b03cea890771147c26dd3a823374d5858c1f6877e"
+            }
+          },
+          "limits": {
+            "newNativeProbe": false,
+            "nativeCopyPass": false,
+            "freshProcess": false,
+            "independentReview": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "installedInUserVault": false,
+            "fullE2E": false
+          },
+          "preservation": {
+            "failedC01HelpersUntouched": true,
+            "failedC01VaultNotReplayed": true,
+            "newGuiUsed": false,
+            "slotHeld": false,
+            "noSelfMerge": true,
+            "foreignRootsPreserved": true
+          },
+          "nextConsumer": "One independent review of the narrow new teardown repair at the existing #80 package. The additional reproduced membership gap needs a guarded normal Copy/fresh-entry repair in the same claim before another newly coordinated native Copy/Fresh pair. No dependent expansion or native PASS from DOM.",
+          "finishedAt": "2026-10-11T09:51:53.378290+00:00",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157"
+        },
+        "dungeonAtLocationRoomDraftCopyMembershipN02": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-COPY-MEMBERSHIP-N02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "independent_Copy_entry_DOM_PASS_targeted_review_and_native_pair_pending",
+          "sourceCommit": "b6ec69d4290259e60e8acab61633b3b4a3ce2b69",
+          "qualifiedSharedConsumed": "fcec359381d1a84f9d65b628ccdb0172c9cec2c7",
+          "baselineCommit": "a416dac679c181be7792561076ae339d096d995b",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157",
+          "consumedInput": {
+            "kind": "independent_N01_review_PASS_and_concrete_standalone_entry_contract",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6107831990",
+            "head": "a416dac679c181be7792561076ae339d096d995b",
+            "source": "a07c274a6f9c83ac5d472148e7f3de5b68940c49",
+            "scope": "Managed teardown/lifetime only. The comment is the independent review evidence, not formal self-approval or qualification of N02."
+          },
+          "implemented": "Normal Copy and ordinary file entry classify parsed path AND World-ID. Valid unique association still uses independently confirmed Campaign navigation. A fresh complete native closure with no confirmed World/Owner collision opens an unregistered native mount beside unrelated valid manifests, without Registry/SaveParticipant authority. Malformed/unreadable/ambiguous manifests, wrong path identity, colliding owners, incomplete native closure and changed inputs fail closed.",
+          "storageBoundary": "Read-only typed native inspection uses existing World/Location/City/Dungeon/Terrain/draft codecs, spatial closure and FileTransaction recovery validator; journal recovery is simulated in memory before any vault write. Inspected saved/draft/recovery identities exclude retained shared/catalog definitions. Inputs and manifest revision stay pinned through real Repository open. Once an old journal has won its repair, its exact old paths finish on revocation; no new editor attaches. After open, existing Repository/FileTransaction journal authority remains unchanged.",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "checks": {
+            "baselineCasesFailed": 3,
+            "focusedCasesPassed": 17,
+            "fullSuite": {
+              "tests": 1157,
+              "pass": 1156,
+              "fail": 0,
+              "skip": 1,
+              "skipScope": "Existing optional external PDF fixture"
+            },
+            "typecheck": "PASS",
+            "cleanSourceBuild": "PASS",
+            "scenarios": [
+              "Actual menu/modal Copy and normal leaf callback open the independent copy; original unsaved Room Markdown and native bytes remain exact, old renderer is released once, old writers are revoked, fresh host/file entry has new History and no Campaign participant.",
+              "Prepared/Committed native journal, Undo/Redo, persisted draft, new View restore, visible Save and Repository Discard operate on the independent copy; original Campaign/native inputs stay exact.",
+              "Same World at a different path, wrong World at a confirmed path, Campaign-owned Room/section ID in saved/draft data, missing Location/Detail/Terrain, duplicate native Detail, malformed/unreadable manifest reject with no writes or canvas.",
+              "Manifest revision during closure or external native change before Recovery rejects without writes. Won Recovery and canonical Save journals finish their old paths after service closure; no revoked editor attaches."
+            ],
+            "evidenceBoundary": "Linkedom with actual View/Host/Services/Repository/native codecs; GPU initialization excluded. New View is model/DOM reentry, not a fresh Obsidian process."
+          },
+          "buildTriplet": {
+            "main.js": {
+              "bytes": 1687847,
+              "sha256": "6709c8520629c9fcd53e5cab2e968056776bbc2c27c9822cb08b4151ca7fd409"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32394,
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7"
+            }
+          },
+          "sourceFilesSha256": {
+            "src/features/atlas/atlas-standalone-entry.ts": "bd0a19fce33deffa999ccf25e68116ad78e3bd4f36a004f320962b9a928bf86e",
+            "src/ui/atlas-view.ts": "c6590226e8858ea36e8acf7dd7569c5cbd2bf990e0d3d6b838deca571c9b6a4e",
+            "src/ui/atlas-campaign-host.ts": "d64a8f43e07a294a0029706ad5c65ba6f4b669dd0edf29515fa8baca3eaf578c",
+            "src/ui/atlas-campaign-services.ts": "bb399a627edf0fa86b6f0534383bf73612dbe1356f09c0a105e145f6a4564e19",
+            "tests/atlas-campaign-host.entry.ts": "0990fe37e7056145d449f2de5697c3c0ca7511f4f3b25e959292e1d56e87f312"
+          },
+          "localEvidence": {
+            "regression-baseline.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/regression-baseline.log",
+              "sha256": "5665c01eb0924da7fe2bdb55a73ed6e903419fa60c00ea6e72887f3c1e94270f"
+            },
+            "focused-final.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/focused-final.log",
+              "sha256": "bb52088f7a573e234986cb1cec038c586e3168a9845338722f4ffd4b31427b62"
+            },
+            "typecheck.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/typecheck.log",
+              "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+            },
+            "full-tests.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/full-tests.log",
+              "sha256": "ab0052c9289cd1e8d7d15d9ac3d5afd16b99f429fde0e35dcda8e2334115ebc6"
+            },
+            "source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/source-build.log",
+              "sha256": "285c93d0ccb600acd1aa5ff398b00cdaada8387798c4addec61c2eaca7e79ef8"
+            },
+            "baseline-regressions.mjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/baseline-regressions.mjs",
+              "sha256": "19e2190bb0587c300183924cf67f9cca7e5f4ae77d2108101772cab52774f487"
+            }
+          },
+          "limits": {
+            "newNativeProbe": false,
+            "nativeCopyPass": false,
+            "freshObsidianProcess": false,
+            "independentN02Review": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "installedInUserVault": false,
+            "fullE2E": false
+          },
+          "preservation": {
+            "failedC01HelpersUntouched": true,
+            "failedC01VaultNotReplayed": true,
+            "newGuiUsed": false,
+            "slotHeld": false,
+            "noSelfMerge": true,
+            "foreignRootsPreserved": true
+          },
+          "nextConsumer": "Existing independent Atlas/Campaign reviewer: targeted N02 classification/read-only closure/recovery guards on this candidate. Hex then owns the visible Copy/fresh Obsidian pair with newly coordinated local slot, frozen new helpers and a new isolated copy of the actual R03 draft vault. Historical failed C01 remains immutable; no native/fresh PASS inferred from DOM.",
+          "finishedAt": "2026-10-11T10:22:10.691262+00:00"
+        },
+        "dungeonAtLocationRoomDraftCopyC02": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-COPY-C02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "visible_Copy_Room_observed_QA_oracle_FAILED_fresh_not_started",
+          "sourceCommit": "b6ec69d4290259e60e8acab61633b3b4a3ce2b69",
+          "cleanCheckoutHead": "fb5266fcd0920d606b687c53fbedb6074e5e883e",
+          "qualifiedShared": "fcec359381d1a84f9d65b628ccdb0172c9cec2c7",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157",
+          "consumedIndependentReview": {
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6108108606",
+            "head": "fb5266fcd0920d606b687c53fbedb6074e5e883e",
+            "result": "PASS_without_required_finding",
+            "scope": "Targeted N02 membership/native closure/recovery guards; independent agent comment, not formal same-account approval. No independent GUI/Fresh claim."
+          },
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "input": "actual_R03_Draft_vault_after_both_normal_quits",
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/vault",
+            "record": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftRecoveryR03",
+            "receiptHead": "dbde783add9df635ba6184c16ac11254bb0ad7d8",
+            "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6107412267",
+            "inputSource": "f53a2667c3d471ea47e16bd1e3c4ff7eadf4758c",
+            "actualDraftSha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+            "priorNormalQuit": true,
+            "reseeded": false,
+            "saveReplayed": false,
+            "preparedAt": "2026-10-11T10:36:24.757307+00:00",
+            "freshQaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011",
+            "failedC01NotReplayed": true
+          },
+          "cleanBuildTriplet": {
+            "main.js": {
+              "sha256": "6709c8520629c9fcd53e5cab2e968056776bbc2c27c9822cb08b4151ca7fd409",
+              "bytes": 1687847
+            },
+            "manifest.json": {
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+              "bytes": 237
+            },
+            "styles.css": {
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7",
+              "bytes": 32394
+            }
+          },
+          "buildExecutedThisRun": false,
+          "sourceAndInstalledTripletsMatch": true,
+          "host": {
+            "protocolVersion": "1.3",
+            "product": "Chrome/150.0.7871.250",
+            "revision": "@07ee2042224499f634596843f209356586214e26",
+            "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+            "jsVersion": "15.0.245.31"
+          },
+          "actualAction": "Normal managed Atlas/Location/Room entry; visible Copy modal cancel, state exact; Copy save switches to independent unregistered leaf; ordinary Fit/select/Ctrl-wheel/real Canvas click reaches copied Room-Key and exact unsaved Markdown. Then QA assertion fails. Normal quit. No Fresh process/reseed/Save replay/direct model write.",
+          "observed": {
+            "copyPath": "Atlanten/R03 Raumdraft Kopie C02.overworld",
+            "copyName": "R03 Raumdraft Kopie C02",
+            "roomName": "N02 Torraum — exakt",
+            "roomNumber": "1",
+            "exactMarkdown": "## Eingang\nR03: Ungespeicherter Raumtext lebt nach regulärem Neustart.  \n\n",
+            "copyNativeFileCount": 7,
+            "freshClosedLocalIDs": 23,
+            "nonIdentityFieldsAndTextsExact": true,
+            "copiedNativeHashes": {
+              "Atlanten/R03 Raumdraft Kopie C02.overworld": "50da40602f3fc522da3715f78257fdfe312a031cc399e41f29013483f6cfccab",
+              "Orte/cfc8c8ad-77e9-4b68-877a-1899352e0d85.location": "dba47f0615080a0ffcdff15410384826250d7de0f4ef4242ac6cf86593b00b6b",
+              "Orte/c068cd2d-4fdb-4736-9aad-043aeb10e420.location": "a4bf9ab887481ca95a55e431f89dc0072190453910cd9696e0055c5978b212aa",
+              "Städte/03c60bb0-7777-485d-ba3e-96014b7ec363.city": "a4feddc34567992065883af87df8b3a1838573832db81a48283004a7f8843338",
+              "Dungeons/333a56f0-6548-482e-92c2-8482323ca61a/Karte.dungeon": "62c1d148ca7cfe1b94571a7fd726b996458bb0421a41c3ceb43db3de1a32f0b6",
+              "Atlasdaten/bff0b9c2-1c89-495e-b00a-9cd146339603/terrain/0_-1_0.json": "81430d89051da92ebb11343652e1db5dfd863f58f1baee5e1c30374ff3115ebb",
+              "Atlasdaten/bff0b9c2-1c89-495e-b00a-9cd146339603/terrain/0_0_0.json": "6b5362d2b809406dc939880f60d5aa2bc7751bd445193ddcff37c69612715924"
+            },
+            "originalCancelStateExact": true,
+            "oneRepository": true,
+            "oneHistory": true,
+            "historyDepth": 0,
+            "canRedo": false,
+            "dirty": false,
+            "hasDraft": false,
+            "pendingKey": false,
+            "managed": false,
+            "oldManagedDraftVisibleRetained": true,
+            "visibleZoomSteps": 9
+          },
+          "failure": {
+            "kind": "QA_oracle_compared_spatialState_to_full_Overworld_document",
+            "runnerExit": 1,
+            "resultPassed": false,
+            "productPageErrors": [],
+            "shutdownFailure": null,
+            "helperLine": 81,
+            "actualRuntimeSpatialStateKeys": [
+              "version",
+              "detailPlacements"
+            ],
+            "expectedFullWorldKeys": [
+              "kind",
+              "version",
+              "id",
+              "name",
+              "orientation",
+              "origin",
+              "metersPerMile",
+              "minHexMiles",
+              "levelFactor",
+              "chunks",
+              "placements",
+              "detailPlacements"
+            ],
+            "typedContract": [
+              "src/features/atlas/spatial-schema.ts:57",
+              "src/features/atlas/terrain-source.ts:144"
+            ],
+            "readonlyDiagnosis": "SpatialState is only version/detailPlacements; exact equality to that recorded native subset and whole copied Dungeon holds offline. The helper mislabeled it world and compared it to full native Overworld. This does not prove product loss or turn the failed run into PASS.",
+            "correctNextReadonlyInput": "repository.spatialGraph.world() returns validated current full SpatialWorld; record spatialState separately, only in a new frozen helper."
+          },
+          "originalNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "originalEightNativeFilesPreserved": true,
+          "actualR03DraftSha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+          "actualDraftBytesPreserved": true,
+          "lifecycle": {
+            "run": "1791715037078-atlas-spatial-reopen",
+            "normalQuit": true,
+            "pids": [
+              200777,
+              200851,
+              200859,
+              200872
+            ],
+            "pidsGone": true,
+            "forcedTerminationPids": [],
+            "systemdAfterCleanup": {
+              "Id": "dungeon-native-200737.service",
+              "ActiveState": "inactive",
+              "SubState": "dead",
+              "InvocationID": "",
+              "MainPID": "0",
+              "ControlPID": "0",
+              "Result": "success",
+              "ExecMainCode": "0",
+              "ExecMainStatus": "0"
+            },
+            "unit": "dungeon-native-200737.service",
+            "freshStarted": false,
+            "freshBlockedByFirstProbeFailure": true
+          },
+          "slot": {
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108140816",
+            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108158250",
+            "held": false,
+            "cityNext151GMFreshExplicitlyConfirmed": true,
+            "futureHexGuiWaitsCityExplicitReturnAndNewCoordination": true
+          },
+          "portableEvidence": {
+            "entry": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
+            "files": [
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
+                "sha256": "5d430d7fc72e6ef92a24ed85bad4445dee4689e9c3aeeb3db4d75ca7b17b1d10",
+                "bytes": 3269
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/build.json",
+                "sha256": "3ff0a84bd71dce102023ae24fd0b3b0407a8a038517ad46fac0a5ef12e5d84b1",
+                "bytes": 582
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-modal-before-cancel.png",
+                "sha256": "b012578bca7e25bc944d627dea12975cd8c3eeccb9306974896749505674fa4d",
+                "bytes": 90246
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-c02-preload.cjs",
+                "sha256": "f9a4ded3649d47b34c2d64caeccecf48ae9a867162cd45640727f61bb166f2a9",
+                "bytes": 357
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-c02-probe.cjs",
+                "sha256": "ae1cf90e49357619d085b2a5c02671f071f1ec0874a7d2021241e1b38c5d332a",
+                "bytes": 16270
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-copy-probe.json",
+                "sha256": "85dbbbaea44b77043a83a768032c4ca8fa20e3122aed8ba7c2c89c8b54a47da2",
+                "bytes": 39553
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/failure.png",
+                "sha256": "4af3bd2b23c1ab1b550bbd0cf3e9537045298cdd552fae697fe94959258b8796",
+                "bytes": 76391
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/input-lineage.json",
+                "sha256": "a8e823d48efaa1b1506654bf8333b443f03b4a5bfe9fadbbd24ba1252bc1e7bc",
+                "bytes": 836
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/input-native-hashes.json",
+                "sha256": "c5197abf8ea73b55a3e37b6f2bf7167d733848d02a460334b9d877267a9c19bc",
+                "bytes": 1015
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/invocation.json",
+                "sha256": "97be9829368d080f2e151d3dfbcd2843c7b9ecc1ad1a33c687bfd14b239bb97f",
+                "bytes": 3029
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/process-lifecycle.json",
+                "sha256": "83cc4f9f81003e1fc16993d200aaa2b907e96b8690b7de7792bcc469b150cbe5",
+                "bytes": 7087
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/result.json",
+                "sha256": "e689cc5d1731c28dc62943ff24f9c200236fcc23f8d7c2df8d165d70118c0a7a",
+                "bytes": 3820
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/runner-result.json",
+                "sha256": "54e63b7a820f7ba5adc1931452126198c5003168f1e7ae9eb0992892163b1631",
+                "bytes": 5164
+              }
+            ]
+          },
+          "localEvidence": [
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/copy-runner.log",
+              "sha256": "fe4600b7d0e42160c97c83ccc96cf67d235e2b5e5a730447c366301c88680af7",
+              "bytes": 5979
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/protected-inputs-before.json",
+              "sha256": "1a3ce26f6b043833e917c9494e55d33e815f13c81a4cecd1da8bd3136fe9f412",
+              "bytes": 6526
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/slot-claim-readback.json",
+              "sha256": "4ab5f07b0a3f803ea27ffd9778cb42bdb4be94d6983f86a284da480610ed42ec",
+              "bytes": 3599
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/slot-return-readback.json",
+              "sha256": "c434d31c66afdf82d7c22ab8a240c4e8fd709b48bbb7f7a2600090617bcd6a72",
+              "bytes": 3013
+            },
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/consumed-independent-review.json",
+              "sha256": "c9b2deb1efff0909c8a1f8c4a6a2c16f5bc6bbad8e8a8f00c4b70395773a2278",
+              "bytes": 6437
+            }
+          ],
+          "publicationIncoming": {
+            "shared": "fcec359381d1a84f9d65b628ccdb0172c9cec2c7",
+            "ownUpstream": "fb5266fcd0920d606b687c53fbedb6074e5e883e",
+            "qualifiedIncomingReadBeforeProbeAndMetadata": true,
+            "productEditedThisRun": false,
+            "unqualifiedForeignBranchesNotSelfIntegrated": true
+          },
+          "limits": {
+            "completeNativeCopyCasePass": false,
+            "freshProcessCopyPass": false,
+            "independentNativeRawReview": false,
+            "physicalInput": false,
+            "nativeIME": false,
+            "MetaShortcut": false,
+            "interruptedSaveOrCopyJournalRecovery": false,
+            "hardCrash": false,
+            "copiedCampaignManifest": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false
+          },
+          "preservation": {
+            "executedC02HelpersUnchanged": true,
+            "C02FailedVaultAndRawRetained": true,
+            "historicalC01VaultAndHelpersUnchanged": true,
+            "R03InputUnchanged": true,
+            "originalForeignLocalFiles": true,
+            "foreignCheckpointAcceptanceRoots": true,
+            "historicalReceipts": true,
+            "userVaultTouched": false,
+            "noSelfMerge": true
+          },
+          "nextConsumer": "Hex in existing #80/branch: correct only the QA full-world read in a newly named helper, preserve C01/C02 executed helpers/vaults/raw, then a newly coordinated Copy/Fresh pair on new actual R03 input. N02 code review consumed; no repeated general review or product repair from this QA mismatch. City owns new #151 local pair; Hex waits explicit return before any new GUI.",
+          "finishedAt": "2026-10-11T10:43:07.115633+00:00"
+        },
+        "dungeonAtLocationRoomDraftCopyC03": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-COPY-C03",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_visible_Copy_Cancel_and_actual_fresh_process_reopen_PASS_full_E2E_open",
+          "sourceCommit": "b6ec69d4290259e60e8acab61633b3b4a3ce2b69",
+          "cleanCheckoutHead": "fc835e811853ddd45d066fa18dc85870988d7ba9",
+          "qualifiedShared": "fcec359381d1a84f9d65b628ccdb0172c9cec2c7",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157",
+          "consumedIndependentReview": {
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6108108606",
+            "head": "fb5266fcd0920d606b687c53fbedb6074e5e883e",
+            "result": "PASS_without_required_finding",
+            "scope": "Targeted N02 membership/native closure/recovery guards; independent agent comment, no formal same-account approval or independent GUI/Fresh claim."
+          },
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "input": "actual_R03_Draft_vault_after_both_normal_quits",
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/vault",
+            "record": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftRecoveryR03",
+            "receiptHead": "dbde783add9df635ba6184c16ac11254bb0ad7d8",
+            "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6107412267",
+            "inputSource": "f53a2667c3d471ea47e16bd1e3c4ff7eadf4758c",
+            "actualDraftSha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+            "priorNormalQuit": true,
+            "reseeded": false,
+            "saveReplayed": false,
+            "preparedAt": "2026-10-11T10:57:37.284773+00:00",
+            "freshQaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c03-20261011",
+            "failedC01C02NotReplayed": true
+          },
+          "cleanBuildTriplet": {
+            "main.js": {
+              "sha256": "6709c8520629c9fcd53e5cab2e968056776bbc2c27c9822cb08b4151ca7fd409",
+              "bytes": 1687847
+            },
+            "manifest.json": {
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+              "bytes": 237
+            },
+            "styles.css": {
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7",
+              "bytes": 32394
+            }
+          },
+          "buildExecutedThisRun": false,
+          "productEdited": false,
+          "sourceAndInstalledTripletsMatch": true,
+          "host": {
+            "protocolVersion": "1.3",
+            "product": "Chrome/150.0.7871.250",
+            "revision": "@07ee2042224499f634596843f209356586214e26",
+            "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+            "jsVersion": "15.0.245.31"
+          },
+          "qaCorrection": {
+            "fullWorld": "repository.spatialGraph.world()",
+            "typedSubset": "terrain.spatialState()",
+            "onlyReadonlyOracleDelta": true,
+            "C02FailedReceiptRetained": true,
+            "helpers": {
+              "copy-room-c03-probe.cjs": "7ec78d7903ed37a2aab5858075ff747992b44f25125332352d415ffaf32cdad6",
+              "copy-room-c03-preload.cjs": "98c51ae0c61fe0b3de9ea236adc97231d6c9ad650c608ff3863d8e2f94cce437"
+            },
+            "frozenBeforeFirstExecution": true
+          },
+          "actualAction": "Normal managed Atlas/Location/Room entry; visible Copy modal Cancel preserves state/draft; Copy save switches to independent unregistered leaf. Ordinary Fit/select/Ctrl-wheel/real Canvas Room click shows exact unsaved R03 Markdown. Normal app.quit/PIDs gone, then one separate native process with ordinary saved Copy file entry, same visible Room-Key and full native/current graph checks. No Copy callback/Save replay/reseed/direct model write.",
+          "observed": {
+            "copyPath": "Atlanten/R03 Raumdraft Kopie C03.overworld",
+            "copyName": "R03 Raumdraft Kopie C03",
+            "roomName": "N02 Torraum — exakt",
+            "roomNumber": "1",
+            "exactMarkdown": "## Eingang\nR03: Ungespeicherter Raumtext lebt nach regulärem Neustart.  \n\n",
+            "copyNativeFileCount": 7,
+            "freshClosedLocalIDs": 23,
+            "allLocalIDsFresh": true,
+            "nonIdentityFieldsAndTextsExact": true,
+            "copiedNativeHashes": {
+              "Atlanten/R03 Raumdraft Kopie C03.overworld": "1f3fff78ba5fea4dc095c7332f4066a28d7bd792db7679960c6d68079835c14a",
+              "Orte/bde59bc7-fcb6-4171-8d9b-f7b21168bb18.location": "263b11a4e88a0ace47e00444fa14a122ac239fd6818d4b2502380e0a5e77fb0d",
+              "Orte/b9629ba2-aa54-424c-8f25-494d71da2594.location": "b343f9d3c77b8a7270e394dc8ece1843fa99ae311da53dd2858a302147b63ee6",
+              "Städte/571b3004-b4f6-43a0-b1d5-23f623c89c5b.city": "7f0f588e6f673201e26240ede304d84fb0113639819dc332ac8998b0fee2a3ae",
+              "Dungeons/e2b3f947-40ba-4f20-b2bf-db35a1fefea8/Karte.dungeon": "c308a927c60de51d28e5520f0e08f6faa9ba3279e9563c9cf6e3ee1754a78834",
+              "Atlasdaten/dbda9f4e-ad35-4746-acd3-635756572670/terrain/0_-1_0.json": "9058445112bdd0968d24d71a7d3cdb4a6531d5259117e02019617f4fedb52004",
+              "Atlasdaten/dbda9f4e-ad35-4746-acd3-635756572670/terrain/0_0_0.json": "db8018a9cf3ffb98af9fa236e9ecc7033cba11d9fe4684460c0041843e2a846b"
+            },
+            "originalCancelStateExact": true,
+            "oneRepository": true,
+            "oneHistory": true,
+            "historyDepth": 0,
+            "canRedo": false,
+            "dirty": false,
+            "hasDraft": false,
+            "pendingKey": false,
+            "managed": false,
+            "fullWorldAndTypedSpatialAndDungeonExact": true,
+            "visibleCopyZoomSteps": 9,
+            "fresh": {
+              "visibleExactRoomKey": true,
+              "fullWorldAndTypedSpatialAndDungeonExact": true,
+              "copyNativeBytesAndIDsExact": true,
+              "oneRepository": true,
+              "oneHistory": true,
+              "historyDepth": 0,
+              "dirty": false,
+              "draft": false,
+              "pending": false,
+              "sameCopyVault": true,
+              "saveReplayed": false,
+              "fixtureReseeded": false
+            }
+          },
+          "originalNativeHashes": {
+            "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+            "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+            "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "cffc6b2b8c72a63c3ac204d22336e9889f78ec776dd7cfc4bad55be133f15c1b",
+            "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+            "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "5de7b1877c425abfa8ee4af3670acbfab993845241c409216b8e73c9cbbeb185"
+          },
+          "originalEightNativeFilesPreserved": true,
+          "actualR03DraftSha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+          "actualDraftBytesPreserved": true,
+          "lifecycle": {
+            "copy": {
+              "run": "1791716287249-atlas-spatial-reopen",
+              "runnerExit": 0,
+              "resultPassed": true,
+              "errors": [],
+              "shutdownFailure": null,
+              "normalQuit": true,
+              "pids": [
+                229305,
+                229385,
+                229392,
+                229402
+              ],
+              "pidsGone": true,
+              "forcedTerminationPids": [],
+              "unit": "dungeon-native-229277.service",
+              "systemdAfterCleanup": {
+                "Id": "dungeon-native-229277.service",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "InvocationID": "",
+                "MainPID": "0",
+                "ControlPID": "0",
+                "Result": "success",
+                "ExecMainCode": "0",
+                "ExecMainStatus": "0"
+              }
+            },
+            "fresh": {
+              "run": "1791716357114-atlas-spatial-reopen",
+              "runnerExit": 0,
+              "resultPassed": true,
+              "errors": [],
+              "shutdownFailure": null,
+              "normalQuit": true,
+              "pids": [
+                230570,
+                230644,
+                230651,
+                230668
+              ],
+              "pidsGone": true,
+              "forcedTerminationPids": [],
+              "unit": "dungeon-native-230541.service",
+              "systemdAfterCleanup": {
+                "Id": "dungeon-native-230541.service",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "InvocationID": "",
+                "MainPID": "0",
+                "ControlPID": "0",
+                "Result": "success",
+                "ExecMainCode": "0",
+                "ExecMainStatus": "0"
+              }
+            }
+          },
+          "slot": {
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108302663",
+            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108319297",
+            "held": false,
+            "newExplicitCoordinationBeforeAnyFutureGui": true
+          },
+          "portableEvidence": {
+            "entry": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
+            "files": [
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
+                "sha256": "dbd17e65b5cc823f3be7d84ac50ae3d25357583e960c230f5e1d4c74b29858fa",
+                "bytes": 4926
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-after-normal-quit.json",
+                "sha256": "0e035f6a3ddbae5a352dd1e99d70b9b1072e2acd0dc518093ed38e67071c6e4e",
+                "bytes": 2834
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-room-c03-preload.cjs",
+                "sha256": "98c51ae0c61fe0b3de9ea236adc97231d6c9ad650c608ff3863d8e2f94cce437",
+                "bytes": 357
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-room-c03-probe.cjs",
+                "sha256": "7ec78d7903ed37a2aab5858075ff747992b44f25125332352d415ffaf32cdad6",
+                "bytes": 16418
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/build.json",
+                "sha256": "324f886de4ef88103b2880368dedcc091c1dc1cb592347f26184e5aec45d22ef",
+                "bytes": 582
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/copy-modal-before-cancel.png",
+                "sha256": "cbccaaa223d915e3aa6461204c7d4d67b7c12407d73c03dca79ff4e0b8f46fa3",
+                "bytes": 90138
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/copy-room-copy-probe.json",
+                "sha256": "01cc8dfbbab155f5e113058fa913e0924e2e6573d50a588572345fa4ae52eecc",
+                "bytes": 46586
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/process-lifecycle.json",
+                "sha256": "ec306ea1115fe484a32b2a48664b631fd7216fc6b2b768e9752b148514c2282a",
+                "bytes": 7099
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/result.json",
+                "sha256": "d4567acf722172405ef2bc00887185eae1065e322d691f218bc2548e837c3092",
+                "bytes": 545
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/visible-copied-room-key.png",
+                "sha256": "34c44a22f348925b3730ea33b762963a1029400f3d1f4fa307c1494df61752a5",
+                "bytes": 76293
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh-after-normal-quit.json",
+                "sha256": "63e85a4a4a70fa68cdb54031ab3ae07b92076a45a1e03bbb544755e6cb1cb837",
+                "bytes": 2835
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/build.json",
+                "sha256": "324f886de4ef88103b2880368dedcc091c1dc1cb592347f26184e5aec45d22ef",
+                "bytes": 582
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/copy-room-fresh-probe.json",
+                "sha256": "cde25eeaeab57ab24e42252890acb451c96c5b2d2a180b6bddb3f83a43e0de2c",
+                "bytes": 35881
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/fresh-process-copied-room-key.png",
+                "sha256": "15ad54a9896074a553f9866c81947d52a9367393d8ef725b0421cf8cac441246",
+                "bytes": 72112
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/process-lifecycle.json",
+                "sha256": "0ee5eae826924de8be240651cd759fa06150a88993ee434fd3c29cd6b3e6f237",
+                "bytes": 7090
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/result.json",
+                "sha256": "dd59eb8e2148363728dd44f073bc49ff1f414bf169c4afa9c5d6beccd2e9c800",
+                "bytes": 546
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/input-lineage.json",
+                "sha256": "8997f0e0ed637284413f9ba2588e6768ad3e271a6c95dec0d8d00735725ba1f0",
+                "bytes": 839
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/input-native-hashes.json",
+                "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+                "bytes": 1011
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/invocation.json",
+                "sha256": "71cf3bc059a4819b950ce8cbdbb679a292208092ab01149be08abf7af577f072",
+                "bytes": 3321
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/protected-inputs-before.json",
+                "sha256": "8172a227cc36c0dfb139e7c268c30f052b4339c077c8d0fb80448b77466f27f9",
+                "bytes": 18318
+              }
+            ]
+          },
+          "localEvidence": {
+            "root": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c03-20261011",
+            "raw": {
+              "copy": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c03-20261011/evidence/1791716287249-atlas-spatial-reopen",
+              "fresh": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c03-20261011/evidence/1791716357114-atlas-spatial-reopen"
+            }
+          },
+          "preserved": {
+            "failedC01C02VaultsHelpersAndRawByteExact": true,
+            "actualR03InputVaultByteExact": true,
+            "foreignLocalFilesByteExact": true,
+            "historicalReceiptsUnchanged": true,
+            "foreignCheckpointAndAcceptanceRootsUnchanged": true,
+            "sourceFilesUnchanged": true,
+            "userVaultAndSourcesUntouched": true
+          },
+          "confirmed": {
+            "actualVisibleCopyCancelAndRoomKey": true,
+            "freshNativeProcessOrdinaryCopyFileReopen": true,
+            "fullCurrentSpatialWorldAndNativeDungeon": true,
+            "normalQuitAndPidExitBothProcesses": true
+          },
+          "limits": {
+            "physicalInput": false,
+            "nativeIME": false,
+            "nativeMetaShortcut": false,
+            "nativeInterruptedSaveCopyJournalMatrix": false,
+            "hardCrash": false,
+            "freshCameraHistoryRestoration": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "independentFreeGMThisRun": false,
+            "selfIntegrated": false,
+            "fullE2E": false
+          },
+          "nextConsumer": "Existing Steward: consume direct C03 normal Copy/Fresh evidence for N01/N02 candidate PR157, source unchanged b6ec69d4. Hex retains #80/branch and remaining direct native journal interruption qualification; no new general review or dependent expansion from this scoped PASS. Any local GUI requires new coordination.",
+          "finishedAt": "2026-10-11T11:04:19.925412+00:00"
         }
       }
     ],
