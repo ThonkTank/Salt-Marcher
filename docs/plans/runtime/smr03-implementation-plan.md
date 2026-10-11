@@ -1,15 +1,15 @@
 ---
 area: runtime
 owner: Chronik
-issue: 90
+issue: 143
 status: active
 checkpoint: saltMarcherReplacement
 ---
 
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
-Status: **I01-A ist in Shared integriert; I01-B läuft als getrenntes Paket in
-Issue #90. Kein Persistenz-, Host- oder Gesamtprodukt-Go.**
+Status: **I01-A und I01-B sind in Shared integriert; I01-C beginnt in getrennten
+Paketen mit C01 in Issue #143. Kein Persistenz-, Host- oder Gesamtprodukt-Go.**
 
 ## Gebundener Stand
 
@@ -20,8 +20,8 @@ Issue #90. Kein Persistenz-, Host- oder Gesamtprodukt-Go.**
 - Source-Owner-Ratifikation: Issue #6, Kommentar `6088996383`.
 - Music/Weather/Shops-Consumer-Ratifikation: direkt erzeugter und unverändert
   integrierter Commit `ed755aedd1dd3d2a85556ce51ed576b25527595d`.
-- Aktueller integrierter Shared-Ausgangspunkt für I01-B:
-  `d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7`.
+- Aktueller integrierter Shared-Ausgangspunkt für I01-C01:
+  `632c580377366af66ab05efcefa3910564f8af48`.
 - I01-Planreview: Issue #6, Kommentar `6089122945`,
   `CHANGES_REQUIRED` für gemeinsame Rejoin-/Clock-Publikation,
   Prepared-Runtime-Kopie und vollständige Acceptance-/Slice-Zuordnung.
@@ -387,9 +387,12 @@ Abschluss: getrennte Implementation, Review, Repair und Re-review.
 
 ### I01-C – History, Lösch- und Coordinator-Verträge
 
-- bounded PartyHistory und kausale Undo-/Redo-Pläne;
-- Tombstone-/Registry-/Manifest-/RetainedQuarantine-Verträge;
-- In-Memory-Modell für fünf Phasen, Cancel-vs-Publish und Faultmatrix;
+- C01: providerneutrale Registry-, Manifest-, Slot-, Token-, Tombstone- und
+  Receipt-Kernverträge samt Parsern;
+- C02: Portability-/RetainedQuarantine-Verträge;
+- C03: bounded PartyHistory und kausale Undo-/Redo-Pläne;
+- C04: reines Delete-/Closure-Entscheidungsmodell;
+- C05: In-Memory-Modell für fünf Phasen, Cancel-vs-Publish und Faultmatrix;
 - Modellorakel für Acceptance 8, 13, 14, 19 und 20 einschließlich vollständiger
   Command-/Phase-/Survivor-Zuordnung;
 - keine echte Erasure, Persistenz oder Prozessarbeit.
@@ -435,11 +438,13 @@ Vor I01-A sind für diesen Plan erforderlich:
 Ein Plan-PASS ist keine Produkt-, Host-, Persistenz-, Acceptance- oder
 Gesamtfreigabe.
 
-#### Arbeitsstand #90
+#### Arbeitsstand #90 / #143
 
 I01-A ist über PR #88 als Shared-SHA
-`d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7` integriert. I01-B bleibt getrennt
-auf `codex/smr-03-i01b-aggregates` beansprucht.
+`d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7` integriert. I01-B ist über seine
+getrennten Kandidaten vollständig in Shared integriert und in Issue #90 im
+reinen Modellscope abgeschlossen. I01-C01 ist in Issue #143 auf
+`codex/smr-03-i01c-reference-owners` beansprucht.
 
 Bereits unabhängig bestätigt sind strikte immutable Aggregatezustände,
 Initialize, Prepared Runtime, Focus und Move samt Cleanup sowie ownergebundene
