@@ -344,7 +344,8 @@ Zusätzlich erzeugt ein deterministischer Invariant-Fuzzer mit explizitem Seed
 gültige Commandfolgen und prüft nach jedem Schritt:
 
 - nach `InitializeLiveSession` liegt jede aktive CharacterId genau in einer
-  Scene; vor der ersten Live Session liegt sie in keiner;
+  scenegebundenen Zuordnung (`assigned XOR pending`); vor der ersten Live
+  Session liegt sie in keiner;
 - keine inaktive/gelöschte CharacterId liegt in einer aktiven Scene/Mask-
   Projektion;
 - genau eine Primary Scene nach Initialisierung;
