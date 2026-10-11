@@ -74,42 +74,42 @@ Kopie:7 native Dateien/23 frische geschlossene IDs, exakter unsaved Raumtext,
 Vollworld/SpatialState/Dungeon, eine Repository/History clean0; Original8/Draft exakt.
 N01/N02-Reparaturen und C03 sind konsumiert; Quelle/Buildpfad bleiben in P01 und committed-Copy-C01 identisch.
 
-**Konsumierter Recoveryeingang P01:** Sichtbare Copy erzeugt ihr echtes prepared
-Journal; kontrollierte zweite Create/erste Rollback-Trash lassen eine Terraindatei
-und Journal bei fehlendem Root stehen. Originalzustand/Kamera/History/Draft exakt.
-Nach normalem Quit/PIDs weg nimmt ein frischer Obsidian alle7 Ziele/Journal über
-sichtbare Copy-Recovery zurück. Anschließender sichtbarer Copyretry zeigt exakten
-Raum-Key,7 neue Dateien/23IDs, unregistrierte Repository/History clean0; Original8/
-R03draft unverändert. Beide Runner0/PASS/normal beendet;
-[portable Originale](docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md)
-binden auch die korrigierte nachträgliche Rootnameprüfung: nach erfolgreichem Retry
-ist derselbe Name neu belegt, alte Child-IDs/-Pfade bleiben fort.
+**Konsumierte Copy-Recovery:** [P01 prepared](docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md)
+nimmt im frischen Prozess die sieben alten Ziele zurück; sichtbarer Retry erzeugt
+neue geschlossene23IDs. [Committed-Copy-C01](docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md)
+öffnet dieselben7 After-Dateien/23IDs über sichtbare Recovery ohne Retry/Save-Replay.
+Beide tatsächlichen Paare regulär beendet; Original8/Campaign/R03draft unverändert.
+[P01 konsumiert/a3b311f2](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/163#issuecomment-6108600398),
+[committed Copy konsumiert/593f8cca](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164#issuecomment-6108755035).
+Rohbelege einschließlich alter FAILs bleiben unverändert; gleiche Produktquelle b6ec69d4.
 
-[P01 ist separat durch Steward konsumiert und in a3b311f2 integriert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/163#issuecomment-6108600398).
+**Neuer committed Room-Save-Eingang J01:** Sichtbares Atlas speichern schreibt
+Raumtext, entfernt den Draft und aktualisiert das autorisierte Campaignmanifest.
+Nur Cleanup des echten committed Journals scheitert zweimal; alle3 After-Zustände
+persistiert. Alte Montage unavailable ohne aktuelle Autorität, vollständiger alter
+World/SpatialState/Dungeon/Raumtext/Kamera/History erhalten. Nach normalem Quit/PIDs
+weg konsumiert echter Fresh das Journal im normalen Startup bereits vor dem QA-
+Szenario. Normaler Dateieinstieg zeigt volle Raumfelder, gleiche8 gespeicherte
+After-Dateihashes/IDs, aktuelle managed Repository/History/Renderer clean0.
+Kein Save-Replay/handgemachtes Journal; beide Runner0/PASS/errors[]/normale Enden.
+Nur Dungeon/Manifest legitim geändert;6 andere Dateien und1013 historische/fremde
+Dateien bytegleich. [Portable Originale/Bilder](docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md),
+[Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108827817). Clean Shared593f8cca, Quelle/Build b6ec69d4 unverändert.
 
-**Neuer committed-Copy-Eingang C01:** Sichtbare Copy erzeugt sieben vollständige
-After-Dateien und ihr echtes committed Journal. Ausschließlich dessen native Trash-
-Cleanup scheitert kontrolliert zweimal; Originalzustand/Kamera/History/Raumdraft exakt.
-Normales Quit/PIDs weg → echter frischer Obsidian → sichtbare Copy-Wiederherstellung
-öffnet dieselbe unabhängige Kopie und entfernt das Journal. Dieselben7 Dateihashes,
-23IDs, exakter Raum-Key, Vollworld/SpatialState/Dungeon, eine Repository/History clean0.
-Kein Copyretry oder Save-Replay. Beide Runner0/PASS/errors[]/normal beendet;
-Original8/Campaign/R03draft und841 geschützte historische/fremde Dateien bytegleich.
-[Portable Originale/Bilder](docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md),
-[Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108672539). Clean Shared a3b311f2, unveränderte Quelle/Build b6ec69d4.
+**Konkreter offener Befund/Nächster Beitrag:** Im erhaltenen alten Editor steht
+„Atlas wird gespeichert …“ weiter, während die Kampagnenmeldung die unbestätigte
+Speicherbasis nennt. Daten-/Recoveryprobe PASS, vollständige Save-UX offen.
+Hex korrigiert diese Anzeige im bestehenden #80/Branch; danach prepared Room-Save-
+Recovery. Steward kann den committed Room-Save-Eingang konsumieren. Kein neuer
+allgemeiner Review/abhängiger Ausbau; vor neuer GUI Slot ausdrücklich koordinieren.
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/165
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
-Kanonisch `acceptance.hexAtlas.requirements[30]`: N02/C03/P01 erhalten,
-`.dungeonAtLocationRoomCopyCommittedJournalC01` bindet den neuen Hosteingang.
+Kanonisch `acceptance.hexAtlas.requirements[30]`: alte Records erhalten;
+`.dungeonAtLocationRoomSaveCommittedJournalJ01` bindet Recovery und UI-Befund.
 
-**Nächste Verwendung/Arbeit:** Bestehender Steward kann committed-Copy-C01 für
-den fehlenden Copy-Hosteingang verwenden. Hex hält #80/Branch und schließt als
-nächste eigene Lücke native Room-Savejournal-Recovery; vor GUI neu koordinieren.
-Kein zusätzlicher allgemeiner Review oder abhängiger Ausbau.
-
-**Offen:** Room-Savejournale, Komposition/Meta/physische IME, äußeres Clipping,
-Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme. Frühere Rohbelege erhalten;
+**Offen:** vorbereitete Room-Savejournale, stehende Saveanzeige, Komposition/Meta/
+physische IME, äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme.
 Kontrollierte Storagefehler/synthetische UI sind kein Hardcrash/physischer PASS.
 Keine Selbstintegration.
 
