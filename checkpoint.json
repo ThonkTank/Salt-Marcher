@@ -11315,7 +11315,11 @@
         "docs/reference/gm-cloud-n04-20261011/screenshots/11-fresh-process-room-search.png",
         "docs/reference/gm-cloud-n04-20261011/screenshots/12-fresh-process-room-key-text.png"
       ],
-      "next": "Deliver this single source-bound fresh-process result to Hex at #80. Do not repeat the already observed save/UndoRedo/131% path; Hex retains the parent and decides its consequence. Keep physical, recovery, player-projection and broad E2E gates open."
+      "next": "Deliver this single source-bound fresh-process result to Hex at #80. Do not repeat the already observed save/UndoRedo/131% path; Hex retains the parent and decides its consequence. Keep physical, recovery, player-projection and broad E2E gates open.",
+      "publishedEvidencePr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125",
+      "publishedEvidenceHead": "6fc9019a60e4c9e8706fa2755b13c1288fdfcaae",
+      "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997",
+      "reportedStatus": "completed; report delivered to Hex at the existing #80 task"
     },
     "executedUiRuns": 24,
     "observedFindings": [
