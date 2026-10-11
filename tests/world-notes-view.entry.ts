@@ -105,3 +105,64 @@ test("actual World Notes view keeps authored A and B drafts across provider moun
   assert.equal(host.querySelector(".dn-world-notes form"), null);
   await afterDiscard.onClose();
 });
+
+test("a revoked World Notes view can explicitly reclaim the latest draft", async () => {
+  const { document, window } = parseHTML("<html><body><div id='first'></div><div id='second'></div></body></html>");
+  Object.defineProperty(window.HTMLElement.prototype, "focus", { configurable: true, value() {} });
+  const firstHost = document.querySelector<HTMLElement>("#first")!;
+  const secondHost = document.querySelector<HTMLElement>("#second")!;
+  const active = context(1);
+  const listeners = new Set<() => void>();
+  const provider = {
+    currentContext: () => active,
+    subscribeContextChanged: (listener: () => void) => {
+      listeners.add(listener); return () => { listeners.delete(listener); };
+    },
+    entries: async () => [{ campaignId: active.campaignId, key: "A", name: "Welt A",
+      status: "available" as const, reason: null }],
+  };
+  const services = { provider } as unknown as AtlasCampaignServices;
+  const drafts = new WorldNotesDraftBuffer();
+  class TestView extends WorldNotesView {
+    protected override createSession(mounted: CampaignContextProjection): WorldNotesNativeSession {
+      let closed = false;
+      return { open: async () => {
+        if (closed) throw new Error("closed session");
+        return emptyWorldNotes(mounted);
+      }, close: () => { closed = true; },
+      commit: async () => { throw new Error("unexpected commit"); },
+      validateReceipt: () => { throw new Error("unexpected receipt"); } } as unknown as WorldNotesNativeSession;
+    }
+  }
+  const catalog = { load: async () => { throw new Error("catalog unused"); } } as unknown as CreatureCatalogLoader;
+  const first = new TestView({ contentEl: firstHost } as never, services, catalog, drafts);
+  const second = new TestView({ contentEl: secondHost } as never, services, catalog, drafts);
+  const click = (host: HTMLElement, label: string) => {
+    const button = Array.from(host.querySelectorAll<HTMLButtonElement>("button"))
+      .find((item) => item.textContent === label);
+    assert(button, `missing ${label}`);
+    button.dispatchEvent(new window.Event("click", { bubbles: true }));
+  };
+  const name = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".dn-world-notes form input")!;
+  const write = (host: HTMLElement, value: string) => {
+    name(host).value = value;
+    name(host).dispatchEvent(new window.Event("input", { bubbles: true }));
+  };
+  await first.onOpen();
+  click(firstHost, "NPC anlegen"); write(firstHost, "Alter Text");
+  await second.onOpen();
+  assert.equal(firstHost.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  assert.equal(name(secondHost).value, "Alter Text");
+  write(secondHost, "Neuer Text");
+  const staleInput = name(secondHost);
+  click(firstHost, "Erneut versuchen"); await settle(); await settle();
+  assert.equal(name(firstHost).value, "Neuer Text");
+  assert.equal(secondHost.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  listeners.forEach((listener) => listener()); await settle();
+  assert.equal(name(firstHost).value, "Neuer Text");
+  assert.equal(secondHost.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  staleInput.value = "Späte alte Eingabe";
+  staleInput.dispatchEvent(new window.Event("input", { bubbles: true }));
+  assert.equal(name(firstHost).value, "Neuer Text");
+  await first.onClose(); await second.onClose();
+});

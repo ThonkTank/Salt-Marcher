@@ -126,117 +126,80 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
 #### Arbeitsstand #68
 
 [PR #83](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/83)
-ist in Shared integriert: Kampagnenwissen anlegen, suchen, bearbeiten und als
-native Note samt Campaignmanifest speichern. Der unabhängige
-[Host-R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103180580)
-schloss den Atlas-first-Restjournalfehler. Eigene isolierte Obsidianläufe
-belegten alle vier Notizarten, Beziehung, Tombstone und frisches Öffnen; die
+integrierte das Anlegen, Suchen, Bearbeiten und native Speichern der vier
+Kampagnenwissen-Arten mit Beziehungen, Tombstones und Campaignmanifest. Der
+unabhängige [Host-R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103180580)
+schloss den Atlas-first-Restjournalfehler; eine
 [freie GM-Probe](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103954556)
-bestätigte Anlegen, Suche, Bearbeiten und erneutes Öffnen unabhängig.
+bestätigte Anlegen, Suche, Bearbeiten und erneutes Öffnen.
 
-Auf Shared `ca290326` besteht zusätzlich ein isolierter echter Obsidianlauf
-mit Electron-Zoomfaktor 2: Hilfe per Tastatur, Suche per Tastatur, sichtbare
-Aktionen und Formularfelder im Viewport, Save und frischer Prozess. Der
-wiederholbare Aufruf `node tools/host-test.cjs --world-notes-zoom200` und danach
-derselbe Aufruf mit `--restart` verwenden einen ausdrücklich gesetzten eigenen
-`DUNGEON_QA_ROOT`; die zwei Läufe und Screenshots liegen unter
-`/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-zoom200-flag-ca290/evidence/`.
-Das ist ein synthetischer GUI-/Save-/Reopen-Nachweis, keine physische
-Tastatur-, Crash- oder Gesamt-SMR-02-Freigabe.
+Kontrollierte echte Obsidianproben auf synthetischer Fixture:
+- Auf Shared `ca290326`: 200 % Electron-Zoom, Tastaturzugang, Save und frischer
+  Prozess; `--world-notes-zoom200` unter eigenem `DUNGEON_QA_ROOT`, Rohbelege
+  `/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-zoom200-flag-ca290/evidence/`.
+- Manifest-CAS-Fehler nach nativer Notizschreibung: exakter Before-Rollback,
+  derselbe Entwurf speicherbar, frischer Prozess; `--world-notes-rollback`,
+  Rohbelege `/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-rollback-fault-02/evidence/`.
+- Aus tatsächlichen Before-/After-Bytes abgeleitetes Committed-Restjournal:
+  zweiter Prozess prüft und entfernt es vor dem Mount; Prosa, Beziehung und
+  Tombstone erhalten. `--world-notes-recovery`, Rohbelege
+  `/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-committed-recovery-01/evidence/`.
+  Die 24 portablen JSON-Kopien samt Hash-/Bytebindung stehen im
+  [Belegpaket](docs/reference/smr02-world-notes-recovery/README.md); der
+  unabhängige [R02-Rohbelegreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362)
+  bestätigte kontrollierte Rollback-/Recoveryfälle. Die ursprünglichen
+  Prüfcheckouts waren dirty; weder physischer Crash noch visueller Reviewer-PASS.
 
-Ein weiterer isolierter echter Obsidianlauf auf demselben Produkttripel
-injiziert beim ersten World-Notes-Save einen Manifest-CAS-Fehler, nachdem die
-native Notiz bereits geschrieben wurde. Notiz und Journal kehren zu den exakten
-Before-Bytes zurück; derselbe Entwurf lässt sich danach speichern und in einem
-frischen Prozess wieder öffnen. Wiederholbar mit
-`node tools/host-test.cjs --world-notes-rollback` und anschließend `--restart`
-unter eigenem `DUNGEON_QA_ROOT`; Belege liegen unter
-`/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-rollback-fault-02/evidence/`.
-Dies ist ein kontrollierter Fehler-/Rollbacknachweis, kein echter
-Prozessabbruch oder Stromausfall.
+Die folgenden Beiträge sind ebenfalls in Shared:
+- [PR #99](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/99):
+  Suche nach aktiven Beziehungsnamen und Zielnamen, Öffnen des Ziels nur bei
+  unverändertem Entwurf. Enge Such-/Navigationsreviews und isolierter echter
+  Edit-/Frischprozess auf `a7cc6991` bestanden; Rohbelege
+  `/home/aaron/.cache/dungeon-native-qa/atlasqa-relation-search-h02/evidence/`.
+- [PR #104](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/104):
+  aktive eingehende Verweise und geschützte Quellnavigation aus bestätigtem
+  Snapshot; enger Stadt-R01 und native Edit-/Frischprozessprobe bestanden.
+- [PR #107](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/107):
+  NPC-Kreatursuche übernimmt nur stabile Katalog-ID, manuelle IDs bleiben
+  editierbar. Enge Reviews, native Save-/Frischprozess- und 200-%-Proben;
+  letzte manuelle-ID-Korrektur nur DOM-geprüft.
+- [PR #108](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/108):
+  aktive NPC-Notizen über gespeicherte Kreatur-ID auffindbar, auch bei manuellen
+  IDs. Enger R01/CI und isolierter echter Edit-/Frischprozess auf `8621d202`;
+  Rohbelege `/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-ref-search-20261011/evidence/`.
+- [PR #112](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/112):
+  getrennte ungespeicherte A/B-Entwürfe beim Kampagnenwechsel im offenen View;
+  alte Sessions/Eingaben widerrufen, Anzeige erst nach bestätigtem Snapshot.
+  Enger R01/CI und echter Obsidianlauf A→B→A→B bestanden; 16 native Dateien
+  bytegleich, normaler Exit. Rohbeleg
+  `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-drafts-host-03/evidence/1791690123926-atlas-spatial-edit/`.
+- [PR #114](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/114):
+  Entwürfe über View-Close/Reopen innerhalb derselben Pluginlaufzeit erhalten.
+  Exklusiver Besitzer je Campaign/Namespace verhindert Überschreiben durch
+  alte Views oder Wiederbelebung nach Save/Discard. Unabhängiger enger R02
+  mit 25/25 Panel-/Viewfällen, Exact-SHA-CI und Autorenprobe im echten
+  Obsidian A→B→A→B auf `c631eb5f` bestanden; 16 native Dateien bytegleich,
+  normaler Exit. Rohbeleg
+  `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-r02-exact-01/evidence/1791692061930-atlas-spatial-edit/`.
 
-Ein zweiter eigener Hostfall leitet aus den tatsächlichen Before-/After-Bytes
-einer Gerücht-Tombstone-Speicherung ein gültiges liegen gebliebenes
-Committed-Journal ab. Beim Neustart eines separaten echten Obsidianprozesses
-wird es vor dem World-Notes-Mount geprüft und entfernt; die gespeicherte Prosa,
-Beziehung und das Tombstone bleiben sichtbar beziehungsweise ausgeblendet wie
-erwartet. Wiederholbar mit `--world-notes-recovery` und anschließend `--restart`
-im eigenen QA-Root; Belege unter
-`/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-committed-recovery-01/evidence/`.
-Das ist eine kontrolliert eingesetzte Restjournalprobe, kein physischer Crash.
-Die kleinen JSON-Rohbelege beider Fälle sind für unabhängige Prüfung
-[versioniert zugänglich](docs/reference/smr02-world-notes-recovery/README.md);
-`manifest.json` dort bindet jede Kopie an Originalpfad, Bytezahl und SHA-256.
-Der unabhängige [R02-Rohbelegreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362)
-hat alle 24 Kopien, vier Hostresultate und die kontrollierten Rollback- und
-Committed-Recovery-Orakel auf PR #95/`575ca65` begrenzt bestätigt. Die
-damaligen Prüfcheckouts waren dirty; daraus folgt kein sauberer
-Exact-SHA-Hostlauf und keine visuelle Abnahme durch den Reviewer.
+Ein Folgebeitrag macht eine durch die zweite Ansicht verdrängte erste Ansicht
+wieder bedienbar: Der vorhandene Button „Erneut versuchen“ holt nach frischem
+Campaignsnapshot den neuesten Entwurf ausdrücklich zurück. Die andere Ansicht
+und ihre späten Eingaben werden widerrufen; ein bloßes Providerereignis nimmt
+den Besitz nicht ungefragt zurück. Eine Zwei-View-DOM-Gegenprobe reproduzierte
+vor der Korrektur den alten Text und besteht danach. Eine isolierte echte
+Obsidianprobe mit zwei Ansichten auf sauberer Quelle `489bc13d` bestand:
+neuester Entwurf zurückgeholt, alte Eingabe wirkungslos, alle acht nativen
+Eingaben bytegleich, normaler Exit. Rohbeleg
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-reclaim-host-03/evidence/1791694205278-atlas-spatial-edit/`,
+Result-SHA256 `3216d4ca0fd0506404505d4dbb80476a0017591b8b419d959b18ad2f5d124f30`.
+Unabhängige Prüfung steht aus.
 
-Offen bleiben breitere Crash-/Recoveryqualifikation, physische Tastatur und die
-zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.
-Ortstags gegenüber Name-only-Anlage warten weiter auf die Zielregel in #44.
-PR #99 erweitert die Notizsuche um aktive Beziehungsnamen
-und Namen ihrer Ziele. Aus einer unveränderten Notiz lässt sich das Ziel öffnen;
-ein bearbeiteter Entwurf bleibt erhalten. Ein isolierter echter Obsidianlauf auf
-sauberem Source `a7cc6991` hat Suche, Entwurfschutz und Zielöffnung in einem
-frischen Prozess bestätigt; beide Prozesse endeten normal. Rohbelege:
-`/home/aaron/.cache/dungeon-native-qa/atlasqa-relation-search-h02/evidence/`.
-Synthetische Fixture und automatisierte Eingabe. Unabhängige enge Such-R01-
-und Navigations-R02-Reviews bestanden; Shared-Merge `88f455cb`. Keine neue
-Datenhaltung oder Gesamt-SMR-02-Freigabe.
-
-PR #104 zeigt an einer gespeicherten World Note die aktiven
-Einträge, die auf sie verweisen. Der GM kann die Quellnotiz öffnen, wenn der
-aktuelle Entwurf unverändert ist; ein bearbeiteter Entwurf bleibt erhalten.
-Die Liste wird aus dem bestätigten Snapshot berechnet und erzeugt keine
-gegenseitige Mitgliedschaft oder neue Speicherautorität. Core-/DOM- und
-isolierte native Edit-/Frischprozessproben sowie ein unabhängiger enger
-Stadt-R01 bestanden; Shared-Merge `de3181be`.
-
-PR #107 ergänzt im NPC-Editor eine Namenssuche im vorhandenen Monsterkatalog.
-Der GM übernimmt dessen stabile ID als Kreaturreferenz; gespeicherte manuelle
-IDs bleiben erhalten. Eigene isolierte Obsidianläufe belegen Auswahl, native
-Speicherung und frisches Öffnen, auch mit 200 % Zoom. Unabhängiger enger R01,
-Delta-Review und CI bestanden; Shared-Merge `76d8ded1`. Die letzte
-manuelle-ID-Korrektur wurde im DOM geprüft, nicht im früheren nativen Lauf.
-
-PR #108 macht aktive NPC-Notizen über ihre gespeicherte
-Kreatur-ID in der vorhandenen Notizsuche auffindbar, ohne neuen Index oder
-Speichervertrag. Auf sauberem Source `8621d202` bestand eine isolierte echte
-Obsidian-Edit-/Frischprozessprobe mit gespeicherter NPC-ID `goblin` und
-ausgeblendeter fremder Fraktion; beide Prozesse endeten normal. Rohbelege:
-`/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-ref-search-20261011/evidence/`.
-Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
-`af5ddcbb`. Die vollständige World-Planner-/SMR-02-Abnahme bleibt offen.
-
-PR #112 adressiert ungespeicherte Notizentwürfe beim
-Kampagnenwechsel A→B→A innerhalb derselben geöffneten Spielansicht. Er hält
-das World-Notes-Panel, widerruft alte Sessions und Eingaben und zeigt einen
-Entwurf erst nach bestätigter neuer Kampagnenbindung wieder an. Typecheck,
-Repositoryprüfung, 1011/1012 Tests (ein Skip) und Build bestanden. Eine neue
-native Probe erreichte den Wechsel zunächst wegen Fehlern im neuen Testskript
-nicht. Der danach korrigierte Lauf `--world-notes-drafts` wechselte in einem
-isolierten echten Obsidianprozess A→B→A→B. Die zwei ungespeicherten Entwürfe
-blieben getrennt und alle A/B-Eingabedateien bytegleich; der Prozess endete
-normal. Rohbeleg: `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-drafts-host-03/evidence/1791690123926-atlas-spatial-edit/`.
-Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
-`87ccdb26`. Die vollständige SMR-02-Abnahme steht aus.
-
-Der folgende #68-Beitrag erhält diese Entwürfe auch beim Schließen und erneuten
-Öffnen der Weltwissen-Ansicht innerhalb derselben Pluginlaufzeit. Pro
-Kampagne/Namespace besitzt nur eine Ansicht den editierbaren Entwurf; eine
-überholte Ansicht kann weder einen neueren Text überschreiben noch nach Save
-oder ausdrücklichem Verwerfen einen alten Entwurf wiederbeleben. Der
-Kampagnen-Snapshot wird weiterhin frisch bestätigt; der Puffer trägt keine
-Speicherautorität. Fokussierte DOM-Gegenproben prüfen A/B-Entwürfe, alte
-Eingaben, Close-Reihenfolgen sowie Save/Discard mit einer zweiten Ansicht.
-Ein isolierter echter
-Obsidianlauf A→B→A→B, Ansicht schließen/öffnen, B- und A-Entwurf erneut
-anzeigen, 16 native Eingabedateien bytegleich und normaler Exit bestand;
-Rohbeleg auf sauberem repariertem Produktstand `c631eb5f` unter
-`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-r02-exact-01/evidence/1791692061930-atlas-spatial-edit/`.
-Ein Prozessneustart erhält ungespeicherte Entwürfe weiterhin nicht.
+Offen: ungespeicherte Entwürfe über Prozessneustart, breite Crash-/Recovery-
+und physische Eingabeprüfung, Encounter-Constraints, NPC-Combat, vollständiger
+World Planner und Gesamt-SMR-02/SMR-AC-03. Ortstags gegenüber Name-only-Anlage
+warten auf die Zielregel in #44. Die genannten Teilbelege sind keine
+Gesamtfreigabe.
 
 ### SMR-03 – Party, Scene und Live Session
 
