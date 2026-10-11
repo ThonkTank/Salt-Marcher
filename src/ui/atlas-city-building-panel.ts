@@ -2,6 +2,7 @@ import { CityDraft } from "../features/city/draft";
 import type { CityEdit } from "../features/city/edit";
 import type { CitySource } from "../features/city/commands";
 import { serializeCityDocument } from "../features/city/codec";
+import { cityBuildingCenteredPose } from "../features/city/geometry";
 
 /** Transient name input only; CitySource and the shared AtlasHistory own all city data. */
 export class AtlasCityBuildingPanel {
@@ -119,8 +120,7 @@ export class AtlasCityBuildingPanel {
     const building = this.draft!.before.buildings.find(b => b.id === this.buildingId)!;
     this.commit([{
       kind: "set-building-pose", buildingId: building.id,
-      position: building.position, scale: building.scale,
-      rotationRadians: building.rotationRadians + radians,
+      ...cityBuildingCenteredPose(building, building.rotationRadians + radians),
     }], "Haus drehen");
     if (this.message) this.message.textContent = "Haus gedreht";
   }
