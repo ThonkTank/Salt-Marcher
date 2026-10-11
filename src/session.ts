@@ -4,6 +4,7 @@ import {
   type Id,
   type MapDocument,
   type DungeonContent,
+  type DungeonVolume,
   type Settings,
   type SmartTileCell,
   type TerrainMask,
@@ -273,6 +274,8 @@ export class Session {
   private savedSmartTiles?: readonly SmartTileCell[];
   private stateTerrainMasks?: readonly TerrainMask[];
   private savedTerrainMasks?: readonly TerrainMask[];
+  private stateVolumes?: readonly DungeonVolume[];
+  private savedVolumes?: readonly DungeonVolume[];
   readonly id: Id;
   readonly version: 3 | 4;
   revision = 0;
@@ -289,6 +292,7 @@ export class Session {
     this.stateContent = doc.content;
     this.stateSmartTiles = doc.smartTiles;
     this.stateTerrainMasks = doc.terrainMasks;
+    this.stateVolumes = doc.volumes;
     for (const f of doc.floors) this.levels.set(f.id, f);
     for (const e of doc.entities) {
       this.records.set(e.id, e);
@@ -300,6 +304,7 @@ export class Session {
     this.savedContent = this.stateContent;
     this.savedSmartTiles = doc.smartTiles;
     this.savedTerrainMasks = doc.terrainMasks;
+    this.savedVolumes = doc.volumes;
   }
   get settings(): Settings {
     return this.stateSettings;
@@ -318,6 +323,9 @@ export class Session {
   }
   get terrainMasks(): readonly TerrainMask[] | undefined {
     return this.stateTerrainMasks;
+  }
+  get volumes(): readonly DungeonVolume[] | undefined {
+    return this.stateVolumes;
   }
   private visibleSmartTiles(): readonly SmartTileCell[] | undefined {
     return this.stateSmartTiles?.filter((cell) =>
@@ -338,6 +346,7 @@ export class Session {
       this.stateContent !== this.savedContent ||
       JSON.stringify(this.visibleSmartTiles()) !== JSON.stringify(this.savedSmartTiles) ||
       JSON.stringify(this.stateTerrainMasks) !== JSON.stringify(this.savedTerrainMasks) ||
+      JSON.stringify(this.stateVolumes) !== JSON.stringify(this.savedVolumes) ||
       [...this.notes.values()].some((n) => n.base !== n.current)
     );
   }
@@ -771,6 +780,7 @@ export class Session {
       ...(this.stateTerrainMasks !== undefined
         ? { terrainMasks: this.stateTerrainMasks }
         : {}),
+      ...(this.stateVolumes !== undefined ? { volumes: this.stateVolumes } : {}),
     };
   }
   snapshot(): SaveSnapshot {
@@ -823,12 +833,15 @@ export class Session {
     this.savedContent = snapshot.document.content;
     this.savedSmartTiles = snapshot.document.smartTiles;
     this.savedTerrainMasks = snapshot.document.terrainMasks;
+    this.savedVolumes = snapshot.document.volumes;
     const equal = (a: unknown, b: unknown) =>
       a === b || JSON.stringify(a) === JSON.stringify(b);
     if (equal(this.stateSettings, this.savedSettings))
       this.stateSettings = this.savedSettings;
     if (equal(this.stateContent, this.savedContent))
       this.stateContent = this.savedContent;
+    if (equal(this.stateVolumes, this.savedVolumes))
+      this.stateVolumes = this.savedVolumes;
     this.dirtyIds = new Set(
       [
         ...new Set([...this.records.keys(), ...this.savedRecords.keys()]),
