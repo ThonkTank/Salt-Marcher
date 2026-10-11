@@ -966,28 +966,29 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-04",
-    "state": "producer_native_and_fresh_process_PASS_independent_helper_oracle_receipt_PASS_GM_pending",
+    "state": "independent_H02_raw_integrity_save_fresh_and_process_PASS_room_image_visibility_limited_GM_pending",
     "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-H02-R01-CONSUMED",
-      "kind": "bounded_independent_helper_oracle_receipt_review_consumption",
+      "id": "E2E-01-HEX04-H02-RAW-R01-CONSUMED",
+      "kind": "bounded_independent_raw_review_consumption_and_statement_correction",
       "owner": "Hex",
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "producer_native_and_fresh_process_PASS_independent_helper_oracle_receipt_PASS_GM_pending",
-      "sourceCommit": "7f64b6c3db9796fe367936ddfe94f461f15ccd53",
-      "sharedInput": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+      "state": "independent_H02_raw_integrity_save_fresh_and_process_PASS_room_image_visibility_limited_GM_pending",
+      "sourceCommit": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
+      "sharedInput": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
       "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorNativeH02",
-      "reviewUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019",
+      "reviewUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982",
       "guiUsed": false,
       "productEdited": false,
       "phaseApproval": false,
-      "finishedAt": "2026-10-11T01:14:46.109681+00:00"
+      "finishedAt": "2026-10-11T01:22:18.595642+00:00",
+      "publicationPullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96"
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-H02-INTEGRATION-AND-GM",
-      "kind": "consume_independent_integration_or_delivered_GM_repair_retest",
+      "id": "E2E-01-HEX04-INSPECTOR-N02-GM-CONSUMPTION",
+      "kind": "consume_delivered_GM_repair_retest_or_required_finding",
       "owner": "Hex",
       "issue": 80,
       "e2eIssue": 12,
@@ -995,9 +996,9 @@
       "e2e01UserLine": 13,
       "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorNativeH02",
       "sourceCommit": "bd2a0ada903b414eb46577ec5451f79ca885770d",
-      "sharedInput": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+      "sharedInput": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
       "fixtureVersion": "e2e01-spatial-v2",
-      "focus": "Independent steward: consume PR94 with its qualified H02 helper/oracle/receipt input and this own metadata-only review consumption; inspect any incoming relevant-path delta before integration. Cloud-GM retains its claimed isolated N02 repair retest. Hex consumes delivered integration or GM findings at issue80; no dependent expansion or new general review.",
+      "focus": "Cloud-GM retains the claimed isolated N02 repair retest and may observe scrolling and Room field discoverability through its ordinary free user flow. Hex consumes delivered GM findings at issue80. The local raw access gap is closed by Stadt RAW-R01; raw integrity and saved/fresh text are qualified, full Room name/prose visibility is not image-proven. No new producer GUI or general review solely for this metadata correction.",
       "dependentExpansionAllowed": false,
       "guiUsedByHex": false,
       "slotRequiredBeforeAnyNewLocalGui": true
@@ -7134,7 +7135,7 @@
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "producer_native_and_fresh_process_PASS_independent_helper_oracle_receipt_PASS_GM_pending",
+      "state": "independent_H02_raw_integrity_save_fresh_and_process_PASS_room_image_visibility_limited_GM_pending",
       "sourceCommit": "bd2a0ada903b414eb46577ec5451f79ca885770d",
       "productBase": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
       "productBuildSource": "dba7d559044f9e8b072a329f2efacd7452b333b4",
@@ -7152,7 +7153,7 @@
         "freshProcess": true,
         "narrowViewport": true,
         "syntheticInput": true,
-        "independentNativeEvidenceReview": false,
+        "independentNativeEvidenceReview": true,
         "freeGMRepairRetest": false,
         "newNativeCopyDiscardRecoveryMatrix": false,
         "physicalInput": false,
@@ -7160,9 +7161,12 @@
         "largeMap": false,
         "userVaultInstallation": false,
         "fullE2E": false,
-        "independentHelperOracleReceiptReview": true
+        "independentHelperOracleReceiptReview": true,
+        "independentGuiExecution": false,
+        "fullRoomNameAndProseVisibilityImageEvidence": false,
+        "freshRoomFieldDiscoverabilityVerified": false
       },
-      "nextConsumer": "Independent steward: consume PR94 with its qualified H02 helper/oracle/receipt input and this own metadata-only review consumption; inspect any incoming relevant-path delta before integration. Cloud-GM retains its claimed isolated N02 repair retest. Hex consumes delivered integration or GM findings at issue80; no dependent expansion or new general review.",
+      "nextConsumer": "Cloud-GM retains the claimed isolated N02 repair retest and may observe scrolling and Room field discoverability through its ordinary free user flow. Hex consumes delivered GM findings at issue80. The local raw access gap is closed by Stadt RAW-R01; raw integrity and saved/fresh text are qualified, full Room name/prose visibility is not image-proven. No new producer GUI or general review solely for this metadata correction.",
       "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94",
       "independentReview": {
         "reviewer": "Contributor",
@@ -7185,6 +7189,69 @@
         "freeGMRepairRetest": false,
         "receiptSha256": "44e53e87b6f11c147dce30ab4cf92e878bc4db5ee99dc77155e7a927a23a8bcf",
         "continuity": "This consumption leaves the reviewed helper, source/build/fixture inputs and original producer receipt byte-identical; metadata and the own working section only."
+      },
+      "independentIntegration": {
+        "steward": "Contributor",
+        "claim": "HEX04-INSPECTOR-N02-H02-S01",
+        "candidateHead": "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd",
+        "sharedMerge": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
+        "parents": [
+          "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+          "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd"
+        ],
+        "candidateIdenticalTree": "f96eb008cd4db7e7b9c71a1f8f190257b32d9dc3",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104127611",
+        "sharedStructureCi": {
+          "runId": 38101379694,
+          "result": "PASS"
+        }
+      },
+      "independentRawReview": {
+        "reviewer": "Stadt",
+        "claim": "HEX04-N02-H02-RAW-R01",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982",
+        "reviewedCandidate": "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd",
+        "sharedInput": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
+        "receiptSha256": "44e53e87b6f11c147dce30ab4cf92e878bc4db5ee99dc77155e7a927a23a8bcf",
+        "result": "PASS_for_raw_integrity_save_fresh_data_and_process_binding_with_image_visibility_limit",
+        "scope": "Independent read-only inspection of original local raw files and PNGs; no new native execution or free GM acceptance.",
+        "rawFilesRead": 30,
+        "editFilesRead": 19,
+        "freshFilesRead": 11,
+        "savedBaselineRead": true,
+        "nativeVaultHashesChecked": 8,
+        "pngsVisuallyInspected": 7,
+        "rawAccessGapClosed": true,
+        "normalProcessIdentitiesChecked": [
+          {
+            "pid": 3591769,
+            "startTicks": 21108009,
+            "normalExit": true,
+            "forcedTermination": false
+          },
+          {
+            "pid": 3593342,
+            "startTicks": 21112021,
+            "normalExit": true,
+            "forcedTermination": false
+          }
+        ],
+        "finding": {
+          "id": "RAW-R01-01",
+          "kind": "evidence_statement_limit",
+          "productFailureEstablished": false,
+          "affectedImages": [
+            "inspector-n02-room.png",
+            "inspector-n02-fresh-room.png"
+          ],
+          "observed": "Images show the lower navigation area. Room name/prose inputs are outside the visible scroll viewport.",
+          "textPreservationEvidence": "Saved native bytes, full fresh model comparison and DOM inputValue oracles establish exact text; screenshots alone do not establish full Room name/prose visibility or fresh field discoverability.",
+          "disposition": "Consumed in own acceptance and working section without editing the original receipt or helper. Existing free Cloud-GM scope can observe scrolling/discoverability; no additional producer GUI or general review required by this finding."
+        },
+        "independentGuiExecution": false,
+        "freeGMRepairRetest": false,
+        "productOrCodecQualification": false,
+        "fullE2E": false
       }
     }
   },
@@ -10489,20 +10556,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-COMPOUND-N02",
-      "issue": 69,
-      "state": "atomic_rename_move_ready_for_independent_delta_review",
-      "branch": "city/manual-session-planner",
-      "plan": "docs/plans/campaign/manual-session-planner.md",
-      "finding": "Dirty draft published before failed rename/move second revision; 2 actual panel probes FAIL before repair",
-      "verification": "24 focused core/panel PASS; final-context and missing-target failures retain draft and allow exact successful retry",
-      "next": "Existing reviewer checks compound action delta; native Planner ownership/file/publish contract still open",
-      "qualifiedPriorInput": "Focus review5481049475 and visible Cloud-GM6102960484 PASS on59f04fe",
-      "limits": "No native storage/plugin/Save/Fresh/Recovery or overall product acceptance"
+      "id": "CITY-BUILDING-NAME-I01",
+      "issue": 92,
+      "state": "inspector_independent_review_pass_native_edit_and_fresh_producer_pass_gm_recovery_pending",
+      "branch": "city/building-name-inspector",
+      "plan": "docs/plans/city/building-name-inspector.md",
+      "verification": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs, one dock/camera/context/history; native Save and fresh host-model mount; invalid/stale/ABA/revoked context retain input",
+      "next": "R02 PASS5481432379 consumed; H01 actual native Edit3/Fresh1 PASS, normalExit0 both, slot returned. Next independent stewardship and GM/Recovery/physical acceptance; first picking countercase preserved",
+      "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {
-      "id": "MANUAL-PLANNER-I01-CONSUME",
-      "focus": "Finish current manual Planner package; bind confirmed Campaign persistence and review inputs. P04-HOST-I01 remains separately owned awaiting its declared payload/archive inputs."
+      "id": "CITY-BUILDING-NAME-H01-CONSUME",
+      "focus": "Consume versioned H01 evidence through independent stewardship and GM/Recovery acceptance; no repeated native run on unchanged scope. #69/#41 retain pending inputs."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

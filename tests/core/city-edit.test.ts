@@ -355,3 +355,90 @@ test("City edit packages use one real shared history step and reject stale gestu
   assert.equal(encode(source.read()), encode(after));
   assert.equal(encode(other.read()), otherBefore);
 });
+
+test("City building name edit preserves exact text, all geometry and other records through shared undo/redo", () => {
+  const initial = town(),
+    before = encode(initial);
+  const renamed = editCity(initial, [
+    {
+      kind: "set-building-name",
+      buildingId: "house",
+      name: "  日本語\n[[Hafen]]\t  ",
+    },
+  ]);
+  assert.equal(renamed.buildings[0]!.name, "  日本語\n[[Hafen]]\t  ");
+  assert.deepEqual(renamed, {
+    ...initial,
+    buildings: [
+      { ...initial.buildings[0]!, name: renamed.buildings[0]!.name },
+      initial.buildings[1]!,
+    ],
+  });
+  assert.equal(encode(initial), before);
+  const history = new AtlasHistory(),
+    source = new CitySource(initial, history);
+  history.execute({
+    label: "Gebäudename ändern",
+    changes: [cityDocumentChange(initial, renamed)],
+  });
+  assert.equal(encode(source.read()), encode(renamed));
+  history.undo();
+  assert.equal(encode(source.read()), before);
+  history.redo();
+  assert.equal(encode(source.read()), encode(renamed));
+  assert.equal(history.undoDepth, 1);
+});
+
+test("City building name edit rejects invalid text, wrong target, duplicate writes and stale publication", () => {
+  const initial = town(),
+    before = encode(initial);
+  for (const value of [null, 42, "x".repeat(201)])
+    reject(initial, [
+      { kind: "set-building-name", buildingId: "house", name: value },
+    ]);
+  for (const target of ["absent", "center", "road-west"])
+    reject(initial, [
+      { kind: "set-building-name", buildingId: target, name: "new" },
+    ]);
+  reject(initial, [
+    { kind: "set-building-name", buildingId: "house", name: "one" },
+    { kind: "remove-building", buildingId: "house" },
+  ]);
+  let calls = 0;
+  const bad = {
+    kind: "set-building-name",
+    buildingId: "house",
+    get name() {
+      calls++;
+      return "bad";
+    },
+  };
+  reject(initial, [bad]);
+  assert.equal(calls, 0);
+  const renamed = editCity(initial, [
+    { kind: "set-building-name", buildingId: "house", name: "" },
+  ]);
+  const history = new AtlasHistory(),
+    source = new CitySource(initial, history);
+  history.execute({
+    label: "Concurrent edit",
+    changes: [
+      cityDocumentChange(
+        initial,
+        editCity(initial, [
+          { kind: "remove-building", buildingId: "other-house" },
+        ]),
+      ),
+    ],
+  });
+  const current = encode(source.read());
+  assert.throws(() =>
+    history.execute({
+      label: "Stale name",
+      changes: [cityDocumentChange(initial, renamed)],
+    }),
+  );
+  assert.equal(encode(source.read()), current);
+  assert.equal(history.undoDepth, 1);
+  assert.equal(encode(initial), before);
+});

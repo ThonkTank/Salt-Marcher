@@ -39,6 +39,11 @@ export type CityEdit =
       readonly buildingId: string;
       readonly footprint: Polygon;
     }
+  | {
+      readonly kind: "set-building-name";
+      readonly buildingId: string;
+      readonly name: string;
+    }
   | { readonly kind: "remove-building"; readonly buildingId: string }
   | { readonly kind: "add-plaza"; readonly plaza: CityArea };
 
@@ -51,6 +56,7 @@ const FIELDS: Record<CityEdit["kind"], readonly string[]> = {
   "add-building": ["building"],
   "set-building-pose": ["buildingId", "position", "rotationRadians", "scale"],
   "set-building-footprint": ["buildingId", "footprint"],
+  "set-building-name": ["buildingId", "name"],
   "remove-building": ["buildingId"],
   "add-plaza": ["plaza"],
 };
@@ -210,6 +216,19 @@ export function editCity(
             next.buildings,
             claim(edit.buildingId),
             (building) => ({ ...building, footprint: edit.footprint }),
+          ),
+        };
+        break;
+      case "set-building-name":
+        next = {
+          ...next,
+          buildings: update(
+            next.buildings,
+            claim(edit.buildingId),
+            (building) => ({
+              ...building,
+              name: edit.name,
+            }),
           ),
         };
         break;

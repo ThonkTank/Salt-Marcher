@@ -39,7 +39,9 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96
+
+Integrierter H02-Eingang: [PR94](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94).
 
 Integrierter Reparatureingang: [PR91](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91).
 Implementierungs-/Savebasis: [PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
@@ -53,14 +55,11 @@ bleiben an ihre alten Produkttripel gebunden. Deren Frischprozess-/Hostgrenzen
 werden nicht auf den geänderten Inspector übertragen.
 
 **N02 ist unabhängig geprüft und integriert:** Orts-/Raum-Key teilen eine Leiste
-mit „Zur Karte“. Die Panels führen Escape vom tatsächlichen Eingabefeld zum selben
-geprüften Schließguard. Invalide oder widerrufene Entwürfe bleiben erhalten;
-gemeinsame Kamera/Repository/History und Savegrenzen bleiben maßgeblich.
+mit „Zur Karte“ und geprüftem Escape aus den Feldern. Drafts, gemeinsame Kamera,
+Repository/History und Savegrenzen bleiben erhalten.
 [Atlas-QA-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700)
 und [separate Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554)
-sind konsumiert. Die frühere Window-Capture-Registrierung und Linkedoms fehlende
-Capturephase begrenzen den alten Testbefund; kein nativer Capturefehler behauptet.
-Quell-/Reviewbeleg: `checkpoint.hexAtlasExecution.dungeonAtLocationInspectorEscapeN02`.
+sind konsumiert; Diagnose und Quellgrenzen bleiben im bestehenden N02-Abnahmeeintrag.
 
 **Gezielte native Producerprobe H02 bestanden:** [Quellgebundener Beleg](docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json).
 Auf unverändertem integriertem N02-Produkt bei 1024×800: eine sichtbare Keyleiste,
@@ -84,15 +83,25 @@ bleibt verwendbar; alte H01-Buildhashes sind historisch. Aufruf des neuen engen
 Consumers mit zusätzlichem `--hex04-inspector-n02`, Wiederöffnung mit `--restart`.
 
 **Enger unabhängiger H02-Review konsumiert:** [Contributor-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019)
-qualifiziert ausschließlich Helper, Nachorakel, versionierte Receipt-/Hashbindungen
-und die ausgewiesenen Grenzen. Keine Pflichtkorrektur. Lokale Rohdateien und Screens
-waren aus seiner Cloud nicht erreichbar und wurden dort nicht gelesen; dieser
-Review ist kein unabhängiger Rohbeleg-/GUI-/GM-PASS. Originalreceipt, Helper,
-Produkt-/Build-/Fixturepfade bleiben unverändert. Der Reviewanschluss ist beendet.
+qualifiziert Helper, Nachorakel und versionierte Receipt-/Hashbindungen ohne
+Pflichtkorrektur. Lokale Rohdateien wurden aus seiner Cloud nicht gelesen;
+dieser Scope erteilt keinen Rohbeleg-/GUI-/GM-PASS. Originalreceipt/Helper unverändert.
 
-**Nächste konkrete Empfänger:** unabhängiger Steward für PR94 mit diesem engen
-qualifizierten Eingang und der eigenen Metadatenübernahme; vor Integration neue
-relevante Deltas prüfen. Keine neue Produkt-/Codec-/allgemeine Reviewrunde.
+**Integration und lokaler Rohbeleganschluss konsumiert:** [Separate PR94-Integration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104127611)
+ist übernommen. [Stadt RAW-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982)
+hat Originaldateien, Baseline, native Hashes, normale getrennte Prozesse und PNGs
+read-only geprüft. Die lokale Raw-Access-Lücke ist geschlossen; Integrität und
+Save/Fresh-Texterhalt sind unabhängig bestätigt, keine eigene GUI-Ausführung.
+
+**Aussagegrenze RAW-R01-01:** Room-/Fresh-Room-PNG zeigen die untere Navigation;
+Raumname und Prosa liegen außerhalb des sichtbaren Scrollbereichs. Exakter Text
+ist durch native Bytes, Fresh-Modellvergleich und DOM-Orakel belegt. Bilder allein
+belegen keine vollständige Raumprosa-/Feldsichtbarkeit oder frische Auffindbarkeit.
+Kein daraus bewiesener Produktfehler. Originalreceipt/Helper bleiben unverändert;
+keine neue Producer-GUI oder allgemeine Reviewrunde nur für diese Präzisierung.
+
+**Nächster fachlicher Empfänger:** bestehender Cloud-GM-Nachtest für freie Nutzung,
+einschließlich Scroll-/Feldauffindbarkeit im normalen eigenen Ablauf.
 Cloud-GM hat den [freien N02-Nachtest selbst übernommen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103956562)
 und nutzt seinen eigenen isolierten Cloudhost; sein Ergebnis bleibt ausstehend.
 Nutzerziel: vom normalen Dateibaumeinstieg `Atlanten/Gemeinsamer-Testatlas.overworld`

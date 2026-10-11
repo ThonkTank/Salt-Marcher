@@ -25,12 +25,13 @@ const restart = process.argv.includes("--restart"),
   dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
   hex04DungeonAtLocation = process.argv.includes("--hex04-dungeon-at-location"),
+  cityBuildingName = process.argv.includes("--city-building-name"),
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
   worldNotesZoom200 = process.argv.includes("--world-notes-zoom200"),
   worldNotesFault = process.argv.includes("--world-notes-rollback"),
   worldNotesRecovery = process.argv.includes("--world-notes-recovery"),
   worldNotesNative = process.argv.includes("--world-notes-native") || worldNotesZoom200 || worldNotesFault || worldNotesRecovery,
-  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesNative || hex04DungeonAtLocation,
+  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesNative || hex04DungeonAtLocation || cityBuildingName,
   atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
@@ -941,7 +942,9 @@ async function workflow() {
     return;
   }
   if (atlasSpatial) {
-    const scenario = require(hex04DungeonAtLocation
+    const scenario = require(cityBuildingName
+      ? "./host/city-building-name.cjs"
+      : hex04DungeonAtLocation
       ? "./host/hex04-dungeon-at-location.cjs"
       : atlasCampaignRuntime
       ? "./host/atlas-campaign-runtime.cjs"

@@ -73,8 +73,13 @@ Seine Produkt-/Buildidentität ersetzt die historischen H01-Hashes ausschließli
 für diesen neuen Nachtest. Der sichtbare Ablauf und die Rohartefakte sind im Beleg
 gebunden. Der [enge unabhängige H02-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019)
 qualifiziert Helper, Nachorakel und versionierte Receipt-/Hashbindungen. Lokale
-Rohdateien und Screens waren für den Cloudreview nicht erreichbar; unabhängiger
-Rohbeleg-/GUI-Nachweis und freie Cloud-GM-Nutzung bleiben offen.
+Rohdateien und Screens waren für diesen Cloudreview nicht erreichbar. Der spätere
+[lokale Stadt-Rohreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982)
+schließt den Raw-Zugriff für Integrität, Save/Fresh-Daten und Prozessbindung.
+Room-/Fresh-Room-Bilder zeigen die untere Navigation; Raumname-/Prosaeingaben liegen
+außerhalb des sichtbaren Scrollbereichs. Native Bytes, Fresh-Modellvergleich und
+DOM-Orakel bestätigen Texte, Bilder allein keine volle Prosa-/Feldsichtbarkeit.
+Keine neue unabhängige GUI-Ausführung; freie Cloud-GM-Nutzung bleibt offen.
 
 Nach frischer Slotkoordination dieselben isolierten Aufrufe wie oben mit zusätzlichem
 `--hex04-inspector-n02`; `--restart` verwendet denselben eigenen Testvault.
