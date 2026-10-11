@@ -66,6 +66,8 @@ Die Matrix bewahrt die quellengebundene Lückenanalyse gegenüber der oben gepin
 
 ## Abhängigkeiten und Abnahmefolge
 
+Die zentrale [Atlaspriorisierung](../../../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) bestimmt die Lieferung. Die folgenden Schritte sind Datenabhängigkeiten innerhalb der räumlichen Facharbeit, keine zusätzliche Gesamtlieferfolge. Originalgesten werden nach dem gemeinsamen Ergebnismaßstab bewertet.
+
 1. `SMR04-DUNGEON-VOLUME` entscheidet zuerst nur den räumlichen
    Domänen-/Persistenzvertrag und seine 2D-Schnittprojektion. Eine bestehende
    `Floor`- oder Building-ID darf nicht stillschweigend zur neuen Volume- oder

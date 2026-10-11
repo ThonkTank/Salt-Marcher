@@ -88,7 +88,7 @@ RP-R/RP-L/RP-X sind konkrete Quell-Qualifikationsprofile, keine Produktcaps: RP-
 
 ### FTG-Lebensdaten-Zuordnung
 
-Geltende Zielregel ist der direkte Stadtauftrag vom 09.10.2026: volle Gleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator bei besserer Bedienung. Die bestehenden [Inventareinträge](../acceptance.json) unter `cityPlans.functionalInventory` halten je Kennung `sourceUrl`, Beobachtungszeit, Originalbelege und offene `gap`-Felder. Diese historischen Teilbeobachtungen begründen die Zuordnung, keinen vollständigen Original- oder Produkt-PASS. Der [Stadtplan](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#lebensdaten-in-der-bestehenden-lieferfolge) enthält die konkrete Umsetzung; die [Roadmap](../ROADMAP-CITIES.md) hält die bestehende Lieferfolge.
+Geltende Zielregel ist der direkte Stadtauftrag vom 09.10.2026: volle Gleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator bei besserer Bedienung. Die bestehenden [Inventareinträge](../acceptance.json) unter `cityPlans.functionalInventory` halten je Kennung `sourceUrl`, Beobachtungszeit, Originalbelege und offene `gap`-Felder. Diese historischen Teilbeobachtungen begründen die Zuordnung, keinen vollständigen Original- oder Produkt-PASS. Der [Stadtplan](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#lebensdaten-in-der-bestehenden-lieferfolge) enthält die konkrete Umsetzung; die zentrale [Atlaspriorisierung](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) bestimmt die Lieferung. Ergebnisgleichwertigkeit gilt für alle Vorbilder; Originalgesten brauchen keine identische eigene Entsprechung.
 
 | Teilziel und genaue Inventarquelle | Bestehendes Paket / geltende oder offene Zielregel | Zukünftige Produktabnahme |
 | --- | --- | --- |

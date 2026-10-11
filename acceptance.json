@@ -1087,11 +1087,11 @@
     ],
     "policy": {
       "sourceRule": "Offizielle Produktbeschreibung und Devlogs liefern Kandidaten; ein direkter Ergebnisvergleich bleibt bis CITY-00 offen. Alte quelloffene Generatorversion ist kein Nachweis für aktuelle Ausgabe.",
-      "referenceRule": "Direkter Auftrag 09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator; Originalgesten nicht vorgeschrieben, Ergebnis-/Bedienvergleich separat belegen.",
+      "referenceRule": "Die vollständigen Stadtfunktionen bleiben Pflicht; ihre erreichbaren, editierbaren und gespeicherten Ergebnisse werden gemäß ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel verglichen. Originalgesten, Menüs und Algorithmen sind keine Vorgabe; eigene Bedienung separat prüfen.",
       "interactionRule": "Ein Atlas, eine Kamera, eine Werkzeugleiste und durchgehende Undo/Redo-Folge. Zoom wechselt keinen Bearbeitungsmodus; Werkzeuge wirken auf direkt getroffene Geometrie.",
-      "scopeRule": "Die Stadt-Ergebnisabnahme ist getrennt von Wonderdraft-Funktions-/Gestenparität. Wiederverwendete gemeinsame Werkzeuge behalten ihre jeweiligen belegten Regeln.",
+      "scopeRule": "Für Stadt, Hex und Dungeon gilt derselbe zentrale Ergebnismaßstab. Wiederverwendete Werkzeuge dürfen mehrere Vorbildfunktionen mit eigener konsistenter Bedienung erfüllen; eigenständige fachliche Wirkungen und historische Belege bleiben erhalten.",
       "evidenceRule": "Direkte Ergebnisbilder, bearbeitbare native Kartendaten, wirkliche Nutzeraufgaben, Save/Neustart und betroffene Konflikt-/Undo-Fälle auf benanntem Build belegen; eigenständiger Review.",
-      "earlyUsability": "Manuell bearbeitbare Stadt nach CITY-01; erzeugter Stadtplan nach CITY-02; vollständige direkte Haus-Dungeon-Bearbeitung nach CITY-03. Je Phase gemeinsame Region weiterprüfen.",
+      "earlyUsability": "Benutzbare Zwischenstände nach zentraler Atlaspriorisierung, nicht starrer CITY-/HEX-Nummernfolge. Jede Lieferung prüft die gemeinsame Region; ein Grundausbau schließt nicht die ganze Fachphase.",
       "protectionRule": "Neugeneration erhält explizite Bearbeitung, verknüpfte Orte/Häuser, Keys und Kennungen. Kein stilles Regenerieren beim Laden.",
       "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/city-plans/"
     },
@@ -4791,7 +4791,7 @@
         }
       ]
     },
-    "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert.",
+    "currentUserGoal": "11.10.2026: vollständige erreichbare Ergebnisgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator bei guter eigener Bedienung, als Teil der zentral priorisierten Atlasumsetzung. Identische Gesten/Algorithmen sind auch für wiederverwendete Hex-/Dungeonwerkzeuge keine Pflicht; fachlicher Umfang bleibt erhalten.",
     "atlasDetailEntry": {
       "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
       "state": "component_review_and_cleanup_pass_host_pending",
@@ -63758,21 +63758,21 @@
     },
     "policy": {
       "sourceRule": "Paketpfade und Dokumentation sind Suchhinweise. Ausschließlich direkt gemessene Bedienfolgen und Wirkungen gelten als Originalbeleg.",
-      "perPhaseGate": "Vor Produktcode für eine Werkzeugfamilie die zugehörigen Original-Unterfälle direkt messen, Optionsmatrix vervollständigen und Original→Host-Zuordnung festhalten. Unbekannte Regeln bleiben offen und werden nicht geraten.",
-      "acceptanceRule": "Pflichtfall erst nach Originalbeleg, finalem Hostpaar, betroffener Undo/Redo-/Save-/Neuöffnungsfolge und getrenntem Review desselben Buildstands schließen; vollständige Parität zusätzlich am installierten Endstand.",
-      "uiCoverageRule": "Jeder erreichbare Originalbefehl, jede Option und kontextbezogene Geste besitzt vor HEX-01 einen Inventareintrag, WD-Fall und Zielphase. Die jetzigen Sammelproben werden anhand realer UI-Kontrollen in zusätzliche stabile Unterfälle aufgeteilt.",
-      "growthRule": "Neue Fälle ergänzen; IDs nicht umnummerieren. Unerreichbare Kandidaten nur mit direktem Klassifizierungsbeleg als nicht zutreffend markieren. Keine stillen Ausschlüsse.",
+      "perPhaseGate": "Die nächste Lieferung folgt ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel. Vorhandene Referenzbelege verwenden; unklare fachliche Wirkungen gezielt vor ihrer Umsetzung im Original klären. Kein neues vollständiges UI-/Gestentor vor jedem benutzbaren Ausbau.",
+      "acceptanceRule": "Pflichtwirkung nach Original-/Aufgabenbeleg und benanntem Hostbuild mit eigenem erreichbaren, editierbaren und dauerhaft gespeicherten Ergebnis schließen; betroffene Abbruch-, Undo/Redo-, Save-/Neuöffnungsfälle und Review nachweisen. Identische Originalgesten sind keine Voraussetzung; vollständige Gleichwertigkeit zusätzlich am installierten Endstand.",
+      "uiCoverageRule": "Das vorhandene Originalinventar bleibt mit UI-/Fallkennungen und Belegen erhalten. Eigenständige fachliche Wirkungen besitzen eine Zielzuordnung; mehrere Eingabewege/Regler derselben Wirkung dürfen denselben eigenen Zugang verwenden. Historisches HEX-00-Inventartor und numerische Phasenliste sind keine aktuelle Produktlieferfolge.",
+      "growthRule": "Neue fachliche Wirkungen im vorhandenen Register ergänzen; IDs und historische Beobachtungen nicht umnummerieren oder entfernen. Gleichartige Eingabewege zusammen zu bedienen ist kein Funktionsausschluss. Unerreichbare oder ungeklärte fachliche Kandidaten bleiben mit ihrer Zugangslücke offen; keine stillen Ausschlüsse.",
       "usabilityRule": "Frühe Teststände bleiben nach HEX-02/05 nutzbar und dürfen als teilweise umgesetzt bereitstehen. Sie ersetzen keine fehlenden Originalpaare und erhalten keine pauschale Paritätsfreigabe.",
       "reviewRule": "Originalaufnahme, Umsetzung, unabhängiger Review und Aufräumen sind getrennte Läufe; keine parallelen Agenten oder GUI-Testinstanzen.",
-      "graphicsRule": "Ungefähr gleichwertige Grafik; Pixelmessungen nur zur Diagnose. Form, räumliche Beziehungen, sichtbare Zustände und Bedientreffer gemeinsam bewerten.",
+      "graphicsRule": "Ergebnisgleichwertigkeit gemäß ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel: eigene Darstellung zulässig, keine Pixelidentität. Form, räumliche Beziehungen, sichtbare Zustände, Bedientreffer und dauerhaft editierbare Daten bewerten; Pixelmessungen nur zur Diagnose.",
       "physicalRule": "Synthetische Eingaben, UI-Daten und Kerntests schließen keine physische Maus-/Touchpad-/Stiftabnahme.",
       "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/wonderdraft-parity/",
       "originalMapProtection": "Nur isolierte Kontrollkarten verändern. Ooke-Welt und Ooke-Kontinent bleiben unverändert; deren exportierte Bilder dienen als Vorlagen."
     },
     "probeProtocol": {
       "dimensions": [
-        "exact_sequence_and_context",
-        "all_reachable_options_one_at_a_time",
+        "same_user_task_and_reference_context",
+        "independent_required_outcomes_and_relevant_options",
         "preview_and_commit",
         "finish_and_cancel",
         "future_tool_defaults_vs_existing_instances",
@@ -63798,7 +63798,7 @@
         "native_document_and_reload_result",
         "previous_atlas_core_flow_regression"
       ],
-      "applicabilityRule": "Nicht zutreffende Prüfdimensionen explizit mit Originalbeleg begründen; z.B. Werkzeugvorgabe ohne Karten-Undo. Keine zusätzliche Wirkung erfinden."
+      "applicabilityRule": "Relevante Prüfdimensionen anhand der Nutzeraufgabe und fachlichen Wirkung bestimmen; eigene Eingaben sind zulässig. Nicht betroffene Dimensionen begründen, keine zusätzliche Wirkung erfinden. Gespeicherte Daten, Undo/Abbruch und getrennte Nachweisqualität bleiben verbindlich; Original-Rohbelege unverändert erhalten."
     },
     "approvedAdaptations": [
       {
@@ -92705,6 +92705,12 @@
   "referencePolicy": "For borrowed features inspect corresponding original product, current official documentation and original files; our previous clone is not authoritative. Record exact version, workflow, behavior, direct evidence and remaining differences. This does not add unrelated new features.",
   "updated": "2026-10-09",
   "strictParity": {
+    "scopeDecision20261011": {
+      "source": "ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel",
+      "comparisonMode": "reachable_outcome_equivalence",
+      "caseInterpretation": "Nutzerentscheidung vom 11.10.2026: Für alle Atlasvorbilder zählen dieselben fachlichen Ergebnisse, gezielte Nachbearbeitung und dauerhafte Speicherung. Mehrere Originalgesten/Regler derselben Wirkung dürfen derselben eigenen Funktion entsprechen; eigenständige Wirkungen bleiben Pflicht. Historische Gestenfälle und Belege erhalten, keinen Fall durch diese Entscheidung automatisch schließen.",
+      "deliveryRule": "Die zentrale Priorisierung ersetzt starre numerische HEX-/CITY-/DD-Lieferfolgen. Kennungen bleiben Fachreferenzen; Datenabhängigkeiten bleiben verbindlich. Keine zweite Prioritäten- oder Funktionsliste im Register."
+    },
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "audit": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit",
     "inventoryStatus": "conditional_original_ui_gaps",
@@ -92748,7 +92754,7 @@
       "replacement": "Atlasanlage und Erstöffnung ohne Breiten-/Höhenabfrage in ROADMAP-HEX-ATLAS.md HEX-01; Generierung und lokale Dungeon-/Schatten-/Abnutzungswirkung getrennt nach ihrem Nutzerzweck prüfen. Historische Original-/Hostbelege bleiben erhalten.",
       "open": "Datei-/Karteninfo-Menüs DD-036/039 und per-Karte-Wirkungen DD-006.03/.04 werden beim gemeinsamen Atlas auf ihren Nutzerzweck geprüft; dieser Beschluss gibt sie nicht pauschal frei."
     },
-    "acceptanceRule": "Pflichtfall erst nach direktem Originalbeleg, implementierter Wirkung, isoliertem Hostlauf und Nachweis am installierten Endstand geschlossen.",
+    "acceptanceRule": "Pflichtwirkung gemäß ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel erst nach Aufgaben-/Originalbeleg, eigenem erreichbaren und editierbaren Ergebnis, isoliertem Hostlauf und Nachweis am installierten Endstand schließen. Gleiche Gesten, Menüpfade, Algorithmen und Regler sind keine Voraussetzung. Bestehende Fallzustände und Belege bleiben unverändert; die neue Definition vergibt keinen PASS.",
     "cases": [
       {
         "id": "DD-011.01",

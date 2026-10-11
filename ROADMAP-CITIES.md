@@ -14,7 +14,7 @@ Die folgenden Phasen beschreiben den vollständigen Zielumfang. Vorhandene Stadt
 
 **Auftragserweiterung vom 09.10.2026:** Die Stadtfunktionen sollen vollständig gleichwertig mit Canvas of Kings, Watabou und [Fantasy Town Generator](https://docs.fantasytowngenerator.com/) sein, bei besserer Bedienung. Dazu gehören auch Bewohner, Beziehungen, Fraktionen, Tagesabläufe und die jeweiligen Ausgabe-/Bearbeitungsfähigkeiten. Der [technische Plan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md) und `acceptance.json.cityPlans.functionalInventory` ergänzen die bestehenden CTY-Fälle. Die vollständige Originalinventur bleibt offen.
 
-**Funktionen und Ergebnisse sind maßgeblich.** Originalgesten, Menüs oder Arbeitsmodi der drei Werkzeuge sind keine Vorgabe. Eigene Bedienung wird anhand wirklicher Aufgaben auf Verständlichkeit, Aktionszahl und Reaktionszeit geprüft. Wonderdrafts bereits vereinbarter Funktions-/Gestenvergleich bleibt für die entsprechenden übernommenen Werkzeuge bestehen.
+Für alle fünf Vorbilder gelten die gemeinsamen [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Die eigene Stadtbedienung wird anhand wirklicher Aufgaben auf Verständlichkeit, Aktionszahl und Reaktionszeit geprüft. Identische Originalgesten sind auch bei wiederverwendeten Wonderdraft-/Dungeonwerkzeugen keine Pflicht.
 
 CITY-00 sammelt vor Stadtproduktcode wenige feste Ergebnisbilder: Dorf, ummauerte Stadt und Hafenstadt sowie eine ausgearbeitete Stadtdetailfläche. Datum beziehungsweise beobachtete Version und Bildausschnitt werden festgehalten. Die feste Galerie ist in `ROADMAP-CITIES-REFERENCE-GALLERY.md` dokumentiert: eigene Watabou-/FTG-Originalbilder und ausdrücklich veröffentlichte COK-Ergebnisbilder. Datum und Ausschnitte sind festgehalten; Galerie-Laufversionen bleiben unbekannt. Die eigene COK-Demo ist separat als0.4.06 belegt. Vollständige Funktionsinventur und Produktparität bleiben offen. Das ältere öffentliche Watabou-Quellarchiv nennt selbst fehlende neuere Funktionen und ersetzt keine aktuelle Ergebnisprobe. [Originalarchiv](https://github.com/watabou/TownGeneratorOS).
 
@@ -65,9 +65,9 @@ Beide Wandumfänge sind mit vollständig und teilweise übereinanderliegenden Wa
 
 ## Kleine Phasen und frühe Benutzbarkeit
 
-CITY-00 wird im Referenzpaket von HEX-00 eingeordnet. **CITY-01 bis CITY-04 folgen nach HEX-05**, bevor die Hex-Roadmap mit HEX-06 weitergeht. Dadurch werden Stadt, Generierung und direkt bearbeitbarer Hausgrundriss früh geprüft. Die relative Reihenfolge der HEX-Phasen bleibt erhalten.
+Die CITY-Kennungen beschreiben Fachumfang, nicht mehr eine starre Einschubfolge zwischen HEX-Phasen. Lieferung und Teilausbau richten sich ausschließlich nach [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Gemeinsamer Quellen-/History-/Saveanschluss geht vor Gebäudeänderungen; räumliche Identität und Inhaltsschutz gehen vor Regeneration. CITY-09 qualifiziert den vollständigen Endstand gemeinsam mit HEX-28.
 
-Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-22. CITY-09 und HEX-28 bilden die gemeinsame Endabnahme nach HEX-27. Die Voraussetzungen stehen zusätzlich im Katalog.
+Die vollständigen CITY-Anforderungen bleiben im bestehenden Katalog; Grundfunktion und späterer Ausbau dürfen über mehrere Prioritäten verteilt sein. Fehlende spätere Funktionen verhindern nur die vollständige Fachabnahme, nicht einen klar bezeichneten benutzbaren Zwischenstand.
 
 | Phase | Nutzbarer Umfang | Praxisprüfung |
 |---|---|---|

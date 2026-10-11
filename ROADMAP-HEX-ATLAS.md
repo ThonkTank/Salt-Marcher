@@ -26,15 +26,19 @@
 
 ### Wie kommen wir zum Ziel?
 
-| Etappe | Nächstes sichtbares Ergebnis | Worauf aufbauen / wann abgeschlossen? |
-| --- | --- | --- |
-| **1. Atlas-Kern zuverlässig abschließen** | Ort → Dungeon → Raum/Key ändern → speichern → frisch wiederfinden. | Ortskern #40 abgeschlossen; #80 und #41 fortführen. Abschluss: vollständiger E2E-01-Ablauf mit geprüfter Speicherung/Wiederherstellung und Import. |
-| **2. Städte vollständig aufbauen** | Fläche/Straßen vorgeben → Häuser erzeugen → korrigieren → Innenraum/Key bearbeiten. | Vorhandene Stadtbasis und PR154 verwenden; Kampagnenanschluss für Neuanlage schließen. Abschluss: CITY-01–04 einschließlich geschützter Neuerzeugung und Neustart. |
-| **3. Weltgestaltung vervollständigen** | Grobe Welt formen, lokal verfeinern und lesbar ausarbeiten. | HEX-06–21 sowie HEX-23–26; erste Vorlage/Ausgabe HEX-09/10. Abschluss: zusammenhängende Stufen, Landschafts-/Gestaltungsfunktionen und zugehörige Originalbelege. |
-| **4. Stadt und Dungeon ausbauen** | Befestigungen/Viertel, Bewohner/Beziehungen/Fraktionen/Tagesabläufe; räumlich verbundene Dungeons mit vollständigen Autorenfunktionen. | CITY-05–07, HEX-22 und [SMR-04-Fachbedarf](docs/SCOPE.md); vorhandene Volumes und gemeinsame Weltzeit verwenden. Abschluss: jeweilige Fachabläufe erhalten Texte und Kennungen. |
-| **5. Gesamten Atlas qualifizieren** | Große Welt bis Innenraum flüssig bearbeiten, ausgeben und zuverlässig wiederaufnehmen. | HEX-08/22/27/28, CITY-08/09 und Querschnittsanforderungen. Abschluss: gemeinsamer Endbuild mit Größen-/Performance-, Original-, Bedien-, Export- und Installationsnachweisen. |
+**Nutzerentscheidung vom 11.10.2026: Gleichwertig bedeutet „kann dasselbe erreichen“.** Für Wonderdraft, Dungeondraft, Canvas of Kings, Watabou und Fantasy Town Generator zählen fachliche Ergebnisse, gezielte Nachbearbeitung und dauerhafte Speicherung. Oberfläche, Gesten, Algorithmen und Grafik dürfen anders sein. Mehrere Originalaktionen können dieselbe eigene Werkzeugfamilie nachweisen; eigenständige Wirkungen dürfen dabei nicht verloren gehen. Ein Bild ersetzt keine geforderte editierbare Geometrie.
 
-Die Etappen bündeln Nutzerergebnisse; die detaillierten Fachphasen und Abhängigkeiten unten bleiben verbindlich. Die [E2E-Abnahmen](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts) behalten ihre fachliche Reihenfolge. Offene Produktissues und PRs enthalten konkrete Befunde und Kandidaten.
+Die folgende Tabelle ist die **einzige Gesamtpriorisierung**. P0 → P1 → P2 → P3 → P4 ersetzt die bisherige starre HEX-/CITY-/Dungeon-Lieferreihenfolge. Phasenkennungen bleiben fachliche Referenzen, keine Reihenfolgenvorgabe. Innerhalb jeder Priorität werden die genannten Fähigkeiten von links nach rechts umgesetzt; bestehende Datenabhängigkeiten gehen vor. Bereits integrierte Fähigkeiten werden angeschlossen und geprüft, nicht neu gebaut. Ein teilweiser Ausbau schließt nicht die gesamte zugehörige Fachphase.
+
+| Priorität | Nächstes nutzbares Ergebnis | Umsetzung und Abschluss |
+| --- | --- | --- |
+| **P0 – Verlässliche gemeinsame Bearbeitung** | Ort → vorhandener Dungeon → Raum/Key ändern → speichern → frisch wiederfinden. | Bestehende Atlas-, Stadt- und Dungeonquellen mit Kamera, Auswahl, Textfokus, Vorschau/Abbruch und gemeinsamer Undo/Redo-Folge absichern. Kritische Mehrdatei-/Speicherfehler erhalten offene Arbeit; Kennungen und Links bleiben stabil. Basis: HEX-01–05/07 und E2E-01. Der Kernablauf wird geprüft; vollständiger Import und breite Fehler-/OS-Abnahme bleiben ausdrücklich offene Fachfälle. |
+| **P1 – Eine spielbare Region vorbereiten** | Eichenfurt am Fluss anlegen → Häuser vorschlagen und korrigieren → Taverne innen ausarbeiten → Alte Wacht verbinden → Bild ausgeben. | Freie Küste, Fluss/Straße, Orte/Keys; Siedlungsfläche/Platz und assistierte Bebauung mit Dichte/Größe/Variante. Gebäude, ausdrücklich angelegte Innenraumhülle, Räume/Wände/Türen, Geschosse und einfache Treppen; Wandumfang und horizontale Gesamtskalierung. Lokale Neuerzeugung schützt eigene Inhalte. Kalibrierte Vorlage, einfache Beschriftung, Messen und erster PNG-Export. Basis: CITY-01–04, HEX-09/10/11/13/14 sowie Grundfunktionen aus HEX-20/22/25 und räumlichem Dungeon. Abschluss: gesamtes Leitbeispiel einschließlich Neustart und geschützter Taverne. |
+| **P2 – Alle drei Kartenarten gründlich bearbeiten** | Landschaft, Stadt und Dungeon ohne geometrische Sackgassen korrigieren und ausgestalten. | Alle Hexstufen mit geschützten Verfeinerungen, Seen/Höhen, Landschaftsauswahl/Kopieren; Viertel, Kreuzungen, Brücken, Befestigungen, Flächenfüllung und Verformung. Dungeonformen/Kurven, Höhlen, freie Wände/Fenster/Öffnungen, vollständige räumliche Wege/Durchgänge und Raumzuordnung. Dächer, Musterflächen, Texturpfade, Terrain-/Material-/Wasserpinsel und Licht. Auswahlfilter, Ebenen/Gruppen/Sperren, Farben, Symbol-/Streupinsel und vollständige Geschossbearbeitung. Basis: HEX-06/12/16–18/21/23, CITY-05, Verformungsanteil CITY-04, Gestaltungsanteil CITY-07 und zugehörige DD-/SMR-04-Fälle. Abschluss: jede Bearbeitungsfamilie mit gezielter Korrektur, Abbruch, Undo und Neuöffnung. |
+| **P3 – Wiederverwenden, erzeugen und mit Leben füllen** | Größere Vorbereitungen durch Varianten, Vorlagen und zusammenhängende Inhalte beschleunigen. | Landmassen-/Dungeonerzeugung, Höhenkartenimport, erweiterte Stadtlayouts und gezielte Neuerzeugung. Pfad-/Flächenverteilung mit Objektvariation/Gruppen; Prefabs, Graphentwurf, Attribute und Inhaltsvorlagen. Bewohner/Haushalte/Berufe, Beziehungen/Familien, Fraktionen/Regierung/Religion; Waren/Preise, Öffnungszeiten, Ressourcen, Ereignisse/Favoriten. Tagesabläufe, Kalender, Wetter/Jahreszeiten aus bestehender gemeinsamer Weltzeit. Eigene Assets/Sets/Namenslisten und wiederverwendbare Vorgaben. Basis: HEX-15, Importanteil HEX-16, HEX-19, erweiterte CITY-02/04 sowie CITY-06/07 und zugehörige DD-/Dungeon-Autorenfälle. Abschluss: Vorschauen, Bindungen, Inhaltsschutz und deterministische Wiederaufnahme bestehen. |
+| **P4 – Vollständige Gestaltung, Austausch und große Szenen** | Ausgearbeitete Welten präsentieren, umfassend ausgeben und in großer Ausdehnung bearbeiten. | Kartenstile/Effekte, Beschriftungsrahmen, Kompass/Maßstabsleisten und Ausschnitt-/Vorgabenverwaltung vervollständigen. Zusätzliche Ansichten einschließlich 3D-/Straßenansicht nach Fachbedarf; Renderoptionen, Bibliotheks-/Assetpaketfunktionen und externe Assetquellen. Bild-/Vektor-/Geometrie-/Inhalts-/VTT-Ausgabe nach den bestehenden Formatpflichten; vollständiger Import-/Recoveryanschluss. Großwelt, mehrere Städte/Dungeons, große Exporte und gemeinsame Endabnahme. Basis: HEX-08/22/24–28, CITY-08/09 und verbleibende DD-/Querschnittsfälle. Abschluss: vollständige Funktionsabdeckung, Größen-/Host-/Exportnachweise und getrennte Installations-/physische Abnahme. |
+
+Jede Priorität liefert einen benutzbaren Zwischenstand. Lesbarkeit, Reaktionsfähigkeit und Bedarfsladen beginnen in P0/P1; vollständige Größenabnahme folgt in P4. Das zentrale [Werkzeugverzeichnis](#konkreter-werkzeugkatalog) ordnet den Zugang zu; `acceptance.json` bleibt das einzige Funktions- und Nachweisregister. Fachpläne enthalten ausschließlich ihre Details und verweisen auf diese Lieferfolge. Die [E2E-Abnahmen](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts) behalten ihre fachlichen Voraussetzungen; offene Produktissues und PRs enthalten konkrete Befunde und Kandidaten.
 
 Diese Übersicht ist ein datierter Einstieg. Bei relevanter Integration oder geänderter Lücke wird sie am bestehenden Ort aktualisiert; Laufchroniken und Abnahmedetails bleiben in ihren Fachquellen. Die folgenden Abschnitte führen Zielarchitektur, vollständige Anforderungen und Phasenzuordnung.
 
@@ -133,18 +137,9 @@ Bestätigte Änderungen werden automatisch dauerhaft gespeichert. Ich sehe, ob �
 
 ### Vom Teilstand zum vollständigen Ablauf
 
-Die bestehende [Lieferfolge](#wie-kommen-wir-zum-ziel) bleibt erhalten. Das Leitbeispiel beschreibt den vollständigen Nutzerweg; seine erzählte Reihenfolge ist keine Umordnung der HEX-/CITY-Phasen.
+Die [Prioritäten P0–P4](#wie-kommen-wir-zum-ziel) bestimmen die Umsetzung des Leitbeispiels. Die Erzählfolge ist der Nutzerweg, keine zusätzliche Lieferliste. Für Gebäude werden gemeinsames Objekt, Befehle und Übernahme vorhandener Daten vor Produktänderungen im [bestehenden technischen Stadtplan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md) konkretisiert; Kennungen, Texte, Maße und Links bleiben erhalten.
 
-| Nächstes konkretes Ergebnis | Vorhandene Basis und noch zu schließen |
-| --- | --- |
-| Ort → vorhandener Dungeon → Raum/Key → vollständig neuer Prozess | Integrierte Orts-/Detailquellen, gemeinsame History und begrenzte Speicherbelege verwenden; vollständige E2E-01-/Import-/Fehlerfälle abschließen. |
-| Eichenfurt neu anlegen → Bebauung vorschlagen → übernehmen → korrigieren | Stadtbasis und PR154-Kandidat verwenden; Kandidat integrieren und Neuanlage mit nativen Dateien und Kampagnenverweisen anschließen. CITY-01/02. |
-| Taverne → leere Innenraumhülle → Räume → Wand ändern oder Gebäude skalieren | Gemeinsames Gebäudeobjekt und passende gemeinsame Befehle erfordern noch Produktarbeit. Bestehende Daten übernehmen, Kennungen, Texte, Maße und Links erhalten. Konkretes Speicherformat und Übergang werden vor Produktumsetzung festgelegt; diese Planung erfindet kein neues Dateischema. CITY-03, CTY-002.02 und CTY-005.01–04. |
-| Viertel ändern → geschützte Taverne behalten | Schutz, Vorschau und ausdrückliche Freigabe in CITY-04 vollständig anschließen und mit Innenräumen/Keys prüfen. |
-| Region grob formen → lokal verfeinern → Ruine vollständig ausarbeiten | Weitere Hex-Stufen und Landschaftswerkzeuge sowie räumliche Dungeon-/Autorenfunktionen entsprechend HEX-06–26 und den Dungeonfachzielen ergänzen. |
-| Vorbereiten → spielen → ausgeben → zuverlässig wiederaufnehmen | Suche/Navigation, große Datenbestände, Export und Endabnahme entsprechend HEX-08/22/27/28 und CITY-08/09 vervollständigen. |
-
-Für die spätere Produktabnahme wird das Leitbeispiel in einem isolierten Obsidian-Testvault durchgespielt. Dabei sind Vorschauabbruch ohne Restdaten, Wandänderung gegenüber Gesamtskalierung, metrisch erhaltendes Verschieben/Drehen, geschützte Regeneration, Raumteilung/-vereinigung ohne Textverlust, gemischte Undo/Redo-Reihenfolge, vollständiger Neustart, sichtbare Speicherfehler/externe Konflikte sowie Suche, stabile Links und Ausgabe ausdrücklich zu prüfen. Bestehende Teilbelege bestätigen nur ihren bisherigen Umfang. Diese Dokumentationsänderung vergibt keinen neuen PASS im Abnahmeregister.
+Die spätere Produktabnahme spielt das Beispiel in einem isolierten Obsidian-Testvault durch: Vorschauabbruch ohne Restdaten, Wandumfang gegenüber Gesamtskalierung, geschützte Regeneration, Raumteilung/-vereinigung ohne Textverlust, gemischte Undo/Redo-Folge, vollständiger Neustart, sichtbare Speicherfehler/externe Konflikte, Suche, stabile Links und Ausgabe. Bestehende Teilbelege bestätigen nur ihren bisherigen Umfang. Die Planungsänderung vergibt keinen PASS.
 
 ## Werkzeuge und Bediengefühl
 
@@ -160,7 +155,7 @@ Eine feste Werkzeugleiste gruppiert **Navigation, Landschaft, Stadt, Innenräume
 | --- | --- |
 | Vorschau vor der Änderung | Pinselradius, Verlauf, Kontur oder Platzierungsobjekt folgen dem Cursor. Die betroffene Geometrie und der räumliche Maßstab sind sichtbar. |
 | Ziehen | Loslassen übernimmt eine gültige Änderung als einen Undo-Schritt. Eine ungültige Vorschau erzeugt keine Teiländerung. |
-| Mehrpunktzeichnung | Klicks setzen Punkte; Enter oder die sichtbare Schaltfläche „Fertig“ schließt ab. Escape verwirft den begonnenen Entwurf. |
+| Mehrpunktzeichnung | Klicks setzen Punkte; Enter oder „Fertig“ schließt ab. Backspace oder „Letzten Punkt entfernen“ nimmt den letzten Entwurfspunkt zurück. Escape oder „Abbrechen“ verwirft den Entwurf. |
 | Vorübergehende Navigation | Leertaste und Ziehen verschieben die Ansicht. Ein ruhender Mehrpunktentwurf bleibt erhalten; danach wird mit demselben Werkzeug weitergearbeitet. |
 | Nachträgliche Korrektur | Auswahl zeigt passende Punkte, Kanten und Griffe. Numerische Maße sind zusätzlich im Panel verfügbar. Ein begonnener Zug behält sein Ziel über Zoom-/Ladegrenzen. |
 | Einrasten | Das Fangziel wird vor dem Setzen sichtbar. Rasterfang und Anschlussfang sind getrennte Einstellungen; geometrisch vorgeschriebene Raster bleiben verbindlich. |
@@ -168,33 +163,48 @@ Eine feste Werkzeugleiste gruppiert **Navigation, Landschaft, Stadt, Innenräume
 | Textfokus | Beim Schreiben bleiben Kartenkürzel gesperrt. Key-Eingabe verliert bei Navigation weder Text noch Fokus unbemerkt. |
 | Umfangreiche Änderung | Erzeugung, umfangreicher Ersatz und Import erhalten eine ausdrückliche Vorschau mit Übernehmen und Abbrechen. Kleine gültige Änderungen benötigen keinen Bestätigungsdialog. |
 
-Diese gemeinsame Bedienung beschreibt den eigenen Atlasentwurf. Bereits verpflichtende, belegte Originalgesten aus Wonderdraft und den Dungeon-Fachkatalogen bleiben erhalten beziehungsweise werden in ihren bestehenden Vergleichsfällen ausdrücklich zugeordnet. Der Werkzeugkatalog hebt keine Originalabnahme auf.
+Die [Ergebnisgleichwertigkeit](#wie-kommen-wir-zum-ziel) gilt für alle Vorbilder. Originalgesten werden als Referenzbeobachtung erhalten, aber nicht identisch nachgebaut. Wichtige Aktionen haben sichtbare Zugänge; Shortcuts dienen der Beschleunigung.
+
+| Eingabe / Zugang | Eigenes Zielverhalten |
+| --- | --- |
+| Mausrad / Zoomanzeige | Mausrad zoomt am Cursor; Zoomanzeige bietet Einpassen und 100 %. Werkzeug und Entwurf bleiben erhalten. |
+| Mehrfachauswahl | Shift-Klick ergänzt/entfernt ein Element; Rahmen/Lasso, Trefferliste und Typ-/Ebenenfilter machen überlagerte Geometrie erreichbar. |
+| Kontur und Kurve | Kantenaktion „Punkt einfügen“, Punktgriff ziehen und „Punkt entfernen“ korrigieren die Kontur. Gerade/Kurve und Anschluss an vorhandene Verläufe sind sichtbare Optionen. |
+| Löschen / Radieren | Delete oder „Entfernen“ betrifft die Auswahl. Der Radierer entfernt gezielte Inhalte; „Zur Vorgabe zurücksetzen“ entfernt ausschließlich Landschaftsüberschreibungen. Bei geschützten Inhalten gelten Erhaltung und Ersatzvorschau. |
+| Kopieren / Transformation | Ctrl+C/Ctrl+V beziehungsweise sichtbare Aktionen kopieren mit eigenen Kennungen; Griffe und Zahlenfelder bewegen/drehen/skalieren, Aktionen spiegeln und ändern die Zeichenreihenfolge. |
+| Werkzeuggröße und Varianten | Radius, Breite, Maßstab, Lichtreichweite und Variantenwahl sind im Panel sichtbar. Das Mausrad bleibt Zoom; keine versteckte Mehrfachbelegung ist für eine Fähigkeit erforderlich. |
+| Farbe / Bibliothek | RGBA/Hex, Palette und Pipette sowie Suche, Kategorien/Tags, Sortierung und Paketwahl bleiben neben der Karte erreichbar. |
+| Text und Kontext | Key-Felder verarbeiten Enter als Text; Beschriftungsfelder bieten mehrzeilige Eingabe und sichtbares Übernehmen. Kartenkürzel wirken nur bei Kartenfokus. Rechtsklick öffnet Kontextaktionen; er bestätigt oder verwirft keinen Entwurf heimlich. |
 
 ### Konkreter Werkzeugkatalog
 
-| Werkzeug | So bediene ich es | Wirkung und Rückmeldung |
-| --- | --- | --- |
-| **Auswahl** | Anklicken; Rahmen oder Lasso für mehrere Elemente. | Hover zeigt vorab das Ziel. Auswahl zeigt nur passende Griffe. Bei überlagerten Elementen bietet eine sichtbare Trefferliste die Alternativen. |
-| **Hand** | Ansicht ziehen; alternativ vorübergehend mit Leertaste. | Bewegt ausschließlich die Kamera. |
-| **Geländepinsel** | Land, Wasser oder Geländeart wählen und malen. | Radius und betroffener Maßstab sind sichtbar. Freie Küsten werden innerhalb der Hexes möglich; fein bearbeitete Eigenschaften bleiben bei groben Änderungen geschützt. |
-| **Zur Vorgabe zurücksetzen** | Über ausdrücklich verfeinerte Landschaft malen. | Die Vorschau markiert die Überschreibungen, die entfernt werden. Orte, Gebäude und Keys bleiben erhalten. |
-| **Fluss** | Verlaufspunkte setzen; Breite einstellen. | Ein durchgehendes Band zeigt die künftige Wasserfläche. Punkte, Kurven und Breite bleiben nachträglich bearbeitbar. |
-| **Straße** | Punkte setzen und an vorhandene Wege anschließen. | Vorschau zeigt Breite, Anschlüsse und Konflikte. Dieselbe Werkzeugfamilie zeichnet regionale Wege, Stadtstraßen und Gassen mit ausdrücklich gewähltem Typ. |
-| **Ort** | Typ wählen und auf die Karte klicken. | Dorf, Ruine oder anderer POI entsteht an dieser Stelle. Danach stehen Name und Key im Panel bereit. |
-| **Siedlungsfläche** | Rechteck ziehen oder Polygon zeichnen. | Legt den Bereich für die Stadtplanung fest. Zeichnen allein erzeugt noch keine Häuser. |
-| **Platz** | Fläche zeichnen und deren Anschlüsse korrigieren. | Hält die Fläche von normaler Bebauung frei; Straßen können daran anschließen. |
-| **Viertel** | Bereich zeichnen, Nutzung und Bebauungsvorgaben wählen. | Macht lokale Vorgaben sichtbar, etwa dichter Marktbereich oder lockere Wohnbebauung. |
-| **Gebäude** | Rechteck ziehen oder Außenkontur zeichnen. | Erstellt ein einzelnes bearbeitbares Gebäude. Lage, Drehung, Außenwände und Größe sind direkt korrigierbar. |
-| **Befestigung** | Mauerverlauf zeichnen; Tore und Türme gezielt einsetzen. | Zusammenhängende Geometrie mit sichtbaren Anschlüssen an Straßen und Mauern. |
-| **Raum** | Rechteck ziehen oder Raumkontur zeichnen. | Erzeugt räumliche Geometrie im gewählten Höhenbereich. Angrenzende Räume verwenden konsistente gemeinsame Grenzen; Raumidentität und Key bleiben bei späteren Änderungen erhalten. |
-| **Wand** | Wandzug zeichnen oder vorhandene Wand greifen. | Unterteilt beziehungsweise begrenzt Räume. Beim Verschieben zeigt die Vorschau sämtliche mitbetroffenen Raumgrenzen im gewählten Bearbeitungsumfang. |
-| **Verbindung** | Anfang und Ziel wählen, bei Bedarf Wegpunkte ergänzen. | Erzeugt Gang, Treppe oder Schacht. Verlauf und Höhenübergang werden vor Übernahme gezeigt; eine unmögliche Verbindung bleibt ein sichtbarer Entwurf. |
-| **Durchgang** | Tür, offene Öffnung oder Geheimdurchgang wählen und auf eine passende Grenze setzen. | Rastet sichtbar an der Grenze ein. Breite, Zustand und Beschreibung gehören zur stabilen Durchgangsidentität. |
-| **Objekt** | Asset oder fachlichen Gegenstand wählen, Vorschau ausrichten und platzieren. | Möbel, Dekoration und beschreibbare Features lassen sich bewegen, drehen und korrigieren. Wiederholtes Platzieren bleibt möglich. |
-| **Symbolpinsel** | Bäume, Berge oder andere Symbole mit Dichte und Streuung malen. | Zeigt die Verteilung als Vorschau; ein Pinselzug ist gemeinsam rücknehmbar. Einzelne Ergebnisse bleiben auswählbar. |
-| **Beschriftung** | Position wählen und Text eingeben. | Freier Text mit sichtbarer Formatierung. Ortsnamen können ausdrücklich an ihren Ort gebunden werden und folgen dessen Umbenennung. |
-| **Gebiet** | Politische oder geografische Grenze zeichnen. | Grenze, Name, Erscheinung und optionaler Key sind direkt bearbeitbar. |
-| **Messen** | Anfang, Ende und gegebenenfalls Wegpunkte setzen. | Zeigt reale Entfernung. Messen verändert keine Kartengeometrie. |
+| Werkzeugfamilie | So bediene ich sie | Wirkung und Rückmeldung | Ausbau |
+| --- | --- | --- | --- |
+| **Auswahl** | Anklicken, Shift-Klick, Rahmen oder Lasso; Trefferliste verwenden. | Passende Griffe; Filter nach Typ/Ebene, Gruppen, Sperren, Spiegeln, Kopieren und Anordnung. Landschaft lässt sich ebenfalls ausschneiden, verschieben und skalieren. | P0; vollständig P2 |
+| **Hand** | Ansicht ziehen; vorübergehend Space-Ziehen. | Bewegt ausschließlich die Kamera; erhält Entwurf und Werkzeug. | P0 |
+| **Geländepinsel** | Land/Wasser/Geländeart wählen und malen. | Freie Küsten innerhalb von Hexes; Radius/Maßstab sichtbar; geschützte feine Bearbeitung bleibt erhalten. | P1; alle Stufen P2 |
+| **Zur Vorgabe zurücksetzen** | Über verfeinerte Landschaft malen. | Entfernt markierte Überschreibungen, erhält Orte/Gebäude/Keys. | P2 |
+| **Radierer** | Zielart wählen und über Inhalte malen oder eine Teilfläche markieren. | Entfernt gezielt Landschaft, Symbole, Wasser oder Oberflächen; Wirkung vorab sichtbar und rücknehmbar. | P1; alle Zielarten P2 |
+| **Höhenpinsel** | Anheben/Absenken und Stärke wählen. | Ändert native Landschaftshöhe; Vorschau zeigt Land-/Wasserwirkung. Höhenkartenimport ist eine getrennte Aktion. | P2 |
+| **Fluss** | Punkte setzen; Breite/Kurven ändern. | Durchgehende Wasserfläche mit bearbeitbaren Punkten und Anschlüssen. | P1; Gestaltung P2 |
+| **Straße** | Punkte setzen und Wege anschließen; Typ wählen. | Regionale Wege, Stadtstraßen/Gassen, Kreuzungen/Brücken mit sichtbaren Konflikten. | P1; vollständig P2 |
+| **Ort** | Typ wählen und platzieren. | Dorf/Ruine/POI mit Name und Key; stabile Ortsbindung. | P0/P1 |
+| **Siedlungsfläche / Platz / Viertel** | Rechteck/Ellipse ziehen, Polygon oder begrenzte Fläche füllen; Nutzung wählen. | Gebiet für Bebauung, freier Platz oder lokale Nutzung/Dichte. Zeichnen erzeugt keine Häuser. Hilfskanten begrenzen Füllung, ohne Straßen darzustellen. | Fläche/Platz P1; Viertel/Füllen P2 |
+| **Gebäude** | Form zeichnen, Haus wählen und Griffe korrigieren. | Außenform, Wände, Innenräume/Geschosse/Dach gehören zu einem Objekt; Wandumfang und horizontale Gesamtskalierung sind getrennt. | P1; Formen P2 |
+| **Gestaltungspinsel** | Zielgebäude markieren, Farbe/Höhe/Dachstil wählen und anwenden. | Ändert mehrere Häuser gezielt; bestehende Inhalte bleiben erhalten. | P2 |
+| **Befestigung** | Mauerzug zeichnen; Tore/Türme setzen. | Sichtbare Anschlüsse an Straßen/Mauern; Änderungen erhalten verbundenen Plan. | P2 |
+| **Raum / Wand** | Rechteck/Ellipse/Polygon beziehungsweise geraden/gekrümmten Wandzug zeichnen; Punkte/Kanten greifen. | Konsistente Grenzen; Ausschneiden, Verlängern, Teilung/Vereinigung und Zuordnungsaktionen erhalten Autoreninhalte. | Grundformen P1; vollständig P2 |
+| **Verbindung** | Endpunkte/Wegpunkte, Typ und Querschnitt wählen. | Gang/Treppe/Schacht mit Höhenübergang, gültiger Vorschau und korrigierbaren Segmenten; Materialisierung als feste Geometrie. | Einfache Treppe P1; vollständig P2 |
+| **Durchgang** | Tür/Fenster/Gitter/Öffnung/Geheimdurchgang wählen und gebunden oder frei setzen. | Breite/Ausrichtung und stabile Identität; Begehbarkeit, Sicht, Licht und Schall getrennt bearbeiten. | Tür P1; vollständig P2 |
+| **Höhlenpinsel** | Graben oder Öffnung erzeugen; Radius wählen, radieren. | Höhlenfläche und Öffnungen mit getrennt bearbeitbarer Fels-/Bodengestaltung. | P2 |
+| **Flächenpinsel / Musterfläche** | Terrain, Material, Wasser, Muster oder Hintergrund wählen; pinseln, Form zeichnen oder begrenzten Bereich füllen. | Textur-/Kachelsets, Mischung, Intensität, Schichten/Anordnung, Musterwinkel, Deckkraft und Wasserübergänge sind korrigierbar. | P2 |
+| **Texturpfad** | Punkte/Kurven setzen, Textur/Breite/Übergang wählen. | Grafischer Pfad mit Schleife und Übergängen; erzeugt keine räumliche Gangverbindung. | P2 |
+| **Dach** | Kontur oder schnelle Form wählen; Dachtyp und First bearbeiten. | Giebel/Walm/Gaube, Breite, Stil und Schattierung; ausgewählte Innengeometrie bleibt sichtbar. | P2 |
+| **Licht** | Quelle platzieren; Reichweite, Stärke, Farbe und Schatten ändern. | Beleuchtungsvorschau und Lichtblockierung durch Geometrie; Umgebungslicht separat im Panel. | P2 |
+| **Objekt / Symbolpinsel / Streuen** | Asset platzieren oder mit Dichte/Streuung/Varianten malen. | Griffe und Spiegeln; gezieltes Radieren. Mehrere Assets, zufällige Drehung/Größe und Einzelkorrektur bleiben möglich. Pfad-/Flächenverteilung folgt als Aktion. | Einzelobjekt P1; Pinsel/Streuen P2 |
+| **Verformen** | Bereich/Ziel und Wirkung wählen, Vorschau ziehen. | Lokales Aufweiten, Zusammenziehen, Verschieben, Ausgleichen und Entspannen; globale Drehung gesondert. Messen ändert keine Geometrie. | P2 |
+| **Beschriftung / Gebiet** | Text oder Grenze setzen; Format beziehungsweise Erscheinung wählen. | Mehrzeilige Namen und geografische/politische Grenzen; Ortsbindung optional, Namensvorschläge und Rahmen später. | Text P1; Gebiet/Format P2; Namen P3, Rahmen P4 |
+| **Messen** | Anfang/Ende und Wegpunkte wählen. | Reale Entfernung aus gemeinsamem Weltmaßstab ohne Datenänderung. | P1 |
 
 **Key-Bearbeitung ist kein eigener Kartenmodus:** Die Auswahl eines Ortes, Gebäudes, Raumes oder Features zeigt dessen Beschreibung im Panel. Der Katalog bündelt den Zugang zu den vereinbarten Funktionen und streicht keine Fähigkeiten aus den vollständigen Fachkatalogen.
 
@@ -202,13 +212,20 @@ Diese gemeinsame Bedienung beschreibt den eigenen Atlasentwurf. Bereits verpflic
 
 Die folgenden Funktionen benötigen keine zusätzlichen Zeichenwerkzeuge:
 
-| Aktion | Konkreter Ablauf |
-| --- | --- |
-| **Bebauung erzeugen** | Siedlungsfläche oder Viertel auswählen → Dichte, Größen und Struktur einstellen → Vorschau betrachten → Variante ausprobieren → Übernehmen. Geschützte Häuser sind sichtbar markiert. Abbrechen hinterlässt keine erzeugten Inhalte. Straßenänderungen lösen keine heimliche Neuerzeugung aus. |
-| **Innenräume anlegen** | Gebäude auswählen → „Innenräume anlegen“ → leere Hülle aus der bestehenden Gebäudeform erhalten → Räume und Trennwände zeichnen. Zoom allein erzeugt nichts. |
-| **Geschosse und Höhen** | Im gemeinsamen Panel Geschoss beziehungsweise Schnitt wählen, Geschoss darüber oder darunter ergänzen und Höhen bearbeiten. Benachbarte Höhen können als zurückhaltende Orientierung eingeblendet werden; die bearbeitete Geometrie bleibt eindeutig erkennbar. |
-| **Bewohner und Inhalte** | Am Ort oder Gebäude Bewohner, Haushalte und Verweise bearbeiten; am Raum Attribute, Features und Inhaltsvorlagen. Mehrfachauswahl ermöglicht gemeinsame Änderungen unter Erhalt individueller Abweichungen. |
-| **Vorlage, Gestaltung und Ausgabe** | Referenzbild hinzufügen und kalibrieren; Gestaltungsvorgaben anwenden; Ausschnitt wählen und exportieren. Diese Aktionen verwenden denselben Kartenstand und ersetzen keine bearbeitbare Geometrie durch ein Bild. |
+| Aktion / Ansicht | Konkreter Ablauf | Ausbau |
+| --- | --- | --- |
+| **Bebauung erzeugen / lokal erneuern** | Fläche/Viertel → Dichte, Größen und Struktur → Variante in Vorschau → Übernehmen/Abbrechen. Manuell bearbeitete Häuser, Innenräume/Keys/Bindungen sind geschützt; Straßenänderung erzeugt nichts heimlich neu. Weitere Layout-/Bedarfs-/Anzahlvorgaben folgen. | P1; Varianten P3 |
+| **Innenräume anlegen / übernehmen** | Gebäude → leere Hülle aus Außenform → Räume zeichnen. Bestehenden Grundriss ausdrücklich übernehmen; Maßstab und Referenzen prüfen. Zoom erzeugt nichts. | P1 |
+| **Geschosse / Schnitte / Zuordnung** | Höhe/Schnitt wählen, Geschoss ergänzen; dann klonen, umbenennen, umordnen, löschen und vergleichen. Decken/einzelne Flächen auswählen; nach Raumteilung/-vereinigung nicht zugeordnete Inhalte sichtbar zuweisen. | Basis P1; vollständig P2 |
+| **Objekte verteilen / gruppieren** | Pfad oder Fläche → Assetkategorien, Abstände/Dichte, Varianten und Höhenversatz → Vorschau → Übernehmen. Gruppen gemeinsam bewegen oder bewusst auflösen; Einzelkorrekturen erhalten. | P3 |
+| **Land/Dungeon erzeugen / Höhenkarte importieren** | Zielbereich → Parameter/Seed oder Höhenbild → Vorschau → native Geometrie übernehmen. Gespeicherte Ergebnisse werden beim Laden nicht erneut erzeugt. | P3 |
+| **Graph / Vorlagen / Inhalte** | Raumgraph oder Prefab-/Inhaltsvorlage wählen, räumlich ausarbeiten; Attribute/Features und Vererbung mit individuellen Abweichungen bearbeiten. Mehrfachänderungen erhalten eigene Inhalte; Fallen/Zustände und Dokumentausgabe bleiben an ihren Fachverträgen. | P3 |
+| **Bewohner / Siedlungsdaten** | Personen, Haushalte, Berufe, Beziehungen/Familien und Fraktionen/Regierung/Religion bearbeiten, suchen und gesammelt in Vorschau ändern. Gebäudebedarf/Anzahl, Demografie, Waren/Preise, Öffnungszeiten, Unterorte/Ressourcen, Ereignisse und Favoriten sind benannte Panelaktionen. Gebäudedaten auf andere Geometrie übertragen erhält Bewohner und Verweise. | P3 |
+| **Weltzeit / Aktivitäten / Wetter** | Bestehende Campaignzeit wählen → Aufenthalte, Tagespläne, Ruhetag-Override, Kalender, Jahreszeit und Wetter betrachten/korrigieren. Keine zweite Uhr. | P3 |
+| **Bibliothek / Farben / Vorgaben** | Assets suchen/filtern, Pakete/Sets aktivieren oder deaktivieren, fehlende Assets sichtbar ersetzen und Farben über Palette/Pipette ändern; eigene Assets/Namenslisten importieren, Vorlagen und Prefabs verwalten. Assetpakete mit Metadaten, Tags und Lizenzangaben erstellen, externe Assetquellen aufnehmen. | Auswahl/Farben P2; eigene Inhalte P3; vollständige Paketfunktionen P4 |
+| **Referenzbild** | Bild hinzufügen → bekannte Strecke kalibrieren → ausrichten → Deckkraft/Zeichenreihenfolge wählen → nachzeichnen; unabhängig ausblenden/entfernen. | P1; Verwaltung P2 |
+| **Gestaltung / Ansichten** | Stil/Paletten/Texturen, Gebäudeabnutzung und Lichtvorgaben anwenden; Dach-/Viertel-/Favoritendarstellung wählen. Später Effekte, Rahmen, Kompass/Maßstabsleiste und zusätzliche 3D-/Straßenansicht verwenden; Rückkehr zeigt denselben Datenstand. | Fachgestaltung P2; vollständige Gestaltung/Ansichten P4 |
+| **Ausschnitt / Ausgabe / Einstellungen** | Ausschnitt, Detailstufe und Raster wählen → Vorschau → exportieren. PNG zuerst; PNG/JPEG/WEBP/SVG, Geometrie-/Inhaltsdaten einschließlich JSON/GeoJSON/CSV, UniversalVTT und vereinbarte Integrationen nach ihren Formatpflichten. Später große Bilder, Geschoss-/Lichtüberlagerung und Ausgabevorgaben. Karteninformationen, Einheiten, Raster-/Snap-/Anzeige-/Kürzel-/Backupoptionen im gemeinsamen Einstellungszugang. | PNG P1; vollständig P4 |
 
 ### Gebäudegriffe und Bearbeitungsumfang
 
@@ -232,6 +249,10 @@ Beispiel: Ich ziehe die Küchenwand nach außen. Schon während des Zugs sehe ic
 | Vorschau abbrechen und bestätigte Änderungen gemeinsam rücknehmen | Abbruch hinterlässt keine Restdaten; Undo/Redo erhält Geometrie, Kennungen, Keys und Referenzen. |
 | Mit begonnenem Punktentwurf navigieren; zoomen und überlagerte Elemente auswählen | Entwurf und Werkzeug bleiben erhalten; die Trefferliste erlaubt eindeutige Auswahl. Ein laufender Zug wechselt sein Ziel nicht. |
 | Key schreiben, Speicherfehler auslösen und vollständig neu starten | Kartenkürzel wirken nicht in Textfeldern, Fehler bleiben sichtbar und offene Arbeit erhalten. Erfolgreich gespeicherte Inhalte und Links sind wieder auffindbar. |
+| P2: Höhle, Wasser/Material/Muster, Texturpfad, Dach und Licht bearbeiten | Jede Familie bietet Vorschau, gezielte Änderung/Radieren und Neuöffnung. Texturpfad ist keine Gangverbindung; Lichtblockierung entspricht der gewählten Geometrie. |
+| P2: Punkt/Kurve, Landschaftsauswahl, Gruppen/Ebenen und Geschosse korrigieren | Einfügen/Entfernen, Kopieren, Sperren/Anordnung und Geschossklonen erhalten Daten/IDs/Bindungen; eigene Gesten sind auffindbar. |
+| P3: Generator/Vorlage verwenden und Bewohner-/Gebäudedaten ändern | Erzeugung bleibt editierbar; Abbruch ohne Restdaten, Regeneration ohne Textverlust, eindeutige Inhaltszuordnung und gemeinsame Zeitquelle. |
+| P4: Zusätzliche Ansicht und Bild-/Daten-/VTT-Ausgabe verwenden | Rückkehr erhält denselben bearbeitbaren Stand; Formatdaten, Ausschnitt, Maßstab, Licht und relevante Inhalte entsprechen der jeweiligen Ausgabeanforderung. |
 | Maus, Touchpad, Tastatur und 200 % Darstellung | Werkzeuge, Griffe, Optionen und Abschluss-/Abbruchaktionen sind erreichbar; das Panel lässt die Karte bedienbar. |
 
 Diese Proben sind geplante Produktabnahmen, keine mit der Dokumentation ausgeführten GUI-Tests oder neuen PASS-Einträge. Die konkreten Produkt-APIs, Speicherformate und bestehenden Quellbausteine werden durch diesen Werkzeugentwurf nicht geändert.
@@ -255,7 +276,7 @@ Das vereinbarte Ziel:
 - **Es gibt keine separaten Modi.** Navigation und Bearbeitung bleiben in einem Editor mit gemeinsamer Kamera, Werkzeugleiste, Auswahl und durchgehender Undo/Redo-Folge. Zoom wechselt keine Editoroberfläche oder Bearbeitungsart.
 - **Städte und POIs erhalten `.location`-Dateien**, deren Keys wie die heutigen Dungeon-Keys bearbeitet werden.
 - **Stadtpläne werden nativ erzeugt und direkt bearbeitet.** Watabous Stadtgrundrisse und Canvas of Kings dienen als Ergebnisvorbilder; die Bedienung gestalten und prüfen wir eigenständig. Die [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt frühe nutzbare Phasen.
-- **Wonderdraft-Parität umfasst Funktionen und Bedienabläufe.** Eine ungefähr gleichwertige grafische Darstellung genügt; Pixelgleichheit ist kein Abnahmekriterium.
+- **Alle Vorbilder werden nach erreichbaren Ergebnissen verglichen.** Eigene Werkzeuge und Gesten sind zulässig; bearbeitbare Wirkung, Korrektur und Speicherung zählen. Die verbindliche [Gleichwertigkeits- und Lieferregel](#wie-kommen-wir-zum-ziel) gilt auch für Wonderdraft und Dungeon.
 - **Ooke-Welt und Ooke-Kontinent dienen als Bildvorlagen.** Neue Hex-Karten entstehen nativ.
 
 Der vollständige Nutzerablauf lautet: Welt gestalten → Region verfeinern → 3-Meilen-Hex bearbeiten → in die Stadt zoomen und Straßen/Häuser ändern → in einen Hausgrundriss zoomen und Räume ändern → Orts-/Raum-Key bearbeiten → wieder herauszoomen. Alle Karteninhalte bleiben im selben Atlas direkt bearbeitbar.
@@ -305,7 +326,7 @@ Neue gemeinsame Schnittstellen umfassen:
 
 ## 3. Kleine Phasen mit früh nutzbaren Ergebnissen
 
-Die zehn bisherigen Etappen werden durch die folgenden **29 HEX-Phasen, HEX-00 bis HEX-28**, ersetzt und um **zehn Stadtphasen CITY-00 bis CITY-09** aus der [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt. Die Phasen beschreiben den vollständigen Zielumfang; sie sind keine Aussage, dass sämtliche Funktionen noch unimplementiert wären. Den integrierten Stand, Kandidaten und offenen Rest zeigt [die Übersicht](#atlas-auf-einen-blick). Die relative HEX-Reihenfolge bleibt verbindlich; die Stadtphasen werden an den unten genannten Stellen eingeordnet. Jede Phase erweitert den zuvor geprüften Benutzerablauf. Die Architektur aus Abschnitt 2 bleibt das Ziel, ihre notwendigen Teile entstehen zusammen mit der jeweiligen Funktion.
+Die zehn bisherigen Etappen werden durch die folgenden **29 HEX-Phasen, HEX-00 bis HEX-28**, ersetzt und um **zehn Stadtphasen CITY-00 bis CITY-09** aus der [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt. Die Phasen beschreiben den vollständigen Zielumfang; sie sind keine Aussage, dass sämtliche Funktionen noch unimplementiert wären. Den integrierten Stand, Kandidaten und offenen Rest zeigt [die Übersicht](#atlas-auf-einen-blick). Die Kennungen und Fachanforderungen bleiben erhalten; die [Prioritäten P0–P4](#wie-kommen-wir-zum-ziel) bestimmen die Lieferung. Fachphasen dürfen in Grundfunktion und späteren vollständigen Ausbau geteilt werden. Jede Lieferung erweitert den zuvor geprüften Benutzerablauf. Die Architektur aus Abschnitt 2 bleibt das Ziel, ihre notwendigen Teile entstehen zusammen mit der jeweiligen Funktion.
 
 ### Funktions- und Datenerhalt
 
@@ -313,17 +334,9 @@ Jede Erweiterung erhält den vorhandenen bearbeitbaren Atlas, gemeinsame Kamera/
 
 ### HEX-00 – Ausgangsbasis und gemeinsame Testregion
 
-**Ergebnis:** Ein gesicherter, reproduzierbar prüfbarer Startpunkt. Installierten Build und Repositorystand unterscheiden, den vorhandenen Dungeon-Kernablauf einmal prüfen und einen isolierten Testvault mit einer kleinen Dungeonkopie vorbereiten. Die gemeinsame Testregion beginnt leer und wächst über alle Phasen hinweg. Der [Wonderdraft-Vergleichsplan](WONDERDRAFT-PARITY.md) enthält den Ausgangskatalog mit festen WD-Kennungen und Phasenzuordnung. Er wird in drei getrennten Referenzläufen gegen Wonderdraft 1.1.8.2 vervollständigt:
+Vorhandene Referenzinventare, Quellstand und begrenzte Hostbelege verwenden. Fehlende fachliche Wirkungen anhand gleicher Nutzeraufgaben gezielt im Original klären, sobald sie für die nächste Lieferung benötigt werden. Die vollständige Inventur bleibt offen nachgeführt; sämtliche Originalgesten, Regler und Helfermodule erneut zu erfassen ist keine Voraussetzung für einen benutzbaren Ausbau. Bestehende HEX-00-A/B/C-Belege bleiben historische Referenzläufe.
 
-| Referenzlauf | Konkretes Ergebnis | Tor vor HEX-01 |
-|---|---|---|
-| **HEX-00-A – Originaloberfläche mappen** | Sämtliche erreichbaren Werkzeuge, Optionen, Menüs, Dialoge und kontextbezogenen Gesten mit exaktem UI-Pfad, Default, direkten Belegen, WD-Unterfall und zuständiger Phase erfassen. Alle lokalen Pakethinweise als Funktion oder Helfer einordnen. | Keine erreichbare Funktion oder Option bleibt unzugeordnet. |
-| **HEX-00-B – Original-Startfolge messen** | Kleine Originalkarte anlegen, bewegen/zoomen, Land/Farbe bearbeiten, abbrechen, Undo/Redo, Save/Open und vollständigen Prozessneustart belegen. Kontrollkarten und logische Entsprechung für erste Hostpaare festlegen. | Die Originalregeln für den ersten nutzbaren Ablauf sind belegt. |
-| **HEX-00-C – Inventarreview** | In einem eigenen Lauf Originaloberfläche, Katalog, Startbelege und Phasenzuordnung auf Lücken prüfen. Ausnahmen und Hex-Anpassungen ausdrücklich begründen. | Erst der bestandene Inventarreview öffnet HEX-01; tiefe Varianten späterer Fachgruppen behalten konkrete offene Messfälle. |
-
-Dieses Tor fordert früh ein vollständiges Mapping und direkt belegte Startfolgen. Die vollständige Paarabnahme sämtlicher späterer Varianten bleibt bei der jeweiligen Werkzeugphase, damit der nutzbare Hex-Editor nach HEX-02 und der zusammenhängende Atlasablauf nach HEX-05 früh verfügbar werden.
-
-**Praxistest:** Dungeon öffnen → Raum-Key lesen und bearbeiten → Undo/Redo → speichern → frischer Obsidian-Start. Bestehende offene Dungeondraft-Abnahmen bleiben in ihrer eigenen Roadmap erhalten. Das Phase-5-Aufräumtor ist nach `phase5CleanupRepairIndependentReview` in [acceptance.json](acceptance.json) am 8. Oktober 2026 auf `f53c78164fcfd6e74c6410161272914aa8597a25` abgeschlossen; dieser datierte Nachweis ist keine aktuelle Gesamt-Paritätsabnahme. Ein konkreter Fehler in einer benötigten gemeinsamen Funktion wird vor deren Wiederverwendung behoben; die gesamte übrige Dungeondraft-Parität muss nicht vor dem ersten Hex-Editor fertig sein.
+Die gemeinsame Testregion wächst mit P0–P4. Originalversion, Aufgabe, erreichbare Wirkung und offene Frage werden im vorhandenen Register festgehalten. Identische Eingaben, Reglerwerte oder Algorithmen sind kein Ziel; unbekannte fachliche Wirkung bleibt offen.
 
 ### Meilenstein A – Eine Hexkarte tatsächlich bearbeiten
 
@@ -346,9 +359,7 @@ Dieses Tor fordert früh ein vollständiges Mapping und direkt belegte Startfolg
 
 ### Frühe Stadtphasen im selben Atlas
 
-Nach HEX-05 folgen **CITY-01 bis CITY-04**: Stadt zeichnen, einen nutzbaren Plan erzeugen, Gebäude samt Innenräumen und Keys gemeinsam bearbeiten und anschließend lokal verfeinern, ohne eigene Änderungen zu verlieren. CITY-00 gehört zum frühen Referenzpaket von HEX-00. Die konkreten Ergebnisse und Tests stehen in der [Stadtplan-Roadmap](ROADMAP-CITIES.md).
-
-Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-22. CITY-09 wird nach HEX-27 zusammen mit HEX-28 abgenommen. Die erste Stadt und der erste Hausgrundriss werden dadurch vor vollständiger Wonderdraft-Parität nutzbar geprüft.
+CITY-01–04 liefern den Stadt-/Gebäudeanteil von P1. Sie bauen auf dem verlässlichen gemeinsamen Anschluss aus P0 auf; Küste, Fluss, Straße, einfache Beschriftung und erste Ausgabe werden für das Leitbeispiel gemeinsam ergänzt. Die [Priorisierung](#wie-kommen-wir-zum-ziel) ersetzt feste Einschübe zwischen HEX-Nummern. CITY-05–09 behalten ihren vollständigen Fachumfang in P2–P4.
 
 ### Meilenstein C – Weltmaßstab, eigene Vorlage und erste Ausgabe
 
@@ -368,8 +379,8 @@ Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-2
 |---|---|---|
 | **HEX-11 – Küsten innerhalb von Hexes** | Land und Wasser auch innerhalb eines Hexes mit einem freien Pinsel bearbeiten. Zusammenhängende Küsten und weiche Übergänge darstellen; Änderungen bleiben in den betroffenen Hex-Bereichen verankert. | Eine Bucht und schmale Landzunge über mehrere Hex- und Ladegrenzen zeichnen. Zoomen, Undo/Redo, Neuöffnung und PNG-Ausgabe erhalten Verlauf und Anschlüsse ohne Naht. |
 | **HEX-12 – Seen und Wasser gestalten** | See beziehungsweise Süßwasserfläche anlegen und radieren; Wasserfarbe und die für diesen Ablauf gemessenen Erscheinungsoptionen bearbeiten. | See innerhalb einer Insel zeichnen, einen Teil entfernen und Erscheinung ändern. Rücknahme, Neuöffnung und Export erhalten die Fläche; das angrenzende Land und die Ortspositionen stimmen. |
-| **HEX-13 – Einen Fluss durchgehend zeichnen** | Fluss anlegen, mit den Originalgesten beenden oder abbrechen, Punkte ändern und Breite wählen. Durchgehende Geometrie über Hexes und Stufen sichern. | Fluss vom Gebirge bis ins Meer ziehen, einen Punkt verschieben und Breite ändern. Abbruch erzeugt keinen halben Fluss; Übergänge, Undo und frische Öffnung stimmen. |
-| **HEX-14 – Orte mit Straßen verbinden** | Straße beziehungsweise Pfad zwischen Orten zeichnen, Punkte und Kurven bearbeiten und Stil wählen. Zuständige Originalgesten und einfache Stilvarianten prüfen. | Stadt, POI und Dungeon durch Wege verbinden. Einen Verlauf ändern; Verbindungen, Orts-Keys, Flussquerung und Ausgabe bleiben nach Neuöffnung an der richtigen Stelle. |
+| **HEX-13 – Einen Fluss durchgehend zeichnen** | Fluss anlegen, mit der gemeinsamen Bedienung beenden oder abbrechen, Punkte ändern und Breite wählen. Durchgehende Geometrie über Hexes und Stufen sichern. | Fluss vom Gebirge bis ins Meer ziehen, einen Punkt verschieben und Breite ändern. Abbruch erzeugt keinen halben Fluss; Übergänge, Undo und frische Öffnung stimmen. |
+| **HEX-14 – Orte mit Straßen verbinden** | Straße beziehungsweise Pfad zwischen Orten zeichnen, Punkte und Kurven bearbeiten und Stil wählen. Erreichbare Wegformen und einfache Stilvarianten prüfen. | Stadt, POI und Dungeon durch Wege verbinden. Einen Verlauf ändern; Verbindungen, Orts-Keys, Flussquerung und Ausgabe bleiben nach Neuöffnung an der richtigen Stelle. |
 | **HEX-15 – Landmassen erzeugen** | Die erste Original-Generatorfamilie mit ihren gemessenen Parametern und reproduzierbarem Ausgangswert anbieten; weitere katalogisierte Muster im begrenzten Generator-Nachbesserungslauf ergänzen. Erzeugung rücknehmbar in die Landschaftsvorgaben übernehmen. | Zwei reproduzierbare Ausgangswelten erzeugen und eine davon weiterbearbeiten. Eine erneute grobe Erzeugung erhält vorhandene feine Überschreibungen und Orte; Rücknahme und Neustart erhalten den richtigen Stand. |
 | **HEX-16 – Heightmap und Geländehöhe** | Heightmap als eigenes Eingangsmaterial übernehmen und Landmassen anheben beziehungsweise absenken. Die Übernahme erzeugt native, anschließend bearbeitbare Landschaftsvorgaben. | Kleine bekannte Heightmap übernehmen, Inselhöhe verändern und einen Küstenabschnitt von Hand ändern. Speicherung, Rücknahme und Neuöffnung erhalten die native Bearbeitbarkeit und räumliche Ausrichtung. |
 
@@ -379,10 +390,10 @@ Nach jeder neuen Landschaftsfunktion wird derselbe Insel-Ort-Dungeon-Ablauf erne
 
 | Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
 |---|---|---|
-| **HEX-17 – Ein Symbol auswählen und setzen** | Ein Symbol aus einer kleinen Bibliothek auswählen, Vorschau zeigen, platzieren, auswählen, skalieren, drehen, spiegeln, duplizieren, anordnen und entfernen. Gemessene Grundgesten verwenden. | Berg, Baum und Siedlung setzen; überlappende Symbole bearbeiten. Jeweils Karte und Trefferreihenfolge prüfen; Undo/Redo und Neustart erhalten Position, Maßstab und Ordnung. |
+| **HEX-17 – Ein Symbol auswählen und setzen** | Ein Symbol aus einer kleinen Bibliothek auswählen, Vorschau zeigen, platzieren, auswählen, skalieren, drehen, spiegeln, duplizieren, anordnen und entfernen. Gemeinsame Platzierungs- und Korrekturaktionen verwenden. | Berg, Baum und Siedlung setzen; überlappende Symbole bearbeiten. Jeweils Karte und Trefferreihenfolge prüfen; Undo/Redo und Neustart erhalten Position, Maßstab und Ordnung. |
 | **HEX-18 – Wälder und Gebirge pinseln** | Gruppenpinsel mit Dichte, Streuung und Varianten für Bäume und Berge; Radieren und rücknehmbare zusammenhängende Pinselzüge. | Wald über mehrere Hexes malen, Teilbereich radieren und einen ganzen Zug rücknehmen. Eine gebirgige Region bleibt bei Stufenwechsel, Export und Neuöffnung vollständig und bedienbar. |
 | **HEX-19 – Eigene Assets und Bibliothek** | Eigene Symbolsets aufnehmen; passende Farbmodi, Suche, Paketwahl, erneutes Laden und Fehlasset-Platzhalter ergänzen. Nur benötigte Vorschauen dekodieren. | Eigenes Set einsetzen, Farbe bearbeiten, neu laden und ein Asset im Testset fehlen lassen. Bestehende Instanz bleibt erhalten; Bibliothek, Ortsnavigation und Neustart funktionieren mit großem Katalog. |
-| **HEX-20 – Namen und Beschriftungen** | Freie Beschriftung, Format- und Schriftvorgaben, Drehung, mehrzeilige Texte, Name-Vorschläge und Original-Labelgesten ergänzen. Ortsgebundene Namen übernehmen die zugehörige Ortskennung. | Stadt umbenennen, Fluss beschriften, mehrzeiligen Titel setzen und bei verschiedenen Zoomstufen lesen. Ortslink, Abschnittslink, Formatierung und Export bleiben nach Neuöffnung korrekt. |
+| **HEX-20 – Namen und Beschriftungen** | Freie Beschriftung, Format- und Schriftvorgaben, Drehung, mehrzeilige Texte, Name-Vorschläge und gemeinsame Text- und Platzierungsaktionen ergänzen. Ortsgebundene Namen übernehmen die zugehörige Ortskennung. | Stadt umbenennen, Fluss beschriften, mehrzeiligen Titel setzen und bei verschiedenen Zoomstufen lesen. Ortslink, Abschnittslink, Formatierung und Export bleiben nach Neuöffnung korrekt. |
 | **HEX-21 – Gebiete und Grenzen** | Politische und geografische Gebiete anlegen, Grenze und Erscheinung bearbeiten und mit einem Orts-Key verknüpfen. Gebiete benutzen dieselben Weltkoordinaten wie Landschaft und Orte. | Zwei Gebiete über mehrere Hexes zeichnen, gemeinsame Grenze ändern und den Regions-Key öffnen. Grobe und feine Ansicht, Links, Undo und PNG zeigen denselben Grenzverlauf. |
 
 ### Meilenstein F – Mehrere Detailkarten im gemeinsamen Raum
@@ -397,13 +408,13 @@ Diese Phase erweitert den seit HEX-05 funktionierenden Übergang. Ihr Review pr�
 
 | Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
 |---|---|---|
-| **HEX-23 – Landmassenausschnitt bearbeiten** | Lasso, Flächenauswahl, Ausschneiden, Kopieren, Einfügen, Verschieben und Größenänderung für Landschaft entsprechend den gemessenen Originalabläufen anbieten. Betroffene Landschaftsdaten ändern sich als zusammengehöriger Befehl. | Inselteil auswählen, kopieren, verschieben und rücknehmen. Land, Süßwasser und andere laut Original mitbewegte Bestandteile prüfen; bestehende Ortsbindungen, gespeicherte Vorgaben und Neuöffnung bleiben konsistent. |
+| **HEX-23 – Landmassenausschnitt bearbeiten** | Lasso, Flächenauswahl, Ausschneiden, Kopieren, Einfügen, Verschieben und Größenänderung für Landschaft mit eigener Bedienung und gleichwertiger bearbeitbarer Wirkung anbieten. Betroffene Landschaftsdaten ändern sich als zusammengehöriger Befehl. | Inselteil auswählen, kopieren, verschieben und rücknehmen. Land, Süßwasser und andere laut Original mitbewegte Bestandteile prüfen; bestehende Ortsbindungen, gespeicherte Vorgaben und Neuöffnung bleiben konsistent. |
 | **HEX-24 – Gestaltungsvorlagen und Effekte** | Kartenweite Vorlagen, Texturen, Paletten und die katalogisierten Erscheinungseffekte ergänzen. Geometrie und Key-Inhalte bleiben eigenständige Daten. | Auf derselben Testregion mehrere Vorlagen und Effekte anwenden. Beschriftungen, Wasser und Symbole bleiben lesbar; Raum- und Orts-Keys unverändert. Editor und PNG zeigen dieselbe Gestaltung. |
-| **HEX-25 – Rahmen, Kompass und Maße** | Rahmen, Kompassrose, Maßstabsleiste und Messwerkzeuge nach Originalabläufen ergänzen. Größen und Entfernungen aus dem gemeinsamen Weltmaßstab ableiten. | Bekannte Strecke zwischen Orten messen und eine Maßstabsleiste setzen. Welt-, Regions- und Dungeonmaßstab, Rahmen, Undo, Neuöffnung und Export stimmen. |
+| **HEX-25 – Rahmen, Kompass und Maße** | Rahmen, Kompassrose, Maßstabsleiste und Messwerkzeuge mit gleichwertiger Wirkung ergänzen. Größen und Entfernungen aus dem gemeinsamen Weltmaßstab ableiten. | Bekannte Strecke zwischen Orten messen und eine Maßstabsleiste setzen. Welt-, Regions- und Dungeonmaßstab, Rahmen, Undo, Neuöffnung und Export stimmen. |
 | **HEX-26 – Ausschnitte und Vorgaben** | Benannte Welt-/Regionsausschnitte in Meilen oder Hex-Kacheln verwalten; relevante Vorgaben, Rasteroptionen, Tastenkürzel und Vorlagen-Zeichenreihenfolge vervollständigen. Wonderdrafts endliche Karten-/Detailgrößen werden ausdrücklich auf Ausschnitte im grenzenlosen gemeinsamen Atlas abgebildet. Verfeinern benötigt keine separate Detailkarte oder Bearbeitungsansicht. | Ausschnitt vergrößern/verkleinern, Vorgaben ändern und neu öffnen. Inhalte außerhalb des Ausschnitts bleiben erhalten und direkt erreichbar. Landschaft, Stadt und Dungeon behalten Weltposition, Links und gemeinsame Bearbeitung; Ausschnittsänderungen sind rücknehmbar. |
 | **HEX-27 – Vollständige Bildausgabe** | PNG/JPEG, Ausschnitt, gewählte Detailstufe, Raster, Gestaltung und Ausgabegröße bis mindestens 8.192 × 8.192 Pixel vollständig anbieten. Große Bilder werden ohne vollständiges Laden aller Welt-Detaildaten ausgegeben. | Region und Welt in beiden Formaten ausgeben, darunter ein 8.192-Pixel-Bild. Bild öffnen und gezielte Details prüfen; laufende Bearbeitung, gespeicherter Stand und Ergebnis hängen nicht von der Editorkamera ab. |
 
-Nach bestandenem HEX-00-Tor muss die vollständige Zuordnung der Originaloberfläche vorliegen. Jede zuständige Werkzeugphase ergänzt vor ihrem Produktcode die direkten Wirkungsbelege und danach die Hostpaare. Spätestens beim jeweiligen Meilenstein werden offene Befunde als begrenzte, benannte Nachbesserungsläufe eingeordnet. HEX-28 beginnt mit einem vollständig ausgeführten Unterfallkatalog; bislang unberührte Gruppen werden nicht erst dort entdeckt.
+Vor jeder Lieferung müssen ihre fachlichen Ergebnisse und Datenabhängigkeiten eindeutig sein; vorhandene Originalbelege werden verwendet und unklare Wirkungen gezielt ergänzt. Die eigene Umsetzung wird anhand derselben Aufgaben auf benanntem Build geprüft. Offene spätere Fähigkeiten bleiben zugeordnet; vollständige Ergebnisabdeckung ist Voraussetzung der Endabnahme, kein Vorabtor für P0/P1.
 
 ### HEX-28 – Endstand prüfen und gesichert installieren
 
@@ -415,7 +426,7 @@ Nach bestandenem HEX-00-Tor muss die vollständige Zuordnung der Originaloberfl�
 
 | Ursprüngliche Etappe | Neue zuständige Phasen |
 |---|---|
-| 0 – Referenz und Ausgangsbasis | HEX-00-A/B/C vor HEX-01: vollständiges Original-Mapping, belegte Startfolge und Inventarreview; tiefe Wirkungsvarianten vor der jeweiligen Werkzeugphase |
+| 0 – Referenz und Ausgangsbasis | HEX-00: vorhandene Inventare und Belege verwenden; fachliche Unklarheiten gezielt vor der betroffenen Lieferung klären |
 | 1 – Raum- und Hex-Fundament | HEX-01/02/04/06/07/08; notwendige Anbindungen mit HEX-03/05 |
 | 2 – Erster zusammenhängender Atlas | HEX-02 bis HEX-05 |
 | 3 – Landmassen und Gewässer | HEX-11/12/15/16/23 |
@@ -442,9 +453,9 @@ Funktionsbeleg und Paritätsbeleg werden je Unterfall getrennt festgehalten; Nac
 
 ### Funktions- und Bedienabnahme
 
-Der [Wonderdraft-Vergleichsplan](WONDERDRAFT-PARITY.md) übernimmt den Unterfall- und Paarablauf der Dungeondraft-Abnahme. Der verbindliche Katalog unter `acceptance.json.wonderdraftParity` hält für jeden Fall fest: exakter Originalpfad und Ablauf, Optionen, Vorschau, Abschluss oder Abbruch, Undo/Redo, gespeicherter Zustand, frische Neuöffnung, Hostbuild, Review und verbleibende Abweichungen. Insbesondere werden Werkzeugvorgaben und vorhandene Instanzen, Auswahl-/Zeichenreihenfolge, Escape-Kontexte und globale beziehungsweise kartenlokale Werte getrennt geprüft. Die offiziellen [Tastatur- und Gestenabläufe](https://github.com/Megasploot/Wonderdraft/wiki/Shortcuts) dienen als Einstieg; maßgeblich bleibt das Verhalten der lokalen Version. Fehlende Originalbelege bleiben offen.
+Der [Wonderdraft-Vergleichsplan](WONDERDRAFT-PARITY.md) übernimmt den Unterfall- und Paarablauf der Dungeondraft-Abnahme. Der verbindliche Katalog unter `acceptance.json.wonderdraftParity` hält für jeden Fall fest: exakter Originalpfad und Ablauf, Optionen, Vorschau, Abschluss oder Abbruch, Undo/Redo, gespeicherter Zustand, frische Neuöffnung, Hostbuild, Review und verbleibende Abweichungen. Insbesondere werden Werkzeugvorgaben und vorhandene Instanzen, Auswahl-/Zeichenreihenfolge, Abbruch/Textfokus und globale beziehungsweise kartenlokale Werte getrennt geprüft. Die offiziellen [Tastatur- und Gestenabläufe](https://github.com/Megasploot/Wonderdraft/wiki/Shortcuts) dienen als Einstieg; maßgeblich bleibt das Verhalten der lokalen Version. Fehlende Originalbelege bleiben offen.
 
-Die jeweiligen Werkzeuge behalten ihre belegten Gesten; sie wirken in der gemeinsamen Atlasansicht auf die zugehörige Geometrie. Es werden dafür keine Overworld-, Stadt- oder Dungeonmodi eingeführt. Stadtvorbilder werden hinsichtlich ihres Ergebnisses verglichen; ihre Bedienung unterliegt den eigenen Aufgabenprüfungen aus CITY-00 bis CITY-09. Texteingabe im Key-Editor darf keine Kartenaktionen auslösen.
+Die eigenen Werkzeuge erreichen die benötigten Wirkungen in der gemeinsamen Atlasansicht. Originalgesten dienen als Referenzbeobachtung, nicht als Nachbaupflicht. Es werden dafür keine Overworld-, Stadt- oder Dungeonmodi eingeführt. Alle Vorbilder werden anhand gleicher Aufgaben und bearbeitbarer Ergebnisse verglichen; die eigene Bedienung wird gesondert geprüft. Texteingabe im Key-Editor darf keine Kartenaktionen auslösen.
 
 ### Zusammenhängende Prüfszenarien
 
