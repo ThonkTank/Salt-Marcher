@@ -186,6 +186,14 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
         assert.equal(await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).count(), 1);
         await search.fill("");
       }
+      const search = panel.getByRole("searchbox", { name: "Notizen durchsuchen" });
+      await search.fill("nebelbund");
+      assert.equal(await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).count(), 1);
+      assert.equal(await panel.getByRole("button", { name: "Fraktion: Nebelbund" }).count(), 1);
+      await search.fill("kennt");
+      assert.equal(await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).count(), 1);
+      assert.equal(await panel.getByRole("button", { name: "Fraktion: Nebelbund" }).count(), 0);
+      await search.fill("");
       await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).click();
       const form = panel.locator("form");
       if (worldNotesZoom200) {
@@ -205,6 +213,16 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
       assert.equal(await form.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea").inputValue(),
         "Kennt den alten Kai und den Nebelbund.");
       assert.match(await form.locator("ul").innerText(), /kennt: Nebelbund/);
+      const notes = form.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea");
+      await notes.fill("Ungespeicherter Entwurf");
+      await form.getByRole("button", { name: "Fraktion Nebelbund öffnen" }).click();
+      assert.equal(await notes.inputValue(), "Ungespeicherter Entwurf");
+      assert.equal(await form.locator("label").filter({ hasText: "Name" }).locator("input").inputValue(),
+        "Maris vom Hafen");
+      await notes.fill("Kennt den alten Kai und den Nebelbund.");
+      await form.getByRole("button", { name: "Fraktion Nebelbund öffnen" }).click();
+      assert.equal(await panel.locator("form label").filter({ hasText: "Name" }).locator("input").inputValue(),
+        "Nebelbund");
       await panel.getByRole("button", { name: "Entwurf verwerfen" }).click();
       await panel.getByRole("button", { name: "Verwerfen bestätigen" }).click();
       await panel.getByRole("button", { name: "Fraktion: Nebelbund" }).click();
@@ -216,7 +234,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
       assert.equal(await panel.locator("form label").filter({ hasText: "GM-Notizen" }).locator("textarea").inputValue(),
         "Die Glocke fehlt.");
       assert.equal(await panel.getByRole("button", { name: "Gerücht: Nebelzeichen" }).count(), 0);
-      checks.push("Fresh real Obsidian process reopens exact prose/relationship and hides the persisted rumor tombstone PASS");
+      checks.push("Fresh real Obsidian searches relations, preserves unsaved draft, opens linked faction and hides rumor tombstone PASS");
     },
   };
 };
