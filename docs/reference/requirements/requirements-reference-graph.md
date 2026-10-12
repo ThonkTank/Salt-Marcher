@@ -41,6 +41,27 @@ full entry in the center Details tab while preserving the surrounding work.
 
 ## Content and failure behavior
 
+- Scene desktop lookup searches names and aliases plus saved location notes and
+  tags, faction notes, and NPC notes, appearance, behavior and history. All query
+  words may match across fields; Unicode normalization and case folding apply to
+  lookup without changing exact inline campaign-name recognition.
+- Campaign prose is searched offline in Core. The renderer receives matching
+  identities through an explicitly campaign-bound, validated, paginated read.
+  Late responses from another query or Campaign cannot replace current results.
+- The lookup reports pending or failed Campaign search separately from no
+  results, keeps static reference lookup usable on failure, offers retry, and
+  exposes further matches instead of silently stopping at one hundred results.
+- Opening a prose match reveals and highlights the matching phrase inside that
+  reader. A lookup intent is transient and scoped to its Campaign, Scene and
+  reader window; it does not alter stored reference identities or replay on
+  ordinary history navigation. The resulting reader scroll is saved normally.
+  Authored line breaks remain visible in desktop reference documents.
+- Opening or restoring lookup focuses and selects its query immediately.
+  Ctrl/Command+K restores it in the active Scene without an extra pointer action;
+  the shortcut does not intercept other editors, IME composition or modal work.
+  Enter opens a sole visible result after search has settled. Multiple matches
+  still require an explicit candidate selection.
+
 - Full rule documents expose structured blocks, compiler-linked inline references,
   facts, source version, and attribution. Creature documents reuse the
   canonical statblock projection. Campaign and creature prose is linked from

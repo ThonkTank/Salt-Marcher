@@ -146,6 +146,14 @@ export function ReferenceProvider(props: {
     [capability]
   )
 
+  const searchCampaign = useCallback(
+    (query: string, offset: number) =>
+      campaignId
+        ? capability.searchCampaign({ campaignId, query, offset, limit: 100 })
+        : Promise.resolve({ candidates: [], total: 0, offset }),
+    [campaignId, capability]
+  )
+
   const openReference = useCallback(
     (target: ReferenceTarget, breadcrumb: string) =>
       routeReference(target, breadcrumb, false),
@@ -237,6 +245,7 @@ export function ReferenceProvider(props: {
       compiled,
       campaignId,
       loadDetail,
+      searchCampaign,
       openReference,
       openOverlay,
       closeOverlayBranch,
@@ -253,6 +262,7 @@ export function ReferenceProvider(props: {
       closeOverlayBranch,
       compiled,
       loadDetail,
+      searchCampaign,
       openOverlay,
       openReference,
       visibleOverlays,

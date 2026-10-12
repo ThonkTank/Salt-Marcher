@@ -90,6 +90,9 @@ const document = (target: ReferenceTarget): ReferenceDocument => {
 function setup(text = 'Prone', enabled = true) {
   const routeReference = vi.fn()
   const capability: SaltMarcherApi['references'] = {
+    searchCampaign: vi
+      .fn()
+      .mockResolvedValue({ candidates: [], total: 0, offset: 0 }),
     staticIndex: vi.fn(() => Promise.resolve(referenceIndex)),
     campaignIndex: vi.fn(() =>
       Promise.resolve({

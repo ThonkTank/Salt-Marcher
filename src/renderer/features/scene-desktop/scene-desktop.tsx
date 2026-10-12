@@ -31,6 +31,12 @@ import {
   type SnapSide
 } from './desktop-geometry.js'
 import { DesktopReader, DesktopSearch } from './desktop-references.js'
+import {
+  focusDesktopWindow,
+  isLookupShortcut,
+  type DesktopSearchIntent
+} from './reference-search-focus.js'
+import { referenceTargetKey } from '../reference/reference-matcher.js'
 import { desktopWindowTitle } from './desktop-window-title.js'
 import './scene-desktop.css'
 
@@ -80,6 +86,10 @@ export function SceneDesktop(
     combatCommands
   )
   const [expanded, setExpanded] = useState<Record<string, string[]>>({})
+  const [searchFocus, setSearchFocus] = useState<{
+    scope: string
+    intent: DesktopSearchIntent
+  } | null>(null)
 
   const stage = useRef<HTMLDivElement>(null)
   const launcher = useRef<HTMLButtonElement>(null)
@@ -90,9 +100,7 @@ export function SceneDesktop(
     const request = requestedFocus.current
     requestedFocus.current = null
     if (request?.sceneId === focused.id)
-      stage.current
-        ?.querySelector<HTMLElement>(`[data-window-id="${request.windowId}"]`)
-        ?.focus()
+      focusDesktopWindow(stage.current, request.windowId)
   }, [snapshot.state, focused.id])
   useLayoutEffect(() => {
     const windowId = snapshot.focusWindowId
@@ -101,10 +109,31 @@ export function SceneDesktop(
       `[data-window-id="${windowId}"]`
     )
     if (frame) {
-      frame.focus()
+      focusDesktopWindow(stage.current, windowId)
       projection.acknowledgeFocus(windowId)
     }
   }, [projection, snapshot.focusWindowId, snapshot.state])
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      const state = projection.snapshot()
+      if (
+        !isLookupShortcut(event) ||
+        !stage.current?.getClientRects().length ||
+        stage.current.closest('[inert]') ||
+        document.querySelector('[aria-modal="true"]') ||
+        !state.state ||
+        state.error ||
+        editingBlocked
+      )
+        return
+      event.preventDefault()
+      requestedFocus.current = { sceneId: focused.id, windowId: 'search' }
+      projection.dispatch({ type: 'open-search' })
+      focusDesktopWindow(stage.current, 'search')
+    }
+    window.addEventListener('keydown', keydown)
+    return () => window.removeEventListener('keydown', keydown)
+  }, [projection, focused.id, editingBlocked])
   const [size, setSize] = useState<DesktopSize>({ width: 800, height: 600 })
   const [preview, setPreview] = useState<{
     sceneId: string
@@ -178,9 +207,12 @@ export function SceneDesktop(
         </button>
         <button
           disabled={!snapshot.state || !!snapshot.error}
+          title={message('desktop.searchShortcut')}
+          aria-keyshortcuts="Control+K Meta+K"
           onClick={() => {
             requestedFocus.current = { sceneId: focused.id, windowId: 'search' }
             projection.dispatch({ type: 'open-search' })
+            focusDesktopWindow(stage.current, 'search')
           }}
         >
           {message('desktop.search')}
@@ -270,11 +302,44 @@ export function SceneDesktop(
                   <DesktopSearch
                     window={window}
                     dispatch={projection.dispatch.bind(projection)}
+                    onResultSelected={(intent) => {
+                      const existing = windows.find(
+                        (candidate) =>
+                          candidate.kind === 'reference' &&
+                          referenceTargetKey(candidate.entry.target) ===
+                            intent.targetKey
+                      )
+                      setSearchFocus({
+                        scope: scopeKey,
+                        intent: {
+                          ...intent,
+                          windowId:
+                            intent.windowId === 'reader'
+                              ? 'reader'
+                              : (existing?.id ?? intent.windowId)
+                        }
+                      })
+                    }}
                   />
                 ) : window.kind === 'reader' || window.kind === 'reference' ? (
                   <DesktopReader
                     window={window}
                     dispatch={projection.dispatch.bind(projection)}
+                    searchIntent={
+                      searchFocus?.scope === scopeKey
+                        ? searchFocus.intent
+                        : undefined
+                    }
+                    onSearchFocused={(id) =>
+                      setSearchFocus((current) =>
+                        current?.intent.id === id
+                          ? {
+                              ...current,
+                              intent: { ...current.intent, consumed: true }
+                            }
+                          : current
+                      )
+                    }
                   />
                 ) : window.kind === 'map' ? (
                   <div className="desktop-map">
@@ -448,6 +513,7 @@ export function SceneDesktop(
                   windowId: window.id
                 }
                 projection.dispatch({ type: 'raise', id: window.id })
+                focusDesktopWindow(stage.current, window.id)
               }}
             >
               {window.minimized ? '▁ ' : ''}

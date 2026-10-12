@@ -1,29 +1,56 @@
 import { referenceTargetLabel } from '../reference/reference-target-label.js'
 import { message, formatMessage } from '../../i18n/session-runtime.de.js'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { ReferenceDocument } from '../../../shared/contracts/reference.js'
+import type {
+  ReferenceCandidate,
+  ReferenceDocument
+} from '../../../shared/contracts/reference.js'
 import type { SceneDesktopWindow } from '../../../shared/contracts/scene-desktop.js'
 import { useReferenceContext } from '../reference/reference-context.js'
-import {
-  referenceTargetKey,
-  searchReferenceIndices
-} from '../reference/reference-matcher.js'
+import { referenceTargetKey } from '../reference/reference-matcher.js'
+import { useDesktopSearch } from './use-desktop-search.js'
 import { LazyReferenceDocument } from '../reference/lazy-reference-document.js'
 import type { DesktopAction } from './desktop-state.js'
+import {
+  focusReferenceSearch,
+  type DesktopSearchIntent
+} from './reference-search-focus.js'
 
 type Props = {
   window: SceneDesktopWindow
   dispatch: (action: DesktopAction) => void
+  searchIntent?: DesktopSearchIntent | undefined
+  onSearchFocused?: ((id: string) => void) | undefined
+  onResultSelected?: ((intent: DesktopSearchIntent) => void) | undefined
 }
-export function DesktopSearch({ window, dispatch }: Props) {
+export function DesktopSearch({ window, dispatch, onResultSelected }: Props) {
   const reference = useReferenceContext()
   const scroll = useRef<HTMLDivElement>(null)
   const scrollTop = window.kind === 'search' ? window.scrollTop : 0
+  const search = useDesktopSearch(
+    reference,
+    window.kind === 'search' ? window.query : ''
+  )
   useLayoutEffect(() => {
     if (scroll.current) scroll.current.scrollTop = scrollTop
   }, [scrollTop])
   if (window.kind !== 'search') return null
-  const results = searchReferenceIndices(reference.compiled ?? [], window.query)
+  const { results } = search
+  const open = (candidate: ReferenceCandidate, separate = false) => {
+    const windowId = separate ? crypto.randomUUID() : 'reader'
+    onResultSelected?.({
+      id: crypto.randomUUID(),
+      windowId,
+      targetKey: referenceTargetKey(candidate.target),
+      query: window.query,
+      consumed: false
+    })
+    dispatch({
+      type: 'open-reference',
+      entry: { ...candidate, scrollTop: 0 },
+      ...(separate ? { separateId: windowId } : {})
+    })
+  }
   return (
     <div className="desktop-reference-pane">
       <input
@@ -35,6 +62,18 @@ export function DesktopSearch({ window, dispatch }: Props) {
         onChange={(event) =>
           dispatch({ type: 'query', value: event.target.value })
         }
+        onKeyDown={(event) => {
+          if (
+            event.key === 'Enter' &&
+            !event.nativeEvent.isComposing &&
+            reference.compiled &&
+            !search.loading &&
+            results.length === 1
+          ) {
+            event.preventDefault()
+            open(results[0]!)
+          }
+        }}
       />
       <div
         className="desktop-reference-scroll"
@@ -62,14 +101,7 @@ export function DesktopSearch({ window, dispatch }: Props) {
               }
               key={referenceTargetKey(candidate.target)}
             >
-              <button
-                onClick={() =>
-                  dispatch({
-                    type: 'open-reference',
-                    entry: { ...candidate, scrollTop: 0 }
-                  })
-                }
-              >
+              <button onClick={() => open(candidate)}>
                 <span>{candidate.title}</span>
                 <small>{referenceTargetLabel(candidate.target)}</small>
               </button>
@@ -78,28 +110,46 @@ export function DesktopSearch({ window, dispatch }: Props) {
                   title: candidate.title
                 })}
                 title={message('desktop.separate')}
-                onClick={() =>
-                  dispatch({
-                    type: 'open-reference',
-                    entry: { ...candidate, scrollTop: 0 },
-                    separateId: crypto.randomUUID()
-                  })
-                }
+                onClick={() => open(candidate, true)}
               >
                 ↗
               </button>
             </div>
           ))
         )}
-        {reference.compiled && window.query.trim() && results.length === 0 && (
-          <p>{message('desktop.noResults')}</p>
+        {search.loading && (
+          <p role="status">{message('desktop.searchLoading')}</p>
         )}
+        {search.failed && (
+          <div role="alert">
+            {message('desktop.searchFailed')}{' '}
+            <button onClick={search.retry}>{message('desktop.retry')}</button>
+          </div>
+        )}
+        {search.more && (
+          <button
+            disabled={search.loading || search.failed}
+            onClick={search.loadMore}
+          >
+            {message('desktop.moreResults')}
+          </button>
+        )}
+        {reference.compiled &&
+          window.query.trim() &&
+          !search.loading &&
+          !search.failed &&
+          results.length === 0 && <p>{message('desktop.noResults')}</p>}
       </div>
     </div>
   )
 }
 
-export function DesktopReader({ window, dispatch }: Props) {
+export function DesktopReader({
+  window,
+  dispatch,
+  searchIntent,
+  onSearchFocused
+}: Props) {
   const entry =
     window.kind === 'reader'
       ? window.entries[window.index]!
@@ -107,17 +157,28 @@ export function DesktopReader({ window, dispatch }: Props) {
         ? window.entry
         : null
   const key = entry ? referenceTargetKey(entry.target) : ''
+  const intent =
+    searchIntent?.windowId === window.id && searchIntent.targetKey === key
+      ? searchIntent
+      : undefined
   if (!entry) return null
   return (
     <DesktopReaderContent
-      key={`${key}:${window.kind === 'reader' ? window.index : 0}`}
+      key={`${key}:${window.kind === 'reader' ? window.index : 0}:${intent?.id ?? ''}`}
       window={window}
       dispatch={dispatch}
+      searchIntent={intent}
+      onSearchFocused={onSearchFocused}
     />
   )
 }
 
-function DesktopReaderContent({ window, dispatch }: Props) {
+function DesktopReaderContent({
+  window,
+  dispatch,
+  searchIntent,
+  onSearchFocused
+}: Props) {
   const { loadDetail, cacheRevision } = useReferenceContext()
   const entry =
     window.kind === 'reader'
@@ -135,6 +196,17 @@ function DesktopReaderContent({ window, dispatch }: Props) {
   const scroll = useRef<HTMLDivElement>(null)
   const restored = useRef(false)
   const initialScroll = useRef(entry?.scrollTop ?? 0)
+  const highlight = useRef<Highlight | null>(null)
+  useEffect(
+    () => () => {
+      if (
+        highlight.current &&
+        CSS.highlights?.get('reference-search') === highlight.current
+      )
+        CSS.highlights.delete('reference-search')
+    },
+    []
+  )
   const target = entry?.target
   useEffect(() => {
     if (!target) return
@@ -218,6 +290,22 @@ function DesktopReaderContent({ window, dispatch }: Props) {
               if (scroll.current && !restored.current) {
                 scroll.current.scrollTop = initialScroll.current
                 restored.current = true
+                if (searchIntent && !searchIntent.consumed) {
+                  const range = focusReferenceSearch(
+                    scroll.current,
+                    searchIntent.query,
+                    entry.title
+                  )
+                  if (
+                    range &&
+                    typeof Highlight !== 'undefined' &&
+                    CSS.highlights
+                  ) {
+                    highlight.current = new Highlight(range)
+                    CSS.highlights.set('reference-search', highlight.current)
+                  }
+                  onSearchFocused?.(searchIntent.id)
+                }
               }
             }}
           />

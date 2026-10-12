@@ -78,6 +78,95 @@ function harness() {
 }
 
 describe('reference service', () => {
+  it('finds GM prose across fields, normalizes Unicode, and never searches a different Campaign', () => {
+    const { campaigns, locations, sources, references } = harness()
+    const campaignId = campaigns.activeCampaignId()
+    const search = (query: string) =>
+      references.searchCampaign({ campaignId, query, offset: 0, limit: 100 })
+    const created = locations.create(
+      {
+        displayName: 'Alter Hafen',
+        tags: ['Küste'],
+        notes: 'Kai 30: Überfall bei Vollmond.'
+      },
+      0
+    ).saved
+    const faction = sources.createFaction(
+      randomUUID(),
+      {
+        displayName: 'Seewache',
+        notes: 'Die Schuld wird am Kai beglichen.',
+        disposition: 0,
+        primaryEncounterTableId: null,
+        inventory: []
+      },
+      0
+    ).saved
+    expect(
+      search('hafen ÜBERFALL').candidates.map((entry) => entry.target)
+    ).toEqual([
+      {
+        scope: 'campaign',
+        campaignId,
+        entityKind: 'location',
+        entityId: created.id
+      }
+    ])
+    expect(search('U\u0308BERFALL').candidates[0]?.title).toBe('Alter Hafen')
+    expect(search('küste kai 30').candidates[0]?.title).toBe('Alter Hafen')
+    expect(search('Schuld').candidates[0]?.target).toMatchObject({
+      entityKind: 'faction',
+      entityId: faction.id
+    })
+    expect(search('   ')).toEqual({ candidates: [], total: 0, offset: 0 })
+    locations.update(
+      created.id,
+      {
+        displayName: created.displayName,
+        tags: created.tags,
+        notes: 'Nur noch eine Fähre.'
+      },
+      locations.read().revision
+    )
+    expect(search('Überfall').total).toBe(0)
+    expect(search('Fähre').total).toBe(1)
+    campaigns.create('Other')
+    expect(() => search('Fähre')).toThrow()
+    campaigns.close()
+  })
+
+  it('pages matching records without collapsing duplicate names or silently losing the last matches', () => {
+    const { campaigns, locations, references } = harness()
+    const campaignId = campaigns.activeCampaignId()
+    for (let index = 0; index < 105; index += 1)
+      locations.create(
+        { displayName: 'Lager', tags: ['Ort'], notes: 'versiegelte Kiste' },
+        locations.read().revision
+      )
+    const first = references.searchCampaign({
+      campaignId,
+      query: 'Kiste',
+      offset: 0,
+      limit: 100
+    })
+    const second = references.searchCampaign({
+      campaignId,
+      query: 'Kiste',
+      offset: 100,
+      limit: 100
+    })
+    expect(first.total).toBe(105)
+    expect(first.candidates).toHaveLength(100)
+    expect(second.candidates).toHaveLength(5)
+    expect(
+      new Set(
+        [...first.candidates, ...second.candidates].map((entry) =>
+          JSON.stringify(entry.target)
+        )
+      ).size
+    ).toBe(105)
+    campaigns.close()
+  })
   it('publishes pinned offline SRD concepts and stable creature-part targets', () => {
     const { campaigns, references } = harness()
     const index = references.staticIndex()
@@ -195,6 +284,17 @@ describe('reference service', () => {
     const indexed = references.campaignIndex(campaignId)
     const candidate = indexed.terms.find((term) => term.term === 'Erika')
       ?.candidates[0]
+    for (const query of [
+      'Flügel',
+      'Neugierig',
+      'Rosenschein',
+      'Gerettet',
+      'erika Flügel'
+    ])
+      expect(
+        references.searchCampaign({ campaignId, query, offset: 0, limit: 100 })
+          .candidates
+      ).toContainEqual(candidate)
     expect(candidate?.target).toEqual({
       scope: 'campaign',
       campaignId,

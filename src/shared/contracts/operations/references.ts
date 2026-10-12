@@ -1,5 +1,7 @@
 import {
   referenceCampaignIndexInputSchema,
+  referenceCampaignSearchInputSchema,
+  referenceSearchPageSchema,
   referenceDocumentSchema,
   referenceIndexSchema,
   referenceTargetSchema
@@ -7,6 +9,11 @@ import {
 import { none, read, utilityOperationFragment } from './registry.js'
 
 export const referencesOperationDefinitions = utilityOperationFragment({
+  'references.searchCampaign': read(
+    'references:search-campaign',
+    referenceCampaignSearchInputSchema,
+    referenceSearchPageSchema
+  ),
   'references.staticIndex': read(
     'references:static-index',
     none,

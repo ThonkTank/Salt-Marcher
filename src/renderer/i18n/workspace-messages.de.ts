@@ -135,7 +135,11 @@ export const workspaceMessagesDe = {
   'character.levelValue': 'Lv. {level}',
 
   'desktop.search': 'Nachschlagen',
-  'desktop.searchPlaceholder': 'Name oder Begriff …',
+  'desktop.searchShortcut': 'Nachschlagen (Strg/⌘+K)',
+  'desktop.searchPlaceholder': 'Name, Begriff oder GM-Notiz …',
+  'desktop.searchLoading': 'Notizen werden durchsucht …',
+  'desktop.searchFailed': 'Kampagnennotizen konnten nicht durchsucht werden.',
+  'desktop.moreResults': 'Weitere Treffer',
   'desktop.separate': 'Separat öffnen',
   'desktop.separateTarget': '{title} separat öffnen',
   'desktop.noResults': 'Keine Treffer.',

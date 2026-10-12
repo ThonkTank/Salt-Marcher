@@ -180,6 +180,27 @@ export const referenceCampaignIndexInputSchema = z
   .object({ campaignId: z.string().min(1).max(100) })
   .strict()
 
+export const referenceCampaignSearchInputSchema = z
+  .object({
+    campaignId: z.string().min(1).max(100),
+    query: z.string().trim().max(300),
+    offset: z.number().int().nonnegative().default(0),
+    limit: z.number().int().min(1).max(100).default(100)
+  })
+  .strict()
+
+export const referenceSearchPageSchema = z
+  .object({
+    candidates: z.array(referenceCandidateSchema).max(100),
+    total: z.number().int().nonnegative(),
+    offset: z.number().int().nonnegative()
+  })
+  .strict()
+
+export type ReferenceSearchPage = Readonly<
+  z.infer<typeof referenceSearchPageSchema>
+>
+
 export const referenceIndexChangeNoticeSchema = z
   .object({
     campaignId: z.string().min(1).max(100),

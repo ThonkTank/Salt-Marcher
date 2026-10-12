@@ -43,6 +43,9 @@ function api(
 ): SaltMarcherApi['references'] {
   return {
     detail,
+    searchCampaign: vi
+      .fn()
+      .mockResolvedValue({ candidates: [], total: 0, offset: 0 }),
     staticIndex: vi.fn().mockResolvedValue({
       scope: 'static',
       revision: '1',

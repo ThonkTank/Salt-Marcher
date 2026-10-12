@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-09-13",
-  "reason": "Ratchet the Catalog graph after the compact Group editor reuses the shared creature filters; retain the existing ceilings for other graphs.",
-  "dependencyRationale": "No dependency or lockfile change. The Group editor uses the existing React controls, capabilities and draft coordinator.",
-  "chunkRationale": "Catalog shrinks by 1412 bytes to 185265. New group state, balance and selection components remain in the existing lazy SceneDesktop graph. Measured reachable growth is 11262 bytes and common Workspace growth is 2030 bytes, within the unchanged 16 KiB growth gate; Pixi and unrelated routes remain isolated.",
+  "recordedAt": "2026-10-12",
+  "reason": "Record GM note lookup, paginated results, visible match focus and direct keyboard access.",
+  "dependencyRationale": "No dependency or lockfile change. Uses existing validated Core reads, React, DOM Range and native CSS Highlight APIs.",
+  "chunkRationale": "Reachable growth is 17464 bytes for campaign prose search, race-safe pagination, source-preserving match focus and keyboard lookup. Common Workspace grows 3106 bytes; shell, Catalog and reference graphs are unchanged. New UI remains in the lazy SceneDesktop graph; Pixi stays a dynamic leaf. All absolute graph budgets and the future 16 KiB growth gate are unchanged.",
   "graphs": {
     "shell": 420931,
-    "workspace": 530075,
-    "session": 1348,
+    "workspace": 533181,
+    "session": 1386,
     "catalog": 185265,
-    "hex": 175900,
+    "hex": 175945,
     "reference": 37404,
-    "pixi": 409405,
-    "reachable": 1687147
+    "pixi": 409565,
+    "reachable": 1704611
   }
 }

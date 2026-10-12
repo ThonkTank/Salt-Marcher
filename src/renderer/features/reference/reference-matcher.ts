@@ -5,6 +5,10 @@ import type {
   ReferenceTerm
 } from '../../../shared/contracts/reference.js'
 import { referenceTargetKey } from '../../../shared/reference/reference-target-key.js'
+import {
+  matchesReferenceSearch,
+  referenceSearchWords
+} from '../../../shared/reference/reference-search.js'
 
 type AutomatonOutput = Readonly<{
   length: number
@@ -160,6 +164,7 @@ function matchesFor(
   originalText: string,
   excluded: ReadonlySet<string>
 ): ReferenceMatch[] {
+  if (automaton.nodes.length === 1) return []
   const projection = normalizedProjection(originalText, automaton.mode)
   const matches: ReferenceMatch[] = []
   let state = 0
@@ -263,17 +268,14 @@ export function searchReferenceIndices(
   indices: readonly CompiledReferenceIndex[],
   query: string
 ): readonly ReferenceCandidate[] {
-  const words = query.trim().toLocaleLowerCase().split(/\s+/u).filter(Boolean)
+  const words = referenceSearchWords(query)
   if (words.length === 0) return []
   const found = new Map<string, ReferenceCandidate>()
   for (const index of indices)
     for (const term of index.terms)
       for (const candidate of term.candidates) {
-        const text = `${term.term} ${candidate.title}`.toLocaleLowerCase()
-        if (words.every((word) => text.includes(word)))
+        if (matchesReferenceSearch(words, `${term.term} ${candidate.title}`))
           found.set(referenceTargetKey(candidate.target), candidate)
       }
-  return [...found.values()]
-    .sort((a, b) => a.title.localeCompare(b.title))
-    .slice(0, 100)
+  return [...found.values()].sort((a, b) => a.title.localeCompare(b.title))
 }

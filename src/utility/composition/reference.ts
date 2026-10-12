@@ -26,6 +26,7 @@ export function createReferenceHandlers(dependencies: {
       'creatures.filterOptions': () => creatures.filterOptions(),
       'creatures.detail': (input) => creatures.detail(input.id),
       'references.staticIndex': () => references.staticIndex(),
+      'references.searchCampaign': (input) => references.searchCampaign(input),
       'references.campaignIndex': (input) =>
         references.campaignIndex(input.campaignId),
       'references.detail': (input) => references.detail(input)

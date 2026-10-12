@@ -1,5 +1,7 @@
 import {
   referenceDocumentSchema,
+  referenceCampaignSearchInputSchema,
+  referenceSearchPageSchema,
   referenceIndexSchema,
   referenceTargetSchema,
   type ReferenceCandidate,
@@ -9,6 +11,11 @@ import {
   type ReferenceTarget,
   type ReferenceTerm
 } from '../../shared/contracts/reference.js'
+import type { z } from 'zod'
+import {
+  matchesReferenceSearch,
+  referenceSearchWords
+} from '../../shared/reference/reference-search.js'
 import type {
   Creature,
   CreatureAction
@@ -145,6 +152,56 @@ export class ReferenceService {
       this.creatureQueries.detail(npc.creatureId),
       target
     )
+  }
+
+  searchCampaign(input: z.infer<typeof referenceCampaignSearchInputSchema>) {
+    const { campaignId, query, offset, limit } =
+      referenceCampaignSearchInputSchema.parse(input)
+    this.assertCampaign(campaignId)
+    const words = referenceSearchWords(query)
+    const candidates: ReferenceCandidate[] = []
+    const add = (
+      entityKind: 'location' | 'faction' | 'npc',
+      entityId: string,
+      title: string,
+      prose: string
+    ) => {
+      if (matchesReferenceSearch(words, `${title}\n${prose}`))
+        candidates.push({
+          target: { scope: 'campaign', campaignId, entityKind, entityId },
+          title
+        })
+    }
+    if (words.length > 0) {
+      for (const location of this.locationQueries.read().locations)
+        add(
+          'location',
+          location.id,
+          location.displayName,
+          `${location.notes}\n${location.tags.join(' ')}`
+        )
+      for (const faction of this.factionQueries.read().factions)
+        add('faction', faction.id, faction.displayName, faction.notes)
+      for (const npc of this.npcQueries.read().npcs)
+        add(
+          'npc',
+          npc.id,
+          npc.displayName,
+          `${npc.notes}\n${npc.appearance}\n${npc.behavior}\n${npc.history}`
+        )
+    }
+    candidates.sort(
+      (left, right) =>
+        left.title.localeCompare(right.title) ||
+        referenceTargetKey(left.target).localeCompare(
+          referenceTargetKey(right.target)
+        )
+    )
+    return referenceSearchPageSchema.parse({
+      candidates: candidates.slice(offset, offset + limit),
+      total: candidates.length,
+      offset
+    })
   }
 
   private assertCampaign(campaignId: string): void {

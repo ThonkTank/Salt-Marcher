@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import type {
   ReferenceDocument,
+  ReferenceSearchPage,
   ReferenceTarget
 } from '../../../shared/contracts/reference.js'
 import type {
@@ -21,6 +22,7 @@ export type ReferenceContextValue = Readonly<{
   compiled: readonly CompiledReferenceIndex[] | null
   campaignId: string | null
   loadDetail(target: ReferenceTarget): Promise<ReferenceDocument>
+  searchCampaign(query: string, offset: number): Promise<ReferenceSearchPage>
   openReference(target: ReferenceTarget, breadcrumb: string): void
   openOverlay(
     anchor: HTMLElement,

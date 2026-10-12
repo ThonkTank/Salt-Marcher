@@ -772,3 +772,12 @@
 .desktop-party-history-error span {
   min-width: 0;
 }
+
+.desktop-reference-scroll .reference-document p {
+  white-space: pre-wrap;
+}
+
+::highlight(reference-search) {
+  background-color: Mark;
+  color: MarkText;
+}
