@@ -286,61 +286,11 @@
       {"id": "CE-AC-13", "title": "Independent plan lifecycle actions", "state": "open"},
       {"id": "CE-AC-14", "title": "Mouse, keyboard and damaged-data resilience", "state": "open", "automatedRealHost": "passed", "physicalInput": "open"}
     ],
-    "implementationCandidate": {
-      "run": "CE-00-I01",
-      "files": [
-        "src/features/catalog/creature-catalog.ts",
-        "src/features/catalog/data/srd-5.1.generated.json",
-        "src/features/catalog/SRD-5.1-ATTRIBUTION.md",
-        "tests/core/creature-catalog.test.ts"
-      ],
-      "sourceSha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
-      "sourceHashComparison": "byte-identical to SaltMarcher source artifact",
-      "verification": {
-        "check": "passed",
-        "tests": {"passed": 210, "failed": 0},
-        "build": "passed"
-      },
-      "limits": "Pure read-only domain foundation only; no Obsidian UI, Vault persistence, Encounter builder or host acceptance. All CE acceptance cases remain open. D&D 2024 is intentionally out of scope."
-    },
-    "review": {
-      "run": "CE-00-R01",
-      "state": "changes_required",
-      "findings": [
-        "Artifact and manifest provenance were not independently pinned",
-        "Attribution was not distribution-safe",
-        "Nested reference values remained mutable",
-        "Runtime queries accepted non-finite and unknown values",
-        "Text ordering used environment locale",
-        "CE-01 bundle and startup strategy was undecided"
-      ]
-    },
-    "repairCandidate": {
-      "run": "CE-00-N01",
-      "state": "completed_checked_reviewed",
-      "changes": [
-        "Pinned exact manifest identity and independent JSON SHA-256 test guard",
-        "Repository NOTICE plus exported visible-notice text with license URLs and change provenance",
-        "Deeply frozen reference graph",
-        "Finite range, paging, enum and array query validation",
-        "Locale-independent normalized comparison",
-        "Explicit CE-01 gate against unmeasured eager startup and missing release notice"
-      ],
-      "verification": {"check": "passed", "tests": {"passed": 211, "failed": 0}, "build": "passed"}
-    },
     "repairReview": {
       "run": "CE-00-R02",
       "state": "passed",
       "result": "No remaining R01 findings. Manifest and byte hash guards, notice/gate, deep immutability, runtime query validation, deterministic ordering and honest bundle status statically confirmed.",
       "testsRunByReviewer": false
-    },
-    "integratedVerification": {
-      "commit": "f5fb834c5caa5b83b4ae624800dcec81287b606f",
-      "incomingCommits": 12,
-      "check": "passed",
-      "tests": {"passed": 212, "failed": 0},
-      "build": "passed",
-      "scope": "Merged current shared branch after the reviewed repair; all incoming City, Hex, resize, Canvas of Kings and GM testing work preserved."
     },
     "ce01I01": {
       "run": "CE-01-I01",
@@ -362,27 +312,6 @@
       "review": "Passed after product-bundle/gate regressions, honest dirty provenance and all runtime capability guards were added.",
       "limits": "No ItemView or host acceptance yet; CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
     },
-    "ce01I02": {
-      "run": "CE-01-I02",
-      "state": "completed_checked_review_pending",
-      "files": [
-        "src/features/catalog/creature-catalog-view.ts",
-        "src/features/catalog/creature-catalog-view-state.ts",
-        "src/main.ts",
-        "src/ui/view-types.ts",
-        "styles.css",
-        "tests/core/creature-catalog-view-state.test.ts"
-      ],
-      "result": "A unique Obsidian ItemView is command-accessible and retains its serializable catalog session. It exposes core name/CR/type/size filters, deterministic sortable and pageable results, mouse/keyboard selection, complete read-only statblocks, direct license notice and explicit loading/error/retry states.",
-      "verification": {
-        "check": "passed",
-        "tests": {"passed": 225, "failed": 0},
-        "build": "passed",
-        "mainJsGrowthBytes": 159355,
-        "mainJsGrowthLimitBytes": 180000
-      },
-      "limits": "Implementation candidate only. Advanced filters/chips/reset/debounce, DOM-host and real Obsidian acceptance, independent review and all Encounter behavior remain open; CE-AC-01/02/14 are not approved."
-    },
     "ce01I03": {
       "run": "CE-01-I03",
       "state": "completed_checked_reviewed",
@@ -396,17 +325,6 @@
       },
       "review": "Passed after required repairs; reviewer ran no separate tests.",
       "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open. All Encounter cases remain open."
-    },
-    "ce01R01": {
-      "run": "CE-01-R01",
-      "state": "changes_required",
-      "reviewedCommit": "a04efd3df215f4c03504e2895a21c92d67b15ee2",
-      "findings": [
-        "Concurrent openCreatureCatalog calls can both pass the pre-await unique-view check and leave two catalog leaves because the command callback does not serialize or await the open operation.",
-        "A parser-accepted adversarial creature ID can make the keyboard focus querySelector throw a selector SyntaxError."
-      ],
-      "retained": "Host-neutral content boundary, draft/close race handling, ownerWindow use, combined filters and the static accessibility contract remain sound.",
-      "limits": "Reviewer ran no separate tests or GUI. Real Obsidian command, restart, physical input, damaged-data and measured-size acceptance remain open."
     },
     "ce01N01": {
       "run": "CE-01-N01",
@@ -445,34 +363,6 @@
       "repairs": "Real-host execution found and repaired unbound browser timer invocation and restored-default state being overwritten by normalized undefined values; focused regressions cover both.",
       "review": "Independent read-only review approved the automated scope after lifecycle receipts bound unique systemd and Obsidian process identities and normal non-forced exit for all three runs.",
       "limits": "CE-AC-01, CE-AC-02 and CE-AC-14 remain open until the remaining product lifecycle and physical acceptance gates are completed. Playwright input is not physical keyboard/mouse evidence; screenreader and other-platform checks were not run."
-    },
-    "ce01C01Implementation": {
-      "run": "CE-01-C01-I01",
-      "state": "completed_checked_host_passed_review_changes_required",
-      "commit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
-      "result": "One shared mapping now owns restore drafts and reset draft keys, while one host-neutral helper owns sort, direction and page defaults; the content controller no longer duplicates those rules.",
-      "verification": {
-        "check": "passed",
-        "tests": {"passed": 246, "failed": 0},
-        "build": "passed",
-        "mainBytes": 1339259,
-        "mainSha256": "f29f86cb02547ee5f6b5767a247c7364ebaad1d2509df52cdd00752ad5ba7686",
-        "mainJsGrowthBytes": 149889,
-        "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558557553-ce01-catalog-edit",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558564140-ce01-catalog-reopen",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558569690-ce01-catalog-damaged-edit"
-        ]
-      },
-      "limits": "Independent cleanup review pending. Automated host input does not close physical keyboard/mouse, screenreader or other-platform acceptance."
-    },
-    "ce01C01Review": {
-      "run": "CE-01-C01-R01",
-      "state": "passed_after_repair",
-      "reviewedCommit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
-      "finding": "CreatureCatalogViewContent still names six text-filter draft keys manually and implements the name draft through a separate search path, so CREATURE_CATALOG_DRAFT_FILTERS is not yet the only pair source.",
-      "retained": "Restore/reset/default behavior, 246 tests, bundle identity, all three real-host receipts and honest open physical/screenreader/platform gates passed review.",
-      "reReview": "CE-01-C01-R02 passed on c9dfde7 after confirming the sole pair source, shared content path, retained name UX, 247 tests, exact build and all three normal-exit host receipts."
     },
     "ce01C01Repair": {
       "run": "CE-01-C01-N01",
@@ -89757,7 +89647,6 @@
         ]
       },
       "verifiedScope": "Kartenformat V2 besitzt ein gemeinsames Building für Boden-/Wandkontur und optionale Raumidentität. Zeichnen/Radieren, Loch-/Mehrteilkontur, Portalbindung vor Raumzuweisung, Key-Erzeugung, Punktbearbeitung mit Portal-Follow und atomarem Undo/Redo sind durch gezielte Kernprüfungen und grafischen Obsidian-Host belegt. Beide produktiven Karten wurden verlustfrei offline migriert; der installierte Build besteht 104/104 Tests, Typprüfung, Build, Save und frische Neuöffnung beider Kartenkopien. Alle 49 Dungeon-Markdown-Dateien blieben bytegleich.",
-      "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
       "strictParityNote": "Dungeondraft 1.2.0.1 belegt Rechteck/Alt-Radieren, Polygon-Rücktaste und Doppelklick; Rechtsklick und Enter beendeten das Building-Polygon nicht, ein eigener Gangknopf existiert nicht. Der produktive V2-Build ist installiert und mit 15 Drachenhöhlen-Räumen, 42 Portalposen sowie der Testkarte im echten Obsidian-Host geprüft. Der lokale Topologie-Guard weist Punktfehler und nahezu flächenlose Konturen vor Command und Portal-Follow ab; der Parser bleibt für bestehende V2-Geometrie unverändert. Offen: Snap-off, volle native Werkzeugfolge, Portalbreite an einer nach Edit stark verkürzten Kante, sehr komplexe Konturen/Großkartenleistung und physische Eingabe. Deshalb keine strikte Vollabnahme."
     },
@@ -89793,9 +89682,7 @@
         ]
       },
       "verifiedScope": "Ellipse wird in gewöhnliche editierbare Konturpunkte überführt und nativ gezogen. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-013",
@@ -89829,9 +89716,7 @@
         ]
       },
       "verifiedScope": "Alt-Klick entfernt einen Konturpunkt unter Mindestpunktprüfung. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-014",
@@ -89865,9 +89750,7 @@
         ]
       },
       "verifiedScope": "Doppelklick auf die sichtbare gerade oder geglättete Kante fügt einen Konturpunkt ein. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-015",
@@ -89901,9 +89784,7 @@
         ]
       },
       "verifiedScope": "Paketwand wird direkt als stabile Assetkennung am Raum gespeichert und gerendert. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-016",
@@ -89937,9 +89818,7 @@
         ]
       },
       "verifiedScope": "Freie gerade und geglättete Wände, Punktbearbeitung und gebundene Öffnung nativ bestanden. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-017",
@@ -89975,9 +89854,7 @@
         ]
       },
       "verifiedScope": "Gebundene Portale schneiden die Wanddarstellung, folgen Konturänderungen und speichern Himmelsrichtung, Beschreibung, Zustand, Versteck-SG, HP, RK und Schlüsselverweis gemeinsam mit lesbarem Raum-Key-Text in derselben Undo-/Save-Historie. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-018",
@@ -90011,9 +89888,7 @@
         ]
       },
       "verifiedScope": "Fenster und Gitter sind gebunden oder freistehend, drehbar, spiegelbar und getrennt lichtblockierend. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-019",
@@ -90047,9 +89922,7 @@
         ]
       },
       "verifiedScope": "Höhlenpinsel und Radieren verwenden gemeinsame Polygongeometrie mit echten Löchern und Hintergrundberechnung. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-020",
@@ -90083,9 +89956,7 @@
         ]
       },
       "verifiedScope": "Musterflächen teilen Rechteck-/Ellipse-/Polygonkonturen, Material, Farbe, Rand und Ebene. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-021",
@@ -90119,9 +89990,7 @@
         ]
       },
       "verifiedScope": "Pakettexturpfade mit Breite, Glättung, Enden, Ebene und Lichtblockade sind nativ gespeichert. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-022",
@@ -90155,9 +90024,7 @@
         ]
       },
       "verifiedScope": "Dächer mit Kontur, First, Form, Ebene, Farbe und Material sind editierbar. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-023",
@@ -90191,9 +90058,7 @@
         ]
       },
       "verifiedScope": "Wasserflächen mit Uferbreite, Wellen, Farbe und Deckkraft teilen die Pinselhistorie. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-024",
@@ -90227,9 +90092,7 @@
         ]
       },
       "verifiedScope": "Terrain wird im Worker gemalt, gemischt, rückgängig gemacht und auf der Großkarte gespeichert. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-025",
@@ -90263,9 +90126,7 @@
         ]
       },
       "verifiedScope": "Materialpinsel, Radieren, Kachelgröße, Färbung, Drehung und Ebenenreihenfolge sind nativ und großkartengeprüft. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-026",
@@ -90301,9 +90162,7 @@
         ]
       },
       "verifiedScope": "Objekte wählen, platzieren, verschieben, drehen, skalieren, färben, sperren und gruppieren ist nativ geprüft. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung.",
       "phase2": {
         "status": "installed_host_passed_strict_parity_partial",
         "build": "4852243fd3804aa4c7e16f797658836140f4a7b3d819bc0011a43928aea1cc74",
@@ -90362,9 +90221,7 @@
         ]
       },
       "verifiedScope": "Deterministisches Streuen erzeugt einen einzigen vollständigen Undo-Schritt; Presets und Paketassets bleiben Werkzeugvorgaben. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-028",
@@ -90398,9 +90255,7 @@
         ]
       },
       "verifiedScope": "Direkte Farben und Materialfärbung sind für Objekte, Licht, Flächen, Pfade und Dächer vorhanden. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-029",
@@ -90434,9 +90289,7 @@
         ]
       },
       "verifiedScope": "Lichtreichweite, Stärke, Farbe, Schatten und Lichtblockaden sind getrennt; Großkarte und Neustart bestanden. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-030",
@@ -90696,7 +90549,6 @@
         ]
       },
       "verifiedScope": "Teilnachweis: 63 Kernprüfungen und isolierter Obsidian-Hostlauf für Auswahlleiste, Filter, Spiegeln, Sperren, Löschen, Vorheriges Werkzeug, stabile Kamera, Rahmenauswahl, gemeinsames Verschieben, Lichtquellen-Kopie und Objektanordnung über numerische Ebenen hinweg samt Grafik, Treffer, Undo und Speicherung. Gemischte Objekt-Licht-Bewegung und Undo entsprechen einer direkten unmodifizierten Dungeondraft-Probe. Globale Lichtvorlagen und gemischte Objekt-Licht-Vorlagen lassen sich benannt anlegen, gerastert platzieren und rückgängig machen; Speicherung, frischer Prozess und zweite Karte bestehen. Strikte Dungeondraft-Auswahlparität bleibt offen; Details in TOOL-PARITY.md. Die Auswahl wird nach tatsächlichem Undo/Redo über Knopf und Tastatur wie im Original geleert; der erneute isolierte Hostlauf und frische Prozess bestanden. Gemischte Objekt-Licht-Kopie ist mit gleichem Abstand, Ausschnittmitte, wiederholtem Einfügen, Auswahl der neuen Kopien und zwei getrennten Undo-Schritten im isolierten Host geprüft. Muster und Materialflächen besitzen getrennte Auswahlfilter; Kerntest, Hostanzeige und frischer Prozess bestehen. Das Entfernen einer leeren temporären Sammlung stellt nach direktem Originalvergleich die zuvor gewählte Sammlung wieder her; isolierter Host und frischer Prozess bestanden. Einzelne Möbel und Nachzeichenvorlagen besitzen jetzt sichtbare Eckgriffe; im isolierten Obsidian-Host skaliert der äußere Eckzug und dreht der Zug außerhalb, jeweils mit eigenem Undo. 66 Kernprüfungen, Typprüfung, Build, erneuter Hostlauf und frischer Prozess bestehen. Ein gespeicherter nativer Eckzug belegt proportionale Skalierung und feste Gegenecke; der eigene Eckzug erhält beides. Exakte Empfindlichkeit und Einrastregel sind noch nicht vermessen. Lichtquellen besitzen nun einen speicherbaren Drehwinkel, dessen Ursprungsgeste und Undo direkt mit Dungeondraft verglichen sind. Kerntest mit Speichern/Öffnen, Obsidian-Host mit sichtbarem Richtungszeiger und Undo sowie frischer Prozess bestehen; insgesamt 67 Kernprüfungen. Eine gemischte Objekt-Licht-Auswahl besitzt nun einen gemeinsamen Dreh- und Skalierrahmen. Direkte Dungeondraft-Kartenzustände, 68 Kernprüfungen sowie isolierter Obsidian-Host mit zwei Undo-Schritten und frischer Prozess belegen die gemessenen Wirkungen. Der Lichtsymbolrahmen statt der Beleuchtungsreichweite bestimmt Auswahlrahmen und Mittelpunkt. Eine angeschnittene Möbel- oder Lichtgrafik wird bei innenliegendem Mittelpunkt gewählt und bei außenliegendem Mittelpunkt trotz Überschneidung nicht gewählt; die Lichtreichweite spielt keine Rolle. Eine direkte native Rahmenprobe, Kerntest, isolierter Obsidian-Host und frischer Prozess belegen dies. Kerntest, isolierter Obsidian-Host und frischer Prozess bestehen; das Originalverhalten ist hier nur über die primäre SelectTool-Referenz belegt. Der aktuelle isolierte Hostlauf bestätigt per echten Rahmenzügen die Mittelpunkt-Regel für Möbel und Lichter; der frische Prozess bestand. Frühere Hostläufe zur vollständigen Grafikaufnahme waren nur Regressionsevidenz für die inzwischen widerlegte Eigenregel. Der native Pfad-Rahmenzug bestätigt die bestehende Vollausdehnungsregel für Pfade; Teilstück und einzelner Endpunkt werden nicht gewählt. Der neue Pfad-Kerntest erhöht die bestandene Kernprüfungszahl auf 70; Typprüfung und Build bestehen. Die freie und wandgebundene Portal-Rahmenregel ist direkt gegen Dungeondraft geprüft und im Geometriehelfer sowie im isolierten Obsidian-Host mit tatsächlichen Rahmenzügen und Direktklick umgesetzt. 71 Kernprüfungen, Typprüfung, Build, Hostlauf und frischer Prozess bestehen. Der native Materialklick auf Ebene −400 bleibt ungewählt. Der Editor startet deshalb mit den sieben Originalarten und hält die eigenen Zusatzflächen zunächst ausgeschaltet. Ein isolierter Hostlauf belegte fehlende Materialwahl vor und erfolgreiche Wahl nach Einschalten des Materialflächenfilters; 71 Kernprüfungen, Typprüfung, Build und frischer Prozess bestehen. Eine native Trace-Image-Vorlage blieb bei Direktklick und vollständig gemessenem Rahmen ungewählt; der eigene Nachzeichenvorlagenfilter bleibt optional und standardmäßig aus. Ein direkt gemessener Originalvergleich belegt für ein 2×2-Feld-Schnellrechteck-Dach Auswahl per Klick und vollem Rahmen, keine Auswahl bei bloßer Teilüberschneidung. Die eigene Auswahl verwendet nun die Dachkontur ohne Render-Randzugabe; 72 Kernprüfungen, Typprüfung, Build, isolierter Hostlauf mit Speicherung und frischer Prozess bestehen. Unregelmäßige Dachformen und exakte Randinklusivität sind damit nicht vollständig abgenommen. Die frühere Deutung einer freien-Wand-Vollrahmenwahl ist durch eine sauber gespeicherte und während aller Rahmenzüge gemessene Originalprobe widerlegt. Der korrigierte Kerntest zählt 74 bestandene Kernprüfungen: Die Wand ist direkt anklickbar, wird aber durch keinen der drei vollständig umfassenden Rahmen gewählt. Typprüfung, Build, 26 isolierte Obsidian-Auswahlprüfungen samt Speicherung und ein frischer Prozess bestehen. Ein erneut gespeicherter und während der Geste gemessener nativer Mustervergleich löst die zuvor widersprüchliche 2×2-Rechteckprobe: Vollrahmen wählt, schneidender Teilrahmen nicht. Die eigene Muster-Rahmenprüfung nutzt jetzt die Kontur ohne ein Feld Darstellungsrand. 74 Kernprüfungen, Typprüfung, Build, 25 isolierte Obsidian-Auswahlprüfungen einschließlich Speichern und ein frischer Prozess bestehen. Andere Musterformen und genaue Randinklusion bleiben offen. Die zuvor aus Cursorpositionen abgeleitete 0,16-Feld-Muster-Toleranz ist durch direkte Zustandsmessungen widerlegt. Die linke/obere Kontur ist inklusiv; die beobachtete rechte/untere Lücke entsteht aus dem vorangehenden Bewegungsereignis und schrumpft mit kleineren Schritten. Die eigene Musterwahl verwendet den vorangehenden Bewegungsstand ohne geometrischen Rand. 74 Kernprüfungen, Typprüfung, Build, 26 isolierte Hostprüfungen mit Speichern und ein frischer Prozess bestehen. Andere Elementarten und umgekehrte Randzüge sind hinsichtlich dieser Ereignisfolge offen. Der rechte untere Möbelgriff wurde mit 47 nativen Druckpunkten bei 100/200 Prozent abgegrenzt: rund 33 Bildschirmpixel Radius, Skalieren vor Innenbewegung. Der eigene Editor verwendet diese Reihenfolge; 74 Kernprüfungen, Typprüfung, Build und 26 isolierte Obsidian-Auswahlprüfungen einschließlich echtem Zug aus dem inneren Griff, Undo und Speicherung sowie ein frischer Prozess bestehen. Die übrigen Ecken waren bei diesem Zwischenschritt noch offen; gedrehte/gemeinsame Rahmen und genaue Skalierungsempfindlichkeit bleiben es weiterhin. Die drei übrigen ungedrehten Möbelgriffe sind mit weiteren 29 Original-Druckpunkten bei beiden Zoomstufen geprüft; gezielte Kernprüfungen für alle vier Ecken bestehen. Der Produktcode benötigte dafür keine weitere Änderung. Gedrehte Einzel- und gemeinsame Auswahlrahmen sowie Skalierungsempfindlichkeit und Snap bleiben offen. Gedrehte Einzelmöbel besitzen nach direktem Originalvergleich eine gedrehte Kontur und einen geraden äußeren Griffrahmen. Dessen vier Eckaktionen und ein proportionaler Zug bestehen im isolierten Obsidian-Host mit Undo, Speicherung und frischem Prozess; 75 Kernprüfungen, Typprüfung und Build bestehen. Gemeinsame Rahmen, genaue Skalierungsempfindlichkeit, Snap und einzelne Lichtskalierung bleiben offen. Der gemischte Rahmen wurde vor und nach nativer Drehung an allen vier Eckgriffen direkt vermessen; die bestehende Gruppenlogik und ein isolierter Hostlauf decken die Bedienung ab. Die exakte gedrehte Griffgrenze bleibt offen. Ein einzelnes Licht besitzt nun vier echte Eckgriffe und einen temporär skalierbaren Auswahlrahmen; seine Position ändert sich bei einem Eckzug ohne Änderung der Beleuchtungswerte. 76 Kernprüfungen, Typprüfung, Build, isolierter Obsidian-Lauf mit Lichtgriff, Undo und Speicherung sowie frischer Prozess bestehen. Möbel-Snap und Zoom wurden direkt beobachtet, die exakte Skalierungsformel bleibt offen. Der native Licht-Griffradius von ungefähr 32 Bildschirmpixeln ist bei 50/75/100 Prozent abgeglichen. Bei 50 Prozent skaliert ein echter Obsidian-Zug aus der Symbolmitte über Ecke 0; Undo stellt das Licht wieder her. 77 Kernprüfungen, Typprüfung, Build, 28 Auswahl-Hostprüfungen und frischer Prozess bestehen. Die native Wiederwahl und der temporäre Rahmenzustand sind inzwischen belegt; ein erweiterter isolierter Obsidian-Schnelllauf mit exakt 32-Pixel-Rand, vier Sekunden Rahmenbestand, Fremdauswahl, Wiederwahl und Undo bestand. Ein eigener isolierter 3,66-Sekunden-Obsidian-Schnelllauf deckt fünf Licht-Griff-/Mitte-Gesten mit Undo bei 50/75/100 Prozent ab; er ersetzt nicht die breite Auswahlregression oder Save/Reopen. Der erweiterte Lauf umfasst sieben echte Gesten in 11,84 Sekunden ohne Seiten-/Konsolenfehler; kleine synthetische Karte, daher keine Großkarten-, Speicher- oder physische Eingabeabnahme.",
-      "previousEquivalenceStatus": "verified",
       "strictParity": "in_progress",
       "strictParityNote": "Einzelabgleich läuft. Belegt sind Mittelpunktwahl für Möbel, Lichter und freie Durchgänge sowie der Ausschluss eines wandgebundenen Durchgangs vom Rahmen bei weiter möglichem Direktklick. Eine rein lesende SelectTool-Probe misst Rahmen und ausgewählte Typen. Bei einer frischen Musterfläche blieben Teilüberdeckung und ein voll umfassender RFB-Rahmen ohne Auswahl, während direkter Klick wählte; ein früherer Xvfb-Vollrahmen schien dagegen zu wählen. Die früheren Muster- und Wandrahmenwidersprüche sind durch frische gespeicherte Originalkarten mit tatsächlich gemessenen Gesten geklärt; eine Wand ist am Endpunkt direkt anklickbar, aber in drei vollen Rahmen nicht wählbar. Die genaue Wandklickzone und Rahmenrand-Inklusion bleiben offen. Weitere offene Punkte: exakte Griffzone, Skalierungsempfindlichkeit und Snap, einzelne Lichtskalierung. Direkter Materialklick auf Ebene −400 ist nun als nicht auswählbar belegt; der eigene Materialflächenfilter bleibt eine bewusste Erweiterung. Die Startfilter entsprechen nun den sieben Originalarten; der optionale Zusatzfilter wurde im Host direkt geprüft. Nachzeichenvorlagen sind im Original bei direktem Klick und vollem Rahmen nicht Teil der SelectTool-Auswahl; der eigene Zusatzfilter bleibt optional. Für das gemessene rechteckige Dach ist die Klick-/Teil-/Vollrahmenregel nun im Host belegt; andere Dachkonturen bleiben bei der Dachwerkzeug-Abnahme zu prüfen. Die frühere Interpretation eines freien-Wand-Vollrahmens war falsch. Eine gespeicherte gerade Wand blieb bei drei gemessenen Vollrahmen ungewählt; die eigene Wand-Rahmenwahl wurde deshalb entfernt und im Host geprüft. Eine neue Raummauer-Portalprobe enthält zwei negative gemessene Vollrahmen, aber einen positiven engen Zug ohne bestätigten Rahmen sowie eine nicht gespeicherte Bindung. Der Fall bleibt widersprüchlich und wird mit anderer Speichermethode geprüft. Eine anschließend von Dungeondraft gespeicherte Karte bestätigt die tatsächliche Raumwand-Bindung: Das Portal liegt in der vom Raum referenzierten Wand mit wall_id 0. Die negativen Vollrahmen sind dadurch mit der vorhandenen Boundary-ID-Regel vereinbar; die enge Geste bleibt unklassifiziert. Der zuvor widersprüchliche Musterrahmen wurde mit gespeicherter Geometrie und während des Zugs gemessen. Der gespeicherte und während des Zugs gemessene Musterlauf klärt den früheren Widerspruch für eine rechteckige Musterfläche: volle Kontur ja, Teilüberschneidung nein. Der eigene Kontur-Fix ist im Host und nach Neustart belegt. Außerdem bestehen 26 Auswahlprüfungen mit der korrigierten Wandregel und ein frischer Prozess. Andere Formen, Randinklusion und Griffzonen bleiben offen. Korrigierte direkte Kontrollmessung: Der feste Muster-Rand von 0,16 Feld war eine Fehldeutung der Cursorposition. Bei 100, 150, 200 und 300 Prozent zeigen gehaltene Zustandsmessungen einen um ungefähr ein Bewegungsereignis nachlaufenden Auswahlbereich; nach Loslassen wird die Auswahl nicht aktualisiert. Linke und obere Polygonkante sind exakt inklusiv. Der eigene Host und der frische Prozess prüfen die korrigierte Ereignis- und Konturregel. Andere Elementarten und umgekehrte Randzüge bleiben offen. Die zuerst abgebrochene Griffzonenprobe wurde mit stabil verwalteter Originalinstanz ersetzt: 47 Druckpunkte bei zwei Zoomstufen belegen den ungefähr 33 Bildschirmpixel großen rechten unteren Eckkreis samt Vorrang vor Move. Der korrigierte Editor ist im Host mit innerem Griffzug, Undo und frischem Prozess geprüft. Zu diesem Zeitpunkt waren andere Ecken sowie gedrehte und gemeinsame Rahmen noch offen. Eine weitere Originalprobe belegt die gleiche Griffpriorität und bildschirmfeste Kreiszone für die drei übrigen ungedrehten Möbelecken bei 100/200 Prozent. Produktcode unverändert, gezielte Kernprüfungen bestehen; gedrehte und gemeinsame Rahmen bleiben offen. Der gedrehte Einzelmöbelrahmen wurde auf einer kontrolliert rotierten QA-Kopie der nativ gespeicherten Karte vermessen: vier gerade Eckgriffe, Move im Rahmen, Rotate außerhalb und proportionaler Griffzug. Der Host bildet dies nach; die Kopie belegt keine native Rotationserzeugung. Gemeinsame Rahmen sowie Empfindlichkeit, Snap und Lichtskalierung bleiben offen. Der gemeinsame Objekt-Licht-Rahmen wurde vor und nach Drehung an allen vier Ecken geprüft; Skalierungsindex und Innenbewegung entsprechen dem Editor. Die gedrehte äußere Drehgrenze ist noch nicht vermessen. Möbel-Eckzüge bei mehreren Längen, Snap an/aus und zwei Zoomstufen zeigen proportionale, für die getesteten Züge nicht rasterquantisierte Größenänderung; die frühen Messwerte erfassten wegen eines nachlaufenden Bewegungsereignisses nicht die endgültigen Zielpunkte. Einzellichtgriffe und gespeicherte Wirkung entsprechen nun dem Original. Die native Probe bei 50/75/100 Prozent widerlegt die Kleinstrahmen-Begrenzung: ungefähr 32 Bildschirmpixel Griffzone bleiben fest; bei 50 Prozent fällt die Mitte auf Ecke 0. Der Editor nutzt nun diese Regel, durch Kern- und echte Obsidian-Mauszugprüfung samt Undo belegt. Nachfolgende Originalmessung belegt erste passende Ecke 0→1→2→3, Rasterrand bei 32 Pixeln außen sowie vier Sekunden unveränderten vergrößerten Lichtrahmen und Reset nach Fremdauswahl/Wiederwahl. Der Editor nutzt für Lichter nun strikt Abstand < 32 Pixel; Kernprüfung, Typprüfung und Build bestanden, echte isolierte Obsidian-Rand-/Wiederwahlprobe mit sieben Gesten, vier Sekunden Rahmenbestand und Undo bestand. Die kontrollierte BR-Einzelmöbelprobe bestimmt die diagonale Endpunktempfindlichkeit für 20/40/80 Pixel bei 100 Prozent und 20/40 Pixel bei 200 Prozent; vier Snap-an/aus-Paare sind identisch. Der vorhandene Geometriehelfer folgt der gemessenen limitierenden Rahmenachse, bestätigt durch einen Originalwert-Kerntest. Andere Griffe, Größen, Richtungen, Gruppen und Snap-Grenzen bleiben offen. Ein späterer asymmetrischer Zug (+40,+20) lieferte nativ getrennte Skalen 4,493342/4,493827, begann aber in einem anderen Auswahlrahmenzustand. Eine frische vollständige Marquee-Auswahl stellte alle vier Referenzgriffe exakt her; derselbe Zug endete nativ uniform bei 4,495356/4,495356 und entsprach dem Produkthelfer. Damit ist U1 für diesen Ausgangszustand geklärt, ohne Produktänderung. Andere Richtungen, Griffe, Größen, Gruppen und Snap-Grenzen bleiben offen; DD-030 ist noch nicht vollständig abgenommen.",
       "phase3": {
@@ -90742,9 +90594,7 @@
         ]
       },
       "verifiedScope": "Kopieren/Einfügen vergibt neue IDs, erhält interne Bindungen und kopiert ganze Geschosse samt Raum-Keys. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-032",
@@ -90778,9 +90628,7 @@
         ]
       },
       "verifiedScope": "Geschosse anlegen, benennen, beleuchten, kopieren, vergleichen, archivieren und exakt wiederherstellen ist geprüft. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-033",
@@ -91311,9 +91159,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Im Editor zoomen vertikale unmodifizierte Rad-/Touchpad-Ereignisse nach frischem Obsidian-Neustart begrenzt um den Zeiger; Ctrl/Cmd-Pinch bleibt Zoom, horizontale Bewegung und Umschalt+Scrollen verschieben. Die kompakte Spielkarte behält bewusst den bisherigen Vertrag: Pinch/Strg+Scrollen zoomt in festen mittigen Schritten, gewöhnliches Scrollen ändert die Karte nicht, und Ziehen verschiebt ab vier Pixeln. Beide Entscheidungswege sind durch Kernprüfungen und den echten Obsidian-Ablauf belegt. Die physische Touchpad-Haptik bleibt eine kurze Nutzerabnahme.",
-      "previousEquivalenceStatus": "manual",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "EB-012",
@@ -91341,9 +91187,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Vom Nutzer ausdrücklich entfallen: bestehende SVG-A-Bögen müssen nicht bearbeitet werden.",
-      "previousEquivalenceStatus": "not_applicable",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-038",
@@ -91445,9 +91289,7 @@
         ]
       },
       "verifiedScope": "Bildvorlage wird einmal importiert, pro Geschoss ausgerichtet, skaliert, gedreht und ein-/ausgeblendet. Einzelabgleich mit Dungeondraft 1.2.0.1 und aktueller nativer Hostlauf bestanden; Details in TOOL-PARITY.md.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "DD-041",
@@ -91824,9 +91666,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Die kompakte Toolbar enthält nur −, +, Alles, Aktuell und Maximieren und besitzt keine Editorwerkzeuge. Maximieren öffnet direkt den vollflächigen Editor mit sieben Werkzeuggruppen. Zurück zum Layout und Escape schließen den Editor-Tab, aktivieren wieder die kompakte Karte und hinterlassen keinen kleinen oder verborgenen Editor-Tab.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-12",
@@ -91868,9 +91708,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Unten links stehen ausschließlich Übersicht, Key, Charaktere und Items. Die drei Indizes sind als schlichte Obsidian-Dokumentabschnitte ohne Kartenflächen, Nummernplaketten, Pfeile, Rahmen, Schatten, Auswahlhintergründe oder Bewegungsanimationen dargestellt. Verlinkte Überschriften öffnen den vollständigen Artikel rechts; vorhandene Featurelinks springen direkt zum verlinkten Abschnitt. Key zeigt 15 Räume mit vollständigem ersten Vorleseabsatz, Charaktere 18 Einträge mit vorhandenen XP und Items 4 Einträge mit Fundorten oder Kerndaten. Charakter- und Itembeschreibungen bleiben zweizeilig. Bei dieser Layoutänderung blieben Karte, Raumtexte und SVG-Dateien bytegleich.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-13",
@@ -91892,9 +91730,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Alle 15 Räume behalten ihre Nummern 1–15. Die 62 ortsgebundenen Feature-Vorkommen verwenden je Raum A–G; 70 sichtbare Kartenmarker, 60 Featureanker und sämtliche zugehörigen Links wurden konsistent umgestellt. Die 18 Kreaturenvorkommen behalten ihre 13 namensbasierten Kürzel. Bei Detailzoom sind Raumnummer 1 und Feature A gleichzeitig sichtbar und getrennt anklickbar. Neue Features erhalten automatisch den nächsten freien Buchstaben, neue Kreaturen weiterhin ein namensbasiertes Kürzel. Der Vergleich mit der Sicherung fand in 21 geänderten Markdown-Dateien keine unbeauftragte Textänderung; die zuvor ungespeicherte Position der nördlichen Öffnung in Raum 1 wurde erhalten.",
-      "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung.",
       "phase5": {
         "status": "verified_on_isolated_v4_test_data_with_installed_build",
         "scope": "Der V4-Dialog vergibt A im neuen Raum; Kernprüfungen decken Vergabe nach dem höchsten vorhandenen Buchstaben ohne Lückenwiederverwendung und Kennzeichnungswechsel beim Raumzug ab. Drachenhöhlenmigration und strikte Parität bleiben offen.",
@@ -91926,9 +91762,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Das Raster ist in der kompakten Gesamtansicht, im kompakten Raumfokus und im maximierten Editor sichtbar. Es wird als eigene Ebene über Kartenhintergrund, Wegen und Raumflächen sowie unter Wänden, Portalen, Einrichtung, Licht, Auswahl und Beschriftungen gezeichnet. Bei niedriger Vergrößerung erscheinen Hauptlinien im Abstand von fünf Feldern, im Detail jedes Feld. Die Rückkehr aus dem maximierten Editor wurde ohne Seitenfehler geprüft.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-15",
@@ -91952,9 +91786,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Nur ein aktiver Raumfokus zeigt Maße: maximale Außenbreite horizontal oberhalb und maximale Tiefe vertikal links außerhalb der Kontur, jeweils mit Endstrichen und Beschriftung in Feldern. Raum 1 zeigt 7 × 7 Felder; der unregelmäßige Raum 15 zeigt 9 × 6 Felder. Die Maßangaben bleiben beim Zoomen sichtbar, Alles entfernt sie vollständig und Aktuell stellt den gegenwärtigen Raum mit Maßen wieder her. Die Darstellung wurde ohne Seitenfehler im laufenden Obsidian geprüft.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-16",
@@ -91977,9 +91809,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Der Fokusrahmen wird aus der tatsächlichen Raumkontur, 0,35 Feld Abstand für Wand und Schatten und dem festen Bildschirmbereich der Maßlinien berechnet. Der zusätzliche allgemeine Entitätenrand entfällt. Raum 1 wird gegenüber dem vorherigen Fokus um 32 Prozent größer dargestellt und nutzt 72 Prozent der verfügbaren Höhe; der 19 × 29 Felder große Festsaal nutzt 77 Prozent. Beide Konturen und sämtliche Maßbeschriftungen bleiben vollständig im Ausschnitt. Aktuell stellt anschließend wieder Raum 1 her; im Test traten keine Seitenfehler auf.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-17",
@@ -92001,9 +91831,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Ein echter Klick auf Featuremarker A in Raum 1 wechselte von einem anderen Abschnitt zuverlässig zu A · Säulen im rechten Detailbereich; die rechte Gliederung markierte denselben Abschnitt. Der Infobereich unter der Karte blieb leer, Kartenhöhe und Viewporthöhe blieben unverändert und der Raumkontext für Aktuell erhalten. Derselbe direkte Ablauf gilt für Featureknöpfe innerhalb einer Rauminfo. Bereits geöffnete Artikel erhalten den Unterpfad nach dem Öffnen erneut als flüchtigen Zustand, damit der Sprung nicht an der vorherigen Scrollposition hängen bleibt. Im Test traten keine Seitenfehler auf.",
-      "previousEquivalenceStatus": "verified",
       "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung.",
       "phase5": {
         "status": "verified_on_isolated_v4_test_data_with_installed_build",
         "scope": "Klick auf das verknüpfte V4-Kartenobjekt öffnet seinen exakten Key-Abschnitt rechts; eine frische Obsidian-Instanz löst dessen stabile ID nach Raumwechsel auf.",
@@ -92036,9 +91864,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Der konstante SVG-Importversatz wurde aus allen 1.198 absoluten Koordinaten entfernt. Alle 15 Raumkonturen liegen auf ganzen Feldgrenzen. Raum 8, seine 23 zugeordneten Objekte und seine drei Anschlüsse wurden gemeinsam ausgerichtet; sechs betroffene Gegenöffnungen bleiben exakt an ihren Wegen. Alle 21 vollfeldbreiten Straßenpfade belegen vollständige Rasterzellen. Einstellungen, Geschosse, 559 Kennungen und Reihenfolge, Maße, Stile, strukturierter Inhalt und Markdown blieben unverändert. Kompakte Übersicht, Raum 8, die unregelmäßige Grotte, maximierter Editor und Rückkehr ins Layout wurden in Obsidian 1.13.7 ohne Seitenfehler geprüft.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-19",
@@ -92059,9 +91885,7 @@
         "directEvidence": []
       },
       "verifiedScope": "Der redundante Key-Schließpfad löst kein Einpassen mehr aus. Acht Werkzeugwechsel über Schaltflächen in fünf Gruppen sowie sieben Wechsel über Tastenkürzel behielten die Testkamera exakt bei x = −321, y = −654 und Zoom 17. Die Session blieb unverändert und gespeichert. Echte Layoutbreitenänderungen erhalten Mittelpunkt und Ausschnitt über den gemeinsamen Resize-Pfad. Rückkehr zur Spielansicht und Plugin-Neuladen liefen in Obsidian 1.13.7 ohne Seitenfehler.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-20",
@@ -92093,9 +91917,7 @@
         ]
       },
       "verifiedScope": "39 zusammenhängende Hostprüfungen decken jedes native Werkzeug und die Verwaltungsbereiche ab; 47 Kernprüfungen, Speichern und frischer Prozess bestehen. Die produktive Karte enthält 42 korrekt an gleich breite Gangenden ausgerichtete Durchgänge; der nördliche Eingang hat Abstand 0.",
-      "previousEquivalenceStatus": "verified",
-      "strictParity": "pending",
-      "strictParityNote": "Frühere Nachweise bleiben Regressionsevidenz, belegen aber keine identische Dungeondraft-Bedienung."
+      "strictParity": "pending"
     },
     {
       "id": "NATIVE-21",
