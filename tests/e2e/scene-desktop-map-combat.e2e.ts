@@ -265,6 +265,23 @@ async function verifyPreparedNarration(client: WdioBrowser) {
     )
     .waitForClickable({ timeout: 10000 })
   await client.keys('Enter')
+  await client.waitUntil(
+    () =>
+      client.execute(() => {
+        const frame = document.querySelector('[data-window-id="reader"]')
+        return (
+          frame?.querySelector('h2')?.textContent === 'Glassteg' &&
+          frame
+            .querySelector('.reference-document')
+            ?.textContent?.includes('Die Fährfrau fordert')
+        )
+      }),
+    {
+      timeout: 10000,
+      timeoutMsg:
+        'The new reader must finish replacing the previous document before asserting its text'
+    }
+  )
   await expect(
     client.$('[data-window-id="reader"] .reference-document')
   ).toHaveText(expect.stringContaining('Die Fährfrau fordert'))

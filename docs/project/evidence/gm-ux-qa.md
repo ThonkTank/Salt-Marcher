@@ -80,3 +80,11 @@ remaining product goals still require practical independent exploration.
 Neither this slice nor green automated checks establish whole-product success.
 Candidate qualification, canonical handoff, installed runtime and green Main
 remain separate required delivery evidence.
+
+Exact-SHA Check `38286240157` passed the product assertions and the other
+partitions, but rejected two stale-element warnings in the extended
+map/combat test. Early Enter replaces an existing reader asynchronously; its
+text assertion had retained the old element. The regression now waits for
+the actual Glassteg document through a DOM read before obtaining fresh element
+handles. The zero-warning gate remains unchanged. This failed run does not
+qualify installation or Main promotion.
