@@ -4,7 +4,7 @@ Diese Erweiterung gehört zur [Hex-Atlas-Roadmap](ROADMAP-HEX-ATLAS.md). **Ein A
 
 Der gemeinsame Atlas ist grenzenlos und wächst mit seinen Inhalten. Stadtanlage, Straßen und Haus-Dungeons erweitern bei Bedarf seine belegte Ausdehnung, ohne Kartenrand-, Resize- oder Betretenaktion. Siedlungsflächen besitzen reale Maße; Meilen und Hex-Kacheln beschreiben den gewählten Bereich, Pixel nur die Darstellung beziehungsweise Bildausgabe. Orts-, Stadt- und Dungeondokumente teilen denselben räumlichen Atlas und dieselbe Bearbeitung.
 
-Alle folgenden Phasen sind geplant. Der Abnahmekatalog liegt unter `acceptance.json.cityPlans`; die geplanten Daten- und Raumentscheidungen stehen in der [Architektur](ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung).
+Die folgenden Phasen beschreiben den vollständigen Zielumfang. Vorhandene Stadtgeometrie ist bereits teilweise im gemeinsamen Atlas bearbeitbar; die assistierte Bebauung liegt als Kandidat vor. Den datierten integrierten Stand, Kandidaten und offenen Rest führt zentral [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). Der Abnahmekatalog liegt unter `acceptance.json.cityPlans`; die Daten- und Raumentscheidungen stehen in der [Architektur](ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung).
 
 ## Ergebnisvorbilder und Vergleich
 
@@ -33,7 +33,7 @@ Bei sehr weitem Zoom erscheinen Stadtstruktur und wichtige Orte; beim Näherkomm
 
 CITY-00 wird im Referenzpaket von HEX-00 eingeordnet. **CITY-01 bis CITY-04 folgen nach HEX-05**, bevor die Hex-Roadmap mit HEX-06 weitergeht. Dadurch werden Stadt, Generierung und direkt bearbeitbarer Hausgrundriss früh geprüft. Die relative Reihenfolge der HEX-Phasen bleibt erhalten.
 
-Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-22. CITY-09 und HEX-28 bilden die gemeinsame Endabnahme nach HEX-27. Es läuft jeweils ein Arbeitslauf und eine grafische Testinstanz; diese Zuordnung verlangt keine parallele Entwicklung. Die Voraussetzungen stehen zusätzlich im Katalog.
+Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-22. CITY-09 und HEX-28 bilden die gemeinsame Endabnahme nach HEX-27. Die Voraussetzungen stehen zusätzlich im Katalog.
 
 | Phase | Nutzbarer Umfang | Praxisprüfung |
 |---|---|---|
@@ -86,4 +86,4 @@ Zusätzliche Pflichtproben:
 - Stadt mit 5.000 Gebäuden und mehreren Haus-Dungeons prüfen. Die bestehenden Atlas-Ziele von höchstens 33 ms pro Navigationsbild im 95. Perzentil und 100 ms bis zur Werkzeugvorschau nach dem Laden werden gemessen; sie sind noch nicht verifiziert.
 - Physische Maus-/Touchpad-Bedienung, Großkartenlauf, Ergebnisvergleich, Ausgabe und tatsächlich installierten Endstand getrennt belegen.
 
-Nachweise stehen bei stabilen CTY-Unterfällen in `acceptance.json`, aktueller Stand und nächster Schritt in `checkpoint.json`. Große Ergebnisbilder und Kontrollkarten liegen unter `/home/aaron/.cache/dungeon-native-qa/city-plans/`. Dieser Plan enthält keine fortlaufenden Laufprotokolle.
+Nachweise stehen bei stabilen CTY-Unterfällen in `acceptance.json`, der aktuelle Atlasstand in der Atlasübersicht. Große Ergebnisbilder und Kontrollkarten liegen unter `/home/aaron/.cache/dungeon-native-qa/city-plans/`. Dieser Plan enthält keine fortlaufenden Laufprotokolle.

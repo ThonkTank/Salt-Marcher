@@ -5,6 +5,13 @@ Hex, E2E-01 Nutzerzeile 13, `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`.
 Der [quellgebundene H01-Beleg](dungeon-at-location-h01.json) bestätigt ausschließlich
 die native synthetische Producerprobe; freie GM-Nutzung und gemeinsames E2E bleiben offen.
 
+Weiterer quellgebundener Copy-Nachweis: [C02 mit unveränderten Rohbelegen und QA-Orakelfehler](room-draft-copy-c02/README.md). Der aktuelle Folgeauftrag bleibt am verlinkten Arbeitsstand von #80.
+[C03](room-draft-copy-c03/README.md) belegt nun sichtbares Copy/Abbrechen und den normalen Frischeinstieg derselben Kopie; C02 bleibt unverändert.
+[P01](room-copy-journal-p01/README.md) belegt tatsächliche prepared-Copy-Unterbrechung, sichtbare Rücknahme im frischen Prozess und erfolgreichen Copyretry.
+[Committed-Copy-C01](room-copy-committed-journal-c01/README.md) belegt tatsächlichen Journal-Cleanupfehler und sichtbare Wiederherstellung derselben sieben After-Dateien/23IDs im frischen Obsidian.
+[Room-Save-J01](room-save-committed-journal-j01/README.md) belegt das native committed Savejournal, unveränderte After-Daten/IDs beim frischen normalen Einstieg und den offenen Save-Anzeigefehler im erhaltenen Editor.
+[Retained-Save-J02](room-save-retained-status-j02/README.md) repariert diesen Status samt spätem Saveabschluss und bindet den sichtbaren nativen Fehler-/Freshnachtest an seine tatsächliche Quelle.
+
 ## Startbarer Eingang
 
 Produktquelle: `17339c29c8494658d0cadf4d2d1c059b056c3184`.
@@ -47,7 +54,7 @@ Kein neuer Dungeon oder neue Placementidentität wird von diesem Anschluss erzeu
 
 ## Native Producerprobe reproduzieren
 
-Nach neuer ausdrücklicher Koordination des lokalen Slots, aus dem Repositoryroot:
+Reproduktionsbefehl im isolierten Testvault aus dem Repositoryroot:
 
 ```sh
 DUNGEON_QA_ROOT=/home/aaron/.cache/dungeon-native-qa/hex-04/eigener-h01-test \

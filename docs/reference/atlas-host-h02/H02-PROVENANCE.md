@@ -1,6 +1,6 @@
 # H02: zugängliche Rohbelege und Buildprovenienz
 
-Datierter Nachweis vom 10.10.2026 zum konkreten [Chronik-Befund](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6099834538), Gate `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`. Keine neue GUI-Probe oder unabhängige Freigabe. Der aktuelle Aufgabenstand bleibt in Issue #38 und checkpoint.hexAtlasExecution.
+Datierter Nachweis vom 10.10.2026 zum konkreten [Chronik-Befund](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6099834538), Gate `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`. Keine neue GUI-Probe oder unabhängige Freigabe.
 
 ## Vorhandene Probe unverändert lesen
 

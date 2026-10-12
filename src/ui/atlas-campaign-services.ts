@@ -52,6 +52,8 @@ export function atlasCampaignServices(
     receiptId: () => campaignReceiptId(crypto.randomUUID()),
   });
   const provider = new CampaignRuntimeNavigationProvider(source, lifecycle);
+  let manifestRevision = 0;
+  const unsubscribeHints = source.subscribe(() => { manifestRevision++; });
   const retainedDrafts: { title: string; element: HTMLElement }[] = [];
   let closed = false;
   const closedListeners = new Set<() => void>();
@@ -92,24 +94,41 @@ export function atlasCampaignServices(
         throw new Error("Kampagnenziel fehlt oder ist mehrdeutig.");
       return matches[0]!.atlas.worldId;
     },
-    campaignHint: async (path) => {
-      const all = await hints(),
+    campaignHint: async (path, worldId, standalone) => {
+      const revision = manifestRevision;
+      const current = () => {
+        assertOpen();
+        if (revision !== manifestRevision) throw new Error("Kampagnenbestand wurde während der Atlasöffnung geändert.");
+      };
+      current();
+      const files = await storage.list(); current();
+      // Entry classification is strict. A malformed manifest cannot disappear into a fallback.
+      const all = files.map((file) => parseCampaignRuntimeManifest(file.bytes, digest)),
         matches = all.filter((m) =>
           m.atlas.files.some((f) => f.kind === "world" && f.path === path),
         );
+      if (new Set(files.map((file) => file.path)).size !== files.length ||
+          new Set(all.map((m) => m.snapshot.campaignId)).size !== all.length)
+        throw new Error("Kampagnenbestand ist mehrdeutig.");
       if (!matches.length) {
-        if ((await storage.list()).length)
-          throw new Error(
-            "Dieser Atlas gehört keinem bestätigten Kampagnenbestand. Bestand ergänzen oder reparieren.",
-          );
+        const reserved = new Set(all.flatMap((m) => [m.atlas.worldId,
+          ...m.atlas.files.flatMap((file) => file.id === null ? [] : [file.id]),
+          ...m.registry.owners.flatMap((owner) => owner.records.map((record) => record.id))]));
+        if (reserved.has(worldId)) throw new Error("Atlaskennung gehört bereits einem anderen Kampagnenbestand.");
+        const identities = await standalone(current); current();
+        if (!identities.includes(worldId) || identities.some((id) => reserved.has(id)))
+          throw new Error("Native Atlaskennung kollidiert mit einem bestätigten Kampagnenowner.");
+        const after = await storage.list(); current();
+        if (after.length !== files.length || after.some((file) =>
+          !files.some((before) => before.path === file.path && before.bytes === file.bytes)))
+          throw new Error("Kampagnenbestand wurde während der Atlasöffnung geändert.");
         return null;
       }
-      if (
-        matches.length !== 1 ||
-        all.filter(
-          (m) => m.snapshot.campaignId === matches[0]!.snapshot.campaignId,
-        ).length !== 1
-      )
+      if (matches.length !== 1)
+        throw new Error("Atlas ist mehreren Kampagnenbeständen zugeordnet.");
+      if (matches[0]!.atlas.worldId !== worldId)
+        throw new Error("Atlaspfad und bestätigte Weltkennung stimmen nicht überein.");
+      if (all.filter((m) => m.atlas.worldId === worldId).length !== 1)
         throw new Error("Atlas ist mehreren Kampagnenbeständen zugeordnet.");
       return matches[0]!.snapshot.campaignId;
     },
@@ -195,6 +214,7 @@ export function atlasCampaignServices(
     close: () => {
       if (closed) return;
       closed = true;
+      unsubscribeHints();
       for (const listener of closedListeners) listener();
       closedListeners.clear();
       provider.close();

@@ -73,7 +73,7 @@ Der bestehende Owner erhält diesen konkreten Eingang über #40/#12.
    und neue Dateimengen dürfen nicht als unveränderlich gleiche Liste geprüft werden.
 4. Regressionen müssen erfolgreiches Create/Key/Move/UndoRedo/Save, fremde Pfad-/ID-
    Kollision, Abbruch vor Commit, unterbrochenes Journal, Rollback/Retry und Fresh-
-   Open prüfen. Anschließend folgt mit **neu abgestimmtem** GUI-Slot die echte
+   Open prüfen. Eine tatsächliche Hostprüfung benötigt die echte
    Save-/frischer-Prozess-Probe und die unabhängige #40-Abnahme.
 
 Der nächste eigene Lauf ist gezielte Reparatur bzw. Konsum des konkreten qualifizierten

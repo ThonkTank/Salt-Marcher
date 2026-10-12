@@ -4,6 +4,7 @@ import {
   type Id,
   type MapDocument,
   type DungeonContent,
+  type DungeonVolume,
   type Settings,
   type SmartTileCell,
   type TerrainMask,
@@ -15,6 +16,8 @@ import {
   validateTerrainMasks,
   validateFloor,
   validateContent,
+  validateDungeonVolumes,
+  collectReservedDocumentIds,
   safePath,
 } from "./model";
 
@@ -45,6 +48,10 @@ export interface Command {
     readonly before: readonly TerrainMask[] | undefined;
     readonly after: readonly TerrainMask[] | undefined;
   };
+  readonly volumes?: {
+    readonly before: readonly DungeonVolume[] | undefined;
+    readonly after: readonly DungeonVolume[] | undefined;
+  };
   readonly content?: {
     readonly before: DungeonContent;
     readonly after: DungeonContent;
@@ -60,6 +67,7 @@ export interface ChangeEvent {
   readonly settings: boolean;
   readonly smartTiles?: boolean;
   readonly terrainMasks?: boolean;
+  readonly volumes?: boolean;
   readonly paletteOnly?: boolean;
   readonly content: boolean;
   readonly revision: number;
@@ -201,6 +209,8 @@ export function projectDocumentCommand(
     !sameValue(command.terrainMasks.before, raw.terrainMasks)
   )
     throw new Error("Veraltete Terrainmasken.");
+  if (command.volumes && !sameValue(command.volumes.before, raw.volumes))
+    throw new Error("Veraltete Dungeon-Volumes.");
   if (!nextFloors.size) throw new Error("Mindestens ein Geschoss bleibt erforderlich.");
   const document = immutable(
     structuredClone({
@@ -219,6 +229,11 @@ export function projectDocumentCommand(
         : raw.terrainMasks === undefined
           ? {}
           : { terrainMasks: raw.terrainMasks }),
+      ...(command.volumes
+        ? { volumes: command.volumes.after }
+        : raw.volumes === undefined
+          ? {}
+          : { volumes: raw.volumes }),
     }),
   );
   validateDocument(document);
@@ -273,6 +288,8 @@ export class Session {
   private savedSmartTiles?: readonly SmartTileCell[];
   private stateTerrainMasks?: readonly TerrainMask[];
   private savedTerrainMasks?: readonly TerrainMask[];
+  private stateVolumes?: readonly DungeonVolume[];
+  private savedVolumes?: readonly DungeonVolume[];
   readonly id: Id;
   readonly version: 3 | 4;
   revision = 0;
@@ -289,6 +306,7 @@ export class Session {
     this.stateContent = doc.content;
     this.stateSmartTiles = doc.smartTiles;
     this.stateTerrainMasks = doc.terrainMasks;
+    this.stateVolumes = doc.volumes;
     for (const f of doc.floors) this.levels.set(f.id, f);
     for (const e of doc.entities) {
       this.records.set(e.id, e);
@@ -300,6 +318,7 @@ export class Session {
     this.savedContent = this.stateContent;
     this.savedSmartTiles = doc.smartTiles;
     this.savedTerrainMasks = doc.terrainMasks;
+    this.savedVolumes = doc.volumes;
   }
   get settings(): Settings {
     return this.stateSettings;
@@ -318,6 +337,9 @@ export class Session {
   }
   get terrainMasks(): readonly TerrainMask[] | undefined {
     return this.stateTerrainMasks;
+  }
+  get volumes(): readonly DungeonVolume[] | undefined {
+    return this.stateVolumes;
   }
   private visibleSmartTiles(): readonly SmartTileCell[] | undefined {
     return this.stateSmartTiles?.filter((cell) =>
@@ -338,6 +360,7 @@ export class Session {
       this.stateContent !== this.savedContent ||
       JSON.stringify(this.visibleSmartTiles()) !== JSON.stringify(this.savedSmartTiles) ||
       JSON.stringify(this.stateTerrainMasks) !== JSON.stringify(this.savedTerrainMasks) ||
+      JSON.stringify(this.stateVolumes) !== JSON.stringify(this.savedVolumes) ||
       [...this.notes.values()].some((n) => n.base !== n.current)
     );
   }
@@ -509,6 +532,7 @@ export class Session {
         command.settings ||
         command.smartTiles ||
         command.terrainMasks ||
+        command.volumes ||
         command.content ||
         command.texts?.some((p) => p.before !== p.after || p.create)
       )
@@ -655,7 +679,45 @@ export class Session {
     }
     if (terrainMasks !== undefined && (c.terrainMasks || c.settings || floorChanges.length))
       validateTerrainMasks(terrainMasks, settings.width, settings.height, nextFloors);
+    let volumes = this.stateVolumes;
+    if (c.volumes) {
+      if (this.version !== 4)
+        throw new Error("Dungeon-Volumes benötigen Kartenformat V4.");
+      const before = inverse ? c.volumes.after : c.volumes.before;
+      volumes = inverse ? c.volumes.before : c.volumes.after;
+      if (!sameValue(before, this.stateVolumes))
+        throw new Error("Veraltete Dungeon-Volumes.");
+    }
     validateContent(content, nextEntities, this.version);
+    const prospective: MapDocument = {
+      format: "dungeon-map",
+      version: this.version,
+      id: this.id,
+      settings,
+      floors: [...nextFloors.values()],
+      entities: [...nextEntities.values()],
+      content,
+      ...(smartTiles === undefined ? {} : { smartTiles }),
+      ...(terrainMasks === undefined ? {} : { terrainMasks }),
+      ...(volumes === undefined ? {} : { volumes }),
+    };
+    const keySectionIds = (entity: Entity | null): readonly Id[] =>
+        entity?.kind === "building" && entity.key
+          ? entity.key.sections.map(({ id }) => id)
+          : [],
+      reservedIdsMayHaveChanged = !!c.content || entityChanges.some((change) =>
+        change.before === null || change.after === null ||
+        !sameValue(keySectionIds(change.before), keySectionIds(change.after)),
+      ) || floorChanges.some((change) =>
+        change.before === null || change.after === null,
+      );
+    if (volumes !== undefined && (c.volumes || reservedIdsMayHaveChanged))
+      validateDungeonVolumes(
+        volumes,
+        settings.width,
+        settings.height,
+        collectReservedDocumentIds(prospective),
+      );
     const noteValues = new Map<string, string | null>();
     const patches = inverse ? [...(c.texts ?? [])].reverse() : (c.texts ?? []);
     for (const p of patches) {
@@ -726,6 +788,7 @@ export class Session {
       : content;
     this.stateSmartTiles = smartTiles;
     this.stateTerrainMasks = terrainMasks;
+    this.stateVolumes = volumes;
     for (const [path, current] of noteValues)
       this.notes.get(path)!.current = current;
     this.revision++;
@@ -738,6 +801,7 @@ export class Session {
       settings: !!c.settings,
       smartTiles: !!c.smartTiles,
       terrainMasks: !!c.terrainMasks,
+      volumes: !!c.volumes,
       content: !!c.content,
       revision: this.revision,
       rulesRevision: this.rulesRevision,
@@ -771,6 +835,7 @@ export class Session {
       ...(this.stateTerrainMasks !== undefined
         ? { terrainMasks: this.stateTerrainMasks }
         : {}),
+      ...(this.stateVolumes !== undefined ? { volumes: this.stateVolumes } : {}),
     };
   }
   snapshot(): SaveSnapshot {
@@ -823,12 +888,15 @@ export class Session {
     this.savedContent = snapshot.document.content;
     this.savedSmartTiles = snapshot.document.smartTiles;
     this.savedTerrainMasks = snapshot.document.terrainMasks;
+    this.savedVolumes = snapshot.document.volumes;
     const equal = (a: unknown, b: unknown) =>
       a === b || JSON.stringify(a) === JSON.stringify(b);
     if (equal(this.stateSettings, this.savedSettings))
       this.stateSettings = this.savedSettings;
     if (equal(this.stateContent, this.savedContent))
       this.stateContent = this.savedContent;
+    if (equal(this.stateVolumes, this.savedVolumes))
+      this.stateVolumes = this.savedVolumes;
     this.dirtyIds = new Set(
       [
         ...new Set([...this.records.keys(), ...this.savedRecords.keys()]),

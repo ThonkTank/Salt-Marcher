@@ -8,8 +8,10 @@ export interface PlannerLocation {
 export class ManualPlannerPanel {
   private readonly root: HTMLElement;
   private readonly status: HTMLElement;
+  private readonly help: HTMLDetailsElement;
   private destroyed = false;
   private renderEpoch = 0;
+  private displayedDraft: ManualPlanner["draft"] = null;
   constructor(
     host: HTMLElement,
     private readonly planner: ManualPlanner,
@@ -21,20 +23,51 @@ export class ManualPlannerPanel {
     this.root.className = "dn-manual-planner";
     this.status = doc.createElement("p");
     this.status.setAttribute("role", "status");
+    this.help = doc.createElement("details");
+    const summary = doc.createElement("summary");
+    summary.textContent = "Hilfe zur Sessionplanung";
+    this.help.append(summary);
+    for (const text of [
+      "Mit „Neuer Plan“ beginnst du ohne Namen, Datum oder Party. Füge Szenen hinzu und wähle sie in der Liste, um Titel und Notizen zu bearbeiten. Ein Ort ist freiwillig; der ausgewählte Ort selbst wird nicht verändert.",
+      "„Entwurf übernehmen“ übernimmt deine Eingaben. Beim Plan- oder Szenenwechsel, Umbenennen und Verschieben werden offene Eingaben ebenfalls übernommen. „Entwurf verwerfen“ verwirft nur die offenen Eingaben; „Szene löschen“ oder „Plan löschen“ entfernt dagegen die Szene beziehungsweise den ganzen Plan.",
+      "Bei einer Fehlermeldung bleiben deine Eingaben erhalten. „Ansicht aktualisieren“ zeigt den aktuellen Plan, ohne einen Entwurf zu übernehmen oder zu verwerfen.",
+      "Mit Tab erreichst du Felder und Aktionen, mit Umschalt+Tab gehst du zurück. Enter oder Leertaste aktiviert Schaltflächen; nach der Szenenauswahl geht der Fokus zum Titel, danach mit Tab zu den Notizen.",
+    ]) {
+      const paragraph = doc.createElement("p");
+      paragraph.textContent = text;
+      this.help.append(paragraph);
+    }
     host.append(this.root);
     this.render();
   }
-  private run(action: () => void, focusSceneTitle = false): void {
+  private run(
+    action: () => void,
+    focusSceneTitle = false,
+    unsubmittedPlanName?: string,
+    retainPlanName = false,
+    focusAfter?: () => void,
+  ): void {
     if (this.destroyed) return;
     try {
+      const planId = this.planner.active?.id,
+        typedName = retainPlanName
+          ? this.root.querySelector<HTMLInputElement>('[aria-label="Planname"]')?.value
+          : undefined;
       action();
       this.render();
+      const retainedName = unsubmittedPlanName ??
+        (planId !== undefined && this.planner.active?.id === planId ? typedName : undefined);
+      if (retainedName !== undefined) {
+        const name = this.root.querySelector<HTMLInputElement>('[aria-label="Planname"]');
+        if (name) name.value = retainedName;
+      }
       // Scene buttons are replaced by render. Hand successful selection to the
       // editor; stale/failed actions never render or redirect keyboard focus.
       if (focusSceneTitle)
         this.root
           .querySelector<HTMLInputElement>('[aria-label="Szenentitel"]')
           ?.focus();
+      else focusAfter?.();
     } catch (e) {
       this.status.textContent =
         e instanceof Error
@@ -51,6 +84,7 @@ export class ManualPlannerPanel {
       const current = this.planner.active;
       if (
         epoch !== this.renderEpoch ||
+        this.planner.draft !== this.displayedDraft ||
         current?.id !== plan?.id ||
         current?.revision !== plan?.revision ||
         this.planner.selectedSceneId !== sceneId
@@ -67,17 +101,31 @@ export class ManualPlannerPanel {
     disabled = false,
     focusSceneTitle = false,
   ): void {
-    const b = this.root.ownerDocument.createElement("button");
+    const doc = this.root.ownerDocument;
+    const b = doc.createElement("button");
     b.type = "button";
     const assertDisplayed = this.displayedGuard();
     b.textContent = text;
     b.disabled = disabled;
-    b.addEventListener("click", () =>
+    if (!focusSceneTitle) b.dataset.plannerAction = text;
+    b.addEventListener("click", () => {
+      const wasFocused = doc.activeElement === b;
       this.run(() => {
         assertDisplayed();
         action();
-      }, focusSceneTitle),
-    );
+      }, focusSceneTitle, undefined, true, () => {
+        if (!wasFocused) return;
+        // Rendering removes the invoking control. Continue keyboard navigation
+        // on its replacement; a move at the boundary may disable that action.
+        const replacement = [...this.root.querySelectorAll("button")].find(
+          (button) => button.dataset.plannerAction === text && !button.disabled,
+        );
+        const target = replacement ??
+          this.root.querySelector<HTMLElement>('[aria-label="Szenentitel"]') ??
+          this.root.querySelector<HTMLElement>('[aria-label="Planname"]');
+        target?.focus();
+      });
+    });
     parent.append(b);
   }
   private label(parent: HTMLElement, name: string, input: HTMLElement): void {
@@ -89,6 +137,7 @@ export class ManualPlannerPanel {
   }
   private render(): void {
     this.renderEpoch++;
+    this.displayedDraft = this.planner.draft;
     this.root.replaceChildren();
     const doc = this.root.ownerDocument;
     const toolbar = doc.createElement("div");
@@ -102,7 +151,15 @@ export class ManualPlannerPanel {
     refresh.type = "button";
     refresh.textContent = "Ansicht aktualisieren";
     refresh.title = "Aktuellen Plan anzeigen; Entwürfe bleiben erhalten.";
-    refresh.addEventListener("click", () => this.run(() => {}));
+    const displayedPlan = this.planner.active;
+    refresh.addEventListener("click", () => {
+      // Refresh is view-only: retain typed name only against the same immutable
+      // displayed plan, never rebase an old name onto an external revision/selection.
+      const name = this.planner.active === displayedPlan
+        ? this.root.querySelector<HTMLInputElement>('[aria-label="Planname"]')?.value
+        : undefined;
+      this.run(() => {}, false, name);
+    });
     toolbar.append(refresh);
     this.button(toolbar, "Neuer Plan", () => {
       this.planner.create();
@@ -247,7 +304,7 @@ export class ManualPlannerPanel {
     const help = doc.createElement("p");
     help.textContent =
       "Plan und Szenen sind auch ohne Party oder Ort bearbeitbar. Notizen gehören nur zu diesem Plan. Dieser Entwurf ist noch nicht dauerhaft gespeichert.";
-    this.root.append(help);
+    this.root.append(help, this.help);
     this.status.textContent = "";
     this.root.append(this.status);
   }
@@ -256,6 +313,9 @@ export class ManualPlannerPanel {
     // Preserve inspector focus/caret while typing and while a stale draft is displayed.
     try {
       action();
+      // Advance only after this displayed input successfully authored the draft.
+      // An external replacement requires an explicit refresh before editing.
+      this.displayedDraft = this.planner.draft;
       this.status.textContent = "Entwurf geändert.";
     } catch (e) {
       this.status.textContent =

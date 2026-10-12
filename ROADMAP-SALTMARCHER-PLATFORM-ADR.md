@@ -1,6 +1,6 @@
 # SMR-00-ADR-01 – Zielplattform und Migrationspfad
 
-Status: vorgeschlagen; Team- und Cloud-Review ausstehend
+Status: vorgeschlagen; Plattformentscheidung und erforderliche Beweise offen
 Stand: 9. Oktober 2026
 
 ## Entscheidungskontext
@@ -33,7 +33,7 @@ Die Entscheidung muss insbesondere diese vorhandenen Werte erhalten:
 
 ## Vorgeschlagene Entscheidung
 
-Das Team verfolgt einen schrittweise entkoppelten Hybrid-Migrationspfad mit
+Vorgeschlagen ist ein schrittweise entkoppelter Hybrid-Migrationspfad mit
 genau einem finalen Produkt:
 
 1. Domäne, Anwendungskommandos, Projektionen und UI-Zustände werden
@@ -52,12 +52,9 @@ genau einem finalen Produkt:
    Zielshell mindestens gleichwertig bestehen. Originale Nutzerdateien und
    stabile IDs bleiben geschützt.
 
-Diese Richtung ist noch nicht ratifiziert. Sie wird erst verbindlich, wenn die
-unten genannten Beweise vorliegen und die drei neuen lokalen
-Integrationsstränge sowie die Gerätekollegen für Hex/Atlas, Stadt und Dungeon
-und die zuständigen Cloud-Reviewer ihre Bereichsrisiken geprüft haben. Die
-aktuellen Threadkennungen stehen in `checkpoint.json` unter
-`saltMarcherReplacement.coordination`.
+Diese Richtung ist noch nicht ratifiziert. Die Plattformentscheidung benötigt
+die unten genannten Beweise zu Wiederverwendung, Produktumfang, Migration
+und Bereichsrisiken.
 
 Eine erste statische Zielrepo-Inventur auf `b7e06f0` stützt die Richtung:
 68 von 78 ausgewerteten TypeScript-Dateien importieren Obsidian nicht direkt.
@@ -121,12 +118,12 @@ werden fail-closed validiert und nicht pauschal akzeptiert.
 
 ## Ratifikationskriterien
 
-- Hex/Atlas-, Stadt- und Dungeon-Gerätekollegen bestätigen die Wiederverwendung
-  ihrer Formate, Belege, Performancegrenzen und offenen Gates.
-- Die drei lokalen Integrationsstränge bestätigen Produktumfang,
-  Plugin-Bestandsreuse und Migrationsfolge.
-- Der abgelöste GM-Cloud-Strang liefert einen unabhängigen Architektur- und
-  Technikreview; weitere Cloud-Kollegen prüfen ihre bestehenden Spezialgebiete.
+- Die Wiederverwendung der Hex-/Atlas-, Stadt- und Dungeonformate, Belege und
+  Performancegrenzen muss nachgewiesen sein; offene Fachabnahmen bleiben sichtbar.
+- Produktumfang, Plugin-Bestandsreuse und Migrationsfolge müssen anhand der
+  Fachanforderungen und vorhandenen Implementierung geprüft sein.
+- Ein unabhängiger Architektur- und Technikreview bewertet die Bereichsrisiken
+  einschließlich Sicherheit, Barrierefreiheit, Packaging und Datenlebenszyklus.
 - Pro Gerät läuft höchstens eine grafische Host-/Originalinstanz.
 - Die ersten vertikalen Abläufe bestehen Tastatur, 200 %, Screenreader/axe und
   die bestätigten kleinen Fenstergrößen.
@@ -157,5 +154,5 @@ werden fail-closed validiert und nicht pauschal akzeptiert.
   Nutzereinsatz eingefroren?
 - Welche Kartenperformancebelege müssen auf jedem Betriebssystem wiederholt
   werden?
-- Welche Cloud-Stränge besitzen über den GM-Review hinaus konkrete
-  Sicherheits-, A11y-, Packaging- oder Datenreviewzuständigkeiten?
+- Welche Sicherheits-, A11y-, Packaging- und Datenrisiken benötigen noch
+  konkrete technische Nachweise?

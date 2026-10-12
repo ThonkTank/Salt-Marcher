@@ -4,7 +4,24 @@ import test from "node:test";
 import ts from "typescript";
 
 const ROOT = new URL("../src/features/live-session/", import.meta.url);
-const ALLOWED_STATIC_IMPORTS = new Set(["./contracts", "./ids", "./projections"]);
+const ALLOWED_STATIC_IMPORTS = new Set([
+  "./commands",
+  "./contracts",
+  "./deletion",
+  "./evidence",
+  "./history",
+  "./ids",
+  "./mask-reconciliation",
+  "./multi-owner-model",
+  "./party-aggregate",
+  "./portability",
+  "./projections",
+  "./reference-owners",
+  "./scene-aggregate",
+  "./state",
+  "./validation",
+  "../campaign/campaign-contracts",
+]);
 
 function importsIn(source, file = "module.ts") {
   const tree = ts.createSourceFile(
@@ -25,7 +42,10 @@ function importsIn(source, file = "module.ts") {
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
       node.moduleSpecifier
     ) {
-      assert(ts.isStringLiteral(node.moduleSpecifier), `${file} has a nonliteral module specifier`);
+      assert(
+        ts.isStringLiteral(node.moduleSpecifier),
+        `${file} has a nonliteral module specifier`,
+      );
       imports.push({ kind: "static", specifier: node.moduleSpecifier.text });
     } else if (
       ts.isImportEqualsDeclaration(node) &&
@@ -35,7 +55,8 @@ function importsIn(source, file = "module.ts") {
     } else if (
       ts.isCallExpression(node) &&
       (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-        (ts.isIdentifier(node.expression) && node.expression.text === "require"))
+        (ts.isIdentifier(node.expression) &&
+          node.expression.text === "require"))
     ) {
       const argument = node.arguments[0];
       imports.push({
@@ -43,7 +64,9 @@ function importsIn(source, file = "module.ts") {
           node.expression.kind === ts.SyntaxKind.ImportKeyword
             ? "dynamic-import"
             : "require",
-        specifier: ts.isStringLiteral(argument) ? argument.text : "<nonliteral>",
+        specifier: ts.isStringLiteral(argument)
+          ? argument.text
+          : "<nonliteral>",
       });
     }
     ts.forEachChild(node, visit);
@@ -63,14 +86,40 @@ function assertLocalStaticImports(source, file = "module.ts") {
       ALLOWED_STATIC_IMPORTS.has(dependency.specifier),
       `${file} imports forbidden dependency ${dependency.specifier}`,
     );
+    if (dependency.specifier === "../campaign/campaign-contracts")
+      assert.equal(
+        file,
+        "evidence.ts",
+        `${file} uses the narrowly allowed Campaign contract bridge`,
+      );
   }
 }
 
 test("live-session core has no host, persistence or player-display surface", async () => {
   const files = (await readdir(ROOT)).filter((file) => file.endsWith(".ts"));
-  assert.deepEqual(files.sort(), ["contracts.ts", "ids.ts", "index.ts", "projections.ts"]);
+  assert.deepEqual(files.sort(), [
+    "commands.ts",
+    "contracts.ts",
+    "deletion.ts",
+    "evidence.ts",
+    "history.ts",
+    "ids.ts",
+    "index.ts",
+    "mask-reconciliation.ts",
+    "multi-owner-model.ts",
+    "party-aggregate.ts",
+    "portability.ts",
+    "projections.ts",
+    "reference-owners.ts",
+    "scene-aggregate.ts",
+    "state.ts",
+    "validation.ts",
+  ]);
   const sources = await Promise.all(
-    files.map(async (file) => [file, await readFile(new URL(file, ROOT), "utf8")]),
+    files.map(async (file) => [
+      file,
+      await readFile(new URL(file, ROOT), "utf8"),
+    ]),
   );
   for (const [file, source] of sources) {
     assertLocalStaticImports(source, file);

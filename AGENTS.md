@@ -1,14 +1,10 @@
 # Agenteneinstieg
 
-1. Aktiven Nutzerauftrag und erteilte Freigaben beachten. [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md) erklären das Ziel; `git fetch origin` und `npm run next` zeigen Produktengpässe, freie Aufgaben und Unterstützung. Eigene Arbeit mit `npm run next -- --task <nummer>` fortsetzen; bei echtem Blocker kompatible unabhängige Arbeit suchen. Vor Beginn Claims/PRs prüfen, nach dem Claim nochmals lesen. Leere `ready`-Liste allein ist kein Blocker. [CONTRIBUTING](CONTRIBUTING.md#agenteneinstieg) beschreibt den Einstieg.
-2. `npm run context -- --area <bereich>` und die [Bereichskarte](docs/INDEX.md) verwenden. Nur betroffene Fachverträge, Checkpoint-/Acceptanceeinträge und Architekturentscheidungen lesen. Checkout und Kandidatenhead unterscheiden; historische Top-Level-Felder sind kein Gesamtproduktstatus.
-3. Ein zusammenhängendes Nutzerergebnis oder einen konkreten Umsetzungseingang liefern. [WORKFLOW](docs/WORKFLOW.md) bestimmt Paketgrenzen, risikogerechte Prüfung, Veröffentlichung und Hostschutz; diese Regeln ersetzen allgemeine getrennte Plan-/Review-/Aufräumzyklen älterer Pläne. [REPOSITORY](docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung) bestimmt Besitz, Übergabe und Informationsorte. Den [gemeinsamen Arbeitsablauf](docs/AGENT-ROLES.md#gemeinsame-ausführung) anwenden: eigene Lieferung fortsetzen, bis zur Verwendung verfolgen, Arbeitsstand ersetzen und ohne neue Konsequenz still bleiben. Keine zentrale Zuweisung abwarten.
+Den aktuellen Nutzerauftrag bearbeiten. Historische Pläne, Issues und Belege sind keine zusätzlichen Aufträge.
 
-Wiederkehrende Aufträge laden zusätzlich ihre benannte [Arbeitsrolle](docs/AGENT-ROLES.md) vom aktuellen Remote. Gemeinsame Regeln stehen hier und in den verlinkten Verträgen; gespeicherte Startprompts enthalten keine zweite Ablaufkopie. Bei Abschluss/Übergabe und regelmäßigem Wiedereinstieg [eigene Entscheidungen rückblickend prüfen](docs/WORKFLOW.md#eigene-arbeit-selbstkritisch-beurteilen) und nötige Korrekturen im bestehenden Paket ausführen.
-
-## Verbindliche Grenzen
-
-- Kein Legacy-Support. Übernommene Funktionen am entsprechenden Original Dungeondraft/Dungeon Scrawl prüfen; Version, Ablauf, Beleg und Abweichung bei der Abnahme festhalten. Der alte Editor ist nur Inventarhilfe.
-- Vor jedem Edit aktuelle Datei lesen. Fremde Änderungen, Kennungen, Belege, Karten und Raumtexte erhalten; nur eigene Checkpoint-/Abnahmewurzeln ändern. Orientierungspflege führt `checkpoint.repositoryOrientation`.
-- Aktueller Lauf in `checkpoint.json`, Anforderungen/Nachweise in `acceptance.json`, Architekturentscheidungen in `ARCHITECTURE.md`. Fehlende Abnahme bleibt offen; Testzahlen sind keine Gesamtprozente.
-- Neue Dateien nach dem [Pflegevertrag](docs/REPOSITORY.md#wo-neue-dateien-hingehören) ablegen und `npm run check:repo` anwenden. Referenzierte Root-Pfade erhalten.
+- [Produktziele](docs/PRODUCT.md), [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) und [Dokumentationsindex](docs/INDEX.md) führen zu den betroffenen Fachanforderungen. Architekturentscheidungen stehen in [ARCHITECTURE.md](ARCHITECTURE.md), Anforderungen und Nachweise in `acceptance.json`.
+- Kein Legacy-Support; Funktionsumfang und vereinbarte Originalvergleiche aus den Fachanforderungen erhalten.
+- Vor Änderungen die betroffenen Dateien und den aktuellen gemeinsamen Branch `active/installed-phase1` prüfen. Fremde Arbeit, Karten, Kennungen, Links und Nutzertexte erhalten. Veröffentlichten Git-Verlauf nicht überschreiben.
+- Produktänderungen mit `npm run check`, `npm test` und `npm run build` sowie passenden Regressionen prüfen; Dokumentationsverweise mit `npm run check:repo`.
+- GUI-Prüfungen in einem isolierten Testvault ausführen. Produktive Vaults und fremde laufende Hosts schützen. Installation nur im ausdrücklich beauftragten Umfang.
+- Integrierte Funktion, PR-Kandidat, Test, tatsächliche Host-/Originalabnahme und installierte Version getrennt benennen. Fehlende Nachweise bleiben offen. Historische absolute Belegpfade bestätigen keinen eigenen Zugriff.

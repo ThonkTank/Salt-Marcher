@@ -1,10 +1,3 @@
----
-area: campaign
-owner: Stadt
-issue: 69
-status: active
-checkpoint: cityExecution
----
 # Manuelle Sessionplanung ohne Party und Generator
 
 Consumer ist die GM-Vorbereitung in [#69](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69). Grundlage: SRC-P01/P03 und AC-F03/AC-P01/P02 im [Quellenregister](../../scope-sources.json), gepinnte Session-Planner-Requirements auf Salt-Marcher9de85c1. Das vollständige Paket endet beim nutzbaren persistenten Plan und frischem Reopen, nicht bei diesem ersten Kern-/DOM-Eingang.
@@ -19,9 +12,9 @@ Szenendrafts behalten ihre ursprüngliche Planrevision über weitere Eingaben. W
 
 Der Kandidatenpayload ist **kein bestätigtes natives Speicherformat**. Kein Pluginview/Command ist aktiviert; keine Datei, Party, LiveSession oder Atlas wird geschrieben. Die in-memory Workspace-Klasse ist keine zweite Campaignpersistenz. Die Oberfläche benennt die fehlende dauerhafte Speicherung ausdrücklich.
 
-Campaign/Data bestätigt für `manual-planner.ts` die neuen Plan-/Scene-Records, Referenzclosure optionaler Location-IDs, Namespace/Revisionbindung und Ownerpayload→native Dateiplan/atomaren Publish. Der Host muss `assertCurrent` an den tatsächlich eingefrorenen Campaigncontext binden; ein leeres Callback ist ausschließlich synthetischer Test. Der bestehende #41-Publisher wird konsumiert, nicht kopiert. Hydrierung verwendet dann den gleichen validierten Payloadcodec; durable Receipt/Recovery und Fehler nach Publish brauchen dessen tatsächlichen Vertrag. Chroniks PreparationSnapshot aus #60 bleibt einziger späterer Runtime-Transfervertrag; manuelle Planung setzt ihn nicht voraus.
+Campaign/Data bestätigt für `manual-planner.ts` die neuen Plan-/Scene-Records, Referenzclosure optionaler Location-IDs, Namespace/Revisionbindung und Ownerpayload→native Dateiplan/atomaren Publish. Der Host muss `assertCurrent` an den tatsächlich eingefrorenen Campaigncontext binden; ein leeres Callback ist ausschließlich synthetischer Test. Der bestehende #41-Publisher wird konsumiert, nicht kopiert. Hydrierung verwendet dann den gleichen validierten Payloadcodec; durable Receipt/Recovery und Fehler nach Publish brauchen dessen tatsächlichen Vertrag. Der PreparationSnapshot aus #60 bleibt einziger späterer Runtime-Transfervertrag; manuelle Planung setzt ihn nicht voraus.
 
-Nächster eigener Schritt: unabhängig reviewed Kern-/DOM-Stand mit bestätigten Campaign-Datei-/Ownerinputs an bestehenden Host und Persistenz anschließen. Danach getrennt tatsächliches Save/Close/Fresh-Reopen, IDs/Prosa/Order-Erhalt sowie Write-/Context-/Recoveryfehler prüfen. Ortlose Planung bleibt ausführbar; positive Ortsprojektion braucht bestätigte Quelle. Generator, Partybudget, Encounter/Rewards und vollständige Originalparität bleiben im Gesamtumfang und werden nicht durch diese manuelle Teilfolge freigegeben.
+Für den produktiven Anschluss fehlen die bestätigten Campaign-Datei-/Ownerinputs sowie Host und Persistenz. Er benötigt tatsächliche Save/Close/Fresh-Reopen-Belege, IDs/Prosa/Order-Erhalt und Prüfung der Write-/Context-/Recoveryfehler. Ortlose Planung bleibt ausführbar; positive Ortsprojektion braucht bestätigte Quelle. Generator, Partybudget, Encounter/Rewards und vollständige Originalparität bleiben im Gesamtumfang und werden nicht durch diese manuelle Teilfolge freigegeben.
 
 ## Nachbesserung des unabhängigen Kernreviews
 
@@ -39,7 +32,7 @@ Eine eigene Fehlerprobe fand eine Teilwirkung bei `addScene`: Der alte Draft wur
 
 Die sichtbare Memory-only-Kennzeichnung nennt ausdrücklich den Verlust sämtlicher Pläne beim Neuladen/Schließen. Kein localStorage/IndexedDB, Dateidownload oder vermeintliches Save/Fresh-Reopen; das echte Panel wird ohne Campaign-/Locationport eingebunden. Der leere Contextguard und deterministische lokale Test-IDs gelten ausschließlich für diesen synthetischen Host. Das Browserbundle wird außerhalb des Produktbuilds erzeugt und aktiviert keinen Pluginview. Content-Security-Policy verhindert Netzwerkverbindungen.
 
-Eigene technische Smokeprobe führt das erzeugte Browserbundle im DOM aus: Blankstart, Szenenanlage, exakte Unicode-/Whitespace-Notizen übernehmen, zweiter Plan und sichtbare Flüchtigkeitsgrenze bestanden. Typ-/Strukturprüfung PASS. Der unabhängige Previewhostreview5480996581 ist auf a8ffbfd PASS. Der Cloud-GM-Browserlauf6102831310 bestätigt Auffindbarkeit, Notizen, Umordnen und Planwechsel, fand aber einen konkreten Fokusverlust bei Szenenauswahl; 200%-Zoom wurde nicht wirksam erzeugt. Nächster Empfänger ist derselbe GM für den gezielten Fokus-Retest; native Speicherung/Recovery bleibt vom konkret angefragten Campaign/Data-Port abhängig.
+Eigene technische Smokeprobe führt das erzeugte Browserbundle im DOM aus: Blankstart, Szenenanlage, exakte Unicode-/Whitespace-Notizen übernehmen, zweiter Plan und sichtbare Flüchtigkeitsgrenze bestanden. Typ-/Strukturprüfung PASS. Der unabhängige Previewhostreview5480996581 ist auf a8ffbfd PASS. Der Cloud-GM-Browserlauf6102831310 bestätigt Auffindbarkeit, Notizen, Umordnen und Planwechsel, fand aber einen konkreten Fokusverlust bei Szenenauswahl; 200%-Zoom wurde nicht wirksam erzeugt. Der unten gebundene Fokus-Retest ist ein eigener Nachweis; native Speicherung/Recovery bleibt vom tatsächlichen Campaign/Data-Port abhängig.
 
 ## GM-Fokusbefund und Reparatur
 
@@ -51,4 +44,63 @@ Fokus wird erst nach bestehender Displayguard-/Modellprüfung und erfolgreichem 
 
 Die konkrete Fehlerprobe am tatsächlichen Panel startet einen Plan auf Revision MAX_SAFE_INTEGER−1 mit Dirty Draft. Umbenennen und Verschieben übernahmen bislang dessen Prosa, danach scheiterte die zweite Revision: zwei Gegenproben vor Fix FAIL, bestätigter Payload verändert und Draft gelöscht. Der gemeinsame Modellpfad `actWithDraft` bereitet Edit und Rename/Move jetzt ohne Veröffentlichung vor und prüft abschließend Context, Planrevision, Auswahl, Draftidentität und gesamten Workspace. Erst danach wird der vollständige Zustand übernommen. Dieselbe reine Payloadfunktion dient weiterhin Einzelaktionen; vorhandene Revisionsschritte und Move-No-op-Verhalten bleiben erhalten.
 
-Zwei echte Panel-Fehlerregressionen bewahren den gleichen bestätigten Payload und das ursprüngliche Draftobjekt. Zwei Modellgegenproben prüfen fehlendes Moveziel und finalen Contextwiderruf sowie erfolgreichen Retry mit exakter Prosa, Reihenfolge, Namen und Revisionen. 24 fokussierte Core-/Panel-Fälle PASS. Das neue Atomizitätsdelta benötigt den bestehenden unabhängigen Reviewer; Fokus-/Browserbelege auf59f04fe werden nicht wiederholt oder als Beleg des neuen Deltas ausgegeben. Native Speicherautorität bleibt offen.
+Zwei echte Panel-Fehlerregressionen bewahren den gleichen bestätigten Payload und das ursprüngliche Draftobjekt. Zwei Modellgegenproben prüfen fehlendes Moveziel und finalen Contextwiderruf sowie erfolgreichen Retry mit exakter Prosa, Reihenfolge, Namen und Revisionen. 24 fokussierte Core-/Panel-Fälle PASS. Diese Angaben enthalten keinen unabhängigen Reviewbeleg des Atomizitätsdeltas; Fokus-/Browserbelege auf59f04fe belegen dieses Delta nicht. Native Speicherautorität bleibt offen.
+
+## Sichtbare Hilfe und Plannamen-Refresh
+
+Das bestehende Memory-only-Panel enthält jetzt eine aufklappbare Hilfe für
+Arbeitsbeginn, Entwurfsübernahme/-verwerfen, Plan-/Szenenwechsel,
+Fehlererholung und Tastaturbedienung. Der begrenzte Cloud-GM-Lauf
+[6103955574](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6103955574)
+bestätigt Auffindbarkeit und den sichtbaren Ablauf im synthetischen Browser;
+200 Prozent waren dabei simulierter Dokumentzoom, kein nativer Zoomnachweis.
+
+`Ansicht aktualisieren` erhält einen noch nicht übernommenen Plannamen nur,
+wenn weiterhin exakt dieselbe immutable Planbasis angezeigt wird. Der Refresh
+publiziert nichts; `Umbenennen` bleibt der einzige Aktionspfad. Externer
+Planwechsel oder eine neue Revision übernimmt den alten DOM-Wert nicht. Der
+unabhängige Deltareview
+[MANUAL-PLANNER-REFRESH-NAME-R03](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86#pullrequestreview-5482290972)
+bestand auf `ec9d7a4` mit 16 Panelregressionen.
+
+Dieser integrierbare UI-Anteil enthält ausdrücklich keinen vorgeschlagenen
+Planner-Dokumentcodec und keine neue Speicherautorität. Campaign/Data-Dateiplan,
+Writer, Publish, Receipt, Recovery, Pluginmount sowie echtes Save/Fresh-Reopen
+bleiben offene Eingänge von #69.
+
+## Plannamen bei Szenenaktionen erhalten
+
+Ein noch nicht mit „Umbenennen“ übernommener Planname ging bei erfolgreicher
+Szenenanlage, Entwurfübernahme, Entwurfverwerfen, Umordnung und Szenenauswahl
+beim Render verloren. Fünf direkte Panel-Gegenproben reproduzieren den Verlust.
+Der gemeinsame guardgebundene Buttonpfad erhält jetzt den exakten Feldwert,
+wenn nach der erfolgreichen Aktion derselbe Plan aktiv bleibt. Er benennt den
+Plan nicht still um; die ausdrückliche Aktion „Umbenennen“ übernimmt den Namen.
+Ein neuer Plan übernimmt diesen Text nicht. Die bestehenden Refreshgrenzen für
+externe Auswahl und externe Revision bleiben erhalten.
+
+Vor der Reparatur: fünf Gegenproben FAIL, neue-Plan-Isolation bereits PASS.
+Nachher: alle sechs PASS; gesamte Suite 1090 PASS, 0 FAIL, ein bestehender
+optionaler PDF-Skip. Typprüfung, Build und Repositoryprüfung PASS. Unabhängiger
+Deltareview6106571586 und reguläre PR133-Integration auf Shared6df23a7 sind konsumiert;
+diese Angaben enthalten keinen sichtbaren Browser-Retest dieser Änderung. Die Lieferung bleibt
+UI-only; der offene Campaign/Data-Speichervertrag wird nicht vorweggenommen.
+
+## Kontextschutz nach Plan-ID-Vergabe
+
+Plananlage und Ersatzanlage beim Löschen des letzten Plans rufen die ID-Vergabe
+als Hostcallback auf. Ein dort widerrufener Campaigncontext wurde ohne offenen
+Draft nicht erneut geprüft; beim Löschen konnte eine neuere bestätigte
+Workspaceänderung durch den vorab vorbereiteten Katalog überschrieben werden.
+Vier Kerngegenproben reproduzieren beide Fehler bei beiden Aktionen.
+
+Beide Pfade halten jetzt vor der ID-Vergabe eine Vergleichsbasis für Katalog,
+aktive Auswahl und Draft fest. Nach Validierung des neuen Plans prüfen sie die
+bestehende Contextautorität und diese Basis erneut, bevor sie veröffentlichen.
+Ein Widerruf erhält den unveränderten ursprünglichen Payload, Draft und Auswahl;
+eine zwischenzeitliche gültige Fremdänderung bleibt bestehen. Gültige Retrypfade
+und die bestehende Draftübernahme bei erfolgreicher Plananlage bleiben erhalten.
+Diese Grenze betrifft den In-Memory-Kern, keinen neuen Writer oder Speichervertrag.
+Vier Gegenproben FAIL vor Reparatur, PASS nachher. Vollsuite1094 PASS/0 FAIL/
+1 bestehender optionaler PDF-Skip; Typ/Build/Repo PASS. Diese Angaben
+enthalten keinen unabhängigen Reviewbeleg dieses Kontextschutz-Deltas.

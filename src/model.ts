@@ -326,6 +326,24 @@ export interface TerrainMask {
   readonly splat: string;
   readonly splat2?: string;
 }
+export type DungeonVolumeWall = "north" | "east" | "south" | "west";
+export type DungeonVolumeFace = "floor" | "ceiling" | DungeonVolumeWall;
+/** One authored 5-foot cube of traversable interior. Faces remain independently editable. */
+export interface DungeonVolumeCell {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly floor: boolean;
+  readonly ceiling: boolean;
+  readonly walls: readonly DungeonVolumeWall[];
+  /** Faces explicitly changed by the GM; unmarked shell faces may follow height edits. */
+  readonly authoredFaces?: readonly DungeonVolumeFace[];
+}
+/** Geometric identity only; Room identity and authored prose deliberately live elsewhere. */
+export interface DungeonVolume {
+  readonly id: Id;
+  readonly cells: readonly DungeonVolumeCell[];
+}
 export interface MapDocument {
   readonly format: "dungeon-map";
   readonly version: 3 | 4;
@@ -338,6 +356,8 @@ export interface MapDocument {
   readonly smartTiles?: readonly SmartTileCell[];
   /** Optional V4 terrain weights; absent on cards without a terrain raster. */
   readonly terrainMasks?: readonly TerrainMask[];
+  /** Optional V4 continuous 3D geometry; absence keeps pre-volume bytes canonical. */
+  readonly volumes?: readonly DungeonVolume[];
 }
 export type MapDocumentV2 = Omit<MapDocument, "version"> & {
   readonly version: 2;
@@ -742,6 +762,12 @@ export function validateDocument(doc: MapDocument): void {
       throw new Error("Terrainmasken benötigen Kartenformat V4.");
     validateTerrainMasks(doc.terrainMasks, doc.settings.width, doc.settings.height, floors);
   }
+  if (doc.volumes !== undefined) {
+    if (doc.version !== 4)
+      throw new Error("Dungeon-Volumes benötigen Kartenformat V4.");
+    validateDungeonVolumes(doc.volumes, doc.settings.width, doc.settings.height,
+      collectReservedDocumentIds(doc));
+  }
   for (const e of entities.values())
     validateEntity(e, floors, (id) => entities.get(id), doc.version);
   for (const e of entities.values()) if (e.keyTarget) {
@@ -751,6 +777,111 @@ export function validateDocument(doc: MapDocument): void {
       throw new Error("Key-Ziel des Kartenobjekts fehlt.");
   }
   validateContent(doc.content, entities, doc.version);
+}
+
+/** Every persisted identity namespace that Dungeon-Volume IDs may not occupy. */
+export function collectReservedDocumentIds(doc: MapDocument): ReadonlySet<Id> {
+  return new Set([
+    doc.id,
+    ...doc.floors.map(({ id }) => id),
+    ...doc.entities.map(({ id }) => id),
+    ...doc.content.definitions.map(({ id }) => id),
+    ...doc.content.occurrences.map(({ id }) => id),
+    ...doc.content.routes.map(({ id }) => id),
+    ...doc.content.archive.flatMap((bundle) => [bundle.id,
+      ...bundle.floors.map(({ id }) => id),
+      ...bundle.definitions.map(({ id }) => id),
+      ...bundle.occurrences.map(({ id }) => id),
+      ...bundle.routes.map(({ id }) => id),
+      ...bundle.entities.map(({ id }) => id),
+      ...bundle.entities.flatMap((entity) =>
+        entity.kind === "building" && entity.key
+          ? entity.key.sections.map((section: KeySection) => section.id) : [])]),
+    ...doc.entities.flatMap((entity) =>
+      entity.kind === "building" && entity.key
+        ? entity.key.sections.map((section: KeySection) => section.id) : []),
+  ]);
+}
+export function validateDungeonVolumes(
+  volumes: readonly DungeonVolume[], _width: number, _height: number,
+  reservedIds: ReadonlySet<Id> = new Set(),
+): void {
+  if (!Array.isArray(volumes)) throw new Error("Ungültige Dungeon-Volumes.");
+  const ids = new Set<Id>();
+  const occupied = new Set<string>();
+  for (const volume of volumes) {
+    if (!volume || typeof volume.id !== "string" || !volume.id.trim() ||
+        ids.has(volume.id) || reservedIds.has(volume.id) ||
+        !Array.isArray(volume.cells) || !volume.cells.length)
+      throw new Error("Ungültiges Dungeon-Volume.");
+    ids.add(volume.id);
+    const positions = new Set<string>();
+    for (const cell of volume.cells) {
+      if (!cell || !Number.isInteger(cell.x) || !Number.isInteger(cell.y) ||
+          !Number.isInteger(cell.z) ||
+          typeof cell.floor !== "boolean" || typeof cell.ceiling !== "boolean" ||
+          !Array.isArray(cell.walls) ||
+          cell.walls.some((wall: unknown) =>
+            typeof wall !== "string" ||
+            !["north", "east", "south", "west"].includes(wall)) ||
+          new Set(cell.walls).size !== cell.walls.length)
+        throw new Error("Ungültige Dungeon-Volume-Zelle.");
+      if (cell.authoredFaces !== undefined &&
+          (!Array.isArray(cell.authoredFaces) ||
+            cell.authoredFaces.some((face: unknown) =>
+              typeof face !== "string" ||
+              !["floor", "ceiling", "north", "east", "south", "west"].includes(face)) ||
+            new Set(cell.authoredFaces).size !== cell.authoredFaces.length))
+        throw new Error("Ungültige bearbeitete Dungeon-Volume-Fläche.");
+      const key = `${cell.x}:${cell.y}:${cell.z}`;
+      if (positions.has(key)) throw new Error("Doppelte Dungeon-Volume-Zelle.");
+      if (occupied.has(key))
+        throw new Error("Dungeon-Volumes dürfen dieselbe Zelle nicht überlappen.");
+      positions.add(key);
+      occupied.add(key);
+    }
+    if (positions.size > 1) {
+      const byPosition = new Map<string, DungeonVolumeCell>(
+          volume.cells.map((cell: DungeonVolumeCell): [string, DungeonVolumeCell] =>
+            [`${cell.x}:${cell.y}:${cell.z}`, cell]),
+        ),
+        first = byPosition.keys().next().value as string,
+        pending = [first], seen = new Set(pending),
+        connected = (from: DungeonVolumeCell, to: DungeonVolumeCell): boolean => {
+          if (from.x === to.x && from.y === to.y && Math.abs(from.z - to.z) === 1) {
+            const lower = from.z < to.z ? from : to, upper = lower === from ? to : from;
+            return !lower.ceiling && !upper.floor;
+          }
+          if (from.z !== to.z) return false;
+          if (to.x === from.x + 1 && to.y === from.y)
+            return !from.walls.includes("east") && !to.walls.includes("west");
+          if (to.x === from.x - 1 && to.y === from.y)
+            return !from.walls.includes("west") && !to.walls.includes("east");
+          if (to.y === from.y + 1 && to.x === from.x)
+            return !from.walls.includes("south") && !to.walls.includes("north");
+          if (to.y === from.y - 1 && to.x === from.x)
+            return !from.walls.includes("north") && !to.walls.includes("south");
+          return false;
+        };
+      while (pending.length) {
+        const parts = pending.pop()!.split(":").map(Number),
+          x = parts[0]!, y = parts[1]!, z = parts[2]!;
+        for (const next of [
+          `${x - 1}:${y}:${z}`, `${x + 1}:${y}:${z}`,
+          `${x}:${y - 1}:${z}`, `${x}:${y + 1}:${z}`,
+          `${x}:${y}:${z - 1}`, `${x}:${y}:${z + 1}`,
+        ]) {
+          const from = byPosition.get(`${x}:${y}:${z}`), to = byPosition.get(next);
+          if (from && to && connected(from, to) && !seen.has(next)) {
+            seen.add(next);
+            pending.push(next);
+          }
+        }
+      }
+      if (seen.size !== positions.size)
+        throw new Error("Dungeon-Volume muss räumlich zusammenhängend sein.");
+    }
+  }
 }
 export function validateSmartTileCells(
   cells: readonly SmartTileCell[], width: number, height: number,

@@ -8,7 +8,7 @@ Die [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt Ergebnisvorbilder von Canvas
 
 ## Referenz und Aussagegrenzen
 
-Referenz ist die lokal installierte **Wonderdraft-Version 1.1.8.2** unter `/home/aaron/.local/opt/Wonderdraft/`. Programm- und Paketprüfsummen stehen im Katalog. Die Versionskennung ist in den lokalen Paketdaten und direkten Originalaufnahmen belegt. Der aktuelle Umfang und offene Original-/Reviewpflichten stehen im Katalog und Checkpoint; einzelne Bedienaufnahmen ersetzen keine vollständige Inventarfreigabe.
+Referenz ist die lokal installierte **Wonderdraft-Version 1.1.8.2** unter `/home/aaron/.local/opt/Wonderdraft/`. Programm- und Paketprüfsummen stehen im Katalog. Die Versionskennung ist in den lokalen Paketdaten und direkten Originalaufnahmen belegt. Der aktuelle Umfang und offene Original-/Reviewpflichten stehen im Katalog; einzelne Bedienaufnahmen ersetzen keine vollständige Inventarfreigabe.
 
 Der erste Katalog enthält **36 Inventargruppen und 79 konkrete Ausgangsproben**. Sämtliche 35 Werkzeug- und 61 UI-Modulpfade aus dem lokalen Programmpaket sind Gruppen zugeordnet. Das belegt vorhandene Paketbestandteile; Erreichbarkeit, genaue UI-Namen, Defaults und Wirkung bleiben bis zur Originalprobe offen. Hilfsmodule können dieselbe Funktion unterstützen, unbenutzt sein oder reine Programmoberfläche betreffen. Diese Unterscheidung wird im Inventarreview belegt.
 
@@ -44,7 +44,7 @@ Vorlagen, exakte Eingaben, räumlicher Ausschnitt und Assets für die späteren 
 
 ### HEX-00-C – Inventar getrennt reviewen
 
-In einem eigenen Reviewlauf Oberfläche, Inventar und Unterfälle erneut abgleichen. Keine neu implementierte Oberfläche als Vorlage nehmen. Werkzeuggruppen, Dialogoptionen, Gestenkontexte, Paketkandidaten und Startfolgen auf Lücken prüfen. Jeder Ausschluss beziehungsweise jede Hex-Anpassung braucht eine nachvollziehbare Entscheidung; fehlende Beobachtung ist kein Ausschlussgrund.
+Oberfläche, Inventar und Unterfälle erneut abgleichen. Keine neu implementierte Oberfläche als Vorlage nehmen. Werkzeuggruppen, Dialogoptionen, Gestenkontexte, Paketkandidaten und Startfolgen auf Lücken prüfen. Jeder Ausschluss beziehungsweise jede Hex-Anpassung braucht eine nachvollziehbare Entscheidung; fehlende Beobachtung ist kein Ausschlussgrund.
 
 **Tor:** Der Review öffnet HEX-01 nur bei vollständiger Zuordnung und belegten Startfolgen. Original-Wirkungsfragen der späteren Fachgruppen bleiben sichtbar und bekommen ihren vorgesehenen Messlauf. Keine Prozentzahl aus Gruppen- oder Testanzahl ersetzt dieses Tor.
 
@@ -95,13 +95,13 @@ HEX-03/04/05/06/07/08/22 enthalten zusätzlich eigene Projektanforderungen: Orts
 
 ## Vorgehen je Werkzeugphase: wie beim Dungeondraft-Abgleich
 
-Grundlage sind die [Dungeondraft-Paritätsroadmap](ROADMAP-PARITY.md) und der [konkrete Phase-5-Paarplan](ROADMAP-PARITY-PHASE5-PLAN.md). Ihr entscheidender Ablauf wird übernommen:
+Grundlage sind die [Dungeondraft-Paritätsroadmap](ROADMAP-PARITY.md) und der [konkrete Phase-5-Paarplan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE5-PLAN.md). Ihr entscheidender Ablauf wird übernommen:
 
 1. **Original messen:** Zugeordnete Unterfälle und Inventarkontrollen lesen. Kontrollkarte, Programm/Paket, Profil und Assets festhalten. Jede Option einzeln ändern; Vorschau, Commit, Abbruch, Werkzeugzustand und tatsächlich veränderte Kartendaten beobachten. Default und Wertebereich erfassen, Abhängigkeiten und eine kritische Kombination gezielt prüfen. Kein unbegrenzter kombinatorischer Optionslauf.
 2. **Original→Editor festlegen:** Für jeden Unterfall dieselbe Geste, denselben logischen Inhalt und die wirksamen Optionen im Editor benennen. Einheiten-/Hex-Anpassung mit Begründung dokumentieren. Unbekanntes Verhalten vor dem betroffenen Produktcode nachmessen. Eine ähnlich aussehende Eigenlösung schließt keinen Originalfall.
 3. **Einen kleinen Ablauf umsetzen:** Den begrenzten Phasenablauf benutzbar machen; notwendige Kernregeln prüfen. Erweiterte Optionsfälle bekommen stabile Unterfälle und einen benannten Nachbesserungslauf. Ein funktionierender früher Teststand darf mit offenen Paritätsfällen bereitstehen.
 4. **Auf einem festen Build paaren:** Gleiche Assets, Startwerte und logisch gleiche Geometrie im isolierten Obsidian verwenden. Vorschau, Grafik, Klicktreffer und gespeicherten Zustand gemeinsam prüfen. Betroffene Abbruch-, Undo/Redo-, Save- und Neuöffnungsfolge mit vollständig neuem Prozess ausführen. Anschließend den bislang verfügbaren Atlas-Kernablauf prüfen.
-5. **Getrennt reviewen und aufräumen:** Original- und Hostbelege unabhängig vom Umsetzungslauf erneut lesen; kritische Proben auf demselben Build wiederholen. Offene Pflichtabweichung führt zu begrenzter Nachbesserung und erneutem Review. Aufräumen erhält den geprüften Benutzerablauf und bekommt eine passende Regression.
+5. **Funktionsvergleich prüfen:** Original- und Hostbelege unabhängig prüfen; kritische Proben auf demselben Build wiederholen. Offene Pflichtabweichung führt zu begrenzter Nachbesserung und erneutem Review. Aufräumen erhält den geprüften Benutzerablauf und bekommt eine passende Regression.
 
 Pro Phase entstehen zuerst wenige repräsentative direkte Original-/Hostpaare; Varianten folgen anhand des bereits vollständigen Inventars. Nach je zwei Produktphasen und an den frühen Meilensteinen bleibt der aus der Roadmap vereinbarte geprüfte Testbuild verfügbar. Ein grober Hex-Geländepinsel nach HEX-02 ist eine frühe Ausbaustufe; die vollständige organische Küstenwirkung wird erst durch HEX-11 und ihre Originalpaare belegt.
 
@@ -141,10 +141,10 @@ Pro Unterfall werden Originalversion und exakter Ablauf, Optionsmatrix, Vorschau
 | Inventarzuordnung | Erreichbarer Originalkontext mit UI-Pfad, Kontrollen, WD-Kennung und Phase. |
 | Originalregel gemessen | Direkte Folge, Optionen, beobachtete Wirkung und betroffene Speicher-/Neuöffnungsprobe. |
 | Hostpaar bestanden | Derselbe Fall auf benanntem Build mit Grafik, Bedientreffer und gespeicherter Wirkung. |
-| Fachfall reviewt | Eigener Reviewlauf, keine offene Pflichtabweichung im geprüften Umfang. |
+| Fachfall reviewt | Unabhängige Prüfung, keine offene Pflichtabweichung im geprüften Umfang. |
 | Gesamte Parität | Alle Pflichtfälle einschließlich Endstand und tatsächlicher Installation; physische Eingabe separat. |
 
-Große Karten, Bilder, Rohdateien und Laufberichte liegen außerhalb des Nutzervaults unter `/home/aaron/.cache/dungeon-native-qa/wonderdraft-parity/`. Ergebnisse werden bei den Fällen in `acceptance.json`, aktueller Stand und nächster Schritt in `checkpoint.json` geführt. Dieses Dokument bleibt der Vergleichsplan. Es läuft eine grafische Testinstanz; Originalaufnahme, Hostpaar und Review folgen nacheinander.
+Große Karten, Bilder, Rohdateien und Laufberichte liegen außerhalb des Nutzervaults unter `/home/aaron/.cache/dungeon-native-qa/wonderdraft-parity/`. Ergebnisse werden bei den Fällen in `acceptance.json`, der aktuelle Atlasstand in der Atlasübersicht geführt. Dieses Dokument bleibt der Vergleichsplan. Es läuft eine grafische Testinstanz; Originalaufnahme, Hostpaar und Review folgen nacheinander.
 
 ## Vereinbarte Anpassungen
 

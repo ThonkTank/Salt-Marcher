@@ -43,11 +43,11 @@ Typprüfung, Build und 551 Kern-/Host-/Copy-/Vault-Tests sind bestanden.
 Prüfkommandos, Quellhashes, Loghashes und Erhaltung stehen im
 [R01-Receipt](receipt.json); große Logs liegen am darin benannten lokalen QA-Ort.
 
-## Nächster eigener Eingang
+## Nachweisgrenzen
 
 Unabhängiger Review des veröffentlichten PR62-Heads, anschließend ein separat
-neu koordinierter echter Obsidianlauf für Save und frischen Prozess auf dem
-qualifizierten Integrationsstand. Kein GUI-Slot wurde in R01 belegt. H01 bleibt
+tatsächlicher isolierter Obsidianlauf für Save und frischen Prozess auf dem
+qualifizierten Integrationsstand. R01 war eine reine Vertragsprüfung. H01 bleibt
 ein nativer FAIL; #40 und das Gesamtgate bleiben offen. Detaillinks, CITY,
 physische Bedienung, Originalparität, Großkarten, Nutzervaultinstallation und
 P02/P04 sind hier nicht abgenommen. Planung, Reparatur, Review, native Probe und

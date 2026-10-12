@@ -1,133 +1,14 @@
-# E2E-01-SPACE-I01c-RUNTIME-P01: Kampagne zum bestehenden Atlas verbinden
+# Gemeinsamer Atlas: Laufzeit, Speicherung und räumliche Verträge
 
-## Konkreter nächster HEX-04-Eingang
+Abschnitte: [Arbeitsstand #80](#arbeitsstand-80) · [Nutzerziel, Basis und unveränderte Abnahmelinie](#nutzerziel-basis-und-unveränderte-abnahmelinie) · [Einmalige Consumer-Matrix für den restlichen RUNTIME-MANIFEST-I02-Pfad](#einmalige-consumer-matrix-für-den-restlichen-runtime-manifest-i02-pfad) · [Gemeinsame räumliche Darstellung](#gemeinsame-räumliche-darstellung) · [Dungeon-Geometrie und Vorschau](#dungeon-geometrie-und-vorschau)
 
-[D01-Modellbefund](docs/reference/atlas-detail-binding-d01/README.md) auf
-`7ec9f85ef9d6b263504ea2398ca1bbfc41b97899`, E2E-01 Nutzerzeile13:
-Save eines Detaillinks am bestehenden Ort und des geänderten Parents einer
-bestehenden Dungeonplatzierung gelingt, behält jedoch veraltete Atlas-Registryreferenzen.
-Eine frische Modell-Repositoryinstanz bestätigt die gespeicherten nativen Bindungen
-und ihre abweichende Registryclosure; Dungeonbytes und Undo/Redo bleiben exakt.
-Die [N01-Reparatur](docs/reference/atlas-detail-binding-d01/repair-n01.json) auf
-`9784d03ec33cccefebb6878383f6f7e80e034102` leitet die Atlasreferenzen aus exakten
-nativen Before-/Afterdaten ab und nutzt die vorhandene Campaign-Erweiterungsautorität.
-Neun neue Regressionen prüfen Save/Undo/Redo, frischen Modell-Mount, Recovery und
-gefälschte Referenzbelege; der gemeinsame Stand mit Shared527398c besteht Typprüfung,
-880 Tests (ein optionaler PDF-Test ausgelassen) und Build. Der unabhängige
-Campaign/Data-Review und die separate [PR78-Integration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6102632284)
-sind konsumiert. [I01: sichtbarer Dungeon-am-Ort-Anschluss](docs/reference/atlas-detail-binding-d01/dungeon-at-location-i01.json)
-nutzt jetzt vorhandene Platzierungen und die gemeinsame History; neue Placementkennungen
-werden weiterhin nicht freigegeben. Aktuelle Fortsetzung führt #80.
-N01 liefert keinen GUI-/Electron-/physischen oder Gesamt-E2E-Nachweis und keine neue allgemeine
-Plan-/Reviewrunde. Der begrenzte abgeschlossene #40-Scope bleibt erhalten.
+## Arbeitsstand #80
 
-Der begrenzte Orts-/Key-/Verschiebe-/UndoRedo-/Save-/Frischstart-Meilenstein
-[#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40) ist
-qualifiziert: [Stadt H02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077),
-[Campaign/Data-Dateiorakel](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277),
-[Chronik R02-N01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191)
-und [separate PR72-Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/72#issuecomment-6102108341)
-sind konsumiert. [Qualifikationsentscheidung](docs/reference/atlas-shared-location-h02/qualification.json).
-Der tatsächliche native Source bleibt `4515088772b759cda2e19d249367699c9868c72c`;
-spätere Shared-Commits sind kein neuer nativer Hostlauf. Das gemeinsame E2E-01-Gate
-bleibt offen. Die [eigene begrenzte Bereinigung](docs/reference/atlas-shared-location-h02/cleanup.json)
-ist abgeschlossen: vollständiges hashgeprüftes Archiv des H02-Prüfcheckouts,
-danach normale Entfernung nur dieses Checkouts; Belege und Testvault erhalten.
-Nächster produktiver Hex-Anschluss bleibt die konkrete Detail-/verortete-Dungeon-/
-Raum-Key-Folge derselben E2E-01-Zeile. In diesem Bereinigungslauf werden keine
-Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
+Campaign→Atlas, native Orts-/Stadt-/Dungeonquellen, gemeinsame History, Raum-Key-Editor, Platzierung und Save/Copy/Discard sind im gemeinsamen Branch integriert. Diese technischen Anschlüsse ersetzen keine vollständige E2E-01-, Original-, physische oder Großweltabnahme.
 
-#### Arbeitsstand #80
+Der letzte integrierte Save-Stand ist [PR167](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167) auf Shared `6a90f3ee2f50f0be45f0e256784576f13722c319`. [J02](docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md) belegt erhaltenen Save-Status nach Veröffentlichung; [J03](docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md) den wirklichen Prepared-Journal-/Fresh-Recoveryfall. [Copy C03](docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md), [Prepared Copy](docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md), [Committed Copy](docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md) und [Committed Save](docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md) behalten ihre jeweilige SHA, Fixtures und Grenzen.
 
-Hex besitzt Dungeon-am-Ort und den gemeinsamen Inspector im selben Canvas,
-Repository und History. Verorten, Raum/Key und zurück sind integriert aus
-[PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
-[PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87),
-[PR78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
-N02 bündelt Orts-/Raum-Key, Zur Karte und Escape mit erhaltenen Drafts und IDs.
-[Nachreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700)
-und [Integration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554)
-binden ihren ursprünglichen Quellstand.
-
-**Frühere Belege erhalten:** [H02-Originalreceipt](docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json)
-bindet native synthetische Eingabe bei1024×800, History/Save und exakten Text im
-separaten frischen Obsidian-Prozess: Helper bd2a0ad, Build dba7d55, Shared ca29032.
-[Helperreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019),
-[Aussagekorrektur PR96](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96)
-und [Stadt RAW-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982)
-sind konsumiert. Room-PNGs zeigen untere Navigation, Name/Prosa außerhalb des
-sichtbaren Scrollbereichs; Texterhalt separat durch Bytes/Fresh-Modell/DOM.
-[Erster Cloud-GM](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884)
-auf ca29032 berichtet Finden/Zurück/Escape/History/Save/Tab-Reopen.
-`dungeonAtLocationInspectorGmN02Consumption` bindet Producerquelle und Grenzen;
-Cloudrohdateien nicht selbst gelesen, kein frischer oder physischer Nachweis.
-
-**N03 / GM-N02-01 integriert und sichtbar konsumiert:** Neu gewählter Key beginnt
-oben; Eingabe/Apply/History desselben Keys behalten Scroll. Draftguards laufen
-vorher, ungültige Eingabe bleibt mit Scroll sichtbar. Kein neuer Store/Modus/CSS.
-Produkt cac07c3, komponiert1e22697 mit [City Save PR98](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/98).
-Managed-DOM-Regressionen sowie Gesamt-Suite/Typ/Build/Repo bestehen;
-`dungeonAtLocationInspectorScrollN03` bindet Quelle/Tripel.
-[R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104475506)
-auf c7e6873 PASS ohne Pflichtbefund;
-[S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104516785)
-integriert unverändert in7ff78b9. Eltern/Baum/Exact-CI geprüft, Verbrauch in
-`dungeonAtLocationInspectorScrollN03Qualification`; keine zweite Fachreviewrunde.
-
-[Gebündelter City-/N03-GM](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161)
-und [Hex-Übergabe](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104737639)
-beenden den Displayblocker. Isolierter Cloudhost Obsidian1.14.4/1440×1000:
-auf1d8c7ff neue Raumfelder oben und gleicher Scroll nach Apply/Undo/Redo,
-Originaltext/Dungeondatei erhalten berichtet. Auf cf8d3c1 nach In-App-Reload
-neue Raumfelder oben, volle History nur auf1d8c7ff. GM-N02-01 im berichteten
-Ablauf erledigt. Producer7c3a1e3/Quellen/Tripel direkt geprüft;
-`dungeonAtLocationInspectorScrollN03GmConsumption` bindet den Verbrauch.
-Temporäre Cloud-PNGs nicht selbst gelesen; kein Frischprozess/Gesamt-PASS.
-
-**Separater City-Savebefund:** Stadt/#92 besitzt die gemeldete Save-Kollision
-nach Reload/Undo/Redo. [PR106-R01/S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/106#issuecomment-6104784418)
-integriert Notify-Snapshotkorrektur in a4f20a5, vor Hex-Geometrieprobe konsumiert.
-Cloud-GM-Save-Nachtest ist dessen separater Consumer; keine City-Abnahme oder
-konkurrierende Savekorrektur aus Hex-Geometrie.
-
-**D01-Eingang / N04-Reparatur:** [D01](docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json)
-auf bca790c zeigte153px Dockbreite/276px Inhalt bei131% mit Sidebar.
-Keyaktionen und Detail-/Bindungsziele liefen über; Dock innerhalb des Fensters.
-Früheres äußeres Clipping nicht reproduziert oder als behoben erklärt;
-erster Helper-Selektor-FAIL bleibt erhalten.
-
-[N04-Kandidat / Native-Beleg](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
-auf da3e06a nach Shared76d8ded: Felder/Buttons an Dockbreite begrenzt, Aktionen und
-Zielnamen umbrechend, Buttonhöhe mitwachsend. Raumaktionen nutzen vorhandene
-Actionklasse. Zwei Produktdateien/acht Zeilen; Dockposition/-breite, Navigation,
-IDs, Stores, Kamera und History bleiben. Typ/Build/Repo und1010Tests
-(1009PASS/1bestehenderSkip); Scroll-/Draft-/Escape-/Revokations-/Cityfälle bestehen.
-
-Tatsächlicher isolierter Obsidian1.14.4 mit gepackter CSS, sieben Layoutproben:
-Renderer1024×800/100% und131% (782×611CSSpx), Sidebar offen/geschlossen,
-Ortsaktionen/neues Raumfeld. Horizontal249/249,153/153 bzw273/273px;
-Dock/Kontrollboxen innerhalb, kein horizontaler Scroll. Vertikales Scrollen bleibt.
-Keine CSSinjektion oder native Save-/History-/Gesamtabnahme. Gleiche Repository/
-History/Renderer/Context, acht Dateien erhalten, normal beendet/keine erzwungenen
-PIDs; Slot frisch abgestimmt/zurückgegeben. Hex sah zwei PNGs direkt.
-Build/Fixture/Helper/Rohhashes im Beleg.
-
-**N04 unabhängig geprüft:** [Stadt-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#pullrequestreview-5481730796)
-auf305680d PASS: 11/11 Tests, Quellen/Rohdateien und zwei Bilder geprüft.
-
-**Nächster Empfänger:** Contributor zur unabhängigen Integration von PR110 nach
-Exact-CI/Kompositionsprüfung; danach freier GM-Nachtest in #80. Kein Selfmerge oder
-Detailausbau; vor GUI Slot neu koordinieren. Copy/Discard/Recovery, äußeres Clipping,
-Gesamt-E2E, physische/Original-/Großkarten-/Nutzervaultabnahme bleiben offen.
-
-
-## Historische Planbasis und Lieferbelege
-
-Die folgenden Anschlüsse, Lücken und nächsten Schritte beschreiben ihre jeweils
-genannte Quellbasis. Sie sind keine aktuelle Aufgabenfolge; auch alte Planreview-,
-I01a/b/c- oder Aufräumanweisungen starten keine neuen Pakete. Die verlinkten
-H01-/D01-/R01-/N02-Artefakte einschließlich des hashgebundenen R01-README bleiben
-unveränderte Belege ihrer damaligen Ausführung. Für die Fortsetzung #80 lesen.
+Weitere offene Fähigkeiten und Kandidaten stehen in der [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). Vollständiger Complete-Import, breite Recovery/OS-Abnahme und durchgehende Originalparität bleiben offen. Die folgenden Fachverträge und Gegenfälle bestimmen den Anschluss; historische Prozessentscheidungen vergeben keine Arbeit.
 
 ## Nutzerziel, Basis und unveränderte Abnahmelinie
 
@@ -146,9 +27,9 @@ Planbasis: alleiniger PR-13-Kandidat
 und dessen getrenntes
 [Aufräumen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094023183)
 sind Vorbelege. Sie werden nicht neu abgenommen. Der
-[räumliche Integrationsplan](ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md), die
-[Campaign-Kontextgrenze](ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md) und der
-[Ownership-Vertrag](ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md) bleiben maßgeblich.
+[räumliche Integrationsplan](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#gemeinsame-räumliche-darstellung), die
+[Campaign-Kontextgrenze](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#campaign-kontext) und der
+[Ownership-Vertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#ownership-und-gemeinsame-commands) bleiben maßgeblich.
 Der dort historische offene Stand wird durch tatsächliche Quellnachweise ergänzt,
 nicht als zweiter Lieferplan erneut gestartet.
 
@@ -345,7 +226,7 @@ Slot neu koordinieren. Native Bedienung und physische Eingabe bleiben getrennt.
 
 Fehlen reale Provider, sind I01a/I01b weiterhin eigene lieferbare Schritte. I01c
 meldet dann genau die fehlenden konkreten Objekte/Revisionen an die zuständigen
-Implementierer in #12/#11; kein allgemeiner neuer Ownership-/Ratifikationsumlauf.
+Schnittstellen für Publish, Registry und Medien müssen tatsächlich verfügbar sein.
 Keine GUI mit einer als produktiv dargestellten Testregistry und keine Änderung
 am Nutzervault. Full E2E-01 bleibt bis P02/P04/Complete-Import/Mehrbesitzer-Publish
 und unabhängiger Gate-/Hostprüfung offen.
@@ -355,7 +236,7 @@ und unabhängiger Gate-/Hostprüfung offen.
 | Fall | Erwartetes Ergebnis / Zeitpunkt |
 | --- | --- |
 | Capture des bestehenden Spatial-V2 und unsichtbaren Chunks | I01a: tatsächliche IDs/Before-/Afterbytes/Digests, kein Schreiben oder Phantomhex. |
-| Nur geladene Closure, unreferenzierter bestätigter Ort oder unbekannter Owner | I01a: kein Complete-/Empty-Claim; bestätigter Bestand vollständig oder sichtbar unavailable. |
+| Nur geladene Closure, unreferenzierter bestätigter Ort oder unbekannter Owner | I01a: kein vollständiger oder leerer Bestand behauptet; bestätigter Bestand vollständig oder sichtbar unavailable. |
 | Key/Placement/Chunk ändert sich während Erfassung; Source A→B→A | I01a: captured Basis rejected, keine gemischte Projektion. |
 | Externe Bytes ändern sich bei gleichem Pfad/ID | I01a/I01c: Konflikt, keine still übernommene Baseline. |
 | Positivroute Ort→Haus→Dungeon→Raum/Abschnitt | I01b/I01c: IDgenaues Ziel, derselbe Canvas/History/Kamerabesitzer; Kamerawerte ändern sich über korrekte physische Transforms. |
@@ -375,34 +256,7 @@ Neue Tests benutzen tatsächliche native Fixtures/Sources und asynchron kontroll
 Portgrenzen; keine zweite räumliche Toy-Welt. Keine neuen Großkarten-, Original-
 paritäts- oder Installationsclaims aus einem kleinen Navigationstest.
 
-## Getrennte Lieferfolge und kurze Gates
-
-1. **Dieser P01 → unabhängiger R01** durch bestehenden Stadtchat auf exaktem
-   PR-13-SHA. Nur konkrete neue Pflichtbefunde führen zu N01. Bereits geprüfte
-   Campaign- und Raumpläne werden nicht erneut generell aufgerollt.
-2. **I01a Capture** → eigene Codechecks → unabhängig R01a/N01a → eigenes separates
-   Aufräumen. Ergebnis direkt nutzbare Sourceprojektion, ohne auf fremde Publisher zu warten.
-3. **I01b Context/Navigation** → eigene Codechecks → unabhängig R01b/N01b → eigenes
-   Aufräumen. Positive Route und Wechselguards vor größerer Import-/Medienarbeit prüfen.
-4. **I01c Host** erst mit tatsächlich verfügbaren Providerinstanzen → früh native
-   Probe und frischer Prozess → unabhängiger Host-/Integrationsreview → Aufräumen.
-   Kein Vorziehen von E2E-02–04. P02/P04/atomarer Publisher bleiben benannte fremde Eingänge.
-
-Vor jedem Paket und vor Veröffentlichung aktuellen Shared/Ownremote prüfen und
-freigegebenen Fortschritt normal integrieren; fremde lokale Änderungen erhalten.
-Jeder Abschluss bleibt im einzigen PR-13-Kandidaten mit Source-/Fixture-/SHA-Liste
-und einem kurzen Gateprotokoll zu Zeile13. Tests, Build, native Probe, unabhängiger
-Review, physische Eingabe, Originalparität, Großwelt und Installation werden jeweils
-als eigener Nachweis geführt. Eine Planprüfung ist kein Produkt-PASS.
-
 ## Einmalige Consumer-Matrix für den restlichen RUNTIME-MANIFEST-I02-Pfad
-
-Die konkrete [Prozessentscheidung in #12/6097273698](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097273698)
-setzt für diesen Pfad die bisherigen einzelnen Producer-/Consumer-Runden außer
-Kraft. Hex besitzt vorübergehend die Integration; Campaign/Data liefert genau
-einen Patch innerhalb seiner Fachgrenze. Die bereits geschlossenen I02-01/-02-
-Belege und ihre Exact-SHAs bleiben gültig. Es beginnt keine weitere allgemeine
-Plan- oder Reviewrunde.
 
 **Eingefrorener ausführbarer Vertrag:**
 `RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1` in
@@ -448,8 +302,7 @@ Produktjournalcode nicht.
 **Öffentlicher Producervertrag der tatsächlichen Lieferung:** Der während dieses
 Matrixlaufs direkt gelesene PR35-Kandidat
 `8a25c92c89962a4b1fbf4b15a209205e5704bbc3` liefert diese API bereits. Seine
-bisherigen Ownerchecks/-reviews bleiben Vorbelege; er ist vor dem vollständigen
-Matrixlauf und dem hier vereinbarten Chronikreview nicht in PR13 integriert.
+damaligen Ownerchecks/-reviews waren Vorbelege vor vollständigem Matrixlauf und unabhängigem Review. Der aktuelle Anschluss und seine begrenzten Belege stehen in [Arbeitsstand #80](#arbeitsstand-80).
 
 - Der Participant konsumiert als optionalen vierten Constructorparameter
   `CampaignRuntimeSaveRollbackAuthority.validateRollbackReceipt(receipt)`.
@@ -476,8 +329,6 @@ Produkt-Recoveryadapter und keinen erfundenen Commit. Die laufenden produktiven
 Campaignquellen bleiben in diesem Freeze-Schritt unverändert. Keine neue
 Lifecycle-Aktivierung oder private Source-Flagänderung als Ersatz.
 
-Reproduzierbarer Lauf aus der Candidate-Wurzel:
-
 ```sh
 node tools/verify-campaign-manifest-consumer-matrix.mjs \
   --output /home/aaron/.cache/dungeon-native-qa/campaign-consumer-matrix-report.json
@@ -491,132 +342,474 @@ Methodenabwesenheit zählt nicht als korrekter fachlicher Reject. Diese offene
 Consumer-Matrix ist bis zur Lieferung ausdrücklich ein separater Vertragslauf,
 kein Include in der grünen Basissuite.
 
-Campaign/Data übergibt **einmal**: Exact-SHA, unveränderte Matrix-/Fixturehashes,
-vollständiges grünes Report und seine passende Basisprüfung. Erst dann
-`REVIEW_READY` und **ein** unabhängiger Chronikreview auf derselben SHA. Keine
-Einzelhandoffs pro Fall und keine Vollreviews geschlossener Belege. Danach bindet
-Hex die beobachteten Prepared-/Committed-/Released-Grenzen im Produkt an und
-aktualisiert Registry/Inventory in demselben Navigator/Mount/History. Dieser
-Testlauf aktiviert den noch fehlenden `AtlasView`-Savehook nicht. Der echte
-Host-Save/Fresh/Recovery-Lauf mit neu koordiniertem GUI-Slot sowie Stadt- und
-Gesamtintegrationsreview bleiben separate offene Nachweise. Diese konkrete
-Prozessänderung ersetzt keine vollständige Produktparität oder E2E-01-Freigabe.
+## Gemeinsame räumliche Darstellung
 
-**Gemeinsame Reviewbasis und eingegangener unabhängiger Review:** Campaign/Data
-hat PR13/`9e6651350eb2d33dc4f5e950486c5e8aa693cda6` regulär mit seinem
-unveränderten PR35-Input/`8a25c92c89962a4b1fbf4b15a209205e5704bbc3`
-komponiert und in
-[#12/6097463689](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097463689)
-auf **`ce2f9032dc9f72f994a307b5aac26e1ad8910065`** einen sauberen
-18/18-Lauf (`reviewReady:true`) sowie check/629-Tests/Build gemeldet.
-Hex hat dessen Herkunft, die unveränderten 19 Freeze-Dateien und den exakten
-Vier-Dateien-Delta der Campaign-Fachgrenze direkt geprüft. Der externe Report
-`c9c5b34eee733e9807259cbed30e5e67b293ec8cb47ae9fe76cecc999a00b8dc`
-ist ein Owner-Lauf, kein lokal wiederholter Hex-Test.
+## Gemeinsame räumliche Darstellung — Nutzerablauf und historische Ausgangsbasis
 
-**Dieser komponierte integrierte SHA war die einzige Chronik-Reviewbasis.**
-Der tatsächliche unabhängige Review in
-[#12/6097491451](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097491451)
-und [#35/6097491452](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/35#issuecomment-6097491452)
-ist **PASS**, ohne Pflichtbefunde: unveränderter Freeze, unabhängiger 18/18-Lauf
-mit demselben Reporthash, check/629-Tests/Build und saubere exakte Reviewbasis.
-Diese direkte Review-Lektüre ersetzt keinen lokal ausgeführten Hex-Test.
-Chroniks zuvor genannter integrierter Eingang ist damit tatsächlich erfüllt;
-die widersprüchliche Wartefolge ist erledigt. Kein zusätzlicher Standalone-Review
-von `8a25c92`, zweiter Producer-Matrixlauf oder weiterer Producer-Handoff.
+Der gemeinsame sichtbare Nutzerablauf ist: Vorhandenen nativen Stadtplan am Ort und
+Dungeon am Haus verankern → allein hineinzoomen → Straße/Haus verschieben und
+Raum-Key bearbeiten → herauszoomen → gemeinsame Undo/Redo-Folge → Save → neuer
+Obsidianprozess. Ein Editor, eine Kamera, ein Werkzeugzug und eine History.
+Bestehende Karten werden dafür nicht neu erzeugt. Der erste Durchlauf benutzt
+den gelieferten Stadtplan, nicht einen vorgezogenen Stadtgenerator.
 
-Als nächster begrenzter Schritt konsumiert Hex den qualifizierten Exact-SHA
-regulär im einzigen PR13-Kandidaten und prüft die Zusammensetzung samt Gates
-des neuen Integrationsstands. Anschließend folgt der getrennte produktive
-Anschluss echter FileTransaction-/Host-Receipts und des Registry-/Inventory-
-Refreshs im selben Navigator/Mount/History. Keine Shared-/Installations- oder
-Gesamtpromotion aus dem Komponentenreview; der tatsächliche
-Host-Save/Fresh/Recovery/A-B-A-Nachweis bleibt offen.
+Der damalige Quellenanschluss prüfte AtlasRepository, CitySource und DungeonAtlasSource in derselben History und sieben bytegenau wiederhergestellte native Snapshots. Stadt war in diesem Ausgangslauf ein ausdrücklicher No-op. Die folgenden Anschlussanforderungen und Schnittkennungen dokumentieren diese historische Basis; der aktuelle Integrationsstand und verbleibende Host-/Recovery-/Importlücken stehen in [Arbeitsstand #80](#arbeitsstand-80).
 
-**Qualifizierte Übernahme im einzigen PR13-Kandidaten:** Der unabhängig geprüfte
-Campaign-Stand `ce2f9032dc9f72f994a307b5aac26e1ad8910065` ist regulär als
-Merge `8f0d39a9ada55e351e306317736892c6b89a68ab` übernommen. Produktquellen
-und Tests stimmen vollständig mit der geprüften Reviewbasis überein; gegenüber
-dieser Basis unterscheiden sich nur die vorhandenen Hex-Metadaten. Alle 19
-Freeze-Dateien und bestehende Übergaben bleiben unverändert. Der saubere lokale
-Integrationslauf besteht die unveränderte Matrix mit **18/18**, Typprüfung,
-**629/629 Basistests** und Build mit exakter Quellkennung und `dirty:false`.
-Der neue Report bindet ausdrücklich den Integrations-SHA; er benennt keine
-neue Producerübergabe oder Komponentenreviewrunde.
+## Gemeinsame räumliche Darstellung — Gepinnte Eingänge und Anschlussgrenzen
 
-**Aktueller Produktstand: `HEX-E2E01-HOST-SAVE-I02`.** Der tatsächliche Save-Button
-ist auf Quellstand `86bbbbfac44233509f084ac836e6dafa07b11a16` mit den
-zurückgelesenen FileTransaction-Journalen, dem zuständigen Participant und
-Provider verbunden. Registry und Inventory werden in derselben Navigatorqueue
-erneuert; Mount, Sources, Repository, History, Renderer und Kamera bleiben.
-Die DOM-Probe belegt außerdem die Wiederholung nach einem vollständig
-zurückgenommenen ersten nativen Schreibfehler und eine frische View-/Service-
-Lebensdauer mit gespeicherten Orts-/Raumnamen. Sie ist kein neuer Obsidianprozess.
-Nach regulärer Übernahme von Shared `a6b132d` bestehen Typprüfung, **637/637 Tests**,
-sauberer Build und die unveränderte **18/18**-Matrix. Direkter vollständiger Beleg:
-[implementation.json](/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json).
+| Vorhanden                                        | Folgerung für den Anschluss                                                                                                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TerrainSource`, LocationSource, AtlasHistory    | Worldowner bleibt derselbe; Welt-/Orts-/Geländeänderung nutzt dieselbe atomare Before/After-Grenze.                                                                                               |
+| `CitySource`, `cityDocumentChange`, CityGesture  | City-v1-Metergeometrie und fachliche Kennungen bleiben erhalten. Apply führt bereits genau einen Historycommit aus.                                                                               |
+| `cityScene`, `hitCity`, CityRenderer             | Der Atlas liefert präzise Projektions-/Inversefunktionen und Bildschirmtoleranz, montiert einmal und zeichnet vor seinem Render.                                                                  |
+| DungeonAtlasSource, `dungeonDocumentChange`      | Native V4-Bytes sind die Dungeon-/Key-Wahrheit. Keine Session-History und keine dauerhafte `Session.revision` daneben.                                                                            |
+| AtlasRepository, Draft v1/v2, FileTransaction v1 | Die Ausgangsbasis führte nur World/Terrain/Locations in Snapshot und Datei-/Entwurfsstrecke. Der Anschluss verlangt ebenso echte City-/Dungeonbytes.                                                                |
+| `MapRenderer` und DungeonEditor                  | Besitzen im Ausgangsstand Application/Kamera beziehungsweise schreibende Session. Sie sind nicht als zweite Editorinstanz einhängbar; reine Zeichnung und Fachbefehle müssen ausdrücklich abgetrennt werden. |
+| CampaignLifecyclePort                            | Unterstützt im Ausgangsstand `create`/`rename`, nicht einen bestätigten Mehrowner-Atlas-Publish. Der angenommene Kern liefert noch keinen Vault-/Campaign- oder Complete-Importbeleg.                        |
 
-PR13 bleibt ACTIVE; die qualifizierten Komponenten sind INPUT-Vorbelege. Der
-nächste begrenzte Hex-Lauf koordiniert den einzigen GUI-Slot neu und prüft den
-tatsächlichen Obsidian Save/Fresh/Recovery/A-B-A-Ablauf. Danach folgen bestehender
-integrierter Hostreview und getrenntes Aufräumen. Chronik besitzt BASE-CI-01;
-kein zusätzlicher Workflow oder Komponentenreview wird hier gestartet. Keine
-Shared-/Installations-/Native-/Gesamtfreigabe aus den automatisierten Prüfungen.
+Die neue vorgeschlagene Format-, Transform- und Speichergrenze steht ausschließlich
+in [ARCHITECTURE.md](ARCHITECTURE.md#räumliche-atlasverträge).
+Die damaligen Schnittstellenvorschläge sind vom heutigen Quellstand zu unterscheiden; vorhandene APIs und Quellenanschlüsse werden weiterverwendet.
 
-**#40 / SHARED-LOCATION-KEY-R01 (10.10.2026):** Nach dem erhaltenen H01-FAIL und
-D01-Reparatureingang ist der enge Save-Fix im bestehenden PR62 umgesetzt.
-Der unabhängig qualifizierte Campaign/Data-Producer PR65 (`32dc3e8f`) und Shared
-`113e37f` wurden regulär konsumiert. Hex autorisiert die tatsächliche neue
-Location-/Section-/Worldmarker-Closure im nativen Adapter samt Prepare/Recovery;
-Navigation akzeptiert den geschlossenen lokalen Entwurf und hydriert seinen
-Source vor der Keynavigation. Save/Ack/Rollback bleiben beim bestehenden Journal.
-551 automatische Kern-/DOM-/Copy-/Vault-Tests, Typprüfung und Build PASS;
-[konkreter R01-Beleg und Grenzen](docs/reference/atlas-shared-location-r01/README.md).
-Nächster Eingang ist der unabhängige Review des veröffentlichten Reparaturheads,
-danach die gesondert neu koordinierte Obsidian-Save-/frischer-Prozess-Probe.
-H01 wird nicht umgeschrieben; #40 und das gemeinsame E2E-01-Gate bleiben offen.
+## Gemeinsame räumliche Darstellung — Technische Anschlussanforderungen
 
-**#40 / SHARED-LOCATION-SAVE-N02 (10.10.2026):** Der unabhängige
-[R02-Befund auf PR62/3c6b87c](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#pullrequestreview-5480579984)
-ist im bestehenden Paket gezielt nachgebessert. Vollständig zurückgenommene,
-nie gespeicherte Locations behalten ihren Source für Redo, erscheinen aber nicht
-als Null/Null-Datei im Capture oder Null/Null-Guard im Save. Der tatsächliche
-Navigation-Save ist ohne Writes und erhält Mount/History/Renderer/Context;
-anschließendes Redo und Save funktionieren. Gespeicherte Ortslöschungen bleiben
-erfasst und ohne zusätzliche Campaign-Freigabe abgelehnt. Produktcommit
-`bc98b720d742693025563df7f93282be9936eb62`, konsumierter Shared `11b4020`;
-560 Atlas-Kern-/DOM-/Copy-/Vault-Tests, Typ/Build und 27 Repositorytests PASS.
-[Quellgebundener N02-Beleg](docs/reference/atlas-shared-location-r01/noop-repair.json).
-Jetzt setzt der bestehende unabhängige Reviewer R02 auf dem veröffentlichten
-Reparaturhead fort; die separat neu koordinierte echte Save-/frischer-Prozess-
-Probe folgt erst auf qualifiziertem Stand. H01/D01/R01 bleiben bytegleich und
-#40 sowie E2E-01 offen; kein GUI-Lauf oder Selbstmerge in dieser Nachbesserung.
+| Schnitt                                     | Konkretes Ergebnis                                                                                                                                                                                                         | Direkt erforderlicher Nachweis                                                                                                                                                                                                          |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **I01a – räumliche Speicherbasis**          | V2-Worldbindings, relative Transformkette, prospektive Graphprüfung und wirkliche City-/Dungeon-Owneraufnahme in Snapshot/Draft/Save/Copy/Discard/Recovery. Ein unveränderter Altatlas bleibt unverändert.                 | Native codecs und echte Repositorydateien: Ankoppeln, Ort/Haus bewegen, Undo/Redo, unterbrochenes Save, externer Konflikt, Copy-Closure und frisches Repository; Präzisionsgegenprobe unten. Noch kein sichtbarer Atlas-PASS.           |
+| **I01b – unmittelbar sichtbarer Anschluss** | Citycontainer und erste native Dungeon-Raumzeichnung im vorhandenen Frame, Zoomdarstellung, Hitrouter, bestehende Stadtgesten und Source-basierter Raum-Key. Verankern nutzt denselben Atlas; keine Betreten-/Modusaktion. | Vor der nächsten Fachgruppe echte isolierte Obsidianprobe: vollständige sichtbare Folge aus dem ersten Absatz einschließlich Hausbewegung, Escape, gemeinsamen Undo/Redo, Save und einem neuen Prozess. Aktive Hosts schützen. |
+| **I01c – verbleibende Pflichtintegration**  | Dungeon-Geometrieaktionen über reine fachliche Changes, bestätigter Campaign/Vault-Context, persistierte Command-/Receiptgrenze und echte P02/P04-Importvariante; Katalogreferenzen aus tatsächlichen Ownerlieferungen.    | Exakte Reviewinputs und festes erweitertes Fixture; erst danach unabhängiger integrierter Code- und Hostreview anhand der [E2E-Kriterien](ROADMAP-E2E-GATES-CANDIDATE.md). Fehlende Ownerlieferung bleibt offen, nicht durch Platzhalter verdeckt.                                        |
 
-**R02 und Stewardintegration konsumiert (10.10.2026):** Der tatsächliche
-[Chronik-R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#pullrequestreview-5480666699)
-besteht auf Exact-Head `92ad4a06883fc48349598bb79d98e4e38035dbe2` ohne weiteren
-Befund. Seine Ausführung (8 fokussierte Fälle, 818/817 PASS mit einem vorhandenen
-PDF-Skip) bleibt ein unabhängiger Reviewerbeleg. Exact-Head-CI38082382444 SUCCESS.
-Der [separate Steward](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#issuecomment-6101774442)
-hat diesen Kandidaten unverändert als zweiten Elterncommit in Shared
-`4515088772b759cda2e19d249367699c9868c72c` integriert; Treevergleich ist bytegleich,
-Shared-Struktur-CI38083220356 SUCCESS. Hex konsumiert diese tatsächlichen Eingänge
-schreibfrei am Produkt und führt als nächsten getrennten Lauf H02 auf genau
-diesem qualifizierten Shared-Source: GUI-Slot neu ausdrücklich koordinieren,
-danach echter Orts-/Key-/Move-/UndoRedo-/Save-/frischer-Obsidian-Prozess-Nachweis.
-Kein GUI-Slot oder Hostlauf in der Reviewübernahme; #40 und E2E-01 bleiben offen,
-H01/D01/R01/N02 und der historische currentRun bleiben unverändert.
+Die historischen Kennungen I01a/I01b/I01c ordnen Speicherbasis, sichtbaren Anschluss und vollständige E2E-Eingänge zu. Sie erzeugen keine erneuten Phasenläufe. Ein vorhandener räumlicher Anschluss ersetzt keinen vollständigen E2E-01- oder E2E-02–04-Nachweis.
 
-**H02 echter Ort-Save/Frischstart (10.10.2026):** Auf qualifiziertem Shared
-`4515088772b759cda2e19d249367699c9868c72c` bestehen der tatsächliche POI-/Key-/Move-/gemeinsame
-UndoRedo-/Save-Weg und ein sequenzieller frischer Obsidianprozess. Auch
-create→Undo→No-op-Save→Redo erhält aktive Mount/History/Renderer und alle acht
-gespeicherten Eingangsdateien. Neun gespeicherte Dateien sowie Orts-/Marker-/
-Abschnittskennungen, Texte und Position sind im frischen Prozess bytegleich.
-Build `76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322`; zwei normale Prozessenden, alle eigenen PIDs
-weg, Slot6101912782 ausdrücklich zurückgegeben. Synthetische native Eingabe;
-H01/D01/R01/N02/R02, H01-Draft und historischer currentRun unverändert.
-[Quellgebundene H02-Rohbelege](docs/reference/atlas-shared-location-h02/README.md)
-gehen an das bestehende #40-/E2E01-Gate. Host-/Gesamtqualifikation und eigene
-Bereinigung bleiben getrennt; keine neue allgemeine Reviewrunde, weitere GUI,
-Details/CITY/P02/P04/Großkarten-/Installations-/physische oder Gesamtfreigabe.
+## Gemeinsame räumliche Darstellung — Sichtbarer Frame und Eingabe
+
+- Source einmal je Dokument und History-Lebensdauer registrieren. Grafikcontainer
+  dürfen unsichtbar werden oder freigegeben werden; Dirtyowner und Historywerte
+  dürfen durch Zoom/Entladen nicht verschwinden. Geladene Childsources nach
+  Discard gemeinsam an die neue History binden, alte Responses per Generation
+  zurückweisen. Frühere Kamera/gewähltes Werkzeug bleiben erhalten.
+- City- und Dungeonzeichnung erfolgen im `detailLayer` vor `Application.render()`.
+  Ein nachgeschalteter `changed()`-Callback ist kein Zeichenhook. Eine
+  Application, ein Resizepfad und ein Frame-Scheduler reichen aus.
+- Gemeinsame sichtbare Reihenfolge: Landschaft → Stadtaussenflächen/Häuser →
+  eingeblendete Dungeonräume → Auswahl/Griffe/Ortsmarkierung. Der tatsächliche
+  Trefferrouter geht dieselbe Folge rückwärts. Innenhöfe bleiben transparent.
+  Nur gezeichnete Griffe treffen; tolerierte Kanten werden in Bildschirmnähe
+  geprüft. Der erste äußere Citytransform ist starr, sodass Citys Kreis-Toleranz
+  exakt in Meter umgerechnet werden kann. Kein nicht gleichförmiger
+  Elterntransform, der diese Annahme still verletzt.
+- Zoom blendet Dächer aus und Räume ein, mit Hysterese nach projizierter Größe.
+  Es wechselt weder Dokumentwahrheit, Werkzeug noch Kamera und verschiebt keine
+  Geometrie. Zeichnung und Hit verwenden dieselbe Darstellung/Transformkette.
+  Ein begonnener Zug behält Ziel und Beforewerte über einen Detailwechsel.
+- Pointerup übernimmt eine gültige Vorschau einmal; Escape/pointercancel/blur
+  verwerfen den laufenden unbestätigten Zug bei allen neuen räumlichen Gesten.
+  Die Terrain-Abschlussregel muss dieselbe Cancel-/Apply-Grenze einhalten; entsprechende Regressionen bleiben erforderlich. Save/Flush beenden einen gültigen Zug einmal
+  und sichern ihn; invalide oder stale Vorschau bzw. Keytexte bleiben sichtbar
+  erhalten und blockieren Wechsel/Discard. Nach gewonnenem Publish ist ein
+  Interrupt kein rückwirkendes Cancel.
+- Ein Key-Adapter liest/schreibt den tatsächlichen DungeonAtlasSource-Stand und
+  verwendet `dungeonDocumentChange`. Zuerst Raumname/Nummer und Markdown mit
+  bestehenden Abschnitts-IDs; Passageabschnitte bleiben erhalten. Die spätere
+  vollständige Dungeon-Werkzeugprojektion darf keine schreibende Session als
+  Zwischenstufe benutzen. Nicht angebundene Gesten werden nicht als funktional
+  ausgewiesen.
+
+## Gemeinsame räumliche Darstellung — Festes räumliches Orakel statt passend skalierter Bilder
+
+**Konkreter neuer Fixturebefund:** Haus A im gelieferten Cityseed ist 4 × 6 Meter.
+Der Dungeon-Torraum liegt von `(4,4)` bis `(14,12)` in Fünf-Fuß-Feldern, also
+**15,24 × 12,192 Meter**. Ein stilles Anpassen des Dungeonmaßstabs an das kleine
+Haus wäre falsch. Die bisherigen v1-Dateien und Hashes bleiben eingefroren.
+
+Für das nächste explizite integrierte Fixture-v2 wird vorgeschlagen, Haus A mit
+denselben IDs über die vorhandenen CityEdit-Aktionen auf 15,24 × 12,192 Meter
+zu setzen und auf `(-18,8)` zu verschieben. Haus B und sein Hof bleiben erhalten;
+damit überlappen die beiden Häuser nicht. Dungeonbytes, Raum/Key/Floor/Route-IDs
+bleiben erhalten. Hauslokaler Ursprung `(0,0)` und Dungeonpunkt `(4,4)` werden
+explizit ausgerichtet, ohne aus der Entrance-Route eine physische Tür zu erfinden.
+Die [konkrete City-Fachantwort #7/6091472576](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576)
+bestätigt diese Hausgeometrie/Pose und ihre Materialisierung durch Hex mit nativen
+CityEdit-Aktionen. Die [Dungeon-Fachantwort #12/6091516581](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581)
+bestätigt den Dock-/Floor-/Route-/Keyteil und dasselbe v2-Orakel. Damit sind diese
+engen fachlichen Eingänge bestätigt; der vollständige neue Oraclebestand ist noch
+nicht materialisiert. Die eingefrorene Bereichsfixture wird dadurch nicht geändert.
+
+Bei der späteren Materialisierung werden Grundriss und Pose über zwei aufeinander
+folgende reine `editCity`-Aufrufe berechnet: Das bestehende API verbietet zwei
+Schreibaktionen auf dieselbe Haus-ID in einem Aktionspaket. Erst der vollständige
+Endstand wird mit dem ursprünglichen Before über einen `cityDocumentChange`
+übernommen; kein Zwischenstand wird veröffentlicht und kein zweiter Historycommit
+benötigt. Das ist eine aus dem tatsächlichen API gelesene Anschlussvorgabe, noch
+keine ausgeführte v2-Materialisierung.
+
+Die aktive Version wird erst nach konkreter Ownerbestätigung und Materialisierung
+der vollständigen v2-Input-/Expectedbytes und SHA-Liste atomar umgestellt.
+`e2e01-component-closure-v1` bleibt bis dahin die eine aktive eingefrorene
+Zwischenbelegversion. Kein zweiter live geladener Satz derselben Dokument-IDs.
+Dungeonfläche muss im Allgemeinen nicht im Haus liegen: Keller/Höhlen dürfen
+ausgreifen. Die Deckungsgleichheit ist ein gezieltes Orakel dieser Testkarte,
+keine universelle Größenbeschränkung.
+
+## Gemeinsame räumliche Darstellung — Passende Prüfungen, früh und getrennt
+
+1. **Relative Präzision:** Weltanker und Kameraanker `1e16`, `0,01 m/px`,
+   Stadtpunkt `(0,01,0,01)` → genau `(1,1)` Pixel relativ zur Mitte und korrekt
+   zurück. Danach ein Pixel Pan und Zoom am Pointer. Auch negative Anker,
+   Rotation, Hauspose und native 1,524 Meter pro Dungeonfeld prüfen. Nicht erst
+   absolute Weltposition bilden und dann den Kameraanker abziehen.
+2. **Echte Prospektivprüfung:** Cityhaus entfernen, während ein Dungeon daran
+   gebunden ist; Child unbekannt/mehrdeutig/fremd; Route/Floor/Room falsch;
+   gleiche Schreibziele und stale Before. Jede Ablehnung erhält alle Owner,
+   Redo und Datei-/Keybytes. Preview benutzt dieselbe Prüfung wie Apply.
+3. **Speicherclosure:** World, Terrain, Locations, City und Dungeon in einem
+   Repositorysave; Copy remappt die tatsächliche gesamte lokale ID-/Referenz-
+   Closure. Ungeladene Karten bleiben erhalten. Unbekannte Fremdkeys erhalten
+   ihre sichtbare Fehlergrenze statt kopierter Ersatzpayloads.
+4. **Fehler/Neustart:** Save während weiterer Keybearbeitung, Dirtyowner beim
+   Entkoppeln, externer City-/Dungeonkonflikt, unterbrochenes Journal, Copy ohne
+   Zielroot, Discard/Contextwechsel während Load. Quelle, fremde Texte und
+   resumable Evidenz bleiben erhalten; committed wird nur vorwärts abgeschlossen.
+5. **Gemeinsame Darstellung:** Empty/City-only/ferne City/mischtes Fit, Höfe,
+   konstante Griffe, Resize und große negative Position. Dach und Raum bleiben
+   vor/nach Zoom deckungsgleich, Pan/Zoom allokieren keine Native-Dateien.
+6. **Erster nativer Ablauf:** Haus bewegen → verorteten Raum hineinzoomen →
+   Keytext mit CRLF/Unicode verändern → herauszoomen → Hex verändern → Undo/Redo
+   → Save → normal beenden → frischer Prozess, dieselben IDs/Bytes/Posen prüfen.
+   Sichtbare Originalbilder prüfen; keine GUI-Freigabe aus einem Coretest.
+
+Plan-/JSON-/Verweis-/Diffprüfung in diesem Lauf. Schlanke check/test/build und
+die gezielten Fehlerfälle bei tatsächlichen Produktänderungen. Physische
+Eingabe, große Welt, Originalparität, Zielhost und Installation bleiben eigene
+Nachweise. Vollständiges E2E-01 erhält weiterhin die unveränderten harten
+Campaign-/Katalog-/P02/P04-Eingänge, keine positive LiveSession-Abhängigkeit.
+
+## Dungeon-Geometrie und Vorschau
+
+## Dungeon-Geometrie und Vorschau — Aktueller Anschluss statt erneutem Phasenlauf
+
+Der Dungeonbeitrag ist geliefert: [unabhängiger enger Produktreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093376162)
+auf `c8bd27d6d223403b46748d3051409c3e1c498224`, [Ownerübergabe](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093407357)
+auf `d02a546df50e891dcb65ec2be548c06b66090bbe`. Beide sowie Produktcommit
+`5675cbd13be6f0fa096c3651743f1eb40d93f845` sind Vorfahren des promoteten
+Sharedstands `6a41f1640de3e4a4311d905d95f66cd79d91b698` aus PR13
+([begrenzte Integrationsentscheidung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444)).
+Der verbleibende Dungeon-am-Ort-/Recovery-Ablauf steht in [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80). Vorhandene Geometrie gehört zum selben Atlas-/Saveablauf; die folgenden Verträge beschreiben dessen technische Grenzen.
+
+Die folgenden Vertragsgrenzen bleiben maßgeblich. Datierte Phasen- und
+Reviewangaben bewahren deren Entstehung, keine offenen Folgeaufträge. Der
+damalige Planbefund `DUN-GEO-P01-R01-01` und seine Reparatur bleiben nachvollziehbar
+im [Vertrags-Cleanup (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md).
+Quellenintegration und lokaler Review ersetzen keine fehlende Host-, physische
+Bedien-, Originalparitäts- oder vollständige E2E-Abnahme.
+
+## Dungeon-Geometrie und Vorschau — Vertragsbegriffe
+
+Diese Begriffe bezeichnen jeweils genau eine Ebene:
+
+| Begriff | Bedeutung | Keine Bedeutung |
+| --- | --- | --- |
+| `snapshot` | Ein kanonischer immutable Read aus `DungeonAtlasSource` mit nativen Dungeonbytes, Dokument und abgeleiteter Keyclosure. | Keine Revision, kein Preview und kein schreibender Sessionzustand. |
+| `gesture state` | Flüchtiger Editorzustand zwischen Begin und Cancel/Handoff. Er gehört genau einer tatsächlichen Source-/History-/Graph-Lebensdauer und einer bei Begin eingefrorenen räumlichen Parentbasis. | Kein Sourcewert, kein Historieneintrag und keine persistente Sessionrevision. |
+| `preview` | Ein aus dem Gesturezustand abgeleitetes immutable Dokument, das nur die bestehende räumliche Lesesicht überlagert. | Kein Draft, kein Save und keine Mutation eines Owners. |
+| `proposal` | Das schreibfrei validierte Paar aus Previewdokument und möglichem ownergebundenem `AtlasChange`. | Kein Commit und keine Erlaubnis zum Execute. |
+| `AtlasChange` | Kanonischer Before→After-Beitrag genau des Dungeonowners. | Kein vollständiger Mehrownerbefehl und kein eigener Undo-Schritt. |
+| `composed command` | Vollständiger, vom `AtlasEditor` zusammengestellter Befehl aller beteiligten tatsächlichen Owner. | Keine Dungeon-eigene Parallelhistory. |
+| `handoff` | Übergabe eines noch nicht ausgeführten Dungeonbeitrags an den Orchestrator. | Weder `check()` noch `execute()` und keine Speicherwirkung. |
+
+Die normativen Aussagen dieses Plans sind Scope, Eingaben, Ausgaben,
+Wirkungsverbote, Erhaltungsgrenzen und Gates. Bezeichner, TypeScript-Form,
+Dateizuschnitt und Sichtbarkeit richten sich nach dem tatsächlichen Source-/Framevertrag.
+
+## Dungeon-Geometrie und Vorschau — Enger Auftrag und Nichtziele
+
+Der erste Port bearbeitet ausschließlich einen Punkt der **äußeren Kontur**
+von Room31 auf Floor32. Er verwendet den vorhandenen nativen Dungeon-Snapshot,
+die bestehenden reinen Building-Punkt- und Konturplaner und erzeugt bei
+Finalisierung genau einen kanonischen ownergebundenen Before→After-
+`AtlasChange`. Vorschau und Abbruch sind vollständig transient.
+
+Nicht Teil dieses Laufs und des ersten I01 sind Punkt einfügen/entfernen,
+Innenlöcher, ganze Räume verschieben, neue Räume oder Geschosse, freie Wände,
+neue Detailkarten, Raum-Key-Bearbeitung, Campaign-/Worldautorität,
+CompleteImport, Save-/Draft-/Journalumbau und eine zweite Kamera, Geometrie,
+Session, History oder Persistenzstrecke. Route33 bleibt ein semantischer
+Eingang und wird nicht als physische Tür umgedeutet. OBS-04/PR #21 bleibt
+unverändert.
+
+## Dungeon-Geometrie und Vorschau — Wiederverwendete Wahrheit
+
+- `DungeonAtlasSource.read()` liefert aus der gemeinsamen `AtlasHistory` den
+  kanonischen `.dungeon`-Bytewert, ein immutable `MapDocument` und die daraus
+  abgeleitete Keyclosure. `dungeonDocumentChange(before, after)` erzeugt den
+  ownergebundenen kanonischen Dokumentbeitrag. Es gibt keine persistente
+  Sessionrevision und keine zweite Keyautorität.
+- `SpatialGraph.frame(documentId, view)` prüft die tatsächliche Owner-, Floor-,
+  Room- und Entrance-Route-Closure. Der Dungeonmaßstab bleibt ausschließlich
+  dort `1.524` Meter pro Feld.
+- `SpatialCanvas` verwendet dieselbe relative Kamera zum Zeichnen, Treffen und
+  Zurückprojizieren. Die geplante Vorschau erweitert diese Lesesicht; sie
+  besitzt keine Kamera und keinen Renderer.
+- `buildingVertexGrip`, `buildingPointDragDestination`,
+  `proposeBuildingPointDrag` und `planBuildingContourMutation` bleiben die
+  einzige Punkt-/Topologiesemantik. Der letzte Planer validiert Metadaten,
+  Konturadresse, Polygongeometrie und abhängige Portalanker.
+- `AtlasHistory.check()` prüft einen vollständigen prospektiven
+  Mehrownerzustand schreibfrei. Erst der bestehende `AtlasEditor` darf
+  danach genau einmal `AtlasHistory.execute()` für denselben vollständigen
+  Befehl aufrufen.
+
+## Dungeon-Geometrie und Vorschau — Source- und Gesturevertrag
+
+`src/features/dungeon/geometry-change.ts` liefert die integrierten Source-/Gestureverträge. Der Port exportiert keinen Executor und keine Speicherfunktion; alle Vorschauinformationen bleiben bis zum Handoff schreibfrei. Die Typen verwenden die tatsächlich gebundene `DungeonSpatialBasis`:
+
+```ts
+interface DungeonGeometryAddress {
+  ownerId: string;
+  floorId: string;
+  roomId: string;
+  contour: number;
+  point: number;
+}
+
+interface DungeonGeometryProposal {
+  before: DungeonAtlasSnapshot;
+  address: DungeonGeometryAddress;
+  basis: DungeonSpatialBasis;
+  preview: MapDocument;
+  change: AtlasChange;
+}
+```
+
+Die konkreten Funktionen beginnen eine Geste aus genau einem eingefrorenen
+`DungeonAtlasSnapshot`, ermitteln einen äußeren Vertexgrip und aktualisieren
+ihn in nativen Dungeonfeldern. Der 16-Pixel-Grip wird mit der vorhandenen
+Kamera und dem `RigidFrame` in Felder umgerechnet; `1.524` wird weder im
+Dokument noch im Proposal gespeichert. Snap benutzt unverändert
+`buildingPointDragDestination`.
+
+`proposeBuildingPointDrag` liefert die Geometrie, anschließend erzeugt
+`planBuildingContourMutation` das validierte bestehende `Command` samt
+abhängigen Portaländerungen. Für dessen schreibfreie Materialisierung wird
+die bereits von `Session` verwendete Record-Change-Validierung als **eine
+gemeinsame pure Dokumentprojektion** freigelegt oder eng extrahiert. Die
+Umsetzung darf weder `Session.execute()` auf einer temporären Session aufrufen
+noch Entity-/Portal-/Reihenfolgelogik nachbauen. Die Projektion nimmt das
+eingefrorene Dokument und das validierte Command, prüft Beforewerte, Kennungen,
+Indizes und das resultierende Gesamtdokument und gibt ein neues immutable
+`MapDocument` zurück. `dungeonDocumentChange(snapshot.document, after)` ist
+danach die einzige Atlas-Change-Erzeugung.
+
+Ein Nullzug liefert kein Proposal. Ein erfolgreiches Proposal enthält genau
+den Byte-Snapshot, aus dem auch die Vorschau stammt. Es hat keine
+`execute`-, `undo`, `save`, `flush`-, Repository-, Vault- oder Dateimethode.
+
+## Dungeon-Geometrie und Vorschau — Rollen- und Wirkungsgrenzen
+
+| Rolle | Eingabe und Lebensdauer | Erlaubte Ausgabe | Verbotene Wirkung |
+| --- | --- | --- | --- |
+| `DungeonAtlasSource` | Tatsächliche registrierte Ownerwerte derselben `AtlasHistory`; liefert einen Zeitpunktssnapshot. | Kanonische Dungeonbytes, immutable Dokument und abgeleitete Keyclosure. | Keine Gesture, kein Preview, keine Session-/Dateioperation. |
+| Pure Command→Document-Projektion | Eingefrorenes Dokument plus ein vom vorhandenen Konturplaner validiertes `Command`; nur für eine Proposalberechnung. | Neues vollständig validiertes immutable `MapDocument`. | Kein `Session.execute`, kein eigener Historystack und keine duplizierte Portal-/Reihenfolgesemantik. |
+| Dungeon-Gesturezustand | Begin bis Cancel oder Handoff; hält Adresse, Pointer, tatsächliche Source-/History-/Graph-Identitäten und die eingefrorene Parentbasis. Ein History-Abonnement macht jede zwischenzeitliche Änderung terminal stale. | Nur bei unveränderter Basis aktuelles Preview oder noch nicht ausgeführter Dungeonbeitrag. | Keine Source-, History-, Draft-, Repository-, Vault- oder Dateimutation; kein Auto-Rebase. |
+| `SpatialCanvas` | Liest tatsächliche räumliche Sources und optional genau einen ownergebundenen Previewoverride für einen Draw/Hit-Zyklus. | Darstellung, Grip und Treffer in derselben relativen Kamera. | Keine zweite Kamera, kein Sourcewrite und keine Finalisierung. |
+| Atlas-Editor | Besitzt Begin/Update/Cancel und gibt bei erfolgreichem Abschluss höchstens einen Beitrag weiter. | UI-Zustand und Handoff an den bestehenden Orchestrator. | Kein eigener Dungeon-Execute, Save oder Sessioncommit. |
+| `AtlasEditor` | Empfängt noch nicht ausgeführte Beiträge tatsächlicher Owner für genau einen vollständigen Befehl. | Erst `check()` auf dem vollständigen Befehl, danach genau ein `execute()` auf demselben Befehl. | Kein Teilcommit, keine zweite History und keine stellvertretende Domainautorität. |
+
+Diese Tabelle ordnet vorhandene Verantwortlichkeiten; sie führt keine zweite
+Source-, Transform-, History- oder Persistenzarchitektur ein.
+
+## Dungeon-Geometrie und Vorschau — Tatsächliche Gesturebasis und ChangedBasis
+
+Der rein flüchtige `DungeonSpatialBasis`-Guard bindet jede Geste an ihre tatsächliche Basis. Der Guard wird bei Begin aus den **heute
+existierenden tatsächlichen Objekten und Records** gebildet und weder
+persistiert noch als Campaign-/Worldrevision ausgegeben:
+
+- Objektidentität von `TerrainSource`, `SpatialGraph`,
+  `DungeonAtlasSource`, dem tatsächlichen `LocationSource`, gegebenenfalls
+  `CitySource` und ihrer einen gemeinsamen `AtlasHistory`; der Resolver nutzt
+  dafür die vorhandene Ownerregistry des Graphen, keine zweite Registry;
+- Dungeonowner-ID und die kanonischen `documentBytes` des Begin-Snapshots;
+- der vollständige `DungeonPlacement`-Record für dieses Dokument aus dem
+  bestehenden `spatial`-Target, einschließlich Placement-ID, Parent,
+  Anchor, Rotation, Surface-Floor und Entrances;
+- der vollständige zugehörige `LocationPlacement`-Record aus dem bestehenden
+  `placements`-Target;
+- bei `city-building` zusätzlich der vollständige `CityPlacement`-Record und
+  der exakte adressierte `CityBuilding`-Record mit ID, Footprint, Position,
+  Rotation und Scale;
+- der aus genau dieser Kette berechnete `RigidFrame` einschließlich
+  `metersPerUnit` und `originUnits`.
+
+Ein einziger reiner Resolver liest dieselbe Kette bei Begin, vor jedem neuen
+Preview und unmittelbar vor Handoff erneut. Er verlangt dieselben Source-,
+Graph- und Historyobjekte sowie strukturelle Gleichheit jedes genannten
+Records, der Dungeonbytes und des Frames. Er leitet keine Revision aus
+Payloads ab und akzeptiert keinen gleich aussehenden Ersatzadapter.
+
+Zusätzlich abonniert der Gesturezustand beim Begin genau diese
+`AtlasHistory`. Jede Benachrichtigung durch Execute, Undo oder Redo setzt ihn
+terminal auf `changed-basis`, entfernt das Preview und löst das Abonnement.
+Damit bleibt auch A→B→A stale: spätere Rückkehr zu strukturell gleichen
+Records reaktiviert eine alte Geste nicht. Eine direkte Source-/Graph-/
+History-Auswechslung mit bytegleichen Dungeondaten wird durch die
+Objektidentitäten und den erneuten Resolververgleich erkannt.
+
+`changed-basis` ist ein Abbruchzustand, kein Rebase. Update erzeugt danach
+kein Preview; Handoff gibt keinen `AtlasChange` zurück; ein verspätetes
+Pointer-up bleibt wirkungslos. Ein neuer Zug darf erst mit einem neuen Begin
+auf der dann aktuellen Basis starten. Der Guard besitzt keine Execute-,
+Save-, Draft-, Repository-, Vault- oder Dateioperation.
+
+Der erfolgreiche Handoff prüft die Basis ein letztes Mal und läuft ohne
+asynchronen Yield im selben Aufruf weiter zur bestehenden Komposition. Er
+übergibt weiterhin **genau einen** Dungeon-`AtlasChange`; der Orchestrator
+führt weiterhin den vollständigen Befehl durch ein `check()` und genau ein
+`execute()`. Vor Handoff wird das History-Abonnement gelöst, sodass das
+anschließende beabsichtigte gemeinsame Execute keinen bereits übergebenen
+UI-Zustand reaktiviert. Es entsteht weder eine zweite Autorität noch ein
+zweiter Commit.
+
+## Dungeon-Geometrie und Vorschau — Gesture- und Vorschaulebensdauer
+
+1. Pointer-down im Select-Werkzeug trifft Room31 und zusätzlich einen
+   expliziten äußeren Vertexgrip. Der Editor friert Owner/Floor/Room,
+   Kontur-/Punktadresse, Gripkoordinate, Sourcebytes, Pointerstart und die
+   vollständige oben definierte Gesturebasis ein und aktiviert ihr
+   History-Abonnement. Ein normaler Raumtreffer ohne Grip behält sein heutiges
+   Verhalten.
+2. Pointer-move prüft zuerst Source-/History-/Parentbasis. Nur bei Gleichheit
+   wird mit dem eingefrorenen Frame und derselben relativen Kamera in
+   Dungeonfelder zurückprojiziert und rein ein neues Proposal berechnet.
+   `SpatialCanvas` liest dessen `preview` als ownergebundenen
+   Dokumentoverride; Source und `AtlasHistory` bleiben unangetastet.
+3. Ein Historyereignis oder ungleiche aktuelle Basis wechselt terminal auf
+   `changed-basis` und entfernt Preview/Abonnement. Escape, `pointercancel`,
+   Fenster-`blur`, Tool-/Source-/Dokumentwechsel und ein explizites Cancel
+   tun dasselbe ohne Historywirkung. Nach jedem dieser Endzustände darf ein
+   verspätetes Pointer-up nichts finalisieren.
+4. Die Undo-/Redo-Aktion des Atlas-Editors bricht einen aktiven Dungeonzug vor
+   dem Historyaufruf ab. Die angeforderte Historyaktion läuft danach normal;
+   der Abbruch selbst erzeugt keinen Eintrag und leert insbesondere keinen
+   vorhandenen Redostand.
+5. Pointer-up finalisiert nicht selbst. Nach letzter Basisprüfung löst der
+   Editor das Abonnement und übergibt höchstens den eingefrorenen einzelnen
+   `AtlasChange` synchron an den bestehenden `AtlasEditor`. Dieser setzt
+   ihn mit tatsächlichen anderen Ownerbeiträgen zu einem Befehl zusammen,
+   ruft `check()` auf diesem Gesamtbefehl und anschließend genau einmal
+   `execute()` auf demselben Gesamtbefehl auf.
+6. Save, Draft, Journal, Copy/Discard und frischer Prozess konsumieren danach
+   unverändert die bereits registrierten tatsächlichen Sources und den
+   vorhandenen Repository-/FileTransaction-Weg.
+
+## Dungeon-Geometrie und Vorschau — Verbindliche Validierungsorakel
+
+Die aktive Fixture `e2e01-spatial-v2` adressiert exakt:
+
+- Dokument `00000000-0000-4000-8000-000000000030`;
+- Room `00000000-0000-4000-8000-000000000031`;
+- Floor `00000000-0000-4000-8000-000000000032`;
+- semantische Entrance-Route
+  `00000000-0000-4000-8000-000000000033`;
+- Keysection `00000000-0000-4000-8000-000000000034`.
+
+Für I01 gelten alle folgenden Orakel:
+
+1. **Adress- und Sperrprüfung:** falscher oder inzwischen anderer Owner,
+   Floor, Room, Kontur, Punkt, Gripkoordinate, nicht äußerer Ring, gelöschter
+   Datensatz, locked Room sowie nicht endliche Koordinaten werden vor einem
+   sichtbaren Proposal abgewiesen.
+2. **Source-/Basis-Stale-Prüfung:** Die `before`-Bytes des finalen Change sind
+   exakt die beim Begin eingefrorenen Sourcebytes. Source-, Graph- und
+   Historyobjekte sowie DungeonPlacement/Binding, LocationPlacement,
+   gegebenenfalls CityPlacement/House und berechneter Frame müssen bis zum
+   Handoff dieselben bleiben. Historyereignis oder Vergleichsabweichung führt
+   terminal zu `changed-basis`; kein Auto-Rebase und kein stilles Übernehmen
+   eines bytegleichen Ersatzowners.
+3. **Topologie und Closure:** ungültige Polygone sowie nicht auflösbare oder
+   inkonsistente abhängige Portalanker scheitern über denselben
+   `planBuildingContourMutation`-/Dokumentvalidator wie der native Editor.
+   `SpatialGraph.frame(..., prospectiveView)` prüft vor dem Gesamt-Execute die
+   Owner-/Floor-/Room-/Route-Closure.
+4. **Erhaltungsgrenze:** Dokument-, Floor-, Room-, Route- und Section-ID,
+   Entity-/Floor-/Section-Reihenfolgen, Dokumentoptionen, nicht betroffene
+   Entities und sämtliche unabhängigen Markdownbytes bleiben exakt. Erlaubt
+   sind nur die eine Room-Außenkontur und die vom bestehenden Konturplaner
+   tatsächlich abhängigen Portalanker.
+5. **Preview/Cancel:** während Begin/Update/Cancel bleiben Sourcebytes,
+   Keyclosure, `undoDepth`, `canRedo`, Repositorydirty, Draft, Dateien und jede
+   Session unverändert. Escape, `pointercancel`, `blur` und Kontextwechsel
+   entfernen die Vorschau; keine dieser Folgen erzeugt einen Change.
+6. **Preview/Final-Kohärenz:** Das final serialisierte After-Dokument entspricht
+   bytegenau dem zuletzt sichtbaren gültigen Preview. Ein Nullzug erzeugt
+   weder Change noch Historieneintrag.
+7. **Einmaligkeit:** Der vollständige Mehrownerbefehl wird zuerst als Ganzes
+   geprüft und danach einmal ausgeführt. Der Dungeonbeitrag erzeugt keinen
+   vorgelagerten Session- oder Atlas-Commit. Undo/Redo ist genau ein Schritt
+   gemeinsam mit den im selben Befehl enthaltenen Ownerbeiträgen.
+8. **Maßstab:** Der native Lauf rechnet ausschließlich über denselben
+   `RigidFrame` mit `1.524 m/Feld`. Verschieben des gebundenen Hauses ändert
+   die starre Projektion, nicht die gespeicherte Dungeonkontur.
+
+### Dungeon-Geometrie und Vorschau — N01-Pflichtrepros für I01
+
+Jede Folge beginnt mit gültigem Room31/Floor32-Preview und endet mit exakten
+Zähler-, Byte- und Dateivergleichen:
+
+1. Haus105 verschieben, Geste beginnen, gemeinsames Undo der Hausbewegung,
+   Update und verspätetes Pointer-up: Preview weg, kein Dungeonchange, Undo
+   erzeugt den normalen Redostand und der Abbruch leert ihn nicht.
+2. Dasselbe mit Redo sowie mit einer Locationbewegung. Ein Historyereignis
+   invalidiert auch dann terminal, wenn A→B→A am Ende wieder dieselben Records
+   und denselben Frame ergibt.
+3. DungeonBinding/Anchor oder zugehöriges CityPlacement ändern, ohne die
+   Dungeonbytes zu ändern: Update/Handoff blockiert; nach Rückkehr kein
+   Wiederaufleben der alten Geste.
+4. `DungeonAtlasSource`, `LocationSource`, gegebenenfalls `CitySource`,
+   `TerrainSource`/`SpatialGraph` oder die gemeinsame `AtlasHistory` durch
+   einen neuen Adapter mit identischen Dungeonbytes und strukturell gleichen
+   Records ersetzen: alte Geste blockiert.
+5. Nach jedem `changed-basis`, Escape, `pointercancel`, `blur` und
+   Sourcewechsel ein late pointer-up senden: null AtlasChanges, gegenüber dem
+   unmittelbar nach einer erlaubten Historyaktion gemessenen Stand keine
+   zusätzliche Undo-/Redo-Änderung, kein Repositorydirty, kein Draft-/Datei-
+   oder Journalwrite.
+6. Anschließend auf der aktuellen Basis neu beginnen: Preview und finaler
+   einzelner Dungeonchange verwenden denselben aktuellen Frame; gemeinsame
+   `check`/einmalige-`execute`-Komposition und ein Undo/Redo-Schritt bleiben
+   unverändert.
+
+## Dungeon-Geometrie und Vorschau — I01-Dateigrenze und Prüfplan
+
+Technische Modulgrenzen:
+
+- `src/features/dungeon/geometry-change.ts`;
+- eine eng extrahierte pure Command→Document-Projektion im vorhandenen
+  Dungeon-/Session-Pfad statt einer zweiten Applikationslogik;
+- `src/features/atlas/spatial-canvas.ts` nur für einen ownergebundenen
+  Dungeon-Previewoverride und Vertexgripdarstellung;
+- `src/features/atlas/atlas-editor.ts` nur für Begin/Update/Cancel/Handoff;
+- fokussierte Core- und DOM-Regressionen in den vorhandenen Testsammlungen.
+
+Coretests frieren Sourcebytes, Closure, Historytiefen und Dateidoubles vor
+jeder Folge ein. Positive Fälle prüfen Grip, Update, bytegleichen
+Preview/Final-Stand, abhängigen Portal-Follow und genau einen komponierten
+Undo/Redo-Schritt. Negative Tabellen decken jede Adress-/Stale-/Locked-/
+Topologie-/Closure-Grenze sowie sämtliche sechs N01-Pflichtrepros ab. Ein
+Instrumentierungsfall verbietet
+`Session.execute`, `AtlasHistory.execute`, Repository- und Dateiaufrufe während
+Begin/Update/Cancel. Die aktive v2-Fixture und ihre nicht betroffenen SHA-/
+Markdownwerte werden vor und nach dem komponierten Corefall verglichen.
+
+I01 erhält `npm run check`, fokussierte Regressionen, vollständiges `npm test`
+und `npm run build`. Produktwirkung benötigt zusätzlich unabhängige
+Codeprüfung und direkte Belege auf dem vereinbarten isolierten Host. Die reine
+Vertragsprüfung führt mangels
+Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
+
+## Integrierte Gesture-Gegenfälle
+
+`DungeonGeometryGesture.sample(resolvePointer, snap)` widerruft das bisherige Proposal bereits vor der Pointerumrechnung. Wirft `unprojectLocal()` oder scheitert Topologie/Endlichkeit, müssen Vorschau und späterer Handoff leer bleiben; Pointer-up darf keinen älteren unsichtbaren Stand übernehmen. Ein später gültiges Sample liefert ausschließlich seinen neuen sichtbaren Stand. Der immutable Beginpointer bleibt Delta-Ursprung für off-center-Zug, Rückkehr und Snap.
+
+`projectRecordChanges()` ist dieselbe reine Prüfungs-/Anwendungsgrenze für `projectDocumentCommand()` und `Session.apply()`; Indexergänzung, Reihenfolge, IDs, Markdownclosure, Portal-Follow und stale-/invalid-Ablehnung bleiben gleich. Gegenproben verwenden echte `AtlasEditor.bind()`-Callbacks: gültige Vorschau → Fehler vor der Geometrieberechnung → Pointer-up mit unveränderten Dungeonbytes, Undo-Tiefe, Redo und Draftsignal; ein frischer Begin funktioniert weiter.
+
+Starre Cityplatzierung und skalierter Hausdockpunkt dürfen Dungeonräume nicht verformen. Entfernen eines gebundenen Hauses erfordert prospektive Ablehnung oder atomare Entkopplung. Das feste Dungeonorakel bleibt Dock `(4,4)`, 1,524 m/Feld, Floor32/Room31/Entrance-Route33/Key34; Route33 bleibt eine semantische Adresse. Vollständiger Campaign-/Import-/P02-/P04-Nachweis ist zusätzlich erforderlich, ohne positive LiveSession-Abhängigkeit.

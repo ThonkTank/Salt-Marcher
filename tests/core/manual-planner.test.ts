@@ -271,3 +271,58 @@ for (const failure of ["target", "context"] as const) {
     assert.equal(p.draft, null);
   });
 }
+
+for (const action of ['create', 'delete'] as const) {
+  test(`manual planner: ${action} rejects context revoked during allocation without publishing`, () => {
+    let revoked = false;
+    let revokeAllocation = false;
+    let n = 10;
+    const p = new ManualPlanner(() => {
+      if (revokeAllocation) revoked = true;
+      return id(++n);
+    }, () => { if (revoked) throw new Error('Context revoked'); }, [
+      {version: 1, id: id(1), revision: 1, name: 'Original', scenes: [
+        {id: id(2), title: 'Scene', notes: '  日本語\n', locationId: null},
+      ]},
+    ]);
+    if (action === 'delete') {
+      p.selectScene(id(2));
+      p.editDraft({title: 'Pending', notes: ' exact\n\ttext ', locationId: null});
+    }
+    const before = p.active, draft = p.draft, selection = p.selectedSceneId, catalog = p.catalog;
+    revokeAllocation = true;
+    assert.throws(() => action === 'create' ? p.create() : p.deletePlan(p.binding()), /Context revoked/);
+    assert.deepEqual(p.catalog, catalog);
+    assert.equal(p.active, before);
+    assert.equal(p.draft, draft);
+    assert.equal(p.selectedSceneId, selection);
+    revoked = false; revokeAllocation = false;
+    if (action === 'create') {
+      p.create();
+      assert.equal(p.catalog.length, 2);
+      assert.equal(p.catalog.find(x => x.id === before!.id), before);
+    } else {
+      p.deletePlan(p.binding());
+      assert.equal(p.catalog.length, 1);
+      assert.notEqual(p.active!.id, before!.id);
+      assert.equal(p.draft, null);
+    }
+  });
+}
+
+for (const action of ['create', 'delete'] as const) {
+  test(`manual planner: ${action} cannot overwrite a newer workspace returned by allocation`, () => {
+    let reenter = false;
+    let n = 10;
+    const p = new ManualPlanner(() => {
+      if (reenter) p.act(p.binding(), {kind: 'rename', name: 'External confirmed'});
+      return id(++n);
+    }, () => {}, [{version: 1, id: id(1), revision: 1, name: 'Original', scenes: []}]);
+    reenter = true;
+    assert.throws(() => action === 'create' ? p.create() : p.deletePlan(p.binding()), /Plan geändert/);
+    assert.equal(p.catalog.length, 1);
+    assert.equal(p.active!.id, id(1));
+    assert.equal(p.active!.name, 'External confirmed');
+    assert.equal(p.active!.revision, 2);
+  });
+}
