@@ -1,6 +1,12 @@
 import { referenceTargetLabel } from '../reference/reference-target-label.js'
 import { message, formatMessage } from '../../i18n/session-runtime.de.js'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from 'react'
 import type {
   ReferenceCandidate,
   ReferenceDocument
@@ -26,6 +32,14 @@ type Props = {
 export function DesktopSearch({ window, dispatch, onResultSelected }: Props) {
   const reference = useReferenceContext()
   const scroll = useRef<HTMLDivElement>(null)
+  const input = useRef<HTMLInputElement>(null)
+  const submitted = useRef<string | null>(null)
+  const query = window.kind === 'search' ? window.query : ''
+  const submissionKey = JSON.stringify([
+    reference.campaignId,
+    query,
+    reference.cacheRevision
+  ])
   const scrollTop = window.kind === 'search' ? window.scrollTop : 0
   const search = useDesktopSearch(
     reference,
@@ -34,43 +48,74 @@ export function DesktopSearch({ window, dispatch, onResultSelected }: Props) {
   useLayoutEffect(() => {
     if (scroll.current) scroll.current.scrollTop = scrollTop
   }, [scrollTop])
-  if (window.kind !== 'search') return null
   const { results } = search
-  const open = (candidate: ReferenceCandidate, separate = false) => {
-    const windowId = separate ? crypto.randomUUID() : 'reader'
-    onResultSelected?.({
-      id: crypto.randomUUID(),
-      windowId,
-      targetKey: referenceTargetKey(candidate.target),
-      query: window.query,
-      consumed: false
-    })
-    dispatch({
-      type: 'open-reference',
-      entry: { ...candidate, scrollTop: 0 },
-      ...(separate ? { separateId: windowId } : {})
-    })
-  }
+  const open = useCallback(
+    (candidate: ReferenceCandidate, separate = false) => {
+      submitted.current = null
+      const windowId = separate ? crypto.randomUUID() : 'reader'
+      onResultSelected?.({
+        id: crypto.randomUUID(),
+        windowId,
+        targetKey: referenceTargetKey(candidate.target),
+        query,
+        consumed: false
+      })
+      dispatch({
+        type: 'open-reference',
+        entry: { ...candidate, scrollTop: 0 },
+        ...(separate ? { separateId: windowId } : {})
+      })
+    },
+    [dispatch, onResultSelected, query]
+  )
+  useEffect(() => {
+    if (!submitted.current) return
+    if (
+      submitted.current !== submissionKey ||
+      window.minimized ||
+      document.activeElement !== input.current
+    ) {
+      submitted.current = null
+      return
+    }
+    if (search.loading || !reference.compiled) return
+    submitted.current = null
+    if (!search.failed && !search.more && results.length === 1)
+      open(results[0]!)
+  }, [
+    submissionKey,
+    window.minimized,
+    search.loading,
+    search.failed,
+    search.more,
+    reference.compiled,
+    results,
+    open
+  ])
+  if (window.kind !== 'search') return null
   return (
     <div className="desktop-reference-pane">
       <input
         type="search"
+        ref={input}
+        onBlur={() => {
+          submitted.current = null
+        }}
         aria-label={message('desktop.search')}
         placeholder={message('desktop.searchPlaceholder')}
         maxLength={300}
         value={window.query}
-        onChange={(event) =>
+        onChange={(event) => {
+          submitted.current = null
           dispatch({ type: 'query', value: event.target.value })
-        }
+        }}
         onKeyDown={(event) => {
-          if (
-            event.key === 'Enter' &&
-            !event.nativeEvent.isComposing &&
-            reference.compiled &&
-            !search.loading &&
-            results.length === 1
-          ) {
-            event.preventDefault()
+          if (event.key === 'Escape') submitted.current = null
+          if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+          event.preventDefault()
+          if (search.loading || !reference.compiled) {
+            submitted.current = submissionKey
+          } else if (!search.failed && !search.more && results.length === 1) {
             open(results[0]!)
           }
         }}

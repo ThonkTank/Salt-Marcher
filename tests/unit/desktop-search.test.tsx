@@ -17,6 +17,7 @@ import { useDesktopSearch } from '../../src/renderer/features/scene-desktop/use-
 import { DesktopSearch } from '../../src/renderer/features/scene-desktop/desktop-references.js'
 import { ReferenceContext } from '../../src/renderer/features/reference/reference-context.js'
 import { initialPartyWindow } from '../../src/renderer/features/scene-desktop/desktop-state.js'
+import type { SceneDesktopWindow } from '../../src/shared/contracts/scene-desktop.js'
 import type {
   ReferenceCandidate,
   ReferenceSearchPage
@@ -71,7 +72,7 @@ afterEach(() => {
 })
 
 describe('desktop note search', () => {
-  it('opens a sole settled result with Enter and does not silently select among several matches', async () => {
+  it('honors early Enter once results settle and does not silently select among several matches', async () => {
     vi.useFakeTimers()
     for (const candidates of [
       [candidate('Only')],
@@ -95,16 +96,100 @@ describe('desktop note search', () => {
           />
         </ReferenceContext.Provider>
       )
+      screen.getByRole('searchbox').focus()
       fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Enter' })
       expect(dispatch).not.toHaveBeenCalled()
       await tick()
-      fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Enter' })
       if (candidates.length === 1)
         expect(dispatch).toHaveBeenCalledWith({
           type: 'open-reference',
           entry: { ...candidates[0], scrollTop: 0 }
         })
       else expect(dispatch).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenCalledTimes(candidates.length === 1 ? 1 : 0)
+      cleanup()
+    }
+  })
+  it('cancels queued Enter on a changed query, Campaign, note revision, hidden window, blur or Escape', async () => {
+    vi.useFakeTimers()
+    for (const cancellation of [
+      'query',
+      'campaign',
+      'revision',
+      'hidden',
+      'blur',
+      'escape'
+    ]) {
+      const pending = deferred()
+      const search = vi.fn().mockReturnValue(pending.promise)
+      const dispatch = vi.fn()
+      const reference = context(search)
+      const window: Extract<SceneDesktopWindow, { kind: 'search' }> = {
+        ...initialPartyWindow,
+        kind: 'search' as const,
+        id: 'search',
+        query: 'secret',
+        scrollTop: 0
+      }
+      const view = (ref: ReferenceContextValue, frame = window) => (
+        <ReferenceContext.Provider value={ref}>
+          <DesktopSearch window={frame} dispatch={dispatch} />
+        </ReferenceContext.Provider>
+      )
+      const rendered = render(view(reference))
+      const input = screen.getByRole('searchbox')
+      input.focus()
+      fireEvent.keyDown(input, { key: 'Enter' })
+      await tick()
+      if (cancellation === 'query')
+        rendered.rerender(view(reference, { ...window, query: 'other' }))
+      if (cancellation === 'campaign')
+        rendered.rerender(view({ ...reference, campaignId: 'B' }))
+      if (cancellation === 'revision')
+        rendered.rerender(view({ ...reference, cacheRevision: 1 }))
+      if (cancellation === 'hidden')
+        rendered.rerender(view(reference, { ...window, minimized: true }))
+      if (cancellation === 'blur') fireEvent.blur(input)
+      if (cancellation === 'escape') fireEvent.keyDown(input, { key: 'Escape' })
+      await act(async () => {
+        pending.resolve(page('Only'))
+        await pending.promise
+      })
+      await tick()
+      expect(dispatch, cancellation).not.toHaveBeenCalled()
+      cleanup()
+    }
+  })
+  it('never opens an incomplete or failed search, or an IME confirmation', async () => {
+    vi.useFakeTimers()
+    for (const mode of ['failed', 'more', 'ime']) {
+      const search =
+        mode === 'failed'
+          ? vi.fn().mockRejectedValue(new Error('read failed'))
+          : vi.fn().mockResolvedValue({
+              ...page('Only'),
+              total: mode === 'more' ? 2 : 1
+            })
+      const dispatch = vi.fn()
+      render(
+        <ReferenceContext.Provider value={context(search)}>
+          <DesktopSearch
+            window={{
+              ...initialPartyWindow,
+              kind: 'search',
+              id: 'search',
+              query: 'secret',
+              scrollTop: 0
+            }}
+            dispatch={dispatch}
+          />
+        </ReferenceContext.Provider>
+      )
+      const input = screen.getByRole('searchbox')
+      input.focus()
+      fireEvent.keyDown(input, { key: 'Enter', isComposing: mode === 'ime' })
+      await tick()
+      expect(dispatch, mode).not.toHaveBeenCalled()
       cleanup()
     }
   })

@@ -45,7 +45,7 @@ full entry in the center Details tab while preserving the surrounding work.
   tags, faction notes, and NPC notes, appearance, behavior and history. All query
   words may match across fields; Unicode normalization and case folding apply to
   lookup without changing exact inline campaign-name recognition.
-- Campaign prose is searched offline in Core. The renderer receives matching
+- Campaign prose, including prepared location read-aloud text, is searched offline in Core. The renderer receives matching
   identities through an explicitly campaign-bound, validated, paginated read.
   Late responses from another query or Campaign cannot replace current results.
 - The lookup reports pending or failed Campaign search separately from no

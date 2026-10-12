@@ -178,7 +178,7 @@ export class ReferenceService {
           'location',
           location.id,
           location.displayName,
-          `${location.notes}\n${location.tags.join(' ')}`
+          `${location.readAloud}\n${location.notes}\n${location.tags.join(' ')}`
         )
       for (const faction of this.factionQueries.read().factions)
         add('faction', faction.id, faction.displayName, faction.notes)
@@ -308,16 +308,29 @@ function locationDocument(
     (entry) => entry.id === target.entityId
   )
   if (!location) throw new CapabilityError('not_found', false)
-  return article(
+  const document = article(
     target,
     location.displayName,
     [
       ['Factions', String(location.factionIds.length)],
       ['Encounter Tables', String(location.encounterTableIds.length)]
     ],
-    location.notes,
+    '',
     null
   )
+  const sections = [
+    ['Vorlesetext', location.readAloud],
+    ['GM-Notizen', location.notes]
+  ] as const
+  return referenceDocumentSchema.parse({
+    ...document,
+    blocks: sections
+      .filter(([, text]) => text.trim())
+      .flatMap(([label, text]) => [
+        { kind: 'heading', level: 2, inlines: [{ kind: 'text', text: label }] },
+        { kind: 'paragraph', inlines: [{ kind: 'text', text: text.trim() }] }
+      ])
+  })
 }
 
 function factionDocument(

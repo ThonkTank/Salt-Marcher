@@ -7,6 +7,7 @@ import {
   setElectronWindowSize
 } from './support/e2e-assertions.js'
 import { waitSaved, selectScene } from './support/scene-desktop-scenarios.js'
+import { clickWhenInteractable } from './support/e2e-interactions.js'
 
 describe('per-scene desktop', () => {
   it('keeps map presentation and combat alive independently of their windows', async () => {
@@ -120,6 +121,43 @@ describe('per-scene desktop', () => {
     await hpDialog().$('.hp-dialog-close').click()
     await expect(monster().$('.hp-value')).not.toHaveText(hpBefore)
     await expect(client.$('[data-error-scope="workspace"]')).not.toBeExisting()
+    const campaignId = await client.execute(
+      async () => (await window.saltMarcher.campaigns.list()).activeCampaignId!
+    )
+    const liveCombatBefore = await client.execute(
+      (id) => window.saltMarcher.session.read({ campaignId: id }),
+      campaignId
+    )
+    expect(liveCombatBefore.combat).not.toBeNull()
+    await openSceneWindow(client, 'search')
+    await replaceFieldValue(
+      client,
+      client.$('[data-window-id="search"] input[type="search"]'),
+      'Salzmarschhafen Kai 30'
+    )
+    await client
+      .$(
+        '[data-window-id="search"] [data-reference-kind="location"] button:first-child'
+      )
+      .waitForClickable({ timeout: 10000 })
+    await client.keys('Enter')
+    await expect(
+      client.$('[data-window-id="reader"] .reference-document')
+    ).toHaveText(expect.stringContaining('Kai 30'))
+    expect(
+      await client.execute(
+        (id) => window.saltMarcher.session.read({ campaignId: id }),
+        campaignId
+      )
+    ).toEqual(liveCombatBefore)
+    await client.saveScreenshot('.tmp/gm-live-combat-lookup.png')
+    await openSceneWindow(client, 'search')
+    await client
+      .$('[data-window-id="search"] button[aria-label="Fenster schließen"]')
+      .click()
+    process.stdout.write(
+      'GM live lookup: active Combat and complete Session preserved after note retrieval\n'
+    )
     const readerTitle = await client.$('[data-window-id="reader"] h2').getText()
     await client
       .$('[data-window-id="combat"]')
@@ -183,5 +221,85 @@ describe('per-scene desktop', () => {
     await expect(
       client.$('[data-window-id="combat"] .combat-panel')
     ).toBeExisting()
+    await verifyPreparedNarration(client)
   })
 })
+
+async function verifyPreparedNarration(client: WdioBrowser) {
+  await client.$('button[aria-label="Katalog"]').click()
+  await client.$('button=Orte').click()
+  await client.$('button=Erstellen').click()
+  const dialog = client.$('[role="dialog"][aria-label="Ort erstellen"]')
+  await dialog.$('input[aria-label="Ortsname"]').setValue('Glassteg')
+  await dialog.$('input[aria-label="Tags"]').setValue('Schauplatz')
+  await client.keys('Enter')
+  await dialog
+    .$('textarea[aria-label="Vorlesetext"]')
+    .setValue(
+      'Unter euch glühen sternenblaue Quallen.\n\nAm Ende wartet die schweigende Fährfrau.'
+    )
+  await dialog
+    .$('textarea[aria-label="GM-Notizen"]')
+    .setValue('Die Fährfrau fordert eine Erinnerung statt Münzen.')
+  await clickWhenInteractable(
+    client,
+    async () => await dialog.$('button=Erstellen')
+  )
+  await expect(client.$('h2[aria-label="Glassteg"]')).toBeExisting()
+  await client.$('button[aria-label="Ort Details schließen"]').click()
+  await client.$('button[aria-label="Session"]').click()
+  const campaignId = await client.execute(
+    async () => (await window.saltMarcher.campaigns.list()).activeCampaignId!
+  )
+  const liveBefore = await client.execute(
+    (id) => window.saltMarcher.session.read({ campaignId: id }),
+    campaignId
+  )
+  expect(liveBefore.combat).not.toBeNull()
+  await client.$('.desktop-toolbar').$('button*=Nachschlagen').click()
+  let input = client.$('[data-window-id="search"] input[type="search"]')
+  await replaceFieldValue(client, input, 'Glassteg')
+  await client
+    .$(
+      '[data-window-id="search"] [data-reference-kind="location"] button:first-child'
+    )
+    .waitForClickable({ timeout: 10000 })
+  await client.keys('Enter')
+  await expect(
+    client.$('[data-window-id="reader"] .reference-document')
+  ).toHaveText(expect.stringContaining('Die Fährfrau fordert'))
+  const body = await client
+    .$('[data-window-id="reader"] .reference-document')
+    .getText()
+  await client.saveScreenshot('.tmp/gm-read-aloud-after.png')
+  expect(body).toContain('Vorlesetext')
+  expect(body).toContain('sternenblaue Quallen')
+  expect(body).toContain('GM-Notizen')
+  await client.$('.desktop-toolbar').$('button*=Nachschlagen').click()
+  input = client.$('[data-window-id="search"] input[type="search"]')
+  await replaceFieldValue(client, input, 'sternenblaue Quallen')
+  await client.keys('Enter')
+  await client.waitUntil(
+    () =>
+      client.execute(() => {
+        const range = CSS.highlights
+          .get('reference-search')
+          ?.values()
+          .next().value
+        return (
+          range instanceof Range && range.toString() === 'sternenblaue Quallen'
+        )
+      }),
+    { timeout: 10000 }
+  )
+
+  expect(
+    await client.execute(
+      (id) => window.saltMarcher.session.read({ campaignId: id }),
+      campaignId
+    )
+  ).toEqual(liveBefore)
+  process.stdout.write(
+    'GM prepared narration: UI creation, early Enter, narration retrieval and active Combat preserved\n'
+  )
+}

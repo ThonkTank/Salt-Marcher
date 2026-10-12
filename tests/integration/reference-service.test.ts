@@ -135,6 +135,65 @@ describe('reference service', () => {
     campaigns.close()
   })
 
+  it('retrieves prepared narration and keeps it separate from GM secrets without dropping line breaks', () => {
+    const { campaigns, locations, references } = harness()
+    const campaignId = campaigns.activeCampaignId()
+    const readAloud =
+      'Unter euch glühen sternenblaue Quallen.\n\nAm Ende wartet die schweigende Fährfrau.'
+    const notes = 'Die Fährfrau fordert eine Erinnerung statt Münzen.'
+    const location = locations.create(
+      { displayName: 'Glassteg', tags: ['Ort'], readAloud, notes },
+      0
+    ).saved
+    const hits = references.searchCampaign({
+      campaignId,
+      query: 'sternenblaue Quallen',
+      offset: 0,
+      limit: 100
+    })
+    expect(hits.total).toBe(1)
+    const target = hits.candidates[0]!.target
+    const document = references.detail(target)
+    expect(document.documentKind).toBe('article')
+    if (document.documentKind !== 'article')
+      throw new Error('Expected location document')
+    expect(document.blocks).toEqual([
+      {
+        kind: 'heading',
+        level: 2,
+        inlines: [{ kind: 'text', text: 'Vorlesetext' }]
+      },
+      { kind: 'paragraph', inlines: [{ kind: 'text', text: readAloud }] },
+      {
+        kind: 'heading',
+        level: 2,
+        inlines: [{ kind: 'text', text: 'GM-Notizen' }]
+      },
+      { kind: 'paragraph', inlines: [{ kind: 'text', text: notes }] }
+    ])
+    locations.update(
+      location.id,
+      {
+        displayName: location.displayName,
+        tags: location.tags,
+        readAloud: '',
+        notes: ''
+      },
+      locations.read().revision
+    )
+    expect(
+      references.searchCampaign({
+        campaignId,
+        query: 'sternenblaue',
+        offset: 0,
+        limit: 100
+      }).total
+    ).toBe(0)
+    const empty = references.detail(target)
+    expect(empty).toMatchObject({ blocks: [] })
+    campaigns.close()
+  })
+
   it('pages matching records without collapsing duplicate names or silently losing the last matches', () => {
     const { campaigns, locations, references } = harness()
     const campaignId = campaigns.activeCampaignId()
