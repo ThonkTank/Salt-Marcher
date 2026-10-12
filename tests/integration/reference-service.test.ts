@@ -1,3 +1,5 @@
+import { SessionPlannerStore } from '../../src/core/session-planner/session-planner-store.js'
+import { PlannedSceneReferences } from '../../src/core/session-planner/planned-scene-references.js'
 import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -72,12 +74,177 @@ function harness() {
       locations,
       { read: () => sources.readFactions() },
       { read: () => npcs.readAllForReferences() },
-      () => campaigns.activeCampaignId()
+      () => campaigns.activeCampaignId(),
+      new PlannedSceneReferences(campaigns.activeCampaignPersistence())
     )
   }
 }
 
 describe('reference service', () => {
+  it('finds saved Scene notes across sessions without changing selected preparation, and distinguishes repeated titles', () => {
+    const { campaigns, references } = harness()
+    const persistence = campaigns.activeCampaignPersistence()
+    const campaignId = campaigns.activeCampaignId()
+    const createScene = (sessionName: string, notes: string, manual: string) =>
+      persistence.use((db) => {
+        const store = new SessionPlannerStore(db)
+        const session = store.create(sessionName)
+        const sceneId = randomUUID()
+        const saved = store.save({
+          sessionId: session.id,
+          expectedRevision: session.revision,
+          participantIds: [],
+          adventureDayFraction: '1',
+          encounterCount: null,
+          selectedSceneId: sceneId,
+          scenes: [
+            {
+              id: sceneId,
+              titleKind: 'authored',
+              title: 'Verhör am Glassteg',
+              notes,
+              locationId: null,
+              encounterPlanId: null,
+              allocatedXp: 0,
+              position: 0,
+              restAfter: null,
+              manualLootNotes: manual
+                ? [{ id: randomUUID(), text: manual, position: 0 }]
+                : [],
+              generatedRewards: []
+            }
+          ]
+        })
+        return { store, saved, sceneId }
+      })
+    const first = createScene(
+      'Am Hafen',
+      'Die Zeugin erwähnt eine kobaltblaue Erinnerung.',
+      'Die gestohlene Smaragdbrosche liegt am Kai.'
+    )
+    const second = createScene('Im Wald', 'Die Zeugin bleibt stumm.', '')
+    const selected = persistence.use((db) =>
+      new SessionPlannerStore(db).currentId()
+    )
+    const search = (query: string) =>
+      references.searchCampaign({ campaignId, query, offset: 0, limit: 100 })
+    const matches = search('Verhör')
+    expect(matches.total).toBe(2)
+    expect(matches.candidates.map((c) => c.contextLabel).toSorted()).toEqual([
+      'Geplante Szene · Am Hafen',
+      'Geplante Szene · Im Wald'
+    ])
+    expect(search('Hafen kobaltblaue').candidates[0]?.target).toMatchObject({
+      entityKind: 'planned-scene',
+      entityId: first.sceneId
+    })
+    const loot = search('Smaragdbrosche')
+    expect(loot.total).toBe(1)
+    expect(references.detail(loot.candidates[0]!.target)).toMatchObject({
+      documentKind: 'article',
+      title: 'Verhör am Glassteg',
+      facts: [
+        { label: 'Sitzung', value: [{ kind: 'text', text: 'Am Hafen' }] }
+      ],
+      blocks: [
+        {
+          kind: 'paragraph',
+          inlines: [
+            {
+              kind: 'text',
+              text: 'Die Zeugin erwähnt eine kobaltblaue Erinnerung.'
+            }
+          ]
+        },
+        {
+          kind: 'heading',
+          level: 2,
+          inlines: [{ kind: 'text', text: 'Manuelle Loot-Notizen' }]
+        },
+        {
+          kind: 'list',
+          ordered: false,
+          items: [
+            [
+              {
+                kind: 'text',
+                text: 'Die gestohlene Smaragdbrosche liegt am Kai.'
+              }
+            ]
+          ]
+        }
+      ]
+    })
+    expect(
+      persistence.use((db) => new SessionPlannerStore(db).currentId())
+    ).toBe(selected)
+    persistence.use((db) =>
+      new SessionPlannerStore(db).delete(first.saved.id, first.saved.revision)
+    )
+    expect(search('Smaragdbrosche').total).toBe(0)
+    expect(() => references.detail(loot.candidates[0]!.target)).toThrow(
+      'not_found'
+    )
+    expect(search('stumm').candidates[0]?.target).toMatchObject({
+      entityId: second.sceneId
+    })
+    campaigns.create('Other')
+    expect(() => search('stumm')).toThrow('not_found')
+    campaigns.close()
+  })
+
+  it('retains valid manual notes beyond one reference-list block', () => {
+    const { campaigns, references } = harness()
+    const sceneId = randomUUID()
+    campaigns.activeCampaignPersistence().use((db) => {
+      const store = new SessionPlannerStore(db),
+        current = store.require(store.currentId())
+      store.save({
+        sessionId: current.id,
+        expectedRevision: current.revision,
+        participantIds: [],
+        adventureDayFraction: '1',
+        encounterCount: null,
+        selectedSceneId: sceneId,
+        scenes: [
+          {
+            id: sceneId,
+            titleKind: 'authored',
+            title: 'Fundstücke',
+            notes: '',
+            locationId: null,
+            encounterPlanId: null,
+            allocatedXp: 0,
+            position: 0,
+            restAfter: null,
+            generatedRewards: [],
+            manualLootNotes: Array.from({ length: 1001 }, (_, position) => ({
+              id: randomUUID(),
+              text: `Fundstück ${position + 1}`,
+              position
+            }))
+          }
+        ]
+      })
+    })
+    const page = references.searchCampaign({
+      campaignId: campaigns.activeCampaignId(),
+      query: 'Fundstück 1001',
+      offset: 0,
+      limit: 100
+    })
+    expect(page.total).toBe(1)
+    const document = references.detail(page.candidates[0]!.target)
+    if (document.documentKind !== 'article')
+      throw new Error('Expected Scene document')
+    const lists = document.blocks.filter((block) => block.kind === 'list')
+    expect(lists.flatMap((block) => block.items)).toHaveLength(1001)
+    expect(lists.at(-1)?.items.at(-1)).toEqual([
+      { kind: 'text', text: 'Fundstück 1001' }
+    ])
+    campaigns.close()
+  })
+
   it('finds GM prose across fields, normalizes Unicode, and never searches a different Campaign', () => {
     const { campaigns, locations, sources, references } = harness()
     const campaignId = campaigns.activeCampaignId()

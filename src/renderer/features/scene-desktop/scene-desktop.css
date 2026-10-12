@@ -309,6 +309,20 @@
 .desktop-search-result small {
   color: var(--text-3);
 }
+.desktop-search-result[data-reference-kind='planned-scene']
+  > button:first-child {
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+.desktop-search-result[data-reference-kind='planned-scene']
+  > button:first-child
+  > span,
+.desktop-search-result[data-reference-kind='planned-scene'] small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 
 .desktop-section-heading {
   display: flex;

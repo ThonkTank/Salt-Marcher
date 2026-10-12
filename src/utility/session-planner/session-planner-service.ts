@@ -1,3 +1,4 @@
+import { PlannedSceneReferences } from '../../core/session-planner/planned-scene-references.js'
 import { SessionPlannerCommandJournal } from '../../core/session-planner/session-planner-command-journal.js'
 import {
   sessionPlannerCommandSchema,
@@ -56,6 +57,7 @@ import { mapGeneratedScenes } from './session-generated-scene-mapper.js'
 
 export class SessionPlannerService {
   private readonly scheduled = new Set<string>()
+  private referenceCommit: Set<string> | null = null
 
   constructor(
     private readonly databaseAccess: SqliteDatabaseAccess,
@@ -81,7 +83,10 @@ export class SessionPlannerService {
     ) => ItemDefinitionResolver = (db) =>
       new ItemDefinitionResolver(db, () => {
         throw new Error('Catalog definition resolver is not configured')
-      })
+      }),
+    private readonly referencesChanged: (
+      sceneIds: readonly string[]
+    ) => void = () => undefined
   ) {}
 
   private activeDatabase(): Database.Database {
@@ -97,16 +102,24 @@ export class SessionPlannerService {
     const parsed = sessionPlannerCommandSchema.parse(input)
     const db = this.activeDatabase()
     const journal = new SessionPlannerCommandJournal(db)
-    return db
-      .transaction(() => {
-        const receipt = journal.read(parsed)
-        if (receipt) return receipt
-        const { command } = parsed
-        const result = this[command.kind](command.input)
-        journal.record(parsed, result)
-        return result
-      })
-      .immediate()
+    const changes = new Set<string>()
+    this.referenceCommit = changes
+    try {
+      const result = db
+        .transaction(() => {
+          const receipt = journal.read(parsed)
+          if (receipt) return receipt
+          const { command } = parsed
+          const result = this[command.kind](command.input)
+          journal.record(parsed, result)
+          return result
+        })
+        .immediate()
+      if (changes.size > 0) this.referencesChanged([...changes])
+      return result
+    } finally {
+      this.referenceCommit = null
+    }
   }
 
   commandStatus(input: unknown) {
@@ -137,35 +150,51 @@ export class SessionPlannerService {
   switch(input: unknown): SessionPlannerWorkspace {
     const parsed = switchSessionPlanInputSchema.parse(input)
     this.validateAuthoredReferences(parsed.source)
+    const before = new PlannedSceneReferences(this.databaseAccess).sceneIds(
+      parsed.source.sessionId
+    )
     const session = new SessionPlannerStore(this.activeDatabase()).switch(
       parsed
     )
+    this.notifyReferences(before, [parsed.source.sessionId])
     return this.workspace(session.id)
   }
 
   rename(input: unknown): SessionPlannerWorkspace {
     const parsed = renameSessionPlanInputSchema.parse(input)
+    const before = new PlannedSceneReferences(this.databaseAccess).sceneIds(
+      parsed.sessionId
+    )
     const session = new SessionPlannerStore(this.activeDatabase()).rename(
       parsed.sessionId,
       parsed.expectedRevision,
       parsed.name
     )
+    this.notifyReferences(before, [parsed.sessionId])
     return this.workspace(session.id)
   }
 
   save(input: unknown): SessionPlannerWorkspace {
     const parsed = saveSessionPlanInputSchema.parse(input)
     this.validateAuthoredReferences(parsed)
+    const before = new PlannedSceneReferences(this.databaseAccess).sceneIds(
+      parsed.sessionId
+    )
     const session = new SessionPlannerStore(this.activeDatabase()).save(parsed)
+    this.notifyReferences(before, [parsed.sessionId])
     return this.workspace(session.id)
   }
 
   delete(input: unknown): SessionPlannerWorkspace {
     const parsed = deleteSessionPlanInputSchema.parse(input)
+    const before = new PlannedSceneReferences(this.databaseAccess).sceneIds(
+      parsed.sessionId
+    )
     const session = new SessionPlannerStore(this.activeDatabase()).delete(
       parsed.sessionId,
       parsed.expectedRevision
     )
+    this.notifyReferences(before, [parsed.sessionId])
     return this.workspace(session.id)
   }
 
@@ -450,6 +479,9 @@ export class SessionPlannerService {
     }
 
     if (operation.status !== 'saving') return false
+    const beforeReferenceIds = new PlannedSceneReferences(
+      this.databaseAccess
+    ).sceneIds(operation.sessionId)
     try {
       const finish = db.transaction(() => {
         const current = journal.read(operationId)
@@ -481,6 +513,7 @@ export class SessionPlannerService {
           throw new Error('preparation_receipt_commit_failed')
       })
       finish.immediate()
+      this.notifyReferences(beforeReferenceIds, [operation.sessionId])
       this.phaseBoundary('after_planner_commit', operationId)
     } catch (error) {
       journal.markFailure(
@@ -507,6 +540,19 @@ export class SessionPlannerService {
     }
     this.publishCurrent(journal, operationId)
     return false
+  }
+
+  private notifyReferences(
+    before: readonly string[],
+    sessionIds: readonly string[]
+  ): void {
+    const queries = new PlannedSceneReferences(this.databaseAccess)
+    const ids = new Set([
+      ...before,
+      ...sessionIds.flatMap((id) => queries.sceneIds(id))
+    ])
+    if (this.referenceCommit) for (const id of ids) this.referenceCommit.add(id)
+    else if (ids.size > 0) this.referencesChanged([...ids])
   }
 
   private rewardBasisIsCurrent(

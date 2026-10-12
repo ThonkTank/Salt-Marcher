@@ -88,3 +88,28 @@ text assertion had retained the old element. The regression now waits for
 the actual Glassteg document through a DOM read before obtaining fresh element
 handles. The zero-warning gate remains unchanged. This failed run does not
 qualify installation or Main promotion.
+
+## Saved preparation at the table
+
+| Problem reproduced | Comparison | Change | Evidence |
+| --- | --- | --- | --- |
+| The real Planner saves `Verhör am Glassteg` and its `kobaltblaue Erinnerung` note, but live lookup reports no result. | A plain two-section text note exposes authored prose directly; Kanka's public body-text lookup retrieves a saved passage. | Query saved Scene titles, notes and manual loot notes across Sessions in the owning Core aggregate. Results identify the Session; reader navigation preserves the running Scene and selected preparation. | Native `preparedSceneReferences` starts Combat, authors and saves the Scene through the UI, retrieves it, edits its note and reopens the current document after restart. Complete live Session equality is checked through authoring and retrieval. |
+| Adding session context can make repeated Scene names ambiguous or long captions unusable. | A document heading identifies its containing session. | Keep title and full Session context distinct, wrap captions in their result row, and preserve an explicit accessible name. Context labels do not enter saved desktop identities. | Core test distinguishes equal titles in two Sessions; native geometry checks a long Session label remains inside lookup; both-theme accessibility passes. |
+
+The corrected map/combat journey and the new preparation journey both pass with
+zero window-rect, scroll-fallback or stale-element warnings under the unchanged
+CI warning classifier. The preparation journey also passes both-theme axe
+checks. Local regression evidence includes 38 focused cases across seven files and
+26 Planner lifecycle/transaction cases.
+Rollback and command replay do not emit false reference invalidations; rename,
+replacement and deletion invalidate the affected reader identities. A valid
+1001st manual note remains searchable and readable across bounded list blocks.
+Typecheck, changed-file lint and formatting pass before qualification.
+Reachable renderer: 1,705,693 bytes; unchanged absolute and growth limits pass.
+Screenshot: `.tmp/gm-planned-notes-after.png`.
+
+This adds reading of preparation during play. Activating prepared scenes as
+runtime scenes and whole-product comparative speed acceptance are not established
+by this journey. The failed `d1e49e05f` workflow is not delivery evidence for
+these follow-up changes; their immutable candidate still needs full exact-SHA
+Check, canonical Local installation and green Main.

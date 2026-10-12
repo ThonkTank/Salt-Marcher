@@ -1,3 +1,4 @@
+import type { PlannedSceneReferences } from '../session-planner/planned-scene-references.js'
 import {
   referenceDocumentSchema,
   referenceCampaignSearchInputSchema,
@@ -56,7 +57,11 @@ export class ReferenceService {
     private readonly locationQueries: ReferenceLocationQueries,
     private readonly factionQueries: ReferenceFactionQueries,
     private readonly npcQueries: ReferenceNpcQueries,
-    private readonly activeCampaignId: () => string
+    private readonly activeCampaignId: () => string,
+    private readonly plannedScenes: Pick<
+      PlannedSceneReferences,
+      'search' | 'detail'
+    >
   ) {}
 
   staticIndex(): ReferenceIndex {
@@ -138,6 +143,38 @@ export class ReferenceService {
         target
       )
     this.assertCampaign(target.campaignId)
+    if (target.entityKind === 'planned-scene') {
+      const scene = this.plannedScenes.detail(target.entityId)
+      const document = article(
+        target,
+        scene.title,
+        [['Sitzung', scene.sessionName]],
+        scene.notes,
+        null
+      )
+      if (scene.manualLootNotes.length === 0) return document
+      return referenceDocumentSchema.parse({
+        ...document,
+        blocks: [
+          ...(document.documentKind === 'article' ? document.blocks : []),
+          {
+            kind: 'heading',
+            level: 2,
+            inlines: [{ kind: 'text', text: 'Manuelle Loot-Notizen' }]
+          },
+          ...Array.from(
+            { length: Math.ceil(scene.manualLootNotes.length / 1000) },
+            (_, page) => ({
+              kind: 'list',
+              ordered: false,
+              items: scene.manualLootNotes
+                .slice(page * 1000, (page + 1) * 1000)
+                .map((text) => [{ kind: 'text', text }])
+            })
+          )
+        ]
+      })
+    }
     if (target.entityKind === 'location')
       return locationDocument(this.locationQueries.read(), target)
     if (target.entityKind === 'faction')
@@ -190,6 +227,18 @@ export class ReferenceService {
           `${npc.notes}\n${npc.appearance}\n${npc.behavior}\n${npc.history}`
         )
     }
+    if (words.length > 0)
+      for (const scene of this.plannedScenes.search(words))
+        candidates.push({
+          target: {
+            scope: 'campaign',
+            campaignId,
+            entityKind: 'planned-scene',
+            entityId: scene.id
+          },
+          title: scene.title,
+          contextLabel: `Geplante Szene · ${scene.sessionName}`
+        })
     candidates.sort(
       (left, right) =>
         left.title.localeCompare(right.title) ||

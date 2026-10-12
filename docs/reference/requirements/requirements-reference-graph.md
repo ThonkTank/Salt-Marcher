@@ -42,11 +42,14 @@ full entry in the center Details tab while preserving the surrounding work.
 ## Content and failure behavior
 
 - Scene desktop lookup searches names and aliases plus saved location notes and
-  tags, faction notes, and NPC notes, appearance, behavior and history. All query
+  tags, faction notes, NPC notes, appearance, behavior and history, plus saved
+  preparation Scene titles, notes and manual loot notes across Sessions. All query
   words may match across fields; Unicode normalization and case folding apply to
   lookup without changing exact inline campaign-name recognition.
 - Campaign prose, including prepared location read-aloud text, is searched offline in Core. The renderer receives matching
-  identities through an explicitly campaign-bound, validated, paginated read.
+  identities and bounded context labels through an explicitly campaign-bound,
+  validated, paginated read. Preparation results identify their Session, without
+  opening or changing its selected preparation or the running Scene.
   Late responses from another query or Campaign cannot replace current results.
 - The lookup reports pending or failed Campaign search separately from no
   results, keeps static reference lookup usable on failure, offers retry, and
@@ -60,7 +63,9 @@ full entry in the center Details tab while preserving the surrounding work.
   Ctrl/Command+K restores it in the active Scene without an extra pointer action;
   the shortcut does not intercept other editors, IME composition or modal work.
   Enter opens a sole visible result after search has settled. Multiple matches
-  still require an explicit candidate selection.
+  still require an explicit candidate selection. An early Enter remains scoped
+  to the same query, Campaign, note revision and focused visible search input;
+  changed context, blur, Escape, failures or ambiguity cancel it.
 
 - Full rule documents expose structured blocks, compiler-linked inline references,
   facts, source version, and attribution. Creature documents reuse the

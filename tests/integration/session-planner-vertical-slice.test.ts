@@ -13,7 +13,7 @@ import type Database from 'better-sqlite3'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GeneratedEncounterPlanService } from '../../src/core/encounter/generated-plan-service.js'
 import { PartyStore } from '../../src/core/party/party-store.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
@@ -39,6 +39,66 @@ afterEach(() => {
 })
 
 describe('Session Planner vertical slice', () => {
+  it('invalidates Scene readers after committed authoring, renaming, replacement and deletion, but never on a rolled-back or replayed command', () => {
+    const h = createHarness()
+    const changes = vi.fn()
+    const planner = services(h.campaigns, undefined, changes).planner
+    const current = planner.read()
+    const id = randomUUID()
+    const command: SessionPlannerCommand = {
+      commandId: randomUUID(),
+      command: {
+        kind: 'save',
+        input: {
+          ...draft(current),
+          selectedSceneId: id,
+          scenes: [
+            {
+              ...manualScene(id, 'Verhör'),
+              notes: 'kobaltblaue Erinnerung',
+              manualLootNotes: [],
+              generatedRewards: []
+            }
+          ]
+        }
+      }
+    }
+    const db = activeCampaignDatabase(h.campaigns)
+    db.exec(
+      "CREATE TEMP TRIGGER fail_reference_receipt BEFORE INSERT ON session_planner_command_receipt BEGIN SELECT RAISE(ABORT, 'receipt interrupted'); END"
+    )
+    expect(() => planner.executeCommand(command)).toThrow('receipt interrupted')
+    expect(changes).not.toHaveBeenCalled()
+    expect(planner.read()).toEqual(current)
+    db.exec('DROP TRIGGER fail_reference_receipt')
+    const saved = planner.executeCommand(command)
+    expect(changes).toHaveBeenCalledExactlyOnceWith([id])
+    changes.mockClear()
+    expect(planner.executeCommand(command)).toEqual(saved)
+    expect(changes).not.toHaveBeenCalled()
+    const renamed = planner.rename({
+      sessionId: saved.session.id,
+      expectedRevision: saved.session.revision,
+      name: 'Am Hafen'
+    })
+    expect(changes).toHaveBeenLastCalledWith([id])
+    changes.mockClear()
+    const replacementId = randomUUID()
+    const replaced = planner.save({
+      ...draft(renamed),
+      selectedSceneId: replacementId,
+      scenes: [manualScene(replacementId, 'Verhör')]
+    })
+    expect(changes).toHaveBeenCalledExactlyOnceWith([id, replacementId])
+    changes.mockClear()
+    planner.delete({
+      sessionId: replaced.session.id,
+      expectedRevision: replaced.session.revision
+    })
+    expect(changes).toHaveBeenCalledExactlyOnceWith([replacementId])
+    h.campaigns.close()
+  })
+
   it.each(['create', 'open', 'switch', 'rename', 'save', 'delete'] as const)(
     'commits %s with a durable receipt and reconciles without replaying later state',
     (kind) => {
@@ -905,7 +965,10 @@ function createHarness() {
 function services(
   campaigns: CampaignStore,
   phaseBoundary: ConstructorParameters<typeof SessionPlannerService>[5] = () =>
-    undefined
+    undefined,
+  referencesChanged: ConstructorParameters<
+    typeof SessionPlannerService
+  >[7] = () => undefined
 ) {
   const generation = new SessionGenerationService(
     new BundledEncounterCatalogProvider(
@@ -932,7 +995,9 @@ function services(
       encounterPlans,
       () => undefined,
       () => undefined,
-      phaseBoundary
+      phaseBoundary,
+      undefined,
+      referencesChanged
     )
   }
 }

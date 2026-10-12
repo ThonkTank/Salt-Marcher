@@ -1,4 +1,5 @@
 export const referenceMessagesDe = {
+  'reference.kind.planned-scene': 'Geplante Szene',
   'reference.indexFailed': 'Referenzindex konnte nicht geladen werden.',
   'reference.label': 'Referenz: {name}',
   'reference.possibleCount': '{count} mögliche Referenzen',

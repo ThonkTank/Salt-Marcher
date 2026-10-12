@@ -62,7 +62,11 @@ export function DesktopSearch({ window, dispatch, onResultSelected }: Props) {
       })
       dispatch({
         type: 'open-reference',
-        entry: { ...candidate, scrollTop: 0 },
+        entry: {
+          target: candidate.target,
+          title: candidate.title,
+          scrollTop: 0
+        },
         ...(separate ? { separateId: windowId } : {})
       })
     },
@@ -146,9 +150,15 @@ export function DesktopSearch({ window, dispatch, onResultSelected }: Props) {
               }
               key={referenceTargetKey(candidate.target)}
             >
-              <button onClick={() => open(candidate)}>
+              <button
+                aria-label={`${candidate.title} · ${candidate.contextLabel ?? referenceTargetLabel(candidate.target)}`}
+                onClick={() => open(candidate)}
+              >
                 <span>{candidate.title}</span>
-                <small>{referenceTargetLabel(candidate.target)}</small>
+                <small title={candidate.contextLabel}>
+                  {candidate.contextLabel ??
+                    referenceTargetLabel(candidate.target)}
+                </small>
               </button>
               <button
                 aria-label={formatMessage('desktop.separateTarget', {

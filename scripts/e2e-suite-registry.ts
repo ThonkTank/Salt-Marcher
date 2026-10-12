@@ -106,6 +106,13 @@ export const e2eSuiteRegistry = [
     }
   },
   {
+    name: 'preparedSceneReferences',
+    spec: './tests/e2e/prepared-scene-references.e2e.ts',
+    fixture: 'v8/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 96 } }
+  },
+  {
     name: 'sceneDesktopLocationDraft',
     spec: './tests/e2e/scene-desktop-location-draft.e2e.ts',
     fixture: 'v8/scene-desktop',

@@ -12,7 +12,8 @@ export function referenceTargetLabel(target: ReferenceTarget): string {
     creature: message('reference.kind.creature'),
     location: message('reference.kind.location'),
     faction: message('reference.kind.faction'),
-    npc: message('reference.kind.npc')
+    npc: message('reference.kind.npc'),
+    'planned-scene': message('reference.kind.planned-scene')
   }
   if (target.scope === 'srd') return labels[target.definitionKind]
   if (target.scope === 'creature') return labels.creature

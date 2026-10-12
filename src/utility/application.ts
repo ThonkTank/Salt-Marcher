@@ -1,3 +1,4 @@
+import { PlannedSceneReferences } from '../core/session-planner/planned-scene-references.js'
 import { PartyActionService } from '../core/application/party-action-service.js'
 import { HexTravelCommandService } from '../core/hex/hex-travel-command-service.js'
 import type Database from 'better-sqlite3'
@@ -286,13 +287,15 @@ const creatures = new CreatureCatalogService(
   })
 )
 const referenceCatalog = new ReferenceCatalogAdapter(referenceDatabasePath)
+const plannedSceneReferences = new PlannedSceneReferences(activePersistence)
 const references = new ReferenceService(
   referenceCatalog,
   { all: () => creatureCatalogRows, detail: (id) => creatures.detail(id) },
   locations,
   { read: () => sources.readFactions() },
   { read: () => worldNpcs.readAllForReferences() },
-  () => campaigns.activeCampaignId()
+  () => campaigns.activeCampaignId(),
+  plannedSceneReferences
 )
 const eventSink = new CoreEventSink(process.parentPort, runtimeCounters)
 const referenceChanges = new ReferenceChangeCoordinator(
@@ -352,7 +355,15 @@ const sessionPlanner = new SessionPlannerService(
       createLootCatalogIndex(
         sessionGenerationCatalog.loadFullByReference(reference)
       )
-    )
+    ),
+  (ids) => {
+    for (let offset = 0; offset < ids.length; offset += 10_000)
+      referenceChanges.record(
+        ids
+          .slice(offset, offset + 10_000)
+          .map((id) => ({ kind: 'planned-scene', id }))
+      )
+  }
 )
 
 bootstrapPhase('recovery', () => {

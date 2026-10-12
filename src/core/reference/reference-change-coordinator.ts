@@ -15,6 +15,7 @@ export type NpcReferenceDependencies = Readonly<{
 export type ReferenceChangeDescriptor =
   | Readonly<{ kind: 'campaign' }>
   | Readonly<{ kind: 'npc'; id: string }>
+  | Readonly<{ kind: 'planned-scene'; id: string }>
   | Readonly<{ kind: ReferenceDependencyKind; id: string }>
 
 export class ReferenceDependencyIndex {
@@ -84,6 +85,10 @@ export class ReferenceChangeCoordinator {
           for (const candidate of term.candidates) add(candidate.target)
         continue
       }
+      if (change.kind === 'planned-scene') {
+        add(campaignTarget(campaignId, change.kind, change.id))
+        continue
+      }
       if (change.kind === 'npc') {
         add(campaignTarget(campaignId, 'npc', change.id))
         const current = this.npcDependencies.one(change.id)
@@ -135,7 +140,7 @@ function dependencyKeys(record: NpcReferenceDependencies): readonly string[] {
 
 function campaignTarget(
   campaignId: string,
-  entityKind: 'npc' | 'faction' | 'location',
+  entityKind: 'npc' | 'faction' | 'location' | 'planned-scene',
   entityId: string
 ): ReferenceTarget {
   return { scope: 'campaign', campaignId, entityKind, entityId }

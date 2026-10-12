@@ -7,6 +7,32 @@ import {
 import type { ReferenceIndex } from '../../src/shared/contracts/reference.js'
 
 describe('Reference dependency invalidation', () => {
+  it('invalidates saved Scene documents without indexing every plan or consulting NPC dependencies', () => {
+    const all = vi.fn(() => []),
+      one = vi.fn(() => null),
+      publish = vi.fn()
+    const coordinator = new ReferenceChangeCoordinator(
+      () => 'campaign-1',
+      campaignIndex,
+      { all, one },
+      publish
+    )
+    coordinator.record([{ kind: 'planned-scene', id: 'scene-1' }])
+    expect(one).not.toHaveBeenCalled()
+    expect(publish).toHaveBeenCalledWith({
+      campaignId: 'campaign-1',
+      revision: 'revision-1',
+      changedTargets: [
+        {
+          scope: 'campaign',
+          campaignId: 'campaign-1',
+          entityKind: 'planned-scene',
+          entityId: 'scene-1'
+        }
+      ]
+    })
+  })
+
   it('replaces reverse dependencies without leaving stale edges', () => {
     const index = new ReferenceDependencyIndex()
     index.replace(dependency('npc-1', 'creature-1', 'faction-1', 'location-1'))

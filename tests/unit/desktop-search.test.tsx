@@ -193,6 +193,40 @@ describe('desktop note search', () => {
       cleanup()
     }
   })
+  it('shows session context for repeated scene names without persisting display-only search metadata', async () => {
+    vi.useFakeTimers()
+    const match = {
+      ...candidate('Verhör'),
+      contextLabel: 'Geplante Szene · Am Hafen'
+    }
+    const search = vi
+      .fn()
+      .mockResolvedValue({ candidates: [match], total: 1, offset: 0 })
+    const dispatch = vi.fn()
+    render(
+      <ReferenceContext.Provider value={context(search)}>
+        <DesktopSearch
+          window={{
+            ...initialPartyWindow,
+            kind: 'search',
+            id: 'search',
+            query: 'secret',
+            scrollTop: 0
+          }}
+          dispatch={dispatch}
+        />
+      </ReferenceContext.Provider>
+    )
+    await tick()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Verhör · Geplante Szene · Am Hafen' })
+    )
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'open-reference',
+      entry: { target: match.target, title: match.title, scrollTop: 0 }
+    })
+  })
+
   it('does not show no-results while pending and discards late query and Campaign responses', async () => {
     vi.useFakeTimers()
     const old = deferred(),
