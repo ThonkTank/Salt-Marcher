@@ -99,6 +99,15 @@ betroffenen Nutzerweg. Historische Obsidian-/Originalbelege bleiben datiert,
 keine synthetische Übertragung ihres PASS auf den Neuaufbau. Physischer Input,
 Stromverlust, OSinstallation und Fachgesamtumfang haben eigene Nachweise.
 
+**Legacy-Speicherintegration:** Die eigenständige Consumer-Matrix prüft 18 Modellfälle;
+[direkter Aufruf](README.md#lokal-entwickeln). Auf `f23912ff` bestanden 17:
+M13 erwartet nach Rollback mit beobachtetem eigenem Manifestereignis einen
+widerrufenen Context, tatsächlich bleibt er aktiv. Das historische 18/18 auf
+`86bbbbf` belegt einen anderen Quellstand. Bei Übernahme alter Save-/Source-
+Logik ist diese Erwartung gegen den gültigen Context-/Rollbackvertrag zu klären;
+weder Fehlerfall verwerfen noch einen aktuellen PASS daraus ableiten.
+Das verlangt keine vorgelagerte Reparatur des gesamten Altadapters vor dem neuen Store.
+
 Work 1 benötigt den kleinen autoritativen Store, nicht schon den vollständigen
 Import/Generator/Graph oder sämtliche späteren Runtimefeatures. Bei fehlendem
 konkreten Anschluss genau diesen liefern; keine globale Abnahmesperre für
@@ -368,27 +377,11 @@ Diese Proben sind geplante Produktabnahmen, keine mit der Dokumentation ausgefü
 
 ## 1. Ausgangspunkt und Zielbild
 
-Der bestehende Dungeon-Editor liefert native Kartendateien, stabile Kennungen, strukturierte Raum-Keys, Undo/Redo, konfliktgeschütztes Speichern, Zeichenwerkzeuge, Assets und eine Spielansicht. Hex-Geometrie und gemeinsame Stadt-/Dungeonverortung sind inzwischen teilweise umgesetzt; vollständige mehrstufige Landschaftsbearbeitung und durchgehende Atlasqualifikation bleiben offen. Den geprüften Funktionsstand zeigt [Atlas auf einen Blick](#atlas-auf-einen-blick). Grundlage des vollständigen Ziels sind die vorhandene [Architektur](ARCHITECTURE.md) und der [Abnahmekatalog](acceptance.json).
-
-Die lokal installierte Wonderdraft-Version ist **1.1.8.2**. Installationsdateien und offizielle Dokumentation wurden geprüft; eine vollständige direkte Bedienabnahme steht noch aus. Die dokumentierten Kernbereiche umfassen unter anderem Landmassen, Küsten, Flüsse, Straßen, Symbolpinsel, Gestaltungsvorlagen und Beschriftungen. [Wonderdraft](https://wonderdraft.net/), [offizieller Quick Guide](https://github.com/Megasploot/Wonderdraft/wiki/Quick-Guide).
-
-Das vereinbarte Ziel:
-
-- **Hexes tragen die Landschaftsdaten.** Innerhalb eines Hexes sind natürliche Küsten, weiche Übergänge und frei platzierte Details möglich.
-- **Alle Hex-Stufen sind bearbeitbar.** Grobe Weltgestaltung lässt sich schrittweise verfeinern.
-- **3 Meilen bilden die kleinste Hex-Stufe.** Darunter folgen Stadt- und Dungeonansichten mit ihrem eigenen Detailraster.
-- **Overworld, Städte und Dungeons teilen einen räumlichen Atlas.** Lage, Orientierung, Maßstab und Eingänge verbinden die Karten.
-- **Dungeondrafts „New Map“, Startgrößen und Größenvorlagen sind keine direkten Bedienvorbilder.** Die Welt besitzt eine einzige Atlaskarte; Dungeon-, Stadt- und Hexinhalte werden dort integriert.
-- **Der Atlas ist grenzenlos und wächst mit seinem Inhalt.** Beim Anlegen werden weder Breite/Höhe noch ein Kartenrand verlangt. Landschaft, Städte und Dungeonplatzierungen können den bislang bearbeiteten Bereich in jede Richtung erweitern.
-- **Räumliche Größen werden in Meilen oder Hex-Kacheln angegeben.** Das betrifft erzeugte Bereiche, Vorlagen und gewählte Ausschnitte; Hex-Anzahlen beziehen sich auf eine ausdrücklich benannte Hex-Stufe. Pixel bestimmen ausschließlich Darstellung und Bildausgabe.
-- **Alle räumlichen Detailstufen sind allein durch Zoom erreichbar.** Welt → Region → Stadt → Haus → Dungeonraum bleibt an denselben Weltpositionen.
-- **Es gibt keine separaten Modi.** Navigation und Bearbeitung bleiben in einem Editor mit gemeinsamer Kamera, Werkzeugleiste, Auswahl und durchgehender Undo/Redo-Folge. Zoom wechselt keine Editoroberfläche oder Bearbeitungsart.
-- **Städte und POIs besitzen stabile Ortsidentitäten und bearbeitbare Keys** im gemeinsamen Store.
-- **Stadtpläne werden nativ erzeugt und direkt bearbeitet.** Watabous Stadtgrundrisse und Canvas of Kings dienen als Ergebnisvorbilder; die Bedienung gestalten und prüfen wir eigenständig. Die [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt frühe nutzbare Phasen.
-- **Alle Vorbilder werden nach erreichbaren Ergebnissen verglichen.** Eigene Werkzeuge und Gesten sind zulässig; bearbeitbare Wirkung, Korrektur und Speicherung zählen. Die verbindliche [Gleichwertigkeits- und Lieferregel](#wie-kommen-wir-zum-ziel) gilt auch für Wonderdraft und Dungeon.
-- **Ooke-Welt und Ooke-Kontinent dienen als Bildvorlagen.** Neue Hex-Karten entstehen nativ.
-
-Der vollständige Nutzerablauf lautet: Welt gestalten → Region verfeinern → 3-Meilen-Hex bearbeiten → in die Stadt zoomen und Straßen/Häuser ändern → in einen Hausgrundriss zoomen und Räume ändern → Orts-/Raum-Key bearbeiten → wieder herauszoomen. Alle Karteninhalte bleiben im selben Atlas direkt bearbeitbar.
+[Atlasstand](#atlas-auf-einen-blick), [Nutzerabläufe](#konkrete-nutzerabläufe),
+[Bedienung](#gemeinsame-bedienung) und [Lieferprioritäten](#wie-kommen-wir-zum-ziel)
+führen das Ziel und den Weg. Die [Wonderdraft-Referenz](WONDERDRAFT-PARITY.md)
+benennt Version 1.1.8.2 und ihren noch begrenzten Originalnachweis.
+Ooke-Welt und Ooke-Kontinent dienen als Bildvorlagen; die neuen Hexkarten entstehen nativ.
 
 ## 2. Verbindliche Architektur
 
@@ -567,7 +560,7 @@ Kernprüfungen, Build, Zielhost-Bedienung, Großkartenlauf und physische Maus-/T
 ### Gewählte Defaults
 
 - Die Welt ist zunächst ein **ebener Atlas**; Weltkarten benötigen keine Kugelprojektion.
-- Der Atlas hat keine festen Ränder und keine Größenabfrage beim Anlegen. Inhalt bestimmt die belegte Ausdehnung; Ausschnitte erhalten Maße in Meilen oder Hex-Kacheln. Pixelauflösung ist eine eigene Exportangabe.
+- Der Atlas hat keine festen Ränder und keine Größenabfrage beim Anlegen. Inhalt bestimmt die belegte Ausdehnung. Erzeugte Bereiche, Vorlagen und Ausschnitte erhalten Maße in Meilen oder Hex-Kacheln einer benannten Stufe; Pixel bestimmen nur Darstellung und Bildausgabe.
 - Hex-Ausrichtung ist beim Anlegen wählbar und bleibt danach fest.
 - Automatischer Stufenwechsel besitzt einen Übergangsbereich gegen Hin-und-her-Springen; eine manuelle Stufenwahl bleibt möglich.
 - Unterhalb der 3-Meilen-Stufe entstehen keine weiteren Overworld-Hex-Stufen. Stadt- und Dungeonraster übernehmen die Detailbearbeitung.

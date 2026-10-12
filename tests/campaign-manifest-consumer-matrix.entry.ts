@@ -1,6 +1,5 @@
-/** Frozen I02 consumer contract: real Repository -> FileTransaction -> Campaign source/provider.
- * Faults/storage delivery and the renderer/camera owner are controlled test ports, not GUI evidence.
- * Deliberately separate from npm test until the public rollback-release seam is supplied.
+/** Standalone legacy integration: Repository -> FileTransaction -> Campaign source/provider.
+ * Controlled fault, storage-delivery and renderer/camera ports; not GUI evidence.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -69,7 +68,7 @@ const nativeWrites = before.atlas.files.map((f) => ({
   after: expected.get(f.path)!,
 }));
 
-// Sole new public contract requested of Campaign/Data. No private state/reset or invented commit.
+// Public rollback-proof factory and consumer exercised by these integration cases.
 interface RollbackObservation {
   readonly journalPath: string;
   readonly preparedJournalBytes: string;

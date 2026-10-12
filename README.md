@@ -27,6 +27,14 @@ npm run build
 
 Der Build erzeugt `main.js` und `main.js.map`. Für einen manuellen Smoke ausschließlich einen separaten Obsidian-Testvault verwenden: `main.js`, `manifest.json` und `styles.css` nach `.obsidian/plugins/dungeon-editor/` kopieren und das Plugin dort aktivieren. Obsidian Desktop mindestens 1.8.7; WebGL-Verfügbarkeit für Grafikprüfungen kontrollieren. Zum Einstieg die Befehle „Dungeon“ bzw. „Atlas“ in der Befehlspalette suchen. Produktive Karten und bestehende Nutzertexte bleiben geschützt. Build oder Push installieren kein Plugin im Nutzervault.
 
+Die eigenständigen Legacy-Speicherfälle verwenden synthetische Daten und kontrollierte
+Modellports. Sie sind keine GUI-/Prozessabnahme; der [aktuelle begrenzte Befund](ROADMAP-HEX-ATLAS.md#lieferpakete-und-codeanschlüsse) hält M13 offen.
+
+```bash
+./node_modules/esbuild/bin/esbuild tests/campaign-manifest-consumer-matrix.entry.ts --bundle --platform=node --outfile=/tmp/dungeon-consumer-matrix.cjs
+node --test --experimental-test-isolation=none /tmp/dungeon-consumer-matrix.cjs
+```
+
 ## Repositorykarte
 
 - `src/`: Produktcode und Obsidian-Anschluss.

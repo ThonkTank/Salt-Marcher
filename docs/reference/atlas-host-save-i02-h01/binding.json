@@ -651,11 +651,11 @@
   "frozenContractSha256": "92b766263ed73fd5dc5e24b2023e55af6f5f17b006830adb45f10734dfba69d6",
   "frozenFiles": [
     {
-      "path": "tests/campaign-manifest-consumer-matrix.entry.ts",
+      "path": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/82ebc7f9bbc9ce79447bca3f98ce70e6cc253cd9/tests/campaign-manifest-consumer-matrix.entry.ts",
       "sha256": "70e372b3172239e2084c4c645ab1f9f1c16b8abca469662fea0e4ac6e35fea83"
     },
     {
-      "path": "tools/verify-campaign-manifest-consumer-matrix.mjs",
+      "path": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/82ebc7f9bbc9ce79447bca3f98ce70e6cc253cd9/tools/verify-campaign-manifest-consumer-matrix.mjs",
       "sha256": "98f6be22f554c0effd2f30b6ea2bc9410f6e7bc6732374a5c73ba5d80f06c9f5"
     },
     {
