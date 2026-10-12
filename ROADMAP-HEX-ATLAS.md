@@ -168,7 +168,7 @@ Ich verlege den regionalen Weg, korrigiere eine Dorfstraße und lasse einen ausg
 
 #### 10. Speichern und später weiterarbeiten
 
-Bestätigte Änderungen werden automatisch dauerhaft gespeichert. Ich sehe, ob Änderungen noch ausstehen, gespeichert sind oder ein Speicherfehler vorliegt. Ich schließe Obsidian vollständig, starte neu und finde Eichenfurt, die Taverne und die Alte Wacht samt Geometrie, Keys und Links wieder. Kamera und Auswahl werden wiederhergestellt, soweit das gespeicherte Ziel noch existiert.
+Bestätigte Änderungen werden automatisch dauerhaft gespeichert. Ich sehe, ob Änderungen noch ausstehen, gespeichert sind oder ein Speicherfehler vorliegt. Ich schließe das Programm vollständig, starte neu und finde Eichenfurt, die Taverne und die Alte Wacht samt Geometrie, Keys und Links wieder. Kamera und Auswahl werden wiederhergestellt, soweit das gespeicherte Ziel noch existiert.
 
 **Sichtbares Ergebnis:** „Gespeichert“ wird erst nach erfolgreicher dauerhafter Speicherung angezeigt. Ein Fehler oder eine externe Änderung bleibt sichtbar und erhält meine offene Arbeit zur Auflösung. Gelände-, Straßen-, Gebäude-, Raum- und Key-Änderungen haben während einer Atlas-Lebensdauer eine gemeinsame Undo/Redo-Reihenfolge. Eine über vollständige Neustarts fortgesetzte Undo-Historie ist damit nicht vereinbart.
 
@@ -201,7 +201,7 @@ Bestätigte Änderungen werden automatisch dauerhaft gespeichert. Ich sehe, ob �
 
 Die [Lieferstufen Work → Efficient → Beautiful](#wie-kommen-wir-zum-ziel) bestimmen die Umsetzung des Leitbeispiels. Die Erzählfolge ist der Nutzerweg, keine zusätzliche Lieferliste. Für Gebäude werden gemeinsames Objekt, Befehle und Übernahme vorhandener Daten vor Produktänderungen im [bestehenden technischen Stadtplan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md) konkretisiert; Kennungen, Texte, Maße und Links bleiben erhalten.
 
-Die spätere Produktabnahme spielt das Beispiel in einem isolierten Obsidian-Testvault durch: Vorschauabbruch ohne Restdaten, Wandumfang gegenüber Gesamtskalierung, geschützte Regeneration, Raumteilung/-vereinigung ohne Textverlust, gemischte Undo/Redo-Folge, vollständiger Neustart, sichtbare Speicherfehler/externe Konflikte, Suche, stabile Links und Ausgabe. Bestehende Teilbelege bestätigen nur ihren bisherigen Umfang. Die Planungsänderung vergibt keinen PASS.
+Die spätere Produktabnahme spielt das Beispiel im tatsächlichen Zielhost mit isolierten Testdaten durch: Vorschauabbruch ohne Restdaten, Wandumfang gegenüber Gesamtskalierung, geschützte Regeneration, Raumteilung/-vereinigung ohne Textverlust, gemischte Undo/Redo-Folge, vollständiger Neustart, sichtbare Speicherfehler/externe Konflikte, Suche, stabile Links und Ausgabe. Bestehende Teilbelege bestätigen nur ihren bisherigen Umfang. Die Planungsänderung vergibt keinen PASS.
 
 ## Werkzeuge und Bediengefühl
 
@@ -383,7 +383,7 @@ Das vereinbarte Ziel:
 - **Räumliche Größen werden in Meilen oder Hex-Kacheln angegeben.** Das betrifft erzeugte Bereiche, Vorlagen und gewählte Ausschnitte; Hex-Anzahlen beziehen sich auf eine ausdrücklich benannte Hex-Stufe. Pixel bestimmen ausschließlich Darstellung und Bildausgabe.
 - **Alle räumlichen Detailstufen sind allein durch Zoom erreichbar.** Welt → Region → Stadt → Haus → Dungeonraum bleibt an denselben Weltpositionen.
 - **Es gibt keine separaten Modi.** Navigation und Bearbeitung bleiben in einem Editor mit gemeinsamer Kamera, Werkzeugleiste, Auswahl und durchgehender Undo/Redo-Folge. Zoom wechselt keine Editoroberfläche oder Bearbeitungsart.
-- **Städte und POIs erhalten `.location`-Dateien**, deren Keys wie die heutigen Dungeon-Keys bearbeitet werden.
+- **Städte und POIs besitzen stabile Ortsidentitäten und bearbeitbare Keys** im gemeinsamen Store.
 - **Stadtpläne werden nativ erzeugt und direkt bearbeitet.** Watabous Stadtgrundrisse und Canvas of Kings dienen als Ergebnisvorbilder; die Bedienung gestalten und prüfen wir eigenständig. Die [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt frühe nutzbare Phasen.
 - **Alle Vorbilder werden nach erreichbaren Ergebnissen verglichen.** Eigene Werkzeuge und Gesten sind zulässig; bearbeitbare Wirkung, Korrektur und Speicherung zählen. Die verbindliche [Gleichwertigkeits- und Lieferregel](#wie-kommen-wir-zum-ziel) gilt auch für Wonderdraft und Dungeon.
 - **Ooke-Welt und Ooke-Kontinent dienen als Bildvorlagen.** Neue Hex-Karten entstehen nativ.
@@ -443,19 +443,19 @@ Die gemeinsame Testregion wächst mit den zentralen Lieferstufen und ihren funkt
 
 ### Meilenstein A – Eine Hexkarte tatsächlich bearbeiten
 
-| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
+| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
-| **HEX-01 – Atlas anlegen und öffnen** | Grenzenlose `.overworld` anlegen, benennen und öffnen, ohne Größenabfrage. 3-Meilen-Hexes anzeigen, ein Hex treffen und seine Adresse zeigen; verschieben, zoomen und belegte Inhalte einpassen. Ausrichtung, Weltmaßstab und Weltkoordinaten von Anfang an speichern. | Leeren Atlas öffnen, Hexes auf beiden Seiten des Ursprungs und außerhalb des ersten Ausschnitts anklicken. Pan/Zoom belegen keine Landschaftsdaten. Nach frischem Start stimmen Kennung und Adressen; ein bestehender Dungeon öffnet weiterhin. |
+| **HEX-01 – Atlas anlegen und öffnen** | Grenzenlosen Atlas anlegen, benennen und öffnen, ohne Größenabfrage. 3-Meilen-Hexes anzeigen, ein Hex treffen und seine Adresse zeigen; verschieben, zoomen und belegte Inhalte einpassen. Ausrichtung, Weltmaßstab und Weltkoordinaten von Anfang an speichern. | Leeren Atlas öffnen, Hexes auf beiden Seiten des Ursprungs und außerhalb des ersten Ausschnitts anklicken. Pan/Zoom belegen keine Landschaftsdaten. Nach frischem Start stimmen Kennung und Adressen; ein bestehender Dungeon öffnet weiterhin. |
 | **HEX-02 – Gelände malen und erhalten** | Land, Meer und einfacher Geländetyp per Klick und zusammenhängendem Pinselzug setzen; lokale Bearbeitung zurücksetzen; Undo/Redo, explizites Speichern und dauerhafte Entwürfe anbieten. Nur bearbeitete Hexes werden als spärlich belegte, getrennt ladbare Bereiche gespeichert; Inhalt erweitert die gemeinsame Ausdehnung automatisch. | Kleine Insel zeichnen und jenseits ihres bisherigen Bereichs weiterzeichnen, auch in negativen Koordinaten. Wachstum verlangt keine Resize-Aktion und verschiebt nichts. Abbruch, Undo/Redo, Speichern, Neuöffnung und Entwurfswiederherstellung erhalten Inhalt und daraus abgeleitete Ausdehnung. |
 
 **Nach HEX-02 steht der erste benutzbare Hex-Editor bereit.** Sein Testbuild enthält einen vollständigen Bearbeitungs- und Speicherablauf; weitere Kartengestaltung folgt auf dieser Grundlage.
 
 ### Meilenstein B – Hex → Ort → Dungeon → Raum-Key → zurück
 
-| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
+| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
-| **HEX-03 – Stadt und POI mit Key** | Stadt oder POI an einer Weltposition anlegen. `.location` mit stabiler Kennung und zwei frei bearbeitbaren Markdown-Abschnitten öffnen, Abschnitte ordnen und direkt verlinken. Anlage von Ort und Atlasplatzierung gemeinsam rücknehmen und mit einem wiederherstellbaren Speicherjournal für die beteiligten Dateien speichern. | Ort anklicken, Text rechts bearbeiten, Abschnittslink öffnen und Ort verschieben. Undo/Redo und frischer Start erhalten Wortlaut, Abschnittskennungen und Position. Abbruch und unterbrochene Anlage hinterlassen nach Wiederherstellung keinen verwaisten Ortsverweis. |
-| **HEX-04 – Einen Dungeon verorten** | Bestehende `.dungeon`-Karte über ihre Kennung am Ort platzieren. Einen lokalen Eingangsanker wählen; Weltposition, Drehung, tatsächlichen Maßstab und Kartenumriss darstellen. | Bekannte Dungeonkontur platzieren und drehen. Lokaler Eingangsanker und Weltanker stimmen überein; Rücknahme und Neuöffnung erhalten die Bindung. Die Quelldatei des Dungeons bleibt unverändert. |
+| **HEX-03 – Stadt und POI mit Key** | Stadt oder POI an einer Weltposition anlegen. Orts-Key mit stabiler Kennung und zwei frei bearbeitbaren Markdown-Abschnitten öffnen, Abschnitte ordnen und direkt verlinken. Anlage von Ort, Abschnitten und Atlasplatzierung als einen rücknehmbaren Command dauerhaft speichern; Recovery folgt dem gemeinsamen Storevertrag. | Ort anklicken, Text rechts bearbeiten, Abschnittslink öffnen und Ort verschieben. Undo/Redo und frischer Start erhalten Wortlaut, Abschnittskennungen und Position. Abbruch und unterbrochene Anlage hinterlassen nach Wiederherstellung keinen verwaisten Ortsverweis. |
+| **HEX-04 – Einen Dungeon verorten** | Vorhandenen Dungeon über seine Kennung am Ort platzieren; externe `.dungeon`-Bestände zuvor über den geprüften Adapter übernehmen. Einen lokalen Eingangsanker wählen; Weltposition, Drehung, tatsächlichen Maßstab und Kartenumriss darstellen. | Bekannte Dungeonkontur platzieren und drehen. Lokaler Eingangsanker und Weltanker stimmen überein; Rücknahme und Neuöffnung erhalten die Bindung. Die Originaldatei und der lokale Dungeoninhalt bleiben durch die Platzierung unverändert. |
 | **HEX-05 – Dungeon direkt im Atlas bearbeiten** | Beim Hineinzoomen verortete Dungeon-Geometrie im selben Atlas anzeigen, Raum und Key unmittelbar bearbeiten und durch Herauszoomen zur Region gelangen. Welt-/Lokalkoordinaten werden über die Platzierung umgerechnet. Zunächst werden eine Dungeonkarte und ihre Umgebung gemeinsam sichtbar und bearbeitbar. | Nur zoomen, Hex und Dungeonraum ändern, Key bearbeiten und herauszoomen. Keine Öffnen-/Betreten-/Modusaktion; Werkzeug, Auswahl, Lage, Maßstab und durchgehendes Undo/Redo bleiben korrekt. Speichern und frischer Start erhalten dieselbe Folge. |
 
 **Nach HEX-05 ist der erste zusammenhängende Spielablauf benutzbar.** Der zugehörige Build wird mit der gemeinsamen Testregion bereitgestellt. Mehrere gleichzeitig sichtbare Detailkarten folgen in HEX-22; die erste räumliche Verbindung und Navigation sind bereits hier prüfbar.
@@ -466,7 +466,7 @@ CITY-01–04 enthalten den Stadt-/Gebäudegrundablauf für Work und dessen spät
 
 ### Meilenstein C – Weltmaßstab, eigene Vorlage und erste Ausgabe
 
-| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
+| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
 | **HEX-06 – Alle Hex-Stufen bearbeiten** | Standardstufen von 3 bis 2.187 Meilen und erforderliche größere Stufen anbieten. Manuelle Stufenwahl und automatischer Wechsel mit Übergangsbereich; grobe Vorgaben, feine Überschreibungen und Zurücksetzen verbinden. | Auf 27 Meilen Land setzen, auf 3 Meilen eine Küste verfeinern, grobe Vorgabe ändern und ein feines Detail zurücksetzen. Alle Stufen, Ortspositionen, Übersicht und Neuöffnung zeigen den jeweils richtigen Zustand. |
 | **HEX-07 – Verbundene Änderungen sicher erhalten** | Externe Importkonflikte, unterbrochene gekoppelte Transaktion, Wiederherstellung und direkte Links nach Umbenennungen ausdrücklich absichern. Benötigte Dungeonwirkung im gemeinsamen Kern liefern. | Orts-Key ändern und Platzierung verschieben; Abbruch im gemeinsamen Commit und externe Importänderung im isolierten Zielstore auslösen. Ein lesbarer, konsistenter Stand wird wiederhergestellt oder ein Konflikt gemeldet. Orts- und Raumlinks funktionieren nach Umbenennung. |
@@ -478,7 +478,7 @@ CITY-01–04 enthalten den Stadt-/Gebäudegrundablauf für Work und dessen spät
 
 ### Meilenstein D – Eine natürliche Landschaft zeichnen
 
-| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
+| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
 | **HEX-11 – Küsten innerhalb von Hexes** | Land und Wasser auch innerhalb eines Hexes mit einem freien Pinsel bearbeiten. Zusammenhängende Küsten und weiche Übergänge darstellen; Änderungen bleiben in den betroffenen Hex-Bereichen verankert. | Eine Bucht und schmale Landzunge über mehrere Hex- und Ladegrenzen zeichnen. Zoomen, Undo/Redo, Neuöffnung und PNG-Ausgabe erhalten Verlauf und Anschlüsse ohne Naht. |
 | **HEX-12 – Seen und Wasser gestalten** | See beziehungsweise Süßwasserfläche anlegen und radieren; Wasserfarbe und die für diesen Ablauf gemessenen Erscheinungsoptionen bearbeiten. | See innerhalb einer Insel zeichnen, einen Teil entfernen und Erscheinung ändern. Rücknahme, Neuöffnung und Export erhalten die Fläche; das angrenzende Land und die Ortspositionen stimmen. |
@@ -491,7 +491,7 @@ Nach jeder neuen Landschaftsfunktion wird derselbe Insel-Ort-Dungeon-Ablauf erne
 
 ### Meilenstein E – Die Karte lesbar ausarbeiten
 
-| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
+| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
 | **HEX-17 – Ein Symbol auswählen und setzen** | Ein Symbol aus einer kleinen Bibliothek auswählen, Vorschau zeigen, platzieren, auswählen, skalieren, drehen, spiegeln, duplizieren, anordnen und entfernen. Gemeinsame Platzierungs- und Korrekturaktionen verwenden. | Berg, Baum und Siedlung setzen; überlappende Symbole bearbeiten. Jeweils Karte und Trefferreihenfolge prüfen; Undo/Redo und Neustart erhalten Position, Maßstab und Ordnung. |
 | **HEX-18 – Wälder und Gebirge pinseln** | Gruppenpinsel mit Dichte, Streuung und Varianten für Bäume und Berge; Radieren und rücknehmbare zusammenhängende Pinselzüge. | Wald über mehrere Hexes malen, Teilbereich radieren und einen ganzen Zug rücknehmen. Eine gebirgige Region bleibt bei Stufenwechsel, Export und Neuöffnung vollständig und bedienbar. |
@@ -501,7 +501,7 @@ Nach jeder neuen Landschaftsfunktion wird derselbe Insel-Ort-Dungeon-Ablauf erne
 
 ### Meilenstein F – Mehrere Detailkarten im gemeinsamen Raum
 
-| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
+| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
 | **HEX-22 – Stadt und mehrere Dungeons im Atlas** | Mehrere Detailkarten abhängig von sichtbarer Größe mit Vorschau und vollständiger Geometrie darstellen. Stadt aus CITY-03, zwei Gebäudeinnenräume sowie eigenständige Orts-Dungeons und mehrere Eingänge räumlich verbinden; alle sichtbaren Geometrien im selben Editor direkt bearbeitbar halten. | Ausschließlich von Welt zu Stadt und zwei Hausgrundrissen hinein-/herauszoomen; Straßen, Räume und Keys ohne Kontextwechsel mit gemeinsamer Undo-Folge bearbeiten. Nach Save/Neustart stimmen Lage, gültige Auswahl und Eingangszielpunkte; eine über Neustarts fortgesetzte Undo-Historie ist nicht vorausgesetzt. Außer Sicht liegende Ressourcen werden freigegeben. |
 
@@ -509,7 +509,7 @@ Diese Phase erweitert den seit HEX-05 funktionierenden Übergang. Ihr Review pr�
 
 ### Meilenstein G – Verbleibende Wonderdraft-Werkzeugfamilien vervollständigen
 
-| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
+| Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im tatsächlichen Zielhost |
 |---|---|---|
 | **HEX-23 – Landmassenausschnitt bearbeiten** | Lasso, Flächenauswahl, Ausschneiden, Kopieren, Einfügen, Verschieben und Größenänderung für Landschaft mit eigener Bedienung und gleichwertiger bearbeitbarer Wirkung anbieten. Betroffene Landschaftsdaten ändern sich als zusammengehöriger Befehl. | Inselteil auswählen, kopieren, verschieben und rücknehmen. Land, Süßwasser und andere laut Original mitbewegte Bestandteile prüfen; bestehende Ortsbindungen, gespeicherte Vorgaben und Neuöffnung bleiben konsistent. |
 | **HEX-24 – Gestaltungsvorlagen und Effekte** | Kartenweite Vorlagen, Texturen, Paletten und die katalogisierten Erscheinungseffekte ergänzen. Geometrie und Key-Inhalte bleiben eigenständige Daten. | Auf derselben Testregion mehrere Vorlagen und Effekte anwenden. Beschriftungen, Wasser und Symbole bleiben lesbar; Raum- und Orts-Keys unverändert. Editor und PNG zeigen dieselbe Gestaltung. |
@@ -523,7 +523,7 @@ Vor jeder Lieferung müssen ihre fachlichen Ergebnisse und Datenabhängigkeiten 
 
 **Ergebnis:** Die vollständige Wonderdraft-Parität und der zusammenhängende Atlasablauf bestehen auf demselben Endbuild. Der Abnahmekatalog enthält für jede Pflichtfunktion direkte Original- und Hostbelege beziehungsweise eine ausdrücklich vereinbarte Anpassung durch die Hex-Grundstruktur. Offene Pflichtfälle verhindern die Behauptung vollständiger Gleichwertigkeit und werden in ihren zuständigen Werkzeuggruppen nachgebessert.
 
-**Praxistest:** Kleine Testregion und große Prüfwelt aus Abschnitt 4 im echten Obsidian bearbeiten, speichern, wiederherstellen und frisch öffnen. Physische Maus-/Touchpad-Eingaben, Detailkarten, Orts- und Raumlinks sowie Ausgabebilder prüfen. Nach Sicherung des aktuellen Produktstands installieren und den Kernablauf auf dem tatsächlich installierten Build wiederholen.
+**Praxistest:** Kleine Testregion und große Prüfwelt aus Abschnitt 4 im tatsächlichen Zielhost bearbeiten, speichern, wiederherstellen und frisch öffnen. Physische Maus-/Touchpad-Eingaben, Detailkarten, Orts- und Raumlinks sowie Ausgabebilder prüfen. Nach Sicherung des aktuellen Produktstands installieren und den Kernablauf auf dem tatsächlich installierten Build wiederholen.
 
 ## 4. Abnahme, Fehlerfälle und feste Vorgaben
 
@@ -562,7 +562,7 @@ Die große Prüfwelt besitzt eine **belegte Ausdehnung von 40.000 × 20.000 Kilo
 
 Geprüft werden Ladezeit, Reaktionszeit, Kamerabewegung, Speicherbedarf und Freigabe ungenutzter Ressourcen. Als Ziel gelten auf dem vorhandenen Laptop nach dem Laden höchstens 33 ms pro Navigationsbild im 95. Perzentil und höchstens 100 ms bis zur Werkzeugvorschau. Die Übersicht muss nutzbar werden, bevor alle Detaildaten geladen sind.
 
-Kernprüfungen, Build, Obsidian-Bedienung, Großkartenlauf und physische Maus-/Touchpad-Abnahme werden getrennt dokumentiert.
+Kernprüfungen, Build, Zielhost-Bedienung, Großkartenlauf und physische Maus-/Touchpad-Abnahme werden getrennt dokumentiert.
 
 ### Gewählte Defaults
 
@@ -571,8 +571,8 @@ Kernprüfungen, Build, Obsidian-Bedienung, Großkartenlauf und physische Maus-/T
 - Hex-Ausrichtung ist beim Anlegen wählbar und bleibt danach fest.
 - Automatischer Stufenwechsel besitzt einen Übergangsbereich gegen Hin-und-her-Springen; eine manuelle Stufenwahl bleibt möglich.
 - Unterhalb der 3-Meilen-Stufe entstehen keine weiteren Overworld-Hex-Stufen. Stadt- und Dungeonraster übernehmen die Detailbearbeitung.
-- Orts-Keys bleiben in `.location`, Raum-Keys eigenständiger Dungeons in `.dungeon`. Bestehende Gebäude-Raumkeys und ihre Links bleiben erhalten; ihre Speicherung folgt dem [gemeinsamen Gebäudevertrag](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#gemeinsamer-gebäudezustand-erste-umsetzung). Der Atlas verweist auf diese Inhalte.
-- Stadtgeometrie wird in `.city` geführt. Außenform und Innenräume eines Gebäudes werden gemeinsam bearbeitet; eigenständige Dungeons bleiben stabil verortet. Generation schützt manuelle Änderungen, Innenräume und Keys.
+- Orts-/Raum-Keys und Stadtgeometrie folgen dem [gemeinsamen Store- und Adaptervertrag](#gemeinsamer-raum-und-kartenformate). IDs, Prosa und bestehende Links bleiben beim Übergang erhalten.
+- Außenform und Innenräume eines Gebäudes werden gemeinsam bearbeitet; eigenständige Dungeons bleiben stabil verortet. Generation schützt manuelle Änderungen, Innenräume und Keys.
 - Der Atlas bleibt ein durchgehend bearbeitbarer Raum ohne separate Modi. Zoom allein erschließt räumliche Größenstufen; Detaildarstellung ist kein Wechsel des Editors.
 - Bestehende Wonderdraft-Karten werden als Bildvorlagen verwendet; ihre Originaldateien bleiben erhalten.
 - Bestehende Dungeonkarten werden durch ihre Atlasplatzierung nicht umgerechnet oder neu gezeichnet.

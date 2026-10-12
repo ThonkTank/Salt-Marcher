@@ -208,28 +208,13 @@ CE-01 besitzt komprimiertes Buildasset/Lazy Loader, Katalogview und Command-Foku
 
 ## Monsterkatalog
 
-### Ausgangslage
+### Vorhandene Basis
 
-- CE-00 stellt einen geprüften, reinen Katalogkern mit 334 SRD-5.1-Kreaturen,
-  Manifestbindung, unabhängigem Artefakthash, kombinierten Filtern, Sortierung,
-  Paging, Detailzugriff und tiefer Immutabilität bereit.
-- Der Katalogkern ist noch nicht vom Produktionseinstieg erreichbar. Das ist
-  absichtlich so, weil sein statischer JSON-Import beim Pluginstart vermeidbare
-  Kosten verursachen würde.
-- Der bestehende Build erzeugt ein einzelnes CJS-`main.js`; die Hostinstallationen
-  kopieren zuverlässig nur `main.js`, `manifest.json` und `styles.css`.
-- Die reproduzierbare Produktbaseline auf Commit
-  `86ce73179ede452ee6a9f5d3197ee325544a58b8` unter Node `v24.19.0` ist
-  1.189.370 Bytes unkomprimiert und 344.194 Bytes gzip. Messbefehl:
-  `npm run build && wc -c main.js && gzip -9 -c main.js | wc -c`.
-- Nicht eingecheckte Einmalproben ergaben für ein isoliertes Katalogbundle
-  606.237 Bytes beziehungsweise 96.282 Bytes gzip, für das rohe JSON 106.150
-  Bytes gzip beziehungsweise 141.536 Base64-Zeichen und für eine einzelne
-  Node-Materialisierung rund 28,84 ms sowie 3.154.264 Bytes Heap-Zuwachs.
-  Diese Werte sind **unverifizierte Planungsbeobachtungen**: Ohne
-  eingechecktes Messskript, Warmup-/Sampledefinition und Receipt sind sie
-  weder Abnahmebeleg noch Leistungsbaseline. CE-01-I01 ersetzt sie durch ein
-  reproduzierbares Buildinventar; echte Start-/Ladezeit bleibt Hostabnahme.
+Der geprüfte Katalogkern enthält 334 SRD-5.1-Kreaturen mit Manifestbindung,
+unabhängigem Artefakthash, kombinierten Filtern, Sortierung, Paging, Detailzugriff
+und tiefer Immutabilität. Der derzeitige Obsidianadapter stellt ihn über einen
+Lazy Loader und eine eigene Katalogansicht bereit. Die aktuelle Fachabnahme und
+ihre Grenzen stehen in `acceptance.json.saltMarcherCatalogEncounter`.
 
 ### Verbindliche Entscheidungen
 
@@ -249,7 +234,7 @@ CE-01 besitzt komprimiertes Buildasset/Lazy Loader, Katalogview und Command-Foku
 5. D&D 2014 bleibt einziges Coreprofil; keine 2024-/Multisystemarchitektur.
 
 Die frühere main.js-/Base64-/DecompressionStream-/Drei-Plugin-Dateien-
-Entscheidung wird ersetzt. Ihre folgenden Lauf-/Buildbelege sind historische
+Entscheidung wird ersetzt. Ihre Lauf-/Buildbelege im Abnahmeregister sind historische
 Obsidianbefunde, kein Zielpackaginglimit. Neue Bundleartefakte erhalten
 Manifest-/Hash-/Offline-/Installationsprüfung an der neuen Zielshell.
 
@@ -295,191 +280,48 @@ Nameklick, Doppelklick oder Enter auf einer ausgewählten Zeile öffnet Details.
 - Fokus wird bei einer Aktualisierung nicht versetzt. Eine weiterhin vorhandene
   Auswahl bleibt nach Query-/Sortieränderung über ihre stabile ID erhalten.
 
-### Historische Obsidian-Umsetzungspakete
-
-Die folgenden CE-01-I01–I03-Schritte beschreiben den damaligen Adapter. Für den Zielkern gilt die neue Entscheidung oben; keine Pflicht zu gzip-in-main.js, festen Payloadbytes oder Obsidian-Views. Historische Hostbelege behalten ihren Scope.
-
-#### CE-01-I01 – Komprimiertes Buildasset und Lazy Loader
-
-Status: umgesetzt, Basisprüfungen und 222 Tests grün, nach Reparaturreview
-bestanden. Das Buildinventar misst 102.021 Gzip-Bytes, 136.028
-Base64-Zeichen und 144.954 Bytes `main.js`-Zuwachs; alle festgelegten Grenzen
-sind eingehalten. Katalog-UI und Hostabnahme bleiben offen.
-
-- JSON-Import aus `creature-catalog.ts` entfernen.
-- Hashprüfenden, einmalig cachenden Loader ergänzen.
-- Build um das hashgeprüfte virtuelle Gzip-/Base64-Modul und eine
-  objektive Payload-Grenze erweitern: höchstens 122.880 Gzip-Bytes, höchstens
-  164.000 Base64-Zeichen und höchstens 180.000 tatsächlich in `main.js`
-  emittierte Bytes des virtuellen Katalogpayloads. Das gesamte Wachstum von
-  `main.js` gegenüber der gebundenen 1.189.370-Byte-Baseline bleibt als
-  Inventarwert sichtbar, ist aber kein Kataloggate für spätere Atlas-, City-
-  oder andere Produktfunktionen. Das Buildinventar dokumentiert Quelle,
-  Commit, Node-Version, Befehl, Payloadanteil und Gesamtwachstum.
-- Lazy-, Fehler-/Retry-, Hash-, Notice- und Buildinventartests ergänzen.
-
-#### CE-01-I02 – View-Grundgerüst und Kernfluss
-
-Status: umgesetzt; Typprüfung, 225 Tests und Build bestanden. Unabhängiger
-Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
-
-- View-Type, Registrierung und Command-Fokus ergänzen.
-- Suche, CR/Typ/Größe, Sortierung, Paging, Auswahl und vollständigen Statblock
-  mit stabiler View-Session implementieren.
-- Kein Encounter-Button in diesem Paket.
-
-#### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
-
-Status: umgesetzt; Typprüfung, 235 Tests einschließlich hostneutralem DOM-
-Harness und Build bestanden. Ein Reparaturreview bestätigt Filterprojektion,
-Mehrfachwerte, Chips/Reset, 200-ms-Drafts, Timer-Cleanup, atomare Übernahme
-ausstehender Drafts beim Host-Lifecycle und Fokusfallbacks.
-Der CSS-Container und seine Breakpoints sind statisch belegt; echte
-Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
-
-- Query, State, Render-Controller und DOM-Host-Prüfungen bleiben hostneutral
-  und erhalten alle Hostfähigkeiten über injizierte Ports. Der bestehende
-  Obsidian-`ItemView` ist nur ein dünner Übergangsadapter; Command-/View-Tests
-  prüfen diesen Adapter getrennt und begründen keine dauerhafte Hostbindung.
-- Verbleibende D&D-Beyond-2014-vergleichbare Filter, einzelne Chips und Reset.
-- Den lokalen statischen I02-Befund reproduzieren und beheben: `change()` darf
-  beabsichtigte Scroll-Resets nicht durch ein nachfolgendes `captureScroll()`
-  aus dem alten DOM überschreiben.
-- Responsive Containerregeln am tatsächlichen Katalogcontainer aktivieren und
-  im DOM-Host belegen; derzeit ist `container-type` nur für den Editorhost
-  nachgewiesen.
-- Tastaturablauf, 200-ms-Debounce, Statuszustände und Layout bei 900×650 und
-  1150×700 fertigstellen.
-
 ### Fokussierte Prüfungen
 
-- Reiner Loader-Test: keine Dekompression vor `load()`, gültige und beschädigte
-  Payload, Retry nach behobenem Fehler und genau eine Instanz bei parallelem
-  Öffnen.
-- Buildtest: `main.js` enthält weder den Aboleth-Statblocktext noch den
-  unkomprimierten Katalog-JSON-Korpus, aber Notice/CC-URL und das begrenzte
-  virtuelle Payloadmodul; Build bricht bei abweichendem Quellhash oder einem
-  der drei numerischen Payloadlimits ab.
-- Viewtest mit DOM-Host: Debounce, stale Query, Schnittmengenfilter, Paging,
-  Auswahlbeibehalt, Enter/Escape, `aria-sort`, Status und Notice.
-- Echte Obsidian-Abnahme auf einem Gerät: Öffnen aus der Command Palette,
-  Suche/Filter/Detail, Fokuswechsel, View schließen/neu öffnen und frischer
-  Prozess.
+- Quellenhash, Manifest und Attribution prüfen; vor Öffnen keine vollständige
+  Statblockmaterialisierung. Beschädigte Daten zeigen einen konkreten Fehler;
+  nach Behebung lädt derselbe Retry den gültigen Katalog.
+- Paralleles Öffnen erzeugt eine sichtbare Katalogansicht. Debounce, verspätete
+  Queries, Schnittmengenfilter, Paging, Auswahl, Fokus, Scroll, Enter/Escape,
+  `aria-sort`, Status und Lizenzzugang erfüllen den gemeinsamen Providervertrag.
+- Normales Schließen und frischer Prozess erhalten bestätigten Ansichtszustand;
+  bewusstes Schließen der Ansicht und neue Anlage beginnen mit gültigen Defaults.
+  Filter, Tabelle, Inspector und Lizenz bleiben auch in schmalen Ansichten erreichbar.
+- Den tatsächlichen Zielhost prüfen. Alte Obsidian-, Gzip-/Base64- und main.js-
+  Belege übertragen weder ihren PASS noch ihre Packaginglimits auf den neuen Kern.
 
 ### Offene Abnahme
 
-- CE-AC-01 bleibt bis zu I03 und echtem Host offen.
-- CE-AC-02 bleibt bis zum vollständigen Inspector und nachgewiesenem
-  Zustands-/Scroll-Erhalt offen.
-- CE-AC-14 bleibt bis zur Tastatur-, Fehler- und beschädigten-Asset-Abnahme
-  offen.
-- Sämtliche Encounter-Fälle CE-AC-03 bis CE-AC-13 bleiben vollständig offen.
+CE-AC-01, CE-AC-02 und CE-AC-14 benötigen weiterhin den vollständigen
+Produktlifecycle und die fehlenden physischen, Screenreader- und Plattformproben.
+CE-AC-03 bis CE-AC-13 sind durch den Monsterkatalog nicht geliefert.
 
 ## Monster-Hostprüfung
 
-### Zweck und Grenze
+**Datierter Befund vom 09.10.2026:** Der automatisierte H01-Scope auf
+`aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05` ist geprüft. Drei getrennte echte
+Obsidianprozesse belegten Öffnen über die Befehlspalette, genau eine sichtbare
+Ansicht bei überlappender Öffnung, Filter/Chips/Sortierung/Paging/Details,
+Tastatur-/Fokus-/Scrollzustand, frische Wiederaufnahme und gültige Defaults nach
+bewusster neuer Anlage. Die Größen 900×650 und 1150×700 waren ohne horizontalen
+Hauptüberlauf bedienbar; normale Prozessenden sind gebunden.
 
-Dieser Lauf prüft den auf `active/installed-phase1` integrierten CE-01-Kandidaten
-in einer echten, isolierten Obsidian-Desktopinstanz. Er ändert keine
-Produktdatei und erteilt allein keine CE-01-Fachfreigabe. Automatisierte
-Playwright-Eingaben belegen den echten Hostpfad, ersetzen aber keine spätere
-physische Tastatur-/Mausprüfung; diese Grenze bleibt im Receipt ausdrücklich
-offen.
+Der beschädigte-Payload-Fall injizierte einmal ungültige Gzip-Bytes vor dem alten
+Produktdecoder. Ein sichtbarer Fehler und Retry in derselben Ansicht bestanden
+nach Rücknahme der Injektion. Das ist ein kontrollierter Hostfehlerfall, kein
+Nachweis eines manipulierten Releasebundles. Die dabei gefundenen Timer- und
+Restoredefaultfehler wurden behoben und regressionsgeprüft.
 
-Die Abnahme verwendet ausschließlich das QA-Vault unter
-`/home/aaron/.cache/dungeon-native-qa/`. Produktive Vaults, Karten und
-Benutzerdaten werden nicht verändert. Auf diesem Gerät läuft gleichzeitig nur
-eine grafische Obsidian-, Original- oder Prototypinstanz.
-
-### Läufe und Belege
-
-#### H01-A – Kernablauf und frischer Prozess
-
-1. `npm run check`, `npm test` und `npm run build` müssen auf sauberem SHA
-   bestehen. SHA-256 und Größe von `main.js`, `manifest.json` und `styles.css`
-   werden vor dem Start erfasst.
-2. Obsidian startet mit eigenem Config-/Cache-/Data-Root und genau dem
-   `dungeon-editor`-Plugin. Der Katalog wird über die sichtbare Command Palette
-   mit `Monsterkatalog öffnen` geöffnet, nicht durch einen direkten View-Aufruf.
-3. Zwei überlappende Command-Ausführungen ergeben genau einen
-   `dungeon-creature-catalog`-Leaf; der kanonische Leaf ist aktiv und sichtbar.
-4. Suche, mindestens zwei kombinierte Filter, Chipentfernung, Sortierung,
-   Paging, Zeilenauswahl, Enter, Pfeiltaste, Escape und `Quelle & Lizenz` werden
-   über echte Host-DOM-Eingaben geprüft. Filter, Auswahl, Paging, Ergebnis- und
-   Detailscroll bleiben bei Fokuswechsel und Rückkehr erhalten.
-5. Bei 900×650 und 1150×700 bleiben Filter, Ergebnistabelle, Status, Inspector
-   und Lizenzzugang erreichbar; der Hauptcontainer besitzt keinen horizontalen
-   Überlauf. Bounding-Boxen, Scrollmaße und Screenshots werden gespeichert.
-6. Der Edit-Lauf beendet Obsidian normal. Ein eigener `--restart`-Lauf öffnet
-   denselben QA-Workspace in einem frischen Prozess und verifiziert exakt den
-   serialisierten Viewzustand. Danach wird der Leaf geschlossen und über die
-   Command Palette sauber als genau ein neuer Default-Leaf geöffnet.
-
-#### H01-B – Beschädigte Payload und Retry
-
-Ein separater frischer Hostlauf injiziert vor dem ersten Katalogzugriff genau
-einmal beschädigte, von `atob` gelieferte Gzip-Bytes. Der unveränderte
-Produktdecoder muss einen sichtbaren `role=alert`-Fehler mit
-`Erneut versuchen` zeigen; es darf weder ungefangenen Pagefehler noch einen
-zweiten Katalogleaf geben. Nach Rücknahme der Fault-Injection lädt derselbe
-Retry-Button den vollständigen Katalog. Das Receipt bezeichnet dies als
-kontrollierte Host-Fault-Injection und nicht als Nachweis eines manipulierten
-Releasebundles.
-
-Jeder Lauf schreibt unter einem neuen unveränderlichen Verzeichnis in
-`/home/aaron/.cache/dungeon-native-qa/` mindestens `build.json`,
-`plugin-state.json`, `result.json`, `catalog-state.json`, Layoutmessungen,
-Screenshots, Console-/Pagefehler und Speichertelemetrie. Vorhandene Receipts
-werden nicht überschrieben.
-
-### Gates
-
-- Exakter sauberer Git-SHA und Pluginhash stimmen in Edit-, Restart- und
-  Faultlauf überein.
-- 0 ungefangene Pagefehler und 0 unerwartete Consolefehler.
-- Genau ein sichtbarer Katalogleaf nach jeder Einzel- oder Doppelöffnung.
-- Kombinierte Filter, Detailauswahl, Fokus, Scroll und Lizenz erfüllen den
-  dokumentierten CE-01-Vertrag.
-- Restart stellt den gespeicherten Zustand im frischen Prozess wieder her;
-  manuelles Schließen und Neuöffnen erzeugt einen sauberen einzelnen
-  Default-Leaf.
-- Beide Größenprofile sind ohne horizontalen Hauptüberlauf bedienbar.
-- Faultlauf zeigt den expliziten Fehler und besteht nach Retry.
-- Ein erzwungener Prozessabbruch, fremde QA-Prozesse, geänderte Produktdateien
-  oder fehlende Belege sind `failed`, nicht `passed with warning`.
-
-### Review und verbleibende Grenzen
-
-Physische Eingabe sowie nicht ausgeführte Plattform-/Screenreaderfälle bleiben offen; automatisierte Hostfälle belegen nur ihren tatsächlichen Umfang.
-
-### Ergebnis vom 9. Oktober 2026
-
-Der automatisierte H01-Scope ist auf dem sauberen Commit
-`aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05` unabhängig geprüft und
-freigegeben. `npm run check`, 242/242 Tests und `npm run build` bestanden;
-`main.js` ist 1.339.676 Byte groß, liegt mit 150.306 Byte Wachstum unter dem
-180.000-Byte-Limit und besitzt in allen drei Läufen denselben SHA-256
-`3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad`.
-
-Maßgebliche Receipts:
-
-- `/home/aaron/.cache/dungeon-native-qa/evidence/1791557643230-ce01-catalog-edit`
-- `/home/aaron/.cache/dungeon-native-qa/evidence/1791557649842-ce01-catalog-reopen`
-- `/home/aaron/.cache/dungeon-native-qa/evidence/1791557655176-ce01-catalog-damaged-edit`
-
-Jeder Lauf bindet eine eigene systemd-Unit und Invocation-ID sowie MainPID,
-Obsidian-PIDs, Startticks und Cgroup. Alle drei Receipts belegen normalen
-`app.quit()`-Ausstieg, `Result=success`, `ExecMainStatus=0` und keine erzwungene
-Terminierung. Der reale Hostlauf fand zwei Produktfehler: browsernative Timer
-wurden mit einem unzulässigen Empfänger aufgerufen, und normalisierte
-`undefined`-Werte überschrieben nach leerem Restore die expliziten
-Sortier-/Richtungs-/Seitendefaults. Beide Fehler und die Hostharness-Belege
-wurden repariert und regressionsgetestet.
-
-Dieses Ergebnis schließt ausschließlich den automatisierten Real-Host-Scope.
-Physische Tastatur/Maus, Screenreader und nicht ausgeführte Plattformen bleiben
-offen und werden durch Playwright nicht ersetzt. CE-01 erhält deshalb noch
-keine vollständige Fachfreigabe.
+Exakter Build, Receipts und Grenzen stehen ausschließlich unter
+`acceptance.json.saltMarcherCatalogEncounter.ce01H01`. Der
+[historische Ablauf und die alten Buildpakete](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/68eab342b656b56b2d03e5e7228ecf56d37373b5/ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
+bleiben im Gitstand verfügbar. Physische Tastatur/Maus, Screenreader und weitere
+Plattformen wurden nicht geprüft; H01 schließt weder volle CE-01-Fachfreigabe
+noch Encounterfunktion oder den neuen Zielhost ab.
 
 ## Gemeinsame Providerverträge
 

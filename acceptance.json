@@ -122,7 +122,7 @@
       "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
       "reviewedEvidenceCommit": "8f0e64904a95a4b02aaf545aa42a47108a1476e5",
       "cleanupCommit": "9c412c21751a67d6126c825d64552f4445e2589f",
-      "contract": "tools/adr-prototypes/contracts/p01-v1/contract.mjs",
+      "contract": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/68eab342b656b56b2d03e5e7228ecf56d37373b5/tools/adr-prototypes/contracts/p01-v1/contract.mjs",
       "aggregate": "tools/adr-prototypes/evidence/p01-aggregate.json",
       "decision": "No-Go: a same-process Node-FS harness does not prove the required desktop isolation or native durable file boundary.",
       "evidence": {
@@ -160,7 +160,7 @@
       "i02PreviousPlanCandidate": "b4f50c52e926d6ee7d7016d29b2d58192c0377d8",
       "i02PlanCandidate": "c9f05806c94a1900ab276940730cae24ee94850f",
       "i02PlanIntegrationCommit": "e051028aa581fd4d77b57b22b128658d2b5a20cc",
-      "i02RepairMatrix": "ROADMAP-SALTMARCHER-ADR-P01-H03-I02-MATRIX.json",
+      "i02RepairMatrix": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/68eab342b656b56b2d03e5e7228ecf56d37373b5/ROADMAP-SALTMARCHER-ADR-P01-H03-I02-MATRIX.json",
       "i02ImplementationCandidate": "1cb104f105441f78a796c2e1daea74ccbde3196c",
       "review": "The reviewed p01-v3 contract remains passed. I02 plan R01 through R03 failed and independent R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f. Code/Security R01 on implementation candidate 1cb104f105441f78a796c2e1daea74ccbde3196c requires repair: matrix composition and one durable create primitive exist, but Parent/Child receipt generations, Create/Update/Delete state machines, conflict/rollback/fresh double recovery, live 3,393-cell execution, eleven adversaries, complete identity and errno oracles, runtime/byte/process limits and adversarial tests are not implemented. The status correctly makes no Evidence or Go claim.",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. No native helper, complete fault matrix, executable H03 proof, Linux durability Go, target-platform decision or P02 authorization exists. Windows and macOS remain not-run."
@@ -445,17 +445,6 @@
       "repairs": "Real-host execution found and repaired unbound browser timer invocation and restored-default state being overwritten by normalized undefined values; focused regressions cover both.",
       "review": "Independent read-only review approved the automated scope after lifecycle receipts bound unique systemd and Obsidian process identities and normal non-forced exit for all three runs.",
       "limits": "CE-AC-01, CE-AC-02 and CE-AC-14 remain open until the remaining product lifecycle and physical acceptance gates are completed. Playwright input is not physical keyboard/mouse evidence; screenreader and other-platform checks were not run."
-    },
-    "ce01C01PlanReview": {
-      "run": "CE-01-C01-P01-R01",
-      "state": "passed_after_repair",
-      "reviewedPlanCommit": "2ee3a80f988ac8b96a736a0cc15ee27b5e989faf",
-      "finding": "The plan identifies separately maintained restore and reset draft lists, but its implementation scope derives only restore/hydration from DRAFT_FILTERS and leaves resetCreatureCatalogFilters with a second manual seven-key list.",
-      "requiredRepair": "Derive reset draft keys from DRAFT_FILTERS too and require a regression across all seven filter/draft pairs while preserving sort and selection.",
-      "retained": "All other cleanup boundaries, exact-candidate host reruns, reviewed H01 evidence, D&D-2014-only scope and open physical/screenreader/platform gates remain valid.",
-      "reReview": "Independent read-only re-review on 9016ced passed the repaired plan without a remaining mandatory finding.",
-      "verification": {"check": "passed", "tests": {"passed": 245, "failed": 0}, "build": "passed", "json": "passed", "diffCheck": "passed"},
-      "limits": "Read-only plan review; no implementation, host run or CE case closure."
     },
     "ce01C01Implementation": {
       "run": "CE-01-C01-I01",
@@ -151888,10 +151877,7 @@
         "physicalInputVerified": false
       },
       "gate": "passed_with_user_exception",
-      "open": [
-        "Abschließende Aufräumphase",
-        "Parität der übrigen Dungeondraft-Werkzeuge"
-      ]
+      "open": ["Parität der übrigen Dungeondraft-Werkzeuge"]
     },
     "phase7CleanupImplementation": {
       "date": "2026-10-09",
