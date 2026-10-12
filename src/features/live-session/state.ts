@@ -93,32 +93,8 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
     throw new Error(
       `${label}.encounterPlanRef widerspricht der Preparation-Provenienz.`,
     );
-  if (
-    preparedFrom &&
-    (preparedFrom.campaignId !== source.campaignId ||
-      preparedFrom.title !== row.title ||
-      preparedFrom.notes !== row.notes ||
-      preparedFrom.locationRef?.ownerId !== source.locationRef?.ownerId ||
-      preparedFrom.locationRef?.referenceId !==
-        source.locationRef?.referenceId ||
-      preparedFrom.locationRef?.ownerRevision !==
-        source.locationRef?.ownerRevision)
-  )
-    throw new Error(`${label} widerspricht seiner Preparation-Provenienz.`);
-  if (
-    preparedFrom &&
-    (preparedFrom.contentPins.length !== source.contentPins.length ||
-      preparedFrom.contentPins.some((pin, pinIndex) => {
-        const sourcePin = source.contentPins[pinIndex];
-        return (
-          sourcePin === undefined ||
-          pin.ownerId !== sourcePin.ownerId ||
-          pin.referenceId !== sourcePin.referenceId ||
-          pin.ownerRevision !== sourcePin.ownerRevision
-        );
-      }))
-  )
-    throw new Error(`${label}.contentPins widersprechen der Preparation.`);
+  if (preparedFrom && preparedFrom.campaignId !== source.campaignId)
+    throw new Error(`${label} besitzt fremde Preparation-Provenienz.`);
   if (
     encounterPlanRef !== undefined &&
     (preparedFrom?.encounterPlanRef?.ownerId !== encounterPlanRef.ownerId ||
@@ -139,12 +115,6 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
     throw new Error(`${label} enthält eine aktive Prepared Runtime.`);
   if (source.lifecycle === "prepared" && !preparedFrom)
     throw new Error(`${label} benötigt Preparation-Provenienz.`);
-  if (
-    source.lifecycle !== "prepared" &&
-    preparedFrom !== undefined &&
-    preparedFrom.campaignId !== source.campaignId
-  )
-    throw new Error(`${label} besitzt fremde Preparation-Provenienz.`);
   const ownerRevisionById = new Map<string, Revision>(),
     maskById = new Map<string, (typeof source.maskRefs)[number]>(),
     ownerStatus = new Map<string, (typeof source.reconciliations)[number]>(),

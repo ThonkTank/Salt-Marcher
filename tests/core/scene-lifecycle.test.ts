@@ -1041,14 +1041,14 @@ test("state parser binds Prepared provenance and pending membership exactly", ()
     changedPins = structuredClone(prepared) as Record<string, any>,
     pendingPrepared = structuredClone(prepared) as Record<string, any>;
   delete withoutEncounter.scenes[1].encounterPlanRef;
-  changedPins.scenes[1].source.contentPins = [];
+  changedPins.scenes[1].source.contentPins[0].referenceId = "";
   assert.throws(
     () => parseLiveSessionAggregateState(withoutEncounter),
     /encounterPlanRef widerspricht/,
   );
   assert.throws(
     () => parseLiveSessionAggregateState(changedPins),
-    /contentPins widersprechen/,
+    /[Rr]eferenceId/,
   );
   pendingPrepared.scenes[1].source.pendingAssignments = [
     {
@@ -2345,4 +2345,38 @@ test("aggregate state requires one unique Clock identity per active Scene", () =
     () => parseLiveSessionAggregateState(duplicate),
     /doppelte Kennungen/,
   );
+});
+
+for (const [name, edit] of [
+  ["title", (scene: Record<string, any>) => { scene.title = "Live title"; }],
+  ["notes", (scene: Record<string, any>) => { scene.notes = "  New live prose.  \r\n"; }],
+  ["location", (scene: Record<string, any>) => { scene.source.locationRef = { ownerId: "locations", referenceId: "forest", ownerRevision: 8 }; }],
+  ["content pins", (scene: Record<string, any>) => { scene.source.contentPins = [{ ownerId: "notes", referenceId: "note-b", ownerRevision: 9 }]; }],
+] as const) test(`live ${name} survives JSON reopen with intact immutable preparation provenance`, () => {
+  const prepared = prepare(), moved = moveCharacters(prepared, commandBase("move-characters", {
+    expectedPartyRevision: prepared.party.partyRevision, expectedFocusRevision: prepared.focus.focusRevision,
+    sourceSceneId: "scene-primary", targetSceneId: "scene-prepared", expectedSourceRevision: 0, expectedTargetRevision: 0,
+    characterIds: ["character-b"],
+  }));
+  assert.equal(moved.status, "applied");
+  if (moved.status !== "applied") throw new Error("activation failed");
+  const before = moved.state, origin = before.scenes[1]!.preparedFrom, raw = structuredClone(before) as Record<string, any>;
+  edit(raw.scenes[1]); raw.scenes[1].source.sceneRevision++;
+  raw.party.partyRevision++;
+  for (const character of raw.party.characters) if (character.sceneAssignment.liveSceneId === "scene-prepared") character.sceneAssignment.sceneRevision = raw.scenes[1].source.sceneRevision;
+  const parsed = parseLiveSessionAggregateState(raw), reopened = parseLiveSessionAggregateState(JSON.parse(JSON.stringify(parsed)));
+  const scene = reopened.scenes[1]!;
+  assert.equal(scene.title, raw.scenes[1].title); assert.equal(scene.notes, raw.scenes[1].notes);
+  assert.deepEqual(scene.source.locationRef, raw.scenes[1].source.locationRef);
+  assert.deepEqual(scene.source.contentPins, raw.scenes[1].source.contentPins);
+  assert.deepEqual(scene.preparedFrom, origin); assert.deepEqual(scene.encounterPlanRef, before.scenes[1]!.encounterPlanRef);
+  assert(frozenGraph(reopened));
+  raw.scenes[1].preparedFrom.notes = "mutated input alias";
+  assert.deepEqual(scene.preparedFrom, origin);
+  for (const state of [prepared, reopened]) {
+    const foreign = structuredClone(state) as Record<string, any>; foreign.scenes[1].preparedFrom.campaignId = "campaign-foreign";
+    assert.throws(() => parseLiveSessionAggregateState(foreign), /Preparation-Provenienz/);
+  }
+  const invalid = structuredClone(reopened) as Record<string, any>; invalid.scenes[1].notes = 42;
+  assert.throws(() => parseLiveSessionAggregateState(invalid));
 });
