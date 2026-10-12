@@ -540,7 +540,6 @@ export function parsePartyCharacterProgress(
     );
   if (
     xpSinceShortRest > xpSinceLongRest ||
-    xpSinceLongRest > currentXp ||
     (currentLevelXpFloor !== undefined && currentXp < currentLevelXpFloor) ||
     (nextLevelXpThreshold !== undefined && nextLevelXpThreshold <= currentXp)
   )

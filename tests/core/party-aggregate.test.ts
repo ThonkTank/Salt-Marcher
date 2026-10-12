@@ -273,3 +273,31 @@ test("party commands fail closed on cancel, stale revisions, collisions and bad 
     /doppelte/,
   );
 });
+
+for (const xp of [50, 0]) test(`downward XP correction to ${xp} retains rest counters, profile and Scene membership`, () => {
+  const initial = activeParty(), before = parsePartyProjection({ ...initial, characters: initial.characters.map((character, index) => index === 0 ? {
+    ...character, progress: { currentXp: 1000, currentLevelXpFloor: 900, nextLevelXpThreshold: 2700, xpSinceLongRest: 900, xpSinceShortRest: 300 },
+  } : character) }), original = JSON.stringify(before);
+  const corrected = { ...before.characters[0]!.progress, currentXp: xp, currentLevelXpFloor: 0, nextLevelXpThreshold: 300 };
+  const result = setPartyCharacterProgress(before, commandBase("set-party-character-progress", before.partyRevision, { characterId: "character-a", progress: corrected }));
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") throw new Error("correction failed");
+  const reopened = parsePartyProjection(JSON.parse(JSON.stringify(result.party)));
+  assert.deepEqual(reopened.characters[0]!.progress, corrected);
+  assert.deepEqual(reopened.characters.map(character => character.profile), before.characters.map(character => character.profile));
+  assert.deepEqual(reopened.characters.map(character => character.sceneAssignment), before.characters.map(character => character.sceneAssignment));
+  assert.deepEqual(reopened.characters[1], before.characters[1]);
+  assert.equal(reopened.partyRevision, before.partyRevision + 1); assert(frozenGraph(reopened));
+  assert.equal(JSON.stringify(before), original);
+  const short = restPartyCharacters(reopened, commandBase("rest-party-characters", reopened.partyRevision, { rest: "short", characterIds: ["character-a"] }));
+  assert.equal(short.status, "applied"); if (short.status !== "applied") throw new Error("short rest failed");
+  assert.deepEqual(short.party.characters[0]!.progress, { ...corrected, xpSinceShortRest: 0 });
+  const long = restPartyCharacters(short.party, commandBase("rest-party-characters", short.party.partyRevision, { rest: "long", characterIds: ["character-a"] }));
+  assert.equal(long.status, "applied"); if (long.status !== "applied") throw new Error("long rest failed");
+  assert.deepEqual(long.party.characters[0]!.progress, { ...corrected, xpSinceShortRest: 0, xpSinceLongRest: 0 });
+  assert.deepEqual(long.party.characters.map(character => character.sceneAssignment), before.characters.map(character => character.sceneAssignment));
+  for (const invalid of [
+    { ...corrected, currentXp: -1 }, { ...corrected, currentXp: 0.5 }, { ...corrected, xpSinceLongRest: Number.MAX_SAFE_INTEGER + 1 },
+    { ...corrected, xpSinceShortRest: 901 }, { ...corrected, currentLevelXpFloor: xp + 1 }, { ...corrected, nextLevelXpThreshold: xp },
+  ]) assert.throws(() => setPartyCharacterProgress(reopened, commandBase("set-party-character-progress", reopened.partyRevision, { characterId: "character-a", progress: invalid })));
+});
