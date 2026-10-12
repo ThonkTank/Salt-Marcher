@@ -75,6 +75,7 @@ export class WorldNotesPanel {
   private readonly list: HTMLUListElement;
   private readonly editor: HTMLDivElement;
   private readonly search: HTMLInputElement;
+  private readonly kindFilter: HTMLSelectElement;
   private readonly status: HTMLParagraphElement;
   private snapshot: WorldNotesSnapshotV1 | null = null;
   private pending: BufferedDraft | null = null;
@@ -98,6 +99,15 @@ export class WorldNotesPanel {
     this.search = doc.createElement("input"); this.search.type = "search";
     this.search.setAttribute("aria-label", "Notizen durchsuchen");
     this.search.addEventListener("input", () => this.renderList());
+    this.kindFilter = doc.createElement("select");
+    this.kindFilter.setAttribute("aria-label", "Notizart filtern");
+    for (const kind of ["", ...kinds]) {
+      const option = doc.createElement("option"); option.value = kind;
+      option.textContent = kind ? labels[kind as WorldNoteKind] : "Alle Arten";
+      if (!kind) option.selected = true;
+      this.kindFilter.append(option);
+    }
+    this.kindFilter.addEventListener("change", () => this.renderList());
     const actions = doc.createElement("div"); actions.className = "dn-world-notes-actions";
     for (const kind of kinds) {
       const button = doc.createElement("button"); button.type = "button";
@@ -113,7 +123,7 @@ export class WorldNotesPanel {
     this.list = doc.createElement("ul"); this.list.className = "dn-world-notes-list";
     this.editor = doc.createElement("div"); this.editor.className = "dn-world-notes-editor";
     this.status = doc.createElement("p"); this.status.setAttribute("role", "status");
-    this.root.append(title, help, this.search, actions, this.list, this.editor, this.status);
+    this.root.append(title, help, this.search, this.kindFilter, actions, this.list, this.editor, this.status);
     host.append(this.root);
   }
   update(snapshot: WorldNotesSnapshotV1, reclaimOwnership = false): boolean {
@@ -141,6 +151,7 @@ export class WorldNotesPanel {
       this.retainedDrafts.release(this.draftKey(previous), this, this.pending);
       this.pending = this.claimDraft(next);
       this.search.value = "";
+      this.kindFilter.options[0]!.selected = true;
     }
     const changedDuringEdit = this.pending && this.snapshot &&
       next.revision !== this.snapshot.revision;
@@ -247,7 +258,8 @@ export class WorldNotesPanel {
     this.list.replaceChildren();
     if (!this.snapshot) return;
     const boundSnapshot = this.snapshot;
-    for (const record of searchWorldNotes(this.snapshot, this.search.value)) {
+    const kinds = this.kindFilter.value ? [this.kindFilter.value as WorldNoteKind] : undefined;
+    for (const record of searchWorldNotes(this.snapshot, this.search.value, kinds)) {
       const row = this.root.ownerDocument.createElement("li");
       const button = this.root.ownerDocument.createElement("button"); button.type = "button";
       button.textContent = `${labels[record.kind]}: ${record.title}`;
