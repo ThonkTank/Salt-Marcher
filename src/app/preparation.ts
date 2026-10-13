@@ -1,3 +1,4 @@
+import {showNarrative,flushNarrative} from './narrative-ui';
 import type { Workspace, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
 import { newLocation } from '../features/location/location-schema';
@@ -165,11 +166,12 @@ async function change(change: PreparationChange, redraw = true): Promise<boolean
   }
   finally { changesPending.delete(completion); complete(); }
 }
-export async function flushPreparation(skipSession=false): Promise<boolean> {
+export async function flushPreparation(skipSession=false,skipNarrative=false): Promise<boolean> {
+  if(!skipNarrative&&!await flushNarrative())return false;
   if(!skipSession&&!await flushSession())return false;
   if (timer) clearTimeout(timer); timer = null;
-  if (pending) { const result = await pending; return result ? flushPreparation(skipSession) : false; }
-  if (changesPending.size) { await Promise.all(changesPending); return flushPreparation(skipSession); }
+  if (pending) { const result = await pending; return result ? flushPreparation(skipSession,skipNarrative) : false; }
+  if (changesPending.size) { await Promise.all(changesPending); return flushPreparation(skipSession,skipNarrative); }
   if (!context) return true;
   if (draftLoads) return false;
   if (blocked || composing) return false;
@@ -203,7 +205,7 @@ export async function flushPreparation(skipSession=false): Promise<boolean> {
     return true;
   })().finally(() => { pending = null; });
   const okay = await pending;
-  return okay ? flushPreparation(skipSession) : false;
+  return okay ? flushPreparation(skipSession,skipNarrative) : false;
 }
 function schedule() {
   hasOpenInput = true;
@@ -278,7 +280,7 @@ async function renderNotes() {
   get('note-kind').textContent = ({ npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht' })[row.note.kind];
   for (const id of ['note-title', 'note-read-aloud', 'note-gm']) get<HTMLInputElement>(id).disabled = row.trashed || draftProblems.has(draftKey('note', row.note.id));
   get('note-remove').hidden = row.trashed; get('note-restore').hidden = !row.trashed;
-  renderRelations();
+  renderRelations();void showNarrative(context,row.note,row.trashed,()=>flushPreparation(true,true),tell);
 }
 function renderSceneList() {
   const list = get('scene-list'); list.replaceChildren();

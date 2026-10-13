@@ -122,6 +122,8 @@ else {
     handle('campaign:encounter-plans', (token: string, search: string) => store.encounterPlans(token,search));
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
+    handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
+    handle('campaign:narrative',(token:string,id:string)=>store.narrative(token,id));
     handle('campaign:progress-history', (token: string, characterId: string, after: string | null) => store.progressHistory(token, characterId, after));
     handle('campaign:progress', (token: string) => store.progress(token));
     handle('campaign:treasures', (token: string, after: string | null) => store.treasures(token, after));

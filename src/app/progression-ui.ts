@@ -1,3 +1,5 @@
+import {drawLedgerStacks} from './ledger-stack-ui';
+import {rewardItemsEditor} from './reward-items-ui';
 import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { Workspace, Result } from './contracts';
 import type { LiveView } from './live-contracts';
@@ -13,7 +15,7 @@ let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = 
 let selectedTreasure: string | null = null;
 let ledgerRequest=0, treasureRequest=0;
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
-let finishBasis: ProgressView | null = null;
+let finishBasis: ProgressView | null = null;let finishItems:ItemInput[]=[];
 let history: ProgressHistory = { items: [], next: null };
 let tell: (text: string, error?: boolean) => void;
 const healthFields=['health-current','health-maximum','health-temporary','health-conditions','health-reason'] as const;
@@ -38,7 +40,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
 export async function refreshProgress(deliverNotices=true) {
   if (!workspace) return;
   const gen = generation, request = ++loadNumber;
-  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result; await Promise.all([loadTreasures(),loadLedger()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
+  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result; const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
   catch (error) { if (gen === generation) tell((error as Error).message, true); }
 }
 async function execute(action: ProgressAction): Promise<boolean> {
@@ -50,7 +52,7 @@ async function execute(action: ProgressAction): Promise<boolean> {
     try {
       const result = await writeConfirmed<ProgressAck>('progress',command,()=>window.campaign.executeProgress(command),()=>workspace?.token===command.token&&gen===generation,meta); if (gen !== generation) return false;
       view = result; publishProgress();tell(action.kind==='health'?'HP gespeichert.':'Fortschritt und Beute gespeichert.'); void loadHistory();
-      if (['treasure','allocate','manual-item','ledger'].includes(action.kind)) {
+      if (['treasure','allocate','manual-item','ledger','ledger-split','ledger-merge','ledger-transfer','narrative-award'].includes(action.kind)) {
         try {
           await Promise.all([loadTreasures(false,result.treasureId??undefined),loadLedger()]);
           if (result.ledgerIds?.[0] && (action.kind !== 'manual-item' || action.characterId === selected)) await loadLedgerItem(result.ledgerIds[0]);
@@ -134,15 +136,15 @@ function renderTreasure() {
 function renderLedger() {
   const root=get('ledger-list');root.replaceChildren();
   const entries=ledger.items, cumulative=ledger.totalCopper===null?null:BigInt(ledger.totalCopper);
-  get('ledger-summary').textContent=ledgerLoaded?'Kumulativ erhaltene Beute: '+(cumulative===null?'nicht vollständig bekannt':gold(cumulative.toString()))+' · Käufe ausgeschlossen.'+(ledger.unavailableCount?' · '+ledger.unavailableCount+' Einträge nicht verfügbar.':''):selected?'Beute wird geladen.':'Figur auswählen.';
+  get('ledger-summary').textContent=ledgerLoaded?'Kumulativ erhaltene Beute: '+(cumulative===null?'nicht vollständig bekannt':gold(cumulative.toString()))+' · Käufe und interne Weitergaben ausgeschlossen.'+(ledger.unavailableCount?' · '+ledger.unavailableCount+' Einträge nicht verfügbar.':''):selected?'Beute wird geladen.':'Figur auswählen.';
   for(const l of entries){
-    const amount=ledgerCopper(l),b=document.createElement('button');b.textContent=l.quantity+' × '+(l.currentName??l.name)+' · '+({received:'Erhalten',sold:'Verkauft',given:'Weitergegeben'}[l.status])+(l.origin==='purchase'?' · Kauf':'')+' · '+(amount===null?'Wert unbekannt':gold(amount.toString()));b.setAttribute('aria-pressed',String(l.id===selectedLedger));b.onclick=()=>{void loadLedgerItem(l.id).catch(error=>tell(error.message,true));};root.append(b);
+    const amount=ledgerCopper(l),b=document.createElement('button');b.textContent=l.quantity+' × '+(l.currentName??l.name)+' · '+({received:'Erhalten',sold:'Verkauft',given:'Weitergegeben'}[l.status])+(l.origin==='purchase'?' · Kauf':l.origin==='transfer'?' · Übernahme aus Weitergabe':'')+' · '+(amount===null?'Wert unbekannt':gold(amount.toString()));b.setAttribute('aria-pressed',String(l.id===selectedLedger));b.onclick=()=>{void loadLedgerItem(l.id).catch(error=>tell(error.message,true));};root.append(b);
   }
   for(const problem of ledger.problems){const p=document.createElement('p');p.className='error';p.setAttribute('role','status');p.textContent='Eintrag nicht verfügbar: '+problem.id+' · '+problem.message;root.append(p);}
   get('ledger-more').hidden=!ledger.next;
   const l=ledgerDetail; get('ledger-editor').hidden=!l;
-  get('ledger-detail').textContent=l?l.name+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
-  lock();
+  get('ledger-detail').textContent=l?l.name+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
+  drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute);lock();
 }
 async function loadTreasures(more=false,preferredId?:string) {
   if(!workspace)return;const token=workspace.token,request=++treasureRequest,before=treasures;
@@ -177,7 +179,7 @@ async function loadLedgerItem(id:string){
   const detail=unwrap(await window.campaign.ledgerItem(token,id));
   if(workspace?.token!==token||selected!==characterId||request!==ledgerDetailRequest)return;
   if(detail.characterId!==characterId)throw new Error('Dieser Eintrag gehört zu einer anderen Figur.');
-  ledgerDetail=detail;selectedLedger=id;renderLedger();
+  if(selectedLedger!==id){get<HTMLInputElement>('ledger-counterparty').value=detail.status==='received'?'':detail.counterparty;get<HTMLSelectElement>('ledger-linked-counterparty').value=detail.counterpartyLink?detail.counterpartyLink.kind+':'+detail.counterpartyLink.id:'';}ledgerDetail=detail;selectedLedger=id;renderLedger();
 }
 async function loadHistory(more = false) {
   if (!workspace || !selected) { get('progress-history-list').replaceChildren(); return; }
@@ -197,11 +199,11 @@ async function loadHistory(more = false) {
   }catch(error){tell((error as Error).message,true);}
 }
 function item(prefix: string): ItemInput { return { name:value(prefix+'-name'),quantity:Number(value(prefix+'-quantity')),valueGold:value(prefix+'-value'),category:value(prefix+'-category') as ItemCategory }; }
-export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment) {
-  if(!workspace)return; const gen=generation; const result=unwrap(await window.campaign.progress(workspace.token));if(gen!==generation)return;
+export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:Workspace;poolXp:number;items:ItemInput[]}) {
+  const owner=options?.workspace??workspace;if(!owner)return; const gen=generation; const result=unwrap(await window.campaign.progress(owner.token));if(gen!==generation)return;
   finishBasis=result;const list=get('finish-recipients');list.replaceChildren();
   for(const c of result.characters){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=participantIds.includes(c.characterId);label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?'':' · inaktiv')+(c.xp===null?' · XP bislang unbekannt': ' · Level '+xpLevel(c.xp).level)));list.append(label);box.onchange=finishPreview;}
-  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=false;finishPreview();
+  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=!!options?.items.length;finishItems=structuredClone(options?.items??[]);rewardItemsEditor(get('finish-item-list'),finishItems,finishPreview);if(options){get<HTMLInputElement>('finish-no-xp').checked=options.poolXp===0;get<HTMLInputElement>('finish-xp').value=String(options.poolXp);get<HTMLInputElement>('finish-load').value='0';}finishPreview();
 }
 function finishPreview() {
   const none=get<HTMLInputElement>('finish-no-xp').checked, boxes=[...get('finish-recipients').querySelectorAll<HTMLInputElement>('input:checked')];
@@ -210,7 +212,7 @@ function finishPreview() {
 }
 export function finishRewards(): FinishRewards {
   const none=get<HTMLInputElement>('finish-no-xp').checked;
-  return {poolXp:none?0:Number(value('finish-xp')),noXp:none,recipients:none?[]:[...get('finish-recipients').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:finishBasis!.characters.find(c=>c.characterId===b.value)!.revision})),policyVersion:'xp-ceil-2014-v1',loadXp:Number(value('finish-load')),items:get<HTMLInputElement>('finish-has-loot').checked?[item('finish-item')]:[]};
+  return {poolXp:none?0:Number(value('finish-xp')),noXp:none,recipients:none?[]:[...get('finish-recipients').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:finishBasis!.characters.find(c=>c.characterId===b.value)!.revision})),policyVersion:'xp-ceil-2014-v1',loadXp:Number(value('finish-load')),items:get<HTMLInputElement>('finish-has-loot').checked?finishItems:[]};
 }
 async function recoveredProgress(event:CommitResolution){
  if(!workspace||event.ref.campaignId!==workspace.campaign.id)return;
@@ -242,6 +244,6 @@ export function initProgress(status: typeof tell) {
   get('loot-allocate-form').onsubmit=event=>{event.preventDefault();const t=treasure,c=view?.characters.find(c=>c.characterId===value('loot-recipient'));const i=t?.items.find(i=>i.id===value('treasure-item'));if(t&&c&&i?.currentDefinition)void execute({kind:'allocate',treasureId:t.id,expectedRevision:t.revision,expectedDefinitionRevision:i.currentDefinition.revision,itemId:i.id,quantity:Number(value('loot-quantity')),characterId:c.characterId,expectedMembershipRevision:c.membershipRevision});else tell('Beute und Empfänger wählen und aktuellen Gegenstand laden.',true);};
   get('manual-loot-form').onsubmit=event=>{event.preventDefault();const c=view?.characters.find(c=>c.characterId===value('manual-loot-recipient'));if(c)void execute({kind:'manual-item',characterId:c.characterId,expectedMembershipRevision:c.membershipRevision,origin:value('manual-loot-origin') as 'award'|'purchase'|'manual',item:item('manual-loot'),note:value('manual-loot-note')});};
   get('ledger-search').oninput=()=>{void loadLedger().catch(error=>tell(error.message,true));};get('ledger-filter').onchange=()=>{void loadLedger().catch(error=>tell(error.message,true));};
-  get('ledger-form').onsubmit=event=>{event.preventDefault();if(!ledgerLoaded||ledgerUnavailable()){tell('Beuteeintrag derzeit nicht verfügbar. Eingaben bleiben erhalten.',true);return;}const l=ledgerDetail;if(l)void execute({kind:'ledger',entryId:l.id,expectedRevision:l.revision,operation:value('ledger-operation') as 'sold'|'given'|'correct',quantity:Number(value('ledger-quantity')),correctedQuantity:Number(value('ledger-quantity')),actualGold:value('ledger-price'),counterparty:value('ledger-counterparty'),reason:value('ledger-reason')});};
+  get('ledger-form').onsubmit=event=>{event.preventDefault();if(!ledgerLoaded||ledgerUnavailable()){tell('Beuteeintrag derzeit nicht verfügbar. Eingaben bleiben erhalten.',true);return;}const l=ledgerDetail;if(l)void execute({kind:'ledger',entryId:l.id,expectedRevision:l.revision,operation:value('ledger-operation') as 'sold'|'given'|'correct',quantity:Number(value('ledger-quantity')),correctedQuantity:Number(value('ledger-quantity')),actualGold:value('ledger-price'),counterparty:value('ledger-counterparty'),counterpartyLink:value('ledger-linked-counterparty')?{kind:value('ledger-linked-counterparty').split(':')[0] as 'shop'|'npc'|'location'|'faction',id:value('ledger-linked-counterparty').slice(value('ledger-linked-counterparty').indexOf(':')+1)}:undefined,reason:value('ledger-reason')});};
   for(const id of ['finish-xp','finish-no-xp','finish-has-loot'])get(id).oninput=finishPreview;
 }
