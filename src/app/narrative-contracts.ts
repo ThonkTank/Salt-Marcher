@@ -50,6 +50,7 @@ export type NarrativeAction =
       recipients: ProgressGuard[];
       items: ItemInput[];
       outcome: string;
+      finishDraftWriteId?:string;
       draftWriteId?: string;
     };
 export interface NarrativeView {

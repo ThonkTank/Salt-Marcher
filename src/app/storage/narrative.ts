@@ -60,10 +60,11 @@ export function readNarrative(db:any,cam:string,id:string):NarrativeView {
  return{state,award:linkedAward(db,cam,state),noteRevision:n.revision,draft:readNarrativeDraft(db,cam,id)};
 }
 export function validateNarrativeBackup(db:any){
- const exists=(name:string)=>!!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(name),state=exists('narrative_state'),award=exists('narrative_award');
+ const tables=new Set<string>(db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").all().map((r:any)=>r.name)),exists=(name:string)=>tables.has(name),state=exists('narrative_state'),award=exists('narrative_award');
  if(!state&&!award&&db.pragma('user_version',{simple:true})<35)return;
- if(!state||!award)throw new Error('Narratives Datenschema fehlt oder ist unvollständig.');
+ if(!state||!award)throw new Error('Narrativer Speicherstand ist unvollständig.');
  if(exists('narrative_draft'))for(const row of db.prepare('SELECT * FROM narrative_draft').iterate())validateNarrativeDraft(db,row.campaign_id,parsed<NarrativeDraft>(row),row.note_id);
+ else if(db.pragma('user_version',{simple:true})>=36)throw new Error('Narrativer Entwurfsspeicher ist unvollständig.');
  for(const row of db.prepare('SELECT * FROM narrative_state').iterate())linkedAward(db,row.campaign_id,checkedState(db,row.campaign_id,row));
  for(const row of db.prepare('SELECT * FROM narrative_award').iterate()){const a=checkedAward(db,row.campaign_id,row),s=db.prepare('SELECT * FROM narrative_state WHERE campaign_id=? AND note_id=?').get(row.campaign_id,a.noteId);if(!s||checkedState(db,row.campaign_id,s).awardId!==a.id)throw new Error('Narrative Belohnung besitzt keinen passenden Statusverweis.');}
 }
@@ -71,43 +72,18 @@ export function saveNarrative(db:any,cam:string,state:NarrativeState){checkedNar
 export function saveNarrativeAward(db:any,cam:string,award:NarrativeAward){checkedNarrativeAward(award);const payload=JSON.stringify(award);db.prepare('INSERT INTO narrative_award VALUES(?,?,?,?,?)').run(cam,award.id,award.noteId,payload,hash(payload));}
 export function validateNarrativeState(db:any,cam:string,s:NarrativeState,retained=false){checkedNarrativeState(s);if(!s||!['open','closed'].includes(s.status)||!Number.isSafeInteger(s.poolXp)||s.poolXp<0||!Array.isArray(s.contributors)||s.contributors.length>1000||new Set(s.contributors).size!==s.contributors.length||!Array.isArray(s.items)||s.items.length>100)throw new Error('Status, Mitwirkende und Belohnung prüfen.');if(s.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND (? OR trashed=0)').get(cam,s.locationId,Number(retained)))throw new Error('Verknüpfter Ort nicht verfügbar.');for(const id of s.contributors)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,id))throw new Error('Mitwirkende Figur fehlt.');for(const i of s.items)if(!i||typeof i.name!=='string'||!i.name.trim()||!Number.isSafeInteger(i.quantity)||i.quantity<1||typeof i.valueGold!=='string')throw new Error('Belohnungsgegenstand prüfen.');for(const i of s.items){copper(i.valueGold);if(!['coins','equipment','trade-goods','magic','other'].includes(i.category))throw new Error('Belohnungskategorie ungültig.');}}
 
-function validateNarrativeDraft(db:any,cam:string,d:NarrativeDraft,id:string) {
- if(!d||d.noteId!==id)throw new Error('Narrativer Entwurf gehört zu einer anderen Notiz.');
- narrativeNote(db,cam,id,true);
-      const text = (v: unknown, max = 1000) =>
-        typeof v === "string" && v.length <= max;
-      if (
-        !d.writeId ||
-        !text(d.writeId) ||
-        !Number.isSafeInteger(d.revision) ||
-        d.revision < 0 ||
-        !["open", "closed"].includes(d.status) ||
-        (d.locationId !== null && !text(d.locationId)) ||
-        !text(d.poolXp) ||
-        !Array.isArray(d.contributors) ||
-        d.contributors.length > 1000 ||
-        d.contributors.some((v) => !text(v)) ||
-        !Array.isArray(d.items) ||
-        d.items.length > 100 ||
-        d.items.some(
-          (i) =>
-            !i ||
-            !text(i.name) ||
-            !text(i.quantity) ||
-            !text(i.valueGold) ||
-            !["coins", "equipment", "trade-goods", "magic", "other"].includes(
-              i.category,
-            ),
-        ) ||
-        Buffer.byteLength(JSON.stringify(d)) > 256000
-      )
-        throw new Error("Narrative Eingabe ist zu groß oder ungültig.");
-
- if(d.locationId!==null&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,d.locationId))throw new Error('Entwurfsort gehört nicht zur Kampagne.');
- if(new Set(d.contributors).size!==d.contributors.length)throw new Error('Entwurfsmitwirkende dürfen nicht doppelt vorkommen.');
- for(const characterId of d.contributors)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,characterId))throw new Error('Entwurfsmitwirkende Figur gehört nicht zur Kampagne.');
+function checkedNarrativeDraft(value:unknown):NarrativeDraft{
+ const d=value as NarrativeDraft,text=(v:unknown)=>typeof v==='string'&&v.length<=1000;
+ if(!d||!id(d.noteId)||!id(d.writeId)||!Number.isSafeInteger(d.revision)||d.revision<0||!['open','closed'].includes(d.status)||!nullableId(d.locationId)||!text(d.poolXp)||!Array.isArray(d.contributors)||d.contributors.length>1000||d.contributors.some(v=>!id(v))||new Set(d.contributors).size!==d.contributors.length||!Array.isArray(d.items)||d.items.length>100||Buffer.byteLength(JSON.stringify(d))>256000)throw new Error('Narrative Eingabe ist zu groß oder ungültig.');
+ for(const item of d.items){const ref=item?.reference;if(!item||!text(item.name)||!text(item.quantity)||!text(item.valueGold)||!categories.includes(item.category)||ref!==undefined&&(ref.kind!=='authored'||!id(ref.definitionId)||!Number.isSafeInteger(ref.revision)||ref.revision<1||ref.historicalDefinitionId!==undefined&&!id(ref.historicalDefinitionId)))throw new Error('Narrative Eingabe ist zu groß oder ungültig.');}
+ return d;
 }
-
+function validateDraftOwners(db:any,cam:string,d:NarrativeDraft){
+ if(d.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,d.locationId))throw new Error('Narrativer Entwurf verweist auf einen fehlenden Ort.');
+ for(const contributor of d.contributors)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,contributor))throw new Error('Narrativer Entwurf verweist auf eine fehlende Figur.');
+ for(const item of d.items)if(item.reference&&!db.prepare('SELECT 1 FROM authored_item WHERE id=?').get(item.reference.definitionId))throw new Error('Narrativer Entwurf verweist auf einen fehlenden Gegenstand.');
+}
+function validateNarrativeDraft(db:any,cam:string,value:NarrativeDraft,id:string){const d=checkedNarrativeDraft(value);if(d.noteId!==id)throw new Error('Narrativer Entwurf gehört zu einer anderen Notiz.');narrativeNote(db,cam,id,true);validateDraftOwners(db,cam,d);}
 export function readNarrativeDraft(
   db: any,
   cam: string,

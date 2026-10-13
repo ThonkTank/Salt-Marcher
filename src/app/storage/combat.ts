@@ -1,3 +1,4 @@
+import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';
 import { randomUUID, randomInt, createHash } from 'node:crypto';
 import { checkedCombat, combatOrder, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
@@ -190,6 +191,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const nextIndex = (index + 1) % order.length; state.turnId = order[nextIndex]!.id; if (nextIndex === 0) state.round++;
         } else if (a.kind === 'notes') { state.title = a.title; state.notes = a.notes;
         } else if (a.kind === 'finish') {
+          consumeFinishDraft(db,cam,{kind:'combat',targetId:state.id,revision:state.revision},a.finishDraftWriteId);
           if (typeof a.outcome !== 'string' || !a.outcome.trim()) throw new Error('Die Begegnung benötigt ein Ergebnis.');
           state.assessment=assessment(db,cam,state);
           state.rewards = finishCombatRewards(db, cam, state, a.rewards);
