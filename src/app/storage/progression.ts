@@ -2,7 +2,8 @@ import {editTreasury} from './treasury';
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
-import { applyDeathSave, checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import {checkedCharacterProfile} from '../live-contracts';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene, readCharacter } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
@@ -284,9 +285,7 @@ export function readLootBalance(db:any,cam:string){
   }
   const leader=[...totals.values()].reduce((a,b)=>a>b?a:b,0n);
   const characters=members.map((m:any)=>({characterId:m.id,name:m.profile.name,active:m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));
-  const known=characters.filter((c:any)=>!c.unknownEntries),pool=known.some((c:any)=>c.active)?known.filter((c:any)=>c.active):known;
-  const lowest=pool.reduce((best:any,c:any)=>!best||BigInt(c.copper)<BigInt(best.copper)?c:best,null);
-  return{characters,leaderCopper:leader.toString(),suggestedCharacterId:characters.some((c:any)=>c.unknownEntries)?null:lowest?.characterId??null};
+  return{characters,leaderCopper:leader.toString(),suggestedCharacterIds:lootBalanceSuggestions(characters,leader.toString())};
  })();
 }
 export function checkedItem(db: any, input: ItemInput) {

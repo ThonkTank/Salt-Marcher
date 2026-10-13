@@ -128,7 +128,7 @@ function renderLootBalance(){
  for(const c of lootBalance.characters){
   const p=document.createElement('p');
   p.textContent=c.name+': '+(c.unknownEntries?'Teilwert ':'')+gold(c.copper)+(complete?(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze'):' · Vergleich offen')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');
-  if(complete&&c.characterId===lootBalance.suggestedCharacterId){const strong=document.createElement('strong');strong.textContent='Nächste wertbare Belohnung: ';p.prepend(strong);}root.append(p);
+  if(complete&&lootBalance.suggestedCharacterIds.includes(c.characterId)){const strong=document.createElement('strong');strong.textContent='Nächste wertbare Belohnung: ';p.prepend(strong);}root.append(p);
  }
 }
 function renderHealth(p: ProgressView['characters'][number] | undefined) {

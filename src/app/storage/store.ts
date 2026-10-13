@@ -62,7 +62,7 @@ import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '..
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
-import {installChaseSchema,readChase,executeChase,validateChaseBackup} from './chase';
+import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
 import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
@@ -712,7 +712,7 @@ export class CampaignStore {
     this.guard(command.token, command.campaignId);
     const a = command.action;
     const sceneId = a.kind === 'move' ? a.sceneId : a.kind === 'membership' ? this.db.prepare('SELECT scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(command.campaignId, a.characterId)?.scene_id : null;
-    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active))assertCombatPartyChange(this.db,command.campaignId,a.kind==='move'?a.memberIds:[a.characterId],sceneId??null);
+    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];assertCombatPartyChange(this.db,command.campaignId,ids,sceneId??null);reconcileChaseParticipants(this.db,command.campaignId,ids);}
   });
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);

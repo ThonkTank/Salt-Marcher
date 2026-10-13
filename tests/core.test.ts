@@ -79,3 +79,4 @@ import "./core/death-saves.test";
 import "./core/chase.test";
 
 import './core/chronicle-filter.test';
+import "./core/loot-balance.test";
