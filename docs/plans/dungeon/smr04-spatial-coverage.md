@@ -106,5 +106,9 @@ Key-Beschreibungen bestimmen Raumgrenzen und Höhen ohne große temporäre Array
 oder Argumentlisten. Die [Key-Prüfungen](../../../tests/desktop-key-store.test.mjs)
 decken 100.000 Volumenspalten mit 200.000 Höhenintervallen, große Konturen,
 Sammeländerungen an 1.001 Räumen mit Undo/Redo sowie den Schutz von privaten Texten
-und gültigen Backups bei beschädigten Key-Daten ab. Das sind lokale Prüfungen;
-eine native Gesamtqualifikation des Key-Editors bleibt offen.
+und gültigen Backups bei beschädigten Key-Daten ab. Die
+[Oberflächenprüfungen](../../../tests/desktop-surface.test.mjs) prüfen diese
+Volumengröße auch beim Nachschlagen und Neuverknüpfen von 20.000 markierten
+Flächen. Der Volumenursprung wird je Neuverknüpfung einmal berechnet; Prosa,
+Fragmentkennungen und nicht mehr zuordenbare Flächen bleiben erhalten.
+Das sind lokale Prüfungen; eine native Gesamtqualifikation des Key-Editors bleibt offen.

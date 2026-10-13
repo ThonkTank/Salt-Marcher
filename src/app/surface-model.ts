@@ -4,7 +4,14 @@ import type {KeyContent} from './key-contracts';
 export type SurfaceSide='north'|'east'|'south'|'west'|'floor'|'ceiling';
 export interface SurfaceFace{x:number;y:number;z:number;side:SurfaceSide}
 export interface SurfaceRegion{roomId:string;fragments:{id:string;volumeId:string;faces:SurfaceFace[];unbound?:boolean;orphanedWorld?:{floorId:string;faces:SurfaceFace[]}}[]}
-export const surfaceOrigin=(v:DungeonVolume)=>({x:Math.min(...v.columns.map(c=>c.x)),y:Math.min(...v.columns.map(c=>c.y)),z:Math.min(...v.columns.flatMap(c=>c.spans.map(s=>s.z)))});
+export function surfaceOrigin(v:DungeonVolume){
+ let x=Infinity,y=Infinity,z=Infinity;
+ for(const column of v.columns){
+  x=Math.min(x,column.x);y=Math.min(y,column.y);
+  for(const span of column.spans)z=Math.min(z,span.z);
+ }
+ return{x,y,z};
+}
 export const surfaceFaceKey=(f:SurfaceFace)=>[f.x,f.y,f.z,f.side].join(',');
 const indexes=new WeakMap<DungeonVolume,Map<string,DungeonVolume['columns'][number]>>();
 export function isSurfaceFace(v:DungeonVolume,f:SurfaceFace){let index=indexes.get(v);if(!index){index=new Map(v.columns.map(c=>[c.x+','+c.y,c]));indexes.set(v,index);}const s=index.get(f.x+','+f.y)?.spans.find(s=>f.z>=s.z&&f.z<s.z+s.height);if(!s)return false;if(f.side==='floor')return s.floor&&f.z===s.z;if(f.side==='ceiling')return s.ceiling&&f.z===s.z+s.height-1;const explicit=v.faces[[f.x,f.y,f.z,f.side].join(',')];if(explicit)return explicit==='solid';const [dx,dy]=({north:[0,-1],east:[1,0],south:[0,1],west:[-1,0]} as const)[f.side];return !index.get((f.x+dx)+','+(f.y+dy))?.spans.some(s=>f.z>=s.z&&f.z<s.z+s.height);}
