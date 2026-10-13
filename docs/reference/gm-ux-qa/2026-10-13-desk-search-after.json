@@ -1,0 +1,24 @@
+{
+  "results": {
+    "afterQueryChange": {
+      "count": 0,
+      "moreVisible": false,
+      "title": ""
+    },
+    "completeWaldResults": true,
+    "areaSwitchPreservesEditor": true,
+    "originalsAndIncompleteDraftRetained": true,
+    "nativeDraftRestart": true
+  },
+  "launches": [
+    {
+      "pid": 120829,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-efdd046f7c2447cbb0afe9e05459af02.service"
+    },
+    {
+      "pid": 120928,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-efdd046f7c2447cbb0afe9e05459af02.service"
+    }
+  ],
+  "normalClose": true
+}
