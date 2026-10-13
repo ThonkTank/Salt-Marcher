@@ -105,6 +105,7 @@ export type ProgressAction = NarrativeAction|TreasuryAction
   | { kind: 'notice'; ids: string[] };
 export interface ProgressCommand { commandId: string; campaignId: string; token: string; action: ProgressAction }
 export interface ProgressHistory { items: { id: string; kind: string; facts: Record<string, any> }[]; next: string | null }
+export interface LootBalance {characters:{characterId:string;name:string;active:boolean;copper:string;unknownEntries:number;gapCopper:string}[];leaderCopper:string;suggestedCharacterId:string|null}
 export interface ProgressAPI extends importFinishDraftAPI,SceneDeskAPI,TreasuryAPI {
   ledgerParties(token:string):Promise<Result<{kind:'shop'|'npc'|'location'|'faction';id:string;name:string}[]>>;
   keepNarrativeDraft(token:string,draft:import('./narrative-contracts').NarrativeDraft,expected:string|null):Promise<Result<void>>;
@@ -112,6 +113,7 @@ export interface ProgressAPI extends importFinishDraftAPI,SceneDeskAPI,TreasuryA
   narrative(token:string,noteId:string):Promise<Result<import('./narrative-contracts').NarrativeView>>;
   progressHistory(token: string, characterId: string, after: string | null): Promise<Result<ProgressHistory>>;
   progress(token: string): Promise<Result<ProgressView>>;
+  lootBalance(token:string):Promise<Result<LootBalance>>;
   treasures(token: string, after: string | null): Promise<Result<TreasurePage>>;
   treasure(token: string, id: string): Promise<Result<Treasure>>;
   ledger(token: string, query: LedgerQuery): Promise<Result<LedgerPage>>;

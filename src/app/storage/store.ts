@@ -65,7 +65,7 @@ import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat
 import {installChaseSchema,readChase,executeChase,validateChaseBackup} from './chase';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
-import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
+import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
 import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
@@ -530,6 +530,7 @@ export class CampaignStore {
   executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
+  lootBalance(token:string){return readLootBalance(this.db,this.guard(token));}
   treasures(token: string, after: string | null) { return readTreasures(this.db, this.guard(token), after); }
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }
   ledger(token: string, query: LedgerQuery) { return readLedger(this.db, this.guard(token), query); }
