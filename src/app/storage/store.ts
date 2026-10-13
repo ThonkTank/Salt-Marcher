@@ -67,8 +67,8 @@ import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../prog
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
 import type { EncounterPlanCommand } from '../encounter-contracts';
-import { installGenerationSchema, readEncounterTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, validateGenerationBackup } from './generation';
-import type { GenerationCommand, GenerationRequest } from '../generation-contracts';
+import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
+import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
 import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal, readSessionRuns, readSessionRun, scenePreparation, cleanSessionVisits } from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
@@ -513,12 +513,14 @@ export class CampaignStore {
   sessionRun(token: string,id: string) { return readSessionRun(this.db,this.guard(token),id); }
   scenePreparation(token: string,sceneId: string) { return scenePreparation(this.db,this.guard(token),sceneId); }
   encounterTables(token: string, includeTrashed: boolean) { return readEncounterTables(this.db,this.guard(token),includeTrashed); }
+  lootTables(token: string, includeTrashed: boolean) { return readLootTables(this.db,this.guard(token),includeTrashed); }
   generatorRegistry(token: string) { return readGeneratorRegistry(this.db,this.guard(token)); }
   executeGeneration(command: GenerationCommand) { return executeGeneration(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   generateEncounters(token: string, request: GenerationRequest) { return generateEncounters(this.db,this.guard(token),request); }
   acceptGeneration(command: Parameters<typeof acceptGeneration>[1]) { return acceptGeneration(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   generationRuns(token: string) { return readGenerationRuns(this.db,this.guard(token)); }
   generationRun(token: string, id: string) { return readGenerationRun(this.db,this.guard(token),id); }
+  rollLoot(command: LootRollCommand) { return rollLoot(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   encounterPlans(token: string, search: string) { return readEncounterPlans(this.db,this.guard(token),search); }
   encounterPlan(token: string, id: string) { return readEncounterPlan(this.db,this.guard(token),id); }
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
