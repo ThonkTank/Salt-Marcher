@@ -46,6 +46,8 @@ export class AtlasRenderer {
   private initialized = false;
   private closed = false;
   private currentCamera: RelativeAtlasCamera;
+  private captureViewport?: ViewportSize;
+  private capturing = false;
   beforeRender?: () => void;
   detailFitPoints?: () => readonly { frame: RigidFrame; point: WorldPoint }[];
   level = 0;
@@ -118,10 +120,15 @@ export class AtlasRenderer {
     );
   }
   get viewport(): ViewportSize {
+    if (this.captureViewport) return this.captureViewport;
     return {
       width: Math.max(1, this.host.clientWidth),
       height: Math.max(1, this.host.clientHeight),
     };
+  }
+  /** True only while drawing the clean shareable image instead of editor chrome. */
+  get imageCapture(): boolean {
+    return this.capturing;
   }
   async init(): Promise<void> {
     await this.application.init({
@@ -212,7 +219,7 @@ export class AtlasRenderer {
       .find(({ point: p }) => Math.hypot(screen.x - p.x, screen.y - p.y) <= 14)
       ?.id;
   }
-  fit(): void {
+  private fittedCamera(viewport: ViewportSize): RelativeAtlasCamera {
     const refs = this.terrain?.references() ?? [];
     const points = refs.flatMap((ref) =>
       [
@@ -238,35 +245,100 @@ export class AtlasRenderer {
       ...(this.detailFitPoints?.() ?? []),
     ];
     if (!framed.length)
-      this.currentCamera = relativeCamera(
+      return relativeCamera(
         this.world.origin,
         { x: 0, y: 0 },
         initialAtlasCamera(this.world.origin).metersPerPixel,
       );
-    else {
-      const anchor = framed[0]!.frame.anchor,
-        probe = relativeCamera(anchor, { x: 0, y: 0 }, 1e15);
-      const relative = framed.map((p) =>
-        relativeLocalMeters(p.frame, probe, p.point),
-      );
-      const minX = Math.min(...relative.map((p) => p.x)),
-        maxX = Math.max(...relative.map((p) => p.x)),
-        minY = Math.min(...relative.map((p) => p.y)),
-        maxY = Math.max(...relative.map((p) => p.y));
-      const padding = refs.length
-        ? hexDistanceMeters(0) * 2
-        : Math.max(1, (maxX - minX) * 0.2, (maxY - minY) * 0.2);
-      this.currentCamera = relativeCamera(
-        anchor,
-        { x: minX / 2 + maxX / 2, y: minY / 2 + maxY / 2 },
-        Math.max(
-          0.005,
-          (maxX - minX + padding) / Math.max(1, this.viewport.width - 64),
-          (maxY - minY + padding) / Math.max(1, this.viewport.height - 64),
-        ),
-      );
-    }
+    const anchor = framed[0]!.frame.anchor,
+      probe = relativeCamera(anchor, { x: 0, y: 0 }, 1e15);
+    const relative = framed.map((p) =>
+      relativeLocalMeters(p.frame, probe, p.point),
+    );
+    const minX = Math.min(...relative.map((p) => p.x)),
+      maxX = Math.max(...relative.map((p) => p.x)),
+      minY = Math.min(...relative.map((p) => p.y)),
+      maxY = Math.max(...relative.map((p) => p.y));
+    const padding = refs.length
+      ? hexDistanceMeters(0) * 2
+      : Math.max(1, (maxX - minX) * 0.2, (maxY - minY) * 0.2);
+    return relativeCamera(
+      anchor,
+      { x: minX / 2 + maxX / 2, y: minY / 2 + maxY / 2 },
+      Math.max(
+        0.005,
+        (maxX - minX + padding) / Math.max(1, viewport.width - 64),
+        (maxY - minY + padding) / Math.max(1, viewport.height - 64),
+      ),
+    );
+  }
+  fit(): void {
+    this.currentCamera = this.fittedCamera(this.viewport);
     this.schedule();
+  }
+  /** Render a stable, camera-independent raster without changing the editor view. */
+  async captureMap(options: {
+    readonly scope: "atlas" | "view";
+    readonly width: number;
+    readonly includeGrid: boolean;
+  }): Promise<HTMLCanvasElement> {
+    if (!this.initialized || this.closed || this.capturing)
+      throw new Error("Atlas ist nicht für den Export bereit.");
+    if (!Number.isSafeInteger(options.width) || options.width < 256 || options.width > 2048)
+      throw new RangeError("Die Exportbreite muss zwischen 256 und 2.048 Pixeln liegen.");
+    if (this.terrainSource) {
+      if (options.scope === "atlas") {
+        const refs = this.terrainSource.references();
+        if (refs.length)
+          await this.terrainSource.ensureVisible({
+            minQ: Math.min(...refs.map((ref) => ref.extent.minQ)),
+            maxQ: Math.max(...refs.map((ref) => ref.extent.maxQ)),
+            minR: Math.min(...refs.map((ref) => ref.extent.minR)),
+            maxR: Math.max(...refs.map((ref) => ref.extent.maxR)),
+          });
+      } else await this.terrainSource.ensureVisible(this.visibleTerrainBounds());
+    }
+    if (this.closed) throw new Error("Atlas wurde während des Exports geschlossen.");
+    const editorViewport = this.viewport,
+      height = Math.max(256, Math.min(2048,
+        Math.round(options.width * editorViewport.height / editorViewport.width))),
+      outputViewport = { width: options.width, height },
+      camera = this.currentCamera,
+      level = this.level,
+      gridVisible = this.grid.visible,
+      overlayVisible = this.overlay.visible;
+    this.capturing = true;
+    if (this.frame !== undefined) {
+      cancelAnimationFrame(this.frame);
+      this.frame = undefined;
+    }
+    try {
+      this.captureViewport = outputViewport;
+      this.application.renderer.resize(outputViewport.width, outputViewport.height);
+      this.currentCamera = options.scope === "atlas"
+        ? this.fittedCamera(outputViewport)
+        : relativeCamera(camera.anchor, camera.offsetMeters,
+          camera.metersPerPixel * editorViewport.width / outputViewport.width);
+      this.grid.visible = options.includeGrid;
+      this.overlay.visible = false;
+      this.draw();
+      const copy = this.host.ownerDocument.createElement("canvas");
+      copy.width = outputViewport.width;
+      copy.height = outputViewport.height;
+      const context = copy.getContext("2d");
+      if (!context) throw new Error("Bildausgabe ist in diesem Host nicht verfügbar.");
+      context.drawImage(this.application.canvas, 0, 0, copy.width, copy.height);
+      return copy;
+    } finally {
+      this.currentCamera = camera;
+      this.level = level;
+      this.grid.visible = gridVisible;
+      this.overlay.visible = overlayVisible;
+      this.captureViewport = undefined;
+      this.application.renderer.resize(editorViewport.width, editorViewport.height);
+      this.capturing = false;
+      if (!this.closed) this.draw();
+    }
   }
   visibleTerrainBounds() {
     const size = this.viewport;
@@ -415,7 +487,7 @@ export class AtlasRenderer {
     this.drawLocations();
     this.beforeRender?.();
     this.application.render();
-    this.changed();
+    if (!this.capturing) this.changed();
   }
   private drawLocations(): void {
     this.markers.clear();

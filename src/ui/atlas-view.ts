@@ -32,6 +32,7 @@ import { newLocationPath } from "../features/atlas/location-owners";
 import type { RelativeAtlasCamera } from "../features/atlas/relative-frame";
 import { parseSpatialWorld } from "../features/atlas/spatial-schema";
 import { inspectStandaloneAtlas, type AtlasStandaloneEntry } from "../features/atlas/atlas-standalone-entry";
+import { encodeRasterFile, type RasterFileFormat } from "../features/verwaltung/raster-files";
 
 export const ATLAS_VIEW = "dungeon-native-atlas";
 export class AtlasView extends FileView {
@@ -410,6 +411,20 @@ export class AtlasView extends FileView {
     guard();
     new Menu()
       .addItem((item) =>
+        item.setTitle("Kartenbild exportieren …").setIcon("image-file").onClick(() => {
+          new AtlasExportModal(this.app, editor.terrain.world.name, async (request) => {
+            guard();
+            if (generation !== this.generation || this.editor !== editor)
+              throw new Error("Die Ausgangskarte ist nicht mehr geöffnet.");
+            const canvas = await editor.captureMap(request);
+            guard();
+            if (generation !== this.generation || this.editor !== editor)
+              throw new Error("Die Karte wurde während des Exports geschlossen.");
+            return canvas;
+          }).open();
+        }),
+      )
+      .addItem((item) =>
         item.setTitle("Speichern unter …").onClick(() => {
           new CopyAtlasModal(
             this.app,
@@ -480,6 +495,103 @@ export class AtlasView extends FileView {
       this.campaignHost = undefined;
       this.contentEl.replaceChildren();
     });
+  }
+}
+class AtlasExportModal extends Modal {
+  private generation = 0;
+  private busy = false;
+  constructor(
+    app: App,
+    private readonly worldName: string,
+    private readonly capture: (request: {
+      readonly scope: "atlas" | "view";
+      readonly width: number;
+      readonly includeGrid: boolean;
+    }) => Promise<HTMLCanvasElement>,
+  ) {
+    super(app);
+  }
+  onOpen(): void {
+    const generation = ++this.generation;
+    this.busy = false;
+    this.setTitle("Atlas als Kartenbild exportieren");
+    this.contentEl.empty();
+    this.contentEl.createEl("p", {
+      text: "Exportiere den gesamten belegten Atlas oder genau den sichtbaren Ausschnitt. Die Editor-Kamera bleibt unverändert.",
+    });
+    let scope: "atlas" | "view" = "atlas",
+      width = 2048,
+      includeGrid = true,
+      format: RasterFileFormat = "png",
+      quality = 90;
+    const message = this.contentEl.createEl("p", { attr: { role: "status" } });
+    new Setting(this.contentEl).setName("Ausschnitt").addDropdown((dropdown) =>
+      dropdown.addOptions({ atlas: "Gesamter belegter Atlas", view: "Aktuelle Ansicht" })
+        .setValue(scope).onChange((value) => { scope = value === "view" ? "view" : "atlas"; }));
+    new Setting(this.contentEl).setName("Bildbreite")
+      .setDesc("256 bis 2.048 Pixel; die Höhe folgt dem Seitenverhältnis der Ansicht.")
+      .addSlider((slider) => slider.setLimits(256, 2048, 128).setValue(width)
+        .setDynamicTooltip().onChange((value) => { width = value; }));
+    new Setting(this.contentEl).setName("Hexraster anzeigen").addToggle((toggle) =>
+      toggle.setValue(includeGrid).onChange((value) => { includeGrid = value; }));
+    new Setting(this.contentEl).setName("Format").addDropdown((dropdown) =>
+      dropdown.addOptions({ png: "PNG", jpeg: "JPEG", webp: "WebP" })
+        .setValue(format).onChange((value) => {
+          format = value === "jpeg" || value === "webp" ? value : "png";
+        }));
+    new Setting(this.contentEl).setName("Qualität")
+      .setDesc("Wirkt bei JPEG und WebP.")
+      .addSlider((slider) => slider.setLimits(40, 100, 5).setValue(quality)
+        .setDynamicTooltip().onChange((value) => { quality = value; }));
+    const action = new Setting(this.contentEl);
+    action.addButton((button) => button.setButtonText("Exportieren").setCta().onClick(() => {
+      if (this.busy) return;
+      this.busy = true;
+      message.textContent = "Kartenbild wird erstellt …";
+      button.setDisabled(true);
+      void (async () => {
+        try {
+          const canvas = await this.capture({ scope, width, includeGrid });
+          if (generation !== this.generation) return;
+          const raster = await encodeRasterFile(canvas, {
+            format,
+            ...(format === "png" ? {} : { quality: quality / 100 }),
+          });
+          if (generation !== this.generation) return;
+          this.download(raster.blob, `${this.safeName(this.worldName)}.${format === "jpeg" ? "jpg" : format}`);
+          this.close();
+        } catch (error) {
+          if (generation === this.generation)
+            message.textContent = "Export fehlgeschlagen. " + String(error);
+        } finally {
+          if (generation === this.generation) {
+            this.busy = false;
+            button.setDisabled(false);
+          }
+        }
+      })();
+    }));
+    action.addButton((button) => button.setButtonText("Abbrechen").onClick(() => this.close()));
+  }
+  private safeName(value: string): string {
+    return value.trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ") || "Atlas";
+  }
+  private download(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob),
+      link = this.contentEl.ownerDocument.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.hidden = true;
+    this.contentEl.append(link);
+    try { link.click(); }
+    finally {
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    }
+  }
+  onClose(): void {
+    this.generation++;
+    this.contentEl.empty();
   }
 }
 class DiscardAtlasModal extends Modal {

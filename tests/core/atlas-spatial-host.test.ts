@@ -139,7 +139,55 @@ test("Courtyard remains transparent and nodes cannot be hit until their handles 
   const active = f.canvas.hit(p);
   assert.equal(active?.kind, "city");
   if (active?.kind === "city") assert.equal(active.hit.kind, "node");
+  (f.renderer as unknown as { imageCapture: boolean }).imageCapture = true;
+  f.canvas.draw();
+  const exported = f.canvas.hit(p);
+  assert.equal(exported?.kind, "city");
+  if (exported?.kind === "city") assert.equal(exported.hit.kind, "road");
   f.canvas.destroy();
+});
+
+test("Atlas image capture hides editor overlay and restores renderer state", async () => {
+  const visibility: boolean[] = [],
+    sizes: { width: number; height: number }[] = [],
+    overlay = { visible: true },
+    grid = { visible: true },
+    context = { drawImage() {} },
+    output = {
+      width: 0,
+      height: 0,
+      getContext: () => context,
+    },
+    renderer = Object.assign(Object.create(AtlasRenderer.prototype), {
+      initialized: true,
+      closed: false,
+      capturing: false,
+      host: {
+        clientWidth: 800,
+        clientHeight: 400,
+        ownerDocument: { createElement: () => output },
+      },
+      application: {
+        canvas: {},
+        renderer: { resize: (width: number, height: number) => sizes.push({ width, height }) },
+      },
+      currentCamera: relativeCamera({ x: 0, y: 0 }, { x: 0, y: 0 }, 2),
+      level: 3,
+      grid,
+      overlay,
+      draw: () => visibility.push(overlay.visible),
+    }) as AtlasRenderer;
+  const image = await renderer.captureMap({ scope: "view", width: 1024, includeGrid: false });
+  assert.equal(image, output);
+  assert.deepEqual(visibility, [false, true]);
+  assert.deepEqual(sizes, [
+    { width: 1024, height: 512 },
+    { width: 800, height: 400 },
+  ]);
+  assert.equal(overlay.visible, true);
+  assert.equal(grid.visible, true);
+  assert.equal(renderer.imageCapture, false);
+  assert.equal(renderer.level, 3);
 });
 test("Transient house preview moves child room in same frame without changing native owners or history", async () => {
   const f = await setup(0.1),
