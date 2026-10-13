@@ -6,6 +6,7 @@ import "./core/building-wall-band.test";
 import "./core/native-floor-tiles.test";
 import "./core/session.test";
 import "./core/drawing.test";
+import "./core/drawing-tool-controls.test";
 import "./core/assets.test";
 import "./core/map-resize-input.test";
 import "./core/smart-tiles-resize.test";
