@@ -47,7 +47,9 @@ Daten
 Umfang
   Kampagnenverwaltung, Vorbereitung und Live-Spiel, Katalog, Gegenstände,
   Welt und Atlas, Städte, lokale Musik, Dungeonwerkzeuge sowie eine getrennte
-  schreibgeschützte Spieleranzeige. Kampagnen lassen sich als .kwcampaign mit
+  schreibgeschützte Spieleranzeige. Quests und Gerüchte tragen vorbereitete
+  XP- und Gegenstandsbelohnungen; persönliche Mengenstapel lassen sich teilen,
+  zusammenführen und weitergeben. Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 
 Status
