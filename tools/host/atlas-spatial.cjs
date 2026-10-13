@@ -175,9 +175,7 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks,
     assert.deepEqual((await state()).city.roadNodes, initial.city.roadNodes);
     const marker = await screen({ x: 0, y: 0 });
     await page.mouse.click(marker.x, marker.y);
-    const locationKey = panel().locator(
-      ".dn-location-key:not(.dn-atlas-room-key)",
-    );
+    const locationKey = panel().getByLabel("Orts-Key", { exact: true });
     await locationKey.waitFor({ state: "visible" });
     await locationKey
       .getByRole("textbox", { name: "Ortsname", exact: true })

@@ -46,6 +46,19 @@ export class CampaignEntry {
   }
   private render(): void {
     this.root.replaceChildren();
+    this.root.toggleAttribute("data-empty", this.model.entries.length === 0);
+    if (this.model.entries.length === 0 && !this.model.activeUnavailableReason) {
+      const disclosure = this.root.ownerDocument.createElement("details"),
+        summary = this.root.ownerDocument.createElement("summary"),
+        explanation = this.root.ownerDocument.createElement("p");
+      disclosure.className = "dn-campaign-empty";
+      summary.textContent = "Kampagne verknüpfen";
+      explanation.textContent = "Keine verfügbare Kampagne gefunden.";
+      disclosure.append(summary, explanation);
+      this.appendRetry(disclosure);
+      this.root.append(disclosure);
+      return;
+    }
     const title = this.root.ownerDocument.createElement("h3");
     title.textContent = "Kampagne";
     this.root.append(title);
@@ -97,6 +110,9 @@ export class CampaignEntry {
       row.append(button); list.append(row);
     }
     this.root.append(list);
+    this.appendRetry(this.root);
+  }
+  private appendRetry(host: HTMLElement): void {
     const retry = this.root.ownerDocument.createElement("button");
     retry.type = "button"; retry.textContent = "Liste neu laden"; retry.disabled = this.busy;
     retry.addEventListener("click", () => {
@@ -110,7 +126,7 @@ export class CampaignEntry {
         this.busy = false; this.render();
       });
     });
-    this.root.append(retry);
+    host.append(retry);
   }
   destroy(): void {
     if (this.destroyed) return;

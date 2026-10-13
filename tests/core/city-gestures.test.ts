@@ -166,6 +166,30 @@ test("City house dragging retains pointer offset, final absolute movement and ex
   assert.deepEqual(source.read(), preview.document);
 });
 
+test("City dragging removes pointer projection tails before they reach saved metre values", () => {
+  const { source } = setup();
+  const buildingGesture = new CityGesture(
+    source,
+    building("move-building"),
+    { x: -97, y: 53 },
+  );
+  assert.deepEqual(
+    buildingGesture.update({ x: -11.000000000000004, y: 9.000000000000002 })
+      .document.buildings[0]!.position,
+    { x: -14, y: 6 },
+  );
+  const nodeGesture = new CityGesture(
+    source,
+    { kind: "move-node", ownerId: "city", nodeId: "a" },
+    { x: 1, y: 1 },
+  );
+  assert.deepEqual(
+    nodeGesture.update({ x: -6.999999999999999, y: 0.0000000000000002 })
+      .document.roadNodes[0]!.point,
+    { x: -8, y: -1 },
+  );
+});
+
 test("City T-junction and one via handle preserve all other referenced street geometry", () => {
   const { history, source } = setup(),
     before = source.read();
