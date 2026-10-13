@@ -191,10 +191,15 @@ export async function finishDraftCommit() {
     throw new Error(
       "Abschlussstand geändert. Gesicherte Eingabe zuerst prüfen und übernehmen.",
     );
-  return { writeId: s.draft?.writeId, revision: s.owner.revision };
-}
-export function finishDraftConsumed() {
-  deactivateFinishDraft();
+  return {
+    writeId:s.draft?.writeId,
+    revision:s.owner.revision,
+    consume:()=>{
+      if(active!==s)return false;
+      deactivateFinishDraft();
+      return true;
+    },
+  };
 }
 function init() {
   if (initialized) return;

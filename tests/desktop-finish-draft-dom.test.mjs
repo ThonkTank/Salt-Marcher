@@ -129,3 +129,10 @@ test('even an unchanged draft cannot return confirmation for a superseded owner'
  x.set('Second');const load=x.begin('second');await assert.rejects(commit);await load;
  assert.equal(x.text().value,'Second');assert.equal(x.writes.length,0);
 });
+
+test('a confirmed former command cannot consume a newly reopened dialog for the same target',async t=>{
+ const x=fixture(t);x.set('First');await x.begin('first');const confirmed=await x.editor.finishDraftCommit();
+ x.set('Reopened defaults');await x.begin('first');x.set('  Reopened later input\r\n');x.editor.markFinishDraft();
+ assert.equal(confirmed.consume(),false);assert.equal(await x.editor.flushFinishDraft(),true);
+ assert.equal(x.writes[0].d.outcome,'  Reopened later input\r\n');
+});

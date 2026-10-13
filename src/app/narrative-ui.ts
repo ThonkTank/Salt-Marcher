@@ -1,4 +1,4 @@
-import {finishDraftCommit,finishDraftConsumed} from './finish-draft-ui';
+import {finishDraftCommit} from './finish-draft-ui';
 import type { Workspace } from "./contracts";
 import type { WorldNoteV1 } from "../features/world/world-notes";
 import type { NarrativeView, NarrativeDraft } from "./narrative-contracts";
@@ -418,7 +418,7 @@ export async function showNarrative(
                 outcome: el<HTMLTextAreaElement>("combat-outcome").value,
               })
             ) {
-              finishDraftConsumed();dialog.close();
+              if(draft.consume())dialog.close();
               await refreshProgress();
             }}catch(e){tell((e as Error).message,true);}
           })();

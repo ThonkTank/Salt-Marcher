@@ -1,4 +1,4 @@
-import {finishDraftCommit,finishDraftConsumed,flushFinishDraft} from './finish-draft-ui';
+import {finishDraftCommit,flushFinishDraft} from './finish-draft-ui';
 import {CombatDraftCache,combatDraftKey} from './combat-draft-cache';
 import {fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
@@ -219,7 +219,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-notes-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'notes', title: value('combat-edit-title'), notes: value('combat-notes') },draftRevision(notesDraft())); };
   get('combat-finish').onclick = () => { void (async () => { try { const gen = generation; if(!workspace||!view?.combat)return;if(!await prepareFinish(view.combat.participants.map(p=>p.characterId).filter((id):id is string=>!!id),view.assessment,{workspace,owner:{kind:'combat',targetId:view.combat.id,revision:view.combat.revision}}))return; if (gen !== generation) return; get<HTMLDialogElement>('combat-finish-dialog').showModal(); get('combat-outcome').focus(); } catch (error) { tell((error as Error).message, true); } })(); };
   get('combat-finish-cancel').onclick = () => get<HTMLDialogElement>('combat-finish-dialog').close();
-  get('combat-finish-form').onsubmit = event => { event.preventDefault(); void (async () => { try{const draft=await finishDraftCommit();if (await execute({ kind: 'finish', outcome: value('combat-outcome'), rewards: finishRewards(),finishDraftWriteId:draft.writeId },draft.revision)) {finishDraftConsumed(); get<HTMLDialogElement>('combat-finish-dialog').close(); await refreshProgress(); }}catch(e){tell((e as Error).message,true);} })(); };
+  get('combat-finish-form').onsubmit = event => { event.preventDefault(); void (async () => { try{const draft=await finishDraftCommit();if (await execute({ kind: 'finish', outcome: value('combat-outcome'), rewards: finishRewards(),finishDraftWriteId:draft.writeId },draft.revision)) {if(draft.consume())get<HTMLDialogElement>('combat-finish-dialog').close(); await refreshProgress(); }}catch(e){tell((e as Error).message,true);} })(); };
 }
 
 export async function openExistingCombat(id:string){if(await flushCombat())await load(id);}
