@@ -29,3 +29,7 @@ test('same-scene updates retain input and group import keeps character ownership
  const c=x.commands[0].command;assert.equal(c.sceneId,'scene-a');assert.equal(c.chaseId,'A');assert.equal(c.action.kind,'participants');assert.equal(c.action.participants[0].characterId,'hero-1');assert.equal(c.action.participants[0].name,'Heldin');assert.equal(c.action.participants[0].speed,9);
  x.commands[0].resolve({ok:true,value:view('A','scene-a',2)});await tick();
 });
+
+test('refresh retains an explicitly selected completed chase',async t=>{
+ const x=setup(t);x.context('scene-a');const finished=view('Finished','scene-a',3);finished.chase.status='finished';finished.chase.outcome='Escaped';x.requests[0].resolve({ok:true,value:finished});await until(()=>x.get('chase-status').textContent.includes('Finished'));x.get('chase-refresh').click();assert.equal(x.requests[1].id,'Finished');x.requests[1].resolve({ok:true,value:finished});await tick();assert.ok(x.get('chase-status').textContent.includes('Escaped'));
+});
