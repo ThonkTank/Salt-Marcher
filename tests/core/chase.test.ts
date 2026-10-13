@@ -2,7 +2,7 @@ import {createHash} from "node:crypto";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {applyChaseAction,chaseActionControls,type ChaseState} from "../../src/app/chase-contracts";
-import {readChase} from "../../src/app/storage/chase";
+import {readChase,reconcileChaseParticipants} from "../../src/app/storage/chase";
 
 const running=():ChaseState=>({id:"chase-1",revision:1,sceneId:"scene-1",title:"Flucht",status:"running",round:0,goal:"Tor",complication:"",outcome:"",participants:[{id:"p-1",name:"Flüchtende",side:"quarry",distance:0,speed:9,exhaustion:0,notes:""},{id:"p-2",name:"Wache",side:"pursuer",distance:12,speed:9,exhaustion:0,notes:""}]});
 
@@ -18,6 +18,20 @@ test("finished chases are terminal",()=>{
   const finished=applyChaseAction(running(),{kind:"finish",outcome:"Entkommen"});
   assert.equal(finished.status,"finished");
   assert.throws(()=>applyChaseAction(finished,{kind:"remove",participantId:"p-1"}),/abgeschlossen/);
+});
+
+test("scene participants keep stable character references and cannot be imported twice",()=>{
+  const participant={id:"p-3",characterId:"character-1",name:"Heldin",side:"quarry" as const,distance:0,speed:9,exhaustion:0,notes:""};
+  const next=applyChaseAction(running(),{kind:"participants",participants:[participant]});
+  assert.equal(next.participants[2]!.characterId,"character-1");
+  assert.throws(()=>applyChaseAction(next,{kind:"participants",participants:[{...participant,id:"p-4"}]}),/bereits/);
+});
+
+test("party movement removes linked characters from every running chase",()=>{
+  const state=applyChaseAction(running(),{kind:"participants",participants:[{id:"p-3",characterId:"character-1",name:"Heldin",side:"quarry",distance:0,speed:9,exhaustion:0,notes:""}]}),payload=JSON.stringify(state),row={campaign_id:"campaign-1",id:state.id,scene_id:state.sceneId,revision:state.revision,status:state.status,payload,checksum:createHash("sha256").update(payload).digest("hex")};let saved:any[]=[];
+  const db={prepare:(sql:string)=>sql.startsWith("SELECT")?{iterate:()=>[row]}:{run:(...values:any[])=>{saved=values;}}};
+  reconcileChaseParticipants(db,"campaign-1",["character-1"]);
+  const after=JSON.parse(saved[5]);assert.equal(after.revision,state.revision+1);assert.equal(after.participants.some((p:any)=>p.characterId==="character-1"),false);
 });
 
 test("unknown chase actions cannot masquerade as completion",()=>{

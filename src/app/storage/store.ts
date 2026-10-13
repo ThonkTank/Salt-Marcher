@@ -62,7 +62,7 @@ import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '..
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
-import {installChaseSchema,readChase,executeChase,validateChaseBackup} from './chase';
+import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
 import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
@@ -70,8 +70,8 @@ import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../prog
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
 import type { EncounterPlanCommand } from '../encounter-contracts';
-import { installGenerationSchema, readEncounterTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, validateGenerationBackup } from './generation';
-import type { GenerationCommand, GenerationRequest } from '../generation-contracts';
+import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
+import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
 import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal, readSessionRuns, readSessionRun, scenePreparation, cleanSessionVisits } from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
@@ -516,12 +516,14 @@ export class CampaignStore {
   sessionRun(token: string,id: string) { return readSessionRun(this.db,this.guard(token),id); }
   scenePreparation(token: string,sceneId: string) { return scenePreparation(this.db,this.guard(token),sceneId); }
   encounterTables(token: string, includeTrashed: boolean) { return readEncounterTables(this.db,this.guard(token),includeTrashed); }
+  lootTables(token: string, includeTrashed: boolean) { return readLootTables(this.db,this.guard(token),includeTrashed); }
   generatorRegistry(token: string) { return readGeneratorRegistry(this.db,this.guard(token)); }
   executeGeneration(command: GenerationCommand) { return executeGeneration(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   generateEncounters(token: string, request: GenerationRequest) { return generateEncounters(this.db,this.guard(token),request); }
   acceptGeneration(command: Parameters<typeof acceptGeneration>[1]) { return acceptGeneration(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   generationRuns(token: string) { return readGenerationRuns(this.db,this.guard(token)); }
   generationRun(token: string, id: string) { return readGenerationRun(this.db,this.guard(token),id); }
+  rollLoot(command: LootRollCommand) { return rollLoot(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   encounterPlans(token: string, search: string) { return readEncounterPlans(this.db,this.guard(token),search); }
   encounterPlan(token: string, id: string) { return readEncounterPlan(this.db,this.guard(token),id); }
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
@@ -712,7 +714,7 @@ export class CampaignStore {
     this.guard(command.token, command.campaignId);
     const a = command.action;
     const sceneId = a.kind === 'move' ? a.sceneId : a.kind === 'membership' ? this.db.prepare('SELECT scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(command.campaignId, a.characterId)?.scene_id : null;
-    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active))assertCombatPartyChange(this.db,command.campaignId,a.kind==='move'?a.memberIds:[a.characterId],sceneId??null);
+    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];assertCombatPartyChange(this.db,command.campaignId,ids,sceneId??null);reconcileChaseParticipants(this.db,command.campaignId,ids);}
   });
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
