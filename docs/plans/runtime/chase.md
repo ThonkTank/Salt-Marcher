@@ -17,7 +17,8 @@ Registryhash `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e` 
 zurzeit eine manuelle persistente Liste mit freien Teilnehmern, Abstand, Tempo,
 Erschöpfung, Komplikation, Runde und Abschluss. Abschluss schreibt einen
 Welthistorieneintrag. Mehrfachmaskenwahl, Actor-/Membershipbindungen, Zeitport,
-Workingdrafts, Receiptaufklärung und vollständige Datenclosure bleiben offen.
+Workingdrafts und vollständige Datenclosure bleiben offen. Die inzwischen
+integrierte Receiptstrecke bietet Commandreplay und lesende Statusaufklärung.
 Der aktuelle Tracker ist daher eine Teillieferung.
 
 ## Behobene Antwortzuordnung
@@ -38,29 +39,37 @@ bleibt beim ursprünglichen Ziel; sein Reply zeichnet und meldet nur im weiterhi
 passenden Kontext. Aktuelle IPCfehler bleiben sichtbar und Refresh bleibt möglich.
 Anlage nach abgeschlossenem Tracker sendet außerdem keine alte Chase-ID/Basis.
 
-`tests/desktop-chase-authority-dom.test.mjs` enthält zehn kontrollierte DOMfälle
+`tests/desktop-chase-authority-dom.test.mjs` enthält elf kontrollierte DOMfälle
 mit verzögerten/ersetzten IPCantworten. Zusammen mit den betroffenen
-Szenensuche-/Reisezielprüfungen bestanden 17 lokale Prüfungen und Desktop-Typecheck.
+Szenensuche-/Reiseziel-, Codec-, Store-/Transfer- und Draftmigrationprüfungen
+bestanden 35 lokale Prüfungen und Desktop-Typecheck.
 Native Bedienung und reale Crossworkflow-/Speicher-/Maskenabnahme stehen aus.
 
 ## Nächste ausführbare Schritte
 
-1. **Commandidentität und Roharbeit schließen.** `storage/chase.executeChase`
-   verwendet bisher `commandId` nicht. An bestehendes Receipt-/Fingerprintmuster
-   anschließen und lesenden `commitStatus`-Port für Chase ergänzen; identischer
-   Create-/Round-/Finish-Replay publiziert keine zweite Maske/Runde/History.
-   Persistente Rohfelder, Original-Scene-/Chasebasis und unbekannter Command
-   bleiben getrennt. Kein blindes Retry nach verlorener Antwort. Abnahme: Fehler
-   vor/nach Commit, Fresh und A/B/A erhalten Eingaben und klären genau den alten
-   Auftrag, ohne ein neues Ziel zu beschreiben.
-2. **Datenabschluss anschließen.** `storage/chase`-Header-/Shapeprüfung am Backup,
-   Export und Import wiederverwenden; ältere Pakete ohne die neue Tabelle
-   ausdrücklich migrieren oder als kompatibel leere Fähigkeit behandeln.
-   `campaign-data.ts` braucht den strukturellen `chaseId`-Referenzslot für
-   `world_history.facts`; freie Texte bleiben unverändert. SQL- und Body-Scene,
-   Revision und Status müssen stimmen. Abnahme: gültiger und checksummed falsch
-   zugeordneter Tracker, kopierter Abschlussverweis, unveränderte Quelle,
-   archivierte Scene, Erasure sowie früheres Format ohne Chaserecords.
+1. **Roharbeit und vollständige Klärung schließen.** Der integrierte
+   `chase_receipt`-Writer bindet Command-ID/Fingerprint und ursprüngliches Ergebnis
+   atomar. `commitStatus` und `writeConfirmed` klären den Ausgang lesend; Replay
+   von Create, Round und Finish sowie Fresh erzeugten im SQLitetest keine zweite
+   Maske/Runde/History. Die UI behält ihre Kontextprüfung auch an diesem Port.
+   Commitkontrolländerungen sperren nur Controls und bauen keine Eingabefelder
+   neu auf. Unbestätigte Werte bleiben dabei erhalten. Persistente Workingdrafts
+   mit Original-Scene-/Chasebasis fehlen weiterhin. Abnahme als nächster Schritt:
+   rohe ungültige Werte und Ausgangsklärung vor/nach Commit über Close/Fresh,
+   A/B/A und späteren Receiptread erhalten; kein blindes Retry oder neues Ziel.
+2. **Datenabschluss vervollständigen.** Der integrierte Backupvalidator prüft
+   Header/Shape und gespeicherte Belege. Zwei Legacygegenproben fanden allerdings
+   Fehler bei Schema 38 ohne Chase bzw. ohne Receipttabelle; der Validator
+   berücksichtigt jetzt diese historischen Varianten. Ältere Formatadapter
+   installieren die Chasetabellen auf der eigenen Importkopie.
+   Eine weitere Gegenprobe fand den alten Abschlussverweis nach unabhängiger
+   Kopie. `campaign-data.ts` remappt nun den strukturellen `chaseId`-Slot in
+   `world_history.facts`, bewahrt freie Ergebnisprosa und Originaldatei. Gültige
+   Kopie/Backup und lesender Replaystatus nach Fresh sind geprüft. Eine
+   zusätzliche Gegenprobe entlarvte gelöschte Tabellen mit erhaltenem
+   Abschlussverweis; die Ownerprüfung verweigert jetzt diesen hängenden Verweis,
+   während wirklich leere Legacyfähigkeiten gültig bleiben. Danach
+   Receipt-/Recent-Ownerclosure, archivierte Scenes und Erasure testen. Keine allgemeine Bodytext-Ersetzung.
 3. **Teilnahme und Zeit koppeln.** Bestehende Roster-/Worldactoridentitäten und
    die geprüften Combat-/Live-Membershipregeln konsumieren. Move/Split/Rejoin
    bereinigen betroffene Teilnahme atomar, ohne den Scenemove zu blockieren.
