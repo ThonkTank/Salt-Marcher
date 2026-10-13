@@ -49,7 +49,9 @@ Umfang
   Welt und Atlas, Städte, lokale Musik, Dungeonwerkzeuge sowie eine getrennte
   schreibgeschützte Spieleranzeige. Quests und Gerüchte tragen vorbereitete
   XP- und Gegenstandsbelohnungen; persönliche Mengenstapel lassen sich teilen,
-  zusammenführen und weitergeben. Kampagnen lassen sich als .kwcampaign mit
+  zusammenführen und weitergeben. Angefangene Questangaben bleiben als Entwurf
+  erhalten; spätere Verkäufe weitergegebener Beute aktualisieren den ursprünglichen
+  Lootwert. Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 
 Status
