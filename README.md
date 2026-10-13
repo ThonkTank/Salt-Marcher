@@ -1,14 +1,15 @@
-# Dungeon-Editor und Kampagnenwerkzeuge
+# Dungeon-Editor und gemeinsamer GM-Atlas
 
-Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Dieses Repository entwickelt den SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost. Die [technische Zielarchitektur](ARCHITECTURE.md) beschreibt den geplanten Übergang zum Gesamtprodukt.
+Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Dieses Repository entwickelt den SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost; die endgültige Plattformentscheidung bleibt offen.
 
 **Entwicklungsstand:** Dungeon-Editor und Raum-Keys sind vorhanden; Atlas-, Stadt- und Kampagnenintegration ist teilweise umgesetzt. Das Gesamtprodukt ist noch nicht abgenommen.
 
 ## Hier anfangen
 
-- [Produktziele](docs/PRODUCT.md), [vollständiger Umfang](docs/SCOPE.md) und [Lieferfolge](docs/ROADMAP.md): Gesamtprodukt und Weg zum Ziel.
-- [Atlasstand](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) und [Umsetzung](ROADMAP-HEX-ATLAS.md#umsetzungsplan): Kartenoberfläche, Werkzeuge und Codepakete.
+- [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): umgesetzt, fehlend und Weg zum Ziel.
+- [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md): vollständiger Funktionsumfang.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
+- [Beitragen](CONTRIBUTING.md) und [AGENTS.md](AGENTS.md): Entwicklung und Arbeitsgrenzen.
 
 ## Lokal entwickeln
 
@@ -26,14 +27,6 @@ npm run build
 ```
 
 Der Build erzeugt `main.js` und `main.js.map`. Für einen manuellen Smoke ausschließlich einen separaten Obsidian-Testvault verwenden: `main.js`, `manifest.json` und `styles.css` nach `.obsidian/plugins/dungeon-editor/` kopieren und das Plugin dort aktivieren. Obsidian Desktop mindestens 1.8.7; WebGL-Verfügbarkeit für Grafikprüfungen kontrollieren. Zum Einstieg die Befehle „Dungeon“ bzw. „Atlas“ in der Befehlspalette suchen. Produktive Karten und bestehende Nutzertexte bleiben geschützt. Build oder Push installieren kein Plugin im Nutzervault.
-
-Die eigenständigen Legacy-Speicherfälle verwenden synthetische Daten und kontrollierte
-Modellports. Sie sind keine GUI-/Prozessabnahme; der [aktuelle begrenzte Befund](ROADMAP-HEX-ATLAS.md#lieferpakete-und-codeanschlüsse) hält M13 offen.
-
-```bash
-./node_modules/esbuild/bin/esbuild tests/campaign-manifest-consumer-matrix.entry.ts --bundle --platform=node --outfile=/tmp/dungeon-consumer-matrix.cjs
-node --test --experimental-test-isolation=none /tmp/dungeon-consumer-matrix.cjs
-```
 
 ## Repositorykarte
 
@@ -176,3 +169,15 @@ Flächen folgen Volumenverschiebungen und 90-Grad-Drehungen. Bei Schnitten werde
 Dungeon-Leiten und Karten-/Key-Ausgaben ergänzen die zugeordneten Flächenbeschreibungen. Das Spielerfenster berücksichtigt die tatsächliche Sicht der aktiven Beobachter und erhält ausschließlich öffentliche oder ausdrücklich entdeckte Texte. Vorlagen und unterdrückte Attributwerte benutzen dieselbe Darstellung wie Raumkeys.
 
 Kurzer nativer Kerncheck: neun Bodenflächen im Key-Editor markieren, öffentliche und private Prosa bearbeiten, Raumwert erben und Material überschreiben, Spielertext ohne GM-Notiz, Volumenverschiebung, entfernte Zelle als erhaltenes ungebundenes Fragment und Wiederöffnen. Beide Prozesse endeten regulär. Eigene schwere Jobs liefen einzeln mit MemoryMax=1G, MemorySwapMax=128M und Node-Heap 512 MiB. Die ursprüngliche temporäre Prüfdatenbank war nach der Unterbrechung nicht mehr vorhanden; dieser Lauf verwendet eine neue separate, dauerhaft abgelegte Testkampagne. Der weitere dokumentierte Produktumfang bleibt in Arbeit.
+
+### Desktopstand 0.30: manuelle Questbelohnungen und Mengenstapel im Beutebuch
+
+Quests und Gerüchte ergänzen ihre vorhandene Notiz um offenen/geschlossenen Status, einen optionalen zugehörigen Ort, ausdrücklich gewählte Mitwirkende und vorbereitete XP-/Gegenstandsbelohnungen. Freie Notiztexte und bestehende NPC-/Fraktionsbeziehungen behalten ihren bisherigen Owner. Neue Quests beginnen ohne automatisch ausgewählte Mitwirkende. Offene gültige narrative Eingaben werden beim Wechsel der Arbeitsfläche gespeichert.
+
+Der manuelle Abschluss verwendet denselben Verteilungsdialog wie Encounter. Mitwirkende sind die voreingestellten, weiterhin änderbaren XP-Empfänger; gleiche Anteile runden über den bestehenden XP-Owner auf. Auch inaktive Empfänger bleiben auswählbar und verwenden die vorhandenen Aktivierungshinweise. Mehrere Gegenstände können unabhängig ergänzt und verändert werden. Die Gegenstände werden als kanonische unverteilte Beute angelegt, mit Quest-/Gerücht- und Ortsherkunft. Jede Zuweisung an eine Figur bleibt eine ausdrückliche GM-Aktion. Abschluss und Belohnungsreceipt verhindern erneute Vergabe derselben Notizbelohnung. Es gibt keine automatischen Erfüllungsbedingungen oder narrativen Effekte.
+
+Das persönliche Beutebuch ergänzt Teilen und Zusammenführen passender verfügbarer Mengenstapel gleicher Herkunft sowie die ausdrückliche Weitergabe an eine andere bestehende Figur. Quellen, Teilstücke, Vorher-/Nachherstände und Gründe bleiben im Verlauf erhalten. Der Absender behält die Weitergabe als erhaltenen Loot; die Übernahme beim Empfänger ist keine neue Belohnung und erhöht die kumulative Reward-Guidance nicht erneut. Verkäufe und Weitergaben können bestehende Shops, NPCs, Orte oder Fraktionen verknüpfen. Korrekturen behalten die bisherigen Fakten und können diese Verknüpfung berichtigen.
+
+Datenbankformat 35 ergänzt narrative Zustände und Awardreceipts; ältere Formate 33/34 werden beim Kampagnenimport ergänzt. Der gemeinsame Ressourcen-Launcher ist unter `tools/codex-dungeon-job.py` dokumentiert. Seine Quoten bleiben unverändert; Prozessdelegation erlaubt dem Prüftreiber, von KDE verschobene eigene Electron-Prozesse samt Kindern wieder in den begrenzten Job zurückzuführen. Die gemeinsame Codex-App wird nicht begrenzt.
+
+Nativer Kernablauf: Quest-Metadaten und Mitwirkende bearbeiten, gemeinsamen Belohnungsdialog verwenden, 101 XP auf zwei gewählte Figuren als je 51 XP verteilen, Gegenstände zunächst unvergeben lassen, zwölf Münzen zuweisen, einen Mengenstapel teilen und wieder zusammenführen, drei Münzen weitergeben und alle Zustände nach einem neuen Prozess lesen. Die weitergehende Gesamtqualifikation und der weitere dokumentierte Produktumfang bleiben offen.

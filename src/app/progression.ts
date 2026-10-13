@@ -1,3 +1,4 @@
+import type {NarrativeAction} from './narrative-contracts';
 import type { Result } from './contracts';
 import type { ItemDefinition } from './items-contracts';
 export const levelXp = [0,300,900,2700,6500,14000,23000,34000,48000,64000,85000,100000,120000,140000,165000,195000,225000,265000,305000,355000] as const;
@@ -45,12 +46,12 @@ export type ItemCategory = 'coins' | 'equipment' | 'trade-goods' | 'magic' | 'ot
 export interface ItemInput { name: string; quantity: number; valueGold: string; category: ItemCategory; reference?: ItemReference }
 export interface ItemReference { kind: 'authored'; definitionId: string; revision: number; historicalDefinitionId?:string }
 export interface TreasureItem { id: string; reference: ItemReference; name: string; category: ItemCategory; quantity: number; allocated: number; unitCopper: string | null; currentDefinition?: ItemDefinition }
-export interface Treasure { id: string; revision: number; title: string; sceneId: string | null; locationId: string | null; combatId: string | null; items: TreasureItem[] }
+export interface Treasure { id: string; revision: number; title: string; sceneId: string | null; locationId: string | null; combatId: string | null; sourceNoteId?:string; awardId?:string; items: TreasureItem[] }
 export interface LedgerItem {
   id: string; characterId: string; revision: number; reference: ItemReference; name: string; category: ItemCategory; quantity: number; unitCopper: string | null;
-  origin: 'award' | 'purchase' | 'manual'; status: 'received' | 'sold' | 'given'; actualSaleCopper: string | null; counterparty: string;
+  origin: 'award' | 'purchase' | 'manual' | 'transfer'; status: 'received' | 'sold' | 'given'; actualSaleCopper: string | null; counterparty: string;
   treasureId: string | null; combatId: string | null; sceneId: string | null; locationId: string | null; instantMs: string | null; recordedAt: string; parentId: string | null;
-  paidCopper?: string; instanceId?: string | null; counterpartyReference?: {shopId:string;owner:{kind:'npc'|'location';id:string}};
+  recipientCharacterId?:string; sourceCharacterId?:string; sourceNoteId?:string; awardId?:string; provenance?:string; mergeTargetId?:string; counterpartyLink?:{kind:'shop'|'npc'|'location'|'faction';id:string};paidCopper?: string; instanceId?: string | null; counterpartyReference?: {shopId:string;owner:{kind:'npc'|'location';id:string}};
   currentName?:string; currentUnitCopper?:string|null;
 }
 export function ledgerCopper(item: LedgerItem): bigint | null {
@@ -69,18 +70,23 @@ export interface LedgerInventoryPage {items:LedgerItem[];problems:LedgerPage['pr
 export interface ProgressGuard { characterId: string; revision: number }
 export interface FinishRewards { poolXp: number; noXp: boolean; recipients: ProgressGuard[]; policyVersion: 'xp-ceil-2014-v1'; loadXp: number; items: ItemInput[] }
 export interface CombatReward { awardId: string; poolXp: number; shareXp: number; totalXp: number; recipientIds: string[]; treasureId: string | null; policyVersion: 'xp-ceil-2014-v1' }
-export type ProgressAction =
+export type ProgressAction = NarrativeAction
+  | {kind:'ledger-split';entryId:string;expectedRevision:number;quantity:number;reason:string}
+  | {kind:'ledger-merge';entryId:string;expectedRevision:number;sourceId:string;expectedSourceRevision:number;reason:string}
+  | {kind:'ledger-transfer';entryId:string;expectedRevision:number;quantity:number;characterId:string;expectedMembershipRevision:number;reason:string}
   | ({kind:'health';characterId:string;expectedRevision:number;reason:string} & ({operation:'set';health:CharacterHealth}|{operation:'damage'|'heal';amount:number}))
   | { kind: 'xp'; characterId: string; expectedRevision: number; mode: 'add' | 'subtract' | 'set'; amount: number; reason: string; correctionOf?: string }
   | { kind: 'rest'; rest: 'short' | 'long'; recipients: ProgressGuard[] }
   | { kind: 'treasure'; title: string; sceneId: string | null; items: ItemInput[] }
   | { kind: 'allocate'; treasureId: string; expectedRevision: number; expectedDefinitionRevision: number; itemId: string; quantity: number; characterId: string; expectedMembershipRevision: number }
   | { kind: 'manual-item'; characterId: string; expectedMembershipRevision: number; origin: 'award' | 'purchase' | 'manual'; item: ItemInput; note: string }
-  | { kind: 'ledger'; entryId: string; expectedRevision: number; operation: 'sold' | 'given' | 'correct'; quantity: number; actualGold: string; counterparty: string; correctedQuantity?: number; reason: string }
+  | { kind: 'ledger'; entryId: string; expectedRevision: number; operation: 'sold' | 'given' | 'correct'; quantity: number; actualGold: string; counterparty: string; correctedQuantity?: number;counterpartyLink?:LedgerItem['counterpartyLink']; reason: string }
   | { kind: 'notice'; ids: string[] };
 export interface ProgressCommand { commandId: string; campaignId: string; token: string; action: ProgressAction }
 export interface ProgressHistory { items: { id: string; kind: string; facts: Record<string, any> }[]; next: string | null }
 export interface ProgressAPI {
+  ledgerParties(token:string):Promise<Result<{kind:'shop'|'npc'|'location'|'faction';id:string;name:string}[]>>;
+  narrative(token:string,noteId:string):Promise<Result<import('./narrative-contracts').NarrativeView>>;
   progressHistory(token: string, characterId: string, after: string | null): Promise<Result<ProgressHistory>>;
   progress(token: string): Promise<Result<ProgressView>>;
   treasures(token: string, after: string | null): Promise<Result<TreasurePage>>;

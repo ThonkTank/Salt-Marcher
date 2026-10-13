@@ -37,7 +37,9 @@ export async function exportCampaignArchive(destination:string,manifest:Campaign
  await writeArchive(destination,m,entries.map(e=>({...files.get(e.name)!,filename:e.filename})),{check:()=>check(h),progress:(bytes,records)=>h.progress({phase:'Kampagne exportieren',bytes,records,busy:true})});
 }
 export async function extractCampaignArchive(filename:string,base:string,h:CampaignFileHooks){
- const extracted=await readArchive(filename,base,allowedName,{check:()=>check(h),progress:(bytes,records)=>h.progress({phase:'Kampagnenpaket vorbereiten',bytes,records,busy:true})});
+ const extracted=await readArchive(filename,base,allowedName,value=>{
+  const manifest=checkedManifest(value);return new Map(manifest.files.map(file=>[file.name,file]));
+ },{check:()=>check(h),progress:(bytes,records)=>h.progress({phase:'Kampagnenpaket vorbereiten',bytes,records,busy:true})});
  try{
   const manifest=checkedManifest(extracted.manifest);
   if(manifest.files.length!==extracted.files.size)throw new Error('Manifest und Paket-Dateiverzeichnis widersprechen sich.');

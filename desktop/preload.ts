@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   encounterPlans: (token: string,search: string) => ipcRenderer.invoke('campaign:encounter-plans',token,search),
   encounterPlan: (token: string,id: string) => ipcRenderer.invoke('campaign:encounter-plan',token,id),
   saveEncounterPlan: (command: unknown) => ipcRenderer.invoke('campaign:save-encounter-plan',command),
+  ledgerParties:(token:string)=>ipcRenderer.invoke('campaign:ledger-parties',token),
+  narrative:(token:string,id:string)=>ipcRenderer.invoke('campaign:narrative',token,id),
   progressHistory: (token: string, characterId: string, after: string | null) => ipcRenderer.invoke('campaign:progress-history', token, characterId, after),
   progress: (token: string) => ipcRenderer.invoke('campaign:progress', token),
   treasures: (token: string, after: string | null) => ipcRenderer.invoke('campaign:treasures', token, after),

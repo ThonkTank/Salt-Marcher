@@ -152,7 +152,7 @@ function renderList() {
   const token = context?.token;
   for (const character of data?.roster ?? []) {
     const group = data?.scenes.find(s => s.id === character.sceneId);
-    const button = document.createElement('button'); button.textContent = character.profile.name + (character.active ? ' · dabei' + (data!.scenes.length > 1 && group ? ' · ' + (group.title || 'Gruppe ' + group.id.slice(0,8)) : '') : ' · inaktiv');
+    const button = document.createElement('button'); button.textContent = character.profile.name + (character.active ? ' · dabei' + (data!.scenes.length > 1 && group ? ' · ' + (group.title || (group.primary?'Hauptgruppe':'Gruppe mit '+groupPeople(group.id))) : '') : ' · inaktiv');
     button.setAttribute('aria-pressed', String(character.id === selected)); button.disabled = intentBlocked();
     button.onclick = () => { void (async () => {
       if (!(await flushLive()) || context?.token !== token) return;
@@ -213,13 +213,17 @@ function renderScene() {
   if (current && !sources?.locations.some(l => l.document.id === current)) { const option = document.createElement('option'); option.value = current; option.textContent = 'Ort nicht verfügbar'; option.disabled = true; select.append(option); }
   select.value = current ?? ''; renderSceneMeta(); renderGroups();
 }
+function groupPeople(id:string){return data?.roster.filter(c=>c.active&&c.sceneId===id).map(c=>c.profile.name).join(', ')||'Leere Party';}
+function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'|'clock'>){
+  return (group.title||'Unbenannte Gruppe')+(group.primary?' · Hauptgruppe':'')+' · '+groupPeople(group.id)+' · '+formatInstant(group.clock.instantMs);
+}
 function renderGroups() {
   const select = get<HTMLSelectElement>('scene-focus'); select.replaceChildren();
   const cards = get('group-list'); cards.replaceChildren(); cards.hidden = !resumed || (data?.scenes.length ?? 0) < 2;
   for (const group of data?.scenes ?? []) {
     const option = document.createElement('option'); option.value = group.id;
     const people = data!.roster.filter(c => c.active && c.sceneId === group.id).map(c => c.profile.name).join(', ') || 'Leere Party';
-    option.textContent = (group.title || 'Unbenannte Gruppe') + (group.primary ? ' · Hauptgruppe' : '') + ' · ' + people + ' · ' + formatInstant(group.clock.instantMs); select.append(option);
+    option.textContent = groupLabel(group); select.append(option);
     const button = document.createElement('button'), name = document.createElement('strong'), facts = document.createElement('small');
     name.textContent = (group.title || 'Unbenannte Gruppe') + (group.primary ? ' · Hauptgruppe' : ''); facts.textContent = people + ' · ' + formatInstant(group.clock.instantMs);
     button.append(name, facts); button.setAttribute('aria-pressed', String(data?.focusId === group.id)); button.disabled = intentBlocked();
@@ -351,7 +355,7 @@ function initGroups() {
     const source = data.scene;
     moveBasis = { kind: 'move', sceneId: source.id, expectedRosterRevision: data.rosterRevision, expectedFocusRevision: data.focusRevision, expectedSceneMembershipRevision: source.membershipRevision, expectedClockRevision: source.clock.revision };
     moveTargets = structuredClone(data.scenes); get('move-members').replaceChildren();
-    get('move-source').textContent = (source.title || 'Aktuelle Gruppe') + ' · ' + formatInstant(source.clock.instantMs);
+    get('move-source').textContent = groupLabel({...source,primary:source.id===data.primaryId});
     for (const id of source.members) {
       const c = data.roster.find(c => c.id === id)!;
       const label = document.createElement('label'), box = document.createElement('input'); box.type = 'checkbox'; box.value = id;
@@ -359,7 +363,7 @@ function initGroups() {
     }
     const select = get<HTMLSelectElement>('move-target'); select.replaceChildren();
     const fresh = document.createElement('option'); fresh.value = ''; fresh.textContent = 'Neue unabhängige Gruppe'; select.append(fresh);
-    for (const g of moveTargets.filter(g => g.id !== source.id)) { const option = document.createElement('option'); option.value = g.id; option.textContent = (g.title || 'Gruppe ' + g.id.slice(0,8)) + ' · ' + formatInstant(g.clock.instantMs); select.append(option); }
+    for (const g of moveTargets.filter(g => g.id !== source.id)) { const option = document.createElement('option'); option.value = g.id; option.textContent = groupLabel(g); select.append(option); }
     select.value = ''; get('move-new-fields').hidden = false; get<HTMLInputElement>('move-title').value = '';
     get<HTMLDialogElement>('move-dialog').showModal();
     get('move-title').dataset.clockRevision = String(source.clock.revision); get('move-title').dataset.contentRevision = String(source.revision);
