@@ -96,7 +96,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
     for(const row of sourceRows(db,cam,'world_history')){const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);const entry:ChronicleEntry={id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}}
     const entries=[...progressEntries,...combatEntries,...worldEntries];
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id));
-    return{campaignName:campaign.name,entries:entries.slice(0,2000),truncated:progressTruncated||worldTruncated||entries.length>2000};
+    return{campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:progressTruncated||worldTruncated||entries.length>sourceLimit};
   })();
 }
 
