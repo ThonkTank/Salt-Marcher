@@ -27,6 +27,7 @@ let w: Workspace | null = null,
   version = 0,
   savedVersion = 0,
   key = "",
+  editorEpoch = 0,
   request = 0,
   searchRequest = 0,
   next: number | null = null;
@@ -44,6 +45,7 @@ function button(text: string, action: () => Promise<unknown>) {
   b.onclick = () => void action().catch((e) => tell(e.message, true));
   return b;
 }
+const editorOwner=()=>{const epoch=editorEpoch;return()=>epoch===editorEpoch;};
 const owns = (token: string, id: string) =>
   w?.token === token && scene?.id === id;
 export function initSceneDesk(
@@ -86,9 +88,11 @@ export function sceneDeskContext(
     return;
   }
   key = changed;
+  editorEpoch++;version=0;savedVersion=0;saving=null;applying=null;
   request++;
   invalidateSearch();
   if (timer) clearTimeout(timer);
+  timer=null;
   content = null;
   draft = null;
   writeId = null;
@@ -115,7 +119,7 @@ async function refresh() {
       if (initial && !initial.unavailable) await open(initial.ref);
     }
   } catch (e) {
-    tell((e as Error).message, true);
+    if(owns(token,id)&&n===request)tell((e as Error).message,true);
   }
 }
 function drawPins() {
@@ -149,17 +153,14 @@ function drawPins() {
     root.textContent =
       "Noch nichts angeheftet. Suche nach Kampagnenwissen oder lege einen Eintrag direkt hier an.";
 }
-async function pin(ref: DeskRef, on: boolean) {
-  if (!w || !scene || !desk || !(await flushSceneDesk())) return;
-  const token = w.token,
-    id = scene.id,
-    result = unwrap(
-      await window.campaign.pinSceneDesk(token, id, desk.revision, ref, on),
-    );
-  if (!owns(token, id)) return;
-  desk = result;
-  drawPins();
-  if (on) await open(ref);
+async function pin(ref:DeskRef,on:boolean){
+  if(!w||!scene||!desk)return;
+  const current=editorOwner(),token=w.token,id=scene.id,revision=desk.revision;
+  if(!await flushSceneDesk()||!current())return;
+  const result=unwrap(await window.campaign.pinSceneDesk(token,id,revision,ref,on));
+  if(!current())return;
+  desk=result;drawPins();
+  if(on)await open(ref);
 }
 function invalidateSearch(changed = false) {
   searchRequest++;
@@ -217,22 +218,23 @@ async function search(more: boolean) {
   }
 }
 async function open(ref: DeskRef) {
-  if (!w || !scene || !(await flushSceneDesk())) return;
-  const token = w.token,
-    id = scene.id,
-    n = ++request;
-  const c = unwrap(await window.campaign.deskContent(token, ref));
-  if (!owns(token, id) || n !== request) return;
+  if(!w||!scene)return;
+  const current=editorOwner(),token=w.token,id=scene.id,n=++request;
+  if(!await flushSceneDesk()||!current()||n!==request)return;
+  const readVersion=version;
+  const read=await window.campaign.deskContent(token,ref);
+  if(!current()||!owns(token,id)||n!==request)return;
+  const c=unwrap(read);
   let retained: PreparationDraft | null = null;
   if (c.note || c.location)
-    retained = unwrap(
-      await window.campaign.preparationDraft(
-        token,
-        c.note ? "note" : "location",
-        ref.id,
-      ),
-    );
+  {
+    const read=await window.campaign.preparationDraft(token,c.note?"note":"location",ref.id);
+    if(!current()||n!==request)return;
+    retained=unwrap(read);
+  }
   if (!owns(token, id) || n !== request) return;
+  if(version!==readVersion)return;
+  editorEpoch++;version=0;savedVersion=0;
   content = c;
   draft = retained;
   writeId = retained?.writeId ?? null;
@@ -262,7 +264,8 @@ function mark() {
   dirty = true;
   version++;
   if (timer) clearTimeout(timer);
-  timer = setTimeout(() => void keep(), 250);
+  const current=editorOwner();
+  timer = setTimeout(() => {if(current())void keep();}, 250);
 }
 function drawEditor() {
   const c = content!,
@@ -378,8 +381,9 @@ async function drawNarrative() {
   );
 }
 async function keep(): Promise<boolean> {
+  const current=editorOwner();
   if (saving) {
-    if (!(await saving)) return false;
+    if (!(await saving)||!current()) return false;
     return dirty && savedVersion !== version ? keep() : true;
   }
   if (!dirty || savedVersion === version || !draft || !w) return true;
@@ -390,30 +394,34 @@ async function keep(): Promise<boolean> {
   const run = (async () => {
     try {
       unwrap(await window.campaign.keepDeskDraft(token, value, writeId));
+      if(!current())return false;
       writeId = value.writeId;
       savedVersion = n;
       el("desk-note-status").textContent = "Eingabe gesichert.";
       return true;
     } catch (e) {
-      tell((e as Error).message, true);
+      if(current())tell((e as Error).message,true);
       return false;
     }
   })();
   saving = run;
   const ok = await run;
-  saving = null;
-  return ok && savedVersion !== version ? keep() : ok;
+  if(saving===run)saving=null;
+  return current()&&(ok&&savedVersion!==version?await keep():ok);
 }
 let applying:Promise<boolean>|null=null;
-export async function flushSceneDesk(narrative = true): Promise<boolean> {
-  if(applying){const ok=await applying;return ok?flushSceneDesk(narrative):false;}
-  if (narrative && !(await flushNarrative())) return false;
-  if (timer) clearTimeout(timer);
-  if (!(await keep())) return false;
-  if (!dirty || !draft || !w || !content) return true;
-  const run=applyContent();applying=run;try{return await run;}finally{if(applying===run)applying=null;}
+export async function flushSceneDesk(narrative=true):Promise<boolean>{
+  const current=editorOwner();
+  if(applying){const ok=await applying;return ok&&current()?flushSceneDesk(narrative):false;}
+  if(narrative&&!(await flushNarrative())||!current())return false;
+  if(timer)clearTimeout(timer);
+  if(!await keep()||!current())return false;
+  if(!dirty||!draft||!w||!content)return true;
+  const run=applyContent();applying=run;
+  try{return await run;}finally{if(applying===run)applying=null;}
 }
 async function applyContent():Promise<boolean>{
+ const current=editorOwner();
  if(!draft||!w||!content)return true;
   const change = structuredClone(draft.change),
     valid =
@@ -440,8 +448,10 @@ async function applyContent():Promise<boolean>{
         change,
       }),
     );
+    if(!current())return false;
     const fresh = unwrap(await window.campaign.deskContent(token, c.ref));
-    if (w?.token !== token || content !== c) return true;
+    if(!current()||content!==c)return false;
+    if(fresh.revision!==c.revision+1)throw new Error("Inhalt nach Speicherung erneut geändert. Gesicherte Eingabe zuerst prüfen.");
     content = fresh;
     writeId = null;
     if (n === version) {
@@ -465,35 +475,30 @@ async function applyContent():Promise<boolean>{
     }
     return true;
   } catch (e) {
-    tell((e as Error).message, true);
+    if(current())tell((e as Error).message,true);
     return false;
   }
 }
-async function reloadContent() {
-  if (!w || !content || !(await keep())) return;
-  const ref = content.ref;
-  if (writeId)
-    unwrap(
-      await window.campaign.discardPreparationDraft(
-        w.token,
-        content.note ? "note" : "location",
-        ref.id,
-        writeId,
-      ),
-    );
-  dirty = false;
-  draft = null;
-  writeId = null;
-  await open(ref);
+async function reloadContent(){
+  if(!w||!content)return;
+  const current=editorOwner(),token=w.token,c=content;
+  if(!await keep()||!current())return;
+  const n=version;
+  if(writeId)unwrap(await window.campaign.discardPreparationDraft(token,c.note?"note":"location",c.ref.id,writeId));
+  if(!current())return;
+  writeId=null;
+  if(n!==version){savedVersion=-1;await keep();return;}
+  dirty=false;draft=null;
+  await open(c.ref);
 }
 async function create() {
-  if (!w || !scene || !(await flushSceneDesk())) return;
-  const token = w.token,
-    id = scene.id,
+  if(!w||!scene)return;
+  const current=editorOwner(),token=w.token,id=scene.id,campaignId=w.campaign.id,locationId=scene.locationId,members=[...scene.members],
     kind = el<HTMLSelectElement>("desk-new-kind").value,
     name = el<HTMLInputElement>("desk-new-title").value,
     notes = el<HTMLTextAreaElement>("desk-new-notes").value,
     newId = crypto.randomUUID();
+  if(!await flushSceneDesk()||!current())return;
   if (!name.trim()) throw new Error("Titel oder Name fehlt.");
   let ref: DeskRef;
   if (kind === "location") {
@@ -510,7 +515,7 @@ async function create() {
     unwrap(
       await window.campaign.changePreparation({
         commandId: crypto.randomUUID(),
-        campaignId: w.campaign.id,
+        campaignId,
         token,
         change: { kind: "location", expectedRevision: null, document },
       }),
@@ -532,7 +537,7 @@ async function create() {
     unwrap(
       await window.campaign.changePreparation({
         commandId: crypto.randomUUID(),
-        campaignId: w.campaign.id,
+        campaignId,
         token,
         change: {
           kind: "note",
@@ -541,11 +546,12 @@ async function create() {
         },
       }),
     );
+    if(!current())return;
     if (kind === "quest" || kind === "rumor")
       unwrap(
         await window.campaign.executeProgress({
           commandId: crypto.randomUUID(),
-          campaignId: w.campaign.id,
+          campaignId,
           token,
           action: {
             kind: "narrative-state",
@@ -555,8 +561,8 @@ async function create() {
               noteId: newId,
               revision: 0,
               status: "open",
-              locationId: scene.locationId,
-              contributors: kind === "quest" ? [...scene.members] : [],
+              locationId,
+              contributors: kind === "quest" ? members : [],
               poolXp: 0,
               items: [],
               awardId: null,
@@ -566,9 +572,9 @@ async function create() {
       );
     ref = { kind: "note", id: newId };
   }
-  if (!owns(token, id)) return;
-  el<HTMLInputElement>("desk-new-title").value = "";
-  el<HTMLTextAreaElement>("desk-new-notes").value = "";
+  if(!current()||!owns(token,id))return;
+  if(el<HTMLInputElement>("desk-new-title").value===name)el<HTMLInputElement>("desk-new-title").value="";
+  if(el<HTMLTextAreaElement>("desk-new-notes").value===notes)el<HTMLTextAreaElement>("desk-new-notes").value="";
   await pin(ref, true);
   tell("Kampagneninhalt angelegt und an diese Szene geheftet.");
 }
