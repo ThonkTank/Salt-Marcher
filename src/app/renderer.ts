@@ -23,6 +23,7 @@ import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
+const setWorkspaceAvailable = (available: boolean) => document.body.classList.toggle('has-workspace', available);
 let workspace: Workspace | null = null;
 let draft: Room | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -79,7 +80,7 @@ function showTab(selected: 'atlas' | 'preparation' | 'live' | 'catalog' | 'items
   for (const id of ['atlas', 'preparation', 'live', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
-initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=await refreshCampaigns();if(!list)return;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;deactivateMusic();deactivatePlayer();showTab('atlas');document.querySelector('main')!.inert=true;}const target=id??(!workspace?list.activeId??list.campaigns[0]?.id:null);if(target)await activate(target);else if(!workspace){el('map-title').textContent='Keine Kampagne geöffnet';el('rooms').replaceChildren();el<HTMLSelectElement>('campaigns').value='';}});
+initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=await refreshCampaigns();if(!list)return;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();showTab('atlas');document.querySelector('main')!.inert=true;}const target=id??(!workspace?list.activeId??list.campaigns[0]?.id:null);if(target)await activate(target);else if(!workspace){setWorkspaceAvailable(false);el('map-title').textContent='Keine Kampagne geöffnet';el('rooms').replaceChildren();el<HTMLSelectElement>('campaigns').value='';}});
 void initTutorial();
 async function flushAll() { return await flushTriggers() && await flushDungeonContent() && await flushGraph() && await flushKeys() && await flushPaths() && await flushVolume() && await flushDungeon() && await flushDrawing() && await flushAutonomy() && await flushCity() && await flushMusic() && await flushWorld() && await flushItems() && await flushCatalog() && await flushLive() && await flushPreparation() && await flush(); }
 async function leaveWorkspace() {
@@ -263,8 +264,16 @@ function draw() {
     const room = draft?.id === saved.id ? draft : saved;
     if (JSON.stringify([room.scopeId, room.floorId]) !== el<HTMLSelectElement>('floors').value) continue;
     const path = room.polygons.flatMap(p => [p.outer, ...p.holes]).map(ring => 'M' + ring.map(p => `${p.x},${p.y}`).join('L') + 'Z').join(' ');
-    const shape = svgElement('path', { d: path, class: `room-shape${room.id === draft?.id ? ' selected' : ''}` });
-    const style=roomDrawingStyle(room.id);if(style){shape.style.setProperty('--drawing-room-fill',style.fill);shape.style.setProperty('--drawing-room-wall',style.wall);}
+    const style = roomDrawingStyle(room.id);
+    const isSelected = room.id === draft?.id;
+    const shape = svgElement('path', {
+      d: path,
+      fill: isSelected ? '#aecfdf' : style?.fill ?? '#d7e1e9',
+      stroke: isSelected ? '#234d74' : style?.wall ?? '#576c80',
+      'stroke-width': isSelected ? '.13' : '.08',
+      'fill-rule': 'evenodd',
+      cursor: 'pointer',
+    });
     const title = svgElement('title', {}); title.textContent = `${room.number}. ${room.name}`; shape.append(title);
     shape.addEventListener('click', () => { void selectRoom(room.id); }); map.append(shape);
   }
@@ -374,7 +383,7 @@ async function drainActivation(): Promise<void> {
       try {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
-        workspace = next; el<HTMLSelectElement>('campaigns').value = id;
+        workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
         activateLive(next); activateCatalog(next); activateItems(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
@@ -402,6 +411,7 @@ async function drainActivation(): Promise<void> {
 }
 el('campaigns').addEventListener('change', () => { const id = el<HTMLSelectElement>('campaigns').value; if (id) void activate(id); });
 el('new-campaign').onclick = () => { el<HTMLDialogElement>('create-dialog').showModal(); };
+el('workspace-new-campaign').onclick = () => el<HTMLButtonElement>('new-campaign').click();
 el('cancel-create').onclick = () => el<HTMLDialogElement>('create-dialog').close();
 el('rename-campaign').onclick = () => {
   if (!workspace) return;
@@ -484,6 +494,7 @@ el('import').onclick = () => {
     } catch (error) { if (owns()) status((error as Error).message, true); }
   })();
 };
+el('workspace-import').onclick = () => el<HTMLButtonElement>('import').click();
 el('cancel-import').onclick = () => { importPreview = null; activationIntent++; el<HTMLDialogElement>('import-dialog').close(); };
 el('confirm-import').onclick = () => {
   const preview = importPreview; if (!preview || activationJob) return;
@@ -508,7 +519,7 @@ for (const id of ['atlas', 'preparation', 'live'] as const) el(id + '-tab').oncl
   if (id === 'live') await openLive();
   if (id === 'atlas') await reloadDrawing();
 })(); };
-void (async () => { const intent = activationIntent; try { const list = await refreshCampaigns(); if (list && intent === activationIntent && list.activeId) await activate(list.activeId); } catch (error) { if (intent === activationIntent) status((error as Error).message, true); } })();
+void (async () => { const intent = activationIntent; try { const list = await refreshCampaigns(); if (list && intent === activationIntent && list.activeId) await activate(list.activeId); else if (list && intent === activationIntent) setWorkspaceAvailable(false); } catch (error) { if (intent === activationIntent) status((error as Error).message, true); } })();
 setInterval(() => { void (async () => {
   try { const message = unwrap(await api.backupStatus()); el('backup-status').hidden = !message; el('backup-status').textContent = message; }
   catch { el('backup-status').hidden = false; el('backup-status').textContent = 'Status der Wiederherstellungskopie nicht verfügbar.'; }
