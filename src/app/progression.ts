@@ -38,11 +38,12 @@ export function checkedHealthStatus(h: NonNullable<Progress['combatStatus']>) {
 }
 export function checkedHealth(h: CharacterHealth): CharacterHealth {
   if (!h || typeof h !== 'object' || Array.isArray(h) || typeof h.conditions !== 'string' || h.conditions.length > 4000 || typeof h.concentrating !== 'boolean' || ![h.hp,h.maxHp,h.tempHp].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=1000000) || h.maxHp<1 || h.hp>h.maxHp) throw new Error('HP benötigen gültige ganze Werte und aktuelle HP bis zum Maximum.');
-  if(h.death){const d=h.death;if(h.hp>0||![d.successes,d.failures].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=3)||typeof d.stable!=='boolean'||typeof d.dead!=='boolean'||d.dead&&(d.failures!==3||d.stable||d.successes===3)||d.stable&&(d.successes!==3||d.dead||d.failures===3)||!d.dead&&!d.stable&&(d.successes===3||d.failures===3))throw new Error('Todesrettungswürfe ungültig.');}
+  if(h.death!==undefined){const d=h.death;if(!d||typeof d!=='object'||Array.isArray(d)||h.hp>0||![d.successes,d.failures].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=3)||typeof d.stable!=='boolean'||typeof d.dead!=='boolean'||d.dead&&(d.failures!==3||d.stable||d.successes===3)||d.stable&&(d.successes!==3||d.dead||d.failures===3)||!d.dead&&!d.stable&&(d.successes===3||d.failures===3))throw new Error('Todesrettungswürfe ungültig.');}
   return h;
 }
 export function applyDeathSave(health:CharacterHealth,result:DeathSaveResult):CharacterHealth{
  const h=structuredClone(checkedHealth(health));if(h.hp>0)throw new Error('Todesrettungswürfe benötigen 0 HP.');
+ if(!['success','failure','natural-20','natural-1','stabilize','reset','dead'].includes(result))throw new Error('Unbekanntes Todesrettungswurfergebnis.');
  const d=h.death??{successes:0,failures:0,stable:false,dead:false};
  if((d.dead||d.stable)&&result!=='reset')throw new Error(d.dead?'Figur ist als tot markiert. Zuerst zurücksetzen.':'Figur ist stabilisiert. Für neue Todesrettungswürfe zuerst zurücksetzen.');
  if(result==='reset')h.death={successes:0,failures:0,stable:false,dead:false};
