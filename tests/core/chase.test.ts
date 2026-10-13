@@ -20,6 +20,11 @@ test("finished chases are terminal",()=>{
   assert.throws(()=>applyChaseAction(finished,{kind:"remove",participantId:"p-1"}),/abgeschlossen/);
 });
 
+test("unknown chase actions cannot masquerade as completion",()=>{
+  const forged={kind:"complete",outcome:"Entkommen"} as unknown as Parameters<typeof applyChaseAction>[1];
+  assert.throws(()=>applyChaseAction(running(),forged),/Unbekannte Verfolgungsaktion/);
+});
+
 test("chase actions require the input they can affect",()=>{
   assert.deepEqual(chaseActionControls({title:" ",participantName:"",participantCount:0,outcome:"  "}),{start:false,addParticipant:false,advanceRound:false,finish:false});
   assert.deepEqual(chaseActionControls({title:"Flucht",participantName:"Wache",participantCount:1,outcome:"Entkommen"}),{start:true,addParticipant:true,advanceRound:true,finish:true});
