@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   applyDeathSave,
   checkedHealth,
+  deathSaveControls,
   type CharacterHealth,
 } from "../../src/app/progression";
 
@@ -25,6 +26,13 @@ test("reset explicitly reopens saves and a natural 20 restores one HP",()=>{
   assert.deepEqual(reset.death,{successes:0,failures:0,stable:false,dead:false});
   assert.equal(revived.hp,1);
   assert.equal(revived.death,undefined);
+});
+
+test("death-save controls offer reset only after a meaningful entry",()=>{
+  assert.deepEqual(deathSaveControls(undefined),{terminal:false,reset:false});
+  assert.deepEqual(deathSaveControls({successes:0,failures:0,stable:false,dead:false}),{terminal:false,reset:false});
+  assert.deepEqual(deathSaveControls({successes:1,failures:0,stable:false,dead:false}),{terminal:false,reset:true});
+  assert.deepEqual(deathSaveControls({successes:3,failures:0,stable:true,dead:false}),{terminal:true,reset:true});
 });
 
 test("health validation rejects death-save flags that contradict HP or counters",()=>{
