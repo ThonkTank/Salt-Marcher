@@ -14,14 +14,14 @@ const progress=(id:string,kind:string,recordedAt:string)=>({
   ...envelope({recordedAt,before:{xp:0},after:{xp:1},reason:"Prüfung"}),
 });
 
-function database(progressRows:any[],profiles:any[]=[]){
+function database(progressRows:any[],profiles:any[]=[],worldRows:any[]=[],timeRows:any[]=[],scenes:any[]=[]){
   return{
     transaction:(run:()=>unknown)=>run,
     prepare:(sql:string)=>({
       get:()=>sql.startsWith("SELECT name FROM campaign")?{name:"Testkampagne"}:undefined,
       all:()=>{
         if(sql.includes("character_profile"))return profiles;
-        if(sql.includes("live_scene"))return[];
+        if(sql.includes("live_scene"))return scenes;
         if(sql.includes("FROM location"))return[];
         if(sql.includes("narrative_state"))return[];
         if(sql.includes("FROM combat"))return[];
@@ -29,7 +29,8 @@ function database(progressRows:any[],profiles:any[]=[]){
       },
       iterate:()=>{
         if(sql.includes("progress_event"))return sql.includes("LIMIT 2001")?progressRows.slice(0,2001):progressRows;
-        if(sql.includes("world_history"))return[];
+        if(sql.includes("world_history"))return worldRows;
+        if(sql.includes("scene_time_step"))return timeRows;
         return[];
       },
     }),
@@ -55,4 +56,19 @@ test("chronicle bounds relevant history and reports that older entries were trun
 test("chronicle does not silently trust damaged context labels",()=>{
   const profile={id:"hero-1",payload:JSON.stringify({name:"Falscher Name"}),checksum:"broken"};
   assert.throws(()=>readChronicle(database([], [profile]),"campaign-1"),/beschädigt/);
+});
+
+test("chronicle connects party changes to people and groups",()=>{
+  const hero={id:"hero-1",...envelope({name:"Ada"})};
+  const event={id:"party-1",scene_id:"scene-2",...envelope({text:"Figur verschoben",recordedAt:"2026-10-14T10:00:00.000Z",facts:{kind:"party-move",characterIds:["hero-1"],fromSceneId:"scene-1",toSceneId:"scene-2",createdScene:true}})};
+  const result=readChronicle(database([], [hero], [event], [], [{id:"scene-1",title:"Turm",location_id:null},{id:"scene-2",title:"Keller",location_id:null}]),"campaign-1");
+  assert.deepEqual(result.entries[0],{id:"world:party-1",recordedAt:"2026-10-14T10:00:00.000Z",category:"party",title:"Figur verschoben",summary:"Turm → Keller · neue Gruppe",people:["Ada"],scene:"Keller",location:null});
+});
+
+test("chronicle shows confirmed time but does not duplicate travel steps",()=>{
+  const direct={id:"time-1",scene_id:"scene-1",...envelope({recordedAt:"2026-10-14T11:00:00.000Z",amount:2,unit:"hours",reason:"Wache abgewartet"})};
+  const travel={id:"time-2",scene_id:"scene-1",...envelope({recordedAt:"2026-10-14T12:00:00.000Z",amount:1,unit:"hours",reason:"Reise route-1 · A → B"})};
+  const result=readChronicle(database([], [], [], [travel,direct], [{id:"scene-1",title:"Lager",location_id:null}]),"campaign-1");
+  assert.deepEqual(result.entries.map(entry=>entry.id),["time:time-1"]);
+  assert.equal(result.entries[0]!.summary,"+2 Stunden · Wache abgewartet");
 });
