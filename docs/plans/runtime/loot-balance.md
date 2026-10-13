@@ -1,6 +1,6 @@
 # Gemeinsame Beutewertung für Ledger und Bilanz
 
-Stand: 13.10.2026. Ergänzt den [Katalog-/Rewardvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#nächster-anschluss-für-abschluss-rewards-und-handel).
+Stand: 13.10.2026. Ergänzt den [Katalog-/Itemvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider).
 
 ## Fachregel und ausführbarer Stand
 
@@ -19,22 +19,18 @@ auch über mehrere Besitzer und Teilmengen genau einmal bewertet. Käufe und
 Transferempfang begründen keine neue Belohnung. Profile kommen aus dem bereits
 geprüften Charakterreader; ungeprüfte Profiltexte gelangen nicht in die Bilanz.
 
-Gegenproben fanden alte Itempreise, ignorierte unbekannte/beschädigte aktuelle
-Definitionen und ungeprüfte Profile in der zuvor gesonderten Bilanzberechnung.
-Ein kontrollierter DOM-Test zeigte außerdem, dass eine verspätete A-Bilanz in
-Kampagne B erschien. Bilanzreads binden nun Aktivierung, Token und Lesereihenfolge.
-Bei offenen Werten zeigt die UI Teilwerte und einen offenen Vergleich; eine
-Empfängerempfehlung bleibt aus. Eine fehlende Bewertung wird nicht als null
-ausgegeben. `copper` ist bei `unknownEntries > 0` ausdrücklich nur der bekannte
-Teilbetrag; `gapCopper` darf dann nicht als vollständiger Abstand dargestellt werden.
+Bilanzreads binden Aktivierung, Token und Lesereihenfolge. Bei offenen Werten
+zeigt die UI Teilwerte und einen offenen Vergleich; eine Empfängerempfehlung
+bleibt aus. Vollständige Werte berücksichtigen alle gleichauf zurückliegenden
+Figuren; Gleichstand an der Spitze bleibt neutral. `copper` ist bei
+`unknownEntries > 0` nur der bekannte Teilbetrag; `gapCopper` darf dann nicht
+als vollständiger Abstand dargestellt werden.
 
-Fünf SQLite-Prüfungen (`desktop-loot-balance.test.mjs`) decken aktuelle Preise,
-mehrfache/partielle Weitergabe mit Verkauf, Fresh, Purchaseausschluss, Nullstapel,
-beschädigte und wertlose Definitionen sowie Profilintegrität ab. Zwei kontrollierte
-DOM-Prüfungen (`desktop-loot-balance-dom.test.mjs`) belegen Kontextschutz und die
-offene Anzeige. Zusammen mit 42 bestehenden Shop-/Ledgerprüfungen bestanden
-49 Tests und der Desktop-Typecheck. Das ist lokale Store-/DOM-Evidenz; eine
-native Bedienabnahme oder vollständige Rewardqualifikation folgt daraus nicht.
+[Storeprüfungen](../../../tests/desktop-loot-balance.test.mjs) decken aktuelle
+Preise, Weitergaben mit Verkauf, Fresh, Käufe, Nullstapel, unbekannte Werte und
+Profilintegrität ab. [DOM-Prüfungen](../../../tests/desktop-loot-balance-dom.test.mjs)
+prüfen Kontextwechsel und die offene Anzeige. Native Bedienabnahme und
+vollständige Rewardqualifikation bleiben offen.
 
 ## Nächste ausführbare Schritte
 

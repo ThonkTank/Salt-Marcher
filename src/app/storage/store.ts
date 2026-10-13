@@ -1,5 +1,5 @@
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
-import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk} from './scene-desk';
+import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
 import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft,validateFinishDrafts} from './finish-drafts';
 import {installNarrative,readNarrative,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
 import {readPreparedGroup} from './session';
@@ -298,7 +298,9 @@ export class CampaignStore {
   }
   private decodeLocation(row: Row, checksumError = 'Ortsprüfung fehlgeschlagen.') {
     if (hash(row.payload) !== row.checksum) throw new Error(checksumError);
-    return checkedLocationDocument(JSON.parse(row.payload));
+    const document=checkedLocationDocument(JSON.parse(row.payload));
+    if(document.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1)throw new Error("Ortszuordnung widersprüchlich.");
+    return document;
   }
   workspace(): Workspace {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspace());
@@ -417,7 +419,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
