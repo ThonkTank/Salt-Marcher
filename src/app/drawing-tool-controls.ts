@@ -17,6 +17,8 @@ export function drawingToolControls(tool: string, hasRoom: boolean, append: bool
   const createsRoom = ['room-rectangle', 'room-polygon', 'room-cave'].includes(tool);
   const canAppend = createsRoom && hasRoom;
   const object = ['object', 'scatter'].includes(tool);
+  const minimumPoints = tool === 'room-rectangle' ? 2 : ['room-polygon', 'room-hole'].includes(tool) ? 3 : 1;
+  const hasTarget = !['room-hole', 'room-erase'].includes(tool) || hasRoom;
   return {
     active,
     brush: ['room-cave', 'room-erase', 'scatter'].includes(tool),
@@ -26,7 +28,7 @@ export function drawingToolControls(tool: string, hasRoom: boolean, append: bool
     object,
     light: tool === 'light',
     text: tool === 'text',
-    actionEnabled: active && pathPoints > 0,
+    actionEnabled: active && hasTarget && pathPoints >= minimumPoints,
     instruction: tool === 'select'
       ? 'Raum oder Element auswählen; Raumecken lassen sich direkt ziehen.'
       : roomTool
