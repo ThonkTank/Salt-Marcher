@@ -48,6 +48,13 @@ Bei der unabhängigen Kopie wurde zusätzlich eine konkrete Historylücke gefund
 Notiz, Award und Empfänger remappt waren. Der Transfer remappt jetzt genau diese
 fachliche Notizreferenz. Andere `sourceId`-Verträge und freie Prosa bleiben erhalten.
 
+Der gemeinsame Abschlussdialog bindet Lesen, Autosave, Verwerfen und Bestätigung
+an die ursprüngliche Sitzung. Ziel- und Kampagnenwechsel entwerten alte Antworten
+und Timer; spätere Eingaben werden nach einer bestätigten Verwerfung unter neuer
+Schreibbasis gesichert. Die [Dialogprüfungen](../../../tests/desktop-finish-draft-dom.test.mjs)
+prüfen diese Übergänge und den Erhalt wortgetreuer Rohtexte über echte Stores.
+Die vollständige native Abschluss- und Recoveryabnahme bleibt offen.
+
 ## Geprüfter Umfang
 
 - `tests/desktop-narrative-integrity.test.mjs`: falsche Statusidentität/-revision,

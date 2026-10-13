@@ -370,12 +370,12 @@ export async function showNarrative(
         }
         if (!current() || !data || !(await drain()) || !current()) return;
         const basis = data;
-        await prepareFinish(basis.state.contributors, undefined, {
+        if(!await prepareFinish(basis.state.contributors, undefined, {
           workspace: w!,
           owner:{kind:'narrative',targetId:note!.id,revision:basis.state.revision},
           poolXp: basis.state.poolXp,
           items: basis.state.items,
-        });
+        }))return;
         if (!current()) return;
         const dialog = el<HTMLDialogElement>("combat-finish-dialog"),
           form = el<HTMLFormElement>("combat-finish-form"),

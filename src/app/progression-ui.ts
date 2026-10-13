@@ -1,4 +1,4 @@
-import {beginFinishDraft,resetFinishDraft,markFinishDraft,flushFinishDraft} from './finish-draft-ui';
+import {beginFinishDraft,resetFinishDraft,deactivateFinishDraft,markFinishDraft,flushFinishDraft} from './finish-draft-ui';
 import type {FinishOwner,RewardItemDraft} from './finish-draft-contracts';
 import {drawLedgerStacks} from './ledger-stack-ui';
 import {rewardItemsEditor} from './reward-items-ui';
@@ -17,6 +17,7 @@ let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = 
 let selectedTreasure: string | null = null;
 let ledgerRequest=0, treasureRequest=0;
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
+let finishRequest=0;
 let finishBasis: ProgressView | null = null;let finishItems:RewardItemDraft[]=[];
 let history: ProgressHistory = { items: [], next: null };
 let tell: (text: string, error?: boolean) => void;
@@ -33,7 +34,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
   const selectionChanged = characterId !== selected;
   const activationChanged = next?.token !== workspace?.token;
   if (selectionChanged || next?.token !== workspace?.token) { ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; ledgerDetail=null; selectedLedger=null; ledgerLoaded=false; }
-  if (next?.token !== workspace?.token) { generation++;pending=null; view = null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
+  if (next?.token !== workspace?.token) { deactivateFinishDraft();finishRequest++;generation++;pending=null; view = null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
   workspace = next; live = data; selected = characterId;updateCommitControls();
   get('reward-panel').hidden = !data; get('character-progression').hidden = !data || !selected;
   if(activationChanged)render();
@@ -202,10 +203,16 @@ async function loadHistory(more = false) {
 }
 function item(prefix: string): ItemInput { return { name:value(prefix+'-name'),quantity:Number(value(prefix+'-quantity')),valueGold:value(prefix+'-value'),category:value(prefix+'-category') as ItemCategory }; }
 export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:Workspace;poolXp?:number;items?:ItemInput[];owner:FinishOwner}) {
-  await resetFinishDraft();get<HTMLTextAreaElement>('combat-outcome').value='';const owner=options?.workspace??workspace;if(!owner)return; const gen=generation; const result=unwrap(await window.campaign.progress(owner.token));if(gen!==generation)return;
+  const request=++finishRequest,gen=generation,owner=options?.workspace??workspace;
+  if(!owner)return false;
+  const current=()=>request===finishRequest&&gen===generation;
+  if(!await resetFinishDraft()||!current())return false;
+  get<HTMLTextAreaElement>('combat-outcome').value='';
+  const result=unwrap(await window.campaign.progress(owner.token));if(!current())return false;
   finishBasis=result;const list=get('finish-recipients');list.replaceChildren();
   for(const c of result.characters){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=participantIds.includes(c.characterId);label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?'':' · inaktiv')+(c.xp===null?' · XP bislang unbekannt': ' · Level '+xpLevel(c.xp).level)));list.append(label);box.onchange=finishPreview;}
-  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=!!options?.items?.length;finishItems=(options?.items??[]).map(i=>({...i,quantity:String(i.quantity)}));drawFinishItems();if(options?.poolXp!==undefined){get<HTMLInputElement>('finish-no-xp').checked=options.poolXp===0;get<HTMLInputElement>('finish-xp').value=String(options.poolXp);get<HTMLInputElement>('finish-load').value='0';}finishPreview();if(options)await beginFinishDraft(owner,options.owner,()=>finishItems,items=>{finishItems=items;drawFinishItems();},finishPreview);
+  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=!!options?.items?.length;finishItems=(options?.items??[]).map(i=>({...i,quantity:String(i.quantity)}));drawFinishItems();if(options?.poolXp!==undefined){get<HTMLInputElement>('finish-no-xp').checked=options.poolXp===0;get<HTMLInputElement>('finish-xp').value=String(options.poolXp);get<HTMLInputElement>('finish-load').value='0';}finishPreview();if(options&&!await beginFinishDraft(owner,options.owner,()=>finishItems,items=>{finishItems=items;drawFinishItems();},finishPreview))return false;
+  return current();
 }
 function drawFinishItems(){rewardItemsEditor(get('finish-item-list'),finishItems,()=>{finishPreview();markFinishDraft();},true);}
 function finishPreview() {
