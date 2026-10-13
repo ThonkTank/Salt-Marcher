@@ -41,7 +41,8 @@ beide defekten lokalen Extensionrecordarten, unabhängigen Export neben einer
 beschädigten anderen Kampagne, beschädigten ausgewählten Inhalt, Quelllöschung
 während der Kopie und beschädigte ausgewählte Capabilitybytes. Gesunde opaque
 Bytes bleiben im unabhängigen Import exakt erhalten; lokale Installationen und
-Rechte fehlen dort. Fehler erhalten den vorherigen Snapshot und die Quelle.
+Rechte fehlen dort. Zurückweisung vor Veröffentlichung erhält den vorherigen
+Snapshot und die Quelle.
 Zusammen mit Installations-/DOM- und Campaignintegritäts-/Annahmeprüfungen:
 88 gezielte Prüfungen und Desktop-Typecheck bestanden. Das ist kein Nachweis
 für einen laufenden Extensionprovider, vollständige Medientransfers, Hard-Crash,
@@ -62,7 +63,9 @@ Dateisystem-Durabilität unter Stromverlust oder die erforderlichen Plattformen.
    Cancel, Fullcopy/Subset und unabhängiger Annahme gegen dieselbe Scope-/Fencegrenze
    prüfen. Unterbrochene eigene temporäre Kopien beim Start bereinigen, ohne fremde
    Dateien zu berühren. Verlust der Antwort vor/nach Publish muss gezielt lesbar
-   geklärt werden; keine automatische Wiederholung oder Rechteübernahme.
+   geklärt werden; keine automatische Wiederholung oder Rechteübernahme. Ein
+   Fehler nach Rename, aber vor bestätigtem Verzeichnissync, ist ein ungeklärter
+   Ausgabestand; das tatsächliche Ziel muss gelesen werden.
 3. **Reale Fehler- und Plattformabnahme.** Schreib-/Rename-/Syncfehler,
    fehlenden Speicherplatz und kontrollierten Prozessabbruch am fertigen Paketweg
    prüfen. Linux-/Windows-/macOS-Dateisysteme und die native Bedienung bleiben
