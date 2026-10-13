@@ -109,10 +109,10 @@ function preparationOwner(){
   const token=workspace.token,id=scene.id,revision=scene.membershipRevision,gen=generation;
   return {sceneId:id,revision,current:()=>workspace?.token===token&&scene?.id===id&&scene.membershipRevision===revision&&generation===gen};
 }
-export async function prepareWorldGroup(group:PreparedGroup){
+export async function prepareWorldGroup(group:PreparedGroup,worldActorIds?:string[]){
   const {id,title,revision}=group;
   const owner=preparationOwner();if(!owner||!await load()||!owner.current())return;
-  if(await execute({kind:'create',sceneId:owner.sceneId,title,includeParty:true,expectedMembershipRevision:owner.revision,preparedGroupId:id,expectedPreparedRevision:revision})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
+  if(await execute({kind:'create',sceneId:owner.sceneId,title,includeParty:true,expectedMembershipRevision:owner.revision,preparedGroupId:id,expectedPreparedRevision:revision,worldActorIds})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
 }
 export async function prepareCombatPlan(plan: EncounterPlan) {
   const {id,name,revision}=plan;

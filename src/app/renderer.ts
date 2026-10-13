@@ -1,3 +1,4 @@
+import {initGroups,activateGroups,openGroups,flushGroups} from './groups-ui';
 import {refreshProgress} from './progression-ui';
 import {initTreasury,activateTreasury,openTreasury,flushTreasury} from './treasury-ui';
 import {openExistingCombat} from './combat';
@@ -20,7 +21,7 @@ import {initWorld,activateWorld,openWorld,flushWorld} from './world-ui';
 import {initItems,activateItems,openItems,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation } from './preparation';
-import { activateLive, initLive, flushLive,refreshScenePreparation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature } from './live';
+import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
 import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
@@ -61,6 +62,9 @@ initLive(status, async id => {
   await openPreparedLocation(id); showTab('preparation');
 });
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
+initGroups(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);});
+el('groups-tab').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups();})().catch(e=>status(e.message,true));};
+setGroupNavigation(async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);});
 initTreasury(status,async()=>{await refreshProgress();await refreshScenePreparation();},async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
 el('treasury-tab').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury();})().catch(e=>status(e.message,true));};
 initItems(status,async id=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems(id);});
@@ -84,14 +88,15 @@ el('world-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;
 el('items-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems();})().catch(error=>status(error.message,true));};
 el('catalog-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('catalog');await openCatalog();})();};
 el('chronicle-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('chronicle');await openChronicle();})().catch(error=>status(error.message,true));};
-function showTab(selected: 'treasury' | 'atlas' | 'preparation' | 'live' | 'chronicle' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
-  for (const id of ['treasury','atlas', 'preparation', 'live', 'chronicle', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
+function showTab(selected: 'groups' | 'treasury' | 'atlas' | 'preparation' | 'live' | 'chronicle' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
+  for (const id of ['groups','treasury','atlas', 'preparation', 'live', 'chronicle', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
 initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=await refreshCampaigns();if(!list)return;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();showTab('atlas');document.querySelector('main')!.inert=true;}const target=id??(!workspace?list.activeId??list.campaigns[0]?.id:null);if(target)await activate(target);else if(!workspace){setWorkspaceAvailable(false);el('map-title').textContent='Keine Kampagne geöffnet';el('rooms').replaceChildren();el<HTMLSelectElement>('campaigns').value='';}});
 void initTutorial();
-async function flushAll() { return await flushTreasury() && await flushTriggers() && await flushDungeonContent() && await flushGraph() && await flushKeys() && await flushPaths() && await flushVolume() && await flushDungeon() && await flushDrawing() && await flushAutonomy() && await flushCity() && await flushMusic() && await flushWorld() && await flushItems() && await flushCatalog() && await flushLive() && await flushPreparation() && await flush(); }
+async function flushAll() { return await flushGroups() && await flushTreasury() && await flushTriggers() && await flushDungeonContent() && await flushGraph() && await flushKeys() && await flushPaths() && await flushVolume() && await flushDungeon() && await flushDrawing() && await flushAutonomy() && await flushCity() && await flushMusic() && await flushWorld() && await flushItems() && await flushCatalog() && await flushLive() && await flushPreparation() && await flush(); }
 async function leaveWorkspace() {
+  if(!await flushGroups())return false;
   if(!await flushTreasury())return false;
   if (!(await flushTriggers()) || !(await flushDungeonContent()) || !(await flushGraph()) || !(await flushKeys()) || !(await flushPaths())) return false;
   if (!(await flushVolume())) return false;
@@ -393,7 +398,7 @@ async function drainActivation(): Promise<void> {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        activateLive(next); activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
+        activateLive(next); activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';

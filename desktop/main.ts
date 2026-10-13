@@ -222,6 +222,11 @@ else {
     handle('dungeon:view',(token:string)=>store.dungeon(token));
     handle('dungeon:preview',(token:string,r:import('../src/app/dungeon-contracts').DungeonRequest)=>store.previewDungeon(token,r));
     handle('dungeon:execute',(c:import('../src/app/dungeon-contracts').DungeonCommand)=>store.executeDungeon(c));
+    handle('campaign:groups',(token:string,search:string,after:string|null)=>store.preparedGroups(token,search,after));
+    handle('campaign:group-view',(token:string,id:string)=>store.groupView(token,id));
+    handle('campaign:group-draft',(token:string,id:string)=>store.groupDraft(token,id));
+    handle('campaign:keep-group-draft',(token:string,draft:import('../src/app/groups-contracts').GroupDraft,expected:string|null)=>store.keepGroupDraft(token,draft,expected));
+    handle('campaign:discard-group-draft',(token:string,id:string,writeId:string)=>store.discardGroupDraft(token,id,writeId));
     handle('campaign:prepared-group',(token:string,id:string)=>store.preparedGroup(token,id));
     handle('graph:view',(token:string,scopeId:string)=>store.graph(token,scopeId));
     handle('graph:execute',(c:import('../src/app/graph-contracts').GraphCommand)=>store.executeGraph(c));
