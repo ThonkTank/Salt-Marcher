@@ -250,6 +250,7 @@ else {
     handle('campaign:commit-status',(ref:import('../src/app/commit-receipt').CommitReference,token:string)=>commits.status(ref,token));
     handle('items:execute',(command:import('../src/app/items-contracts').ItemShopCommand)=>commits.execute('items',command,()=>store.executeItemShop(command)));
     handle('campaign:execute-progress', (command: ProgressCommand) => commits.execute('progress',command,()=>store.executeProgress(command)));
+    handle('campaign:loot-balance',(token:string)=>store.lootBalance(token));
     handle('campaign:chronicle',(token:string)=>store.chronicle(token));
     handle('campaign:chronicle-export',async(token:string,category:ChronicleCategory|'all',search:string)=>{if(!['all','combat','narrative','reward','travel','party','world'].includes(category)||typeof search!=='string'||search.length>1000)throw new Error('Chronikfilter ungültig.');const view=store.chronicle(token),safe=view.campaignName.replace(/[\\/:*?"<>|]+/g,'-').trim()||'Kampagne',destination=await dialog.showSaveDialog(win,{defaultPath:safe+' – Chronik.md',filters:[{name:'Markdown',extensions:['md']}]});if(destination.canceled||!destination.filePath)return{cancelled:true};await writeFile(destination.filePath,chronicleMarkdown(view,category,search),'utf8');return{cancelled:false};});
     handle('campaign:combat-draft',(token:string,id:string,kind:import('../src/app/combat-draft-contracts').CombatDraftKind,target:string)=>store.combatDraft(token,id,kind,target));
