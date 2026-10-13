@@ -18,7 +18,7 @@ zurzeit eine manuelle persistente Liste mit freien Teilnehmern, Abstand, Tempo,
 Erschöpfung, Komplikation, Runde und Abschluss. Abschluss schreibt einen
 Welthistorieneintrag. Die integrierte Auswahl erschließt zuletzt gespeicherte
 Masken derselben Scene; Pflichtfelder sperren verfrühte Aktionen. Vollständige
-parallele Maskenführung, Actor-/Membershipbindungen, Zeitport,
+Actor-/Membershipabschluss, Zeitport,
 Workingdrafts und vollständige Datenclosure bleiben offen. Die inzwischen
 integrierte Receiptstrecke bietet Commandreplay und lesende Statusaufklärung.
 Der aktuelle Tracker ist daher eine Teillieferung.
@@ -63,8 +63,8 @@ Native Bedienung und reale Crossworkflow-/Speicher-/Maskenabnahme stehen aus.
    Header/Shape und gespeicherte Belege. Zwei Legacygegenproben fanden allerdings
    Fehler bei Schema 38 ohne Chase bzw. ohne Receipttabelle; der Validator
    berücksichtigt jetzt diese historischen Varianten. Der integrierte
-Treasuryanschluss nutzt Schema 39; dessen Adapter installiert Chase ebenfalls
-auf der eigenen Migrationskopie. Ältere Formatadapter
+   Gruppenanschluss nutzt Schema 40; dessen Adapter installiert Chase ebenfalls
+   auf der eigenen Migrationskopie. Ältere Formatadapter
    installieren die Chasetabellen auf der eigenen Importkopie.
    Eine weitere Gegenprobe fand den alten Abschlussverweis nach unabhängiger
    Kopie. `campaign-data.ts` remappt nun den strukturellen `chaseId`-Slot in
@@ -74,15 +74,19 @@ auf der eigenen Migrationskopie. Ältere Formatadapter
    Abschlussverweis; die Ownerprüfung verweigert jetzt diesen hängenden Verweis,
    während wirklich leere Legacyfähigkeiten gültig bleiben. Danach
    Receipt-/Recent-Ownerclosure, archivierte Scenes und Erasure testen. Keine allgemeine Bodytext-Ersetzung.
-3. **Teilnahme und Zeit koppeln.** Bestehende Roster-/Worldactoridentitäten und
+3. **Teilnahme und Zeit koppeln.** Die neue Scene-Gruppenübernahme bindet
+   Character-IDs; der Livewriter bereinigt laufende Masken bei Move und
+   Deaktivierung atomar. Die Chasestrecke prüft referenzierte Character-Membership
+   bei Teilnahmecommands jedoch noch nicht vollständig. Bestehende Roster-/Worldactoridentitäten und
    die geprüften Combat-/Live-Membershipregeln konsumieren. Move/Split/Rejoin
    bereinigen betroffene Teilnahme atomar, ohne den Scenemove zu blockieren.
    Roundcommand bindet den echten Sceneclockport; 6000 ms, Chasewirkung,
    Worldfolgen und Receipt gehören in dieselbe bestätigte Wirkung. Keine zweite
    Uhr und keine bloß angezeigten Sekunden. Abnahme: zwei Scenes, mehrere Masken,
    verschobene Figur, Worldzeitfault und Replay ohne verlorene/doppelte Intervalle.
-4. **Mehrfachmasken und Anzeige bedienen.** Vorhandene `recent`-Query als begrenzte
-   Auswahl mit stabilem Ziel nutzen; mehrere laufende Masken müssen erreichbar
-   bleiben. Aktive Actor-Art nur über die bestehende Publicprojektion freigeben.
+4. **Mehrfachmasken und Anzeige bedienen.** Der neue Maskenstart ermöglicht
+   mehrere laufende Masken; `recent` erschließt die letzten 30. Aktualisieren
+   behält die gewählte Maske mit den vorhandenen Kontextguards. Vollständige
+   Navigation über ältere Masken und native Rohwert-/Wechselabnahme fehlen. Aktive Actor-Art nur über die bestehende Publicprojektion freigeben.
    Danach echter Desktopablauf mit paralleler Party, Scenewechsel, Replyverlust,
    normalem Fresh und erforderlicher Plattform-/Tastatur-/Skalierungsprüfung.
