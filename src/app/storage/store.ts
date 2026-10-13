@@ -1,4 +1,4 @@
-import {installNarrative,readNarrative} from './narrative';
+import {installNarrative,readNarrative,validateNarrativeBackup} from './narrative';
 import {readPreparedGroup} from './session';
 import {installCombatDraftSchema,validateCombatDrafts,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
 import type {CombatDraftKind,CombatWorkingDraft} from '../combat-draft-contracts';
@@ -411,7 +411,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);
-    validateProgressBackup(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
@@ -528,7 +528,7 @@ export class CampaignStore {
   ledgerItem(token: string, id: string) { return readLedgerItem(this.db, this.guard(token), id); }
   commitStatus(ref:CommitReference,token:string):CommitOutcome{checkedCommitReference(ref);this.guard(token,ref.campaignId);return readCommitReceipt(this.db,ref);}
   ledgerParties(token:string){const cam=this.guard(token),rows:any[]=[];for(const kind of ['npc','faction'])rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.title') name FROM world_note WHERE campaign_id=? AND trashed=0 AND json_extract(payload,'$.kind')=? ORDER BY name LIMIT 2000").all(cam,kind).map((r:any)=>({...r,kind})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM location WHERE campaign_id=? AND trashed=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'location'})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM shop WHERE campaign_id=? AND coalesce(json_extract(payload,'$.trashed'),0)=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'shop'})));return rows;}
-  narrative(token:string,id:string){return readNarrative(this.db,this.guard(token),id);}
+  narrative(token:string,id:string){return this.db.transaction(()=>readNarrative(this.db,this.guard(token),id))();}
   executeProgress(command: ProgressCommand) { return executeProgress(this.db, command, () => { this.guard(command.token, command.campaignId); }); }
   preparedGroup(token:string,id:string){return readPreparedGroup(this.db,this.guard(token),id);}
   dungeon(token:string){const cam=this.guard(token),view=dungeonView(this.db,cam);return this.graphShadow?{...view,...dungeonGeometry(this.graphShadow.db,cam),drawing:{...drawingView(this.graphShadow.db,cam),graphPreview:this.graphShadow.state()}}:view;}
