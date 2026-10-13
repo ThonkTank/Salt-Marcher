@@ -93,6 +93,7 @@ function render() {
   const restMeter = get<HTMLProgressElement>('rest-meter'); restMeter.hidden = !frame; restMeter.max = 1; restMeter.value = frame?.fill ?? 0;
   const status=p?.health??p?.lastCombatStatus;
   get('health-summary').textContent = (p?.health?'HP: '+p.health.hp+' / '+p.health.maxHp:'HP noch offen.')+(status?.tempHp?' + '+status.tempHp+' temporär':'')+(status?.conditions?' · '+status.conditions:'')+(status?.concentrating?' · Konzentration':'');
+  const death=p?.health?.death,panel=get('death-saves');panel.hidden=!p?.health||p.health.hp>0||!!p.healthCombat;if(!panel.hidden)get('death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':'Todesrettungswürfe: '+(death?.successes??0)+' Erfolge · '+(death?.failures??0)+' Fehlschläge';
   renderHealth(p);
   const rest = get('rest-members'); rest.replaceChildren();
   for (const c of view?.characters.filter(c => c.active && c.sceneId === live?.focusId) ?? []) { const label = document.createElement('label'), checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = c.characterId; checkbox.checked = true; label.className = 'check-label'; label.append(checkbox, document.createTextNode(c.name)); rest.append(label); }
@@ -228,6 +229,8 @@ async function recoveredProgress(event:CommitResolution){
 }
 export function initProgress(status: typeof tell) {
   tell=status;initCommitControls(()=>workspace,status);onCommitState(lock);onCommitResolved(recoveredProgress);
+  const death=document.createElement('div');death.id='death-saves';death.hidden=true;death.innerHTML='<p id="death-summary"></p><div class="toolbar"><button id="death-success" type="button">Erfolg</button><button id="death-failure" type="button">Fehlschlag</button><button id="death-natural-20" type="button">Natürliche 20</button><button id="death-natural-1" type="button">Natürliche 1</button><button id="death-stabilize" type="button">Stabilisieren</button><button id="death-dead" type="button">Als tot markieren</button><button id="death-reset" type="button">Zurücksetzen</button></div>';get('health-summary').after(death);
+  for(const result of ['success','failure','natural-20','natural-1','stabilize','dead','reset'] as const)get('death-'+result).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation:'death',result,reason:'Todesrettungswurf'});};
   for(const id of [...healthFields,'health-concentration'])get(id).addEventListener('input',keepHealthDraft);
   get('health-form').onsubmit=event=>{event.preventDefault();void(async()=>{
   const p=view?.characters.find(p=>p.characterId===selected),key=healthKey();if(!p||!key)return;
