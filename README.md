@@ -247,3 +247,11 @@ SRD-Definitionen sind schreibgeschützt und unmittelbar in Shops, Treasures und 
 Ein Shop verlangt für Gegenstände ohne Richtwert ausdrücklich Verkaufs- und Ankaufspreise. Ein nicht veröffentlichter Preis wird nicht mehr als kostenloser Standardbestand eingesetzt. Vergaben behalten den Definitionsrichtwert oder einen unbekannten Wert; ein eigener Richtwert gehört in eine eigene Definition. Käufe und Verkäufe verwenden weiterhin die tatsächlich bestätigten Preise und vorhandenen Gegenstandsreferenzen.
 
 Der Anschluss ersetzt keine vollständige Quelle: Das Inventar erfasst 290 von 459 Fundstellen, das Transkript enthält wegen einer zusammengeführten Fundstelle 289 Definitionen. 169 Fundstellen und die unabhängige Quellenabnahme bleiben offen. Die Oberfläche zeigt den unvollständigen Quellenstatus ausdrücklich. Datenbankformat 38 bleibt unverändert; die Definitionen verwenden die vorhandenen globalen Tabellen und Versionssnapshots.
+
+### Desktopstand 0.35: Schätze vorbereiten, platzieren und nachbearbeiten
+
+Der eigene Bereich „Schätze“ funktioniert auch ohne laufende Gruppe. Schätze lassen sich anlegen, benennen, an Orte legen und mit eigenen oder vorhandenen Kataloggegenständen bestücken. Mengen beziehen sich ausdrücklich auf den unverteilten Rest. Bereits zugewiesene Gegenstände behalten ihre Mengen, Definitionen und Werte im persönlichen Ledger; spätere Änderungen am Schatz schreiben diese Vergaben nicht um.
+
+Unverteilte Mengen lassen sich in bestehende oder neue Schätze verschieben und direkt an aktive Charaktere vergeben. Verschobene Gegenstände behalten ihre ursprüngliche Schatzherkunft. Bearbeitungen und Verschiebungen erscheinen im Schatzverlauf und der Chronik. Am aktuellen Szenenort führt „Schatz öffnen und zuweisen“ zur passenden Schatzansicht; Ankunft vergibt keine Beute automatisch.
+
+Angefangene Eingaben bleiben als Entwurf erhalten, auch mit leeren Namen oder Mengen. „Schatzangaben übernehmen“ bestätigt gültige Änderungen. Vor Verschieben oder Zuweisen müssen offene Änderungen übernommen werden; „Gespeicherten Stand laden“ verwirft die offene Eingabe ausdrücklich. Datenbankformat 39 ergänzt Schatzentwürfe und übernimmt Kampagnenimporte aus den Formaten 33–38.

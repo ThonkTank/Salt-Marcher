@@ -6,7 +6,7 @@ import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,
 import type { Workspace, Result } from './contracts';
 import type { LiveView } from './live-contracts';
 import type { EncounterAssessment } from './encounter-contracts';
-import { deathSaveControls, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem } from './progression';
+import { deathSaveControls, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
@@ -14,6 +14,7 @@ let workspace: Workspace | null = null, live: LiveView | null = null, selected: 
 let contextBasis = '';
 let generation = 0, loadNumber = 0, pending: Promise<boolean> | null = null, selectedLedger: string | null = null;
 let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = null, ledger: LedgerPage = {items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'};
+let lootBalance:LootBalance|null=null;
 let selectedTreasure: string | null = null;
 let ledgerRequest=0, treasureRequest=0;
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
@@ -36,7 +37,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
   const selectionChanged = characterId !== selected;
   const activationChanged = next?.token !== workspace?.token;
   if (selectionChanged || next?.token !== workspace?.token) { ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; ledgerDetail=null; selectedLedger=null; ledgerLoaded=false; }
-  if (next?.token !== workspace?.token) { deactivateFinishDraft();finishRequest++;generation++;pending=null; view = null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
+  if (next?.token !== workspace?.token) { deactivateFinishDraft();finishRequest++;generation++;pending=null; view = null;lootBalance=null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
   workspace = next; live = data; selected = characterId;updateCommitControls();
   get('reward-panel').hidden = !data; get('character-progression').hidden = !data || !selected;
   if(activationChanged)render();
@@ -45,7 +46,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
 export async function refreshProgress(deliverNotices=true) {
   if (!workspace) return;
   const gen = generation, request = ++loadNumber;
-  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result; const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
+  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result; const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
   catch (error) { if (gen === generation) tell((error as Error).message, true); }
 }
 async function execute(action: ProgressAction): Promise<boolean> {
@@ -59,7 +60,7 @@ async function execute(action: ProgressAction): Promise<boolean> {
       view = result; publishProgress();tell(action.kind==='health'?'HP gespeichert.':'Fortschritt und Beute gespeichert.'); void loadHistory();
       if (['treasure','allocate','manual-item','ledger','ledger-split','ledger-merge','ledger-transfer','narrative-award'].includes(action.kind)) {
         try {
-          await Promise.all([loadTreasures(false,result.treasureId??undefined),loadLedger()]);
+          await Promise.all([loadTreasures(false,result.treasureId??undefined),loadLedger(),loadLootBalance()]);
           if (result.ledgerIds?.[0] && (action.kind !== 'manual-item' || action.characterId === selected)) await loadLedgerItem(result.ledgerIds[0]);
         } catch (error) { tell('Speicherung bestätigt; Anzeige konnte nicht aktualisiert werden: '+(error as Error).message,true); }
       }
@@ -113,7 +114,10 @@ function render() {
   for (const c of view?.characters.filter(c=>c.active) ?? []) option(recipient,c.characterId,c.name); recipient.value = old;
   const manual = get<HTMLSelectElement>('manual-loot-recipient'), manualOld = manual.value; manual.replaceChildren(); option(manual,'','Figur wählen'); for (const c of view?.characters ?? []) option(manual,c.characterId,c.name); manual.value = manualOld;
   renderLedger(); lock();
+  renderLootBalance();
 }
+async function loadLootBalance(){if(workspace)lootBalance=unwrap(await window.campaign.lootBalance(workspace.token));}
+function renderLootBalance(){const root=get('loot-balance-list');root.replaceChildren();if(!lootBalance)return;for(const c of lootBalance.characters){const p=document.createElement('p');p.textContent=c.name+': '+gold(c.copper)+(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');if(c.characterId===lootBalance.suggestedCharacterId){const strong=document.createElement('strong');strong.textContent='Nächste wertbare Belohnung: ';p.prepend(strong);}root.append(p);}}
 function renderHealth(p: ProgressView['characters'][number] | undefined) {
   const key=healthKey(),draft=key?healthDrafts.get(key):undefined,h=p?.health,status=h??p?.lastCombatStatus;
   if(draft&&p&&!p.healthCombat&&draft.basis===JSON.stringify([p.health,p.lastCombatStatus]))draft.revision=p.revision;
@@ -154,7 +158,7 @@ function renderLedger() {
   for(const problem of ledger.problems){const p=document.createElement('p');p.className='error';p.setAttribute('role','status');p.textContent='Eintrag nicht verfügbar: '+problem.id+' · '+problem.message;root.append(p);}
   get('ledger-more').hidden=!ledger.next;
   const l=ledgerDetail; get('ledger-editor').hidden=!l;
-  get('ledger-detail').textContent=l?l.name+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.rewardCreditId?' · Loot-Gutschrift bei ursprünglichem Empfänger · Herkunft '+l.rewardCreditId.slice(0,8):'')+(l.creditedCopper!==undefined?' · Aktueller gutgeschriebener Lootwert: '+(l.creditedCopper===null?'unbekannt':gold(l.creditedCopper)):'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
+  get('ledger-detail').textContent=l?l.name+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.sourceTreasureId?' · Ursprünglicher Schatz '+l.sourceTreasureId.slice(0,8):'')+(l.rewardCreditId?' · Loot-Gutschrift bei ursprünglichem Empfänger · Herkunft '+l.rewardCreditId.slice(0,8):'')+(l.creditedCopper!==undefined?' · Aktueller gutgeschriebener Lootwert: '+(l.creditedCopper===null?'unbekannt':gold(l.creditedCopper)):'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
   drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute);lock();
 }
 async function loadTreasures(more=false,preferredId?:string) {
@@ -243,6 +247,7 @@ async function recoveredProgress(event:CommitResolution){
 }
 export function initProgress(status: typeof tell) {
   tell=status;initCommitControls(()=>workspace,status);onCommitState(lock);onCommitResolved(recoveredProgress);
+  const balance=document.createElement('details');balance.id='loot-balance';balance.innerHTML='<summary>Kumulative Beuteverteilung</summary><p class="caption">Zählt erhaltene Belohnungen zum gespeicherten Wert. Käufe und reine Weitergaben erzeugen keinen neuen Kampagnenwert; unbekannte Werte bleiben offen.</p><div id="loot-balance-list"></div>';get('progress-notices').after(balance);
   const death=document.createElement('div');death.id='death-saves';death.hidden=true;death.innerHTML='<p id="death-summary"></p><div class="toolbar"><button id="death-success" type="button">Erfolg</button><button id="death-failure" type="button">Fehlschlag</button></div><details id="death-other"><summary>Sonderfälle und Korrektur</summary><div class="toolbar"><button id="death-natural-20" type="button">Natürliche 20</button><button id="death-natural-1" type="button">Natürliche 1</button><button id="death-stabilize" type="button">Stabilisieren</button><button id="death-dead" type="button">Als tot markieren</button><button id="death-reset" type="button" hidden>Todesrettungswürfe zurücksetzen</button></div></details>';get('health-summary').after(death);
   for(const result of deathResults)get('death-'+result).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation:'death',result,reason:'Todesrettungswurf'});};
   for(const id of [...healthFields,'health-concentration'])get(id).addEventListener('input',keepHealthDraft);

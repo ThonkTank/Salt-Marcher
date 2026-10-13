@@ -1,3 +1,4 @@
+import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk} from './scene-desk';
 import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft,validateFinishDrafts} from './finish-drafts';
 import {installNarrative,readNarrative,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
@@ -64,7 +65,7 @@ import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat
 import {installChaseSchema,readChase,executeChase,validateChaseBackup} from './chase';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
-import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
+import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
 import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
@@ -103,7 +104,7 @@ export class CampaignStore {
     if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) { this.db.close(); throw new Error('SQLite-Wartungsstand zu alt.'); }
     this.db.pragma('foreign_keys=ON'); this.db.pragma('journal_mode=WAL'); this.db.pragma('synchronous=FULL'); this.db.pragma('secure_delete=ON'); this.db.pragma('busy_timeout=5000');
     const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 38) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 39) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS campaign(id TEXT PRIMARY KEY, name TEXT NOT NULL, selected_id TEXT, cursor INTEGER NOT NULL DEFAULT 0) STRICT;
       CREATE TABLE IF NOT EXISTS scope(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
@@ -166,8 +167,8 @@ export class CampaignStore {
       installDungeonKey(this.db);
       installGraph(this.db);
       installTriggers(this.db);
-      installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);
-      this.db.pragma('user_version=38');
+      installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);
+      this.db.pragma('user_version=39');
     }).immediate();
   }
   extensionPreview(bytes:Buffer){return this.extensionRegistry.preview(bytes);}
@@ -529,6 +530,7 @@ export class CampaignStore {
   executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
+  lootBalance(token:string){return readLootBalance(this.db,this.guard(token));}
   treasures(token: string, after: string | null) { return readTreasures(this.db, this.guard(token), after); }
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }
   ledger(token: string, query: LedgerQuery) { return readLedger(this.db, this.guard(token), query); }
@@ -536,6 +538,10 @@ export class CampaignStore {
   ledgerItem(token: string, id: string) { return readLedgerItem(this.db, this.guard(token), id); }
   commitStatus(ref:CommitReference,token:string):CommitOutcome{checkedCommitReference(ref);this.guard(token,ref.campaignId);return readCommitReceipt(this.db,ref);}
   ledgerParties(token:string){const cam=this.guard(token),rows:any[]=[];for(const kind of ['npc','faction'])rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.title') name FROM world_note WHERE campaign_id=? AND trashed=0 AND json_extract(payload,'$.kind')=? ORDER BY name LIMIT 2000").all(cam,kind).map((r:any)=>({...r,kind})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM location WHERE campaign_id=? AND trashed=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'location'})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM shop WHERE campaign_id=? AND coalesce(json_extract(payload,'$.trashed'),0)=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'shop'})));return rows;}
+  treasuryDraft(token:string,id:string){return readTreasuryDraft(this.db,this.guard(token),id);}
+  keepTreasuryDraft(token:string,draft:import('../treasury-contracts').TreasuryDraft,expected:string|null){return keepTreasuryDraft(this.db,this.guard(token),draft,expected);}
+  discardTreasuryDraft(token:string,id:string,writeId:string){return discardTreasuryDraft(this.db,this.guard(token),id,writeId);}
+  treasureHistory(token:string,id:string,after:string|null){return treasureHistory(this.db,this.guard(token),id,after);}
   sceneDesk(token:string,id:string){return readSceneDesk(this.db,this.guard(token),id);}
   searchDesk(token:string,kind:string,search:string,offset:number){return searchDesk(this.db,this.guard(token),kind,search,offset);}
   deskContent(token:string,ref:import('../scene-desk-contracts').DeskRef){return deskContent(this.db,this.guard(token),ref);}
@@ -608,7 +614,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==this.db.pragma('user_version',{simple:true})&&!([33,34,35,36,37].includes(schema)&&this.db.pragma('user_version',{simple:true})===38))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
+    if(schema!==this.db.pragma('user_version',{simple:true})&&!([33,34,35,36,37,38].includes(schema)&&this.db.pragma('user_version',{simple:true})===39))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
     const c:Pick<Campaign,'id'|'name'>=rows[0];
@@ -636,7 +642,7 @@ export class CampaignStore {
       const sha256=snapshotDigest(candidate);
       if(expectedDigest!==undefined&&sha256!==expectedDigest)throw new Error('Geprüfte Paketdatenbank wurde verändert.');
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
-      if([33,34,35,36,37].includes(c.schema)){installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installChaseSchema(source);source.pragma('user_version=38');}
+      if([33,34,35,36,37,38].includes(c.schema)){installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installChaseSchema(source);source.pragma('user_version=39');}
       archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
