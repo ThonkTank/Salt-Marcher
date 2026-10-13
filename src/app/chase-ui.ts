@@ -15,7 +15,7 @@ function accept(next:ChaseView,o:Owner){
 }
 async function load(id?:string){
  const o=owner();if(!o)return;const query=++request;
- try{const r=await window.campaign.chase(o.token,o.sceneId,id);if(!current(o)||query!==request)return;if(!r.ok)throw new Error(r.error);accept(r.value,o);}
+ try{const r=await window.campaign.chase(o.token,o.sceneId,id??view?.chase?.id);if(!current(o)||query!==request)return;if(!r.ok)throw new Error(r.error);accept(r.value,o);}
  catch(e){if(current(o)&&query===request)tell((e as Error).message,true);}
 }
 async function command(action:ChaseCommand['action']){

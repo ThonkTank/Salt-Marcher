@@ -11,3 +11,13 @@ export type AutonomyAction={kind:'actor';actor:AutonomyActor;expectedRevision:nu
 export interface AutonomyCommand {commandId:string;token:string;campaignId:string;action:AutonomyAction}
 export interface AutonomyAPI {autonomy(token:string):Promise<Result<AutonomyView>>;executeAutonomy(command:AutonomyCommand):Promise<Result<{view:AutonomyView;progressed:number;pending:number}>>}
 export const standardNeeds=():AutonomyNeed[]=>['hunger','thirst','rest','safety','social'].map((id,i)=>({id,name:['Hunger','Durst','Ruhe','Sicherheit','Nähe'][i]!,enabled:true,value:0,ratePerHour:[4,6,3,0,1][i]!,weight:1}));
+
+export function checkedAutonomyJob(job:AutonomyJob):AutonomyJob {
+ const id=(value:unknown)=>typeof value==='string'&&value.length>0;
+ if(!job||typeof job!=='object'||Array.isArray(job)||!id(job.id)||!Number.isSafeInteger(job.revision)||job.revision<1||typeof job.name!=='string'||!job.name.trim()||!['wait','guard','rest','eat','drink','work','social','move','patrol','conflict','reset'].includes(job.kind)||typeof job.enabled!=='boolean'||typeof job.exclusive!=='boolean'||!Array.isArray(job.roles)||job.roles.some(role=>typeof role!=='string')||!Number.isFinite(job.priority)||!Number.isSafeInteger(job.durationSeconds)||job.durationSeconds<1||job.durationSeconds>100000000||!Number.isFinite(job.maxDamage)||job.maxDamage<0||job.maxDamage>100)throw new Error('Autonomie-Jobvorgaben prüfen.');
+ if(!job.needEffects||typeof job.needEffects!=='object'||![Object.prototype,null].includes(Object.getPrototypeOf(job.needEffects))||Object.values(job.needEffects).some(value=>!Number.isFinite(value)||value<0||value>100))throw new Error('Autonomie-Jobbedürfnisse prüfen.');
+ for(const value of [job.locationId,job.routeId,job.targetActorId])if(value!==null&&!id(value))throw new Error('Autonomie-Jobziel prüfen.');
+ for(const value of [job.featureId,job.roomId,job.patrolRoomId])if(value!==undefined&&value!==null&&!id(value))throw new Error('Autonomie-Jobraum oder Feature prüfen.');
+ if(job.speedMetersPerMinute!==undefined&&(!Number.isFinite(job.speedMetersPerMinute)||job.speedMetersPerMinute<.1||job.speedMetersPerMinute>1000))throw new Error('Autonomie-Jobtempo prüfen.');
+ return job;
+}
