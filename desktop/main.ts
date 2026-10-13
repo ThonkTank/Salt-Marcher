@@ -22,6 +22,8 @@ import type { PreparationCommand, PreparationSelection, PreparationDraft, Prepar
 import type { LiveCommand } from '../src/app/live-contracts';
 import type { CombatCommand } from '../src/app/combat-contracts';
 import type { ProgressCommand } from '../src/app/progression';
+import {chronicleMarkdown} from '../src/app/storage/chronicle';
+import type {ChronicleCategory} from '../src/app/chronicle-contracts';
 import { creatureInfo, searchCreatures, readCreature } from '../src/app/storage/encounters';
 import type { CreatureCatalogQuery } from '../src/features/catalog/creature-catalog';
 import type { EncounterPlanCommand } from '../src/app/encounter-contracts';
@@ -123,6 +125,9 @@ else {
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
+    handle('campaign:finish-draft',(token:string,owner:any)=>store.finishDraft(token,owner));
+    handle('campaign:keep-finish-draft',(token:string,draft:any,expected:string|null)=>store.keepFinishDraft(token,draft,expected));
+    handle('campaign:discard-finish-draft',(token:string,owner:any,writeId:string)=>store.discardFinishDraft(token,owner,writeId));
     handle('campaign:keep-narrative-draft',(token:string,draft:any,expected:string|null)=>store.keepNarrativeDraft(token,draft,expected));
     handle('campaign:discard-narrative-draft',(token:string,id:string,writeId:string)=>store.discardNarrativeDraft(token,id,writeId));
     handle('campaign:narrative',(token:string,id:string)=>store.narrative(token,id));
@@ -239,6 +244,8 @@ else {
     handle('campaign:commit-status',(ref:import('../src/app/commit-receipt').CommitReference,token:string)=>commits.status(ref,token));
     handle('items:execute',(command:import('../src/app/items-contracts').ItemShopCommand)=>commits.execute('items',command,()=>store.executeItemShop(command)));
     handle('campaign:execute-progress', (command: ProgressCommand) => commits.execute('progress',command,()=>store.executeProgress(command)));
+    handle('campaign:chronicle',(token:string)=>store.chronicle(token));
+    handle('campaign:chronicle-export',async(token:string,category:ChronicleCategory|'all',search:string)=>{if(!['all','combat','narrative','reward','travel','party','world'].includes(category)||typeof search!=='string'||search.length>1000)throw new Error('Chronikfilter ungültig.');const view=store.chronicle(token),safe=view.campaignName.replace(/[\\/:*?"<>|]+/g,'-').trim()||'Kampagne',destination=await dialog.showSaveDialog(win,{defaultPath:safe+' – Chronik.md',filters:[{name:'Markdown',extensions:['md']}]});if(destination.canceled||!destination.filePath)return{cancelled:true};await writeFile(destination.filePath,chronicleMarkdown(view,category,search),'utf8');return{cancelled:false};});
     handle('campaign:combat-draft',(token:string,id:string,kind:import('../src/app/combat-draft-contracts').CombatDraftKind,target:string)=>store.combatDraft(token,id,kind,target));
     handle('campaign:combat-drafts',(token:string,id:string,after:string|null)=>store.combatDrafts(token,id,after));
     handle('campaign:keep-combat-draft',(token:string,draft:import('../src/app/combat-draft-contracts').CombatWorkingDraft,expected:string|null)=>store.keepCombatDraft(token,draft,expected));

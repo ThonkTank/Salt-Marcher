@@ -136,6 +136,12 @@ function availableLocation(db: any, campaignId: string, id: string | null, retai
   if (!row || hash(row.payload) !== row.checksum || row.trashed && retained !== id) throw new Error('Gewählter Szenenort ist nicht verfügbar.');
   checkedLocationDocument(JSON.parse(row.payload));
 }
+function recordLocationVisit(db:any,campaignId:string,sceneId:string,beforeLocationId:string|null,locationId:string|null,source:'visit'|'manual',visitId?:string){
+  if(locationId===beforeLocationId)return;
+  const row=locationId?db.prepare('SELECT payload,checksum FROM location WHERE campaign_id=? AND id=?').get(campaignId,locationId):null,name=row&&hash(row.payload)===row.checksum?checkedLocationDocument(JSON.parse(row.payload)).name:'Kein Ort';
+  const value=json({text:locationId?'Ort besucht: '+name:'Ort verlassen',recordedAt:new Date().toISOString(),facts:{locationId,beforeLocationId,source,visitId:visitId??null}});
+  db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(campaignId,randomUUID(),sceneId,value,hash(value));
+}
 function targetRevision(db: any, campaignId: string, action: LiveCommand['action'], targetId: string): number | null {
   const table = action.kind === 'membership' ? 'roster_member' : action.kind === 'profile' || action.kind === 'create-character' ? 'character_profile' : 'live_scene';
   if (!db.prepare('SELECT 1 FROM ' + table + ' WHERE campaign_id=? AND id=?').get(campaignId, targetId)) return null;
@@ -325,6 +331,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       } else { ({ title, notes, locationId } = action); availableLocation(db, campaignId, locationId, before.locationId);if(action.readAloud!==undefined)writeSceneReadAloud(db,campaignId,targetId,action.readAloud); }
       if (typeof title !== 'string' || typeof notes !== 'string' || title.length > 1000 || notes.length > 2_000_000) throw new Error('Ungültiger Sceneinhalt.');
       db.prepare('UPDATE live_scene SET revision=?,title=?,notes=?,location_id=? WHERE campaign_id=? AND id=?').run(revision, title, notes, locationId, campaignId, targetId); scene = readLiveScene(db, campaignId, targetId);
+      recordLocationVisit(db,campaignId,targetId,before.locationId,locationId,action.kind==='apply-visit'?'visit':'manual',action.kind==='apply-visit'?action.visitId:undefined);
     } else throw new Error('Unbekannte Liveaktion.');
     const rosterRevision = db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision;
     if (!Number.isSafeInteger(rosterRevision)) throw new Error('Partyquelle nicht verfügbar.');

@@ -214,3 +214,12 @@ Quest- und Gerüchtangaben werden während der Eingabe als eigener Entwurf gespe
 Figurenweitergaben behalten eine stabile Loot-Herkunft. Der kumulative Wert zählt beim ursprünglichen Empfänger einmal: noch gehaltene Mengen zum aktuellen Definitionswert, später verkaufte Mengen zum tatsächlichen Verkaufspreis. Weitere Weitergaben, Rückgaben, Teilmengen und Verkaufsberichtigungen aktualisieren dieselbe Gutschrift. Der übernehmenden Figur entstehen dadurch keine zusätzlichen Belohnungen. Auch bestehende Weitergaben aus 0.30 werden anhand ihrer erhaltenen Elternbeziehungen berücksichtigt. Stapel verschiedener Gutschriften lassen sich nicht vermischen. Der Verlauf behält die ursprünglichen Transaktionen; die Beutedetails zeigen die Herkunft und den aktuellen gutgeschriebenen Wert.
 
 Datenbankformat 36 ergänzt die narrativen Eingabeentwürfe und Herkunftsindizes. Kampagnenimporte aus den Formaten 33–35 werden vor der Übernahme ergänzt. Die Eingabesicherung umfasst die narrativen Angaben im Vorbereitungsbereich; ein noch nicht bestätigter Abschlussdialog besitzt weiterhin keinen eigenen fortsetzbaren Entwurf.
+
+
+### Desktopstand 0.32: Abschlüsse unterbrechen und fortsetzen
+
+Der gemeinsame Abschlussdialog für Kämpfe, Quests und Gerüchte speichert nun Ergebnistext, XP-Pool, Tagesbelastung, Empfängerauswahl und mehrere Gegenstandsbelohnungen als Eingabeentwurf. Auch angefangene Zahlen, leere Mengen und unfertige Goldwerte bleiben unverändert erhalten. „Schließen · Eingabe behalten“ erlaubt eine Unterbrechung; beim erneuten Öffnen desselben Kampfes oder derselben Quest werden die Angaben wieder angezeigt, auch nach einem App-Neustart. „Entwurf verwerfen“ lädt die vorbereiteten Vorgaben neu.
+
+Ein gespeicherter Abschlussentwurf vergibt keine XP oder Beute. Erst die ausdrückliche Bestätigung übernimmt Ergebnis und Belohnung und entfernt genau den zugehörigen Entwurf in derselben Datenbanktransaktion. Hat sich der bestätigte Kampf-/Queststand inzwischen verändert, bleibt die Eingabe erhalten und verlangt eine ausdrückliche Übernahme des geprüften Entwurfs. Kämpfe und narrative Notizen besitzen getrennte Abschlussziele, sodass ihre Eingaben sich nicht gegenseitig überschreiben.
+
+Datenbankformat 37 ergänzt Abschlussentwürfe. Die Kampagnenübertragung erhält deren lokale Ziele, Empfänger und Gegenstandsreferenzen; Importe aus den Formaten 33–36 werden ergänzt. Die in 0.31 genannte Lücke für noch nicht bestätigte Abschlussdialoge ist damit geschlossen.

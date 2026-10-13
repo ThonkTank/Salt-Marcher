@@ -71,6 +71,8 @@ import "./core/atlas-spatial-host.test";
 
 import "./core/atlas-mount-lease.test";
 import "./core/manual-planner.test";
+import "./core/preparation-controls.test";
 import "./core/campaign-archive.test";
 import "./core/narrative-storage.test";
 import "./core/desktop-csp.test";
+import "./core/chronicle.test";

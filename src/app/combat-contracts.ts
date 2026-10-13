@@ -32,7 +32,7 @@ export type CombatAction =
   | { kind: 'roll'; mode: 'normal' | 'advantage' | 'disadvantage' }
   | { kind: 'start' | 'next' | 'undo' }
   | { kind: 'notes'; title: string; notes: string }
-  | { kind: 'finish'; outcome: string; rewards?: FinishRewards };
+  | { kind: 'finish'; outcome: string; rewards?: FinishRewards; finishDraftWriteId?:string };
 export interface CombatCommand { commandId: string; campaignId: string; token: string; combatId: string | null; expectedRevision: number | null; action: CombatAction;draftWriteId?:string }
 export interface CombatAPI extends CombatDraftAPI {
   combat(token: string, sceneId: string, combatId?: string): Promise<Result<CombatView>>;

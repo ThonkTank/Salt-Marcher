@@ -1,3 +1,4 @@
+import {finishDraftCommit,finishDraftConsumed,flushFinishDraft} from './finish-draft-ui';
 import {CombatDraftCache,combatDraftKey} from './combat-draft-cache';
 import {fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
@@ -125,7 +126,7 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
   }
   if(await execute({kind:'add-creature',creatureId,count,grouped})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
 }
-export async function flushCombat(): Promise<boolean> { if(pending)return await pending;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
+export async function flushCombat(): Promise<boolean> { if(!await flushFinishDraft())return false; if(pending)return await pending;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
 const blocked=()=>!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked();
@@ -216,9 +217,9 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('fighter-heal').onclick = () => { if (selected) void execute({ kind: 'heal', participantId: selected, amount: Number(value('fighter-amount')) }); };
   get('fighter-remove').onclick = () => { if (selected) void execute({ kind: 'remove', participantId: selected }); };
   get('combat-notes-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'notes', title: value('combat-edit-title'), notes: value('combat-notes') },draftRevision(notesDraft())); };
-  get('combat-finish').onclick = () => { void (async () => { try { const gen = generation; await prepareFinish(view?.combat?.participants.map(p => p.characterId).filter((id): id is string => !!id) ?? [], view?.assessment); if (gen !== generation) return; get<HTMLDialogElement>('combat-finish-dialog').showModal(); get('combat-outcome').focus(); } catch (error) { tell((error as Error).message, true); } })(); };
+  get('combat-finish').onclick = () => { void (async () => { try { const gen = generation; if(!workspace||!view?.combat)return;await prepareFinish(view.combat.participants.map(p=>p.characterId).filter((id):id is string=>!!id),view.assessment,{workspace,owner:{kind:'combat',targetId:view.combat.id,revision:view.combat.revision}}); if (gen !== generation) return; get<HTMLDialogElement>('combat-finish-dialog').showModal(); get('combat-outcome').focus(); } catch (error) { tell((error as Error).message, true); } })(); };
   get('combat-finish-cancel').onclick = () => get<HTMLDialogElement>('combat-finish-dialog').close();
-  get('combat-finish-form').onsubmit = event => { event.preventDefault(); void (async () => { if (await execute({ kind: 'finish', outcome: value('combat-outcome'), rewards: finishRewards() })) { get<HTMLDialogElement>('combat-finish-dialog').close(); await refreshProgress(); } })(); };
+  get('combat-finish-form').onsubmit = event => { event.preventDefault(); void (async () => { try{const draft=await finishDraftCommit();if (await execute({ kind: 'finish', outcome: value('combat-outcome'), rewards: finishRewards(),finishDraftWriteId:draft.writeId },draft.revision)) {finishDraftConsumed(); get<HTMLDialogElement>('combat-finish-dialog').close(); await refreshProgress(); }}catch(e){tell((e as Error).message,true);} })(); };
 }
 
 export async function openExistingCombat(id:string){if(await flushCombat())await load(id);}
