@@ -1,0 +1,1483 @@
+{
+  "source": {
+    "catalogVersion": "catalog-2026-08-16",
+    "roleBandsSha256": "4575163d8ab46e30f0c1a2b9835b96bac8dfe0008c4b04509b9419aa3f55a0ae",
+    "patternsSha256": "7ecf49d71b5c800ec24b9ab47fbbfa5d46825fac4b22f3b28cacc66a730fb548"
+  },
+  "config": {
+    "composition": {
+      "roleMatrix": [
+        [
+          "minion",
+          "support",
+          "standard",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "support",
+          "standard",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "standard",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "standard",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "standard",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ],
+        [
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "minion",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "support",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "standard",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "elite",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss",
+          "boss"
+        ]
+      ],
+      "roleQuantities": {
+        "minion": {
+          "min": 4,
+          "max": 10
+        },
+        "support": {
+          "min": 2,
+          "max": 5
+        },
+        "standard": {
+          "min": 1,
+          "max": 5
+        },
+        "elite": {
+          "min": 1,
+          "max": 2
+        },
+        "boss": {
+          "min": 1,
+          "max": 1
+        }
+      },
+      "roleCombinations": [
+        [
+          "minion"
+        ],
+        [
+          "support"
+        ],
+        [
+          "support",
+          "minion"
+        ],
+        [
+          "standard"
+        ],
+        [
+          "standard",
+          "support"
+        ],
+        [
+          "standard",
+          "minion"
+        ],
+        [
+          "elite"
+        ],
+        [
+          "elite",
+          "standard"
+        ],
+        [
+          "elite",
+          "support"
+        ],
+        [
+          "elite",
+          "minion"
+        ],
+        [
+          "elite",
+          "standard",
+          "support"
+        ],
+        [
+          "elite",
+          "standard",
+          "minion"
+        ],
+        [
+          "elite",
+          "support",
+          "minion"
+        ],
+        [
+          "boss"
+        ],
+        [
+          "boss",
+          "elite"
+        ],
+        [
+          "boss",
+          "standard"
+        ],
+        [
+          "boss",
+          "support"
+        ],
+        [
+          "boss",
+          "minion"
+        ],
+        [
+          "boss",
+          "elite",
+          "standard"
+        ],
+        [
+          "boss",
+          "elite",
+          "support"
+        ],
+        [
+          "boss",
+          "elite",
+          "minion"
+        ],
+        [
+          "boss",
+          "standard",
+          "support"
+        ],
+        [
+          "boss",
+          "standard",
+          "minion"
+        ],
+        [
+          "boss",
+          "support",
+          "minion"
+        ]
+      ],
+      "crBlocks": {
+        "min": 1,
+        "max": 3
+      },
+      "statblocks": {
+        "min": 2,
+        "max": 4
+      },
+      "monsters": {
+        "min": {
+          "value": 3,
+          "perPlayer": false
+        },
+        "max": {
+          "value": 8,
+          "perPlayer": false
+        }
+      },
+      "initiativeSlots": {
+        "min": {
+          "value": 1,
+          "perPlayer": true
+        },
+        "max": {
+          "value": 1.5,
+          "perPlayer": true
+        }
+      },
+      "mixing": "mixed-within-cr-block"
+    },
+    "generationDefaults": {
+      "difficulty": "weighted",
+      "amount": "standard",
+      "balance": "neutral",
+      "diversity": "neutral"
+    },
+    "scene": {
+      "difficultyWeights": {
+        "trivial": 10,
+        "easy": 25,
+        "medium": 30,
+        "hard": 25,
+        "deadly": 10
+      }
+    },
+    "combat": {
+      "mobThreshold": 6
+    },
+    "loot": {
+      "progression": [
+        {
+          "level": 1,
+          "xpAtLevel": 0,
+          "goldAtLevelCp": 9400,
+          "magicPerXp": {
+            "Common": 0.0008333333333333334,
+            "Uncommon": 0,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 2,
+          "xpAtLevel": 300,
+          "goldAtLevelCp": 18800,
+          "magicPerXp": {
+            "Common": 0.0004166666666666667,
+            "Uncommon": 0,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 3,
+          "xpAtLevel": 900,
+          "goldAtLevelCp": 37600,
+          "magicPerXp": {
+            "Common": 0.0001388888888888889,
+            "Uncommon": 0,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 4,
+          "xpAtLevel": 2700,
+          "goldAtLevelCp": 65800,
+          "magicPerXp": {
+            "Common": 0.00006578947368421052,
+            "Uncommon": 0.00006578947368421052,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 5,
+          "xpAtLevel": 6500,
+          "goldAtLevelCp": 293000,
+          "magicPerXp": {
+            "Common": 0.00006666666666666667,
+            "Uncommon": 0.000033333333333333335,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 6,
+          "xpAtLevel": 14000,
+          "goldAtLevelCp": 540400,
+          "magicPerXp": {
+            "Common": 0.00008333333333333333,
+            "Uncommon": 0.00002777777777777778,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 7,
+          "xpAtLevel": 23000,
+          "goldAtLevelCp": 861000,
+          "magicPerXp": {
+            "Common": 0.00006818181818181818,
+            "Uncommon": 0.000022727272727272726,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 8,
+          "xpAtLevel": 34000,
+          "goldAtLevelCp": 1201900,
+          "magicPerXp": {
+            "Common": 0.00005357142857142857,
+            "Uncommon": 0.00001785714285714286,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 9,
+          "xpAtLevel": 48000,
+          "goldAtLevelCp": 1656300,
+          "magicPerXp": {
+            "Common": 0.000046875,
+            "Uncommon": 0.000015625,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 10,
+          "xpAtLevel": 64000,
+          "goldAtLevelCp": 2110800,
+          "magicPerXp": {
+            "Common": 0.00003571428571428572,
+            "Uncommon": 0.000011904761904761905,
+            "Rare": 0.000011904761904761905,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 11,
+          "xpAtLevel": 85000,
+          "goldAtLevelCp": 3016100,
+          "magicPerXp": {
+            "Common": 0.000033333333333333335,
+            "Uncommon": 0.000016666666666666667,
+            "Rare": 0.000016666666666666667,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 12,
+          "xpAtLevel": 100000,
+          "goldAtLevelCp": 3921400,
+          "magicPerXp": {
+            "Common": 0.0000125,
+            "Uncommon": 0.000025,
+            "Rare": 0.0000125,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 13,
+          "xpAtLevel": 120000,
+          "goldAtLevelCp": 5732000,
+          "magicPerXp": {
+            "Common": 0.0000125,
+            "Uncommon": 0.000025,
+            "Rare": 0.0000125,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 14,
+          "xpAtLevel": 140000,
+          "goldAtLevelCp": 7542700,
+          "magicPerXp": {
+            "Common": 0.00001,
+            "Uncommon": 0.00002,
+            "Rare": 0.00001,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 15,
+          "xpAtLevel": 165000,
+          "goldAtLevelCp": 10258600,
+          "magicPerXp": {
+            "Common": 0.000008333333333333334,
+            "Uncommon": 0.000016666666666666667,
+            "Rare": 0.000008333333333333334,
+            "Very Rare": 0.000008333333333333334,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 16,
+          "xpAtLevel": 195000,
+          "goldAtLevelCp": 12974500,
+          "magicPerXp": {
+            "Common": 0.000008333333333333334,
+            "Uncommon": 0.000016666666666666667,
+            "Rare": 0.000016666666666666667,
+            "Very Rare": 0.000008333333333333334,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 17,
+          "xpAtLevel": 225000,
+          "goldAtLevelCp": 21420400,
+          "magicPerXp": {
+            "Common": 0,
+            "Uncommon": 0.0000125,
+            "Rare": 0.00003125,
+            "Very Rare": 0.0000125,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 18,
+          "xpAtLevel": 265000,
+          "goldAtLevelCp": 38312300,
+          "magicPerXp": {
+            "Common": 0,
+            "Uncommon": 0.00000625,
+            "Rare": 0.00003125,
+            "Very Rare": 0.0000125,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 19,
+          "xpAtLevel": 305000,
+          "goldAtLevelCp": 55204200,
+          "magicPerXp": {
+            "Common": 0,
+            "Uncommon": 0.000005,
+            "Rare": 0.000025,
+            "Very Rare": 0.00001,
+            "Legendary": 0
+          }
+        },
+        {
+          "level": 20,
+          "xpAtLevel": 355000,
+          "goldAtLevelCp": 80542000,
+          "magicPerXp": {
+            "Common": 0,
+            "Uncommon": 0,
+            "Rare": 0,
+            "Very Rare": 0,
+            "Legendary": 0
+          }
+        }
+      ],
+      "treasure": {
+        "slotMin": 6,
+        "slotTarget": 8,
+        "slotMax": 10,
+        "encounterTreasureRatio": 0.75,
+        "treasuresPerAdventureDay": 3,
+        "treasureCountVariance": 1,
+        "overstockShare": 0.2,
+        "channels": {
+          "quest": 0.4,
+          "encounter": 0.4,
+          "environment": 0.2
+        },
+        "enhancedCapMin": 1,
+        "enhancedCapMax": 2,
+        "enhancedCapMultiplier": 2
+      },
+      "mix": {
+        "roles": {
+          "compactValue": 0.25,
+          "complexValue": 0.25,
+          "useful": 0.3,
+          "flavor": 0.2
+        },
+        "compactForms": {
+          "Coinage": 0.3333333333333333,
+          "Gemstone": 0.3333333333333333,
+          "Ingot": 0.3333333333333333
+        },
+        "complexForms": {
+          "Bulk_Good": 0.5,
+          "Compact_Good": 0.1,
+          "Art_Object": 0.1,
+          "Adorned": 0.1,
+          "Livestock": 0.1,
+          "Clothing": 0.1
+        }
+      },
+      "selection": {
+        "coinage": {
+          "fitWeight": 0,
+          "themeWeight": 0,
+          "jitterWeight": 0,
+          "duplicatePenalty": 0,
+          "nearBestGap": 0,
+          "shortlistSize": 9,
+          "minFit": 0,
+          "maxOverfit": 0.05,
+          "variantShortlistSize": 0,
+          "minBaseExtraCp": 0,
+          "preferredBaseExtraCp": 0
+        },
+        "carrier": {
+          "fitWeight": 0.8,
+          "themeWeight": 0.1,
+          "jitterWeight": 0.1,
+          "duplicatePenalty": 0.35,
+          "nearBestGap": 0.05,
+          "shortlistSize": 10,
+          "minFit": 0,
+          "maxOverfit": 0.05,
+          "variantShortlistSize": 0,
+          "minBaseExtraCp": 0,
+          "preferredBaseExtraCp": 0
+        },
+        "adornedBase": {
+          "fitWeight": 0.8,
+          "themeWeight": 0.1,
+          "jitterWeight": 0.1,
+          "duplicatePenalty": 0.35,
+          "nearBestGap": 0,
+          "shortlistSize": 5,
+          "minFit": 0,
+          "maxOverfit": 0.05,
+          "variantShortlistSize": 0,
+          "minBaseExtraCp": 1000,
+          "preferredBaseExtraCp": 1500
+        },
+        "adornedModifier": {
+          "fitWeight": 0.8,
+          "themeWeight": 0,
+          "jitterWeight": 0.2,
+          "duplicatePenalty": 0,
+          "nearBestGap": 0,
+          "shortlistSize": 5,
+          "minFit": 0,
+          "maxOverfit": 0.05,
+          "variantShortlistSize": 0,
+          "minBaseExtraCp": 0,
+          "preferredBaseExtraCp": 0
+        },
+        "adornedComponent": {
+          "fitWeight": 0.9,
+          "themeWeight": 0,
+          "jitterWeight": 0.1,
+          "duplicatePenalty": 0,
+          "nearBestGap": 0,
+          "shortlistSize": 5,
+          "minFit": 0,
+          "maxOverfit": 0.05,
+          "variantShortlistSize": 0,
+          "minBaseExtraCp": 0,
+          "preferredBaseExtraCp": 0
+        },
+        "useful": {
+          "fitWeight": 0.8,
+          "themeWeight": 0.1,
+          "jitterWeight": 0.1,
+          "duplicatePenalty": 0,
+          "nearBestGap": 0.05,
+          "shortlistSize": 10,
+          "minFit": 0.5,
+          "maxOverfit": 0.05,
+          "variantShortlistSize": 5,
+          "minBaseExtraCp": 0,
+          "preferredBaseExtraCp": 0
+        },
+        "flavor": {
+          "fitWeight": 0.8,
+          "themeWeight": 0.1,
+          "jitterWeight": 0.1,
+          "duplicatePenalty": 0,
+          "nearBestGap": 0.05,
+          "shortlistSize": 10,
+          "minFit": 0.5,
+          "maxOverfit": 0.05,
+          "variantShortlistSize": 0,
+          "minBaseExtraCp": 0,
+          "preferredBaseExtraCp": 0
+        }
+      },
+      "quantityLimits": {
+        "carrier": {
+          "quantityGood": 10000,
+          "artObject": 3,
+          "gemstone": 10,
+          "ingot": 20,
+          "tradeGood": 250,
+          "fallback": 50
+        },
+        "useful": {
+          "quantityGood": 10000,
+          "ammunition": 20,
+          "potion": 3,
+          "poison": 3,
+          "hazardItem": 3,
+          "fallback": 1
+        },
+        "flavor": {
+          "quantityGood": 10000,
+          "fallback": 50
+        }
+      },
+      "coins": {
+        "denominations": {
+          "pp": {
+            "valueCp": 1000,
+            "singularLabel": "Platinum Coin",
+            "pluralLabel": "Platinum Coins"
+          },
+          "gp": {
+            "valueCp": 100,
+            "singularLabel": "Gold Coin",
+            "pluralLabel": "Gold Coins"
+          },
+          "ep": {
+            "valueCp": 50,
+            "singularLabel": "Electrum Coin",
+            "pluralLabel": "Electrum Coins"
+          },
+          "sp": {
+            "valueCp": 10,
+            "singularLabel": "Silver Coin",
+            "pluralLabel": "Silver Coins"
+          },
+          "cp": {
+            "valueCp": 1,
+            "singularLabel": "Copper Coin",
+            "pluralLabel": "Copper Coins"
+          }
+        },
+        "profiles": {
+          "ppGp": {
+            "denominations": [
+              "pp",
+              "gp"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 0,
+            "maxBudgetCp": 999999999,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "gpEp": {
+            "denominations": [
+              "gp",
+              "ep"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 0,
+            "maxBudgetCp": 999999999,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "gpSp": {
+            "denominations": [
+              "gp",
+              "sp"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 0,
+            "maxBudgetCp": 999999999,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "epSp": {
+            "denominations": [
+              "ep",
+              "sp"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 0,
+            "maxBudgetCp": 5000,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "spCp": {
+            "denominations": [
+              "sp",
+              "cp"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 0,
+            "maxBudgetCp": 2000,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "ppGpEp": {
+            "denominations": [
+              "pp",
+              "gp",
+              "ep"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 300,
+            "maxBudgetCp": 999999999,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "ppGpSp": {
+            "denominations": [
+              "pp",
+              "gp",
+              "sp"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 300,
+            "maxBudgetCp": 999999999,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "gpEpSp": {
+            "denominations": [
+              "gp",
+              "ep",
+              "sp"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 300,
+            "maxBudgetCp": 20000,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          },
+          "epSpCp": {
+            "denominations": [
+              "ep",
+              "sp",
+              "cp"
+            ],
+            "minLowCount": 5,
+            "maxLowCount": 30,
+            "maxMiddleCount": 300,
+            "maxBudgetCp": 5000,
+            "allowedContainerIds": [
+              "container:pouch",
+              "container:chest"
+            ]
+          }
+        }
+      },
+      "packing": {
+        "coinsPerCapacityUnit": 50,
+        "contextBulkMinLb": 20,
+        "loosePlacementMaxQty": 1,
+        "looseNonAmountMinCapacity": 2,
+        "pileMinQty": 5,
+        "containerMaxCountFactor": 4,
+        "minimumFillRatio": 0.25
+      },
+      "magic": {
+        "curseChance": 0.2,
+        "overstockShare": 0.2
+      },
+      "balance": {
+        "categoryStrength": 0.5,
+        "roleStrength": 1.5,
+        "minimumRoleWeight": 0.01
+      },
+      "audit": {
+        "normalBudgetTolerance": 0.15
+      }
+    }
+  }
+}

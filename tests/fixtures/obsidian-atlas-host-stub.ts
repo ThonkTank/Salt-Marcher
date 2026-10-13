@@ -50,6 +50,7 @@ export class Menu {
         value.title = text;
         return item;
       },
+      setIcon: () => item,
       setDisabled: () => item,
       onClick: (click: () => void) => {
         value.click = click;

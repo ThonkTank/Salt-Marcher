@@ -81,6 +81,12 @@ function target(raw: CityGestureTarget, owner: string): CityGestureTarget {
 function vector(point: Point, origin: Point): Point {
   return cityInputPoint({ x: point.x - origin.x, y: point.y - origin.y });
 }
+/** Pointer projection can add a few binary-float tail digits to authored metres. */
+function movedCoordinate(value: number): number {
+  if (!Number.isFinite(value)) return value;
+  const rounded = Number(value.toFixed(12));
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
 /** Local-meter adapter; the Atlas router retains projection, capture and tool selection. */
 export class CityGesture {
   readonly target: CityGestureTarget;
@@ -98,8 +104,8 @@ export class CityGesture {
       before = source.read();
     const moved = (position: Point, point: Point) =>
       cityInputPoint({
-        x: position.x + (point.x - this.start.x),
-        y: position.y + (point.y - this.start.y),
+        x: movedCoordinate(position.x + (point.x - this.start.x)),
+        y: movedCoordinate(position.y + (point.y - this.start.y)),
       });
     if (t.kind === "move-node") {
       const node = before.roadNodes.find((n) => n.id === t.nodeId);

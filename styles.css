@@ -1130,6 +1130,8 @@
 .dn-atlas-canvas-host { flex: 1; min-height: 0; }
 .dn-atlas-campaign-dock { flex: 0 0 auto; padding: 6px 12px; max-height: 25%; overflow: auto; }
 .dn-campaign-entry h3 { margin: 0 0 4px; }
+.dn-campaign-empty > summary { cursor: pointer; color: var(--text-muted); }
+.dn-campaign-empty > p { margin: 6px 0; }
 .dn-campaign-entry ul { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 4px; list-style: none; }
 .dn-campaign-entry li { display: flex; align-items: center; gap: 6px; }
 .dn-world-notes { display: flex; flex-direction: column; gap: 8px; min-width: 0; max-width: 100%; overflow: auto; }
