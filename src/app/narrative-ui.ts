@@ -50,9 +50,10 @@ export async function showNarrative(
   trashed: boolean,
   drain: () => Promise<boolean>,
   tell: (s: string, error?: boolean) => void,
+  targetPanel?:HTMLElement,
 ) {
-  const panel = el("narrative-editor"),
-    key = w && note ? w.token + ":" + note.id : "";
+  const panel = targetPanel??el("narrative-editor"),
+    key = w && note ? panel.id+":"+w.token + ":" + note.id : "";
   panel.hidden =
     !w || !note || trashed || !["quest", "rumor"].includes(note.kind);
   if (!panel.hidden && key === ownerKey && (dirty || pending)) return;

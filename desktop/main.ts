@@ -125,6 +125,11 @@ else {
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
+    handle('campaign:scene-desk',(token:string,id:string)=>store.sceneDesk(token,id));
+    handle('campaign:search-desk',(token:string,kind:string,search:string,offset:number)=>store.searchDesk(token,kind,search,offset));
+    handle('campaign:desk-content',(token:string,ref:any)=>store.deskContent(token,ref));
+    handle('campaign:pin-scene-desk',(token:string,id:string,revision:number,ref:any,pin:boolean)=>store.pinSceneDesk(token,id,revision,ref,pin));
+    handle('campaign:keep-desk-draft',(token:string,draft:any,expected:string|null)=>store.keepDeskDraft(token,draft,expected));
     handle('campaign:finish-draft',(token:string,owner:any)=>store.finishDraft(token,owner));
     handle('campaign:keep-finish-draft',(token:string,draft:any,expected:string|null)=>store.keepFinishDraft(token,draft,expected));
     handle('campaign:discard-finish-draft',(token:string,owner:any,writeId:string)=>store.discardFinishDraft(token,owner,writeId));

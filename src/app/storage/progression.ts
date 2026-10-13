@@ -1,7 +1,7 @@
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
-import { checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { applyDeathSave, checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
@@ -44,6 +44,7 @@ export function readProgressCharacter(db: any, cam: string, id: string): Progres
     const h = p.health;
     if (!h || typeof h.conditions !== 'string' || h.conditions.length > 4000 || typeof h.concentrating !== 'boolean' ||
       ![h.hp, h.maxHp, h.tempHp].every(v => Number.isSafeInteger(v) && v >= 0 && v <= 1000000) || h.maxHp < 1 || h.hp > h.maxHp) throw new Error('Gespeicherte Trefferpunkte oder Zustände ungültig.');
+    checkedHealth(h);
   }
   if(p.combatStatus!==undefined)checkedHealthStatus(p.combatStatus);
   return p;
@@ -338,8 +339,11 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         if(!Number.isSafeInteger(a.amount)||a.amount<=0||a.amount>1000000)throw new Error('Betrag benötigt eine positive ganze Zahl.');
         if(a.operation==='damage'){const absorbed=Math.min(p.health.tempHp,a.amount);p.health.tempHp-=absorbed;p.health.hp=Math.max(0,p.health.hp-(a.amount-absorbed));}
         else p.health.hp=Math.min(p.health.maxHp,p.health.hp+a.amount);
+        if(p.health.hp>0)delete p.health.death;
+      }else if(a.operation==='death'){
+        if(!p.health)throw new Error('Todesrettungswürfe benötigen bekannte HP.');p.health=applyDeathSave(p.health,a.result);
       }else throw new Error('Unbekannte HP-Aktion.');
-      checkedHealth(p.health!);delete p.combatStatus;saveProgress(db,cam,p);event(db,cam,p.characterId,'health',{operation:a.operation,...('amount'in a?{amount:a.amount}:{}),reason:a.reason,before,after:p},command.commandId);
+      checkedHealth(p.health!);delete p.combatStatus;saveProgress(db,cam,p);event(db,cam,p.characterId,a.operation==='death'?'death-save':'health',{operation:a.operation,...('amount'in a?{amount:a.amount}:{}),...('result'in a?{result:a.result}:{}),reason:a.reason,before,after:p},command.commandId);
     }else if (a.kind === 'xp') {
       const p = readProgressCharacter(db, cam, a.characterId), before = structuredClone(p);
       if (p.revision !== a.expectedRevision) throw new Error('XP-Stand geändert. Bitte aktualisieren.');

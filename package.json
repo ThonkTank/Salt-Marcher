@@ -1,12 +1,12 @@
 {
   "name": "dungeon-editor",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
     "check": "tsc --noEmit",
-    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs .build/room-key-search-panel.cjs .build/atlas-copy-modal.cjs .build/dungeon-view-lifecycle.cjs .build/campaign-entry-dom.cjs .build/manual-planner-panel.cjs .build/atlas-detail-entry.cjs .build/world-notes-panel.cjs .build/world-notes-view.cjs .build/atlas-campaign-host.cjs .build/vault-campaign-runtime-source.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs tests/items-srd51-e-section.test.mjs tests/renderer-boundary.test.mjs tests/live-session-boundary.test.mjs tests/wonderdraft-rfb-preflight.test.mjs tests/repository-structure.test.mjs tests/host-shutdown-receipt.test.mjs tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs tests/adr-prototypes/p03-contract.test.mjs tests/adr-prototypes/p03-channel.test.mjs tests/adr-prototypes/p03-renderer.test.mjs tests/adr-prototypes/p03-pixel-oracle.test.mjs tests/adr-prototypes/p03-evidence.test.mjs tests/desktop-key-discovery.test.mjs tests/desktop-narrative-integrity.test.mjs tests/desktop-narrative-loading.test.mjs tests/desktop-travel-target-dom.test.mjs tests/desktop-key-store.test.mjs tests/desktop-surface.test.mjs tests/desktop-volume-spatial.test.mjs tests/desktop-finish-draft-dom.test.mjs",
+    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs .build/room-key-search-panel.cjs .build/atlas-copy-modal.cjs .build/dungeon-view-lifecycle.cjs .build/campaign-entry-dom.cjs .build/manual-planner-panel.cjs .build/atlas-detail-entry.cjs .build/world-notes-panel.cjs .build/world-notes-view.cjs .build/atlas-campaign-host.cjs .build/vault-campaign-runtime-source.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs tests/items-srd51-e-section.test.mjs tests/renderer-boundary.test.mjs tests/live-session-boundary.test.mjs tests/wonderdraft-rfb-preflight.test.mjs tests/repository-structure.test.mjs tests/host-shutdown-receipt.test.mjs tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs tests/adr-prototypes/p03-contract.test.mjs tests/adr-prototypes/p03-channel.test.mjs tests/adr-prototypes/p03-renderer.test.mjs tests/adr-prototypes/p03-pixel-oracle.test.mjs tests/adr-prototypes/p03-evidence.test.mjs tests/desktop-key-discovery.test.mjs tests/desktop-narrative-integrity.test.mjs tests/desktop-narrative-loading.test.mjs tests/desktop-travel-target-dom.test.mjs tests/desktop-desk-search.test.mjs tests/desktop-key-store.test.mjs tests/desktop-surface.test.mjs tests/desktop-volume-spatial.test.mjs tests/desktop-finish-draft-dom.test.mjs",
     "check:repo": "node tools/check-repository.mjs",
     "test:repo": "node --test --test-concurrency=1 tests/repository-structure.test.mjs",
     "test:adr-p02": "node --test --test-concurrency=1 tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs",
@@ -23,7 +23,9 @@
     "test:desktop-narrative": "node --test --test-concurrency=1 tests/desktop-narrative-integrity.test.mjs tests/desktop-narrative-loading.test.mjs",
     "test:desktop-narrative-ui": "node tools/test-desktop-narrative-recovery.mjs",
     "test:desktop-travel-target": "node --test --test-concurrency=1 tests/desktop-travel-target-dom.test.mjs",
-    "test:desktop-travel-target-ui": "node tools/test-desktop-travel-target.mjs"
+    "test:desktop-travel-target-ui": "node tools/test-desktop-travel-target.mjs",
+    "test:desktop-desk-search": "node --test --test-concurrency=1 tests/desktop-desk-search.test.mjs",
+    "test:desktop-desk-search-ui": "node tools/test-desktop-desk-search.mjs"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
