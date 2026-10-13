@@ -54,7 +54,9 @@ Umfang
   Lootwert. Kampf- und Questabschlüsse lassen sich mit Ergebnis und Belohnungsfeldern
   unterbrechen und nach einem Neustart fortsetzen. Der Szenentisch verbindet
   Kampagnenwissen, Suche, gruppenspezifische Pins, direkte NPC-/Quest-/Ortsanlage
-  und bearbeitbare Notizen mit der laufenden Gruppe. Kampagnen lassen sich als .kwcampaign mit
+  und bearbeitbare Notizen mit der laufenden Gruppe. 289 lokal erfasste
+  SRD-5.1-Gegenstände sind mit Quellenangaben, eigenen Kopien und Shoppreisen
+  nutzbar; die vollständige Quellenabdeckung bleibt ausdrücklich offen. Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 
 Status
