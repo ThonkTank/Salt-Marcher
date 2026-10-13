@@ -37,6 +37,7 @@ export function validateNarrativeBackup(db:any){
  const exists=(name:string)=>!!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(name),state=exists('narrative_state'),award=exists('narrative_award');
  if(!state&&!award&&db.pragma('user_version',{simple:true})<35)return;
  if(!state||!award)throw new Error('Narratives Datenschema fehlt oder ist unvollständig.');
+ if(exists('narrative_draft'))for(const row of db.prepare('SELECT * FROM narrative_draft').iterate())validateNarrativeDraft(db,row.campaign_id,parsed<NarrativeDraft>(row),row.note_id);
  for(const row of db.prepare('SELECT * FROM narrative_state').iterate())linkedAward(db,row.campaign_id,checkedState(db,row.campaign_id,row));
  for(const row of db.prepare('SELECT * FROM narrative_award').iterate()){const a=checkedAward(db,row.campaign_id,row),s=db.prepare('SELECT * FROM narrative_state WHERE campaign_id=? AND note_id=?').get(row.campaign_id,a.noteId);if(!s||checkedState(db,row.campaign_id,s).awardId!==a.id)throw new Error('Narrative Belohnung besitzt keinen passenden Statusverweis.');}
 }
@@ -44,25 +45,9 @@ export function saveNarrative(db:any,cam:string,state:NarrativeState){const payl
 export function saveNarrativeAward(db:any,cam:string,award:NarrativeAward){const payload=JSON.stringify(award);db.prepare('INSERT INTO narrative_award VALUES(?,?,?,?,?)').run(cam,award.id,award.noteId,payload,hash(payload));}
 export function validateNarrativeState(db:any,cam:string,s:NarrativeState,retained=false){if(!s||!['open','closed'].includes(s.status)||!Number.isSafeInteger(s.poolXp)||s.poolXp<0||!Array.isArray(s.contributors)||s.contributors.length>1000||new Set(s.contributors).size!==s.contributors.length||!Array.isArray(s.items)||s.items.length>100)throw new Error('Status, Mitwirkende und Belohnung prüfen.');if(s.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND (? OR trashed=0)').get(cam,s.locationId,Number(retained)))throw new Error('Verknüpfter Ort nicht verfügbar.');for(const id of s.contributors)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,id))throw new Error('Mitwirkende Figur fehlt.');for(const i of s.items)if(!i||typeof i.name!=='string'||!i.name.trim()||!Number.isSafeInteger(i.quantity)||i.quantity<1||typeof i.valueGold!=='string')throw new Error('Belohnungsgegenstand prüfen.');for(const i of s.items){copper(i.valueGold);if(!['coins','equipment','trade-goods','magic','other'].includes(i.category))throw new Error('Belohnungskategorie ungültig.');}}
 
-export function readNarrativeDraft(
-  db: any,
-  cam: string,
-  id: string,
-): NarrativeDraft | null {
-  const r = db
-    .prepare("SELECT * FROM narrative_draft WHERE campaign_id=? AND note_id=?")
-    .get(cam, id);
-  return r ? parsed<NarrativeDraft>(r) : null;
-}
-export function keepNarrativeDraft(
-  db: any,
-  cam: string,
-  d: NarrativeDraft,
-  expected: string | null,
-) {
-  return db
-    .transaction(() => {
-      narrativeNote(db, cam, d.noteId);
+function validateNarrativeDraft(db:any,cam:string,d:NarrativeDraft,id:string) {
+ if(!d||d.noteId!==id)throw new Error('Narrativer Entwurf gehört zu einer anderen Notiz.');
+ narrativeNote(db,cam,id,true);
       const text = (v: unknown, max = 1000) =>
         typeof v === "string" && v.length <= max;
       if (
@@ -91,6 +76,33 @@ export function keepNarrativeDraft(
         Buffer.byteLength(JSON.stringify(d)) > 256000
       )
         throw new Error("Narrative Eingabe ist zu groß oder ungültig.");
+
+ if(d.locationId!==null&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,d.locationId))throw new Error('Entwurfsort gehört nicht zur Kampagne.');
+ if(new Set(d.contributors).size!==d.contributors.length)throw new Error('Entwurfsmitwirkende dürfen nicht doppelt vorkommen.');
+ for(const characterId of d.contributors)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,characterId))throw new Error('Entwurfsmitwirkende Figur gehört nicht zur Kampagne.');
+}
+
+export function readNarrativeDraft(
+  db: any,
+  cam: string,
+  id: string,
+): NarrativeDraft | null {
+  const r = db
+    .prepare("SELECT * FROM narrative_draft WHERE campaign_id=? AND note_id=?")
+    .get(cam, id);
+  if(!r)return null;
+  const d=parsed<NarrativeDraft>(r);validateNarrativeDraft(db,cam,d,r.note_id);return d;
+}
+export function keepNarrativeDraft(
+  db: any,
+  cam: string,
+  d: NarrativeDraft,
+  expected: string | null,
+) {
+  return db
+    .transaction(() => {
+      narrativeNote(db, cam, d.noteId);
+      validateNarrativeDraft(db,cam,d,d.noteId);
       const old = readNarrativeDraft(db, cam, d.noteId),
         payload = JSON.stringify(d);
       if (old?.writeId === d.writeId && JSON.stringify(old) === payload) return;
