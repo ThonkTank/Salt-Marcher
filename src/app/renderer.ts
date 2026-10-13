@@ -264,8 +264,16 @@ function draw() {
     const room = draft?.id === saved.id ? draft : saved;
     if (JSON.stringify([room.scopeId, room.floorId]) !== el<HTMLSelectElement>('floors').value) continue;
     const path = room.polygons.flatMap(p => [p.outer, ...p.holes]).map(ring => 'M' + ring.map(p => `${p.x},${p.y}`).join('L') + 'Z').join(' ');
-    const shape = svgElement('path', { d: path, class: `room-shape${room.id === draft?.id ? ' selected' : ''}` });
-    const style=roomDrawingStyle(room.id);if(style){shape.style.setProperty('--drawing-room-fill',style.fill);shape.style.setProperty('--drawing-room-wall',style.wall);}
+    const style = roomDrawingStyle(room.id);
+    const isSelected = room.id === draft?.id;
+    const shape = svgElement('path', {
+      d: path,
+      fill: isSelected ? '#aecfdf' : style?.fill ?? '#d7e1e9',
+      stroke: isSelected ? '#234d74' : style?.wall ?? '#576c80',
+      'stroke-width': isSelected ? '.13' : '.08',
+      'fill-rule': 'evenodd',
+      cursor: 'pointer',
+    });
     const title = svgElement('title', {}); title.textContent = `${room.number}. ${room.name}`; shape.append(title);
     shape.addEventListener('click', () => { void selectRoom(room.id); }); map.append(shape);
   }

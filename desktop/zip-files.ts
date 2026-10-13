@@ -60,7 +60,7 @@ export async function readArchive(filename:string,base:string,allowedName:(name:
   decoders.push(file);
   if(seen.has(file.name)||file.name!=='manifest.json'&&!allowedName(file.name)){error=new Error('Archiv enthält einen unbekannten oder doppelten Eintrag.');return;}
   if(!seen.size&&file.name!=='manifest.json'){error=new Error('Archivmanifest muss der erste Eintrag sein.');return;}
-  if(file.name!=='manifest.json'&&(!manifestState.expected||!manifestState.expected.has(file.name))){error=new Error('Archiv enthält einen nicht deklarierten Eintrag.');return;}seen.add(file.name);
+  if(file.name!=='manifest.json'&&(!manifestState.expected||!manifestState.expected.has(file.name))){error=new Error('Archiv-Manifest enthält einen nicht deklarierten Eintrag.');return;}seen.add(file.name);
   const target=path.join(dir,file.name);mkdirSync(path.dirname(target),{recursive:true});
   const output=createWriteStream(target,{flags:'wx'}),done=completeOutput(output),digest=createHash('sha256');let count=0;
   outputs.push({output,done});output.on('error',e=>{error=e;});
@@ -86,7 +86,6 @@ export async function readArchive(filename:string,base:string,allowedName:(name:
   for await(const chunk of createReadStream(filename)){h.check();bytes+=chunk.length;unzip.push(chunk);if(error)throw error;await Promise.all(drains.splice(0));h.progress(bytes,files.size);}
   h.check();unzip.push(new Uint8Array(),true);if(error)throw error;
   if(!files.has('manifest.json')||!manifestState.expected||files.size!==manifestState.expected.size+1||files.size!==outputs.length||[...manifestState.expected].some(([name])=>!files.has(name)))throw new Error('Archiv ist unvollständig.');
-
   await Promise.all(outputs.map(x=>x.done));h.check();
   files.delete('manifest.json');
   success=true;return{dir,manifest,files};

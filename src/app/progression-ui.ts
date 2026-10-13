@@ -136,14 +136,14 @@ function renderTreasure() {
 function renderLedger() {
   const root=get('ledger-list');root.replaceChildren();
   const entries=ledger.items, cumulative=ledger.totalCopper===null?null:BigInt(ledger.totalCopper);
-  get('ledger-summary').textContent=ledgerLoaded?'Kumulativ erhaltene Beute: '+(cumulative===null?'nicht vollständig bekannt':gold(cumulative.toString()))+' · Käufe und interne Weitergaben ausgeschlossen.'+(ledger.unavailableCount?' · '+ledger.unavailableCount+' Einträge nicht verfügbar.':''):selected?'Beute wird geladen.':'Figur auswählen.';
+  get('ledger-summary').textContent=ledgerLoaded?'Kumulativ erhaltene Beute: '+(cumulative===null?'nicht vollständig bekannt':gold(cumulative.toString()))+' · Käufe ausgeschlossen; Weitergaben zählen einmal beim ursprünglichen Empfänger, spätere Verkaufspreise aktualisieren den Wert.'+(ledger.unavailableCount?' · '+ledger.unavailableCount+' Einträge nicht verfügbar.':''):selected?'Beute wird geladen.':'Figur auswählen.';
   for(const l of entries){
     const amount=ledgerCopper(l),b=document.createElement('button');b.textContent=l.quantity+' × '+(l.currentName??l.name)+' · '+({received:'Erhalten',sold:'Verkauft',given:'Weitergegeben'}[l.status])+(l.origin==='purchase'?' · Kauf':l.origin==='transfer'?' · Übernahme aus Weitergabe':'')+' · '+(amount===null?'Wert unbekannt':gold(amount.toString()));b.setAttribute('aria-pressed',String(l.id===selectedLedger));b.onclick=()=>{void loadLedgerItem(l.id).catch(error=>tell(error.message,true));};root.append(b);
   }
   for(const problem of ledger.problems){const p=document.createElement('p');p.className='error';p.setAttribute('role','status');p.textContent='Eintrag nicht verfügbar: '+problem.id+' · '+problem.message;root.append(p);}
   get('ledger-more').hidden=!ledger.next;
   const l=ledgerDetail; get('ledger-editor').hidden=!l;
-  get('ledger-detail').textContent=l?l.name+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
+  get('ledger-detail').textContent=l?l.name+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.rewardCreditId?' · Loot-Gutschrift bei ursprünglichem Empfänger · Herkunft '+l.rewardCreditId.slice(0,8):'')+(l.creditedCopper!==undefined?' · Aktueller gutgeschriebener Lootwert: '+(l.creditedCopper===null?'unbekannt':gold(l.creditedCopper)):'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
   drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute);lock();
 }
 async function loadTreasures(more=false,preferredId?:string) {

@@ -1,4 +1,4 @@
-import {readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
+import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
 import { checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
@@ -174,7 +174,7 @@ function validateLedgerItem(l:LedgerItem){
  for(const key of ['treasureId','combatId','sceneId','locationId','parentId'] as const)if(l[key]!==null&&!id(l[key]))throw new Error('Beuteverknüpfung ungültig.');
  if(l.parentId===l.id||l.instantMs!==null&&(typeof l.instantMs!=='string'||!/^(0|[1-9][0-9]{0,29})$/.test(l.instantMs)))throw new Error('Beuteherkunft oder aufgezeichnete Zeit ungültig.');
  if(l.instanceId!==undefined&&l.instanceId!==null&&(!id(l.instanceId)||l.quantity>1))throw new Error('Einzelstück im persönlichen Bestand benötigt eine eindeutige Identität und höchstens Menge eins.');
- if(l.counterpartyLink&&(!['shop','npc','location','faction'].includes(l.counterpartyLink.kind)||!id(l.counterpartyLink.id)))throw new Error('Empfängerverknüpfung prüfen.');for(const field of ['sourceNoteId','awardId','mergeTargetId'] as const)if(l[field]!==undefined&&!id(l[field]))throw new Error('Beuteherkunft prüfen.');
+ if(l.counterpartyLink&&(!['shop','npc','location','faction'].includes(l.counterpartyLink.kind)||!id(l.counterpartyLink.id)))throw new Error('Empfängerverknüpfung prüfen.');for(const field of ['sourceNoteId','awardId','mergeTargetId','rewardCreditId'] as const)if(l[field]!==undefined&&!id(l[field]))throw new Error('Beuteherkunft prüfen.');
  const c=l.counterpartyReference;if(c&&(!id(c.shopId)||!c.owner||!['npc','location'].includes(c.owner.kind)||!id(c.owner.id))||c!==undefined&&!c)throw new Error('Aufgezeichnete Handelsbeziehung ungültig.');
 }
 function checkedLedgerRow(row:any):LedgerItem{
@@ -183,7 +183,34 @@ function checkedLedgerRow(row:any):LedgerItem{
  return item;
 }
 export function readLedgerItem(db: any, cam: string, id: string): LedgerItem {
-  return checkedLedgerRow(db.prepare('SELECT * FROM character_ledger WHERE campaign_id=? AND id=?').get(cam, id));
+  const item=checkedLedgerRow(db.prepare('SELECT * FROM character_ledger WHERE campaign_id=? AND id=?').get(cam,id));if(item.origin==='transfer'&&!item.rewardCreditId)item.rewardCreditId=transferCredit(db,cam,item);if(item.origin!=='transfer'&&item.status==='given'&&item.recipientCharacterId)item.creditedCopper=transferredValue(db,cam,item)?.toString()??null;return item;
+}
+// Older transfers already record their parent chain. Resolve it lazily so old
+// campaign histories keep their bytes and receipts while new portions carry a stable credit.
+function transferCredit(db:any,cam:string,item:LedgerItem):string{
+ let current=item;const seen=new Set<string>();
+ while(current.origin==='transfer'){
+  if(current.rewardCreditId)return current.rewardCreditId;
+  if(!current.parentId||seen.has(current.id))throw new Error('Weitergabeherkunft nicht verfügbar.');seen.add(current.id);
+  current=checkedLedgerRow(db.prepare('SELECT * FROM character_ledger WHERE campaign_id=? AND id=?').get(cam,current.parentId));
+ }
+ return current.id;
+}
+function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
+ let total=0n;
+ // A transferred stack stays credited to its first handout. Quantity is counted
+ // only at its current holder, or by the final sale/gift, never at intermediate handouts.
+ const sql=`WITH RECURSIVE descendants(id) AS (
+ SELECT id FROM character_ledger WHERE campaign_id=? AND id=?
+ UNION SELECT l.id FROM character_ledger l JOIN descendants d ON CASE WHEN json_valid(l.payload) THEN json_extract(l.payload,'$.parentId') END=d.id WHERE l.campaign_id=?
+ ) SELECT l.* FROM character_ledger l WHERE l.campaign_id=? AND (l.id IN (SELECT id FROM descendants) OR CASE WHEN json_valid(l.payload) THEN json_extract(l.payload,'$.rewardCreditId') END=?)`;
+ for(const row of db.prepare(sql).iterate(cam,root.id,cam,cam,root.id)){
+  const item=checkedLedgerRow(row);if(item.origin!=='transfer'||item.status==='given'&&item.recipientCharacterId)continue;
+  if(transferCredit(db,cam,item)!==root.id)continue;
+  item.currentUnitCopper=readItemDefinition(db,item.reference.definitionId).unitCopper;
+  const value=ledgerCopper(item);if(value===null)return null;total+=value;
+ }
+ return total;
 }
 export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage {
   return db.transaction(() => {
@@ -198,7 +225,7 @@ export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage
       try{
         const item=checkedLedgerRow(row),definition=readItemDefinition(db,item.reference.definitionId);
         item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;
-        if(item.origin!=='purchase'&&item.origin!=='transfer'){const value=ledgerCopper(item);if(value===null)valueKnown=false;else total+=value;}
+        if(item.origin==='transfer')item.rewardCreditId=transferCredit(db,cam,item);if(item.origin!=='purchase'&&item.origin!=='transfer'){const value=item.status==='given'&&item.recipientCharacterId?transferredValue(db,cam,item):ledgerCopper(item);if(item.status==='given'&&item.recipientCharacterId)item.creditedCopper=value?.toString()??null;if(value===null)valueKnown=false;else total+=value;}
         if(onPage&&(!query.status||query.status===item.status)&&(!needle||(item.name+' '+item.currentName+' '+item.counterparty).toLocaleLowerCase().includes(needle))){
           if(shown<50){items.push(item);shown++;next=String(row.cursor);}else hasMore=true;
         }
@@ -240,7 +267,7 @@ function checkedItem(db: any, input: ItemInput) {
   return { id: randomUUID(), reference: { kind: 'authored' as const, definitionId: id, revision: 1 }, name: input.name, category: input.category, quantity: input.quantity, allocated: 0, unitCopper };
 }
 function saveTreasure(db: any, cam: string, t: Treasure) { const payload = json(t); db.prepare('INSERT INTO treasure VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, t.id, t.revision, payload, hash(payload)); }
-export function saveLedger(db: any, cam: string, l: LedgerItem) { validateLedgerItem(l);const payload = json(l); db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, l.id, l.characterId, l.revision, payload, hash(payload)); }
+export function saveLedger(db: any, cam: string, l: LedgerItem) { validateLedgerItem(l);const stored={...l};delete stored.currentName;delete stored.currentUnitCopper;delete stored.creditedCopper;const payload = json(stored); db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, l.id, l.characterId, l.revision, payload, hash(payload)); }
 export function makeTreasure(db: any, cam: string, title: string, sceneId: string | null, combatId: string | null, inputs: ItemInput[], locationId?: string) {
   if (typeof title !== 'string' || title.length > 1000 || !Array.isArray(inputs) || inputs.length > 100) throw new Error('Ungültige Beute.');
   if (!inputs.length) return null;
@@ -285,16 +312,16 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
     const a = command.action;
     let treasureId: string | null = null; const ledgerIds: string[] = [];
     if(a.kind==='narrative-state'){
-      const current=readNarrative(db,cam,a.state.noteId);if(current.state.revision!==a.expectedRevision||current.noteRevision!==a.expectedNoteRevision)throw new Error('Narrative Notiz oder Belohnung geändert.');validateNarrativeState(db,cam,a.state);for(const i of a.state.items){copper(i.valueGold);if(!['coins','equipment','trade-goods','magic','other'].includes(i.category))throw new Error('Gegenstandskategorie prüfen.');}const state={...structuredClone(a.state),revision:current.state.revision+1,awardId:current.state.awardId};saveNarrative(db,cam,state);event(db,cam,null,'narrative-state',{before:current.state,after:state});
-    }else if(a.kind==='narrative-award'){
+      const current=readNarrative(db,cam,a.state.noteId);if(current.state.revision!==a.expectedRevision||current.noteRevision!==a.expectedNoteRevision)throw new Error('Narrative Notiz oder Belohnung geändert.');validateNarrativeState(db,cam,a.state);for(const i of a.state.items){copper(i.valueGold);if(!['coins','equipment','trade-goods','magic','other'].includes(i.category))throw new Error('Gegenstandskategorie prüfen.');}consumeNarrativeDraft(db,cam,a.state.noteId,a.draftWriteId);const state={...structuredClone(a.state),revision:current.state.revision+1,awardId:current.state.awardId};saveNarrative(db,cam,state);event(db,cam,null,'narrative-state',{before:current.state,after:state});
+    }else if(a.kind==='narrative-award'){consumeNarrativeDraft(db,cam,a.noteId,a.draftWriteId);
       const current=readNarrative(db,cam,a.noteId),note=narrativeNote(db,cam,a.noteId);if(current.state.revision!==a.expectedRevision||current.noteRevision!==a.expectedNoteRevision||current.state.awardId)throw new Error('Quest-/Gerüchtbelohnung geändert oder bereits vergeben.');if(typeof a.outcome!=='string'||!a.outcome.trim()||a.outcome.length>10000||!Array.isArray(a.recipients)||a.recipients.length>1000||typeof a.noXp!=='boolean'||a.noXp&&(a.poolXp!==0||a.recipients.length)||!a.noXp&&!a.recipients.length)throw new Error('Manuelles Ergebnis und XP-Empfänger oder ausdrücklich keine XP angeben.');const divided=awardXpPool(db,cam,a.poolXp,a.recipients,note.kind,note.id);treasureId=makeTreasure(db,cam,note.title+' · Belohnung',a.sceneId,null,a.items,current.state.locationId??undefined);const award={id:randomUUID(),noteId:note.id,title:note.title,sceneId:a.sceneId,poolXp:a.poolXp,shareXp:divided.share,recipientIds:a.recipients.map(r=>r.characterId),treasureId,outcome:a.outcome,recordedAt:new Date().toISOString()};if(treasureId){const t=decoded<Treasure>(db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam,treasureId));t.sourceNoteId=note.id;t.awardId=award.id;saveTreasure(db,cam,t);}saveNarrativeAward(db,cam,award);saveNarrative(db,cam,{...current.state,revision:current.state.revision+1,status:'closed',awardId:award.id});event(db,cam,null,'narrative-award',award);
     }else if(a.kind==='ledger-split'||a.kind==='ledger-merge'||a.kind==='ledger-transfer'){
       const l=readLedgerItem(db,cam,a.entryId),before=structuredClone(l);if(l.revision!==a.expectedRevision||l.status!=='received'||typeof a.reason!=='string'||!a.reason.trim()||a.reason.length>10000)throw new Error('Verfügbaren Beuteeintrag und Grund angeben.');
       if(a.kind==='ledger-merge'){
-        const source=readLedgerItem(db,cam,a.sourceId),sourceBefore=structuredClone(source);if(source.id===l.id||source.revision!==a.expectedSourceRevision||source.status!=='received'||source.quantity<1||l.instanceId||source.instanceId||source.characterId!==l.characterId||source.reference.definitionId!==l.reference.definitionId||['origin','unitCopper','treasureId','combatId','sceneId','locationId','instantMs','sourceNoteId','awardId','provenance'].some(k=>(source as any)[k] !== (l as any)[k])||l.quantity+source.quantity>1000000)throw new Error('Nur passende Mengenstapel derselben Herkunft zusammenführen.');l.quantity+=source.quantity;if(l.paidCopper!==undefined||source.paidCopper!==undefined)l.paidCopper=(BigInt(l.paidCopper??'0')+BigInt(source.paidCopper??'0')).toString();source.quantity=0;source.mergeTargetId=l.id;source.revision++;l.revision++;saveLedger(db,cam,source);saveLedger(db,cam,l);event(db,cam,l.characterId,'loot-merge',{before,sourceBefore,after:l,sourceAfter:source,reason:a.reason});ledgerIds.push(l.id);
+        const source=readLedgerItem(db,cam,a.sourceId),sourceBefore=structuredClone(source);if(source.id===l.id||source.revision!==a.expectedSourceRevision||source.status!=='received'||source.quantity<1||l.instanceId||source.instanceId||source.characterId!==l.characterId||source.reference.definitionId!==l.reference.definitionId||['origin','unitCopper','treasureId','combatId','sceneId','locationId','instantMs','sourceNoteId','awardId','provenance','rewardCreditId'].some(k=>(source as any)[k] !== (l as any)[k])||l.quantity+source.quantity>1000000)throw new Error('Nur passende Mengenstapel derselben Herkunft zusammenführen.');l.quantity+=source.quantity;if(l.paidCopper!==undefined||source.paidCopper!==undefined)l.paidCopper=(BigInt(l.paidCopper??'0')+BigInt(source.paidCopper??'0')).toString();source.quantity=0;source.mergeTargetId=l.id;source.revision++;l.revision++;saveLedger(db,cam,source);saveLedger(db,cam,l);event(db,cam,l.characterId,'loot-merge',{before,sourceBefore,after:l,sourceAfter:source,reason:a.reason});ledgerIds.push(l.id);
       }else{
         if(!Number.isSafeInteger(a.quantity)||a.quantity<1||a.quantity>l.quantity||a.kind==='ledger-split'&&(a.quantity===l.quantity||l.instanceId))throw new Error('Eine passende Teilmenge angeben.');const part:LedgerItem={...l,id:randomUUID(),revision:1,quantity:a.quantity,parentId:l.id,recordedAt:new Date().toISOString()};if(l.paidCopper!==undefined){part.paidCopper=(BigInt(l.paidCopper)*BigInt(a.quantity)/BigInt(l.quantity)).toString();l.paidCopper=(BigInt(l.paidCopper)-BigInt(part.paidCopper)).toString();}l.quantity-=a.quantity;l.revision++;
-        if(a.kind==='ledger-transfer'){const m=db.prepare('SELECT membership_revision FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);if(!m||m.membership_revision!==a.expectedMembershipRevision||a.characterId===l.characterId)throw new Error('Andere bestehende Empfängerfigur auswählen.');const handed={...part,status:'given' as const,counterparty:JSON.parse(db.prepare('SELECT payload FROM character_profile WHERE campaign_id=? AND id=?').get(cam,a.characterId).payload).name,recipientCharacterId:a.characterId,counterpartyLink:undefined};saveLedger(db,cam,handed);const received={...part,id:randomUUID(),characterId:a.characterId,origin:'transfer' as const,parentId:handed.id,counterparty:JSON.parse(db.prepare('SELECT payload FROM character_profile WHERE campaign_id=? AND id=?').get(cam,l.characterId).payload).name,sourceCharacterId:l.characterId,provenance:'Weitergabe'};delete received.paidCopper;saveLedger(db,cam,received);event(db,cam,a.characterId,'loot-transfer-received',{sourceId:handed.id,entry:received,reason:a.reason});event(db,cam,l.characterId,'loot-transfer',{before,after:l,handed,receivedId:received.id,reason:a.reason});ledgerIds.push(l.id,handed.id,received.id);
+        if(a.kind==='ledger-transfer'){const m=db.prepare('SELECT membership_revision FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);if(!m||m.membership_revision!==a.expectedMembershipRevision||a.characterId===l.characterId)throw new Error('Andere bestehende Empfängerfigur auswählen.');const handed={...part,status:'given' as const,counterparty:JSON.parse(db.prepare('SELECT payload FROM character_profile WHERE campaign_id=? AND id=?').get(cam,a.characterId).payload).name,recipientCharacterId:a.characterId,counterpartyLink:undefined};saveLedger(db,cam,handed);const received={...part,id:randomUUID(),characterId:a.characterId,origin:'transfer' as const,rewardCreditId:l.rewardCreditId??handed.id,parentId:handed.id,counterparty:JSON.parse(db.prepare('SELECT payload FROM character_profile WHERE campaign_id=? AND id=?').get(cam,l.characterId).payload).name,sourceCharacterId:l.characterId,provenance:'Weitergabe'};delete received.paidCopper;saveLedger(db,cam,received);event(db,cam,a.characterId,'loot-transfer-received',{sourceId:handed.id,entry:received,reason:a.reason});event(db,cam,l.characterId,'loot-transfer',{before,after:l,handed,receivedId:received.id,reason:a.reason});ledgerIds.push(l.id,handed.id,received.id);
         }else{saveLedger(db,cam,part);event(db,cam,l.characterId,'loot-split',{before,after:l,portion:part,reason:a.reason});ledgerIds.push(l.id,part.id);}saveLedger(db,cam,l);
       }
     }else if(a.kind==='health'){
