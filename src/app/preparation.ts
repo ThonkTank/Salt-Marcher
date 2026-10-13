@@ -5,7 +5,6 @@ import { newLocation } from '../features/location/location-schema';
 import type { ManualPlan } from '../features/planner/manual-planner';
 import {initSession,sessionContext,flushSession} from './session-ui';
 import { campaignLocalId } from '../features/campaign/campaign-contracts';
-import {preparationControls} from './preparation-controls';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -34,7 +33,7 @@ let preparationLoad = 0;
 let hasOpenInput = false;
 let failedCommand: PreparationCommand | null = null;
 let tell: (text: string, error?: boolean) => void;
-function syncSaveControl() { get('preparation-apply').hidden = !preparationControls({ dirty: hasOpenInput, blocked, sceneCount: planDraft?.scenes.length ?? 0, trashedNote: noteRow(selectedNote)?.trashed ?? false, relationTargetCount: 0 }).save; }
+function syncSaveControl() { get('preparation-apply').hidden = !hasOpenInput || blocked; }
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const originalNote = () => noteRow(selectedNote)?.note;
 const originalPlan = () => data.plans.find(plan => plan.id === selectedPlan);
@@ -307,7 +306,7 @@ async function renderPlans() {
   else if (saved?.change.kind === 'plan') planDraft = structuredClone(saved.change.plan);
   else if (planDraft?.id !== confirmed.id || planDraft.revision !== confirmed.revision) planDraft = structuredClone(confirmed);
   if (planDraft && !planDraft.scenes.some(scene => scene.id === selectedScene)) selectedScene = planDraft.scenes[0]?.id ?? null;
-  get('plan-controls').hidden = !planDraft; get('plan-empty').hidden = !!planDraft; get('plan-clear').hidden = !preparationControls({ dirty: hasOpenInput, blocked, sceneCount: planDraft?.scenes.length ?? 0, trashedNote: false, relationTargetCount: 0 }).clearTimeline;
+  get('plan-controls').hidden = !planDraft; get('plan-empty').hidden = !!planDraft; get('plan-clear').hidden = !planDraft?.scenes.length;
   get('plan-controls').inert = !!confirmed && draftProblems.has(draftKey('plan', confirmed.id));
   get<HTMLInputElement>('plan-name').value = planDraft?.name ?? '';
   renderSceneList(); const scene = planDraft?.scenes.find(scene => scene.id === selectedScene);
@@ -532,7 +531,7 @@ function renderRelations() {
   const row = noteRow(selectedNote); get('note-relations').replaceChildren(); get('note-incoming').replaceChildren();
   const select = get<HTMLSelectElement>('relation-target'); select.replaceChildren();
   for (const target of campaignNotes.values()) { if (target.trashed || target.note.id === selectedNote) continue; const option = document.createElement('option'); option.value = target.note.id; option.textContent = target.note.title; select.append(option); }
-  get('relation-create').hidden = !row || !preparationControls({ dirty: hasOpenInput, blocked, sceneCount: 0, trashedNote: row.trashed, relationTargetCount: select.options.length }).addRelation;
+  get('relation-create').hidden = !row || row.trashed || !select.options.length;
   if (!row) return; const token = context?.token;
   const navigate = (id: string) => { void (async () => { if (context?.token !== token || !(await flushPreparation()) || context?.token !== token) return; selectedNote = id; showLocations(false); await renderNotes(); if (context?.token === token) revealNote(id); })(); };
   for (const relation of row.note.relations) {
