@@ -32,7 +32,7 @@ Chronik-/Chase-/Todesrettungswurf-/Szenentischprüfungen sowie bestehende
 Generator- und Live-Prüfungen mit aktualisierten privaten API-Fixtures.
 92 Prüfungen einschließlich des letzten Integrationsmerges bestanden, Desktop-Typecheck und Build erfolgreich. Die vier nativen
 Starts endeten normal. Ein einzelner begrenzter QA-Job benötigte laut systemd
-1,5 GiB Spitze bei 4 GiB Limit; alle eigenen Electron-PIDs sind beendet.
+rund 1,6 GiB Spitze bei 4 GiB Limit; alle eigenen Electron-PIDs sind beendet.
 
 Grenzen: Gruppenfixture ohne Monsterteilnehmer; diese Probe qualifiziert Suche,
 Entwurferhalt und Anschluss der Chronikquellen. Kein Beleg für vollständige
