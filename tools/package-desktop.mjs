@@ -60,6 +60,9 @@ Umfang
   Der eigene Schatzbereich erlaubt Ortszuordnung, Nachbearbeitung unverteilten
   Bestands und Verschiebungen mit Herkunft. Bereits vergebene Beute bleibt im
   persönlichen Ledger erhalten; angefangene Schatzangaben bleiben als Entwurf.
+  Monstergruppen lassen sich unabhängig vom Plan mit einzelnen NPC-Figuren,
+  HP, Zuständen und Notizen vorbereiten und platzieren. Am Szenenort wählst du
+  die Figuren für eine Begegnung ausdrücklich aus.
   Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 

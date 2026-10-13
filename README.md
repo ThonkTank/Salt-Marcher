@@ -253,3 +253,11 @@ Der eigene Bereich „Schätze“ funktioniert auch ohne laufende Gruppe. Schät
 Unverteilte Mengen lassen sich in bestehende oder neue Schätze verschieben und direkt an aktive Charaktere vergeben. Verschobene Gegenstände behalten ihre ursprüngliche Schatzherkunft. Bearbeitungen und Verschiebungen erscheinen im Schatzverlauf und der Chronik. Am aktuellen Szenenort führt „Schatz öffnen und zuweisen“ zur passenden Schatzansicht; Ankunft vergibt keine Beute automatisch.
 
 Angefangene Eingaben bleiben als Entwurf erhalten, auch mit leeren Namen oder Mengen. „Schatzangaben übernehmen“ bestätigt gültige Änderungen. Vor Verschieben oder Zuweisen müssen offene Änderungen übernommen werden; „Gespeicherten Stand laden“ verwirft die offene Eingabe ausdrücklich. Datenbankformat 39 ergänzt Schatzentwürfe und übernimmt Kampagnenimporte aus den Formaten 33–38.
+
+### Desktopstand 0.36: Monstergruppen als eigenständiger Weltinhalt
+
+„Monstergruppen“ verwaltet vorbereitete Gruppen unabhängig vom Spielabendplan und von der aktiven Party. Eine Gruppe beginnt leer oder als eigene Kopie einer Encounter-Vorlage. Einzelne Kreaturen aus dem Katalog erhalten dauerhafte NPC-Identitäten; Name, HP, temporäre HP, Zustände, Konzentration, Vorlesetext und GM-Notizen lassen sich nachbearbeiten. Bestehende Figuren behalten ihre Identität und ihren Zustand beim Standortwechsel.
+
+Offene Eingaben werden als Rohentwurf gesichert, einschließlich leerer Namen und HP. „Gruppenangaben übernehmen“ bestätigt die Gruppe als dauerhaften Weltinhalt; sie ist danach nicht mehr an einen Planentwurf gebunden. „Aus Gruppe entfernen“ erhält die NPC-Figur und den bisherigen Verlauf. Die NPC-Notizen bleiben in der gemeinsamen Wissenssuche verfügbar.
+
+Am aktuellen Szenenort erscheinen platzierte Gruppen. Die Spielleitung wählt einzelne verfügbare Figuren aus und bereitet daraus ausdrücklich eine Begegnung vor. Ankunft startet keinen Kampf. Die bestehende Beschränkung auf einen offenen Encounter pro Scene bleibt noch bestehen; mehrere gleichzeitige Encounter-Masken sind weiter offen. Gruppenänderungen erscheinen in der Kampagnenchronik. Datenbankformat 40 ergänzt Gruppenentwürfe und übernimmt Kampagnenimporte aus den Formaten 33–39.

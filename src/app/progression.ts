@@ -1,3 +1,4 @@
+import type {GroupsAPI,GroupAction} from './groups-contracts';
 import type {TreasuryAPI,TreasuryAction,TreasureOrigin} from './treasury-contracts';
 import type {SceneDeskAPI} from './scene-desk-contracts';
 import type {FinishDraftAPI as importFinishDraftAPI} from './finish-draft-contracts';
@@ -82,7 +83,7 @@ export function ledgerCopper(item: LedgerItem): bigint | null {
   return value === null ? null : BigInt(value) * BigInt(item.quantity);
 }
 export interface ProgressView { characters: (Progress & { name: string; active: boolean; membershipRevision: number; sceneId: string | null; healthCombat?: {id:string;sceneId:string;title:string}; lastCombatStatus?: Pick<CharacterHealth,'tempHp'|'conditions'|'concentrating'> })[]; notices: { id: string; characterId: string; text: string }[] }
-export interface ProgressAck extends ProgressView { treasureId: string | null; ledgerIds: string[] }
+export interface ProgressAck extends ProgressView { treasureId: string | null; groupId?:string; ledgerIds: string[] }
 export interface TreasurePage { items: { id: string; title: string; revision: number; available: number }[]; next: string | null }
 export interface LedgerQuery { characterId: string; after: string | null; search: string; status: '' | LedgerItem['status'] }
 export interface LedgerPage { items: LedgerItem[]; problems: {id:string;message:string}[]; unavailableCount:number; next: string | null; totalCopper: string | null }
@@ -91,7 +92,7 @@ export interface LedgerInventoryPage {items:LedgerItem[];problems:LedgerPage['pr
 export interface ProgressGuard { characterId: string; revision: number }
 export interface FinishRewards { poolXp: number; noXp: boolean; recipients: ProgressGuard[]; policyVersion: 'xp-ceil-2014-v1'; loadXp: number; items: ItemInput[] }
 export interface CombatReward { awardId: string; poolXp: number; shareXp: number; totalXp: number; recipientIds: string[]; treasureId: string | null; policyVersion: 'xp-ceil-2014-v1' }
-export type ProgressAction = NarrativeAction|TreasuryAction
+export type ProgressAction = GroupAction|NarrativeAction|TreasuryAction
   | {kind:'ledger-split';entryId:string;expectedRevision:number;quantity:number;reason:string}
   | {kind:'ledger-merge';entryId:string;expectedRevision:number;sourceId:string;expectedSourceRevision:number;reason:string}
   | {kind:'ledger-transfer';entryId:string;expectedRevision:number;quantity:number;characterId:string;expectedMembershipRevision:number;reason:string}
@@ -107,7 +108,7 @@ export interface ProgressCommand { commandId: string; campaignId: string; token:
 export interface ProgressHistory { items: { id: string; kind: string; facts: Record<string, any> }[]; next: string | null }
 export interface LootBalance {characters:{characterId:string;name:string;active:boolean;copper:string;unknownEntries:number;gapCopper:string}[];leaderCopper:string;suggestedCharacterIds:string[]}
 export function lootBalanceSuggestions(characters:LootBalance['characters'],leaderCopper:string){if(characters.some(c=>c.unknownEntries))return[];const known=characters.filter(c=>!c.unknownEntries),active=known.filter(c=>c.active),pool=active.length?active:known;if(!pool.length)return[];const minimum=pool.reduce((best,c)=>BigInt(c.copper)<best?BigInt(c.copper):best,BigInt(pool[0]!.copper));if(minimum>=BigInt(leaderCopper))return[];return pool.filter(c=>BigInt(c.copper)===minimum).map(c=>c.characterId);}
-export interface ProgressAPI extends importFinishDraftAPI,SceneDeskAPI,TreasuryAPI {
+export interface ProgressAPI extends importFinishDraftAPI,SceneDeskAPI,TreasuryAPI,GroupsAPI {
   ledgerParties(token:string):Promise<Result<{kind:'shop'|'npc'|'location'|'faction';id:string;name:string}[]>>;
   keepNarrativeDraft(token:string,draft:import('./narrative-contracts').NarrativeDraft,expected:string|null):Promise<Result<void>>;
   discardNarrativeDraft(token:string,id:string,writeId:string):Promise<Result<void>>;

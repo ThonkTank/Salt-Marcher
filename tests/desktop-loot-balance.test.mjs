@@ -31,11 +31,11 @@ test('purchases stay excluded and zero stacks match ledger semantics',t=>{
  const x=fixture(t);x.add(x.characters[0],2,'purchase');const id=x.add(x.characters[1],2);x.store.executeProgress(x.command({kind:'ledger',entryId:id,expectedRevision:1,operation:'correct',quantity:0,correctedQuantity:0,actualGold:'',counterparty:'',reason:'Menge berichtigt'}));assert.deepEqual(matchesLedger(x).characters.map(c=>c.copper),['0','0']);
 });
 test('unreadable current definitions make a balance explicitly incomplete rather than using historical prices',t=>{
- const x=fixture(t);x.add();x.store.db.prepare('UPDATE item_definition SET checksum=? WHERE id=?').run('broken',x.definition.id);const view=x.store.lootBalance(x.w.token);assert.equal(view.characters[0].unknownEntries,1);assert.equal(x.ledger(x.characters[0]).totalCopper,null);assert.equal(view.suggestedCharacterId,null);
+ const x=fixture(t);x.add();x.store.db.prepare('UPDATE item_definition SET checksum=? WHERE id=?').run('broken',x.definition.id);const view=x.store.lootBalance(x.w.token);assert.equal(view.characters[0].unknownEntries,1);assert.equal(x.ledger(x.characters[0]).totalCopper,null);assert.deepEqual(view.suggestedCharacterIds,[]);
 });
 test('profile checksum must be checked before labels enter the balance',t=>{
  const x=fixture(t),row=x.store.db.prepare('SELECT payload FROM character_profile WHERE id=?').get(x.characters[0].id),profile=JSON.parse(row.payload);profile.name='Ungeprüfter Name';x.store.db.prepare('UPDATE character_profile SET payload=? WHERE id=?').run(JSON.stringify(profile),x.characters[0].id);assert.throws(()=>x.store.lootBalance(x.w.token),/beschädigt|nicht verfügbar|prüf/i);
 });
 test('unknown item value prevents recommending that character',t=>{
- const x=fixture(t);x.add();const payload=JSON.stringify({...x.definition,unitCopper:null});x.store.db.prepare('UPDATE item_definition SET payload=?,checksum=? WHERE id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.definition.id);const view=x.store.lootBalance(x.w.token);assert.equal(view.characters[0].unknownEntries,1);assert.equal(view.suggestedCharacterId,null);
+ const x=fixture(t);x.add();const payload=JSON.stringify({...x.definition,unitCopper:null});x.store.db.prepare('UPDATE item_definition SET payload=?,checksum=? WHERE id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.definition.id);const view=x.store.lootBalance(x.w.token);assert.equal(view.characters[0].unknownEntries,1);assert.deepEqual(view.suggestedCharacterIds,[]);
 });
