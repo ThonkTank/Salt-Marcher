@@ -75,3 +75,4 @@ import "./core/campaign-archive.test";
 import "./core/narrative-storage.test";
 import "./core/desktop-csp.test";
 import "./core/chronicle.test";
+import "./core/death-saves.test";

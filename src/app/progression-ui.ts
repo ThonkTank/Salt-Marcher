@@ -19,6 +19,7 @@ let finishBasis: ProgressView | null = null;let finishItems:ItemInput[]=[];
 let history: ProgressHistory = { items: [], next: null };
 let tell: (text: string, error?: boolean) => void;
 const healthFields=['health-current','health-maximum','health-temporary','health-conditions','health-reason'] as const;
+const deathResults=['success','failure','natural-20','natural-1','stabilize','dead','reset'] as const;
 type HealthDraft={revision:number;basis:string;values:Record<string,string>;concentrating:boolean};
 const healthDrafts=new Map<string,HealthDraft>();
 const progressListeners=new Set<()=>void>();
@@ -73,6 +74,10 @@ function lock() {
   const p=view?.characters.find(p=>p.characterId===selected),key=healthKey(),dirty=key?healthDrafts.has(key):false;
   for(const c of get('health-form').querySelectorAll<HTMLInputElement|HTMLButtonElement>('input,button'))c.disabled=blocked||!!p?.healthCombat;
   for(const id of ['health-amount','health-damage','health-heal'])get<HTMLInputElement|HTMLButtonElement>(id).disabled=blocked||!p?.health||!!p.healthCombat||dirty;
+  for(const result of deathResults){
+    const terminal=!!(p?.health?.death?.dead||p?.health?.death?.stable);
+    get<HTMLButtonElement>('death-'+result).disabled=blocked||!p?.health||p.health.hp>0||!!p.healthCombat||terminal&&result!=='reset';
+  }
 }
 function showNotices() {
   if (!view?.notices.length) return;
@@ -227,7 +232,7 @@ async function recoveredProgress(event:CommitResolution){
 export function initProgress(status: typeof tell) {
   tell=status;initCommitControls(()=>workspace,status);onCommitState(lock);onCommitResolved(recoveredProgress);
   const death=document.createElement('div');death.id='death-saves';death.hidden=true;death.innerHTML='<p id="death-summary"></p><div class="toolbar"><button id="death-success" type="button">Erfolg</button><button id="death-failure" type="button">Fehlschlag</button><button id="death-natural-20" type="button">Natürliche 20</button><button id="death-natural-1" type="button">Natürliche 1</button><button id="death-stabilize" type="button">Stabilisieren</button><button id="death-dead" type="button">Als tot markieren</button><button id="death-reset" type="button">Zurücksetzen</button></div>';get('health-summary').after(death);
-  for(const result of ['success','failure','natural-20','natural-1','stabilize','dead','reset'] as const)get('death-'+result).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation:'death',result,reason:'Todesrettungswurf'});};
+  for(const result of deathResults)get('death-'+result).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation:'death',result,reason:'Todesrettungswurf'});};
   for(const id of [...healthFields,'health-concentration'])get(id).addEventListener('input',keepHealthDraft);
   get('health-form').onsubmit=event=>{event.preventDefault();void(async()=>{
   const p=view?.characters.find(p=>p.characterId===selected),key=healthKey();if(!p||!key)return;
