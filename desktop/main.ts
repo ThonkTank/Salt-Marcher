@@ -1,3 +1,4 @@
+import {audioResponse} from './audio-response';
 import {extensionPackageLimit} from '../src/app/storage/extensions';
 import {dungeonKeyMarkdown,dungeonKeyDocument} from '../src/app/key-document';
 import {CommitTracker} from './commit-tracker';
@@ -51,7 +52,7 @@ else {
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
     protocol.handle('campaign', request => {
       const url = new URL(request.url);
-      if(url.host==='app'&&url.pathname.startsWith('/audio/')){try{const id=decodeURIComponent(url.pathname.slice(7)),filename=store.audioFile(id);const headers:Record<string,string>={};const range=request.headers.get('range');if(range)headers.Range=range;return net.fetch(pathToFileURL(filename).href,{method:request.method,headers});}catch{return new Response('Audio unavailable',{status:404});}}
+      if(url.host==='app'&&url.pathname.startsWith('/audio/')){try{const id=decodeURIComponent(url.pathname.slice(7)),filename=store.audioFile(id);return audioResponse(filename,request,(url,options)=>net.fetch(url,options)).catch(()=>new Response('Audio unavailable',{status:404}));}catch{return new Response('Audio unavailable',{status:404});}}
       if(url.pathname.startsWith('/player/art/')&&url.host==='app'){try{const id=decodeURIComponent(url.pathname.split('/').at(-1)!),frame=store.currentPlayerFrame();if(frame.mode!=='image'||frame.imageId!==id)return new Response('Image unavailable',{status:404});return net.fetch(pathToFileURL(store.playerImageFile(id)).href);}catch{return new Response('Image unavailable',{status:404});}}
       const name = url.pathname.slice(1);
 

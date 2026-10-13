@@ -237,7 +237,7 @@ export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage
       const onPage=cursor===null||row.cursor<cursor;
       try{
         const item=checkedLedgerRow(row),value=ledgerRewardValue(db,cam,item);
-        if(value===null)valueKnown=false;else total+=value;
+        if(item.origin!=='purchase'&&item.origin!=='transfer'){if(value===null)valueKnown=false;else total+=value;}
         if(onPage&&(!query.status||query.status===item.status)&&(!needle||(item.name+' '+item.currentName+' '+item.counterparty).toLocaleLowerCase().includes(needle))){
           if(shown<50){items.push(item);shown++;next=String(row.cursor);}else hasMore=true;
         }
