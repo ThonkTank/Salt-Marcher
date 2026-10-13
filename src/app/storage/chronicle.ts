@@ -40,22 +40,24 @@ const sourceLimit=2000;
 export function readChronicle(db:any,cam:string):ChronicleView{
   return db.transaction(()=>{
     const campaign=db.prepare('SELECT name FROM campaign WHERE id=?').get(cam);if(!campaign)throw new Error('Kampagne fehlt.');
-    const names=new Map<string,string>(db.prepare('SELECT id,payload FROM character_profile WHERE campaign_id=?').all(cam).map((r:any)=>{const p=JSON.parse(r.payload);return[r.id,text(p.name,'Unbekannte Figur')];}));
+    const names=new Map<string,string>(db.prepare('SELECT id,payload,checksum FROM character_profile WHERE campaign_id=?').all(cam).map((r:any)=>{const p=payload(r);return[r.id,text(p.name,'Unbekannte Figur')];}));
     const sceneRows=db.prepare('SELECT id,title,location_id FROM live_scene WHERE campaign_id=?').all(cam),scenes=new Map<string,string>(sceneRows.map((r:any)=>[r.id,r.title]));
-    const locations=new Map<string,string>(db.prepare('SELECT id,payload FROM location WHERE campaign_id=?').all(cam).map((r:any)=>[r.id,text(JSON.parse(r.payload).name,'Unbekannter Ort')]));
-    const narrativeLocations=new Map<string,string|null>(db.prepare('SELECT note_id,payload FROM narrative_state WHERE campaign_id=?').all(cam).map((r:any)=>[r.note_id,JSON.parse(r.payload).locationId??null]));
-    const combats=new Map<string,{title:string;sceneId:string;outcome:string}>();for(const r of db.prepare("SELECT id,scene_id,payload FROM combat WHERE campaign_id=? AND phase='finished'").all(cam)){const p=JSON.parse(r.payload);combats.set(r.id,{title:text(p.title,'Begegnung'),sceneId:r.scene_id,outcome:text(p.outcome)});}
+    const locations=new Map<string,string>(db.prepare('SELECT id,payload,checksum FROM location WHERE campaign_id=?').all(cam).map((r:any)=>[r.id,text(payload(r).name,'Unbekannter Ort')]));
+    const narrativeLocations=new Map<string,string|null>(db.prepare('SELECT note_id,payload,checksum FROM narrative_state WHERE campaign_id=?').all(cam).map((r:any)=>[r.note_id,payload(r).locationId??null]));
+    const combats=new Map<string,{title:string;sceneId:string;outcome:string}>();for(const r of db.prepare("SELECT id,scene_id,payload,checksum FROM combat WHERE campaign_id=? AND phase='finished'").all(cam)){const p=payload(r);combats.set(r.id,{title:text(p.title,'Begegnung'),sceneId:r.scene_id,outcome:text(p.outcome)});}
     const entries:ChronicleEntry[]=[],awards=new Map<string,ChronicleEntry>();
-    const progressRows=db.prepare('SELECT rowid AS cursor,* FROM progress_event WHERE campaign_id=? AND kind IN ('+progressKinds.map(()=>'?').join(',')+') ORDER BY rowid DESC LIMIT ?').all(cam,...progressKinds,sourceLimit+1);
-    const worldRows=db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC LIMIT ?').all(cam,sourceLimit+1);
-    const sourceTruncated=progressRows.length>sourceLimit||worldRows.length>sourceLimit;
+    const progressRows=db.prepare('SELECT rowid AS cursor,* FROM progress_event WHERE campaign_id=? AND kind IN ('+progressKinds.map(()=>'?').join(',')+') ORDER BY rowid DESC LIMIT ?').iterate(cam,...progressKinds,sourceLimit+1);
+    const worldRows=db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC LIMIT ?').iterate(cam,sourceLimit+1);
+    let sourceTruncated=false,progressCount=0,worldCount=0;
     for(const row of progressRows){
+      if(!progressKinds.includes(row.kind))continue;
+      if(++progressCount>sourceLimit){sourceTruncated=true;break;}
       const f=payload(row);
       const entry=progressEntry(row,f,names,scenes,locations,narrativeLocations,combats);if(!entry)continue;
       if(row.kind==='combat-award'&&f.awardId){const prior=awards.get(f.awardId);if(prior){prior.people.push(...entry.people);if(Number(f.xp)>0)prior.summary+=(prior.summary.includes(' XP für ')?', ':' · '+f.xp+' XP für ')+(entry.people[0]??'Unbekannt');continue;}awards.set(f.awardId,entry);}
       entries.push(entry);
     }
-    for(const row of worldRows){const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);entries.push({id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null});}
+    for(const row of worldRows){if(++worldCount>sourceLimit){sourceTruncated=true;break;}const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);entries.push({id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null});}
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id));
     return{campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:sourceTruncated||entries.length>sourceLimit};
   })();
