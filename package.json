@@ -17,7 +17,8 @@
     "package:desktop": "npm run build:desktop && node tools/package-desktop.mjs",
     "check:desktop": "tsc --noEmit -p desktop/tsconfig.json",
     "start:desktop": "npm run build:desktop && electron .build/desktop/main.cjs",
-    "test:desktop-discovery": "node --test --test-concurrency=1 tests/desktop-key-discovery.test.mjs"
+    "test:desktop-discovery": "node --test --test-concurrency=1 tests/desktop-key-discovery.test.mjs",
+    "test:desktop-split-knowledge": "node tools/test-desktop-split-knowledge.mjs"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
