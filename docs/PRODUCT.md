@@ -19,7 +19,7 @@ Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md)
 | Reise und Weltzeit | Hex-/Dungeonreise, Unterbrechungen/Tracks/Perception, eigene Scene-Zeiten, Fantasykalender, einmalige gemeinsame Worldfolgen auch bei Retry/Restart und kausales Undo |
 | Unterstützende Systeme | Shops/Restock, regionales Wetter/Klima, lokale Musik/Autoplay und geschichtete Ambience mit Vorrang manueller GM-Entscheidungen |
 | Actor Autonomy | Ausdrücklich freigegebene NPC-/Monsterbedürfnisse, Jobs/Reservierungen, begrenzte Konflikte, Erklärbarkeit und atomare zeitgebundene Steps; Partygefahr bleibt beim GM |
-| Anzeige, Daten und Erweiterung | Sichere passive Spielerprojektion mit getrenntem Wissen/aktueller Sicht; automatische Speicherung/Recovery; komplette unabhängige Im-/Exporte; installierbare Extensions mit begrenzten widerrufbaren Rechten |
+| Anzeige, Daten und Erweiterung | Sichere passive Spielerprojektion mit getrenntem Wissen/aktueller Sicht; automatische Speicherung/Recovery; komplette unabhängige Im-/Exporte; installierbare Extensions mit begrenzten widerrufbaren Rechten [Isolation von Kampagnenexport und lokaler Extensioninstallation](plans/campaign/scoped-export.md). |
 | Gesamtqualifikation | Linux/Windows/macOS, Offline/Privacy, selbständige Installation, Lokalisierung/Tastatur/200 %/Kontrast, vollständige versionierte In-game-Tutorials, Latenz/Skalierung, Cancel-/Fehlerisolation und Originalvergleiche |
 
 Quellen, Lieferphasen und verbleibende Zuordnungslücken stehen in [SCOPE.md](SCOPE.md). Insbesondere ersetzen Dungeondraft-Parität und E2E-01 die zusätzlichen Dungeon-Fachanforderungen nicht. [#44](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/44) führt die konkreten offenen Zuordnungen und Zielregeln.

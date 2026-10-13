@@ -35,7 +35,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
 }
 
 // These are the event kinds represented by progressEntry; bookkeeping has no chronicle row.
-const progressKinds=['narrative-award','combat-award','treasure-created','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','rest','combat-entry','combat-exit','combat-return'];
+const progressKinds=['narrative-award','combat-award','treasure-created','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
 const sourceLimit=2000;
 
 export function readChronicle(db:any,cam:string):ChronicleView{
