@@ -19,6 +19,16 @@ function model(active: typeof a | null = null) { return { activeCampaignId: acti
   { key: b, campaignId: b, name: "Beta", status: "unavailable" as const, reason: "Registry fehlt" },
 ] }; }
 
+test("empty campaign picker stays as a compact optional disclosure", async () => {
+  const f = fixture();
+  const disclosure = f.host.querySelector("details")!;
+  assert.ok(disclosure);
+  assert.equal(disclosure.hasAttribute("open"), false);
+  assert.equal(disclosure.querySelector("summary")?.textContent, "Kampagne verknüpfen");
+  assert.match(disclosure.textContent, /Keine verfügbare Kampagne gefunden/);
+  assert.equal(f.host.querySelector("h3"), null);
+});
+
 test("campaign picker renders active and unavailable campaigns and invokes the safe host callback", async () => {
   const calls: unknown[] = [], f = fixture(async (...args) => { calls.push(args); return { activeCampaignId: args[0] }; }); f.view.update(model(a));
   assert.match(f.host.textContent, /AlphaAktivErneut versuchen/); assert.match(f.host.textContent, /BetaRegistry fehlt/);
