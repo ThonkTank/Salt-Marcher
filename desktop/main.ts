@@ -126,6 +126,10 @@ else {
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
     handle('campaign:open-item-source',async(token:string,id:string)=>{store.live(token);const d=store.itemDefinition(id),url=d.source.url;if(!url||!/^https:\/\/media\.wizards\.com\/2023\/downloads\/dnd\/SRD_CC_v5\.1\.pdf#page=[1-9][0-9]{0,2}$/.test(url))throw new Error('Keine verfügbare SRD-Quellenseite.');await shell.openExternal(url);});
+    handle('campaign:treasury-draft',(token:string,id:string)=>store.treasuryDraft(token,id));
+    handle('campaign:keep-treasury-draft',(token:string,draft:any,expected:string|null)=>store.keepTreasuryDraft(token,draft,expected));
+    handle('campaign:discard-treasury-draft',(token:string,id:string,writeId:string)=>store.discardTreasuryDraft(token,id,writeId));
+    handle('campaign:treasure-history',(token:string,id:string,after:string|null)=>store.treasureHistory(token,id,after));
     handle('campaign:scene-desk',(token:string,id:string)=>store.sceneDesk(token,id));
     handle('campaign:search-desk',(token:string,kind:string,search:string,offset:number)=>store.searchDesk(token,kind,search,offset));
     handle('campaign:desk-content',(token:string,ref:any)=>store.deskContent(token,ref));

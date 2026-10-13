@@ -56,7 +56,11 @@ Umfang
   Kampagnenwissen, Suche, gruppenspezifische Pins, direkte NPC-/Quest-/Ortsanlage
   und bearbeitbare Notizen mit der laufenden Gruppe. 289 lokal erfasste
   SRD-5.1-Gegenstände sind mit Quellenangaben, eigenen Kopien und Shoppreisen
-  nutzbar; die vollständige Quellenabdeckung bleibt ausdrücklich offen. Kampagnen lassen sich als .kwcampaign mit
+  nutzbar; die vollständige Quellenabdeckung bleibt ausdrücklich offen.
+  Der eigene Schatzbereich erlaubt Ortszuordnung, Nachbearbeitung unverteilten
+  Bestands und Verschiebungen mit Herkunft. Bereits vergebene Beute bleibt im
+  persönlichen Ledger erhalten; angefangene Schatzangaben bleiben als Entwurf.
+  Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 
 Status
