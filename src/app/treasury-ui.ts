@@ -38,6 +38,7 @@ let w: Workspace | null = null,
   version = 0,
   savedVersion = 0,
   generation = 0,
+  editing = 0,
   reading = 0;
 let pending: Promise<boolean> | null = null,
   keeping: Promise<boolean> | null = null,
@@ -47,8 +48,13 @@ let tell: (s: string, error?: boolean) => void,
   after: () => Promise<void>,
   enter: (id?: string) => Promise<void>,
   ready = false;
+function editorOwner() {
+  const g = generation, e = editing;
+  return () => generation === g && editing === e;
+}
 function run(fn: () => Promise<unknown>) {
-  void fn().catch((e) => tell(e.message, true));
+  const current = editorOwner();
+  void fn().catch((e) => { if (current()) tell(e.message, true); });
 }
 function option(s: HTMLSelectElement, id: string, title: string) {
   const o = document.createElement("option");
@@ -61,7 +67,8 @@ function mark() {
   dirty = true;
   version++;
   if (timer) clearTimeout(timer);
-  timer = setTimeout(() => void keep(), 250);
+  const current = editorOwner();
+  timer = setTimeout(() => { if (current()) void keep(); }, 250);
   lock();
 }
 function snapshot(): TreasuryDraft {
@@ -76,12 +83,18 @@ function snapshot(): TreasuryDraft {
 export function activateTreasury(next: Workspace | null) {
   w = next;
   generation++;
+  editing++;
   reading++;
   book = null;
   draft = null;
   writeId = null;
   dirty = false;
   pending = null;
+  keeping = null;
+  version = savedVersion = 0;
+  people = null;
+  places = [];
+  historyCursor = null;
   list = { items: [], next: null };
   if (timer) clearTimeout(timer);
   el("treasury-editor").hidden = true;
@@ -89,13 +102,13 @@ export function activateTreasury(next: Workspace | null) {
 }
 export async function openTreasury(id?: string) {
   if (!w) return;
-  if (!(await flushTreasury())) return;
-  const token = w.token,
-    g = generation;
-  const r = unwrap(await window.campaign.treasures(token, null)),
-    p = unwrap(await window.campaign.progress(token)),
-    refs = unwrap(await window.campaign.ledgerParties(token));
-  if (w?.token !== token || g !== generation) return;
+  const current = editorOwner(), token = w.token;
+  if (!(await flushTreasury()) || !current()) return;
+  const [treasures, progress, parties] = await Promise.all([
+    window.campaign.treasures(token, null), window.campaign.progress(token), window.campaign.ledgerParties(token),
+  ]);
+  if (!current()) return;
+  const r = unwrap(treasures), p = unwrap(progress), refs = unwrap(parties);
   list = r;
   people = p;
   places = refs.filter((r) => r.kind === "location");
@@ -104,17 +117,20 @@ export async function openTreasury(id?: string) {
   if (target) await select(target);
 }
 async function select(id: string) {
-  if (!w || !(await flushTreasury())) return;
-  const token = w.token,
-    g = generation,
-    r = ++reading;
+  if (!w) return;
+  const current = editorOwner(), token = w.token;
+  if (!(await flushTreasury()) || !current()) return;
+  const r = ++reading, n = version;
   const [t, d] = await Promise.all([
     window.campaign.treasure(token, id),
     window.campaign.treasuryDraft(token, id),
   ]);
-  if (w?.token !== token || g !== generation || r !== reading) return;
-  book = unwrap(t);
-  draft = unwrap(d);
+  if (!current() || r !== reading || n !== version) return;
+  const nextBook = unwrap(t), nextDraft = unwrap(d);
+  editing++;
+  version = savedVersion = 0;
+  book = nextBook;
+  draft = nextDraft;
   dirty = !!draft;
   writeId = draft?.writeId ?? null;
   savedVersion = version;
@@ -221,42 +237,45 @@ function draw() {
   lock();
 }
 async function keep(): Promise<boolean> {
+  const current = editorOwner();
   if (keeping) {
-    if (!(await keeping)) return false;
+    if (!(await keeping) || !current()) return false;
     return dirty && savedVersion !== version ? keep() : true;
   }
   if (!dirty || !draft || !w || savedVersion === version) return true;
-  const token = w.token,
-    n = version,
-    d = snapshot();
+  const token = w.token, n = version, d = snapshot(), expected = writeId;
   d.writeId = crypto.randomUUID();
   const task = (async () => {
     try {
-      unwrap(await window.campaign.keepTreasuryDraft(token, d, writeId));
+      unwrap(await window.campaign.keepTreasuryDraft(token, d, expected));
+      if (!current()) return false;
       writeId = d.writeId;
       savedVersion = n;
-      el("treasury-draft-status").textContent =
-        "Schatzeingabe gesichert · noch nicht übernommen.";
+      el("treasury-draft-status").textContent = "Schatzeingabe gesichert · noch nicht übernommen.";
       return true;
     } catch (e) {
-      tell((e as Error).message, true);
+      if (current()) tell((e as Error).message, true);
       return false;
     }
   })();
   keeping = task;
   const ok = await task;
-  keeping = null;
+  if (keeping === task) keeping = null;
+  if (!current()) return false;
   return ok && savedVersion !== version ? keep() : ok;
 }
 export async function flushTreasury() {
+  const current = editorOwner();
   if (pending && !(await pending)) return false;
+  if (!current()) return false;
   if (timer) clearTimeout(timer);
-  return (await keep()) && (!w || !hasPendingCommit(w.campaign.id));
+  return (await keep()) && current() && (!w || !hasPendingCommit(w.campaign.id));
 }
 async function execute(action: ProgressAction) {
   if (!w || pending || hasPendingCommit(w.campaign.id)) return false;
   const token = w.token,
     g = generation,
+    current = editorOwner(),
     command: ProgressCommand = {
       commandId: crypto.randomUUID(),
       token,
@@ -269,34 +288,42 @@ async function execute(action: ProgressAction) {
         "progress",
         command,
         () => window.campaign.executeProgress(command),
-        () => w?.token === token && generation === g,
-        { owner: "treasury", action: command.action },
+        () => current() && w?.token === token && generation === g,
+        { owner: "treasury", action: command.action, token, generation: g, editing },
       );
-      if (w?.token !== token || generation !== g) return false;
+      if (!current()) return false;
       dirty = false;
       draft = null;
       writeId = null;
       await after();
-      const r = unwrap(await window.campaign.treasures(token, null));
+      if (!current()) return false;
+      const response = await window.campaign.treasures(token, null);
+      if (!current()) return false;
+      const r = unwrap(response);
       list = r;
       people = ack;
       drawList();
       if (ack.treasureId) {
-        const t = unwrap(await window.campaign.treasure(token, ack.treasureId));
+        const response = await window.campaign.treasure(token, ack.treasureId);
+        if (!current()) return false;
+        const t = unwrap(response);
         book = t;
         draw();
         await history(false);
       } else if (book) {
-        book = unwrap(await window.campaign.treasure(token, book.id));
+        const response = await window.campaign.treasure(token, book.id);
+        if (!current()) return false;
+        book = unwrap(response);
         draw();
         await history(false);
       }
+      if (!current()) return false;
       tell(
         "Schatzänderung gespeichert. Bereits vergebene Beute bleibt im Ledger.",
       );
       return true;
     } catch (e) {
-      tell((e as Error).message, true);
+      if (current()) tell((e as Error).message, true);
       return false;
     } finally {
       if (pending === task) pending = null;
@@ -319,8 +346,9 @@ function lock() {
   for(const id of ['treasury-move-form','treasury-allocate-form']){const b=el(id).querySelector<HTMLButtonElement>('button');if(b)b.disabled=blocked||dirty||!book?.items.some(i=>i.quantity>i.allocated);}
 }
 async function apply() {
-  if (!w || !book || !draft || !(await keep())) return false;
-  const d = snapshot();
+  if (!w || !book || !draft) return false;
+  const current = editorOwner(), n = version, d = snapshot();
+  if (!(await keep()) || !current() || version !== n) return false;
   if (d.revision !== book.revision)
     throw new Error("Schatzentwurf und bestätigten Stand zuerst abgleichen.");
   const items = d.items.map((i) => {
@@ -343,20 +371,23 @@ async function apply() {
   });
 }
 async function reload() {
-  if (!w || !book || !(await keep())) return;
-  if (writeId)
-    unwrap(
-      await window.campaign.discardTreasuryDraft(w.token, book.id, writeId),
-    );
+  if (!w || !book) return;
+  const current = editorOwner(), token = w.token, id = book.id;
+  if (!(await keep()) || !current()) return;
+  const n = version;
+  if (writeId) unwrap(await window.campaign.discardTreasuryDraft(token, id, writeId));
+  if (!current()) return;
+  writeId = null;
+  savedVersion = -1;
+  if (version !== n) { await keep(); return; }
   dirty = false;
   draft = null;
-  writeId = null;
-  await select(book.id);
+  await select(id);
 }
 async function history(more: boolean) {
   if (!w || !book) return;
   const token = w.token,
-    id = book.id;
+    id = book.id, current = editorOwner();
   const h = unwrap(
     await window.campaign.treasureHistory(
       token,
@@ -364,7 +395,7 @@ async function history(more: boolean) {
       more ? historyCursor : null,
     ),
   );
-  if (w?.token !== token || book?.id !== id) return;
+  if (!current() || w?.token !== token || book?.id !== id) return;
   const root = el("treasury-history");
   if (!more) root.replaceChildren();
   for (const entry of h.items) {
@@ -393,6 +424,7 @@ async function history(more: boolean) {
   el("treasury-history-more").hidden = !h.next;
 }
 async function findCatalog() {
+  const current = editorOwner();
   const q = {
     search: value("treasury-catalog-search"),
     category: "",
@@ -404,13 +436,15 @@ async function findCatalog() {
     after: 0,
     includeTrashed: false,
   };
-  const p = unwrap(await window.campaign.itemDefinitions(q));
+  const response = await window.campaign.itemDefinitions(q);
+  if (!current() || q.search !== value("treasury-catalog-search")) return;
+  const p = unwrap(response);
   el("treasury-catalog-results").replaceChildren();
   for (const d of p.items) {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = d.name + (d.unitCopper === null ? " · Wert offen" : "");
-    b.onclick = () => addDefinition(d);
+    b.onclick = () => { if (current()) addDefinition(d); };
     el("treasury-catalog-results").append(b);
   }
 }
@@ -438,10 +472,10 @@ export function initTreasury(
   ready = true;
   onCommitState(lock);
   onCommitResolved((event) => {
-    const meta = event.meta as { owner?: string } | undefined;
+    const meta = event.meta as { owner?: string; token?: string; generation?: number; editing?: number } | undefined;
     if (
       meta?.owner === "treasury" &&
-      w &&
+      w && meta.token === w.token && meta.generation === generation && meta.editing === editing &&
       event.ref.campaignId === w.campaign.id
     ) {
       dirty = false;
@@ -462,7 +496,10 @@ export function initTreasury(
   el("treasury-more").onclick = () =>
     run(async () => {
       if (!w || !list.next) return;
-      const p = unwrap(await window.campaign.treasures(w.token, list.next));
+      const current = editorOwner(), token = w.token, cursor = list.next;
+      const response = await window.campaign.treasures(token, cursor);
+      if (!current() || cursor !== list.next) return;
+      const p = unwrap(response);
       list = {
         items: [
           ...new Map(
@@ -485,7 +522,8 @@ export function initTreasury(
   el("treasury-move-form").onsubmit = (e) => {
     e.preventDefault();
     run(async () => {
-      if (!book || !(await flushTreasury())) return;
+      const current = editorOwner();
+      if (!book || !(await flushTreasury()) || !current()) return;
       if (dirty) throw new Error('Schatzangaben zuerst übernehmen; danach die aktuelle Teilmenge auswählen.');
       const id = value("treasury-target"),
         target = list.items.find((t) => t.id === id);
@@ -508,7 +546,8 @@ export function initTreasury(
   el("treasury-allocate-form").onsubmit = (e) => {
     e.preventDefault();
     run(async () => {
-      if (!w || !book || !(await flushTreasury())) return;
+      const current = editorOwner();
+      if (!w || !book || !(await flushTreasury()) || !current()) return;
       if (dirty) throw new Error('Schatzangaben zuerst übernehmen; danach die aktuelle Teilmenge auswählen.');
       const item = book.items.find((i) => i.id === value("treasury-move-item")),
         person = people?.characters.find(

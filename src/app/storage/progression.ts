@@ -33,7 +33,7 @@ function decoded<T>(row: any): T {
 export function validateProgressBackup(db: any) {
   for (const row of db.prepare('SELECT campaign_id,id FROM character_progress').iterate()) readProgressCharacter(db, row.campaign_id, row.id);
   for (const table of ['progress_event', 'treasure', 'character_ledger', 'progress_receipt', 'combat_award']) {
-    for (const row of db.prepare(`SELECT * FROM ${table}`).iterate()) {if(table==='character_ledger')checkedLedgerRow(row);else decoded(row);}
+    for (const row of db.prepare(`SELECT * FROM ${table}`).iterate()) {if(table==='character_ledger')checkedLedgerRow(row);else if(table==='treasure'){const treasure=checkedTreasureRow(row);for(const item of treasure.items)readItemDefinition(db,item.reference.definitionId);}else decoded(row);}
   }
 }
 export function readProgressCharacter(db: any, cam: string, id: string): Progress {
@@ -146,10 +146,39 @@ function checkedCursor(after: string | null) {
   if (after !== null && (typeof after !== 'string' || !/^[1-9][0-9]{0,15}$/.test(after) || !Number.isSafeInteger(Number(after)))) throw new Error('Ungültige Listenseite.');
   return after === null ? null : Number(after);
 }
+function checkedTreasure(t: Treasure): Treasure {
+  const id = (v: unknown) => typeof v === 'string' && !!v.trim() && v.length <= 1000;
+  const reference = (r: Treasure['items'][number]['reference']) => r && r.kind === 'authored' && id(r.definitionId) && Number.isSafeInteger(r.revision) && r.revision > 0 && (r.historicalDefinitionId === undefined || id(r.historicalDefinitionId));
+  if (!t || !id(t.id) || !Number.isSafeInteger(t.revision) || t.revision < 1 ||
+      typeof t.title !== 'string' || t.title.length > 1000 || !Array.isArray(t.items) ||
+      [t.sceneId,t.locationId,t.combatId].some(v => v !== null && !id(v)) ||
+      [t.sourceNoteId,t.awardId].some(v => v !== undefined && !id(v)))
+    throw new Error('Schatzbeschreibung oder Zuordnung widersprüchlich.');
+  const seen = new Set<string>();
+  for (const i of t.items) {
+    if (!i || !id(i.id) || seen.has(i.id) || !reference(i.reference) || typeof i.name !== 'string' || i.name.length > 1000 ||
+        !['coins','equipment','trade-goods','magic','other'].includes(i.category) ||
+        !Number.isSafeInteger(i.quantity) || i.quantity < 0 ||
+        !Number.isSafeInteger(i.allocated) || i.allocated < 0 || i.allocated > i.quantity ||
+        i.unitCopper !== null && (typeof i.unitCopper !== 'string' || !/^(0|[1-9][0-9]{0,17})$/.test(i.unitCopper)))
+      throw new Error('Schatzlos oder vergebene Menge widersprüchlich.');
+    const o = i.origin;
+    if (o !== undefined && (!o || !id(o.treasureId) || !id(o.itemId) ||
+        [o.sceneId,o.locationId,o.combatId].some(v => v !== null && !id(v)) ||
+        [o.sourceNoteId,o.awardId].some(v => v !== undefined && !id(v))))
+      throw new Error('Schatzlosherkunft ungültig.');
+    seen.add(i.id);
+  }
+  return t;
+}
+export function checkedTreasureRow(row: any): Treasure {
+  const t = checkedTreasure(decoded<Treasure>(row));
+  if (t.id !== row.id || t.revision !== row.revision) throw new Error('Beutezuordnung widersprüchlich.');
+  return t;
+}
 export function readTreasure(db: any, cam: string, id: string): Treasure {
   return db.transaction(() => {
-    const row = db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam, id), value = decoded<Treasure>(row);
-    if (value.id !== id) throw new Error('Beutezuordnung widersprüchlich.');
+    const row = db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam, id), value = checkedTreasureRow(row);
     const definitions = new Map<string, ReturnType<typeof readItemDefinition>>();
     for (const item of value.items) {
       let definition = definitions.get(item.reference.definitionId);
@@ -164,8 +193,7 @@ export function readTreasures(db: any, cam: string, after: string | null): Treas
   const rows = db.prepare('SELECT rowid AS cursor,* FROM treasure WHERE campaign_id=? AND (? IS NULL OR rowid<?) ORDER BY rowid DESC LIMIT 26').all(cam, cursor, cursor);
   const page = rows.slice(0,25);
   return { items: page.map((row: any) => {
-    const treasure = decoded<Treasure>(row);
-    if (treasure.id !== row.id) throw new Error('Beutezuordnung widersprüchlich.');
+    const treasure = checkedTreasureRow(row);
     return { id: treasure.id, title: treasure.title, revision: treasure.revision, available: treasure.items.reduce((sum, item) => sum + item.quantity - item.allocated, 0) };
   }), next: rows.length > 25 ? String(page[24].cursor) : null };
 }
@@ -296,7 +324,7 @@ export function checkedItem(db: any, input: ItemInput) {
   recordItemDefinitionVersion(db,readItemDefinition(db,id));
   return { id: randomUUID(), reference: { kind: 'authored' as const, definitionId: id, revision: 1 }, name: input.name, category: input.category, quantity: input.quantity, allocated: 0, unitCopper };
 }
-export function saveTreasure(db: any, cam: string, t: Treasure) { const stored={...t,items:t.items.map(i=>{const s={...i};delete s.currentDefinition;return s;})};const payload = json(stored); db.prepare('INSERT INTO treasure VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, t.id, t.revision, payload, hash(payload)); }
+export function saveTreasure(db: any, cam: string, t: Treasure) { checkedTreasure(t);const stored={...t,items:t.items.map(i=>{const s={...i};delete s.currentDefinition;return s;})};const payload = json(stored); db.prepare('INSERT INTO treasure VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, t.id, t.revision, payload, hash(payload)); }
 export function saveLedger(db: any, cam: string, l: LedgerItem) { validateLedgerItem(l);const stored={...l};delete stored.currentName;delete stored.currentUnitCopper;delete stored.creditedCopper;const payload = json(stored); db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, l.id, l.characterId, l.revision, payload, hash(payload)); }
 export function makeTreasure(db: any, cam: string, title: string, sceneId: string | null, combatId: string | null, inputs: ItemInput[], locationId?: string) {
   if (typeof title !== 'string' || title.length > 1000 || !Array.isArray(inputs) || inputs.length > 100) throw new Error('Ungültige Beute.');
@@ -431,6 +459,6 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
       if (!Array.isArray(a.ids) || a.ids.length > 1000) throw new Error('Ungültige Hinweise.');
       for (const id of a.ids) db.prepare('UPDATE progress_notice SET delivered=1 WHERE campaign_id=? AND id=? AND character_id IN(SELECT id FROM roster_member WHERE campaign_id=? AND active=1)').run(cam,id,cam);
     } else throw new Error('Unbekannte Fortschrittsaktion.');
-    const result: ProgressAck = { ...readProgress(db,cam), treasureId, groupId, ledgerIds }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
+    const result: ProgressAck = { ...readProgress(db,cam), treasureId, ...(groupId ? {groupId} : {}), ledgerIds }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
   }).immediate();
 }

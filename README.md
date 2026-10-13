@@ -254,7 +254,7 @@ Der eigene Bereich „Schätze“ funktioniert auch ohne laufende Gruppe. Schät
 
 Unverteilte Mengen lassen sich in bestehende oder neue Schätze verschieben und direkt an aktive Charaktere vergeben. Verschobene Gegenstände behalten ihre ursprüngliche Schatzherkunft. Bearbeitungen und Verschiebungen erscheinen im Schatzverlauf und der Chronik. Am aktuellen Szenenort führt „Schatz öffnen und zuweisen“ zur passenden Schatzansicht; Ankunft vergibt keine Beute automatisch.
 
-Angefangene Eingaben bleiben als Entwurf erhalten, auch mit leeren Namen oder Mengen. „Schatzangaben übernehmen“ bestätigt gültige Änderungen. Vor Verschieben oder Zuweisen müssen offene Änderungen übernommen werden; „Gespeicherten Stand laden“ verwirft die offene Eingabe ausdrücklich. Datenbankformat 39 ergänzt Schatzentwürfe und übernimmt Kampagnenimporte aus den Formaten 33–38.
+Angefangene Eingaben bleiben als Entwurf erhalten, auch mit leeren Namen oder Mengen. „Schatzangaben übernehmen“ bestätigt gültige Änderungen. Vor Verschieben oder Zuweisen müssen offene Änderungen übernommen werden; „Gespeicherten Stand laden“ verwirft die offene Eingabe ausdrücklich. Datenbankformat 39 ergänzt Schatzentwürfe und übernimmt Kampagnenimporte aus den Formaten 33–38. [Speicherprüfungen](tests/desktop-treasury-integrity.test.mjs) sichern dieselben Mengen-, Referenz- und Revisionsregeln beim Schreiben, Lesen und Backup; rohe Texte und angefangene Zahlen bleiben erhalten. [Editorprüfungen](tests/desktop-treasury-owner-dom.test.mjs) sichern Kampagnenwechsel, verspätete Timer, Verwerfen und Folgeabfragen nach bestätigten Änderungen.
 
 ### Desktopstand 0.36: Monstergruppen als eigenständiger Weltinhalt
 
