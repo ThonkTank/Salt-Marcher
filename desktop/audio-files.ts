@@ -36,7 +36,11 @@ export async function exportAudioBundle(filename:string,root:string,library:Libr
 }
 
 export async function importAudioBundle(filename:string,root:string,h:TransferHooks):Promise<Library>{
- const extracted=await readArchive(filename,root,name=>/^audio\/[a-f0-9]{64}\.[a-z0-9]{1,8}$/.test(name),{check:()=>check(h),progress:(bytes,files)=>h.progress({phase:'Musikbibliothek importieren',bytes,files,busy:true})});
+ const extracted=await readArchive(filename,root,name=>/^audio\/[a-f0-9]{64}\.[a-z0-9]{1,8}$/.test(name),value=>{
+  const library=value as Library;validateAudioLibrary(library);const files=new Map<string,{name:string;sha256:string;bytes:number}>();
+  for(const asset of library.assets){const name='audio/'+asset.media.sha256+asset.media.extension,old=files.get(name);if(old&&old.bytes!==asset.media.bytes)throw new Error('Widersprüchliche Mediengröße: '+asset.name);files.set(name,{name,sha256:asset.media.sha256,bytes:asset.media.bytes});}
+  return files;
+ },{check:()=>check(h),progress:(bytes,files)=>h.progress({phase:'Musikbibliothek importieren',bytes,files,busy:true})});
  const published:string[]=[];
  try{
   const library=extracted.manifest as Library;validateAudioLibrary(library);const expected=new Map<string,AudioAsset>();
