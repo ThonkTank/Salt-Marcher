@@ -5,6 +5,7 @@ import type { Workspace, Result } from './contracts';
 import { checkedCharacterProfile, advanceInstant, formatInstant, type TimeUnit, type Character, type CharacterProfile, type LiveScene, type LiveView, type LiveAction, type LiveCommand, type LiveAck } from './live-contracts';
 import type { Preparation } from './preparation-contracts';
 import { initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup } from './combat';
+import {initChase,chaseContext,flushChase} from './chase-ui';
 import type { EncounterPlan } from './encounter-contracts';
 import { initProgress, progressionContext, flushProgress } from './progression-ui';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -25,7 +26,7 @@ const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 export function activateLive(workspace: Workspace) {
-  combatContext(null, null); progressionContext(null, null, null);
+  combatContext(null, null);chaseContext(null,null); progressionContext(null, null, null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
   get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
@@ -121,7 +122,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
   return request;
 }
 export async function flushLive(): Promise<boolean> {
-  if (!(await flushProgress()) || !(await flushCombat())) return false;
+  if (!(await flushProgress()) || !(await flushCombat()) || !(await flushChase())) return false;
   if (timer) clearTimeout(timer); timer = null;
   if (flushing) { const okay = await flushing; return okay ? flushLive() : false; }
   if (request) { if (!(await request)) return false; return flushLive(); }
@@ -187,6 +188,7 @@ function renderSceneMeta() {
   if(context&&data?.scene&&resumed)void renderLiveWorld(context.token,data.scene.id);
   const scene = data?.scene;
   combatContext(context, resumed ? scene ?? null : null, data?.rosterRevision);
+  chaseContext(context,resumed?scene??null:null);
   const active = data?.roster.filter(c => c.active && c.sceneId === scene?.id) ?? [];
   get('live-party').textContent = active.length ? 'Dabei: ' + active.map(c => c.profile.name).join(', ') : 'Leere Party – Scene bleibt verfügbar.';
   get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatInstant(scene.clock.instantMs) : '';
@@ -248,7 +250,7 @@ function render() {
   renderVisits();
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation) {
-  tell = status; openLocation = navigate; initCombat(status,refreshScenePreparation); initProgress(status);
+  tell = status; openLocation = navigate; initCombat(status,refreshScenePreparation);initChase(status); initProgress(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
