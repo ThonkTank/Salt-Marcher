@@ -22,4 +22,4 @@ Die Integration deckte zusätzlich eine Abweichung zwischen Beutebilanz und Ledg
 /home/aaron/.local/bin/codex-dungeon-job qa -- npm run test:desktop-music-stop-ui
 ```
 
-Alle schweren Jobs liefen einzeln im QAlauncher mit einem Testworker, 4-GiB-Limit und ohne Swap. Eigener Nativebaum blieb im QAservice und ist beendet. Der gesamte erfolgreiche Prüfjob erreichte 565,7 MiB Spitzenverbrauch. Linux, drei eigene Mono-PCM-WAVs und isolierte Campaign. Andere Codecs, physische Audioausgabe, große Bibliotheken, vollständige Szenen-/Wetter-/Autoplaykombinationen und Konkurrenzzeitvergleich bleiben offen; kein Gesamtprodukt-PASS.
+Alle schweren Jobs liefen einzeln im QAlauncher mit einem Testworker, 4-GiB-Limit und ohne Swap. Eigener Nativebaum blieb im QAservice und ist beendet. Die finale integrierte Qualifikation erreichte 576,3 MiB Spitzenverbrauch für den gesamten Prüfjob. Linux, drei eigene Mono-PCM-WAVs und isolierte Campaign. Andere Codecs, physische Audioausgabe, große Bibliotheken, vollständige Szenen-/Wetter-/Autoplaykombinationen und Konkurrenzzeitvergleich bleiben offen; kein Gesamtprodukt-PASS.
