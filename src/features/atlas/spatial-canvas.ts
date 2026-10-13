@@ -146,7 +146,8 @@ export class SpatialCanvas {
       world = graph.world(),
       view = this.view(),
       camera = this.renderer.relativeCamera,
-      viewport = this.renderer.viewport;
+      viewport = this.renderer.viewport,
+      selection = this.renderer.imageCapture ? undefined : this.selection;
     this.cityDisplays = [];
     this.roomDisplays = [];
     this.rooms.clear();
@@ -225,7 +226,7 @@ export class SpatialCanvas {
             !hiddenRoofs.get(p.documentId)?.has(s.elementId),
         ),
       };
-      const nodes = this.selection?.ownerId === p.documentId;
+      const nodes = selection?.ownerId === p.documentId;
       let drawing = this.cities.get(p.documentId);
       if (!drawing) {
         drawing = new CityRenderer();
@@ -239,7 +240,7 @@ export class SpatialCanvas {
       drawing.draw(
         scene,
         (point) => projectLocal(frame, camera, viewport, point),
-        { selection: this.selection, showNodes: nodes },
+        { selection, showNodes: nodes },
       );
       this.cityDisplays.push({ scene, frame, nodes });
     }
@@ -263,7 +264,7 @@ export class SpatialCanvas {
           for (const hole of polygon.holes) ring(hole);
           this.rooms.cut();
         }
-        const selected =
+        const selected = !this.renderer.imageCapture &&
           this.selectedRoom?.ownerId === ownerId &&
           this.selectedRoom.roomId === room.id;
         for (const points of [polygon.outer, ...polygon.holes])
