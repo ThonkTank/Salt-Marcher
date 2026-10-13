@@ -1,7 +1,7 @@
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
-import { checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { applyDeathSave, checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
@@ -44,7 +44,7 @@ export function readProgressCharacter(db: any, cam: string, id: string): Progres
     const h = p.health;
     if (!h || typeof h.conditions !== 'string' || h.conditions.length > 4000 || typeof h.concentrating !== 'boolean' ||
       ![h.hp, h.maxHp, h.tempHp].every(v => Number.isSafeInteger(v) && v >= 0 && v <= 1000000) || h.maxHp < 1 || h.hp > h.maxHp) throw new Error('Gespeicherte Trefferpunkte oder Zustände ungültig.');
-    if(h.death&&(![h.death.successes,h.death.failures].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=3)||typeof h.death.stable!=='boolean'||typeof h.death.dead!=='boolean'))throw new Error('Todesrettungswürfe ungültig.');
+    checkedHealth(h);
   }
   if(p.combatStatus!==undefined)checkedHealthStatus(p.combatStatus);
   return p;
@@ -341,9 +341,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         else p.health.hp=Math.min(p.health.maxHp,p.health.hp+a.amount);
         if(p.health.hp>0)delete p.health.death;
       }else if(a.operation==='death'){
-        if(!p.health||p.health.hp>0)throw new Error('Todesrettungswürfe benötigen 0 HP.');const d=p.health.death??{successes:0,failures:0,stable:false,dead:false};
-        if(d.dead&&a.result!=='reset')throw new Error('Figur ist als tot markiert. Zuerst zurücksetzen.');
-        if(a.result==='reset')p.health.death={successes:0,failures:0,stable:false,dead:false};else if(a.result==='stabilize')p.health.death={...d,successes:3,stable:true};else if(a.result==='dead')p.health.death={...d,failures:3,dead:true,stable:false};else if(a.result==='natural-20'){p.health.hp=1;delete p.health.death;}else{const failures=Math.min(3,d.failures+(a.result==='natural-1'?2:a.result==='failure'?1:0)),successes=Math.min(3,d.successes+(a.result==='success'?1:0));p.health.death={successes,failures,stable:successes===3,dead:failures===3};}
+        if(!p.health)throw new Error('Todesrettungswürfe benötigen bekannte HP.');p.health=applyDeathSave(p.health,a.result);
       }else throw new Error('Unbekannte HP-Aktion.');
       checkedHealth(p.health!);delete p.combatStatus;saveProgress(db,cam,p);event(db,cam,p.characterId,a.operation==='death'?'death-save':'health',{operation:a.operation,...('amount'in a?{amount:a.amount}:{}),...('result'in a?{result:a.result}:{}),reason:a.reason,before,after:p},command.commandId);
     }else if (a.kind === 'xp') {
