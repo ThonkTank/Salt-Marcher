@@ -1,0 +1,92 @@
+import type { Result } from './contracts';
+import type { ItemDefinition } from './items-contracts';
+export const levelXp = [0,300,900,2700,6500,14000,23000,34000,48000,64000,85000,100000,120000,140000,165000,195000,225000,265000,305000,355000] as const;
+export const dailyXp = [300,600,1200,1700,3500,4000,5000,6000,7500,9000,10500,11500,13500,15000,18000,20000,25000,27000,30000,40000] as const;
+export function xpLevel(xp: number) {
+  if (!Number.isSafeInteger(xp) || xp < 0) throw new Error('XP müssen eine nichtnegative ganze Zahl sein.');
+  let index = 0; while (index < 19 && xp >= levelXp[index + 1]!) index++;
+  return { level: index + 1, floor: levelXp[index]!, next: levelXp[index + 1] ?? null, budget: dailyXp[index]! };
+}
+export function xpShare(pool: number, recipients: number) {
+  if (!Number.isSafeInteger(pool) || pool < 0 || !Number.isSafeInteger(recipients) || recipients < 0) throw new Error('Ungültige XP-Verteilung.');
+  const share = recipients ? Number((BigInt(pool) + BigInt(recipients) - 1n) / BigInt(recipients)) : 0;
+  const total = share * recipients; if (!Number.isSafeInteger(total)) throw new Error('XP-Verteilung zu groß.');
+  return { share, total };
+}
+export function copper(gold: string): string {
+  if (typeof gold !== 'string' || !/^(0|[1-9][0-9]{0,14})([.,][0-9]{1,2})?$/.test(gold.trim())) throw new Error('Wert benötigt eine nichtnegative Goldsumme mit höchstens zwei Nachkommastellen.');
+  const [whole, part = ''] = gold.trim().replace(',', '.').split('.'); return (BigInt(whole!) * 100n + BigInt(part.padEnd(2,'0'))).toString();
+}
+export function gold(cp: string) { const n = BigInt(cp); return (n / 100n) + ',' + (n % 100n).toString().padStart(2,'0') + ' GM'; }
+export interface Progress {
+  characterId: string; revision: number; xp: number | null;
+  rest: { known: boolean; longXp: number; shortXp: number; baseline: number; sections: number };
+  health: { hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean } | null;
+  /** Current conditions/temporary HP when normal HP are intentionally unknown. */
+  combatStatus?: {tempHp:number;conditions:string;concentrating:boolean};
+}
+export type CharacterHealth = NonNullable<Progress['health']>;
+export function checkedHealthStatus(h: NonNullable<Progress['combatStatus']>) {
+  if(!h||typeof h!=='object'||Array.isArray(h)||!Number.isSafeInteger(h.tempHp)||h.tempHp<0||h.tempHp>1000000||typeof h.conditions!=='string'||h.conditions.length>4000||typeof h.concentrating!=='boolean')throw new Error('Gespeicherte HP oder Zustände ungültig.');
+  return h;
+}
+export function checkedHealth(h: CharacterHealth): CharacterHealth {
+  if (!h || typeof h !== 'object' || Array.isArray(h) || typeof h.conditions !== 'string' || h.conditions.length > 4000 || typeof h.concentrating !== 'boolean' || ![h.hp,h.maxHp,h.tempHp].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=1000000) || h.maxHp<1 || h.hp>h.maxHp) throw new Error('HP benötigen gültige ganze Werte und aktuelle HP bis zum Maximum.');
+  return h;
+}
+export function restFrame(p: Progress) {
+  if (p.xp === null || !p.rest.known) return null;
+  const budget = xpLevel(p.xp).budget, remaining = budget - p.rest.baseline;
+  return { budget, consumed: p.rest.longXp, sections: 3 - p.rest.sections,
+    fill: remaining <= 0 ? 1 : Math.max(0, Math.min(1, (p.rest.longXp - p.rest.baseline) / remaining)),
+    nextRest: p.rest.baseline + Math.max(0, remaining) / (3 - p.rest.sections), overdue: p.rest.longXp >= budget };
+}
+export type ItemCategory = 'coins' | 'equipment' | 'trade-goods' | 'magic' | 'other';
+export interface ItemInput { name: string; quantity: number; valueGold: string; category: ItemCategory; reference?: ItemReference }
+export interface ItemReference { kind: 'authored'; definitionId: string; revision: number; historicalDefinitionId?:string }
+export interface TreasureItem { id: string; reference: ItemReference; name: string; category: ItemCategory; quantity: number; allocated: number; unitCopper: string | null; currentDefinition?: ItemDefinition }
+export interface Treasure { id: string; revision: number; title: string; sceneId: string | null; locationId: string | null; combatId: string | null; items: TreasureItem[] }
+export interface LedgerItem {
+  id: string; characterId: string; revision: number; reference: ItemReference; name: string; category: ItemCategory; quantity: number; unitCopper: string | null;
+  origin: 'award' | 'purchase' | 'manual'; status: 'received' | 'sold' | 'given'; actualSaleCopper: string | null; counterparty: string;
+  treasureId: string | null; combatId: string | null; sceneId: string | null; locationId: string | null; instantMs: string | null; recordedAt: string; parentId: string | null;
+  paidCopper?: string; instanceId?: string | null; counterpartyReference?: {shopId:string;owner:{kind:'npc'|'location';id:string}};
+  currentName?:string; currentUnitCopper?:string|null;
+}
+export function ledgerCopper(item: LedgerItem): bigint | null {
+  if (item.status === 'sold') return item.actualSaleCopper === null ? null : BigInt(item.actualSaleCopper);
+  if (item.quantity === 0) return 0n;
+  const value = item.currentUnitCopper !== undefined ? item.currentUnitCopper : item.unitCopper;
+  return value === null ? null : BigInt(value) * BigInt(item.quantity);
+}
+export interface ProgressView { characters: (Progress & { name: string; active: boolean; membershipRevision: number; sceneId: string | null; healthCombat?: {id:string;sceneId:string;title:string}; lastCombatStatus?: Pick<CharacterHealth,'tempHp'|'conditions'|'concentrating'> })[]; notices: { id: string; characterId: string; text: string }[] }
+export interface ProgressAck extends ProgressView { treasureId: string | null; ledgerIds: string[] }
+export interface TreasurePage { items: { id: string; title: string; revision: number; available: number }[]; next: string | null }
+export interface LedgerQuery { characterId: string; after: string | null; search: string; status: '' | LedgerItem['status'] }
+export interface LedgerPage { items: LedgerItem[]; problems: {id:string;message:string}[]; unavailableCount:number; next: string | null; totalCopper: string | null }
+export interface LedgerInventoryQuery {characterId:string;after:string|null}
+export interface LedgerInventoryPage {items:LedgerItem[];problems:LedgerPage['problems'];visited:number;next:string|null}
+export interface ProgressGuard { characterId: string; revision: number }
+export interface FinishRewards { poolXp: number; noXp: boolean; recipients: ProgressGuard[]; policyVersion: 'xp-ceil-2014-v1'; loadXp: number; items: ItemInput[] }
+export interface CombatReward { awardId: string; poolXp: number; shareXp: number; totalXp: number; recipientIds: string[]; treasureId: string | null; policyVersion: 'xp-ceil-2014-v1' }
+export type ProgressAction =
+  | ({kind:'health';characterId:string;expectedRevision:number;reason:string} & ({operation:'set';health:CharacterHealth}|{operation:'damage'|'heal';amount:number}))
+  | { kind: 'xp'; characterId: string; expectedRevision: number; mode: 'add' | 'subtract' | 'set'; amount: number; reason: string; correctionOf?: string }
+  | { kind: 'rest'; rest: 'short' | 'long'; recipients: ProgressGuard[] }
+  | { kind: 'treasure'; title: string; sceneId: string | null; items: ItemInput[] }
+  | { kind: 'allocate'; treasureId: string; expectedRevision: number; expectedDefinitionRevision: number; itemId: string; quantity: number; characterId: string; expectedMembershipRevision: number }
+  | { kind: 'manual-item'; characterId: string; expectedMembershipRevision: number; origin: 'award' | 'purchase' | 'manual'; item: ItemInput; note: string }
+  | { kind: 'ledger'; entryId: string; expectedRevision: number; operation: 'sold' | 'given' | 'correct'; quantity: number; actualGold: string; counterparty: string; correctedQuantity?: number; reason: string }
+  | { kind: 'notice'; ids: string[] };
+export interface ProgressCommand { commandId: string; campaignId: string; token: string; action: ProgressAction }
+export interface ProgressHistory { items: { id: string; kind: string; facts: Record<string, any> }[]; next: string | null }
+export interface ProgressAPI {
+  progressHistory(token: string, characterId: string, after: string | null): Promise<Result<ProgressHistory>>;
+  progress(token: string): Promise<Result<ProgressView>>;
+  treasures(token: string, after: string | null): Promise<Result<TreasurePage>>;
+  treasure(token: string, id: string): Promise<Result<Treasure>>;
+  ledger(token: string, query: LedgerQuery): Promise<Result<LedgerPage>>;
+  ledgerInventory(token:string,query:LedgerInventoryQuery):Promise<Result<LedgerInventoryPage>>;
+  ledgerItem(token: string, id: string): Promise<Result<LedgerItem>>;
+  executeProgress(command: ProgressCommand): Promise<Result<ProgressAck>>;
+}
