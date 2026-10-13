@@ -123,6 +123,8 @@ else {
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
+    handle('campaign:keep-narrative-draft',(token:string,draft:any,expected:string|null)=>store.keepNarrativeDraft(token,draft,expected));
+    handle('campaign:discard-narrative-draft',(token:string,id:string,writeId:string)=>store.discardNarrativeDraft(token,id,writeId));
     handle('campaign:narrative',(token:string,id:string)=>store.narrative(token,id));
     handle('campaign:progress-history', (token: string, characterId: string, after: string | null) => store.progressHistory(token, characterId, after));
     handle('campaign:progress', (token: string) => store.progress(token));
