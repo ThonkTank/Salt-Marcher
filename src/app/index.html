@@ -8,6 +8,15 @@
   <div id="commit-pending" role="status" aria-live="polite" hidden><span id="commit-message"></span> <button id="commit-check" type="button">Buchungsstatus prüfen</button></div>
   <div id="error-actions" hidden><button id="reconcile">Speicherstatus prüfen</button><button id="discard">Entwurf verwerfen und aktualisieren</button></div>
   <div id="backup-status" role="status" hidden></div>
+  <section id="workspace-empty" aria-labelledby="workspace-empty-heading">
+    <p class="workspace-empty-kicker">Kampagnenstart</p>
+    <h2 id="workspace-empty-heading">Womit möchtest du beginnen?</h2>
+    <p>Lege eine leere Kampagne an oder übernimm einen vorhandenen Dungeon. Die Arbeitsbereiche erscheinen, sobald eine Kampagne geöffnet ist.</p>
+    <div class="workspace-empty-actions">
+      <button id="workspace-new-campaign" type="button">Neue Kampagne anlegen</button>
+      <button id="workspace-import" type="button">Dungeon übernehmen…</button>
+    </div>
+  </section>
   <nav aria-label="Arbeitsbereich"><button id="atlas-tab" aria-pressed="true">Karte und Keys</button><button id="preparation-tab" aria-pressed="false">Welt und Spielabend</button><button id="live-tab" aria-pressed="false">Party und Leiten</button><button id="catalog-tab" aria-pressed="false">Katalog und Encounter</button><button id="items-tab" aria-pressed="false">Gegenstände und Shops</button><button id="dungeon-tab" aria-pressed="false">Dungeon leiten</button><button id="autonomy-tab" aria-pressed="false">NPC-Verhalten</button><button id="city-tab" aria-pressed="false">Städte</button><button id="world-tab" aria-pressed="false">Atlas und Reise</button><button id="music-tab" aria-pressed="false">Musik und Ambience</button></nav>
   <div id="graph-preview-banner" hidden><p id="graph-preview-label"></p><div class="toolbar"><button id="graph-accept" disabled>Graph- und Rastervorschau übernehmen</button><button id="graph-restore">Ursprung vollständig wiederherstellen</button></div></div><main id="atlas">
     <aside><h2>Räume</h2><label for="search">Raum oder Key durchsuchen</label><input id="search" type="search" placeholder="Name, Nummer, Text"><button id="add-room" disabled>Raum anlegen</button><div id="rooms" aria-label="Raumauswahl"></div></aside>

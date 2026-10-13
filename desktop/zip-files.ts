@@ -85,7 +85,9 @@ export async function readArchive(filename:string,base:string,allowedName:(name:
  try{
   for await(const chunk of createReadStream(filename)){h.check();bytes+=chunk.length;unzip.push(chunk);if(error)throw error;await Promise.all(drains.splice(0));h.progress(bytes,files.size);}
   h.check();unzip.push(new Uint8Array(),true);if(error)throw error;
-  if(!files.has('manifest.json')||!expected||files.size!==expected.size+1||files.size!==outputs.length||[...expected].some(([name])=>!files.has(name)))throw new Error('Archiv ist unvollständig.');
+  // The unzip callback runs synchronously during push(), but TypeScript cannot observe its assignment.
+  const declaredFiles=expected as Map<string,ArchiveFile>|null;
+  if(!files.has('manifest.json')||!declaredFiles||files.size!==declaredFiles.size+1||files.size!==outputs.length||[...declaredFiles].some(([name])=>!files.has(name)))throw new Error('Archiv ist unvollständig.');
   await Promise.all(outputs.map(x=>x.done));h.check();
   files.delete('manifest.json');
   success=true;return{dir,manifest,files};
