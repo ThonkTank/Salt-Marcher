@@ -18,6 +18,7 @@ test('selection mode hides drawing-only controls and actions', () => {
 });
 
 test('a first room asks for a name while an appended room shape does not', () => {
+  assert.equal(drawingToolControls('room-rectangle', false, false, 1).actionEnabled, false);
   const first = drawingToolControls('room-rectangle', false, true, 2);
   assert.equal(first.append, false);
   assert.equal(first.roomName, true);
@@ -25,6 +26,15 @@ test('a first room asks for a name while an appended room shape does not', () =>
   const appended = drawingToolControls('room-rectangle', true, true, 2);
   assert.equal(appended.append, true);
   assert.equal(appended.roomName, false);
+});
+
+test('room edits become actionable only with a target and a complete contour', () => {
+  assert.equal(drawingToolControls('room-polygon', false, false, 2).actionEnabled, false);
+  assert.equal(drawingToolControls('room-polygon', false, false, 3).actionEnabled, true);
+  assert.equal(drawingToolControls('room-hole', false, false, 3).actionEnabled, false);
+  assert.equal(drawingToolControls('room-hole', true, false, 3).actionEnabled, true);
+  assert.equal(drawingToolControls('room-erase', false, false, 1).actionEnabled, false);
+  assert.equal(drawingToolControls('room-erase', true, false, 1).actionEnabled, true);
 });
 
 test('element tools expose only their relevant settings', () => {
