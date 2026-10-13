@@ -30,6 +30,7 @@ let w: Workspace | null = null,
   request = 0,
   searchRequest = 0,
   next: number | null = null;
+let searchPage: { kind: string; query: string } | null = null, searchBusy = false;
 let saving: Promise<boolean> | null = null,
   timer: ReturnType<typeof setTimeout> | null = null,
   initialized = false;
@@ -60,6 +61,8 @@ export function initSceneDesk(
     void search(false);
   };
   el("desk-more").onclick = () => void search(true);
+  el("desk-search").addEventListener("input", () => invalidateSearch(true));
+  el("desk-search-kind").addEventListener("change", () => invalidateSearch(true));
   el("desk-refresh").onclick = () => void refresh();
   el("desk-create-form").onsubmit = (e) => {
     e.preventDefault();
@@ -84,7 +87,7 @@ export function sceneDeskContext(
   }
   key = changed;
   request++;
-  searchRequest++;
+  invalidateSearch();
   if (timer) clearTimeout(timer);
   content = null;
   draft = null;
@@ -158,22 +161,33 @@ async function pin(ref: DeskRef, on: boolean) {
   drawPins();
   if (on) await open(ref);
 }
+function invalidateSearch(changed = false) {
+  searchRequest++;
+  searchPage = null;
+  searchBusy = false;
+  next = null;
+  el("desk-results").replaceChildren();
+  el("desk-more").hidden = true;
+  el<HTMLButtonElement>("desk-more").disabled = false;
+  el("desk-search-status").textContent = changed
+    ? "Suche geändert · mit Suchen oder Enter neue Treffer laden."
+    : "";
+}
 async function search(more: boolean) {
   if (!w || !scene) return;
-  const token = w.token,
-    id = scene.id,
-    n = ++searchRequest;
+  const kind = el<HTMLSelectElement>("desk-search-kind").value,
+    query = el<HTMLInputElement>("desk-search").value;
+  if (more && (searchBusy || next === null || searchPage?.kind !== kind || searchPage.query !== query)) return;
+  const offset = more ? next! : 0;
+  if (!more) invalidateSearch();
+  const token = w.token, id = scene.id, n = ++searchRequest;
+  const current = () => owns(token, id) && n === searchRequest;
+  searchBusy = true;
+  el<HTMLButtonElement>("desk-more").disabled = true;
+  el("desk-search-status").textContent = "Suche läuft…";
   try {
-    const r = unwrap(
-      await window.campaign.searchDesk(
-        token,
-        el<HTMLSelectElement>("desk-search-kind").value as "world",
-        el<HTMLInputElement>("desk-search").value,
-        more ? (next ?? 0) : 0,
-      ),
-    );
-    if (!owns(token, id) || n !== searchRequest) return;
-    if (!more) el("desk-results").replaceChildren();
+    const r = unwrap(await window.campaign.searchDesk(token, kind as "world", query, offset));
+    if (!current()) return;
     for (const entry of r.entries) {
       const row = document.createElement("div");
       row.className = "toolbar";
@@ -183,13 +197,23 @@ async function search(more: boolean) {
       );
       el("desk-results").append(row);
     }
+    searchPage = {kind, query};
     next = r.next;
     el("desk-more").hidden = next === null;
-    el("desk-search-status").textContent = r.entries.length
-      ? "Treffer · Titel und Notizen durchsucht."
-      : "Keine passenden Inhalte.";if(r.notice)el("desk-search-status").textContent+=" · "+r.notice;
+    const count = el("desk-results").childElementCount;
+    el("desk-search-status").textContent = count
+      ? `${count} Treffer geladen · Titel und Notizen durchsucht.`
+      : "Keine passenden Inhalte.";
+    if (r.notice) el("desk-search-status").textContent += " · " + r.notice;
   } catch (e) {
+    if (!current()) return;
+    el("desk-search-status").textContent = "Suche fehlgeschlagen · bitte erneut suchen. " + (e as Error).message;
     tell((e as Error).message, true);
+  } finally {
+    if (current()) {
+      searchBusy = false;
+      el<HTMLButtonElement>("desk-more").disabled = false;
+    }
   }
 }
 async function open(ref: DeskRef) {

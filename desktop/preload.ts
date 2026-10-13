@@ -105,6 +105,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   previewTravel:(token:string,request:import('../src/app/world-contracts').TravelRequest)=>ipcRenderer.invoke('world:travel-preview',token,request),
   reconcileWorld:(command:import('../src/app/world-contracts').WorldCommand,token:string)=>ipcRenderer.invoke('world:reconcile',command,token),
   executeWorld:(command:import('../src/app/world-contracts').WorldCommand)=>ipcRenderer.invoke('world:execute',command),
+  openItemSource:(token:string,id:string)=>ipcRenderer.invoke('campaign:open-item-source',token,id),
   itemDefinitions:(query:import('../src/app/items-contracts').ItemQuery)=>ipcRenderer.invoke('items:definitions',query),
   itemDefinition:(id:string,revision?:number)=>ipcRenderer.invoke('items:definition',id,revision),
   shops:(token:string,trashed:boolean)=>ipcRenderer.invoke('items:shops',token,trashed),

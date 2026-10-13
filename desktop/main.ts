@@ -10,7 +10,7 @@ import {acceptPreparedCampaign} from './campaign-accept';
 import {exportCampaignArchive,extractCampaignArchive,fileDigest,checkCampaignContents,campaignMediaPath,type CampaignManifest,type CampaignFileHooks} from './campaign-files';
 import {mkdtemp,readdir,stat,rm} from 'node:fs/promises';
 import {copyAudio,exportAudioBundle,importAudioBundle,type TransferHooks} from './audio-files';
-import { app, BrowserWindow, dialog, ipcMain, protocol, net,screen,nativeImage,session } from 'electron';
+import { app, BrowserWindow, dialog,shell, ipcMain, protocol, net,screen,nativeImage,session } from 'electron';
 import { randomUUID, createHash } from 'node:crypto';
 import { readFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -125,6 +125,7 @@ else {
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
+    handle('campaign:open-item-source',async(token:string,id:string)=>{store.live(token);const d=store.itemDefinition(id),url=d.source.url;if(!url||!/^https:\/\/media\.wizards\.com\/2023\/downloads\/dnd\/SRD_CC_v5\.1\.pdf#page=[1-9][0-9]{0,2}$/.test(url))throw new Error('Keine verfügbare SRD-Quellenseite.');await shell.openExternal(url);});
     handle('campaign:scene-desk',(token:string,id:string)=>store.sceneDesk(token,id));
     handle('campaign:search-desk',(token:string,kind:string,search:string,offset:number)=>store.searchDesk(token,kind,search,offset));
     handle('campaign:desk-content',(token:string,ref:any)=>store.deskContent(token,ref));

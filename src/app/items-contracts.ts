@@ -17,6 +17,7 @@ export type ItemShopAction=
 export interface ItemShopCommand {commandId:string;campaignId:string;token:string;action:ItemShopAction}
 export interface ItemShopAck {definition?:ItemDefinition;shop?:ShopView;ledgerIds?:string[]}
 export interface ItemsAPI {
+ openItemSource(token:string,id:string):Promise<Result<void>>;
  itemDefinitions(query:ItemQuery):Promise<Result<ItemPage>>;
  itemDefinition(id:string,revision?:number):Promise<Result<ItemDefinition>>;
  shops(token:string,includeTrashed:boolean):Promise<Result<ShopSummary[]>>;

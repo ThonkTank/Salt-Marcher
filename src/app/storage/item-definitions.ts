@@ -1,3 +1,4 @@
+import {srdItemDefinitions,srdItemSourceStatus} from './srd-items';
 import { createHash } from 'node:crypto';
 import type { ItemDefinition, ItemQuery, ItemPage } from '../items-contracts';
 import { canonicalJson } from '../generation/canonical-json';
@@ -44,7 +45,7 @@ export function installItemDefinitions(db: any) {
   const existed = !!db.prepare("SELECT 1 FROM sqlite_schema WHERE name='item_definition_version'").get();
   db.exec(`CREATE TABLE IF NOT EXISTS item_definition(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
     CREATE TABLE IF NOT EXISTS item_definition_version(id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(id,revision)) STRICT;`);
-  if (existed) return;
+  if (existed) {installSrdItems(db);return;}
   // Preserve readable historical snapshots already present in verified receipts.
   // Invalid units stay untouched and will fail their own reader/backup qualification.
   if (db.prepare("SELECT 1 FROM sqlite_schema WHERE name='shop_receipt'").get()) {
@@ -58,6 +59,13 @@ export function installItemDefinitions(db: any) {
   for (const row of migrationRows(db, 'authored_item', 'id,revision,name,category,unit_copper', 'id NOT IN(SELECT id FROM item_definition)')) {
     try { recordItemDefinitionVersion(db, legacyDefinition(row)); } catch { /* Legacy corruption is isolated too. */ }
   }
+  installSrdItems(db);
+}
+function installSrdItems(db:any){
+ db.transaction(()=>{for(const source of srdItemDefinitions){const row=db.prepare('SELECT * FROM item_definition WHERE id=?').get(source.id),legacy=db.prepare('SELECT 1 FROM authored_item WHERE id=?').get(source.id);let d=source;
+  if(row){const current=decoded(row,source.id,row.revision);if(current.source.kind!=='srd51'||current.sourceHash===source.sourceHash)continue;recordItemDefinitionVersion(db,current);d={...source,revision:current.revision+1};}else if(legacy)continue;
+  checkedDefinition(d);recordItemDefinitionVersion(db,d);const payload=JSON.stringify(d);db.prepare('INSERT INTO item_definition VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(d.id,d.revision,payload,hash(payload));db.prepare('INSERT INTO authored_item VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,name=excluded.name,category=excluded.category,unit_copper=excluded.unit_copper').run(d.id,d.revision,d.name,d.category,d.unitCopper??'0');
+ }}).immediate();
 }
 export function readItemDefinition(db: any, id: string, revision?: number): ItemDefinition {
   if (typeof id !== 'string' || !id || revision !== undefined && (!Number.isSafeInteger(revision) || revision < 1)) throw new Error('Ungültige Gegenstandsreferenz.');
@@ -85,8 +93,9 @@ export function saveItemDefinition(db: any, input: ItemDefinition, expected: num
     if (!input || typeof input.id !== 'string' || !input.id || expected !== null && (!Number.isSafeInteger(expected) || expected < 1)) throw new Error('Ungültiger Gegenstandsauftrag.');
     const row = db.prepare('SELECT revision FROM item_definition WHERE id=? UNION ALL SELECT revision FROM authored_item WHERE id=? AND NOT EXISTS(SELECT 1 FROM item_definition WHERE id=?)').get(input.id, input.id, input.id);
     if ((row?.revision ?? null) !== expected) throw new Error('Gegenstand geändert. Bitte aktualisieren.');
+    if(input.source?.kind==='srd51'||row&&readItemDefinition(db,input.id).source.kind==='srd51')throw new Error('SRD-Quellen sind schreibgeschützt. Zuerst eine eigene Kopie anlegen.');
     if (row) recordItemDefinitionVersion(db, readItemDefinition(db, input.id));
-    const d: ItemDefinition = { ...input, revision: (expected ?? 0) + 1, source: { kind: 'authored', label: 'Eigener Gegenstand', license: null, url: null } };
+    const d: ItemDefinition = { ...input, revision: (expected ?? 0) + 1, source: { ...input.source,kind:'authored' } };
     checkedDefinition(d); recordItemDefinitionVersion(db, d);
     const payload = JSON.stringify(d);
     db.prepare('INSERT INTO item_definition(id,revision,payload,checksum) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(d.id, d.revision, payload, hash(payload));
@@ -104,7 +113,7 @@ export function readItemDefinitions(db: any, q: ItemQuery): ItemPage {
     } catch (error) { problems.push('Gegenstand ' + row.id + ' ist gesperrt: ' + (error as Error).message); }
   }
   items.sort((a, b) => { const byValue = q.sort === 'value' ? (BigInt(a.unitCopper ?? '0') < BigInt(b.unitCopper ?? '0') ? -1 : BigInt(a.unitCopper ?? '0') > BigInt(b.unitCopper ?? '0') ? 1 : 0) : a.name.localeCompare(b.name); return (q.direction === 'asc' ? 1 : -1) * (byValue || a.id.localeCompare(b.id)); });
-  return { items: items.slice(q.after, q.after + 40), total: items.length, next: items.length > q.after + 40 ? q.after + 40 : null, problems, sourceStatus: { complete: false, message: 'Eigene Gegenstände · Der vollständige SRD-5.1-Itemkatalog ist noch in Vorbereitung.' } };
+  return { items: items.slice(q.after, q.after + 40), total: items.length, next: items.length > q.after + 40 ? q.after + 40 : null, problems, sourceStatus: srdItemSourceStatus };
 }
 export function validateItemDefinitionVersions(db: any) {
   for (const row of db.prepare('SELECT * FROM item_definition_version').iterate()) decoded(row, row.id, row.revision);
