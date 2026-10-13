@@ -61,6 +61,8 @@ import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '..
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+import {installChaseSchema,readChase,executeChase,validateChaseBackup} from './chase';
+import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
 import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
 import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
@@ -138,7 +140,7 @@ export class CampaignStore {
       if (schema < 6) for (const row of this.db.prepare('SELECT id FROM campaign').all()) ensureLiveOwners(this.db, row.id);
       if (schema < 7) migrateLiveClock(this.db);
       if (schema < 8) this.db.exec('INSERT OR IGNORE INTO scene_lifecycle(campaign_id,id,membership_revision,retired) SELECT campaign_id,id,0,0 FROM live_scene;');
-      installCombatSchema(this.db);installCombatDraftSchema(this.db);
+      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);
       installProgressSchema(this.db);
       if (schema < 10) migrateProgress(this.db);
       installEncounterSchema(this.db);
@@ -413,7 +415,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
-    validateCombatBackup(db);validateCombatDrafts(db);
+    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);
     validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
@@ -523,7 +525,9 @@ export class CampaignStore {
   encounterPlan(token: string, id: string) { return readEncounterPlan(this.db,this.guard(token),id); }
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   progressHistory(token: string, characterId: string, after: string | null) { return readProgressHistory(this.db, this.guard(token), characterId, after); }
-  chronicle(token:string){return readChronicle(this.db,this.guard(token));}
+  chase(token:string,sceneId:string,id?:string){return readChase(this.db,this.guard(token),sceneId,id);}
+  executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
+  chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
   treasures(token: string, after: string | null) { return readTreasures(this.db, this.guard(token), after); }
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }

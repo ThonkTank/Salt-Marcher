@@ -1,11 +1,12 @@
 import {checkedCombat} from '../combat-contracts';
+import {checkedChaseView} from '../chase-contracts';
 import {checkedDefinition} from './item-definitions';
 import {createHash} from 'node:crypto';
 import {checkedCommitReference,type CommitReference,type CommitOutcome} from '../commit-receipt';
 
 export function readCommitReceipt(db:any,ref:CommitReference):CommitOutcome {
   checkedCommitReference(ref);
-  const table=ref.family==='progress'?'progress_receipt':ref.family==='combat'?'combat_receipt':'shop_receipt';
+  const table=ref.family==='progress'?'progress_receipt':ref.family==='combat'?'combat_receipt':ref.family==='chase'?'chase_receipt':'shop_receipt';
   const row=db.prepare(`SELECT campaign_id,fingerprint,payload,checksum FROM ${table} WHERE command_id=?`).get(ref.commandId);
   if(!row)return{outcome:'not-applied'};
   if(row.campaign_id!==ref.campaignId||row.fingerprint!==ref.fingerprint)
@@ -20,6 +21,9 @@ export function readCommitReceipt(db:any,ref:CommitReference):CommitOutcome {
     if(!value.combat||!Array.isArray(value.recent)||typeof value.canUndo!=='boolean')throw new Error('Kampfbeleg hat ein unbekanntes Format.');
     checkedCombat(value.combat);
     if(!db.prepare('SELECT 1 FROM combat WHERE campaign_id=? AND id=? AND scene_id=?').get(ref.campaignId,value.combat.id,value.combat.sceneId))throw new Error('Kampfbeleg gehört nicht zum gespeicherten Kampf.');
+  }else if(ref.family==='chase'){
+    checkedChaseView(value);
+    if(value.chase&&!db.prepare('SELECT 1 FROM chase WHERE campaign_id=? AND id=? AND scene_id=?').get(ref.campaignId,value.chase.id,value.chase.sceneId))throw new Error('Verfolgungsbeleg gehört nicht zur gespeicherten Verfolgung.');
   }else{
     if(!value.definition&&!value.shop)throw new Error('Shopbeleg hat kein bestätigtes Ergebnis.');
     if(value.definition)checkedDefinition(value.definition);
