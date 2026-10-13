@@ -77,3 +77,4 @@ import "./core/desktop-csp.test";
 import "./core/chronicle.test";
 import "./core/death-saves.test";
 import "./core/chase.test";
+import "./core/loot-balance.test";

@@ -26,7 +26,7 @@ const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 export function activateLive(workspace: Workspace) {
-  combatContext(null, null);chaseContext(null,null); progressionContext(null, null, null);
+  combatContext(null, null);chaseContext(null,null,[]); progressionContext(null, null, null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
   get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
@@ -188,7 +188,7 @@ function renderSceneMeta() {
   if(context&&data?.scene&&resumed)void renderLiveWorld(context.token,data.scene.id);
   const scene = data?.scene;
   combatContext(context, resumed ? scene ?? null : null, data?.rosterRevision);
-  chaseContext(context,resumed?scene??null:null);
+  chaseContext(context,resumed?scene??null:null,data?.roster??[]);
   const active = data?.roster.filter(c => c.active && c.sceneId === scene?.id) ?? [];
   get('live-party').textContent = active.length ? 'Dabei: ' + active.map(c => c.profile.name).join(', ') : 'Leere Party – Scene bleibt verfügbar.';
   get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatInstant(scene.clock.instantMs) : '';
