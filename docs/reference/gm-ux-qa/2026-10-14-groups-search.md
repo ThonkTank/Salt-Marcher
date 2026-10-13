@@ -30,7 +30,7 @@ Regressionen: `tests/desktop-groups-search.test.mjs` (fünf Fälle), zusätzlich
 SQLite-Zeit-/Partyfilterfall in `tests/desktop-chronicle-store.test.mjs`,
 Chronik-/Chase-/Todesrettungswurf-/Szenentischprüfungen sowie bestehende
 Generator- und Live-Prüfungen mit aktualisierten privaten API-Fixtures.
-91 Prüfungen bestanden, Desktop-Typecheck und Build erfolgreich. Die vier nativen
+92 Prüfungen einschließlich des letzten Integrationsmerges bestanden, Desktop-Typecheck und Build erfolgreich. Die vier nativen
 Starts endeten normal. Ein einzelner begrenzter QA-Job benötigte laut systemd
 1,5 GiB Spitze bei 4 GiB Limit; alle eigenen Electron-PIDs sind beendet.
 
@@ -39,3 +39,5 @@ Entwurferhalt und Anschluss der Chronikquellen. Kein Beleg für vollständige
 Gruppen-/Generator-/Atlasfunktion, menschliche GM-Geschwindigkeit oder das
 Gesamtprodukt. Die Chronik bleibt auf 2000 passende Einträge begrenzt und
 kennzeichnet ausgelassene Ereignisse.
+
+[Abschlussprüfung nach letztem Code-Merge](2026-10-14-groups-search-sync.json).
