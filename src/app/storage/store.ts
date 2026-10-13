@@ -1,4 +1,4 @@
-import {installNarrative,readNarrative} from './narrative';
+import {installNarrative,readNarrative,validateNarrativeBackup} from './narrative';
 import {readPreparedGroup} from './session';
 import {installCombatDraftSchema,validateCombatDrafts,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
 import type {CombatDraftKind,CombatWorkingDraft} from '../combat-draft-contracts';
@@ -411,7 +411,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);
-    validateProgressBackup(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
