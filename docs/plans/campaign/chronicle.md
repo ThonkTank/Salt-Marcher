@@ -20,8 +20,8 @@ der lokale Quellenstand wurde damit verglichen.
 
 ## Aktueller Anschluss und Korrektur
 
-`src/app/storage/chronicle.ts` kombiniert bestätigte `progress_event`- und
-`world_history`-Records in einer Lesetransaktion. `chronicle-contracts.ts`,
+`src/app/storage/chronicle.ts` kombiniert bestätigte `progress_event`-,
+`world_history`- und `scene_time_step`-Records in einer Lesetransaktion. `chronicle-contracts.ts`,
 Main/preload und `chronicle-ui.ts` bieten Kategorien, Textfilter und Markdown.
 Der aktuelle Ausschnitt liest relevante Records in Portionen von höchstens
 2001 unter demselben Snapshot. Kategorie und Text werden vor der Ergebnisgrenze
@@ -53,6 +53,23 @@ Szenentisch- und Todesrettungswurfprüfungen bestanden zuletzt 37 gezielte Tests
 älterer Treffer hinter 2000 neueren Ereignissen, gefilterte Markdownausgabe,
 Fresh und kontrollierter IPC-Lesefehler. Kein Hard-Crash-, umfassender
 Dateidialog- oder vollständiger Produktnachweis.
+
+## Party- und Zeitanschluss vom 14.10.2026
+
+Der Livewriter protokolliert Aktivierung, Deaktivierung und Scenemove mit
+Character-/Scene-IDs sowie bestätigte Zeit mit eigener Erfassungszeit. Die
+Chronik unterscheidet Party- und Reisefakten und zeigt bestätigte Zeit ohne
+zusätzliche Kopie derselben Reisefolge. Alle drei Quellen wenden Kategorie und
+Text vor ihrem passenden Ergebnislimit an; vollständige Combat-Awardgruppen
+bleiben erhalten. Fünf Coreprüfungen und 13 Store-/DOM-Prüfungen qualifizieren
+diesen integrierten Reader lokal.
+
+Eine SQLite-Gegenprobe fand alte `fromSceneId`-/`toSceneId`-Verweise in der
+unabhängigen Kampagnenkopie. `campaign-data.ts` remappt jetzt beide strukturellen
+Slots zusammen mit den Character-IDs. Move- und Deaktivierungshistorie zeigen
+kopierte Scenes; authored Scenetitel und Quellpaketbytes bleiben identisch.
+Kopie und anschließender Backup sind lokal geprüft. Historische Linkkorrekturen,
+vollständige Navigation und native Abnahme bleiben offen.
 
 ## Nächste ausführbare Lieferung
 

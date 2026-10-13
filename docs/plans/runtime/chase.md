@@ -17,7 +17,7 @@ Registryhash `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e` 
 zurzeit eine manuelle persistente Liste mit freien Teilnehmern, Abstand, Tempo,
 Erschöpfung, Komplikation, Runde und Abschluss. Abschluss schreibt einen
 Welthistorieneintrag. Die integrierte Auswahl erschließt zuletzt gespeicherte
-Masken derselben Scene; Pflichtfelder sperren verfrühte Aktionen. Vollständige
+Masken derselben Scene; Pflichtfelder sperren verfrühte Aktionen. Vollständiger
 Actor-/Membershipabschluss, Zeitport,
 Workingdrafts und vollständige Datenclosure bleiben offen. Die inzwischen
 integrierte Receiptstrecke bietet Commandreplay und lesende Statusaufklärung.
