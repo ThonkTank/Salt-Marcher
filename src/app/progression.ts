@@ -30,6 +30,10 @@ export interface Progress {
 }
 export type CharacterHealth = NonNullable<Progress['health']> & {death?:{successes:number;failures:number;stable:boolean;dead:boolean}};
 export type DeathSaveResult='success'|'failure'|'natural-20'|'natural-1'|'stabilize'|'reset'|'dead';
+export function deathSaveControls(death:CharacterHealth['death']){
+ const terminal=!!(death?.dead||death?.stable);
+ return{terminal,reset:!!death&&(death.successes>0||death.failures>0||terminal)};
+}
 export function checkedHealthStatus(h: NonNullable<Progress['combatStatus']>) {
   if(!h||typeof h!=='object'||Array.isArray(h)||!Number.isSafeInteger(h.tempHp)||h.tempHp<0||h.tempHp>1000000||typeof h.conditions!=='string'||h.conditions.length>4000||typeof h.concentrating!=='boolean')throw new Error('Gespeicherte HP oder Zustände ungültig.');
   return h;
