@@ -1,5 +1,7 @@
 # Manuelle Sessionplanung ohne Party und Generator
 
+Aktueller Datenanschluss und konkrete Folgelieferung: [Kampfentwürfe und narrative Belohnungen](../runtime/combat-and-narrative-recovery.md).
+
 Ziel: Einen Plan mit Szenen, exakten Notizen und optionalen Ortsverweisen bearbeiten, dauerhaft speichern und nach Neustart fortsetzen. Quelle: [#69](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69), SRC-P01/P03 und AC-F03/AC-P01/P02 im [Quellenregister](../../scope-sources.json). Der Generator und der spätere Transfer ins Live-Spiel bleiben eigene Funktionen.
 
 ## Vorhandene Funktion
