@@ -694,6 +694,33 @@ export class AtlasEditor {
       this.flushing = false;
     }
   }
+  /** Freeze authored work, hydrate the chosen export scope, and render one shareable image. */
+  async captureMap(options: {
+    readonly scope: "atlas" | "view";
+    readonly width: number;
+    readonly includeGrid: boolean;
+  }): Promise<HTMLCanvasElement> {
+    if (this.closed || this.inputBlocked)
+      throw new Error("Atlas ist nicht für den Export bereit.");
+    this.setInputBlocked(true);
+    try {
+      await this.flush();
+      if (options.scope === "atlas" && this.storage.locations) {
+        for (const placement of this.terrain.placements()) {
+          this.storage.assertCurrent?.();
+          const document = await this.storage.locations.ensure(placement.locationId);
+          if (document) {
+            this.loadedLocations.add(placement.locationId);
+            this.renderer.location(document, placement.locationId);
+          }
+        }
+      }
+      this.storage.assertCurrent?.();
+      return await this.renderer.captureMap(options);
+    } finally {
+      if (!this.closed) this.setInputBlocked(false);
+    }
+  }
   /** The navigator blocks input first, so only already requested visible data can finish. */
   async prepareNavigation(): Promise<void> {
     this.storage.assertCurrent?.();
