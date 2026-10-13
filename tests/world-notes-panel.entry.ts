@@ -144,6 +144,29 @@ test("keyboard focus moves into a new editor and returns after save or discard",
   f.panel.destroy();
 });
 
+test("GM narrows note search by kind without losing an open draft", async () => {
+  const f = fixture();
+  f.click("NPC anlegen"); f.input("Name", "Mira"); await f.save();
+  f.click("Quest anlegen"); f.input("Name", "Mira finden"); await f.save();
+  const search = f.host.querySelector<HTMLInputElement>('[aria-label="Notizen durchsuchen"]')!;
+  const filter = f.host.querySelector<HTMLSelectElement>('[aria-label="Notizart filtern"]')!;
+  const listed = () => Array.from(f.host.querySelectorAll<HTMLButtonElement>(".dn-world-notes-list button"))
+    .map((button) => button.textContent);
+  search.value = "mira"; search.dispatchEvent(new f.window.Event("input"));
+  assert.deepEqual(listed(), ["NPC: Mira", "Quest: Mira finden"]);
+  Array.from(filter.options).find((option) => option.value === "quest")!.selected = true;
+  filter.dispatchEvent(new f.window.Event("change"));
+  assert.deepEqual(listed(), ["Quest: Mira finden"]);
+  f.click("Gerücht anlegen"); f.input("Name", "Ungespeichertes Gerücht");
+  Array.from(filter.options).find((option) => option.value === "npc")!.selected = true;
+  filter.dispatchEvent(new f.window.Event("change"));
+  assert.deepEqual(listed(), ["NPC: Mira"]);
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Ungespeichertes Gerücht");
+  filter.options[0]!.selected = true; filter.dispatchEvent(new f.window.Event("change"));
+  assert.deepEqual(listed(), ["NPC: Mira", "Quest: Mira finden"]);
+  f.panel.destroy();
+});
+
 test("NPC can choose an existing creature by name without copying catalog content", async () => {
   const f = fixture({
     search: async (query) => query === "gob" ? [{ id: "goblin", name: "Goblin" }] : [],
