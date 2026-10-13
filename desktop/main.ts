@@ -28,7 +28,7 @@ import type {ChronicleCategory} from '../src/app/chronicle-contracts';
 import { creatureInfo, searchCreatures, readCreature } from '../src/app/storage/encounters';
 import type { CreatureCatalogQuery } from '../src/features/catalog/creature-catalog';
 import type { EncounterPlanCommand } from '../src/app/encounter-contracts';
-import type { GenerationCommand, GenerationRequest } from '../src/app/generation-contracts';
+import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../src/app/generation-contracts';
 import type { SessionCommand, SessionGenerationRequest } from '../src/app/session-contracts';
 declare const __APP_VERSION__: string;
 
@@ -113,12 +113,14 @@ else {
     handle('campaign:session-run', (token: string,id: string)=>store.sessionRun(token,id));
     handle('campaign:scene-preparation', (token: string,id: string)=>store.scenePreparation(token,id));
     handle('campaign:encounter-tables', (token: string, trashed: boolean) => store.encounterTables(token,trashed));
+    handle('campaign:loot-tables', (token: string, trashed: boolean) => store.lootTables(token,trashed));
     handle('campaign:generator-registry', (token: string) => store.generatorRegistry(token));
     handle('campaign:execute-generation', (command: GenerationCommand) => store.executeGeneration(command));
     handle('campaign:generate-encounters', (token: string, request: GenerationRequest) => store.generateEncounters(token,request));
     handle('campaign:accept-generation', (command: Parameters<typeof store.acceptGeneration>[0]) => store.acceptGeneration(command));
     handle('campaign:generation-runs', (token: string) => store.generationRuns(token));
     handle('campaign:generation-run', (token: string,id: string) => store.generationRun(token,id));
+    handle('campaign:roll-loot', (command: LootRollCommand) => store.rollLoot(command));
     handle('catalog:info', () => creatureInfo());
     handle('catalog:search', (query: CreatureCatalogQuery) => searchCreatures(query));
     handle('catalog:creature', (id: string) => readCreature(id));
@@ -222,6 +224,11 @@ else {
     handle('dungeon:view',(token:string)=>store.dungeon(token));
     handle('dungeon:preview',(token:string,r:import('../src/app/dungeon-contracts').DungeonRequest)=>store.previewDungeon(token,r));
     handle('dungeon:execute',(c:import('../src/app/dungeon-contracts').DungeonCommand)=>store.executeDungeon(c));
+    handle('campaign:groups',(token:string,search:string,after:string|null)=>store.preparedGroups(token,search,after));
+    handle('campaign:group-view',(token:string,id:string)=>store.groupView(token,id));
+    handle('campaign:group-draft',(token:string,id:string)=>store.groupDraft(token,id));
+    handle('campaign:keep-group-draft',(token:string,draft:import('../src/app/groups-contracts').GroupDraft,expected:string|null)=>store.keepGroupDraft(token,draft,expected));
+    handle('campaign:discard-group-draft',(token:string,id:string,writeId:string)=>store.discardGroupDraft(token,id,writeId));
     handle('campaign:prepared-group',(token:string,id:string)=>store.preparedGroup(token,id));
     handle('graph:view',(token:string,scopeId:string)=>store.graph(token,scopeId));
     handle('graph:execute',(c:import('../src/app/graph-contracts').GraphCommand)=>store.executeGraph(c));

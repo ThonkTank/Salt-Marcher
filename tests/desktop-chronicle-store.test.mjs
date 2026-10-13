@@ -23,3 +23,20 @@ test('SQLite groups award receipts before filtering and retains the newest bound
   assert.deepEqual(store.db.prepare('SELECT id,payload,checksum FROM progress_event ORDER BY id').all(),original);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+test('SQLite searches older time and party events before truncating each source',()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'chronicle-time-')),{CampaignStore}=require('../.build/chronicle-store-test.cjs'),store=new CampaignStore(root+'/workbench.sqlite');
+ try{
+  const campaign=store.create('Zeitnotizen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
+  const hero=store.executeLive(command({kind:'create-character',profile:{name:'Iri'}})).character;
+  let scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:store.live(w.token).rosterRevision})).scene;
+  for(let i=0;i<2003;i++)scene=store.executeLive(command({kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:1,unit:'minutes',calendarVersion:'relative-v1',reason:i===0?'Bronzeschlüssel nach der Nachtwache':'Routinenotiz '+i})).scene;
+  const original=store.db.prepare('SELECT id,payload,checksum FROM scene_time_step ORDER BY id').all();
+  const match=store.chronicle(w.token,'world','Bronzeschlüssel');assert.equal(match.entries.length,1);assert.match(match.entries[0].summary,/Bronzeschlüssel/);assert.equal(match.truncated,false);
+  assert.equal(store.chronicle(w.token,'party','Bronzeschlüssel').entries.length,0);
+  const all=store.chronicle(w.token,'world');assert.equal(all.entries.length,2000);assert.equal(all.truncated,true);
+  const insert=store.db.prepare('INSERT INTO world_history(campaign_id,id,scene_id,payload,checksum) VALUES(?,?,?,?,?)');
+  store.db.transaction(()=>{for(let i=0;i<2003;i++){const payload=JSON.stringify({recordedAt:new Date(i).toISOString(),text:'Gruppe gewechselt',facts:{kind:'party-move',characterIds:[hero.id],fromSceneId:scene.id,toSceneId:scene.id,reason:i===0?'alt':''}});insert.run(campaign.id,'party-'+i,scene.id,payload,createHash('sha256').update(payload).digest('hex'));}})();
+  assert.equal(store.chronicle(w.token,'party','Iri').entries.length,2000);assert.equal(store.chronicle(w.token,'party','Iri').truncated,true);assert.equal(store.chronicle(w.token,'travel','Iri').entries.length,0);
+  assert.deepEqual(store.db.prepare('SELECT id,payload,checksum FROM scene_time_step ORDER BY id').all(),original);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});

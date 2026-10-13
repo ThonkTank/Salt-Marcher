@@ -1,3 +1,4 @@
+import {editGroup} from './groups';
 import {editTreasury} from './treasury';
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
@@ -339,6 +340,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
     const cam = command.campaignId, fp = hash(json({ ...command, token: undefined })), prior = db.prepare('SELECT * FROM progress_receipt WHERE command_id=?').get(command.commandId);
     if (prior) { if (prior.campaign_id !== cam || prior.fingerprint !== fp || hash(prior.payload) !== prior.checksum) throw new Error('Auftragskennung bereits anders verwendet.'); return JSON.parse(prior.payload); }
     const a = command.action;
+    let groupId:string|undefined;
     let treasureId: string | null = null; const ledgerIds: string[] = [];
     if(a.kind==='narrative-state'){
       const current=readNarrative(db,cam,a.state.noteId);if(current.state.revision!==a.expectedRevision||current.noteRevision!==a.expectedNoteRevision)throw new Error('Narrative Notiz oder Belohnung geändert.');validateNarrativeState(db,cam,a.state);for(const i of a.state.items){copper(i.valueGold);if(!['coins','equipment','trade-goods','magic','other'].includes(i.category))throw new Error('Gegenstandskategorie prüfen.');}consumeNarrativeDraft(db,cam,a.state.noteId,a.draftWriteId);const state={...structuredClone(a.state),revision:current.state.revision+1,awardId:current.state.awardId};saveNarrative(db,cam,state);event(db,cam,null,'narrative-state',{before:current.state,after:state});
@@ -390,6 +392,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         else { p.rest.shortXp = 0; if (p.rest.known && p.rest.sections < 2) { p.rest.baseline = p.rest.longXp; p.rest.sections++; } }
         saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', { rest: a.rest, before, after: p });
       }
+    } else if(a.kind==='group-create'||a.kind==='group-edit'){groupId=editGroup(db,cam,a);
     } else if(a.kind==='treasure-create'||a.kind==='treasure-edit'||a.kind==='treasure-move'){treasureId=editTreasury(db,cam,a);
     } else if (a.kind === 'treasure') { treasureId = makeTreasure(db, cam, a.title, a.sceneId, null, a.items);
     } else if (a.kind === 'allocate') {
@@ -428,6 +431,6 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
       if (!Array.isArray(a.ids) || a.ids.length > 1000) throw new Error('Ungültige Hinweise.');
       for (const id of a.ids) db.prepare('UPDATE progress_notice SET delivered=1 WHERE campaign_id=? AND id=? AND character_id IN(SELECT id FROM roster_member WHERE campaign_id=? AND active=1)').run(cam,id,cam);
     } else throw new Error('Unbekannte Fortschrittsaktion.');
-    const result: ProgressAck = { ...readProgress(db,cam), treasureId, ledgerIds }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
+    const result: ProgressAck = { ...readProgress(db,cam), treasureId, groupId, ledgerIds }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
   }).immediate();
 }

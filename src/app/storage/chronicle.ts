@@ -9,6 +9,8 @@ function payload(row:any):Record<string,any>{
 const text=(value:unknown,fallback='')=>typeof value==='string'?value:fallback;
 const quantity=(item:any)=>item&&Number.isSafeInteger(item.quantity)?item.quantity+' × '+text(item.currentName??item.name,'Gegenstand'):'Gegenstand';
 const nameList=(ids:unknown,names:Map<string,string>)=>Array.isArray(ids)?ids.map(id=>names.get(String(id))??'Unbekannte Figur'):[];
+const sceneName=(id:unknown,scenes:Map<string,string>)=>typeof id==='string'?scenes.get(id)??'Unbekannte Gruppe':null;
+const timeUnit=(unit:unknown)=>({seconds:'Sekunden',minutes:'Minuten',hours:'Stunden',days:'Tage'}[String(unit)]??String(unit));
 
 function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,string>,locations:Map<string,string>,narrativeLocations:Map<string,string|null>,combats:Map<string,{title:string;sceneId:string;outcome:string}>):ChronicleEntry|null{
   const person=row.character_id?names.get(row.character_id)??'Unbekannte Figur':null;
@@ -23,6 +25,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
   else if(row.kind==='shop-purchase'){category='reward';title='Gegenstand gekauft';summary=(person?person+': ':'')+quantity(item)+(item?.counterparty?' · '+item.counterparty:'');locationId=item?.locationId??null;}
   else if(['loot-given','loot-transfer'].includes(row.kind)){category='reward';title='Gegenstand weitergegeben';summary=(person?person+': ':'')+quantity(item)+(item?.counterparty?' · an '+item.counterparty:'');}
   else if(row.kind==='loot-transfer-received'){category='reward';title='Gegenstand erhalten';summary=(person?person+': ':'')+quantity(item);}
+  else if(row.kind==='group-created'||row.kind==='group-edited'){category='world';title=(row.kind==='group-created'?'Gruppe angelegt: ':'Gruppe bearbeitet: ')+text(f.after?.title,'Gruppe');summary=String(f.after?.actors?.length??0)+' Figuren';locationId=f.after?.locationId??null;}
   else if(row.kind==='treasure-edited'){category='reward';title='Schatz nachbearbeitet: '+text(f.after?.title,'Fund');summary=text(f.reason,'Unverteilte Beute angepasst.');locationId=f.after?.locationId??null;}
   else if(row.kind==='treasure-moved'){category='reward';title='Beute verschoben: '+text(f.before?.title,'Fund')+' → '+text(f.targetAfter?.title,'Zielschatz');summary=String(f.quantity??0)+' Einheiten · '+text(f.reason);locationId=f.targetAfter?.locationId??null;}
   else if(row.kind==='loot-correction'){category='reward';title='Beutestand korrigiert';summary=(person?person+': ':'')+text(f.reason,'Bestand angepasst');}
@@ -37,9 +40,9 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
 }
 
 // Stream relevant source records in bounded portions under the same read snapshot.
-const progressKinds=['narrative-award','combat-award','treasure-created','treasure-edited','treasure-moved','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
+const progressKinds=['group-created','group-edited','narrative-award','combat-award','treasure-created','treasure-edited','treasure-moved','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
 const sourceLimit=2000;
-function* sourceRows(db:any,cam:string,table:'progress_event'|'world_history',kinds?:string[]){
+function* sourceRows(db:any,cam:string,table:'progress_event'|'world_history'|'scene_time_step',kinds?:string[]){
   let before=Number.MAX_SAFE_INTEGER;
   for(;;){
     let count=0,cursor=before;
@@ -93,10 +96,26 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
     }
     finishAward();
     const worldEntries:ChronicleEntry[]=[];let worldTruncated=false;
-    for(const row of sourceRows(db,cam,'world_history')){const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);const entry:ChronicleEntry={id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}}
-    const entries=[...progressEntries,...combatEntries,...worldEntries];
+    for(const row of sourceRows(db,cam,'world_history')){
+      const f=payload(row),facts=f.facts??{},sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=facts.locationId??facts.after?.position?.locationId??facts.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;
+      const title=text(f.text,'Weltereignis'),party=facts.kind==='party-membership'||facts.kind==='party-move',travel=!party&&/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);
+      let summary='';
+      if(facts.kind==='party-membership')summary=facts.active?'Aktiviert'+(sceneName(facts.toSceneId,scenes)?' in '+sceneName(facts.toSceneId,scenes):''):'Deaktiviert'+(sceneName(facts.fromSceneId,scenes)?' aus '+sceneName(facts.fromSceneId,scenes):'');
+      else if(facts.kind==='party-move')summary=(sceneName(facts.fromSceneId,scenes)??'Unbekannte Gruppe')+' → '+(sceneName(facts.toSceneId,scenes)??'Unbekannte Gruppe')+(facts.createdScene?' · neue Gruppe':'');
+      const entry:ChronicleEntry={id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:party?'party':travel?'travel':'world',title,summary,people:party?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}
+    }
+    const timeEntries:ChronicleEntry[]=[];let timeTruncated=false;
+    for(const row of sourceRows(db,cam,'scene_time_step')){
+      const f=payload(row),recordedAt=text(f.recordedAt);if(!recordedAt)continue;
+      if(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(recordedAt)||!Number.isFinite(Date.parse(recordedAt)))throw new Error('Chronikquelle hat einen ungültigen Zeitpunkt.');
+      const reason=text(f.reason);if(reason.startsWith('Reise '))continue;
+      const travel=reason==='Dungeonbewegung'||reason==='Bestätigter Passagenlink',sceneRow=sceneRows.find((r:any)=>r.id===row.scene_id),locationId=sceneRow?.location_id??null;
+      const entry:ChronicleEntry={id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+String(f.amount)+' '+timeUnit(f.unit)+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;timeEntries.push(entry);if(timeEntries.length>2000){timeTruncated=true;break;}
+    }
+    const entries=[...progressEntries,...combatEntries,...worldEntries,...timeEntries];
+
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id));
-    return{campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:progressTruncated||worldTruncated||entries.length>sourceLimit};
+    return{campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:progressTruncated||worldTruncated||timeTruncated||entries.length>sourceLimit};
   })();
 }
 
