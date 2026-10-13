@@ -34,6 +34,8 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   sessionRuns: (token: string,id: string)=>ipcRenderer.invoke('campaign:session-runs',token,id),
   sessionRun: (token: string,id: string)=>ipcRenderer.invoke('campaign:session-run',token,id),
   scenePreparation: (token: string,id: string)=>ipcRenderer.invoke('campaign:scene-preparation',token,id),
+  sceneRules:(token:string,id:string)=>ipcRenderer.invoke('campaign:scene-rules',token,id),
+  executeSceneRule:(command:import('../src/app/rule-reference-contracts').SceneRuleCommand)=>ipcRenderer.invoke('campaign:execute-scene-rule',command),
   encounterTables: (token: string, includeTrashed: boolean) => ipcRenderer.invoke('campaign:encounter-tables',token,includeTrashed),
   lootTables: (token: string, includeTrashed: boolean) => ipcRenderer.invoke('campaign:loot-tables',token,includeTrashed),
   generatorRegistry: (token: string) => ipcRenderer.invoke('campaign:generator-registry',token),

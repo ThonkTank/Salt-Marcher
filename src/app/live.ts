@@ -8,6 +8,7 @@ import { initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCr
 import {initChase,chaseContext,flushChase} from './chase-ui';
 import type { EncounterPlan } from './encounter-contracts';
 import { initProgress, progressionContext, flushProgress } from './progression-ui';
+import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -28,6 +29,7 @@ const changed = () => !!(characterDraft && originalCharacter() && !equal(charact
 export function activateLive(workspace: Workspace) {
   combatContext(null, null);chaseContext(null,null,[]); progressionContext(null, null, null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
+  activateRuleReferences(workspace);
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
   get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
   adoption = null; moveBasis = null;
@@ -194,6 +196,7 @@ function renderSceneMeta() {
   get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatInstant(scene.clock.instantMs) : '';
   renderTimePreview();
   void refreshScenePreparation();
+  void refreshRuleReferences(resumed?scene?.id??null:null);
   const origin = get('running-origin'); origin.replaceChildren();
   if (scene?.adoption) {
     const a = scene.adoption, title = document.createElement('p'), notes = document.createElement('p'), place = document.createElement('p');
@@ -250,7 +253,7 @@ function render() {
   renderVisits();
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation) {
-  tell = status; openLocation = navigate; initCombat(status,refreshScenePreparation);initChase(status); initProgress(status);
+  tell = status; openLocation = navigate; initCombat(status,refreshScenePreparation);initChase(status); initProgress(status);initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
