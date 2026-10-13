@@ -33,6 +33,7 @@ let preparationLoad = 0;
 let hasOpenInput = false;
 let failedCommand: PreparationCommand | null = null;
 let tell: (text: string, error?: boolean) => void;
+function syncSaveControl() { get('preparation-apply').hidden = !hasOpenInput || blocked; }
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const originalNote = () => noteRow(selectedNote)?.note;
 const originalPlan = () => data.plans.find(plan => plan.id === selectedPlan);
@@ -52,6 +53,7 @@ async function loadedDraft(kind: PreparationEdit['kind'], id: string) {
     if (saved) {
       hasOpenInput = true;
       if (saved.failedCommand) { failedCommand = saved.failedCommand; blocked = true; get('preparation-reconcile').hidden = false; get('preparation-refresh').hidden = false; }
+      syncSaveControl();
       tell('Offener Vorbereitungsentwurf wiederaufgenommen. Noch nicht als Autorenstand gespeichert.', true);
     }
     return saved;
@@ -102,7 +104,7 @@ export async function activatePreparation(workspace: Workspace) {
   context = workspace; blocked = false; failedCommand = null; hasOpenInput = false; noteDraft = null; planDraft = null; locationDraft = null;
   retained.clear(); draftProblems.clear();
   composing = false; if (timer) clearTimeout(timer); timer = null;
-  get('preparation-reconcile').hidden = true; get('preparation-refresh').hidden = true;
+  get('preparation-reconcile').hidden = true; get('preparation-refresh').hidden = true; syncSaveControl();
   try {
     const response = await window.campaign.preparation(workspace.token, '');
     if (request !== preparationLoad || context?.token !== workspace.token) return;
@@ -155,11 +157,11 @@ async function change(change: PreparationChange, redraw = true): Promise<boolean
       if (confirmed) planDraft = preservePlanInput(confirmed, sent, planDraft);
     }
     if (redraw) await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
-    renderProblems(); tell('Gespeichert.'); return true;
+    renderProblems(); syncSaveControl(); tell('Gespeichert.'); return true;
   } catch (error) {
     if (context?.token !== token) return false;
     if (change.kind === 'plan' && planDraft?.id === change.plan.id && originalPlan()) planDraft = preservePlanInput(change.plan, originalPlan()!, planDraft);
-    blocked = true; failedCommand = command; get('preparation-refresh').hidden = false; get('preparation-reconcile').hidden = false;
+    blocked = true; failedCommand = command; get('preparation-refresh').hidden = false; get('preparation-reconcile').hidden = false; syncSaveControl();
     try { await retainOpenDrafts(); tell((error as Error).message + ' Entwurf gesichert. Kein automatischer Neuversuch.', true); }
     catch (draftError) { tell((error as Error).message + ' Entwurf bleibt im Speicher: ' + (draftError as Error).message, true); }
     return false;
@@ -179,7 +181,7 @@ export async function flushPreparation(skipSession=false,skipNarrative=false): P
   const beforeLocation = originalLocation();
   const changedNote = noteDraft && beforeNote && !equal(noteDraft, beforeNote), changedPlan = planDraft && beforePlan && !equal(planDraft, beforePlan);
   const changedLocation = locationDraft && beforeLocation && !equal(locationDraft, beforeLocation);
-  if (!changedNote && !changedPlan && !changedLocation) { if (hasOpenInput) { await retainOpenDrafts(); hasOpenInput = false; tell('Gespeichert.'); } return true; }
+  if (!changedNote && !changedPlan && !changedLocation) { if (hasOpenInput) { await retainOpenDrafts(); hasOpenInput = false; syncSaveControl(); tell('Gespeichert.'); } return true; }
   pending = (async () => {
     if (changedNote) {
       const sent = structuredClone(noteDraft!);
@@ -201,7 +203,7 @@ export async function flushPreparation(skipSession=false,skipNarrative=false): P
       renderLocationList(); renderSceneLocation(); renderLocationMapActions();
     }
     hasOpenInput = !!(noteDraft && originalNote() && !equal(noteDraft, originalNote()) || planDraft && originalPlan() && !equal(planDraft, originalPlan()) || locationDraft && originalLocation() && !equal(locationDraft, originalLocation()));
-    tell(hasOpenInput ? 'Weitere Vorbereitungseingabe offen – noch nicht gespeichert.' : 'Gespeichert.');
+    syncSaveControl(); tell(hasOpenInput ? 'Weitere Vorbereitungseingabe offen – noch nicht gespeichert.' : 'Gespeichert.');
     return true;
   })().finally(() => { pending = null; });
   const okay = await pending;
@@ -209,6 +211,7 @@ export async function flushPreparation(skipSession=false,skipNarrative=false): P
 }
 function schedule() {
   hasOpenInput = true;
+  syncSaveControl();
   if (timer) clearTimeout(timer);
   if (blocked) { tell('Schreiben gesperrt. Der Entwurf bleibt offen.', true); return; }
   tell('Eingabe offen – noch nicht gespeichert.');
@@ -303,7 +306,7 @@ async function renderPlans() {
   else if (saved?.change.kind === 'plan') planDraft = structuredClone(saved.change.plan);
   else if (planDraft?.id !== confirmed.id || planDraft.revision !== confirmed.revision) planDraft = structuredClone(confirmed);
   if (planDraft && !planDraft.scenes.some(scene => scene.id === selectedScene)) selectedScene = planDraft.scenes[0]?.id ?? null;
-  get('plan-controls').hidden = !planDraft; get('plan-empty').hidden = !!planDraft;
+  get('plan-controls').hidden = !planDraft; get('plan-empty').hidden = !!planDraft; get('plan-clear').hidden = !planDraft?.scenes.length;
   get('plan-controls').inert = !!confirmed && draftProblems.has(draftKey('plan', confirmed.id));
   get<HTMLInputElement>('plan-name').value = planDraft?.name ?? '';
   renderSceneList(); const scene = planDraft?.scenes.find(scene => scene.id === selectedScene);
@@ -528,7 +531,7 @@ function renderRelations() {
   const row = noteRow(selectedNote); get('note-relations').replaceChildren(); get('note-incoming').replaceChildren();
   const select = get<HTMLSelectElement>('relation-target'); select.replaceChildren();
   for (const target of campaignNotes.values()) { if (target.trashed || target.note.id === selectedNote) continue; const option = document.createElement('option'); option.value = target.note.id; option.textContent = target.note.title; select.append(option); }
-  get('relation-create').hidden = !row || row.trashed;
+  get('relation-create').hidden = !row || row.trashed || !select.options.length;
   if (!row) return; const token = context?.token;
   const navigate = (id: string) => { void (async () => { if (context?.token !== token || !(await flushPreparation()) || context?.token !== token) return; selectedNote = id; showLocations(false); await renderNotes(); if (context?.token === token) revealNote(id); })(); };
   for (const relation of row.note.relations) {

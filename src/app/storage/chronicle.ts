@@ -26,6 +26,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
   else if(row.kind==='loot-correction'){category='reward';title='Beutestand korrigiert';summary=(person?person+': ':'')+text(f.reason,'Bestand angepasst');}
   else if(row.kind==='xp'){category='party';title='XP korrigiert';summary=(person?person+': ':'')+String(f.before?.xp??'offen')+' → '+String(f.after?.xp??'offen')+(f.reason?' · '+f.reason:'');}
   else if(row.kind==='health'){category='party';title='Trefferpunkte geändert';summary=(person?person+': ':'')+String(f.before?.health?.hp??'offen')+' → '+String(f.after?.health?.hp??'offen')+' HP'+(f.reason?' · '+f.reason:'');}
+  else if(row.kind==='death-save'){category='party';title='Todesrettungswurf';const d=f.after?.health?.death;summary=(person?person+': ':'')+(d?.dead?'tot':d?.stable?'stabilisiert':(d?.successes??0)+' Erfolge · '+(d?.failures??0)+' Fehlschläge');}
   else if(row.kind==='rest'){category='party';title=f.rest==='long'?'Lange Rast':'Kurze Rast';summary=person??'Partyfortschritt gespeichert';}
   else if(['combat-entry','combat-exit','combat-return'].includes(row.kind)){category='combat';title=row.kind==='combat-entry'?'Initiative betreten':row.kind==='combat-exit'?'Initiative verlassen':'In Initiative zurückgekehrt';summary=(person?person+' · ':'')+text(f.title,'Begegnung');const combat=combats.get(String(f.combatId));sceneId=combat?.sceneId??null;}
   else return null;
@@ -34,7 +35,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
 }
 
 // These are the event kinds represented by progressEntry; bookkeeping has no chronicle row.
-const progressKinds=['narrative-award','combat-award','treasure-created','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','rest','combat-entry','combat-exit','combat-return'];
+const progressKinds=['narrative-award','combat-award','treasure-created','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
 const sourceLimit=2000;
 
 export function readChronicle(db:any,cam:string):ChronicleView{

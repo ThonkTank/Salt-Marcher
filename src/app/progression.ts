@@ -23,17 +23,18 @@ export function gold(cp: string) { const n = BigInt(cp); return (n / 100n) + ','
 export interface Progress {
   characterId: string; revision: number; xp: number | null;
   rest: { known: boolean; longXp: number; shortXp: number; baseline: number; sections: number };
-  health: { hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean } | null;
+  health: { hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean; death?:{successes:number;failures:number;stable:boolean;dead:boolean} } | null;
   /** Current conditions/temporary HP when normal HP are intentionally unknown. */
   combatStatus?: {tempHp:number;conditions:string;concentrating:boolean};
 }
-export type CharacterHealth = NonNullable<Progress['health']>;
+export type CharacterHealth = NonNullable<Progress['health']> & {death?:{successes:number;failures:number;stable:boolean;dead:boolean}};
 export function checkedHealthStatus(h: NonNullable<Progress['combatStatus']>) {
   if(!h||typeof h!=='object'||Array.isArray(h)||!Number.isSafeInteger(h.tempHp)||h.tempHp<0||h.tempHp>1000000||typeof h.conditions!=='string'||h.conditions.length>4000||typeof h.concentrating!=='boolean')throw new Error('Gespeicherte HP oder Zustände ungültig.');
   return h;
 }
 export function checkedHealth(h: CharacterHealth): CharacterHealth {
   if (!h || typeof h !== 'object' || Array.isArray(h) || typeof h.conditions !== 'string' || h.conditions.length > 4000 || typeof h.concentrating !== 'boolean' || ![h.hp,h.maxHp,h.tempHp].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=1000000) || h.maxHp<1 || h.hp>h.maxHp) throw new Error('HP benötigen gültige ganze Werte und aktuelle HP bis zum Maximum.');
+  if(h.death&&(![h.death.successes,h.death.failures].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=3)||typeof h.death.stable!=='boolean'||typeof h.death.dead!=='boolean'))throw new Error('Todesrettungswürfe ungültig.');
   return h;
 }
 export function restFrame(p: Progress) {
@@ -75,7 +76,7 @@ export type ProgressAction = NarrativeAction
   | {kind:'ledger-split';entryId:string;expectedRevision:number;quantity:number;reason:string}
   | {kind:'ledger-merge';entryId:string;expectedRevision:number;sourceId:string;expectedSourceRevision:number;reason:string}
   | {kind:'ledger-transfer';entryId:string;expectedRevision:number;quantity:number;characterId:string;expectedMembershipRevision:number;reason:string}
-  | ({kind:'health';characterId:string;expectedRevision:number;reason:string} & ({operation:'set';health:CharacterHealth}|{operation:'damage'|'heal';amount:number}))
+  | ({kind:'health';characterId:string;expectedRevision:number;reason:string} & ({operation:'set';health:CharacterHealth}|{operation:'damage'|'heal';amount:number}|{operation:'death';result:'success'|'failure'|'natural-20'|'natural-1'|'stabilize'|'reset'|'dead'}))
   | { kind: 'xp'; characterId: string; expectedRevision: number; mode: 'add' | 'subtract' | 'set'; amount: number; reason: string; correctionOf?: string }
   | { kind: 'rest'; rest: 'short' | 'long'; recipients: ProgressGuard[] }
   | { kind: 'treasure'; title: string; sceneId: string | null; items: ItemInput[] }
