@@ -1,7 +1,7 @@
 import {createHash} from "node:crypto";
 import assert from "node:assert/strict";
 import test from "node:test";
-import {applyChaseAction,type ChaseState} from "../../src/app/chase-contracts";
+import {applyChaseAction,chaseActionControls,type ChaseState} from "../../src/app/chase-contracts";
 import {readChase} from "../../src/app/storage/chase";
 
 const running=():ChaseState=>({id:"chase-1",revision:1,sceneId:"scene-1",title:"Flucht",status:"running",round:0,goal:"Tor",complication:"",outcome:"",participants:[{id:"p-1",name:"Flüchtende",side:"quarry",distance:0,speed:9,exhaustion:0,notes:""},{id:"p-2",name:"Wache",side:"pursuer",distance:12,speed:9,exhaustion:0,notes:""}]});
@@ -18,6 +18,11 @@ test("finished chases are terminal",()=>{
   const finished=applyChaseAction(running(),{kind:"finish",outcome:"Entkommen"});
   assert.equal(finished.status,"finished");
   assert.throws(()=>applyChaseAction(finished,{kind:"remove",participantId:"p-1"}),/abgeschlossen/);
+});
+
+test("chase actions require the input they can affect",()=>{
+  assert.deepEqual(chaseActionControls({title:" ",participantName:"",participantCount:0,outcome:"  "}),{start:false,addParticipant:false,advanceRound:false,finish:false});
+  assert.deepEqual(chaseActionControls({title:"Flucht",participantName:"Wache",participantCount:1,outcome:"Entkommen"}),{start:true,addParticipant:true,advanceRound:true,finish:true});
 });
 
 test("recent chase summaries verify the stored envelope",()=>{
