@@ -43,6 +43,8 @@ npm run start:desktop -- --data-dir /tmp/campaign-workbench-smoke
 
 Der Desktopkandidat speichert ohne `--data-dir` im lokalen Appdatenordner `CampaignWorkbench`. Er verbindet Kampagnenverwaltung, Vorbereitung, Live-Spiel, Katalog, Gegenstände, Welt/Atlas, Städte, Musik, Dungeonzeichnung und eine getrennte Spieleranzeige. Die Desktopfunktion ist ein Entwicklungsstand; offene Produktlücken und Abnahmen stehen in den Fachplänen.
 
+Quests und Gerüchte können Mitwirkende, Ort, Status, XP und mehrere Gegenstandsbelohnungen tragen. Ihr manueller Abschluss verwendet denselben Verteilungsablauf wie Encounter. Das persönliche Beutebuch kann Mengenstapel teilen, zusammenführen und ausdrücklich an andere Figuren weitergeben.
+
 Ein lokales Linux-x64-Paket entsteht mit:
 
 ```bash
