@@ -86,6 +86,7 @@ export async function readArchive(filename:string,base:string,allowedName:(name:
   for await(const chunk of createReadStream(filename)){h.check();bytes+=chunk.length;unzip.push(chunk);if(error)throw error;await Promise.all(drains.splice(0));h.progress(bytes,files.size);}
   h.check();unzip.push(new Uint8Array(),true);if(error)throw error;
   if(!files.has('manifest.json')||!manifestState.expected||files.size!==manifestState.expected.size+1||files.size!==outputs.length||[...manifestState.expected].some(([name])=>!files.has(name)))throw new Error('Archiv ist unvollständig.');
+
   await Promise.all(outputs.map(x=>x.done));h.check();
   files.delete('manifest.json');
   success=true;return{dir,manifest,files};
