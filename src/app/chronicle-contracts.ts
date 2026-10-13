@@ -13,6 +13,6 @@ export interface ChronicleEntry {
 }
 export interface ChronicleView {campaignName:string;entries:ChronicleEntry[];truncated:boolean}
 export interface ChronicleAPI {
-  chronicle(token:string):Promise<Result<ChronicleView>>;
+  chronicle(token:string,category?:ChronicleCategory|'all',search?:string):Promise<Result<ChronicleView>>;
   exportChronicle(token:string,category:ChronicleCategory|'all',search:string):Promise<Result<{cancelled:boolean}>>;
 }

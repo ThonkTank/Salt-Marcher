@@ -527,7 +527,7 @@ export class CampaignStore {
   progressHistory(token: string, characterId: string, after: string | null) { return readProgressHistory(this.db, this.guard(token), characterId, after); }
   chase(token:string,sceneId:string,id?:string){return readChase(this.db,this.guard(token),sceneId,id);}
   executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
-  chronicle(token:string){return readChronicle(this.db,this.guard(token));}
+  chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
   treasures(token: string, after: string | null) { return readTreasures(this.db, this.guard(token), after); }
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }
