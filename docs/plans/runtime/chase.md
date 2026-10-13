@@ -16,7 +16,9 @@ Registryhash `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e` 
 `chase-contracts.ts`, `storage/chase.ts`, Main/preload und `chase-ui.ts` bieten
 zurzeit eine manuelle persistente Liste mit freien Teilnehmern, Abstand, Tempo,
 Erschöpfung, Komplikation, Runde und Abschluss. Abschluss schreibt einen
-Welthistorieneintrag. Mehrfachmaskenwahl, Actor-/Membershipbindungen, Zeitport,
+Welthistorieneintrag. Die integrierte Auswahl erschließt zuletzt gespeicherte
+Masken derselben Scene; Pflichtfelder sperren verfrühte Aktionen. Vollständige
+parallele Maskenführung, Actor-/Membershipbindungen, Zeitport,
 Workingdrafts und vollständige Datenclosure bleiben offen. Die inzwischen
 integrierte Receiptstrecke bietet Commandreplay und lesende Statusaufklärung.
 Der aktuelle Tracker ist daher eine Teillieferung.
@@ -60,7 +62,9 @@ Native Bedienung und reale Crossworkflow-/Speicher-/Maskenabnahme stehen aus.
 2. **Datenabschluss vervollständigen.** Der integrierte Backupvalidator prüft
    Header/Shape und gespeicherte Belege. Zwei Legacygegenproben fanden allerdings
    Fehler bei Schema 38 ohne Chase bzw. ohne Receipttabelle; der Validator
-   berücksichtigt jetzt diese historischen Varianten. Ältere Formatadapter
+   berücksichtigt jetzt diese historischen Varianten. Der integrierte
+Treasuryanschluss nutzt Schema 39; dessen Adapter installiert Chase ebenfalls
+auf der eigenen Migrationskopie. Ältere Formatadapter
    installieren die Chasetabellen auf der eigenen Importkopie.
    Eine weitere Gegenprobe fand den alten Abschlussverweis nach unabhängiger
    Kopie. `campaign-data.ts` remappt nun den strukturellen `chaseId`-Slot in
