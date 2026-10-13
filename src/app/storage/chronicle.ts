@@ -47,7 +47,6 @@ export function readChronicle(db:any,cam:string):ChronicleView{
     const combats=new Map<string,{title:string;sceneId:string;outcome:string}>();for(const r of db.prepare("SELECT id,scene_id,payload,checksum FROM combat WHERE campaign_id=? AND phase='finished'").all(cam)){const p=payload(r);combats.set(r.id,{title:text(p.title,'Begegnung'),sceneId:r.scene_id,outcome:text(p.outcome)});}
     const entries:ChronicleEntry[]=[],awards=new Map<string,ChronicleEntry>();
     const progressRows=db.prepare('SELECT rowid AS cursor,* FROM progress_event WHERE campaign_id=? AND kind IN ('+progressKinds.map(()=>'?').join(',')+') ORDER BY rowid DESC LIMIT ?').iterate(cam,...progressKinds,sourceLimit+1);
-    const worldRows=db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC LIMIT ?').iterate(cam,sourceLimit+1);
     let sourceTruncated=false,progressCount=0,worldCount=0;
     for(const row of progressRows){
       if(!progressKinds.includes(row.kind))continue;
@@ -57,6 +56,7 @@ export function readChronicle(db:any,cam:string):ChronicleView{
       if(row.kind==='combat-award'&&f.awardId){const prior=awards.get(f.awardId);if(prior){prior.people.push(...entry.people);if(Number(f.xp)>0)prior.summary+=(prior.summary.includes(' XP für ')?', ':' · '+f.xp+' XP für ')+(entry.people[0]??'Unbekannt');continue;}awards.set(f.awardId,entry);}
       entries.push(entry);
     }
+    const worldRows=db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC LIMIT ?').iterate(cam,sourceLimit+1);
     for(const row of worldRows){if(++worldCount>sourceLimit){sourceTruncated=true;break;}const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);entries.push({id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null});}
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id));
     return{campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:sourceTruncated||entries.length>sourceLimit};

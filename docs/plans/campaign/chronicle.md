@@ -34,13 +34,17 @@ ein gekürzter Markdownexport trug keinen Hinweis. Der Reader filtert jetzt die
 von `progressEntry` dargestellten Eventarten vor dem SQL-Limit. Die Lookahead-
 Grenzen beider Quellen bleiben unabhängig von der Gruppierung im `truncated`-
 Flag erhalten. Markdown übernimmt diesen Hinweis auch bei leerem Suchergebnis.
-Datenquellen und ihre Textinhalte werden dabei nicht verändert.
+Datenquellen und ihre Textinhalte werden dabei nicht verändert. Integrierte
+Kontextlabels werden ebenfalls gegen ihren Bytehash geprüft. Die begrenzten
+Quellen werden nacheinander gestreamt; ein noch unbenutzter SQLiteiterator darf
+bei einem Quellfehler den Transaktionsrollback nicht mit einer Busy-Meldung
+verdecken. Die vorhandene Fehlergegenprobe prüft diese Grenze.
 
 `tests/desktop-chronicle-window.test.mjs` prüft diese drei Fehler, die genaue
 2000/2001-Grenze, Weltquellenüberlauf, die gemeinsame Ausgabegrenze und eine
 beschädigte sichtbare Quelle gegen SQLite. Sieben Prüfungen bestanden;
 zusammen mit den betroffenen Narrativ-/Kampf-/Lade-/Codecprüfungen bestanden
-35 gezielte Prüfungen und der Desktop-Typecheck. Keine native Chronikbedienung,
+38 gezielte Prüfungen und der Desktop-Typecheck. Keine native Chronikbedienung,
 Hard-Crash- oder vollständige Produktabnahme ist damit belegt.
 
 ## Nächste ausführbare Lieferung
