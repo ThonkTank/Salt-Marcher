@@ -142,6 +142,10 @@ function recordLocationVisit(db:any,campaignId:string,sceneId:string,beforeLocat
   const value=json({text:locationId?'Ort besucht: '+name:'Ort verlassen',recordedAt:new Date().toISOString(),facts:{locationId,beforeLocationId,source,visitId:visitId??null}});
   db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(campaignId,randomUUID(),sceneId,value,hash(value));
 }
+function recordPartyHistory(db:any,campaignId:string,sceneId:string|null,text:string,facts:Record<string,unknown>){
+  const value=json({text,recordedAt:new Date().toISOString(),facts});
+  db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(campaignId,randomUUID(),sceneId,value,hash(value));
+}
 function targetRevision(db: any, campaignId: string, action: LiveCommand['action'], targetId: string): number | null {
   const table = action.kind === 'membership' ? 'roster_member' : action.kind === 'profile' || action.kind === 'create-character' ? 'character_profile' : 'live_scene';
   if (!db.prepare('SELECT 1 FROM ' + table + ' WHERE campaign_id=? AND id=?').get(campaignId, targetId)) return null;
@@ -197,7 +201,8 @@ export function validateLiveBackup(db: any, campaignId: string) {
     if (hash(row.payload) !== row.checksum) throw new Error('Zeitverlauf beschädigt.');
     const step = JSON.parse(row.payload), current = clock(db, campaignId, row.scene_id);
     if (step.calendarVersion !== 'relative-v1' || step.epochId !== current.epochId || advanceInstant(step.from, step.amount, step.unit) !== step.to ||
-      !Number.isSafeInteger(step.beforeRevision) || step.beforeRevision < 0 || step.afterRevision !== step.beforeRevision + 1 || step.afterRevision > current.revision) throw new Error('Zeitverlauf ist nicht konsistent.');
+      !Number.isSafeInteger(step.beforeRevision) || step.beforeRevision < 0 || step.afterRevision !== step.beforeRevision + 1 || step.afterRevision > current.revision ||
+      step.recordedAt!==undefined&&(typeof step.recordedAt!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(step.recordedAt)||!Number.isFinite(Date.parse(step.recordedAt)))) throw new Error('Zeitverlauf ist nicht konsistent.');
     const previous = last.get(row.scene_id);
     if (previous ? row.ordinal !== previous.ordinal + 1 || step.from !== previous.to || step.beforeRevision !== previous.revision : row.ordinal !== 0) throw new Error('Zeitverlauf hat eine Lücke.');
     const receipt = db.prepare('SELECT room_id,revision FROM receipt WHERE command_id=?').get(row.command_id);
@@ -260,6 +265,9 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
         session = sessionDelta(db, campaignId, [before.id], retired, [before.sceneId, action.targetSceneId].filter((id): id is string => id !== null));
         scene = currentScene(db, campaignId, session.focusId);
       }
+      if (before.active !== action.active) recordPartyHistory(db,campaignId,action.active?action.targetSceneId:before.sceneId,
+        'Figur '+(action.active?'aktiviert: ':'deaktiviert: ')+before.profile.name,
+        {kind:'party-membership',characterIds:[before.id],active:action.active,fromSceneId:before.sceneId,toSceneId:action.active?action.targetSceneId:null});
     } else if (action.kind === 'focus') {
       const current = readLive(db, campaignId);
       if (current.focusRevision !== action.expectedRevision) throw new Error('Gruppenfokus wurde inzwischen geändert.');
@@ -300,6 +308,8 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       }
       targetId = source.id; revision = action.expectedRosterRevision + 1;
       scene = currentScene(db, campaignId, session.focusId);
+      recordPartyHistory(db,campaignId,destination.id,action.memberIds.length===1?'Figur verschoben':'Gruppe verschoben: '+action.memberIds.length+' Figuren',
+        {kind:'party-move',characterIds:action.memberIds,fromSceneId:source.id,toSceneId:destination.id,createdScene:created});
     } else if (action.kind === 'advance-clock') {
       const before = currentScene(db, campaignId, action.sceneId);
       if (before.clock.revision !== action.expectedRevision || action.calendarVersion !== 'relative-v1') throw new Error('Scenezeit oder Kalenderinterpretation wurde inzwischen geändert.');
@@ -308,7 +318,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       const to = advanceInstant(before.clock.instantMs, action.amount, action.unit);
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),-1)+1 n FROM scene_time_step WHERE campaign_id=? AND scene_id=?').get(campaignId, targetId).n;
       const payload = json({ epochId: before.clock.epochId, from: before.clock.instantMs, to, beforeRevision: before.clock.revision, afterRevision: revision,
-        amount: action.amount, unit: action.unit, calendarVersion: action.calendarVersion, reason: action.reason });
+        amount: action.amount, unit: action.unit, calendarVersion: action.calendarVersion, reason: action.reason,recordedAt:new Date().toISOString() });
       db.prepare('INSERT INTO scene_time_step VALUES(?,?,?,?,?,?,?)').run(campaignId, randomUUID(), targetId, command.commandId, ordinal, payload, hash(payload));
       db.prepare('UPDATE scene_clock SET revision=?,instant_ms=? WHERE campaign_id=? AND scene_id=?').run(revision, to, campaignId, targetId);
       scene = currentScene(db, campaignId, targetId);

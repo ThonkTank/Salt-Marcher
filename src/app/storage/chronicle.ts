@@ -9,6 +9,8 @@ function payload(row:any):Record<string,any>{
 const text=(value:unknown,fallback='')=>typeof value==='string'?value:fallback;
 const quantity=(item:any)=>item&&Number.isSafeInteger(item.quantity)?item.quantity+' × '+text(item.currentName??item.name,'Gegenstand'):'Gegenstand';
 const nameList=(ids:unknown,names:Map<string,string>)=>Array.isArray(ids)?ids.map(id=>names.get(String(id))??'Unbekannte Figur'):[];
+const sceneName=(id:unknown,scenes:Map<string,string>)=>typeof id==='string'?scenes.get(id)??'Unbekannte Gruppe':null;
+const timeUnit=(unit:unknown)=>({seconds:'Sekunden',minutes:'Minuten',hours:'Stunden',days:'Tage'}[String(unit)]??String(unit));
 
 function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,string>,locations:Map<string,string>,narrativeLocations:Map<string,string|null>,combats:Map<string,{title:string;sceneId:string;outcome:string}>):ChronicleEntry|null{
   const person=row.character_id?names.get(row.character_id)??'Unbekannte Figur':null;
@@ -50,10 +52,25 @@ export function readChronicle(db:any,cam:string):ChronicleView{
       progressEntries.push(entry);if(progressEntries.length>2000){progressTruncated=true;break;}
     }
     const worldEntries:ChronicleEntry[]=[];let worldTruncated=false;
-    for(const row of db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC').iterate(cam)){const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);worldEntries.push({id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null});if(worldEntries.length>2000){worldTruncated=true;break;}}
-    const entries=[...progressEntries,...worldEntries];
+    for(const row of db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC').iterate(cam)){
+      const f=payload(row),facts=f.facts??{},sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=facts.locationId??facts.after?.position?.locationId??facts.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;
+      const title=text(f.text,'Weltereignis'),party=facts.kind==='party-membership'||facts.kind==='party-move',travel=!party&&/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);
+      let summary='';
+      if(facts.kind==='party-membership')summary=facts.active?'Aktiviert'+(sceneName(facts.toSceneId,scenes)?' in '+sceneName(facts.toSceneId,scenes):''):'Deaktiviert'+(sceneName(facts.fromSceneId,scenes)?' aus '+sceneName(facts.fromSceneId,scenes):'');
+      else if(facts.kind==='party-move')summary=(sceneName(facts.fromSceneId,scenes)??'Unbekannte Gruppe')+' → '+(sceneName(facts.toSceneId,scenes)??'Unbekannte Gruppe')+(facts.createdScene?' · neue Gruppe':'');
+      worldEntries.push({id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:party?'party':travel?'travel':'world',title,summary,people:party?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null});if(worldEntries.length>2000){worldTruncated=true;break;}
+    }
+    const timeEntries:ChronicleEntry[]=[];let timeTruncated=false;
+    for(const row of db.prepare('SELECT rowid AS cursor,* FROM scene_time_step WHERE campaign_id=? ORDER BY rowid DESC').iterate(cam)){
+      const f=payload(row),recordedAt=text(f.recordedAt);if(!recordedAt)continue;
+      if(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(recordedAt)||!Number.isFinite(Date.parse(recordedAt)))throw new Error('Chronikquelle hat einen ungültigen Zeitpunkt.');
+      const reason=text(f.reason);if(reason.startsWith('Reise '))continue;
+      const travel=reason==='Dungeonbewegung'||reason==='Bestätigter Passagenlink',sceneRow=sceneRows.find((r:any)=>r.id===row.scene_id),locationId=sceneRow?.location_id??null;
+      timeEntries.push({id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+String(f.amount)+' '+timeUnit(f.unit)+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null});if(timeEntries.length>2000){timeTruncated=true;break;}
+    }
+    const entries=[...progressEntries,...worldEntries,...timeEntries];
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id));
-    return{campaignName:campaign.name,entries:entries.slice(0,2000),truncated:progressTruncated||worldTruncated||entries.length>2000};
+    return{campaignName:campaign.name,entries:entries.slice(0,2000),truncated:progressTruncated||worldTruncated||timeTruncated||entries.length>2000};
   })();
 }
 
