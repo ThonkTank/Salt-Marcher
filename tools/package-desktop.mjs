@@ -52,7 +52,9 @@ Umfang
   zusammenführen und weitergeben. Angefangene Questangaben bleiben als Entwurf
   erhalten; spätere Verkäufe weitergegebener Beute aktualisieren den ursprünglichen
   Lootwert. Kampf- und Questabschlüsse lassen sich mit Ergebnis und Belohnungsfeldern
-  unterbrechen und nach einem Neustart fortsetzen. Kampagnen lassen sich als .kwcampaign mit
+  unterbrechen und nach einem Neustart fortsetzen. Der Szenentisch verbindet
+  Kampagnenwissen, Suche, gruppenspezifische Pins, direkte NPC-/Quest-/Ortsanlage
+  und bearbeitbare Notizen mit der laufenden Gruppe. Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 
 Status
