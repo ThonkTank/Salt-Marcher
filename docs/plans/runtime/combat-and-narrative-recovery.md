@@ -73,9 +73,10 @@ fachliche Notizreferenz. Andere `sourceId`-Verträge und freie Prosa bleiben erh
 
 ## Nächste ausführbare Schritte
 
-1. **Narrative Wiederaufnahme vervollständigen.** Metadatenrohentwürfe sind
-   angeschlossen; Ergebnistext und der gemeinsame Belohnungsdialog brauchen noch
-   eigene persistente Eingaben. `NarrativeDraft` enthält bisher keine ursprüngliche
+1. **Narrative Wiederaufnahme vervollständigen.** Metadatenrohentwürfe und
+   der gemeinsame Kampf-/Questabschluss besitzen inzwischen persistente Eingaben
+   einschließlich Ergebnistext in `finish_draft`. Ursprüngliche Notizbasis und
+   unbekannter Commandausgang bleiben offen. `NarrativeDraft` enthält bisher keine ursprüngliche
    Notizrevision und keinen ungeklärten Command. In `src/app/narrative-ui.ts`
    überschreibt `writeAction` zudem vor dem Senden die erwartete Notizrevision mit
    einem neuen Read. Das bietet keine ursprüngliche Notizkonfliktbasis.
@@ -88,8 +89,8 @@ fachliche Notizreferenz. Andere `sourceId`-Verträge und freie Prosa bleiben erh
    Replyverlust erzeugen keine automatische Belohnungswiederholung und verlieren
    keine spätere Eingabe. Vorhandene Vorbereitung-/Kampfverträge nutzen.
 2. **Kampfanlage und Abschluss schließen.** In `src/app/combat-contracts.ts`,
-   `src/app/combat.ts` und bestehendem Draftstore Anlage-, Gegner- und Abschlussfelder
-   ergänzen. Anlage bindet Scene und Membershipbasis ohne erfundene Kampf-ID;
+   `src/app/combat.ts` und bestehendem Draftstore Anlage- und Gegnerfelder
+   ergänzen; die integrierten Abschlussentwürfe gegen Konflikte/Replyverlust prüfen. Anlage bindet Scene und Membershipbasis ohne erfundene Kampf-ID;
    Abschluss bindet konkreten Kampf und offene Outcome-/Rewardeingaben. Bestätigung
    verbraucht genau die angenommene Draftfassung atomar. Abnahme: Scenewechsel,
    beendetes Ziel und verzögerte Antwort verlieren keine Rohwerte und schreiben
