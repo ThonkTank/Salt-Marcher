@@ -114,7 +114,7 @@ function render() {
   renderLootBalance();
 }
 async function loadLootBalance(){if(workspace)lootBalance=unwrap(await window.campaign.lootBalance(workspace.token));}
-function renderLootBalance(){const root=get('loot-balance-list');root.replaceChildren();if(!lootBalance)return;for(const c of lootBalance.characters){const p=document.createElement('p');p.textContent=c.name+': '+gold(c.copper)+(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');if(c.characterId===lootBalance.suggestedCharacterId){const strong=document.createElement('strong');strong.textContent='Nächste wertbare Belohnung: ';p.prepend(strong);}root.append(p);}}
+function renderLootBalance(){const root=get('loot-balance-list');root.replaceChildren();if(!lootBalance)return;for(const c of lootBalance.characters){const p=document.createElement('p');p.textContent=c.name+': '+gold(c.copper)+(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');if(lootBalance.suggestedCharacterIds.includes(c.characterId)){const strong=document.createElement('strong');strong.textContent='Für nächste wertbare Belohnung berücksichtigen: ';p.prepend(strong);}root.append(p);}}
 function renderHealth(p: ProgressView['characters'][number] | undefined) {
   const key=healthKey(),draft=key?healthDrafts.get(key):undefined,h=p?.health,status=h??p?.lastCombatStatus;
   if(draft&&p&&!p.healthCombat&&draft.basis===JSON.stringify([p.health,p.lastCombatStatus]))draft.revision=p.revision;
