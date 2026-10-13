@@ -1,0 +1,357 @@
+import { randomUUID, createHash } from 'node:crypto';
+import { checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { checkedCombat, type CombatState } from '../combat-contracts';
+import { readLiveScene } from './live';
+import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
+const json = (v: unknown) => JSON.stringify(v), hash = (s: string) => createHash('sha256').update(s).digest('hex');
+export function installProgressSchema(db: any) {
+  db.exec(`CREATE TABLE IF NOT EXISTS character_progress(campaign_id TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,id) REFERENCES roster_member(campaign_id,id)) STRICT;
+    CREATE TABLE IF NOT EXISTS progress_event(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, character_id TEXT, kind TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
+    CREATE TABLE IF NOT EXISTS progress_notice(campaign_id TEXT NOT NULL, id TEXT NOT NULL, character_id TEXT NOT NULL, text TEXT NOT NULL, delivered INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,character_id) REFERENCES roster_member(campaign_id,id)) STRICT;
+    CREATE TABLE IF NOT EXISTS authored_item(id TEXT PRIMARY KEY, revision INTEGER NOT NULL, name TEXT NOT NULL, category TEXT NOT NULL, unit_copper TEXT NOT NULL) STRICT;
+    CREATE TABLE IF NOT EXISTS treasure(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
+    CREATE TABLE IF NOT EXISTS character_ledger(campaign_id TEXT NOT NULL, id TEXT NOT NULL, character_id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,character_id) REFERENCES roster_member(campaign_id,id)) STRICT;
+    CREATE TABLE IF NOT EXISTS progress_receipt(command_id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL REFERENCES campaign(id), fingerprint TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL) STRICT;
+    CREATE TABLE IF NOT EXISTS combat_award(campaign_id TEXT NOT NULL, combat_id TEXT NOT NULL, id TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,combat_id), FOREIGN KEY(campaign_id,combat_id) REFERENCES combat(campaign_id,id)) STRICT;
+    CREATE INDEX IF NOT EXISTS ledger_character ON character_ledger(campaign_id,character_id);
+    CREATE INDEX IF NOT EXISTS progress_event_character_kind ON progress_event(campaign_id,character_id,kind);`);
+}
+export function createProgress(db: any, cam: string, id: string, known = true) {
+  const p: Progress = { characterId: id, revision: 0, xp: null, rest: { known, longXp: 0, shortXp: 0, baseline: 0, sections: 0 }, health: null };
+  const payload = json(p); db.prepare('INSERT OR IGNORE INTO character_progress VALUES(?,?,?,?,?)').run(cam, id, 0, payload, hash(payload));
+}
+function decoded<T>(row: any): T {
+  if (!row || hash(row.payload) !== row.checksum) throw new Error('Fortschritts- oder Beutedaten nicht verfügbar.');
+  const state = JSON.parse(row.payload);
+  if (!state || typeof state !== 'object' || Array.isArray(state)) throw new Error('Fortschritts- oder Beutepayload hat ein ungültiges Format.');
+  if (state.revision !== undefined && state.revision !== row.revision) throw new Error('Fortschrittsrevision widersprüchlich.'); return state;
+}
+export function validateProgressBackup(db: any) {
+  for (const row of db.prepare('SELECT campaign_id,id FROM character_progress').iterate()) readProgressCharacter(db, row.campaign_id, row.id);
+  for (const table of ['progress_event', 'treasure', 'character_ledger', 'progress_receipt', 'combat_award']) {
+    for (const row of db.prepare(`SELECT * FROM ${table}`).iterate()) {if(table==='character_ledger')checkedLedgerRow(row);else decoded(row);}
+  }
+}
+export function readProgressCharacter(db: any, cam: string, id: string): Progress {
+  const p = decoded<Progress>(db.prepare('SELECT * FROM character_progress WHERE campaign_id=? AND id=?').get(cam, id));
+  if (p.characterId !== id || !Number.isSafeInteger(p.revision) || p.revision < 0 || p.xp !== null && (!Number.isSafeInteger(p.xp) || p.xp < 0)) throw new Error('XP-Stand ungültig.');
+  if (!p.rest || typeof p.rest !== 'object' || Array.isArray(p.rest) || typeof p.rest.known !== 'boolean') throw new Error('Raststand ungültig.');
+  for (const value of [p.rest.longXp, p.rest.shortXp, p.rest.baseline, p.rest.sections]) if (!Number.isSafeInteger(value) || value < 0) throw new Error('Raststand ungültig.');
+  if (p.rest.sections > 2 || p.rest.baseline > p.rest.longXp || p.rest.shortXp > p.rest.longXp) throw new Error('Rastabschnitte widersprüchlich.');
+  if (p.health !== null) {
+    const h = p.health;
+    if (!h || typeof h.conditions !== 'string' || h.conditions.length > 4000 || typeof h.concentrating !== 'boolean' ||
+      ![h.hp, h.maxHp, h.tempHp].every(v => Number.isSafeInteger(v) && v >= 0 && v <= 1000000) || h.maxHp < 1 || h.hp > h.maxHp) throw new Error('Gespeicherte Trefferpunkte oder Zustände ungültig.');
+  }
+  if(p.combatStatus!==undefined)checkedHealthStatus(p.combatStatus);
+  return p;
+}
+export function migrateProgress(db: any) {
+  for (const row of db.prepare('SELECT campaign_id,id FROM roster_member').all()) createProgress(db,row.campaign_id,row.id,false);
+  const seen = new Set<string>();
+  for (const row of db.prepare("SELECT * FROM combat WHERE phase='finished' ORDER BY ordinal DESC").all()) {
+    const combat = checkedCombat(decoded<CombatState>(row));
+    for (const actor of combat.participants) {
+      if (!actor.characterId) continue;
+      const key = JSON.stringify([row.campaign_id,actor.characterId]); if (seen.has(key)) continue; seen.add(key);
+      const p = readProgressCharacter(db,row.campaign_id,actor.characterId);
+      if (p.health !== null || p.combatStatus!==undefined || actor.healthKnown === false) continue;
+      p.health = { hp: actor.hp, maxHp: actor.maxHp, tempHp: actor.tempHp, conditions: actor.conditions, concentrating: actor.concentrating };
+      const payload = json(p); db.prepare('UPDATE character_progress SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),row.campaign_id,p.characterId);
+    }
+  }
+}
+function saveProgress(db: any, cam: string, p: Progress) {
+  p.revision++; const payload = json(p); db.prepare('UPDATE character_progress SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(p.revision, payload, hash(payload), cam, p.characterId);
+}
+export function event(db: any, cam: string, characterId: string | null, kind: string, facts: unknown, id: string = randomUUID()) {
+  const payload = json({ recordedAt: new Date().toISOString(), ...facts as object }); db.prepare('INSERT INTO progress_event VALUES(?,?,?,?,?,?)').run(cam, id, characterId, kind, payload, hash(payload)); return id;
+}
+function notice(db: any, cam: string, characterId: string, amount: number) {
+  if (amount && !db.prepare('SELECT active FROM roster_member WHERE campaign_id=? AND id=?').get(cam, characterId).active) db.prepare('INSERT INTO progress_notice VALUES(?,?,?,?,0)').run(cam, randomUUID(), characterId, amount + ' XP erhalten, während die Figur inaktiv war.');
+}
+function healthFromActor(actor: NonNullable<Progress['health']>) {
+  return {hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating};
+}
+function healthStatus(actor: Pick<NonNullable<Progress['combatStatus']>,'tempHp'|'conditions'|'concentrating'>) {
+  return {tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating};
+}
+export function detachCombatHealth(db:any,cam:string,state:CombatState,actor:CombatState['participants'][number],commandId:string) {
+  if(!actor.characterId)return;
+  const p=readProgressCharacter(db,cam,actor.characterId),before=structuredClone(p);
+  if(actor.healthKnown===false){p.health=null;p.combatStatus=checkedHealthStatus(healthStatus(actor));}
+  else{p.health=checkedHealth(healthFromActor(actor));delete p.combatStatus;}
+  saveProgress(db,cam,p);
+  event(db,cam,p.characterId,'combat-exit',{commandId,combatId:state.id,title:state.title,participant:structuredClone(actor),before,after:p});
+}
+export function resumeCombatHealth(db:any,cam:string,state:CombatState,actor:CombatState['participants'][number],commandId:string) {
+  if(!actor.characterId)return;
+  const p=readProgressCharacter(db,cam,actor.characterId),expected=actor.healthKnown===false?null:healthFromActor(actor);
+  const actual=p.health?healthFromActor(p.health):null;
+  if(json(expected)!==json(actual)||actor.healthKnown===false&&json(healthStatus(actor))!==json(healthStatus(p.combatStatus??{tempHp:0,conditions:'',concentrating:false})))throw new Error('HP oder Zustände der ausgeschiedenen Figur wurden geändert. Rückkehr nicht durchgeführt; aktuellen Figurenstand zuerst abgleichen.');
+  const other=openHealthCombats(db,cam).get(actor.characterId);
+  if(other&&other.state.id!==state.id)throw new Error('Figur hat inzwischen eine andere offene Begegnung. Rückkehr nicht durchgeführt.');
+  const member=db.prepare('SELECT active,scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(cam,actor.characterId);
+  if(!member?.active||member.scene_id!==state.sceneId)throw new Error('Figur gehört inzwischen zu einer anderen Gruppe oder ist inaktiv. Rückkehr nicht durchgeführt.');
+  event(db,cam,p.characterId,'combat-return',{commandId,combatId:state.id,title:state.title,participant:structuredClone(actor)});
+}
+function storedCombat(row: any): CombatState {
+  const state=checkedCombat(decoded<CombatState>(row));
+  if(state.id!==row.id||state.sceneId!==row.scene_id||state.phase!==row.phase)throw new Error('Kampfzuordnung widersprüchlich.');
+  return state;
+}
+export function latestCombatStatuses(db:any,cam:string,ids:Iterable<string>) {
+  const missing=new Set(ids),statuses=new Map<string,Pick<NonNullable<Progress['health']>,'tempHp'|'conditions'|'concentrating'>>();
+  if(missing.size)for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase='finished' ORDER BY ordinal DESC").iterate(cam)){
+    for(const p of storedCombat(row).participants)if(p.characterId&&missing.delete(p.characterId))statuses.set(p.characterId,{tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating});
+    if(!missing.size)break;
+  }
+  return statuses;
+}
+function openHealthCombats(db:any,cam:string) {
+  const actors=new Map<string,{state:CombatState;actor:CombatState['participants'][number]}>();
+  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished'").iterate(cam)){
+    const state=storedCombat(row);
+    for(const actor of state.participants)if(actor.characterId){if(actors.has(actor.characterId))throw new Error('Figur hat mehrere offene Begegnungen. Zuerst die Kampfstände abgleichen.');actors.set(actor.characterId,{state,actor});}
+  }
+  return actors;
+}
+export function lastCombatPartyParticipant(db:any,cam:string,state:CombatState,characterId:string){
+  for(const row of db.prepare("SELECT * FROM progress_event WHERE campaign_id=? AND character_id=? AND kind IN ('combat-exit','combat-entry','combat-return') ORDER BY rowid DESC").iterate(cam,characterId)){
+    const facts=decoded<{combatId:string;participant:CombatState['participants'][number]}>(row);if(facts.combatId!==state.id)continue;
+    if(facts.participant?.characterId!==characterId)throw new Error('Gespeicherte Rückkehr gehört nicht zur Figur.');
+    checkedCombat({...state,phase:'preparing',round:0,turnId:null,participants:[facts.participant]});return facts.participant;
+  }
+  return undefined;
+}
+export function assertCharacterHealthAvailable(db:any,cam:string,id:string){const owner=openHealthCombats(db,cam).get(id);if(owner)throw new Error('Figur nimmt bereits an „'+owner.state.title+'“ teil. Zuerst dort aus der Initiative entfernen.');}
+export function readProgress(db: any, cam: string): ProgressView {
+  return db.transaction(() => {
+    const rows=db.prepare('SELECT m.*,p.payload AS profile FROM roster_member m JOIN character_profile p ON m.campaign_id=p.campaign_id AND m.id=p.id WHERE m.campaign_id=? ORDER BY m.ordinal,m.id').all(cam);
+    const progress=new Map<string,Progress>(rows.map((r:any)=>[r.id,readProgressCharacter(db,cam,r.id)]));
+    const open=openHealthCombats(db,cam),statuses=latestCombatStatuses(db,cam,rows.filter((r:any)=>progress.get(r.id)!.health===null&&!progress.get(r.id)!.combatStatus).map((r:any)=>r.id));
+    return {characters:rows.map((r:any)=>{
+      const p=progress.get(r.id)!,active=open.get(r.id);
+      return {...p,name:JSON.parse(r.profile).name,active:!!r.active,membershipRevision:r.membership_revision,sceneId:r.scene_id,
+        ...(active?{health:active.actor.healthKnown===false?null:healthFromActor(active.actor),healthCombat:{id:active.state.id,sceneId:active.state.sceneId,title:active.state.title},lastCombatStatus:{tempHp:active.actor.tempHp,conditions:active.actor.conditions,concentrating:active.actor.concentrating}}:p.health===null&&p.combatStatus?{lastCombatStatus:p.combatStatus}:statuses.has(r.id)?{lastCombatStatus:statuses.get(r.id)}:{})};
+    }),notices: db.prepare('SELECT n.id,n.character_id AS characterId,n.text FROM progress_notice n JOIN roster_member m ON m.campaign_id=n.campaign_id AND m.id=n.character_id WHERE n.campaign_id=? AND n.delivered=0 AND m.active=1 ORDER BY n.rowid').all(cam),
+  };})();
+}
+function checkedCursor(after: string | null) {
+  if (after !== null && (typeof after !== 'string' || !/^[1-9][0-9]{0,15}$/.test(after) || !Number.isSafeInteger(Number(after)))) throw new Error('Ungültige Listenseite.');
+  return after === null ? null : Number(after);
+}
+export function readTreasure(db: any, cam: string, id: string): Treasure {
+  return db.transaction(() => {
+    const row = db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam, id), value = decoded<Treasure>(row);
+    if (value.id !== id) throw new Error('Beutezuordnung widersprüchlich.');
+    const definitions = new Map<string, ReturnType<typeof readItemDefinition>>();
+    for (const item of value.items) {
+      let definition = definitions.get(item.reference.definitionId);
+      if (!definition) { definition = readItemDefinition(db, item.reference.definitionId); definitions.set(definition.id, definition); }
+      item.currentDefinition = definition;
+    }
+    return value;
+  })();
+}
+export function readTreasures(db: any, cam: string, after: string | null): TreasurePage {
+  const cursor = checkedCursor(after);
+  const rows = db.prepare('SELECT rowid AS cursor,* FROM treasure WHERE campaign_id=? AND (? IS NULL OR rowid<?) ORDER BY rowid DESC LIMIT 26').all(cam, cursor, cursor);
+  const page = rows.slice(0,25);
+  return { items: page.map((row: any) => {
+    const treasure = decoded<Treasure>(row);
+    if (treasure.id !== row.id) throw new Error('Beutezuordnung widersprüchlich.');
+    return { id: treasure.id, title: treasure.title, revision: treasure.revision, available: treasure.items.reduce((sum, item) => sum + item.quantity - item.allocated, 0) };
+  }), next: rows.length > 25 ? String(page[24].cursor) : null };
+}
+function validateLedgerItem(l:LedgerItem){
+ const text=(v:unknown,max:number,nonempty=false)=>typeof v==='string'&&v.length<=max&&(!nonempty||!!v.trim());
+ const id=(v:unknown)=>text(v,1000,true),price=(v:unknown)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,17})$/.test(v);
+ if(!l||!id(l.id)||!id(l.characterId)||!Number.isSafeInteger(l.revision)||l.revision<1||!text(l.name,1000,true)||!['coins','equipment','trade-goods','magic','other'].includes(l.category)||!Number.isSafeInteger(l.quantity)||l.quantity<0||l.quantity>1000000||!['award','purchase','manual'].includes(l.origin)||!['received','sold','given'].includes(l.status)||!text(l.counterparty,10000)||!text(l.recordedAt,1000,true))throw new Error('Persönlicher Beuteeintrag hat eine ungültige Beschreibung, Menge oder Herkunft.');
+ if(!l.reference||l.reference.kind!=='authored'||!id(l.reference.definitionId)||!Number.isSafeInteger(l.reference.revision)||l.reference.revision<1||l.reference.historicalDefinitionId!==undefined&&!id(l.reference.historicalDefinitionId))throw new Error('Gegenstandsreferenz im Beuteeintrag ungültig.');
+ if(l.unitCopper!==null&&!price(l.unitCopper)||l.actualSaleCopper!==null&&!price(l.actualSaleCopper)||l.paidCopper!==undefined&&!price(l.paidCopper)||l.status!=='sold'&&l.actualSaleCopper!==null)throw new Error('Aufgezeichneter Beutewert oder Handelspreis ungültig.');
+ for(const key of ['treasureId','combatId','sceneId','locationId','parentId'] as const)if(l[key]!==null&&!id(l[key]))throw new Error('Beuteverknüpfung ungültig.');
+ if(l.parentId===l.id||l.instantMs!==null&&(typeof l.instantMs!=='string'||!/^(0|[1-9][0-9]{0,29})$/.test(l.instantMs)))throw new Error('Beuteherkunft oder aufgezeichnete Zeit ungültig.');
+ if(l.instanceId!==undefined&&l.instanceId!==null&&(!id(l.instanceId)||l.quantity>1))throw new Error('Einzelstück im persönlichen Bestand benötigt eine eindeutige Identität und höchstens Menge eins.');
+ const c=l.counterpartyReference;if(c&&(!id(c.shopId)||!c.owner||!['npc','location'].includes(c.owner.kind)||!id(c.owner.id))||c!==undefined&&!c)throw new Error('Aufgezeichnete Handelsbeziehung ungültig.');
+}
+function checkedLedgerRow(row:any):LedgerItem{
+ const item=decoded<LedgerItem>(row);validateLedgerItem(item);
+ if(item.id!==row.id||item.characterId!==row.character_id||item.revision!==row.revision)throw new Error('Beuteeintrag gehört nicht zu seiner Figur oder Revision.');
+ return item;
+}
+export function readLedgerItem(db: any, cam: string, id: string): LedgerItem {
+  return checkedLedgerRow(db.prepare('SELECT * FROM character_ledger WHERE campaign_id=? AND id=?').get(cam, id));
+}
+export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage {
+  return db.transaction(() => {
+    if (!query || typeof query.search !== 'string' || query.search.length > 1000 || !['','received','sold','given'].includes(query.status)) throw new Error('Ungültige Beutesuche.');
+    const cursor = checkedCursor(query.after), needle = query.search.toLocaleLowerCase();
+    readProgressCharacter(db, cam, query.characterId);
+    const items:LedgerItem[]=[],problems:LedgerPage['problems']=[];let next:string|null=null,total=0n,hasMore=false,valueKnown=true,shown=0,unavailableCount=0;
+    // Evaluate all required units for the total; share fifty page slots between
+    // healthy matches and explicit problems. Unreadable fields cannot be filtered.
+    for(const row of db.prepare('SELECT rowid AS cursor,* FROM character_ledger WHERE campaign_id=? AND character_id=? ORDER BY rowid DESC').iterate(cam,query.characterId)){
+      const onPage=cursor===null||row.cursor<cursor;
+      try{
+        const item=checkedLedgerRow(row),definition=readItemDefinition(db,item.reference.definitionId);
+        item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;
+        if(item.origin!=='purchase'){const value=ledgerCopper(item);if(value===null)valueKnown=false;else total+=value;}
+        if(onPage&&(!query.status||query.status===item.status)&&(!needle||(item.name+' '+item.currentName+' '+item.counterparty).toLocaleLowerCase().includes(needle))){
+          if(shown<50){items.push(item);shown++;next=String(row.cursor);}else hasMore=true;
+        }
+      }catch(error){
+        unavailableCount++;valueKnown=false;
+        if(onPage){if(shown<50){problems.push({id:row.id,message:(error instanceof Error?error.message:'Beuteeintrag nicht verfügbar.').slice(0,1000)});shown++;next=String(row.cursor);}else hasMore=true;}
+      }
+    }
+    return{items,problems,unavailableCount,next:hasMore?next:null,totalCopper:valueKnown?total.toString():null};
+  })();
+}
+export function readLedgerInventory(db:any,cam:string,query:LedgerInventoryQuery):LedgerInventoryPage{
+ return db.transaction(()=>{
+  if(!query||typeof query.characterId!=='string'||!query.characterId||query.characterId.length>1000)throw new Error('Ungültige Inventarfigur.');
+  const cursor=checkedCursor(query.after);
+  if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,query.characterId))throw new Error('Inventarfigur gehört nicht zu dieser Kampagne.');
+  const sql='SELECT rowid AS cursor,* FROM character_ledger WHERE campaign_id=? AND character_id=?'+(cursor===null?'':' AND rowid<?')+' ORDER BY rowid DESC LIMIT 51';
+  const rows=db.prepare(sql).all(cam,query.characterId,...(cursor===null?[]:[cursor])),page=rows.slice(0,50),items:LedgerItem[]=[],problems:LedgerPage['problems']=[];
+  for(const row of page)try{
+   const item=checkedLedgerRow(row);if(item.status!=='received'||item.quantity===0)continue;
+   const definition=readItemDefinition(db,item.reference.definitionId);item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;items.push(item);
+  }catch(error){problems.push({id:row.id,message:(error instanceof Error?error.message:'Beuteeintrag nicht verfügbar.').slice(0,1000)});}
+  return{items,problems,visited:page.length,next:rows.length>50?String(page[49].cursor):null};
+ })();
+}
+export function readProgressHistory(db: any, cam: string, characterId: string, after: string | null) {
+  readProgressCharacter(db, cam, characterId);
+  if (after !== null && !/^[1-9][0-9]{0,15}$/.test(after)) throw new Error('Ungültige Verlaufseite.');
+  const rows = db.prepare('SELECT rowid AS cursor,* FROM progress_event WHERE campaign_id=? AND character_id=? AND (? IS NULL OR rowid<?) ORDER BY rowid DESC LIMIT 51').all(cam, characterId, after, after);
+  const page = rows.slice(0,50);
+  return { items: page.map((r: any) => ({ id: r.id, kind: r.kind, facts: decoded<Record<string, any>>(r) })), next: rows.length > 50 ? String(page[49].cursor) : null };
+}
+function checkedItem(db: any, input: ItemInput) {
+  if (!input || typeof input.name !== 'string' || !input.name.trim() || input.name.length > 1000 || !Number.isSafeInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000 || !['coins','equipment','trade-goods','magic','other'].includes(input.category)) throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
+  if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');return{id:randomUUID(),reference:{kind:'authored' as const,definitionId:d.id,revision:d.revision},name:d.name,category:d.category,quantity:input.quantity,allocated:0,unitCopper:d.unitCopper};}
+  const id = randomUUID(), unitCopper = copper(input.valueGold);
+  db.prepare('INSERT INTO authored_item VALUES(?,1,?,?,?)').run(id, input.name, input.category, unitCopper);
+  recordItemDefinitionVersion(db,readItemDefinition(db,id));
+  return { id: randomUUID(), reference: { kind: 'authored' as const, definitionId: id, revision: 1 }, name: input.name, category: input.category, quantity: input.quantity, allocated: 0, unitCopper };
+}
+function saveTreasure(db: any, cam: string, t: Treasure) { const payload = json(t); db.prepare('INSERT INTO treasure VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, t.id, t.revision, payload, hash(payload)); }
+export function saveLedger(db: any, cam: string, l: LedgerItem) { validateLedgerItem(l);const payload = json(l); db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, l.id, l.characterId, l.revision, payload, hash(payload)); }
+export function makeTreasure(db: any, cam: string, title: string, sceneId: string | null, combatId: string | null, inputs: ItemInput[], locationId?: string) {
+  if (typeof title !== 'string' || title.length > 1000 || !Array.isArray(inputs) || inputs.length > 100) throw new Error('Ungültige Beute.');
+  if (!inputs.length) return null;
+  const scene = sceneId ? readLiveScene(db, cam, sceneId) : null;
+  const treasure: Treasure = { id: randomUUID(), revision: 1, title: title || 'Beute', sceneId, locationId: locationId ?? scene?.locationId ?? null, combatId, items: inputs.map(i => checkedItem(db, i)) };
+  saveTreasure(db, cam, treasure); event(db, cam, null, 'treasure-created', { treasure }); return treasure.id;
+}
+export function awardXpPool(db:any,cam:string,pool:number,recipients:{characterId:string;revision:number}[],sourceKind:string,sourceId:string) {
+  if(new Set(recipients.map(r=>r.characterId)).size!==recipients.length)throw new Error('XP-Empfänger dürfen nicht doppelt vorkommen.');const award=xpShare(pool,recipients.length);
+  for(const recipient of recipients){const p=readProgressCharacter(db,cam,recipient.characterId),before=structuredClone(p);if(p.revision!==recipient.revision)throw new Error('XP-Empfänger geändert. Belohnung erneut ansehen.');p.xp=(p.xp??0)+award.share;xpLevel(p.xp);saveProgress(db,cam,p);notice(db,cam,p.characterId,award.share);event(db,cam,p.characterId,'story-award',{sourceKind,sourceId,before,after:p,xp:award.share});}
+  return award;
+}
+export function finishCombatRewards(db: any, cam: string, state: CombatState, rewards: FinishRewards | undefined): CombatReward {
+  const r: FinishRewards = rewards ?? { poolXp: 0, noXp: true, recipients: [], policyVersion: 'xp-ceil-2014-v1', loadXp: 0, items: [] };
+  if (r.policyVersion !== 'xp-ceil-2014-v1' || !Number.isSafeInteger(r.loadXp) || r.loadXp < 0 || !Array.isArray(r.recipients) || r.recipients.length > 1000 || new Set(r.recipients.map(p => p.characterId)).size !== r.recipients.length || r.noXp && (r.poolXp !== 0 || r.recipients.length) || !r.noXp && !r.recipients.length) throw new Error('XP-Empfänger oder ausdrückliche Keine-XP-Entscheidung fehlen.');
+  const divided = xpShare(r.poolXp, r.recipients.length), awardId = randomUUID();
+  const participants = [...new Set(state.participants.map(p => p.characterId).filter((id): id is string => !!id))];
+  const affected = [...new Set([...participants, ...r.recipients.map(p => p.characterId)])];
+  const load = xpShare(r.loadXp, participants.length).share;
+  for (const id of affected) {
+    const p = readProgressCharacter(db, cam, id), before = structuredClone(p), recipient = r.recipients.find(c => c.characterId === id);
+    if (recipient && recipient.revision !== p.revision) throw new Error('XP-Empfänger wurde geändert. Abschluss erneut ansehen.');
+    if (recipient) { p.xp = (p.xp ?? 0) + divided.share; xpLevel(p.xp); notice(db, cam, id, divided.share); }
+    const actor = state.participants.find(p => p.characterId === id);
+    if (actor) {
+      if(actor.healthKnown===false){p.health=null;p.combatStatus=healthStatus(actor);}else{p.health=healthFromActor(actor);delete p.combatStatus;}
+      p.rest.longXp += load; p.rest.shortXp += load;
+      if (![p.rest.longXp,p.rest.shortXp].every(Number.isSafeInteger)) throw new Error('Rastbelastung zu groß.');
+    }
+    saveProgress(db, cam, p); event(db, cam, id, 'combat-award', { awardId, combatId: state.id, before, after: p, xp: recipient ? divided.share : 0, load: actor ? load : 0 });
+  }
+  const treasureId = makeTreasure(db, cam, state.title + ' · Beute', state.sceneId, state.id, r.items);
+  const result: CombatReward = { awardId, poolXp: r.poolXp, shareXp: divided.share, totalXp: divided.total, recipientIds: r.recipients.map(p => p.characterId), treasureId, policyVersion: r.policyVersion };
+  const payload = json(result); db.prepare('INSERT INTO combat_award VALUES(?,?,?,?,?)').run(cam, state.id, awardId, payload, hash(payload)); return result;
+}
+export function executeProgress(db: any, command: ProgressCommand, guard: () => void): ProgressAck {
+  return db.transaction(() => {
+    guard(); if (!command.commandId || command.commandId.length > 1000 || !command.action) throw new Error('Fortschrittsauftrag fehlt.');
+    const cam = command.campaignId, fp = hash(json({ ...command, token: undefined })), prior = db.prepare('SELECT * FROM progress_receipt WHERE command_id=?').get(command.commandId);
+    if (prior) { if (prior.campaign_id !== cam || prior.fingerprint !== fp || hash(prior.payload) !== prior.checksum) throw new Error('Auftragskennung bereits anders verwendet.'); return JSON.parse(prior.payload); }
+    const a = command.action;
+    let treasureId: string | null = null; const ledgerIds: string[] = [];
+    if(a.kind==='health'){
+      const p=readProgressCharacter(db,cam,a.characterId),before=structuredClone(p);
+      if(p.revision!==a.expectedRevision)throw new Error('HP-Stand geändert. Gespeicherten Stand laden, bevor du erneut änderst.');
+      const active=openHealthCombats(db,cam).get(p.characterId);
+      if(active)throw new Error('Offene Begegnung „'+active.state.title+'“: HP im Kampftracker ändern.');
+      if(typeof a.reason!=='string'||a.reason.length>2000)throw new Error('HP-Grund zu lang oder ungültig.');
+      if(a.operation==='set'){
+        const h=checkedHealth(a.health);p.health={hp:h.hp,maxHp:h.maxHp,tempHp:h.tempHp,conditions:h.conditions,concentrating:h.concentrating};
+      }else if(a.operation==='damage'||a.operation==='heal'){
+        if(!p.health)throw new Error('HP noch offen. Zuerst aktuelle und maximale HP eintragen.');
+        if(!Number.isSafeInteger(a.amount)||a.amount<=0||a.amount>1000000)throw new Error('Betrag benötigt eine positive ganze Zahl.');
+        if(a.operation==='damage'){const absorbed=Math.min(p.health.tempHp,a.amount);p.health.tempHp-=absorbed;p.health.hp=Math.max(0,p.health.hp-(a.amount-absorbed));}
+        else p.health.hp=Math.min(p.health.maxHp,p.health.hp+a.amount);
+      }else throw new Error('Unbekannte HP-Aktion.');
+      checkedHealth(p.health!);delete p.combatStatus;saveProgress(db,cam,p);event(db,cam,p.characterId,'health',{operation:a.operation,...('amount'in a?{amount:a.amount}:{}),reason:a.reason,before,after:p},command.commandId);
+    }else if (a.kind === 'xp') {
+      const p = readProgressCharacter(db, cam, a.characterId), before = structuredClone(p);
+      if (p.revision !== a.expectedRevision) throw new Error('XP-Stand geändert. Bitte aktualisieren.');
+      if (!Number.isSafeInteger(a.amount) || a.amount < 0 || !['add','subtract','set'].includes(a.mode) || typeof a.reason !== 'string' || !a.reason.trim() || a.reason.length > 10000) throw new Error('XP-Änderung benötigt einen nichtnegativen Betrag und einen Grund.');
+      if (a.correctionOf && !db.prepare('SELECT 1 FROM progress_event WHERE campaign_id=? AND id=? AND character_id=?').get(cam, a.correctionOf, a.characterId)) throw new Error('Originaleintrag der XP-Korrektur fehlt.');
+      p.xp = a.mode === 'set' ? a.amount : Math.max(0, (p.xp ?? 0) + (a.mode === 'subtract' ? -a.amount : a.amount)); xpLevel(p.xp);
+      saveProgress(db, cam, p); notice(db, cam, p.characterId, Math.max(0,p.xp - (before.xp ?? 0))); event(db, cam, p.characterId, 'xp', { before, after: p, reason: a.reason, correctionOf: a.correctionOf ?? null }, command.commandId);
+    } else if (a.kind === 'rest') {
+      if (!['short','long'].includes(a.rest) || !a.recipients.length || new Set(a.recipients.map(r => r.characterId)).size !== a.recipients.length) throw new Error('Wähle Figuren für die Rast.');
+      for (const recipient of a.recipients) {
+        const p = readProgressCharacter(db, cam, recipient.characterId), before = structuredClone(p);
+        if (p.revision !== recipient.revision) throw new Error('Raststand geändert. Bitte aktualisieren.');
+        const member = db.prepare('SELECT active,scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(cam, p.characterId);
+        if (!member?.active) throw new Error('Rast nur für aktive Figuren.');
+        if (db.prepare("SELECT 1 FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running'").get(cam,member.scene_id)) throw new Error('Kampf vor der Rast abschließen.');
+        if (a.rest === 'long') p.rest = { known: true, longXp: 0, shortXp: 0, baseline: 0, sections: 0 };
+        else { p.rest.shortXp = 0; if (p.rest.known && p.rest.sections < 2) { p.rest.baseline = p.rest.longXp; p.rest.sections++; } }
+        saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', { rest: a.rest, before, after: p });
+      }
+    } else if (a.kind === 'treasure') { treasureId = makeTreasure(db, cam, a.title, a.sceneId, null, a.items);
+    } else if (a.kind === 'allocate') {
+      const t = decoded<Treasure>(db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam,a.treasureId)), item = t.items.find(i => i.id === a.itemId);
+      const member = db.prepare('SELECT active,membership_revision FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);
+      if (t.revision !== a.expectedRevision || !item || !member?.active || member.membership_revision !== a.expectedMembershipRevision) throw new Error('Beute oder Empfänger geändert. Bitte aktualisieren.');
+      if (!Number.isSafeInteger(a.quantity) || a.quantity <= 0 || a.quantity > item.quantity - item.allocated) throw new Error('Menge überschreitet die unverteilte Beute.');
+      const definition = readItemDefinition(db, item.reference.definitionId);
+      if (definition.revision !== a.expectedDefinitionRevision || definition.trashed) throw new Error('Gegenstand geändert oder im Papierkorb. Beute erneut ansehen.');
+      recordItemDefinitionVersion(db, definition);
+      const scene = t.sceneId ? readLiveScene(db,cam,t.sceneId) : null;
+      const l: LedgerItem = { id: randomUUID(), characterId: a.characterId, revision: 1, reference: { kind: 'authored', definitionId: definition.id, revision: definition.revision }, name: definition.name, category: definition.category, quantity: a.quantity, unitCopper: definition.unitCopper, origin: 'award', status: 'received', actualSaleCopper: null, counterparty: '', treasureId: t.id, combatId: t.combatId, sceneId: t.sceneId, locationId: t.locationId, instantMs: scene?.clock.instantMs ?? null, recordedAt: new Date().toISOString(), parentId: null };
+      item.allocated += a.quantity; t.revision++; saveTreasure(db,cam,t); saveLedger(db,cam,l); event(db,cam,l.characterId,'loot-award',{ treasureId: t.id, itemId: item.id, entry: l });
+      treasureId = t.id; ledgerIds.push(l.id);
+    } else if (a.kind === 'manual-item') {
+      const member = db.prepare('SELECT membership_revision FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);
+      if (!member || member.membership_revision !== a.expectedMembershipRevision || !['award','purchase','manual'].includes(a.origin) || typeof a.note !== 'string' || a.note.length > 10000) throw new Error('Ungültiger persönlicher Beuteeintrag.');
+      const item = checkedItem(db,a.item);
+      const l: LedgerItem = { id: randomUUID(), characterId: a.characterId, revision: 1, reference: item.reference, name: item.name, category: item.category, quantity: item.quantity, unitCopper: item.unitCopper, origin: a.origin, status: 'received', actualSaleCopper: null, counterparty: a.note, treasureId: null, combatId: null, sceneId: null, locationId: null, instantMs: null, recordedAt: new Date().toISOString(), parentId: null };
+      saveLedger(db,cam,l); event(db,cam,l.characterId,'manual-loot',{ entry: l });
+      ledgerIds.push(l.id);
+    } else if (a.kind === 'ledger') {
+      const l = readLedgerItem(db,cam,a.entryId), before = structuredClone(l);
+      ledgerIds.push(l.id);
+      if (l.revision !== a.expectedRevision || typeof a.reason !== 'string' || !a.reason.trim() || a.reason.length > 10000 || typeof a.counterparty !== 'string' || a.counterparty.length > 1000) throw new Error('Beuteänderung benötigt den aktuellen Stand und einen Grund.');
+      if (a.operation === 'correct') {
+        if (!Number.isSafeInteger(a.correctedQuantity) || a.correctedQuantity! < 0 || a.correctedQuantity! > 1000000) throw new Error('Korrektur benötigt eine nichtnegative Menge.');
+        l.quantity = a.correctedQuantity!; if (l.status === 'sold') l.actualSaleCopper = copper(a.actualGold); l.revision++; saveLedger(db,cam,l); event(db,cam,l.characterId,'loot-correction',{ originalId: l.id, before, after: l, reason: a.reason });
+      } else {
+        if (!['sold','given'].includes(a.operation) || l.status !== 'received' || !Number.isSafeInteger(a.quantity) || a.quantity <= 0 || a.quantity > l.quantity) throw new Error('Verkauf/Weitergabe benötigt eine verfügbare Teilmenge.');
+        const part: LedgerItem = { ...l, id: randomUUID(), revision: 1, quantity: a.quantity, status: a.operation, actualSaleCopper: a.operation === 'sold' ? copper(a.actualGold) : null, counterparty: a.counterparty, parentId: l.id, recordedAt: new Date().toISOString() };
+        l.quantity -= a.quantity; l.revision++; saveLedger(db,cam,l); saveLedger(db,cam,part); event(db,cam,l.characterId,'loot-'+a.operation,{ originalId: l.id, before, after: l, portion: part, reason: a.reason });
+        ledgerIds.push(part.id);
+      }
+    } else if (a.kind === 'notice') {
+      if (!Array.isArray(a.ids) || a.ids.length > 1000) throw new Error('Ungültige Hinweise.');
+      for (const id of a.ids) db.prepare('UPDATE progress_notice SET delivered=1 WHERE campaign_id=? AND id=? AND character_id IN(SELECT id FROM roster_member WHERE campaign_id=? AND active=1)').run(cam,id,cam);
+    } else throw new Error('Unbekannte Fortschrittsaktion.');
+    const result: ProgressAck = { ...readProgress(db,cam), treasureId, ledgerIds }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
+  }).immediate();
+}

@@ -1,6 +1,6 @@
 {
   "name": "dungeon-editor",
-  "version": "0.1.0",
+  "version": "0.29.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,9 +12,14 @@
     "test:adr-p02": "node --test --test-concurrency=1 tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs",
     "adr:p02:matrix": "node tools/adr-prototypes/p02/matrix.mjs --runs 10 --out tools/adr-prototypes/evidence/p02-aggregate.json",
     "test:adr-p03": "node --test --test-concurrency=1 tests/adr-prototypes/p03-contract.test.mjs tests/adr-prototypes/p03-channel.test.mjs tests/adr-prototypes/p03-renderer.test.mjs tests/adr-prototypes/p03-pixel-oracle.test.mjs tests/adr-prototypes/p03-evidence.test.mjs tests/adr-prototypes/p03-process.test.mjs",
-    "adr:p03:probe": "electron tools/adr-prototypes/p03/probe-main.mjs --out tools/adr-prototypes/evidence/p03-aggregate.json --frames tools/adr-prototypes/evidence/p03-frames"
+    "adr:p03:probe": "electron tools/adr-prototypes/p03/probe-main.mjs --out tools/adr-prototypes/evidence/p03-aggregate.json --frames tools/adr-prototypes/evidence/p03-frames",
+    "build:desktop": "node tools/build-desktop.mjs",
+    "package:desktop": "npm run build:desktop && node tools/package-desktop.mjs",
+    "check:desktop": "tsc --noEmit -p desktop/tsconfig.json",
+    "start:desktop": "npm run build:desktop && electron .build/desktop/main.cjs"
   },
   "dependencies": {
+    "@noble/hashes": "2.4.0",
     "clipper-lib": "^6.4.2",
     "fflate": "0.8.3",
     "pixi.js": "8.22.0",
@@ -32,6 +37,7 @@
     "esbuild": "^0.25.0",
     "linkedom": "^0.18.13",
     "obsidian": "^1.8.7",
+    "playwright-core": "1.62.1",
     "typescript": "^5.9.0"
   }
 }
