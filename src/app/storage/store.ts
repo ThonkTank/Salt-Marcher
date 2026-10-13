@@ -61,7 +61,7 @@ import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '..
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
-import {installChaseSchema,readChase,executeChase} from './chase';
+import {installChaseSchema,readChase,executeChase,validateChaseBackup} from './chase';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
 import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
@@ -415,7 +415,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
-    validateCombatBackup(db);validateCombatDrafts(db);
+    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);
     validateProgressBackup(db);validateNarrativeBackup(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
