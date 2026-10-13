@@ -1,3 +1,4 @@
+import {installNarrative,readNarrative} from './narrative';
 import {readPreparedGroup} from './session';
 import {installCombatDraftSchema,validateCombatDrafts,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
 import type {CombatDraftKind,CombatWorkingDraft} from '../combat-draft-contracts';
@@ -97,7 +98,7 @@ export class CampaignStore {
     if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) { this.db.close(); throw new Error('SQLite-Wartungsstand zu alt.'); }
     this.db.pragma('foreign_keys=ON'); this.db.pragma('journal_mode=WAL'); this.db.pragma('synchronous=FULL'); this.db.pragma('secure_delete=ON'); this.db.pragma('busy_timeout=5000');
     const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 34) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 35) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS campaign(id TEXT PRIMARY KEY, name TEXT NOT NULL, selected_id TEXT, cursor INTEGER NOT NULL DEFAULT 0) STRICT;
       CREATE TABLE IF NOT EXISTS scope(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
@@ -160,8 +161,8 @@ export class CampaignStore {
       installDungeonKey(this.db);
       installGraph(this.db);
       installTriggers(this.db);
-      installContentRuntime(this.db);
-      this.db.pragma('user_version=34');
+      installContentRuntime(this.db);installNarrative(this.db);
+      this.db.pragma('user_version=35');
     }).immediate();
   }
   extensionPreview(bytes:Buffer){return this.extensionRegistry.preview(bytes);}
@@ -526,6 +527,8 @@ export class CampaignStore {
   ledgerInventory(token:string,query:LedgerInventoryQuery){return readLedgerInventory(this.db,this.guard(token),query);}
   ledgerItem(token: string, id: string) { return readLedgerItem(this.db, this.guard(token), id); }
   commitStatus(ref:CommitReference,token:string):CommitOutcome{checkedCommitReference(ref);this.guard(token,ref.campaignId);return readCommitReceipt(this.db,ref);}
+  ledgerParties(token:string){const cam=this.guard(token),rows:any[]=[];for(const kind of ['npc','faction'])rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.title') name FROM world_note WHERE campaign_id=? AND trashed=0 AND json_extract(payload,'$.kind')=? ORDER BY name LIMIT 2000").all(cam,kind).map((r:any)=>({...r,kind})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM location WHERE campaign_id=? AND trashed=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'location'})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM shop WHERE campaign_id=? AND coalesce(json_extract(payload,'$.trashed'),0)=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'shop'})));return rows;}
+  narrative(token:string,id:string){return readNarrative(this.db,this.guard(token),id);}
   executeProgress(command: ProgressCommand) { return executeProgress(this.db, command, () => { this.guard(command.token, command.campaignId); }); }
   preparedGroup(token:string,id:string){return readPreparedGroup(this.db,this.guard(token),id);}
   dungeon(token:string){const cam=this.guard(token),view=dungeonView(this.db,cam);return this.graphShadow?{...view,...dungeonGeometry(this.graphShadow.db,cam),drawing:{...drawingView(this.graphShadow.db,cam),graphPreview:this.graphShadow.state()}}:view;}
@@ -584,7 +587,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==this.db.pragma('user_version',{simple:true})&&!(schema===33&&this.db.pragma('user_version',{simple:true})===34))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
+    if(schema!==this.db.pragma('user_version',{simple:true})&&!([33,34].includes(schema)&&this.db.pragma('user_version',{simple:true})===35))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
     const c:Pick<Campaign,'id'|'name'>=rows[0];
@@ -612,7 +615,7 @@ export class CampaignStore {
       const sha256=snapshotDigest(candidate);
       if(expectedDigest!==undefined&&sha256!==expectedDigest)throw new Error('Geprüfte Paketdatenbank wurde verändert.');
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
-      if(c.schema===33){installCombatDraftSchema(source);source.pragma('user_version=34');}
+      if([33,34].includes(c.schema)){installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);source.pragma('user_version=35');}
       archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
