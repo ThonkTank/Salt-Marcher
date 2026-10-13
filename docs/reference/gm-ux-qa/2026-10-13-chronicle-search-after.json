@@ -3,7 +3,7 @@
     "initialCount": "2000 Einträge · neueste passende Ereignisse; ältere fehlen · Suche eingrenzen",
     "truncatedExportHasNotice": true,
     "filteredCount": 1,
-    "filteredText": "Dienstag, 13. Oktober 2026\nPARTY\nXP korrigiert\n20:46\n\nIri: offen → 1 · Bronzeschlüssel am Hafen gefunden\n\nBeteiligte: Iri",
+    "filteredText": "Dienstag, 13. Oktober 2026\nPARTY\nXP korrigiert\n20:50\n\nIri: offen → 1 · Bronzeschlüssel am Hafen gefunden\n\nBeteiligte: Iri",
     "filteredNativeExport": true,
     "allHistoryUnchanged": true,
     "nativeRestartSearch": true,
@@ -11,12 +11,12 @@
   },
   "launches": [
     {
-      "pid": 144297,
-      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-ca01e0460c8849d18cefc1fbcb4356fc.service"
+      "pid": 146219,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-e0e9d7fe60064832929229a0e640d5a7.service"
     },
     {
-      "pid": 144398,
-      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-ca01e0460c8849d18cefc1fbcb4356fc.service"
+      "pid": 146322,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-e0e9d7fe60064832929229a0e640d5a7.service"
     }
   ],
   "normalClose": true

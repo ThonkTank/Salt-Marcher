@@ -48,7 +48,7 @@ interne Records, 2000/2001-Grenze, Quellenüberlauf, gemeinsame Ausgabegrenze
 und beschädigte Quellen einschließlich Rollback. Vollständig gruppierte Awards
 werden vollständig gelesen und lösen ohne ausgelassene Ereignisse keinen
 Kürzungshinweis aus. Zusammen mit den neuen Filter-, Gruppen-, UI-, Chase-,
-Szenentisch- und Todesrettungswurfprüfungen bestanden 35 gezielte Tests.
+Szenentisch- und Todesrettungswurfprüfungen bestanden zuletzt 37 gezielte Tests.
 [Nativer Nachweis](../../reference/gm-ux-qa/2026-10-13-chronicle-search.md):
 älterer Treffer hinter 2000 neueren Ereignissen, gefilterte Markdownausgabe,
 Fresh und kontrollierter IPC-Lesefehler. Kein Hard-Crash-, umfassender

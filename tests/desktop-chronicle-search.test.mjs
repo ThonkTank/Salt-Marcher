@@ -34,3 +34,8 @@ test('rapid typing coalesces reads but immediately invalidates accepted results'
  const x=fixture();try{const task=x.ui.openChronicle();x.answer('Alt');await task;for(const q of ['B','Br','Bronze'])x.query(q);assert.equal(x.calls.length,1);assert.equal(x.el('chronicle-list').childElementCount,0);await new Promise(r=>setTimeout(r,200));assert.equal(x.calls.length,2);assert.equal(x.calls.at(-1).search,'Bronze');x.answer('Bronzeschlüssel');await tick();assert.match(x.el('chronicle-list').textContent,/Bronzeschlüssel/);
  }finally{x.cleanup();}
 });
+
+test('an unavailable native bridge shows its usable cause without internal method names',async()=>{
+ const x=fixture();try{const task=x.ui.openChronicle();x.pending.shift()({ok:false,error:"Error invoking remote method 'campaign:chronicle': Error: Quelle nicht lesbar"});await task;const text=x.el('chronicle-list').querySelector('[role=alert]').textContent;assert.match(text,/Quelle nicht lesbar/);assert.doesNotMatch(text,/campaign:|remote method/);assert.equal(x.el('chronicle-export').disabled,true);
+ }finally{x.cleanup();}
+});

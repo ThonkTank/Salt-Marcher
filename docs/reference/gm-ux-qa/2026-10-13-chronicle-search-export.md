@@ -1,10 +1,10 @@
 # Kampagnenchronik: Reise nach der Ortswahl
 
-Exportiert am 13.10.2026, 20:47:04
+Exportiert am 13.10.2026, 20:50:55
 
 ## XP korrigiert
 
-- Zeitpunkt: 13.10.2026, 20:46:59
+- Zeitpunkt: 13.10.2026, 20:50:49
 - Bereich: Party
 - Beteiligte: Iri
 
