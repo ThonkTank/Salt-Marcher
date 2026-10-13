@@ -14,6 +14,7 @@ export interface Combatant {
 export interface CombatState {
   id: string; sceneId: string; revision: number; title: string;
   phase: 'preparing' | 'running' | 'finished'; round: number; turnId: string | null;
+  sharedNotice?:string;
   participants: Combatant[]; notes: string; outcome: string; rewards?: CombatReward; sources?: Creature[]; sourceSerials?: Record<string,number>; assessment?: EncounterAssessment; partyBasis?: EncounterParty[]; generatorPreset?: {id:string;revision:number;hash:string;mobThreshold:number}; planOrigin?: { id: string; revision: number; name: string };
 }
 export interface CombatView {
