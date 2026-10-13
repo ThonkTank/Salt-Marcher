@@ -1,3 +1,4 @@
+import {finishDraftCommit,finishDraftConsumed} from './finish-draft-ui';
 import type { Workspace } from "./contracts";
 import type { WorldNoteV1 } from "../features/world/world-notes";
 import type { NarrativeView, NarrativeDraft } from "./narrative-contracts";
@@ -371,6 +372,7 @@ export async function showNarrative(
         const basis = data;
         await prepareFinish(basis.state.contributors, undefined, {
           workspace: w!,
+          owner:{kind:'narrative',targetId:note!.id,revision:basis.state.revision},
           poolXp: basis.state.poolXp,
           items: basis.state.items,
         });
@@ -396,17 +398,17 @@ export async function showNarrative(
         legend.textContent = "XP";
         message.textContent =
           "Manuelles Ergebnis, XP und Beute werden gemeinsam gespeichert. Gegenstände anschließend ausdrücklich zuweisen.";
-        el<HTMLTextAreaElement>("combat-outcome").value = "";
-        el<HTMLInputElement>("finish-load").value = "0";
+
         form.onsubmit = (event) => {
           event.preventDefault();
           void (async () => {
-            const rewards = finishRewards();
+            try{const draft=await finishDraftCommit();const rewards = finishRewards();
             if (
               await execute({
                 kind: "narrative-award",
                 noteId: note!.id,
-                expectedRevision: basis.state.revision,
+                expectedRevision: draft.revision,
+                finishDraftWriteId:draft.writeId,
                 expectedNoteRevision: basis.noteRevision,
                 sceneId: null,
                 poolXp: rewards.poolXp,
@@ -416,9 +418,9 @@ export async function showNarrative(
                 outcome: el<HTMLTextAreaElement>("combat-outcome").value,
               })
             ) {
-              dialog.close();
+              finishDraftConsumed();dialog.close();
               await refreshProgress();
-            }
+            }}catch(e){tell((e as Error).message,true);}
           })();
         };
         dialog.addEventListener(

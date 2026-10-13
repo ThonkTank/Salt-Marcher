@@ -123,6 +123,9 @@ else {
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
+    handle('campaign:finish-draft',(token:string,owner:any)=>store.finishDraft(token,owner));
+    handle('campaign:keep-finish-draft',(token:string,draft:any,expected:string|null)=>store.keepFinishDraft(token,draft,expected));
+    handle('campaign:discard-finish-draft',(token:string,owner:any,writeId:string)=>store.discardFinishDraft(token,owner,writeId));
     handle('campaign:keep-narrative-draft',(token:string,draft:any,expected:string|null)=>store.keepNarrativeDraft(token,draft,expected));
     handle('campaign:discard-narrative-draft',(token:string,id:string,writeId:string)=>store.discardNarrativeDraft(token,id,writeId));
     handle('campaign:narrative',(token:string,id:string)=>store.narrative(token,id));

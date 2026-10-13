@@ -1,3 +1,5 @@
+import {beginFinishDraft,resetFinishDraft,markFinishDraft,flushFinishDraft} from './finish-draft-ui';
+import type {FinishOwner,RewardItemDraft} from './finish-draft-contracts';
 import {drawLedgerStacks} from './ledger-stack-ui';
 import {rewardItemsEditor} from './reward-items-ui';
 import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
@@ -15,7 +17,7 @@ let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = 
 let selectedTreasure: string | null = null;
 let ledgerRequest=0, treasureRequest=0;
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
-let finishBasis: ProgressView | null = null;let finishItems:ItemInput[]=[];
+let finishBasis: ProgressView | null = null;let finishItems:RewardItemDraft[]=[];
 let history: ProgressHistory = { items: [], next: null };
 let tell: (text: string, error?: boolean) => void;
 const healthFields=['health-current','health-maximum','health-temporary','health-conditions','health-reason'] as const;
@@ -64,7 +66,7 @@ async function execute(action: ProgressAction): Promise<boolean> {
     finally { if(pending===task)pending = null; if (gen === generation) render(); }
   });pending=task;lock();return task;
 }
-export async function flushProgress() { if(pending)return await pending;return !workspace||!hasPendingCommit(workspace.campaign.id); }
+export async function flushProgress() { if(!await flushFinishDraft())return false; if(pending)return await pending;return !workspace||!hasPendingCommit(workspace.campaign.id); }
 function ledgerUnavailable(){return !!selectedLedger&&ledger.problems.some(p=>p.id===selectedLedger);}
 function lock() {
   const blocked=!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
@@ -199,20 +201,21 @@ async function loadHistory(more = false) {
   }catch(error){tell((error as Error).message,true);}
 }
 function item(prefix: string): ItemInput { return { name:value(prefix+'-name'),quantity:Number(value(prefix+'-quantity')),valueGold:value(prefix+'-value'),category:value(prefix+'-category') as ItemCategory }; }
-export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:Workspace;poolXp:number;items:ItemInput[]}) {
-  const owner=options?.workspace??workspace;if(!owner)return; const gen=generation; const result=unwrap(await window.campaign.progress(owner.token));if(gen!==generation)return;
+export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:Workspace;poolXp?:number;items?:ItemInput[];owner:FinishOwner}) {
+  await resetFinishDraft();get<HTMLTextAreaElement>('combat-outcome').value='';const owner=options?.workspace??workspace;if(!owner)return; const gen=generation; const result=unwrap(await window.campaign.progress(owner.token));if(gen!==generation)return;
   finishBasis=result;const list=get('finish-recipients');list.replaceChildren();
   for(const c of result.characters){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=participantIds.includes(c.characterId);label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?'':' · inaktiv')+(c.xp===null?' · XP bislang unbekannt': ' · Level '+xpLevel(c.xp).level)));list.append(label);box.onchange=finishPreview;}
-  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=!!options?.items.length;finishItems=structuredClone(options?.items??[]);rewardItemsEditor(get('finish-item-list'),finishItems,finishPreview);if(options){get<HTMLInputElement>('finish-no-xp').checked=options.poolXp===0;get<HTMLInputElement>('finish-xp').value=String(options.poolXp);get<HTMLInputElement>('finish-load').value='0';}finishPreview();
+  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=!!options?.items?.length;finishItems=(options?.items??[]).map(i=>({...i,quantity:String(i.quantity)}));drawFinishItems();if(options?.poolXp!==undefined){get<HTMLInputElement>('finish-no-xp').checked=options.poolXp===0;get<HTMLInputElement>('finish-xp').value=String(options.poolXp);get<HTMLInputElement>('finish-load').value='0';}finishPreview();if(options)await beginFinishDraft(owner,options.owner,()=>finishItems,items=>{finishItems=items;drawFinishItems();},finishPreview);
 }
+function drawFinishItems(){rewardItemsEditor(get('finish-item-list'),finishItems,()=>{finishPreview();markFinishDraft();},true);}
 function finishPreview() {
   const none=get<HTMLInputElement>('finish-no-xp').checked, boxes=[...get('finish-recipients').querySelectorAll<HTMLInputElement>('input:checked')];
   get('finish-xp-fields').hidden=none;get('finish-loot-fields').hidden=!get<HTMLInputElement>('finish-has-loot').checked;
   try{const pool=Number(value('finish-xp')), share=xpShare(none?0:pool,none?0:boxes.length);get('finish-xp-preview').textContent=none?'Kein XP-Award.':boxes.length?share.share+' XP pro Figur · '+share.total+' XP insgesamt (aufgerundet).\n'+boxes.map(b=>{const c=finishBasis!.characters.find(c=>c.characterId===b.value)!;const next=(c.xp??0)+share.share;return c.name+': '+next+' XP, Level '+xpLevel(next).level;}).join('\n'):'Wähle mindestens eine Figur oder ausdrücklich „Keine XP“. ';}catch(error){get('finish-xp-preview').textContent=(error as Error).message;}
 }
 export function finishRewards(): FinishRewards {
-  const none=get<HTMLInputElement>('finish-no-xp').checked;
-  return {poolXp:none?0:Number(value('finish-xp')),noXp:none,recipients:none?[]:[...get('finish-recipients').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:finishBasis!.characters.find(c=>c.characterId===b.value)!.revision})),policyVersion:'xp-ceil-2014-v1',loadXp:Number(value('finish-load')),items:get<HTMLInputElement>('finish-has-loot').checked?finishItems:[]};
+  const none=get<HTMLInputElement>('finish-no-xp').checked;if(!none&&!/^[0-9]+$/.test(value('finish-xp'))||!/^[0-9]+$/.test(value('finish-load')))throw new Error('XP und Tagesbelastung zuerst vervollständigen.');
+  return {poolXp:none?0:Number(value('finish-xp')),noXp:none,recipients:none?[]:[...get('finish-recipients').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:finishBasis!.characters.find(c=>c.characterId===b.value)!.revision})),policyVersion:'xp-ceil-2014-v1',loadXp:Number(value('finish-load')),items:get<HTMLInputElement>('finish-has-loot').checked?finishItems.map(i=>{if(!/^[1-9][0-9]*$/.test(i.quantity))throw new Error('Gegenstandsmengen zuerst vervollständigen.');return{...i,quantity:Number(i.quantity)};}):[]};
 }
 async function recoveredProgress(event:CommitResolution){
  if(!workspace||event.ref.campaignId!==workspace.campaign.id)return;
