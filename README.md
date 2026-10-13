@@ -1,14 +1,15 @@
-# Dungeon-Editor und Kampagnenwerkzeuge
+# Dungeon-Editor und gemeinsamer GM-Atlas
 
-Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Dieses Repository entwickelt den SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost. Die [technische Zielarchitektur](ARCHITECTURE.md) beschreibt den geplanten Übergang zum Gesamtprodukt.
+Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Dieses Repository entwickelt den SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost; die endgültige Plattformentscheidung bleibt offen.
 
 **Entwicklungsstand:** Dungeon-Editor und Raum-Keys sind vorhanden; Atlas-, Stadt- und Kampagnenintegration ist teilweise umgesetzt. Das Gesamtprodukt ist noch nicht abgenommen.
 
 ## Hier anfangen
 
-- [Produktziele](docs/PRODUCT.md), [vollständiger Umfang](docs/SCOPE.md) und [Lieferfolge](docs/ROADMAP.md): Gesamtprodukt und Weg zum Ziel.
-- [Atlasstand](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) und [Umsetzung](ROADMAP-HEX-ATLAS.md#umsetzungsplan): Kartenoberfläche, Werkzeuge und Codepakete.
+- [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): umgesetzt, fehlend und Weg zum Ziel.
+- [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md): vollständiger Funktionsumfang.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
+- [Beitragen](CONTRIBUTING.md) und [AGENTS.md](AGENTS.md): Entwicklung und Arbeitsgrenzen.
 
 ## Lokal entwickeln
 
@@ -26,14 +27,6 @@ npm run build
 ```
 
 Der Build erzeugt `main.js` und `main.js.map`. Für einen manuellen Smoke ausschließlich einen separaten Obsidian-Testvault verwenden: `main.js`, `manifest.json` und `styles.css` nach `.obsidian/plugins/dungeon-editor/` kopieren und das Plugin dort aktivieren. Obsidian Desktop mindestens 1.8.7; WebGL-Verfügbarkeit für Grafikprüfungen kontrollieren. Zum Einstieg die Befehle „Dungeon“ bzw. „Atlas“ in der Befehlspalette suchen. Produktive Karten und bestehende Nutzertexte bleiben geschützt. Build oder Push installieren kein Plugin im Nutzervault.
-
-Die eigenständigen Legacy-Speicherfälle verwenden synthetische Daten und kontrollierte
-Modellports. Sie sind keine GUI-/Prozessabnahme; der [aktuelle begrenzte Befund](ROADMAP-HEX-ATLAS.md#lieferpakete-und-codeanschlüsse) hält M13 offen.
-
-```bash
-./node_modules/esbuild/bin/esbuild tests/campaign-manifest-consumer-matrix.entry.ts --bundle --platform=node --outfile=/tmp/dungeon-consumer-matrix.cjs
-node --test --experimental-test-isolation=none /tmp/dungeon-consumer-matrix.cjs
-```
 
 ## Repositorykarte
 
