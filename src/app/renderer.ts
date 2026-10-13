@@ -21,6 +21,7 @@ import { activatePreparation, initPreparation, flushPreparation, leavePreparatio
 import { activateLive, initLive, flushLive, openLive, prepareLiveEncounter, addLiveCreature } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
+import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
 const setWorkspaceAvailable = (available: boolean) => document.body.classList.toggle('has-workspace', available);
@@ -41,6 +42,7 @@ let importPreview: ImportPreview | null = null;
 let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
 const status = (text: string, error = false) => { el('status').textContent = text; el('status').dataset.error = String(error); };
 initExtensions(status);
+initChronicle(status);
 initPreparation(status, async scopeId => {
   if (!workspace || !(await leaveWorkspace())) return;
   const room = workspace.rooms.find(room => room.scopeId === scopeId);
@@ -76,8 +78,9 @@ el('music-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;
 el('world-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();})().catch(error=>status(error.message,true));};
 el('items-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems();})().catch(error=>status(error.message,true));};
 el('catalog-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('catalog');await openCatalog();})();};
-function showTab(selected: 'atlas' | 'preparation' | 'live' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
-  for (const id of ['atlas', 'preparation', 'live', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
+el('chronicle-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('chronicle');await openChronicle();})().catch(error=>status(error.message,true));};
+function showTab(selected: 'atlas' | 'preparation' | 'live' | 'chronicle' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
+  for (const id of ['atlas', 'preparation', 'live', 'chronicle', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
 initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=await refreshCampaigns();if(!list)return;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();showTab('atlas');document.querySelector('main')!.inert=true;}const target=id??(!workspace?list.activeId??list.campaigns[0]?.id:null);if(target)await activate(target);else if(!workspace){setWorkspaceAvailable(false);el('map-title').textContent='Keine Kampagne geöffnet';el('rooms').replaceChildren();el<HTMLSelectElement>('campaigns').value='';}});
@@ -384,7 +387,7 @@ async function drainActivation(): Promise<void> {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        activateLive(next); activateCatalog(next); activateItems(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
+        activateLive(next); activateChronicle(next); activateCatalog(next); activateItems(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';

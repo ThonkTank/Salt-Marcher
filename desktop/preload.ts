@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   ledgerParties:(token:string)=>ipcRenderer.invoke('campaign:ledger-parties',token),
   narrative:(token:string,id:string)=>ipcRenderer.invoke('campaign:narrative',token,id),
   progressHistory: (token: string, characterId: string, after: string | null) => ipcRenderer.invoke('campaign:progress-history', token, characterId, after),
+  chronicle:(token:string)=>ipcRenderer.invoke('campaign:chronicle',token),
+  exportChronicle:(token:string,category:import('../src/app/chronicle-contracts').ChronicleCategory|'all',search:string)=>ipcRenderer.invoke('campaign:chronicle-export',token,category,search),
   progress: (token: string) => ipcRenderer.invoke('campaign:progress', token),
   treasures: (token: string, after: string | null) => ipcRenderer.invoke('campaign:treasures', token, after),
   treasure: (token: string, id: string) => ipcRenderer.invoke('campaign:treasure', token, id),

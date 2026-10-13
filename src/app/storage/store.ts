@@ -62,6 +62,7 @@ import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat
 import type { CombatCommand } from '../combat-contracts';
 import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
 import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
+import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
 import type { EncounterPlanCommand } from '../encounter-contracts';
 import { installGenerationSchema, readEncounterTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, validateGenerationBackup } from './generation';
@@ -520,6 +521,7 @@ export class CampaignStore {
   encounterPlan(token: string, id: string) { return readEncounterPlan(this.db,this.guard(token),id); }
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   progressHistory(token: string, characterId: string, after: string | null) { return readProgressHistory(this.db, this.guard(token), characterId, after); }
+  chronicle(token:string){return readChronicle(this.db,this.guard(token));}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
   treasures(token: string, after: string | null) { return readTreasures(this.db, this.guard(token), after); }
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }
