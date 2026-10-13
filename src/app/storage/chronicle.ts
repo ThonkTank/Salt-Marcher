@@ -23,6 +23,8 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
   else if(row.kind==='shop-purchase'){category='reward';title='Gegenstand gekauft';summary=(person?person+': ':'')+quantity(item)+(item?.counterparty?' · '+item.counterparty:'');locationId=item?.locationId??null;}
   else if(['loot-given','loot-transfer'].includes(row.kind)){category='reward';title='Gegenstand weitergegeben';summary=(person?person+': ':'')+quantity(item)+(item?.counterparty?' · an '+item.counterparty:'');}
   else if(row.kind==='loot-transfer-received'){category='reward';title='Gegenstand erhalten';summary=(person?person+': ':'')+quantity(item);}
+  else if(row.kind==='treasure-edited'){category='reward';title='Schatz nachbearbeitet: '+text(f.after?.title,'Fund');summary=text(f.reason,'Unverteilte Beute angepasst.');locationId=f.after?.locationId??null;}
+  else if(row.kind==='treasure-moved'){category='reward';title='Beute verschoben: '+text(f.before?.title,'Fund')+' → '+text(f.targetAfter?.title,'Zielschatz');summary=String(f.quantity??0)+' Einheiten · '+text(f.reason);locationId=f.targetAfter?.locationId??null;}
   else if(row.kind==='loot-correction'){category='reward';title='Beutestand korrigiert';summary=(person?person+': ':'')+text(f.reason,'Bestand angepasst');}
   else if(row.kind==='xp'){category='party';title='XP korrigiert';summary=(person?person+': ':'')+String(f.before?.xp??'offen')+' → '+String(f.after?.xp??'offen')+(f.reason?' · '+f.reason:'');}
   else if(row.kind==='health'){category='party';title='Trefferpunkte geändert';summary=(person?person+': ':'')+String(f.before?.health?.hp??'offen')+' → '+String(f.after?.health?.hp??'offen')+' HP'+(f.reason?' · '+f.reason:'');}
@@ -34,11 +36,29 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
   return{id:'progress:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category,title,summary,people,scene,location};
 }
 
-// These are the event kinds represented by progressEntry; bookkeeping has no chronicle row.
-const progressKinds=['narrative-award','combat-award','treasure-created','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
+// Stream relevant source records in bounded portions under the same read snapshot.
+const progressKinds=['narrative-award','combat-award','treasure-created','treasure-edited','treasure-moved','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
 const sourceLimit=2000;
+function* sourceRows(db:any,cam:string,table:'progress_event'|'world_history',kinds?:string[]){
+  let before=Number.MAX_SAFE_INTEGER;
+  for(;;){
+    let count=0,cursor=before;
+    const filter=kinds?' AND kind IN ('+kinds.map(()=>'?').join(',')+')':'';
+    for(const row of db.prepare('SELECT rowid AS cursor,* FROM '+table+' WHERE campaign_id=? AND rowid<?'+filter+' ORDER BY rowid DESC LIMIT ?').iterate(cam,before,...(kinds??[]),sourceLimit+1)){
+      count++;cursor=row.cursor;yield row;
+    }
+    if(count<sourceLimit+1||!Number.isSafeInteger(cursor)||cursor>=before)return;
+    before=cursor;
+  }
+}
 
-export function readChronicle(db:any,cam:string):ChronicleView{
+export function chronicleMatches(entry:ChronicleEntry,category:ChronicleCategory|'all',search:string){
+  const needle=search.trim().toLocaleLowerCase();
+  return(category==='all'||entry.category===category)&&(!needle||[entry.title,entry.summary,entry.scene,entry.location,...entry.people].some(value=>value?.toLocaleLowerCase().includes(needle)));
+}
+
+export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'='all',search=''):ChronicleView{
+  if(!['all','combat','narrative','reward','travel','party','world'].includes(category)||typeof search!=='string'||search.length>1000)throw new Error('Chronikfilter ungültig.');
   return db.transaction(()=>{
     const campaign=db.prepare('SELECT name FROM campaign WHERE id=?').get(cam);if(!campaign)throw new Error('Kampagne fehlt.');
     const names=new Map<string,string>(db.prepare('SELECT id,payload,checksum FROM character_profile WHERE campaign_id=?').all(cam).map((r:any)=>{const p=payload(r);return[r.id,text(p.name,'Unbekannte Figur')];}));
@@ -46,26 +66,42 @@ export function readChronicle(db:any,cam:string):ChronicleView{
     const locations=new Map<string,string>(db.prepare('SELECT id,payload,checksum FROM location WHERE campaign_id=?').all(cam).map((r:any)=>[r.id,text(payload(r).name,'Unbekannter Ort')]));
     const narrativeLocations=new Map<string,string|null>(db.prepare('SELECT note_id,payload,checksum FROM narrative_state WHERE campaign_id=?').all(cam).map((r:any)=>[r.note_id,payload(r).locationId??null]));
     const combats=new Map<string,{title:string;sceneId:string;outcome:string}>();for(const r of db.prepare("SELECT id,scene_id,payload,checksum FROM combat WHERE campaign_id=? AND phase='finished'").all(cam)){const p=payload(r);combats.set(r.id,{title:text(p.title,'Begegnung'),sceneId:r.scene_id,outcome:text(p.outcome)});}
-    const entries:ChronicleEntry[]=[],awards=new Map<string,ChronicleEntry>();
-    const progressRows=db.prepare('SELECT rowid AS cursor,* FROM progress_event WHERE campaign_id=? AND kind IN ('+progressKinds.map(()=>'?').join(',')+') ORDER BY rowid DESC LIMIT ?').iterate(cam,...progressKinds,sourceLimit+1);
-    let sourceTruncated=false,progressCount=0,worldCount=0;
-    for(const row of progressRows){
-      if(!progressKinds.includes(row.kind))continue;
-      if(++progressCount>sourceLimit){sourceTruncated=true;break;}
+    const progressEntries:ChronicleEntry[]=[];let progressTruncated=false;
+    for(const row of sourceRows(db,cam,'progress_event',progressKinds.filter(kind=>kind!=='combat-award'))){
       const f=payload(row);
       const entry=progressEntry(row,f,names,scenes,locations,narrativeLocations,combats);if(!entry)continue;
-      if(row.kind==='combat-award'&&f.awardId){const prior=awards.get(f.awardId);if(prior){prior.people.push(...entry.people);if(Number(f.xp)>0)prior.summary+=(prior.summary.includes(' XP für ')?', ':' · '+f.xp+' XP für ')+(entry.people[0]??'Unbekannt');continue;}awards.set(f.awardId,entry);}
-      entries.push(entry);
+      if(row.kind==='combat-award'||!chronicleMatches(entry,category,search))continue;
+      progressEntries.push(entry);if(progressEntries.length>2000){progressTruncated=true;break;}
     }
-    const worldRows=db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC LIMIT ?').iterate(cam,sourceLimit+1);
-    for(const row of worldRows){if(++worldCount>sourceLimit){sourceTruncated=true;break;}const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);entries.push({id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null});}
+    // Awards have one receipt per person. Match the complete group while retaining
+    // only one group's prose plus the newest bounded set of matching entries.
+    const combatEntries:ChronicleEntry[]=[];
+    let awardKey:string|null=null,awardEntry:ChronicleEntry|null=null;
+    const compare=(a:ChronicleEntry,b:ChronicleEntry)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id);
+    const finishAward=()=>{
+      if(awardEntry&&chronicleMatches(awardEntry,category,search)){
+        combatEntries.push(awardEntry);
+        if(combatEntries.length>2001){combatEntries.sort(compare);combatEntries.length=2001;}
+      }
+    };
+    if(category==='all'||category==='combat')for(const row of db.prepare("SELECT * FROM progress_event WHERE campaign_id=? AND kind='combat-award' ORDER BY CASE WHEN json_valid(payload) THEN json_extract(payload,'$.awardId') END,rowid DESC").iterate(cam)){
+      if(row.kind!=='combat-award')continue;
+      const f=payload(row),entry=progressEntry(row,f,names,scenes,locations,narrativeLocations,combats);if(!entry)continue;
+      const key=typeof f.awardId==='string'&&f.awardId?'award:'+f.awardId:'event:'+row.id;
+      if(key!==awardKey){finishAward();awardKey=key;awardEntry=entry;}
+      else if(awardEntry){awardEntry.people.push(...entry.people);if(Number(f.xp)>0)awardEntry.summary+=(awardEntry.summary.includes(' XP für ')?', ':' · '+f.xp+' XP für ')+(entry.people[0]??'Unbekannt');}
+    }
+    finishAward();
+    const worldEntries:ChronicleEntry[]=[];let worldTruncated=false;
+    for(const row of sourceRows(db,cam,'world_history')){const f=payload(row),sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=f.facts?.locationId??f.facts?.after?.position?.locationId??f.facts?.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;const title=text(f.text,'Weltereignis'),travel=/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);const entry:ChronicleEntry={id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:travel?'travel':'world',title,summary:'',people:[],scene,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}}
+    const entries=[...progressEntries,...combatEntries,...worldEntries];
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id));
-    return{campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:sourceTruncated||entries.length>sourceLimit};
+    return{campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:progressTruncated||worldTruncated||entries.length>sourceLimit};
   })();
 }
 
 export function chronicleMarkdown(view:ChronicleView,category:ChronicleCategory|'all',search:string){
-  const needle=search.trim().toLocaleLowerCase(),entries=view.entries.filter(e=>(category==='all'||e.category===category)&&(!needle||[e.title,e.summary,e.scene,e.location,...e.people].some(v=>v?.toLocaleLowerCase().includes(needle))));
+  const entries=view.entries.filter(entry=>chronicleMatches(entry,category,search));
   const labels:Record<ChronicleCategory,string>={combat:'Kampf',narrative:'Quest',reward:'Beute',travel:'Reise',party:'Party',world:'Welt'};
-  return '# Kampagnenchronik: '+view.campaignName+'\n\nExportiert am '+new Date().toLocaleString('de-DE')+'\n\n'+(view.truncated?'_Unvollständiger Ausschnitt: Ältere Ereignisse und passende Suchtreffer können fehlen._\n\n':'')+(entries.map(e=>'## '+e.title+'\n\n- Zeitpunkt: '+new Date(e.recordedAt).toLocaleString('de-DE')+'\n- Bereich: '+labels[e.category]+(e.scene?'\n- Gruppe: '+e.scene:'')+(e.location?'\n- Ort: '+e.location:'')+(e.people.length?'\n- Beteiligte: '+[...new Set(e.people)].join(', '):'')+(e.summary?'\n\n'+e.summary:'')).join('\n\n')||'_Keine passenden Einträge._')+'\n';
+  return '# Kampagnenchronik: '+view.campaignName+'\n\nExportiert am '+new Date().toLocaleString('de-DE')+'\n\n'+(view.truncated?'> Unvollständiger Ausschnitt: Auf die neuesten 2.000 passenden Ereignisse begrenzt; ältere passende Einträge fehlen. Suche oder Bereich eingrenzen.\n\n':'')+(entries.map(e=>'## '+e.title+'\n\n- Zeitpunkt: '+new Date(e.recordedAt).toLocaleString('de-DE')+'\n- Bereich: '+labels[e.category]+(e.scene?'\n- Gruppe: '+e.scene:'')+(e.location?'\n- Ort: '+e.location:'')+(e.people.length?'\n- Beteiligte: '+[...new Set(e.people)].join(', '):'')+(e.summary?'\n\n'+e.summary:'')).join('\n\n')||'_Keine passenden Einträge._')+'\n';
 }

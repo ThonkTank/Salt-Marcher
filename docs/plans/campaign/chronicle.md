@@ -23,29 +23,36 @@ der lokale Quellenstand wurde damit verglichen.
 `src/app/storage/chronicle.ts` kombiniert bestätigte `progress_event`- und
 `world_history`-Records in einer Lesetransaktion. `chronicle-contracts.ts`,
 Main/preload und `chronicle-ui.ts` bieten Kategorien, Textfilter und Markdown.
-Der aktuelle Ausschnitt liest je Quelle höchstens 2001 relevante Records und
-zeigt höchstens 2000 zusammengefasste Einträge. Das ist keine vollständige
+Der aktuelle Ausschnitt liest relevante Records in Portionen von höchstens
+2001 unter demselben Snapshot. Kategorie und Text werden vor der Ergebnisgrenze
+angewendet; eine Suche erreicht damit auch ältere Portionen. Die Ausgabe zeigt
+höchstens 2000 passende, zusammengefasste Einträge. Das ist keine vollständige
 Historiennavigation oder vollständige Exportqualifikation.
 
 Drei Gegenproben fanden zwei zusammenhängende Fehler: 2500 interne Statusrecords
 verdrängten einen älteren sichtbaren XP-Eintrag aus dem Rohfenster; 2002
 zusammengefasste Awardrecords meldeten den verbliebenen Eintrag als vollständig;
 ein gekürzter Markdownexport trug keinen Hinweis. Der Reader filtert jetzt die
-von `progressEntry` dargestellten Eventarten vor dem SQL-Limit. Die Lookahead-
-Grenzen beider Quellen bleiben unabhängig von der Gruppierung im `truncated`-
-Flag erhalten. Markdown übernimmt diesen Hinweis auch bei leerem Suchergebnis.
+von `progressEntry` dargestellten Eventarten vor dem SQL-Limit. Die Lookahead-Grenze betrifft nun passende Einträge, nicht einzelne
+Beteiligtenbelege. Ein vollständig gelesenes Award mit mehr als 2000 Belegen
+ist deshalb vollständig; mehr als 2000 passende Ereignisse bleiben als
+`truncated` markiert. Markdown übernimmt diesen Hinweis auch bei leerem Suchergebnis.
 Datenquellen und ihre Textinhalte werden dabei nicht verändert. Integrierte
 Kontextlabels werden ebenfalls gegen ihren Bytehash geprüft. Die begrenzten
 Quellen werden nacheinander gestreamt; ein noch unbenutzter SQLiteiterator darf
 bei einem Quellfehler den Transaktionsrollback nicht mit einer Busy-Meldung
 verdecken. Die vorhandene Fehlergegenprobe prüft diese Grenze.
 
-`tests/desktop-chronicle-window.test.mjs` prüft diese drei Fehler, die genaue
-2000/2001-Grenze, Weltquellenüberlauf, die gemeinsame Ausgabegrenze und eine
-beschädigte sichtbare Quelle gegen SQLite. Sieben Prüfungen bestanden;
-zusammen mit den betroffenen Narrativ-/Kampf-/Lade-/Codecprüfungen bestanden
-38 gezielte Prüfungen und der Desktop-Typecheck. Keine native Chronikbedienung,
-Hard-Crash- oder vollständige Produktabnahme ist damit belegt.
+`tests/desktop-chronicle-window.test.mjs` bewahrt die SQLite-Gegenproben für
+interne Records, 2000/2001-Grenze, Quellenüberlauf, gemeinsame Ausgabegrenze
+und beschädigte Quellen einschließlich Rollback. Vollständig gruppierte Awards
+werden vollständig gelesen und lösen ohne ausgelassene Ereignisse keinen
+Kürzungshinweis aus. Zusammen mit den neuen Filter-, Gruppen-, UI-, Chase-,
+Szenentisch- und Todesrettungswurfprüfungen bestanden zuletzt 37 gezielte Tests.
+[Nativer Nachweis](../../reference/gm-ux-qa/2026-10-13-chronicle-search.md):
+älterer Treffer hinter 2000 neueren Ereignissen, gefilterte Markdownausgabe,
+Fresh und kontrollierter IPC-Lesefehler. Kein Hard-Crash-, umfassender
+Dateidialog- oder vollständiger Produktnachweis.
 
 ## Nächste ausführbare Lieferung
 
@@ -62,8 +69,8 @@ Hard-Crash- oder vollständige Produktabnahme ist damit belegt.
    Korrektur und aktuelle Wahrheit. Bestehende `correctionOf`-Verträge konsumieren.
    Abnahme: HP-/XP-/Lootkorrektur und rückdatierte Weltfolge behalten ihre
    ursprünglichen Records; kausales Reise-Undo entfernt nur erlaubte Folgen.
-3. **Begrenzte Navigation und vollständige Ausgabe schließen.** API, Reader und
-   UI auf stabile Cursor plus serverseitige Kategorie-/Textfilter umstellen,
+3. **Begrenzte Navigation und vollständige Ausgabe schließen.** Serverseitige Kategorie-/Textfilter sind angeschlossen. API, Reader und
+   UI zusätzlich auf öffentliche stabile Cursor umstellen,
    beide Quellen deterministisch zusammenführen und nur die benötigten Namen/
    Orte/Kämpfe lesen. Momentan laden diese Kontextmaps ganze Kampagnentabellen;
    ein Quellenlimit allein begrenzt diesen Aufwand nicht. Gruppierte Kampfawards

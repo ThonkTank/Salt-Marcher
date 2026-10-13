@@ -77,3 +77,5 @@ import "./core/desktop-csp.test";
 import "./core/chronicle.test";
 import "./core/death-saves.test";
 import "./core/chase.test";
+
+import './core/chronicle-filter.test';
