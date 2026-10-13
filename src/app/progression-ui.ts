@@ -14,7 +14,7 @@ let workspace: Workspace | null = null, live: LiveView | null = null, selected: 
 let contextBasis = '';
 let generation = 0, loadNumber = 0, pending: Promise<boolean> | null = null, selectedLedger: string | null = null;
 let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = null, ledger: LedgerPage = {items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'};
-let lootBalance:LootBalance|null=null;
+let lootBalance:LootBalance|null=null,balanceRead=0;
 let selectedTreasure: string | null = null;
 let ledgerRequest=0, treasureRequest=0;
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
@@ -115,8 +115,21 @@ function render() {
   renderLedger(); lock();
   renderLootBalance();
 }
-async function loadLootBalance(){if(workspace)lootBalance=unwrap(await window.campaign.lootBalance(workspace.token));}
-function renderLootBalance(){const root=get('loot-balance-list');root.replaceChildren();if(!lootBalance)return;for(const c of lootBalance.characters){const p=document.createElement('p');p.textContent=c.name+': '+gold(c.copper)+(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');if(c.characterId===lootBalance.suggestedCharacterId){const strong=document.createElement('strong');strong.textContent='Nächste wertbare Belohnung: ';p.prepend(strong);}root.append(p);}}
+async function loadLootBalance(){
+ if(!workspace)return;const token=workspace.token,gen=generation,request=++balanceRead;
+ const result=await window.campaign.lootBalance(token);
+ if(gen!==generation||token!==workspace?.token||request!==balanceRead)return;
+ lootBalance=unwrap(result);
+}
+function renderLootBalance(){
+ const root=get('loot-balance-list');root.replaceChildren();if(!lootBalance)return;
+ const complete=lootBalance.characters.every(c=>!c.unknownEntries);
+ for(const c of lootBalance.characters){
+  const p=document.createElement('p');
+  p.textContent=c.name+': '+(c.unknownEntries?'Teilwert ':'')+gold(c.copper)+(complete?(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze'):' · Vergleich offen')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');
+  if(complete&&c.characterId===lootBalance.suggestedCharacterId){const strong=document.createElement('strong');strong.textContent='Nächste wertbare Belohnung: ';p.prepend(strong);}root.append(p);
+ }
+}
 function renderHealth(p: ProgressView['characters'][number] | undefined) {
   const key=healthKey(),draft=key?healthDrafts.get(key):undefined,h=p?.health,status=h??p?.lastCombatStatus;
   if(draft&&p&&!p.healthCombat&&draft.basis===JSON.stringify([p.health,p.lastCombatStatus]))draft.revision=p.revision;

@@ -39,6 +39,7 @@ function profile(db: any, campaignId: string, id: string): Character {
   if (![row.ordinal, row.membership_revision].every(v => Number.isSafeInteger(v) && v >= 0) || !Number.isSafeInteger(row.profile_revision) || row.profile_revision < 1) throw new Error('Charakterrevision oder Partyreihenfolge beschädigt.');
   return { id: row.id, ordinal: row.ordinal, profile: checkedCharacterProfile(JSON.parse(row.payload)), profileRevision: row.profile_revision, active: !!row.active, membershipRevision: row.membership_revision, sceneId: row.scene_id };
 }
+export {profile as readCharacter};
 export function readCampaignTime(db:any,campaignId:string){
  const anchor=db.prepare('SELECT epoch_id,instant_ms FROM campaign_time WHERE campaign_id=?').get(campaignId);
  if(!anchor||!anchor.epoch_id||!/^(0|[1-9][0-9]{0,29})$/.test(anchor.instant_ms))throw new Error('Kampagnenzeit fehlt oder ist beschädigt. Kein Ersatzstand erzeugt.');

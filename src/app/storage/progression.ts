@@ -4,7 +4,7 @@ import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,val
 import { randomUUID, createHash } from 'node:crypto';
 import { applyDeathSave, checkedHealth, checkedHealthStatus, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
-import { readLiveScene } from './live';
+import { readLiveScene, readCharacter } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
 const json = (v: unknown) => JSON.stringify(v), hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installProgressSchema(db: any) {
@@ -215,6 +215,16 @@ function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
  }
  return total;
 }
+// One current reward valuation for the personal ledger and cross-character balance.
+function ledgerRewardValue(db:any,cam:string,item:LedgerItem):bigint|null {
+  const definition=readItemDefinition(db,item.reference.definitionId);
+  item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;
+  if(item.origin==='transfer')item.rewardCreditId=transferCredit(db,cam,item);
+  if(item.origin==='purchase'||item.origin==='transfer')return 0n;
+  const value=item.status==='given'&&item.recipientCharacterId?transferredValue(db,cam,item):ledgerCopper(item);
+  if(item.status==='given'&&item.recipientCharacterId)item.creditedCopper=value?.toString()??null;
+  return value;
+}
 export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage {
   return db.transaction(() => {
     if (!query || typeof query.search !== 'string' || query.search.length > 1000 || !['','received','sold','given'].includes(query.status)) throw new Error('Ungültige Beutesuche.');
@@ -226,9 +236,8 @@ export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage
     for(const row of db.prepare('SELECT rowid AS cursor,* FROM character_ledger WHERE campaign_id=? AND character_id=? ORDER BY rowid DESC').iterate(cam,query.characterId)){
       const onPage=cursor===null||row.cursor<cursor;
       try{
-        const item=checkedLedgerRow(row),definition=readItemDefinition(db,item.reference.definitionId);
-        item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;
-        if(item.origin==='transfer')item.rewardCreditId=transferCredit(db,cam,item);if(item.origin!=='purchase'&&item.origin!=='transfer'){const value=item.status==='given'&&item.recipientCharacterId?transferredValue(db,cam,item):ledgerCopper(item);if(item.status==='given'&&item.recipientCharacterId)item.creditedCopper=value?.toString()??null;if(value===null)valueKnown=false;else total+=value;}
+        const item=checkedLedgerRow(row),value=ledgerRewardValue(db,cam,item);
+        if(value===null)valueKnown=false;else total+=value;
         if(onPage&&(!query.status||query.status===item.status)&&(!needle||(item.name+' '+item.currentName+' '+item.counterparty).toLocaleLowerCase().includes(needle))){
           if(shown<50){items.push(item);shown++;next=String(row.cursor);}else hasMore=true;
         }
@@ -261,7 +270,25 @@ export function readProgressHistory(db: any, cam: string, characterId: string, a
   const page = rows.slice(0,50);
   return { items: page.map((r: any) => ({ id: r.id, kind: r.kind, facts: decoded<Record<string, any>>(r) })), next: rows.length > 50 ? String(page[49].cursor) : null };
 }
-export function readLootBalance(db:any,cam:string){return db.transaction(()=>{const members=db.prepare('SELECT m.id,m.active,p.payload FROM roster_member m JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id WHERE m.campaign_id=? ORDER BY m.ordinal').all(cam),totals=new Map<string,bigint>(),unknown=new Map<string,number>();for(const m of members){totals.set(m.id,0n);unknown.set(m.id,0);}for(const row of db.prepare('SELECT * FROM character_ledger WHERE campaign_id=?').iterate(cam)){try{const item=checkedLedgerRow(row);if(item.origin==='purchase'||item.origin==='transfer'||item.quantity===0)continue;const value=ledgerCopper(item);if(value===null)unknown.set(item.characterId,(unknown.get(item.characterId)??0)+1);else totals.set(item.characterId,(totals.get(item.characterId)??0n)+value);}catch{unknown.set(row.character_id,(unknown.get(row.character_id)??0)+1);}}const leader=[...totals.values()].reduce((a,b)=>a>b?a:b,0n),characters=members.map((m:any)=>({characterId:m.id,name:JSON.parse(m.payload).name,active:!!m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()})),known=characters.filter((c:any)=>!c.unknownEntries),pool=known.some((c:any)=>c.active)?known.filter((c:any)=>c.active):known,lowest=pool.reduce((best:any,c:any)=>!best||BigInt(c.copper)<BigInt(best.copper)?c:best,null);return{characters,leaderCopper:leader.toString(),suggestedCharacterId:lowest?.characterId??null};})();}
+export function readLootBalance(db:any,cam:string){
+ return db.transaction(()=>{
+  const members=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? ORDER BY ordinal').all(cam).map((m:any)=>readCharacter(db,cam,m.id));
+  const totals=new Map<string,bigint>(),unknown=new Map<string,number>();
+  for(const m of members){totals.set(m.id,0n);unknown.set(m.id,0);}
+  for(const row of db.prepare('SELECT * FROM character_ledger WHERE campaign_id=?').iterate(cam)){
+   try{
+    const item=checkedLedgerRow(row),value=ledgerRewardValue(db,cam,item);
+    if(value===null)unknown.set(item.characterId,(unknown.get(item.characterId)??0)+1);
+    else totals.set(item.characterId,(totals.get(item.characterId)??0n)+value);
+   }catch{unknown.set(row.character_id,(unknown.get(row.character_id)??0)+1);}
+  }
+  const leader=[...totals.values()].reduce((a,b)=>a>b?a:b,0n);
+  const characters=members.map((m:any)=>({characterId:m.id,name:m.profile.name,active:m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));
+  const known=characters.filter((c:any)=>!c.unknownEntries),pool=known.some((c:any)=>c.active)?known.filter((c:any)=>c.active):known;
+  const lowest=pool.reduce((best:any,c:any)=>!best||BigInt(c.copper)<BigInt(best.copper)?c:best,null);
+  return{characters,leaderCopper:leader.toString(),suggestedCharacterId:characters.some((c:any)=>c.unknownEntries)?null:lowest?.characterId??null};
+ })();
+}
 export function checkedItem(db: any, input: ItemInput) {
   if (!input || typeof input.name !== 'string' || !input.name.trim() || input.name.length > 1000 || !Number.isSafeInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000 || !['coins','equipment','trade-goods','magic','other'].includes(input.category)) throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
   if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');return{id:randomUUID(),reference:{kind:'authored' as const,definitionId:d.id,revision:d.revision},name:d.name,category:d.category,quantity:input.quantity,allocated:0,unitCopper:d.unitCopper};}
