@@ -126,6 +126,10 @@ export class AtlasRenderer {
       height: Math.max(1, this.host.clientHeight),
     };
   }
+  /** True only while drawing the clean shareable image instead of editor chrome. */
+  get imageCapture(): boolean {
+    return this.capturing;
+  }
   async init(): Promise<void> {
     await this.application.init({
       width: this.viewport.width,
@@ -301,7 +305,8 @@ export class AtlasRenderer {
       outputViewport = { width: options.width, height },
       camera = this.currentCamera,
       level = this.level,
-      gridVisible = this.grid.visible;
+      gridVisible = this.grid.visible,
+      overlayVisible = this.overlay.visible;
     this.capturing = true;
     if (this.frame !== undefined) {
       cancelAnimationFrame(this.frame);
@@ -315,6 +320,7 @@ export class AtlasRenderer {
         : relativeCamera(camera.anchor, camera.offsetMeters,
           camera.metersPerPixel * editorViewport.width / outputViewport.width);
       this.grid.visible = options.includeGrid;
+      this.overlay.visible = false;
       this.draw();
       const copy = this.host.ownerDocument.createElement("canvas");
       copy.width = outputViewport.width;
@@ -327,6 +333,7 @@ export class AtlasRenderer {
       this.currentCamera = camera;
       this.level = level;
       this.grid.visible = gridVisible;
+      this.overlay.visible = overlayVisible;
       this.captureViewport = undefined;
       this.application.renderer.resize(editorViewport.width, editorViewport.height);
       this.capturing = false;
