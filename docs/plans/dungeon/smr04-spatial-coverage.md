@@ -111,4 +111,8 @@ und gültigen Backups bei beschädigten Key-Daten ab. Die
 Volumengröße auch beim Nachschlagen und Neuverknüpfen von 20.000 markierten
 Flächen. Der Volumenursprung wird je Neuverknüpfung einmal berechnet; Prosa,
 Fragmentkennungen und nicht mehr zuordenbare Flächen bleiben erhalten.
-Das sind lokale Prüfungen; eine native Gesamtqualifikation des Key-Editors bleibt offen.
+Pfadanker, Fallenfelder und Oberflächen verwenden dieselbe Ursprungsberechnung
+im Volumenmodell. Die [räumlichen Prüfungen](../../../tests/desktop-volume-spatial.test.mjs)
+prüfen Pfadanker und Feldeintritt bei dieser Größe. Die automatische Ankerwahl
+behält nur die nächstgelegene Grenzfläche und erhält die Reihenfolge bei Gleichstand.
+Das sind lokale Prüfungen; eine native Gesamtqualifikation bleibt offen.

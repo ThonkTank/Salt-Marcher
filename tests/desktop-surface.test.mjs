@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 
-for(const [name,entry] of [['model','surface-model'],['storage','storage/surfaces']]){
+for(const [name,entry] of [['model','surface-model'],['storage','storage/surfaces'],['volume','volume-model']]){
  buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/surface-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 }
 const require=createRequire(import.meta.url);
-const {surfaceOrigin,surfaceWorldFaces}=require('../.build/surface-model.cjs');
+const {surfaceWorldFaces}=require('../.build/surface-model.cjs');
+const {volumeOrigin}=require('../.build/surface-volume.cjs');
 const {rebindSurfaces}=require('../.build/surface-storage.cjs');
 const span=(z=0)=>({z,height:2,floor:true,ceiling:true,medium:'air'});
 const face=x=>({x,y:0,z:0,side:'floor'});
@@ -17,7 +18,7 @@ const content={id:'surface',scopeId:'local',revision:3,name:'  Marked stone\r\n'
 const captured=faces=>[{content:structuredClone(content),parts:[{fragment:{id:'original-fragment',volumeId:'old',faces},floorId:'ground',faces}]}];
 
 test('surface origins handle 100000 columns and 200000 spans without call stack overflow',()=>{
- assert.deepEqual(surfaceOrigin(largeVolume()),{x:-5,y:-7,z:-3});
+ assert.deepEqual(volumeOrigin(largeVolume()),{x:-5,y:-7,z:-3});
 });
 
 test('large-volume surface lookup retains local coordinates and floor elevation',()=>{
