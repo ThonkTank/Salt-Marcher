@@ -53,6 +53,11 @@ an die ursprüngliche Sitzung. Ziel- und Kampagnenwechsel entwerten alte Antwort
 und Timer; spätere Eingaben werden nach einer bestätigten Verwerfung unter neuer
 Schreibbasis gesichert. Die [Dialogprüfungen](../../../tests/desktop-finish-draft-dom.test.mjs)
 prüfen diese Übergänge und den Erhalt wortgetreuer Rohtexte über echte Stores.
+Der [Entwurfsspeicher](../../../tests/desktop-finish-draft-store.test.mjs) prüft
+Rohfeldtypen, Ziel, Revision, Empfänger und Gegenstandsreferenzen beim Lesen,
+Schreiben und Backup. Beschädigte Daten ersetzen keine gültige Sicherung.
+Kopie und Fresh remappen strukturierte IDs, erhalten Prosa und unfertige Zahlen;
+archivierte Ziele bleiben zulässige historische Eigentümer.
 Die vollständige native Abschluss- und Recoveryabnahme bleibt offen.
 
 ## Geprüfter Umfang

@@ -49,8 +49,8 @@ function checkedAward(db:any,cam:string,row:any):NarrativeAward{
  return award;
 }
 
-export function readNarrative(db:any,cam:string,noteId:string):NarrativeView{
- const note=narrativeNote(db,cam,noteId),row=db.prepare('SELECT * FROM narrative_state WHERE campaign_id=? AND note_id=?').get(cam,noteId);
+export function readNarrative(db:any,cam:string,noteId:string,retained=false):NarrativeView{
+ const note=narrativeNote(db,cam,noteId,retained),row=db.prepare('SELECT * FROM narrative_state WHERE campaign_id=? AND note_id=?').get(cam,noteId);
  const state: NarrativeState=row?checkedNarrativeState(parsed(row)):{noteId,revision:0,status:'open',locationId:null,contributors:[],poolXp:0,items:[],awardId:null};
  const paid=db.prepare('SELECT * FROM narrative_award WHERE campaign_id=? AND note_id=? LIMIT 2').all(cam,noteId);if(paid.length>1||paid.length!==Number(state.awardId!==null)||paid.length===1&&paid[0].id!==state.awardId)throw new Error('Narrativer Belohnungsbeleg ist falsch zugeordnet.');
   if(row&&(row.note_id!==state.noteId||row.revision!==state.revision||state.revision<1))throw new Error('Narrativer Status widerspricht seinem Datensatz.');

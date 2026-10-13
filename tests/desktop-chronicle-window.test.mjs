@@ -18,3 +18,8 @@ test('damaged visible event cannot become a chronicle or change source bytes',t=
 
 test('combined world and progress sources share the visible limit',t=>{const x=fixture(t),insert=x.store.db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)');x.store.db.transaction(()=>{for(let i=0;i<1200;i++){x.add('health');const payload=JSON.stringify({recordedAt:'2026-10-13T14:00:00.000Z',text:'Reise '+i,facts:{}});insert.run(x.campaign.id,randomUUID(),null,payload,hash(payload));}})();const view=x.read();assert.equal(view.entries.length,2000);assert.equal(view.truncated,true);assert.equal(view.entries.filter(e=>e.category==='travel').length,1200);});
 test('world source overflow is disclosed independently of progress history',t=>{const x=fixture(t),insert=x.store.db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)');x.store.db.transaction(()=>{for(let i=0;i<2002;i++){const payload=JSON.stringify({recordedAt:'2026-10-13T14:00:00.000Z',text:'Welt '+i,facts:{}});insert.run(x.campaign.id,randomUUID(),null,payload,hash(payload));}})();const view=x.read();assert.equal(view.entries.length,2000);assert.equal(view.truncated,true);});
+
+test('death save outcomes remain visible in the bounded chronicle source query',t=>{
+ const x=fixture(t),id=x.add('death-save',{after:{health:{death:{successes:3,failures:1,stable:true,dead:false}}}}),view=x.read();
+ assert.equal(view.entries.length,1);assert.equal(view.entries[0].id,'progress:'+id);assert.equal(view.entries[0].title,'Todesrettungswurf');assert.equal(view.entries[0].summary,'stabilisiert');assert.equal(view.truncated,false);
+});
