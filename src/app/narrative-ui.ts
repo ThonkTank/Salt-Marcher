@@ -67,7 +67,17 @@ export async function showNarrative(
     return;
   }
   ownerKey = key;
+  data = null;
   dirty = false;
+  saveHook = null;
+  persistHook = null;
+  readyHook = null;
+  if (timer) clearTimeout(timer);
+  timer = null;
+  const loading = document.createElement("p");
+  loading.setAttribute("role", "status");
+  loading.textContent = "Narrative Angaben werden geladen…";
+  panel.replaceChildren(loading);
   panel.setAttribute("aria-busy", "true");
   let writeId: string | null = null,
     raw: NarrativeDraft | null = null,
@@ -122,7 +132,19 @@ export async function showNarrative(
     dirty = !!data.draft;
     draw();
   } catch (e) {
-    if (current()) tell((e as Error).message, true);
+    if (current()) {
+      data = null;
+      saveHook = null;
+      persistHook = null;
+      readyHook = null;
+      panel.setAttribute("aria-busy", "false");
+      const error = document.createElement("p");
+      error.setAttribute("role", "alert");
+      error.textContent =
+        "Narrative Angaben konnten nicht geladen werden: " + (e as Error).message;
+      panel.replaceChildren(error);
+      tell((e as Error).message, true);
+    }
   }
   function execute(action: ProgressAction): Promise<boolean> {
     if (task) return task;

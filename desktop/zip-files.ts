@@ -60,7 +60,7 @@ export async function readArchive(filename:string,base:string,allowedName:(name:
   decoders.push(file);
   if(seen.has(file.name)||file.name!=='manifest.json'&&!allowedName(file.name)){error=new Error('Archiv enthält einen unbekannten oder doppelten Eintrag.');return;}
   if(!seen.size&&file.name!=='manifest.json'){error=new Error('Archivmanifest muss der erste Eintrag sein.');return;}
-  if(file.name!=='manifest.json'&&(!manifestState.expected||!manifestState.expected.has(file.name))){error=new Error('Archiv enthält einen nicht deklarierten Eintrag.');return;}seen.add(file.name);
+  if(file.name!=='manifest.json'&&(!manifestState.expected||!manifestState.expected.has(file.name))){error=new Error('Archiv-Manifest enthält einen nicht deklarierten Eintrag.');return;}seen.add(file.name);
   const target=path.join(dir,file.name);mkdirSync(path.dirname(target),{recursive:true});
   const output=createWriteStream(target,{flags:'wx'}),done=completeOutput(output),digest=createHash('sha256');let count=0;
   outputs.push({output,done});output.on('error',e=>{error=e;});
