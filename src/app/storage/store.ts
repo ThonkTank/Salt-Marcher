@@ -589,14 +589,17 @@ export class CampaignStore {
   async campaignSnapshot(token:string,filename:string){
     const id=this.guard(token),fence=this.db.prepare('SELECT revision FROM campaign_lifecycle WHERE campaign_id=?').get(id).revision,candidate=filename+'.snapshot-'+randomUUID();
     try{
-      await this.backup(candidate);this.campaignFence(id,fence);
+      await this.db.backup(candidate);this.campaignFence(id,fence);
       const db=new Database(candidate,{fileMustExist:true});let snapshot;
       try{
         db.pragma('journal_mode=DELETE');pruneCampaignSnapshot(db,id);this.validateDatabase(db);
         const c:Pick<Campaign,'id'|'name'>=db.prepare('SELECT id,name FROM campaign').get();
         snapshot={...c,fence,schema:db.pragma('user_version',{simple:true}),counts:snapshotCounts(db),media:[...audioMediaFiles(db),...playerMediaFiles(db,id)]};
       }finally{db.close();}
-      this.campaignFence(id,fence);renameSync(candidate,filename);return snapshot;
+      const fd=openSync(candidate,'r');try{fsyncSync(fd);}finally{closeSync(fd);}
+      this.campaignFence(id,fence);renameSync(candidate,filename);
+      const directory=openSync(dirname(filename),'r');try{fsyncSync(directory);}finally{closeSync(directory);}
+      return snapshot;
     }finally{for(const suffix of ['','-wal','-shm'])rmSync(candidate+suffix,{force:true});}
   }
   private inspectCampaignDatabase(db:any){
