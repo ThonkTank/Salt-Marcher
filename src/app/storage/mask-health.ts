@@ -1,5 +1,5 @@
-import {recordMaskReconciliation} from './mask-reconciliation';
 import {createHash} from 'node:crypto';
+import {recordMaskReconciliation} from './mask-reconciliation';
 import {checkedCombat,combatOrder,type CombatState} from '../combat-contracts';
 import {checkedHealth,checkedHealthStatus} from '../progression';
 import {readProgressCharacter,saveProgress,event} from './progression';

@@ -11,12 +11,13 @@ test("a rapid second rule pin is ignored while the first host write is pending",
   let calls=0,resolveWrite!:(value:unknown)=>void;
   const write=new Promise(resolve=>{resolveWrite=resolve;});
   (parsed.window as any).campaign={
-    sceneRules:async()=>({ok:true,value:{sceneId:"scene",revision:0,pins:[]}}),
+    sceneChecks:async(token,sceneId)=>({ok:true,value:{sceneId,revision:0,checks:[],truncated:false}}),sceneRules:async()=>({ok:true,value:{sceneId:"scene",revision:0,pins:[]}}),
     preparation:async()=>({ok:true,value:{notes:[{trashed:false,note:{id:"rule",kind:"rule",title:"Festhalten",readAloud:"Bewegungsrate 0",gmNotes:"Vorteil",revision:1}}]}}),
     executeSceneRule:()=>{calls++;return write;},
   };
   try{
     initRuleReferences(()=>{});
+    for(const select of parsed.document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});
     activateRuleReferences({campaign:{id:"campaign"},token:"token"} as any);
     await refreshRuleReferences("scene");
     const pin=parsed.document.querySelector<HTMLButtonElement>("#live-rule-results button")!;

@@ -1,4 +1,4 @@
-import {removePartyFromMasks,migrateMaskHealth} from './mask-health';
+import {migrateMaskHealth} from './mask-health';
 import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk} from './scene-desk';
@@ -63,7 +63,9 @@ import { checkedLocationDocument } from '../../features/location/location-schema
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
-import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+import { reconcileCombatParticipants, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+
+
 import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
 import {installMaskReconciliationSchema,validateMaskReconciliations} from './mask-reconciliation';
 import {installRuleReferenceSchema,readSceneRules,executeSceneRule,validateRuleReferences} from './rule-references';
