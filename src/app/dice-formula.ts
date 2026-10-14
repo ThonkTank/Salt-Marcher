@@ -3,6 +3,7 @@ import type {CreatureAction} from '../features/catalog/creature-catalog';
 export interface ParsedDiceFormula {count:number;sides:number;modifier:number;formula:string}
 export interface CreatureRollPreset {kind:'attack'|'damage'|'save'|'check';label:string;formula:string;dc:number|null}
 export const creatureRollKey=(preset:CreatureRollPreset)=>[preset.kind,preset.label,preset.formula,preset.dc??''].join('\0');
+export function legendaryActionCost(action:Pick<CreatureAction,'name'>){const match=/\(\s*costs?\s+(\d+)\s+actions?\s*\)/i.exec(action.name),cost=match?Number(match[1]):1;return Number.isSafeInteger(cost)&&cost>=1&&cost<=3?cost:1;}
 
 export function parseDiceFormula(input:string):ParsedDiceFormula{
   if(typeof input!=='string'||input.length>100)throw new Error('Würfelformel ist zu lang.');

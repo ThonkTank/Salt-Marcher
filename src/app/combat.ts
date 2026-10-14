@@ -4,7 +4,7 @@ import {fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type 
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { Workspace, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
-import { combatOrder, type CombatAction, type CombatView, type CombatCommand } from './combat-contracts';
+import { combatOrder, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
 import { renderCreatureDetail } from './catalog-ui';
 import type { EncounterPlan } from './encounter-contracts';
@@ -12,8 +12,8 @@ import type {PreparedGroup} from './session-contracts';
 import {rollSceneCheck,rollSceneFormula} from './rule-reference-ui';
 import type {SceneCheck} from './scene-check-contracts';
 import {deathSaveControls,type DeathSaveResult} from './progression';
-import {creatureActionRolls,creatureRollKey,criticalDamageFormula,type CreatureRollPreset} from './dice-formula';
-import type {CreatureAction} from '../features/catalog/creature-catalog';
+import {creatureActionRolls,creatureRollKey,criticalDamageFormula,legendaryActionCost,type CreatureRollPreset} from './dice-formula';
+import type {Creature,CreatureAction} from '../features/catalog/creature-catalog';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
@@ -127,8 +127,9 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
       const openConcentration=action.kind==='damage'?actor?.concentrationChecks?.[0]:undefined;
+      const legendary=action.kind==='legendary-action'?actor?.legendaryActions:undefined;
       revealConcentration=!!openConcentration;
-      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+actor!.name+' gegen SG '+openConcentration.dc+' offen.'):'Kampf gespeichert.'); return true;
+      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+actor!.name+' gegen SG '+openConcentration.dc+' offen.'):legendary?('Legendäre Aktion eingesetzt · '+legendary.remaining+' von '+legendary.maximum+' Punkten verbleiben.'):'Kampf gespeichert.'); return true;
     } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
     finally { pending = null; if (generation === gen) { if (applied){render();if(revealConcentration)get('combat-concentration-effect').scrollIntoView({block:'nearest'});}else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
   })();
@@ -281,7 +282,7 @@ function render() {
     choose.textContent = p.name+(p.role?' · '+{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]:''); choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
     const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; name.append(tag); tr.append(name);
     const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
-    for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : ''].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
+    for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:''].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
     body.append(tr);
   }
   if (selected && !combat?.participants.some(p => p.id === selected)) selected = null;
@@ -289,6 +290,13 @@ function render() {
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
 }
 function renderSelection() { for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
+const isLegendaryAction=(source:Creature,action:CreatureAction)=>source.legendaryActions.includes(action);
+function legendaryControl(source:Creature,p:Combatant,action:CreatureAction){if(!isLegendaryAction(source,action))return null;const points=p.legendaryActions??{remaining:0,maximum:3},cost=legendaryActionCost(action),running=view?.combat?.phase==='running';return{disabled:blocked()||!running||points.remaining<cost,note:running?points.remaining+' / '+points.maximum+' Punkte · kostet '+cost:'Ab Kampfbeginn verfügbar'};}
+async function spendLegendary(source:Creature,p:Combatant,action:CreatureAction){return !isLegendaryAction(source,action)||await execute({kind:'legendary-action',participantId:p.id,actionId:action.id,cost:legendaryActionCost(action)});}
+async function useCreatureRoll(source:Creature,p:Combatant,combatId:string,action:CreatureAction,preset:CreatureRollPreset){
+  if(preset.kind==='attack'&&pendingAttack){stageAttack(action,preset,p.id,p.name,source.id,combatId);return;}if((preset.kind==='save'||preset.kind==='check')&&pendingSave){stageSave(action,preset,p.id,p.name,source.id,combatId);return;}if(!await spendLegendary(source,p,action))return;
+  if(preset.kind==='save'||preset.kind==='check')stageSave(action,preset,p.id,p.name,source.id,combatId);else if(preset.kind==='attack')stageAttack(action,preset,p.id,p.name,source.id,combatId);else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,formulaKind:'damage',dc:null,sourceCreatureId:source.id,sourceActionId:action.id},check=>stageDamage(check,p.id,combatId));
+}
 function renderEditor() {
   const p = view?.combat?.participants.find(p => p.id === selected),key=fighterKey(),draft=key?fighterDrafts.get(key):undefined;
   get('fighter-draft-status').textContent=draft?(JSON.stringify(draft.basis)===JSON.stringify(p)?'Eingabe offen – mit „Werte übernehmen“ bestätigen.':'Gespeicherte Werte wurden geändert. Eingabe bleibt offen; zuerst den aktuellen Stand laden.') : '';
@@ -305,7 +313,7 @@ function renderEditor() {
   get('fighter-death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':(death?.successes??0)+' Erfolge · '+(death?.failures??0)+' Fehlschläge'+(p?.deathLast?.roll!==null&&p?.deathLast?.roll!==undefined?' · letzter Wurf '+p.deathLast.roll:'');
   get<HTMLDetailsElement>('fighter-death-other').open=deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').hidden=!deathControls.reset;
-  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id; get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{if(preset.kind==='save'||preset.kind==='check')stageSave(action,preset,p.id,p.name,source.id,combatId);else if(preset.kind==='attack')stageAttack(action,preset,p.id,p.name,source.id,combatId);else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,formulaKind:'damage',dc:null,sourceCreatureId:source.id,sourceActionId:action.id},check=>stageDamage(check,p.id,combatId));});
+  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id; get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});
 }
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){

@@ -51,6 +51,34 @@ fehlende Seltenheiten bleiben mit Warnung offen. Sessioneditor und Writer tragen
 `SessionMagicGuidance` weiter. Diese Aussage ist Codebefund, keine vollständige
 Magie-/Quellen-/Bedienqualifikation.
 
+## Gemeinsame Integritätsprüfung am Session-Rewardanschluss
+
+Der neue Sessionreader verwendete eine eigene Prüfsummen-/JSONleseoperation.
+Dadurch passierten korrekt gehashte Ledgerpayloads mit ungültigem Status,
+Herkunft oder Mengentyp sowie widersprüchlicher ID, Figurenidentität oder
+Revision. Sie konnten Gold-/Magieziele beeinflussen und einen Sessionrun erzeugen.
+`sessionLootGuidance` verwendet nun `progression.ts.checkedLedgerRow`, denselben
+Reader wie Ledger, Bilanz und Backup. Die vorhandenen Wert-/Herkunftsregeln
+bleiben maßgeblich; keine neue Validatorvariante, Migration oder Datenreparatur.
+
+Neun Storeprüfungen in `desktop-session-reward-integrity.test.mjs` belegen die
+sechs beschädigten Formen in beiden Guidancewegen. Der echte Sessiongenerator
+rollt seine vorher erzeugten Teilruns bei beschädigter Beute zurück; nach
+Wiederherstellung gültiger Fixturebytes gelingt die Generierung und ihr Run
+bleibt nach Fresh identisch. Mehrfache/partielle Weitergabe mit Verkauf zählt die
+magische Menge genau einmal zur Erstvergabe, Käufe nicht. Aktuelle Definitions-
+und Mengenberichtigungen ändern die Guidance ohne Umdeutung der aufgezeichneten
+Ledgerrevision. Fresh und unabhängige Campaignkopie erhalten Credit/Mengen und
+unveränderte Quellpaketbytes. Die isolierten Guidanceproben besitzen keinen
+zusätzlichen Produktwriter; der Generatorrollback ist ausdrücklich separat geprüft.
+
+Das schließt diesen Integritätsanschluss lokal. Vollständige Seltenheits-/Profil-
+ableitung, sämtliche Quellenbindungen, Annahme nach geänderter Ledgerbasis und
+native UI/Prozessabbruch bleiben offen. Insbesondere werden magische Werte im
+Gold-only-Modus aktuell monetär berücksichtigt, im kombinierten Modus dagegen
+nach Seltenheit. Diese Moduskopplung braucht eine ausdrückliche Fachentscheidung
+gegen das versionierte Profil, bevor bestehende Vorschläge umgedeutet werden.
+
 ## Nächste ausführbare Schritte
 
 1. **Vorhandene Guidance vollständig qualifizieren.** `storage/session-rewards.ts`
@@ -70,8 +98,10 @@ Magie-/Quellen-/Bedienqualifikation.
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
    erklärende Korrekturen stimmen; freie Prosa und Quellpaketbytes bleiben erhalten.
-   Abnahme: gesplitteter, zweimal weitergereichter und teilweise verkaufter Grant,
-   Definitionkorrektur, Fresh und unabhängige Kopie mit unverändertem Gesamtcredit.
+   Der geprüfte persönliche Session-Guidancepfad erhält Credit/Mengen nach
+   Mehrfachweitergabe, Verkauf, Fresh und unabhängiger Kopie. Treasury-/Quest-/
+   Encounterherkunft und erklärende Korrekturgeschichte zusätzlich abnehmen;
+   dieser lokale Ledgerbeleg ersetzt ihre Owner-/Transferclosure nicht.
 3. **Bedienung und Aufwand qualifizieren.** Native Kampagnenwechsel während eines
    Reads, unbekannte Preise und Itemkorrektur bis Fresh prüfen. Die Bilanz scannt
    weiterhin das gesamte Ledger und kann pro Weitergabe eine Herkunftsquery

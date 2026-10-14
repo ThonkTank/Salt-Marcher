@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {executeSceneRule} from "../../src/app/storage/rule-references";
-import {creatureActionRolls,creatureRollKey,criticalDamageFormula,formulaOutcome} from '../../src/app/dice-formula';
+import {creatureActionRolls,creatureRollKey,criticalDamageFormula,formulaOutcome,legendaryActionCost} from '../../src/app/dice-formula';
 
 const db={transaction:(run:()=>unknown)=>({immediate:run})};
 const base={commandId:"command-1",campaignId:"campaign-1",token:"token-1",sceneId:"scene-1",expectedRevision:0};
@@ -21,6 +21,8 @@ test('attack outcomes honor natural rolls and critical damage doubles only dice'
   assert.equal(formulaOutcome('attack',20,21,25),'success');
   assert.equal(formulaOutcome('attack',12,17,16),'success');
   assert.equal(criticalDamageFormula('2d6 + 3'),'4d6 + 3');
+  assert.equal(legendaryActionCost({name:'Psychic Drain (Costs 2 Actions)'}),2);
+  assert.equal(legendaryActionCost({name:'Tail Swipe'}),1);
 });
 
 test('statblock damage choices keep distinct alternatives and remove exact duplicates',()=>{
