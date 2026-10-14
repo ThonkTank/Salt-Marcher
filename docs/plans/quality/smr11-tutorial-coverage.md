@@ -20,10 +20,10 @@ Eine ausführbare Invariante bindet die primären Arbeitsbereiche und die ausgew
 | Kampagnenchronik | Bestätigte Kampagnenfolgen nachlesen |
 | Katalog und Encounter | Begegnungen vorbereiten und leiten |
 | NSCs und Monstergruppen | NSCs als bestehende Individuen führen |
-| Schätze | Einen Schatz gemeinsam verteilen |
+| Schätze | Schätze bearbeiten und verschieben |
 | Party öffnen | Party direkt am Tisch verwalten |
 | Rastbudget | Tagesbudget und Level-Prognose immer griffbereit |
-| Gegenstände und Shops | Gegenstände, Beute und Shops |
+| Gegenstände und Shops | Shops, Bestand und Handel führen |
 | Dungeon leiten | Grundriss, Geschosse und gebundene Details zeichnen |
 | NPC-Verhalten | NPCs mit begrenztem Verhalten beauftragen |
 | Städte | Vom Straßenzug zum editierbaren Stadtplan |
@@ -48,6 +48,10 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Charakterzustand | HP-Formular, Schaden/Heilung, Todesrettungswürfe | HP, Zustände und Todesrettungswürfe führen |
 | Fortschritt und Rast | manuelle XP/Korrektur, Gruppenauswahl für Rast, Verlauf | XP und Rastbudget nachvollziehbar ändern |
 | Persönliche Beute | manueller Eintrag, Suche/Filter, Statusänderung und Stapelwerkzeuge | Persönliche Beute mit Herkunft weiterführen |
+| Gegenstandsdefinitionen | Katalogsuche, eigene Definition, schreibgeschützte SRD-Quelle, Kopie und Papierkorb | Gegenstände als Definitionen pflegen |
+| Shops und Handel | Shopanlage, Bestand und Preise, Auffüllzeit, Kauf, Verkauf und Verlauf | Shops, Bestand und Handel führen |
+| Schatzverwaltung | Anlage, Katalogposten, bestätigter Entwurf, Teilmengenverschiebung, Einzelzuweisung und Verlauf | Schätze bearbeiten und verschieben |
+| Gemeinsame Schatzverteilung | Einstieg im Schatzbereich und am Spieltisch, Gleichverteilung, Einzelkorrektur und Bestätigung | Einen Schatz gemeinsam verteilen |
 | Live-Momente | gruppengebundener Moment mit optionaler Quest-/Gerüchtspur und Verwaltung aus der Live-Suche | Momente festhalten und Kampagnenfolgen nachlesen |
 | Spielabend-Rückblick | Beginnmarkierung, laufende bestätigte Ereignisse, Ende mit Abschlussnotiz | Einen Spielabend beginnen und mit Rückblick beenden |
 | Direkte Spielerfreigaben | Vorlesetext, Ortsbild, NPC-Porträt, Handout, Live-Automatik und Leeren | Inhalte am Spieltisch ausdrücklich freigeben |

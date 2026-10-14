@@ -1,6 +1,6 @@
 {
   "name": "dungeon-editor",
-  "version": "0.68.0",
+  "version": "0.70.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -64,6 +64,7 @@
     "test:desktop-player-privacy-ui": "node tools/test-desktop-player-scene-privacy.mjs && node tools/test-desktop-player-scene-privacy.mjs --combat && node tools/test-desktop-player-scene-privacy.mjs --chase",
     "test:desktop-player-visual": "node --test --test-concurrency=1 tests/desktop-player-visual-contract.test.mjs tests/desktop-player-visual-host.test.mjs",
     "test:desktop-live-visual-context": "node --test --test-concurrency=1 tests/desktop-live-visual-context.test.mjs",
+    "test:desktop-dungeon-binder": "node --test --test-concurrency=1 tests/desktop-dungeon-binder-context.test.mjs",
     "test:desktop-player-focus": "node --test --test-concurrency=1 tests/desktop-player-focus.test.mjs",
     "test:desktop-player-focus-ui": "node tools/test-desktop-player-focus.mjs",
     "test:desktop-player-blank-ui": "node tools/test-desktop-player-blank.mjs && node tools/test-desktop-player-blank.mjs --pending",

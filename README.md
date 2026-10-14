@@ -752,4 +752,20 @@ Der Abschluss trennt den Rückblick auf das Geschehene von der Vorbereitung des 
 
 Rückblick und Übergabe werden gemeinsam mit dem bestätigten Endmarker gespeichert. Die letzte Übergabe bleibt am Spieltisch sichtbar, auch nachdem der nächste Abend begonnen hat. Chronik, Suche und Markdownausgabe führen sie als eigenen Abschnitt; ältere Marker ohne Übergabe bleiben unverändert lesbar.
 
-Der Dungeon-Binder (0.68) ist über Karte und Dungeon leiten erreichbar. Er durchsucht sämtliche Raum- und Vorlagentexte sowie platzierte Fallen/Inhalte, filtert Dungeon/Geschoss und zeigt GM-Key, Geheimnishinweise, Attribute, Verbindungen und bestehende Fallenstände. Raumlinks blättern im Binder; Reiseziel/Keybearbeitung führen in die bestehenden Besitzer. Die öffentliche Textvorschau ist eine GM-Lesehilfe, keine neue Spielerfreigabe. Lesen verändert weder Gruppenposition noch Uhr, Entdeckung, Charges, XP oder Beute.
+### Desktopstand 0.68: Den nächsten Abend direkt aufnehmen
+
+„Nächsten Abend vorbereiten…“ öffnet vor dem Start einen gemeinsamen Leitungsstand. Er zeigt die letzte gültige Übergabe, alle fortbestehenden Gruppen mit Besetzung und Weltzeit, laufende Kämpfe und Verfolgungen sowie unverteilte Beute. Offene Masken, Schatzverteilung und XP-Abrechnung führen direkt in ihre bestehenden Arbeitsbereiche.
+
+Jede Gruppe kann den neuen Spielabend mit einem Klick als Fokusgruppe beginnen. Der Start verwendet weiterhin denselben bestätigten Session-Marker und Gruppenfokus; die Übersicht erzeugt keinen parallelen Sitzungs- oder Szenenstand. Kampagnenwechsel und Schließen entwerten laufende Leseanfragen, damit kein alter Leitungsstand in eine andere Kampagne hineinwirkt.
+
+### Desktopstand 0.68: Dungeon-Binder am Spieltisch
+
+Der Dungeon-Binder ist über Karte und Dungeon leiten erreichbar. Er durchsucht sämtliche Raum- und Vorlagentexte sowie platzierte Fallen/Inhalte, filtert Dungeon/Geschoss und zeigt GM-Key, Geheimnishinweise, Attribute, Verbindungen und bestehende Fallenstände. Raumlinks blättern im Binder; Reiseziel und Keybearbeitung führen in die bestehenden Besitzer. Die öffentliche Textvorschau ist eine GM-Lesehilfe, keine neue Spielerfreigabe. Lesen verändert weder Gruppenposition noch Uhr, Entdeckung, Charges, XP oder Beute.
+
+Die Agenda (0.69) öffnet Kalenderereignisse und Fristen zur bestätigten Gruppenzeit. Relative Minuten-/Stunden-/Tages-/Wochenangaben und eine Datumswahl im bestehenden Fantasykalender ersetzen das Rechnen mit absoluten Tageszahlen. Wiederholungen, Such-/Ortsfilter, Countdowns und drei kommende Ereignisse am Spieltisch nutzen dieselben Kalenderereignisse. Speichern läuft über den bisherigen Weltbesitzer; relative Angaben prüfen zusätzlich Kalender- und Clockbasis. Lesen/Planen erzeugt keinen Zeitfortschritt, XP oder Beute.
+
+### Desktopstand 0.70: Besuch und Auftrag in den Wiedereinstieg holen
+
+Der Leitungsstand vor dem nächsten Spielabend liest nun für jede fortbestehende Gruppe den nächsten vorbereiteten Besuch und zeigt ihn neben Übergabe, Gruppen, Masken und Beute. „Vorschau öffnen“ wechselt zur richtigen Gruppe und führt in die vorhandene Besuchsübernahme; der Spielabend wird dadurch noch nicht begonnen.
+
+Bis zu sechs offene Quests und Gerüchte sowie ihre Ortsbindung stehen ebenfalls im Leitungsstand. Das gemeinsame Auftragsjournal öffnet von dort mit seinem bestehenden Status-, Ergebnis- und Belohnungsablauf. Alle Reads sind an Kampagne und offenen Leitungsstand gebunden; Schließen oder Kampagnenwechsel verwirft verspätete Ergebnisse.

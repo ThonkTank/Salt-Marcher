@@ -58,7 +58,7 @@ Widerruf, schreibfreier Outcomeprüfung und gesicherter Wiederaufnahme-Reparatur
 auffindbar. Sie benennt den noch fehlenden zusätzlichen Inhaltseditor. Die
 Journallektion ergänzt den Zugang zu Quests/Gerüchten mit demselben bestehenden
 Status-/Belohnungseditor; sie führt keinen weiteren Rewardwriter ein. Die
-Lessonrevision ist `desktop-tutorial-dungeon-binder-scene-visits-atlas-coverage-treasure-distribution-session-recap-player-cues-live-generation-character-progression-session-copy-live-soundboard-follow-ups-capability-coverage-quick-reference-narrative-journal-session-review-live-packet-workspace-shortcuts-v50`.
+Lessonrevision ist `desktop-tutorial-campaign-agenda-items-treasury-dungeon-binder-scene-visits-atlas-coverage-treasure-distribution-session-recap-player-cues-live-generation-character-progression-session-copy-live-soundboard-follow-ups-capability-coverage-quick-reference-narrative-journal-session-review-live-packet-workspace-shortcuts-v52`.
 
 ## Aussagekräftige lokale Belege
 
@@ -103,3 +103,7 @@ Bedienung, Paketinstallation und vollständiger Feature-Tutorialabdeckung.
    Status ist kein bestätigter gespeicherter Abschluss. Linux/Windows/macOS,
    Screenreader, Laptop-/200 %-Layout, Kontrast und Nicht-Farbsignale brauchen
    die eigenen betroffenen Feature-/Gesamtabnahmen.
+
+Der [Dungeon-Binder](../dungeon/binder.md) führt seine angezeigten Raum- und
+Inhaltsaktionen mit eigener Kontextgrenze. Sein weiterer Query-/Gruppenanschluss
+und die native Abnahme bleiben von der Tutorialzuordnung getrennt.
