@@ -42,7 +42,10 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | --- | --- | --- |
 | Sessiongenerierung | Planungsprofil, bindende Generierung, gespeicherte Vorschauen | Spielabendvorschläge mit bindenden Vorgaben erzeugen |
 | Kampf und Rewards | Kampfabschluss, vorbereitete Rewardvergabe, Rewardpanel | Kampf, XP und Beute gemeinsam abschließen |
-| Live-Momente | gruppengebundener Moment mit optionaler Quest-/Gerüchtspur | Momente festhalten und Kampagnenfolgen nachlesen |
+| Charakterzustand | HP-Formular, Schaden/Heilung, Todesrettungswürfe | HP, Zustände und Todesrettungswürfe führen |
+| Fortschritt und Rast | manuelle XP/Korrektur, Gruppenauswahl für Rast, Verlauf | XP und Rastbudget nachvollziehbar ändern |
+| Persönliche Beute | manueller Eintrag, Suche/Filter, Statusänderung und Stapelwerkzeuge | Persönliche Beute mit Herkunft weiterführen |
+| Live-Momente | gruppengebundener Moment mit optionaler Quest-/Gerüchtspur und Verwaltung aus der Live-Suche | Momente festhalten und Kampagnenfolgen nachlesen |
 | Live-Regeln | dynamisches Regelpanel und d20-Probenformular | Regelreferenzen und Proben bei der Gruppe halten |
 | Erweiterter Dungeon | 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
 
