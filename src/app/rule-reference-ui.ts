@@ -53,7 +53,7 @@ export async function refreshRuleReferences(nextSceneId:string|null){
 
 export function prepareSceneCheck(input:{label:string;dc:number}){ensure();if(!workspace||!sceneId||!checks){tell('Öffne zuerst die laufende Gruppe.',true);return;}el<HTMLInputElement>('live-check-label').value=input.label;el<HTMLSelectElement>('live-check-rule').value='';el<HTMLSelectElement>('live-check-mode').value='normal';el<HTMLInputElement>('live-check-modifier').value='0';el<HTMLInputElement>('live-check-dc').value=String(input.dc);el('live-check-form').scrollIntoView({behavior:'smooth',block:'center'});el<HTMLInputElement>('live-check-modifier').select();tell('Rettungswurf vorbereitet: Modifikator des Ziels eintragen und würfeln.');}
 export async function rollSceneFormula(action:Omit<Extract<SceneCheckCommand['action'],{kind:'formula'}>,'kind'>){
- const o=owner(),basis=checks;if(!o||!basis||busy){tell('Wurf derzeit nicht verfügbar.',true);return false;}
+ const o=owner(),basis=checks;if(busy)return false;if(!o||!basis){tell('Wurf derzeit nicht verfügbar.',true);return false;}
  busy=true;readRequest++;lock();
  try{
   const result=await window.campaign.executeSceneCheck({commandId:crypto.randomUUID(),campaignId:o.campaignId,token:o.token,sceneId:o.sceneId,expectedRevision:basis.revision,action:{kind:'formula',...action}});
