@@ -71,6 +71,18 @@ Receiptreplay sowie Rollback eines Fehlers beim zweiten Gruppenwrite. Ein
 aktiver Reviewdialog, Entwürfe nach Neustart und die vollständige beauftragte
 Ein-Klick-Vorbereitung sind dadurch noch nicht nativ oder vollständig abgenommen.
 
+Die Reviewbestätigung bindet Campaigntoken, Planrevision, Vorschlagsstand und
+Vorschauanfrage bereits beim Öffnen. Sie kopiert die angezeigte Auswahl;
+Revisionen werden nach einem Flush nicht auf den dann aktuellen Plan umgebogen.
+Schließen, erneutes Review und ein neuer Render entwerten alte Controls und
+Antworten. Eine verspätete erfolgreiche Übernahme darf keine neuere Auswahl
+leeren oder deren Dialog schließen; der nachfolgende Runread prüft den Kontext
+auch nach seiner Antwort. Fehler bleiben im aktuellen Dialog sichtbar und
+lassen dieselbe geprüfte Auswahl erneut versuchen. Geänderte Grundlagen
+verlangen ein neues Review. Kontrollierte DOMproben prüfen diese Übergänge
+sowie den wirklichen Sessionhandler mit verzögerten IPCantworten; sie ersetzen
+keine native Abnahme und beweisen keine zusätzliche SQLitewirkung.
+
 ## Nächste ausführbare Schritte
 
 1. **Vollständigkeit am Spielabend prüfen:** Eine konkrete Vorbereitung mit
@@ -96,7 +108,17 @@ Ein-Klick-Vorbereitung sind dadurch noch nicht nativ oder vollständig abgenomme
    vollständig und konsistent sein; keine willkürliche Ergebnisabschneidung und
    kein zweiter dauerhaft gespeicherter Inhaltsbestand. Kleine Pläne benötigen
    keinen allgemeinen Suchindex oder Package-/Rendererframework.
-4. **Bedienabschluss:** Dialogfokus und Rückkehr zum auslösenden Control,
+4. **Auswahl und Wiederaufnahme schließen:** In `session-review-ui.ts` und
+   `session-ui.ts` den nativen Wechsel zwischen offenem Review, Planrevision,
+   Vorschlagseditor und laufendem Speichern prüfen. Esc/Abbruch vor Submit
+   schreibt nichts; nach bereits gesendetem Submit bleibt der bestätigte
+   Commandstatus maßgeblich. Auswahlwechsel während des nachfolgenden Reads
+   darf nicht zurückspringen. Danach die fehlenden Entwurfsregeln für
+   Neustart aus dem manuellen Sessionplan liefern: gewählte Vorschläge,
+   Filter/Suche und ungespeicherte Eingaben eindeutig an Campaign/Plan/Run
+   binden, veraltete Revisionen erkennbar machen und Wiederaufnahme anbieten.
+   Ein temporärer DOMauswahlstand gilt nicht als persistierter Entwurf.
+5. **Bedienabschluss:** Dialogfokus und Rückkehr zum auslösenden Control,
    Tastatur, Suche ohne Treffer, 200-%-Skalierung und lange Statblocks nativ prüfen.
    GM-Mappe beim tatsächlichen Live-Spiel verwenden; keine Erfolgsmeldung aus
    der Zahl der Tests oder einer neuen Tutoriallektion ableiten.
