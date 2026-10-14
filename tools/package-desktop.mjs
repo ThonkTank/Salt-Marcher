@@ -65,6 +65,8 @@ Umfang
   die Figuren für eine Begegnung ausdrücklich aus.
   Mehrere Begegnungen derselben Scene teilen Figuren-HP und Zustände.
   Partywechsel entfernen PCs aus allen offenen Begegnungs-/Verfolgungsmasken.
+  Spielabendpläne lassen sich aus vorhandenen Timelines wiederverwenden oder
+  ersetzen. Angenommene Weltinhalte und laufende Scenes bleiben erhalten.
   Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 
