@@ -468,7 +468,7 @@ export class CampaignStore {
       }
     }
   }
-  async backup(filename: string) {
+  async backup(filename:string){
     const epoch=this.backupEpoch,candidate = filename + '.candidate-' + randomUUID();
     try {
       await this.db.backup(candidate);
