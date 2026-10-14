@@ -3,7 +3,7 @@ import type { Result } from './contracts';
 import type { FinishRewards, CombatReward, CharacterHealth } from './progression';
 import type { Creature } from '../features/catalog/creature-catalog';
 import type { EncounterAssessment, EncounterParty } from './encounter-contracts';
-export interface Combatant {
+export interface Combatant {role?:import('./npc-contracts').NpcRole;
   id: string; characterId: string | null; groupId: string; name: string;
   initiative: number; initiativeBonus: number; armorClass: number;
   hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean;
@@ -24,6 +24,7 @@ export interface CombatView {
 }
 export type CombatAction =
   | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
+  | {kind:'add-world-actor';actorId:string;expectedActorRevision:number;expectedRecordRevision:number}
   | {kind:'add-party';characterId:string;expectedMembershipRevision:number;expectedProgressRevision:number;initiative?:number}
   | { kind: 'add-creature'; creatureId: string; count: number; grouped: boolean; groupId?: string }
   | { kind: 'add'; name: string; count: number; grouped: boolean; maxHp: number; armorClass: number; initiativeBonus: number }
@@ -60,6 +61,7 @@ export function checkedCombat(state: CombatState): CombatState {
 
 export function checkedCombatant(p:Combatant):Combatant {
     if (!p || typeof p.id!=='string' || !p.id || typeof p.groupId!=='string' || !p.groupId || typeof p.name !== 'string' || !p.name.trim() || p.name.length > 1000 || typeof p.conditions !== 'string' || p.conditions.length > 4000 || typeof p.concentrating !== 'boolean') throw new Error('Ungültiger Initiativeeintrag.');
+    if(p.role!==undefined&&!['friendly','neutral','hostile'].includes(p.role))throw new Error('Ungültige Begegnungsrolle.');
     if (p.healthKnown !== undefined && typeof p.healthKnown !== 'boolean' || p.healthKnown === false && !p.characterId) throw new Error('Unbekannter HP-Status ungültig.');
     for (const value of [p.initiative, p.initiativeBonus, p.armorClass, p.hp, p.maxHp, p.tempHp]) if (!Number.isSafeInteger(value) || Math.abs(value) > 1000000) throw new Error('Kampfwerte benötigen ganze Zahlen bis 1.000.000.');
     if (p.xp !== undefined && (!Number.isSafeInteger(p.xp) || p.xp < 0)) throw new Error('Kreatur-XP benötigen eine nichtnegative ganze Zahl.');

@@ -1,5 +1,7 @@
 export {removePartyFromMasks as reconcileCombatParticipants} from './mask-health';
 import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
+import {npcRecord} from './npc-record';
+import {npcPosition} from './npc-world';
 import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';
 import { randomUUID, randomInt, createHash } from 'node:crypto';
@@ -10,7 +12,7 @@ import { xpLevel } from '../progression';
 import { assessEncounter } from '../encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry } from './generation';
-import {readPreparedGroup} from './session';
+import {readWorldActor,readPreparedGroup} from './session';
 import type { Creature } from '../../features/catalog/creature-catalog';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installCombatSchema(db: any) {
@@ -118,8 +120,8 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
         for(const entry of plan.entries){const creature=plan.sources.find(c=>c.id===entry.creatureId);if(!creature)throw new Error('Vorlage hat eine fehlende Kreaturquelle.');const grouped=state.generatorPreset?state.generatorPreset.mobThreshold>0&&entry.count>=state.generatorPreset.mobThreshold:entry.grouped;addCreature(state,creature,entry.count,grouped,undefined,entry.id);}
         state.notes=plan.notes;state.title=a.title||plan.name;state.planOrigin={id:plan.id,revision:plan.revision,name:plan.name};
       }
-      if(a.preparedGroupId){const group=readPreparedGroup(db,cam,a.preparedGroupId),selectedActors=a.worldActorIds?group.actors.filter(actor=>a.worldActorIds!.includes(actor.id)):group.actors;if(a.worldActorIds&&(!a.worldActorIds.length||new Set(a.worldActorIds).size!==a.worldActorIds.length||a.worldActorIds.some(id=>!group.actors.some(actor=>actor.id===id))))throw new Error('Ausgewählte NPCs gehören nicht zur vorbereiteten Gruppe.');if(group.revision!==a.expectedPreparedRevision||group.locationId&&group.locationId!==scene.locationId||!selectedActors.length||selectedActors.some(actor=>actor.hp>0&&actor.unavailable)||!selectedActors.some(actor=>actor.hp>0))throw new Error('Vorbereitete Gruppe geändert, nicht am aktuellen Ort oder ein NPC nicht verfügbar.');const registry=readGeneratorRegistry(db,cam),preset=registry.presets.find(p=>p.id===registry.effectiveId)!;state.generatorPreset={id:preset.id,revision:preset.revision,hash:preset.hash,mobThreshold:preset.config.combat.mobThreshold};state.sources=group.plan.sources;state.title=a.title||group.title;state.notes=group.notes;state.planOrigin={id:group.id,revision:group.revision,name:group.title};
-        for(const entry of group.plan.entries){const c=group.plan.sources.find(c=>c.id===entry.creatureId)!;const actors=selectedActors.filter(actor=>actor.entryId===entry.id&&actor.hp>0),mob=preset.config.combat.mobThreshold>0&&actors.filter(actor=>actor.hp>0).length>=preset.config.combat.mobThreshold,shared=randomUUID();for(const actor of actors){const id=randomUUID();state.participants.push({id,characterId:null,groupId:mob?shared:id,name:actor.name,initiative:0,initiativeBonus:c.initiative,armorClass:c.ac,hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating,xp:c.xp,sourceId:c.id,sourceEntryId:entry.id,partitionKind:mob?'mob':'individual',worldActorId:actor.id,worldActorRevision:actor.revision});}}
+      if(a.preparedGroupId){const group=readPreparedGroup(db,cam,a.preparedGroupId),selectedActors=a.worldActorIds?group.actors.filter(actor=>a.worldActorIds!.includes(actor.id)):group.actors;if(a.worldActorIds&&(!a.worldActorIds.length||new Set(a.worldActorIds).size!==a.worldActorIds.length||a.worldActorIds.some(id=>!group.actors.some(actor=>actor.id===id))))throw new Error('Ausgewählte NPCs gehören nicht zur vorbereiteten Gruppe.');if(group.revision!==a.expectedPreparedRevision||group.locationId&&group.locationId!==scene.locationId||!selectedActors.length||selectedActors.some(actor=>actor.hp>0&&(actor.unavailable||actor.defeated))||!selectedActors.some(actor=>actor.hp>0))throw new Error('Vorbereitete Gruppe geändert, nicht am aktuellen Ort oder ein NPC nicht verfügbar.');const registry=readGeneratorRegistry(db,cam),preset=registry.presets.find(p=>p.id===registry.effectiveId)!;state.generatorPreset={id:preset.id,revision:preset.revision,hash:preset.hash,mobThreshold:preset.config.combat.mobThreshold};state.sources=group.plan.sources;state.title=a.title||group.title;state.notes=group.notes;state.planOrigin={id:group.id,revision:group.revision,name:group.title};
+        for(const entry of group.plan.entries){const c=group.plan.sources.find(c=>c.id===entry.creatureId)!;const actors=selectedActors.filter(actor=>actor.entryId===entry.id&&actor.hp>0&&!actor.defeated),mob=preset.config.combat.mobThreshold>0&&actors.filter(actor=>actor.hp>0).length>=preset.config.combat.mobThreshold,shared=randomUUID();for(const actor of actors){const id=randomUUID();state.participants.push({id,characterId:null,groupId:mob?shared:id,name:actor.name,initiative:0,initiativeBonus:c.initiative,armorClass:c.ac,hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating,role:actor.role??'hostile',xp:actor.role&&actor.role!=='hostile'?0:c.xp,countForMultiplier:!actor.role||actor.role==='hostile',sourceId:c.id,sourceEntryId:entry.id,partitionKind:mob?'mob':'individual',worldActorId:actor.id,worldActorRevision:actor.revision});}}
       }
       checkedCombat(state);
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),0)+1 n FROM combat WHERE campaign_id=?').get(cam).n;
@@ -149,6 +151,13 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if(a.initiative!==undefined){if(!Number.isSafeInteger(a.initiative)||Math.abs(a.initiative)>1000000)throw new Error('Initiative benötigt eine gültige ganze Zahl.');if(state.participants.some(p=>p.groupId===actor.groupId&&p.initiative!==a.initiative))actor.groupId=randomUUID();actor.initiative=a.initiative;}
           state.participants.push(actor);if(state.partyBasis&&!state.partyBasis.some(p=>p.id===character.id))state.partyBasis.push({id:character.id,name:character.profile.name,level:progress.xp===null?null:xpLevel(progress.xp).level,count:1});
           event(db,cam,character.id,'combat-entry',{commandId:command.commandId,combatId:state.id,title:state.title,participant:actor,returning:!!prior});
+        } else if(a.kind==='add-world-actor'){
+          const actor=readWorldActor(db,cam,a.actorId),record=npcRecord(db,cam,a.actorId),position=npcPosition(db,cam,a.actorId),scene=readLiveScene(db,cam,state.sceneId);
+          if(actor.revision!==a.expectedActorRevision||record.revision!==a.expectedRecordRevision||actor.unavailable||actor.defeated||actor.hp<=0)throw new Error('NPC geändert, besiegt oder ohne kampffähige HP. Weltprofil prüfen.');
+          if(position.locationId&&position.locationId!==scene.locationId)throw new Error('NPC befindet sich an einem anderen Ort. Platzierung ausdrücklich ändern.');
+          if(state.participants.some(p=>p.worldActorId===actor.id))throw new Error('NPC steht bereits in dieser Begegnung.');
+          const c=readCreature(actor.creatureId),id=randomUUID(),role=actor.role??'hostile';state.sources??=[];if(!state.sources.some(s=>s.id===c.id))state.sources.push(c);
+          state.participants.push({id,characterId:null,groupId:id,name:actor.name,initiative:0,initiativeBonus:c.initiative,armorClass:c.ac,hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating,role,xp:role==='hostile'?c.xp:0,countForMultiplier:role==='hostile',sourceId:c.id,sourceEntryId:actor.entryId,partitionKind:'individual',worldActorId:actor.id,worldActorRevision:actor.revision});
         } else if (a.kind === 'add-creature') {
           addCreature(state,readCreature(a.creatureId),a.count,a.grouped,a.groupId);
         } else if (a.kind === 'add') {

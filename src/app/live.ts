@@ -5,10 +5,9 @@ import {renderSceneShops} from './items-ui';
 import type { Workspace, Result } from './contracts';
 import { checkedCharacterProfile, advanceInstant, formatInstant, type TimeUnit, type Character, type CharacterProfile, type LiveScene, type LiveView, type LiveAction, type LiveCommand, type LiveAck } from './live-contracts';
 import type { Preparation } from './preparation-contracts';
-import { initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup } from './combat';
+import { addWorldNpc,initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup } from './combat';
 import {initChase,chaseContext,flushChase} from './chase-ui';
-import type {CombatState} from './combat-contracts';
-import type {ChaseState} from './chase-contracts';
+import {initLiveArchives} from './live-archive-ui';
 import type { EncounterPlan } from './encounter-contracts';
 import { initProgress, progressionContext, flushProgress } from './progression-ui';
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
@@ -24,12 +23,14 @@ let requestIsTextSave = false;
 const intentBlocked = () => !!request && !requestIsTextSave;
 let adoption: Extract<LiveAction, { kind: 'apply-visit' }> | null = null;
 let moveBasis: Omit<Extract<LiveAction, { kind: 'move' }>, 'memberIds' | 'target'> | null = null;
-let moveTargets: LiveView['scenes'] = [], archiveCursor: string | null = null;
+let moveTargets: LiveView['scenes'] = [];
+let resetLiveArchives=()=>{};
 let tell: (text: string, error?: boolean) => void, openLocation: (id: string) => Promise<void>;
 const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 export function activateLive(workspace: Workspace) {
+  resetLiveArchives();
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
@@ -61,6 +62,7 @@ async function ensureLiveRuntime() {
   resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();return !!data.scene;
 }
 export async function prepareLiveEncounter(plan:EncounterPlan) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await prepareCombatPlan(plan); }
+export async function addLiveNpc(id:string){if(await ensureLiveRuntime())await addWorldNpc(id);}
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
   for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel']) get<HTMLButtonElement>(id).disabled = on && !textSave;
@@ -357,7 +359,7 @@ let scenePreparationRequest=0, nextVisit:{planId:string;planRevision:number;visi
 let openTreasure:((id:string)=>Promise<void>)|null=null;export function setTreasureNavigation(open:(id:string)=>Promise<void>){openTreasure=open;}
 let openGroup:((id:string)=>Promise<void>)|null=null;
 export function setGroupNavigation(fn:(id:string)=>Promise<void>){openGroup=fn;}
-export async function refreshScenePreparation(){if(!context||!data?.scene||!resumed)return;const token=context.token,id=data.scene.id,request=++scenePreparationRequest;try{const result=unwrap(await window.campaign.scenePreparation(token,id));if(context?.token!==token||data?.scene?.id!==id||request!==scenePreparationRequest)return;await renderSceneShops(token,id,get('scene-shops'));nextVisit=result.nextVisit;get('live-next-visit').hidden=!nextVisit;get('live-next-visit').textContent=nextVisit?'Nächsten Besuch ansehen: '+(nextVisit.title||'Unbenannter Besuch'):'';const root=get('scene-prepared-groups');root.replaceChildren();for(const group of result.groups){const card=document.createElement('article');card.className='session-group-card';const title=document.createElement('h4'),facts=document.createElement('p'),button=document.createElement('button');title.textContent=group.title;facts.textContent=group.actors.map(a=>a.name+' '+a.hp+'/'+a.maxHp+' HP').join(', ');button.textContent='Begegnung mit diesen Figuren vorbereiten';const selected=new Set(group.actors.filter(a=>a.hp>0&&!a.unavailable).map(a=>a.id)),choice=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='Figuren für diese Begegnung';choice.append(legend);for(const actor of group.actors){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=selected.has(actor.id);box.disabled=actor.hp<=0||actor.unavailable;box.onchange=()=>{if(box.checked)selected.add(actor.id);else selected.delete(actor.id);button.disabled=!selected.size;};label.className='check-label';label.append(box,document.createTextNode(actor.name+' · '+actor.hp+'/'+actor.maxHp+' HP'));choice.append(label);}button.disabled=!selected.size;button.onclick=()=>{void(async()=>{if(await flushLive())await prepareWorldGroup(group,[...selected]);})().catch(error=>tell(error.message,true));};const edit=document.createElement('button');edit.type='button';edit.textContent='Gruppe und Figuren bearbeiten';edit.onclick=()=>void openGroup?.(group.id);card.append(title,facts,choice,button,edit);root.append(card);}const treasures=get('scene-prepared-treasures');treasures.replaceChildren();for(const treasure of result.treasures){const p=document.createElement('p');p.textContent='Platzierte Beute: '+treasure.title+' · ';const open=document.createElement('button');open.type='button';open.textContent='Schatz öffnen und zuweisen';open.onclick=()=>void openTreasure?.(treasure.id);p.append(open);treasures.append(p);}}catch(error){if(context?.token===token)tell((error as Error).message,true);}}
+export async function refreshScenePreparation(){if(!context||!data?.scene||!resumed)return;const token=context.token,id=data.scene.id,request=++scenePreparationRequest;try{const result=unwrap(await window.campaign.scenePreparation(token,id));if(context?.token!==token||data?.scene?.id!==id||request!==scenePreparationRequest)return;await renderSceneShops(token,id,get('scene-shops'));nextVisit=result.nextVisit;get('live-next-visit').hidden=!nextVisit;get('live-next-visit').textContent=nextVisit?'Nächsten Besuch ansehen: '+(nextVisit.title||'Unbenannter Besuch'):'';const root=get('scene-prepared-groups');root.replaceChildren();for(const group of result.groups){const card=document.createElement('article');card.className='session-group-card';const title=document.createElement('h4'),facts=document.createElement('p'),button=document.createElement('button');title.textContent=group.title;facts.textContent=group.actors.map(a=>a.name+' '+a.hp+'/'+a.maxHp+' HP').join(', ');button.textContent='Begegnung mit diesen Figuren vorbereiten';const selected=new Set(group.actors.filter(a=>a.hp>0&&!a.unavailable&&!a.defeated).map(a=>a.id)),choice=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='Figuren für diese Begegnung';choice.append(legend);for(const actor of group.actors){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=selected.has(actor.id);box.disabled=actor.hp<=0||actor.unavailable||!!actor.defeated;box.onchange=()=>{if(box.checked)selected.add(actor.id);else selected.delete(actor.id);button.disabled=!selected.size;};label.className='check-label';label.append(box,document.createTextNode(actor.name+' · '+actor.hp+'/'+actor.maxHp+' HP'+(actor.defeated?' · besiegt':'')));choice.append(label);}button.disabled=!selected.size;button.onclick=()=>{void(async()=>{if(await flushLive())await prepareWorldGroup(group,[...selected]);})().catch(error=>tell(error.message,true));};const edit=document.createElement('button');edit.type='button';edit.textContent='Gruppe und Figuren bearbeiten';edit.onclick=()=>void openGroup?.(group.id);card.append(title,facts,choice,button,edit);root.append(card);}const treasures=get('scene-prepared-treasures');treasures.replaceChildren();for(const treasure of result.treasures){const p=document.createElement('p');p.textContent='Platzierte Beute: '+treasure.title+' · ';const open=document.createElement('button');open.type='button';open.textContent='Schatz öffnen und zuweisen';open.onclick=()=>void openTreasure?.(treasure.id);p.append(open);treasures.append(p);}}catch(error){if(context?.token===token)tell((error as Error).message,true);}}
 function initGroups() {
   get('scene-focus').onchange = () => { void (async () => {
     await changeFocus(value('scene-focus'));
@@ -400,53 +402,5 @@ function initGroups() {
     try { advanceInstant(scene.clock.instantMs, amount, unit); } catch (error) { tell((error as Error).message, true); return; }
     if (await execute({ kind: 'advance-clock', sceneId: scene.id, expectedRevision: scene.clock.revision, calendarVersion: 'relative-v1', amount, unit, reason })) renderSceneMeta();
   })(); };
-  let archiveRequest=0;
-  const archiveParagraph=(root:HTMLElement,text:string,className='')=>{const p=document.createElement('p');p.textContent=text;if(className)p.className=className;root.append(p);};
-  function renderArchivedCombat(root:HTMLElement,combat:CombatState){
-    root.replaceChildren();const heading=document.createElement('h4');heading.textContent=combat.title;root.append(heading);
-    archiveParagraph(root,'Kampf · '+(combat.phase==='retired'?'archiviert ohne Kampfergebnis':combat.phase==='finished'?'abgeschlossen':'gespeicherter Stand')+' · Runde '+combat.round);
-    if(combat.outcome)archiveParagraph(root,'Ergebnis: '+combat.outcome);if(combat.notes)archiveParagraph(root,combat.notes);
-    archiveParagraph(root,combat.participants.length?'Teilnehmer:':'Keine Teilnehmer.','caption');
-    for(const p of combat.participants)archiveParagraph(root,p.name+' · Initiative '+p.initiative+' · RK '+p.armorClass+' · '+(p.healthKnown===false?'HP offen':p.hp+' / '+p.maxHp+' HP')+([p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).length?' · '+[p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).join(' · '):''));
-  }
-  function renderArchivedChase(root:HTMLElement,chase:ChaseState){
-    root.replaceChildren();const heading=document.createElement('h4');heading.textContent=chase.title;root.append(heading);
-    archiveParagraph(root,'Verfolgung · '+(chase.status==='retired'?'archiviert ohne Ergebnis':chase.status==='finished'?'abgeschlossen':'gespeicherter Stand')+' · Runde '+chase.round);
-    if(chase.goal)archiveParagraph(root,'Ziel: '+chase.goal);if(chase.complication)archiveParagraph(root,'Letzte Komplikation: '+chase.complication);if(chase.outcome)archiveParagraph(root,'Ergebnis: '+chase.outcome);
-    archiveParagraph(root,chase.participants.length?'Teilnehmer:':'Keine Teilnehmer.','caption');
-    for(const p of chase.participants)archiveParagraph(root,p.name+' · '+(p.side==='pursuer'?'Verfolger':'Flüchtend')+' · Abstand '+p.distance+' m · Tempo '+p.speed+' m · Erschöpfung '+p.exhaustion+(p.notes?' · '+p.notes:''));
-  }
-  async function openArchive(token:string,item:{id:string;title:string}){
-    const request=++archiveRequest,root=get('archive-detail');root.replaceChildren();archiveParagraph(root,'Archiv wird geladen…');
-    try{
-      const [sceneResult,combatResult,chaseResult]=await Promise.all([window.campaign.liveScene(token,item.id),window.campaign.combat(token,item.id),window.campaign.chase(token,item.id)]);
-      if(context?.token!==token||request!==archiveRequest)return;const scene=unwrap(sceneResult),combat=unwrap(combatResult),chase=unwrap(chaseResult);root.replaceChildren();
-      const heading=document.createElement('h3');heading.textContent=scene.title||'Unbenannte frühere Gruppe';root.append(heading);archiveParagraph(root,formatInstant(scene.clock.instantMs),'caption');if(scene.notes)archiveParagraph(root,scene.notes);
-      const masks=document.createElement('section'),maskTitle=document.createElement('h4'),buttons=document.createElement('div'),detail=document.createElement('div');let maskRequest=0;maskTitle.textContent='Letzte gespeicherte Laufzeitstände';buttons.className='selection-list';masks.append(maskTitle,buttons,detail);root.append(masks);
-      for(const entry of combat.recent){const button=document.createElement('button');button.textContent='Kampf: '+entry.title+' · '+(entry.phase==='retired'?'archiviert':entry.phase==='finished'?'abgeschlossen':entry.phase==='running'?'laufend':'vorbereitet');button.onclick=()=>{const selection=++maskRequest;void(async()=>{try{const result=unwrap(await window.campaign.combat(token,item.id,entry.id));if(context?.token===token&&request===archiveRequest&&selection===maskRequest&&result.combat)renderArchivedCombat(detail,result.combat);}catch(error){if(context?.token===token&&request===archiveRequest&&selection===maskRequest)tell((error as Error).message,true);}})();};buttons.append(button);}
-      for(const entry of chase.recent){const button=document.createElement('button');button.textContent='Verfolgung: '+entry.title+' · '+(entry.status==='retired'?'archiviert':entry.status==='finished'?'abgeschlossen':'laufend');button.onclick=()=>{const selection=++maskRequest;void(async()=>{try{const result=unwrap(await window.campaign.chase(token,item.id,entry.id));if(context?.token===token&&request===archiveRequest&&selection===maskRequest&&result.chase)renderArchivedChase(detail,result.chase);}catch(error){if(context?.token===token&&request===archiveRequest&&selection===maskRequest)tell((error as Error).message,true);}})();};buttons.append(button);}
-      if(!combat.recent.length&&!chase.recent.length)archiveParagraph(detail,'Für diese frühere Gruppe sind keine Kämpfe oder Verfolgungen gespeichert.','caption');
-      else if(combat.combat)renderArchivedCombat(detail,combat.combat);
-      else archiveParagraph(detail,'Wähle einen gespeicherten Laufzeitstand aus.','caption');
-    }catch(error){if(context?.token===token&&request===archiveRequest){root.replaceChildren();tell((error as Error).message,true);}}
-  }
-  async function loadArchives(reset: boolean) {
-    const token = context?.token; if (!token) return;
-    try {
-      const page = unwrap(await window.campaign.liveArchives(token, reset ? null : archiveCursor));
-      if (context?.token !== token) return;
-      if (reset) { get('archive-list').replaceChildren(); get('archive-detail').replaceChildren(); }
-      for (const item of page.items) {
-        const button = document.createElement('button'); button.textContent = item.title || 'Gruppe ' + item.id.slice(0,8);
-        button.onclick = () => { void openArchive(token,item); }; get('archive-list').append(button);
-      }
-      archiveCursor = page.next; get('archive-more').hidden = page.next === null;
-    } catch (error) { tell((error as Error).message, true); }
-  }
-  get('live-archives').onclick = () => { void (async () => {
-    if (!(await flushLive())) return;
-    await loadArchives(true); get<HTMLDialogElement>('archive-dialog').showModal();
-  })(); };
-  get('archive-more').onclick = () => { void loadArchives(false); };
-  get('archive-close').onclick = () => get<HTMLDialogElement>('archive-dialog').close();
+  resetLiveArchives=initLiveArchives(()=>context?.token??null,flushLive);
 }
