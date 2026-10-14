@@ -40,11 +40,17 @@ function acceptCombat(result:CombatView){view=result;requestedCombatId=result.co
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
+export function rebaseFighterDraft(draft:FighterWorkingDraft,basis:Combatant,revision:number,writeId:string):FighterWorkingDraft{return {...draft,writeId,basis:structuredClone(basis),revision};}
 const draftCache=new CombatDraftCache((cam,message)=>{if(workspace?.campaign.id===cam)tell(message,true);});
 const fighterDrafts={get:(key:string)=>draftCache.values.get(key) as FighterDraft|undefined};
 const fighterKey=()=>workspace&&view?.combat&&selected?combatDraftKey(workspace.campaign.id,view.combat.id,'fighter',selected):null;
 const notesKey=()=>workspace&&view?.combat?combatDraftKey(workspace.campaign.id,view.combat.id,'notes',view.combat.id):null;
 const notesDraft=()=>{const key=notesKey();return key?draftCache.values.get(key) as NotesWorkingDraft|undefined:undefined;};
+function rebaseOpenFighterDraft(key:string|undefined,draft:FighterDraft|undefined,result:CombatView){
+ if(!key||!draft||!workspace||fighterDrafts.get(key)?.writeId!==draft.writeId)return;
+ const basis=result.combat?.participants.find(participant=>participant.id===draft.targetId);if(!basis)return;
+ void draftCache.put(workspace.token,workspace.campaign.id,rebaseFighterDraft(draft,basis,result.combat!.revision,crypto.randomUUID()));
+}
 let editorLoading=false,notesLoading=false,editorRequest=0,draftPageRequest=0,draftCursor:string|null=null;
 function keepFighterDraft(){
  const p=view?.combat?.participants.find(p=>p.id===selected),key=fighterKey();if(!p||!key||!view?.combat||!workspace||editorLoading||draftCache.readFailures.has(key))return;
@@ -115,6 +121,7 @@ async function load(id?: string):Promise<boolean> {
 async function execute(action: CombatAction, expectedRevision?:number): Promise<boolean> {
   if (!workspace || !scene || blocked()) return false;
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='notes'?notesDraft():editDraft;
+  const effectTarget=action.kind==='effect-add'||action.kind==='effect-remove'?action.participantId:undefined,effectKey=effectTarget&&workspace&&view?.combat?combatDraftKey(workspace.campaign.id,view.combat.id,'fighter',effectTarget):undefined,effectDraft=effectKey?fighterDrafts.get(effectKey):undefined;
   const priorDamageDeath=action.kind==='damage'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
   const priorEffects=action.kind==='next'||action.kind==='start'?view?.combat?.participants.flatMap(actor=>(actor.timedEffects??[]).map(effect=>({actorId:actor.id,actor:actor.name,...effect})))??[]:[];
   const gen = generation;
@@ -125,9 +132,9 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
   pending = (async () => {
     try {
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
-      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
+      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft,effectKey,effectDraft});
       if (generation !== gen) return false;
-      acceptCombat(result); applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
+      acceptCombat(result);rebaseOpenFighterDraft(effectKey,effectDraft,result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
       if(['create','edit','damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
@@ -322,8 +329,9 @@ function renderEditor() {
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
   if(event.ref.family!=='combat'||workspace?.campaign.id!==event.ref.campaignId)return;
-  const result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft}|undefined;
+  const result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft;effectKey?:string;effectDraft?:FighterDraft}|undefined;
   if(meta?.token===workspace.token&&meta.editorDraft)draftCache.consumed(workspace.campaign.id,meta.editorDraft);
+  if(meta?.token===workspace.token)rebaseOpenFighterDraft(meta.effectKey,meta.effectDraft,result);
   if(result.combat&&scene&&result.combat.sceneId===scene.id&&(!view?.combat||view.combat.id===result.combat.id))await load(result.combat.id);
   await refreshProgress();if(afterSaved)await afterSaved();
 }
