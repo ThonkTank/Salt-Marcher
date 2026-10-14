@@ -325,3 +325,29 @@ Platzierung an einem anderen Ort muss vorher durch die GM korrigiert werden.
 Offen bleiben NPC-basierte Zufallsgenerierung und direkte Weltfilter im
 Spielabendgenerator. Die Fraktionszuordnung ergänzt den bisherigen freien
 Beziehungsgraphen; Fraktionen/Orte werden weiterhin in Welt und Spielabend angelegt.
+
+### Desktopstand 0.41: Spielabend-Vorschläge aus Ort und Fraktion
+
+Der Spielabend-Generator verwendet auf Wunsch die Weltquellen jedes gebundenen
+Szenenorts. Gewählte Fraktionen und Encounter-Tabellen schneiden diese Quellen;
+Fraktionen erscheinen zusätzlich als gebundene Wissensverweise. Jede Begegnung
+hält ihren eigenen Generatorstand fest. Fehlende gemeinsame Quellen lassen die
+gesamte Vorschau unverändert; es entsteht keine teilweise Session. Alte API-
+Aufträge ohne Ortsquellenflag behalten die bisherige freie Generierung.
+
+Eindeutig verknüpfte Beutetabellen erzeugen geplante, reproduzierbare Belohnungen
+mit zunächst 0 Story-XP. Es entsteht dabei kein World-Schatz und keine Vergabe.
+Einzelne Vorschläge können Titel, Vorlesetext, GM-Notizen, Ort, Wissensverweise,
+Story-XP und Beuteeinträge vor ihrer Timeline-Übernahme bearbeiten. Begegnung
+und Beute lassen sich separat neu erzeugen; andere Vorschläge, angenommene
+Besuche und eigene Texte bleiben erhalten. Ein geänderter Quellenort verlangt
+eine neue Begegnung vor der Annahme. Vorschläge lassen sich verwerfen und
+wiederherstellen. Angenommene Vorschläge bleiben geschlossen; ihre Inhalte
+werden über den bestehenden Besuch bearbeitet und Belohnungen separat platziert
+oder vergeben. Änderungen im Vorschlagsdialog werden ausdrücklich gespeichert;
+Abbrechen verwirft die noch ungespeicherten Dialogeingaben.
+
+Bestandsgrenzen gelten pro Begegnung, nicht als Reservierung für den ganzen
+Abend. Vollständiger DMG-Beutebudget-/Lootausgleich und NPC-basierte Kandidaten
+bleiben offen; verknüpfte Beutetabellen ersetzen diese spätere Budgetgenerierung
+nicht. Schema43 bleibt unverändert; neue Vorschlagsfelder sind optional.

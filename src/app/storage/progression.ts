@@ -252,7 +252,7 @@ function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
 }
 // One current reward valuation for the personal ledger and cross-character balance.
 function ledgerRewardValue(db:any,cam:string,item:LedgerItem):bigint|null {
-  const definition=readItemDefinition(db,item.reference.definitionId);
+  const definition=readLedgerDefinition(db,item);
   item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;
   if(item.origin==='transfer')item.rewardCreditId=transferCredit(db,cam,item);
   if(item.origin==='purchase'||item.origin==='transfer')return 0n;
@@ -320,6 +320,10 @@ export function readLootBalance(db:any,cam:string){
   const characters=members.map((m:any)=>({characterId:m.id,name:m.profile.name,active:m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));
   return{characters,leaderCopper:leader.toString(),suggestedCharacterIds:lootBalanceSuggestions(characters,leader.toString())};
  })();
+}
+export function validateItemInput(db:any,input:ItemInput){
+ if(!input||typeof input.name!=='string'||!input.name.trim()||input.name.length>1000||!Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>1000000||!['coins','equipment','trade-goods','magic','other'].includes(input.category))throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
+ if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');}else copper(input.valueGold);
 }
 export function checkedItem(db: any, input: ItemInput) {
   if (!input || typeof input.name !== 'string' || !input.name.trim() || input.name.length > 1000 || !Number.isSafeInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000 || !['coins','equipment','trade-goods','magic','other'].includes(input.category)) throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
