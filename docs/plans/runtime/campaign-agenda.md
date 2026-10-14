@@ -70,6 +70,8 @@ Diese Teilbelege ersetzen keinen nativen Spielabendablauf.
 Tagesbeginn und Ereignisbeginn/-ende. Seine Lese-/Vorschau-/Bestätigungs- und
 Recoveryantworten binden den ursprünglichen Dialog, Campaigntoken und die Scene.
 Eine abgelöste Ereignisschaltfläche darf keine ältere Eventrevision auswählen.
+Agenda-Handoff und Refresh behalten die ausgewählte Eventrevision; eine Änderung
+verlangt eine ausdrückliche neue Ereignisauswahl vor der Vorschau.
 Die Live-Schreibschnittstelle prüft diese Bindung nochmals nach dem Flush und
 vor Dispatch; ein bereits gesendeter Auftrag behält seinen eigenen Ausgang.
 Alte Antworten schließen oder entsperren keine spätere Zeitwahl, auch bei
@@ -84,7 +86,7 @@ Die explizite Receiptklärung beendet die Sperre vor einer weiteren Vorschau;
 bei einem Lesefehler bleiben Eingaben und Ausgang offen. Der Dialog nutzt den
 bestehenden Livewriter und `recoverTimeWrite`, keinen zweiten Zeitwriter.
 
-Elf Gegenproben in `time-plan-context.test.ts` prüfen unter anderem Öffnen vor
+Vierzehn Gegenproben in `time-plan-context.test.ts` prüfen unter anderem Öffnen vor
 Flush, spätes positives/negatives Write, ältere finally-Blöcke, Recoveryfehler,
 abgelöste Eventaktionen, ungültige Rohdaten während Load und die erneute Bindung
 vor Dispatch. Der Label-/Filtertest und die bestehenden Agenda-/World-/Reise-

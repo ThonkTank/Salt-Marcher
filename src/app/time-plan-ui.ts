@@ -33,10 +33,10 @@ export class TimeNavigator {
   try{
    if(!await this.flush()||epoch!==this.epoch||this.context()?.workspace.token!==c.workspace.token||this.context()?.scene.id!==c.scene.id)return;
    this.owner=c;this.preselected=target??null;this.cursor=null;this.search.value='';this.reason.value='';this.mode.value=target?'event':'duration';this.phase.value=target?.phase??'start';this.drawMode();this.dialog.showModal();
-   if(!await this.read(target?.eventId)||!this.current(c,epoch)||!this.page)return;
+   const readNumber=this.reading+1,ready=await this.read(target?.eventId);if(!this.current(c,epoch)||!this.page||this.readVersion!==readNumber)return;
    const parts=calendarParts(this.page.calendar,this.page.scene?.instantMs??c.scene.clock.instantMs);
    for(const [id,value]of Object.entries(parts))this.dateFields.get(id)!.value=value;
-   if(target)await this.preview();
+   if(target&&ready)await this.preview();
   }catch(e){if(epoch===this.epoch&&this.context()?.workspace.token===c.workspace.token&&this.context()?.scene.id===c.scene.id)this.report((e as Error).message);}
  }
  private async read(preselect?:string,duringRecovery=false):Promise<boolean>{
@@ -51,7 +51,10 @@ export class TimeNavigator {
    this.page=r.value;this.readVersion=n;this.currentDate.textContent=o.scene.title+' · '+calendarDate(r.value.calendar,r.value.scene.instantMs);
    const month=this.dateFields.get('month') as HTMLSelectElement,previous=month.value;
    month.replaceChildren(...r.value.calendar.months.map((m,i)=>new Option(m.name,String(i))));month.value=previous;
-   this.selected=r.value.items.find(i=>i.event.id===(preselect??this.selected?.event.id))??null;this.drawEvents();this.status.textContent='Zeitwahl treffen, Vorschau prüfen und ausdrücklich bestätigen.';return true;
+   const targetId=preselect??this.selected?.event.id??this.preselected?.eventId,expected=this.preselected&&this.preselected.eventId===targetId?this.preselected.expectedRevision:this.selected?.event.revision;
+   const candidate=r.value.items.find(i=>i.event.id===targetId);this.selected=candidate&&(expected===undefined||candidate.event.revision===expected)?candidate:null;this.drawEvents();
+   if(candidate&&expected!==undefined&&candidate.event.revision!==expected){this.status.textContent='Ereignis seit Auswahl geändert. Aktuelles Ereignis ausdrücklich erneut auswählen.';return false;}
+   this.status.textContent='Zeitwahl treffen, Vorschau prüfen und ausdrücklich bestätigen.';return true;
   }catch(e){if(this.current(o,epoch)&&n===this.reading)this.report((e as Error).message);return false;}
   finally{if(this.current(o,epoch)&&n===this.reading){this.loading=false;this.refresh.disabled=false;this.calculate.disabled=!this.recovery.hidden||!this.page||this.readVersion!==this.reading;}}
  }
