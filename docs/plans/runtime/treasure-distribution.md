@@ -49,8 +49,7 @@ oder vollständige Recovery-/Portabilitätsabnahme.
 3. Ursprung aus verschobenen/angenommenen Rewards, archivierte Figuren,
    Trash/Restore, Definitionänderung und unabhängige Kampagnenkopie einschließlich
    bereits verteilter Mengen qualifizieren. Bekannte Werte bleiben Definitions-
-   bzw. historische Ledgerwerte; ein unbekannter Wert wird nicht als null Euro
-   oder null Gold erfunden. Verkäufe und Kaufpreise haben eigene Wahrheiten.
+   bzw. historische Ledgerwerte; ein unbekannter Wert wird nicht als null Gold erfunden. Verkäufe und Kaufpreise haben eigene Wahrheiten.
 4. Große Schätze/Roster über begrenzte Queries anbinden und Kosten messen.
    25 Posten, acht Spalten und 25 sichtbare Figuren begrenzen die Darstellung,
    nicht bereits die vollständig gelesenen Quellen. Native Tastatur, Dialogscroll,
