@@ -5,7 +5,7 @@ import {initNarrativeJournal,activateNarrativeJournal} from './narrative-journal
 import {setSessionPacketSurface} from './session-packet-ui';
 import {initPartyTopbar,activatePartyTopbar} from './party-topbar-ui';
 import {initDayCalculator,activateDayCalculator} from './adventuring-day-ui';
-import {initNpcs,activateNpcs,openNpcs,flushNpcs} from './npc-ui';
+import {initNpcs,activateNpcs,openNpcs,openNpcProfile,flushNpcs} from './npc-ui';
 import {initGroups,activateGroups,openGroups,flushGroups} from './groups-ui';
 import {refreshProgress} from './progression-ui';
 import {initTreasury,activateTreasury,openTreasury,flushTreasury} from './treasury-ui';
@@ -30,7 +30,7 @@ import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './wo
 import {initItems,activateItems,openItems,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote } from './preparation';
-import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
+import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
 import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
@@ -84,6 +84,7 @@ initLive(status, async id => {
 },async id=>{if(!(await leaveWorkspace()))return;showTab('preparation');await openPreparedNote(id);});
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
+setNpcNavigation(async(id,contact)=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups();await openNpcProfile(id,contact);},async id=>{if(!await leaveWorkspace())return;showTab('autonomy');await openAutonomy(id);});
 initGroups(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);await openNpcs(false);});
 el('groups-tab').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups();await openNpcs();})().catch(e=>status(e.message,true));};
 setGroupNavigation(async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);await openNpcs(false);});

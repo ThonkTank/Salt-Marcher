@@ -125,6 +125,8 @@ else {
     handle('campaign:execute-scene-rule',(command:SceneRuleCommand)=>store.executeSceneRule(command));
     handle('campaign:scene-checks',(token:string,id:string)=>store.sceneChecks(token,id));
     handle('campaign:execute-scene-check',(command:SceneCheckCommand)=>store.executeSceneCheck(command));
+    handle('campaign:npc-cast',(token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>store.npcCast(token,q));
+    handle('campaign:npc-dossier',(token:string,sceneId:string,id:string)=>store.npcDossier(token,sceneId,id));
     handle('campaign:npc-drafts',(token:string)=>store.npcDrafts(token));
     handle('campaign:npc-draft',(token:string,id:string)=>store.npcDraft(token,id));
     handle('campaign:keep-npc-draft',(token:string,d:NpcDraft,expected:string|null)=>store.keepNpcDraft(token,d,expected));
