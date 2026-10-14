@@ -65,6 +65,7 @@ import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLi
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import { reconcileCombatParticipants, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
 
+
 import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
 import {installMaskReconciliationSchema,validateMaskReconciliations} from './mask-reconciliation';
 import {installRuleReferenceSchema,readSceneRules,executeSceneRule,validateRuleReferences} from './rule-references';
@@ -725,6 +726,7 @@ export class CampaignStore {
     this.guard(command.token, command.campaignId);
     const a = command.action;
     if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];reconcileCombatParticipants(this.db,command.campaignId,ids,command.commandId);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId);}
+
 
   });
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);

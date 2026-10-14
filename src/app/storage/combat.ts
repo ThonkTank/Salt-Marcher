@@ -27,6 +27,7 @@ function decode(row: any): CombatState {
 }
 export function reconcileCombatParticipants(db:any,cam:string,ids:string[],commandId:string){removePartyFromMasks(db,cam,ids,commandId);}
 
+
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));
