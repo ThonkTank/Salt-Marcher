@@ -1,6 +1,6 @@
 # Gemeinsame Beutewertung für Ledger und Bilanz
 
-Stand: 13.10.2026. Ergänzt den [Katalog-/Rewardvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#nächster-anschluss-für-abschluss-rewards-und-handel).
+Stand: 14.10.2026. Ergänzt den [Katalog-/Rewardvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#nächster-anschluss-für-abschluss-rewards-und-handel).
 
 ## Fachregel und ausführbarer Stand
 
@@ -47,6 +47,14 @@ Anschluss ersetzt die frühere Aussage, es gebe noch keinen XP-basierten Code.
 Er ist noch kein Beleg für vollständige D&D-2014-Guidance, Transfer-/Korrektur-
 semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
 
+Der ebenfalls integrierte `storage/session-magic.ts` berechnet optionale
+kumulative Seltenheitsquoten vor/nach erwartetem XP, zieht erhaltene magische
+Beute ab und verteilt den offenen Zielbetrag auf Vorschläge. `fitMagicItems`
+erhält passende Tabellenitems und ergänzt revisionierte Katalogdefinitionen;
+fehlende Seltenheiten bleiben mit Warnung offen. Sessioneditor und Writer tragen
+`SessionMagicGuidance` weiter. Diese Aussage ist Codebefund, keine vollständige
+Magie-/Quellen-/Bedienqualifikation.
+
 ## Nächste ausführbare Schritte
 
 1. **Vollständige Guidance qualifizieren.** `storage/session-rewards.ts`,
@@ -56,7 +64,12 @@ semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
    XP-Basis, erwartete/tatsächliche Beute und Defizit gemeinsam erklären.
    Abnahme: unterschiedliche XP-Stände, korrigierte/weitergereichte/verkaufte
    Grants, fehlender Wert, individuelle Vorschlagsänderung und Neustart;
-   keine automatische Änderung bestehender Awards.
+   keine automatische Änderung bestehender Awards. `session-magic.ts` zusätzlich
+   mit verkauften/weitergegebenen/verbrauchbaren magischen Grants und korrigierten
+   Definitionen prüfen: einmalige Herkunftswertung, kumulative Seltenheitsrundung,
+   endlicher zulässiger Katalogpool und explizit fehlende Definition. Seed,
+   Preset-/XP-/Katalogbasis sowie manuelle Itemänderung bis Annahme/Fresh binden;
+   keine stillen Ersatzitems außerhalb bindender Quellenvorgaben.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
