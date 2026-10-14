@@ -89,43 +89,25 @@ Picker und Editoren binden Verhalten und Ergebnisse an diese Vorlage.
 
 ## Gezahlter Kaufpreis bei Teilmengen
 
-Der bestätigte Shopworkflow (Program Capabilities L576–586) zeichnet den
-gezahlten Preis auf, bucht aber keine Münzen automatisch ab. `paidCopper`
-ist der insgesamt auf diese Ledgerteilmenge entfallende Kaufpreis, kein
-Stückpreis und kein Verkaufserlös. Der ursprüngliche Kauf bleibt im
-unveränderten `shop-purchase`-Ereignis erklärt.
+`paidCopper` ist der gesamte bestätigte Kaufpreis dieser Ledgerteilmenge;
+fehlend bedeutet unbekannt, null Kupfer wird als `"0"` aufgezeichnet. Käufe
+buchen keine Münzen automatisch ab und erzeugen keinen Rewardcredit.
 
-Shopverkauf und manuelles Markieren als verkauft/weitergegeben kopierten
-bisher den gesamten gezahlten Kaufpreis in jede neue Teilmenge. Ein Kauf von
-3 Stück für 101 Kupfer zeigte nach dem ersten Teilverkauf insgesamt 202 Kupfer.
-Split und anschließender Merge hinterließen außerdem 33 Kupfer auf dem leeren
-Quellstapel: angezeigt wurden 134 statt 101 Kupfer. Der bestehende Splitweg
-hatte bereits eine korrekte proportionale Teilberechnung.
+`partitionLedgerPaidPrice` verteilt beim Split, Shop-/manuellen Teilverkauf,
+Geschenk und Charakterweitergabe `floor(gesamt × teilmenge / vorherige menge)`;
+der ganzzahlige Rest bleibt auf dem verbleibenden Stapel. Writers prüfen Mengen
+und Quellen vorher und schreiben Preis/Menge/Receipt gemeinsam. Merge addiert
+bekannte Preise und leert den Quellpreis; ein unbekannter Beitrag macht den
+Gesamtpreis unbekannt. Bei Charakterweitergabe steht der Anteil auf der
+Abgabezeile, der Empfang erzeugt keine weitere Zahlung. Verkaufserlös bleibt
+separat maßgeblich für Beute. Alte Kaufereignisse/Receipts bleiben unverändert;
+früher falsch vervielfachte Anteile werden nicht rückwirkend repariert.
 
-`progression.ts.partitionLedgerPaidPrice` verwendet diese Berechnung jetzt für
-Shopverkauf, manuelle Verkauf-/Geschenkmarkierung, Split und Charakterweitergabe.
-Die neue Teilmenge erhält `floor(gesamt × teilmenge / vorherige menge)`;
-der ganzzahlige Rest bleibt auf dem verbleibenden Stapel. Die Writers rufen
-die Funktion nach ihren Mengen-/Quellenprüfungen und vor der Mengenänderung
-in derselben Transaktion auf. Beim Merge werden die bekannten Preise addiert
-und vom geleerten Quellstapel entfernt. Sobald ein Beitrag unbekannt ist,
-bleibt auch der gesamte Preis unbekannt. Fehlend und ausdrücklich null sind
-unterschiedliche Fakten; es gibt keine automatische Münzbuchung.
-
-Eine Charakterweitergabe trägt den Kaufpreisanteil auf der erklärenden
-Abgabezeile; der Empfang erzeugt keine weitere Zahlung. Tatsächlicher
-Verkaufserlös bleibt separat autoritativ für vergebene Beute. Käufe erhalten
-weiterhin keine Rewardgutschrift. Alte Ledgerbytes, Kaufereignisse und Receipts
-werden nicht migriert oder rückwirkend neu berechnet. Bereits vor dieser
-Korrektur falsch vervielfachte Anteile sind dadurch noch nicht repariert.
-
-`tests/desktop-trade-paid-price.test.mjs` prüft echte SQLitewrites einschließlich
-101-Kupfer-Rundung, vollständigem Verkauf, Split/Merge, Geschenk und Weitergabe,
-unbekanntem Preis, null und einem großen exakten Betrag. Dazu kommen Fresh,
-exakte Receiptreplays, Lootausschluss und ein kontrollierter Fehler nach den
-Ledgerwrites: die Transaktion rollt vollständig zurück; Statusklärung nach
-Neustart bestätigt genau einen wirksamen Verkauf. Dies ist Storeevidenz,
-keine native Prüfung einer verlorenen IPC-Antwort oder vollständige Handelsabnahme.
+[Tradeprüfungen](../../../tests/desktop-trade-paid-price.test.mjs) verwenden echte
+SQLitewrites: 101-Kupfer-Rundung, vollständiger Verkauf, Split/Merge, Geschenk,
+Weitergabe, unbekannter Preis, null und großer exakter Betrag. Fresh, Replay,
+Lootausschluss und ein Fehler nach den Ledgerwrites prüfen Rollback und
+Statusklärung. Native IPC-/Handelsabnahme bleibt offen.
 
 ## Nächste ausführbare Schritte
 

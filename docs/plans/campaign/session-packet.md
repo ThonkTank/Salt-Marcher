@@ -46,7 +46,9 @@ Der benachbarte Live-Wissensbereich übernimmt Vorlesetext in den GM-Sceneentwur
 und speichert ihn über den bestehenden Autosaveweg. Der entfernte
 Textprojektionsknopf ist keine Voraussetzung. Wird ein übernommener Besuch
 aus der Planung entfernt, bleiben Sceneherkunft und die Live-Vorbereitungsquery
-lesbar. Der nicht mehr aktuelle Besuch liefert keine aktuellen Notizverknüpfungen
+lesbar. Vorbereitungsantworten und Fehler benötigen weiterhin die aktuelle
+Campaign, Scene und Anfrage; verspätete Shopreads dürfen keine älteren
+Gruppen-/Beuteaktionen zurückbringen. Der nicht mehr aktuelle Besuch liefert keine aktuellen Notizverknüpfungen
 oder Folgebesuch; historische Sceneinhalte bleiben erhalten. Der lokale Test
 `tests/desktop-live-visual-context.test.mjs` prüft diesen tatsächlichen
 Übernahme-/Speicherweg und erhält Autorenwortlaut ohne Playercommand.

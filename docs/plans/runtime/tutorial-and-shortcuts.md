@@ -38,8 +38,8 @@ weder native Tastatur-/IME-/Screenreaderwirkung noch Feature- oder Localeabnahme
    Party/Daypopover, Select/Richtext, Escape, Fokus und 200 % gesondert bedienen.
 2. Lektionen gegen tatsächlich sichtbare Aktionen und SCOPE prüfen: Anlegen,
    Datenwirkung, Fehler und Wiederaufnahme je Nutzerweg. Neue Sessionmappe,
-   NPC-Suche, Ortsfreigabe und Quellenstatus korrekt erklären; noch fehlenden
-   Extensionzugriff nicht als verfügbar darstellen.
+   NPC-Suche, Ortsfreigabe und Quellenstatus korrekt erklären; Installation, Rechteannahme, Widerruf und schreibfreie Reparatur von
+   Extensions erklären; noch fehlenden Inhaltseditor nicht als verfügbar darstellen.
 3. Tutorial und gemeinsame Status-/Actionlabels zuerst in einen kleinen
    UI-Textkatalog führen; deutsche Basis und eine zusätzliche Sprache mit
    Textexpansion, Zahlen/Datum, Pending und Sprachwechsel prüfen. Prosa, IDs,
