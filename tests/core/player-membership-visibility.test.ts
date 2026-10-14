@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
 import type {AtlasCell,AtlasMap} from '../../src/app/world-contracts';
+const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision};};
 
 const cell=(q:number):AtlasCell=>({q,r:0,level:0,terrain:q===2?'forest':'plains',elevationM:0,climate:null,road:false,river:false,label:'',faction:'',interrupt:''});
 
@@ -24,7 +25,9 @@ test('deactivation hides a character from the player display without deleting re
     assert.equal(player.frame.mode,'map');
     assert.equal(player.frame.map?.cells.find((hex:{q:number;r:number;terrain:string})=>hex.q===2&&hex.r===0)?.terrain,'forest');
 
+    const staleObserver={...focus(store,token),commandId:'stale-observer',campaignId:campaign.id,token,expectedRevision:player.settings.revision,action:{kind:'observer' as const,observer:{characterId:character.id,enabled:true,rangeMeters:10,darkvisionMeters:0,eyeHeightMeters:1.7}}};
     const inactive=store.executeLive({commandId:'deactivate',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:active.membershipRevision,expectedRosterRevision:2,active:false,targetSceneId:null,expectedFocusRevision:0}}).character!;
+    assert.throws(()=>store.executePlayer(staleObserver),/Fokussierte Gruppe geändert/);
     assert.deepEqual(store.playerView(token).observers,[]);
     assert.equal(store.currentPlayerFrame().mode,'blank');
 
@@ -35,5 +38,3 @@ test('deactivation hides a character from the player display without deleting re
     assert.equal(restored.frame.map?.cells.find((hex:{q:number;r:number;terrain:string})=>hex.q===2&&hex.r===0)?.terrain,'forest');
   }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
-
-function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};}
