@@ -198,7 +198,8 @@ function sessionReviewBasis():SessionReviewBasis|null{return workspace&&plan?{to
 async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[],reviewed:SessionReviewBasis){
  const owner=previewOwner(),request=previewRequest;if(!owner||run!==source||!sameSessionReviewBasis(reviewed,sessionReviewBasis()))return false;
  try{
-  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source||!sameSessionReviewBasis(reviewed,sessionReviewBasis()))return false;
+  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source)return false;
+  if(!sameSessionReviewBasis(reviewed,sessionReviewBasis())){tell('Planstand nach dem Speichern geändert. Auswahl erneut prüfen.',true);return false;}
   const action:SessionAction={kind:'accept-proposals',planId:reviewed.planId,expectedPlanRevision:reviewed.planRevision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
   if(!await execute(action))return false;
   if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
