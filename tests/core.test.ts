@@ -104,5 +104,6 @@ import "./core/music-record-integrity.test";
 import "./core/autonomy-persistence-integrity.test";
 import "./core/live-player-cues.test";
 import "./core/live-knowledge.test";
+import "./core/live-party-reference.test";
 import "./core/object-gestures.test";
 import "./core/extension-lifecycle.test";
