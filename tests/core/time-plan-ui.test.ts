@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import {TimeNavigator} from '../../src/app/time-plan-ui';
-import type {AgendaPage} from '../../src/app/agenda-contracts';
+import type {AgendaPage,AgendaQuery} from '../../src/app/agenda-contracts';
 
 const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
 async function until(check:()=>boolean){for(let i=0;i<20;i++){if(check())return;await settle();}assert.ok(check(),'expected time navigator state');}
@@ -16,7 +16,7 @@ test('time navigation labels its choices and filters events while the GM types',
   Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,Option:TestOption,Event:window.Event});
   const event={id:'event-1',revision:1,name:'Hafenwache trifft ein',startMs:'3600000',durationMs:'3600000',repeatMs:null,locationId:null,notes:'',trashed:false};
   const base:AgendaPage={calendar:{revision:1,name:'Kalender',startYear:1,daySeconds:86400,months:[{name:'Frühmond',days:30}],weekdays:['Erster Tag']},scene:{id:'scene-1',title:'Vorhut',clockRevision:1,instantMs:'0',locationId:null,locationTitle:''},items:[{event,state:'upcoming',startMs:event.startMs,endMs:'7200000',sortMs:event.startMs,locationTitle:'',locationAvailable:true}],next:null,total:1};
-  const searches:string[]=[];window.campaign={agenda:async(_token,query)=>{searches.push(query.search);return{ok:true as const,value:{...base,items:query.search==='Nacht' ? [] : base.items}};}} as unknown as typeof window.campaign;
+  const searches:string[]=[];window.campaign={agenda:async(_token:string,query:AgendaQuery)=>{searches.push(query.search);return{ok:true as const,value:{...base,items:query.search==='Nacht' ? [] : base.items}};}} as unknown as typeof window.campaign;
   const navigator=new TimeNavigator(()=>{},()=>({workspace:{token:'token'} as any,scene:{id:'scene-1',title:'Vorhut',clock:{instantMs:'0'}} as any}),async()=>true,async()=>true,async()=>true),dialog=document.getElementById('time-navigator') as HTMLDialogElement;
   Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
   try{
