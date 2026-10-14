@@ -274,8 +274,8 @@ function groupPeople(id:string){return data?.roster.filter(c=>c.active&&c.sceneI
 function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'|'clock'>){
   return (group.title||'Unbenannte Gruppe')+(group.primary?' · Hauptgruppe':'')+' · '+groupPeople(group.id)+' · '+formatInstant(group.clock.instantMs);
 }
-function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-moment-category') as LiveMomentCategory,title:value('live-moment-title'),summary:value('live-moment-summary')};}
-function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;}
+function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-moment-category') as LiveMomentCategory,title:value('live-moment-title'),summary:value('live-moment-summary'),followUp:value('live-moment-follow-up') as LiveMomentDraft['followUp']};}
+function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;get<HTMLSelectElement>('live-moment-follow-up').value=draft.followUp;}
 function renderLiveMomentDraft(){const next=liveMomentDrafts.switchTo(data?.scene?.id??null,currentLiveMomentDraft());if(next.changed){writeLiveMomentDraft(next.draft);get('live-moment-result').textContent='';}}
 function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
 function renderGroups() {

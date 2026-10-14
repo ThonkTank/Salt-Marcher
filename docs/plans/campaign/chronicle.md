@@ -70,11 +70,11 @@ und Filter vor dem Ergebnislimit bei. Ein Moment bestätigt weder Kampfabschluss
 noch XP oder Loot; diese Fakten bleiben bei ihren bestehenden Writern.
 
 Der Renderer bindet Scene und Fokus bereits beim Submit und kopiert Titel,
-Notiz und Bereich vor dem Flush. Geänderter Fokus vor dem Senden verhindert
+Notiz, Bereich und Folgespur vor dem Flush. Geänderter Fokus vor dem Senden verhindert
 diesen Submit. Ein bereits bestätigter älterer Moment bleibt in der Historie;
 seine spätere Antwort ersetzt keine neuere fokussierte Scene und leert keine
 weiter eingegebene Notiz. Nur eine unveränderte Formfassung wird nach Erfolg
-geleert. Drei kontrollierte DOM-/SQLiteproben in
+geleert. Kontrollierte DOM-/SQLiteproben in
 `desktop-live-moment-context.test.mjs` prüfen ursprünglichen Wortlaut samt CRLF,
 Fokuswechsel während Flush und spätere Antwort mit weiter nutzbarer neuer Scene.
 
@@ -89,6 +89,19 @@ nach einem nicht eindeutig bestätigten Command dessen Status prüfen. Einen
 unbekannten Ausgang nicht durch erneutes Festhalten verdoppeln. Native IME,
 Fokus-/Tastaturbedienung und wiederaufgenommene unvollständige Notizen bleiben
 separat abzunehmen; lokale Storebelege schließen diese Schritte nicht.
+
+Ein bestätigter Moment kann optional eine Quest oder ein Gerücht anlegen.
+`CampaignStore.executeLive` speichert Moment, Folgespur und Receipts in derselben
+Transaktion; ein belegtes Ziel darf keine Teilhistorie hinterlassen. Derselbe
+Command wird über sein ursprüngliches Receipt wiederholt, ohne einen zweiten
+Wissenseintrag anzulegen. Die Chronik hält den Zielverweis und bietet Navigation
+in den Wissensbinder. Das Ziel erhält den unveränderten Rohtext als GM-Notiz;
+Vorlesetext bleibt leer. Die Folgespurauswahl gehört zum selben Sceneentwurf wie
+Titel und Notiz. Neue Auswahl nach dem Senden bleibt offen und wird beim
+Fokuswechsel mitgeführt. Entfernte Chronikbuttons prüfen Campaign und die
+angezeigte Suchgeneration, bevor sie navigieren. Store-/DOMproben prüfen diese
+Grenzen; native Navigation, gelöschte Ziele und unbekannte Commandausgänge sind
+weiter separat zu qualifizieren.
 
 ## Party- und Zeitanschluss vom 14.10.2026
 
