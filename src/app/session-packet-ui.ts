@@ -30,12 +30,12 @@ export function initSessionPacket(tell:(s:string,e?:boolean)=>void,owner:()=>{to
  function visit(id:string){
   selected=id;const v=packet?.visits.find(v=>v.id===id),root=el('session-packet-content');root.replaceChildren();if(!v)return;
   for(const b of el('session-packet-visits').querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.visitId===id));
-  const header=document.createElement('div');header.className='toolbar';const h=document.createElement('h3');h.textContent=v.title;header.append(h);const captured=source;
-  if(captured?.openVisit){const b=document.createElement('button');b.type='button';b.textContent=captured.visitId===id?'Besuch erneut übernehmen…':'Besuch übernehmen…';b.onclick=()=>act(async()=>{if(captured.current())await captured.openVisit!(id);});header.append(b);}
+  const header=document.createElement('div');header.className='toolbar';const h=document.createElement('h3');h.textContent=v.title;header.append(h);const captured=source,viewed=packet,version=request;const current=()=>!!captured&&same(captured)&&packet===viewed&&request===version;
+  if(captured?.openVisit){const b=document.createElement('button');b.type='button';b.textContent=captured.visitId===id?'Besuch erneut übernehmen…':'Besuch übernehmen…';b.onclick=()=>act(async()=>{if(current())await captured!.openVisit!(id);});header.append(b);}
   root.append(header);const location=document.createElement('p');location.className='caption';location.textContent=v.location??'Ohne Ortsbindung';root.append(location);
   if(!v.blocks.length){const p=document.createElement('p');p.textContent='Dieser Besuch hat noch keine vorbereiteten Texte, Begegnungen oder Belohnungen.';root.append(p);}
   for(const block of v.blocks){const section=document.createElement('section');section.className='packet-block packet-'+block.kind;const h=document.createElement('h4'),p=document.createElement('div');h.textContent=block.heading;p.className='packet-text';p.textContent=block.text||'Keine Notizen.';section.append(h,p);
-   if(block.kind==='read-aloud'&&captured?.readAloud){const b=document.createElement('button');b.type='button';b.className='packet-use-read-aloud';b.textContent='Vorlesetext in Szene übernehmen';b.onclick=()=>act(async()=>{if(captured.current())await captured.readAloud!(block.text,block.heading);});section.append(b);}
+   if(block.kind==='read-aloud'&&captured?.readAloud){const b=document.createElement('button');b.type='button';b.className='packet-use-read-aloud';b.textContent='Vorlesetext in Szene übernehmen';b.onclick=()=>act(async()=>{if(current())await captured!.readAloud!(block.text,block.heading);});section.append(b);}
    root.append(section);
   }
   const rows=matches(),index=rows.findIndex(v=>v.id===id);el<HTMLButtonElement>('session-packet-prev').disabled=index<=0;el<HTMLButtonElement>('session-packet-next').disabled=index<0||index>=rows.length-1;root.scrollTop=0;
