@@ -26,3 +26,15 @@ test('replacement reuses an accepted world group without duplicating or resettin
  const x=fixture(t),locationId=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id:locationId,name:'Keep',type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});x.store.executeSession(x.command({kind:'place',planId:x.planId,groupId:x.id,expectedRevision:x.group.revision,locationId,expectedLocationRevision:1}));
  const before=read(x),group=x.store.groupView(x.w.token,x.id),count=x.store.db.prepare('SELECT count(*) n FROM world_actor WHERE campaign_id=?').get(x.cam.id).n,ack=x.store.executeSession(x.command({kind:'replace-plan',planId:x.planId,expectedBasis:before.replacementBasis,name:'Next watch',sourcePlanId:x.planId,expectedSourceBasis:before.replacementBasis,copyParty:false}));assert.deepEqual(ack.visits[0].groupIds,[x.id]);assert.deepEqual(x.store.groupView(x.w.token,x.id),group);assert.equal(x.store.db.prepare('SELECT count(*) n FROM world_actor WHERE campaign_id=?').get(x.cam.id).n,count);await x.store.backup(path.join(x.root,'world-safe.sqlite'));
 });
+
+test('session packet freezes readable preparation and changes its basis after a source edit without writing during reads',t=>{
+ const x=fixture(t),before=x.store.db.serialize(),packet=x.store.sessionPacket(x.w.token,x.planId);
+ assert.ok(x.store.db.serialize().equals(before));assert.equal(packet.visits.length,1);assert.equal(packet.visits[0].id,x.visitId);
+ assert.equal(packet.visits[0].blocks.find(block=>block.kind==='gm').text,'  Exact prose\r\n');
+ assert.ok(packet.visits[0].blocks.some(block=>block.heading.startsWith('Begegnung:')));assert.ok(packet.visits[0].blocks.some(block=>block.heading.startsWith('Statblock:')));
+ assert.match(packet.basis,/^[a-f0-9]{64}$/);const plan=read(x).plan;
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:plan.revision,plan:{...plan,scenes:[{...plan.scenes[0],notes:'Neue Vorbereitungsnotiz'}]}}});
+ const changedBytes=x.store.db.serialize(),next=x.store.sessionPacket(x.w.token,x.planId);
+ assert.ok(x.store.db.serialize().equals(changedBytes));assert.notEqual(next.basis,packet.basis);assert.equal(next.visits[0].blocks.find(block=>block.kind==='gm').text,'Neue Vorbereitungsnotiz');
+ assert.equal(packet.visits[0].blocks.find(block=>block.kind==='gm').text,'  Exact prose\r\n');assert.equal(x.store.session(x.w.token,x.planId).groups[0].id,x.id);
+});

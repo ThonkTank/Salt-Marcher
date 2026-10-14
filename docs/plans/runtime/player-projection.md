@@ -32,6 +32,9 @@ Ortsart oder Karte nicht mehr durch Mechaniktabellen. Die GM kann NPC-/Orts-/
 eigene Art weiterhin ausdrücklich hervorheben. Private Scene-/Maskentitel
 werden nicht automatisch als öffentliche Überschrift übernommen; ausdrücklicher
 öffentlicher Titel und freigegebene Kartenbeschriftungen bleiben eigene Metadaten.
+Ein entferntes NPC-Porträt bleibt als historisches Asset erhalten, darf aber
+nach Blank oder Gruppenwechsel nicht erneut freigegeben werden. Dieser
+Gruppenwechsel zählt auch bei unveränderter Bild-ID als neue Freigabe.
 
 `PlayerFrame` und `PlayerDungeon` in `player-contracts.ts` enthalten nur diese
 visuellen Varianten. Dungeonposition, bekannte/sichtbare Geometrie, freigegebene
