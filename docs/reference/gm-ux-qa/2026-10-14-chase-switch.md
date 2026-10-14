@@ -57,3 +57,7 @@ kein Swap und keine Subagenten. [Verifikation](2026-10-14-chase-switch-verificat
 [Ergebnisbild](2026-10-14-chase-switch-after.png),
 [Prüflog](2026-10-14-chase-switch-checks.log).
 Gesamtes Produkt, alle Kombinationen und praktische Originalvergleiche bleiben offen.
+
+Fortsetzung desselben Tages: Die oben dokumentierte flüchtige Entwurfslücke ist
+mit [dauerhaften Verfolgungsentwürfen](2026-10-14-chase-drafts.md) geschlossen.
+Die ursprünglichen Belege und ihre damalige Reichweite bleiben historisch erhalten.

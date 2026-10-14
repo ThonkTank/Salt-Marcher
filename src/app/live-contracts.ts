@@ -1,7 +1,7 @@
 import type { Result } from './contracts';
 export interface CharacterProfile {
   name: string; playerName?: string; species?: string; characterClass?: string;
-  armorClass?: number; passivePerception?: number; speedFeet?: number;
+  armorClass?: number; passivePerception?: number; passiveInsight?:number; passiveInvestigation?:number; languages?:string[]; speedFeet?: number;
 }
 export interface Character {
   id: string; ordinal: number; profile: CharacterProfile; profileRevision: number;
@@ -61,12 +61,13 @@ export interface LiveAPI {
 export interface LiveStatus { outcome: 'applied' | 'not-applied' | 'conflict'; receipt: LiveAck | null; targetChanged: boolean; currentScene?: LiveScene; currentCharacter?: Character }
 export function checkedCharacterProfile(value: CharacterProfile): CharacterProfile {
   if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Ungültiges Charakterprofil.');
-  const keys = ['name', 'playerName', 'species', 'characterClass', 'armorClass', 'passivePerception', 'speedFeet'];
+  const keys = ['name', 'playerName', 'species', 'characterClass', 'armorClass', 'passivePerception', 'passiveInsight', 'passiveInvestigation', 'languages', 'speedFeet'];
   if (Reflect.ownKeys(value).some(key => typeof key !== 'string' || !keys.includes(key))) throw new Error('Unbekanntes Profilfeld.');
   for (const key of Reflect.ownKeys(value)) if (!('value' in Object.getOwnPropertyDescriptor(value, key)!)) throw new Error('Profil benötigt eigene Werte.');
   if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 1000) throw new Error('Charaktername fehlt.');
   for (const text of [value.playerName, value.species, value.characterClass]) if (text !== undefined && (typeof text !== 'string' || text.length > 1000)) throw new Error('Ungültiger Profiltext.');
-  for (const number of [value.armorClass, value.passivePerception, value.speedFeet]) if (number !== undefined && (!Number.isSafeInteger(number) || number < 0)) throw new Error('Profilwerte müssen nichtnegative ganze Zahlen sein.');
+  for (const number of [value.armorClass, value.passivePerception, value.passiveInsight, value.passiveInvestigation, value.speedFeet]) if (number !== undefined && (!Number.isSafeInteger(number) || number < 0)) throw new Error('Profilwerte müssen nichtnegative ganze Zahlen sein.');
+  if(value.languages!==undefined&&(!Array.isArray(value.languages)||value.languages.length>100||value.languages.some(t=>typeof t!=='string'||!t.trim()||t.length>1000)))throw new Error('Sprachen benötigen geordnete, nichtleere Namen.');
   return { ...value };
 }
 export function validateLiveCommand(command: LiveCommand) {

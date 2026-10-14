@@ -9,7 +9,7 @@ import { addWorldNpc,initCombat, combatContext, flushCombat, prepareCombatPlan, 
 import {initChase,chaseContext,flushChase} from './chase-ui';
 import {initLiveArchives} from './live-archive-ui';
 import type { EncounterPlan } from './encounter-contracts';
-import { initProgress, progressionContext, flushProgress } from './progression-ui';
+import { initProgress, progressionContext, flushProgress, executePartyProgress } from './progression-ui';
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
@@ -404,4 +404,21 @@ function initGroups() {
     if (await execute({ kind: 'advance-clock', sceneId: scene.id, expectedRevision: scene.clock.revision, calendarVersion: 'relative-v1', amount, unit, reason })) renderSceneMeta();
   })(); };
   resetLiveArchives=initLiveArchives(()=>context?.token??null,flushLive);
+}
+
+// Topbar commands share the existing writer, draft flushing and receipt recovery.
+export async function runPartyLive(token:string,action:LiveAction){
+ if(context?.token!==token||!await flushLive())throw new Error('Offene Eingaben zuerst speichern oder den Speicherstatus im Spieltisch klären.');
+ if(!data)await openLive();
+ if(context?.token!==token||!data)throw new Error('Party nicht verfügbar.');
+ const ack=await execute(action);if(!ack)throw new Error('Änderung nicht bestätigt. Speicherstatus im Spieltisch prüfen; Eingabe bleibt erhalten.');
+ if(ack.character&&characterDraft?.id===ack.character.id){characterDraft=structuredClone(ack.character);renderCharacter();}
+ return ack;
+}
+export async function runPartyProgress(token:string,action:import('./progression').ProgressAction){
+ if(context?.token!==token||!await flushLive())throw new Error('Offene Eingaben zuerst speichern oder den Buchungsstatus klären.');
+ if(!data)await openLive();
+ if(context?.token!==token||!data)throw new Error('Party nicht verfügbar.');
+ progressionContext(context,data,selected);
+ if(!await executePartyProgress(action))throw new Error('Buchung nicht bestätigt. Statusmeldung und Buchungsbeleg prüfen; Eingabe bleibt erhalten.');
 }
