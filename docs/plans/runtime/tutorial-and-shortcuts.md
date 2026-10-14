@@ -38,7 +38,10 @@ Monstergruppen und Schätze. Weitere Einstiege decken Sessiongenerierung,
 Kampfabschluss/Rewards, HP/Zustände, XP/Rastbudget, persönliche Beute, Live-Momente,
 Regelpanel/Proben, Spieleranzeige/Freigaben, Hex-/Reisewerkzeuge, Stadtplanung,
 Weltbeziehungen und erweiterte Dungeonwerkzeuge
-ab. Die Zuordnung steht im Code; dynamische Controls wie Journal und Schnellsuche
+ab. NSC-Profile, Monstergruppen und Verhalten haben eigene Lektionen für Suche,
+Weltidentität, Entwurf/Verwerfen und die Vorbereitung ohne Kampfstart.
+Zusammenhänge erklärt Navigation und den Sprung in den vorhandenen Quelleneditor.
+Die Zuordnung steht im Code; dynamische Controls wie Journal und Schnellsuche
 brauchen zusätzliche Zuordnungsprüfungen. Eine zugeordnete Lektion belegt noch
 keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.
 

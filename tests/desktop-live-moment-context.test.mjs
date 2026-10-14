@@ -141,12 +141,12 @@ test('starting the prepared opening docks its packet and keeps exact prose witho
  assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='start').length,starts+1);assert.deepEqual(x.messages.filter(m=>m.error),[]);
 });
 
-test('a late handoff suggestion preserves a newer raw edit and can be explicitly adopted',async t=>{
+for(const raw of ['  Eigene Planung\r\n',''])test(`a late handoff suggestion preserves authored input (${raw?'raw text':'empty'}) until explicitly adopted`,async t=>{
  const x=await setup(t);x.el('live-session-start').click();await settle();const read=x.window.campaign.narrativeJournal;let release;
  x.window.campaign.narrativeJournal=async(...args)=>{const result=await read(...args);return new Promise(r=>{release=()=>r(result);x.releases.push(release);});};
  x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-use-suggestion').disabled,true);
- x.el('live-session-close-handoff').value='  Eigene Planung\r\n';release();await settle();
- assert.equal(x.el('live-session-close-handoff').value,'  Eigene Planung\r\n');const suggestion=x.el('live-session-close-suggestion').textContent;assert.match(suggestion,/Nächster Einstieg:/);
+ x.el('live-session-close-handoff').value=raw;release();await settle();
+ assert.equal(x.el('live-session-close-handoff').value,raw);const suggestion=x.el('live-session-close-suggestion').textContent;assert.match(suggestion,/Nächster Einstieg:/);
  x.el('live-session-close-use-suggestion').click();assert.equal(x.el('live-session-close-handoff').value,suggestion);
  x.el('live-session-close-x').click();assert.equal(x.el('live-session-handoff').value,suggestion);assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='end').length,0);
 });
