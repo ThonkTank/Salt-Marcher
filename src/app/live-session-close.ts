@@ -17,6 +17,12 @@ export function sessionCloseHandoffSuggestion(input:SessionCloseHandoffInput){
   return lines.join('\n');
 }
 
+export async function settleSessionCloseSources<A,P>(audit:Promise<A>,preparation:Promise<P>){
+  const [checked,enrichment]=await Promise.allSettled([audit,preparation]);
+  if(checked.status==='rejected')throw checked.reason;
+  return{audit:checked.value,preparation:enrichment.status==='fulfilled'?enrichment.value:null,preparationError:enrichment.status==='rejected'?enrichment.reason:null};
+}
+
 export function latestCompletedSessionHandoff(entries:ChronicleEntry[]){
   return entries.find(entry=>entry.sessionMarker==='end')?.handoff??'';
 }
