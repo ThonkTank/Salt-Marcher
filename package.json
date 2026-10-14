@@ -1,6 +1,7 @@
 {
   "name": "dungeon-editor",
   "version": "0.38.0",
+
   "private": true,
   "type": "module",
   "scripts": {
