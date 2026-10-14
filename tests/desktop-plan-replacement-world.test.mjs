@@ -28,7 +28,7 @@ test('timeline replacement keeps accepted World NPC identities and copies remain
  x.store.executeSession(x.command({kind:'group-content',planId:x.source.id,groupId:draft.id,expectedRevision:draft.revision,title:'Andere Wachen',notes:'Geändert'}));assert.equal(x.store.session(x.w.token,x.target.id).groups.find(g=>g.id===copiedDraft.id).notes,draft.notes);
  x.store.executeSession(command);assert.equal(x.store.db.prepare('SELECT count(*) n FROM world_actor').get().n,2);
  x.clear(x.target.id);x.clear(x.source.id);assert.equal(x.store.db.prepare('SELECT count(*) n FROM prepared_group').get().n,1);assert.deepEqual(x.store.db.prepare('SELECT payload FROM world_actor ORDER BY id').all(),before);
- x.reopen();assert.deepEqual(x.store.scenePreparation(x.w.token,scene.id).groups,[world]);await x.store.backup(path.join(x.root,'safe.sqlite'));
+ x.reopen();const livePreparation=x.store.scenePreparation(x.w.token,scene.id);assert.deepEqual(livePreparation.groups,[world]);assert.deepEqual(livePreparation.noteIds,[]);assert.equal(livePreparation.nextVisit,null);await x.store.backup(path.join(x.root,'safe.sqlite'));
 });
 test('awarded rewards remain historical and unawarded copies are independently awardable',async t=>{
  const x=fixture(t),character=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Iri'}})).character;
