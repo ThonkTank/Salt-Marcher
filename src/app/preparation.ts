@@ -467,6 +467,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     if(!noteDraft||blocked)return;
     const label=value('relation-label'),target=value('relation-target');
     if(!label.trim()||!target){tell('Wähle ein Ziel und benenne die Beziehung.',true);return;}
+    if(noteDraft.relations.some(relation=>relation.targetId===target&&relation.label===label)){tell('Diese Beziehung besteht bereits.');return;}
     if(await changeNoteRelations([...noteDraft.relations,{targetId:campaignLocalId(target),label}])&&value('relation-label')===label)get<HTMLInputElement>('relation-label').value='';
   })(); };
   get('scene-location').onchange = () => { if (!planDraft) return; const locationId = value('scene-location') ? campaignLocalId(value('scene-location')) : null; planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, locationId } : s) }; get<HTMLButtonElement>('scene-open-location').disabled = !locationId; schedule(); };

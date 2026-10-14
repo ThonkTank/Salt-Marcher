@@ -41,6 +41,9 @@ Weltbeziehungen und erweiterte Dungeonwerkzeuge
 ab. NSC-Profile, Monstergruppen und Verhalten haben eigene Lektionen für Suche,
 Weltidentität, Entwurf/Verwerfen und die Vorbereitung ohne Kampfstart.
 Zusammenhänge erklärt Navigation und den Sprung in den vorhandenen Quelleneditor.
+Volumen, Trigger/Fallenlaufzustand, Dungeon-Inhalte, Graphentwurf, Key-Ausgabe
+und gerichtete Passagen haben eigene Ablauflektionen mit Vorschau, Bestätigung
+und ihren jeweiligen Grenzen.
 Die Zuordnung steht im Code; dynamische Controls wie Journal und Schnellsuche
 brauchen zusätzliche Zuordnungsprüfungen. Eine zugeordnete Lektion belegt noch
 keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.

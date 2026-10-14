@@ -62,3 +62,8 @@ test('removing an authored relationship uses the same draft writer and revokes i
  const old=[...x.el('note-relations').querySelectorAll('button')].find(b=>b.textContent==='Beziehung lösen');assert.ok(old);old.click();await settle();await x.ui.flushPreparation();
  const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.deepEqual(saved.relations,[]);assert.equal(saved.readAloud,draft.change.note.readAloud);const count=x.writes.length;old.onclick();await settle();assert.equal(x.writes.length,count);
 });
+test('a repeated relationship click cannot create an invalid duplicate draft',async t=>{
+ const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);x.el('relation-target').value=x.ids.ada;x.el('relation-label').value='kennt';
+ x.el('relation-add').click();x.el('relation-add').click();await settle();assert.equal(await x.ui.flushPreparation(),true);
+ const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.deepEqual(saved.relations,[{targetId:x.ids.ada,label:'kennt'}]);assert.equal(x.writes.length,1);
+});

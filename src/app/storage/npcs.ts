@@ -11,7 +11,6 @@ import {checkedHealth} from '../progression';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export const npcFingerprint=(c:NpcCommand)=>hash(JSON.stringify({...c,token:undefined}));
 function checkedPending(cam:string,d:NpcDraft){
- if(!d||typeof d.id!=='string'||!d.id||typeof d.writeId!=='string'||!d.writeId||typeof d.concentrating!=='boolean'||!d.fields||typeof d.fields!=='object'||Array.isArray(d.fields)||Object.values(d.fields).some(v=>typeof v!=='string')||d.basis&&d.basis.id!==d.id)throw new Error('NPC-Entwurf prüfen.');
  const rejected=d.rejectedCommand;if(rejected&&(rejected.campaignId!==cam||rejected.npc?.id!==d.id||typeof rejected.commandId!=='string'||!rejected.commandId))throw new Error('Abgewiesener NPC-Auftrag gehört nicht zu diesem Entwurf.');
  const c=d.pendingCommand;if(!c)return;
  if(!c.commandId||typeof c.commandId!=='string'||c.commandId.length>1000||c.campaignId!==cam||c.npc?.id!==d.id||c.npc?.record?.id!==d.id||c.draftWriteId!==d.writeId)throw new Error('NPC-Auftrag gehört nicht zu diesem Entwurf.');
