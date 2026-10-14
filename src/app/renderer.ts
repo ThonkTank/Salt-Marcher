@@ -85,7 +85,7 @@ initLive(status, async id => {
 },async id=>{if(!(await leaveWorkspace()))return;showTab('preparation');await openPreparedNote(id);});
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
-setNpcNavigation(async(id,contact)=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups();await openNpcProfile(id,contact);},async id=>{if(!await leaveWorkspace())return;showTab('autonomy');await openAutonomy(id);});
+setNpcNavigation(async(id,contact,current)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,contact,current);},async(id,current)=>{if(!await leaveWorkspace()||!current())return;showTab('autonomy');await openAutonomy(id);});
 initGroups(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);await openNpcs(false);});
 el('groups-tab').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups();await openNpcs();})().catch(e=>status(e.message,true));};
 setGroupNavigation(async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);await openNpcs(false);});

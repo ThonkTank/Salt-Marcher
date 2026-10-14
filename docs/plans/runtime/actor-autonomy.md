@@ -385,3 +385,7 @@ noch nicht nativ qualifiziert.
    veröffentlichen; Autonomy darf danach nur deren bestätigten Snapshot binden.
    Bis dahin stattdessen genau eine weitere einfache Featureinteraktion über
    einen bestehenden Owner liefern; keine parallele Simulationswahrheit anlegen.
+
+Der NPC-Dossier-/Gesprächsübergang und seine Bindung an bestehende Fachbesitzer
+stehen im [NPC-Dossierplan](../campaign/npc-dossiers.md). Dossierlesen und
+Gesprächsentwürfe aktivieren oder bestätigen keine Autonomiefolgen.

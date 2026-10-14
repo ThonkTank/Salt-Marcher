@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import {NpcCastBinder} from '../../src/app/npc-cast-ui';
-import type {NpcCastPage,NpcDossier} from '../../src/app/npc-cast-contracts';
+import type {NpcCastPage,NpcCastQuery,NpcDossier} from '../../src/app/npc-cast-contracts';
 
 const wait=(ms=0)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
 
@@ -13,7 +13,7 @@ test('changing the cast query immediately removes a dossier outside the new resu
  const selectValues=new WeakMap<object,string>();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return selectValues.get(this)??this.querySelector('option')?.value??'';},set(value:string){selectValues.set(this,value);}});
  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,Option:TestOption,Event:window.Event});
  const row={id:'npc-1',name:'Hafenwache',creatureId:null,lifecycle:'active' as const,factionId:null,locationId:null,disposition:0,role:'neutral' as const},base:Omit<NpcCastPage,'rows'|'total'>={sceneId:'scene-1',sceneTitle:'Vorhut',locationTitle:'Ohne Ortsbindung',offset:0,onlyUnplaced:true},dossier={scene:{id:'scene-1',title:'Vorhut'},date:'Erster Tag',locationTitle:'Ohne Ortsbindung',npc:{...row,noteRevision:0,readAloud:'Halt!',gmNotes:'Kennwort',record:{id:'npc-1',revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'Wachsam',history:''},positionRevision:null,actorRevision:null,health:null},faction:null,relations:[],relationCount:0,groups:[],autonomy:null,logs:[]} as unknown as NpcDossier;
- window.campaign={npcCast:async(_token,q)=>({ok:true as const,value:{...base,rows:q.text?[]:[row],total:q.text?0:1}}),npcDossier:async()=>({ok:true as const,value:dossier})} as unknown as typeof window.campaign;
+ window.campaign={npcCast:async(_token:string,q:NpcCastQuery)=>({ok:true as const,value:{...base,rows:q.text?[]:[row],total:q.text?0:1}}),npcDossier:async()=>({ok:true as const,value:dossier})} as unknown as typeof window.campaign;
  const context={workspace:{token:'token'} as any,scene:{id:'scene-1',title:'Vorhut',locationId:null} as any},binder=new NpcCastBinder(()=>{},()=>context,async()=>true,async()=>{},async()=>{},async()=>{},async()=>{},async()=>{},async()=>{});
  const dialog=document.getElementById('npc-cast') as HTMLDialogElement;Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
  try{
