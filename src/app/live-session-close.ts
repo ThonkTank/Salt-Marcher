@@ -1,3 +1,5 @@
+import type {ChronicleEntry} from './chronicle-contracts';
+
 export type SessionCloseReviewExit='discard'|'continue';
 export interface SessionCloseHandoffInput{sceneTitle:string;locationTitle?:string|null;masks:{kind:'combat'|'chase';title:string;sceneTitle:string}[];treasureCount:number;xpBooked:boolean}
 
@@ -7,6 +9,10 @@ export function sessionCloseHandoffSuggestion(input:SessionCloseHandoffInput){
   if(input.treasureCount)lines.push('- Unverteilte Beute prüfen: '+input.treasureCount+' '+(input.treasureCount===1?'Schatzposition':'Schatzpositionen'));
   if(!input.xpBooked)lines.push('- Spielabend-XP abrechnen');
   return lines.join('\n');
+}
+
+export function latestCompletedSessionHandoff(entries:ChronicleEntry[]){
+  return entries.find(entry=>entry.sessionMarker==='end')?.handoff??'';
 }
 
 export function leaveSessionCloseReview(dialog:HTMLDialogElement,draft:HTMLTextAreaElement,review:HTMLTextAreaElement,exit:SessionCloseReviewExit){
