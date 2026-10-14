@@ -69,17 +69,22 @@ späterer Actorstand nicht zurückgerollt wird. Der Test belegt außerdem die
 persistente Pause, die Sperre alternativer Aufhebungswege und die begründete
 Auflösung nach einem Neustart. `tests/core/autonomy-time-conflict-ui.test.ts`
 prüft am vollständigen DOM die Zeit-/Worldinformationen und beide begründeten
-Entscheidungen. Diese SQLite- und DOM-Nachweise sind keine native Bedien-,
-Hardcrash-, Größen- oder vollständige Produktabnahme.
+Entscheidungen.
+
+`tests/core/autonomy-owner-atomicity.test.ts` lässt Dungeonbewegung,
+Fallenreset und begrenzten NPC-Konflikt jeweils erst nach einer Ownerwirkung an
+der folgenden Logschreibung scheitern. Der komplette SQLite-Stand bleibt dabei
+unverändert und ohne Receipt. Derselbe Command kann anschließend erfolgreich
+ausgeführt werden; sein Replay verändert Position, Featureladung, HP, Logs,
+Buchungen und Actorcursor nicht erneut. Diese SQLite- und DOM-Nachweise sind
+keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
 
 ## Nächste ausführbare Schritte
 
-1. Dungeonbewegung, Fallenreset und begrenzten NPC-Konflikt jeweils nach einer
-   vorherigen Actorwirkung fehlschlagen lassen. Actorcursor, World-/Feature-/HP-
-   Owner, Logs, Buchungen und Receipt müssen gemeinsam zurückrollen; Retry darf
-   genau einmal wirken.
-2. Danach 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
+1. 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
    Nur belegte Engstellen ändern; keine zusätzliche persistierte Simulation oder
    Hintergrundlaufzeit einführen.
-3. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
+2. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
    laufenden Catch-ups prüfen.
+3. Die Autonomy-Fachseite anschließend gegen Produktumfang und Roadmap
+   rückverlinken und verbleibende Abnahmelücken dort eindeutig zuordnen.

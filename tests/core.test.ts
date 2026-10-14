@@ -94,6 +94,8 @@ import "./core/combat-damage-queue.test";
 import "./core/player-membership-visibility.test";
 import "./core/player-combat-projection.test";
 import "./core/player-chase-projection.test";
+import "./core/player-scene-projection.test";
 import "./core/autonomy-scene-time-boundary.test";
 import "./core/autonomy-time-conflict-ui.test";
+import "./core/autonomy-owner-atomicity.test";
 import "./core/music-scene-context.test";
