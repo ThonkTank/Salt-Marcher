@@ -436,3 +436,59 @@ Bindung ausdrücklich. Mengen und freie Einträge bleiben bearbeitbar. Übernahm
 in die Timeline, Platzierung und Kampagnentransfer erhalten die Referenzen.
 Schema43 unverändert, zusätzliche Guidance-/Proposal-Felder optional. Gemischte
 NPC-/Katalogpools und getrennte Verbrauchs-/Dauermagiequoten bleiben offen.
+
+
+### Desktopstand 0.45: benannte Gegner und neue Begleiter in einer Gruppe
+
+Der gemischte Encounter-/Spielabendmodus verwendet die bestehenden Tabellen,
+Orts-/Fraktionsfilter und Bestandsgrenzen. Wenn der gewählte Kreaturtyp bei
+vorhandenen feindlichen NPCs vorkommt, werden diese bevorzugt übernommen.
+Die übrige Menge bleibt eine neue Tabellenbesetzung. Vorhandene NPCs werden
+nicht zusätzlich auf den Bestand aufgeschlagen: zwei benannte Goblins in
+einer Gruppe von drei ergeben zwei Weltreferenzen und einen neuen Goblin.
+
+Vorschläge zeigen Namen und die übrige Menge getrennt. Benannte NPCs behalten
+Identität, aktuelle HP, Zustände und Haltung. Neue Weltfiguren entstehen nur
+für die übrige Menge beim Platzieren oder Übernehmen ins Live-Spiel. Ein
+gemeinsamer Mob-Eintrag kann beide enthalten, ohne zusätzliche Initiativeplätze
+durch den Identitätsmix. Bearbeitung, separate Regeneration und Kampagnentransfer
+erhalten die Zuordnung. Gruppenbearbeitung erhält benannte Referenzen auch
+bei anderer Figurenreihenfolge.
+
+Der reine NPC-Modus bleibt ohne neue Tabellengegner verfügbar; ältere Requests
+ohne includeNpcs behalten den Katalogmodus. Gebundene Orte greifen im gemischten
+Modus und benötigen passende Quellenbindungen. Bestehende NPCs anderer Typen
+werden nicht automatisch als Pflichtgegner ergänzt. Vorschläge reservieren
+keinen gemeinsamen Abendbestand und verändern keine NPC-Zustände.
+
+Neue Vorschauen speichern außerdem portable, revisionierte Weltquelleninputs
+zusätzlich zum bisherigen Hash. Beim Kampagnentransfer werden deren Orte,
+Fraktionen und Tabellen remappt; Quelländerungen werden weiter erkannt.
+NPC-Kandidaten halten während der Generierung nur kleine Identitäts-/
+Revisionsprojektionen statt vollständiger Profiltexte im Speicher.
+Schema43 unverändert, Entry-Weltreferenzen können nun einen Teil der gesamten
+Menge belegen; bestehende reine NPC-Vorlagen bleiben gültig.
+
+
+### Desktopstand 0.46: verbindliche NPCs statt zufälliger Besetzung
+
+Im Encounter-Generator und Spielabend lassen sich bestehende feindliche NPCs
+suchen und verbindlich auswählen. Ihr Statblock darf außerhalb der gewählten
+Monsterfilter und Tabellen liegen; die Auswahl der zusätzlichen Gegner bleibt
+an diese Quellen gebunden. Der gemeinsame Selector rechnet die gesetzten XP,
+Kreaturen und Initiativeplätze vor der Ergänzung mit ein. Eine Begegnung kann
+auch allein aus den gesetzten NPCs bestehen. Jeder gesetzte Gegner besitzt
+seinen eigenen Initiativeplatz, seine Weltidentität und den aktuellen HP-Stand.
+Verfügbare Bestandsgrenzen, tatsächlicher Ort und gewählte Fraktionen bleiben
+bindend. Die Vorschau erzeugt keine Weltfiguren.
+
+Ein Spielabend verteilt die verbindlichen NPCs genau einmal: bei ausgewählten
+Orten auf deren ersten Besuch, sonst reihum auf die Szenen. NPCs an einem nicht
+gewählten Ort werden ausdrücklich gemeldet. Einzelne Neugenerierung hält die
+Besetzung fest. Änderungen an den NPCs verlangen vor der Übernahme eine neue
+Vorschau. Kampagnentransfer übersetzt die gesetzten und ausgeschlossenen IDs.
+Das Tutorial erklärt die Auswahl; ältere Requests ohne Auswahl bleiben gültig.
+
+Offen bleiben die vollständige veröffentlichte DMG-Herleitung der Beutequoten,
+gezielte Gegenstandspools und getrennte Kontingente für verbrauchbare und
+permanente Magiebeute. Native Gesamt- und Plattformabnahme bleiben separat.

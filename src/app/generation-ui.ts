@@ -1,3 +1,4 @@
+import {requiredNpcPicker} from './required-npc-picker';
 import {encounterEntryLabel} from './encounter-contracts';
 import {initWorldSourceUI,setWorldSources,worldSourceFilters,worldSourceOpen} from './world-source-ui';
 import type {Workspace,Result} from './contracts';
@@ -9,6 +10,7 @@ import {currentGenerationLoot,weightShares,type EncounterTable,type LootTable,ty
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T, value=(id:string)=>get<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 interface Bridge{plan():Promise<EncounterPlan|null>;creature():Creature|null;filters():CreatureCatalogQuery;info():CatalogInfo|null;accept(plan:EncounterPlan):Promise<void>}
+let requiredPick:ReturnType<typeof requiredNpcPicker>;
 let workspace:Workspace|null=null,tables:EncounterTable[]=[],lootTables:LootTable[]=[],registry:GeneratorRegistry|null=null,run:GenerationRun|null=null;
 let previewRequest=0,refreshRequest=0,tableRequest=0;
 const owned=(token:string,g:number)=>workspace?.token===token&&generation===g;
@@ -18,7 +20,7 @@ let pending:Promise<boolean>|null=null,tell:(text:string,error?:boolean)=>void,b
 let brush:GeneratorRoleCell='standard',painting=false,paintFrame:number|null=null,paintCells=new Map<string,HTMLButtonElement>();
 let catalogParent:Node|null=null,catalogNext:Node|null=null;const names=new Map<string,string>();
 export function activateGeneration(next:Workspace){
- lock(false);pending=null;clearPaint();workspace=next;generation++;previewRequest++;refreshRequest++;tableRequest++;
+ lock(false);pending=null;clearPaint();workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
  tables=[];lootTables=[];registry=null;run=null;tableDraft=null;lootDraft=null;presetDraft=null;previewDirty=false;
  for(const id of ['table-manager','loot-table-manager','preset-manager','generation-discard'])if(get<HTMLDialogElement>(id).open)get<HTMLDialogElement>(id).close();
@@ -95,7 +97,7 @@ function accept(index:number){
 function generationFields(){return JSON.stringify({fields:[...get('generation-fields').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')].map(c=>[c.id,c.type==='checkbox'?c.checked:c.value]),filters:bridge.filters()});}
 function generate(){
  const w=workspace,g=generation;if(!w||pending)return;const requestId=++previewRequest,fields=generationFields();
- const request:GenerationRequest={npcOnly:get<HTMLInputElement>('generation-npc-only').checked,...worldSourceFilters(),seed:value('generation-seed'),title:value('generation-title'),count:Number(value('generation-count')),xpCeiling:value('generation-xp-ceiling')?Number(value('generation-xp-ceiling')):null,tableIds:[...get('generation-tables').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),filters:structuredClone(bridge.filters()),habitat:value('generation-habitat'),time:value('generation-time') as GenerationRequest['time'],party:[],difficulty:value('generation-difficulty') as GenerationRequest['difficulty'],amount:value('generation-amount') as GenerationRequest['amount'],balance:value('generation-balance') as GenerationRequest['balance'],diversity:value('generation-diversity') as GenerationRequest['diversity']};
+ const request:GenerationRequest={requiredNpcIds:requiredPick.ids(),includeNpcs:get<HTMLInputElement>('generation-npc-mixed').checked,npcOnly:get<HTMLInputElement>('generation-npc-only').checked,...worldSourceFilters(),seed:value('generation-seed'),title:value('generation-title'),count:Number(value('generation-count')),xpCeiling:value('generation-xp-ceiling')?Number(value('generation-xp-ceiling')):null,tableIds:[...get('generation-tables').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),filters:structuredClone(bridge.filters()),habitat:value('generation-habitat'),time:value('generation-time') as GenerationRequest['time'],party:[],difficulty:value('generation-difficulty') as GenerationRequest['difficulty'],amount:value('generation-amount') as GenerationRequest['amount'],balance:value('generation-balance') as GenerationRequest['balance'],diversity:value('generation-diversity') as GenerationRequest['diversity']};
  void operation(async()=>{const plan=await bridge.plan();if(!owned(w.token,g)||requestId!==previewRequest)return false;if(!plan){tell('Lege zuerst eine Encounter-Vorlage mit Planungsparty an.',true);return false;}request.party=structuredClone(plan.party);const response=await window.campaign.generateEncounters(w.token,request);if(!owned(w.token,g)||requestId!==previewRequest)return false;run=unwrap(response);previewDirty=fields!==generationFields();renderPreview();await refreshGeneration();if(!owned(w.token,g)||requestId!==previewRequest)return false;tell('Encounter-Vorschau erzeugt. Noch keine Vorlage oder Kampf übernommen.');return true;});
 }
 async function loadHistory(){
@@ -126,7 +128,9 @@ function renderLootRows(){const root=get('loot-entries');root.replaceChildren();
 function rollLootTable(table:LootTable,title:string,seed:string){const w=workspace,g=generation;if(!w||table.trashed)return;void operation(async()=>{const response=await window.campaign.rollLoot({commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,tableId:table.id,expectedRevision:table.revision,seed,title});if(!owned(w.token,g))return false;const rolled=unwrap(response);get('loot-roll-result').textContent=rolled.items.map(i=>i.quantity+' × '+i.name).join(', ')+' · als unverteilte Beute gespeichert';tell('Beute reproduzierbar ausgewürfelt und unverteilten Schätzen hinzugefügt.');return true;});}
 function rollSelectedLoot(){const table=lootTables.find(t=>t.id===value('loot-table-list'));if(table)rollLootTable(table,table.name,value('generation-seed'));}
 
-export function initGeneration(status:typeof tell,callbacks:Bridge){tell=status;bridge=callbacks;
+export function initGeneration(status:typeof tell,callbacks:Bridge){
+ for(const [a,b]of [['generation-npc-only','generation-npc-mixed'],['generation-npc-mixed','generation-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
+tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required-npcs',tell);
  ensureLootUI();
  initWorldSourceUI(command,()=>{previewDirty=true;sourceLabel();renderPreview();});
  get('encounter-table-list').oninput=renderSourceActions;get('loot-table-list').oninput=renderSourceActions;renderSourceActions();
