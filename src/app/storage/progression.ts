@@ -335,7 +335,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
     if (prior) { if (prior.campaign_id !== cam || prior.fingerprint !== fp || hash(prior.payload) !== prior.checksum) throw new Error('Auftragskennung bereits anders verwendet.'); return JSON.parse(prior.payload); }
     const a = command.action;
     let groupId:string|undefined;
-    let treasureId: string | null = null; const ledgerIds: string[] = [];
+    let treasureId: string | null = null; const ledgerIds: string[] = [];const restWarnings:string[]=[];
     if(a.kind==='narrative-state'){
       const current=readNarrative(db,cam,a.state.noteId);if(current.state.revision!==a.expectedRevision||current.noteRevision!==a.expectedNoteRevision)throw new Error('Narrative Notiz oder Belohnung geändert.');validateNarrativeState(db,cam,a.state);for(const i of a.state.items){copper(i.valueGold);if(!['coins','equipment','trade-goods','magic','other'].includes(i.category))throw new Error('Gegenstandskategorie prüfen.');}consumeNarrativeDraft(db,cam,a.state.noteId,a.draftWriteId);const state={...structuredClone(a.state),revision:current.state.revision+1,awardId:current.state.awardId};saveNarrative(db,cam,state);event(db,cam,null,'narrative-state',{before:current.state,after:state});
     }else if(a.kind==='narrative-award'){consumeFinishDraft(db,cam,{kind:'narrative',targetId:a.noteId,revision:a.expectedRevision},a.finishDraftWriteId);consumeNarrativeDraft(db,cam,a.noteId,a.draftWriteId);
@@ -375,6 +375,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
       p.xp = a.mode === 'set' ? a.amount : Math.max(0, (p.xp ?? 0) + (a.mode === 'subtract' ? -a.amount : a.amount)); xpLevel(p.xp);
       saveProgress(db, cam, p); notice(db, cam, p.characterId, Math.max(0,p.xp - (before.xp ?? 0))); event(db, cam, p.characterId, 'xp', { before, after: p, reason: a.reason, correctionOf: a.correctionOf ?? null }, command.commandId);
     } else if (a.kind === 'rest') {
+      if(a.restoreHp!==undefined&&typeof a.restoreHp!=='boolean'||a.restoreHp&&a.rest!=='long')throw new Error('HP-Erholung ist eine ausdrückliche Option der langen Rast.');
       if (!['short','long'].includes(a.rest) || !a.recipients.length || new Set(a.recipients.map(r => r.characterId)).size !== a.recipients.length) throw new Error('Wähle Figuren für die Rast.');
       for (const recipient of a.recipients) {
         const p = readProgressCharacter(db, cam, recipient.characterId), before = structuredClone(p);
@@ -384,7 +385,8 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         if (db.prepare("SELECT 1 FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running'").get(cam,member.scene_id)) throw new Error('Kampf vor der Rast abschließen.');
         if (a.rest === 'long') p.rest = { known: true, longXp: 0, shortXp: 0, baseline: 0, sections: 0 };
         else { p.rest.shortXp = 0; if (p.rest.known && p.rest.sections < 2) { p.rest.baseline = p.rest.longXp; p.rest.sections++; } }
-        saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', { rest: a.rest, before, after: p });
+        if(a.restoreHp){if(!p.health||p.health.hp<=0||p.health.death?.dead)restWarnings.push(p.characterId);else p.health.hp=p.health.maxHp;}
+        saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', {commandId:command.commandId,rest:a.rest,before,after:p,restoreHp:a.restoreHp===true,...(a.scene?{sceneId:a.scene.id,duration:{amount:a.scene.amount,unit:a.scene.unit}}:{})});
       }
     } else if(a.kind==='group-create'||a.kind==='group-edit'){groupId=editGroup(db,cam,a);
     } else if(a.kind==='treasure-create'||a.kind==='treasure-edit'||a.kind==='treasure-move'){treasureId=editTreasury(db,cam,a);
@@ -426,6 +428,6 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
       for (const id of a.ids) db.prepare('UPDATE progress_notice SET delivered=1 WHERE campaign_id=? AND id=? AND character_id IN(SELECT id FROM roster_member WHERE campaign_id=? AND active=1)').run(cam,id,cam);
     } else throw new Error('Unbekannte Fortschrittsaktion.');
     syncOpenMaskHealth(db,cam);
-    const result: ProgressAck = { ...readProgress(db,cam), treasureId, groupId, ledgerIds }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
+    const current=readProgress(db,cam),result: ProgressAck = { ...current, treasureId, groupId, ledgerIds,...(restWarnings.length?{restWarnings:restWarnings.map(id=>(current.characters.find(c=>c.characterId===id)?.name??'Figur')+': HP bleiben unverändert (unbekannt oder 0 HP).')}:{}) }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
   }).immediate();
 }

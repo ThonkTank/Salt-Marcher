@@ -85,7 +85,7 @@ function renderPartyCandidates(){const select=get<HTMLSelectElement>('combat-par
 async function refreshPartyCandidates(){
  if(pending){candidatePending=true;return;}const combat=view?.combat;if(!workspace||!scene||!editableCombat(combat??null)||!combat)return;
  const gen=generation,request=++candidateRequest,id=combat.id,token=workspace.token;candidateLoading=true;lock();
- try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==generation||request!==candidateRequest||view?.combat?.id!==id||pending||result.combat?.revision!==combat.revision)return;view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
+ try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==generation||request!==candidateRequest||view?.combat?.id!==id||pending)return;if(result.combat?.revision!==combat.revision){await load(id);return;}view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
  catch(error){if(gen===generation&&request===candidateRequest)tell('Party-Auswahl konnte nicht aktualisiert werden: '+(error as Error).message,true);}
  finally{if(gen===generation&&request===candidateRequest){candidateLoading=false;lock();}}
 }
