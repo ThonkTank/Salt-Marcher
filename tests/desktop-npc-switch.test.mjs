@@ -135,3 +135,10 @@ test('arming recovery does not halve the existing raw-text draft limit',async()=
   x.input('npc-readAloud','a'.repeat(1400000));x.input('npc-gmNotes','b'.repeat(1400000));assert(await x.ui.flushNpcs());x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1);await until(()=>!x.el('npc-name').disabled&&!x.el('npc-name').readOnly);assert.equal(x.store.npc(x.w.token,x.a.id).readAloud.length,1400000);assert.equal(x.store.npcDraft(x.w.token,x.a.id),null);
  }finally{await x.cleanup();}
 });
+
+test('reactivation before the recovery microtask cannot acknowledge the old draft',async()=>{
+ const x=await fixture();try{
+  x.input('npc-contact','Original');assert(await x.ui.flushNpcs());window.campaign.executeNpc=async c=>{x.writes.push(c);throw new Error('Antwort verloren');};x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.messages.includes('Antwort verloren'));const original=JSON.stringify(x.store.npcDraft(x.w.token,x.a.id));
+  x.el('npc-write-check').onclick();x.ui.activateNpcs(x.w);await x.ui.openNpcProfile(x.b.id);await tick();assert.equal(JSON.stringify(x.store.npcDraft(x.w.token,x.a.id)),original);assert.equal(x.reads.filter(r=>r.kind==='reconcileNpc').length,0);assert.equal(x.el('npc-name').value,x.b.name);
+ }finally{await x.cleanup();}
+});
