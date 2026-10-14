@@ -19,6 +19,7 @@ import type { SessionAPI } from './session-contracts';
 import type {ItemsAPI} from './items-contracts';
 import type {ChronicleAPI} from './chronicle-contracts';
 import type {ChaseAPI} from './chase-contracts';
+import type {RuleReferenceAPI} from './rule-reference-contracts';
 export interface Point { x: number; y: number }
 export interface Polygon { outer: Point[]; holes: Point[][] }
 export interface Section { id: string; kind: 'markdown' | 'passage'; markdown?: string; doorId?: string }
@@ -42,7 +43,7 @@ export interface RoomCommit { room: Room; token: string; canUndo: boolean; canRe
 export interface WorkingRoomDraft { room: Room; points: string; pointsChanged: boolean; failedEdit: Edit | null }
 export interface ImportPreview { ticket: string; name: string; roomCount: number; sourceHash: string; warnings: string[] }
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
-export interface DesktopAPI extends ExtensionAPI,GraphAPI, DungeonAPI,DrawingAPI, AutonomyAPI, PlayerAPI, CityAPI, PreparationAPI, LiveAPI, CombatAPI, ProgressAPI, EncounterAPI, GenerationAPI, SessionAPI, ItemsAPI, WorldAPI, MusicAPI, CampaignManagementAPI, ChronicleAPI, ChaseAPI {
+export interface DesktopAPI extends ExtensionAPI,GraphAPI, DungeonAPI,DrawingAPI, AutonomyAPI, PlayerAPI, CityAPI, PreparationAPI, LiveAPI, CombatAPI, ProgressAPI, EncounterAPI, GenerationAPI, SessionAPI, ItemsAPI, WorldAPI, MusicAPI, CampaignManagementAPI, ChronicleAPI, ChaseAPI, RuleReferenceAPI {
   commitStatus(ref:CommitReference,token:string):Promise<Result<CommitOutcome>>;
   list(): Promise<Result<{ campaigns: Campaign[]; activeId: string | null }>>;
   create(name: string): Promise<Result<Campaign>>;

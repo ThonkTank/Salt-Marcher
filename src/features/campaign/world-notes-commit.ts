@@ -112,7 +112,7 @@ export function worldNotePath(
 ): string {
   campaignNamespace(namespace);
   campaignLocalId(id);
-  if (!["npc", "faction", "quest", "rumor"].includes(kind))
+  if (!["npc", "faction", "quest", "rumor", "rule"].includes(kind))
     throw new Error("Unbekannte World-Art.");
   return safePath(
     `Kampagnen/SaltMarcher/${namespace}/Weltwissen/${kind}/${id}.world-note.json`,

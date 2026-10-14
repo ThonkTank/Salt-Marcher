@@ -1,3 +1,4 @@
+import {syncOpenMaskHealth} from './mask-health';
 import {editGroup} from './groups';
 import {editTreasury} from './treasury';
 import {consumeFinishDraft} from './finish-drafts';
@@ -66,7 +67,7 @@ export function migrateProgress(db: any) {
     }
   }
 }
-function saveProgress(db: any, cam: string, p: Progress) {
+export function saveProgress(db: any, cam: string, p: Progress) {
   p.revision++; const payload = json(p); db.prepare('UPDATE character_progress SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(p.revision, payload, hash(payload), cam, p.characterId);
 }
 export function event(db: any, cam: string, characterId: string | null, kind: string, facts: unknown, id: string = randomUUID()) {
@@ -94,8 +95,6 @@ export function resumeCombatHealth(db:any,cam:string,state:CombatState,actor:Com
   const p=readProgressCharacter(db,cam,actor.characterId),expected=actor.healthKnown===false?null:healthFromActor(actor);
   const actual=p.health?healthFromActor(p.health):null;
   if(json(expected)!==json(actual)||actor.healthKnown===false&&json(healthStatus(actor))!==json(healthStatus(p.combatStatus??{tempHp:0,conditions:'',concentrating:false})))throw new Error('HP oder Zustände der ausgeschiedenen Figur wurden geändert. Rückkehr nicht durchgeführt; aktuellen Figurenstand zuerst abgleichen.');
-  const other=openHealthCombats(db,cam).get(actor.characterId);
-  if(other&&other.state.id!==state.id)throw new Error('Figur hat inzwischen eine andere offene Begegnung. Rückkehr nicht durchgeführt.');
   const member=db.prepare('SELECT active,scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(cam,actor.characterId);
   if(!member?.active||member.scene_id!==state.sceneId)throw new Error('Figur gehört inzwischen zu einer anderen Gruppe oder ist inaktiv. Rückkehr nicht durchgeführt.');
   event(db,cam,p.characterId,'combat-return',{commandId,combatId:state.id,title:state.title,participant:structuredClone(actor)});
@@ -115,9 +114,9 @@ export function latestCombatStatuses(db:any,cam:string,ids:Iterable<string>) {
 }
 function openHealthCombats(db:any,cam:string) {
   const actors=new Map<string,{state:CombatState;actor:CombatState['participants'][number]}>();
-  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished'").iterate(cam)){
+  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished' ORDER BY ordinal DESC").iterate(cam)){
     const state=storedCombat(row);
-    for(const actor of state.participants)if(actor.characterId){if(actors.has(actor.characterId))throw new Error('Figur hat mehrere offene Begegnungen. Zuerst die Kampfstände abgleichen.');actors.set(actor.characterId,{state,actor});}
+    for(const actor of state.participants)if(actor.characterId){if(!actors.has(actor.characterId))actors.set(actor.characterId,{state,actor});}
   }
   return actors;
 }
@@ -129,7 +128,7 @@ export function lastCombatPartyParticipant(db:any,cam:string,state:CombatState,c
   }
   return undefined;
 }
-export function assertCharacterHealthAvailable(db:any,cam:string,id:string){const owner=openHealthCombats(db,cam).get(id);if(owner)throw new Error('Figur nimmt bereits an „'+owner.state.title+'“ teil. Zuerst dort aus der Initiative entfernen.');}
+
 export function readProgress(db: any, cam: string): ProgressView {
   return db.transaction(() => {
     const rows=db.prepare('SELECT m.*,p.payload AS profile FROM roster_member m JOIN character_profile p ON m.campaign_id=p.campaign_id AND m.id=p.id WHERE m.campaign_id=? ORDER BY m.ordinal,m.id').all(cam);
@@ -459,6 +458,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
       if (!Array.isArray(a.ids) || a.ids.length > 1000) throw new Error('Ungültige Hinweise.');
       for (const id of a.ids) db.prepare('UPDATE progress_notice SET delivered=1 WHERE campaign_id=? AND id=? AND character_id IN(SELECT id FROM roster_member WHERE campaign_id=? AND active=1)').run(cam,id,cam);
     } else throw new Error('Unbekannte Fortschrittsaktion.');
+    syncOpenMaskHealth(db,cam);
     const result: ProgressAck = { ...readProgress(db,cam), treasureId, ...(groupId ? {groupId} : {}), ledgerIds }, payload = json(result); db.prepare('INSERT INTO progress_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload)); return result;
   }).immediate();
 }

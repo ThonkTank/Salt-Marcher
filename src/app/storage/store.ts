@@ -1,3 +1,4 @@
+import {removePartyFromMasks,migrateMaskHealth} from './mask-health';
 import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
@@ -62,8 +63,10 @@ import { checkedLocationDocument } from '../../features/location/location-schema
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
-import { assertCombatPartyChange, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
 import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
+import {installRuleReferenceSchema,readSceneRules,executeSceneRule,validateRuleReferences} from './rule-references';
+import type {SceneRuleCommand} from '../rule-reference-contracts';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
 import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
@@ -105,7 +108,7 @@ export class CampaignStore {
     if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) { this.db.close(); throw new Error('SQLite-Wartungsstand zu alt.'); }
     this.db.pragma('foreign_keys=ON'); this.db.pragma('journal_mode=WAL'); this.db.pragma('synchronous=FULL'); this.db.pragma('secure_delete=ON'); this.db.pragma('busy_timeout=5000');
     const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 40) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 41) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS campaign(id TEXT PRIMARY KEY, name TEXT NOT NULL, selected_id TEXT, cursor INTEGER NOT NULL DEFAULT 0) STRICT;
       CREATE TABLE IF NOT EXISTS scope(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
@@ -142,7 +145,7 @@ export class CampaignStore {
       if (schema < 6) for (const row of this.db.prepare('SELECT id FROM campaign').all()) ensureLiveOwners(this.db, row.id);
       if (schema < 7) migrateLiveClock(this.db);
       if (schema < 8) this.db.exec('INSERT OR IGNORE INTO scene_lifecycle(campaign_id,id,membership_revision,retired) SELECT campaign_id,id,0,0 FROM live_scene;');
-      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);
+      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installRuleReferenceSchema(this.db);
       installProgressSchema(this.db);
       if (schema < 10) migrateProgress(this.db);
       installEncounterSchema(this.db);
@@ -169,7 +172,8 @@ export class CampaignStore {
       installGraph(this.db);
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);
-      this.db.pragma('user_version=40');
+      if(schema<41)migrateMaskHealth(this.db);
+      this.db.pragma('user_version=41');
     }).immediate();
   }
   extensionPreview(bytes:Buffer){return this.extensionRegistry.preview(bytes);}
@@ -419,7 +423,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
-    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);
+    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateRuleReferences(db);
     validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
@@ -518,6 +522,8 @@ export class CampaignStore {
   sessionRuns(token: string,planId: string) { return readSessionRuns(this.db,this.guard(token),planId); }
   sessionRun(token: string,id: string) { return readSessionRun(this.db,this.guard(token),id); }
   scenePreparation(token: string,sceneId: string) { return scenePreparation(this.db,this.guard(token),sceneId); }
+  sceneRules(token:string,sceneId:string){return readSceneRules(this.db,this.guard(token),sceneId);}
+  executeSceneRule(command:SceneRuleCommand){return executeSceneRule(this.db,command,()=>this.guard(command.token,command.campaignId));}
   encounterTables(token: string, includeTrashed: boolean) { return readEncounterTables(this.db,this.guard(token),includeTrashed); }
   lootTables(token: string, includeTrashed: boolean) { return readLootTables(this.db,this.guard(token),includeTrashed); }
   generatorRegistry(token: string) { return readGeneratorRegistry(this.db,this.guard(token)); }
@@ -624,7 +630,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==this.db.pragma('user_version',{simple:true})&&!([33,34,35,36,37,38,39].includes(schema)&&this.db.pragma('user_version',{simple:true})===40))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
+    if(schema!==this.db.pragma('user_version',{simple:true})&&!([33,34,35,36,37,38,39,40].includes(schema)&&this.db.pragma('user_version',{simple:true})===41))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
     const c:Pick<Campaign,'id'|'name'>=rows[0];
@@ -652,7 +658,7 @@ export class CampaignStore {
       const sha256=snapshotDigest(candidate);
       if(expectedDigest!==undefined&&sha256!==expectedDigest)throw new Error('Geprüfte Paketdatenbank wurde verändert.');
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
-      if([33,34,35,36,37,38,39].includes(c.schema)){installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installChaseSchema(source);installGroups(source);source.pragma('user_version=40');}
+      if([33,34,35,36,37,38,39,40].includes(c.schema)){installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installChaseSchema(source);installGroups(source);installRuleReferenceSchema(source);installCombatSchema(source);migrateMaskHealth(source);source.pragma('user_version=41');}
       archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
@@ -721,8 +727,8 @@ export class CampaignStore {
     const ack = executeLive(this.db, command, () => {
     this.guard(command.token, command.campaignId);
     const a = command.action;
-    const sceneId = a.kind === 'move' ? a.sceneId : a.kind === 'membership' ? this.db.prepare('SELECT scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(command.campaignId, a.characterId)?.scene_id : null;
-    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];assertCombatPartyChange(this.db,command.campaignId,ids,sceneId??null);reconcileChaseParticipants(this.db,command.campaignId,ids);}
+
+    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];removePartyFromMasks(this.db,command.campaignId,ids,command.commandId);reconcileChaseParticipants(this.db,command.campaignId,ids);}
   });
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);

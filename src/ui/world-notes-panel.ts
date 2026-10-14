@@ -62,9 +62,9 @@ export interface WorldNotesPanelOptions {
   readonly draftBuffer?: WorldNotesDraftBuffer;
   readonly onDraftOwnershipRevoked?: () => void;
 }
-const kinds: readonly WorldNoteKind[] = ["npc", "faction", "quest", "rumor"];
+const kinds: readonly WorldNoteKind[] = ["npc", "faction", "quest", "rumor", "rule"];
 const labels: Record<WorldNoteKind, string> = {
-  npc: "NPC", faction: "Fraktion", quest: "Quest", rumor: "Gerücht",
+  npc: "NPC", faction: "Fraktion", quest: "Quest", rumor: "Gerücht", rule: "Regel",
 };
 const blank = (kind: WorldNoteKind): WorldNoteDraft => ({ kind, title: "",
   readAloud: "", gmNotes: "", relations: [], creatureId: null });

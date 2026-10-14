@@ -73,13 +73,13 @@ export function combatContext(next: Workspace | null, current: LiveScene | null,
   workspace = next; scene = current;
   get('combat-panel').hidden = !current;
   if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null; view = null; render(); if (next && current) void load(); }
-  else if(partyChanged)void refreshPartyCandidates();
+  else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
 }
 async function load(id?: string):Promise<boolean> {
   if (!workspace || !scene) return false;
   candidateRequest++;candidateLoading=false;
   const gen = generation,request=++loadNumber,basis=partyContext;
-  try { const result = unwrap(await window.campaign.combat(workspace.token, scene.id, id)); if (generation === gen&&request===loadNumber) { view = result; render();await loadNotes();if(generation!==gen||request!==loadNumber)return false;void listDrafts();if(basis!==partyContext)void refreshPartyCandidates();return true; } }
+  try { const result = unwrap(await window.campaign.combat(workspace.token, scene.id, id??view?.combat?.id)); if (generation === gen&&request===loadNumber) { view = result; render();await loadNotes();if(generation!==gen||request!==loadNumber)return false;void listDrafts();if(basis!==partyContext)void refreshPartyCandidates();return true; } }
   catch (error) { if (generation === gen) tell((error as Error).message, true); }
   return false;
 }
@@ -139,7 +139,8 @@ function lock() {
 }
 function render() {
   const combat = view?.combat;
-  get('combat-creation').hidden = !!combat && combat.phase !== 'finished';
+  get('combat-creation').hidden = false;
+  get('combat-shared-notice').textContent=combat?.sharedNotice??'';
   get('combat-workspace').hidden = !combat;
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
   get('combat-assessment').textContent = view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '';
