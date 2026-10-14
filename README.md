@@ -431,3 +431,35 @@ Bindung ausdrücklich. Mengen und freie Einträge bleiben bearbeitbar. Übernahm
 in die Timeline, Platzierung und Kampagnentransfer erhalten die Referenzen.
 Schema43 unverändert, zusätzliche Guidance-/Proposal-Felder optional. Gemischte
 NPC-/Katalogpools und getrennte Verbrauchs-/Dauermagiequoten bleiben offen.
+
+
+### Desktopstand 0.45: benannte Gegner und neue Begleiter in einer Gruppe
+
+Der gemischte Encounter-/Spielabendmodus verwendet die bestehenden Tabellen,
+Orts-/Fraktionsfilter und Bestandsgrenzen. Wenn der gewählte Kreaturtyp bei
+vorhandenen feindlichen NPCs vorkommt, werden diese bevorzugt übernommen.
+Die übrige Menge bleibt eine neue Tabellenbesetzung. Vorhandene NPCs werden
+nicht zusätzlich auf den Bestand aufgeschlagen: zwei benannte Goblins in
+einer Gruppe von drei ergeben zwei Weltreferenzen und einen neuen Goblin.
+
+Vorschläge zeigen Namen und die übrige Menge getrennt. Benannte NPCs behalten
+Identität, aktuelle HP, Zustände und Haltung. Neue Weltfiguren entstehen nur
+für die übrige Menge beim Platzieren oder Übernehmen ins Live-Spiel. Ein
+gemeinsamer Mob-Eintrag kann beide enthalten, ohne zusätzliche Initiativeplätze
+durch den Identitätsmix. Bearbeitung, separate Regeneration und Kampagnentransfer
+erhalten die Zuordnung. Gruppenbearbeitung erhält benannte Referenzen auch
+bei anderer Figurenreihenfolge.
+
+Der reine NPC-Modus bleibt ohne neue Tabellengegner verfügbar; ältere Requests
+ohne includeNpcs behalten den Katalogmodus. Gebundene Orte greifen im gemischten
+Modus und benötigen passende Quellenbindungen. Bestehende NPCs anderer Typen
+werden nicht automatisch als Pflichtgegner ergänzt. Vorschläge reservieren
+keinen gemeinsamen Abendbestand und verändern keine NPC-Zustände.
+
+Neue Vorschauen speichern außerdem portable, revisionierte Weltquelleninputs
+zusätzlich zum bisherigen Hash. Beim Kampagnentransfer werden deren Orte,
+Fraktionen und Tabellen remappt; Quelländerungen werden weiter erkannt.
+NPC-Kandidaten halten während der Generierung nur kleine Identitäts-/
+Revisionsprojektionen statt vollständiger Profiltexte im Speicher.
+Schema43 unverändert, Entry-Weltreferenzen können nun einen Teil der gesamten
+Menge belegen; bestehende reine NPC-Vorlagen bleiben gültig.

@@ -211,7 +211,7 @@ async function generatePreview(){
  const request=++previewRequest;
  try{
   if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||!view)return;
-  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
+  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={includeNpcs:get<HTMLInputElement>('session-npc-mixed').checked,npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
   const generated=unwrap(await window.campaign.generateSession(owner.token,{compensateMagic:get<HTMLInputElement>('session-magic-compensate').checked,compensateLoot:get<HTMLInputElement>('session-loot-compensate').checked,worldSourcesByLocation:get<HTMLInputElement>('session-world-sources').checked,planId:owner.planId,expectedProfileRevision:view.profile.revision,count:Number(value('session-scene-count')),locationIds:[...get('session-locations').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),noteIds:[...get('session-notes').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),encounter}));
   if(!ownsPreview(owner)||request!==previewRequest)return;
   run=generated;renderRun();tell('Spielabend-Vorschau erzeugt. Noch keine Szenen übernommen.');
@@ -312,6 +312,7 @@ export async function clearSessionTimeline(){
  return execute({kind:'replace-plan',planId:owner.planId,expectedBasis:target.replacementBasis,name:plan.name,sourcePlanId:null,expectedSourceBasis:null,copyParty:false});
 }
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){
+ for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked)get<HTMLInputElement>('session-magic-compensate').checked=false;});
 initProposalEditor();tell=status;flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));

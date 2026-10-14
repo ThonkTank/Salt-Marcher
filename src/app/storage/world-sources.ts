@@ -25,7 +25,7 @@ export function pruneWorldStock(db:any,table:EncounterTable){const allowed=new S
 export function resolveWorldSources(db:any,cam:string,r:Pick<GenerationRequest,'factionIds'|'locationId'|'tableIds'>,tables:EncounterTable[]){
  const factionIds=r.factionIds??[],locationId=r.locationId??null;
  if(!Array.isArray(factionIds)||factionIds.length>1000||new Set(factionIds).size!==factionIds.length||locationId!==null&&typeof locationId!=='string')throw new Error('Ungültige Weltfilter.');
- if(!factionIds.length&&!locationId)return{tableIds:r.tableIds,caps:new Map<string,number>(),basis:null};
+ if(!factionIds.length&&!locationId)return{tableIds:r.tableIds,caps:new Map<string,number>(),basis:null,snapshot:null};
  const view=readWorldSources(db,cam);for(const id of factionIds)if(!view.factions.some(f=>f.id===id))throw new Error('Gewählte Fraktion nicht verfügbar.');if(locationId&&!view.locations.some(l=>l.id===locationId))throw new Error('Gewählter Ort nicht verfügbar.');
  const source=(kind:WorldSource['kind'],id:string)=>view.sources.find(s=>s.kind===kind&&s.id===id)??{kind,id,revision:0,tableIds:[],factionIds:[],stock:[]};
  const factionTables=(ids:string[])=>ids.flatMap(id=>source('faction',id).tableIds);
@@ -46,5 +46,10 @@ export function resolveWorldSources(db:any,cam:string,r:Pick<GenerationRequest,'
  };
  const caps=new Map<string,number>();for(const creatureId of new Set(tables.filter(t=>ids.includes(t.id)).flatMap(t=>t.entries.map(e=>e.creatureId)))){const cap=Math.min(factionIds.length?capacity(creatureId,factionIds,[]):Infinity,location?capacity(creatureId,linked,location.tableIds):Infinity);if(Number.isFinite(cap))caps.set(creatureId,cap);}
  const involved=[...new Set([...factionIds,...linked])].sort().map(id=>source('faction',id));
- return{tableIds:ids,caps,basis:hash(JSON.stringify({location,involved,tableIds:ids,caps:[...caps]}))};
+ return{tableIds:ids,caps,snapshot:{location,involved,tableIds:ids,caps:[...caps].map(([creatureId,limit])=>({creatureId,limit}))},basis:hash(JSON.stringify({location,involved,tableIds:ids,caps:[...caps]}))};
+}
+
+export function canonicalSourceSnapshot(snapshot:import('../generation-contracts').WorldSourceSnapshot|null){
+ if(!snapshot)return null;const source=(s:WorldSource)=>({...s,tableIds:s.tableIds.slice().sort(),factionIds:s.factionIds.slice().sort(),stock:s.stock.slice().sort((a,b)=>a.creatureId.localeCompare(b.creatureId))});
+ return{location:snapshot.location?source(snapshot.location):null,involved:snapshot.involved.map(source).sort((a,b)=>a.id.localeCompare(b.id)),tableIds:snapshot.tableIds.slice().sort(),caps:snapshot.caps.slice().sort((a,b)=>a.creatureId.localeCompare(b.creatureId))};
 }

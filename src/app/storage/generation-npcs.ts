@@ -14,8 +14,8 @@ export function generationNpcs(db:any,cam:string,r:GenerationRequest){
   const n=readNpc(db,cam,row.id);
   if(!n.creatureId||!allowed.has(n.creatureId)||!n.health||n.health.hp<=0||n.record.lifecycle!=='active'||n.role!=='hostile'||location&&n.locationId!==location||factions.length&&!factions.includes(n.record.factionId??''))continue;
   if(text&&!n.name.toLocaleLowerCase().includes(text)&&!readCreature(n.creatureId).name.toLocaleLowerCase().includes(text))continue;
-  npcs.push(n);
+  npcs.push({id:n.id,name:n.name,creatureId:n.creatureId,noteRevision:n.noteRevision,actorRevision:n.actorRevision,recordRevision:n.record.revision,positionRevision:n.positionRevision,locationId:n.locationId,role:n.role});
  }
- const basis=npcs.map(n=>({id:n.id,name:n.name,creatureId:n.creatureId,noteRevision:n.noteRevision,actorRevision:n.actorRevision,recordRevision:n.record.revision,positionRevision:n.positionRevision,locationId:n.locationId,role:n.role}));
+ const basis=npcs;
  return{npcs,basis};
 }
