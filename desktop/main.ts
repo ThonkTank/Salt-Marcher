@@ -161,6 +161,7 @@ else {
     handle('campaign:discard-narrative-draft',(token:string,id:string,writeId:string)=>store.discardNarrativeDraft(token,id,writeId));
     handle('campaign:narrative',(token:string,id:string)=>store.narrative(token,id));
     handle('campaign:progress-history', (token: string, characterId: string, after: string | null) => store.progressHistory(token, characterId, after));
+    handle('campaign:adventuring-day',(token:string,request:import('../src/app/adventuring-day-contracts').DayRequest)=>store.adventuringDay(token,request));
     handle('campaign:progress', (token: string) => store.progress(token));
     handle('campaign:treasures', (token: string, after: string | null) => store.treasures(token, after));
     handle('campaign:treasure', (token: string, id: string) => store.treasure(token, id));

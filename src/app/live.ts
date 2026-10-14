@@ -106,6 +106,7 @@ function mergeAck(ack: LiveAck, action: LiveAction) {
     data.scenes = data.scenes.map(s => s.id === ack.scene!.id ? { ...s, title: ack.scene!.title, members: ack.scene!.members.length, membershipRevision: ack.scene!.membershipRevision, clock: ack.scene!.clock } : s);
   }
   renderList(); renderMembership(); renderSceneMeta(); renderGroups();
+  document.dispatchEvent(new Event('campaign-party-changed'));
 }
 async function execute(action: LiveAction): Promise<LiveAck | null> {
   if (!context || blocked || request) return null;
