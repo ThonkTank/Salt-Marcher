@@ -49,6 +49,7 @@ prüfen erhaltene NPC-/Treasure-Identitäten, Vergabestatus, Retry und Rollback.
 [Bereinigung](../../../tests/desktop-session-retention.test.mjs) erhält Rohentwürfe
 und prüft Ersetzung aus demselben Plan. Das sind Storeprüfungen, keine native
 Bedien-, Crash- oder Undoabnahme.
+[Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs) kontrollieren gemeinsam gelesene und gesicherte Vorschläge, Budget- und Quellenbezüge, unabhängige Generierungskennungen, historischen Beuteausgleich sowie unveränderte Sicherungen bei beschädigten Daten. Ältere Partyprofile und archivierte Wissensverweise bleiben gültige Vorschauhistorie.
 
 Die nächsten konkreten Prüfungen und Korrekturen:
 

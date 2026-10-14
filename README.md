@@ -345,7 +345,7 @@ wiederherstellen. Angenommene Vorschläge bleiben geschlossen; ihre Inhalte
 werden über den bestehenden Besuch bearbeitet und Belohnungen separat platziert
 oder vergeben. Änderungen im Vorschlagsdialog werden ausdrücklich gespeichert;
 Abbrechen verwirft die noch ungespeicherten Dialogeingaben.
-Unfertige Mengen bleiben beim Hinzufügen oder Entfernen von Beutezeilen als Text erhalten; erst Speichern prüft die Zahlen. Nicht mehr verfügbare Wissensverweise bleiben sichtbar und lassen sich ausdrücklich entfernen. [Dialogprüfungen](tests/desktop-session-proposal-dom.test.mjs) sichern diese Eingaben und verspätete Antworten beim Wiederöffnen; [Speicherprüfungen](tests/desktop-session-proposal-store.test.mjs) decken Bearbeiten, unabhängige Neugenerierung, Übernahme, Kopie und erneutes Öffnen ab.
+Lesen und Sicherung prüfen Vorschlagskennungen, Quellen, Budgets, Belohnungen und Übernahmereferenzen gemeinsam. Kampagnenkopien remappen auch den ursprünglichen Generierungsrun; veraltete Vorschauen und archivierte Wissensbezüge bleiben lesbar. Unfertige Mengen bleiben beim Hinzufügen oder Entfernen von Beutezeilen als Text erhalten; erst Speichern prüft die Zahlen. Nicht mehr verfügbare Wissensverweise bleiben sichtbar und lassen sich ausdrücklich entfernen. [Dialogprüfungen](tests/desktop-session-proposal-dom.test.mjs) sichern diese Eingaben und verspätete Antworten beim Wiederöffnen; [Speicherprüfungen](tests/desktop-session-proposal-store.test.mjs) decken Bearbeiten, unabhängige Neugenerierung, Übernahme, Kopie und erneutes Öffnen ab.
 
 Bestandsgrenzen gelten pro Begegnung, nicht als Reservierung für den ganzen
 Abend. Vollständiger DMG-Beutebudget-/Lootausgleich und NPC-basierte Kandidaten

@@ -85,7 +85,7 @@ import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEnco
 import type { EncounterPlanCommand } from '../encounter-contracts';
 import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
-import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, scenePreparation, cleanSessionVisits } from './session';
+import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, validateSessionRuns, scenePreparation, cleanSessionVisits } from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
 const noteTitleOrder = new Intl.Collator('de', {numeric: true, sensitivity: 'base'});
@@ -444,7 +444,7 @@ export class CampaignStore {
     validateAutonomy(db);
     validateDrawing(db);
     validateMusicBackup(db);
-    validateGenerationBackup(db);
+    validateGenerationBackup(db);validateSessionRuns(db);
     for (const row of db.prepare('SELECT payload,checksum FROM live_receipt').iterate()) if (hash(row.payload) !== row.checksum) throw new Error('Beschädigtes Live-Commitreceipt im Backupkandidaten.');
     for (const row of db.prepare('SELECT * FROM source').iterate()) if (hash(row.bytes) !== row.checksum) throw new Error('Beschädigte Quellbytes im Backupkandidaten.');
     // Every stored payload envelope receives the same byte/JSON check.

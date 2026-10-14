@@ -321,9 +321,14 @@ export function readLootBalance(db:any,cam:string){
   return{characters,leaderCopper:leader.toString(),suggestedCharacterIds:lootBalanceSuggestions(characters,leader.toString())};
  })();
 }
-export function validateItemInput(db:any,input:ItemInput){
+export function checkedItemInput(input:ItemInput){
  if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.name!=='string'||!input.name.trim()||input.name.length>1000||!Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>1000000||!['coins','equipment','trade-goods','magic','other'].includes(input.category))throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
- if(input.reference){if(typeof input.reference!=='object'||Array.isArray(input.reference)||input.reference.kind!=='authored'||typeof input.reference.definitionId!=='string'||!input.reference.definitionId.trim()||!Number.isSafeInteger(input.reference.revision)||input.reference.revision<1)throw new Error('Gegenstandsreferenz prüfen.');const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');return d;}copper(input.valueGold);return null;
+ if(input.reference&& (typeof input.reference!=='object'||Array.isArray(input.reference)||input.reference.kind!=='authored'||typeof input.reference.definitionId!=='string'||!input.reference.definitionId.trim()||!Number.isSafeInteger(input.reference.revision)||input.reference.revision<1))throw new Error('Gegenstandsreferenz prüfen.');
+ if(!input.reference)copper(input.valueGold);return input;
+}
+export function validateItemInput(db:any,input:ItemInput){
+ checkedItemInput(input);
+ if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');return d;}return null;
 }
 export function checkedItem(db: any, input: ItemInput) {
   const definition=validateItemInput(db,input);
