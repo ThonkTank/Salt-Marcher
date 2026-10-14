@@ -1,9 +1,14 @@
 import type {Room} from './contracts';
 import type {DungeonView} from './dungeon-contracts';
 import type {DrawingElement} from './drawing-contracts';
-import type {KeyContent} from './key-contracts';
+import type {KeyBlock,KeyContent} from './key-contracts';
 import {expandedKeyBlocks,keyAttributes} from './key-model';
 export interface BinderExit {id:string;name:string;description:string;targetId:string|null;state:string;secret:boolean}
+
+export function unplacedBinderPublicText(room:Room,blocks:KeyBlock[],discovered:Set<string>){
+ return blocks.filter(block=>block.visibility==='public'||block.visibility==='secret'&&discovered.has(block.id)).filter(block=>block.kind==='text'||block.kind==='legacy').map(block=>block.kind==='legacy'?room.sections.filter(section=>section.kind==='markdown').map(section=>section.markdown??'').join('\n\n'):discovered.has(block.id)&&block.revealedText?block.revealedText:block.text).filter(Boolean).join('\n\n');
+}
+
 export class DungeonBinderIndex {
  readonly rooms:Room[];readonly keys:Map<string,KeyContent>;readonly features=new Map<string,DrawingElement[]>();readonly exits=new Map<string,BinderExit[]>();readonly surfaces=new Map<string,KeyContent[]>();readonly geometric:Set<string>;
  constructor(readonly view:DungeonView){
