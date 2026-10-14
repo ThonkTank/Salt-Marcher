@@ -1,7 +1,7 @@
 import type {Workspace,Result} from './contracts';
 import type {Note} from './preparation-contracts';
 import type {SceneRuleCommand,SceneRules} from './rule-reference-contracts';
-import type {SceneCheckCommand,SceneChecks} from './scene-check-contracts';
+import type {SceneCheck,SceneCheckCommand,SceneChecks} from './scene-check-contracts';
 import {formatInstant} from './live-contracts';
 
 type FormulaAction=Extract<SceneCheckCommand['action'],{kind:'formula'}>;
@@ -68,13 +68,13 @@ function renderCheckOptions(){const select=el<HTMLSelectElement>('live-check-rul
 export function describeSceneCheck(check:SceneChecks['checks'][number]){const modifier=check.modifier===0?'':check.modifier>0?' + '+check.modifier:' − '+Math.abs(check.modifier),decision=check.outcome===null?'':check.outcome==='success'?' · Erfolg gegen SG '+check.dc:' · Fehlschlag gegen SG '+check.dc;if(check.rollKind==='formula')return(check.actor?check.actor+' · ':'')+check.label+': '+check.formula+' → '+check.rolls.join(' + ')+modifier+' = '+check.total+decision;const kept=check.mode==='advantage'?Math.max(...check.rolls):check.mode==='disadvantage'?Math.min(...check.rolls):check.rolls[0]!,rolls=check.mode==='normal'?String(kept):check.rolls.join(' / ')+' · '+(check.mode==='advantage'?'Vorteil':'Nachteil')+' wählt '+kept;return check.label+': '+rolls+modifier+' = '+check.total+decision;}
 function renderChecks(){const root=el('live-check-history'),latest=el('live-check-latest');root.replaceChildren();latest.textContent='';if(!checks?.checks.length){const p=document.createElement('p');p.className='caption';p.textContent='Noch keine Probe für diese Gruppe protokolliert.';root.append(p);return;}const [newest,...history]=checks.checks;latest.className=newest!.outcome===null?'':newest!.outcome==='success'?'check-success':'check-failure';latest.textContent='Letztes Ergebnis · '+describeSceneCheck(newest!);const details=document.createElement('details'),summary=document.createElement('summary'),list=document.createElement('ol');summary.textContent='Probenverlauf ('+checks.checks.length+(checks.truncated?'+':'')+')';for(const check of [newest!,...history.slice(0,29)]){const item=document.createElement('li'),strong=document.createElement('strong'),context=document.createElement('span');strong.textContent=describeSceneCheck(check);context.textContent=' · '+formatInstant(check.sceneInstantMs)+(check.ruleTitle?' · '+check.ruleTitle+' · Regelrevision '+check.ruleSourceRevision:'');item.append(strong,context);list.append(item);}details.append(summary,list);root.append(details);}
 function checkOption(text:string,value:string){const option=document.createElement('option');option.textContent=text;option.value=value;return option;}
-async function sendCheck(action:SceneCheckCommand['action']){
+async function sendCheck(action:SceneCheckCommand['action'],onResult?:(check:SceneCheck)=>void){
  const o=owner(),basis=checks;if(!o||!basis||busy)return false;
  const command:SceneCheckCommand={commandId:crypto.randomUUID(),campaignId:o.campaignId,token:o.token,sceneId:o.sceneId,expectedRevision:basis.revision,action};
  busy=true;readRequest++;lock();
  try{
   const result=await window.campaign.executeSceneCheck(command);if(!current(o))return false;
-  readRequest++;acceptChecks(unwrap(result),o);
+  const next=unwrap(result);readRequest++;acceptChecks(next,o);if(onResult&&next.checks[0])onResult(next.checks[0]);
   if(action.kind==='roll')el<HTMLInputElement>('live-check-label').select();
   tell(action.kind==='roll'?'GM-Probe gewürfelt und bei der Gruppe gespeichert.':'Statblock-Wurf ausgeführt und bei der Gruppe gespeichert.');return true;
  }catch(error){if(current(o))tell((error as Error).message,true);return false;}finally{if(current(o)){busy=false;lock();}}
@@ -87,4 +87,4 @@ export function prepareSceneCheck(input:{label:string;dc:number}){
  ensure();if(!workspace||!sceneId||!checks||busy){tell('Öffne zuerst eine verfügbare laufende Gruppe.',true);return;}
  el<HTMLInputElement>('live-check-label').value=input.label;el<HTMLSelectElement>('live-check-rule').value='';el<HTMLSelectElement>('live-check-mode').value='normal';el<HTMLInputElement>('live-check-modifier').value='0';el<HTMLInputElement>('live-check-dc').value=String(input.dc);el('live-check-form').scrollIntoView({behavior:'smooth',block:'center'});el<HTMLInputElement>('live-check-modifier').select();tell('Rettungswurf vorbereitet: Modifikator des Ziels eintragen und würfeln.');
 }
-export async function rollSceneFormula(action:Omit<FormulaAction,'kind'>){return sendCheck({kind:'formula',...action});}
+export async function rollSceneFormula(action:Omit<FormulaAction,'kind'>,onResult?:(check:SceneCheck)=>void){return sendCheck({kind:'formula',...action},onResult);}
