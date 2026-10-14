@@ -2,6 +2,7 @@ export type LiveMomentCategory='combat'|'narrative'|'reward'|'travel'|'party'|'w
 export interface LiveMomentDraft {category:LiveMomentCategory;title:string;summary:string}
 
 export const emptyLiveMomentDraft=():LiveMomentDraft=>({category:'world',title:'',summary:''});
+export const canClearSavedLiveMoment=(sceneId:string,currentSceneId:string|null,saved:LiveMomentDraft,current:LiveMomentDraft)=>sceneId===currentSceneId&&saved.category===current.category&&saved.title===current.title&&saved.summary===current.summary;
 
 export class LiveMomentDraftBook {
   private drafts=new Map<string,LiveMomentDraft>();

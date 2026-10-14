@@ -15,7 +15,7 @@ import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
 import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
-import {emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import {canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -353,7 +353,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('live-passive-form').onsubmit=event=>{event.preventDefault();renderPassivePerception();};
-  get('live-moment-form').onsubmit=event=>{event.preventDefault();void(async()=>{const token=context?.token,scene=data?.scene,draft=currentLiveMomentDraft();if(!scene||liveMomentDrafts.currentSceneId!==scene.id)return;if(!await flushLive()||context?.token!==token||data?.scene?.id!==scene.id){get('live-moment-result').textContent='Gruppenfokus geändert. Der Moment bleibt bei seiner Gruppe offen.';return;}const ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...draft});if(!ack)return;liveMomentDrafts.saved(scene.id);writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent='In der Kampagnenchronik gespeichert.';get<HTMLInputElement>('live-moment-title').focus();})();};
+  get('live-moment-form').onsubmit=event=>{event.preventDefault();void(async()=>{const token=context?.token,scene=data?.scene,draft=currentLiveMomentDraft();if(!scene||liveMomentDrafts.currentSceneId!==scene.id)return;if(!await flushLive()||context?.token!==token||data?.scene?.id!==scene.id){get('live-moment-result').textContent='Gruppenfokus geändert. Der Moment bleibt bei seiner Gruppe offen.';return;}const ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...draft});if(!ack)return;const clear=canClearSavedLiveMoment(scene.id,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());liveMomentDrafts.saved(scene.id);if(clear)writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent=clear?'In der Kampagnenchronik gespeichert.':'In der Kampagnenchronik gespeichert. Neuere Eingabe bleibt offen.';get<HTMLInputElement>('live-moment-title').focus();})();};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');
