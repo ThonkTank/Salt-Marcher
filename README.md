@@ -751,3 +751,9 @@ Das Soundboard verwendet denselben LocalAudioPlayer und dessen manuelle Priorit�
 Der Abschluss trennt den Rückblick auf das Geschehene von der Vorbereitung des nächsten Einstiegs. Aus laufenden Kämpfen und Verfolgungen, unverteilten Schätzen, fehlender XP-Abrechnung sowie der aktuellen Gruppe und ihrem Ort entsteht eine editierbare Übergabe. Der GM kann offene Punkte weiterhin direkt öffnen und danach in denselben Abschlussentwurf zurückkehren.
 
 Rückblick und Übergabe werden gemeinsam mit dem bestätigten Endmarker gespeichert. Die letzte Übergabe bleibt am Spieltisch sichtbar, auch nachdem der nächste Abend begonnen hat. Chronik, Suche und Markdownausgabe führen sie als eigenen Abschnitt; ältere Marker ohne Übergabe bleiben unverändert lesbar.
+
+### Desktopstand 0.68: Den nächsten Abend direkt aufnehmen
+
+„Nächsten Abend vorbereiten…“ öffnet vor dem Start einen gemeinsamen Leitungsstand. Er zeigt die letzte gültige Übergabe, alle fortbestehenden Gruppen mit Besetzung und Weltzeit, laufende Kämpfe und Verfolgungen sowie unverteilte Beute. Offene Masken, Schatzverteilung und XP-Abrechnung führen direkt in ihre bestehenden Arbeitsbereiche.
+
+Jede Gruppe kann den neuen Spielabend mit einem Klick als Fokusgruppe beginnen. Der Start verwendet weiterhin denselben bestätigten Session-Marker und Gruppenfokus; die Übersicht erzeugt keinen parallelen Sitzungs- oder Szenenstand. Kampagnenwechsel und Schließen entwerten laufende Leseanfragen, damit kein alter Leitungsstand in eine andere Kampagne hineinwirkt.
