@@ -37,3 +37,38 @@ test('current definition and quantity corrections update guidance without rewrit
  const x=fixture(t),original=x.store.db.prepare('SELECT payload FROM character_ledger WHERE id=?').get(x.id).payload;x.store.executeItemShop(x.command({kind:'definition',expectedRevision:1,definition:{...x.definition,rarity:'Rare',unitCopper:'300'}}));const magic=x.guidance(true);assert.equal(magic.magic.received.Common,0);assert.equal(magic.magic.received.Rare,2);assert.equal(x.guidance(false).receivedCopper,'600');assert.equal(x.store.db.prepare('SELECT payload FROM character_ledger WHERE id=?').get(x.id).payload,original);
  x.store.executeProgress(x.command({kind:'ledger',entryId:x.id,expectedRevision:1,operation:'correct',quantity:0,correctedQuantity:0,actualGold:'',counterparty:'',reason:'Menge berichtigt'}));assert.equal(x.guidance(true).magic.received.Rare,0);assert.equal(x.guidance(false).receivedCopper,'0');
 });
+
+function generateGuided(x,guided=true){
+ const plan={version:1,id:x.profile.planId,revision:1,name:'Geprüfte Annahme',scenes:[]};x.store.changePreparation({...x.command(null),change:{kind:'plan',plan,expectedRevision:null}});x.store.executeSession(x.command({kind:'profile',expectedRevision:0,profile:{...x.profile,revision:0}}));
+ const table={id:randomUUID(),revision:0,scope:'campaign',name:'Goblinquelle',description:'',entries:[{creatureId:'goblin',weight:'1'}],habitats:[],time:'any',lootTableId:null,trashed:false};x.store.executeGeneration(x.command({kind:'table-save',table,expectedRevision:null}));
+ const run=x.store.generateSession(x.w.token,{planId:plan.id,expectedProfileRevision:1,count:1,locationIds:[],noteIds:[],compensateMagic:guided,encounter:{tableIds:[table.id],filters:{},habitat:'',time:'any',difficulty:'medium',amount:'neutral',balance:'neutral',diversity:'neutral',xpCeiling:500}});return run;
+}
+function acceptCommand(x,run,index=0){const revision=x.store.db.prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?').get(x.cam.id,run.planId).revision;return x.command({kind:'accept-proposal',planId:run.planId,expectedPlanRevision:revision,runId:run.id,index});}
+for(const change of ['XP','new loot','same-value correction','rarity','planning party'])test(`guided proposal rejects changed ${change} before timeline or acceptance effects`,t=>{
+ const x=fixture(t),run=generateGuided(x);if(change==='XP')x.store.executeProgress(x.command({kind:'xp',characterId:x.characters[0].id,expectedRevision:1,mode:'add',amount:30,reason:'Nach Vorschau'}));if(change==='new loot')x.add();if(change==='same-value correction')x.store.executeProgress(x.command({kind:'ledger',entryId:x.id,expectedRevision:1,operation:'correct',quantity:0,correctedQuantity:2,actualGold:'',counterparty:'',reason:'Gleichwertig berichtigt'}));if(change==='rarity')x.store.executeItemShop(x.command({kind:'definition',expectedRevision:1,definition:{...x.definition,rarity:'Rare'}}));if(change==='planning party')x.store.executeSession(x.command({kind:'profile',expectedRevision:1,profile:{...x.profile,party:x.profile.party.slice(0,1)}}));
+ const command=acceptCommand(x,run),bytes=x.store.db.serialize();assert.throws(()=>x.store.executeSession(command),/Beute|Grundlage|Planungsparty|Vorschau/i);assert.ok(bytes.equals(x.store.db.serialize()));assert.equal(x.store.sessionRun(x.w.token,run.id).proposals[0].acceptedVisitId,null);
+});
+test('guided acceptance with unchanged basis survives Fresh and receipt replay after a later XP change',t=>{
+ const x=fixture(t),run=generateGuided(x),command=acceptCommand(x,run),ack=x.store.executeSession(command);x.store.close();x.store=new CampaignStore(x.filename);x.w=x.store.activate(x.cam.id);x.store.executeProgress(x.command({kind:'xp',characterId:x.characters[0].id,expectedRevision:1,mode:'add',amount:30,reason:'Späterer XP-Stand'}));const bytes=x.store.db.serialize();assert.deepEqual(x.store.executeSession({...command,token:x.w.token}),ack);assert.ok(bytes.equals(x.store.db.serialize()));
+});
+test('unguided manual proposal remains independent of subsequent personal loot changes',t=>{
+ const x=fixture(t),run=generateGuided(x,false);x.add();const accepted=x.store.executeSession(acceptCommand(x,run));assert.equal(accepted.visits.length,1);
+});
+
+test('guided source basis remains usable after independent campaign copy without rebinding original IDs',async t=>{
+ const x=fixture(t),run=generateGuided(x),file=path.join(x.root,'guided-package.sqlite');await x.store.campaignSnapshot(x.w.token,file);const bytes=readFileSync(file),copy=x.store.acceptCampaignSnapshot(file,'Geführte Kopie',{});x.cam=copy;x.w=x.store.activate(copy.id);const row=x.store.db.prepare('SELECT id FROM session_run WHERE campaign_id=?').get(copy.id),copied=x.store.sessionRun(x.w.token,row.id);assert.notEqual(copied.id,run.id);assert.ok(copied.lootGuidance.basis.ledger.every(l=>!run.lootGuidance.basis.ledger.some(original=>original.id===l.id)));x.store.executeSession(acceptCommand(x,copied));assert.equal(x.store.session(x.w.token,copied.planId).visits.length,1);assert.ok(bytes.equals(readFileSync(file)));
+});
+test('a historical guided run without source metadata stays readable but cannot create a new acceptance',t=>{
+ const x=fixture(t),run=generateGuided(x),row=x.store.db.prepare('SELECT payload FROM session_run WHERE campaign_id=? AND id=?').get(x.cam.id,run.id),legacy=JSON.parse(row.payload);delete legacy.lootGuidance.basis;const payload=JSON.stringify(legacy);x.store.db.prepare('UPDATE session_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),x.cam.id,run.id);assert.deepEqual(x.store.sessionRun(x.w.token,run.id),legacy);const command=acceptCommand(x,legacy),bytes=x.store.db.serialize();assert.throws(()=>x.store.executeSession(command),/Grundlage/);assert.ok(bytes.equals(x.store.db.serialize()));
+});
+test('an unrelated character handout does not invalidate a guided selected-party basis',t=>{
+ const x=fixture(t),run=generateGuided(x),other=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Andere Gruppe'}})).character;x.add(other);x.store.executeSession(acceptCommand(x,run));assert.equal(x.store.session(x.w.token,run.planId).visits.length,1);
+});
+test('acceptance rejects a revised referenced reward definition outside the personal ledger',t=>{
+ const x=fixture(t),run=generateGuided(x,false),proposal=run.proposals[0],definition=x.store.executeItemShop(x.command({kind:'definition',expectedRevision:null,definition:{...x.definition,id:randomUUID(),revision:0,name:'Zusätzliche Auswahl',unitCopper:'400'}})).definition;
+ x.store.executeSession(x.command({kind:'edit-proposal',planId:run.planId,runId:run.id,index:0,expectedRevision:proposal.revision??1,title:proposal.title,notes:proposal.notes,readAloud:proposal.readAloud,locationId:proposal.locationId,noteIds:proposal.noteIds,reward:{poolXp:0,items:[{name:definition.name,category:definition.category,quantity:1,valueGold:'4',reference:{kind:'authored',definitionId:definition.id,revision:definition.revision}}]}}));x.store.executeItemShop(x.command({kind:'definition',expectedRevision:1,definition:{...definition,unitCopper:'500'}}));const command=acceptCommand(x,run),bytes=x.store.db.serialize();assert.throws(()=>x.store.executeSession(command),/Katalogbeute/);assert.ok(bytes.equals(x.store.db.serialize()));
+});
+
+test('purchased items do not invalidate the effective received-loot basis of a guided proposal',t=>{
+ const x=fixture(t),run=generateGuided(x);x.add(x.characters[0],'purchase',3);x.store.executeSession(acceptCommand(x,run));assert.equal(x.store.session(x.w.token,run.planId).visits.length,1);
+});
