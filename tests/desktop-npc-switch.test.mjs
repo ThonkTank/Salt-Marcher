@@ -1,0 +1,50 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {randomUUID} from 'node:crypto';
+import {createRequire} from 'node:module';
+import {buildSync} from 'esbuild';
+import {parseHTML} from 'linkedom';
+const require=createRequire(import.meta.url);
+for(const [entry,out]of [['src/app/storage/store.ts','npc-switch-store'],['src/app/npc-ui.ts','npc-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+async function until(check){for(let i=0;i<150;i++){if(check())return;await tick();}assert(check(),'Expected NPC state');}
+const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
+async function fixture(){
+ const root=mkdtempSync(path.join(tmpdir(),'npc-switch-')),{CampaignStore}=require('../.build/npc-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite'),campaign=store.create('NPCs sicher wechseln'),w=store.activate(campaign.id),npcs=[];
+ for(const name of ['Hafenmeisterin Mira','Späher Borin']){const id=randomUUID();npcs.push(store.executeNpc({commandId:randomUUID(),campaignId:campaign.id,token:w.token,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name,creatureId:null,readAloud:'  Blick.\r\n- Mantel',gmNotes:'Original: '+name,record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:null,health:null}}));}
+ const [a,b]=npcs,previous={window:globalThis.window,document:globalThis.document,HTMLSelectElement:globalThis.HTMLSelectElement},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document,HTMLSelectElement:window.HTMLSelectElement});
+ const response=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}},writes=[],messages=[],reads=[];
+ window.campaign={};for(const key of ['generationSources','npcs','npcDrafts','npc','npcDraft','keepNpcDraft','discardNpcDraft'])window.campaign[key]=async(...args)=>response(()=>{reads.push({kind:key,args});return store[key](...args);});
+ window.campaign.executeNpc=async command=>{writes.push(command);return response(()=>store.executeNpc(command));};
+ delete require.cache[require.resolve('../.build/npc-switch-ui.cjs')];const ui=require('../.build/npc-switch-ui.cjs');ui.initNpcs(text=>messages.push(text),async()=>{},async()=>{});
+ for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.id==='npc-filter-life'?'all':'',writable:true});
+ ui.activateNpcs(w);await ui.openNpcs();const el=id=>document.getElementById(id),choose=id=>[...el('npc-list').querySelectorAll('button')].find(button=>button.textContent.startsWith(npcs.find(n=>n.id===id).name+' ·')).onclick();
+ choose(a.id);await until(()=>el('npc-name').value===a.name&&!el('npc-name').disabled);
+ const input=(id,value)=>{el(id).value=value;el('npc-editor').oninput();};
+ return{store,w,a,b,ui,el,choose,input,writes,messages,reads,async cleanup(){await ui.flushNpcs();ui.activateNpcs(w);Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
+}
+test('a delayed NPC selection locks the old form and preserves incomplete drafts',async()=>{
+ const x=await fixture();try{x.input('npc-name','');x.input('npc-gmNotes','Unfertig\r\n- Segel');assert(await x.ui.flushNpcs());const held=deferred(),original=window.campaign.npcDraft;window.campaign.npcDraft=async(...args)=>args[1]===x.b.id?held.promise:original(...args);x.choose(x.b.id);await until(()=>x.el('npc-load-status').textContent.includes('Späher Borin'));assert.equal(x.el('npc-gmNotes').disabled,true);assert.equal(x.el('npc-editor').querySelector('button[type=submit]').disabled,true);x.input('npc-gmNotes','Fremder programmatischer Versuch');held.resolve(await original(x.w.token,x.b.id));await until(()=>x.el('npc-name').value===x.b.name&&!x.el('npc-name').disabled);x.choose(x.a.id);await until(()=>x.el('npc-name').value===''&&!x.el('npc-name').disabled);assert.equal(x.el('npc-gmNotes').value,'Unfertig\r\n- Segel');assert.equal(x.store.npcDraft(x.w.token,x.a.id).fields.gmNotes,'Unfertig\r\n- Segel');assert.equal(x.writes.length,0);}finally{await x.cleanup();}
+});
+test('a failed selection cannot submit or discard the previous NPC and retries the requested one',async()=>{
+ const x=await fixture();try{const original=window.campaign.npcDraft;let fail=true;window.campaign.npcDraft=async(...args)=>{if(args[1]===x.b.id&&fail){fail=false;return{ok:false,error:'NPC nicht lesbar'};}return original(...args);};x.choose(x.b.id);await until(()=>x.el('npc-load-status').getAttribute('role')==='alert');assert.equal(x.el('npc-enter').disabled,true);x.el('npc-editor').onsubmit({preventDefault(){}});x.el('npc-reload').onclick();await tick();assert.equal(x.writes.length,0);x.el('npc-load-retry').onclick();await until(()=>x.el('npc-name').value===x.b.name&&!x.el('npc-name').disabled);assert.equal(x.el('npc-load-status').hidden,true);}finally{await x.cleanup();}
+});
+test('a superseded read error cannot replace a newer NPC or report its old failure',async()=>{
+ const x=await fixture();try{const held=deferred(),original=window.campaign.npcDraft;window.campaign.npcDraft=async(...args)=>args[1]===x.b.id?held.promise:original(...args);x.choose(x.b.id);await tick();x.choose(x.a.id);await until(()=>!x.el('npc-name').disabled);held.resolve({ok:false,error:'Veralteter Lesefehler'});await tick();assert.equal(x.el('npc-name').value,x.a.name);assert.equal(x.el('npc-load-status').hidden,true);assert.deepEqual(x.messages,[]);}finally{await x.cleanup();}
+});
+test('refreshing the NPC list does not cancel a pending profile selection',async()=>{
+ const x=await fixture();try{const held=deferred(),original=window.campaign.npcDraft;window.campaign.npcDraft=async(...args)=>args[1]===x.b.id?held.promise:original(...args);x.choose(x.b.id);await tick();await x.ui.openNpcs();held.resolve(await original(x.w.token,x.b.id));await until(()=>x.el('npc-name').value===x.b.name&&!x.el('npc-name').disabled);}finally{await x.cleanup();}
+});
+test('an NPC reply for a different figure is never made editable',async()=>{
+ const x=await fixture();try{window.campaign.npc=async()=>({ok:true,value:x.a});x.choose(x.b.id);await until(()=>x.el('npc-load-status').getAttribute('role')==='alert');assert.equal(x.el('npc-name').disabled,true);assert.equal(x.writes.length,0);}finally{await x.cleanup();}
+});
+test('switching campaigns invalidates pending profile replies',async()=>{
+ const x=await fixture();try{const held=deferred(),original=window.campaign.npcDraft;window.campaign.npcDraft=async(...args)=>args[1]===x.b.id?held.promise:original(...args);x.choose(x.b.id);await tick();x.ui.activateNpcs({...x.w,token:'different'});held.resolve(await original(x.w.token,x.b.id));await tick();assert.equal(x.el('npc-editor').hidden,true);assert.equal(x.el('npc-load-status').hidden,true);assert.deepEqual(x.messages,[]);}finally{await x.cleanup();}
+});
+
+test('editing one NPC field preserves untouched CRLF prose in the draft and published NPC',async()=>{
+ const x=await fixture();try{for(const id of ['npc-readAloud','npc-gmNotes'])x.el(id).value=x.el(id).value.replace(/\r\n/g,'\n');x.input('npc-history','Neue Geschichte');assert(await x.ui.flushNpcs());const draft=x.store.npcDraft(x.w.token,x.a.id);assert.equal(draft.fields.readAloud,x.a.readAloud);x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('npc-name').disabled);const saved=x.store.npc(x.w.token,x.a.id);assert.equal(saved.readAloud,x.a.readAloud);assert.equal(saved.gmNotes,x.a.gmNotes);assert.equal(saved.record.history,'Neue Geschichte');}finally{await x.cleanup();}
+});
