@@ -1,6 +1,6 @@
 # Kampagnenagenda, Fantasy-Datum und Fristen
 
-Stand: 14.10.2026. Die Agenda ergänzt den vollständigen Reise-/Weltzeitvertrag
+Stand: 15.10.2026. Die Agenda ergänzt den vollständigen Reise-/Weltzeitvertrag
 und die Spielabendvorbereitung; sie ersetzt weder Timelinebesuche noch World
 Planner, Shoprestock oder zeitgebundene Autonomie.
 
@@ -56,9 +56,38 @@ Receiptidentität, Eventrevision und Kalender-/Clockautorität bleiben getrennt.
 Die tatsächlichen DOM-/Worldbridge-/SQLite-Prüfungen stehen gemeinsam in
 `agenda-ui.test.ts`; sie ersetzen keine native Abnahme.
 
+## Übergang zum ausdrücklich bestätigten Zeitsprung
+
+`TimeNavigator` in `time-plan-ui.ts` ist der Anschluss für Dauer, Datum,
+Tagesbeginn und Ereignisbeginn/-ende. Seine Lese-/Vorschau-/Bestätigungs- und
+Recoveryantworten binden den ursprünglichen Dialog, Campaigntoken und die Scene.
+Eine abgelöste Ereignisschaltfläche darf keine ältere Eventrevision auswählen.
+Agenda-Handoff und Refresh behalten die ausgewählte Eventrevision; eine Änderung
+verlangt eine ausdrückliche neue Ereignisauswahl vor der Vorschau.
+Die Live-Schreibschnittstelle prüft diese Bindung nochmals nach dem Flush und
+vor Dispatch; ein bereits gesendeter Auftrag behält seinen eigenen Ausgang.
+Alte Antworten schließen oder entsperren keine spätere Zeitwahl, auch bei
+identischer Campaign und Scene. Nur die aktuelle Bestätigung meldet den
+Zeitsprung als übernommen.
+
+Neue Zeitangaben während Kalenderlesen bleiben unverändert; ohne passende
+Lesefassung ist die Vorschau gesperrt. „Kalender und Ereignisse neu lesen“
+ermöglicht anschließend das Lesen ohne Verlust ungültiger Rohwerte. Andere
+Sceneantworten und geänderte Kalenderregeln werden nicht als Basis übernommen.
+Die explizite Receiptklärung beendet die Sperre vor einer weiteren Vorschau;
+bei einem Lesefehler bleiben Eingaben und Ausgang offen. Der Dialog nutzt den
+bestehenden Livewriter und `recoverTimeWrite`, keinen zweiten Zeitwriter.
+
+Vierzehn Gegenproben in `time-plan-context.test.ts` prüfen unter anderem Öffnen vor
+Flush, spätes positives/negatives Write, ältere finally-Blöcke, Recoveryfehler,
+abgelöste Eventaktionen, ungültige Rohdaten während Load und die erneute Bindung
+vor Dispatch. Der Label-/Filtertest und die bestehenden Agenda-/World-/Reise-
+prüfungen bleiben getrennte Teilbelege. Noch offen: dauerhafte Rohsicherung auch
+für diesen Zeitdialog, native Recovery und gruppenübergreifende Fachabnahmen.
+
 ## Nächste konkrete Prüfungen und Lieferung
 
-1. Rohentwürfe vor Close/Fresh sichern; bestehende Entwurfspersistenz samt
+1. Rohentwürfe von Agenda und Zeitdialog vor Close/Fresh sichern; bestehende Entwurfspersistenz samt
    Backup-/Campaign-Lebenszyklus zuerst auf einen passenden Anschluss prüfen.
    Rohe Felder, ursprüngliche Event-/Kalender-/Clockbasis und ungeklärter
    Originalcommand samt ID bleiben erhalten. Altentwürfe ohne Basis verlangen

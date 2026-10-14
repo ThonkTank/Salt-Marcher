@@ -71,4 +71,4 @@ verwenden durchgehend die Agenda statt des entfernten zweiten Ereigniseditorform
 
 Party-, Archiv-, Gruppen-, Zeit-, Szenentisch-, Kampf- und Verfolgungseinstiege
 sind konkreten Lektionen zugeordnet; Live-Recovery und der Szenentisch werden
-eigens erklärt. Die Testfixture konstruiert auch die dynamische Weltoberfläche.
+eigens erklärt. Die Testfixture konstruiert auch die dynamische Welt- und NSC-Oberfläche.

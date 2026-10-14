@@ -91,8 +91,6 @@ export const lessons = [
 ];
 
 export const tutorialSurfaceLessons={
-  'journey-replan':'travel-camp','journey-wait':'travel-camp','journey-rest':'travel-camp',
-  'time-plan-open':'calendar-time',
   'agenda-open':'campaign-agenda',
   'live-generation-open':'live-generation',
   'session-copy-open':'session-reuse',
@@ -101,6 +99,9 @@ export const tutorialSurfaceLessons={
 } as const;
 
 export const tutorialCapabilityLessons={
+  'journey-replan':'travel-camp','journey-wait':'travel-camp','journey-rest':'travel-camp',
+  'time-plan-open':'calendar-time',
+
   'live-npc-cast':'npc-dossier','npc-cast':'npc-dossier','npc-cast-search':'npc-dossier','npc-cast-scope':'npc-dossier','npc-cast-document':'npc-dossier','npc-contact':'npc-dossier',
 
   'live-agenda-open':'campaign-agenda',

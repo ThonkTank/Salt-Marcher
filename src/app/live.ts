@@ -600,7 +600,7 @@ function initGroups() {
   for (const id of ['time-amount', 'time-unit']) get(id).addEventListener('input', renderTimePreview);
   get('time-reason').addEventListener('input',renderTimePreview);
   get('time-form').onsubmit=event=>{event.preventDefault();void(async()=>{const p=manualTimePreview,token=context?.token;if(!p||!token||!data?.scene||p.sceneId!==data.scene.id||!await flushLive()||context?.token!==token)return;manualTimePreview=null;if(await execute(p.action))renderSceneMeta();else renderTimePreview();})();};
-  timeNavigator=new TimeNavigator(tell,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,async action=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==action.sceneId)return false;const ack=await execute(action);if(ack)renderSceneMeta();return !!ack;},recoverTimeWrite);
+  timeNavigator=new TimeNavigator(tell,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,async(action,stillCurrent)=>{const token=context?.token;if(!token||!await flushLive()||!stillCurrent()||context?.token!==token||data?.scene?.id!==action.sceneId)return false;const ack=await execute(action);if(ack)renderSceneMeta();return !!ack;},recoverTimeWrite);
   resetLiveArchives=initLiveArchives(()=>context?.token??null,flushLive,()=>context?.campaign.id??null);
 }
 

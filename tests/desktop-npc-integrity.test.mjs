@@ -57,3 +57,11 @@ test('stale NPC inputs remain readable and portable after a profile changes or i
  x.store.changePreparation({...x.base(),change:{kind:'note-trash',id:x.id,expectedRevision:n.revision+1,trashed:true}});assert.deepEqual(x.store.npcDraft(x.w.token,x.id),x.draft);await x.store.backup(path.join(x.root,'stale-safe.sqlite'));
 });
 for(const table of ['npc_record','npc_draft','npc_receipt'])test(`missing ${table} cannot replace a valid backup`,async t=>{const x=fixture(t),safe=path.join(x.root,'safe.sqlite');await x.store.backup(safe);const original=readFileSync(safe);x.store.db.exec('DROP TABLE '+table);await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(original));});
+
+test('a conversation draft survives another store instance without publishing it into NPC history',t=>{
+ const x=fixture(t),contact='  Gruppenzeit: 14. Frühmond\r\nNoch ungeklärt  ',original=x.store.npc(x.w.token,x.id);
+ const draft={...x.draft,writeId:randomUUID(),fields:{...x.draft.fields,contact}};x.store.keepNpcDraft(x.w.token,draft,x.draft.writeId);
+ const fresh=new CampaignStore(x.file);
+ try{const w=fresh.activate(x.cam.id),restored=fresh.npcDraft(w.token,x.id);assert.equal(restored.fields.contact,contact);assert.equal(restored.fields.modifier,'-');assert.deepEqual(restored.basis,draft.basis);assert.equal(fresh.npc(w.token,x.id).record.history,original.record.history);}
+ finally{fresh.close();}
+});
