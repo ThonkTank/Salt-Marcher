@@ -795,3 +795,9 @@ Der Leitungsstand zieht den nächsten vorbereiteten Besuch jeder Gruppe nun aus 
 NSCs am Spieltisch liest die Figuren am tatsächlichen Gruppenort, in der ganzen Kampagne oder ohne Ortsbindung in Seiten zu 50. Die Suche umfasst die vorhandenen NPC-Texte und Profile; nur die ausgewählte Figur lädt ihre vollständigen Texte. Das Dossier verbindet Verhalten, Aussehen, Vorlesetext, Gesprächsgeschichte, HP/Zustände, Fraktion, Beziehungen in beiden Richtungen, bestehende Gruppen und den bestätigten Autonomie-/Jobstand. Statblocks öffnen bei Bedarf.
 
 Gespräch festhalten führt mit Kalenderdatum und Gruppe in den vorhandenen NPC-Profilentwurf. Angetippte Texte werden dort über den bestehenden Entwurfsschreiber gesichert; NPC übernehmen bestätigt sie. Profil, Autonomie, Gruppe, Vorlesetext und Begegnung öffnen ihre vorhandenen Besitzer. Keine neue NPC-Identität, kein zusätzlicher Profil-/HP-/Positionsstore und keine automatische Freigabe oder Kampfaktivierung. NPC-Listen verwenden beim Filtern einen begrenzten Seitenpuffer statt vollständiger Ergebnisarrays. Gruppen-/Beziehungs-/Verhaltensauszüge bleiben begrenzt, die Originalquellen erhalten.
+
+### Desktopstand 0.76: Vom Leitungsstand direkt in die Eröffnung
+
+Jeder vorbereitete Besuch bietet nun einen ausdrücklichen Startweg. „Spielabend beginnen + Text in Szene“ fokussiert die zugehörige Gruppe, schreibt den normalen Sitzungsmarker, übernimmt den vorbereiteten Eröffnungstext in die laufende Szene und öffnet die GM-Mappe direkt bei diesem Besuch. Fehlt ein Eröffnungstext, beginnt derselbe Ablauf mit der Mappe.
+
+Besuchsübernahme, Spielerfreigabe und Audio bleiben weiterhin getrennte Bestätigungen. Der Start erzeugt weder Begegnung noch Belohnung und zeigt Spielern den Text nicht automatisch; der GM kann erst in der geöffneten Mappe prüfen und anschließend die vorhandenen Aktionen verwenden.
