@@ -48,6 +48,37 @@ Bei der unabhängigen Kopie wurde zusätzlich eine konkrete Historylücke gefund
 Notiz, Award und Empfänger remappt waren. Der Transfer remappt jetzt genau diese
 fachliche Notizreferenz. Andere `sourceId`-Verträge und freie Prosa bleiben erhalten.
 
+## Journal und gemeinsamer Editorowner
+
+`narrative-journal-ui.ts` verwendet denselben Narrativeeditor wie die Welt-
+vorbereitung. Der Journaleinstieg wird im Renderer nach Campaignaktivierung
+freigegeben. Auswahl und Text-/Weltverweisnavigation binden Campaign, geöffneten
+Dialog, tatsächlichen Listenstand beziehungsweise angezeigtes Detail. Schließen
+entwertet ausstehende Auswahlvorgänge vor dem Flush; erst nach erfolgreichem
+Speichern wird der ursprüngliche Editorowner wieder geöffnet. Parallel ausgelöste
+Schließvorgänge teilen ihren Auftrag. Ein späterer Campaignwechsel oder eine neue
+Öffnung darf von dessen Antwort weder geschlossen noch geleert werden.
+Ein fehlgeschlagener Flush erhält Dialog und Rohfelder für eine ausdrückliche
+Wiederholung. Veraltete Suchantworten ersetzen keine neuere Liste.
+
+Auch die Narrativefelder und Speichern-/Verwerfencontrols binden ihren eigenen
+Renderstand. Ein entferntes Control darf nicht den globalen Savehook eines neuen
+Owners verwenden. `persist()` wiederholt einen neueren Rohstand nur, solange
+sein ursprünglicher Owner noch aktuell ist. Ein tatsächlich gesendeter Write
+beendet seinen ursprünglichen Auftrag; seine spätere Antwort startet keine
+Wiederholung anhand der inzwischen anderen `draftVersion`. Ohne diese Grenze
+konnte der veraltete Persistpfad endlos erneut laufen, den Renderer beschäftigen
+und dessen Speicher belegen. Die korrigierte Probe beendet den alten Auftrag
+und erhält die neuere unvollständige Eingabe ohne zusätzlichen Command.
+
+Elf Fälle in `tests/desktop-narrative-journal-context.test.mjs` benutzen die
+wirklichen Journal-/Narrativehandler und kontrollierte IPCantworten: normale
+Auswahl samt unverändertem CRLF, Rückkehr zum ursprünglichen Editor, entfernte
+Controls, Refresh, verzögertes Close/Navigieren nach Campaignwechsel, Antworten
+in falscher Reihenfolge, doppelte Öffnung während Flush, Fehler/Retry und
+Ownerwechsel mit noch unbestätigter neuer Eingabe. Dies sind lokale DOMbelege;
+Native Dialog-/Tastatur-/Fokusabnahme und Unknown-Command-Recovery bleiben offen.
+
 ## Legendäre Aktion nach unabhängiger Kopie
 
 Der neue legendäre Aktionsstand speichert `lastUsedRound` und `lastUsedTurnId`.
@@ -90,7 +121,13 @@ nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
 
 ## Nächste ausführbare Schritte
 
-1. **Narrative Wiederaufnahme vervollständigen.** Metadatenrohentwürfe und
+1. **Narrative Wiederaufnahme vervollständigen.** Zuerst die ursprüngliche
+   Revisionsbasis und Commandstatus liefern, danach Journal → Metadatenentwurf →
+   Abschluss → Welttexteditor → Rückkehr nativ gemeinsam abnehmen. Esc, langsame
+   Datenträger, nicht lesbarer Entwurf und Campaignwechsel erhalten Rohwerte und
+   schließen keine neuere Ansicht. Lokale Journalguards erfüllen diese native
+   Qualifikation noch nicht.
+ Metadatenrohentwürfe und
    der gemeinsame Kampf-/Questabschluss besitzen inzwischen persistente Eingaben
    einschließlich Ergebnistext in `finish_draft`. Ursprüngliche Notizbasis und
    unbekannter Commandausgang bleiben offen. `NarrativeDraft` enthält bisher keine ursprüngliche
