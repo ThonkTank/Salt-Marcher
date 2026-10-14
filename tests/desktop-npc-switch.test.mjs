@@ -150,3 +150,10 @@ test('a checksum-valid NPC receipt with different confirmed prose cannot consume
   x.el('npc-write-check').onclick();await until(()=>x.messages.some(m=>m.includes('Beleg weicht')));assert.equal(x.el('npc-name').readOnly,true);assert.deepEqual(x.store.npcDraft(x.w.token,x.a.id),d);assert.equal(x.writes.length,1);
  }finally{await x.cleanup();}
 });
+
+
+test('NPC receipt health comparisons preserve values independent of JSON property order',async()=>{
+ const x=await fixture();try{
+  const {noteRevision,actorRevision,positionRevision,disposition,role,...npc}=x.a;const c={commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,expectedNoteRevision:noteRevision,expectedActorRevision:actorRevision,expectedPositionRevision:positionRevision,expectedRecordRevision:npc.record.revision,npc:{...npc,creatureId:'goblin',health:{concentrating:false,conditions:'',tempHp:0,maxHp:7,hp:7}}};const result=x.store.executeNpc(c);assert.deepEqual(x.store.executeNpc(c),result);assert.equal(result.health.hp,7);
+ }finally{await x.cleanup();}
+});
