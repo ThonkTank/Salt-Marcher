@@ -111,6 +111,7 @@ else {
     handle('campaign:session', (token: string,id: string)=>store.session(token,id));
     handle('campaign:execute-session', (command: SessionCommand)=>store.executeSession(command));
     handle('campaign:generate-session', (token: string,request: SessionGenerationRequest)=>store.generateSession(token,request));
+    handle('campaign:regenerate-session-reward',(token:string,id:string,index:number,seed:string)=>store.regenerateSessionReward(token,id,index,seed));
     handle('campaign:regenerate-session', (token: string,id: string,index: number,seed: string)=>store.regenerateSessionProposal(token,id,index,seed));
     handle('campaign:session-runs', (token: string,id: string)=>store.sessionRuns(token,id));
     handle('campaign:session-run', (token: string,id: string)=>store.sessionRun(token,id));

@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   session: (token: string,id: string)=>ipcRenderer.invoke('campaign:session',token,id),
   executeSession: (command: unknown)=>ipcRenderer.invoke('campaign:execute-session',command),
   generateSession: (token: string,request: unknown)=>ipcRenderer.invoke('campaign:generate-session',token,request),
+  regenerateSessionReward:(token:string,id:string,index:number,seed:string)=>ipcRenderer.invoke('campaign:regenerate-session-reward',token,id,index,seed),
   regenerateSessionProposal: (token: string,id: string,index: number,seed: string)=>ipcRenderer.invoke('campaign:regenerate-session',token,id,index,seed),
   sessionRuns: (token: string,id: string)=>ipcRenderer.invoke('campaign:session-runs',token,id),
   sessionRun: (token: string,id: string)=>ipcRenderer.invoke('campaign:session-run',token,id),

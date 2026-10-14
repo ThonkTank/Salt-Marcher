@@ -1,3 +1,4 @@
+import {initProposalEditor,openProposalEditor,proposalEditorOpen,closeProposalEditor} from './session-proposal-editor';
 import type {Workspace,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
 import type {ManualPlan} from '../features/planner/manual-planner';
@@ -25,7 +26,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  basis=key;generation++;loadRequest++;closeStoryAward();
  if(timer)clearTimeout(timer);timer=null;
  profileDirty=false;visitDirty=false;view=null;profileDraft=null;visitDraft=null;
- if(parentChanged){groupDrafts.clear();previewRequest++;run=null;renderRun();for(const id of ['session-history','session-table-picks','session-locations','session-notes'])get(id).replaceChildren();}
+ if(parentChanged){closeProposalEditor();get('session-faction-picks').replaceChildren();groupDrafts.clear();previewRequest++;run=null;renderRun();for(const id of ['session-history','session-table-picks','session-locations','session-notes'])get(id).replaceChildren();}
  get('visit-groups').replaceChildren();
  lock(true);get<HTMLButtonElement>('session-refresh').disabled=false;
  if(next&&current)return load();
@@ -42,9 +43,9 @@ async function load(){
   if(!profileDirty)profileDraft=structuredClone(result.profile);
   if(!visitDirty)visitDraft=structuredClone(result.visits.find(v=>v.visitId===visitId)??null);
   render();
-  const [tableResult,historyResult]=await Promise.all([window.campaign.encounterTables(token,false),window.campaign.sessionRuns(token,id)]);
+  const [tableResult,historyResult,worldResult]=await Promise.all([window.campaign.encounterTables(token,false),window.campaign.sessionRuns(token,id),window.campaign.generationSources(token)]);
   if(!current())return;
-  const tableList=unwrap(tableResult),history=unwrap(historyResult);
+  const tableList=unwrap(tableResult),history=unwrap(historyResult),world=unwrap(worldResult);const factions=get('session-faction-picks'),chosenFactions=new Set([...factions.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value));factions.replaceChildren();for(const f of world.factions)checkbox(factions,f.id,f.name,chosenFactions.has(f.id));
   const picks=get('session-table-picks'),selectedTables=new Set([...picks.querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value));
   picks.replaceChildren();for(const table of tableList)checkbox(picks,table.id,table.name,selectedTables.has(table.id));
   const select=get<HTMLSelectElement>('session-history');select.replaceChildren();option(select,'','Vorschau auswählen');
@@ -115,6 +116,7 @@ function lock(on:boolean){
  }
 }
 export async function flushSession():Promise<boolean>{
+ if(proposalEditorOpen()){tell('Speichere oder schließe den geöffneten Vorschlag zuerst.',true);return false;}
  if(timer)clearTimeout(timer);timer=null;
  if(pending){if(!await pending)return false;return flushSession();}
  if(profileDirty&&profileDraft){if(!await execute({kind:'profile',profile:structuredClone(profileDraft),expectedRevision:profileDraft.revision}))return false;return flushSession();}
@@ -191,6 +193,8 @@ async function regenerateProposal(source:SessionRun,index:number){
   run=replacement;renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
+async function regenerateReward(source:SessionRun,index:number){const owner=previewOwner();if(!owner||run!==source)return;const request=++previewRequest;try{const next=unwrap(await window.campaign.regenerateSessionReward(owner.token,source.id,index,value('session-seed')+'|reward|'+crypto.randomUUID()));if(!ownsPreview(owner)||request!==previewRequest||run!==source)return;run=next;renderRun();}catch(e){if(ownsPreview(owner))tell((e as Error).message,true);}}
+async function rejectProposal(source:SessionRun,index:number){const owner=previewOwner(),p=source.proposals[index];if(!owner||run!==source||!p)return;if(await execute({kind:'reject-proposal',planId:owner.planId,runId:source.id,index,expectedRevision:p.revision??1,rejected:!p.rejected})&&ownsPreview(owner)){run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();}}
 async function selectRun(){
  const owner=previewOwner(),id=value('session-history'),request=++previewRequest;
  run=null;renderRun();if(!owner||!id)return;
@@ -205,8 +209,8 @@ async function generatePreview(){
  const request=++previewRequest;
  try{
   if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||!view)return;
-  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
-  const generated=unwrap(await window.campaign.generateSession(owner.token,{planId:owner.planId,expectedProfileRevision:view.profile.revision,count:Number(value('session-scene-count')),locationIds:[...get('session-locations').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),noteIds:[...get('session-notes').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),encounter}));
+  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
+  const generated=unwrap(await window.campaign.generateSession(owner.token,{worldSourcesByLocation:get<HTMLInputElement>('session-world-sources').checked,planId:owner.planId,expectedProfileRevision:view.profile.revision,count:Number(value('session-scene-count')),locationIds:[...get('session-locations').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),noteIds:[...get('session-notes').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),encounter}));
   if(!ownsPreview(owner)||request!==previewRequest)return;
   run=generated;renderRun();tell('Spielabend-Vorschau erzeugt. Noch keine Szenen übernommen.');
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
@@ -218,13 +222,17 @@ function renderRun(){
  for(const p of source.proposals){
   const card=document.createElement('article');card.className='session-proposal';
   const title=document.createElement('h3'),text=document.createElement('p'),encounter=document.createElement('p'),accept=document.createElement('button'),regenerate=document.createElement('button');
-  title.textContent=p.title;text.textContent=p.notes;
+  title.textContent=p.title+(p.rejected?' · verworfen':'');text.textContent=p.notes;
   encounter.textContent=p.encounter.entries.map(e=>e.count+' × '+(p.encounter.sources.find(c=>c.id===e.creatureId)?.name??e.creatureId)).join(', ');
-  accept.textContent=p.acceptedVisitId?'Bereits in der Timeline':'Diese Szene in Timeline übernehmen';accept.disabled=!!p.acceptedVisitId;
+  accept.textContent=p.acceptedVisitId?'Bereits in der Timeline':'Diese Szene in Timeline übernehmen';accept.disabled=!!p.acceptedVisitId||!!p.rejected||!!p.needsEncounterRefresh;
   accept.onclick=()=>{void acceptProposal(source,p.index);};
   regenerate.textContent='Nur diese Begegnung neu erzeugen';regenerate.disabled=!!p.acceptedVisitId;
   regenerate.onclick=()=>{void regenerateProposal(source,p.index);};
-  card.append(title,text,encounter,accept,regenerate);root.append(card);
+  const reward=document.createElement('p');reward.textContent=p.reward?'Belohnung: '+p.reward.poolXp+' Story-XP · '+p.reward.items.map(i=>i.quantity+' × '+i.name).join(', '):'Keine eigene Belohnung vorbereitet.';
+  const edit=document.createElement('button');edit.textContent='Inhalte und Belohnung bearbeiten…';edit.disabled=!!p.acceptedVisitId;edit.onclick=()=>{const owner=previewOwner();if(!owner||run!==source||!sources)return;openProposalEditor(p,sources,async value=>{if(!ownsPreview(owner)||run!==source)throw new Error('Vorschlagskontext geändert.');if(!await execute({kind:'edit-proposal',planId:owner.planId,runId:source.id,index:p.index,expectedRevision:p.revision??1,...value}))return false;run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();return true;});};
+  const loot=document.createElement('button');loot.textContent='Nur Beute neu erzeugen';loot.disabled=!!p.acceptedVisitId||!p.rewardOrigin;loot.onclick=()=>{void regenerateReward(source,p.index);};
+  const reject=document.createElement('button');reject.textContent=p.rejected?'Vorschlag wiederherstellen':'Vorschlag verwerfen';reject.disabled=!!p.acceptedVisitId;reject.onclick=()=>{void rejectProposal(source,p.index);};
+  card.append(title,text,encounter,reward,edit,accept,regenerate,loot,reject);if(p.needsEncounterRefresh){const warning=document.createElement('p');warning.textContent='Ort geändert: Begegnung neu erzeugen, damit die Ortsquellen gelten.';card.append(warning);}root.append(card);
  }
 }
 function closeStoryAward(){
@@ -299,7 +307,7 @@ export async function clearSessionTimeline(){
  const target=unwrap(await window.campaign.session(owner.token,owner.planId));if(!ownsPreview(owner)||!target.replacementBasis)return false;
  return execute({kind:'replace-plan',planId:owner.planId,expectedBasis:target.replacementBasis,name:plan.name,sourcePlanId:null,expectedSourceBasis:null,copyParty:false});
 }
-export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){tell=status;flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
+export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){initProposalEditor();tell=status;flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
  get('plan-replace').onclick=()=>report(openReplacement);get('plan-replacement-source').onchange=()=>report(replacementSource);
  get('plan-replacement-cancel').onclick=()=>{replacement=null;replacementRequest++;get<HTMLDialogElement>('plan-replacement-dialog').close();};
