@@ -5,6 +5,7 @@ export function installWorldSources(db:any){db.exec(`CREATE TABLE IF NOT EXISTS 
 function checkedSource(value:unknown):WorldSource{
  const s=value as WorldSource,id=(v:unknown)=>typeof v==='string'&&v.length>0&&v.length<=1000,ids=(v:unknown)=>Array.isArray(v)&&v.length<=1000&&v.every(id)&&new Set(v).size===v.length;
  if(!s||typeof s!=='object'||Array.isArray(s)||!['faction','location'].includes(s.kind)||!id(s.id)||!Number.isSafeInteger(s.revision)||s.revision<0||!ids(s.tableIds)||!ids(s.factionIds)||!Array.isArray(s.stock)||s.stock.length>1000||s.stock.some(e=>!e||typeof e!=='object'||Array.isArray(e)||!id(e.creatureId)||!Number.isSafeInteger(e.limit)||e.limit<0||e.limit>1000000)||new Set(s.stock.map(e=>e.creatureId)).size!==s.stock.length||s.kind==='faction'&&(s.tableIds.length>1||s.factionIds.length>0)||s.kind==='location'&&s.stock.length>0)throw new Error('Weltquelle benötigt eindeutige Verknüpfungen und gültige Bestände.');
+ if(s.disposition!==undefined&&(!Number.isSafeInteger(s.disposition)||s.disposition<-100||s.disposition>100))throw new Error('Fraktionshaltung benötigt eine ganze Zahl zwischen -100 und 100.');
  return s;
 }
 function sourceRow(row:any):WorldSource{
