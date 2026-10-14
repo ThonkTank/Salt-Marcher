@@ -85,7 +85,7 @@ und native Crossworkflowabnahme bleiben offen.
    Header/Shape und gespeicherte Belege. Zwei Legacygegenproben fanden allerdings
    Fehler bei Schema 38 ohne Chase bzw. ohne Receipttabelle; der Validator
    berücksichtigt jetzt diese historischen Varianten. Der integrierte
-   Shared-Health-Anschluss nutzt Schema 41; dessen Adapter installiert Chase ebenfalls
+   Aktueller World-/Shared-Health-Anschluss nutzt Schema 42; dessen Adapter installiert Chase ebenfalls
    auf der eigenen Migrationskopie. Ältere Formatadapter
    installieren die Chasetabellen auf der eigenen Importkopie.
    Eine weitere Gegenprobe fand den alten Abschlussverweis nach unabhängiger
