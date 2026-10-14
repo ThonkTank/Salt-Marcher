@@ -33,3 +33,5 @@ test('same-scene updates retain input and group import keeps character ownership
 test('refresh retains an explicitly selected completed chase',async t=>{
  const x=setup(t);x.context('scene-a');const finished=view('Finished','scene-a',3);finished.chase.status='finished';finished.chase.outcome='Escaped';x.requests[0].resolve({ok:true,value:finished});await until(()=>x.get('chase-status').textContent.includes('Finished'));x.get('chase-refresh').click();assert.equal(x.requests[1].id,'Finished');x.requests[1].resolve({ok:true,value:finished});await tick();assert.ok(x.get('chase-status').textContent.includes('Escaped'));
 });
+
+test('an archived chase is labeled and all its work controls stay read-only',async t=>{const x=setup(t);x.context('scene-a');const retired=view('A','scene-a',3);retired.chase.status='retired';x.requests[0].resolve({ok:true,value:retired});await until(()=>x.get('chase-status').textContent.includes('archiviert'));for(const control of x.get('chase-work').querySelectorAll('input,button,textarea,select'))assert.equal(control.disabled,true);assert.equal(x.commands.length,0);});
