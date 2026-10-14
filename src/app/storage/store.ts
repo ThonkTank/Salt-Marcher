@@ -671,7 +671,7 @@ export class CampaignStore {
     advanceDungeonFeatures(this.db,cam,after.clock.epochId,after.clock.instantMs);
     recordAutonomyTime(this.db,cam,commandId,after.id,after.clock.epochId,before.clock.instantMs,after.clock.instantMs,basis);
     const locations=new Set([before.locationId,after.locationId].filter((id):id is string=>id!==null));
-    if(locations.size){const active=autonomyView(this.db,cam).actors.filter(a=>a.enabled&&!a.paused&&a.locationId!==null&&locations.has(a.locationId)).map(a=>a.id);if(active.length)catchUpAutonomy(this.db,cam,active,12);}
+    if(locations.size){const active=autonomyView(this.db,cam).actors.filter(a=>a.enabled&&!a.paused&&a.locationId!==null&&locations.has(a.locationId)).map(a=>a.id);if(active.length)catchUpAutonomy(this.db,cam,active,12,{epochId:after.clock.epochId,instantMs:after.clock.instantMs});}
     const spatialScenes=this.db.prepare("SELECT scene_id FROM scene_position WHERE campaign_id=? AND json_extract(payload,'$.dungeon.roomId') IS NOT NULL").all(cam);if(spatialScenes.length){const geometry=dungeonGeometry(this.db,cam);for(const row of spatialScenes)evaluateDungeonSenses(this.db,cam,row.scene_id,geometry);}
   }
   executeWorld(command:WorldCommand){return this.db.transaction(()=>{
