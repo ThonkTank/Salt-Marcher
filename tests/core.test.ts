@@ -111,6 +111,7 @@ import "./core/dungeon-binder-model.test";
 import "./core/agenda-ui.test";
 import "./core/agenda-time.test";
 import "./core/time-plan-ui.test";
+import "./core/time-plan-storage.test";
 import "./core/agenda-storage.test";
 import "./core/object-gestures.test";
 import "./core/extension-lifecycle.test";

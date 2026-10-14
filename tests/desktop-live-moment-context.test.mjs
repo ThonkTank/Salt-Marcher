@@ -117,7 +117,7 @@ test('next-game prep shows the exact opening prose and detached visit actions ca
  x.store.executeLive(x.command({kind:'apply-visit',planId,visitId:first,expectedPlanRevision:1,expectedVisitRevision:firstDetail.revision,sceneId:scene.id,expectedRevision:scene.revision}));
  await x.ui.openLive();x.el('live-session-start').click();await settle();await x.end();x.el('live-session-resume').click();await settle();
  assert.equal(x.el('live-session-resume-visits').querySelector('blockquote p').textContent,text);
- const old=[...x.el('live-session-resume-visits').querySelectorAll('button')];assert.deepEqual(old.map(b=>b.textContent),['Übernahme prüfen','Mappe öffnen']);
+ const old=[...x.el('live-session-resume-visits').querySelectorAll('button')];assert.deepEqual(old.map(b=>b.textContent),['Übernahme prüfen','Mappe öffnen','Spielabend beginnen + Text in Szene']);
  const b=x.store.create('B'),w=x.store.activate(b.id);x.store.executeLive({commandId:randomUUID(),campaignId:b.id,token:w.token,action:{kind:'initialize',expectedRosterRevision:0}});x.ui.activateLive(w);await x.ui.openLive();await settle();
  let reads=0;const packet=x.window.campaign.sessionPacket;x.window.campaign.sessionPacket=async(...args)=>{reads++;return packet(...args);};const before=x.store.db.serialize(),messages=x.messages.length;
  for(const button of old)button.onclick();await settle();assert.equal(reads,0);assert.equal(x.messages.length,messages);assert.ok(x.store.db.serialize().equals(before));
