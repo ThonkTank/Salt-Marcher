@@ -43,6 +43,14 @@ Anschluss ersetzt die frühere Aussage, es gebe noch keinen XP-basierten Code.
 Er ist noch kein Beleg für vollständige D&D-2014-Guidance, Transfer-/Korrektur-
 semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
 
+Der ebenfalls integrierte `storage/session-magic.ts` berechnet optionale
+kumulative Seltenheitsquoten vor/nach erwartetem XP, zieht erhaltene magische
+Beute ab und verteilt den offenen Zielbetrag auf Vorschläge. `fitMagicItems`
+erhält passende Tabellenitems und ergänzt revisionierte Katalogdefinitionen;
+fehlende Seltenheiten bleiben mit Warnung offen. Sessioneditor und Writer tragen
+`SessionMagicGuidance` weiter. Diese Aussage ist Codebefund, keine vollständige
+Magie-/Quellen-/Bedienqualifikation.
+
 ## Nächste ausführbare Schritte
 
 1. **Vorhandene Guidance vollständig qualifizieren.** `storage/session-rewards.ts`
@@ -53,9 +61,11 @@ semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
    Presetidentität. Spätere XP-, Ledger- oder manuelle Rewardänderungen schreiben
    diese ursprüngliche Rechnung nicht um. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
    decken beschädigte Rechnung/Quellledger, Überschuss, unabhängige Kopie und
-   unveränderte Sicherungen ab. Noch offen: Magie-Seltenheitskontingente,
-   vollständige Regelherleitung und native Qualifikation des Gesamtverlaufs.
+   unveränderte Sicherungen ab. Magie-Seltenheitskontingente sind ebenfalls integriert. Noch offen: vollständige Regelherleitung und native Qualifikation des Gesamtverlaufs.
    Native Abnahme: unterschiedliche XP-Stände, korrigierte/weitergereichte/verkaufte Grants, fehlende Werte, individuelle Vorschlagsänderungen und normaler Neustart.
+   Weitere Abnahme: verkaufte, weitergegebene und verbrauchbare magische Grants,
+   korrigierte Definitionen, einmalige Herkunftswertung, Seltenheitsrundung
+   und endlicher Katalogpool ohne stille Ersatzitems.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und

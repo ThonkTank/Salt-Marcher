@@ -47,7 +47,7 @@ test('automatic music follows the focused scene clock rather than another scene 
 test('damaged focused weather cannot rewrite the last valid automatic music state',()=>{
   const f=splitFixture(),weather:Weather={label:'Regen am Hafen',kind:'rain',intensity:.5,windKmh:20,effects:{visibilityMeters:3500,travelFactor:1.2,perception:'Regen',temperatureC:12,ambience:['Regen'],combatNote:''},source:'GM'};
   try{
-    f.store.executeWorld({commandId:'weather',campaignId:f.campaignId,token:f.token,action:{kind:'weather-override',sceneId:f.primaryId,expectedClockRevision:0,weather}});
+    f.store.executeWorld({commandId:'weather',campaignId:f.campaignId,token:f.token,action:{kind:'weather-override',sceneId:f.primaryId,expectedClockRevision:0,expectedOverrideRevision:null,weather}});
     const before=enableAutomaticMusic(f).state;
     const db=(f.store as unknown as {db:any}).db,payload=JSON.stringify({weather});
     db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='weather-override' AND id=?").run(payload,createHash('sha256').update(payload+'-damaged').digest('hex'),f.campaignId,f.primaryId);
