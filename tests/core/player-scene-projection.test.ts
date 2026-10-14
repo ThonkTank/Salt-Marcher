@@ -47,7 +47,7 @@ test('a reviewed location image cannot be released after the focused scene moves
 test('a trashed npc cannot be newly released from retained portrait history',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-npc-active-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
  try{
-  const campaign=store.create('Aktives NSC-Bild'),token=store.activate(campaign.id).token,npc={version:1 as const,id:'npc',revision:1,kind:'npc' as const,title:'Hafenwache',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};
+  const campaign=store.create('Aktives NSC-Bild'),token=store.activate(campaign.id).token,npc={version:1 as const,id:'00000000-0000-4000-8000-000000000abc',revision:1,kind:'npc' as const,title:'Hafenwache',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};
   store.changePreparation({commandId:'npc',campaignId:campaign.id,token,change:{kind:'note',expectedRevision:null,note:npc}});
   const character=store.executeLive({commandId:'character',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}}).character!;
   const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
@@ -57,6 +57,11 @@ test('a trashed npc cannot be newly released from retained portrait history',()=
   store.changePreparation({commandId:'trash-npc',campaignId:campaign.id,token,change:{kind:'note-trash',id:npc.id,expectedRevision:1,trashed:true}});
   assert.throws(()=>store.executePlayer(release),/Bildziel fehlt/);
   assert.equal(store.playerView(token).settings.blank,true);
+  store.changePreparation({commandId:'restore-npc',campaignId:campaign.id,token,change:{kind:'note-trash',id:npc.id,expectedRevision:2,trashed:false}});
+  const shown=store.executePlayer({...release,commandId:'show-restored-npc',expectedRevision:store.playerView(token).settings.revision});
+  store.changePreparation({commandId:'retire-shown-npc',campaignId:campaign.id,token,change:{kind:'note-trash',id:npc.id,expectedRevision:3,trashed:true}});
+  const before=(store as unknown as {db:any}).db.serialize(),repeated={...release,commandId:'republish-retired-npc',expectedRevision:shown.settings.revision};
+  assert.throws(()=>store.executePlayer(repeated),/Bildziel fehlt/);
+  assert.ok((store as unknown as {db:any}).db.serialize().equals(before));
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
-

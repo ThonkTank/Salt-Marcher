@@ -291,7 +291,9 @@ Auflösung nach einem Neustart. Ein zusätzlicher Fall belegt Needbeiträge,
 Rollen-Ablehnung und den stabilen Tie-break im begrenzten Joblog. Der
 Gruppenfall weist eine veraltete Revision ohne Teilwirkung ab und belegt nach
 Aktivierung die geloggte Gruppenidentität sowie nach Deaktivierung den
-abgebrochenen Job und die abgeschnittene Ressourcenbuchung.
+erhaltenen Job samt Fortschritt und die abgeschnittene Ressourcenbuchung.
+Deaktivierung und ausdrücklich beauftragter Jobabbruch bleiben getrennte
+Aktionen; eine erneute Aktivierung kann den noch gültigen Job fortsetzen.
 `tests/core/autonomy-time-conflict-ui.test.ts` prüft am vollständigen DOM die
 Zeit-/Worldinformationen, beide begründeten Entscheidungen und die sichtbare
 Kandidaten-/Ablehnungszusammenfassung.
