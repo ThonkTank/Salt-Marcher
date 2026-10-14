@@ -61,7 +61,10 @@ Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
 ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt.
 Live-Cues öffnen Ortsart, NPC-Porträts oder ein
-spontanes Handout direkt für die geprüfte Gruppe. Ein Pickerabbruch ändert die
+spontanes Handout direkt für die geprüfte Gruppe. Eine neu ausgewählte Orts-ID
+wird als sichtbarer Auftrag gebunden; erst ihr erfolgreicher Save erlaubt die
+direkte Bild-/Livefreigabe. Ein Savefehler veröffentlicht nichts.
+Ein Pickerabbruch ändert die
 Anzeige nicht. Änderungen an Fokus oder Mitgliedern während der Auswahl
 verhindern die Freigabe; gespeicherte Art bleibt erhalten. Genau ein neues Bild
 mit passendem Typ und Ziel muss die Auswahl bestimmen. Bei parallelen,
@@ -104,7 +107,8 @@ Karten, gespeicherte Kenntnis, GM-Steuerung und alte asynchrone Antworten.
 
 `desktop-live-visual-context.test.mjs` benutzt die Browser-Event-Realm und
 aktuelle Party-/Ledgerreads für sechs Autosave-/Create-Prüfungen einschließlich
-Vorlesetext. Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
+Vorlesetext; drei weitere Fälle prüfen sofortige Freigabe einer neuen
+Ortsauswahl und fehlgeschlagenes Speichern. Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
 gebundenen Vertrag angepasst: GM-Wirkungen und Sichtbarkeitswerte bleiben
 prüfbar; ihr Fortschritt darf keine Mechanik auf den passiven Bildschirm bringen.
 Ein falsches früheres Ausgabeergebnis ist keine Regressionserwartung.
