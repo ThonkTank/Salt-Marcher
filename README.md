@@ -492,3 +492,25 @@ Das Tutorial erklärt die Auswahl; ältere Requests ohne Auswahl bleiben gültig
 Offen bleiben die vollständige veröffentlichte DMG-Herleitung der Beutequoten,
 gezielte Gegenstandspools und getrennte Kontingente für verbrauchbare und
 permanente Magiebeute. Native Gesamt- und Plattformabnahme bleiben separat.
+
+
+### Desktopstand 0.47: gezielte, vielfältige Magiebeute
+
+Die Spielabendplanung kann einen eigenen Gegenstandspool benutzen. Suche und
+Seltenheitsfilter finden aktive magische Katalogdefinitionen; die Auswahl
+aktiviert den Magiebeuteausgleich. Der gespeicherte Lauf bindet die konkreten
+Gegenstandsversionen. Unpassende Tabellenbeute wird ausgelassen, fehlende
+Seltenheiten bleiben als offene Kontingente sichtbar. Ein leerer eigener Pool
+weicht nicht auf den allgemeinen Katalog aus.
+
+Größere Seltenheitskontingente verteilen sich reproduzierbar auf verschiedene
+passende Definitionen statt nur einen zufälligen Gegenstand zu vervielfachen.
+Ohne eigenen Pool gilt die Auswahl auch für den allgemeinen Katalog. Der
+Generator liest Kandidaten nacheinander und hält höchstens zwölf kleine
+Definitionprojektionen je Seltenheit. Die Summe je Seltenheit bleibt erhalten.
+
+„Nur Beute neu erzeugen“ hält Pool und gespeicherte Kontingente fest; einzelne
+Vorschläge bleiben manuell bearbeitbar. Übernahme, Schatzplatzierung, Neustart
+und Kampagnentransfer behalten die Referenzen. Geänderte, entfernte oder beschädigte Definitionen
+werden bei Neugenerierung als offene Kontingente gemeldet. Die veröffentlichten
+DMG-Quoten und getrennte Verbrauchs-/permanente Magiequoten bleiben offen.
