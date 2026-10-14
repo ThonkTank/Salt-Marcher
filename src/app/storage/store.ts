@@ -13,7 +13,7 @@ import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discard
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk} from './scene-desk';
 import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft} from './finish-drafts';
-import {installNarrative,readNarrative,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
+import {installNarrative,readNarrative,saveNarrative,validateNarrativeState,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
 import {readPreparedGroup} from './session';
 import {installCombatDraftSchema,validateCombatDrafts,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
 import type {CombatDraftKind,CombatWorkingDraft} from '../combat-draft-contracts';
@@ -773,7 +773,7 @@ export class CampaignStore {
     const replay=!!this.db.prepare('SELECT 1 FROM live_receipt WHERE command_id=?').get(command.commandId);
     const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
     const ack = executeLive(this.db, command, () => {this.guard(command.token, command.campaignId);});
-    if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!;this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:campaignLocalId(followUp.id),revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});}
+    if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!,noteId=campaignLocalId(followUp.id),scene=ack.scene;if(!scene||scene.id!==a.sceneId)throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});const locationId=scene.locationId&&this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(command.campaignId,scene.locationId)?scene.locationId:null,state={noteId,revision:0,status:'open' as const,locationId,contributors:scene.members,poolXp:0,items:[],awardId:null};validateNarrativeState(this.db,command.campaignId,state);saveNarrative(this.db,command.campaignId,state);}
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){
