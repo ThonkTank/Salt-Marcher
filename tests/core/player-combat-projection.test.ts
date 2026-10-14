@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 import type {CombatState} from '../../src/app/combat-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
+const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision,expectedFocusLocationId:view.focusLocationId};};
 
 test('combat mechanics stay GM-owned while the passive display keeps its visual context',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-combat-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
@@ -21,7 +22,7 @@ test('combat mechanics stay GM-owned while the passive display keeps its visual 
   combat=store.executeCombat({commandId:'hero-init',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:hero.id,changes:{initiative:15,hp:12,maxHp:20}}}).combat!;
   combat=store.executeCombat({commandId:'enemy-init',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:enemy.id,changes:{initiative:10,hp:4,conditions:'Liegend, Fluch des Sehers, Poisoned'}}}).combat!;
   combat=store.executeCombat({commandId:'start',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'start'}}).combat!;
-  let player=store.executePlayer({commandId:'show',campaignId:campaign.id,token,expectedRevision:0,expectedFocusId:scene.id,expectedFocusRevision:0,expectedFocusMembershipRevision:store.live(token).scene?.membershipRevision??null,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
+  let player=store.executePlayer({commandId:'show',campaignId:campaign.id,token,expectedRevision:0,expectedFocusId:scene.id,expectedFocusRevision:0,expectedFocusMembershipRevision:store.live(token).scene?.membershipRevision??null,expectedFocusLocationId:store.live(token).scene?.locationId??null,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
   assert.equal(player.frame.mode,'blank');assert.doesNotMatch(JSON.stringify(player.frame),/combat|Hinterhalt|Vampir|initiative|health/);
   combat=store.executeCombat({commandId:'down-hero',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage',participantId:hero.id,amount:12}}).combat!;
   combat=store.executeCombat({commandId:'death-success',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'death',participantId:hero.id,result:'success'}}).combat!;
@@ -39,7 +40,7 @@ test('combat mechanics stay GM-owned while the passive display keeps its visual 
   player=store.playerView(token);assert.equal(player.frame.mode,'blank');assert.equal(!!combat.participants.find(p=>p.id===enemy.id)!.hiddenFromPlayers,false);
   assert.throws(()=>store.executeCombat({commandId:'hide-party',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'visibility',participantId:hero.id,hidden:true}}),/Partyfiguren/);
 
-  player=store.executePlayer({commandId:'public-heading',campaignId:campaign.id,token,expectedRevision:player.settings.revision,expectedFocusId:scene.id,expectedFocusRevision:0,expectedFocusMembershipRevision:store.live(token).scene?.membershipRevision??null,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'Am Stadttor',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
+  player=store.executePlayer({commandId:'public-heading',campaignId:campaign.id,token,expectedRevision:player.settings.revision,expectedFocusId:scene.id,expectedFocusRevision:0,expectedFocusMembershipRevision:store.live(token).scene?.membershipRevision??null,expectedFocusLocationId:store.live(token).scene?.locationId??null,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'Am Stadttor',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
   assert.equal(player.settings.title,'Am Stadttor');assert.equal(player.frame.title,'');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Vampir/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
