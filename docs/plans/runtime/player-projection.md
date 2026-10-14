@@ -10,8 +10,8 @@ L289–302 und L388–406, verlangen einen passiven Bildschirm für Karten und
 NPC-/Ortsart. Er folgt der fokussierten Scene, kombiniert dauerhafte
 Characterkenntnis mit aktueller Wahrnehmung und bleibt durch GM-Blank und
 Artoverride kontrollierbar. Neue Anzeigeänderungen binden zusätzlich an die
-tatsächlich vorgesehene Focus-ID, Focusrevision, Mitgliedschaftsrevision und aktuellen Ort; der GMdialog benennt diese
-Gruppe ausdrücklich. Ein A/B/A-Wechsel oder geänderte Mitgliedschaft bei gleichem Fokus erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
+tatsächlich vorgesehene Focus-ID, Focusrevision, Mitgliedschaftsrevision und aktuelle Orts-ID; der GMdialog benennt diese
+Gruppe ausdrücklich. Ein A/B/A-Wechsel oder geänderte Mitgliedschaft/Ortsbindung bei gleichem Fokus erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
 Notizen ausdrücklich aus. Die gebundenen Scene-/LiveSessionanforderungen
 beschreiben die GM-Arbeitsflächen; sie erweitern diesen Displaykanal nicht.
 Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
@@ -60,7 +60,7 @@ keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
 ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt.
-Live-Cues öffnen Ortsart oder ein
+Live-Cues öffnen Ortsart, NPC-Porträts oder ein
 spontanes Handout direkt für die geprüfte Gruppe. Ein Pickerabbruch ändert die
 Anzeige nicht. Änderungen an Fokus oder Mitgliedern während der Auswahl
 verhindern die Freigabe; gespeicherte Art bleibt erhalten. Genau ein neues Bild
@@ -89,6 +89,8 @@ Ortsart bleibt trotz aktiver Masken, Mechanik bleibt GM-owned, neue Textaufträg
 haben keine Teilwirkung/Receipt und alte Textsettings bleiben über Fresh,
 Backup/Copy erhalten und neutral. Eine weitere Storegegenprobe verwirft alte Freigaben bei neuer Mitgliedschaft
 ohne Fokuswechsel atomar; nach erneutem Prüfen ist dieselbe visuelle Freigabe gültig.
+Die direkte NPC-Bildprobe verwendet vorhandene freigegebene PNGart ohne neue
+Dateiwahl; private NPC-/Scenerecords bleiben exakt erhalten.
 Renderer-Gegenproben prüfen alte Pakete
 samt Überschrift. `desktop-player-visual-host.test.mjs` prüft echte Hostmethoden mit
 kontrollierten Fenstern: Push/Pull, erlaubte Feldmenge und verschachtelte Daten.
