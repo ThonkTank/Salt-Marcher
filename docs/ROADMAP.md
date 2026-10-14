@@ -68,6 +68,7 @@ Tastatur, 200 %, Lokalisierbarkeit, passende Feature-Tutorials, ehrlicher pendin
 Der [Quellenabgleich](SCOPE.md) führt den gesamten erfassten Umfang. Diese Funktionen brauchen zusätzlich konkrete Fachpakete und direkte Abnahmen:
 
 Die vier E2E-Gates ersetzen keine Fachabnahme. Der vollständige Abschluss verlangt alle SMR-00–11 und SMR-AC-01–18 aus der [SaltMarcher-Lieferplanung](../ROADMAP-SALTMARCHER-REPLACEMENT.md#lieferphasen). Die detaillierte Themen-, Quellen- und Abnahmezuordnung steht ausschließlich in [SCOPE](SCOPE.md) und dem Quellenregister.
+Die [ausführbare Extension-/Capability-Grenze](plans/extensions/smr10-capability-boundary.md) ergänzt SMR-10; Installation und Portabilität ersetzen noch keinen Broker oder Inhaltseditor.
 
 Automatische Speicherung, vollständige Wiederaufnahme, Datenlebenszyklus und Import sind querschnittliche Anforderungen. Ein manueller Save/Reopen-Beleg ersetzt sie nicht. Jeder Fachbereich liefert seine nötigen Fähigkeiten und Nachweise; die fachlichen Abhängigkeiten oben bestimmen, welche Funktionen sich bereits verbinden lassen.
 

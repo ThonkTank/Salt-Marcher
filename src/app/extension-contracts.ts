@@ -7,19 +7,16 @@ export interface ExtensionInfo {id:string;revision:number;generation:string;mani
 export interface ExtensionPreview {ticket:string;hash:string;bytes:number;manifest:ExtensionManifest;expectedRevision:number|null}
 export type ExtensionAction={kind:'install';ticket:string;hash:string;expectedRevision:number|null;rights:ExtensionRight[]}|{kind:'revoke'|'remove';id:string;expectedRevision:number};
 export interface ExtensionCommand {commandId:string;action:ExtensionAction}
+const exact=(value:unknown,keys:string[])=>!!value&&typeof value==='object'&&!Array.isArray(value)&&Object.getPrototypeOf(value)===Object.prototype&&Reflect.ownKeys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));
+const id=(value:unknown)=>typeof value==='string'&&/^[a-z][a-z0-9.-]{0,99}$/.test(value);
+const revision=(value:unknown)=>Number.isSafeInteger(value)&&(value as number)>=1;
+export function checkedExtensionCommand(value:unknown):ExtensionCommand{
+ if(!exact(value,['commandId','action']))throw new Error('Installationsauftrag hat ein unbekanntes Format.');
+ const command=value as ExtensionCommand;if(typeof command.commandId!=='string'||!command.commandId||command.commandId.length>128)throw new Error('Installationskennung fehlt.');const action:any=command.action;
+ if(action?.kind==='install'){if(!exact(action,['kind','ticket','hash','expectedRevision','rights'])||typeof action.ticket!=='string'||!/^[a-f0-9-]{36}$/.test(action.ticket)||typeof action.hash!=='string'||!/^[a-f0-9]{64}$/.test(action.hash)||action.expectedRevision!==null&&!revision(action.expectedRevision)||!Array.isArray(action.rights)||action.rights.length>extensionRights.length||new Set(action.rights).size!==action.rights.length||action.rights.some((right:unknown)=>!extensionRights.includes(right as ExtensionRight)))throw new Error('Installationsauftrag ist ungültig.');}
+ else if(action?.kind==='revoke'||action?.kind==='remove'){if(!exact(action,['kind','id','expectedRevision'])||!id(action.id)||!revision(action.expectedRevision))throw new Error('Installationsauftrag ist ungültig.');}
+ else throw new Error('Installationsaktion unbekannt.');
+ return structuredClone(command);
+}
 export interface ExtensionPage {items:ExtensionInfo[];problems:{id:string;message:string}[];next:string|null}
 export interface ExtensionAPI {extensionPreview():Promise<Result<ExtensionPreview|null>>;extensions(after:string|null):Promise<Result<ExtensionPage>>;executeExtension(command:ExtensionCommand):Promise<Result<ExtensionInfo>>;extensionOutcome(command:ExtensionCommand):Promise<Result<ExtensionInfo|null>>}
-
-/** Shared boundary for persisted recovery intent and host commands; never grants authority itself. */
-export function checkedExtensionCommand(value:unknown):ExtensionCommand {
- const object=(v:any,keys:string[])=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
- const c=value as any;
- if(!object(c,['commandId','action'])||typeof c.commandId!=='string'||!c.commandId||c.commandId.length>128)throw new Error('Gespeicherter Installationsauftrag ungültig.');
- const a=c.action;
- if(a?.kind==='install'){
-  if(!object(a,['kind','ticket','hash','expectedRevision','rights'])||typeof a.ticket!=='string'||!a.ticket||a.ticket.length>128||typeof a.hash!=='string'||!/^[a-f0-9]{64}$/.test(a.hash)||(a.expectedRevision!==null&&(!Number.isSafeInteger(a.expectedRevision)||a.expectedRevision<1))||!Array.isArray(a.rights)||a.rights.length>extensionRights.length||new Set(a.rights).size!==a.rights.length||a.rights.some((r:any)=>!extensionRights.includes(r)))throw new Error('Installationsauftrag für Paketannahme ungültig.');
- }else if(a?.kind==='revoke'||a?.kind==='remove'){
-  if(!object(a,['kind','id','expectedRevision'])||typeof a.id!=='string'||!/^[a-z][a-z0-9.-]{0,99}$/.test(a.id)||!Number.isSafeInteger(a.expectedRevision)||a.expectedRevision<1)throw new Error('Installationsauftrag für Widerruf/Entfernen ungültig.');
- }else throw new Error('Installationsaktion unbekannt.');
- return c;
-}
