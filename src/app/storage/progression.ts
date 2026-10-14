@@ -6,7 +6,7 @@ import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,val
 import { randomUUID, createHash } from 'node:crypto';
 import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
-import { readLiveScene, readCharacter } from './live';
+import { readLiveScene, readRoster } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
 const json = (v: unknown) => JSON.stringify(v), hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installProgressSchema(db: any) {
@@ -132,12 +132,12 @@ export function lastCombatPartyParticipant(db:any,cam:string,state:CombatState,c
 
 export function readProgress(db: any, cam: string): ProgressView {
   return db.transaction(() => {
-    const rows=db.prepare('SELECT m.*,p.payload AS profile FROM roster_member m JOIN character_profile p ON m.campaign_id=p.campaign_id AND m.id=p.id WHERE m.campaign_id=? AND json_type(p.payload,\'$.archive\') IS NULL ORDER BY m.ordinal,m.id').all(cam);
-    const progress=new Map<string,Progress>(rows.map((r:any)=>[r.id,readProgressCharacter(db,cam,r.id)]));
-    const open=openHealthCombats(db,cam),statuses=latestCombatStatuses(db,cam,rows.filter((r:any)=>progress.get(r.id)!.health===null&&!progress.get(r.id)!.combatStatus).map((r:any)=>r.id));
-    return {characters:rows.map((r:any)=>{
+    const rows=readRoster(db,cam).filter(c=>!c.archived);
+    const progress=new Map<string,Progress>(rows.map(r=>[r.id,readProgressCharacter(db,cam,r.id)]));
+    const open=openHealthCombats(db,cam),statuses=latestCombatStatuses(db,cam,rows.filter(r=>progress.get(r.id)!.health===null&&!progress.get(r.id)!.combatStatus).map(r=>r.id));
+    return {characters:rows.map(r=>{
       const p=progress.get(r.id)!,active=open.get(r.id);
-      return {...p,name:JSON.parse(r.profile).name,active:!!r.active,membershipRevision:r.membership_revision,sceneId:r.scene_id,
+      return {...p,name:r.profile.name,active:r.active,membershipRevision:r.membershipRevision,sceneId:r.sceneId,
         ...(active?{health:active.actor.healthKnown===false?null:healthFromActor(active.actor),healthCombat:{id:active.state.id,sceneId:active.state.sceneId,title:active.state.title},lastCombatStatus:{tempHp:active.actor.tempHp,conditions:active.actor.conditions,concentrating:active.actor.concentrating}}:p.health===null&&p.combatStatus?{lastCombatStatus:p.combatStatus}:statuses.has(r.id)?{lastCombatStatus:statuses.get(r.id)}:{})};
     }),notices: db.prepare('SELECT n.id,n.character_id AS characterId,n.text FROM progress_notice n JOIN roster_member m ON m.campaign_id=n.campaign_id AND m.id=n.character_id WHERE n.campaign_id=? AND n.delivered=0 AND m.active=1 ORDER BY n.rowid').all(cam),
   };})();
@@ -307,7 +307,7 @@ export function readProgressHistory(db: any, cam: string, characterId: string, a
 }
 export function readLootBalance(db:any,cam:string){
  return db.transaction(()=>{
-  const members=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? ORDER BY ordinal').all(cam).map((m:any)=>readCharacter(db,cam,m.id)).filter((m:import('../live-contracts').Character)=>!m.archived);
+  const members=readRoster(db,cam).filter(c=>!c.archived);
   const totals=new Map<string,bigint>(),unknown=new Map<string,number>();
   for(const m of members){totals.set(m.id,0n);unknown.set(m.id,0);}
   for(const row of db.prepare('SELECT * FROM character_ledger WHERE campaign_id=?').iterate(cam)){
@@ -319,7 +319,7 @@ export function readLootBalance(db:any,cam:string){
    }catch{unknown.set(row.character_id,(unknown.get(row.character_id)??0)+1);}
   }
   const leader=[...totals.values()].reduce((a,b)=>a>b?a:b,0n);
-  const characters=members.map((m:any)=>({characterId:m.id,name:m.profile.name,active:m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));
+  const characters=members.map(m=>({characterId:m.id,name:m.profile.name,active:m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));
   return{characters,leaderCopper:leader.toString(),suggestedCharacterIds:lootBalanceSuggestions(characters,leader.toString())};
  })();
 }

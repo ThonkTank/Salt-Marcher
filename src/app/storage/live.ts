@@ -33,11 +33,19 @@ export function migrateLiveClock(db: any) {
     INSERT INTO scene_clock_v7(campaign_id,scene_id,revision,epoch_id,instant_ms) SELECT campaign_id,scene_id,revision,epoch_id,instant_ms FROM scene_clock;
     DROP TABLE scene_clock; ALTER TABLE scene_clock_v7 RENAME TO scene_clock;`);
 }
-function profile(db: any, campaignId: string, id: string): Character {
-  const row = db.prepare('SELECT m.*,p.revision AS profile_revision,p.payload,p.checksum FROM roster_member m JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id WHERE m.campaign_id=? AND m.id=?').get(campaignId, id);
-  if (!row || hash(row.payload) !== row.checksum) throw new Error('Charakterprofil nicht verfügbar oder beschädigt.');
+const profileQuery = 'SELECT m.*,p.revision AS profile_revision,p.payload,p.checksum FROM roster_member m LEFT JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id';
+function checkedCharacterRow(row: any): Character {
+  if (!row || typeof row.payload !== 'string' || hash(row.payload) !== row.checksum) throw new Error('Charakterprofil nicht verfügbar oder beschädigt.');
   if (![row.ordinal, row.membership_revision].every(v => Number.isSafeInteger(v) && v >= 0) || !Number.isSafeInteger(row.profile_revision) || row.profile_revision < 1) throw new Error('Charakterrevision oder Partyreihenfolge beschädigt.');
-  return { id: row.id, ordinal: row.ordinal, profile: checkedCharacterProfile(JSON.parse(row.payload)), profileRevision: row.profile_revision, archived:!!JSON.parse(row.payload).archive, active: !!row.active, membershipRevision: row.membership_revision, sceneId: row.scene_id };
+  const value = checkedCharacterProfile(JSON.parse(row.payload));
+  if(value.archive&&(row.active||row.scene_id!==null))throw new Error('Archivierte Figur ist noch einer Party oder Scene zugeordnet.');
+  return { id: row.id, ordinal: row.ordinal, profile: value, profileRevision: row.profile_revision, archived:!!value.archive, active:!!row.active, membershipRevision:row.membership_revision, sceneId:row.scene_id };
+}
+function profile(db: any, campaignId: string, id: string): Character {
+  return checkedCharacterRow(db.prepare(profileQuery+' WHERE m.campaign_id=? AND m.id=?').get(campaignId,id));
+}
+export function readRoster(db: any, campaignId: string): Character[] {
+  return db.prepare(profileQuery+' WHERE m.campaign_id=? ORDER BY m.ordinal,m.id').all(campaignId).map(checkedCharacterRow);
 }
 export {profile as readCharacter};
 export function readCampaignTime(db:any,campaignId:string){
@@ -68,8 +76,7 @@ export function readLive(db: any, campaignId: string): LiveView {
     if (!party || !Number.isSafeInteger(party.revision) || party.revision < 0) throw new Error('Partyquelle ist nicht verfügbar.');
     const time = db.prepare('SELECT * FROM campaign_time WHERE campaign_id=?').get(campaignId);
     if (!time || !time.epoch_id || !/^(0|[1-9][0-9]*)$/.test(time.instant_ms)) throw new Error('Bestätigter Kampagnenzeitanker nicht verfügbar.');
-    const allRoster = db.prepare('SELECT id FROM roster_member WHERE campaign_id=? ORDER BY ordinal,id').all(campaignId).map((row: any) => profile(db, campaignId, row.id));
-    if(allRoster.some((c:Character)=>c.archived&&(c.active||c.sceneId!==null)))throw new Error('Archivierte Figur ist noch einer Party oder Scene zugeordnet.');
+    const allRoster = readRoster(db,campaignId);
     const roster=allRoster.filter((c:Character)=>!c.archived),archivedRosterCount=allRoster.length-roster.length;
     const state = db.prepare('SELECT * FROM live_state WHERE campaign_id=?').get(campaignId);
     if (!state) {
