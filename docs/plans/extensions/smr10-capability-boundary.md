@@ -22,6 +22,8 @@ Der erste echte Consumer braucht einen kleinen Hostport für genau einen `way-no
 
 Die erste Laufzeitabnahme muss Installation und Offenlegung, Unit-Anlage, Fresh, Grant-Widerruf, fehlendes/inkompatibles Paket, unabhängige Campaignbearbeitung, vollständigen Campaigntransfer und Wiederherstellung mit derselben Unit umfassen. Fehler oder Entzug sperren nur den Consumer. Die App bleibt bedienbar, die Bytes bleiben exportierbar, und ein später kompatibler Ersatz liest sie wieder. Paket-Renderer benötigen vor Aktivierung zusätzlich eine belastbare Isolationsentscheidung; eine Host-Webview oder Obsidian-Pluginumgebung gilt nicht automatisch als Sandbox.
 
-## Offene Bediengrenze
+## Bedien- und Wiederaufnahmegrenze
 
-Der Renderer hält einen noch nicht bestätigten Installationsauftrag derzeit in `localStorage`. Beschädigte Wiederaufnahmemetadaten brauchen einen eigenen fail-closed Ablauf: erst den aktuellen Installationsstand erfolgreich lesen, dann den unveränderten beschädigten Vermerk sichern und ausdrücklich zurücksetzen. Bis dieser Ablauf integriert und getestet ist, ist Crash-Recovery der Installationsoberfläche keine vollständige Extensionabnahme.
+Der Renderer hält einen noch nicht bestätigten Installationsauftrag in `localStorage` und prüft ihn beim erneuten Öffnen mit demselben exakten Commandvertrag wie der Store. Ein gültiger Vermerk erlaubt ausschließlich die Outcome-Abfrage. Ein beschädigter oder vorübergehend nicht lesbarer Vermerk sperrt Installation, Widerruf und Entfernen. Erst nachdem alle Seiten der aktuellen Installationsliste erfolgreich gelesen wurden, kann der unveränderte Rohwert unter einer eigenen Schadenskennung gesichert und zurückgesetzt werden. Hat sich der Wert inzwischen geändert oder scheitert ein Speicherschritt, bleibt er erhalten und die Oberfläche gesperrt. Erneutes Öffnen liest den tatsächlichen Stand neu ein.
+
+Damit ist die Renderer-Crash-Recovery für die heutige reine Installationsgrenze belegt. Eine vollständige Extensionabnahme bleibt wegen des noch fehlenden Runtime-Consumers und seiner Isolation offen.

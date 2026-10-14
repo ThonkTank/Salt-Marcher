@@ -103,3 +103,4 @@ import "./core/live-knowledge.test";
 import "./core/live-party-reference.test";
 import "./core/object-gestures.test";
 import "./core/extension-lifecycle.test";
+import "./core/extension-recovery-ui.test";
