@@ -272,6 +272,7 @@ else {
     handle('city:view',(token:string,id:string)=>store.city(token,id));
     handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>store.executeCity(c));
     handle('city:export',async(token:string,id:string,format:'svg'|'json')=>{if(!['svg','json'].includes(format))throw new Error('Ausgabeformat unbekannt.');const city=store.city(token,id),destination=await dialog.showSaveDialog(win,{defaultPath:city.header.name+'.'+format,filters:[{name:'Stadtplan',extensions:[format]}]});if(destination.canceled||!destination.filePath)return{cancelled:true};const text=format==='svg'?citySvg(city):JSON.stringify({format:'Kampagnenwerkstatt City',version:1,...city},null,2);await writeFile(destination.filePath,text);return{cancelled:false};});
+    handle('world:agenda',(token:string,query:import('../src/app/agenda-contracts').AgendaQuery)=>store.agenda(token,query));
     handle('world:view',(token:string)=>store.world(token));
     handle('world:scene',(token:string,id:string)=>store.sceneWorld(token,id));
     handle('world:travel-preview',(token:string,request:import('../src/app/world-contracts').TravelRequest)=>store.previewTravel(token,request));
