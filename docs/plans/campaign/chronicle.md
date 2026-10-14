@@ -154,3 +154,31 @@ vollständige Navigation und native Abnahme bleiben offen.
    Ziellöschung bleiben erkennbar. Archivierte Eigentümer sind historische
    Referenzen. Abschließend tatsächliche Desktopprobe mit Kampagnenwechsel,
    Fresh, Tastatur, Skalierung und Markdownausgabe; lokale Tests ersetzen sie nicht.
+
+## Spielabend-Übergabe vom 14.10.2026
+
+Der ausdrückliche Abschluss hält Rückblick und die separate Übergabe für den
+nächsten Spielabend in demselben bestätigten `session-marker` fest. Die Chronik
+zeigt, durchsucht und exportiert beide Texte. Der Livebereich verwendet die
+letzte Abschlussmarkierung, auch während des folgenden Spielabends; eine neuere
+leere Übergabe lässt ältere Aufgaben nicht wieder aufleben. Sie verändert
+weder den Planner noch offene Kämpfe, Verfolgungen, XP oder Schatzbestände.
+Die Abschlussprüfung schlägt aktuelle offene Arbeit als editierbaren Text vor;
+nur die ausdrückliche Abschlussbestätigung bucht diesen Text.
+
+`desktop-chronicle-window.test.mjs` prüft den realen SQLitewriter mit unverändertem
+CRLF-/Leerzeichenwortlaut, demselben Receipt bei Wiederholung, Fresh-Read,
+Suchfilter und Markdown sowie einer später bewusst leeren Übergabe. Die
+`live-session-close`-Proben unterscheiden fortgesetzte Prüfung von Abbruch.
+Das sind lokale Teilbelege; native Bedienung und Crash-Wiederaufnahme bleiben offen.
+
+Nächster Anschluss: `live.ts` bindet Rückblick und Übergabe derzeit an
+Rendererfelder. Beide Rohentwürfe gemeinsam mit Campaign, laufendem Spielabend
+und Ursprungsscene persistieren; die Abschlussbestätigung muss ihre tatsächlich
+gezeigte Fassung und Scene-Revision halten. Folgeeingaben während Pending und
+beim Wechsel zu XP/Beute erhalten. Ein unbekannter Commandausgang wird über das
+ursprüngliche Receipt aufgeklärt; kein neuer Abschluss zur Aufklärung. Abnahme:
+Close/Fresh vor Bestätigung, Fehler/Antwortverlust, Gruppen-/Campaignwechsel
+während Prüfung und Versand, weiterer Text während Pending und neuer Spielabend
+mit ausdrücklich leerer Übergabe. Erst danach den vollständigen Spielabendweg
+mit XP, Loot, Chronik und nächster Vorbereitung nativ qualifizieren.
