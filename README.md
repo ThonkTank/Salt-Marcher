@@ -346,3 +346,30 @@ Bestandsgrenzen gelten pro Begegnung, nicht als Reservierung für den ganzen
 Abend. Vollständiger DMG-Beutebudget-/Lootausgleich und NPC-basierte Kandidaten
 bleiben offen; verknüpfte Beutetabellen ersetzen diese spätere Budgetgenerierung
 nicht. Schema43 bleibt unverändert; neue Vorschlagsfelder sind optional.
+
+### Desktopstand 0.42: kumulierter Beuteausgleich für Spielabende
+
+Der Spielabend-Generator kann die vorhandene Beute-Fortschrittskurve des wirksamen
+Presets mit bestätigten Charakter-XP und den persönlichen Loot-Ledgern verbinden.
+Nur einzeln gewählte Roster-Figuren mit bekannten XP können diesen Modus nutzen.
+Freie Planungszeilen bleiben bei ausgeschaltetem Beuteausgleich verwendbar.
+Die Summe der erwarteten Werte nach den geplanten Encounter-/Story-XP abzüglich
+bereits erhaltener Beute ergibt das neue monetäre Ziel; Überschüsse können es auf
+0 senken. Käufe zählen nicht als erhaltene Belohnung, Verkäufe und Weitergaben
+verwenden die bestehende Ledgerbewertung. Unbekannte relevante Werte erfordern
+eine Klärung oder den manuellen Modus.
+
+Verknüpfte Beutetabellen liefern weiterhin den Inhalt. Mengen werden auf das
+Budget begrenzt; ein exakter Rest wird mit Gold-, Silber- und Kupfermünzen gefüllt.
+Auch ohne Beutetabelle entstehen so eigene geplante Belohnungen. Die Vorschau
+speichert Presetstand, XP, Ledgerwerte, Basis, Differenz, Ziel und Szenenanteile.
+Sie erzeugt keine Vergabe, Weltbeute oder Gegenstandsdefinitionen. Einzelne
+Beuteregeneration hält den gespeicherten Anteil ein; eigene Reward-Edits bleiben
+erlaubt. Encounterregeneration schreibt bereits geplante Beute nicht um und die
+Empfehlung bleibt als ursprünglicher Berechnungsstand lesbar. Vorschlagshistory
+zeigt nach einzelner Regeneration sofort den tatsächlich offenen Run.
+
+Die Berechnung verwendet die bereits im Projekt enthaltene versionierte
+Presetkurve; sie ist keine neue Behauptung einer vollständigen publizierten
+DMG-Herleitung. Automatische Magie-Seltenheitskontingente und deren kumulierter
+Ausgleich bleiben offen. Schema43 bleibt unverändert.
