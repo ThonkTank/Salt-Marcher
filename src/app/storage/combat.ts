@@ -75,6 +75,7 @@ function assessment(db: any, cam: string, state: CombatState) {
 function label(index: number) { let result=''; do { result=String.fromCharCode(65+index%26)+result;index=Math.floor(index/26)-1; } while(index>=0);return result; }
 function legendarySource(state:CombatState,p:Combatant){return state.sources?.find(source=>source.id===p.sourceId&&source.legendaryActions.length);}
 function resetLegendary(state:CombatState,p:Combatant){if(legendarySource(state,p))p.legendaryActions={remaining:3,maximum:3,lastResetRound:state.round};}
+function tickEffects(p:Combatant,tick:'start'|'end'){if(!p.timedEffects)return;for(const effect of p.timedEffects)if(effect.tick===tick)effect.remaining--;p.timedEffects=p.timedEffects.filter(effect=>effect.remaining>0);if(!p.timedEffects.length)delete p.timedEffects;}
 function addCreature(state: CombatState, creature: Creature, count: number, grouped: boolean, groupId?: string, entryId?: string) {
   if(!Number.isSafeInteger(count)||count<1||count>1000||state.participants.length+count>1000)throw new Error('Bitte eine gültige Teilnehmermenge angeben.');
   const peer=groupId?state.participants.find(p=>p.groupId===groupId&&p.sourceId===creature.id):undefined;
@@ -226,12 +227,16 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           p.concentrationLast={...check,roll,modifier,total,success};p.concentrationChecks=p.concentrationChecks!.slice(1);if(!success){p.concentrating=false;delete p.concentrationChecks;}else if(!p.concentrationChecks.length)delete p.concentrationChecks;
         } else if(a.kind==='legendary-action'){
           const p=participant(),source=legendarySource(state,p),action=source?.legendaryActions.find(action=>action.id===a.actionId),expected=action?legendaryActionCost(action):0;if(state.phase!=='running'||!action)throw new Error('Legendäre Aktion gehört nicht zu dieser laufenden Kreatur.');if(state.turnId===p.id)throw new Error('Legendäre Aktionen sind nicht im eigenen Zug verfügbar.');if(a.cost!==expected)throw new Error('Kosten der legendären Aktion stimmen nicht mit dem Statblock überein.');const points=p.legendaryActions;if(!points||points.remaining<expected)throw new Error('Nicht genügend legendäre Aktionspunkte verfügbar.');if(points.lastUsedRound===state.round&&points.lastUsedTurnId===state.turnId)throw new Error('Diese Kreatur hat in diesem Zug bereits eine legendäre Aktion eingesetzt.');points.remaining-=expected;points.lastUsedRound=state.round;points.lastUsedTurnId=state.turnId!;
+        } else if(a.kind==='effect-add'){
+          const p=participant();if(typeof a.name!=='string'||!a.name.trim()||a.name.length>500||!Number.isSafeInteger(a.rounds)||a.rounds<1||a.rounds>1000||!['start','end'].includes(a.tick))throw new Error('Rundeneffekt benötigt Name, 1–1000 Runden und einen Zeitpunkt.');p.timedEffects??=[];if(p.timedEffects.length>=100)throw new Error('Zu viele Rundeneffekte für diesen Teilnehmer.');p.timedEffects.push({id:randomUUID(),name:a.name.trim(),remaining:a.rounds,tick:a.tick});
+        } else if(a.kind==='effect-remove'){
+          const p=participant(),before=p.timedEffects?.length??0;if(typeof a.effectId!=='string'||!a.effectId)throw new Error('Rundeneffekt fehlt.');p.timedEffects=p.timedEffects?.filter(effect=>effect.id!==a.effectId);if((p.timedEffects?.length??0)===before)throw new Error('Rundeneffekt nicht gefunden.');if(!p.timedEffects?.length)delete p.timedEffects;
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
           if(p.concentrationChecks?.length)throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           detachCombatHealth(db,cam,state,p,command.commandId);
           state.participants = state.participants.filter(c => c.id !== p.id);
-          if (state.turnId === p.id) { const next = order[index + 1] ?? order[0]; state.turnId = state.participants.length ? (next?.id === p.id ? state.participants[0]!.id : next!.id) : null; if (index === order.length - 1 && state.participants.length) state.round++;const current=state.participants.find(actor=>actor.id===state.turnId);if(current)resetLegendary(state,current); }
+          if (state.turnId === p.id) { const next = order[index + 1] ?? order[0]; state.turnId = state.participants.length ? (next?.id === p.id ? state.participants[0]!.id : next!.id) : null; if (index === order.length - 1 && state.participants.length) state.round++;const current=state.participants.find(actor=>actor.id===state.turnId);if(current){resetLegendary(state,current);tickEffects(current,'start');} }
           if (!state.participants.length) { state.phase = 'preparing'; state.round = 0; state.turnId = null; }
         } else if (a.kind === 'roll') {
           if (!['normal', 'advantage', 'disadvantage'].includes(a.mode)) throw new Error('Würfelmodus ungültig.');
@@ -240,12 +245,12 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
         } else if (a.kind === 'start') {
           if (state.phase !== 'preparing' || !state.participants.length) throw new Error('Füge Teilnehmer hinzu, bevor du den Kampf beginnst.');
           if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
-          state.partyBasis=combatParty(db,cam,state); state.assessment=assessment(db,cam,state); state.phase = 'running'; state.round = 1; state.turnId = combatOrder(state)[0]!.id;for(const actor of state.participants)resetLegendary(state,actor);
+          state.partyBasis=combatParty(db,cam,state); state.assessment=assessment(db,cam,state); state.phase = 'running'; state.round = 1; state.turnId = combatOrder(state)[0]!.id;for(const actor of state.participants)resetLegendary(state,actor);tickEffects(state.participants.find(actor=>actor.id===state.turnId)!,'start');
         } else if (a.kind === 'next') {
           if (state.phase !== 'running') throw new Error('Kampf zuerst beginnen.');
           if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
-          const order = combatOrder(state), index = order.findIndex(p => p.id === state.turnId);
-          const nextIndex = (index + 1) % order.length; state.turnId = order[nextIndex]!.id; if (nextIndex === 0) state.round++;resetLegendary(state,order[nextIndex]!);
+          const order = combatOrder(state), index = order.findIndex(p => p.id === state.turnId);tickEffects(order[index]!,'end');
+          const nextIndex = (index + 1) % order.length; state.turnId = order[nextIndex]!.id; if (nextIndex === 0) state.round++;resetLegendary(state,order[nextIndex]!);tickEffects(order[nextIndex]!,'start');
         } else if (a.kind === 'notes') { state.title = a.title; state.notes = a.notes;
         } else if (a.kind === 'finish') {
           if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
