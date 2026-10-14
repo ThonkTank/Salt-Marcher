@@ -21,7 +21,7 @@ test('agenda does not display a location label from damaged source bytes',()=>{
   const campaign=store.create('Agenda'),workspace=store.activate(campaign.id),location=newLocation('place','Nordtor','poi',['description','notes']);
   store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});
   store.executeWorld({commandId:'event',campaignId:campaign.id,token:workspace.token,action:{kind:'calendar-event',expectedRevision:null,event:{id:'event',revision:0,name:'Wache wechselt',startMs:'3600000',durationMs:'60000',repeatMs:null,locationId:location.id,notes:'',trashed:false}}});
-  store.db.prepare('UPDATE location SET checksum=? WHERE campaign_id=? AND id=?').run('broken',campaign.id,location.id);
+  (store as unknown as {db:any}).db.prepare('UPDATE location SET checksum=? WHERE campaign_id=? AND id=?').run('broken',campaign.id,location.id);
   assert.throws(()=>store.agenda(workspace.token,{sceneId:null,search:'',location:'all',horizonDays:null,includePast:false,after:null}),/Agenda-Ort ist beschädigt/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
