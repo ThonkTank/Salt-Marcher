@@ -33,6 +33,15 @@ hat keinen Anschluss an die passive Spieleranzeige.
   geschrieben wird der zuvor geprüfte Stand. Dialogabbruch schreibt nichts.
   Das ist noch kein nativer Dateifehler-/Dialognachweis.
 
+Die Mappe kann inzwischen als gemeinsamer DOM-/Quellenstand neben dem Live-Spiel
+andocken. Vorbereitung öffnet sie weiterhin als Dialog; Live-Spiel bietet
+Besuchswechsel und Übernahme eines Vorleseblocks in den GM-Sceneentwurf. Die
+vorhandenen Kontext-/Flushregeln bleiben bindend. Nach Schließen oder einer
+neuen Aktualisierung dürfen entfernte alte Controls keinen Besuch oder Text
+mehr übernehmen. Ihre Handler prüfen zusätzlich zum Livecontext die aktuelle
+Mappenanfrage und den tatsächlich angezeigten Snapshot. Die lokale Dockfixture
+prüft diese Grenze; native Fokus-/Layout-/Langtextabnahme bleibt offen.
+
 Der integrierte Besuchsnavigator (`session-progress-ui.ts`,
 `storage/visit-outcomes.ts`) und `LiveAction.visit-outcome` zeichnen jetzt
 manuell bestätigte Besuchsergebnisse in der Kampagnenhistorie auf. Die Mappe
