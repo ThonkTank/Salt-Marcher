@@ -42,6 +42,7 @@ async function search(){
  }catch(error){if(current()){message(el('live-rule-results'),(error as Error).message,true);tell((error as Error).message,true);}}
 }
 
+
 function excerptFor(note:Note){const text=(note.readAloud||note.gmNotes).replace(/\s+/g,' ').trim();return text.length>140?text.slice(0,137)+'…':text;}
 export function initRuleReferences(status:typeof tell){tell=status;ensure();}
 export function activateRuleReferences(next:Workspace){
