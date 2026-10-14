@@ -62,6 +62,15 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Szenentisch | gruppengebundene Pins, Suche, direkte Anlage, gemeinsamer Inhaltseditor und Übergabe an Encounter | Kampagnenwissen an der Scene bearbeiten |
 | Kampfmasken | weitere Maske, Maskensuche, ausdrücklicher Start, Initiative und gesicherte offene Eingaben | Mehrere Begegnungen in derselben Scene; Kampf, XP und Beute gemeinsam abschließen |
 | Verfolgungsmasken | Anlage, Teilnehmer, Start, Rundenfortschritt, gesicherte Eingaben, Suche und Abschluss | Eine Verfolgung über Runden führen |
+| Kreaturenkatalog | Filter, Sortierung, Statblock, Provenienz, Menge und getrennte Übergabe an Vorlage oder aktuelle Gruppe | Kreaturen finden und ausdrücklich verwenden |
+| Encounter-Vorlagen | Suche, Anlage, Planungsparty, Bewertung, Autosave, Konfliktauswege, Kopie und ausdrückliche Live-Vorbereitung | Eine Encounter-Vorlage sicher vorbereiten |
+| Gewichtete Encounter-Tabellen | Kampagnen-/Installationsscope, Katalogauswahl, exakte Gewichte, Kontext, Beutelink und Papierkorb | Gewichtete Encounter-Quellen pflegen |
+| Weltquellen und Bestände | Orts-/Fraktionsbindung, Haupttabelle, Schnittmenge und explizite Bestandsgrenzen | Begegnungen aus Ort und Fraktion |
+| Gewichtete Beutetabellen | Einträge, Kategorien, Werte, Mengen, Seed, Tabellenrevision und Übergabe als unverteilten Schatz | Beute reproduzierbar aus Tabellen würfeln |
+| Generatorpresets | geschütztes Systempreset, eigene Kopie, Rollenmatrix, Speichern, Zuweisung und versionierte Vorschau | Den Encounter-Generator kontrolliert konfigurieren |
+| Encounter-Generierung | Party, Katalogfilter, Tabellen, Weltkontext, Preset, Seed, gespeicherte Vorschau und Vorlagenübernahme | Reproduzierbare Encounter-Vorschläge prüfen |
+| Benannte Weltgegner | verbindliche Auswahl, reiner NPC-Modus und gemischte Tabellenbegegnung | Einen Gegner verbindlich einplanen; Benannte Gegner für den Spielabend; Benannte Gegner mit einer Eskorte |
+| Live-Encounter-Generierung | aktuelle Fokusgruppe, Quellenwahl, gespeicherte Vorschau und ausdrückliche Übernahme in eine neue Kampfmaske | Begegnungen direkt für die laufende Gruppe erzeugen |
 | Manuelle Timeline und Ersatz | plan-/ort-/partyfreie Besuche, Suche, Reihenfolge sowie Vorschau für Wiederverwendung oder Leeren | Eine Szenenfolge vorbereiten; Einen neuen Abend aus vorhandener Vorbereitung bauen |
 | Besuchsvorbereitung und Übergabe | Vorlesetext, Weltverweise, Gruppen, Belohnung und ausdrückliche Übernahme in die laufende Gruppe | Spielabendinhalte und Vorschläge verwenden; Party und laufender Spielabend |
 | Gemeinsame Auswahl und Mappe | Vorschlagssuche/-auswahl, Reihenfolge, vollständige GM-Mappe, Suche und Markdownexport | Einen Abend gemeinsam vorbereiten; Den ganzen Spielabend griffbereit haben |
