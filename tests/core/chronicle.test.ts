@@ -42,8 +42,8 @@ function database(progressRows:any[],profiles:any[]=[],worldRows:any[]=[],timeRo
   };
 }
 
-test("chronicle skips non-display events without losing older relevant history",()=>{
-  const ignored=Array.from({length:2001},(_,index)=>progress("ignored-"+index,"narrative-state",new Date(3000-index).toISOString()));
+test("chronicle skips unsupported progress events without losing older relevant history",()=>{
+  const ignored=Array.from({length:2001},(_,index)=>progress("ignored-"+index,"internal-only",new Date(3000-index).toISOString()));
   const relevant=progress("older-xp","xp",new Date(1).toISOString());
   const result=readChronicle(database([...ignored,relevant]),"campaign-1");
   assert.deepEqual(result.entries.map(entry=>entry.id),["progress:older-xp"]);
