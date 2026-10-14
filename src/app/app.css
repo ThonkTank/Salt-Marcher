@@ -161,3 +161,10 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 .session-copy-columns li { padding: 8px; }
 .session-copy-columns li button { margin-left: 6px; }
 @media (max-width: 900px) { .session-copy-columns { grid-template-columns: 1fr; } }
+
+.live-generation-dialog { width:min(1380px,95vw); max-width:min(1380px,95vw); }
+.live-generation-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+.live-generation-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:16px; }
+.live-generation-cards > article { min-width:0; padding:16px; border:1px solid var(--border,#aaa); border-radius:8px; }
+.live-generation-cards pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+.live-generation-provenance { grid-column:1/-1; }

@@ -32,7 +32,7 @@ export interface CombatView {
   recent: { id: string; title: string; phase: CombatState['phase'] }[];
 }
 export type CombatAction =
-  | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
+  | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
   | {kind:'add-world-actor';actorId:string;expectedActorRevision:number;expectedRecordRevision:number}
   | {kind:'add-party';characterId:string;expectedMembershipRevision:number;expectedProgressRevision:number;initiative?:number}
   | { kind: 'add-creature'; creatureId: string; count: number; grouped: boolean; groupId?: string }
