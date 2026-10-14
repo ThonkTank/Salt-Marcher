@@ -95,3 +95,8 @@ import "./core/autonomy-scene-time-boundary.test";
 import "./core/autonomy-time-conflict-ui.test";
 import "./core/autonomy-owner-atomicity.test";
 import "./core/music-scene-context.test";
+import "./core/music-state-integrity.test";
+import "./core/music-record-integrity.test";
+import "./core/autonomy-persistence-integrity.test";
+import "./core/live-player-cues.test";
+import "./core/object-gestures.test";
