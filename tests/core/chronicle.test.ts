@@ -113,7 +113,9 @@ test("live play brackets a session recap with persistent markers",()=>{
     const campaign=store.create("Abendrunde"),token=store.activate(campaign.id).token;
     const scene=store.executeLive({commandId:"scene",campaignId:campaign.id,token,action:{kind:"initialize",expectedRosterRevision:0}}).scene!;
     store.executeLive({commandId:"start",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"start",summary:""}});
+    assert.throws(()=>store.executeLive({commandId:"second-start",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"start",summary:""}}),/läuft bereits/);
     store.executeLive({commandId:"end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:"Weiter im Keller."}});
+    assert.throws(()=>store.executeLive({commandId:"second-end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:""}}),/Kein laufender/);
     const markers=store.chronicle(token).entries.filter(entry=>entry.sessionMarker);
     assert.deepEqual(markers.map(entry=>({marker:entry.sessionMarker,title:entry.title,summary:entry.summary})),[
       {marker:"end",title:"Spielabend beendet",summary:"Weiter im Keller."},
