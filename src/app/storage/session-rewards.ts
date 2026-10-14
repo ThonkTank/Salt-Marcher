@@ -1,6 +1,6 @@
-import {emptyMagic,magicRules,magicGuidance,rewardIsMagic,fitMagicItems} from './session-magic';
+import {emptyMagic,magicRules,magicGuidance,rewardIsMagic,fitMagicItems,checkedMagicPool} from './session-magic';
 import {budgetRarity} from '../dungeon-budget-contracts';
-import type {SessionProfile,SessionLootGuidance,SessionProposal} from '../session-contracts';
+import type {SessionProfile,SessionLootGuidance,SessionProposal,SessionGenerationRequest} from '../session-contracts';
 import type {ItemInput} from '../progression';
 import {copper,xpShare} from '../progression';
 import {cumulativeGoldCopper,type RewardGuidanceRules} from '../generation/reward-guidance';
@@ -28,6 +28,6 @@ export function fitRewardItems(db:any,items:ItemInput[],budget:string):ItemInput
 }
 export function fitSessionReward(db:any,items:ItemInput[],guidance:SessionLootGuidance,index:number,seed:string){
  if(!guidance.magic)return{items:fitRewardItems(db,items,guidance.allocationsCopper[index]!),warnings:[],missing:emptyMagic()};
- const mundane=items.filter(i=>!rewardIsMagic(db,i)),magic=fitMagicItems(db,items.filter(i=>rewardIsMagic(db,i)),guidance.magic.allocations[index]!,seed),combined=[...fitRewardItems(db,mundane,guidance.allocationsCopper[index]!),...magic.items];if(combined.length>100)throw new Error('Höchstens100 Beuteeinträge pro Vorschlag.');return{...magic,items:combined};
+ const mundane=fitRewardItems(db,items.filter(i=>!rewardIsMagic(db,i)),guidance.allocationsCopper[index]!),magic=fitMagicItems(db,items.filter(i=>rewardIsMagic(db,i)),guidance.magic.allocations[index]!,seed,guidance.magic.pool,100-mundane.length),combined=[...mundane,...magic.items];if(combined.length>100)throw new Error('Höchstens100 Beuteeinträge pro Vorschlag.');return{...magic,items:combined};
 }
-export function applyLootGuidance(db:any,cam:string,profile:SessionProfile,proposals:SessionProposal[],withMagic=false){const guidance=sessionLootGuidance(db,cam,profile,proposals,withMagic);for(const [index,p]of proposals.entries()){const result=fitSessionReward(db,p.reward?.items??[],guidance,index,profile.seed+'|reward|'+index);p.reward={poolXp:p.reward?.poolXp??0,items:result.items};if(guidance.magic){p.rewardWarnings=result.warnings;p.rewardMissingMagic=result.missing;}if(guidance.magic){for(const r of Object.keys(result.missing) as (keyof typeof result.missing)[])guidance.magic.missing[r]+=result.missing[r];guidance.magic.warnings.push(...result.warnings);}}if(guidance.magic)guidance.magic.warnings=[...new Set(guidance.magic.warnings)];return guidance;}
+export function applyLootGuidance(db:any,cam:string,profile:SessionProfile,proposals:SessionProposal[],withMagic=false,pool?:SessionGenerationRequest['magicPool']){if(pool!==undefined&&!withMagic)throw new Error('Ein Gegenstandspool benötigt den magischen Beuteausgleich.');const guidance=sessionLootGuidance(db,cam,profile,proposals,withMagic);if(pool!==undefined)guidance.magic!.pool=checkedMagicPool(db,pool);for(const [index,p]of proposals.entries()){const result=fitSessionReward(db,p.reward?.items??[],guidance,index,profile.seed+'|reward|'+index);p.reward={poolXp:p.reward?.poolXp??0,items:result.items};if(guidance.magic){p.rewardWarnings=result.warnings;p.rewardMissingMagic=result.missing;}if(guidance.magic){for(const r of Object.keys(result.missing) as (keyof typeof result.missing)[])guidance.magic.missing[r]+=result.missing[r];guidance.magic.warnings.push(...result.warnings);}}if(guidance.magic)guidance.magic.warnings=[...new Set(guidance.magic.warnings)];return guidance;}
