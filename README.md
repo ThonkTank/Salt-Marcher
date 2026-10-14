@@ -530,3 +530,24 @@ Die Anzeige aktualisiert Uhr, Wetter-/Ortskontext, Party-HP und Budget. Die Chro
 hält Dauer, Scene und ausdrückliche HP-Erholung fest. Rast und Zeitwirkungen werden
 zusammen gespeichert, einschließlich Receipt; ein konkreter Fehler rollt beide
 zurück. Schema43 unverändert, ältere zeitlose Rastcommands weiterhin nutzbar.
+
+
+### Desktopstand 0.49: Adventure-Day-Rechner in der Kopfleiste
+
+„Rastbudget“ zeigt den aktuellen SR-/LR-Verbrauch der aktiven Party und öffnet einen
+Rechner, ohne den Arbeitsbereich zu wechseln. Die separate Party-Schaltfläche führt
+zu den vorhandenen Figuren am Spieltisch. Öffnen und bestätigte Party-/Raständerungen
+aktualisieren den Stand; fehlende XP oder Rastwerte bleiben ausdrücklich offen.
+
+„Budget“ zeigt Tagesbudget, zwei Rastschwellen und Encounter-Schwierigkeiten. „XP →
+Tage“ zeigt volle Tage, Teilfortschritt, Rastanzahl, Etappen und prognostizierte Level.
+Die aktive Party verwendet bestätigte individuelle XP. Eigene Level-/Anzahl-Zeilen
+starten am XP-Minimum ihres Levels und bleiben reine Rechnereingaben. Belastung und
+XP-Verdienst lassen sich getrennt eingeben; der Verdienst wird pro Figur aufgerundet.
+Die Tagesprognose nutzt das feste Budget der eingegebenen Startlevel.
+
+Die Berechnung gehört zum Party-/Progress-Kern und verwendet dieselben XP-/Tages-
+und Encountertabellen wie die vorhandenen Abläufe. Der Renderer stellt nur dar.
+Große Zeiträume erzeugen höchstens 94 Etappeneinträge; weitere volle Tage werden
+zusammengefasst. Rechneraktionen schreiben weder Roster, Planungsparty noch Weltzeit.
+Echte XP, Rasten und Zeitfolgen bestätigt der GM anschließend am Spieltisch.

@@ -1,3 +1,4 @@
+import {readDay} from './adventuring-day';
 import {installNpcRecords} from './npc-record';
 import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
@@ -589,6 +590,7 @@ export class CampaignStore {
   keepNarrativeDraft(token:string,draft:import('../narrative-contracts').NarrativeDraft,expected:string|null){return keepNarrativeDraft(this.db,this.guard(token),draft,expected);}
   discardNarrativeDraft(token:string,id:string,writeId:string){return discardNarrativeDraft(this.db,this.guard(token),id,writeId);}
   narrative(token:string,id:string){return this.db.transaction(()=>readNarrative(this.db,this.guard(token),id))();}
+  adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest){return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
   executeProgress(command: ProgressCommand) { return this.db.transaction(() => {
     this.guard(command.token,command.campaignId);
     const a=command.action,guard=()=>{this.guard(command.token,command.campaignId);};

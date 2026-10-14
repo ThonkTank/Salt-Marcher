@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   progressHistory: (token: string, characterId: string, after: string | null) => ipcRenderer.invoke('campaign:progress-history', token, characterId, after),
   chronicle:(token:string,category:import('../src/app/chronicle-contracts').ChronicleCategory|'all'='all',search='')=>ipcRenderer.invoke('campaign:chronicle',token,category,search),
   exportChronicle:(token:string,category:import('../src/app/chronicle-contracts').ChronicleCategory|'all',search:string)=>ipcRenderer.invoke('campaign:chronicle-export',token,category,search),
+  adventuringDay:(token:string,request:import('../src/app/adventuring-day-contracts').DayRequest)=>ipcRenderer.invoke('campaign:adventuring-day',token,request),
   progress: (token: string) => ipcRenderer.invoke('campaign:progress', token),
   lootBalance:(token:string)=>ipcRenderer.invoke('campaign:loot-balance',token),
   treasures: (token: string, after: string | null) => ipcRenderer.invoke('campaign:treasures', token, after),
