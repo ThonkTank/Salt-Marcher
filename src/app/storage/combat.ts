@@ -4,7 +4,7 @@ import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
 import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';
 import { randomUUID, randomInt, createHash } from 'node:crypto';
-import { checkedCombat, combatOrder, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
+import { checkedCombat, combatOrder, concentrationDc, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
 import { readLiveScene, readLive } from './live';
 import { readProgressCharacter, finishCombatRewards, latestCombatStatuses, detachCombatHealth, resumeCombatHealth, lastCombatPartyParticipant, event } from './progression';
 import {applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../progression';
@@ -185,12 +185,14 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if (p.healthKnown === false && ('hp' in a.changes || 'maxHp' in a.changes) && !('hp' in a.changes && 'maxHp' in a.changes)) throw new Error('Aktuelle und maximale HP gemeinsam eintragen.');
           Object.assign(p, a.changes); if ('hp' in a.changes && 'maxHp' in a.changes) p.healthKnown = true; p.hp = Math.min(p.hp, p.maxHp);
           if(p.hp>0||(beforeHp>0&&p.hp===0)){delete p.death;delete p.deathLast;}
+          if(!p.concentrating)delete p.concentrationChecks;
           if ('initiative' in a.changes) for (const peer of state.participants.filter(peer => peer.groupId === p.groupId)) peer.initiative = p.initiative;
         } else if (a.kind === 'damage' || a.kind === 'heal') {
           const p = participant();
           if (p.healthKnown === false) throw new Error('HP noch offen. Aktuelle und maximale HP eintragen, bevor Schaden oder Heilung angewendet wird.');
           if (!Number.isSafeInteger(a.amount) || a.amount <= 0 || a.amount > 1000000) throw new Error('Betrag benötigt eine positive ganze Zahl.');
           if (a.kind === 'damage') {
+            const wasConcentrating=p.concentrating;
             if((a.sourceCheckId===undefined)!==(a.sourceScale===undefined))throw new Error('Schadensbeleg und Anpassung müssen gemeinsam angegeben werden.');
             if(a.sourceCheckId!==undefined){
               const row=db.prepare('SELECT scene_id,payload,checksum FROM scene_check WHERE campaign_id=? AND id=?').get(cam,a.sourceCheckId);
@@ -202,6 +204,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
             }
             const absorbed=Math.min(p.tempHp,a.amount),remaining=a.amount-absorbed,beforeHp=p.hp;p.tempHp-=absorbed;p.hp=Math.max(0,beforeHp-remaining);
             if(p.characterId&&remaining>0){const overflow=Math.max(0,remaining-beforeHp);if(beforeHp>0&&p.hp===0){delete p.death;delete p.deathLast;}if((beforeHp===0?remaining:overflow)>=p.maxHp)applyDamageDeath(p,'dead');else if(beforeHp===0)applyDamageDeath(p,'failure');}
+            if(wasConcentrating){if(p.hp===0){p.concentrating=false;delete p.concentrationChecks;}else{p.concentrationChecks??=[];if(p.concentrationChecks.length>=100)throw new Error('Zu viele offene Konzentrationsprüfungen.');p.concentrationChecks.push({damage:a.amount,dc:concentrationDc(a.amount)});}}
           }
           else {p.hp = Math.min(p.maxHp, p.hp + a.amount);if(p.hp>0){delete p.death;delete p.deathLast;}}
         } else if(a.kind==='death'||a.kind==='death-roll'){
@@ -209,6 +212,10 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const roll=a.kind==='death-roll'?randomInt(1,21):null,result:DeathSaveResult=a.kind==='death'?a.result:roll===20?'natural-20':roll===1?'natural-1':roll!>=10?'success':'failure';
           const next=applyDeathSave(checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})}),result);
           p.hp=next.hp;p.maxHp=next.maxHp;p.tempHp=next.tempHp;p.conditions=next.conditions;p.concentrating=next.concentrating;p.death=next.death;p.deathLast={result,roll};
+        } else if(a.kind==='concentration'||a.kind==='concentration-roll'){
+          const p=participant(),check=p.concentrationChecks?.[0];if(!p.concentrating||!check)throw new Error('Keine offene Konzentrationsprüfung für diese Figur.');
+          const roll=a.kind==='concentration-roll'?randomInt(1,21):null,modifier=a.kind==='concentration-roll'?a.modifier:0;if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>1000)throw new Error('Konzentrationsmodifikator benötigt eine ganze Zahl bis 1000.');const total=roll===null?null:roll+modifier,success=a.kind==='concentration'?a.success:total!>=check.dc;
+          p.concentrationLast={...check,roll,modifier,total,success};p.concentrationChecks=p.concentrationChecks!.slice(1);if(!success){p.concentrating=false;delete p.concentrationChecks;}else if(!p.concentrationChecks.length)delete p.concentrationChecks;
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
           detachCombatHealth(db,cam,state,p,command.commandId);

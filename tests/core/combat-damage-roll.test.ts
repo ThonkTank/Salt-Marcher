@@ -12,12 +12,14 @@ test('a combat applies a persisted damage roll at the confirmed scale',()=>{
     const scene=store.executeLive({commandId:'live',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:0}}).scene!;
     let combat=store.executeCombat({commandId:'combat',campaignId:campaign.id,token,combatId:null,expectedRevision:null,action:{kind:'create',sceneId:scene.id,title:'Probe',includeParty:false,expectedMembershipRevision:scene.membershipRevision}}).combat!;
     combat=store.executeCombat({commandId:'target',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'add',name:'Ziel',count:1,grouped:false,maxHp:20,armorClass:10,initiativeBonus:0}}).combat!;
+    combat=store.executeCombat({commandId:'concentrating',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:combat.participants[0]!.id,changes:{concentrating:true}}}).combat!;
     const checks=store.executeSceneCheck({commandId:'roll',campaignId:campaign.id,token,sceneId:scene.id,expectedRevision:0,action:{kind:'formula',formulaKind:'damage',label:'Klauen · Hiebschaden',actor:'Bestie',formula:'2d6 + 2',dc:null,sourceCreatureId:'beast',sourceActionId:'claws'}}),check=checks.checks[0]!,amount=Math.floor(check.total/2);
     assert.throws(()=>store.executeCombat({commandId:'bad-damage',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage',participantId:combat.participants[0]!.id,amount:amount+1,sourceCheckId:check.id,sourceScale:'half'}}),/stimmt nicht/);
     const command={commandId:'damage',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage' as const,participantId:combat.participants[0]!.id,amount,sourceCheckId:check.id,sourceScale:'half' as const}};
-    const applied=store.executeCombat(command);assert.equal(applied.combat!.participants[0]!.hp,20-amount);assert.deepEqual(store.executeCombat(command),applied);
+    const applied=store.executeCombat(command),actor=applied.combat!.participants[0]!;assert.equal(actor.hp,20-amount);assert.deepEqual(actor.concentrationChecks,[{damage:amount,dc:10}]);assert.deepEqual(store.executeCombat(command),applied);
     store.close();store=new CampaignStore(filename,'test');const reopened=store.activate(campaign.id);
     assert.equal(store.sceneChecks(reopened.token,scene.id).checks[0]!.id,check.id);
-    assert.equal(store.combat(reopened.token,scene.id,combat.id).combat!.participants[0]!.hp,20-amount);
+    const loaded=store.combat(reopened.token,scene.id,combat.id).combat!;assert.equal(loaded.participants[0]!.hp,20-amount);assert.deepEqual(loaded.participants[0]!.concentrationChecks,[{damage:amount,dc:10}]);
+    const resolved=store.executeCombat({commandId:'concentration-pass',campaignId:campaign.id,token:reopened.token,combatId:loaded.id,expectedRevision:loaded.revision,action:{kind:'concentration',participantId:loaded.participants[0]!.id,success:true}}).combat!.participants[0]!;assert.equal(resolved.concentrating,true);assert.equal(resolved.concentrationChecks,undefined);assert.equal(resolved.concentrationLast?.success,true);
   }finally{try{store.close();}catch{}rmSync(root,{recursive:true,force:true});}
 });
