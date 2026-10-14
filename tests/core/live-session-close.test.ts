@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import type {ChronicleEntry} from '../../src/app/chronicle-contracts';
@@ -43,4 +44,10 @@ test('returning sessions enter through the preparation dashboard without a dupli
   assert.deepEqual(sessionStartControls({open:false,marker:null}),{start:true,resume:false});
   assert.deepEqual(sessionStartControls({open:false,marker:marker('latest','end')}),{start:false,resume:true});
   assert.deepEqual(sessionStartControls({open:true,marker:marker('current','start')}),{start:false,resume:false});
+});
+
+test('session workflows override the narrow default dialog cap',()=>{
+  const css=readFileSync('src/app/app.css','utf8');
+  assert.match(css,/#live-session-close-dialog\{[^}]*max-width:56rem/);
+  assert.match(css,/#live-session-resume-dialog\{[^}]*max-width:68rem/);
 });
