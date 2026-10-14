@@ -1,6 +1,6 @@
 # SMR-11: Versionierte In-game-Tutorials
 
-Stand: 14. Oktober 2026. Normative Quelle: [Program Capability Requirements, fixierter Stand](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md#in-game-capability-tutorials).
+Stand: 15. Oktober 2026. Normative Quelle: [Program Capability Requirements, fixierter Stand](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md#in-game-capability-tutorials).
 
 ## Ausführbarer Stand
 
@@ -96,7 +96,14 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Scene-Musik und Ambience | gruppengebundene Scene-Regler, Weltquellen, Wetter-/Umweltlayer sowie manuelles Hinzufügen, Unterdrücken und Freigeben | Musik und Wetter zur Gruppe passen lassen |
 | Live-Soundboard | gemeinsamer Transport, Kampagnenfavoriten, Bibliotheksauswahl und Mehrfach-Queue am Spieltisch | Den Spielabend direkt am Tisch vertonen |
 | Live-Regeln | dynamisches Regelpanel und d20-Probenformular | Regelreferenzen und Proben bei der Gruppe halten |
-| Erweiterter Dungeon | 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
+| Dungeonstruktur | getrennte Einstiege für 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
+| 3D-Volumen | Konturvorschau, Schnitte, Zellen/Flächen, Übernahme und Verwerfen | Raumkonturen als 3D-Volumen ausarbeiten |
+| Trigger und Fallenlaufzustand | mehrteilige Triggerfelder, Fallenregel, Chargekorrektur, Reset und bestätigte Aktivierung | Triggerfelder und Fallenlaufzustand getrennt führen |
+| Dungeon-Inhalte | Encounter-/Lootbesitzer, öffentliche und private Texte, Voxelanker, Entdeckung und verlorene Geometrie | Dungeon-Inhalte an Volumen binden |
+| Graphentwurf | Ansichten, Änderungen, Budgetplanung, Rastervorschau, Übernahme und vollständige Wiederherstellung | Dungeonfluss in einer geschützten Vorschau planen |
+| Dungeon-Key und Ausgabe | Suche/Filter, Besitzer und Vererbung, Blöcke/Referenzen, Sammeländerung, öffentliche und GM-Ausgaben | Dungeon-Keys, Vererbung und Ausgabe pflegen |
+| Paths und Passagen | Anker, Wegpunkte, Vorschau/Übernahme sowie getrennte Passagenseiten und Wiederzuordnung | 3D-Paths und gerichtete Passagen verbinden |
+| Dungeon-Binder | Suche, Dungeon-/Geschossfilter, GM-Key, öffentliche Vorschau und Navigation in bestehende Abläufe | Raum-Keys beim Leiten lesen |
 
 ## Verbleibende Abnahme
 
