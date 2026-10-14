@@ -60,7 +60,10 @@ keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
 direkte Ortsart-/Handoutwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
-gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Scene-
+gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Blank
+benötigt keinen vorgelagerten Previewread; es bleibt bei ausgefallener oder
+hängender Steuerungsquery sofort als eigener Command benutzbar. Die aktuelle
+Fokus-/Mitgliedschaftsprüfung schützt neue Freigaben weiterhin. Scene-
 Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
 in ihren bisherigen Ownertabellen erhalten. Keine Datenmigration erforderlich.
 
@@ -82,6 +85,10 @@ ohne Fokuswechsel atomar; nach erneutem Prüfen ist dieselbe visuelle Freigabe g
 Renderer-Gegenproben prüfen alte Pakete
 samt Überschrift. `desktop-player-visual-host.test.mjs` prüft echte Hostmethoden mit
 kontrollierten Fenstern: Push/Pull, erlaubte Feldmenge und verschachtelte Daten.
+`desktop-player-focus.test.mjs` prüft inzwischen dieselben gültigen
+Bildfreigaben mit realem PNG statt des früheren Textmodus: ältere Commands,
+A/B/A, fehlende Basis, Replay, erhaltene GM-Entwürfe, verzögerte Writes,
+Notfall-Blank ohne Previewread und Handoutwahl bei geänderter Gruppe.
 Der vorhandene Windowtest ergänzt die Lebenszyklusfälle. Die weiteren
 Dungeon-/Knowledge-/Editor- und Größenproben ergänzen
 Karten, gespeicherte Kenntnis, GM-Steuerung und alte asynchrone Antworten.
