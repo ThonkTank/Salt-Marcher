@@ -1,6 +1,6 @@
 import {canonicalJson} from '../generation/canonical-json';
 import {readItemDefinition} from './item-definitions';
-import {applyLootGuidance,fitRewardItems} from './session-rewards';
+import {applyLootGuidance,fitRewardItems,checkedSessionLootGuidance} from './session-rewards';
 import {npcRecord,npcDisposition} from './npc-record';
 import {replaceSessionPlan} from './plan-replacement';
 import {placeNpcGroup} from './npc-world';
@@ -128,10 +128,10 @@ function sessionRunRow(db:any,row:any):SessionRun{
  const accepted=new Map<number,string>();
  for(const a of db.prepare('SELECT * FROM session_proposal_acceptance WHERE campaign_id=? AND run_id=?').all(cam,run.id)){if(!unsigned(a.proposal_index)||!run.proposals[a.proposal_index]||!identity(a.visit_id))throw new Error('Vorschlagsübernahme beschädigt.');accepted.set(a.proposal_index,a.visit_id);}
  for(const p of run.proposals){if(p.acceptedVisitId!==null&&p.acceptedVisitId!==accepted.get(p.index))throw new Error('Vorschlagsübernahme widersprüchlich.');p.acceptedVisitId=accepted.get(p.index)??null;}
- if(run.lootGuidance){const g=run.lootGuidance,amount=(v:any,signed=false)=>typeof v==='string'&&v.length<=100&&(signed?/^-?\d+$/:/^\d+$/).test(v);
-  if(!object(g)||g.version!=='cumulative-gold-v1'||!object(g.preset)||!identity(g.preset.id)||!unsigned(g.preset.revision)||g.preset.revision<1||typeof g.preset.hash!=='string'||!unsigned(g.rewardXp)||!['expectedBeforeCopper','expectedAfterCopper','receivedCopper','baselineCopper','targetCopper'].every(k=>amount(g[k as keyof typeof g]))||!amount(g.differenceCopper,true)||!Array.isArray(g.allocationsCopper)||g.allocationsCopper.length!==run.proposals.length||!g.allocationsCopper.every(v=>amount(v))||g.allocationsCopper.reduce((n,v)=>n+BigInt(v),0n)!==BigInt(g.targetCopper)||!Array.isArray(g.characters)||!g.characters.length)throw new Error('Beuteausgleich der Vorschau beschädigt.');
-  for(const c of g.characters)if(!object(c)||!identity(c.characterId)||typeof c.name!=='string'||!unsigned(c.xp)||!unsigned(c.revision)||![c.receivedCopper,c.expectedBeforeCopper,c.expectedAfterCopper].every(v=>amount(v))||!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,c.characterId))throw new Error('Figur des Beuteausgleichs gehört nicht zur Kampagne.');
+ if(run.lootGuidance!==undefined){const g=checkedSessionLootGuidance(run.lootGuidance,run.proposals.length);
+  for(const c of g.characters)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,c.characterId))throw new Error('Figur des Beuteausgleichs gehört nicht zur Kampagne.');
  }
+
  return run;
 }
 export function readSessionRun(db:any,cam:string,id:string):SessionRun{return sessionRunRow(db,db.prepare('SELECT * FROM session_run WHERE campaign_id=? AND id=?').get(cam,id));}

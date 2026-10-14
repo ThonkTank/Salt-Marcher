@@ -322,7 +322,7 @@ Kampfende setzt keinen Lebenszyklus und verbraucht keinen Fraktionsbestand.
 NPCs lassen sich ausdrücklich in die aktuelle Begegnung übernehmen. Eine
 Platzierung an einem anderen Ort muss vorher durch die GM korrigiert werden.
 
-Offen bleibt NPC-basierte Zufallsgenerierung. Die Fraktionszuordnung ergänzt den bisherigen freien
+Begegnungen aus vorhandenen NPCs folgen im Desktopstand 0.43. Die Fraktionszuordnung ergänzt den bisherigen freien
 Beziehungsgraphen; Fraktionen/Orte werden weiterhin in Welt und Spielabend angelegt.
 
 ### Desktopstand 0.41: Spielabend-Vorschläge aus Ort und Fraktion
@@ -348,9 +348,7 @@ Abbrechen verwirft die noch ungespeicherten Dialogeingaben.
 Lesen und Sicherung prüfen Vorschlagskennungen, Quellen, Budgets, Belohnungen und Übernahmereferenzen gemeinsam. Kampagnenkopien remappen auch den ursprünglichen Generierungsrun; veraltete Vorschauen und archivierte Wissensbezüge bleiben lesbar. Unfertige Mengen bleiben beim Hinzufügen oder Entfernen von Beutezeilen als Text erhalten; erst Speichern prüft die Zahlen. Nicht mehr verfügbare Wissensverweise bleiben sichtbar und lassen sich ausdrücklich entfernen. [Dialogprüfungen](tests/desktop-session-proposal-dom.test.mjs) sichern diese Eingaben und verspätete Antworten beim Wiederöffnen; [Speicherprüfungen](tests/desktop-session-proposal-store.test.mjs) decken Bearbeiten, unabhängige Neugenerierung, Übernahme, Kopie und erneutes Öffnen ab.
 
 Bestandsgrenzen gelten pro Begegnung, nicht als Reservierung für den ganzen
-Abend. Vollständiger DMG-Beutebudget-/Lootausgleich und NPC-basierte Kandidaten
-bleiben offen; verknüpfte Beutetabellen ersetzen diese spätere Budgetgenerierung
-nicht. Schema43 bleibt unverändert; neue Vorschlagsfelder sind optional.
+Abend. Der monetäre Beuteausgleich und vorhandene NPCs folgen in Desktopstand 0.42/0.43; vollständige Regelherleitung und Magie-Seltenheitskontingente bleiben offen. Schema43 bleibt unverändert; neue Vorschlagsfelder sind optional.
 
 ### Desktopstand 0.42: kumulierter Beuteausgleich für Spielabende
 
@@ -368,7 +366,7 @@ Verknüpfte Beutetabellen liefern weiterhin den Inhalt. Mengen werden auf das
 Budget begrenzt; ein exakter Rest wird mit Gold-, Silber- und Kupfermünzen gefüllt.
 Auch ohne Beutetabelle entstehen so eigene geplante Belohnungen. Die Vorschau
 speichert Presetstand, XP, Ledgerwerte, Basis, Differenz, Ziel und Szenenanteile.
-Sie erzeugt keine Vergabe, Weltbeute oder Gegenstandsdefinitionen. Einzelne
+Erzeugung, Lesen und Sicherung prüfen Figuren, Presetidentität und alle Summen gemeinsam; Ledgerwerte kommen aus dem kanonischen Reader. Sie erzeugt keine Vergabe, Weltbeute oder Gegenstandsdefinitionen. Einzelne
 Beuteregeneration hält den gespeicherten Anteil ein; eigene Reward-Edits bleiben
 erlaubt. Encounterregeneration schreibt bereits geplante Beute nicht um und die
 Empfehlung bleibt als ursprünglicher Berechnungsstand lesbar. Vorschlagshistory

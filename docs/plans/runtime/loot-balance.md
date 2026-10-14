@@ -1,6 +1,6 @@
 # Gemeinsame Beutewertung für Ledger und Bilanz
 
-Stand: 13.10.2026. Ergänzt den [Katalog-/Itemvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider).
+Stand: 14.10.2026. Ergänzt den [Katalog-/Itemvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider).
 
 ## Fachregel und ausführbarer Stand
 
@@ -12,7 +12,7 @@ Korrekturen erhalten erklärende Geschichte. Der Quellenhash entspricht
 `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e` im Register.
 
 `storage/progression.ts` verwendet für `readLedger` und `readLootBalance`
-dieselbe `ledgerRewardValue`-Berechnung innerhalb einer Lesetransaktion:
+dieselbe `checkedLedgerRow`-Prüfung und `ledgerRewardValue`-Berechnung innerhalb einer Lesetransaktion:
 aktuelle geprüfte Itemdefinition, tatsächlicher Erlös bei Verkauf und bestehende
 Herkunftskette bei Weitergaben. Die beim Erstgrant vergebene Gutschrift wird
 auch über mehrere Besitzer und Teilmengen genau einmal bewertet. Käufe und
@@ -34,14 +34,16 @@ vollständige Rewardqualifikation bleiben offen.
 
 ## Nächste ausführbare Schritte
 
-1. **Vollständige Guidance anschließen.** Der jetzige Vergleich zeigt relative
-   Charactergrants. Die verlangte Erwartung für sämtliche erhaltenen XP aus
-   dem versionierten D&D-2014-Profil fehlt weiterhin. Den vorhandenen
-   XP-/Sessionforecast in `progression.ts`, `storage/session.ts` und dessen UI
-   mit einem gemeinsamen erklärbaren Read verbinden: verwendete Profilversion,
-   XP-Basis, erwartete und tatsächliche Beute, Defizit. Fehlende XP-/Regel-/
-   Wertbasis bleibt offen. Abnahme: unterschiedliche XP-Stände, korrigierte
-   Grants und fehlender Wert; keine automatische Änderung bestehender Awards.
+1. **Vorhandene Guidance vollständig qualifizieren.** `storage/session-rewards.ts`
+   verbindet bestätigte Roster-XP, die versionierte Presetkurve und geprüfte
+   Ledgerwerte zu einer gespeicherten Rechnung: Erwartung vor/nach dem
+   Spielabend, erhaltene Beute, Differenz, Ziel und Szenenanteile. Erzeugung,
+   Lesen und Sicherung verwenden dieselbe Prüfung für Summen, Figuren und
+   Presetidentität. Spätere XP-, Ledger- oder manuelle Rewardänderungen schreiben
+   diese ursprüngliche Rechnung nicht um. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
+   decken beschädigte Rechnung/Quellledger, Überschuss, unabhängige Kopie und
+   unveränderte Sicherungen ab. Noch offen: Magie-Seltenheitskontingente,
+   vollständige Regelherleitung und native Qualifikation des Gesamtverlaufs.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und

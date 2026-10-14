@@ -209,7 +209,7 @@ function validateLedgerItem(l:LedgerItem){
  if(l.counterpartyLink&&(!['shop','npc','location','faction'].includes(l.counterpartyLink.kind)||!id(l.counterpartyLink.id)))throw new Error('Empfängerverknüpfung prüfen.');for(const field of ['sourceNoteId','awardId','mergeTargetId','rewardCreditId','sourceTreasureId','sourceTreasureItemId'] as const)if(l[field]!==undefined&&!id(l[field]))throw new Error('Beuteherkunft prüfen.');
  const c=l.counterpartyReference;if(c&&(!id(c.shopId)||!c.owner||!['npc','location'].includes(c.owner.kind)||!id(c.owner.id))||c!==undefined&&!c)throw new Error('Aufgezeichnete Handelsbeziehung ungültig.');
 }
-function checkedLedgerRow(row:any):LedgerItem{
+export function checkedLedgerRow(row:any):LedgerItem{
  const item=decoded<LedgerItem>(row);validateLedgerItem(item);
  if(item.id!==row.id||item.characterId!==row.character_id||item.revision!==row.revision)throw new Error('Beuteeintrag gehört nicht zu seiner Figur oder Revision.');
  return item;
