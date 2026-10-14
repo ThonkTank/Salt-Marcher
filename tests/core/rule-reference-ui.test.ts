@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {parseHTML} from "linkedom";
-import {activateRuleReferences,describeSceneCheck,initRuleReferences,refreshRuleReferences} from "../../src/app/rule-reference-ui";
+import {activateRuleReferences,describeSceneCheck,initRuleReferences,refreshRuleReferences,rollSceneFormula} from "../../src/app/rule-reference-ui";
 
 const tick=()=>new Promise<void>(resolve=>setTimeout(resolve,0));
 
@@ -11,17 +11,18 @@ test("advantage and disadvantage results name the mode and the kept die",()=>{
   assert.equal(describeSceneCheck({...check,mode:"disadvantage",total:5,outcome:"failure"}),"Athletik: 3 / 17 · Nachteil wählt 3 + 2 = 5 · Fehlschlag gegen SG 12");
 });
 
-test("a rapid second rule pin is ignored while the first host write is pending",async()=>{
+test("rapid duplicate scene-tool writes are ignored while the first host write is pending",async()=>{
   const parsed=parseHTML("<html><body><section id='scene-preparation-panel'></section></body></html>"),priorDocument=globalThis.document,priorWindow=globalThis.window,priorOption=globalThis.Option;
   function TestOption(text:string,value:string){const option=parsed.document.createElement("option");option.textContent=text;option.setAttribute("value",value);return option;}
   Object.assign(globalThis,{document:parsed.document,window:parsed.window,Option:TestOption});
-  let calls=0,resolveWrite!:(value:unknown)=>void;
-  const write=new Promise(resolve=>{resolveWrite=resolve;});
+  let calls=0,formulaCalls=0,resolveWrite!:(value:unknown)=>void,resolveFormula!:(value:unknown)=>void;
+  const write=new Promise(resolve=>{resolveWrite=resolve;}),formulaWrite=new Promise(resolve=>{resolveFormula=resolve;});
   (parsed.window as any).campaign={
     sceneRules:async()=>({ok:true,value:{sceneId:"scene",revision:0,pins:[]}}),
     sceneChecks:async()=>({ok:true,value:{sceneId:"scene",revision:0,checks:[],truncated:false}}),
     preparation:async()=>({ok:true,value:{notes:[{trashed:false,note:{id:"rule",kind:"rule",title:"Festhalten",readAloud:"Bewegungsrate 0",gmNotes:"Vorteil",revision:1}}]}}),
     executeSceneRule:()=>{calls++;return write;},
+    executeSceneCheck:()=>{formulaCalls++;return formulaWrite;},
   };
   try{
     const messages:string[]=[];
@@ -39,6 +40,12 @@ test("a rapid second rule pin is ignored while the first host write is pending",
     await tick();await tick();
     assert.equal((parsed.document.querySelector("#live-rules-panel") as HTMLElement).inert,false);
     assert.match(parsed.document.querySelector("#live-rule-pins")!.textContent,/Festhalten/);
+    messages.length=0;
+    const formula={label:"Scimitar · slashing Schaden",actor:"Goblin A",formula:"1d6 + 2",dc:null,sourceCreatureId:"goblin",sourceActionId:"scimitar"};
+    const first=rollSceneFormula(formula),duplicate=await rollSceneFormula(formula);
+    assert.equal(duplicate,false);assert.equal(formulaCalls,1);assert.deepEqual(messages,[]);
+    resolveFormula({ok:true,value:{sceneId:"scene",revision:1,checks:[{id:"check",sceneId:"scene",ordinal:1,label:formula.label,ruleNoteId:null,ruleTitle:null,ruleSourceRevision:null,mode:"normal",modifier:2,dc:null,rolls:[4],total:6,outcome:null,sceneInstantMs:"0",recordedAt:new Date(0).toISOString(),rollKind:"formula",actor:formula.actor,formula:formula.formula,sourceCreatureId:formula.sourceCreatureId,sourceActionId:formula.sourceActionId}],truncated:false}});
+    assert.equal(await first,true);assert.deepEqual(messages,["Statblock-Wurf ausgeführt und bei der Gruppe gespeichert."]);
   }finally{
     Object.assign(globalThis,{document:priorDocument,window:priorWindow,Option:priorOption});
   }
