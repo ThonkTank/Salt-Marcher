@@ -1,3 +1,4 @@
+import {previewSceneTime} from './time-plan';
 import {readAgenda} from './agenda';
 import {readSceneVisits} from './scene-visits';
 import {readNarrativeJournal} from './narrative-journal';
@@ -770,6 +771,7 @@ export class CampaignStore {
   discardCombatDraft(token:string,combatId:string,kind:CombatDraftKind,targetId:string,writeId:string){discardCombatDraft(this.db,this.guard(token),combatId,kind,targetId,writeId);}
   executeCombat(command: CombatCommand) { return this.db.transaction(()=>{const ack=executeCombat(this.db, command, () => { this.guard(command.token, command.campaignId); });this.updateMusic(command.campaignId);return ack;}).immediate(); }
   archivedRoster(token:string,after:string|null,search:string){return readArchivedRoster(this.db,this.guard(token),after,search);}
+  previewTime(token:string,request:import('../time-plan-contracts').TimeRequest){return this.db.transaction(()=>previewSceneTime(this.db,this.guard(token),request))();}
   live(token: string) { return readLive(this.db, this.guard(token)); }
   liveScene(token: string, id: string) { return this.db.transaction(() => readLiveScene(this.db, this.guard(token), id))(); }
   liveArchives(token: string, after: string | null) { return readArchives(this.db, this.guard(token), after); }

@@ -132,6 +132,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   city:(token:string,id:string)=>ipcRenderer.invoke('city:view',token,id),
   executeCity:(command:import('../src/app/city-contracts').CityCommand)=>ipcRenderer.invoke('city:execute',command),
   exportCity:(token:string,id:string,format:string)=>ipcRenderer.invoke('city:export',token,id,format),
+  previewTime:(token:string,request:import('../src/app/time-plan-contracts').TimeRequest)=>ipcRenderer.invoke('world:time-preview',token,request),
   agenda:(token:string,query:import('../src/app/agenda-contracts').AgendaQuery)=>ipcRenderer.invoke('world:agenda',token,query),
   world:(token:string)=>ipcRenderer.invoke('world:view',token),
   sceneWorld:(token:string,id:string)=>ipcRenderer.invoke('world:scene',token,id),

@@ -30,7 +30,7 @@ import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './wo
 import {initItems,activateItems,openItems,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote } from './preparation';
-import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,useLiveReferenceReadAloud } from './live';
+import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
 import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
@@ -105,7 +105,7 @@ el('autonomy-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))retu
 initCity(status);
 el('city-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('city');await openCity();})().catch(error=>status(error.message,true));};
 initWorld(status,flushLive,async()=>{await openLive();},async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();});
-const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;showTab(kind);if(kind==='world')await openWorld();else await openLive();});
+const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;showTab(kind);if(kind==='world')await openWorld();else await openLive();},async target=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openTimeNavigator(target);});
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
 el('music-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();})().catch(error=>status(error.message,true));};

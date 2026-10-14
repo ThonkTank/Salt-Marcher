@@ -1,3 +1,7 @@
+import {TimeNavigator} from './time-plan-ui';
+import type {TimePreview} from './time-plan-contracts';
+import type {FantasyCalendar} from './world-contracts';
+import {calendarDate} from './world-model';
 import {SceneVisitBinder} from './scene-visit-ui';
 import {openTreasureDistribution} from './treasury-ui';
 import {LiveEncounterGenerator} from './live-generation-ui';
@@ -8,7 +12,7 @@ import {refreshMusic} from './music-ui';
 import {renderLiveWorld} from './world-ui';
 import {renderSceneShops} from './items-ui';
 import type { Workspace, Result } from './contracts';
-import { checkedCharacterProfile, advanceInstant, formatInstant, type TimeUnit, type Character, type CharacterProfile, type LiveScene, type LiveView, type LiveAction, type LiveCommand, type LiveAck } from './live-contracts';
+import { checkedCharacterProfile, formatInstant, type Character, type CharacterProfile, type LiveScene, type LiveView, type LiveAction, type LiveCommand, type LiveAck } from './live-contracts';
 import type { Preparation } from './preparation-contracts';
 import { prepareGeneratedCombat,addWorldNpc,initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup,openExistingCombat } from './combat';
 import {initChase,chaseContext,flushChase,openExistingChase} from './chase-ui';
@@ -46,7 +50,9 @@ let moveBasis: Omit<Extract<LiveAction, { kind: 'move' }>, 'memberIds' | 'target
 let moveTargets: LiveView['scenes'] = [],preparedNotesSceneId:string|null=null,preparedNoteIds=new Set<string>();
 let resetLiveArchives=()=>{};
 let liveGenerator:LiveEncounterGenerator;
-let visitBinder:SceneVisitBinder;
+let visitBinder:SceneVisitBinder;let timeNavigator:TimeNavigator;let manualTimePreview:TimePreview|null=null,timePreviewRequest=0;let clockCalendar:FantasyCalendar|null=null;
+function formatSceneInstant(ms:string){return formatInstant(ms,clockCalendar?.daySeconds??86400);}
+
 type SessionCloseMask={kind:'combat'|'chase';id:string;sceneId:string;sceneTitle:string;title:string;state:string};
 type SessionCloseAudit={masks:SessionCloseMask[];treasures:{count:number;units:number;more:boolean};xpBooked:boolean;events:number};
 type SessionResumePrep={visits:{sceneId:string;sceneTitle:string;nextVisit:NonNullable<ScenePreparation['nextVisit']>}[];narratives:NarrativeJournal};
@@ -58,7 +64,7 @@ const changed = () => !!(characterDraft && originalCharacter() && !equal(charact
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:data.scene?.locationId??null}:null;
 export function activateLive(workspace: Workspace) {
   sessionCloseRequest++;sessionResumeRequest++;for(const id of ['live-session-close-dialog','live-session-resume-dialog']){const dialog=document.getElementById(id) as HTMLDialogElement|null;if(dialog?.open)dialog.close();}
-  visitBinder?.reset();liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
+  visitBinder?.reset();timeNavigator?.reset();manualTimePreview=null;clockCalendar=null;timePreviewRequest++;liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
   context = workspace; data = null; sources = null;sessionChronicle=null;sessionChronicleError=''; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
@@ -232,7 +238,7 @@ function renderVisits() {
   get<HTMLButtonElement>('adoption-preview').disabled = !plan?.scenes.length || intentBlocked();
 }
 function renderSceneMeta() {
-  visitBinder?.contextChanged();liveGenerator?.contextChanged();sessionNavigatorContext(context,data,sources,resumed);syncLivePacketContext();
+  visitBinder?.contextChanged();timeNavigator?.contextChanged();liveGenerator?.contextChanged();sessionNavigatorContext(context,data,sources,resumed);syncLivePacketContext();
   void refreshMusic();
   if(context&&data?.scene&&resumed)void renderLiveWorld(context.token,data.scene.id);
   const scene = data?.scene;
@@ -242,7 +248,7 @@ function renderSceneMeta() {
   const active = data?.roster.filter(c => c.active && c.sceneId === scene?.id) ?? [];
   get('live-party').textContent = active.length ? 'Dabei: ' + active.map(c => c.profile.name).join(', ') : 'Leere Party – Scene bleibt verfügbar.';
   renderPartyReference();
-  get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatInstant(scene.clock.instantMs) : '';
+  get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatSceneInstant(scene.clock.instantMs) : '';
   renderTimePreview();
   void refreshScenePreparation();
   void refreshRuleReferences(resumed?scene?.id??null:null);
@@ -299,7 +305,7 @@ function renderScene() {
 }
 function groupPeople(id:string){return data?.roster.filter(c=>c.active&&c.sceneId===id).map(c=>c.profile.name).join(', ')||'Leere Party';}
 function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'|'clock'>){
-  return (group.title||'Unbenannte Gruppe')+(group.primary?' · Hauptgruppe':'')+' · '+groupPeople(group.id)+' · '+formatInstant(group.clock.instantMs);
+  return (group.title||'Unbenannte Gruppe')+(group.primary?' · Hauptgruppe':'')+' · '+groupPeople(group.id)+' · '+formatSceneInstant(group.clock.instantMs);
 }
 
 
@@ -345,7 +351,7 @@ async function readSessionResumePrep(token:string,scenes:LiveView['scenes']):Pro
 function openVisitFromResume(row:SessionResumePrep['visits'][number]){sessionResumeRequest++;get<HTMLDialogElement>('live-session-resume-dialog').close();void(async()=>{if(data?.focusId!==row.sceneId)await changeFocus(row.sceneId);if(data?.scene?.id!==row.sceneId)return;await openLive(row.nextVisit.planId,row.nextVisit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get<HTMLButtonElement>('adoption-preview').click();})().catch(error=>tell(error.message,true));}
 function renderSessionResume(audit:SessionCloseAudit,prep:SessionResumePrep){
   const groups=get('live-session-resume-groups'),masks=get('live-session-resume-masks'),visits=get('live-session-resume-visits'),narratives=get('live-session-resume-narratives');groups.replaceChildren();masks.replaceChildren();visits.replaceChildren();narratives.replaceChildren();get('live-session-resume-handoff').textContent=latestCompletedSessionHandoff(sessionChronicle?.entries??[])||'Keine Übergabe aus dem letzten Spielabend.';
-  for(const group of data?.scenes??[]){const card=document.createElement('article'),body=document.createElement('div'),title=document.createElement('strong'),facts=document.createElement('p'),button=document.createElement('button'),open=audit.masks.filter(mask=>mask.sceneId===group.id);title.textContent=(group.title||'Unbenannte Gruppe')+(group.primary?' · Hauptgruppe':'');facts.textContent=groupPeople(group.id)+' · '+formatInstant(group.clock.instantMs)+(open.length?' · '+open.length+' laufende '+(open.length===1?'Szene':'Szenen'):'');button.type='button';button.textContent='Spielabend hier beginnen';button.onclick=()=>{sessionResumeRequest++;get<HTMLDialogElement>('live-session-resume-dialog').close();void startLiveSession(group.id);};body.append(title,facts);card.append(body,button);groups.append(card);}
+  for(const group of data?.scenes??[]){const card=document.createElement('article'),body=document.createElement('div'),title=document.createElement('strong'),facts=document.createElement('p'),button=document.createElement('button'),open=audit.masks.filter(mask=>mask.sceneId===group.id);title.textContent=(group.title||'Unbenannte Gruppe')+(group.primary?' · Hauptgruppe':'');facts.textContent=groupPeople(group.id)+' · '+formatSceneInstant(group.clock.instantMs)+(open.length?' · '+open.length+' laufende '+(open.length===1?'Szene':'Szenen'):'');button.type='button';button.textContent='Spielabend hier beginnen';button.onclick=()=>{sessionResumeRequest++;get<HTMLDialogElement>('live-session-resume-dialog').close();void startLiveSession(group.id);};body.append(title,facts);card.append(body,button);groups.append(card);}
   for(const mask of audit.masks){const card=document.createElement('article'),body=document.createElement('div'),title=document.createElement('strong'),facts=document.createElement('p'),button=document.createElement('button');title.textContent=mask.title;facts.textContent=(mask.kind==='combat'?'Kampf':'Verfolgung')+' · '+mask.state+' · '+mask.sceneTitle;button.type='button';button.textContent='Öffnen';button.onclick=()=>openMaskFromResume(mask);body.append(title,facts);card.append(body,button);masks.append(card);}if(!audit.masks.length){const empty=document.createElement('p');empty.className='caption';empty.textContent='Keine laufenden Kämpfe oder Verfolgungen.';masks.append(empty);}
   for(const row of prep.visits){const card=document.createElement('article'),body=document.createElement('div'),title=document.createElement('strong'),facts=document.createElement('p'),button=document.createElement('button');title.textContent=row.nextVisit.title||'Unbenannter Besuch';facts.textContent='Nächster vorbereiteter Besuch · '+row.sceneTitle;button.type='button';button.textContent='Vorschau öffnen';button.onclick=()=>openVisitFromResume(row);body.append(title,facts);card.append(body,button);visits.append(card);}if(!prep.visits.length){const empty=document.createElement('p');empty.className='caption';empty.textContent='Für keine Gruppe steht ein weiterer vorbereiteter Besuch an.';visits.append(empty);}
   for(const entry of prep.narratives.entries.slice(0,6)){const item=document.createElement('p'),strong=document.createElement('strong');strong.textContent=entry.note.title||'Unbenannter Auftrag';item.append(strong,document.createTextNode(' · '+(entry.note.kind==='quest'?'Quest':'Gerücht')+(entry.locationName?' · '+entry.locationName:'')));narratives.append(item);}if(!prep.narratives.entries.length){const empty=document.createElement('p');empty.className='caption';empty.textContent='Keine offenen Quests oder Gerüchte.';narratives.append(empty);}get('live-session-resume-narrative-count').textContent=prep.narratives.counts.open+' offene Aufträge und Gerüchte';
@@ -363,7 +369,7 @@ function renderGroups() {
     const people = data!.roster.filter(c => c.active && c.sceneId === group.id).map(c => c.profile.name).join(', ') || 'Leere Party';
     option.textContent = groupLabel(group); select.append(option);
     const button = document.createElement('button'), name = document.createElement('strong'), facts = document.createElement('small');
-    name.textContent = (group.title || 'Unbenannte Gruppe') + (group.primary ? ' · Hauptgruppe' : ''); facts.textContent = people + ' · ' + formatInstant(group.clock.instantMs);
+    name.textContent = (group.title || 'Unbenannte Gruppe') + (group.primary ? ' · Hauptgruppe' : ''); facts.textContent = people + ' · ' + formatSceneInstant(group.clock.instantMs);
     button.append(name, facts); button.setAttribute('aria-pressed', String(data?.focusId === group.id)); button.disabled = intentBlocked();
     button.onclick = () => { void changeFocus(group.id); }; cards.append(button);
   }
@@ -377,11 +383,11 @@ async function changeFocus(id: string) {
   if (revision === null || revision === undefined || !(await flushLive()) || context?.token !== token) { get<HTMLSelectElement>('scene-focus').value = data?.focusId ?? ''; return; }
   if (await execute({ kind: 'focus', sceneId: id, expectedRevision: revision })) renderScene();
 }
-function renderTimePreview() {
-  if (!data?.scene) return;
-  try { get('time-preview').textContent = 'Danach: ' + formatInstant(advanceInstant(data.scene.clock.instantMs, Number(value('time-amount')), value('time-unit') as TimeUnit)); }
-  catch (error) { get('time-preview').textContent = (error as Error).message; }
+function renderTimePreview(){
+ const scene=data?.scene,w=context,n=++timePreviewRequest;manualTimePreview=null;get<HTMLButtonElement>('time-advance').disabled=true;if(!scene||!w)return;const amount=value('time-amount'),unit=value('time-unit'),units:Record<string,'second'|'minute'|'hour'|'day'>={seconds:'second',minutes:'minute',hours:'hour',days:'day'};get('time-preview').textContent='Kalenderzeit wird berechnet…';
+ void window.campaign.previewTime(w.token,{sceneId:scene.id,kind:'duration',amount,unit:units[unit]!,reason:value('time-reason')}).then(r=>{if(context?.token!==w.token||data?.scene?.id!==scene.id||n!==timePreviewRequest||amount!==value('time-amount')||unit!==value('time-unit'))return;if(!r.ok)throw new Error(r.error);manualTimePreview=r.value;clockCalendar=r.value.calendar;get('time-preview').textContent='Danach: '+calendarDate(r.value.calendar,r.value.to);get('live-clock').textContent='Seit Kampagnenbeginn: '+formatInstant(r.value.from,r.value.calendar.daySeconds);get<HTMLButtonElement>('time-advance').disabled=intentBlocked();renderGroups();}).catch(error=>{if(context?.token===w.token&&n===timePreviewRequest)get('time-preview').textContent=error.message;});
 }
+
 function render() {
   get('live-empty').hidden = !!data; get('live-workspace').hidden = !data; renderList(); renderCharacter(); renderScene();
   const select = get<HTMLSelectElement>('adoption-plan'), current = select.value; select.replaceChildren();
@@ -535,12 +541,9 @@ function initGroups() {
     if (await execute(action)) { moveBasis = null; get<HTMLDialogElement>('move-dialog').close(); renderScene(); }
   })(); };
   for (const id of ['time-amount', 'time-unit']) get(id).addEventListener('input', renderTimePreview);
-  get('time-form').onsubmit = event => { event.preventDefault(); void (async () => {
-    const token = context?.token, scene = data?.scene, amount = Number(value('time-amount')), unit = value('time-unit') as TimeUnit, reason = value('time-reason');
-    if (!scene || !(await flushLive()) || context?.token !== token) return;
-    try { advanceInstant(scene.clock.instantMs, amount, unit); } catch (error) { tell((error as Error).message, true); return; }
-    if (await execute({ kind: 'advance-clock', sceneId: scene.id, expectedRevision: scene.clock.revision, calendarVersion: 'relative-v1', amount, unit, reason })) renderSceneMeta();
-  })(); };
+  get('time-reason').addEventListener('input',renderTimePreview);
+  get('time-form').onsubmit=event=>{event.preventDefault();void(async()=>{const p=manualTimePreview,token=context?.token;if(!p||!token||!data?.scene||p.sceneId!==data.scene.id||!await flushLive()||context?.token!==token)return;manualTimePreview=null;if(await execute(p.action))renderSceneMeta();else renderTimePreview();})();};
+  timeNavigator=new TimeNavigator(tell,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,async action=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==action.sceneId)return false;const ack=await execute(action);if(ack)renderSceneMeta();return !!ack;},recoverTimeWrite);
   resetLiveArchives=initLiveArchives(()=>context?.token??null,flushLive,()=>context?.campaign.id??null);
 }
 
@@ -581,3 +584,7 @@ function livePacketSource():LivePacketSource|null{
 }
 function syncLivePacketContext(){syncLiveSessionPacket(livePacketSource());}
 async function openLivePacket(){const source=livePacketSource();if(!source){tell('Wähle einen Spielabendplan für die laufende Gruppe.',true);return;}await openLiveSessionPacket(source);}
+
+export async function openTimeNavigator(target?:{eventId:string;expectedRevision:number;phase:'start'|'end';sceneId:string;title?:string}){if(!await ensureLiveRuntime())return;await timeNavigator.open(target);}
+
+async function recoverTimeWrite(){const command=failed,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failed!==command)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failed=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}

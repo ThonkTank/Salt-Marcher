@@ -1,3 +1,4 @@
+import {formatDuration} from '../time-plan-model';
 import {formatInstant} from '../live-contracts';
 import {createHash} from 'node:crypto';
 import type {ChronicleCategory,ChronicleEntry,ChronicleView} from '../chronicle-contracts';
@@ -116,7 +117,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
       if(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(recordedAt)||!Number.isFinite(Date.parse(recordedAt)))throw new Error('Chronikquelle hat einen ungültigen Zeitpunkt.');
       const reason=text(f.reason);if(reason.startsWith('Reise '))continue;
       const travel=reason==='Dungeonbewegung'||reason==='Bestätigter Passagenlink',sceneRow=sceneRows.find((r:any)=>r.id===row.scene_id),locationId=sceneRow?.location_id??null;
-      const entry:ChronicleEntry={id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+String(f.amount)+' '+timeUnit(f.unit)+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;timeEntries.push(entry);if(timeEntries.length>2000){timeTruncated=true;break;}
+      const entry:ChronicleEntry={id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+(f.calendarVersion==='campaign-calendar-v1'?formatDuration(String(BigInt(f.to)-BigInt(f.from)),f.calendar.daySeconds):String(f.amount)+' '+timeUnit(f.unit))+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;timeEntries.push(entry);if(timeEntries.length>2000){timeTruncated=true;break;}
     }
     const entries=[...progressEntries,...combatEntries,...worldEntries,...timeEntries];
 
