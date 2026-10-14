@@ -7,6 +7,8 @@ import { checkedCharacterProfile, advanceInstant, formatInstant, type TimeUnit, 
 import type { Preparation } from './preparation-contracts';
 import { initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup } from './combat';
 import {initChase,chaseContext,flushChase} from './chase-ui';
+import type {CombatState} from './combat-contracts';
+import type {ChaseState} from './chase-contracts';
 import type { EncounterPlan } from './encounter-contracts';
 import { initProgress, progressionContext, flushProgress } from './progression-ui';
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
@@ -398,6 +400,36 @@ function initGroups() {
     try { advanceInstant(scene.clock.instantMs, amount, unit); } catch (error) { tell((error as Error).message, true); return; }
     if (await execute({ kind: 'advance-clock', sceneId: scene.id, expectedRevision: scene.clock.revision, calendarVersion: 'relative-v1', amount, unit, reason })) renderSceneMeta();
   })(); };
+  let archiveRequest=0;
+  const archiveParagraph=(root:HTMLElement,text:string,className='')=>{const p=document.createElement('p');p.textContent=text;if(className)p.className=className;root.append(p);};
+  function renderArchivedCombat(root:HTMLElement,combat:CombatState){
+    root.replaceChildren();const heading=document.createElement('h4');heading.textContent=combat.title;root.append(heading);
+    archiveParagraph(root,'Kampf · '+(combat.phase==='retired'?'archiviert ohne Kampfergebnis':combat.phase==='finished'?'abgeschlossen':'gespeicherter Stand')+' · Runde '+combat.round);
+    if(combat.outcome)archiveParagraph(root,'Ergebnis: '+combat.outcome);if(combat.notes)archiveParagraph(root,combat.notes);
+    archiveParagraph(root,combat.participants.length?'Teilnehmer:':'Keine Teilnehmer.','caption');
+    for(const p of combat.participants)archiveParagraph(root,p.name+' · Initiative '+p.initiative+' · RK '+p.armorClass+' · '+(p.healthKnown===false?'HP offen':p.hp+' / '+p.maxHp+' HP')+([p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).length?' · '+[p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).join(' · '):''));
+  }
+  function renderArchivedChase(root:HTMLElement,chase:ChaseState){
+    root.replaceChildren();const heading=document.createElement('h4');heading.textContent=chase.title;root.append(heading);
+    archiveParagraph(root,'Verfolgung · '+(chase.status==='retired'?'archiviert ohne Ergebnis':chase.status==='finished'?'abgeschlossen':'gespeicherter Stand')+' · Runde '+chase.round);
+    if(chase.goal)archiveParagraph(root,'Ziel: '+chase.goal);if(chase.complication)archiveParagraph(root,'Letzte Komplikation: '+chase.complication);if(chase.outcome)archiveParagraph(root,'Ergebnis: '+chase.outcome);
+    archiveParagraph(root,chase.participants.length?'Teilnehmer:':'Keine Teilnehmer.','caption');
+    for(const p of chase.participants)archiveParagraph(root,p.name+' · '+(p.side==='pursuer'?'Verfolger':'Flüchtend')+' · Abstand '+p.distance+' m · Tempo '+p.speed+' m · Erschöpfung '+p.exhaustion+(p.notes?' · '+p.notes:''));
+  }
+  async function openArchive(token:string,item:{id:string;title:string}){
+    const request=++archiveRequest,root=get('archive-detail');root.replaceChildren();archiveParagraph(root,'Archiv wird geladen…');
+    try{
+      const [sceneResult,combatResult,chaseResult]=await Promise.all([window.campaign.liveScene(token,item.id),window.campaign.combat(token,item.id),window.campaign.chase(token,item.id)]);
+      if(context?.token!==token||request!==archiveRequest)return;const scene=unwrap(sceneResult),combat=unwrap(combatResult),chase=unwrap(chaseResult);root.replaceChildren();
+      const heading=document.createElement('h3');heading.textContent=scene.title||'Unbenannte frühere Gruppe';root.append(heading);archiveParagraph(root,formatInstant(scene.clock.instantMs),'caption');if(scene.notes)archiveParagraph(root,scene.notes);
+      const masks=document.createElement('section'),maskTitle=document.createElement('h4'),buttons=document.createElement('div'),detail=document.createElement('div');let maskRequest=0;maskTitle.textContent='Letzte gespeicherte Laufzeitstände';buttons.className='selection-list';masks.append(maskTitle,buttons,detail);root.append(masks);
+      for(const entry of combat.recent){const button=document.createElement('button');button.textContent='Kampf: '+entry.title+' · '+(entry.phase==='retired'?'archiviert':entry.phase==='finished'?'abgeschlossen':entry.phase==='running'?'laufend':'vorbereitet');button.onclick=()=>{const selection=++maskRequest;void(async()=>{try{const result=unwrap(await window.campaign.combat(token,item.id,entry.id));if(context?.token===token&&request===archiveRequest&&selection===maskRequest&&result.combat)renderArchivedCombat(detail,result.combat);}catch(error){if(context?.token===token&&request===archiveRequest&&selection===maskRequest)tell((error as Error).message,true);}})();};buttons.append(button);}
+      for(const entry of chase.recent){const button=document.createElement('button');button.textContent='Verfolgung: '+entry.title+' · '+(entry.status==='retired'?'archiviert':entry.status==='finished'?'abgeschlossen':'laufend');button.onclick=()=>{const selection=++maskRequest;void(async()=>{try{const result=unwrap(await window.campaign.chase(token,item.id,entry.id));if(context?.token===token&&request===archiveRequest&&selection===maskRequest&&result.chase)renderArchivedChase(detail,result.chase);}catch(error){if(context?.token===token&&request===archiveRequest&&selection===maskRequest)tell((error as Error).message,true);}})();};buttons.append(button);}
+      if(!combat.recent.length&&!chase.recent.length)archiveParagraph(detail,'Für diese frühere Gruppe sind keine Kämpfe oder Verfolgungen gespeichert.','caption');
+      else if(combat.combat)renderArchivedCombat(detail,combat.combat);
+      else archiveParagraph(detail,'Wähle einen gespeicherten Laufzeitstand aus.','caption');
+    }catch(error){if(context?.token===token&&request===archiveRequest){root.replaceChildren();tell((error as Error).message,true);}}
+  }
   async function loadArchives(reset: boolean) {
     const token = context?.token; if (!token) return;
     try {
@@ -406,13 +438,7 @@ function initGroups() {
       if (reset) { get('archive-list').replaceChildren(); get('archive-detail').replaceChildren(); }
       for (const item of page.items) {
         const button = document.createElement('button'); button.textContent = item.title || 'Gruppe ' + item.id.slice(0,8);
-        button.onclick = () => { void (async () => {
-          try {
-            const s = unwrap(await window.campaign.liveScene(token, item.id));
-            if (context?.token !== token) return;
-            get('archive-detail').textContent = (s.title || 'Unbenannte frühere Gruppe') + '\n' + formatInstant(s.clock.instantMs) + '\n\n' + s.notes;
-          } catch (error) { tell((error as Error).message, true); }
-        })(); }; get('archive-list').append(button);
+        button.onclick = () => { void openArchive(token,item); }; get('archive-list').append(button);
       }
       archiveCursor = page.next; get('archive-more').hidden = page.next === null;
     } catch (error) { tell((error as Error).message, true); }
