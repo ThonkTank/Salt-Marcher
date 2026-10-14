@@ -63,7 +63,7 @@ export function migrateProgress(db: any) {
       const key = JSON.stringify([row.campaign_id,actor.characterId]); if (seen.has(key)) continue; seen.add(key);
       const p = readProgressCharacter(db,row.campaign_id,actor.characterId);
       if (p.health !== null || p.combatStatus!==undefined || actor.healthKnown === false) continue;
-      p.health = { hp: actor.hp, maxHp: actor.maxHp, tempHp: actor.tempHp, conditions: actor.conditions, concentrating: actor.concentrating };
+      p.health = healthFromActor(actor);
       const payload = json(p); db.prepare('UPDATE character_progress SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),row.campaign_id,p.characterId);
     }
   }
@@ -77,8 +77,8 @@ export function event(db: any, cam: string, characterId: string | null, kind: st
 function notice(db: any, cam: string, characterId: string, amount: number) {
   if (amount && !db.prepare('SELECT active FROM roster_member WHERE campaign_id=? AND id=?').get(cam, characterId).active) db.prepare('INSERT INTO progress_notice VALUES(?,?,?,?,0)').run(cam, randomUUID(), characterId, amount + ' XP erhalten, während die Figur inaktiv war.');
 }
-function healthFromActor(actor: NonNullable<Progress['health']>) {
-  return {hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating};
+function healthFromActor(actor: NonNullable<Progress['health']>):NonNullable<Progress['health']> {
+  return {hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating,...(actor.death?{death:structuredClone(actor.death)}:{})};
 }
 function healthStatus(actor: Pick<NonNullable<Progress['combatStatus']>,'tempHp'|'conditions'|'concentrating'>) {
   return {tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating};
