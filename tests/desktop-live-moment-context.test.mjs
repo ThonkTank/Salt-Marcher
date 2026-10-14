@@ -76,9 +76,20 @@ test('a pending recap read does not block the next confirmed moment and older re
  reads[1].resolve(reads[1].value);await settle();assert.match(x.el('live-session-events').textContent,/Während Rückblick lädt/);reads[0].resolve(reads[0].value);await settle();assert.match(x.el('live-session-events').textContent,/Während Rückblick lädt/);
 });
 
-test('closing the recap review retains its edited note without ending the session',async t=>{
- const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-summary').value='Alter Entwurf';x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-dialog').open,true);const before=x.store.db.serialize();x.el('live-session-close-summary').value='Bearbeiteter Entwurf';x.el('live-session-close-x').click();assert.equal(x.el('live-session-summary').value,'Bearbeiteter Entwurf');assert.ok(x.store.db.serialize().equals(before));assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,0);
+for(const exit of ['live-session-close-x','live-session-close-cancel','escape'])test(`closing the recap review via ${exit} retains its edited note without ending the session`,async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-summary').value='Alter Entwurf';x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-dialog').open,true);const before=x.store.db.serialize();x.el('live-session-close-summary').value='Bearbeiteter Entwurf';if(exit==='escape')x.el('live-session-close-dialog').dispatchEvent(new x.window.Event('cancel'));else x.el(exit).click();assert.equal(x.el('live-session-summary').value,'Bearbeiteter Entwurf');assert.ok(x.store.db.serialize().equals(before));assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,0);
 });
 test('an open recap review keeps its note in the original campaign across activation',async t=>{
  const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-end').click();await settle();x.el('live-session-close-summary').value='Review für A';const next=x.store.create('B'),b=x.store.activate(next.id);x.ui.activateLive(b);await x.ui.openLive();assert.equal(x.el('live-session-summary').value,'');const a=x.store.activate(x.w.campaign.id);x.ui.activateLive(a);await x.ui.openLive();assert.equal(x.el('live-session-summary').value,'Review für A');
+});
+
+test('opening a pending combat from the recap review retains its edited note',async t=>{
+ const x=await setup(t),scene=x.store.live(x.w.token).scene;
+ x.store.executeCombat({...x.command({kind:'create',sceneId:scene.id,title:'Torwache',includeParty:true,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null});
+ x.el('live-session-start').click();await settle();x.el('live-session-end').click();await settle();
+ x.el('live-session-close-summary').value='Später die Torwache klären';x.el('combat-panel').scrollIntoView=()=>{};
+ const before=x.store.combat(x.w.token,x.scene.id),markers=x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker);x.el('live-session-close-masks').querySelector('button').click();await settle();
+ assert.equal(x.el('live-session-close-dialog').open,false);assert.equal(x.el('live-session-summary').value,'Später die Torwache klären');
+ assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,0);assert.deepEqual(x.store.combat(x.w.token,x.scene.id),before);assert.deepEqual(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker),markers);
+ x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-summary').value,'Später die Torwache klären');
 });
