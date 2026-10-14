@@ -5,22 +5,32 @@
     "version": "0.63.0"
   },
   "isolation": "Separate management and detached pilot copy; shared development untouched.",
-  "offline_qa_regressions_passed": 86,
   "scenario_contract": "nebelmark 2.0.1 separates visual player handout from GM read-aloud retrieval.",
   "review_candidate": {
+    "id": "INFRA-FIX-02-CANDIDATE-02",
+    "files": 1102,
+    "original_native_frames": 266,
+    "inventory_sha256": "b853df4719e7c8d66de1b470a42b5e4a0e42884c98b436aa797acc8c25023972",
+    "independent_reviews": 0,
+    "status": "technical_evidence_secured_not_accepted"
+  },
+  "confirmed_infrastructure_issues": [
+    "Future audit must preserve historical manifest bytes and reject unverified claim conditions.",
+    "Attached recorder and empty transport evidence need fail-closed checks.",
+    "Delayed successful UI effects need attribution without accepting later corrective inputs."
+  ],
+  "repair": "Source consolidation in a separate infrastructure chat; original native evidence retained. Documented raw-input index loading corrected and 18 targeted tests passed.",
+  "scored_product_runs": 0,
+  "claim": "No product usability, parity, superiority or human-load claim. Private cases and raw personal filesystem views remain outside this repository.",
+  "offline_checks": {
+    "historical_package_tests_passed": 86,
+    "targeted_input_loader_tests_passed": 18,
+    "scope": "Offline method checks; not product acceptance."
+  },
+  "previous_review_candidate": {
     "id": "INFRA-REVIEW-CANDIDATE-01",
     "files": 304,
     "independent_reviews": 2,
     "verdict": "agreed_blocked"
-  },
-  "confirmed_infrastructure_issues": [
-    "Non-atomic scroll counting, including zero/negative steps.",
-    "Incomplete identity, source revision and raw artifact package.",
-    "Native whole-goal guard/restart continuity not yet demonstrated.",
-    "Profile isolation and geometry/focus helper costs not fully established.",
-    "Individual delayed drag effects and complete Editor persistence not yet established."
-  ],
-  "repair": "Separate infrastructure implementation job running; original evidence retained.",
-  "scored_product_runs": 0,
-  "claim": "No product usability, parity, superiority or human-load claim. Private cases and raw personal filesystem views remain outside this repository."
+  }
 }
