@@ -57,6 +57,25 @@ innerhalb seines Commands an. Reads und readonly Snapshotprüfung schreiben
 weiterhin nichts. Die Storegegenprobe prüft den ersten bestätigten Revisionswert
 zusätzlich zu Fresh, Replay und unabhängiger Kopie.
 
+## GM-Proben als eigener Sceneverlauf
+
+Das integrierte `scene-checks.ts` speichert manuelle d20-Proben mit eingegebenem
+Modifier, optionalem SG/Regelpin, echten Würfen, Szenenzeit und Erfassungszeit.
+Probenmechanik bleibt im GM-Kanal. Vollständige Profil-/Skill-/Save-Anschlüsse,
+öffentliche Statusklärung bei Replyverlust und native Abnahme fehlen weiterhin.
+
+Die Zusammenführung hält Regeln und Proben an derselben Antwortautorität:
+A-Replies verändern weder B-Verlauf noch dessen Revisionsbasis; ausstehende
+Proben blockieren doppelte Würfe und konkurrierende Regelwrites. Zwei neue
+DOMprüfungen ergänzen die sieben bestehenden Kontextgegenproben.
+
+Drei SQLite-Prüfungen fanden schreibende Leerreads und einen alten `ruleNoteId`
+nach unabhängiger Kopie. Der Reader bleibt jetzt lesend, auch an einem readonly
+Paket; der erste Rollcommand legt den State ausdrücklich an und bestätigt
+Revision eins. Replay/Fresh würfeln nicht erneut. Der strukturelle Regelverweis
+wird remappt, eingefrorene Labelprosa und Originalpaketbytes bleiben erhalten.
+Ältere Pakete ohne Proben erhalten das Schema nur auf der eigenen Importkopie.
+
 ## Nächste ausführbare Schritte
 
 1. **Bestätigungs-/Closeweg schließen.** `executeSceneRule` besitzt lokale

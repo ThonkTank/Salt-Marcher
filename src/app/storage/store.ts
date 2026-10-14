@@ -662,7 +662,7 @@ export class CampaignStore {
       if(expectedDigest!==undefined&&sha256!==expectedDigest)throw new Error('Geprüfte Paketdatenbank wurde verändert.');
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
       if([33,34,35,36,37,38,39,40].includes(c.schema)){installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installChaseSchema(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);migrateMaskHealth(source);source.pragma('user_version=41');}
-      archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
+      installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }
