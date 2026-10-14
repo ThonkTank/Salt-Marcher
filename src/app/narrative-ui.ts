@@ -25,6 +25,8 @@ let readyHook: (() => boolean) | null = null;
 let draftVersion = 0,
   persistHook: (() => Promise<boolean>) | null = null,
   timer: ReturnType<typeof setTimeout> | null = null;
+let resumeOwner:(()=>Promise<void>)|null=null;
+export function captureNarrativeOwner(){return resumeOwner;}
 function markDirty() {
   dirty = true;
   draftVersion++;
@@ -58,6 +60,7 @@ export async function showNarrative(
   panel.hidden =
     !w || !note || trashed || !["quest", "rumor"].includes(note.kind);
   if (!panel.hidden && key === ownerKey && (dirty || pending)) return;
+  resumeOwner=panel.hidden?null:()=>showNarrative(w,note,trashed,drain,tell,panel,onSaved);
   const n = ++request;
   if (panel.hidden) {
     ownerKey = "";

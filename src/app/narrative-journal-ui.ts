@@ -1,9 +1,10 @@
 import type {Workspace} from './contracts';
 import type {NarrativeJournalEntry,NarrativeJournalQuery} from './narrative-journal-contracts';
-import {showNarrative,flushNarrative} from './narrative-ui';
+import {showNarrative,flushNarrative,captureNarrativeOwner} from './narrative-ui';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 let workspace:Workspace|null=null,entries:NarrativeJournalEntry[]=[],selected:string|null=null,next:string|null=null,request=0,detailRequest=0,queryTimer:ReturnType<typeof setTimeout>|null=null;
+let resumeOwner:(()=>Promise<void>)|null=null;
 let tell:(s:string,error?:boolean)=>void,drain:()=>Promise<boolean>,ownerDrain:()=>Promise<boolean>,editNote:(id:string)=>Promise<void>;
 function query(after:string|null):NarrativeJournalQuery{return{search:el<HTMLInputElement>('journal-search').value,kind:el<HTMLSelectElement>('journal-kind').value as NarrativeJournalQuery['kind'],status:el<HTMLSelectElement>('journal-status').value as NarrativeJournalQuery['status'],after};}
 async function loadPage(after:string|null=null){
@@ -31,13 +32,13 @@ async function selectEntry(entry:NarrativeJournalEntry){
 }
 async function navigate(id:string){if(!await closeJournal())return;await editNote(id);}
 function clearDetail(){selected=null;el('journal-document').replaceChildren(node('p','Wähle links einen Auftrag.'));el('journal-narrative-editor').hidden=true;}
-async function closeJournal(){if(!await flushNarrative())return false;request++;detailRequest++;el<HTMLDialogElement>('narrative-journal').close();await showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));clearDetail();return true;}
-export function activateNarrativeJournal(w:Workspace){workspace=w;request++;detailRequest++;entries=[];selected=null;next=null;clearDetail();const dialog=el<HTMLDialogElement>('narrative-journal');if(dialog.open){dialog.close();void showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));}}
+async function closeJournal(){if(!await flushNarrative())return false;request++;detailRequest++;el<HTMLDialogElement>('narrative-journal').close();await showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));clearDetail();const resume=resumeOwner;resumeOwner=null;if(resume)await resume();return true;}
+export function activateNarrativeJournal(w:Workspace){workspace=w;resumeOwner=null;request++;detailRequest++;entries=[];selected=null;next=null;clearDetail();const dialog=el<HTMLDialogElement>('narrative-journal');if(dialog.open){dialog.close();void showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));}}
 export function initNarrativeJournal(status:typeof tell,flush:typeof drain,flushOwner:typeof ownerDrain,openNote:typeof editNote){
  tell=status;drain=flush;ownerDrain=flushOwner;editNote=openNote;
  const button=node('button','Aufträge und Gerüchte');button.id='narrative-journal-open';button.type='button';button.disabled=true;el('party-shortcut').after(button);
  const dialog=node('dialog');dialog.id='narrative-journal';dialog.innerHTML='<div class="toolbar"><h2>Aufträge und Gerüchte</h2><button id="journal-refresh" type="button">Aktualisieren</button><button id="journal-close" type="button">Schließen</button></div><p>Private GM-Notizen und bestätigte Ergebnisse. Belohnungen ausdrücklich über den bestehenden Abschluss vergeben.</p><div class="journal-columns"><section class="journal-index"><label for="journal-search">Im Journal suchen</label><input id="journal-search" type="search" maxlength="1000" placeholder="Titel, Notizen, Vorlesetext oder Ergebnis"><div class="toolbar"><select id="journal-kind" aria-label="Auftragsart"><option value="all">Quests und Gerüchte</option><option value="quest">Quests</option><option value="rumor">Gerüchte</option></select><select id="journal-status" aria-label="Auftragsstatus"><option value="open">Offen</option><option value="all">Alle</option><option value="closed">Geschlossen</option></select></div><p id="journal-counts"></p><p id="journal-list-status" role="status"></p><div id="journal-list"></div><button id="journal-more" type="button" hidden>Weitere Aufträge</button></section><section class="journal-reading"><article id="journal-document"><p>Wähle links einen Auftrag.</p></article><section id="journal-narrative-editor" hidden></section></section></div>';document.body.append(dialog);
- button.onclick=()=>{void(async()=>{const w=workspace;if(!w||!await drain()||workspace?.token!==w.token)return;dialog.showModal();await loadPage();})().catch(e=>tell(e.message,true));};
+ button.onclick=()=>{void(async()=>{const w=workspace;if(!w||!await drain()||workspace?.token!==w.token)return;resumeOwner=captureNarrativeOwner();dialog.showModal();await loadPage();})().catch(e=>tell(e.message,true));};
  el('journal-close').onclick=()=>void closeJournal();dialog.addEventListener('cancel',e=>{e.preventDefault();void closeJournal();});
  el('journal-refresh').onclick=()=>{void(async()=>{if(await flushNarrative())await loadPage();})().catch(e=>tell(e.message,true));};
  el('journal-more').onclick=()=>void loadPage(next);
