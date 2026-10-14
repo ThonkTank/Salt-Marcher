@@ -489,7 +489,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
       get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
     }catch(error){if(current())tell((error as Error).message,true);}})();
   };
-  get('live-session-start').onclick=()=>void markLiveSession('start');
+  get('live-session-start').onclick=()=>void startLiveSession();
   get('live-session-end').onclick=()=>void loadSessionCloseReview();
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick=()=>void previewPlannedVisit(value('adoption-plan'),value('adoption-visit')).catch(e=>tell(e.message,true));

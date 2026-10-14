@@ -85,7 +85,7 @@ export const lessons = [
 ];
 
 export const tutorialSurfaceLessons={
-  'agenda-open':'campaign-agenda','live-agenda-open':'campaign-agenda',
+  'agenda-open':'campaign-agenda',
   'live-generation-open':'live-generation',
   'session-copy-open':'session-reuse',
   atlas:'drawing-and-key',preparation:'world-notes',live:'live-party',chronicle:'chronicle',catalog:'encounter-catalog',groups:'npc-world',treasury:'treasury',items:'items-trade',dungeon:'dungeon-tools',autonomy:'npc-autonomy',city:'city-infill',world:'atlas-hex',music:'music-library',
@@ -93,6 +93,7 @@ export const tutorialSurfaceLessons={
 } as const;
 
 export const tutorialCapabilityLessons={
+  'live-agenda-open':'campaign-agenda',
   'dungeon-binder-open':'dungeon-binder','dungeon-binder-live':'dungeon-binder',
   'scene-visit-open':'scene-visits',
   'live-loot-distribute':'treasure-distribution','treasury-distribute':'treasure-distribution',

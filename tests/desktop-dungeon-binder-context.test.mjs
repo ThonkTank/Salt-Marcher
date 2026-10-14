@@ -1,0 +1,50 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {randomUUID} from 'node:crypto';
+import {createRequire} from 'node:module';
+import {buildSync} from 'esbuild';
+import {parseHTML} from 'linkedom';
+buildSync({entryPoints:{ui:'src/app/dungeon-binder-ui.ts',store:'src/app/storage/store.ts'},outdir:'.build/binder-context',outExtension:{'.js':'.cjs'},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const require=createRequire(import.meta.url),{DungeonBinder}=require('../.build/binder-context/ui.cjs'),{CampaignStore}=require('../.build/binder-context/store.cjs');
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+async function until(check){for(let i=0;i<30;i++){if(check())return;await tick();}throw Error('condition not reached');}
+function fixture(t){
+ const root=mkdtempSync(path.join(tmpdir(),'binder-context-')),store=new CampaignStore(path.join(root,'store.sqlite')),rooms=['Nordtor','Gewölbe'].map((name,i)=>({id:randomUUID(),scopeId:'local',floorId:'ground',number:String(i+1),name,revision:0,polygons:[{outer:[{x:i*8,y:0},{x:i*8+4,y:0},{x:i*8+4,y:4},{x:i*8,y:4}],holes:[]}],sections:[{id:randomUUID(),kind:'markdown',markdown:'  Originaltext '+name+'\r\n'}]})),campaign=store.create('Binderprobe',rooms),w=store.activate(campaign.id),view=store.dungeon(w.token);
+ const {document,window}=parseHTML('<button id="dungeon-binder-open"></button><button id="dungeon-binder-live"></button>'),prior={document:globalThis.document,window:globalThis.window,Option:globalThis.Option};
+ function Option(text,value){const node=document.createElement('option');node.textContent=text;node.value=value;return node;}
+ window.HTMLSelectElement.prototype.add=function(option){this.append(option);};Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this._value??this.options[0]?.value??'';},set(value){this._value=value;},configurable:true});
+ Object.assign(globalThis,{document,window,Option});let workspace=w;const calls=[],messages=[],reads=[];window.campaign={dungeon:async token=>{reads.push(token);return{ok:true,value:view};},treasure:async()=>{calls.push(['treasure']);return{ok:true,value:{title:'Schatz',items:[]}};}};
+ let flush=async()=>true,navigate=async(id,action)=>calls.push([id,action]);const binder=new DungeonBinder(()=>workspace,()=>flush(),(s,error)=>messages.push({s,error}),(id,action)=>navigate(id,action));
+ const dialog=document.getElementById('dungeon-binder');dialog.showModal=()=>dialog.setAttribute('open','');dialog.close=()=>dialog.removeAttribute('open');Object.defineProperty(dialog,'open',{get(){return this.hasAttribute('open');}});
+ const el=id=>document.getElementById(id),open=()=>el('dungeon-binder-open').onclick(),choose=id=>el('dungeon-binder-list').querySelector('[data-room-id="'+id+'"]').onclick(),mapButton=()=>[...el('dungeon-binder-document').querySelectorAll('button')].find(b=>b.textContent==='Auf der Karte öffnen');
+ t.after(()=>{binder.reset();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});return{binder,view,rooms,w,el,open,choose,mapButton,calls,messages,reads,setFlush:f=>flush=f,setNavigate:f=>navigate=f,setWorkspace:v=>workspace=v,loaded:()=>!!el('dungeon-binder-list').firstChild};
+}
+test('reset invalidates an open intent already waiting for the workspace flush',async t=>{
+ const x=fixture(t);let release;x.setFlush(()=>new Promise(r=>release=r));x.open();await until(()=>!!release);x.binder.reset();x.setFlush(async()=>true);x.open();await until(x.loaded);x.choose(x.rooms[1].id);const text=x.el('dungeon-binder-document').textContent;release(true);await tick();await tick();assert.equal(x.reads.length,1);assert.equal(x.el('dungeon-binder-document').textContent,text);
+});
+test('detached map action cannot navigate a reopened binder',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);x.choose(x.rooms[0].id);const old=x.mapButton();x.binder.reset();x.open();await until(x.loaded);x.choose(x.rooms[1].id);old.onclick();await tick();assert.deepEqual(x.calls,[]);assert.equal(x.el('dungeon-binder').open,true);
+});
+test('detached room row cannot replace a newly selected document',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);const old=x.el('dungeon-binder-list').querySelector('[data-room-id="'+x.rooms[0].id+'"]');x.choose(x.rooms[1].id);const text=x.el('dungeon-binder-document').textContent;old.onclick();assert.equal(x.el('dungeon-binder-document').textContent,text);
+});
+test('map action from the previous read cannot navigate during refresh',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);const old=x.mapButton();let release;window.campaign.dungeon=()=>new Promise(r=>release=()=>r({ok:true,value:x.view}));[...x.el('dungeon-binder').querySelectorAll('button')].find(b=>b.textContent==='Aktualisieren').onclick();await until(()=>!!release);old.onclick();await tick();assert.deepEqual(x.calls,[]);release();await tick();assert.equal(x.el('dungeon-binder').open,true);
+});
+test('a detached feature toggle cannot read old loot in a reopened context',async t=>{
+ const x=fixture(t);x.view.drawing.elements.push({id:'old-feature',kind:'feature',feature:'loot',roomId:x.rooms[0].id,archived:false,name:'Alte Schatzbindung',notes:'GM',content:{reference:{kind:'treasure',id:'old-treasure'},publicText:''}});x.open();await until(x.loaded);x.choose(x.rooms[0].id);const old=x.el('dungeon-binder-document').querySelector('[data-feature-id="old-feature"]');x.binder.reset();x.open();await until(x.loaded);x.choose(x.rooms[1].id);old.open=true;old.dispatchEvent(new window.Event('toggle'));await tick();assert.deepEqual(x.calls,[]);
+});
+test('current room navigation remains usable',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);x.choose(x.rooms[1].id);x.mapButton().onclick();await tick();assert.deepEqual(x.calls,[[x.rooms[1].id,'map']]);assert.equal(x.el('dungeon-binder').open,false);
+});
+
+test('navigation failure from a retired binder does not report into a newer dialog',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);let reject;x.setNavigate(()=>new Promise((resolve,fail)=>reject=fail));x.mapButton().onclick();await until(()=>!!reject);x.open();await until(x.loaded);const status=x.el('dungeon-binder-status').textContent;reject(Error('Alte Kartennavigation'));await tick();assert.deepEqual(x.messages,[]);assert.equal(x.el('dungeon-binder-status').textContent,status);
+});
+
+test('changing filters during refresh cannot give the previous read new authority',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);let release;window.campaign.dungeon=()=>new Promise(r=>release=()=>r({ok:true,value:x.view}));[...x.el('dungeon-binder').querySelectorAll('button')].find(b=>b.textContent==='Aktualisieren').onclick();await until(()=>!!release);x.el('dungeon-binder-filter').value='all';x.el('dungeon-binder-filter').onchange();const row=x.el('dungeon-binder-list').querySelector('[data-room-id="'+x.rooms[1].id+'"]');row.onclick();x.mapButton().onclick();await tick();assert.deepEqual(x.calls,[]);release();await tick();assert.equal(x.el('dungeon-binder').open,true);
+});

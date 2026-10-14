@@ -317,7 +317,7 @@ export async function renderLiveWorld(token:string,sceneId:string){
  if(!document.getElementById('live-world-summary'))return;
  try{
   const result=unwrap(await window.campaign.sceneWorld(token,sceneId));if(workspace?.token!==token||request!==liveRequest||!document.getElementById('live-world-summary'))return;
-  if(result.scene.id!==sceneId)throw new Error('Wetterantwort gehört zu einer anderen Gruppe.');if(!canAdoptWeatherFrame(liveWorld,result))return;liveWorld=result;if(liveTravelOpen&&liveSurface)followLiveGroup(result);paintLiveWeather(result,token,sceneId);
+  if(result.scene.id!==sceneId)throw new Error('Wetterantwort gehört zu einer anderen Gruppe.');if(!canAdoptWeatherFrame(liveWorld,result))return;liveWorld=result;if(liveTravelOpen&&liveSurface)followLiveGroup(result);paintLiveWeather(result,token,sceneId);void renderLiveAgenda(token,sceneId,request);
  }catch(error){if(workspace?.token===token&&request===liveRequest&&document.getElementById('live-world-summary'))el('live-world-summary').textContent='Weltanzeige: '+(error as Error).message;}
 }
 export function initWorld(status:typeof tell,flushLive:typeof before,reloadLive:typeof after,open:typeof enter){tell=status;before=flushLive;after=reloadLive;enter=open;
