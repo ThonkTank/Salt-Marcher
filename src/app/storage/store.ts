@@ -1,4 +1,4 @@
-import {removePartyFromMasks,migrateMaskHealth} from './mask-health';
+import {migrateMaskHealth} from './mask-health';
 import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
@@ -63,8 +63,9 @@ import { checkedLocationDocument } from '../../features/location/location-schema
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
-import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+import { reconcileCombatParticipants, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
 import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
+import {installMaskReconciliationSchema,validateMaskReconciliations} from './mask-reconciliation';
 import {installRuleReferenceSchema,readSceneRules,executeSceneRule,validateRuleReferences} from './rule-references';
 import type {SceneRuleCommand} from '../rule-reference-contracts';
 import type {ChaseCommand} from '../chase-contracts';
@@ -145,7 +146,7 @@ export class CampaignStore {
       if (schema < 6) for (const row of this.db.prepare('SELECT id FROM campaign').all()) ensureLiveOwners(this.db, row.id);
       if (schema < 7) migrateLiveClock(this.db);
       if (schema < 8) this.db.exec('INSERT OR IGNORE INTO scene_lifecycle(campaign_id,id,membership_revision,retired) SELECT campaign_id,id,0,0 FROM live_scene;');
-      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installRuleReferenceSchema(this.db);
+      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installMaskReconciliationSchema(this.db);installRuleReferenceSchema(this.db);
       installProgressSchema(this.db);
       if (schema < 10) migrateProgress(this.db);
       installEncounterSchema(this.db);
@@ -423,7 +424,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
-    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateRuleReferences(db);
+    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateMaskReconciliations(db);validateRuleReferences(db);
     validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
@@ -727,8 +728,7 @@ export class CampaignStore {
     const ack = executeLive(this.db, command, () => {
     this.guard(command.token, command.campaignId);
     const a = command.action;
-
-    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];removePartyFromMasks(this.db,command.campaignId,ids,command.commandId);reconcileChaseParticipants(this.db,command.campaignId,ids);}
+    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];reconcileCombatParticipants(this.db,command.campaignId,ids,command.commandId);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId);}
   });
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);

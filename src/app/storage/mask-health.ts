@@ -35,19 +35,6 @@ export function syncOpenMaskHealth(db:any,cam:string,exceptId?:string){
   if(changed){s.revision++;s.sharedNotice='HP oder Zustände wurden in einer anderen Maske oder am Weltinhalt geändert. Ältere Schritte dieser Begegnung sind nicht mehr rückgängig verfügbar.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);}
  }
 }
-/** PCs leave every ongoing mask as part of the same transaction as a party move. */
-export function removePartyFromMasks(db:any,cam:string,ids:string[],commandId:string){
- const moving=new Set(ids);
- for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished' ORDER BY ordinal").all(cam)){
-  const s=decode(row),removed=s.participants.filter(p=>p.characterId&&moving.has(p.characterId));if(!removed.length)continue;
-  publishCombatHealth(db,cam,{...s,participants:removed});const order=combatOrder(s),turnIndex=order.findIndex(p=>p.id===s.turnId);s.participants=s.participants.filter(p=>!p.characterId||!moving.has(p.characterId));
-  if(s.turnId&&!s.participants.some(p=>p.id===s.turnId)){const candidates=[...order.slice(turnIndex+1),...order.slice(0,turnIndex+1)];s.turnId=candidates.find(p=>s.participants.some(left=>left.id===p.id))?.id??null;}
-  if(!s.participants.length){s.phase='preparing';s.round=0;s.turnId=null;}
-  s.revision++;s.sharedNotice='Party-Figuren wurden in eine andere Scene verschoben oder deaktiviert und aus dieser Begegnung entfernt.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);
-  for(const actor of removed)event(db,cam,actor.characterId,'combat-exit',{commandId,combatId:s.id,title:s.title,participant:actor,reason:'Party-Zuordnung geändert'});
- }
-}
-/** Old databases stored active PC health in the encounter; adopt those facts once. */
 export function migrateMaskHealth(db:any){
  const seen=new Set<string>();for(const row of db.prepare("SELECT * FROM combat WHERE phase!='finished' ORDER BY ordinal DESC").all()){
   const s=decode(row),participants=s.participants.filter(p=>{if(!p.characterId)return false;const key=row.campaign_id+':'+p.characterId;if(seen.has(key))return false;seen.add(key);return true;});publishCombatHealth(db,row.campaign_id,{...s,participants});
