@@ -140,6 +140,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   commitStatus:(ref:import('../src/app/commit-receipt').CommitReference,token:string)=>ipcRenderer.invoke('campaign:commit-status',ref,token),
   executeProgress: (command: unknown) => ipcRenderer.invoke('campaign:execute-progress', command),
   combat: (token: string, sceneId: string, id?: string) => ipcRenderer.invoke('campaign:combat', token, sceneId, id),
+  keepChaseDraft:(token:string,draft:import('../src/app/chase-draft-contracts').ChaseWorkingDraft,expected:string|null)=>ipcRenderer.invoke('campaign:keep-chase-draft',token,draft,expected),
   chase:(token:string,sceneId:string,id?:string)=>ipcRenderer.invoke('campaign:chase',token,sceneId,id),
   executeChase:(command:import('../src/app/chase-contracts').ChaseCommand)=>ipcRenderer.invoke('campaign:execute-chase',command),
   combatDraft:(token:string,id:string,kind:unknown,target:string)=>ipcRenderer.invoke('campaign:combat-draft',token,id,kind,target),

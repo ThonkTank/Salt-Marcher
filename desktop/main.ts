@@ -286,6 +286,7 @@ else {
     handle('campaign:keep-combat-draft',(token:string,draft:import('../src/app/combat-draft-contracts').CombatWorkingDraft,expected:string|null)=>store.keepCombatDraft(token,draft,expected));
     handle('campaign:discard-combat-draft',(token:string,id:string,kind:import('../src/app/combat-draft-contracts').CombatDraftKind,target:string,writeId:string)=>store.discardCombatDraft(token,id,kind,target,writeId));
     handle('campaign:combat', (token: string, sceneId: string, id?: string) => store.combat(token, sceneId, id));
+    handle('campaign:keep-chase-draft',(token:string,draft:import('../src/app/chase-draft-contracts').ChaseWorkingDraft,expected:string|null)=>store.keepChaseDraft(token,draft,expected));
     handle('campaign:chase',(token:string,sceneId:string,id?:string)=>store.chase(token,sceneId,id));
     handle('campaign:execute-chase',(command:import('../src/app/chase-contracts').ChaseCommand)=>commits.execute('chase',command,()=>store.executeChase(command)));
     handle('campaign:execute-combat', (command: CombatCommand) => commits.execute('combat',command,()=>store.executeCombat(command)));
