@@ -158,6 +158,10 @@ export async function prepareCombatPlan(plan: EncounterPlan) {
   const owner=preparationOwner();if(!owner||!await load()||!owner.current())return;
   if(await execute({kind:'create',sceneId:owner.sceneId,title:name,includeParty:true,expectedMembershipRevision:owner.revision,planId:id,expectedPlanRevision:revision})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
 }
+export async function prepareGeneratedCombat(action:Extract<CombatAction,{kind:'create'}>):Promise<boolean>{
+ const owner=preparationOwner();if(!owner||owner.sceneId!==action.sceneId||owner.revision!==action.expectedMembershipRevision||!await load()||!owner.current())return false;
+ const ok=await execute(action);if(ok&&owner.current()){get<HTMLDetailsElement>('combat-panel').open=true;get('combat-panel').scrollIntoView({block:'start'});}return ok;
+}
 export async function addWorldNpc(actorId:string){
  const owner=preparationOwner(),w=workspace;if(!owner||!w||!await load()||!owner.current())return;
  const r=await window.campaign.npc(w.token,actorId);if(!r.ok)throw new Error(r.error);if(!owner.current())return;const npc=r.value;if(npc.actorRevision===null||npc.record.lifecycle==='defeated'||!npc.health?.hp)throw new Error('NPC benötigt einen Kreaturverweis, aktive Freigabe und positive HP.');

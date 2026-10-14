@@ -58,7 +58,7 @@ Widerruf, schreibfreier Outcomeprüfung und gesicherter Wiederaufnahme-Reparatur
 auffindbar. Sie benennt den noch fehlenden zusätzlichen Inhaltseditor. Die
 Journallektion ergänzt den Zugang zu Quests/Gerüchten mit demselben bestehenden
 Status-/Belohnungseditor; sie führt keinen weiteren Rewardwriter ein. Die
-Lessonrevision ist `desktop-tutorial-character-progression-session-copy-live-soundboard-follow-ups-capability-coverage-quick-reference-narrative-journal-session-review-live-packet-workspace-shortcuts-v43`.
+Lessonrevision ist `desktop-tutorial-live-generation-character-progression-session-copy-live-soundboard-follow-ups-capability-coverage-quick-reference-narrative-journal-session-review-live-packet-workspace-shortcuts-v44`.
 
 ## Aussagekräftige lokale Belege
 

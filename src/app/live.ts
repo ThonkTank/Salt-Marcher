@@ -1,3 +1,4 @@
+import {LiveEncounterGenerator} from './live-generation-ui';
 import {closeSessionPacket,openLiveSessionPacket,syncLiveSessionPacket,type LivePacketSource} from './session-packet-ui';
 import {initSessionNavigator,sessionNavigatorContext,sessionNavigatorBusy} from './session-progress-ui';
 import {initSceneDesk,sceneDeskContext,flushSceneDesk} from './scene-desk-ui';
@@ -7,7 +8,7 @@ import {renderSceneShops} from './items-ui';
 import type { Workspace, Result } from './contracts';
 import { checkedCharacterProfile, advanceInstant, formatInstant, type TimeUnit, type Character, type CharacterProfile, type LiveScene, type LiveView, type LiveAction, type LiveCommand, type LiveAck } from './live-contracts';
 import type { Preparation } from './preparation-contracts';
-import { addWorldNpc,initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup } from './combat';
+import { prepareGeneratedCombat,addWorldNpc,initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup } from './combat';
 import {initChase,chaseContext,flushChase} from './chase-ui';
 import {initLiveArchives} from './live-archive-ui';
 import type { EncounterPlan } from './encounter-contracts';
@@ -33,15 +34,16 @@ let narrativeGeneration=0,narrativeCache=new Map<string,NarrativeView>(),narrati
 const intentBlocked = () => !!request && !requestIsTextSave;
 let adoption: Extract<LiveAction, { kind: 'apply-visit' }> | null = null;
 let moveBasis: Omit<Extract<LiveAction, { kind: 'move' }>, 'memberIds' | 'target'> | null = null;
-let moveTargets: LiveView['scenes'] = [], preparedNotesSceneId:string|null=null, preparedNoteIds=new Set<string>();
+let moveTargets: LiveView['scenes'] = [],preparedNotesSceneId:string|null=null,preparedNoteIds=new Set<string>();
 let resetLiveArchives=()=>{};
-let tell: (text: string, error?: boolean) => void, openLocation: (id: string) => Promise<void>, openKnowledgeNote:(id:string)=>Promise<void>;
+let liveGenerator:LiveEncounterGenerator;
+let tell: (text: string, error?: boolean) => void, openLocation: (id: string) => Promise<void>,openKnowledgeNote:(id:string)=>Promise<void>;
 const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:data.scene?.locationId??null}:null;
 export function activateLive(workspace: Workspace) {
-  closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
+  liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
@@ -215,7 +217,7 @@ function renderVisits() {
   get<HTMLButtonElement>('adoption-preview').disabled = !plan?.scenes.length || intentBlocked();
 }
 function renderSceneMeta() {
-  sessionNavigatorContext(context,data,sources,resumed);syncLivePacketContext();
+  liveGenerator?.contextChanged();sessionNavigatorContext(context,data,sources,resumed);syncLivePacketContext();
   void refreshMusic();
   if(context&&data?.scene&&resumed)void renderLiveWorld(context.token,data.scene.id);
   const scene = data?.scene;
@@ -323,7 +325,7 @@ function render() {
   renderVisits();
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation,openNote:(id:string)=>Promise<void> = async()=>{}) {
-  tell=status;openLocation=navigate;openKnowledgeNote=openNote;initSessionNavigator(status,previewPlannedVisit,async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(renderPartyReference);initRuleReferences(status);
+  tell=status;openLocation=navigate;openKnowledgeNote=openNote;initSessionNavigator(status,previewPlannedVisit,async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);liveGenerator=new LiveEncounterGenerator(status,()=>context&&data?.scene&&resumed?{workspace:context,live:data}:null,flushLive,prepareGeneratedCombat);initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(renderPartyReference);initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
