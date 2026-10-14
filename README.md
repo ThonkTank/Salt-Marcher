@@ -622,3 +622,25 @@ und die Zähler für kurze/lange Rast sowie die Rastbasis bis mindestens 0. Bere
 bestätigte Rastabschnitte bleiben bestehen. Positive manuelle XP und ausdrücklich
 gesetzte Gesamtstände erhalten die Belastung; die Gruppenabrechnung setzt sie
 separat. Unbekannte XP müssen vor einem Abzug eingetragen werden.
+
+
+### Desktopstand 0.53: Reiseplanung direkt auf der Hexkarte
+
+Der Atlas trennt „Karte bearbeiten“, „Ziel wählen“ und „Wegpunkte wählen“ ausdrücklich.
+Im Reisemodus übernehmen Karten- und Ortsmarkerklicks Koordinaten in die Reiseplanung;
+Malen und offene Geländefelder bleiben davon getrennt. Nummerierte Stationen lassen
+sich ordnen und entfernen, maximal 20 Wegpunkte plus Ziel. „Route leeren“ entfernt
+Entwurf und Auswertung. Karten- oder Gruppenwechsel nehmen keine alte Vorschau mit.
+
+Die fokussierbare Karte unterstützt Pfeiltasten und Enter; eine aktive Gruppe lässt
+sich ausdrücklich am Cursor platzieren. Zoom erhält Reiseziele und Cursorposition
+in Basiskoordinaten. Die Vorschau kommt vom vorhandenen World-Owner und zeigt Zeit,
+Hexabschnitte, Strecke, Ankunft und Warnungen; erst Bestätigen startet die Reise.
+Stationen sind Eingaben, keine Zusage eines gangbaren oder optimalen Pfads.
+
+Bestätigte Abschnitte, Pause, Fortsetzen und Abbruch verwenden weiterhin dieselbe
+persistierte Reise und gemeinsame Gruppenzeit mit ihren Weltfolgen. Aktive, pausierte
+und unterbrochene Reisen zeigen ihre Route; nach Ankunft oder Abbruch bleibt nur
+Position und Historie. Die Statuszeile zeigt die geplante Restdauer. Weitere automatische
+Präsentationsgeschwindigkeiten und ein gemeinsames Reise-Cockpit in der Session sind
+noch offen; diese Version ergänzt den vorhandenen Atlasablauf.
