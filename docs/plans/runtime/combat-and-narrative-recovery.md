@@ -1,6 +1,6 @@
 # Kampfentwürfe und narrative Belohnungen: Datenregeln und nächste Lieferung
 
-Stand: 13.10.2026, nach Integration der Narrativentwürfe. Ergänzt den [Party-/Liveplan](smr03-live-scene-contract.md)
+Stand: 14.10.2026. Ergänzt den [Party-/Liveplan](smr03-live-scene-contract.md)
 und die [manuelle Vorbereitung](../campaign/manual-session-planner.md).
 Der Atlas ist keine Voraussetzung für diese Abläufe. Gesamtumfang und
 Lieferabhängigkeiten bleiben in [SCOPE](../../SCOPE.md) und [ROADMAP](../../ROADMAP.md).
@@ -59,6 +59,23 @@ Schreiben und Backup. Beschädigte Daten ersetzen keine gültige Sicherung.
 Kopie und Fresh remappen strukturierte IDs, erhalten Prosa und unfertige Zahlen;
 archivierte Ziele bleiben zulässige historische Eigentümer.
 Die vollständige native Abschluss- und Recoveryabnahme bleibt offen.
+
+## Legendäre Aktion nach unabhängiger Kopie
+
+Der neue legendäre Aktionsstand speichert `lastUsedRound` und `lastUsedTurnId`.
+Die Zugreferenz ist eine lokale Teilnehmeridentität. `campaign-data.ts` remappt
+sie beim Kopieren zusammen mit aktueller Zug-ID und Teilnehmern; andernfalls
+könnte eine bereits benutzte Aktion im kopierten selben Zug wieder verfügbar
+erscheinen. `desktop-legendary-transfer-integrity.test.mjs` führt eine echte
+Abolethaktion aus, exportiert/kopiert die Campaign, prüft die neue Zugreferenz
+und weist eine zweite Aktion im selben Zug ohne Zustand/Receiptwirkung ab.
+Die Originalpaketbytes bleiben unverändert.
+
+`removePartyFromMasks` bleibt der gemeinsame Übergang für alle laufenden Masken.
+Der integrierte legendäre Reset beim Wechsel des entfernten aktiven Teilnehmers
+bleibt mit Roundfortschritt, Before-/Afterrevision und Reconciliationrecord
+verbunden. Diese lokalen Belege und die vorhandenen Wechselprüfungen schließen
+nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
 
 ## Geprüfter Umfang
 

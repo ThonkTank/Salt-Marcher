@@ -42,6 +42,8 @@ function decode(row: any): CombatState {
   if (state.id !== row.id || state.sceneId !== row.scene_id || state.revision !== row.revision || state.phase !== row.phase) throw new Error('Kampfzuordnung widersprüchlich.');
   return state;
 }
+
+
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));

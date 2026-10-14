@@ -57,6 +57,38 @@ Werte werden im Gold-only-Modus monetär, im kombinierten Modus nach Seltenheit
 berücksichtigt. Diese Moduskopplung braucht eine ausdrückliche Fachentscheidung
 gegen das versionierte Profil, bevor bestehende Vorschläge umgedeutet werden.
 
+## Aktuelle Grundlage vor Vorschlagsannahme
+
+`SessionLootGuidance.basis` enthält jetzt die beobachteten IDs/Revisionen der
+vergebenden Ledgerwurzeln und ihrer aktuellen Definitionen. Kauffakten und
+Transferempfang erzeugen keinen neuen Rewardcredit und invalidieren die Grundlage
+nicht allein durch ihre Aufnahme. Bestehende Leser prüfen deren Integrität weiter.
+Die Grundlage ist ein strukturierter Teil des vorhandenen Sessionruns, kein
+zusätzlicher Ledgerstand und kein opaker ID-Hash. Campaignkopien remappen ihre
+Referenzen über die vorhandenen Slots; beim Vergleich werden ungeordnete
+Referenzlisten normalisiert.
+
+`assertSessionRewardBasisCurrent` bindet eine neue Annahme an die aktuelle
+Planungspartyrevision und, bei automatischem Ausgleich, an den erneut gelesenen
+Fortschritts-/XPstand, die effektiven Credits/Magiezahlen, Preset und
+aufgezeichnete Ledger-/Definitionsrevisionen. Die tatsächlich ausgewählten
+Rewardreferenzen müssen noch derselben verfügbaren Katalogrevision entsprechen.
+Die Prüfung läuft vor Timeline-/Gruppen-/Reward-/Acceptancewirkungen im
+bestehenden Writer. Sie ersetzt keine Items, ändert keine Budgets und schreibt
+keine älteren Vorschläge um. Bestätigungsreplay und bereits angenommene Inhalte
+behalten den ursprünglichen Ergebnisweg. Ältere geführte Runs ohne prüfbare
+Grundlage bleiben lesbar; ihre neue Annahme verlangt eine neue Vorschau.
+Es gibt keine Migration und keine automatische Neubindung an heutige Revisionen.
+
+Ergänzende Storeproben in `desktop-session-reward-integrity.test.mjs` belegen
+XP-/Beute-/gleichwertige Mengen-/Seltenheits-/Planungspartykonflikte ohne
+Teilwirkung, eine geänderte zusätzlich gewählte Katalogdefinition sowie gültige
+Annahme nach Fresh und unabhängiger Kopie. Receipt-Replay nach späterer
+XPänderung, unbeeinflusste andere Figuren/Käufe und der ungeführte manuelle
+Vorschlag bleiben wirksam. Ein eigener Gegenbefund am neuen Prüfweg zeigte
+zunächst unnötige Invalidierung durch einen Kauf; die Eingabebasis zählt jetzt
+nur Rewardwurzeln. Native Interaktion und gesamte Guidanceabnahme bleiben offen.
+
 ## Nächste ausführbare Schritte
 
 1. **Guidance vollständig qualifizieren.** Regel-/Profilversion, XP-/Preset-/
@@ -66,6 +98,9 @@ gegen das versionierte Profil, bevor bestehende Vorschläge umgedeutet werden.
    Rundung, endlicher Katalogpool, individuelle Vorschlagsänderungen, Annahme
    und normaler Neustart. Keine stillen Ersatzitems oder Änderungen bestehender
    Awards.
+   Einzelregeneration und manuell geänderte XP benötigen weiterhin einen
+   konsistenten Forecast-/Budgetabschluss ohne Neubudgetierung anderer Entwürfe.
+   Reine HP-/Reständerungen auf sachfremde Pflichtregeneration prüfen.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
