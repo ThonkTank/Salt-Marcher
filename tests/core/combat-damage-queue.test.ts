@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {enqueuePendingDamage} from '../../src/app/combat';
+import {enqueuePendingDamage,retainPendingAttack} from '../../src/app/combat';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
   const damage=(id:string)=>({check:{id} as any,combatId:'combat',attackerId:'attacker'});
@@ -10,4 +10,10 @@ test('unresolved combat damage rolls remain queued in roll order',()=>{
   assert.deepEqual(queue.map(entry=>entry.check.id),['first','second']);
   assert.deepEqual(queue.slice(1).map(entry=>entry.check.id),['second']);
   assert.deepEqual(enqueuePendingDamage(queue,{...damage('stale'),combatId:'previous'},'combat'),queue);
+});
+
+test('a second statblock attack cannot replace an unresolved attack',()=>{
+  const first={actionId:'scimitar'},second={actionId:'shortbow'};
+  assert.equal(retainPendingAttack(null,first),first);
+  assert.equal(retainPendingAttack(first,second),first);
 });

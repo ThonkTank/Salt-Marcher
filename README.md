@@ -378,3 +378,27 @@ Die Berechnung verwendet die bereits im Projekt enthaltene versionierte
 Presetkurve; sie ist keine neue Behauptung einer vollständigen publizierten
 DMG-Herleitung. Automatische Magie-Seltenheitskontingente und deren kumulierter
 Ausgleich bleiben offen. Schema43 bleibt unverändert.
+
+
+### Desktopstand 0.43: Begegnungen mit vorhandenen NPCs
+
+Encounter- und Spielabend-Vorschauen besitzen einen Modus für bereits vorhandene
+feindliche Weltfiguren. Positive HP, aktiver Lebensstatus und ein Statblock sind
+erforderlich. Ortsfilter beziehen sich auf den tatsächlichen Standort,
+Fraktionsfilter auf die Zugehörigkeit. Weitere Tabellen und Katalogfilter
+begrenzen die Kreaturtypen; der Textfilter findet NPC- oder Kreaturnamen.
+Dieser Modus benötigt keine zusätzliche Tabellenbindung am Ort. Die Anzahl
+verfügbarer NPCs begrenzt die Komposition, jeder erscheint pro Begegnung einmal.
+
+Vorschläge zeigen Namen und halten Weltreferenzen. Sie reservieren, bewegen oder
+kopieren keine NPCs. Veränderte NPC-Zustände machen die noch unangenommene
+Vorschau veraltet. Nach Übernahme verwenden Vorlagen, vorbereitete Gruppen und
+Live-Masken dieselben NPC-Identitäten mit aktuellen HP, Zuständen und Haltung.
+Figuren an einem anderen Ort müssen ausdrücklich umplatziert werden. Manuelle
+Gruppenbearbeitung und Kampagnentransfer erhalten die Referenzen. Katalogmodus
+und neue Monstergruppen bleiben verfügbar.
+
+Es handelt sich um einen eigenen Modus für benannte Gegner; gemischte
+NPC-/Katalogpools und automatische magische Seltenheitsquoten bleiben offen.
+Bestand wird pro Begegnung begrenzt, nicht über den ganzen Spielabend reserviert.
+Schema43 bleibt unverändert, neue Entry-/Run-Felder sind optional.

@@ -1,7 +1,7 @@
 import type { Result } from './contracts';
 import type { Creature, CreatureCatalogQuery } from '../features/catalog/creature-catalog';
 export interface EncounterParty { id: string; name: string; level: number | null; count: number }
-export interface EncounterEntry { id: string; creatureId: string; count: number; grouped: boolean }
+export interface EncounterEntry { id: string; creatureId: string; count: number; grouped: boolean; worldActorIds?:string[]; actorNames?:string[] }
 export interface EncounterPlan { id: string; revision: number; name: string; notes: string; party: EncounterParty[]; entries: EncounterEntry[]; sources: Creature[]; catalogHash: string; generationOrigin?:{runId:string;index:number;seed:string;preset:{id:string;name:string;revision:number;hash:string;mobThreshold:number}} }
 export const encounterPlanFields = { id:true, revision:true, name:true, notes:true, party:true, entries:true, sources:true, catalogHash:true, generationOrigin:true } satisfies Record<keyof EncounterPlan,true>;
 export function validateEncounterPlanInput(input:EncounterPlan):void {
@@ -13,13 +13,16 @@ export function validateEncounterPlanInput(input:EncounterPlan):void {
       throw new Error('Ungültige Planungsparty.');
     ids.add(p.id);
   }
-  ids.clear();
+  ids.clear();const actors=new Set<string>();
   for(const e of input.entries){
     if(!e||!e.id||ids.has(e.id)||!Number.isSafeInteger(e.count)||e.count<1||e.count>1000||typeof e.grouped!=='boolean')
       throw new Error('Ungültiger Encounter-Eintrag.');
     ids.add(e.id);
+    if(e.worldActorIds){if(!Array.isArray(e.worldActorIds)||e.worldActorIds.length!==e.count||new Set(e.worldActorIds).size!==e.worldActorIds.length||e.worldActorIds.some(id=>typeof id!=='string'||!id||actors.has(id)))throw new Error('Benannte NPCs benötigen eindeutige Weltfiguren, jede nur einmal.');for(const id of e.worldActorIds)actors.add(id);}
+    if(e.actorNames!==undefined&&(!Array.isArray(e.actorNames)||e.actorNames.length!==e.count||e.actorNames.some(n=>typeof n!=='string'||n.length>1000)))throw new Error('NPC-Namen im Vorschlag prüfen.');
   }
 }
+export function encounterEntryLabel(e:EncounterEntry,sources:EncounterPlan['sources']){return e.worldActorIds?e.actorNames?.join(', ')??'Benannte NPCs':e.count+' × '+(sources.find(c=>c.id===e.creatureId)?.name??e.creatureId);}
 export interface EncounterAssessment { baseXp: number; adjustedXp: number; multiplier: number; count: number; partySize: number; unknownLevels: number; difficulty: string | null; thresholds: number[]; missingXp: number }
 export interface CreaturePage { rows: Pick<Creature,'id'|'name'|'challengeRating'|'cr'|'type'|'size'|'ac'|'hp'|'xp'|'sourceLabel'>[]; total: number; offset: number; limit: number }
 export interface CatalogInfo { count: number; types: string[]; subtypes: string[]; sizes: string[]; habitats: string[]; alignments: string[]; notice: string; hash: string }

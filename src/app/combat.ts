@@ -12,7 +12,7 @@ import type {PreparedGroup} from './session-contracts';
 import {prepareSceneCheck,rollSceneFormula} from './rule-reference-ui';
 import type {SceneCheck} from './scene-check-contracts';
 import {deathSaveControls,type DeathSaveResult} from './progression';
-import {creatureActionRolls,criticalDamageFormula,type CreatureRollPreset} from './dice-formula';
+import {creatureActionRolls,creatureRollKey,criticalDamageFormula,type CreatureRollPreset} from './dice-formula';
 import type {CreatureAction} from '../features/catalog/creature-catalog';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
@@ -25,6 +25,7 @@ type PendingDamage={check:SceneCheck;combatId:string;attackerId:string;targetId?
 export function enqueuePendingDamage(queue:readonly PendingDamage[],next:PendingDamage,currentCombatId:string){return next.combatId!==currentCombatId||queue.some(damage=>damage.check.id===next.check.id)?[...queue]:[...queue,next];}
 let pendingDamage:PendingDamage[]=[];
 type PendingAttack={combatId:string;attackerId:string;creatureId:string;actionId:string;actor:string;preset:CreatureRollPreset;damages:CreatureRollPreset[];rolledDamage:string[];targetId:string|null;check:SceneCheck|null};
+export function retainPendingAttack<T>(current:T|null,next:T){return current??next;}
 let pendingAttack:PendingAttack|null=null,attackPending=false;
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
@@ -159,7 +160,7 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
 export async function flushCombat(): Promise<boolean> { if(!await flushFinishDraft())return false; if(pending)return await pending;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
 const blocked=()=>loadPending||!!loadError||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
 function stageAttack(action:CreatureAction,preset:CreatureRollPreset,attackerId:string,actor:string,creatureId:string,combatId:string){
-  if(attackPending||view?.combat?.id!==combatId)return;pendingAttack={combatId,attackerId,creatureId,actionId:action.id,actor,preset,damages:creatureActionRolls(action).filter(p=>p.kind==='damage'),rolledDamage:[],targetId:null,check:null};renderAttackEffect();get('combat-attack-effect').scrollIntoView({block:'nearest'});
+  if(attackPending||view?.combat?.id!==combatId)return;const next={combatId,attackerId,creatureId,actionId:action.id,actor,preset,damages:creatureActionRolls(action).filter(p=>p.kind==='damage'),rolledDamage:[],targetId:null,check:null},retained=retainPendingAttack(pendingAttack,next);if(retained===pendingAttack){renderAttackEffect();get('combat-attack-effect').scrollIntoView({block:'nearest'});tell(pendingAttack.check?'Offenen Angriff zuerst abschließen.':'Offenen Angriff zuerst würfeln oder verwerfen.',true);return;}pendingAttack=retained;renderAttackEffect();get('combat-attack-effect').scrollIntoView({block:'nearest'});
 }
 function renderAttackEffect(){
   const box=get('combat-attack-effect'),combat=view?.combat,attack=pendingAttack;if(!attack||!combat||attack.combatId!==combat.id||!editableCombat(combat)){box.hidden=true;return;}box.hidden=false;
@@ -168,16 +169,16 @@ function renderAttackEffect(){
   const chosen=candidates.find(p=>p.id===target.value),resolvedTarget=attack.targetId?candidates.find(p=>p.id===attack.targetId):undefined,die=attack.check?.rolls[0],critical=die===20,miss=attack.check?.outcome==='failure';
   get('combat-attack-result').textContent=attack.check?(attack.actor+' · '+attack.preset.label+': '+attack.check.total+' gegen RK '+attack.check.dc+' · '+(critical?'Kritischer Treffer':miss?'Verfehlt':'Treffer')+(resolvedTarget?'':' · Ziel nicht mehr in der Initiative')):(attack.actor+' · '+attack.preset.label+' gegen '+(chosen?.name??'Ziel')+' (RK '+(chosen?.armorClass??'—')+')');
   target.disabled=blocked()||attackPending||!!attack.check;const roll=get<HTMLButtonElement>('combat-attack-roll');roll.hidden=!!attack.check;roll.disabled=blocked()||attackPending||!chosen;
-  const damageRoot=get('combat-attack-damage');damageRoot.replaceChildren();if(attack.check?.outcome==='success'&&resolvedTarget)for(const damage of attack.damages){const button=document.createElement('button');button.type='button';const done=attack.rolledDamage.includes(damage.label);button.textContent=(critical?'Kritischen ':'')+damage.label+' würfeln'+(done?' ✓':'');button.disabled=blocked()||attackPending||done;button.onclick=()=>void rollAttackDamage(damage);damageRoot.append(button);}
-  get<HTMLButtonElement>('combat-attack-discard').disabled=blocked()||attackPending;
+  const damageRoot=get('combat-attack-damage');damageRoot.replaceChildren();if(attack.check?.outcome==='success'&&resolvedTarget)for(const damage of attack.damages){const button=document.createElement('button'),formula=critical?criticalDamageFormula(damage.formula):damage.formula,done=attack.rolledDamage.includes(creatureRollKey(damage));button.type='button';button.textContent=(critical?'Kritisch · ':'')+damage.label+' ('+formula+') würfeln'+(done?' ✓':'');button.disabled=blocked()||attackPending||done;button.onclick=()=>void rollAttackDamage(damage);damageRoot.append(button);}
+  const discard=get<HTMLButtonElement>('combat-attack-discard');discard.textContent=attack.check?'Angriff abschließen':'Verwerfen';discard.disabled=blocked()||attackPending;
 }
 async function rollAttack(){
   const attack=pendingAttack,combat=view?.combat,target=combat?.participants.find(p=>p.id===value('combat-attack-target'));if(!attack||!combat||!target||attack.combatId!==combat.id||attack.check)return;attack.targetId=target.id;attackPending=true;renderAttackEffect();
   await rollSceneFormula({label:attack.preset.label+' gegen '+target.name,actor:attack.actor,formula:attack.preset.formula,formulaKind:'attack',dc:target.armorClass,sourceCreatureId:attack.creatureId,sourceActionId:attack.actionId},check=>{if(pendingAttack===attack&&view?.combat?.id===attack.combatId)attack.check=check;});attackPending=false;renderAttackEffect();
 }
 async function rollAttackDamage(damage:CreatureRollPreset){
-  const attack=pendingAttack,check=attack?.check;if(!attack||!check||check.outcome!=='success'||!attack.targetId||!view?.combat?.participants.some(p=>p.id===attack.targetId)||attack.rolledDamage.includes(damage.label))return;const critical=check.rolls[0]===20;attackPending=true;renderAttackEffect();let rolled=false;
-  await rollSceneFormula({label:damage.label+(critical?' · Kritisch':''),actor:attack.actor,formula:critical?criticalDamageFormula(damage.formula):damage.formula,formulaKind:'damage',dc:null,sourceCreatureId:attack.creatureId,sourceActionId:attack.actionId},result=>{if(pendingAttack===attack&&view?.combat?.id===attack.combatId){rolled=true;stageDamage(result,attack.attackerId,attack.combatId,attack.targetId!);}});attackPending=false;if(rolled)attack.rolledDamage.push(damage.label);if(attack.rolledDamage.length===attack.damages.length)pendingAttack=null;renderAttackEffect();
+  const attack=pendingAttack,check=attack?.check,key=creatureRollKey(damage);if(!attack||!check||check.outcome!=='success'||!attack.targetId||!view?.combat?.participants.some(p=>p.id===attack.targetId)||attack.rolledDamage.includes(key))return;const critical=check.rolls[0]===20;attackPending=true;renderAttackEffect();let rolled=false;
+  await rollSceneFormula({label:damage.label+(critical?' · Kritisch':''),actor:attack.actor,formula:critical?criticalDamageFormula(damage.formula):damage.formula,formulaKind:'damage',dc:null,sourceCreatureId:attack.creatureId,sourceActionId:attack.actionId},result=>{if(pendingAttack===attack&&view?.combat?.id===attack.combatId){rolled=true;stageDamage(result,attack.attackerId,attack.combatId,attack.targetId!);}});attackPending=false;if(rolled)attack.rolledDamage.push(key);if(attack.rolledDamage.length===attack.damages.length)pendingAttack=null;renderAttackEffect();
 }
 function stageDamage(check:SceneCheck,attackerId:string,combatId:string,targetId?:string){
   const combat=view?.combat;
