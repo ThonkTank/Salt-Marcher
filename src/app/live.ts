@@ -24,7 +24,7 @@ import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,Live
 import type {NarrativeView} from './narrative-contracts';
 import type {ChronicleView} from './chronicle-contracts';
 import {liveActionUpdatesRecap,liveSessionRecap} from './live-session-recap';
-import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion} from './live-session-close';
+import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls} from './live-session-close';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -303,8 +303,8 @@ function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-mo
 function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;get<HTMLSelectElement>('live-moment-follow-up').value=draft.followUp;}
 function renderLiveMomentDraft(){const next=liveMomentDrafts.switchTo(data?.scene?.id??null,currentLiveMomentDraft());if(next.changed){writeLiveMomentDraft(next.draft);get('live-moment-result').textContent='';}}
 function renderLiveSession(){
-  const recap=liveSessionRecap(sessionChronicle?.entries??[]),status=get('live-session-status'),list=get('live-session-events');list.replaceChildren();
-  get<HTMLButtonElement>('live-session-start').hidden=recap.open;sessionResumeButton.hidden=recap.open;get<HTMLButtonElement>('live-session-end').hidden=!recap.open;get<HTMLButtonElement>('live-session-start').disabled=!!sessionChronicleError||intentBlocked();sessionResumeButton.disabled=!!sessionChronicleError||intentBlocked();get<HTMLButtonElement>('live-session-end').disabled=!!sessionChronicleError||intentBlocked();get('live-session-summary-label').hidden=!recap.open;get('live-session-handoff-label').hidden=!recap.open;
+  const recap=liveSessionRecap(sessionChronicle?.entries??[]),controls=sessionStartControls(recap),status=get('live-session-status'),list=get('live-session-events');list.replaceChildren();
+  get<HTMLButtonElement>('live-session-start').hidden=!controls.start;sessionResumeButton.hidden=!controls.resume;get<HTMLButtonElement>('live-session-end').hidden=!recap.open;get<HTMLButtonElement>('live-session-start').disabled=!!sessionChronicleError||intentBlocked();sessionResumeButton.disabled=!!sessionChronicleError||intentBlocked();get<HTMLButtonElement>('live-session-end').disabled=!!sessionChronicleError||intentBlocked();get('live-session-summary-label').hidden=!recap.open;get('live-session-handoff-label').hidden=!recap.open;
   if(sessionChronicleError)status.textContent='Rückblick nicht verfügbar: '+sessionChronicleError;
   else if(!recap.marker)status.textContent='Noch kein Spielabend markiert.';
   else{const when=new Date(recap.marker.recordedAt),label=Number.isNaN(when.valueOf())?'':when.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'});status.textContent=recap.open?'Läuft seit '+label+' · '+recap.entries.length+' bestätigte Ereignisse':'Letzter Spielabend beendet '+label+' · '+recap.entries.length+' bestätigte Ereignisse'+(recap.marker.summary?' · '+recap.marker.summary:'');}
