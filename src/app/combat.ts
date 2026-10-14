@@ -16,10 +16,12 @@ const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); re
 const editableCombat=(combat:CombatView['combat'])=>!!combat&&['preparing','running'].includes(combat.phase);
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
-let pendingDamage:{check:SceneCheck;combatId:string;attackerId:string}|null=null;
+type PendingDamage={check:SceneCheck;combatId:string;attackerId:string};
+export function enqueuePendingDamage(queue:readonly PendingDamage[],next:PendingDamage){return queue.some(damage=>damage.check.id===next.check.id)?[...queue]:[...queue,next];}
+let pendingDamage:PendingDamage[]=[];
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
-function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage&&pendingDamage.combatId!==result.combat?.id)pendingDamage=null;}
+function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
@@ -77,7 +79,7 @@ export function combatContext(next: Workspace | null, current: LiveScene | null,
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
   get('combat-panel').hidden = !current;
-  if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=null; view = null; render(); if (next && current) void load(); }
+  if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[]; view = null; render(); if (next && current) void load(); }
   else if(partyChanged)void refreshPartyCandidates();
 }
 async function load(id?: string):Promise<boolean> {
@@ -143,22 +145,22 @@ const blocked=()=>loadPending||!!loadError||!!pending||!!workspace&&hasPendingCo
 function stageDamage(check:SceneCheck,attackerId:string){
   const combat=view?.combat;
   if(!combat||!editableCombat(combat)||check.sceneId!==combat.sceneId||check.rollKind!=='formula'||check.formulaKind!=='damage'||!Number.isSafeInteger(check.total)||check.total<=0)return;
-  pendingDamage={check,combatId:combat.id,attackerId};renderDamageEffect();get('combat-roll-effect').scrollIntoView({block:'nearest'});
+  pendingDamage=enqueuePendingDamage(pendingDamage,{check,combatId:combat.id,attackerId});renderDamageEffect();get('combat-roll-effect').scrollIntoView({block:'nearest'});
 }
 function renderDamageEffect(){
-  const box=get('combat-roll-effect'),combat=view?.combat,damage=pendingDamage;
+  const box=get('combat-roll-effect'),combat=view?.combat,damage=pendingDamage[0];
   if(!damage||!combat||damage.combatId!==combat.id||!editableCombat(combat)){box.hidden=true;return;}
-  box.hidden=false;get('combat-roll-effect-result').textContent=(damage.check.actor?damage.check.actor+' · ':'')+damage.check.label+': '+damage.check.total+' Schaden gewürfelt';
+  box.hidden=false;get('combat-roll-effect-result').textContent=(damage.check.actor?damage.check.actor+' · ':'')+damage.check.label+': '+damage.check.total+' Schaden gewürfelt'+(pendingDamage.length>1?' · 1 von '+pendingDamage.length+' offenen Würfen':'');
   const target=get<HTMLSelectElement>('combat-roll-target'),previous=target.value,candidates=combat.participants.filter(p=>p.healthKnown!==false);target.replaceChildren();
   for(const p of candidates){const option=document.createElement('option');option.value=p.id;option.textContent=p.name+' · '+p.hp+' / '+p.maxHp+' HP'+(p.tempHp?' + '+p.tempHp+' temp.':'');target.append(option);}
   const fallback=candidates.find(p=>p.id!==damage.attackerId&&!!p.characterId)??candidates.find(p=>p.id!==damage.attackerId)??candidates[0];target.value=candidates.some(p=>p.id===previous)?previous:fallback?.id??'';
   const unavailable=blocked()||!target.value;get<HTMLButtonElement>('combat-roll-damage').disabled=unavailable;get<HTMLButtonElement>('combat-roll-half').disabled=unavailable||Math.floor(damage.check.total/2)<1;get<HTMLButtonElement>('combat-roll-double').disabled=unavailable||damage.check.total*2>1000000;get<HTMLButtonElement>('combat-roll-discard').disabled=blocked();
 }
 async function applyRolledDamage(scale:'full'|'half'|'double'){
-  const damage=pendingDamage,target=value('combat-roll-target');if(!damage||!target||view?.combat?.id!==damage.combatId)return;
+  const damage=pendingDamage[0],target=value('combat-roll-target');if(!damage||!target||view?.combat?.id!==damage.combatId)return;
   const amount=scale==='half'?Math.floor(damage.check.total/2):scale==='double'?damage.check.total*2:damage.check.total;
   if(amount<1||amount>1000000)return;
-  if(await execute({kind:'damage',participantId:target,amount,sourceCheckId:damage.check.id,sourceScale:scale})&&pendingDamage?.check.id===damage.check.id){pendingDamage=null;renderDamageEffect();}
+  if(await execute({kind:'damage',participantId:target,amount,sourceCheckId:damage.check.id,sourceScale:scale})&&pendingDamage[0]?.check.id===damage.check.id){pendingDamage=pendingDamage.slice(1);renderDamageEffect();}
 }
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked();
@@ -255,7 +257,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-roll-damage').onclick=()=>void applyRolledDamage('full');
   get('combat-roll-half').onclick=()=>void applyRolledDamage('half');
   get('combat-roll-double').onclick=()=>void applyRolledDamage('double');
-  get('combat-roll-discard').onclick=()=>{pendingDamage=null;renderDamageEffect();};
+  get('combat-roll-discard').onclick=()=>{pendingDamage=pendingDamage.slice(1);renderDamageEffect();};
   get('combat-roll-target').onchange=renderDamageEffect;
   get('fighter-remove').onclick = () => { if (selected) void execute({ kind: 'remove', participantId: selected }); };
   get('combat-notes-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'notes', title: value('combat-edit-title'), notes: value('combat-notes') },draftRevision(notesDraft())); };
