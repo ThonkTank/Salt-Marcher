@@ -182,6 +182,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const beforeHp=p.hp;
           const fields = ['name', 'initiative', 'initiativeBonus', 'armorClass', 'hp', 'maxHp', 'tempHp', 'conditions', 'concentrating', 'xp', 'countForMultiplier'];
           if (!a.changes || Object.keys(a.changes).some(k => !fields.includes(k))) throw new Error('Unbekanntes Kampffeld.');
+          if(p.concentrationChecks?.length&&a.changes.concentrating===false)throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           if (p.healthKnown === false && ('hp' in a.changes || 'maxHp' in a.changes) && !('hp' in a.changes && 'maxHp' in a.changes)) throw new Error('Aktuelle und maximale HP gemeinsam eintragen.');
           Object.assign(p, a.changes); if ('hp' in a.changes && 'maxHp' in a.changes) p.healthKnown = true; p.hp = Math.min(p.hp, p.maxHp);
           if(p.hp>0||(beforeHp>0&&p.hp===0)){delete p.death;delete p.deathLast;}
@@ -218,6 +219,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           p.concentrationLast={...check,roll,modifier,total,success};p.concentrationChecks=p.concentrationChecks!.slice(1);if(!success){p.concentrating=false;delete p.concentrationChecks;}else if(!p.concentrationChecks.length)delete p.concentrationChecks;
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
+          if(p.concentrationChecks?.length)throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           detachCombatHealth(db,cam,state,p,command.commandId);
           state.participants = state.participants.filter(c => c.id !== p.id);
           if (state.turnId === p.id) { const next = order[index + 1] ?? order[0]; state.turnId = state.participants.length ? (next?.id === p.id ? state.participants[0]!.id : next!.id) : null; if (index === order.length - 1 && state.participants.length) state.round++; }
@@ -228,13 +230,16 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           for (const p of state.participants) { if (!rolls.has(p.groupId)) { const x = randomInt(1, 21), y = a.mode === 'normal' ? x : randomInt(1, 21); rolls.set(p.groupId, (a.mode === 'advantage' ? Math.max(x, y) : Math.min(x, y)) + p.initiativeBonus); } p.initiative = rolls.get(p.groupId)!; }
         } else if (a.kind === 'start') {
           if (state.phase !== 'preparing' || !state.participants.length) throw new Error('Füge Teilnehmer hinzu, bevor du den Kampf beginnst.');
+          if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           state.partyBasis=combatParty(db,cam,state); state.assessment=assessment(db,cam,state); state.phase = 'running'; state.round = 1; state.turnId = combatOrder(state)[0]!.id;
         } else if (a.kind === 'next') {
           if (state.phase !== 'running') throw new Error('Kampf zuerst beginnen.');
+          if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           const order = combatOrder(state), index = order.findIndex(p => p.id === state.turnId);
           const nextIndex = (index + 1) % order.length; state.turnId = order[nextIndex]!.id; if (nextIndex === 0) state.round++;
         } else if (a.kind === 'notes') { state.title = a.title; state.notes = a.notes;
         } else if (a.kind === 'finish') {
+          if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           consumeFinishDraft(db,cam,{kind:'combat',targetId:state.id,revision:state.revision},a.finishDraftWriteId);
           if (typeof a.outcome !== 'string' || !a.outcome.trim()) throw new Error('Die Begegnung benötigt ein Ergebnis.');
           state.assessment=assessment(db,cam,state);
