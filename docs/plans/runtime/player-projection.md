@@ -1,119 +1,120 @@
-# Passive Spielerprojektion und große bekannte Karten
+# Passive Spielerprojektion: Karten, Art und sichere Ausgabe
 
 Stand: 14.10.2026. Ergänzt den [Player-/Extensionanschluss](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#konkreter-player--und-extensionanschluss)
 und den [Gesamtumfang](../../SCOPE.md).
 
-## Vertrag und gegenwärtiger Anschluss
+## Gebundener Vertrag und Entscheidung
 
-Die gepinnten Program Capabilities, Revision
-`9de85c1a26f526acbc1af332ac5962e185c0aab2`, L289–302 und L388–406, verlangen
-eine passive Anzeige für Karten und NPC-/Ortsart. Sie folgt der fokussierten
-Scene, kombiniert dauerhafte Characterkenntnis und aktuelle Wahrnehmung und
-bleibt durch GM-Blank/Override kontrollierbar. Erzähltexte, Mechanik und private
-Notizen gehören nicht in diesen Anzeigekanal. Der lokale Quellenhash entspricht
-`714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e` im Register.
+Die Program Capabilities, Revision `9de85c1a26f526acbc1af332ac5962e185c0aab2`,
+L289–302 und L388–406, verlangen einen passiven Bildschirm für Karten und
+NPC-/Ortsart. Er folgt der fokussierten Scene, kombiniert dauerhafte
+Characterkenntnis mit aktueller Wahrnehmung und bleibt durch GM-Blank und
+Artoverride kontrollierbar. Die Quelle schließt Mechanik, Erzähltext und private
+Notizen ausdrücklich aus. Die gebundenen Scene-/LiveSessionanforderungen
+beschreiben die GM-Arbeitsflächen; sie erweitern diesen Displaykanal nicht.
+Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
 
-`storage/player.ts` komponiert die freigegebene Projektion. Der Host und die
-getrennte Player-Session bieten eigene Ressourcen-/IPCgrenzen;
-`player-display.ts` und `player-render.ts` zeigen das öffentliche Paket.
-Bestätigte Hex-/Ortskenntnis behält ihre damaligen Fakten; beschädigte oder
-fehlende Erinnerung wird nicht aus neuer GM-Wahrheit rekonstruiert. Bestehende
-Host-/native Teilbelege bleiben auf ihren damaligen konkreten Umfang begrenzt.
+Die zuvor integrierten Initiative-/HP-/Chasepakete und der Vorlesetextmodus
+widersprachen diesem Vertrag. Ihre Filtertests belegten einzelne ausgelassene
+Privatfelder, keine zulässige Produktvariante. Die frühere positive Einordnung
+war falsch. Die Entscheidung ist nun im tatsächlichen Ausgabeweg umgesetzt:
+Mechanik und Vorlesetext bleiben in ihren GM-Ownerdaten und werden nicht über
+den passiven Kanal publiziert. Automatische Actorart während Encounter/Chase
+besitzt weiterhin ihren unten beschriebenen eigenen Anschluss.
 
-## Zwei behobene Grenzen
+## Aktueller Anschluss und Feldgrenze
 
-**Große Karten.** Der Renderer übergab sämtliche bekannten Koordinaten als
-Argumente an `Math.min`/`Math.max`. 150.000 bekannte Hexe und 160.000 Eckpunkte
-aus 2.500 Dungeonpolygonen lösten jeweils `Maximum call stack size exceeded`
-aus. Die Grenzberechnung arbeitet jetzt mit vier laufenden Extremwerten und
-braucht weder eine geflattete Polygonpunktliste noch zusätzliche Koordinaten-
-und Achsenarrays. Position, negative Koordinaten und bisheriges Padding bleiben
-erhalten. Weder Wissen noch Geometrie werden abgeschnitten.
+`storage/player.ts.projectPlayer` komponiert nur Blank, Karte, Dungeonkarte
+oder freigegebene Art. Laufende Kampf-/Verfolgungsmasken ersetzen eine gültige
+Ortsart oder Karte nicht mehr durch Mechaniktabellen. Die GM kann NPC-/Orts-/
+eigene Art weiterhin ausdrücklich hervorheben. Private Scene-/Maskentitel
+werden nicht automatisch als öffentliche Überschrift übernommen; ausdrücklicher
+öffentlicher Titel und freigegebene Kartenbeschriftungen bleiben eigene Metadaten.
 
-Vier Prüfungen in `desktop-player-render-bounds.test.mjs` führen den realen
-Renderer mit einem schlanken DOM-Ersatz aus. Dieser behält keine 150.000 Knoten
-im Speicher. Das belegt Berechnung und Durchlauf, nicht SVG-/GPUleistung oder
-native Latenz. Der eigentliche Pfad-/DOMaufbau und die Projektion wachsen
-weiterhin mit dem bekannten Kartenausschnitt.
+`PlayerFrame` und `PlayerDungeon` in `player-contracts.ts` enthalten nur diese
+visuellen Varianten. Dungeonposition, bekannte/sichtbare Geometrie, freigegebene
+Labels, Markerformen und Spurengeometrie bleiben erhalten. Beschreibung,
+gehörte Hinweise, interne Geschossnamen und unbenutzte Marker-/Spurenprosa
+werden nicht mitgeführt. Der reichere `dungeonDisplay` bleibt ein GM-/
+Wahrnehmungsreader; seine Inhalte werden weder gelöscht noch umgeschrieben.
 
-**Prosa im passiven Paket.** `dungeonDisplay` liefert einen reicheren
-Wahrnehmungsstand mit Keybeschreibung und gehörten Hinweisen. Die Spieler-
-projektion reichte diesen vollständig weiter; der Renderer erzeugte daraus
-Absätze. Zwei Gegenproben bestätigten die Abweichung vom Anzeigekanal.
-`projectPlayer` übernimmt jetzt ausdrücklich nur Position, Geschosslabel,
-bekannte/sichtbare Geometrie, freigegebene Kartenlabels, Marker und Spuren.
-`PlayerFrame.dungeon` schließt `description` und `clues` aus. Der Renderer
-ignoriert diese auch in einem älteren Paket. Autorenbytes und interne
-Wahrnehmungsprosa bleiben erhalten; die Korrektur benötigt keine Migration.
+`visualPlayerFrame` in `player-frame.ts` führt die Feldfreigabe an der tatsächlichen
+Hostgrenze aus. `desktop/player-window.ts` benutzt sie für Push und Pull.
+Unbekannte/alte Text- und Mechanikvarianten ergeben ein neutrales Paket; auch
+auf sonst gültigen Bildern/Karten angehängte fremde Daten und verschachtelte
+Geometrieprosa werden nicht übertragen. GM-Erklärungen für Blank bleiben im
+GMreader und gehören nicht ins Fensterpaket. Der Renderer akzeptiert ebenfalls
+nur die visuellen Varianten, bevor er eine Überschrift erzeugt. Ein alter
+Scene-/Combat-/Chaseframe darf daher weder Inhalt noch Kopfzeile zeichnen.
 
-Zwei Prüfungen in `desktop-player-dungeon-projection.test.mjs` belegen die reale
-SQLite-Projektion ohne diese Felder und deren fehlende Darstellung in Linkedom.
-Mit Größen-, Knowledge- und GM-Dialogprüfungen bestanden 44 lokale Tests und
-der Desktop-Typecheck. Eine vollständige Player-/Privacy-/Plattformabnahme
-folgt daraus nicht.
+## Alte Einstellungen und neue Bedienung
 
-## Integrierte Kampf- und Verfolgungsanzeige
+Gespeicherte `mode: "scene"`-Einstellungen bleiben gültige historische Daten.
+Reader, Backup und unabhängige Campaignkopie erhalten sie einschließlich
+bisheriger Gruppenbindung oder zulässiger fehlender Altbindung. Der Composer
+liefert dafür neutral Blank mit einer Erklärung im GMdialog. Er veröffentlicht
+keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 
-`storage/player.ts` projiziert inzwischen aktive Kampf- und Verfolgungsmasken
-vor der Kartenansicht. Der Vertrag und Renderer besitzen dafür explizite
-öffentliche Felder; GM-Blank und Bildoverride behalten Vorrang. Combat zeigt
-Initiative, aktuellen Zug und öffentliche Gesundheits-/Zustandswerte; private
-freie Kampfnotizen bleiben durch `publicCombatConditionText` ausgeschlossen.
-Chase zeigt Runde, Seiten, Abstand, Tempo und Erschöpfung. Verborgene NPCs,
-GM-Ziel-/Komplikations-/Ergebnisprosa und Teilnehmernotizen gelangen nicht in
-dieses Paket. Die neuen Varianten dürfen weder Dungeonprosa wieder einschließen
-noch die iterative Grenzberechnung großer Karten durch Argumentlisten ersetzen.
+Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
+produktive Steuerung bietet automatische Karten-/Artansicht, ausdrückliche
+Bildwahl und Blank; der Vorlesetextbutton wurde entfernt. Ein ausdrücklich
+gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Scene-
+Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
+in ihren bisherigen Ownertabellen erhalten. Keine Datenmigration erforderlich.
 
-`tests/core/player-chase-projection.test.ts` und
-`player-combat-projection.test.ts` prüfen die Storeprojektionen. Der integrierte
-Chase-Editor bewahrt weiterhin Masken-/Sceneautorität, Pending-Sperren und
-Rundenvorschläge. Eine zusätzliche tatsächliche Store-/DOMprobe in
-`desktop-chase-switch.test.mjs` bestätigt die NPC-Sichtbarkeitsänderung ohne
-Verlust des Rundenvorschlags; ein Handler der zuvor gewählten Maske bleibt nach
-Wechsel wirkungslos. Native Mehrmonitor-/Fokus-/Neustartbedienung dieser beiden
-Anzeigevarianten ist dadurch noch nicht qualifiziert.
+## Große Karten und lokaler Nachweis
 
-## Offener Widerspruch zur gebundenen Displayquelle
+Die iterative Grenzberechnung des Renderers bleibt erhalten. Die früheren
+Argumentlisten von `Math.min`/`Math.max` scheiterten bei 150.000 Hexen oder
+160.000 Polygonpunkten. Laufende Extremwerte benötigen keine zusätzliche
+geflattete Punkt-/Achsenliste; Geometrie und Kenntnis werden nicht abgeschnitten.
+Der vorhandene schlanke DOMtest belegt diese Berechnung, keine native SVG-/GPU-
+oder Latenzqualifikation. Der neue Hostfilter kopiert die freigegebenen Felder;
+Gesamtkosten großer Frames sind weiterhin zu messen und gemeinsam zu begrenzen.
 
-Die integrierten Combat-/Chasepakete enthalten Initiative, HP-/Statuswerte,
-Tempo und Erschöpfung. Die neue ausdrückliche Sceneanzeige liefert außerdem
-Vorlesetext. Ihre Storetests belegen jeweils reduzierte Daten, gebundene Gruppe
-und fehlende private Notizen. Das belegt keine Übereinstimmung mit dem Umfang
-von Program Capabilities L299–302: Dort sind ausschließlich Karten und NPC-/
-Ortsart erlaubt, Mechanik und Text ausdrücklich ausgeschlossen. Der vorhandene
-Quellenabschnitt dieser Seite und ARCHITECTURE tragen diese Einschränkung weiter.
-Die Tests und die aktuelle Implementation dürfen diese Quellentscheidung nicht
-stillschweigend ersetzen. Die frühere Einordnung als integrierte Anzeige war
-insoweit zu weitgehend.
+`desktop-player-visual-contract.test.mjs` belegt mit echtem Store:
+Ortsart bleibt trotz aktiver Masken, Mechanik bleibt GM-owned, neue Textaufträge
+haben keine Teilwirkung/Receipt und alte Textsettings bleiben über Fresh,
+Backup/Copy erhalten und neutral. Renderer-Gegenproben prüfen alte Pakete
+samt Überschrift. `desktop-player-visual-host.test.mjs` prüft echte Hostmethoden mit
+kontrollierten Fenstern: Push/Pull, erlaubte Feldmenge und verschachtelte Daten.
+Der vorhandene Windowtest ergänzt die Lebenszyklusfälle. Die weiteren
+Dungeon-/Knowledge-/Editor- und Größenproben ergänzen
+Karten, gespeicherte Kenntnis, GM-Steuerung und alte asynchrone Antworten.
 
-Vor einer Displayfreigabe den gesamten Publiccomposer und seine tatsächlichen
-Host-/Rendererverbraucher gemeinsam gegen diesen Vertrag prüfen. Konkreter
-Anschluss: `projectPlayer` darf automatisch nur zulässige Karte/Art projizieren;
-Encounter/Chase benötigen gegebenenfalls ausdrücklich freigegebene Actorart,
-keine Mechaniktabelle. Die Scene-/GMtexte bleiben in ihren vorhandenen lokalen
-Ownerdaten. Für einen abweichenden Text-/Mechanikkanal fehlt hier eine gebundene
-Produktentscheidung. Die vorhandenen Varianten sind deshalb bis zum geklärten
-Quellen-/Composerabschluss nicht als qualifizierter passiver Displayumfang zu
-führen. Der aktuelle Code enthält sie weiterhin; dies ist ein offener
-Produktbefund, kein bereits wirksamer Ausgabefilter.
+Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
+gebundenen Vertrag angepasst: GM-Wirkungen und Sichtbarkeitswerte bleiben
+prüfbar; ihr Fortschritt darf keine Mechanik auf den passiven Bildschirm bringen.
+Ein falsches früheres Ausgabeergebnis ist keine Regressionserwartung.
+`tools/test-desktop-player-scene-privacy.mjs` wurde an die Ortsartaufgabe statt
+der früheren Text-/Mechanikausgabe angepasst. Sein nativer Lauf ist nach dieser
+Änderung noch offen; alte Screenshots qualifizieren diesen Stand nicht.
+Die Nachweise sind lokale Store-/Host-/kontrollierte DOMbelege, keine native
+Gesamt-/Privacy-/Plattformabnahme oder vollständige SMR-AC-14-Freigabe.
 
-## Nächste ausführbare Schritte
+## Nächste ausführbare Abschlüsse
 
-1. **Bounded Query und Darstellung gemeinsam liefern.** `projectPlayer`,
-   `dungeonDisplay`, der Playervertrag und Renderer lesen/zeichnen noch gesamte
-   bekannte Ausschnitte. Scene-Position und einen fachlich definierten sichtbaren
-   Kameraausschnitt gemeinsam binden; Knowledge außerhalb des Ausschnitts bleibt
-   gespeichert. Nur nötige Geometrie/Details holen und große SVGpfade/Knotenmengen
-   begrenzen. Abnahme: viele entfernte bekannte Orte, Fokuswechsel und denselben
-   Ausschnitt nach Fresh; keine neue GM-Wahrheit in ungesehenen Bereichen.
-2. **Öffentliches Paket vollständig prüfen.** Für jede tatsächlich gelieferte
-   Hex-/Dungeon-/Bild-/Combat-/Chasevariante eine explizite Feldfreigabe und negative Payload-
-   Gegenproben verwenden. Labels müssen ausdrücklich freigegebene Kartenlabels
-   sein; Beschreibung, Secrets, private Notiz-/Mechanikfelder und lokale Pfade
-   dürfen nicht durch weitere verschachtelte Felder zurückkehren. Bestehende
-   Owner-/Session-/Assettests konsumieren; kein zweiter Wahrnehmungsstand.
-3. **Native Wirkung messen.** Echte begrenzte Player-Session mit großer Geometrie,
-   Scenewechsel, Blank, Bild-/Decoderfehlern und Neustart prüfen. CPU-/RAM-
-   Verbrauch und Latenz am realen Host messen; danach physische Monitorwahl,
-   DPI, Fullscreen und Linux/Windows/macOS qualifizieren. Der schlanke DOM-
-   Ersatz ist kein Nachweis dieser Ergebnisse.
+1. **Bounded Query und Darstellung gemeinsam liefern.** Composer,
+   `dungeonDisplay`, Fensteradapter und Renderer bearbeiten noch vollständige
+   bekannte Ausschnitte. Scene-/Kamerabasis gemeinsam definieren und nur nötige
+   Geometrie/Details übertragen. Kenntnis außerhalb des Ausschnitts bleibt
+   gespeichert. Abnahme: viele entfernte bekannte Orte, Fokuswechsel und Fresh;
+   keine neue GM-Wahrheit aus ungesehenen Bereichen. Kopier-, JSON-/IPC-, Pfad-
+   und DOMkosten am selben konkreten Größenfall messen.
+2. **Artwork-/Maskenanschluss vollständig liefern.** GM-Hervorhebung bleibt
+   ausdrücklich. Optionale automatische Art des aktuellen Encounter-/Chaseactors
+   an dessen Identität, freigegebenes Asset und aktuelle Scene/Fokus binden.
+   Fehlende oder verborgene Art erklärt/neutral behandeln; keine Ersatztexte,
+   Status-/Mechanikwerte oder ungeprüften Actorbilder erfinden. GM-Override und
+   Blank haben Vorrang. Maskenwechsel, Hidden, gelöschter Actor, Replyverlust und
+   Fresh prüfen, ohne confirmed Masken-/GMdaten umzuschreiben.
+3. **Public Assets und vollständige Ausgabeclosure prüfen.** Für jede tatsächlich
+   veröffentlichte Karte/Art einen expliziten Publicprofil-/Assetnachweis führen.
+   Originalcontainer, EXIF/PNGtext, private Pixels, lokale Pfade und ungeprüfte
+   Providerresultate bleiben außerhalb des Displaykanals. Aktuelle Auswahl,
+   Ressourcen-/Session-/Fenstergeneration und Widerruf gemeinsam binden.
+4. **Native Wirkung qualifizieren.** Echte Player-Session mit großer Geometrie,
+   Blank, Art-/Decoderfehlern, Scenewechsel und Neustart; physische Monitorwahl,
+   DPI, Fullscreen, Tastatur/200 % sowie Linux/Windows/macOS. Ein kontrolliertes
+   Fenster ist kein Beleg für diese Aufgaben. Nichtnative Feldtests bleiben
+   separat von sichtbarer Ausgabe und gemessener Ressourcenfreigabe.
