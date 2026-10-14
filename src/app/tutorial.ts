@@ -102,6 +102,7 @@ export const tutorialSurfaceLessons={
 } as const;
 
 export const tutorialCapabilityLessons={
+  'npc-cast':'npc-dossier','npc-cast-search':'npc-dossier','npc-cast-scope':'npc-dossier','npc-cast-document':'npc-dossier','npc-contact':'npc-dossier',
   'party-popover':'party-topbar','party-search':'party-topbar','party-create':'party-topbar','party-editor':'party-topbar','party-profile-form':'party-topbar','party-active':'party-topbar','party-rest':'party-topbar',
   'party-archive':'roster-archive','party-archive-form':'roster-archive','party-archive-list':'roster-archive',
   'live-continue':'live-party','running-editor':'live-party','character-form':'live-party','scene-adopt':'live-party',
