@@ -1,3 +1,5 @@
+import {readVisitOutcome} from './visit-outcomes';
+import {visitOutcomeLabel} from '../visit-outcome-contracts';
 import { randomUUID, createHash } from 'node:crypto';
 import { checkedCharacterProfile, validateLiveCommand, advanceInstant, type Character, type LiveScene, type LiveView, type LiveCommand, type LiveAck, type LiveStatus } from '../live-contracts';
 import { checkedLocationDocument } from '../../features/location/location-schema';
@@ -68,7 +70,7 @@ export function readLiveScene(db: any, campaignId: string, id: string): LiveScen
   if (!life || !Number.isSafeInteger(life.membership_revision) || life.membership_revision < 0) throw new Error('Scenestatus fehlt oder ist beschädigt.');
   const source = db.prepare('SELECT id,plan_id AS planId,plan_revision AS planRevision,visit_id AS visitId,title,notes,location_id AS locationId FROM scene_adoption WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1').get(campaignId, id);
   return { id: row.id, revision: row.revision, title: row.title, notes: row.notes, readAloud:sceneReadAloud(db,campaignId,id), locationId: row.location_id, membershipRevision: life.membership_revision, retired: !!life.retired, clock: clock(db, campaignId, id),
-    members: db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1 ORDER BY ordinal,id').all(campaignId, id).map((r: any) => r.id), adoption: source ?? null };
+    members: db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1 ORDER BY ordinal,id').all(campaignId, id).map((r: any) => r.id), adoption: source ? {...source,outcome:readVisitOutcome(db,campaignId,source.id)} : null };
 }
 export function readLive(db: any, campaignId: string): LiveView {
   return db.transaction(() => {
@@ -347,6 +349,10 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       db.prepare('INSERT INTO scene_time_step VALUES(?,?,?,?,?,?,?)').run(campaignId, randomUUID(), targetId, command.commandId, ordinal, payload, hash(payload));
       db.prepare('UPDATE scene_clock SET revision=?,instant_ms=? WHERE campaign_id=? AND scene_id=?').run(revision, to, campaignId, targetId);
       scene = currentScene(db, campaignId, targetId);
+    } else if(action.kind==='visit-outcome'){
+      const current=currentScene(db,campaignId,action.sceneId);if(current.revision!==action.expectedRevision||current.adoption?.id!==action.adoptionId)throw new Error('Aktueller Besuch wurde geändert. Ergebnis zuerst mit dem neuen Stand abgleichen.');
+      targetId=current.id;revision=current.revision+1;db.prepare('UPDATE live_scene SET revision=? WHERE campaign_id=? AND id=?').run(revision,campaignId,targetId);
+      recordPartyHistory(db,campaignId,targetId,'Besuchsergebnis: '+visitOutcomeLabel(action.status)+' · '+(current.adoption.title||'Unbenannter Besuch'),{kind:'visit-outcome',commandId:command.commandId,adoptionId:action.adoptionId,planId:current.adoption.planId,visitId:current.adoption.visitId,locationId:current.adoption.locationId,status:action.status,outcome:action.outcome,previous:current.adoption.outcome??null,sceneInstantMs:current.clock.instantMs,characterIds:current.members});scene=readLiveScene(db,campaignId,targetId);
     } else if (action.kind === 'scene-content' || action.kind === 'apply-visit') {
       const before = currentScene(db, campaignId, action.sceneId); if (before.revision !== action.expectedRevision) throw new Error('Sceneinhalt wurde inzwischen geändert.');
       targetId = before.id; revision = before.revision + 1;

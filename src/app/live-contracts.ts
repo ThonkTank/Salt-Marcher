@@ -1,3 +1,4 @@
+import type {VisitOutcome,VisitOutcomeStatus} from './visit-outcome-contracts';
 import type { Result } from './contracts';
 export interface CharacterProfile {
   name: string; archive?:{recordedAt:string;reason:string}; playerName?: string; species?: string; characterClass?: string;
@@ -12,7 +13,7 @@ export interface LiveScene {
   membershipRevision: number; retired: boolean;
   clock: { epochId: string; instantMs: string; revision: number };
   members: string[];
-  adoption: { id: string; planId: string; planRevision: number; visitId: string; title: string; notes: string; locationId: string | null } | null;
+  adoption: { outcome?:VisitOutcome|null;id: string; planId: string; planRevision: number; visitId: string; title: string; notes: string; locationId: string | null } | null;
 }
 export interface LiveView {
   rosterRevision: number; roster: Character[]; archivedRosterCount?:number; primaryId: string | null; focusId: string | null; focusRevision: number | null;
@@ -27,6 +28,7 @@ export type LiveAction =
   | {kind:'archive-character';characterId:string;expectedRevision:number;expectedMembershipRevision:number;expectedRosterRevision:number;expectedFocusRevision:number|null;archived:boolean;confirmName:string;reason:string}
   | { kind: 'membership'; characterId: string; expectedRevision: number; expectedRosterRevision: number; active: boolean; targetSceneId: string | null; expectedFocusRevision: number | null }
   | { kind: 'apply-visit'; planId: string; expectedPlanRevision: number; visitId: string; sceneId: string; expectedRevision: number;expectedVisitRevision?:number }
+  | {kind:'visit-outcome';sceneId:string;expectedRevision:number;adoptionId:string;status:VisitOutcomeStatus;outcome:string}
   | { kind: 'scene-content'; sceneId: string; expectedRevision: number; title: string; notes: string; readAloud?:string; locationId: string | null }
   | { kind: 'focus'; sceneId: string; expectedRevision: number }
   | { kind: 'move'; sceneId: string; expectedRosterRevision: number; expectedFocusRevision: number; expectedClockRevision: number; expectedSceneMembershipRevision: number; memberIds: string[];
@@ -80,8 +82,9 @@ export function validateLiveCommand(command: LiveCommand) {
   if ('expectedRosterRevision' in action && (!Number.isSafeInteger(action.expectedRosterRevision) || action.expectedRosterRevision < 0)) throw new Error('Ungültige Partyrevision.');
   if ('expectedPlanRevision' in action && (!Number.isSafeInteger(action.expectedPlanRevision) || action.expectedPlanRevision < 0)) throw new Error('Ungültige Planrevision.');
   if (action.kind === 'move' && (!Number.isSafeInteger(action.expectedSceneMembershipRevision) || action.expectedSceneMembershipRevision < 0 || !Number.isSafeInteger(action.expectedFocusRevision) || action.expectedFocusRevision < 0)) throw new Error('Ungültige Gruppenrevision.');
+  if(action.kind==='visit-outcome'&&(!['open','completed','skipped'].includes(action.status)||typeof action.outcome!=='string'||action.outcome.length>2000000))throw new Error('Besuchsergebnis prüfen.');
   const fields = action as unknown as Record<string, unknown>;
-  for (const key of ['characterId', 'sceneId', 'planId', 'visitId']) {
+  for (const key of ['characterId', 'sceneId', 'planId', 'visitId','adoptionId']) {
     const id = fields[key];
     if (key in fields && (typeof id !== 'string' || !id || id.length > 1000)) throw new Error('Ungültiges Änderungsziel.');
   }

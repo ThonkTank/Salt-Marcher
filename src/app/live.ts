@@ -1,3 +1,4 @@
+import {initSessionNavigator,sessionNavigatorContext,sessionNavigatorBusy} from './session-progress-ui';
 import {initSceneDesk,sceneDeskContext,flushSceneDesk} from './scene-desk-ui';
 import {refreshMusic} from './music-ui';
 import {renderLiveWorld} from './world-ui';
@@ -34,7 +35,7 @@ const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes,
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:(sceneDraft??data.scene)?.locationId??null}:null;
 export function activateLive(workspace: Workspace) {
-  resetLiveArchives();
+  resetLiveArchives();sessionNavigatorContext(null,null,null,false);
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
@@ -70,6 +71,7 @@ export async function prepareLiveEncounter(plan:EncounterPlan) { const token=con
 export async function addLiveNpc(id:string){if(await ensureLiveRuntime())await addWorldNpc(id);}
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
+  sessionNavigatorBusy(on&&!textSave);
   for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel']) get<HTMLButtonElement>(id).disabled = on && !textSave;
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
@@ -199,6 +201,7 @@ function renderVisits() {
   get<HTMLButtonElement>('adoption-preview').disabled = !plan?.scenes.length || intentBlocked();
 }
 function renderSceneMeta() {
+  sessionNavigatorContext(context,data,sources,resumed);
   void refreshMusic();
   if(context&&data?.scene&&resumed)void renderLiveWorld(context.token,data.scene.id);
   const scene = data?.scene;
@@ -288,7 +291,7 @@ function render() {
   renderVisits();
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation) {
-  tell=status;openLocation=navigate;initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});initRuleReferences(status);
+  tell=status;openLocation=navigate;initSessionNavigator(status,previewPlannedVisit,async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
@@ -349,16 +352,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('adoption-plan').onchange = renderVisits;
-  get('adoption-preview').onclick = () => { void (async () => {
-    const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');
-    if (!(await flushLive()) || token !== context?.token || !data?.scene || !resumed) return;
-    const plan = sources?.plans.find(p => p.id === planId), visit = plan?.scenes.find(v => v.id === visitId); if (!plan || !visit) return;
-    const prepared=unwrap(await window.campaign.session(token!,planId)),detail=prepared.visits.find(v=>v.visitId===visitId);if(token!==context?.token)return;
-    adoption = { kind: 'apply-visit', planId, expectedPlanRevision: plan.revision, visitId, sceneId: data.scene.id, expectedRevision: data.scene.revision,expectedVisitRevision:detail?.revision??0 };
-    get('adoption-content').textContent = (visit.title || 'Unbenannter Besuch') + '\n\n' + visit.notes + '\n\nOrt: ' + (sources?.locations.find(l => l.document.id === visit.locationId)?.document.name ?? (visit.locationId ? 'nicht verfügbar' : 'kein Ort'));
-    get('adoption-content').textContent+='\n\nZum Vorlesen:\n'+(detail?.readAloud??'')+'\n\nVorbereitete Gruppen: '+(detail?.groupIds.length??0);
-    get<HTMLDialogElement>('adoption-dialog').showModal();
-  })(); };
+  get('adoption-preview').onclick=()=>void previewPlannedVisit(value('adoption-plan'),value('adoption-visit')).catch(e=>tell(e.message,true));
   get('adoption-cancel').onclick = () => { adoption = null; get<HTMLDialogElement>('adoption-dialog').close(); };
   get('adoption-confirm').onclick = () => { void (async () => {
     const action = adoption; if (!action) return;
@@ -452,4 +446,16 @@ export async function runPartyProgress(token:string,action:import('./progression
  if(context?.token!==token||!data)throw new Error('Party nicht verfügbar.');
  progressionContext(context,data,selected);
  if(!await executePartyProgress(action))throw new Error('Buchung nicht bestätigt. Statusmeldung und Buchungsbeleg prüfen; Eingabe bleibt erhalten.');
+}
+
+async function previewPlannedVisit(planId:string,visitId:string){
+    const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision;
+    if (!(await flushLive()) || token !== context?.token || !data?.scene || !resumed) return;
+    const plan = sources?.plans.find(p => p.id === planId), visit = plan?.scenes.find(v => v.id === visitId); if (!plan || !visit) return;
+    const prepared=unwrap(await window.campaign.session(token!,planId)),detail=prepared.visits.find(v=>v.visitId===visitId);if(token!==context?.token||data?.scene?.id!==sceneId||data.focusRevision!==focusRevision)return;
+    adoption = { kind: 'apply-visit', planId, expectedPlanRevision: plan.revision, visitId, sceneId: data.scene.id, expectedRevision: data.scene.revision,expectedVisitRevision:detail?.revision??0 };
+    get('adoption-content').textContent = (visit.title || 'Unbenannter Besuch') + '\n\n' + visit.notes + '\n\nOrt: ' + (sources?.locations.find(l => l.document.id === visit.locationId)?.document.name ?? (visit.locationId ? 'nicht verfügbar' : 'kein Ort'));
+    get('adoption-content').textContent+='\n\nZum Vorlesen:\n'+(detail?.readAloud??'')+'\n\nVorbereitete Gruppen: '+(detail?.groupIds.length??0);
+    get<HTMLDialogElement>('adoption-dialog').showModal();
+
 }
