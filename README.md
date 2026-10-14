@@ -562,3 +562,28 @@ und Encountertabellen wie die vorhandenen Abläufe. Der Renderer stellt nur dar.
 Große Zeiträume erzeugen höchstens 94 Etappeneinträge; weitere volle Tage werden
 zusammengefasst. Rechneraktionen schreiben weder Roster, Planungsparty noch Weltzeit.
 Echte XP, Rasten und Zeitfolgen bestätigt der GM anschließend am Spieltisch.
+
+
+### Desktopstand 0.50: Party und Roster direkt in der Kopfleiste
+
+Die Party-Schaltfläche (Alt+P) öffnet eine Oberfläche über dem aktuellen Arbeitsbereich.
+Aktive Figuren zeigen Identität, stabile Roster-ID, XP bis zum nächsten Level, HP,
+RK, Bewegung, passive Werte und Rastbelastung. Darunter durchsucht der GM alle
+aktiven und inaktiven Figuren nach Namen, Spieler, Profil, Sprachen oder ID.
+Die Rosterliste zeigt jeweils 40 Treffer und lädt weitere auf ausdrücklichen Klick.
+
+Name allein genügt für eine neue, zunächst inaktive Figur. Profilwerte lassen sich
+explizit speichern oder wieder leeren; Sprachen behalten ihre eingegebene Reihenfolge.
+„Zur Party“ ordnet eine bestehende Figur der Gruppe im Fokus zu, „Aus Party“ entfernt
+sie aus der Teilnahme. Die gespeicherte Figur und ihre Historie bleiben erhalten.
+Zum ersten Aktivieren muss die Sitzung am Spieltisch gestartet sein.
+
+Der XP-Balken öffnet eine bestätigte Korrektur: +XP, −XP bis zum aktuellen Levelfloor
+oder ein ausdrücklicher Gesamtstand, auch über einen Level-Ausgangsstand. XP und Level
+bleiben dieselbe bestätigte Fortschrittsquelle; Profilbearbeitung erzeugt keine XP.
+Die Rastsektion wählt Figuren der Gruppe im Fokus und übernimmt kurze/lange Rast
+mit optionaler gemeinsamer Szenenzeit und positiver HP-Erholung. Vorhandene Schreib-
+und Belegwege halten den Spieltisch, Rastbudget und Chronik aktuell. Offene gültige
+Spieltischeingaben werden vor einer bestätigten Partyänderung gespeichert.
+Löschen/Archivieren von Rosterfiguren und ein wieder löschbarer unbekannter XP-Stand
+sind noch offen; Teilnahme entfernen ist ausdrücklich keine Charakterlöschung.
