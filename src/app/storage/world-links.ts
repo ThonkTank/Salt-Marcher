@@ -6,6 +6,8 @@ import {worldLinkKey,worldLinkKinds} from '../world-links-contracts';
 import {npcPosition} from './npc-world';
 import {readCreature,searchCreatures,readEncounterPlan} from './encounters';
 import {readItemDefinition} from './item-definitions';
+import {worldNoteDocument} from '../../features/world/world-notes';
+import {checkedLocationDocument} from '../../features/location/location-schema';
 const decode=(r:any)=>{if(!r||createHash('sha256').update(r.payload).digest('hex')!==r.checksum)throw new Error('Zusammenhangsquelle beschädigt.');return JSON.parse(r.payload);};
 // Each query returns metadata only. Catalogue bodies and campaign prose load on selection.
 const indexSql=`SELECT 'note' refKind,id,json_extract(payload,'$.title') title,json_extract(payload,'$.kind') kind,revision FROM world_note WHERE campaign_id=@cam AND trashed=0 AND instr(lower(json_extract(payload,'$.title')||char(10)||json_extract(payload,'$.readAloud')||char(10)||json_extract(payload,'$.gmNotes')),lower(@text))>0 AND (@kind IN('all','world') OR json_extract(payload,'$.kind')=@kind)
@@ -15,18 +17,20 @@ const indexSql=`SELECT 'note' refKind,id,json_extract(payload,'$.title') title,j
  UNION ALL SELECT 'item',id,name,'item',revision FROM authored_item WHERE NOT EXISTS(SELECT 1 FROM item_definition d WHERE d.id=authored_item.id) AND instr(lower(name),lower(@text))>0 AND @kind IN('all','item')`;
 export function readWorldLinks(db:any,cam:string,q:WorldLinksQuery):WorldLinksPage{
  if(!q||typeof q.text!=='string'||q.text.length>1000||!['all','world','reference',...Object.keys(worldLinkKinds)].includes(q.kind)||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.focus&&(!['note','location','creature','item','encounter'].includes(q.focus.kind)||typeof q.focus.id!=='string'||!q.focus.id||q.focus.id.length>1000))throw new Error('Zusammenhangssuche prüfen.');
- const meta=(r:any):WorldLinkNode=>({ref:{kind:r.refKind,id:r.id},kind:r.kind,title:r.title,revision:r.revision,available:true});
+ const source=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?'),place=db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?');
+ const resolved=(ref:WorldLinkRef):WorldLinkNode=>{
+  if(ref.kind==='note'){const r=source.get(cam,ref.id);if(!r)return{ref,kind:'rule',title:'Nicht verfügbar',revision:0,available:false};const d=worldNoteDocument(decode(r));if(d.id!==r.id||d.revision!==r.revision)throw new Error('Zusammenhangsquelle widerspricht ihrer Identität.');return{ref,kind:d.kind,title:d.title,revision:d.revision,available:!r.trashed};}
+  if(ref.kind==='location'){const r=place.get(cam,ref.id);if(!r)return{ref,kind:'location',title:'Nicht verfügbar',revision:0,available:false};const d=checkedLocationDocument(decode(r));if(d.id!==r.id)throw new Error('Zusammenhangsquelle widerspricht ihrer Identität.');return{ref,kind:'location',title:d.name,revision:r.revision,available:!r.trashed};}
+  try{const d=ref.kind==='creature'?readCreature(ref.id):ref.kind==='item'?readItemDefinition(db,ref.id):readEncounterPlan(db,cam,ref.id);return{ref,kind:ref.kind,title:d.name,revision:ref.kind==='creature'?1:(d as {revision:number}).revision,available:ref.kind==='item'&&(d as {trashed?:boolean}).trashed?false:true};}catch{return{ref,kind:ref.kind,title:'Quelle nicht verfügbar',revision:0,available:false};}
+ };
  installTextReferenceReader(db);const aliasPage=q.kind==='reference'?searchTextReferences(db,cam,q.text,q.offset):null;
- const params={cam,text:q.text,kind:q.kind},list:WorldLinkNode[]=aliasPage?aliasPage.entries.map(e=>({ref:e.ref,kind:e.ref.kind==='note'?(db.prepare("SELECT json_extract(payload,'$.kind') kind FROM world_note WHERE campaign_id=? AND id=?").get(cam,e.ref.id)?.kind??'rule'):e.ref.kind,title:e.title,revision:e.revision,available:!e.unavailable,alias:e.alias})):q.kind==='creature'?[]:db.prepare(indexSql+' ORDER BY title COLLATE NOCASE,refKind,id LIMIT 41 OFFSET @offset').all({...params,offset:q.offset}).map(meta);
+ const params={cam,text:q.text,kind:q.kind},list:WorldLinkNode[]=aliasPage?aliasPage.entries.map(e=>({...resolved(e.ref),alias:e.alias})):q.kind==='creature'?[]:db.prepare(indexSql+' ORDER BY title COLLATE NOCASE,refKind,id LIMIT 41 OFFSET @offset').all({...params,offset:q.offset}).map((r:any)=>resolved({kind:r.refKind,id:r.id}));
  // All sources share a bounded page: database sources first, then the immutable creature catalogue.
  if((q.kind==='all'||q.kind==='creature')&&list.length<41){const skip=q.kind==='creature'?q.offset:list.length?0:Math.max(0,q.offset-db.prepare('SELECT count(*) n FROM ('+indexSql+')').get(params).n);const p=searchCreatures({text:q.text,offset:skip,limit:41-list.length});for(const c of p.rows)list.push({ref:{kind:'creature',id:c.id},kind:'creature',title:c.name,revision:1,available:true});}
  const matches=list.slice(0,40),nodes=new Map<string,WorldLinkNode>(),edges:WorldLinksPage['edges']=[],edgeKeys=new Set<string>();let hiddenLinks=0;
- const source=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?'),place=db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?');
  const add=(ref:WorldLinkRef):WorldLinkNode|null=>{
   const key=worldLinkKey(ref),old=nodes.get(key);if(old)return old;if(nodes.size>=121){hiddenLinks++;return null;}
-  let n:WorldLinkNode;
-  if(ref.kind==='note'||ref.kind==='location'){const r=(ref.kind==='note'?source:place).get(cam,ref.id);if(r){const d=decode(r);n={ref,kind:ref.kind==='note'?d.kind:'location',title:ref.kind==='note'?d.title:d.name,revision:r.revision,available:!r.trashed};}else n={ref,kind:ref.kind==='note'?'rule':'location',title:'Nicht verfügbar',revision:0,available:false};}
-  else {try{const d=ref.kind==='creature'?readCreature(ref.id):ref.kind==='item'?readItemDefinition(db,ref.id):readEncounterPlan(db,cam,ref.id);n={ref,kind:ref.kind,title:d.name,revision:ref.kind==='creature'?1:(d as {revision:number}).revision,available:ref.kind==='item'&&(d as {trashed?:boolean}).trashed?false:true};}catch{n={ref,kind:ref.kind,title:'Quelle nicht verfügbar',revision:0,available:false};}}
+  const n=resolved(ref);
   nodes.set(key,n);return n;
  };
  const edge=(from:WorldLinkRef,to:WorldLinkRef,label:string,authored=false)=>{if(!add(from)||!add(to))return;const key=JSON.stringify([worldLinkKey(from),worldLinkKey(to),label,authored]);if(edgeKeys.has(key))return;if(edges.length>=160){hiddenLinks++;return;}edgeKeys.add(key);edges.push({source:from,target:to,label,authored});};
