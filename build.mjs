@@ -16,7 +16,7 @@ const productBuild = await build({
   format: "cjs",
   platform: test ? "node" : "browser",
   target: "es2022",
-  external: ["obsidian", "electron", "node:*", "util", "stream", "zlib", "assert", "buffer"],
+  external: ["obsidian", "electron", "better-sqlite3", "node:*", "util", "stream", "zlib", "assert", "buffer"],
   sourcemap: true,
   logLevel: "info",
   metafile: !test,
