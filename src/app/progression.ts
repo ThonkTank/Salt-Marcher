@@ -81,7 +81,7 @@ export function ledgerStacksMatch(a:LedgerItem,b:LedgerItem):boolean{
   const key=(item:LedgerItem)=>JSON.stringify([
     item.reference.definitionId,item.reference.revision,item.reference.historicalDefinitionId??null,item.name,item.category,item.unitCopper,item.origin,
     item.treasureId,item.combatId,item.sceneId,item.locationId,item.instantMs,item.sourceNoteId??null,item.awardId??null,
-    item.provenance??null,item.sourceCharacterId??null,item.mergeTargetId??null,item.counterparty,
+    item.provenance??null,item.rewardCreditId??null,item.sourceTreasureId??null,item.sourceTreasureItemId??null,item.sourceCharacterId??null,item.mergeTargetId??null,item.counterparty,
     item.counterpartyLink?[item.counterpartyLink.kind,item.counterpartyLink.id]:null,
     item.counterpartyReference?[item.counterpartyReference.shopId,item.counterpartyReference.owner.kind,item.counterpartyReference.owner.id]:null,
   ]);

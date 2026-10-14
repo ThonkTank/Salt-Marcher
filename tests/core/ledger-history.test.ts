@@ -16,6 +16,7 @@ test('ledger stack compatibility binds definition revision and full provenance',
   assert.equal(ledgerStacksMatch(a,{...split,reference:{...split.reference,revision:2}}),false);
   assert.equal(ledgerStacksMatch(a,{...split,counterpartyReference:{shopId:'shop-b',owner:{kind:'npc',id:'npc-a'}}}),false);
   assert.equal(ledgerStacksMatch(a,{...split,reference:{...split.reference,historicalDefinitionId:'other'}}),false);
+  for(const key of ['rewardCreditId','sourceTreasureId','sourceTreasureItemId'])assert.equal(ledgerStacksMatch(a,{...split,[key]:'different-origin'}),false);
 });
 
 test('ledger inventory validates remapped history while projecting the chosen current definition',()=>{
