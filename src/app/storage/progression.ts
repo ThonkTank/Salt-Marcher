@@ -113,7 +113,7 @@ export function latestCombatStatuses(db:any,cam:string,ids:Iterable<string>) {
 }
 function openHealthCombats(db:any,cam:string) {
   const actors=new Map<string,{state:CombatState;actor:CombatState['participants'][number]}>();
-  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished'").iterate(cam)){
+  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase IN('preparing','running')").iterate(cam)){
     const state=storedCombat(row);
     for(const actor of state.participants)if(actor.characterId){if(actors.has(actor.characterId))throw new Error('Figur hat mehrere offene Begegnungen. Zuerst die Kampfstände abgleichen.');actors.set(actor.characterId,{state,actor});}
   }
