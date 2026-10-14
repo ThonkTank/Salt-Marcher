@@ -25,6 +25,7 @@ function insertDefinition(store:CampaignStore,value:ItemDefinition){
 function observed(db:any){
   return{
     campaigns:db.prepare("SELECT count(*) n FROM campaign").get().n,
+    authored:db.prepare("SELECT * FROM authored_item ORDER BY id").all(),
     definitions:db.prepare("SELECT count(*) n FROM item_definition").get().n,
     versions:db.prepare("SELECT count(*) n FROM item_definition_version").get().n,
     origins:db.prepare("SELECT count(*) n FROM campaign_origin").get().n,
@@ -51,7 +52,6 @@ test("campaign publication rolls back a late receipt failure and retries exactly
       WHEN NEW.command_id='atomic-ticket' BEGIN SELECT RAISE(ABORT,'später Receiptfehler'); END;`);
     assert.throws(()=>destination.acceptCampaignSnapshot(snapshot,"Übernommene Quelle",choices,"atomic-ticket"),/später Receiptfehler/);
     assert.deepEqual(observed(db),before);
-    assert.equal(db.prepare("SELECT count(*) n FROM authored_item WHERE id!='atomic-shared-item'").get().n,0);
 
     db.exec("DROP TRIGGER fail_atomic_receipt");
     const imported=destination.acceptCampaignSnapshot(snapshot,"Übernommene Quelle",choices,"atomic-ticket");
