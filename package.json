@@ -48,7 +48,8 @@
     "test:desktop-chase-switch": "node --test --test-concurrency=1 tests/desktop-chase-switch.test.mjs",
     "test:desktop-player-privacy-ui": "node tools/test-desktop-player-scene-privacy.mjs && node tools/test-desktop-player-scene-privacy.mjs --combat && node tools/test-desktop-player-scene-privacy.mjs --chase",
     "test:desktop-player-focus": "node --test --test-concurrency=1 tests/desktop-player-focus.test.mjs",
-    "test:desktop-player-focus-ui": "node tools/test-desktop-player-focus.mjs"
+    "test:desktop-player-focus-ui": "node tools/test-desktop-player-focus.mjs",
+    "test:desktop-player-blank-ui": "node tools/test-desktop-player-blank.mjs && node tools/test-desktop-player-blank.mjs --pending"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
