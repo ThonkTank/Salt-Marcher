@@ -1,6 +1,6 @@
 # Kampagnenexport und isolierte lokale Erweiterungen
 
-Stand: 13.10.2026. Ergänzt den
+Stand: 14.10.2026. Ergänzt den
 [Campaign-/Datenvertrag](../../../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md)
 und den [vollständigen Produktumfang](../../SCOPE.md).
 
@@ -47,6 +47,22 @@ Zusammen mit Installations-/DOM- und Campaignintegritäts-/Annahmeprüfungen:
 88 gezielte Prüfungen und Desktop-Typecheck bestanden. Das ist kein Nachweis
 für einen laufenden Extensionprovider, vollständige Medientransfers, Hard-Crash,
 Dateisystem-Durabilität unter Stromverlust oder die erforderlichen Plattformen.
+
+## Ursprüngliche Ursache beim Paketfehler erhalten
+
+`desktop/zip-files.ts.readArchive` ließ nach einem fehlerhaften Manifest weitere
+ZIP-Einträge dieselbe Fehlerstelle ersetzen. Ein eigentlicher Metadatenfehler
+erschien dadurch als nicht deklarierter Eintrag. Der Reader bewahrt nun die erste
+Ursache über Decoder- und Streamcallbacks hinweg; nach Fehler werden keine
+weiteren Ausgabestreams eröffnet. Dateigröße und Prüfsumme besitzen eigene
+Meldungen, fehlende deklarierte Dateien werden als unvollständiges Archiv erklärt.
+Die bestehende Bereinigung und Veröffentlichungssperre bleiben wirksam.
+
+Zwei Gegenproben in `desktop-archive-error.test.mjs` prüfen ursprüngliche
+Metadaten-/Prüfsummenfehler vor einem nachfolgenden nicht deklarierten Eintrag sowie
+bereinigte eigene Stagingordner. Bestehende Audio- und Campaignpaketprüfungen
+prüfen die gemeinsamen Verbraucher. Das qualifiziert die Fehlerursache lokal;
+Cancel-/Crash-/Publish-Durabilität und Plattformabnahmen bleiben eigene Ziele.
 
 ## Nächste konkrete Lieferungen
 
