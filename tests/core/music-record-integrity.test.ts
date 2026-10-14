@@ -12,6 +12,7 @@ function fixture(){
  const root=mkdtempSync(join(tmpdir(),'music-record-integrity-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test'),campaign=store.create('Musikzeilen'),token=store.activate(campaign.id).token;
  store.executeLive({commandId:'character',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}});
  const scene=store.executeLive({commandId:'initialize',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
+ store.executeMusic({commandId:'registry',campaignId:campaign.id,token,action:{kind:'registry',expectedRevision:0,axes:[{id:'tension',name:'Spannung',lowLabel:'Ruhig',highLabel:'Gefahr'}]}});
  const sceneCommand:MusicCommand={commandId:'scene-music',campaignId:campaign.id,token,action:{kind:'scene-settings',expectedRevision:0,settings:{sceneId:scene.id,revision:0,moods:{tension:60},intensity:70,vibes:['Gewitter'],genres:['Orchestral']}}};
  const subjectCommand:MusicCommand={commandId:'subject-music',campaignId:campaign.id,token,action:{kind:'subject',expectedRevision:null,subject:{id:'fixture-creature',kind:'creature',revision:0,name:'Fixture-Kreatur',vibes:['Höhle'],genres:['Drone'],vibeMode:'add',genreMode:'replace'}}};
  store.executeMusic(sceneCommand);store.executeMusic(subjectCommand);
@@ -50,6 +51,7 @@ test('music row identities remain valid after campaign remapping',async()=>{
   const imported=destination.acceptCampaignSnapshot(snapshot,'Importierte Musik',{},'music-import'),opened=destination.activate(imported.id),music=destination.music(opened.token),subject=destination.musicSubject(opened.token,'creature','fixture-creature');
   assert.equal(music.sceneSettings?.revision,1);
   assert.deepEqual(music.sceneSettings?.vibes,['Gewitter']);
+  assert.deepEqual(music.registry.axes.map(axis=>axis.id),['tension']);
   assert.equal(subject.revision,1);
   assert.equal(subject.genreMode,'replace');
  }finally{destination.close();f.store.close();rmSync(f.root,{recursive:true,force:true});}
