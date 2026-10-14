@@ -17,7 +17,7 @@ import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
 import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
-import {canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import {liveMomentSavedMessage,canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -388,7 +388,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
       let refreshProblem=false;if(followUp){const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}
       const unchanged=canClearSavedLiveMoment(sceneId,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());
       if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());get<HTMLInputElement>('live-moment-title').focus();}
-      get('live-moment-result').textContent=(unchanged?'Moment gespeichert.':'Vorheriger Moment gespeichert. Neuere Eingabe bleibt offen.')+(followUp?(followUp==='quest'?' Offene Quest angelegt.':' Gerücht angelegt.'):'')+(refreshProblem?' Wissensbinder aktualisieren.':'');
+      get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
     }catch(error){if(current())tell((error as Error).message,true);}})();
   };
   get('adoption-plan').onchange = renderVisits;

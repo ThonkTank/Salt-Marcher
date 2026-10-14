@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook} from '../../src/app/live-moment-drafts';
+import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,LiveMomentDraftBook} from '../../src/app/live-moment-drafts';
 
 test('live moment drafts remain with their scene across focus changes',()=>{
   const book=new LiveMomentDraftBook();
@@ -32,4 +32,10 @@ test('a confirmed moment clears only the unchanged draft for the same scene',()=
   assert.equal(canClearSavedLiveMoment('scene-a','scene-a',saved,{...saved,summary:'Ada kennt jetzt auch den Träger.'}),false);
   assert.equal(canClearSavedLiveMoment('scene-a','scene-a',saved,{...saved,followUp:'rumor'}),false);
   assert.equal(canClearSavedLiveMoment('scene-a','scene-b',saved,structuredClone(saved)),false);
+});
+
+test('live moment confirmation names one completed action without duplicating saved',()=>{
+  assert.equal(liveMomentSavedMessage('',true),'Moment in der Kampagnenchronik gespeichert.');
+  assert.equal(liveMomentSavedMessage('quest',true),'Moment gespeichert und als offene Quest vorbereitet.');
+  assert.equal(liveMomentSavedMessage('rumor',false,true),'Moment gespeichert und als Gerücht vorbereitet. Neuere Eingabe bleibt offen. Wissensbinder bei Bedarf aktualisieren.');
 });
