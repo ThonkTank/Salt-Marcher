@@ -167,15 +167,60 @@ alte Jobs dürfen deaktiviert bleiben. Catch-up hat bei Fehler keine Teilwirkung
 Backup/Export behalten ihren bestehenden strukturellen Schutz und erhalten den
 sicheren Vorgänger. Historische Target-/Slotclosure bleibt gesondert offen.
 
+## Geprüfte historische Basis nach Integration
+
+`storage/autonomy.ts` führt Actors, Jobs, bestätigte Intervalle, Zeitfronten,
+Reservierungen, Job- und Ressourcenbuchungen, Logs und Commandreceipts. Ein
+Intervall friert die damaligen Actorregeln, Jobs, Worldpositionen, Routen,
+Feature-Revisionen und Dungeon-Snapshotreferenzen ein. Catch-up darf diese Fakten
+nicht durch heutige Werte ersetzen.
+
+Die Reader-, Wirkungs- und Backupgrenze prüft deshalb:
+
+- SQL- und Payloadidentität sowie Revision aktueller Jobs und Actors,
+- kanonische positive Intervallgrenzen mit bestehendem Sceneowner,
+- vollständige historische Actorsteuerung, Needs, Wahrnehmungs-/Spurenregeln,
+  World- und Dungeonpositionen,
+- historische Jobs, Routen, Featurestände und eindeutige Dungeonreferenzen,
+- interne Owner-, Raum-, Geschoss-, Element-, Stil-, Pfad-, Passage- und
+  Volumenstruktur jedes `autonomy_dungeon_basis`-Snapshots,
+- Zeitfronten, Reservierungs-/Actorstand, überschneidungsfreie exklusive
+  Buchungen, Logowner und Receipt-Fingerprint/Fortschritt.
+
+Historische IDs werden nur gegen Daten innerhalb desselben eingefrorenen
+Snapshots gebunden. Ein gelöschter oder heute geänderter Raum, Job oder Ort macht
+eine damals gültige Zeitbasis nicht rückwirkend ungültig. Referenzen auf den
+gespeicherten Dungeon-Snapshot selbst müssen dagegen weiterhin auflösbar sein.
+
+Campaign-Kopien remappen kampagnenlokale Identitäten. Der fachliche Logwert
+`intervalId: "manual"` bleibt dabei in SQL und Payload unverändert; Actor- und
+Campaignowner werden remappt.
+
+## Lokaler Nachweis und Aussagegrenze
+
+`tests/core/autonomy-persistence-integrity.test.ts` belegt korrekt neu gehashte
+Beschädigungen an historischen Jobs, Actorregeln, Positionen, Routen, Features,
+Dungeonreferenzen und Dungeon-Snapshots. Die Fälle prüfen Catch-up-Rollback,
+unveränderten früheren Backupbestand, Ablehnung eines neuen Backups, Fresh sowie
+eine gültige exklusive Ressourcenbuchung. Weitere Fälle prüfen Frontiers,
+Reservierungen, beide Buchungstypen, Logs, Receipts und Campaign-Remap.
+
+`tests/core/autonomy-scene-time-boundary.test.ts` belegt, dass automatischer
+Catch-up an der bestätigten Uhr der auslösenden Scene endet und ein bereits
+späterer Actorstand nicht zurückgerollt wird. Diese SQLite-Nachweise sind keine
+native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
+
+
 ## Nächste ausführbare Schritte
 
-1. **Historische Zeitbasis vervollständigen.** Die Jobs und Intervallgrenzen sind
-   geprüft. Historische Actorsteuerung/Needs, Positions-/Dungeon-/Routensnapshots,
-   Features und Runtimebeziehungen brauchen weiterhin eigene Shape-/Wertregeln.
-   Reine Validatoren mit aktuellen Writerregeln teilen, ohne damalige Targets
-   gegen ausschließlich heutige aktive Inhalte zu prüfen. Archivierte Herkunft
-   muss erhalten bleiben. Abnahme: gültige alte Revisionen, korrekt gehashte
-   beschädigte Snapshot-/Actorwerte und Fresh; keine Teilwirkung oder Umdeutung.
+1. **Historische Zeitbasis gemeinsam qualifizieren.** Die integrierten Reader
+   prüfen nun auch historische Actorsteuerung, Needs, Positionen, Routen, Features
+   und den internen Dungeongraphen. Diese Byte-/Shape-/Referenzbelege sind keine
+   vollständige Wirkungsabnahme. Configänderung bei noch ausstehenden Intervallen,
+   Aktivierungs-/Pausezeit, alte Revisionen, heutige Zieländerung und Fresh gemeinsam
+   prüfen; historische Fakten nicht gegen ausschließlich aktuelle Aktivität binden.
+   Aktivierungswechsel und ihre tatsächliche Zeitgrenze im dauerhaften Faktenlog
+   nachvollziehbar machen, ohne vorhandene Geschichte nachträglich zu erfinden.
 2. **Reservierungs-/Receipt-/Logabschluss vervollständigen.** `autonomy_booking`,
    `autonomy_reservation`, `autonomy_log` und `autonomy_receipt` bei Backup und
    Transfer weiter gemeinsam mit ihren Writern prüfen. Die vorhandenen Form-/
