@@ -1,3 +1,4 @@
+export {removePartyFromMasks as reconcileCombatParticipants} from './mask-health';
 import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
 import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';

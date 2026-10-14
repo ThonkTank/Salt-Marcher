@@ -47,6 +47,23 @@ Szenensuche-/Reiseziel-, Codec-, Store-/Transfer- und Draftmigrationprüfungen
 bestanden 35 lokale Prüfungen und Desktop-Typecheck.
 Native Bedienung und reale Crossworkflow-/Speicher-/Maskenabnahme stehen aus.
 
+## Integrierter Partyabgleich vom 14.10.2026
+
+Move und Deaktivierung entfernen Teilnahmen in allen offenen Combat-/Chasemasken
+unter demselben Partycommand. Je betroffenem Owner wird ein revisionsgebundener
+`mask_reconciliation_receipt` gespeichert. Combat nutzt dafür den vorhandenen
+Shared-Health-Writer, Turnnachfolge und den sichtbaren Abgleichhinweis; eine zweite
+Gesundheitsberechnung für dieselbe Wirkung wurde vermieden. Die integrierten
+Core-/SQLiteprüfungen belegen Turnnachfolge, Stale-Undo, eindeutige Teilnahme und
+Receiptreplay.
+
+Die unabhängige Kopie remappt zusätzlich `removedCharacterIds`. Eine Gegenprobe
+mit Combat und Chase vor Deaktivierung fand zunächst alte IDs; danach gehörten
+beide Abgleichbelege zu den kopierten Characters. Party-/Scenehistorie, freie
+Scenetitel und Quellpaketbytes bleiben erhalten; Folgebackup ist geprüft.
+Provider-Pending, Retirement-/Tombstoneabschluss, echter Roundzeitport und native
+Crossworkflowabnahme bleiben offen.
+
 ## Nächste ausführbare Schritte
 
 1. **Roharbeit und vollständige Klärung schließen.** Der integrierte
@@ -63,7 +80,7 @@ Native Bedienung und reale Crossworkflow-/Speicher-/Maskenabnahme stehen aus.
    Header/Shape und gespeicherte Belege. Zwei Legacygegenproben fanden allerdings
    Fehler bei Schema 38 ohne Chase bzw. ohne Receipttabelle; der Validator
    berücksichtigt jetzt diese historischen Varianten. Der integrierte
-   Gruppenanschluss nutzt Schema 40; dessen Adapter installiert Chase ebenfalls
+   Shared-Health-Anschluss nutzt Schema 41; dessen Adapter installiert Chase ebenfalls
    auf der eigenen Migrationskopie. Ältere Formatadapter
    installieren die Chasetabellen auf der eigenen Importkopie.
    Eine weitere Gegenprobe fand den alten Abschlussverweis nach unabhängiger
