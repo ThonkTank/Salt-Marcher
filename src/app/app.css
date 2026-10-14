@@ -152,3 +152,12 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 .soundboard-card button{white-space:normal}
 .soundboard-queue-row{display:flex;align-items:center;gap:7px;margin:7px 0}
 .soundboard-queue-row span{flex:1;min-width:0;overflow-wrap:anywhere}
+
+.session-copy-dialog { width: min(1240px, 95vw); max-width: min(1240px, 95vw); }
+.session-copy-columns { display: grid; grid-template-columns: 3fr 2fr; gap: 24px; }
+.session-copy-columns section { min-width: 0; }
+.session-copy-columns pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.session-copy-columns article { padding: 12px; margin: 8px 0; border: 1px solid var(--border, #555); border-radius: 6px; }
+.session-copy-columns li { padding: 8px; }
+.session-copy-columns li button { margin-left: 6px; }
+@media (max-width: 900px) { .session-copy-columns { grid-template-columns: 1fr; } }
