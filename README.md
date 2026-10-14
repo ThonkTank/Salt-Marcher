@@ -73,6 +73,7 @@ Produktabnahme. Bedienung, Grenzen und nächste Schritte stehen in den verlinkte
 | Stadt | Straßen und Flächen planen, Gebäudebestand erzeugen und nachbearbeiten; vollständiger Umfang und Grenzen im [Stadtplan](ROADMAP-CITIES.md). |
 | Dungeon zeichnen | Grundrisse, Räume, Objekte, Türen, Licht, Geschosse, Volumen und parametrische Passagen; bearbeitbarer Graph mit ausdrücklich bestätigter Rasterübersetzung. |
 | Dungeon vorbereiten | Raum-Keys, Vorlesetext, vererbte und referenzierte Vorlagen, regionale Beschreibungen, Budgets, Encounter-, Loot- und Curiosity-Kontexte auf räumlichen Ankern. |
+| Dungeon-Binder | Raum-Keys, Ausgänge und gebundene Inhalte durchsuchen; ausdrücklicher Wechsel zur Karte oder Bearbeitung. |
 | Dungeon leiten | Gruppen- und NPC-Positionen, Tür-/Treppenwege, editierbares Tempo, abschnittsweise Bewegung und gemeinsame Szenenzeit. Geometrieänderungen, Fallen und Kontakte können zur GM-Klärung anhalten. |
 | Wahrnehmung | Licht, Sichtweite, Dunkelsicht, aktives/passives Ergebnis, Bekanntheits-Overrides, Geräusche und Spuren mit Bewegungs-/Oberflächenprofilen. GM-Informationen bleiben in der GM-Oberfläche. |
 | Autonomie | NPC-Bedürfnisse, Raum-/Ortsjobs, Patrouillen und Fallenreset; gespeicherte Wege, Reservierungen, Fortschritt und bestätigte Zeitfolgen. Pause/Deaktivieren erhält Fortschritt; ausdrücklicher Abbruch ist separat. |

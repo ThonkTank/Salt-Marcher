@@ -25,3 +25,16 @@ test('death save outcomes remain visible in the bounded chronicle source query',
 });
 test('historical narrative status changes remain visible without a recorded title',t=>{const x=fixture(t),id=x.add('narrative-state',{after:{status:'closed',poolXp:25,items:[],contributors:[],locationId:null}}),view=x.read();assert.equal(view.entries.length,1);assert.equal(view.entries[0].id,'progress:'+id);assert.equal(view.entries[0].category,'narrative');assert.match(view.entries[0].title,/Quest oder Gerücht/);assert.match(view.entries[0].summary,/Geschlossen.*25 Gruppen-XP/);});
 test('an explicitly invalid narrative chronicle status fails without modifying the source',t=>{const x=fixture(t);x.add('narrative-state',{title:'Auftrag',after:{status:'invented'}});const before=x.store.db.serialize();assert.throws(()=>x.read(),/Chronikstatus.*beschädigt/);assert.equal(x.store.db.serialize().equals(before),true);});
+
+test('session handoff keeps authored bytes through receipt replay and Fresh without reviving a retired note',()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'handoff-fresh-')),file=path.join(root,'store.sqlite');let store=new CampaignStore(file);
+ try{
+  const campaign=store.create('Übergabe'),workspace=store.activate(campaign.id),request=action=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,action}),scene=store.executeLive(request({kind:'initialize',expectedRosterRevision:0})).scene;
+  const marker=(kind,handoff='')=>request({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:kind,summary:'Rückblick',handoff});
+  store.executeLive(marker('start'));const authored='  Am Nordtor weiter.\r\n\r\nErst die Wache befragen.  ',end=marker('end',authored),ack=store.executeLive(end);assert.deepEqual(store.executeLive(end),ack);
+  assert.equal(store.chronicle(workspace.token).entries.filter(e=>e.sessionMarker==='end').length,1);
+  assert.equal(store.chronicle(workspace.token,'all','Wache befragen').entries[0].handoff,authored);
+  store.close();store=new CampaignStore(file);const fresh=store.activate(campaign.id),entries=store.chronicle(fresh.token).entries;assert.equal(entries.find(e=>e.sessionMarker==='end').handoff,authored);assert.ok(chronicleMarkdown(store.chronicle(fresh.token),'all','').includes(authored));
+  const next=kind=>({commandId:randomUUID(),campaignId:campaign.id,token:fresh.token,action:{kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:kind,summary:'',handoff:''}});store.executeLive(next('start'));store.executeLive(next('end'));assert.equal(store.chronicle(fresh.token).entries.find(e=>e.sessionMarker==='end').handoff,undefined);assert.equal(store.chronicle(fresh.token).entries.filter(e=>e.sessionMarker==='end').length,2);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});

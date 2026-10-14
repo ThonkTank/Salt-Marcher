@@ -28,6 +28,6 @@ export function validateDrawingElement(e:unknown):asserts e is DrawingElement{
  if(e.sound!==undefined&&(!object(e.sound)||typeof e.sound.enabled!=='boolean'||!Number.isFinite(e.sound.rangeMeters)||e.sound.rangeMeters<0||e.sound.rangeMeters>1000||!Number.isFinite(e.sound.dc)||e.sound.dc<-100||e.sound.dc>100||!text(e.sound.publicText,1000)))throw new Error('Geräuschquelle prüfen.');
  if(e.content!==undefined){
   validateDungeonContentValue(e.content);
-  if(e.kind!=='feature'||e.content.reference&&(e.feature==='encounter'?e.content.reference.kind!=='encounter':e.feature==='loot'?e.content.reference.kind!=='treasure':true))throw new Error('Inhaltszuordnung passt nicht zum Featuretyp.');
+  if(e.kind!=='feature'||e.content.reference&&(e.feature==='encounter'?!['encounter','group'].includes(e.content.reference.kind):e.feature==='loot'?e.content.reference.kind!=='treasure':true))throw new Error('Inhaltszuordnung passt nicht zum Featuretyp.');
  }
 }
