@@ -204,3 +204,5 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 .npc-cast{width:min(1200px,calc(100vw - 2rem));max-width:none;max-height:calc(100vh - 2rem);overflow:auto}.npc-cast-columns{display:grid;grid-template-columns:minmax(250px,1fr) minmax(0,2fr);gap:1.2rem}#npc-cast-list{display:grid;gap:.4rem;max-height:65vh;overflow:auto}#npc-cast-list button{text-align:left}#npc-cast-document{min-width:0}#npc-cast-document pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f7fa;padding:.8rem}#npc-cast-document>button{margin:.25rem}#npc-cast-list button[aria-pressed=true]{border-color:#285b80;background:#e7eff5}@media(max-width:850px){.npc-cast-columns{grid-template-columns:1fr}#npc-cast-list{max-height:30vh}}
 
 .session-resume-start{font-weight:700;border-color:var(--accent,#8b582b)}
+
+.session-close-suggestion{margin:1rem 0;padding:.8rem;border:1px solid var(--line);border-left:4px solid var(--blue);background:var(--soft,#f1eee6)}.session-close-suggestion h3{flex:1}.session-close-suggestion pre{margin:.7rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.5}
