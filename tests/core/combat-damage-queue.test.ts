@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {enqueuePendingDamage,retainPendingAttack,hasCombatCondition,setCombatCondition} from '../../src/app/combat';
+import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,hasCombatCondition,setCombatCondition} from '../../src/app/combat';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
   const damage=(id:string)=>({check:{id} as any,combatId:'combat',attackerId:'attacker'});
@@ -16,6 +16,13 @@ test('a second statblock attack cannot replace an unresolved attack',()=>{
   const first={actionId:'scimitar'},second={actionId:'shortbow'};
   assert.equal(retainPendingAttack(null,first),first);
   assert.equal(retainPendingAttack(first,second),first);
+});
+
+test('legendary cost waits for a targeted roll but not an immediate damage roll',()=>{
+  assert.equal(deferLegendaryCost('attack'),true);
+  assert.equal(deferLegendaryCost('save'),true);
+  assert.equal(deferLegendaryCost('check'),true);
+  assert.equal(deferLegendaryCost('damage'),false);
 });
 
 test('condition shortcuts preserve free notes and recognize catalog language',()=>{
