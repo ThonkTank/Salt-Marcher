@@ -151,6 +151,11 @@ function recordPartyHistory(db:any,campaignId:string,sceneId:string|null,text:st
   const value=json({text,recordedAt:new Date().toISOString(),facts});
   db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(campaignId,randomUUID(),sceneId,value,hash(value));
 }
+function latestSessionMarker(db:any,campaignId:string):'start'|'end'|null{
+  const row=db.prepare(`SELECT payload,checksum FROM world_history WHERE campaign_id=? AND json_valid(payload)=1 AND json_extract(payload,'$.facts.kind')='session-marker' ORDER BY rowid DESC LIMIT 1`).get(campaignId);
+  if(!row)return null;if(hash(row.payload)!==row.checksum)throw new Error('Spielabend-Markierung ist beschädigt.');
+  const marker=JSON.parse(row.payload)?.facts?.marker;if(!['start','end'].includes(marker))throw new Error('Spielabend-Markierung ist ungültig.');return marker;
+}
 function targetRevision(db: any, campaignId: string, action: LiveCommand['action'], targetId: string): number | null {
   const table = action.kind === 'membership' ? 'roster_member' : action.kind === 'profile' || action.kind === 'archive-character' || action.kind === 'create-character' ? 'character_profile' : 'live_scene';
   if (!db.prepare('SELECT 1 FROM ' + table + ' WHERE campaign_id=? AND id=?').get(campaignId, targetId)) return null;
@@ -337,6 +342,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       recordPartyHistory(db,campaignId,targetId,action.title.trim(),{kind:'live-moment',category:action.category,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs,followUpKind:action.followUp?.kind??null,followUpId:action.followUp?.id??null});
     } else if(action.kind==='session-marker'){
       const before=currentScene(db,campaignId,action.sceneId);if(before.revision!==action.expectedRevision)throw new Error('Sceneinhalt wurde inzwischen geändert.');
+      const latest=latestSessionMarker(db,campaignId);if(action.marker==='start'?latest==='start':latest!=='start')throw new Error(action.marker==='start'?'Ein Spielabend läuft bereits.':'Kein laufender Spielabend zum Beenden.');
       targetId=before.id;revision=before.revision;scene=before;
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND active=1 ORDER BY ordinal,id').all(campaignId).map((row:any)=>row.id);
       recordPartyHistory(db,campaignId,targetId,action.marker==='start'?'Spielabend begonnen':'Spielabend beendet',{kind:'session-marker',marker:action.marker,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs});
