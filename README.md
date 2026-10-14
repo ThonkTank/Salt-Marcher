@@ -722,3 +722,11 @@ Die Spielabend-Vorschau hat eine gemeinsame Auswahl mit Textsuche und Statusfilt
 „Szenen prüfen“ zeigt die vollständige Auswahl in ihrer Vorschlagsreihenfolge. Die Bestätigung fügt alle gewählten Besuche mit ihren Inhalten, Begegnungsgruppen und vorbereiteten Belohnungen gemeinsam hinten an die Timeline an. Eine überholte Timeline oder ausgewählte Vorschlagsrevision wird abgewiesen; eine fehlgeschlagene gemeinsame Übernahme schreibt keine Teilauswahl. Bestätigte Wiederholung derselben Änderung erzeugt keine doppelten Besuche. Gruppen am Spieltisch, Zeit, Weltplatzierung und XP-/Lootvergabe werden dadurch nicht ausgeführt.
 
 Übernommene und verworfene Vorschläge bleiben über den Statusfilter erreichbar. Die Auswahl ist ein vorläufiger UI-Zustand; nach Neustart wählst du erneut. Gespeicherte Vorschau und angenommene Timeline bleiben erhalten. „Spielabendmappe öffnen“ führt direkt zur vorbereiteten GM-Mappe.
+
+### Desktopstand 0.59: Aufträge und Gerüchte am Spieltisch führen
+
+„Aufträge und Gerüchte“ in der oberen Leiste öffnet ein gemeinsames GM-Journal. Es durchsucht Titel, GM- und Vorlesetexte sowie bestätigte Abschluss-Ergebnisse und filtert nach Art und offenem/geschlossenem Status. Die Liste lädt jeweils 40 Einträge nach, statt den gesamten Kampagnenbestand in die Ansicht zu kopieren. Der ausgewählte Auftrag bleibt beim Filtern rechts geöffnet.
+
+Die Leseansicht zeigt private Notizen, Vorlesetext, Ortsbindung, Mitwirkende und Weltverweise. Rechts verwendet sie denselben narrativen Editor wie die Einzelnotiz: Status, Ort, Standardempfänger, XP und Beute vorbereiten; Eingaben sichern; mit ausdrücklichem Ergebnis manuell abschließen und Belohnung vergeben. Bereits ausgegebene Belohnungen bleiben gesperrt. Es gibt keinen zweiten Queststatus oder paralleles Belohnungsledger. Texte und Beziehungen lassen sich über die vorhandene Welt-Notizansicht bearbeiten.
+
+An einen Spielabend gebundene Quests und Gerüchte zeigen nun auch ihren bestätigten Status, vorbereitete Belohnung und ein vergebenes Abschluss-Ergebnis in der GM-Mappe und ihrem Markdown-Export. Unbestätigte Eingaben werden als solche gemeldet und ersetzen den bestätigten Stand nicht. Die bestehende Chronik führt Status- und Abschlussbuchungen weiterhin über denselben Owner.

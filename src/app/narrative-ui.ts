@@ -25,6 +25,8 @@ let readyHook: (() => boolean) | null = null;
 let draftVersion = 0,
   persistHook: (() => Promise<boolean>) | null = null,
   timer: ReturnType<typeof setTimeout> | null = null;
+let resumeOwner:(()=>Promise<void>)|null=null;
+export function captureNarrativeOwner(){return resumeOwner;}
 function markDirty() {
   dirty = true;
   draftVersion++;
@@ -51,12 +53,14 @@ export async function showNarrative(
   drain: () => Promise<boolean>,
   tell: (s: string, error?: boolean) => void,
   targetPanel?:HTMLElement,
+  onSaved?:()=>void,
 ) {
   const panel = targetPanel??el("narrative-editor"),
     key = w && note ? panel.id+":"+w.token + ":" + note.id : "";
   panel.hidden =
     !w || !note || trashed || !["quest", "rumor"].includes(note.kind);
   if (!panel.hidden && key === ownerKey && (dirty || pending)) return;
+  resumeOwner=panel.hidden?null:()=>showNarrative(w,note,trashed,drain,tell,panel,onSaved);
   const n = ++request;
   if (panel.hidden) {
     ownerKey = "";
@@ -196,7 +200,7 @@ export async function showNarrative(
         savedVersion = -1;
         void persist();
       }
-      tell("Quest-/Gerüchtstatus und Belohnung gespeichert.");
+      tell("Quest-/Gerüchtstatus und Belohnung gespeichert.");onSaved?.();
       return true;
     } catch (e) {
       if (current()) tell((e as Error).message, true);
