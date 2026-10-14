@@ -179,7 +179,18 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const p = participant();
           if (p.healthKnown === false) throw new Error('HP noch offen. Aktuelle und maximale HP eintragen, bevor Schaden oder Heilung angewendet wird.');
           if (!Number.isSafeInteger(a.amount) || a.amount <= 0 || a.amount > 1000000) throw new Error('Betrag benötigt eine positive ganze Zahl.');
-          if (a.kind === 'damage') { const absorbed = Math.min(p.tempHp, a.amount); p.tempHp -= absorbed; p.hp = Math.max(0, p.hp - (a.amount - absorbed)); }
+          if (a.kind === 'damage') {
+            if((a.sourceCheckId===undefined)!==(a.sourceScale===undefined))throw new Error('Schadensbeleg und Anpassung müssen gemeinsam angegeben werden.');
+            if(a.sourceCheckId!==undefined){
+              const row=db.prepare('SELECT scene_id,payload,checksum FROM scene_check WHERE campaign_id=? AND id=?').get(cam,a.sourceCheckId);
+              if(!row||row.scene_id!==state.sceneId||hash(row.payload)!==row.checksum)throw new Error('Der Schadenswurf gehört nicht zu dieser Begegnung.');
+              const source=JSON.parse(row.payload);
+              if(source.id!==a.sourceCheckId||source.sceneId!==state.sceneId||source.rollKind!=='formula'||source.formulaKind!=='damage'||!Number.isSafeInteger(source.total)||source.total<=0)throw new Error('Der gewählte Beleg ist kein anwendbarer Schadenswurf.');
+              const expected=a.sourceScale==='half'?Math.floor(source.total/2):a.sourceScale==='double'?source.total*2:a.sourceScale==='full'?source.total:NaN;
+              if(a.amount!==expected)throw new Error('Der Schadensbetrag stimmt nicht mit dem gespeicherten Wurf überein.');
+            }
+            const absorbed = Math.min(p.tempHp, a.amount); p.tempHp -= absorbed; p.hp = Math.max(0, p.hp - (a.amount - absorbed));
+          }
           else p.hp = Math.min(p.maxHp, p.hp + a.amount);
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
