@@ -25,5 +25,19 @@
     "Player projection validated by core and Store tests; no separate native player window acceptance",
     "Normal close/restart only in this native run; no hard-kill/power-loss acceptance",
     "Original competitor documentation plus actual UTF-8 Markdown file; no human timing, competitor GUI session, full OS/accessibility or whole-product acceptance"
-  ]
+  ],
+  "qualifiedIntegrationCommit": "812d6a211d140fd6bd36cccc92506079a00f7b57",
+  "lateIntegration": {
+    "tests": 7,
+    "testFiles": [
+      "autonomy-scene-time-boundary",
+      "autonomy-time-conflict-ui",
+      "autonomy-persistence-integrity"
+    ],
+    "typeCheck": true,
+    "desktopBuild": true,
+    "nativeDraftStartsAndNormalExits": 3,
+    "peakMemoryMiB": 632.8,
+    "resourceUnit": "codex-dungeon-qa-73a6a0016d4d471f8e397d408995f10b.service"
+  }
 }

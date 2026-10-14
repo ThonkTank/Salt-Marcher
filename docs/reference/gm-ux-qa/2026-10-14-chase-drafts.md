@@ -54,3 +54,9 @@ Ein schwerer QA-Job, ein Testworker, 816,5 MiB Spitze, 4-GiB-Limit und kein Swap
 Die frühere Einschränkung auf flüchtige Rundenvorschläge ist damit für diesen
 Ablauf geschlossen. Native Hard-kill-/Stromausfallprüfung, separate Spielerfenster-,
 Original-, Zeit-, Accessibility-, Betriebssystem- und Gesamtproduktabnahme bleiben offen.
+
+Später integrierte Autonomie-Zeitkonflikte: sieben betroffene Tests sowie
+Typprüfung/Build erneut bestanden. Derselbe native Entwurfsablauf wurde danach
+mit drei weiteren normalen App-Ausgängen wiederholt; 632,8 MiB Spitze.
+[Integrationslog](2026-10-14-chase-drafts-integration.log),
+[erneute Wiederaufnahme](2026-10-14-chase-drafts-integration-after.json).
