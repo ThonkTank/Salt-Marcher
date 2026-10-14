@@ -3,7 +3,7 @@ import { randomUUID, randomInt, createHash } from 'node:crypto';
 import { checkedCombat, combatOrder, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
 import { readLiveScene, readLive } from './live';
 import { readProgressCharacter, finishCombatRewards, latestCombatStatuses, detachCombatHealth, resumeCombatHealth, assertCharacterHealthAvailable, lastCombatPartyParticipant, event } from './progression';
-import { xpLevel } from '../progression';
+import {applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../progression';
 import { assessEncounter } from '../encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry } from './generation';
@@ -171,6 +171,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if (!a.changes || Object.keys(a.changes).some(k => !fields.includes(k))) throw new Error('Unbekanntes Kampffeld.');
           if (p.healthKnown === false && ('hp' in a.changes || 'maxHp' in a.changes) && !('hp' in a.changes && 'maxHp' in a.changes)) throw new Error('Aktuelle und maximale HP gemeinsam eintragen.');
           Object.assign(p, a.changes); if ('hp' in a.changes && 'maxHp' in a.changes) p.healthKnown = true; p.hp = Math.min(p.hp, p.maxHp);
+          if(p.hp>0){delete p.death;delete p.deathLast;}
           if ('initiative' in a.changes) for (const peer of state.participants.filter(peer => peer.groupId === p.groupId)) peer.initiative = p.initiative;
         } else if (a.kind === 'damage' || a.kind === 'heal') {
           const p = participant();
@@ -188,7 +189,12 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
             }
             const absorbed = Math.min(p.tempHp, a.amount); p.tempHp -= absorbed; p.hp = Math.max(0, p.hp - (a.amount - absorbed));
           }
-          else p.hp = Math.min(p.maxHp, p.hp + a.amount);
+          else {p.hp = Math.min(p.maxHp, p.hp + a.amount);if(p.hp>0){delete p.death;delete p.deathLast;}}
+        } else if(a.kind==='death'||a.kind==='death-roll'){
+          const p=participant();if(!p.characterId)throw new Error('Todesrettungswürfe sind nur für Party-Figuren verfügbar.');if(p.healthKnown===false)throw new Error('Todesrettungswürfe benötigen bekannte HP.');
+          const roll=a.kind==='death-roll'?randomInt(1,21):null,result:DeathSaveResult=a.kind==='death'?a.result:roll===20?'natural-20':roll===1?'natural-1':roll!>=10?'success':'failure';
+          const next=applyDeathSave(checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})}),result);
+          p.hp=next.hp;p.maxHp=next.maxHp;p.tempHp=next.tempHp;p.conditions=next.conditions;p.concentrating=next.concentrating;p.death=next.death;p.deathLast={result,roll};
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
           detachCombatHealth(db,cam,state,p,command.commandId);
