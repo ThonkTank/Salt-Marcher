@@ -20,7 +20,7 @@ export function checkedNpcView(v:NpcView):NpcView{
  return v;
 }
 export function checkedNpcDraft(d:NpcDraft):NpcDraft{
- if(!object(d)||!identity(d.id)||!identity(d.writeId)||typeof d.concentrating!=='boolean'||!object(d.fields)||Object.values(d.fields).some(v=>typeof v!=='string')||Buffer.byteLength(JSON.stringify(d))>4000000)throw new Error('NPC-Entwurf prüfen.');
+ if(!object(d)||!identity(d.id)||!identity(d.writeId)||typeof d.concentrating!=='boolean'||!object(d.fields)||Object.values(d.fields).some(v=>typeof v!=='string')||Buffer.byteLength(JSON.stringify({...d,pendingCommand:undefined,rejectedCommand:undefined}))>4000000||Buffer.byteLength(JSON.stringify(d))>12000000)throw new Error('NPC-Entwurf prüfen.');
  for(const field of ['name','creature','faction','location','modifier','lifecycle','appearance','behavior','history','readAloud','gmNotes','hp','maxHp','tempHp','conditions'])if(typeof d.fields[field]!=='string')throw new Error('NPC-Entwurf hat fehlende Rohfelder.');
  if(d.basis!==null&&checkedNpcView(d.basis).id!==d.id)throw new Error('NPC-Entwurf gehört zu einer anderen Figur.');
  return d;

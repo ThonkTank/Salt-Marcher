@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   discardNpcDraft:(token:string,id:string,writeId:string)=>ipcRenderer.invoke('campaign:discard-npc-draft',token,id,writeId),
   npcs:(token:string,q:unknown)=>ipcRenderer.invoke('campaign:npcs',token,q),
   npc:(token:string,id:string)=>ipcRenderer.invoke('campaign:npc',token,id),
+  reconcileNpc:(c:unknown,token:string)=>ipcRenderer.invoke('campaign:reconcile-npc',c,token),
   executeNpc:(c:unknown)=>ipcRenderer.invoke('campaign:execute-npc',c),
   generationSources: (token:string)=>ipcRenderer.invoke('campaign:generation-sources',token),
   encounterTables: (token: string, includeTrashed: boolean) => ipcRenderer.invoke('campaign:encounter-tables',token,includeTrashed),

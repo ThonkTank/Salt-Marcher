@@ -114,6 +114,7 @@ import "./core/time-plan-ui.test";
 import "./core/time-plan-context.test";
 import "./core/npc-cast-ui.test";
 import "./core/time-plan-storage.test";
+import "./core/npc-cast-context.test";
 import "./core/npc-cast-storage.test";
 import "./core/agenda-storage.test";
 import "./core/object-gestures.test";

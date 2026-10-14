@@ -112,3 +112,5 @@ gesperrten Startknopf bei offener Antwort, keine native Reaktionszeit.
 3. Nativ Fokus, Rohwerte, A/B/A, Kamerafreiheit, unabhängige Reads, Begründungen,
    Replyverlust und Cancel prüfen. Längeres räumliches Wachstum und Reaktionszeit
    messen; nur belegte Engstellen ändern, keine zweite persistierte Simulation.
+
+Dossier, Gespräche und die Wiederaufnahme ungeklärter Profilübernahmen stehen im [NPC-Vertrag](../campaign/npc-dossiers.md).

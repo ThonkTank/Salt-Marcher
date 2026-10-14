@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {parseHTML} from 'linkedom';
+import {searchCreatures} from '../../src/app/storage/encounters';
 import {CampaignStore} from '../../src/app/storage/store';
 import {WorldLinksWorkbench} from '../../src/app/world-links-ui';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
@@ -45,4 +46,15 @@ test('reset cancels an opening still waiting for pending source edits',async t=>
 test('missing relationship targets remain inspectable as unavailable nodes',async t=>{
  const f=await fixture(t),missing=randomUUID(),page=f.store.worldLinks(f.workspace.token,{text:'',kind:'all',offset:0,focus:{kind:'note',id:missing}});
  assert.equal(page.focus?.available,false);assert.equal(page.focus?.ref.id,missing);assert.equal(page.focus?.title,'Nicht verfügbar');
+});
+
+test('catalogue links use the existing creature reader and source editor without product writes',async t=>{
+ const f=await fixture(t),creature=searchCreatures({text:'Goblin',offset:0,limit:1}).rows[0]!;
+ const note=f.store.preparation(f.workspace.token).notes.find(r=>r.note.id===f.ada)!.note;
+ f.store.changePreparation({commandId:randomUUID(),campaignId:f.workspace.campaign.id,token:f.workspace.token,change:{kind:'note',expectedRevision:note.revision,note:{...note,creatureId:creature.id}}});
+ const page=f.store.worldLinks(f.workspace.token,{text:'',kind:'world',offset:0,focus:{kind:'note',id:f.ada}});
+ assert.ok(page.edges.some(e=>e.target.kind==='creature'&&e.target.id===creature.id&&e.label==='verwendet Statblock'));
+ f.ui.reset();const db=(f.store as unknown as {db:any}).db,before=db.serialize();await f.ui.open({kind:'creature',id:creature.id});
+ assert.equal(f.el('inspector').querySelector('h3')?.textContent,creature.name);assert.ok(f.button('Referenz lesen…'));
+ f.button('Quelle bearbeiten…').click();await settle();assert.deepEqual(f.x.edits,[{kind:'creature',id:creature.id}]);assert.ok(db.serialize().equals(before));
 });

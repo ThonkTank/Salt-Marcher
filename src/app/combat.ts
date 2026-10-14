@@ -114,8 +114,8 @@ async function load(id?: string):Promise<boolean> {
   return false;
 }
 
-async function execute(action: CombatAction, expectedRevision?:number): Promise<boolean> {
-  if (!workspace || !scene || blocked()) return false;
+async function execute(action: CombatAction, expectedRevision?:number,stillCurrent:()=>boolean=()=>true): Promise<boolean> {
+  if (!workspace || !scene || blocked()||!stillCurrent()) return false;
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='notes'?notesDraft():editDraft;
   const priorDamageDeath=action.kind==='damage'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
   const priorEffects=action.kind==='next'||action.kind==='start'?view?.combat?.participants.flatMap(actor=>(actor.timedEffects??[]).map(effect=>({actorId:actor.id,actor:actor.name,...effect})))??[]:[];
@@ -127,6 +127,7 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
   pending = (async () => {
     try {
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
+      if(!stillCurrent())return false;
       const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
       acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
@@ -162,11 +163,12 @@ export async function prepareGeneratedCombat(action:Extract<CombatAction,{kind:'
  const owner=preparationOwner();if(!owner||owner.sceneId!==action.sceneId||owner.revision!==action.expectedMembershipRevision||!await load()||!owner.current())return false;
  const ok=await execute(action);if(ok&&owner.current()){get<HTMLDetailsElement>('combat-panel').open=true;get('combat-panel').scrollIntoView({block:'start'});}return ok;
 }
-export async function addWorldNpc(actorId:string){
- const owner=preparationOwner(),w=workspace;if(!owner||!w||!await load()||!owner.current())return;
- const r=await window.campaign.npc(w.token,actorId);if(!r.ok)throw new Error(r.error);if(!owner.current())return;const npc=r.value;if(npc.actorRevision===null||npc.record.lifecycle==='defeated'||!npc.health?.hp)throw new Error('NPC benötigt einen Kreaturverweis, aktive Freigabe und positive HP.');
- if(!editableCombat(view?.combat??null)){if(!await execute({kind:'create',sceneId:owner.sceneId,title:'Begegnung mit '+npc.name,includeParty:true,expectedMembershipRevision:owner.revision})||!owner.current())return;}
- if(await execute({kind:'add-world-actor',actorId,expectedActorRevision:npc.actorRevision,expectedRecordRevision:npc.record.revision})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
+export async function addWorldNpc(actorId:string,stillCurrent:()=>boolean=()=>true){
+ const owner=preparationOwner(),w=workspace;if(!owner||!w||!stillCurrent()||!await load()||!owner.current()||!stillCurrent())return;
+ const current=()=>owner.current()&&stillCurrent();
+ const r=await window.campaign.npc(w.token,actorId);if(!current())return;if(!r.ok)throw new Error(r.error);const npc=r.value;if(npc.actorRevision===null||npc.record.lifecycle==='defeated'||!npc.health?.hp)throw new Error('NPC benötigt einen Kreaturverweis, aktive Freigabe und positive HP.');
+ if(!editableCombat(view?.combat??null)){if(!await execute({kind:'create',sceneId:owner.sceneId,title:'Begegnung mit '+npc.name,includeParty:true,expectedMembershipRevision:owner.revision},undefined,current)||!current())return;}
+ if(await execute({kind:'add-world-actor',actorId,expectedActorRevision:npc.actorRevision,expectedRecordRevision:npc.record.revision},undefined,current)&&current())get('combat-panel').scrollIntoView({block:'start'});
 }
 export async function addCatalogCreature(creatureId:string,count:number,grouped:boolean) {
   const owner=preparationOwner();if(!owner||!await load()||!owner.current())return;

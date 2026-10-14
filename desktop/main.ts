@@ -134,6 +134,7 @@ else {
     handle('campaign:discard-npc-draft',(token:string,id:string,writeId:string)=>store.discardNpcDraft(token,id,writeId));
     handle('campaign:npcs',(token:string,q:NpcQuery)=>store.npcs(token,q));
     handle('campaign:npc',(token:string,id:string)=>store.npc(token,id));
+    handle('campaign:reconcile-npc',(c:NpcCommand,token:string)=>store.reconcileNpc(c,token));
     handle('campaign:execute-npc',(c:NpcCommand)=>store.executeNpc(c));
     handle('campaign:generation-sources', (token:string)=>store.generationSources(token));
     handle('campaign:encounter-tables', (token: string, trashed: boolean) => store.encounterTables(token,trashed));

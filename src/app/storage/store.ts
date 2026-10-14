@@ -10,7 +10,7 @@ import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
 import {installNpcRecords,validateNpcRecords} from './npc-record';
-import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
+import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc,validateNpcRecovery} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
 import {removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
@@ -449,7 +449,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);validateNpcRecovery(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
@@ -541,14 +541,15 @@ export class CampaignStore {
     })();
   }
   worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery){const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
-  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery){const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
-  npcDossier(token:string,sceneId:string,id:string){const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
+  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
+  npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}
   npcDraft(token:string,id:string){return npcDraft(this.db,this.guard(token),id);}
   keepNpcDraft(token:string,d:NpcDraft,expected:string|null){return keepNpcDraft(this.db,this.guard(token),d,expected);}
   discardNpcDraft(token:string,id:string,writeId:string){return discardNpcDraft(this.db,this.guard(token),id,writeId);}
   npcs(token:string,q:NpcQuery){return readNpcs(this.db,this.guard(token),q);}
   npc(token:string,id:string){return readNpc(this.db,this.guard(token),id);}
+  reconcileNpc(c:NpcCommand,token:string){return reconcileNpc(this.db,c,()=>{this.guard(token,c.campaignId);});}
   executeNpc(c:NpcCommand){return executeNpc(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   generationSources(token:string){return readWorldSources(this.db,this.guard(token));}
   sceneVisits(token:string,sceneId:string,after:string|null){return readSceneVisits(this.db,this.guard(token),sceneId,after);}
