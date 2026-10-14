@@ -11,21 +11,25 @@
     "new_files": 27,
     "inventory_sha256": "055a294d2f8464a3b495a57e189adae931eab11c290bc959cbea3ae71ef54c1a",
     "independent_reviews_started": 2,
-    "status": "in_progress_not_accepted",
-    "native_base": "Immutable fix03 lifecycle and fix02 original product pilots; changed offline checker does not imply new GUI execution."
+    "status": "agreed_partial_bounded_recording_usable_conditions_open",
+    "native_base": "Immutable fix03 lifecycle and fix02 original product pilots; changed offline checker does not imply new GUI execution.",
+    "independent_reviews_completed": 2
   },
   "confirmed_infrastructure_issues": [
-    "Scored cohort conditions and initial profile emptiness still require direct proof.",
-    "Timed cold launch must include setup; private display identity is not a semantic UI-view label."
+    "Managed-window behavior must be established; private display geometry is not a substitute for working native maximize/focus.",
+    "A universal browser zoom percentage is inapplicable to some native editors; display contract proposal is isolated and inactive.",
+    "Cold-start/profile evidence exists in separate pilot, with timing and process limits still awaiting current-build independent qualification."
   ],
-  "repair": "Originals retained. New wire checker rejects corrupted prefix/completion receipts; 37 related offline tests passed and all three original complete transport traces remain consistent. Independent native review underway.",
+  "repair": "New offline audit rejects invalid/backward/out-of-event receipt clocks; 8 tests passed and 12 original traces remain consistent. Existing pilot chat is qualifying a managed private desktop; original artifacts unchanged.",
   "scored_product_runs": 0,
   "claim": "No product usability, parity, superiority or human-load claim. Private cases and raw personal filesystem views remain outside this repository.",
   "offline_checks": {
     "historical_package_tests_passed": 86,
     "targeted_input_loader_tests_passed": 18,
     "scope": "Offline method checks; not product acceptance.",
-    "targeted_wire_and_adapter_tests_passed": 37
+    "targeted_wire_and_adapter_tests_passed": 37,
+    "wire_clock_corruption_tests_passed": 8,
+    "original_traces_clock_checked": 12
   },
   "previous_review_candidate": {
     "id": "INFRA-REVIEW-CANDIDATE-01",
@@ -38,7 +42,9 @@
     "version": "0.68.0",
     "desktop_build_exit": 0,
     "artifact_files": 13,
-    "native_pilot": "in_progress",
-    "scored_runs": 0
+    "native_pilot": "partial_completed; products/guards closed normally, later supervisor watchdog timeout retained",
+    "scored_runs": 0,
+    "original_frames": 181,
+    "input_events": 61
   }
 }
