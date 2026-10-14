@@ -105,4 +105,17 @@ Ziel und Positionsoverride gegen beide Buchungstabellen bleiben zu prüfen.
    Nur belegte Engstellen ändern; keine zusätzliche persistierte Simulation oder
    Hintergrundlaufzeit einführen.
 3. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
+
+## 200-Actor-Baseline
+
+`npm run bench:autonomy` misst 20 unabhängige Läufe mit 200 aktivierten,
+unplatzierten Actors, einem global erreichbaren, nicht exklusiven Guard-Angebot,
+15 Minuten bestätigter Zeit und höchstens zwölf Catch-up-Schritten je Actor.
+Der dokumentierte lokale Lauf vom 14.10.2026 ergab p95 25,13 ms für Capture,
+349,46 ms für Catch-up samt View und 13,29 ms für einen separaten View; höchster
+beobachteter Worker-RSS: 112.451.584 Bytes. Ein erster bestätigter Schritt belegte
+median 344.064 Bytes inklusive SQLite-Seitenzuwachs, keine Langzeit-Wachstumsrate.
+Mehrere lokale Kandidaten, räumliche Adapter, Kamerafreiheit und unabhängige Reads
+sind damit nicht qualifiziert. Der DOM-Test prüft sofortigen Status und gesperrten
+Startknopf bei offener Commandantwort, keine native Reaktionszeit.
    laufenden Catch-ups prüfen.
