@@ -44,6 +44,16 @@ Campaign-Kopien remappen kampagnenlokale Identitäten. Der fachliche Logwert
 `intervalId: "manual"` bleibt dabei in SQL und Payload unverändert; Actor- und
 Campaignowner werden remappt.
 
+## Begründete Pending-Entscheidung
+
+Ein Zeitkonflikt bleibt als pausierter Actorstand erhalten, bis der GM ihn über
+`accept-pending` ausdrücklich klärt. Pause-, Actor- und Gruppenbefehle dürfen
+diesen Zustand nicht nebenbei aufheben. Die Oberfläche zeigt den Abstand zwischen
+Actor- und Scenezeit aus den persistierten Entscheidungsfakten sowie den aktuellen
+World- und gegebenenfalls Dungeonstand. Fortsetzen mit diesem Worldstand und das
+Auslassen des Zeitraums verlangen beide eine Begründung; Auflösung und Begründung
+werden geloggt und bleiben nach Fresh nachvollziehbar.
+
 ## Lokaler Nachweis und Aussagegrenze
 
 `tests/core/autonomy-persistence-integrity.test.ts` belegt korrekt neu gehashte
@@ -55,8 +65,12 @@ Reservierungen, beide Buchungstypen, Logs, Receipts und Campaign-Remap.
 
 `tests/core/autonomy-scene-time-boundary.test.ts` belegt, dass automatischer
 Catch-up an der bestätigten Uhr der auslösenden Scene endet und ein bereits
-späterer Actorstand nicht zurückgerollt wird. Diese SQLite-Nachweise sind keine
-native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
+späterer Actorstand nicht zurückgerollt wird. Der Test belegt außerdem die
+persistente Pause, die Sperre alternativer Aufhebungswege und die begründete
+Auflösung nach einem Neustart. `tests/core/autonomy-time-conflict-ui.test.ts`
+prüft am vollständigen DOM die Zeit-/Worldinformationen und beide begründeten
+Entscheidungen. Diese SQLite- und DOM-Nachweise sind keine native Bedien-,
+Hardcrash-, Größen- oder vollständige Produktabnahme.
 
 [Aktivierungs-/Rastprüfungen](../../../tests/desktop-autonomy-disable-time.test.mjs)
 belegen übersprungene inaktive Zeit, erhaltene Standard-/Custom-Needs nach Kopie,
@@ -67,14 +81,12 @@ und Reaktivierung mit erneuter exklusiver Zuweisung bleiben gemeinsam abzunehmen
 
 ## Nächste ausführbare Schritte
 
-1. Den manuellen Zeitkonflikt in `autonomy-ui.ts` als vollständigen GM-Ablauf
-   prüfen: Ursache und betroffene Scenezeit verstehen, aktuellen Worldstand
-   vergleichen, begründet fortsetzen oder Zeitraum überspringen, nach Fresh
-   denselben Pendingstand sehen.
-2. Dungeonbewegung, Fallenreset und begrenzten NPC-Konflikt jeweils nach einer
+1. Dungeonbewegung, Fallenreset und begrenzten NPC-Konflikt jeweils nach einer
    vorherigen Actorwirkung fehlschlagen lassen. Actorcursor, World-/Feature-/HP-
    Owner, Logs, Buchungen und Receipt müssen gemeinsam zurückrollen; Retry darf
    genau einmal wirken.
-3. Danach 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
+2. Danach 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
    Nur belegte Engstellen ändern; keine zusätzliche persistierte Simulation oder
    Hintergrundlaufzeit einführen.
+3. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
+   laufenden Catch-ups prüfen.

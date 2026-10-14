@@ -1,3 +1,4 @@
+import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
 import {installNpcRecords,validateNpcRecords} from './npc-record';
 import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
@@ -113,12 +114,14 @@ export class CampaignStore {
     if (typeof applicationVersion !== 'string' || !applicationVersion.trim() || applicationVersion.length > 128) throw new Error('Anwendungsversion fehlt.');
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
+    const schema = this.db.pragma('user_version', { simple: true });
+    if(schema===44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
+    if (schema > 44) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     this.extensionRegistry=new ExtensionRegistry(this.db);
     const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
     if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) { this.db.close(); throw new Error('SQLite-Wartungsstand zu alt.'); }
     this.db.pragma('foreign_keys=ON'); this.db.pragma('journal_mode=WAL'); this.db.pragma('synchronous=FULL'); this.db.pragma('secure_delete=ON'); this.db.pragma('busy_timeout=5000');
-    const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 43) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+
 
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS campaign(id TEXT PRIMARY KEY, name TEXT NOT NULL, selected_id TEXT, cursor INTEGER NOT NULL DEFAULT 0) STRICT;
@@ -184,7 +187,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      this.db.pragma('user_version=43');
+      this.db.pragma('user_version=44');
 
     }).immediate();
   }
@@ -435,7 +438,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
-    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
+    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
     validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
@@ -560,6 +563,7 @@ export class CampaignStore {
   encounterPlan(token: string, id: string) { return readEncounterPlan(this.db,this.guard(token),id); }
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   progressHistory(token: string, characterId: string, after: string | null) { return readProgressHistory(this.db, this.guard(token), characterId, after); }
+  keepChaseDraft(token:string,draft:import('../chase-draft-contracts').ChaseWorkingDraft,expected:string|null){return keepChaseDraft(this.db,this.guard(token),draft,expected);}
   chase(token:string,sceneId:string,id?:string){return readChase(this.db,this.guard(token),sceneId,id);}
   executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
@@ -665,7 +669,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==this.db.pragma('user_version',{simple:true})&&!([33,34,35,36,37,38,39,40,41,42].includes(schema)&&this.db.pragma('user_version',{simple:true})===43))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
+    if(schema!==this.db.pragma('user_version',{simple:true})&&!([33,34,35,36,37,38,39,40,41,42,43].includes(schema)&&this.db.pragma('user_version',{simple:true})===44))throw new Error('Kampagnenpaket benötigt einen anderen Formatstand.');
 
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
@@ -694,7 +698,8 @@ export class CampaignStore {
       const sha256=snapshotDigest(candidate);
       if(expectedDigest!==undefined&&sha256!==expectedDigest)throw new Error('Geprüfte Paketdatenbank wurde verändert.');
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
-      if([33,34,35,36,37,38,39,40,41,42].includes(c.schema)){installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installChaseSchema(source);installSceneCheckSchema(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=43');}
+      if([33,34,35,36,37,38,39,40,41,42,43].includes(c.schema)){installChaseSchema(source);installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=44');}
+
       installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
