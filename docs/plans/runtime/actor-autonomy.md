@@ -45,15 +45,41 @@ Autonomyprüfungen und 23 Chase-/Lootintegrationsprüfungen bestanden 43 Tests u
 der Desktop-Typecheck. Das sind lokale SQLite-/kontrollierte DOM-Belege; native
 Bedienung, Prozessabbruch, Cancel und gesamte Autonomyqualifikation bleiben offen.
 
+## Historische Jobs und lokaler Mehractor-Rollback
+
+`checkedIntervalRow` in `storage/autonomy.ts` prüft nun bestätigte Intervalle im
+Catch-up und in der Backup-/Exportvalidierung: Intervall-/Scene-/Epochidentitäten,
+positive Ordnungsnummer, kanonische nichtnegative Millisekunden und strikt
+vorwärts laufende Zeitgrenzen; Actor-/Joblisten besitzen eindeutige Identitäten.
+Jeder historische Job durchläuft `checkedAutonomyJob`. Dabei bleiben seine
+aufgezeichneten Werte erhalten; heutige Jobrevisionen ersetzen sie nicht.
+
+Drei korrekt gehashte Gegenbeispiele passierten zuvor den Reader: ungültige
+historische Jobsteuerung, doppelte Jobidentität und umgekehrte Zeitgrenzen.
+`desktop-autonomy-interval-integrity.test.mjs` prüft deren Ablehnung vor Wirkung,
+unveränderte Datenbytes und erhaltene frühere Backup-/Exportdateien. Ein gültiger
+historischer Job bleibt nach heutiger Jobänderung und Fresh unverändert.
+Eine unabhängige Campaignkopie remappt die Actor-/Jobidentitäten in der
+Intervallbasis konsistent und kann ihren Catch-up ausführen; die Paketbytes
+bleiben unverändert. Die
+bestehende Ownerrevisionregel pausiert Catch-up bei geänderter aktueller Quelle.
+
+Eine weitere Storeprobe lässt den zweiten NPC-Positionsowner seine Bewegung
+ablehnen, nachdem der erste Actor bewegt wurde. Der äußere Catch-up-Writer rollt
+beide Actor-/Worldzustände, Logs, Buchungen und Commandreceipt zusammen zurück.
+Ein erneuter bestätigter Command bewegt beide Actors genau einmal. Dieser lokale
+Mehractorbeleg erweitert den bisherigen Jobnachweis; Hardcrash, Cancel und alle
+Dungeon-/Trap-/Konfliktownerwirkungen sind weiterhin gesondert zu qualifizieren.
+
 ## Nächste ausführbare Schritte
 
-1. **Historische Zeitbasis schließen.** `validateAutonomy` und `catchUpAutonomy`
-   prüfen gespeicherte Intervalle derzeit vor allem über ihren Hash. Die damaligen
-   `basis.jobs` ebenfalls mit der reinen Jobprüfung lesen; Runtime-/Zeitfelder und
-   Snapshotidentitäten gesondert binden. Keine Prüfung historischer Targets gegen
-   ausschließlich heutige aktive Inhalte: archivierte Herkunft muss erhalten
-   bleiben. Abnahme: alter gültiger Job, spätere Job-/Raumänderung, korrekt gehashte
-   beschädigte Intervallbasis und Fresh; Catch-up verändert keinen Teilzustand.
+1. **Historische Zeitbasis vervollständigen.** Die Jobs und Intervallgrenzen sind
+   geprüft. Historische Actorsteuerung/Needs, Positions-/Dungeon-/Routensnapshots,
+   Features und Runtimebeziehungen brauchen weiterhin eigene Shape-/Wertregeln.
+   Reine Validatoren mit aktuellen Writerregeln teilen, ohne damalige Targets
+   gegen ausschließlich heutige aktive Inhalte zu prüfen. Archivierte Herkunft
+   muss erhalten bleiben. Abnahme: gültige alte Revisionen, korrekt gehashte
+   beschädigte Snapshot-/Actorwerte und Fresh; keine Teilwirkung oder Umdeutung.
 2. **Reservierungs-/Receipt-/Logabschluss prüfen.** `autonomy_booking`,
    `autonomy_reservation`, `autonomy_log` und `autonomy_receipt` bei Backup und
    Transfer fachlich prüfen. IDs und Campaignowner, Zeitbereiche sowie historische
@@ -63,9 +89,11 @@ Bedienung, Prozessabbruch, Cancel und gesamte Autonomyqualifikation bleiben offe
 3. **Zeit-/Ownerwirkung gemeinsam qualifizieren.** Den realen
    `CampaignStore.executeLive`-/Catch-up-Anschluss mit World-/Dungeon-/Trap-/Actor-
    Effekten prüfen: vor Partygefahr pausieren, auf Ownerfehler den ganzen
-   betreffenden Step zurückrollen, damalige Grundlage nicht umdeuten. Ein Limit
-   pro Actor ist noch kein Nachweis der Gesamtstep-Atomarität. Gezielt einen
-   Ownerfehler zwischen zwei Actorwirkungen sowie Resume nach Fresh prüfen.
+   betreffenden Step zurückrollen, damalige Grundlage nicht umdeuten. Der geprüfte
+   Zwei-Actor-Positionsfehler ist ein lokaler Teilbeleg. Dungeonbewegung,
+   Trap-Reset und Zufallskonflikte jeweils nach vorheriger anderer Actorwirkung
+   fehlschlagen lassen; Logs, Buchungen, Gesundheit und Zeitcursor vergleichen.
+   Prozessabbruch/Cancel sowie Resume nach Fresh zusätzlich prüfen.
 4. **Bedienbarkeit und Größenfall messen.** `autonomy-ui.ts` mit A/B/A,
    unbestätigten Rohwerten, Pending/Replyverlust, erklärtem Jobausschluss und
    Tastatur prüfen. Danach 200 Actors unter der Quellbedingung für ≤2 s p95 und
