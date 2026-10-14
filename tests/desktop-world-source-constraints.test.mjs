@@ -1,18 +1,19 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,mkdirSync,copyFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
+mkdirSync('.build/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json');
 buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {resolveWorldSources} from './src/app/storage/world-sources';",resolveDir:process.cwd(),sourcefile:'world-source-constraints.ts',loader:'ts'},outfile:'.build/world-source-constraints.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,resolveWorldSources}=createRequire(import.meta.url)('../.build/world-source-constraints.cjs');
 function fixture(t){
  const root=mkdtempSync(path.join(tmpdir(),'world-source-constraints-')),store=new CampaignStore(path.join(root,'store.sqlite')),cam=store.create('Weltquellen'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});
  const factions=['A','B'].map(title=>{const note={version:1,id:randomUUID(),revision:1,kind:'faction',title,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};store.changePreparation({...command(null),change:{kind:'note',note,expectedRevision:null}});return note.id;});
  const tables=factions.map((id,i)=>{const table={id:randomUUID(),revision:0,scope:'campaign',name:'Tabelle '+i,description:'',entries:[{creatureId:i?'wolf':'goblin',weight:'1'}],habitats:[],time:'any',lootTableId:null,trashed:false};store.executeGeneration(command({kind:'table-save',table,expectedRevision:null}));return table.id;});
- const save=(kind,id,tableIds,factionIds=[],stock=[],expectedRevision=null)=>store.executeGeneration(command({kind:'source-save',source:{kind,id,revision:0,tableIds,factionIds,stock},expectedRevision}));
+ const save=(kind,id,tableIds,factionIds=[],stock=[],expectedRevision=null)=>store.executeGeneration(command({kind:'source-save',source:{kind,id,revision:expectedRevision??0,tableIds,factionIds,stock},expectedRevision}));
  const request={tableIds:[],factionIds:factions,locationId:null},resolve=changes=>resolveWorldSources(store.db,cam.id,{...request,...changes},store.encounterTables(w.token,true));
  return{root,store,cam,w,command,factions,tables,save,resolve};
 }
