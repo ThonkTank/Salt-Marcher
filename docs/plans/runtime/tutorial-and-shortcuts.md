@@ -58,3 +58,7 @@ keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.
 4. Native Versionsänderung, alter terminaler Run, korrupter Record, hängender
    initialer Read und Help vor Antwort prüfen. Linux/Windows/macOS, Kontrast,
    Nicht-Farbsignale und Laptoplayout benötigen ihre betroffenen Abnahmen.
+
+Die Einstiege für Gegenstände und Shops erklären Definitionen, Bestand und
+Handel; Schatzverwaltung und gemeinsame Verteilung bleiben eigene Lektionen.
+Native Bedienung dieser neuen Lektionen ist weiterhin separat zu prüfen.
