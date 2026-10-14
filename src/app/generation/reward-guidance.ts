@@ -8,3 +8,9 @@ function magicTargetAtXp(xp:number,rarity:BudgetRarity,rules:RewardGuidanceRules
 export function rewardGuidance(level:number,partySize:number,rewardXp:number,rules:RewardGuidanceRules){const start=rules.progression.find(r=>r.level===level)?.xpAtLevel;if(start===undefined)throw new Error('Beute-Preset besitzt für das Ziellevel keine Fortschrittszeile.');const perCharacter=Math.floor(rewardXp/partySize),after=start+perCharacter;return{goldCopper:String(roundHalfUp(multiply(subtract(goldTargetAtXp(after,rules),goldTargetAtXp(start,rules)),rational(BigInt(partySize))))),magic:Object.fromEntries(budgetRarities.map(r=>[r,toNumber(multiply(subtract(magicTargetAtXp(after,r,rules),magicTargetAtXp(start,r,rules)),rational(BigInt(partySize))))])) as Record<BudgetRarity,number>};}
 
 export function cumulativeGoldCopper(xp:number,rules:RewardGuidanceRules):string{if(!Number.isSafeInteger(xp)||xp<0)throw new Error('Kumulierte XP benötigen eine nichtnegative ganze Zahl.');return String(roundHalfUp(goldTargetAtXp(xp,rules)));}
+
+export function cumulativeMagicGuidance(xps:number[],rules:RewardGuidanceRules){
+ if(xps.some(xp=>!Number.isSafeInteger(xp)||xp<0))throw new Error('Magiebeute benötigt bestätigte nichtnegative XP.');
+ const totals=budgetRarities.map(r=>[r,xps.reduce((n,xp)=>add(n,magicTargetAtXp(xp,r,rules)),rational(0n))] as const);
+ return{expected:Object.fromEntries(totals.map(([r,n])=>[r,toNumber(n)])) as Record<BudgetRarity,number>,quota:Object.fromEntries(totals.map(([r,n])=>[r,Number(roundHalfUp(n))])) as Record<BudgetRarity,number>};
+}

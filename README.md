@@ -397,3 +397,37 @@ Es handelt sich um einen eigenen Modus für benannte Gegner; gemischte
 NPC-/Katalogpools und automatische magische Seltenheitsquoten bleiben offen.
 Bestand wird pro Begegnung begrenzt, nicht über den ganzen Spielabend reserviert.
 Schema43 bleibt unverändert, neue Entry-/Run-Felder sind optional.
+
+
+### Desktopstand 0.44: magische Beute und Katalogauswahl
+
+Der zusätzliche Magiebeute-Modus vergleicht die vorhandene versionierte
+Presetkurve mit bestätigten Charakter-XP und erhaltenen Gegenständen nach
+Common, Uncommon, Rare, Very Rare und Legendary. Käufe und Weitergaben werden
+nicht nochmals als Belohnung gezählt; die ursprüngliche Vergabe bleibt auch
+nach Verkauf oder Weitergabe berücksichtigt. Erwartungswerte bleiben als
+Bruchteile gespeichert, neue ganzzahlige Kontingente werden einmal für den
+ganzen Spielabend kaufmännisch gerundet und auf Szenen verteilt. Überschüsse
+können die neue Menge einer Seltenheit auf0 senken.
+
+In diesem Modus werden monetäre Beute und magische Gegenstände getrennt
+berechnet. Magiebeute ohne bekannten Preis bleibt nach Seltenheit auswertbar.
+Eine fehlende Seltenheit in erhaltener Magiebeute erfordert Katalogkorrektur
+oder Opt-out. Der bisherige rein monetäre Modus und alte Vorschauen bleiben
+verfügbar. Die Formel verwendet weiterhin das vorhandene Preset und behauptet
+keine vollständige publizierte DMG-Herleitung.
+
+Passende magische Tabellenitems bleiben im Rahmen der Kontingente erhalten;
+der Katalog ergänzt konkrete revisionierte Gegenstände. Fehlende
+Seltenheitsquellen erscheinen als offene Mengen mit Hinweisen. Der Generator
+erfindet keine Gegenstandsdefinitionen. Einzelne Beuteregeneration verwendet
+die gespeicherten Ziele, auch ohne verknüpfte Beutetabelle. Die Vorschau vergibt
+keine Gegenstände und verändert weder Ledger noch platzierte Schätze.
+
+Im Vorschlagseditor lassen sich Kataloggegenstände nach Text, Magie und
+Seltenheit suchen und mit ihrer Definition zur Belohnung hinzufügen. Referenzierte
+Namen/Eigenschaften bleiben gebunden; Als eigenen Eintrag bearbeiten löst diese
+Bindung ausdrücklich. Mengen und freie Einträge bleiben bearbeitbar. Übernahme
+in die Timeline, Platzierung und Kampagnentransfer erhalten die Referenzen.
+Schema43 unverändert, zusätzliche Guidance-/Proposal-Felder optional. Gemischte
+NPC-/Katalogpools und getrennte Verbrauchs-/Dauermagiequoten bleiben offen.
