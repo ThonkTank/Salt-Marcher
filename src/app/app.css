@@ -114,3 +114,17 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 .session-selection-dialog{width:min(780px,calc(100vw - 48px));max-height:85vh;overflow:auto}
 .session-selection-dialog li{padding:8px 0;border-bottom:1px solid #dce2e8}
 .session-selection-dialog li p{white-space:pre-wrap;margin:6px 0}
+
+#narrative-journal{width:min(1260px,calc(100vw - 48px));max-width:min(1260px,calc(100vw - 48px));max-height:90vh;overflow:auto}
+.journal-reading{min-width:0;overflow-wrap:anywhere}
+.journal-reading button{max-width:100%;white-space:normal}
+.journal-columns{display:grid;grid-template-columns:minmax(240px,1fr) minmax(340px,2fr);gap:24px;align-items:start}
+.journal-index{position:sticky;top:0;background:#fff}
+#journal-list{display:grid;gap:6px;max-height:48vh;overflow:auto}
+#journal-list button{text-align:left;padding:10px 12px;display:grid;gap:5px}
+#journal-list button span{font-size:13px;color:#526478}
+#journal-list button[aria-pressed=true]{border-color:#2365a0;background:#edf5fb}
+.journal-read-aloud{white-space:pre-wrap;border-left:3px solid #38855c;padding:10px 14px;background:#f1f8f3}
+.journal-gm-notes{white-space:pre-wrap}
+#journal-narrative-editor{margin-top:24px;border-top:1px solid #dce2e8;padding-top:12px}
+@media(max-width:900px){.journal-columns{grid-template-columns:1fr}.journal-index{position:static}#journal-list{max-height:30vh}}

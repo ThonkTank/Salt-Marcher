@@ -163,6 +163,7 @@ else {
     handle('campaign:discard-finish-draft',(token:string,owner:any,writeId:string)=>store.discardFinishDraft(token,owner,writeId));
     handle('campaign:keep-narrative-draft',(token:string,draft:any,expected:string|null)=>store.keepNarrativeDraft(token,draft,expected));
     handle('campaign:discard-narrative-draft',(token:string,id:string,writeId:string)=>store.discardNarrativeDraft(token,id,writeId));
+    handle('campaign:narrative-journal',(token:string,query:import('../src/app/narrative-journal-contracts').NarrativeJournalQuery)=>store.narrativeJournal(token,query));
     handle('campaign:narrative',(token:string,id:string)=>store.narrative(token,id));
     handle('campaign:progress-history', (token: string, characterId: string, after: string | null) => store.progressHistory(token, characterId, after));
     handle('campaign:adventuring-day',(token:string,request:import('../src/app/adventuring-day-contracts').DayRequest)=>store.adventuringDay(token,request));

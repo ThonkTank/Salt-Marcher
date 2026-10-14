@@ -1,3 +1,4 @@
+import {readNarrative} from './narrative';
 import {readSessionProgress} from './visit-outcomes';
 import {visitOutcomeLabel} from '../visit-outcome-contracts';
 import {createHash} from 'node:crypto';
@@ -17,6 +18,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
   const row=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);
   if(!row||row.trashed){warnings.push('Weltverweis '+id+' fehlt oder liegt im Papierkorb.');cache.set(key,[]);return [];}
   const n=worldNoteDocument(payload(row)),blocks:SessionPacketBlock[]=[{heading:n.title+' · '+n.kind,text:n.gmNotes,kind:'reference'}];
+  if(n.kind==='quest'||n.kind==='rumor'){const v=readNarrative(db,cam,n.id);blocks.push({heading:n.title+' · Status und Belohnung',kind:'gm',text:[v.state.status==='closed'?'Geschlossen':'Offen',v.award?'Belohnung bereits vergeben':v.state.poolXp+' Gruppen-XP vorbereitet',...(!v.award?v.state.items.map(i=>i.quantity+' × '+i.name):[]),v.award?'Bestätigtes Ergebnis · '+v.award.recordedAt+'\n'+v.award.outcome:'',v.draft?'Gesicherte Eingabe vorhanden; diese Mappe zeigt den bestätigten Stand.':''].filter(Boolean).join('\n')});}
   if(n.readAloud.trim())blocks.unshift({heading:n.title+' · Zum Vorlesen',text:n.readAloud,kind:'read-aloud'});
   if(n.relations.length)blocks.push({heading:n.title+' · Beziehungen',text:n.relations.map(r=>{const target=db.prepare('SELECT payload,checksum,trashed FROM world_note WHERE campaign_id=? AND id=?').get(cam,r.targetId);return r.label+' → '+(target&&!target.trashed?worldNoteDocument(payload(target)).title:r.targetId);}).join('\n'),kind:'reference'});
   cache.set(key,blocks);return blocks;

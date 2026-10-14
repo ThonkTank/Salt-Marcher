@@ -1,3 +1,4 @@
+import {readNarrativeJournal} from './narrative-journal';
 import {readSessionProgress} from './visit-outcomes';
 import {readSessionPacket} from './session-packet';
 import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
@@ -600,6 +601,7 @@ export class CampaignStore {
   discardFinishDraft(token:string,owner:import('../finish-draft-contracts').FinishOwner,writeId:string){return discardFinishDraft(this.db,this.guard(token),owner,writeId);}
   keepNarrativeDraft(token:string,draft:import('../narrative-contracts').NarrativeDraft,expected:string|null){return keepNarrativeDraft(this.db,this.guard(token),draft,expected);}
   discardNarrativeDraft(token:string,id:string,writeId:string){return discardNarrativeDraft(this.db,this.guard(token),id,writeId);}
+  narrativeJournal(token:string,query:import('../narrative-journal-contracts').NarrativeJournalQuery){return readNarrativeJournal(this.db,this.guard(token),query);}
   narrative(token:string,id:string){return readNarrative(this.db,this.guard(token),id);}
   adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest){return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
   executeProgress(command: ProgressCommand) { return this.db.transaction(() => {

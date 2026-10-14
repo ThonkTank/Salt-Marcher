@@ -51,6 +51,7 @@ export async function showNarrative(
   drain: () => Promise<boolean>,
   tell: (s: string, error?: boolean) => void,
   targetPanel?:HTMLElement,
+  onSaved?:()=>void,
 ) {
   const panel = targetPanel??el("narrative-editor"),
     key = w && note ? panel.id+":"+w.token + ":" + note.id : "";
@@ -196,7 +197,7 @@ export async function showNarrative(
         savedVersion = -1;
         void persist();
       }
-      tell("Quest-/Gerüchtstatus und Belohnung gespeichert.");
+      tell("Quest-/Gerüchtstatus und Belohnung gespeichert.");onSaved?.();
       return true;
     } catch (e) {
       if (current()) tell((e as Error).message, true);
