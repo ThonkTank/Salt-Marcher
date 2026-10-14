@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import type {ChronicleEntry} from '../../src/app/chronicle-contracts';
-import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion} from '../../src/app/live-session-close';
+import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls} from '../../src/app/live-session-close';
 
 function fixture(){
   const {document}=parseHTML('<dialog open></dialog><textarea id="draft"></textarea><textarea id="review"></textarea>');
@@ -37,4 +37,10 @@ test('an empty latest session handoff does not revive older completed work',()=>
 
 test('the latest completed session handoff remains visible during the next session',()=>{
   assert.equal(latestCompletedSessionHandoff([marker('current','start'),marker('latest','end','Am Nordtor fortsetzen'),marker('old','end','Alte Aufgabe')]),'Am Nordtor fortsetzen');
+});
+
+test('returning sessions enter through the preparation dashboard without a duplicate start action',()=>{
+  assert.deepEqual(sessionStartControls({open:false,marker:null}),{start:true,resume:false});
+  assert.deepEqual(sessionStartControls({open:false,marker:marker('latest','end')}),{start:false,resume:true});
+  assert.deepEqual(sessionStartControls({open:true,marker:marker('current','start')}),{start:false,resume:false});
 });

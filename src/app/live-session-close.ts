@@ -1,4 +1,5 @@
 import type {ChronicleEntry} from './chronicle-contracts';
+import type {LiveSessionRecap} from './live-session-recap';
 
 export type SessionCloseReviewExit='discard'|'continue';
 export interface SessionCloseHandoffInput{sceneTitle:string;locationTitle?:string|null;masks:{kind:'combat'|'chase';title:string;sceneTitle:string}[];treasureCount:number;xpBooked:boolean}
@@ -13,6 +14,10 @@ export function sessionCloseHandoffSuggestion(input:SessionCloseHandoffInput){
 
 export function latestCompletedSessionHandoff(entries:ChronicleEntry[]){
   return entries.find(entry=>entry.sessionMarker==='end')?.handoff??'';
+}
+
+export function sessionStartControls(recap:Pick<LiveSessionRecap,'open'|'marker'>){
+  return{start:!recap.open&&!recap.marker,resume:!recap.open&&!!recap.marker};
 }
 
 export function leaveSessionCloseReview(dialog:HTMLDialogElement,draft:HTMLTextAreaElement,review:HTMLTextAreaElement,exit:SessionCloseReviewExit){
