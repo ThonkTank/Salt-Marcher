@@ -3,7 +3,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
-import {standardNeeds,type AutonomyActor} from '../../src/app/autonomy-contracts';
+import {standardNeeds,type AutonomyActor,type AutonomyJob} from '../../src/app/autonomy-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
@@ -70,4 +70,26 @@ test('an already newer actor state requires a reasoned decision that survives re
     const afterRejected=reopened.autonomy(workspace.token).actors.find(value=>value.id===f.actorId)!;assert.equal(afterRejected.revision,fresh.revision);assert.equal(afterRejected.pending,fresh.pending);assert.equal(afterRejected.paused,true);
     reopened.executeAutonomy({commandId:'resume-pending',campaignId:f.campaignId,token:workspace.token,action:{kind:'accept-pending',actorId:f.actorId,expectedRevision:fresh.revision,resolution:'resume',reason:'Aktuellen Worldstand geprüft'}});const resumed=reopened.autonomy(workspace.token);assert.equal(resumed.actors.find(value=>value.id===f.actorId)!.pending,null);assert.equal(resumed.actors.find(value=>value.id===f.actorId)!.paused,false);assert.match(resumed.logs[0]!.text,/Aktuellen Worldstand geprüft/);
   }finally{reopened?.close();if(!originalClosed)f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('job selection logs a bounded deterministic explanation',()=>{
+  const f=fixture();
+  try{
+    f.store.executeLive({commandId:'move-secondary-away',campaignId:f.campaignId,token:f.token,action:{kind:'scene-content',sceneId:f.secondaryId,expectedRevision:1,title:'Zweite Gruppe',notes:'',readAloud:'',locationId:'place-a'}});
+    const current=f.store.autonomy(f.token).actors.find(value=>value.id===f.actorId)!;
+    current.role='wache';current.jobPriorities={'job-a':2};current.needs.find(need=>need.id==='hunger')!.value=20;
+    f.store.executeAutonomy({commandId:'explain-actor',campaignId:f.campaignId,token:f.token,action:{kind:'actor',actor:current,expectedRevision:current.revision,initialLocationId:null}});
+    const job=(id:string,name:string,priority:number,roles:string[]=[],needEffects:Record<string,number>={}):AutonomyJob=>({id,revision:1,name,kind:'work',locationId:null,routeId:null,targetActorId:null,roles,priority,durationSeconds:3600,exclusive:false,enabled:true,needEffects,maxDamage:0});
+    for(const value of [job('job-b','Tor prüfen',32),job('job-a','Vorräte ordnen',10,[],{hunger:1}),...Array.from({length:8},(_,index)=>job('job-role-'+index,'Schmiede '+index,100,['schmied']))])f.store.executeAutonomy({commandId:'create-'+value.id,campaignId:f.campaignId,token:f.token,action:{kind:'job',job:value,expectedRevision:null}});
+    advance(f,'explain-time',f.primaryId,0,1);
+    f.store.executeAutonomy({commandId:'explain-catch-up',campaignId:f.campaignId,token:f.token,action:{kind:'catch-up',actorIds:[f.actorId],maxSteps:12}});
+    const view=f.store.autonomy(f.token),entry=view.logs.find(value=>value.actorId===f.actorId&&value.kind==='job');assert.ok(entry,JSON.stringify(view.logs));
+    assert.equal(entry.facts.jobId,'job-a');assert.equal(entry.facts.priority,32);
+    assert.deepEqual(entry.facts.considered,[
+      {jobId:'job-a',name:'Vorräte ordnen',priority:32,reason:'Grundpriorität 10 + NPC-Bonus 2 + Hunger 20 × 1 = 20'},
+      {jobId:'job-b',name:'Tor prüfen',priority:32,reason:'Grundpriorität 32'}
+    ]);
+    assert.deepEqual(entry.facts.excluded,Array.from({length:6},(_,index)=>'Schmiede '+index+': Rolle wache ist nicht zugelassen'));assert.equal(entry.facts.excludedRemaining,2);
+    assert.equal(entry.facts.tieBreak,'Priorität absteigend, bei Gleichstand Job-ID aufsteigend');
+  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
