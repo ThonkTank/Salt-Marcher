@@ -15,7 +15,7 @@ import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
 import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
-import {canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -359,8 +359,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
     const{followUp,...moment}=draft,ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...moment,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;
     let refreshProblem=false;if(followUp){const refreshed=await window.campaign.preparation(token!,'');if(context?.token===token&&refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}
     const clear=canClearSavedLiveMoment(scene.id,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());liveMomentDrafts.saved(scene.id);if(clear)writeLiveMomentDraft(emptyLiveMomentDraft());
-    const saved=followUp?(followUp==='quest'?' und als offene Quest vorbereitet.':' und als Gerücht vorbereitet.'):' in der Kampagnenchronik gespeichert.',refresh=refreshProblem?' Wissensbinder bei Bedarf aktualisieren.':'';
-    get('live-moment-result').textContent=(clear?'Moment gespeichert'+saved:'Moment gespeichert'+saved+' Neuere Eingabe bleibt offen.')+refresh;get<HTMLInputElement>('live-moment-title').focus();
+    get('live-moment-result').textContent=liveMomentSavedMessage(followUp,clear,refreshProblem);get<HTMLInputElement>('live-moment-title').focus();
   })();};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
