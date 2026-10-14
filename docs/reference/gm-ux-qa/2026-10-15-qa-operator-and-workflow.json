@@ -16,13 +16,19 @@
     "KWrite",
     "Obsidian Core"
   ],
-  "native_observations": "Original native UI, actual guarded process identities and normal own-job shutdowns recorded; Obsidian native note survives normal close and fresh process reopen. Historical failures retained.",
+  "native_observations": "Original native UI and guarded identities recorded. Complete real GM exploration across five normal product/WM/service/jobs with unchanged build/run/profile/monotonic epoch; original files and final raw archive match. Saved state and geometry persist through fresh process. No full product/current Main/human acceptance claimed.",
   "independent_infrastructure_review_threads_completed": 2,
   "first_actual_gm_workflow": {
     "commit": "1a06f6ebd546cee5ca73c5e61b11a89f3c31a5ce",
     "version": "0.70.0",
-    "status": "running_prepare_play_resume_in_fresh_chat",
-    "kind": "product_exploration_not_formal_comparison"
+    "status": "complete_exploration_normal_run_end",
+    "kind": "product_exploration_not_formal_comparison",
+    "stage_outcomes": {
+      "PREPARE": "complete",
+      "PLAY": "partial",
+      "RESUME": "complete"
+    },
+    "independent_result_examination_completed": true
   },
   "formal_W01": "Draft only; locale/product scaling and reveal/launch ordering must be evidenced before quantitative comparison registration. Ordinary exploration continues independently.",
   "source_sha256": {
@@ -33,5 +39,13 @@
     "runtime/infrastructure/stable06/src/service.py": "daca799e5baa5565f62e0e65f57a8711930c5cddee5dde80814cf0edcfb7b802",
     "runtime/infrastructure/stable06/src/x11.py": "8bd13a63347ede0d78575c2d788cce3387a2c5f0aace0506e019c12491a4d003"
   },
-  "evidence_policy": "Private scenario answers, raw personal filesystem views, cookies, authorization files and reviewer/control judgments are not published in this repository."
+  "evidence_policy": "Private scenario answers, raw personal filesystem views, cookies, authorization files and reviewer/control judgments are not published in this repository.",
+  "raw_integrity_checks": {
+    "final_inventory_bindings": 1121,
+    "original_frame_hashes": 1016,
+    "executed_source_snapshot_bindings": 50,
+    "mismatches": 0
+  },
+  "product_observation_scope": "Partial product outcome on0.70.0, recorded symptoms require current-integration reproduction before implementation. This technical report contains no reviewer/control judgments or private tester answers.",
+  "automation_configuration": "All four existing heartbeats remain ACTIVE; schedules, target threads, model/reasoning and permission settings verified unchanged. QA/Planner/Realist recurring instructions updated; no new automation."
 }
