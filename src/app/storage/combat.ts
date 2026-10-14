@@ -43,8 +43,7 @@ function decode(row: any): CombatState {
   if (state.id !== row.id || state.sceneId !== row.scene_id || state.revision !== row.revision || state.phase !== row.phase) throw new Error('Kampfzuordnung widersprüchlich.');
   return state;
 }
-
-
+export function activeCombat(db:any,campaignId:string,sceneId:string):CombatState|null{const row=db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY ordinal DESC LIMIT 1").get(campaignId,sceneId);return row?decode(row):null;}
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));
@@ -82,7 +81,7 @@ function addCreature(state: CombatState, creature: Creature, count: number, grou
   if(groupId&&!peer)throw new Error('Verstärkung benötigt eine vorhandene Gruppe dieser Kreatur.');
   const shared=peer?.groupId??randomUUID(),sourceEntryId=peer?.sourceEntryId??entryId??randomUUID(),partitionKind=peer?.partitionKind??(grouped?'mob':'individual');state.sources??=[];if(!state.sources.some(c=>c.id===creature.id))state.sources.push(creature);
   state.sourceSerials??={};let serial=state.sourceSerials[creature.id]??Math.max(-1,...state.participants.filter(p=>p.sourceId===creature.id).map(p=>p.sourceOrdinal??-1))+1;
-  for(let i=0;i<count;i++){const id=randomUUID(),actor:Combatant={id,groupId:grouped||peer?shared:id,characterId:null,name:creature.name+' '+label(serial),initiative:peer?.initiative??0,initiativeBonus:peer?.initiativeBonus??creature.initiative,armorClass:creature.ac,hp:creature.hp,maxHp:creature.hp,tempHp:0,conditions:'',concentrating:false,xp:creature.xp,countForMultiplier:true,sourceId:creature.id,sourceOrdinal:serial++,sourceEntryId,partitionKind};if(state.phase==='running'&&creature.legendaryActions.length)actor.legendaryActions={remaining:3,maximum:3,lastResetRound:state.round};state.participants.push(actor);}
+  for(let i=0;i<count;i++){const id=randomUUID(),actor:Combatant={id,groupId:grouped||peer?shared:id,characterId:null,name:creature.name+' '+label(serial),initiative:peer?.initiative??0,initiativeBonus:peer?.initiativeBonus??creature.initiative,armorClass:creature.ac,hp:creature.hp,maxHp:creature.hp,tempHp:0,conditions:'',concentrating:false,xp:creature.xp,countForMultiplier:true,sourceId:creature.id,sourceOrdinal:serial++,sourceEntryId,partitionKind,...(peer?.hiddenFromPlayers?{hiddenFromPlayers:true}:{})};if(state.phase==='running'&&creature.legendaryActions.length)actor.legendaryActions={remaining:3,maximum:3,lastResetRound:state.round};state.participants.push(actor);}
   state.sourceSerials[creature.id]=serial;
 }
 function partyCombatant(character: ReturnType<typeof readLive>['roster'][number],progress: ReturnType<typeof readProgressCharacter>,status?: Pick<Combatant,'tempHp'|'conditions'|'concentrating'>): Combatant {
@@ -231,6 +230,8 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const p=participant();if(typeof a.name!=='string'||!a.name.trim()||a.name.length>500||!Number.isSafeInteger(a.rounds)||a.rounds<1||a.rounds>1000||!['start','end'].includes(a.tick))throw new Error('Rundeneffekt benötigt Name, 1–1000 Runden und einen Zeitpunkt.');p.timedEffects??=[];if(p.timedEffects.length>=100)throw new Error('Zu viele Rundeneffekte für diesen Teilnehmer.');p.timedEffects.push({id:randomUUID(),name:a.name.trim(),remaining:a.rounds,tick:a.tick});
         } else if(a.kind==='effect-remove'){
           const p=participant(),before=p.timedEffects?.length??0;if(typeof a.effectId!=='string'||!a.effectId)throw new Error('Rundeneffekt fehlt.');p.timedEffects=p.timedEffects?.filter(effect=>effect.id!==a.effectId);if((p.timedEffects?.length??0)===before)throw new Error('Rundeneffekt nicht gefunden.');if(!p.timedEffects?.length)delete p.timedEffects;
+        } else if(a.kind==='visibility'){
+          const p=participant();if(p.characterId)throw new Error('Partyfiguren bleiben auf der Spieleranzeige sichtbar.');if(typeof a.hidden!=='boolean')throw new Error('Spielersichtbarkeit prüfen.');if(a.hidden)p.hiddenFromPlayers=true;else delete p.hiddenFromPlayers;
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
           if(p.concentrationChecks?.length)throw new Error('Offene Konzentrationsprüfung zuerst klären.');
