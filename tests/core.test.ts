@@ -89,3 +89,4 @@ import "./core/combat-damage-roll.test";
 import "./core/combat-damage-queue.test";
 import "./core/player-membership-visibility.test";
 import "./core/autonomy-scene-time-boundary.test";
+import "./core/music-scene-context.test";
