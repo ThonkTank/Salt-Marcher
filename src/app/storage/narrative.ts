@@ -74,7 +74,7 @@ export function validateNarrativeState(db:any,cam:string,s:NarrativeState,retain
 
 function checkedNarrativeDraft(value:unknown):NarrativeDraft{
  const d=value as NarrativeDraft,text=(v:unknown)=>typeof v==='string'&&v.length<=1000;
- if(!d||!id(d.noteId)||!id(d.writeId)||!Number.isSafeInteger(d.revision)||d.revision<0||!['open','closed'].includes(d.status)||!nullableId(d.locationId)||!text(d.poolXp)||!Array.isArray(d.contributors)||d.contributors.length>1000||d.contributors.some(v=>!id(v))||new Set(d.contributors).size!==d.contributors.length||!Array.isArray(d.items)||d.items.length>100||Buffer.byteLength(JSON.stringify(d))>256000)throw new Error('Narrative Eingabe ist zu groß oder ungültig.');
+ if(!d||d.noteRevision!==undefined&&(!Number.isSafeInteger(d.noteRevision)||d.noteRevision<1)||!id(d.noteId)||!id(d.writeId)||!Number.isSafeInteger(d.revision)||d.revision<0||!['open','closed'].includes(d.status)||!nullableId(d.locationId)||!text(d.poolXp)||!Array.isArray(d.contributors)||d.contributors.length>1000||d.contributors.some(v=>!id(v))||new Set(d.contributors).size!==d.contributors.length||!Array.isArray(d.items)||d.items.length>100||Buffer.byteLength(JSON.stringify(d))>256000)throw new Error('Narrative Eingabe ist zu groß oder ungültig.');
  for(const item of d.items){const ref=item?.reference;if(!item||!text(item.name)||!text(item.quantity)||!text(item.valueGold)||!categories.includes(item.category)||ref!==undefined&&(ref.kind!=='authored'||!id(ref.definitionId)||!Number.isSafeInteger(ref.revision)||ref.revision<1||ref.historicalDefinitionId!==undefined&&!id(ref.historicalDefinitionId)))throw new Error('Narrative Eingabe ist zu groß oder ungültig.');}
  return d;
 }
@@ -134,12 +134,14 @@ export function consumeNarrativeDraft(
   cam: string,
   id: string,
   writeId?: string,
+  basis?: {revision:number;noteRevision:number},
 ) {
   const d = readNarrativeDraft(db, cam, id);
   if (d && d.writeId !== writeId)
     throw new Error(
       "Offene narrative Eingabe zuerst speichern oder verwerfen.",
     );
+  if(d&&basis&&(d.revision!==basis.revision||d.noteRevision!==basis.noteRevision))throw new Error('Gesicherter narrativer Entwurf hat eine andere oder unbekannte Notiz-/Statusbasis. Entwurf erneut prüfen.');
   if (d)
     db.prepare(
       "DELETE FROM narrative_draft WHERE campaign_id=? AND note_id=?",
