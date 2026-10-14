@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {reconcileCombatParticipants} from '../../src/app/storage/combat';
+import {removePartyFromMasks} from '../../src/app/storage/mask-health';
 import {checkedCombat} from '../../src/app/combat-contracts';
 
 const envelope=(value:object)=>{const payload=JSON.stringify(value);return{payload,checksum:createHash('sha256').update(payload).digest('hex')};};
@@ -17,7 +17,7 @@ test('party movement detaches combat health, advances the turn and closes stale 
     get:()=>sql.includes('character_progress')?progressRow:undefined,
     run:(...values:any[])=>{if(sql.startsWith('UPDATE combat SET'))updated=values;else if(sql.startsWith('DELETE FROM combat_undo'))undo=true;else if(sql.startsWith('INSERT INTO mask_reconciliation'))proof=values;},
   })};
-  reconcileCombatParticipants(db,'campaign-1',['hero-1'],'move-1');
+  removePartyFromMasks(db,'campaign-1',['hero-1'],'move-1');
   const after=JSON.parse(updated[2]),receipt=JSON.parse(proof[5]);assert.equal(after.revision,5);assert.equal(after.turnId,'foe-turn');assert.deepEqual(after.participants.map((p:any)=>p.id),['foe-turn']);assert.equal(undo,true);assert.deepEqual(receipt.removedCharacterIds,['hero-1']);assert.equal(receipt.beforeRevision,4);assert.equal(receipt.afterRevision,5);
 });
 
