@@ -3,7 +3,7 @@ import type { Workspace, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
 import { newLocation } from '../features/location/location-schema';
 import type { ManualPlan } from '../features/planner/manual-planner';
-import {initSession,sessionContext,flushSession} from './session-ui';
+import {initSession,sessionContext,flushSession,clearSessionTimeline} from './session-ui';
 import { campaignLocalId } from '../features/campaign/campaign-contracts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
@@ -364,12 +364,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
   get('plans').addEventListener('change', () => { void (async () => { if (!(await leavePreparation())) { get<HTMLSelectElement>('plans').value = selectedPlan ?? ''; return; } selectedPlan = value('plans'); selectedScene = null; await renderPlans(); })(); });
   get('plan-name').addEventListener('input', () => { if (planDraft) { planDraft = { ...planDraft, name: value('plan-name') }; schedule(); } });
   get('plan-name').addEventListener('blur', () => { if (!composing) void flushPreparation(); });
-  get('plan-clear').onclick=()=>{void(async()=>{
-    const token=context?.token,planId=selectedPlan;
-    if(!await flushPreparation()||context?.token!==token||selectedPlan!==planId||!planDraft)return;
-    const next={...planDraft,scenes:[]};
-    if(await change({kind:'plan',expectedRevision:next.revision,plan:next},false)){selectedScene=null;await renderPlans();tell('Timeline geleert. Platzierte Gruppen, NPCs und Beute bleiben erhalten.');}
-  })();};
+  get('plan-clear').onclick=()=>{void clearSessionTimeline().catch(error=>tell(error.message,true));};
   get('scene-remove').onclick=()=>{void(async()=>{
     const token=context?.token,planId=selectedPlan,target=selectedScene;
     if(!await flushPreparation()||context?.token!==token||selectedPlan!==planId||selectedScene!==target||!planDraft||!target)return;
