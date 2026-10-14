@@ -813,3 +813,9 @@ Gerichtete Beziehungen lassen sich unmittelbar hinzufügen und lösen. Gültige 
 Der Abschluss des Spielabends baut seinen Übergabevorschlag nun aus dem aktuellen Leitungsstand. Er verbindet Fokusgruppe und Ort mit dem nächsten vorbereiteten Besuch, einer laufenden Reise, den nächsten drei lokalen Fristen, bis zu vier offenen Aufträgen und Weltentscheidungen sowie den bereits geprüften Kämpfen, Verfolgungen, Beute- und XP-Punkten.
 
 Der Vorschlag bleibt neben der editierbaren Übergabe sichtbar und lässt sich nach einer erneuten Prüfung ausdrücklich übernehmen. Nur der Text im Übergabefeld wird mit dem Endmarker gespeichert; die Vorschau verändert weder Besuch, Reise, Auftrag, Agenda noch andere Gruppenstände.
+
+### Desktopstand 0.79: Kataloge im Zusammenhangsplan
+
+Der Zusammenhangsplan erschließt zusätzlich Kreaturen, Gegenstände und Encounter-Vorlagen. Er folgt den vorhandenen Statblock-, Teilnehmer- und Belohnungsreferenzen in beide Richtungen: vom NSC zur Kreatur und ihren Begegnungen, vom Auftrag zur Gegenstandsquelle und zurück. Die Suche lädt jeweils höchstens 40 Metadaten; Einzeltexte und Katalogdetails erst bei Auswahl. Kampagneninhalte bleiben der anfängliche Suchbereich.
+
+„Referenz lesen / am Spieltisch verwenden“ öffnet die bestehende Schnellsuche an genau dieser Quelle. „Katalog / Vorlage öffnen“ führt zum bestehenden Editor, inklusive Gegenstandsvergabe und Encounter-Vorbereitung. Die Schnellsuche führt umgekehrt zu den Zusammenhängen ihrer Quelle. Aktuelle Katalogdefinitionen und eingefrorene Vorlagen-/Belohnungsstände werden ausdrücklich bezeichnet; Graphnavigation ändert keine Zeit, Teilnehmer oder Belohnungen. Beziehungen zwischen Weltinhalten bleiben beim vorhandenen Notizschreiber.

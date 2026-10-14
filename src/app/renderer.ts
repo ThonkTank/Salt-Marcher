@@ -28,12 +28,12 @@ import {initCity,activateCity,openCity,flushCity} from './city-ui';
 import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
 import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './world-ui';
-import {initItems,activateItems,openItems,flushItems} from './items-ui';
+import {initItems,activateItems,openItems,openItemReference,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote } from './preparation';
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
-import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
+import { initCatalog, activateCatalog, openCatalog, openCatalogReference, flushCatalog } from './catalog-ui';
 import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
@@ -70,9 +70,11 @@ setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('trea
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());
 initPartyTopbar(()=>el<HTMLButtonElement>('live-tab').click());
 initNarrativeJournal(status,leaveWorkspace,async()=>await flushPreparation(true,true),async id=>{if(!await leaveWorkspace())return;showTab('preparation');await openPreparedNote(id);});
-const worldLinks=new WorldLinksWorkbench(()=>workspace,leaveWorkspace,status,async ref=>{if(!await leaveWorkspace())return;showTab('preparation');if(ref.kind==='note')await openPreparedNote(ref.id);else await openPreparedLocation(ref.id);});const worldLinksButton=document.createElement('button');worldLinksButton.id='world-links-open';worldLinksButton.type='button';worldLinksButton.textContent='Zusammenhänge';el('narrative-journal-open').after(worldLinksButton);worldLinksButton.onclick=()=>void worldLinks.open().catch(e=>status(e.message,true));
+const worldLinks=new WorldLinksWorkbench(()=>workspace,leaveWorkspace,status,async ref=>{if(!await leaveWorkspace())return;if(ref.kind==='creature'||ref.kind==='encounter'){showTab('catalog');await openCatalogReference({kind:ref.kind,id:ref.id});}else if(ref.kind==='item'){showTab('items');await openItemReference(ref.id);}else{showTab('preparation');if(ref.kind==='note')await openPreparedNote(ref.id);else await openPreparedLocation(ref.id);}});const worldLinksButton=document.createElement('button');worldLinksButton.id='world-links-open';worldLinksButton.type='button';worldLinksButton.textContent='Zusammenhänge';el('narrative-journal-open').after(worldLinksButton);worldLinksButton.onclick=()=>void worldLinks.open().catch(e=>status(e.message,true));
 initQuickReference(status,leaveWorkspace,async action=>{
  const token=workspace?.token;if(!token)return;
+ if(action.kind==='connections'){await worldLinks.open(action.content.ref);return;}
+ if(action.kind==='source'){const ref=action.content.ref;if(ref.kind==='item'){showTab('items');await openItemReference(ref.id);}else if(ref.kind==='creature'||ref.kind==='encounter'){showTab('catalog');await openCatalogReference({kind:ref.kind,id:ref.id});}return;}
  if(action.kind==='edit'){showTab('preparation');if(action.content.note)await openPreparedNote(action.content.ref.id);else if(action.content.location)await openPreparedLocation(action.content.ref.id);return;}
  const live=unwrap(await window.campaign.live(token));if(workspace?.token!==token||live.focusId!==action.sceneId)throw new Error('Fokusgruppe geändert. Schnellsuche erneut öffnen.');
  showTab('live');await openLive();if(workspace?.token!==token)return;
