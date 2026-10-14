@@ -52,6 +52,20 @@ function submit(action:PlayerAction,openWindow=false){
   if(owns(o)&&intent===actions)tell('Spieleranzeige aktualisiert.');
  });
 }
+export async function cuePlayer(mode:'follow'|'scene'|'blank',focus:Pick<PlayerView,'focusId'|'focusRevision'>|null):Promise<boolean>{
+ const o=owner();if(!o)return false;const intent=++actions,request=++presentation;
+ try{
+  const latest=unwrap(await window.campaign.playerView(o.token));if(!owns(o)||intent!==actions)return false;
+  if(mode!=='blank'&&(!focus||focus.focusId!==latest.focusId||focus.focusRevision!==latest.focusRevision))throw new Error('Fokussierte Gruppe geändert. Prüfe die Freigabe für die aktuelle Gruppe erneut.');
+  const action:PlayerAction=mode==='blank'?{kind:'blank'}:{kind:'settings',settings:{blank:false,mode,imageId:latest.settings.imageId,title:'',labels:latest.settings.labels,light:latest.settings.light,displayId:latest.settings.displayId,fullscreen:latest.settings.fullscreen}};
+  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus?.focusId??latest.focusId,expectedFocusRevision:focus?.focusRevision??latest.focusRevision,action};
+  const confirmed=unwrap(await window.campaign.executePlayer(command));if(!owns(o)||intent!==actions)return false;
+  publish(o,confirmed,request);
+  if(mode!=='blank'){unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;await reload(o);}
+  if(owns(o)&&intent===actions)tell(mode==='blank'?'Spieleranzeige geleert.':'Spieleranzeige aktualisiert.');
+  return owns(o)&&intent===actions;
+ }catch(error){if(owns(o)&&intent===actions)tell((error as Error).message,true);return false;}
+}
 export function initPlayerUI(status:typeof tell,getContext:typeof context,flush:typeof before){
  tell=status;context=getContext;before=flush;
  el('player-open-controls').onclick=()=>{generation++;presentation++;const o=owner();run(o,async(o)=>{
