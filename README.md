@@ -609,3 +609,27 @@ Teilnahme, Scenezuordnung oder erneute Aufnahme in frühere Kampfmasken. Kampagn
 und -transfer erhalten den Archivstatus zusammen mit dem Profil und remappen dieselbe
 Charakteridentität durch alle Verweise. Archivieren und Wiederherstellen erscheinen
 in der Kampagnenchronik. Endgültiges Löschen einzelner Figuren bleibt offen.
+
+
+### Desktopstand 0.52: XP-Abrechnung für den Spielabend
+
+In der Party öffnet „Spielabend-XP abrechnen…“ bestätigte Figurenstände für eine
+gemeinsame Buchung. Fokusgruppe, alle aktiven Figuren oder frei gewählte PCs erhalten
+XP. Tagesbelastung hat eine eigene Summe und Empfängerauswahl; nur aktive Figuren
+können Belastung erhalten. Reservefiguren können ausdrücklich XP erhalten, ohne ihre
+Teilnahme zu ändern. Archivierte Figuren sind keine Empfänger.
+
+XP und Belastung werden jeweils auf ihre Empfänger aufgeteilt, pro Figur aufgerundet
+und als tatsächliche Gesamtsummen angezeigt. Die Vorschau zeigt resultierende XP und
+Level. Der gemeinsame Ownerauftrag prüft Figuren- und Teilnahmeversionen und bucht
+Fortschritt, Belastung, Hinweise und Chronik zusammen. Wiederholung desselben Belegs
+vergibt nichts erneut. Ein veränderter Figurenstand lässt die Eingabe offen; „Stand
+neu laden“ aktualisiert die Basis und behält noch verfügbare Empfängerauswahlen.
+Figurenlisten und Prognosen zeigen jeweils 40 Zeilen mit weiterer Auswahlseite.
+
+Negative Einzel-XP-Korrekturen verwenden jetzt in Topbar, Spieltisch und Schreibdienst
+dieselbe Levelfloor-Regel. Nur der tatsächlich abziehbare Betrag reduziert den Stand
+und die Zähler für kurze/lange Rast sowie die Rastbasis bis mindestens 0. Bereits
+bestätigte Rastabschnitte bleiben bestehen. Positive manuelle XP und ausdrücklich
+gesetzte Gesamtstände erhalten die Belastung; die Gruppenabrechnung setzt sie
+separat. Unbekannte XP müssen vor einem Abzug eingetragen werden.

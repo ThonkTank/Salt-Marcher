@@ -100,7 +100,7 @@ export function ledgerCopper(item: LedgerItem): bigint | null {
   return value === null ? null : BigInt(value) * BigInt(item.quantity);
 }
 export interface ProgressView { characters: (Progress & { name: string; active: boolean; membershipRevision: number; sceneId: string | null; healthCombat?: {id:string;sceneId:string;title:string}; lastCombatStatus?: Pick<CharacterHealth,'tempHp'|'conditions'|'concentrating'> })[]; notices: { id: string; characterId: string; text: string }[] }
-export interface ProgressAck extends ProgressView {restScene?:LiveScene;restWarnings?:string[]; treasureId: string | null; groupId?:string; ledgerIds: string[] }
+export interface ProgressAck extends ProgressView {partyAward?:{poolXp:number;loadXp:number;shareXp:number;totalXp:number;shareLoad:number;totalLoad:number};restScene?:LiveScene;restWarnings?:string[]; treasureId: string | null; groupId?:string; ledgerIds: string[] }
 export interface TreasurePage { items: { id: string; title: string; revision: number; available: number }[]; next: string | null }
 export interface LedgerQuery { characterId: string; after: string | null; search: string; status: '' | LedgerItem['status'] }
 export interface LedgerPage { items: LedgerItem[]; problems: {id:string;message:string}[]; unavailableCount:number; next: string | null; totalCopper: string | null }
@@ -114,6 +114,7 @@ export type ProgressAction = GroupAction|NarrativeAction|TreasuryAction
   | {kind:'ledger-merge';entryId:string;expectedRevision:number;sourceId:string;expectedSourceRevision:number;reason:string}
   | {kind:'ledger-transfer';entryId:string;expectedRevision:number;quantity:number;characterId:string;expectedMembershipRevision:number;reason:string}
   | ({kind:'health';characterId:string;expectedRevision:number;reason:string} & ({operation:'set';health:CharacterHealth}|{operation:'damage'|'heal';amount:number}|{operation:'death';result:DeathSaveResult}))
+  | {kind:'party-award';expectedRosterRevision:number;poolXp:number;loadXp:number;reason:string;participants:{characterId:string;revision:number;membershipRevision:number;receiveXp:boolean;receiveLoad:boolean}[]}
   | { kind: 'xp'; characterId: string; expectedRevision: number; mode: 'add' | 'subtract' | 'set'; amount: number; reason: string; correctionOf?: string }
   | { kind: 'rest'; rest: 'short' | 'long'; recipients: ProgressGuard[];restoreHp?:boolean;scene?:{id:string;expectedMembershipRevision:number;expectedClockRevision:number;expectedFocusRevision:number;amount:number;unit:TimeUnit} }
   | { kind: 'treasure'; title: string; sceneId: string | null; items: ItemInput[] }
