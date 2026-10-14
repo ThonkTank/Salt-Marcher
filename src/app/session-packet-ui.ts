@@ -22,12 +22,37 @@ export function initSessionPacket(tell:(s:string,e?:boolean)=>void,owner:()=>{to
   visit(matches.some(v=>v.id===selected)?selected!:matches[0]?.id??'');
  }
  async function load(){
-  const o=owner(),n=++request;if(!o||!await flush()||n!==request||!same(o))return;
-  dialog.showModal();dialog.setAttribute('aria-busy','true');el('session-packet-summary').textContent='Spielabendmappe wird zusammengestellt…';el<HTMLButtonElement>('session-packet-export').disabled=true;
-  try{const r=await window.campaign.sessionPacket(o.token,o.planId);if(n!==request||!same(o))return;if(!r.ok)throw new Error(r.error);packet=r.value;el('session-packet-summary').textContent=(packet.planName||'Unbenannter Spielabend')+' · '+packet.campaignName+' · '+packet.visits.length+' Besuche · Planungsparty: '+(packet.party.join(' · ')||'keine Vorgabe');const warnings=el('session-packet-warnings');warnings.replaceChildren();for(const text of packet.warnings){const p=document.createElement('p');p.textContent=text;warnings.append(p);}draw();el<HTMLButtonElement>('session-packet-export').disabled=false;}
-  catch(error){if(n===request&&same(o)){packet=null;el('session-packet-content').replaceChildren();el('session-packet-visits').replaceChildren();el('session-packet-summary').textContent=(error as Error).message;tell((error as Error).message,true);}}
+  const o=owner(),n=++request;if(!o)return;
+  packet=null;
+  el<HTMLButtonElement>('session-packet-export').disabled=true;
+  for(const id of ['content','visits','warnings','count'])el('session-packet-'+id).replaceChildren();
+  dialog.setAttribute('aria-busy','true');
+  el('session-packet-summary').textContent='Spielabendmappe wird zusammengestellt…';
+  try{
+   if(!await flush()){if(n===request&&same(o))el('session-packet-summary').textContent='Eingaben zuerst speichern; danach die Mappe erneut öffnen oder aktualisieren.';return;}
+   if(n!==request||!same(o))return;
+   if(!dialog.open)dialog.showModal();
+   const r=await window.campaign.sessionPacket(o.token,o.planId);
+   if(n!==request||!same(o))return;
+   if(!r.ok)throw new Error(r.error);
+   packet=r.value;
+   el('session-packet-summary').textContent=(packet.planName||'Unbenannter Spielabend')+' · '+packet.campaignName+' · '+packet.visits.length+' Besuche · Planungsparty: '+(packet.party.join(' · ')||'keine Vorgabe');
+   const warnings=el('session-packet-warnings');
+   for(const text of packet.warnings){const p=document.createElement('p');p.textContent=text;warnings.append(p);}
+   draw();el<HTMLButtonElement>('session-packet-export').disabled=false;
+  }catch(error){if(n===request&&same(o)){packet=null;el('session-packet-summary').textContent=(error as Error).message;tell((error as Error).message,true);}}
   finally{if(n===request)dialog.setAttribute('aria-busy','false');}
  }
  el('session-packet-open').onclick=()=>void load().catch(e=>tell(e.message,true));el('session-packet-refresh').onclick=()=>void load().catch(e=>tell(e.message,true));el('session-packet-close').onclick=()=>{closeSessionPacket();};dialog.addEventListener('cancel',()=>{closeSessionPacket();});el('session-packet-search').oninput=draw;
- el('session-packet-export').onclick=()=>{const o=owner(),p=packet;if(!o||!p||p.planId!==o.planId)return;const b=el<HTMLButtonElement>('session-packet-export');b.disabled=true;void window.campaign.exportSessionPacket(o.token,o.planId,p.basis).then(r=>{if(!same(o))return;if(!r.ok)throw new Error(r.error);tell(r.value.cancelled?'Mappenausgabe abgebrochen.':'GM-Spielabendmappe als Markdown gespeichert.');}).catch(e=>tell(e.message,true)).finally(()=>{if(same(o)&&packet===p)b.disabled=false;});};
+ el('session-packet-export').onclick=()=>{
+  const o=owner(),p=packet,n=request;if(!o||!p||p.planId!==o.planId)return;
+  const b=el<HTMLButtonElement>('session-packet-export');
+  if(b.disabled)return;
+  const current=()=>n===request&&same(o)&&packet===p;
+  b.disabled=true;
+  void window.campaign.exportSessionPacket(o.token,o.planId,p.basis)
+   .then(r=>{if(!current())return;if(!r.ok)throw new Error(r.error);tell(r.value.cancelled?'Mappenausgabe abgebrochen.':'GM-Spielabendmappe als Markdown gespeichert.');})
+   .catch(e=>{if(current())tell(e.message,true);})
+   .finally(()=>{if(current())b.disabled=false;});
+ };
 }
