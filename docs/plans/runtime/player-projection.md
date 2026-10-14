@@ -10,7 +10,7 @@ L289–302 und L388–406, verlangen einen passiven Bildschirm für Karten und
 NPC-/Ortsart. Er folgt der fokussierten Scene, kombiniert dauerhafte
 Characterkenntnis mit aktueller Wahrnehmung und bleibt durch GM-Blank und
 Artoverride kontrollierbar. Neue Anzeigeänderungen binden zusätzlich an die
-tatsächlich vorgesehene Focus-ID und Focusrevision; der GMdialog benennt diese
+tatsächlich vorgesehene Focus-ID, Focusrevision und Mitgliedschaftsrevision; der GMdialog benennt diese
 Gruppe ausdrücklich. Ein A/B/A-Wechsel erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
 Notizen ausdrücklich aus. Die gebundenen Scene-/LiveSessionanforderungen
 beschreiben die GM-Arbeitsflächen; sie erweitern diesen Displaykanal nicht.
@@ -59,9 +59,17 @@ keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 
 Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
-ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
-gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Scene-
-Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
+ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt.
+Live-Cues öffnen Ortsart oder ein
+spontanes Handout direkt für die geprüfte Gruppe. Ein Pickerabbruch ändert die
+Anzeige nicht. Änderungen an Fokus oder Mitgliedern während der Auswahl
+verhindern die Freigabe; gespeicherte Art bleibt erhalten. Genau ein neues Bild
+mit passendem Typ und Ziel muss die Auswahl bestimmen. Bei parallelen,
+mehrdeutigen Ergänzungen erfolgt keine willkürliche Freigabe; das Bild lässt
+sich im bestehenden Dialog auswählen. Die Gegenproben stehen in
+[desktop-player-focus.test.mjs](../../../tests/desktop-player-focus.test.mjs).
+Ein ausdrücklich gewählter neuer visueller Modus ersetzt die alte Einstellung.
+Scene-Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
 in ihren bisherigen Ownertabellen erhalten. Keine Datenmigration erforderlich.
 
 ## Große Karten und lokaler Nachweis
@@ -86,15 +94,18 @@ Karten, gespeicherte Kenntnis, GM-Steuerung und alte asynchrone Antworten.
 
 `desktop-live-visual-context.test.mjs` benutzt die Browser-Event-Realm und
 aktuelle Party-/Ledgerreads für sechs Autosave-/Create-Prüfungen einschließlich
-Vorlesetext. Die ältere untracked Livefixture besitzt diese Anschlüsse nicht;
-ihre vier Fälle sind weiterhin kein grüner Nachweis des aktuellen Stands.
-Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
+Vorlesetext. Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
 gebundenen Vertrag angepasst: GM-Wirkungen und Sichtbarkeitswerte bleiben
 prüfbar; ihr Fortschritt darf keine Mechanik auf den passiven Bildschirm bringen.
 Ein falsches früheres Ausgabeergebnis ist keine Regressionserwartung.
 `tools/test-desktop-player-scene-privacy.mjs` wurde an die Ortsartaufgabe statt
-der früheren Text-/Mechanikausgabe angepasst. Sein nativer Lauf ist nach dieser
-Änderung noch offen; alte Screenshots qualifizieren diesen Stand nicht.
+der früheren Text-/Mechanikausgabe angepasst. Der Fokusprüfer verwendet Karten und die aktuelle Mitgliedschaftsbasis.
+Seine lokalen nativen Dialog-/Live-Cue-Läufe vom 14.10.2026 bestanden:
+gehaltene alte Freigabe nach Gruppenwechsel abgewiesen, Neustart blieb Blank,
+Fehler erhielt den Titelentwurf, erneute Bestätigung zeigte die Nachhutkarte,
+Sceneinhalte unverändert; vier Appstarts endeten normal. Das prüft diese beiden
+kleinen Kartenabläufe. Der aktualisierte native Ortsart-/Privacy-Lauf bleibt
+offen; frühere Screenshots qualifizieren ihn nicht.
 Die Nachweise sind lokale Store-/Host-/kontrollierte DOMbelege, keine native
 Gesamt-/Privacy-/Plattformabnahme oder vollständige SMR-AC-14-Freigabe.
 
