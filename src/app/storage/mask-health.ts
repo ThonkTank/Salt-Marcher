@@ -1,3 +1,4 @@
+import {recordMaskReconciliation} from './mask-reconciliation';
 import {createHash} from 'node:crypto';
 import {checkedCombat,combatOrder,type CombatState} from '../combat-contracts';
 import {checkedHealth,checkedHealthStatus} from '../progression';
@@ -40,11 +41,12 @@ export function removePartyFromMasks(db:any,cam:string,ids:string[],commandId:st
  const moving=new Set(ids);
  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished' ORDER BY ordinal").all(cam)){
   const s=decode(row),removed=s.participants.filter(p=>p.characterId&&moving.has(p.characterId));if(!removed.length)continue;
-  publishCombatHealth(db,cam,{...s,participants:removed});const order=combatOrder(s),turnIndex=order.findIndex(p=>p.id===s.turnId);s.participants=s.participants.filter(p=>!p.characterId||!moving.has(p.characterId));
+  const beforeRevision=s.revision;publishCombatHealth(db,cam,{...s,participants:removed});const order=combatOrder(s),turnIndex=order.findIndex(p=>p.id===s.turnId);s.participants=s.participants.filter(p=>!p.characterId||!moving.has(p.characterId));
   if(s.turnId&&!s.participants.some(p=>p.id===s.turnId)){const candidates=[...order.slice(turnIndex+1),...order.slice(0,turnIndex+1)];s.turnId=candidates.find(p=>s.participants.some(left=>left.id===p.id))?.id??null;}
   if(!s.participants.length){s.phase='preparing';s.round=0;s.turnId=null;}
   s.revision++;s.sharedNotice='Party-Figuren wurden in eine andere Scene verschoben oder deaktiviert und aus dieser Begegnung entfernt.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);
   for(const actor of removed)event(db,cam,actor.characterId,'combat-exit',{commandId,combatId:s.id,title:s.title,participant:actor,reason:'Party-Zuordnung geändert'});
+  recordMaskReconciliation(db,{version:1,commandId,campaignId:cam,ownerKind:'combat',ownerId:s.id,sceneId:s.sceneId,beforeRevision,afterRevision:s.revision,removedCharacterIds:removed.map(p=>p.characterId!)});
  }
 }
 /** Old databases stored active PC health in the encounter; adopt those facts once. */

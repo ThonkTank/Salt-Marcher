@@ -27,11 +27,11 @@ test("scene participants keep stable character references and cannot be imported
   assert.throws(()=>applyChaseAction(next,{kind:"participants",participants:[{...participant,id:"p-4"}]}),/bereits/);
 });
 
-test("party movement removes linked characters from every running chase",()=>{
-  const state=applyChaseAction(running(),{kind:"participants",participants:[{id:"p-3",characterId:"character-1",name:"Heldin",side:"quarry",distance:0,speed:9,exhaustion:0,notes:""}]}),payload=JSON.stringify(state),row={campaign_id:"campaign-1",id:state.id,scene_id:state.sceneId,revision:state.revision,status:state.status,payload,checksum:createHash("sha256").update(payload).digest("hex")};let saved:any[]=[];
-  const db={prepare:(sql:string)=>sql.startsWith("SELECT")?{iterate:()=>[row]}:{run:(...values:any[])=>{saved=values;}}};
-  reconcileChaseParticipants(db,"campaign-1",["character-1"]);
-  const after=JSON.parse(saved[5]);assert.equal(after.revision,state.revision+1);assert.equal(after.participants.some((p:any)=>p.characterId==="character-1"),false);
+test("party movement removes linked characters from every running chase and records the owner result",()=>{
+  const state=applyChaseAction(running(),{kind:"participants",participants:[{id:"p-3",characterId:"character-1",name:"Heldin",side:"quarry",distance:0,speed:9,exhaustion:0,notes:""}]}),payload=JSON.stringify(state),row={campaign_id:"campaign-1",id:state.id,scene_id:state.sceneId,revision:state.revision,status:state.status,payload,checksum:createHash("sha256").update(payload).digest("hex")};let saved:any[]=[],receipt:any[]=[];
+  const db={prepare:(sql:string)=>sql.startsWith("SELECT")?{all:()=>[row]}:{run:(...values:any[])=>{if(sql.startsWith("INSERT INTO chase"))saved=values;else receipt=values;}}};
+  reconcileChaseParticipants(db,"campaign-1",["character-1"],"move-1");
+  const after=JSON.parse(saved[5]),proof=JSON.parse(receipt[5]);assert.equal(after.revision,state.revision+1);assert.equal(after.participants.some((p:any)=>p.characterId==="character-1"),false);assert.deepEqual(proof.removedCharacterIds,["character-1"]);assert.equal(proof.commandId,"move-1");
 });
 
 test("unknown chase actions cannot masquerade as completion",()=>{
