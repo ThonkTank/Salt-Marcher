@@ -293,7 +293,7 @@ Die gespeicherte Vorschau hält ihren Weltquellenstand fest. Änderungen an Link
 oder Beständen erfordern eine neue Vorschau vor Übernahme. Tabellenänderungen
 entfernen nicht mehr zulässige Bestandseinträge in derselben Transaktion.
 Kampagnenpakete behalten und remappen Quellen und Fraktions-/Ortsreferenzen. Unveränderte Weltvorschauen bleiben auch in unabhängigen Kopien übernehmbar; bereits veraltete Vorschauen bleiben gesperrt. Lesen und Sicherung prüfen Identitäten, Revisionen, Bestandswerte und kampagnengebundene Verknüpfungen.
-Noch offen: direkte Weltfilter im Spielabend-Generator; der Encounter-Generator besitzt den vollständigen neuen Ablauf.
+Der Spielabend-Generator verwendet diese Weltfilter ebenfalls (Desktopstand 0.41).
 
 Die [Speicher- und Kopierprüfungen](tests/desktop-world-source-transfer.test.mjs) decken beschädigte Quellen, unveränderte Sicherungen, eigene Kennungen, archivierte Verknüpfungen, Vorschauübernahme und erneutes Öffnen ab. [Editorprüfungen](tests/desktop-world-source-ui.test.mjs) sichern sichtbare, ausdrücklich entfernbare Altverknüpfungen und erhaltene Bestandseingaben bei Hintergrundaktualisierungen.
 
@@ -322,8 +322,7 @@ Kampfende setzt keinen Lebenszyklus und verbraucht keinen Fraktionsbestand.
 NPCs lassen sich ausdrücklich in die aktuelle Begegnung übernehmen. Eine
 Platzierung an einem anderen Ort muss vorher durch die GM korrigiert werden.
 
-Offen bleiben NPC-basierte Zufallsgenerierung und direkte Weltfilter im
-Spielabendgenerator. Die Fraktionszuordnung ergänzt den bisherigen freien
+Offen bleibt NPC-basierte Zufallsgenerierung. Die Fraktionszuordnung ergänzt den bisherigen freien
 Beziehungsgraphen; Fraktionen/Orte werden weiterhin in Welt und Spielabend angelegt.
 
 ### Desktopstand 0.41: Spielabend-Vorschläge aus Ort und Fraktion
