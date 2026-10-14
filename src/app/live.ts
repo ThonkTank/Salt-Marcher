@@ -35,6 +35,7 @@ export function activateLive(workspace: Workspace) {
   combatContext(null, null);chaseContext(null,null,[]); progressionContext(null, null, null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
+  get<HTMLInputElement>('live-knowledge-search').value='';
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
   get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
   adoption = null; moveBasis = null;
@@ -212,6 +213,18 @@ function renderSceneMeta() {
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
   get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }
+async function showLiveNpc(npcId:string){const token=context?.token,focus=playerFocus();if(!focus||!npcId)return;if(await flushLive()&&context?.token===token)await cuePlayerImage('npc',npcId,focus);}
+function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
+function renderLiveKnowledge(){
+  const root=get('live-knowledge-results');root.replaceChildren();const query=value('live-knowledge-search').trim().toLocaleLowerCase('de');
+  const rows=(sources?.notes??[]).filter(row=>!row.trashed&&row.note.kind!=='rule'&&(!query||[row.note.title,row.note.readAloud,row.note.gmNotes].some(text=>text.toLocaleLowerCase('de').includes(query)))).slice(0,30);
+  for(const row of rows){const note=row.note,card=document.createElement('article'),heading=document.createElement('div'),title=document.createElement('h4'),kind=document.createElement('small'),actions=document.createElement('div');heading.className='toolbar';title.textContent=note.title||'Unbenannter Eintrag';kind.textContent=({npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht'})[note.kind as 'npc'|'faction'|'quest'|'rumor'];heading.append(title,kind);actions.className='toolbar';
+    if(note.readAloud){const publicText=document.createElement('pre'),use=document.createElement('button');publicText.textContent=note.readAloud;publicText.className='live-knowledge-public';use.type='button';use.textContent='Als Vorlesetext einsetzen';use.onclick=()=>useKnowledgeReadAloud(note.readAloud,note.title);card.append(heading,publicText);actions.append(use);}else card.append(heading);
+    if(note.kind==='npc'){const portrait=document.createElement('button');portrait.type='button';portrait.textContent='Porträt zeigen';portrait.onclick=()=>void showLiveNpc(note.id);actions.append(portrait);}
+    if(note.gmNotes){const details=document.createElement('details'),summary=document.createElement('summary'),gm=document.createElement('pre');summary.textContent='GM-Notizen';gm.textContent=note.gmNotes;details.append(summary,gm);card.append(details);}card.append(actions);root.append(card);
+  }
+  if(!rows.length){const empty=document.createElement('p');empty.className='caption';empty.textContent=query?'Kein vorbereitetes Wissen gefunden.':'Noch keine NSCs, Fraktionen, Quests oder Gerüchte vorbereitet.';root.append(empty);}
+}
 function renderScene() {
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
@@ -225,7 +238,7 @@ function renderScene() {
   if (current && !sources?.locations.some(l => l.document.id === current)) { const option = document.createElement('option'); option.value = current; option.textContent = 'Ort nicht verfügbar'; option.disabled = true; select.append(option); }
   select.value = current ?? '';
   renderNpcChoices();
-  renderSceneMeta(); renderGroups();
+  renderLiveKnowledge();renderSceneMeta(); renderGroups();
 }
 function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
 function renderGroups() {
@@ -320,9 +333,10 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-player-location').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),locationId=sceneDraft?.locationId;if(!focus||!locationId)return;if(await flushLive()&&context?.token===token&&sceneDraft?.locationId===locationId)await cuePlayerImage('location',locationId,focus);})();};
   get('running-player-npc-filter').oninput=renderNpcChoices;
   get('running-player-npc').onchange=()=>{get<HTMLButtonElement>('running-player-npc-show').disabled=!value('running-player-npc');};
-  get('running-player-npc-show').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),npcId=value('running-player-npc');if(!focus||!npcId)return;if(await flushLive()&&context?.token===token&&value('running-player-npc')===npcId)await cuePlayerImage('npc',npcId,focus);})();};
+  get('running-player-npc-show').onclick=()=>void showLiveNpc(value('running-player-npc'));
   get('running-player-handout').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(!focus)return;if(await flushLive()&&context?.token===token)await cuePlayerImage('custom',null,focus);})();};
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
+  get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');
