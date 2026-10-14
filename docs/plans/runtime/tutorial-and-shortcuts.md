@@ -65,3 +65,6 @@ Native Bedienung dieser neuen Lektionen ist weiterhin separat zu prüfen.
 
 Die Musiklektionen erfassen Datei-/Transferfehler, manuelle Wiedergabe,
 Automatikfreigabe und Soundboard; deren native Bedienung bleibt zu prüfen.
+
+Weltquellen und Spielabendvorbereitung haben eigene Lektionen; Kalenderereignisse
+verwenden durchgehend die Agenda statt des entfernten zweiten Ereigniseditorformulars.
