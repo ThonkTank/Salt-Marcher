@@ -789,3 +789,15 @@ Nach einer Pause oder veränderter Uhr, Gruppe, Karte, Kalender oder Wetter läs
 Der Leitungsstand zieht den nächsten vorbereiteten Besuch jeder Gruppe nun aus derselben GM-Spielabendmappe, die später am Tisch verwendet wird. Ort und vollständiger Eröffnungstext stehen direkt am Besuch; Zähler zeigen vorhandene GM-Hinweise, Referenzen, Begegnungsblöcke und Belohnungen. Fehlende oder archivierte Mappenquellen bleiben als konkrete Warnungen sichtbar.
 
 „Übernahme prüfen“ führt weiter in die bestehende bestätigte Besuchsübernahme. „Mappe öffnen“ fokussiert die betroffene Gruppe, bindet den richtigen Plan an den Spieltisch und öffnet die Mappe direkt beim nächsten Besuch. Das Lesen startet keinen Spielabend, übernimmt keinen Besuch und gibt keinen Text an Spieler frei.
+
+### Desktopstand 0.75: NSC-Dossiers und Gespräche am Spieltisch
+
+NSCs am Spieltisch liest die Figuren am tatsächlichen Gruppenort, in der ganzen Kampagne oder ohne Ortsbindung in Seiten zu 50. Die Suche umfasst die vorhandenen NPC-Texte und Profile; nur die ausgewählte Figur lädt ihre vollständigen Texte. Das Dossier verbindet Verhalten, Aussehen, Vorlesetext, Gesprächsgeschichte, HP/Zustände, Fraktion, Beziehungen in beiden Richtungen, bestehende Gruppen und den bestätigten Autonomie-/Jobstand. Statblocks öffnen bei Bedarf.
+
+Gespräch festhalten führt mit Kalenderdatum und Gruppe in den vorhandenen NPC-Profilentwurf. Angetippte Texte werden dort über den bestehenden Entwurfsschreiber gesichert; NPC übernehmen bestätigt sie. Profil, Autonomie, Gruppe, Vorlesetext und Begegnung öffnen ihre vorhandenen Besitzer. Keine neue NPC-Identität, kein zusätzlicher Profil-/HP-/Positionsstore und keine automatische Freigabe oder Kampfaktivierung. NPC-Listen verwenden beim Filtern einen begrenzten Seitenpuffer statt vollständiger Ergebnisarrays. Gruppen-/Beziehungs-/Verhaltensauszüge bleiben begrenzt, die Originalquellen erhalten.
+
+### Desktopstand 0.76: Vom Leitungsstand direkt in die Eröffnung
+
+Jeder vorbereitete Besuch bietet nun einen ausdrücklichen Startweg. „Spielabend beginnen + Text in Szene“ fokussiert die zugehörige Gruppe, schreibt den normalen Sitzungsmarker, übernimmt den vorbereiteten Eröffnungstext in die laufende Szene und öffnet die GM-Mappe direkt bei diesem Besuch. Fehlt ein Eröffnungstext, beginnt derselbe Ablauf mit der Mappe.
+
+Besuchsübernahme, Spielerfreigabe und Audio bleiben weiterhin getrennte Bestätigungen. Der Start erzeugt weder Begegnung noch Belohnung und zeigt Spielern den Text nicht automatisch; der GM kann erst in der geöffneten Mappe prüfen und anschließend die vorhandenen Aktionen verwenden.
