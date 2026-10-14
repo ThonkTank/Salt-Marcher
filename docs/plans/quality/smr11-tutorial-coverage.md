@@ -19,8 +19,8 @@ Eine ausführbare Invariante bindet die primären Arbeitsbereiche und die ausgew
 | Party und Leiten | Party und laufender Spielabend |
 | Kampagnenchronik | Bestätigte Kampagnenfolgen nachlesen |
 | Katalog und Encounter | Begegnungen vorbereiten und leiten |
-| NSCs und Monstergruppen | Monstergruppen dauerhaft vorbereiten |
-| Schätze | Schätze bearbeiten und verschieben |
+| NSCs und Monstergruppen | NSCs als bestehende Individuen führen |
+| Schätze | Einen Schatz gemeinsam verteilen |
 | Party öffnen | Party direkt am Tisch verwalten |
 | Rastbudget | Tagesbudget und Level-Prognose immer griffbereit |
 | Gegenstände und Shops | Gegenstände, Beute und Shops |
@@ -29,7 +29,10 @@ Eine ausführbare Invariante bindet die primären Arbeitsbereiche und die ausgew
 | Städte | Vom Straßenzug zum editierbaren Stadtplan |
 | Atlas und Reise | Hexkarten und Orte bearbeiten |
 | Musik und Ambience | Lokale Musik und Umgebungs-Sounds |
-| Spieleranzeige | Der fokussierten Gruppe ein eigenes Fenster geben |
+| Spieleranzeige | Kenntnis und aktuelle Sicht der Gruppe trennen |
+| Neue Kampagne / Name ändern | Kampagne als Arbeitsraum |
+| Rastbudget in der Kopfzeile | Tagesbudget und Level-Prognose immer griffbereit |
+| Party in der Kopfzeile | Party direkt am Tisch verwalten |
 | Verwalten / Transfer | Kampagnen vollständig übertragen und löschen |
 | Dungeon übernehmen | Kampagne als Arbeitsraum |
 | Erweiterungen | Lokale Erweiterungspakete kontrollieren |
@@ -49,6 +52,11 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Spielabend-Rückblick | Beginnmarkierung, laufende bestätigte Ereignisse, Ende mit Abschlussnotiz | Einen Spielabend beginnen und mit Rückblick beenden |
 | Direkte Spielerfreigaben | Vorlesetext, Ortsbild, NPC-Porträt, Handout, Live-Automatik und Leeren | Inhalte am Spieltisch ausdrücklich freigeben |
 | Spielerkenntnis und Sicht | Beobachterwerte, Entdecken/Vergessen, Masken und öffentliche Beschriftungen | Kenntnis und aktuelle Sicht der Gruppe trennen |
+| Atlas-Authoring | Karte neu/kopieren/importieren, Hex bearbeiten, Ort markieren, Gruppe platzieren und Kenntnis aufdecken | Hexkarten und Orte bearbeiten |
+| Kartenroute | Ziel-/Wegpunktmodus, Tastaturcursor und administrative Erstplatzierung | Eine Reise auf der Karte planen |
+| Persistente Reise | Vorschau/Annahme, Abschnitte, Pause/Fortsetzen, Grenze und Ende | Eine Reise wirklich fortsetzen |
+| Kalender und Ereignisse | Kalenderregeln sowie einmalige/wiederkehrende örtliche Ereignisse | Kalender und örtliche Ereignisse |
+| Wetter | bewegte Wettergebiete, gruppengebundener GM-Override und Freigabe | Wetter entwickeln und ausdrücklich vorgeben |
 | Live-Regeln | dynamisches Regelpanel und d20-Probenformular | Regelreferenzen und Proben bei der Gruppe halten |
 | Erweiterter Dungeon | 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
 
