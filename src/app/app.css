@@ -169,3 +169,14 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 .live-generation-cards > article { min-width:0; padding:16px; border:1px solid var(--border,#aaa); border-radius:8px; }
 .live-generation-cards pre { white-space:pre-wrap; overflow-wrap:anywhere; }
 .live-generation-provenance { grid-column:1/-1; }
+
+.treasure-distribution-dialog{width:min(1400px,95vw);max-width:min(1400px,95vw)}
+#distribution-people{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+#distribution-grid{overflow:auto;margin:16px 0}
+#distribution-grid table{width:100%;border-collapse:collapse}
+#distribution-grid th,#distribution-grid td{padding:10px;border-bottom:1px solid var(--border,#aaa);vertical-align:top}
+#distribution-grid input{width:100px}
+#distribution-grid td:first-child{min-width:190px}
+#distribution-grid td:last-child{min-width:190px}
+.distribution-invalid{background:#ffe5e5}
+#distribution-review{padding:16px;border:1px solid var(--border,#aaa);border-radius:8px;margin:16px 0}

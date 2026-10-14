@@ -49,6 +49,36 @@ nicht. Bindende Beiträge aller ausgewählten Fraktionen, Poolerschöpfung,
 NPC-Rename/Healthänderung zwischen Vorschau/Annahme, Fresh/Import und Wechsel
 zwischen benannten NPCs und Katalogkreaturen brauchen eigene Gegenproben.
 
+## Vorschau für die laufende Gruppe
+
+`live-generation-ui.ts` liest aktive Mitglieder der fokussierten Scene und deren
+bekannte XP/Level. Sie benutzt dieselben Worldquellen und gespeicherten
+`GenerationRun`s wie der bestehende Generator. Vorschauerzeugung schreibt keine
+Kampfmaske. „Für diese Gruppe vorbereiten“ übergibt Run-ID, Vorschlagsindex,
+Registryrevision, Scenemembership, Focusrevision und Ort an den Combatwriter.
+`storage/combat.ts` prüft vor atomarer Übernahme aktuelle Gruppe/Level, Ort,
+Quellen und Registry; Vorlage, Kampfmaske und Belege teilen die Transaktion.
+Initiative, Kampfstart und Abschluss bleiben ausdrückliche weitere Aktionen.
+Die Planungsparty anderer Abende ist keine Ersatzquelle für die Live-Gruppe.
+
+Der Dialog bindet jeden Vorschlagsbutton an den angezeigten Run, Owner und
+Dialoggeneration. Späte Fehler, Bestätigungen und `finally`-Rückläufe dürfen
+weder die nächste Vorschau schließen noch deren laufenden Auftrag entsperren.
+Close/Reset invalidiert auch einen noch ausstehenden Flush vor Öffnung. Fünf
+DOMgegenproben in `desktop-live-generation-context.test.mjs` waren vor dieser
+Korrektur rot; sie qualifizieren diese Renderergrenzen, nicht bereits sämtliche
+Writer-, Last- oder Nativefälle.
+
+Nächster eigener Lieferabschluss: mit echten gespeicherten Runs Level-/Member-/
+Focus-/Ortswechsel vor Annahme, Registry-/NPC-/Tabellenänderung, falschen Index
+und kontrollierten Rollback an Vorlage/Kampf/Receipts prüfen. Danach verlorene
+Antwort nach bestätigter Übernahme mit bestehendem Combatbeleg rekonstruieren;
+neuere Eingaben und wieder geöffnete Vorschau bleiben getrennt. Kein neuer
+Command oder zweiter Kampf allein wegen einer fehlenden Antwort. Die aktuell
+vollständigen Reads von Roster, Tabellen, Worldsources und Runliste sowie große
+Statblockvorschauen benötigen eine gemessene Query-/Darstellungsgrenze. Native
+Tastatur, Esc/Fokusrückgabe, Fresh und 200%-Darstellung bleiben separat offen.
+
 ## Noch fehlende fachliche Abschlüsse
 
 Die Quellenvorprüfung beweist nicht, dass jede verbleibende Fraktion in den

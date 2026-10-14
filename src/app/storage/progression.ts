@@ -5,7 +5,7 @@ import {editTreasury} from './treasury';
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
-import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, partitionLedgerPaidPrice, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, partitionLedgerPaidPrice, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ProgressAction, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene, readRoster } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
@@ -380,6 +380,19 @@ export function finishCombatRewards(db: any, cam: string, state: CombatState, re
   const payload = json(result); db.prepare('INSERT INTO combat_award VALUES(?,?,?,?,?)').run(cam, state.id, awardId, payload, hash(payload)); return result;
 }
 function checkedCounterparty(db:any,cam:string,link:LedgerItem['counterpartyLink']){if(!link)return undefined;let available=false;if(link.kind==='location')available=!!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(cam,link.id);else if(link.kind==='shop'){const r=db.prepare('SELECT payload FROM shop WHERE campaign_id=? AND id=?').get(cam,link.id);available=!!r&&!JSON.parse(r.payload).trashed;}else if(['npc','faction'].includes(link.kind))available=!!db.prepare("SELECT 1 FROM world_note WHERE campaign_id=? AND id=? AND trashed=0 AND json_extract(payload,'$.kind')=?").get(cam,link.id,link.kind);if(!available)throw new Error('Verknüpften Händler oder Empfänger prüfen.');return link;}
+function allocateTreasurePortion(db:any,cam:string,t:Treasure,a:Extract<ProgressAction,{kind:'allocate-batch'}>['allocations'][number]){
+ const item=t.items.find(i=>i.id===a.itemId);
+      const member = db.prepare('SELECT active,membership_revision,scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);
+      if (!item || !member?.active || member.membership_revision !== a.expectedMembershipRevision) throw new Error('Beute oder Empfänger geändert. Bitte aktualisieren.');
+      if (!Number.isSafeInteger(a.quantity) || a.quantity <= 0 || a.quantity > item.quantity - item.allocated) throw new Error('Menge überschreitet die unverteilte Beute.');
+      const definition = readItemDefinition(db, item.reference.definitionId);
+      if (definition.revision !== a.expectedDefinitionRevision || definition.trashed) throw new Error('Gegenstand geändert oder im Papierkorb. Beute erneut ansehen.');
+      recordItemDefinitionVersion(db, definition);
+      const scene = member.scene_id ? readLiveScene(db,cam,member.scene_id) : t.sceneId ? readLiveScene(db,cam,t.sceneId) : null;
+      const l: LedgerItem = { id: randomUUID(), characterId: a.characterId, revision: 1, reference: { kind: 'authored', definitionId: definition.id, revision: definition.revision }, name: definition.name, category: definition.category, quantity: a.quantity, unitCopper: definition.unitCopper, origin: 'award', status: 'received', actualSaleCopper: null, counterparty: '', treasureId: t.id, combatId: t.combatId, sceneId: scene?.id??t.sceneId, locationId: t.locationId, instantMs: scene?.clock.instantMs ?? null, recordedAt: new Date().toISOString(), parentId: null };
+      if(item.origin){l.sourceNoteId=item.origin.sourceNoteId;l.awardId=item.origin.awardId;l.combatId=item.origin.combatId;l.sourceTreasureId=item.origin.treasureId;l.sourceTreasureItemId=item.origin.itemId;l.provenance='Aus verschobener Schatzbeute';}else{l.sourceNoteId=t.sourceNoteId;l.awardId=t.awardId;}item.allocated += a.quantity; saveLedger(db,cam,l); event(db,cam,l.characterId,'loot-award',{ treasureId: t.id, itemId: item.id, entry: l });
+ return l.id;
+}
 export function executeProgress(db: any, command: ProgressCommand, guard: () => void): ProgressAck {
   return db.transaction(() => {
     guard(); if (!command.commandId || command.commandId.length > 1000 || !command.action) throw new Error('Fortschrittsauftrag fehlt.');
@@ -455,17 +468,13 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
     } else if(a.kind==='treasure-create'||a.kind==='treasure-edit'||a.kind==='treasure-move'){treasureId=editTreasury(db,cam,a);
     } else if (a.kind === 'treasure') { treasureId = makeTreasure(db, cam, a.title, a.sceneId, null, a.items);
     } else if (a.kind === 'allocate') {
-      const t = decoded<Treasure>(db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam,a.treasureId)), item = t.items.find(i => i.id === a.itemId);
-      const member = db.prepare('SELECT active,membership_revision,scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);
-      if (t.revision !== a.expectedRevision || !item || !member?.active || member.membership_revision !== a.expectedMembershipRevision) throw new Error('Beute oder Empfänger geändert. Bitte aktualisieren.');
-      if (!Number.isSafeInteger(a.quantity) || a.quantity <= 0 || a.quantity > item.quantity - item.allocated) throw new Error('Menge überschreitet die unverteilte Beute.');
-      const definition = readItemDefinition(db, item.reference.definitionId);
-      if (definition.revision !== a.expectedDefinitionRevision || definition.trashed) throw new Error('Gegenstand geändert oder im Papierkorb. Beute erneut ansehen.');
-      recordItemDefinitionVersion(db, definition);
-      const scene = member.scene_id ? readLiveScene(db,cam,member.scene_id) : t.sceneId ? readLiveScene(db,cam,t.sceneId) : null;
-      const l: LedgerItem = { id: randomUUID(), characterId: a.characterId, revision: 1, reference: { kind: 'authored', definitionId: definition.id, revision: definition.revision }, name: definition.name, category: definition.category, quantity: a.quantity, unitCopper: definition.unitCopper, origin: 'award', status: 'received', actualSaleCopper: null, counterparty: '', treasureId: t.id, combatId: t.combatId, sceneId: scene?.id??t.sceneId, locationId: t.locationId, instantMs: scene?.clock.instantMs ?? null, recordedAt: new Date().toISOString(), parentId: null };
-      if(item.origin){l.sourceNoteId=item.origin.sourceNoteId;l.awardId=item.origin.awardId;l.combatId=item.origin.combatId;l.sourceTreasureId=item.origin.treasureId;l.sourceTreasureItemId=item.origin.itemId;l.provenance='Aus verschobener Schatzbeute';}else{l.sourceNoteId=t.sourceNoteId;l.awardId=t.awardId;}item.allocated += a.quantity; t.revision++; saveTreasure(db,cam,t); saveLedger(db,cam,l); event(db,cam,l.characterId,'loot-award',{ treasureId: t.id, itemId: item.id, entry: l });
-      treasureId = t.id; ledgerIds.push(l.id);
+      const t=decoded<Treasure>(db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam,a.treasureId));if(t.revision!==a.expectedRevision)throw new Error('Schatz geändert. Verteilung erneut ansehen.');
+      ledgerIds.push(allocateTreasurePortion(db,cam,t,a));t.revision++;saveTreasure(db,cam,t);treasureId=t.id;
+    } else if(a.kind==='allocate-batch'){
+      if(!Array.isArray(a.allocations)||!a.allocations.length||a.allocations.length>1000||new Set(a.allocations.map(p=>JSON.stringify([p.itemId,p.characterId]))).size!==a.allocations.length)throw new Error('Verteilung benötigt eindeutige Gegenstand-/Figur-Zuordnungen (höchstens 1000).');
+      const t=decoded<Treasure>(db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam,a.treasureId));if(t.revision!==a.expectedRevision)throw new Error('Schatz geändert. Verteilung erneut ansehen.');
+      for(const portion of a.allocations){if(db.prepare("SELECT 1 FROM character_profile WHERE campaign_id=? AND id=? AND json_type(payload,'$.archive')='object'").get(cam,portion.characterId))throw new Error('Archivierte Figur zuerst wiederherstellen.');ledgerIds.push(allocateTreasurePortion(db,cam,t,portion));}
+      t.revision++;saveTreasure(db,cam,t);treasureId=t.id;
     } else if (a.kind === 'manual-item') {
       const member = db.prepare('SELECT membership_revision FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);
       if (!member || member.membership_revision !== a.expectedMembershipRevision || !['award','purchase','manual'].includes(a.origin) || typeof a.note !== 'string' || a.note.length > 10000) throw new Error('Ungültiger persönlicher Beuteeintrag.');
