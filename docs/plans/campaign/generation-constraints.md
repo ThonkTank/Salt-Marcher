@@ -38,6 +38,17 @@ Bestandsgrenze und veränderte Quellenbasis nach Bestandsänderung. Der echte
 SQLitewriter legt die Testdaten an; abgewiesene Reads erhalten die Datenbytes.
 Das ist ein lokaler Teilnachweis für die Quellenvorprüfung.
 
+## Neuer Anschluss für benannte NPCs
+
+Der integrierte `storage/generation-npcs.ts` führt einen endlichen Pool bereits
+vorhandener aktiver, feindlicher World-NPCs mit passendem Kreaturverweis, HP,
+Orts-/Fraktionsfilter und Quellenrevisionen. Encountereinträge tragen
+`worldActorIds` und Anzeigenamen; sie sind keine Anweisung zum Klonen dieser
+NPCs. Der vorhandene Tabellenguard qualifiziert diesen separaten Pool noch
+nicht. Bindende Beiträge aller ausgewählten Fraktionen, Poolerschöpfung,
+NPC-Rename/Healthänderung zwischen Vorschau/Annahme, Fresh/Import und Wechsel
+zwischen benannten NPCs und Katalogkreaturen brauchen eigene Gegenproben.
+
 ## Noch fehlende fachliche Abschlüsse
 
 Die Quellenvorprüfung beweist nicht, dass jede verbleibende Fraktion in den

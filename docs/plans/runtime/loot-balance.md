@@ -32,6 +32,17 @@ Profilintegrität ab. [DOM-Prüfungen](../../../tests/desktop-loot-balance-dom.t
 prüfen Kontextwechsel und die offene Anzeige. Native Bedienabnahme und
 vollständige Rewardqualifikation bleiben offen.
 
+## Neuer Sessionanschluss vom 14.10.2026
+
+`storage/session-rewards.ts` verbindet jetzt bestätigte Roster-XP, effektive
+Ledgerwerte und die Fortschrittskurve des wirksamen Presets mit dem erwarteten
+Session-XP. `applyLootGuidance` verteilt daraus Vorschlagsbudgets;
+`fitRewardItems` erhält passende Tabellenitems und füllt den Rest mit Münzen.
+Der Sessionwriter/Editor trägt die Quellenbasis weiter. Dieser integrierte
+Anschluss ersetzt die frühere Aussage, es gebe noch keinen XP-basierten Code.
+Er ist noch kein Beleg für vollständige D&D-2014-Guidance, Transfer-/Korrektur-
+semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
+
 ## Nächste ausführbare Schritte
 
 1. **Vorhandene Guidance vollständig qualifizieren.** `storage/session-rewards.ts`
@@ -44,6 +55,7 @@ vollständige Rewardqualifikation bleiben offen.
    decken beschädigte Rechnung/Quellledger, Überschuss, unabhängige Kopie und
    unveränderte Sicherungen ab. Noch offen: Magie-Seltenheitskontingente,
    vollständige Regelherleitung und native Qualifikation des Gesamtverlaufs.
+   Native Abnahme: unterschiedliche XP-Stände, korrigierte/weitergereichte/verkaufte Grants, fehlende Werte, individuelle Vorschlagsänderungen und normaler Neustart.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
