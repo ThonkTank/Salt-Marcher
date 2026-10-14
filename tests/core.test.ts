@@ -77,5 +77,7 @@ import "./core/desktop-csp.test";
 import "./core/chronicle.test";
 import "./core/death-saves.test";
 import "./core/chase.test";
+import "./core/combat-reconciliation.test";
+import "./core/mask-store-reconciliation.test";
 import "./core/loot-balance.test";
 import "./core/generation-source-actions.test";

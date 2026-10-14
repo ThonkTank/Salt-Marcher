@@ -44,9 +44,10 @@ export function combatOrder(combat: CombatState): Combatant[] {
 export function checkedCombat(state: CombatState): CombatState {
   if (!state || !state.id || !state.sceneId || !['preparing', 'running', 'finished'].includes(state.phase) || !Number.isSafeInteger(state.revision) || state.revision < 1 || !Number.isSafeInteger(state.round) || state.round < 0) throw new Error('Ungültiger Kampfstand.');
   if (typeof state.title !== 'string' || state.title.length > 1000 || typeof state.notes !== 'string' || state.notes.length > 2000000 || typeof state.outcome !== 'string' || state.outcome.length > 10000 || !Array.isArray(state.participants) || state.participants.length > 1000) throw new Error('Ungültige Kampfinhalte.');
-  const ids = new Set<string>(), initiatives = new Map<string, number>();
+  const ids = new Set<string>(), characterIds=new Set<string>(),initiatives = new Map<string, number>();
   for (const p of state.participants) {
     checkedCombatant(p);if(ids.has(p.id))throw new Error('Doppelter Initiativeeintrag.');ids.add(p.id);
+    if(p.characterId){if(characterIds.has(p.characterId))throw new Error('Figur steht mehrfach in derselben Initiative.');characterIds.add(p.characterId);}
     if (initiatives.has(p.groupId) && initiatives.get(p.groupId) !== p.initiative) throw new Error('Eine Initiativegruppe benötigt einen gemeinsamen Wert.');
     initiatives.set(p.groupId, p.initiative);
   }

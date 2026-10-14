@@ -9,6 +9,7 @@ import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry } from './generation';
 import {readPreparedGroup,readWorldActor,writeWorldActorHealth} from './session';
 import type { Creature } from '../../features/catalog/creature-catalog';
+import {recordMaskReconciliation} from './mask-reconciliation';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installCombatSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS combat(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scene_id TEXT NOT NULL, ordinal INTEGER NOT NULL, revision INTEGER NOT NULL, phase TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
@@ -22,11 +23,16 @@ function decode(row: any): CombatState {
   if (state.id !== row.id || state.sceneId !== row.scene_id || state.revision !== row.revision || state.phase !== row.phase) throw new Error('Kampfzuordnung widersprüchlich.');
   return state;
 }
-export function assertCombatPartyChange(db:any,cam:string,ids:string[],sourceSceneId:string|null) {
-  const moving=new Set(ids),open=db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished'").all(cam).map(decode) as CombatState[];
-  for(const state of open){const participant=state.participants.find(p=>p.characterId&&moving.has(p.characterId));if(participant)throw new Error(participant.name+' nimmt noch an „'+state.title+'“ teil. Zuerst aus der Initiative entfernen oder Begegnung abschließen.');}
-  if(sourceSceneId&&open.some(s=>s.sceneId===sourceSceneId)&&!db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1').all(cam,sourceSceneId).some((p:any)=>!moving.has(p.id)))throw new Error('Diese Gruppe führt noch eine Begegnung. Vor dem letzten Austritt die Begegnung abschließen.');
-}
+export function reconcileCombatParticipants(db:any,cam:string,ids:string[],commandId:string){const moving=new Set(ids);for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished'").all(cam)){
+  const state=decode(row),removed=state.participants.filter(p=>p.characterId&&moving.has(p.characterId));if(!removed.length)continue;
+  const beforeRevision=state.revision,order=combatOrder(state),turnIndex=order.findIndex(p=>p.id===state.turnId);for(const actor of removed)detachCombatHealth(db,cam,state,actor,commandId);
+  const removedIds=new Set(removed.map(p=>p.id));state.participants=state.participants.filter(p=>!removedIds.has(p.id));
+  if(state.turnId&&removedIds.has(state.turnId)){const next=[...order.slice(turnIndex+1),...order.slice(0,turnIndex)].find(p=>!removedIds.has(p.id));state.turnId=next?.id??null;}
+  if(!state.participants.length){state.phase='preparing';state.round=0;state.turnId=null;}
+  state.revision++;checkedCombat(state);const payload=JSON.stringify(state);db.prepare('UPDATE combat SET revision=?,phase=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(state.revision,state.phase,payload,hash(payload),cam,state.id);
+  db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,state.id);
+  recordMaskReconciliation(db,{version:1,commandId,campaignId:cam,ownerKind:'combat',ownerId:state.id,sceneId:state.sceneId,beforeRevision,afterRevision:state.revision,removedCharacterIds:removed.map(p=>p.characterId!)});
+}}
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));
