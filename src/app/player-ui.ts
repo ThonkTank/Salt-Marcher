@@ -34,7 +34,7 @@ function paint(){
  baseline=snapshot();
  for(const control of controls()){const v=edits.get(key(control));if(v===undefined)continue;if(control.type==='checkbox')(control as HTMLInputElement).checked=v as boolean;else control.value=v as string;}
  if(focusKey){const next=controls().find(c=>key(c)===focusKey);next?.focus();if(typeof selection==='number'&&next instanceof HTMLInputElement&&next.type!=='number')next.setSelectionRange(selection,selectionEnd??selection);}
- renderPlayer(el('player-preview'),view.frame,'campaign://app/player');el('player-state').textContent=view.frame.mode==='blank'?(view.frame.reason??'Anzeige leer.'):view.frame.mode==='map'?'Reisekarte der fokussierten Gruppe.':view.frame.mode==='combat'?'Öffentliche Initiative des laufenden Kampfes. Verborgene Gegner und geheime Werte bleiben bei der Spielleitung.':view.frame.mode==='chase'?'Öffentlicher Stand der laufenden Verfolgung. Verborgene Teilnehmer und GM-Notizen bleiben privat.':'Freigegebene Ansicht. Bildoverride und Ausblenden verändern keine Charakterkenntnis.';
+ renderPlayer(el('player-preview'),view.frame,'campaign://app/player');el('player-state').textContent=view.frame.mode==='blank'?(view.frame.reason??'Anzeige leer.'):view.frame.mode==='map'?'Reisekarte der fokussierten Gruppe.':view.frame.mode==='combat'?'Öffentliche Initiative des laufenden Kampfes. Verborgene Gegner und geheime Werte bleiben bei der Spielleitung.':view.frame.mode==='chase'?'Öffentlicher Stand der laufenden Verfolgung. Verborgene Teilnehmer und GM-Notizen bleiben privat.':view.frame.mode==='scene'?'Gespeicherter Vorlesetext der fokussierten Scene. GM-Notizen werden nicht übertragen.':'Freigegebene Ansicht. Bildoverride und Ausblenden verändern keine Charakterkenntnis.';
 }
 function publish(o:Owner,result:PlayerView,request:number){if(!owns(o)||request!==presentation||hasView(o)&&result.settings.revision<view!.settings.revision)return false;view=result;viewOwner=o;paint();return true;}
 async function reload(o:Owner){const request=++presentation,result=await window.campaign.playerView(o.token);if(!owns(o)||request!==presentation)return false;return publish(o,unwrap(result),request);}
@@ -61,7 +61,7 @@ export function initPlayerUI(status:typeof tell,getContext:typeof context,flush:
   if(await reload(o)&&owns(o))el<HTMLDialogElement>('player-dialog').showModal();
  });};
  el('player-close-controls').onclick=closeControls;el<HTMLDialogElement>('player-dialog').oncancel=event=>{event.preventDefault();closeControls();};el('player-refresh').onclick=()=>run(owner(),reload);
- el('player-show-follow').onclick=()=>submit(settings('follow',false),true);el('player-show-image').onclick=()=>submit(settings('image',false),true);el('player-blank').onclick=()=>submit({kind:'blank'});
+ el('player-show-follow').onclick=()=>submit(settings('follow',false),true);el('player-show-scene').onclick=()=>submit(settings('scene',false),true);el('player-show-image').onclick=()=>submit(settings('image',false),true);el('player-blank').onclick=()=>submit({kind:'blank'});
  el('player-close-window').onclick=()=>{const o=owner();if(!o||!hasView(o))return;const intent=++actions;run(o,async o=>{unwrap(await window.campaign.playerWindow(o.token,false));if(owns(o)&&intent===actions)await reload(o);});};
  el('player-art-kind').onchange=subjectOptions;
  el('player-pick-art').onclick=()=>{
