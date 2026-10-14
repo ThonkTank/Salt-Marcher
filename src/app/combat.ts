@@ -230,7 +230,7 @@ function renderConcentrationEffect(){
   const modifier=get<HTMLInputElement>('combat-concentration-modifier'),key=actor.id+':'+check.damage+':'+check.dc;if(modifier.dataset.checkKey!==key){modifier.dataset.checkKey=key;modifier.value='0';}for(const id of ['combat-concentration-roll','combat-concentration-pass','combat-concentration-fail'])get<HTMLButtonElement>(id).disabled=blocked();modifier.disabled=blocked();
 }
 function lock() {
-  for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked();
+  for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked()||control.dataset.statblockDisabled==='true';
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
   const contextBlocked=!workspace||!scene||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
   get<HTMLButtonElement>('combat-refresh').disabled=contextBlocked;get<HTMLSelectElement>('combat-history').disabled=contextBlocked;
@@ -291,7 +291,7 @@ function render() {
 }
 function renderSelection() { for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
 const isLegendaryAction=(source:Creature,action:CreatureAction)=>source.legendaryActions.includes(action);
-function legendaryControl(source:Creature,p:Combatant,action:CreatureAction){if(!isLegendaryAction(source,action))return null;const points=p.legendaryActions??{remaining:0,maximum:3},cost=legendaryActionCost(action),running=view?.combat?.phase==='running';return{disabled:blocked()||!running||points.remaining<cost,note:running?points.remaining+' / '+points.maximum+' Punkte · kostet '+cost:'Ab Kampfbeginn verfügbar'};}
+function legendaryControl(source:Creature,p:Combatant,action:CreatureAction){if(!isLegendaryAction(source,action))return null;const points=p.legendaryActions??{remaining:0,maximum:3},cost=legendaryActionCost(action),running=view?.combat?.phase==='running',ownTurn=running&&view?.combat?.turnId===p.id;return{disabled:blocked()||!running||ownTurn||points.remaining<cost,note:!running?'Ab Kampfbeginn verfügbar':ownTurn?'Nicht im eigenen Zug':points.remaining+' / '+points.maximum+' Punkte · kostet '+cost};}
 async function spendLegendary(source:Creature,p:Combatant,action:CreatureAction){return !isLegendaryAction(source,action)||await execute({kind:'legendary-action',participantId:p.id,actionId:action.id,cost:legendaryActionCost(action)});}
 async function useCreatureRoll(source:Creature,p:Combatant,combatId:string,action:CreatureAction,preset:CreatureRollPreset){
   if(preset.kind==='attack'&&pendingAttack){stageAttack(action,preset,p.id,p.name,source.id,combatId);return;}if((preset.kind==='save'||preset.kind==='check')&&pendingSave){stageSave(action,preset,p.id,p.name,source.id,combatId);return;}if(!await spendLegendary(source,p,action))return;

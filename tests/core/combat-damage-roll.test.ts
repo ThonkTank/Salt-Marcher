@@ -4,13 +4,14 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
+import type {CombatState} from '../../src/app/combat-contracts';
 
 test('a combat applies a persisted damage roll at the confirmed scale',()=>{
   const root=mkdtempSync(join(tmpdir(),'combat-damage-roll-')),filename=join(root,'campaign.sqlite');let store=new CampaignStore(filename,'test');
   try{
     const campaign=store.create('Schadenswurf'),workspace=store.activate(campaign.id),token=workspace.token;
     const scene=store.executeLive({commandId:'live',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:0}}).scene!;
-    let combat=store.executeCombat({commandId:'combat',campaignId:campaign.id,token,combatId:null,expectedRevision:null,action:{kind:'create',sceneId:scene.id,title:'Probe',includeParty:false,expectedMembershipRevision:scene.membershipRevision}}).combat!;
+    let combat:CombatState=store.executeCombat({commandId:'combat',campaignId:campaign.id,token,combatId:null,expectedRevision:null,action:{kind:'create',sceneId:scene.id,title:'Probe',includeParty:false,expectedMembershipRevision:scene.membershipRevision}}).combat!;
     combat=store.executeCombat({commandId:'target',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'add',name:'Ziel',count:1,grouped:false,maxHp:20,armorClass:10,initiativeBonus:0}}).combat!;
     combat=store.executeCombat({commandId:'aboleth',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'add-creature',creatureId:'aboleth',count:1,grouped:false}}).combat!;
     combat=store.executeCombat({commandId:'concentrating',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:combat.participants[0]!.id,changes:{concentrating:true}}}).combat!;
@@ -20,6 +21,7 @@ test('a combat applies a persisted damage roll at the confirmed scale',()=>{
     combat=store.executeCombat({commandId:'undo-legendary',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'undo'}}).combat!;assert.equal(combat.participants.find(actor=>actor.id===aboleth.id)!.legendaryActions!.remaining,3);
     combat=store.executeCombat({commandId:'legendary-again',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'legendary-action',participantId:aboleth.id,actionId:'psychic-drain-costs-2-actions',cost:2}}).combat!;
     combat=store.executeCombat({commandId:'aboleth-turn',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'next'}}).combat!;assert.deepEqual(combat.participants.find(actor=>actor.id===aboleth.id)!.legendaryActions,{remaining:3,maximum:3,lastResetRound:1});
+    assert.throws(()=>store.executeCombat({commandId:'legendary-own-turn',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'legendary-action',participantId:aboleth.id,actionId:'psychic-drain-costs-2-actions',cost:2}}),/nicht im eigenen Zug/);
     const save=store.executeSceneCheck({commandId:'save',campaignId:campaign.id,token,sceneId:scene.id,expectedRevision:0,action:{kind:'roll',label:'Bestie · Feueratem · DEX Rettungswurf',ruleNoteId:null,mode:'normal',modifier:2,dc:13,actor:'Ziel',sourceCreatureId:'beast',sourceActionId:'fire-breath'}}).checks[0]!;
     assert.equal(save.actor,'Ziel');assert.equal(save.sourceCreatureId,'beast');assert.equal(save.sourceActionId,'fire-breath');assert.equal(save.outcome,save.total>=13?'success':'failure');
     const checks=store.executeSceneCheck({commandId:'roll',campaignId:campaign.id,token,sceneId:scene.id,expectedRevision:1,action:{kind:'formula',formulaKind:'damage',label:'Klauen · Hiebschaden',actor:'Bestie',formula:'2d6 + 2',dc:null,sourceCreatureId:'beast',sourceActionId:'claws'}}),check=checks.checks[0]!,amount=Math.floor(check.total/2);
