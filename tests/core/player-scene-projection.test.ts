@@ -45,7 +45,7 @@ test('a reviewed location image cannot be released after the focused scene moves
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
-for(const transition of ['blank','group'] as const)test('retired NPC portrait cannot be released after '+transition,()=>{
+for(const transition of ['blank','group','settings'] as const)test('retired NPC portrait cannot be released after '+transition,()=>{
  const root=mkdtempSync(join(tmpdir(),'player-npc-active-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
  try{
   const campaign=store.create('NSC-Porträt'),token=store.activate(campaign.id).token,npcId=campaignLocalId(randomUUID()),artId=randomUUID();
@@ -59,7 +59,7 @@ for(const transition of ['blank','group'] as const)test('retired NPC portrait ca
   store.executePlayer({...focus(store,token),commandId:'show',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings}});
   store.changePreparation({commandId:'trash',campaignId:campaign.id,token,change:{kind:'note-trash',id:npcId,expectedRevision:1,trashed:true}});
   if(transition==='blank')store.executePlayer({...focus(store,token),commandId:'blank',campaignId:campaign.id,token,expectedRevision:1,action:{kind:'blank'}});
-  else{
+  else if(transition==='group'){
    const live=store.live(token),split=store.executeLive({commandId:'split',campaignId:campaign.id,token,action:{kind:'move',sceneId:scene.id,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision!,expectedClockRevision:live.scene!.clock.revision,expectedSceneMembershipRevision:live.scene!.membershipRevision,memberIds:[hero.id],target:{kind:'new',title:'Nachhut',expectedContentRevision:live.scene!.revision}}});
    const current=store.live(token);store.executeLive({commandId:'focus-next',campaignId:campaign.id,token,action:{kind:'focus',sceneId:split.session!.createdScene!.id,expectedRevision:current.focusRevision!}});
   }

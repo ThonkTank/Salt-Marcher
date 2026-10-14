@@ -33,8 +33,9 @@ eigene Art weiterhin ausdrücklich hervorheben. Private Scene-/Maskentitel
 werden nicht automatisch als öffentliche Überschrift übernommen; ausdrücklicher
 öffentlicher Titel und freigegebene Kartenbeschriftungen bleiben eigene Metadaten.
 Ein entferntes NPC-Porträt bleibt als historisches Asset erhalten, darf aber
-nach Blank oder Gruppenwechsel nicht erneut freigegeben werden. Dieser
-Gruppenwechsel zählt auch bei unveränderter Bild-ID als neue Freigabe.
+bei keiner neuen Veröffentlichung erneut freigegeben werden. Das gilt auch
+bei unveränderter Bild-ID und Gruppe; bestehende Ansichten werden dadurch
+nicht aus der gespeicherten History gelöscht.
 
 `PlayerFrame` und `PlayerDungeon` in `player-contracts.ts` enthalten nur diese
 visuellen Varianten. Dungeonposition, bekannte/sichtbare Geometrie, freigegebene
@@ -97,6 +98,9 @@ Backup/Copy erhalten und neutral. Eine weitere Storegegenprobe verwirft alte Fre
 ohne Fokuswechsel atomar; nach erneutem Prüfen ist dieselbe visuelle Freigabe gültig.
 Die direkte NPC-Bildprobe verwendet vorhandene freigegebene PNGart ohne neue
 Dateiwahl; private NPC-/Scenerecords bleiben exakt erhalten.
+Jede neue nichtleere NPC-Bildfreigabe prüft jetzt den aktiven Noteowner, auch
+bei unveränderter Bild-ID. Die Retire-/Restore-/erneute Retire-Gegenprobe erhält
+Bildhistorie und verweigert neue Freigabe ohne Teilwirkung.
 Renderer-Gegenproben prüfen alte Pakete
 samt Überschrift. `desktop-player-visual-host.test.mjs` prüft echte Hostmethoden mit
 kontrollierten Fenstern: Push/Pull, erlaubte Feldmenge und verschachtelte Daten.
