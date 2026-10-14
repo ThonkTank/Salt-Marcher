@@ -221,7 +221,7 @@ function renderSceneMeta() {
   get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }
 async function showLiveNpc(npcId:string,isCurrent=()=>true){const token=context?.token,focus=playerFocus();if(!focus||!npcId)return;if(await flushLive()&&context?.token===token&&isCurrent())await cuePlayerImage('npc',npcId,focus);}
-function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
+function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
 function renderLiveKnowledge(){
   const root=get('live-knowledge-results');root.replaceChildren();const query=value('live-knowledge-search').trim().toLocaleLowerCase('de');
   const rows=(sources?.notes??[]).filter(row=>!row.trashed&&row.note.kind!=='rule'&&(!query||[row.note.title,row.note.readAloud,row.note.gmNotes].some(text=>text.toLocaleLowerCase('de').includes(query)))).slice(0,30);

@@ -33,6 +33,12 @@ hat keinen Anschluss an die passive Spieleranzeige.
   geschrieben wird der zuvor geprüfte Stand. Dialogabbruch schreibt nichts.
   Das ist noch kein nativer Dateifehler-/Dialognachweis.
 
+Der benachbarte Live-Wissensbereich übernimmt Vorlesetext in den GM-Sceneentwurf
+und speichert ihn über den bestehenden Autosaveweg. Der entfernte
+Textprojektionsknopf ist keine Voraussetzung. Der lokale Test
+`tests/desktop-live-visual-context.test.mjs` prüft diesen tatsächlichen
+Übernahme-/Speicherweg und erhält Autorenwortlaut ohne Playercommand.
+
 ## Nächste ausführbare Schritte
 
 1. **Vollständigkeit am Spielabend prüfen:** Eine konkrete Vorbereitung mit

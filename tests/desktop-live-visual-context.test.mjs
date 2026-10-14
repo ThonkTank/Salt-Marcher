@@ -105,3 +105,20 @@ for(const field of ['character-name','running-notes','running-read-aloud'])test(
     assert.equal(field==='character-name'?store.live(context.token).roster[0].profile.name:field==='running-read-aloud'?store.live(context.token).scene.readAloud:store.live(context.token).scene.notes,'Neue Eingabe');
   }finally{if(releaseSave)releaseSave();if(releaseCreate)releaseCreate();await tick();await tick();Object.assign(globalThis,saved);store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test('live knowledge read-aloud action saves authored prose without a retired text projection control',async()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'knowledge-read-aloud-')),file=path.join(root,'store.sqlite'),{CampaignStore}=require('../.build/planner-player-visual-contract/live-store.cjs'),store=new CampaignStore(file),{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
+ const saved={window:globalThis.window,document:globalThis.document,Event:globalThis.Event,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout};
+ const persisted=new Map();window.localStorage={getItem:key=>persisted.get(key)??null,setItem:(key,value)=>persisted.set(key,String(value)),removeItem:key=>persisted.delete(key)};const messages=[];
+ for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});
+ Object.assign(globalThis,{window,document,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
+ try{
+  const campaign=store.create('Wissen'),context=store.activate(campaign.id),text='  Hallo\r\n**Wache**  ',note={version:1,id:randomUUID(),revision:1,kind:'quest',title:'Auftrag',readAloud:text,gmNotes:'Privat',relations:[],creatureId:null,deleted:false};
+  store.changePreparation({commandId:randomUUID(),campaignId:campaign.id,token:context.token,change:{kind:'note',expectedRevision:null,note}});
+  let playerCalls=0;window.campaign={live:async token=>({ok:true,value:store.live(token)}),progress:async token=>({ok:true,value:store.progress(token)}),ledgerParties:async token=>({ok:true,value:store.ledgerParties(token)}),preparation:async token=>({ok:true,value:store.preparation(token)}),sceneWorld:async(token,id)=>({ok:true,value:store.sceneWorld(token,id)}),executeLive:async command=>({ok:true,value:store.executeLive(command)}),executePlayer:async()=>{playerCalls++;return {ok:true,value:null};}};
+  delete require.cache[require.resolve('../.build/planner-player-visual-contract/live-ui.cjs')];const ui=require('../.build/planner-player-visual-contract/live-ui.cjs');ui.initWorld(()=>{},()=>ui.flushLive(),async()=>{},async()=>{});ui.activateWorld(context);ui.initLive((text,error)=>messages.push({text,error}),async()=>{});ui.activateLive(context);await ui.openLive();document.getElementById('live-continue').click();await tick();await tick();
+  assert.equal(document.getElementById('running-editor').hidden,false,JSON.stringify(messages));assert.equal(document.getElementById('running-player-scene'),null);
+  const button=[...document.getElementById('live-knowledge-results').querySelectorAll('button')].find(b=>b.textContent==='Als Vorlesetext einsetzen');assert.ok(button);button.onclick();assert.equal(document.getElementById('running-read-aloud').value,text);assert.equal(await ui.flushLive(),true);assert.equal(store.live(context.token).scene.readAloud,text);assert.equal(playerCalls,0);
+  ui.activateLive(null);
+ }finally{Object.assign(globalThis,saved);store.close();rmSync(root,{recursive:true,force:true});}
+});
