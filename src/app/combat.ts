@@ -17,7 +17,7 @@ const editableCombat=(combat:CombatView['combat'])=>!!combat&&['preparing','runn
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 type PendingDamage={check:SceneCheck;combatId:string;attackerId:string};
-export function enqueuePendingDamage(queue:readonly PendingDamage[],next:PendingDamage){return queue.some(damage=>damage.check.id===next.check.id)?[...queue]:[...queue,next];}
+export function enqueuePendingDamage(queue:readonly PendingDamage[],next:PendingDamage,currentCombatId:string){return next.combatId!==currentCombatId||queue.some(damage=>damage.check.id===next.check.id)?[...queue]:[...queue,next];}
 let pendingDamage:PendingDamage[]=[];
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
@@ -142,10 +142,10 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
 }
 export async function flushCombat(): Promise<boolean> { if(pending)return await pending;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
 const blocked=()=>loadPending||!!loadError||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
-function stageDamage(check:SceneCheck,attackerId:string){
+function stageDamage(check:SceneCheck,attackerId:string,combatId:string){
   const combat=view?.combat;
   if(!combat||!editableCombat(combat)||check.sceneId!==combat.sceneId||check.rollKind!=='formula'||check.formulaKind!=='damage'||!Number.isSafeInteger(check.total)||check.total<=0)return;
-  pendingDamage=enqueuePendingDamage(pendingDamage,{check,combatId:combat.id,attackerId});renderDamageEffect();get('combat-roll-effect').scrollIntoView({block:'nearest'});
+  const next=enqueuePendingDamage(pendingDamage,{check,combatId,attackerId},combat.id);if(next.length===pendingDamage.length)return;pendingDamage=next;renderDamageEffect();get('combat-roll-effect').scrollIntoView({block:'nearest'});
 }
 function renderDamageEffect(){
   const box=get('combat-roll-effect'),combat=view?.combat,damage=pendingDamage[0];
@@ -223,7 +223,7 @@ function renderEditor() {
   get('fighter-concentration-hint').hidden = !p?.concentrating;
   get<HTMLInputElement>('fighter-xp').value = draft?draft.values['fighter-xp']??'':p?.xp === undefined ? '' : String(p.xp);
   get<HTMLInputElement>('fighter-counted').checked = draft?draft.counted:p?.countForMultiplier !== false;
-  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId); get('fighter-statblock').hidden=!source; if(source&&p)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{if(preset.kind==='save'||preset.kind==='check')prepareSceneCheck({label:p.name+' · '+preset.label,dc:preset.dc!});else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,formulaKind:preset.kind,dc:null,sourceCreatureId:source.id,sourceActionId:action.id},preset.kind==='damage'?check=>stageDamage(check,p.id):undefined);});
+  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id; get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{if(preset.kind==='save'||preset.kind==='check')prepareSceneCheck({label:p.name+' · '+preset.label,dc:preset.dc!});else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,formulaKind:preset.kind,dc:null,sourceCreatureId:source.id,sourceActionId:action.id},preset.kind==='damage'?check=>stageDamage(check,p.id,combatId):undefined);});
 }
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
