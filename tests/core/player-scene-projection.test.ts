@@ -43,4 +43,3 @@ test('a reviewed location image cannot be released after the focused scene moves
   assert.equal(store.playerView(token).settings.blank,true);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
-

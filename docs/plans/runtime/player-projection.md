@@ -10,8 +10,8 @@ L289–302 und L388–406, verlangen einen passiven Bildschirm für Karten und
 NPC-/Ortsart. Er folgt der fokussierten Scene, kombiniert dauerhafte
 Characterkenntnis mit aktueller Wahrnehmung und bleibt durch GM-Blank und
 Artoverride kontrollierbar. Neue Anzeigeänderungen binden zusätzlich an die
-tatsächlich vorgesehene Focus-ID, Focusrevision und Mitgliedschaftsrevision; der GMdialog benennt diese
-Gruppe ausdrücklich. Ein A/B/A-Wechsel oder geänderte Mitgliedschaft bei gleichem Fokus erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
+tatsächlich vorgesehene Focus-ID, Focusrevision, Mitgliedschaftsrevision und aktuelle Orts-ID; der GMdialog benennt diese
+Gruppe ausdrücklich. Ein A/B/A-Wechsel oder geänderte Mitgliedschaft/Ortsbindung bei gleichem Fokus erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
 Notizen ausdrücklich aus. Die gebundenen Scene-/LiveSessionanforderungen
 beschreiben die GM-Arbeitsflächen; sie erweitern diesen Displaykanal nicht.
 Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
