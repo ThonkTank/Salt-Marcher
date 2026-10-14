@@ -46,3 +46,13 @@ test('a late dice acknowledgement cannot replace the current group check revisio
  submit();await until(()=>!!release);await x.ui.refreshRuleReferences('B');release();await tick();await tick();submit();await until(()=>writes.length===2);assert.equal(writes[1].sceneId,'B');assert.equal(writes[1].expectedRevision,0);await tick();assert.deepEqual(x.messages,['GM-Probe gewürfelt und bei der Gruppe gespeichert.']);
  }finally{x.cleanup();}
 });
+
+test('targeted save acknowledgements remain bound to the group and never call an old target callback',async()=>{
+ const x=await fixture();try{const writes=[],callbacks=[];let release;window.campaign.executeSceneCheck=async c=>{writes.push(c);const reply={ok:true,value:{sceneId:c.sceneId,revision:1,checks:[{id:c.sceneId,label:'Feueratem',actor:'Ada',sceneInstantMs:'0',mode:'normal',rolls:[14],modifier:2,total:16,dc:15,outcome:'success'}],truncated:false}};if(writes.length===1)return new Promise(resolve=>{release=()=>resolve(reply);});return reply;};
+ const action={label:'Feueratem',actor:'Ada',modifier:2,mode:'normal',dc:15},first=x.ui.rollSceneCheck(action,check=>callbacks.push(check.id));await until(()=>!!release);await x.ui.refreshRuleReferences('B');release();await first;assert.deepEqual(callbacks,[]);await x.ui.rollSceneCheck(action,check=>callbacks.push(check.id));assert.equal(writes[1].sceneId,'B');assert.equal(writes[1].expectedRevision,0);assert.deepEqual(callbacks,['B']);assert.deepEqual(x.messages,['Rettungswurf ausgeführt und bei der Gruppe gespeichert.']);
+ }finally{x.cleanup();}
+});
+test('a targeted save reply for another group cannot poison the next revision or reach the target',async()=>{
+ const x=await fixture();try{const writes=[],callbacks=[];window.campaign.executeSceneCheck=async c=>{writes.push(c);return{ok:true,value:{sceneId:writes.length===1?'foreign':'A',revision:writes.length===1?99:1,checks:[{id:'rolled',label:'Feueratem',actor:'Ada',sceneInstantMs:'0',mode:'normal',rolls:[14],modifier:2,total:16,dc:15,outcome:'success'}],truncated:false}};};const action={label:'Feueratem',actor:'Ada',modifier:2,mode:'normal',dc:15};await x.ui.rollSceneCheck(action,c=>callbacks.push(c.id));assert.deepEqual(callbacks,[]);assert.match(x.messages[0],/anderen Gruppe/);await x.ui.rollSceneCheck(action,c=>callbacks.push(c.id));assert.equal(writes[1].expectedRevision,0);assert.deepEqual(callbacks,['rolled']);
+ }finally{x.cleanup();}
+});
