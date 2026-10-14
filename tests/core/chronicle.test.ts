@@ -106,3 +106,20 @@ test("live play records a confirmed moment directly in the campaign chronicle",(
     assert.deepEqual(store.narrative(token,followUpId).state,{noteId:followUpId,revision:0,status:"open",locationId,contributors:[hero.id],poolXp:0,items:[],awardId:null});
   }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test("live play brackets a session recap with persistent markers",()=>{
+  const root=mkdtempSync(join(tmpdir(),"live-session-marker-")),store=new CampaignStore(join(root,"campaign.sqlite"),"test");
+  try{
+    const campaign=store.create("Abendrunde"),token=store.activate(campaign.id).token;
+    const scene=store.executeLive({commandId:"scene",campaignId:campaign.id,token,action:{kind:"initialize",expectedRosterRevision:0}}).scene!;
+    store.executeLive({commandId:"start",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"start",summary:""}});
+    assert.throws(()=>store.executeLive({commandId:"second-start",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"start",summary:""}}),/läuft bereits/);
+    store.executeLive({commandId:"end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:"Weiter im Keller."}});
+    assert.throws(()=>store.executeLive({commandId:"second-end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:""}}),/Kein laufender/);
+    const markers=store.chronicle(token).entries.filter(entry=>entry.sessionMarker);
+    assert.deepEqual(markers.map(entry=>({marker:entry.sessionMarker,title:entry.title,summary:entry.summary})),[
+      {marker:"end",title:"Spielabend beendet",summary:"Weiter im Keller."},
+      {marker:"start",title:"Spielabend begonnen",summary:""},
+    ]);
+  }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});

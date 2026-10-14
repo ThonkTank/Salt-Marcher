@@ -1,3 +1,4 @@
+import {TreasureDistribution} from "./treasure-distribution-ui";
 import type { ItemDefinition } from "./items-contracts";
 import type { Workspace, Result } from "./contracts";
 import type {
@@ -27,6 +28,7 @@ const goldText = (cp: string | null) =>
   cp === null
     ? ""
     : BigInt(cp) / 100n + "." + (BigInt(cp) % 100n).toString().padStart(2, "0");
+let distribution:TreasureDistribution;
 let w: Workspace | null = null,
   book: Treasure | null = null,
   draft: TreasuryDraft | null = null,
@@ -74,7 +76,7 @@ function snapshot(): TreasuryDraft {
   };
 }
 export function activateTreasury(next: Workspace | null) {
-  w = next;
+  distribution?.reset();w = next;
   generation++;
   reading++;
   book = null;
@@ -436,6 +438,8 @@ export function initTreasury(
   enter = navigate;
   if (ready) return;
   ready = true;
+  distribution=new TreasureDistribution(status,()=>w,async()=>{if(!await flushTreasury())return false;if(dirty){tell("Schatzangaben zuerst übernehmen oder verwerfen.",true);return false;}return true;},execute);
+  const batch=document.createElement("button");batch.id="treasury-distribute";batch.type="button";batch.textContent="Beute gemeinsam verteilen…";el("treasury-allocate-form").after(batch);batch.onclick=()=>run(()=>distribution.open(book?.id));
   onCommitState(lock);
   onCommitResolved((event) => {
     const meta = event.meta as { owner?: string } | undefined;
@@ -530,3 +534,5 @@ export function initTreasury(
   };
   el("treasury-open").onclick = () => run(() => enter(book?.id));
 }
+
+export async function openTreasureDistribution(id?:string,sceneId?:string){await distribution?.open(id,sceneId);}

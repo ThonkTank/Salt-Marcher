@@ -46,6 +46,9 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Fortschritt und Rast | manuelle XP/Korrektur, Gruppenauswahl für Rast, Verlauf | XP und Rastbudget nachvollziehbar ändern |
 | Persönliche Beute | manueller Eintrag, Suche/Filter, Statusänderung und Stapelwerkzeuge | Persönliche Beute mit Herkunft weiterführen |
 | Live-Momente | gruppengebundener Moment mit optionaler Quest-/Gerüchtspur und Verwaltung aus der Live-Suche | Momente festhalten und Kampagnenfolgen nachlesen |
+| Spielabend-Rückblick | Beginnmarkierung, laufende bestätigte Ereignisse, Ende mit Abschlussnotiz | Einen Spielabend beginnen und mit Rückblick beenden |
+| Direkte Spielerfreigaben | Vorlesetext, Ortsbild, NPC-Porträt, Handout, Live-Automatik und Leeren | Inhalte am Spieltisch ausdrücklich freigeben |
+| Spielerkenntnis und Sicht | Beobachterwerte, Entdecken/Vergessen, Masken und öffentliche Beschriftungen | Kenntnis und aktuelle Sicht der Gruppe trennen |
 | Live-Regeln | dynamisches Regelpanel und d20-Probenformular | Regelreferenzen und Proben bei der Gruppe halten |
 | Erweiterter Dungeon | 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
 
