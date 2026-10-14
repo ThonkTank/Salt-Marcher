@@ -783,3 +783,9 @@ Reisekarte und Agenda öffnen aus derselben Gruppenkarte. Vorher wird die gewäh
 Die Reisevorschau zeigt einen Kalenderfahrplan mit Gelände, Wetter, benannten Stationen und GM-Halten für die ersten 40 Abschnitte sowie bis zu zwölf Ereignisse an Reiseorten. Die Gesamtroute bleibt vollständig. Pausieren / warten öffnet am Spieltisch den Zeitdialog, Pausieren / rasten die vorhandene Party-Rast; beide nutzen ihre bestehenden Schreiber und bewegen die Gruppe nicht.
 
 Nach einer Pause oder veränderter Uhr, Gruppe, Karte, Kalender oder Wetter lässt sich der Restweg neu bewerten. Bereits zurückgelegte Abschnitte werden nicht erneut gereist; die verbleibende Hexfolge und das Ziel werden erhalten und am aktuellen Stand neu berechnet. Erst die ausdrückliche Annahme ersetzt die alte Reise, mit gespeichertem Bezug zur Vorgängerreise. Frühere Enddauer-Overrides werden nicht automatisch auf den Restweg übertragen. Eine außerhalb der Route versetzte Gruppe oder ein verschobenes Ziel benötigt eine neue Route. Die Vorschau enthält keine automatisch eingeplanten Rast- oder Begegnungswirkungen.
+
+### Desktopstand 0.74: Die Eröffnung vor dem Start lesen
+
+Der Leitungsstand zieht den nächsten vorbereiteten Besuch jeder Gruppe nun aus derselben GM-Spielabendmappe, die später am Tisch verwendet wird. Ort und vollständiger Eröffnungstext stehen direkt am Besuch; Zähler zeigen vorhandene GM-Hinweise, Referenzen, Begegnungsblöcke und Belohnungen. Fehlende oder archivierte Mappenquellen bleiben als konkrete Warnungen sichtbar.
+
+„Übernahme prüfen“ führt weiter in die bestehende bestätigte Besuchsübernahme. „Mappe öffnen“ fokussiert die betroffene Gruppe, bindet den richtigen Plan an den Spieltisch und öffnet die Mappe direkt beim nächsten Besuch. Das Lesen startet keinen Spielabend, übernimmt keinen Besuch und gibt keinen Text an Spieler frei.
