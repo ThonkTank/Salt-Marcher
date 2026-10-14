@@ -1,7 +1,6 @@
 # Actor Autonomy: geprüfte Jobangebote und Zeitwiederaufnahme
 
-Stand: 14.10.2026. Ergänzt [SMR-09](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-09--actor-autonomy)
-und den [Live-/Scenevertrag](smr03-live-scene-contract.md).
+Stand: 14.10.2026. Dieser Fachplan konkretisiert [SMR-09](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-09--actor-autonomy), die [Produktziele](../../PRODUCT.md), den [vollständigen Produktumfang](../../SCOPE.md), die [Lieferfolge](../../ROADMAP.md), den [Live-/Scenevertrag](smr03-live-scene-contract.md) und die [festgeschriebene Originalanforderung](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/autonomy/requirements/requirements-actor-autonomy.md).
 
 ## Anforderungen und vorhandener Anschluss
 
@@ -205,6 +204,20 @@ Backup/Export behalten ihren bestehenden strukturellen Schutz und erhalten den
 sicheren Vorgänger. Historische Target-/Slotclosure bleibt gesondert offen.
 
 ## Geprüfte historische Basis nach Integration
+## Abdeckung und verbleibende Produktlücken
+
+| Originalanforderung | Aktueller Nachweis | Verbleibende Abnahme |
+| --- | --- | --- |
+| Opt-in für bestehende NPCs/Monster und Gruppen; Identität bleibt erhalten | Einzelaktivierung und Aktivierung aller Mitglieder einer bestehenden vorbereiteten Gruppe verwenden dieselben Actor-IDs. | Eine persistente Autonomy-Gruppenidentität mit gemeinsamem Job/Reiseverhalten sowie konfiguriertem Split und Merge fehlt. |
+| Bedürfnisse, Rollen, erreichbare Jobs, Routen sowie exklusive Reservierungen und Zeitbuchungen | Needs und Prioritäten, Rollenfilter, World-/Dungeonpfade, Reservierungen und überlappungsfreie Buchungen liegen im produktiven Store. | Eine längere Campaignmessung muss noch zeigen, wie Intervall-, Buchungs- und Bewegungsdaten wiederholt wachsen. |
+| Erklärbare deterministische Auswahl und stabiler Gleichstand | Jeder Jobwechsel loggt Grundpriorität, NPC-Bonus, konkrete Needbeiträge, bis zu sechs zulässige Kandidaten, bis zu sechs Ablehnungen, Restzähler und den Job-ID-Tie-break. Die Oberfläche zeigt diese Fakten aufklappbar. | Die native Tastatur-/Screenreaderprüfung der aufklappbaren Fakten bleibt offen. Die vollständige Kandidatenauswertung wird vertragsgemäß nicht dauerhaft gespeichert. |
+| Einfache, vom referenzierten Feature angebotene Interaktion über dessen Owner | Der konkrete Trap-Owner bietet den atomaren, geloggten Resetjob an. | Ein allgemeiner Vertrag für weitere einfache Featureinteraktionen fehlt; er darf erst mit einem echten Featureowner ergänzt werden. |
+| Begrenzter Nicht-Party-Konflikt mit geloggten Inputs, Würfen, Folgen und Schutzgrenzen | Angriff, Abwehr, Wurf, HP-Grenze und Schaden werden über den Actor-/HP-Owner atomar angewandt und kompakt geloggt; Partygefahr und Konzentration pausieren vorher. | Position/Flucht, Gefangenschaft, Verletzung/Tod, Ressourcenverbrauch und Besitztransfer sind noch nicht als freigegebene Owneroperationen modelliert. |
+| Ausschließlich bestätigte Campaignzeit, atomare Steps, Pause/Cancel/Override und genau einmaliges Catch-up | Scenezeit erzeugt eingefrorene Intervalle; Cursor, Ownerwirkungen, Buchungen, Logs und Receipts committen gemeinsam. Pendingentscheidungen verlangen eine Begründung und überleben Fresh. | Abbruch vor Commit und lange Begründungen müssen noch nativ bedient werden; ein Hardcrashbeleg steht ebenfalls aus. |
+| Partygefahr vor Wirkung und passender GM-Kontext | World- und Dungeonwahrnehmung pausieren vor Bewegung, Reset oder Konflikt; die Actor-Karte verlinkt in den Scene-/Dungeonkontext. | Kamerafreiheit und unabhängige Reads während eines längeren Catch-ups sind noch nativ zu qualifizieren. |
+| 200 Actors, p95 höchstens zwei Sekunden und sichtbarer Fortschritt binnen 100 ms | Minimal- und räumliche 200-Actor-Baseline liegen lokal unter zwei Sekunden p95; der DOM-Beleg setzt den Fortschritt vor dem ersten Await. | Native Progress-, Cancel- und Kameraabnahme sowie eine längere räumliche Wachstumsmessung bleiben offen. |
+
+## Persistierter Vertrag
 
 `storage/autonomy.ts` führt Actors, Jobs, bestätigte Intervalle, Zeitfronten,
 Reservierungen, Job- und Ressourcenbuchungen, Logs und Commandreceipts. Ein
@@ -243,6 +256,19 @@ World- und gegebenenfalls Dungeonstand. Fortsetzen mit diesem Worldstand und das
 Auslassen des Zeitraums verlangen beide eine Begründung; Auflösung und Begründung
 werden geloggt und bleiben nach Fresh nachvollziehbar.
 
+## Sichtbare Jobentscheidung
+
+Die deterministische Wahl sortiert zulässige Jobs nach berechneter Priorität und
+bei Gleichstand nach stabiler Job-ID. Das Joblog zerlegt die Priorität in
+Grundwert, NPC-Bonus, aktivierte Needbeiträge und gegebenenfalls die ausdrückliche
+GM-Zuweisung. Rollen-, Reachability-, Reservierungs-, Zeit- und
+Zielbedingungen erscheinen als Ablehnungsgründe; Partygefahr bleibt eine eigene
+Pendingentscheidung. Pro Entscheidung werden
+höchstens sechs zulässige und sechs abgelehnte Jobs gespeichert; Restzähler
+machen die Begrenzung sichtbar. Damit bleibt die aktuelle Entscheidung prüfbar,
+ohne die vollständige Kandidatenauswertung als dauerhaft wachsende Historie
+anzuhängen.
+
 ## Lokaler Nachweis und Aussagegrenze
 
 `tests/core/autonomy-persistence-integrity.test.ts` belegt korrekt neu gehashte
@@ -256,9 +282,11 @@ Reservierungen, beide Buchungstypen, Logs, Receipts und Campaign-Remap.
 Catch-up an der bestätigten Uhr der auslösenden Scene endet und ein bereits
 späterer Actorstand nicht zurückgerollt wird. Der Test belegt außerdem die
 persistente Pause, die Sperre alternativer Aufhebungswege und die begründete
-Auflösung nach einem Neustart. `tests/core/autonomy-time-conflict-ui.test.ts`
-prüft am vollständigen DOM die Zeit-/Worldinformationen und beide begründeten
-Entscheidungen.
+Auflösung nach einem Neustart. Ein zusätzlicher Fall belegt Needbeiträge,
+Rollen-Ablehnung und den stabilen Tie-break im begrenzten Joblog.
+`tests/core/autonomy-time-conflict-ui.test.ts` prüft am vollständigen DOM die
+Zeit-/Worldinformationen, beide begründeten Entscheidungen und die sichtbare
+Kandidaten-/Ablehnungszusammenfassung.
 
 `tests/core/autonomy-owner-atomicity.test.ts` lässt Dungeonbewegung,
 Fallenreset und begrenzten NPC-Konflikt jeweils erst nach einer Ownerwirkung an
