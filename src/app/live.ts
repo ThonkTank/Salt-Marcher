@@ -229,7 +229,10 @@ function renderScene() {
     const option = document.createElement('option'); option.value = row.document.id; option.textContent = row.document.name + (row.trashed ? ' (Papierkorb)' : ''); option.disabled = row.trashed; select.append(option);
   }
   if (current && !sources?.locations.some(l => l.document.id === current)) { const option = document.createElement('option'); option.value = current; option.textContent = 'Ort nicht verfügbar'; option.disabled = true; select.append(option); }
-  select.value = current ?? ''; renderSceneMeta(); renderGroups();
+  select.value = current ?? '';
+  const npcSelect=get<HTMLSelectElement>('running-player-npc'),selectedNpc=npcSelect.value;npcSelect.replaceChildren();const emptyNpc=document.createElement('option');emptyNpc.value='';emptyNpc.textContent='NSC auswählen';npcSelect.append(emptyNpc);
+  for(const row of sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]){const option=document.createElement('option');option.value=row.note.id;option.textContent=row.note.title||'Unbenannter NSC';npcSelect.append(option);}npcSelect.value=[...npcSelect.options].some(option=>option.value===selectedNpc)?selectedNpc:'';get<HTMLButtonElement>('running-player-npc-show').disabled=!npcSelect.value;
+  renderSceneMeta(); renderGroups();
 }
 function groupPeople(id:string){return data?.roster.filter(c=>c.active&&c.sceneId===id).map(c=>c.profile.name).join(', ')||'Leere Party';}
 function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'|'clock'>){
@@ -324,6 +327,8 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-open-location').onclick = () => { void (async () => { const token = context?.token; if (await flushLive() && token === context?.token && sceneDraft?.locationId) await openLocation(sceneDraft.locationId); })(); };
   get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(await flushLive()&&context?.token===token)await cuePlayer('follow',focus);})();};
   get('running-player-location').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),locationId=sceneDraft?.locationId;if(!focus||!locationId)return;if(await flushLive()&&context?.token===token&&sceneDraft?.locationId===locationId)await cuePlayerImage('location',locationId,focus);})();};
+  get('running-player-npc').onchange=()=>{get<HTMLButtonElement>('running-player-npc-show').disabled=!value('running-player-npc');};
+  get('running-player-npc-show').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),npcId=value('running-player-npc');if(!focus||!npcId)return;if(await flushLive()&&context?.token===token&&value('running-player-npc')===npcId)await cuePlayerImage('npc',npcId,focus);})();};
   get('running-player-handout').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(!focus)return;if(await flushLive()&&context?.token===token)await cuePlayerImage('custom',null,focus);})();};
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('adoption-plan').onchange = renderVisits;

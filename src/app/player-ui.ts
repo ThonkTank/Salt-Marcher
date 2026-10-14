@@ -67,13 +67,13 @@ export async function cuePlayer(mode:'follow'|'blank',focus:Pick<PlayerView,'foc
   return owns(o)&&intent===actions;
  }catch(error){if(owns(o)&&intent===actions)tell((error as Error).message,true);return false;}
 }
-export async function cuePlayerImage(kind:'location'|'custom',subjectId:string|null,focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'|'focusLocationId'>):Promise<boolean>{
+export async function cuePlayerImage(kind:'location'|'npc'|'custom',subjectId:string|null,focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'|'focusLocationId'>):Promise<boolean>{
  const o=owner();if(!o)return false;const intent=++actions,request=++presentation;
  try{
   let latest=unwrap(await window.campaign.playerView(o.token));if(!owns(o)||intent!==actions)return false;
   const sameFocus=(candidate:PlayerView)=>focus.focusId===candidate.focusId&&focus.focusRevision===candidate.focusRevision&&focus.focusMembershipRevision===candidate.focusMembershipRevision&&focus.focusLocationId===candidate.focusLocationId;
   if(!sameFocus(latest))throw new Error('Fokussierte Gruppe geändert. Prüfe die Bildfreigabe für die aktuelle Gruppe erneut.');
-  let asset=kind==='location'?latest.assets.filter(a=>a.kind==='location'&&a.subjectId===subjectId).at(-1):undefined;
+  let asset=kind==='custom'?undefined:latest.assets.filter(a=>a.kind===kind&&a.subjectId===subjectId).at(-1);
   if(!asset){
    const known=new Set(latest.assets.map(a=>a.id)),picked=unwrap(await window.campaign.pickPlayerArt(o.token,kind,subjectId,''));if(!picked)return false;
    if(!owns(o)||intent!==actions)return false;if(!sameFocus(picked))throw new Error('Fokussierte Gruppe geändert. Das gewählte Bild wurde gespeichert, aber noch nicht freigegeben.');
@@ -84,7 +84,7 @@ export async function cuePlayerImage(kind:'location'|'custom',subjectId:string|n
   const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus.focusId,expectedFocusRevision:focus.focusRevision,expectedFocusMembershipRevision:focus.focusMembershipRevision,expectedFocusLocationId:focus.focusLocationId,action};
   const confirmed=unwrap(await window.campaign.executePlayer(command));if(!owns(o)||intent!==actions)return false;publish(o,confirmed,request);
   unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;await reload(o);
-  if(owns(o)&&intent===actions)tell(kind==='location'?'Ortsbild auf der Spieleranzeige geöffnet.':'Handout auf der Spieleranzeige geöffnet.');
+  if(owns(o)&&intent===actions)tell(kind==='location'?'Ortsbild auf der Spieleranzeige geöffnet.':kind==='npc'?'NSC-Bild auf der Spieleranzeige geöffnet.':'Handout auf der Spieleranzeige geöffnet.');
   return owns(o)&&intent===actions;
  }catch(error){if(owns(o)&&intent===actions)tell((error as Error).message,true);return false;}
 }
