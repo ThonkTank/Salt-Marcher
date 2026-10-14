@@ -116,7 +116,7 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
   const command: CombatCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token,
     combatId: action.kind === 'create' ? null : view?.combat?.id ?? null,
     expectedRevision: action.kind === 'create' ? null : expectedRevision??view?.combat?.revision ?? null, action,...(editorDraft?{draftWriteId:editorDraft.writeId}:{}) };
-  let applied = false;
+  let applied = false,revealConcentration=false;
   pending = (async () => {
     try {
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
@@ -126,9 +126,11 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
       if(['create','edit','damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
-      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):'Kampf gespeichert.'); return true;
+      const openConcentration=action.kind==='damage'?actor?.concentrationChecks?.[0]:undefined;
+      revealConcentration=!!openConcentration;
+      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+actor!.name+' gegen SG '+openConcentration.dc+' offen.'):'Kampf gespeichert.'); return true;
     } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
-    finally { pending = null; if (generation === gen) { if (applied) render(); else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
+    finally { pending = null; if (generation === gen) { if (applied){render();if(revealConcentration)get('combat-concentration-effect').scrollIntoView({block:'nearest'});}else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
   })();
   lock(); return pending;
 }
