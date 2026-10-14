@@ -21,7 +21,10 @@ function npcReceipt(db:any,c:NpcCommand):NpcView|null{
  if(row.campaign_id!==c.campaignId||row.fingerprint!==npcFingerprint(c))throw new Error('NPC-Auftragskennung anders verwendet.');
  if(hash(row.payload)!==row.checksum)throw new Error('NPC-Beleg beschädigt. Der Originalentwurf bleibt erhalten.');
  const v=JSON.parse(row.payload) as NpcView;
- if(v?.id!==c.npc.id||v.record?.id!==v.id||!Number.isSafeInteger(v.noteRevision)||!Number.isSafeInteger(v.record.revision)||typeof v.record.history!=='string')throw new Error('NPC-Beleg gehört nicht zum ursprünglichen Profil.');
+ if(v?.id!==c.npc.id||v.record?.id!==v.id||v.noteRevision!==(c.expectedNoteRevision??0)+1||v.record.revision!==c.expectedRecordRevision+1)throw new Error('NPC-Beleg gehört nicht zum ursprünglichen Profil.');
+ for(const key of ['name','creatureId','readAloud','gmNotes','locationId'] as const)if(v[key]!==c.npc[key])throw new Error('NPC-Beleg weicht vom ursprünglichen Profil ab.');
+ for(const key of ['factionId','modifier','lifecycle','appearance','behavior','history'] as const)if(v.record[key]!==c.npc.record[key])throw new Error('NPC-Beleg weicht vom ursprünglichen Profil ab.');
+ if(c.npc.health){const health=checkedHealth(c.npc.health);for(const key of ['hp','maxHp','tempHp','conditions','concentrating'] as const)if(v.health?.[key]!==health[key])throw new Error('NPC-Beleg besitzt andere bestätigte Gesundheit.');}
  return v;
 }
 

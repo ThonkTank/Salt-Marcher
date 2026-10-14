@@ -53,7 +53,9 @@ behält diesen Entwurf auch nach erfolgreichem Write. Ein abgewiesener oder
 verlorener Response erlaubt keinen erneuten Gesprächsanhang.
 
 `reconcileNpc` prüft Campaigntoken, Originalfingerprint ohne Aktivierungstoken,
-Receiptchecksum, NPC-Identität und passende Draftkennung in einer Writertransaktion.
+Receiptchecksum, NPC-Identität, bestätigte Autorenfelder/Revisionen und passende
+Draftkennung in einer Writertransaktion. Eine gültige Checksum ohne passenden
+Inhalt ist kein Erfolgsbeleg.
 Bei passendem Beleg räumt sie ausschließlich den Originalentwurf auf. Danach
 liest der Editor das aktuelle Profil; der historische Beleg darf einen späteren
 Notiz-/HP-/Ortsstand nicht zurücksetzen. Ohne Beleg rotiert die Transaktion die

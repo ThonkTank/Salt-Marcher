@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
@@ -140,5 +140,20 @@ test('reactivation before the recovery microtask cannot acknowledge the old draf
  const x=await fixture();try{
   x.input('npc-contact','Original');assert(await x.ui.flushNpcs());window.campaign.executeNpc=async c=>{x.writes.push(c);throw new Error('Antwort verloren');};x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.messages.includes('Antwort verloren'));const original=JSON.stringify(x.store.npcDraft(x.w.token,x.a.id));
   x.el('npc-write-check').onclick();x.ui.activateNpcs(x.w);await x.ui.openNpcProfile(x.b.id);await tick();assert.equal(JSON.stringify(x.store.npcDraft(x.w.token,x.a.id)),original);assert.equal(x.reads.filter(r=>r.kind==='reconcileNpc').length,0);assert.equal(x.el('npc-name').value,x.b.name);
+ }finally{await x.cleanup();}
+});
+
+
+test('a checksum-valid NPC receipt with different confirmed prose cannot consume the raw contact',async()=>{
+ const x=await fixture();try{
+  x.input('npc-contact','Original');assert(await x.ui.flushNpcs());const send=window.campaign.executeNpc;window.campaign.executeNpc=async c=>{await send(c);throw new Error('Antwort verloren');};x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.messages.includes('Antwort verloren'));const d=x.store.npcDraft(x.w.token,x.a.id),row=x.store.db.prepare('SELECT * FROM npc_receipt WHERE command_id=?').get(d.pendingCommand.commandId),v=JSON.parse(row.payload);v.record.history='Andere Geschichte';const payload=JSON.stringify(v);x.store.db.prepare('UPDATE npc_receipt SET payload=?,checksum=? WHERE command_id=?').run(payload,createHash('sha256').update(payload).digest('hex'),row.command_id);
+  x.el('npc-write-check').onclick();await until(()=>x.messages.some(m=>m.includes('Beleg weicht')));assert.equal(x.el('npc-name').readOnly,true);assert.deepEqual(x.store.npcDraft(x.w.token,x.a.id),d);assert.equal(x.writes.length,1);
+ }finally{await x.cleanup();}
+});
+
+
+test('NPC receipt health comparisons preserve values independent of JSON property order',async()=>{
+ const x=await fixture();try{
+  const {noteRevision,actorRevision,positionRevision,disposition,role,...npc}=x.a;const c={commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,expectedNoteRevision:noteRevision,expectedActorRevision:actorRevision,expectedPositionRevision:positionRevision,expectedRecordRevision:npc.record.revision,npc:{...npc,creatureId:'goblin',health:{concentrating:false,conditions:'',tempHp:0,maxHp:7,hp:7}}};const result=x.store.executeNpc(c);assert.deepEqual(x.store.executeNpc(c),result);assert.equal(result.health.hp,7);
  }finally{await x.cleanup();}
 });
