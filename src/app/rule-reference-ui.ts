@@ -14,7 +14,7 @@ function button(text:string,click:()=>void){const b=document.createElement('butt
 type Owner={token:string;campaignId:string;sceneId:string;generation:number};
 function owner():Owner|null{return workspace&&sceneId?{token:workspace.token,campaignId:workspace.campaign.id,sceneId,generation}:null;}
 function current(o:Owner){return o.generation===generation&&o.token===workspace?.token&&o.campaignId===workspace?.campaign.id&&o.sceneId===sceneId;}
-function lock(){const panel=el('live-rules-panel');panel.inert=busy;if(busy)panel.setAttribute('aria-busy','true');else panel.removeAttribute('aria-busy');for(const button of el('live-rules-panel').querySelectorAll<HTMLButtonElement>('#live-rule-pins button,#live-rule-results button'))button.disabled=busy||!view;}
+function lock(){const panel=el('live-rules-panel');panel.inert=busy;if(busy)panel.setAttribute('aria-busy','true');else panel.removeAttribute('aria-busy');for(const button of panel.querySelectorAll<HTMLButtonElement>('button'))button.disabled=busy;for(const button of panel.querySelectorAll<HTMLButtonElement>('#live-rule-pins button,#live-rule-results button'))button.disabled=busy||!view;}
 function accept(next:SceneRules,o:Owner){
  if(next.sceneId!==o.sceneId)throw new Error('Regelantwort gehört zu einer anderen Scene.');
  if(!Number.isSafeInteger(next.revision)||next.revision<0||!Array.isArray(next.pins)||next.pins.length>50)throw new Error('Regelantwort hat einen ungültigen Stand.');

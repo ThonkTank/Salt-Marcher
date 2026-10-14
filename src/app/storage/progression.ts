@@ -222,8 +222,7 @@ function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
  }
  return total;
 }
-// One current reward valuation for the personal ledger and cross-character balance.
-function ledgerRewardValue(db:any,cam:string,item:LedgerItem):bigint|null {
+export function ledgerRewardValue(db:any,cam:string,item:LedgerItem):bigint|null {
   const definition=readLedgerDefinition(db,item);
   item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;
   if(item.origin==='transfer')item.rewardCreditId=transferCredit(db,cam,item);
