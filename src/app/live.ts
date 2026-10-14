@@ -69,6 +69,10 @@ async function ensureLiveRuntime() {
   if (!data.scene) {if(!await execute({kind:'initialize',expectedRosterRevision:data.rosterRevision})||!current())return false;}
   resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();return !!data.scene;
 }
+export async function openLiveSoundboard(){
+ if(!data?.scene){get('live-continue').scrollIntoView({block:'center'});get<HTMLButtonElement>('live-continue').focus();tell('Öffne zuerst eine Gruppe am Spieltisch.');return;}
+ if(!await ensureLiveRuntime())return;get<HTMLDetailsElement>('live-soundboard').open=true;get('live-soundboard').scrollIntoView({block:'start'});
+}
 export async function prepareLiveEncounter(plan:EncounterPlan) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await prepareCombatPlan(plan); }
 export async function addLiveNpc(id:string){if(await ensureLiveRuntime())await addWorldNpc(id);}
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
