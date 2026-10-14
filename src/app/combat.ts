@@ -119,9 +119,10 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
       const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
       acceptCombat(result); applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
-      if(['create','edit','damage','heal','death','death-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
+      if(['create','edit','damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
-      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':'Kampf gespeichert.'); return true;
+      const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
+      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):'Kampf gespeichert.'); return true;
     } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
     finally { pending = null; if (generation === gen) { if (applied) render(); else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
   })();
@@ -192,6 +193,10 @@ async function applyRolledDamage(scale:'full'|'half'|'double'){
   if(amount<1||amount>1000000)return;
   if(await execute({kind:'damage',participantId:target,amount,sourceCheckId:damage.check.id,sourceScale:scale})&&pendingDamage[0]?.check.id===damage.check.id){pendingDamage=pendingDamage.slice(1);renderDamageEffect();}
 }
+function renderConcentrationEffect(){
+  const box=get('combat-concentration-effect'),combat=view?.combat,actor=combat?.participants.find(p=>p.concentrationChecks?.length),check=actor?.concentrationChecks?.[0];if(!combat||!actor||!check||!editableCombat(combat)){box.hidden=true;return;}box.hidden=false;get('combat-concentration-result').textContent=actor.name+' · Konzentration SG '+check.dc+' nach '+check.damage+' Schaden'+(actor.concentrationChecks!.length>1?' · 1 von '+actor.concentrationChecks!.length+' offenen Prüfungen':'');
+  const modifier=get<HTMLInputElement>('combat-concentration-modifier'),key=actor.id+':'+check.damage+':'+check.dc;if(modifier.dataset.checkKey!==key){modifier.dataset.checkKey=key;modifier.value='0';}for(const id of ['combat-concentration-roll','combat-concentration-pass','combat-concentration-fail'])get<HTMLButtonElement>(id).disabled=blocked();modifier.disabled=blocked();
+}
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked();
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
@@ -209,6 +214,7 @@ function lock() {
   get<HTMLButtonElement>('fighter-death-reset').disabled=deathUnavailable||!deathControls.reset;
   renderAttackEffect();
   renderDamageEffect();
+  renderConcentrationEffect();
 }
 function render() {
   const combat = view?.combat;
@@ -242,7 +248,7 @@ function render() {
     body.append(tr);
   }
   if (selected && !combat?.participants.some(p => p.id === selected)) selected = null;
-  renderPartyCandidates();renderEditor();renderAttackEffect();renderDamageEffect();lock();
+  renderPartyCandidates();renderEditor();renderAttackEffect();renderDamageEffect();renderConcentrationEffect();lock();
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
 }
 function renderSelection() { for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
@@ -303,6 +309,9 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-attack-target').onchange=renderAttackEffect;
   get('combat-attack-roll').onclick=()=>void rollAttack();
   get('combat-attack-discard').onclick=()=>{pendingAttack=null;renderAttackEffect();};
+  get('combat-concentration-roll').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration-roll',participantId:actor.id,modifier:Number(value('combat-concentration-modifier'))});};
+  get('combat-concentration-pass').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration',participantId:actor.id,success:true});};
+  get('combat-concentration-fail').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration',participantId:actor.id,success:false});};
   get('fighter-remove').onclick = () => { if (selected) void execute({ kind: 'remove', participantId: selected }); };
   get('combat-notes-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'notes', title: value('combat-edit-title'), notes: value('combat-notes') },draftRevision(notesDraft())); };
   get('combat-finish').onclick = () => { void (async () => { try { const gen = generation; await prepareFinish(view?.combat?.participants.map(p => p.characterId).filter((id): id is string => !!id) ?? [], view?.assessment); if (gen !== generation) return; get<HTMLDialogElement>('combat-finish-dialog').showModal(); get('combat-outcome').focus(); } catch (error) { tell((error as Error).message, true); } })(); };
