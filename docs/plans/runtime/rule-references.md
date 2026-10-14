@@ -57,6 +57,16 @@ innerhalb seines Commands an. Reads und readonly Snapshotprüfung schreiben
 weiterhin nichts. Die Storegegenprobe prüft den ersten bestätigten Revisionswert
 zusätzlich zu Fresh, Replay und unabhängiger Kopie.
 
+Die d20-Proben verwenden dieselbe Scene-Autorität: Mehrfaches Absenden bleibt
+während der Bestätigung gesperrt, verspätete Antworten ändern keine andere
+Gruppe, und der sichtbare Verlauf wird beim Gruppenwechsel sofort geleert.
+Reads legen keinen State an. Normal/Vorteil/Nachteil, unveränderte Würfel beim
+Replay, Fresh, unabhängige Kopie mit eigenen Regelverweisen und beschädigte
+Sicherungen prüfen die [Store-Regressionen](../../../tests/desktop-rule-reference-store.test.mjs);
+[DOM-Gegenproben](../../../tests/desktop-rule-reference-authority.test.mjs) prüfen
+Gruppenwechsel und die verwendete Revision. Native Close-/Replyverlustabnahme
+bleibt offen.
+
 ## Nächste ausführbare Schritte
 
 1. **Bestätigungs-/Closeweg schließen.** `executeSceneRule` besitzt lokale

@@ -1,6 +1,6 @@
 # Passive Spielerprojektion und große bekannte Karten
 
-Stand: 14.10.2026. Ergänzt den [Player-/Extensionanschluss](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#konkreter-player--und-extensionanschluss)
+Stand: 14.10.2026. Ergänzt den [Player-/Extensionanschluss](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-10--zweites-display-extensions-und-vollständige-portabilität)
 und den [Gesamtumfang](../../SCOPE.md).
 
 ## Vertrag und gegenwärtiger Anschluss
