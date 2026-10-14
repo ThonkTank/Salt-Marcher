@@ -1,3 +1,4 @@
+import {initSessionPacket,closeSessionPacket} from './session-packet-ui';
 import {magicPoolPicker} from './session-magic-pool-ui';
 import {requiredNpcPicker} from './required-npc-picker';
 import {budgetRarities} from './dungeon-budget-contracts';
@@ -27,7 +28,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
  const key=JSON.stringify([next?.token,current?.id,selected]);
  workspace=next;plan=current;visitId=selected;sources=data;
- if(parentChanged){requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
+ if(parentChanged){closeSessionPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
  if(key===basis)return;
  basis=key;generation++;loadRequest++;closeStoryAward();
@@ -319,6 +320,7 @@ export async function clearSessionTimeline(){
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
+initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession());
 initProposalEditor();tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
  get('plan-replace').onclick=()=>report(openReplacement);get('plan-replacement-source').onchange=()=>report(replacementSource);
