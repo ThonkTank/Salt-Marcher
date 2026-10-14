@@ -30,13 +30,27 @@ keine Scenezeit. Änderungen bleiben bei `executeProgress`.
   Kampagnenreaktivierung verwirft ihn. Token und Antwortgeneration sperren ältere
   Antworten. Eine Vorschau ist keine Schreibgrundlage für einen späteren Award.
 
+## Bestätigte XP-Abrechnung
+
+`party-award` bucht Verdienst und Tagesbelastung atomar mit getrennten Empfängern:
+Reservefiguren dürfen XP erhalten, Belastung nur aktive Figuren. Beide Pools
+verwenden dieselbe aufgerundete Verteilung wie die Vorschau. Ein Receipt-Replay
+wirkt nicht erneut; Scenezeit und Rasten werden damit nicht bestätigt.
+`changeCharacterXp` verbindet Korrekturvorschau und Writer: Abzug endet am aktuellen
+Levelfloor und reduziert lange/kurze Belastung sowie Rastbaseline bis mindestens
+null. Addieren und Setzen erhalten diese Zähler; eine Korrektur ist keine Rast.
+
 ## Nachweise und nächste Arbeit
 
 [Store-/Rechner-/DOM-Prüfungen](../../../tests/desktop-day-calculator.test.mjs)
 prüfen aktive Datenquellen, unveränderte Datenbytes, Fresh, fehlende XP/Rasten,
 Rundung, große Zeiträume, Split Scenes, Fokus-/Mitgliedschaftswechsel und verspätete
 Antworten. [Zeilenprüfung](../../../tests/desktop-adventuring-day-dom.test.mjs)
-prüft unfertige Rohwerte beim Hinzufügen und Entfernen. Das ersetzt keine native
+prüft unfertige Rohwerte beim Hinzufügen und Entfernen.
+[Abrechnungsprüfungen](../../../tests/desktop-party-xp.test.mjs) prüfen getrennte
+Empfänger, Rundung, Rollback, Replay nach Fresh, Korrektur und Copy-Verweise;
+[Antwortprüfungen](../../../tests/desktop-party-award-dom.test.mjs) erhalten neue
+Eingaben nach Wiederöffnung oder Kampagnenreaktivierung. Das ersetzt keine native
 Popover-, IPC-, Tastatur-, Last- oder Produktabnahme.
 
 1. Rast-/Levelrechnung mit Fortschrittswriter und tatsächlichen Awards prüfen:
