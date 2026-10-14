@@ -11,7 +11,7 @@ import type {ChaseState} from './chase-contracts';
 import type { EncounterPlan } from './encounter-contracts';
 import { initProgress, progressionContext, flushProgress } from './progression-ui';
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
-import {cuePlayer} from './player-ui';
+import {cuePlayer,cuePlayerImage} from './player-ui';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -29,6 +29,7 @@ let tell: (text: string, error?: boolean) => void, openLocation: (id: string) =>
 const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
+const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null}:null;
 export function activateLive(workspace: Workspace) {
   combatContext(null, null);chaseContext(null,null,[]); progressionContext(null, null, null);
   context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
@@ -213,6 +214,7 @@ function renderScene() {
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
   get<HTMLButtonElement>('running-player-scene').disabled=!(sceneDraft?.readAloud?.trim());
+  get<HTMLButtonElement>('running-player-location').disabled=!sceneDraft?.locationId;
   const select = get<HTMLSelectElement>('running-location'); select.replaceChildren();
   const none = document.createElement('option'); none.value = ''; none.textContent = 'Kein Ort'; select.append(none);
   const current = sceneDraft?.locationId;
@@ -309,8 +311,10 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   }
   get('running-location').onchange = () => { if (sceneDraft) { sceneDraft = { ...sceneDraft, locationId: value('running-location') || null }; renderSceneMeta(); schedule(); } };
   get('running-open-location').onclick = () => { void (async () => { const token = context?.token; if (await flushLive() && token === context?.token && sceneDraft?.locationId) await openLocation(sceneDraft.locationId); })(); };
-  get('running-player-scene').onclick=()=>{void(async()=>{const token=context?.token,focus=data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null}:null;if(!sceneDraft?.readAloud?.trim()){tell('Trage zuerst einen Vorlesetext ein.',true);return;}if(await flushLive()&&context?.token===token)await cuePlayer('scene',focus);})();};
-  get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token,focus=data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null}:null;if(await flushLive()&&context?.token===token)await cuePlayer('follow',focus);})();};
+  get('running-player-scene').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(!sceneDraft?.readAloud?.trim()){tell('Trage zuerst einen Vorlesetext ein.',true);return;}if(await flushLive()&&context?.token===token)await cuePlayer('scene',focus);})();};
+  get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(await flushLive()&&context?.token===token)await cuePlayer('follow',focus);})();};
+  get('running-player-location').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),locationId=sceneDraft?.locationId;if(!focus||!locationId)return;if(await flushLive()&&context?.token===token&&sceneDraft?.locationId===locationId)await cuePlayerImage('location',locationId,focus);})();};
+  get('running-player-handout').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(!focus)return;if(await flushLive()&&context?.token===token)await cuePlayerImage('custom',null,focus);})();};
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
