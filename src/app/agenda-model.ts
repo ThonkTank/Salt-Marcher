@@ -1,7 +1,10 @@
 import type {FantasyCalendar,CalendarEvent} from './world-contracts';
 export type AgendaUnit='second'|'minute'|'hour'|'day'|'week';
 export const agendaUnitLabels:Record<AgendaUnit,string>={second:'Sekunden',minute:'Minuten',hour:'Stunden',day:'Tage',week:'Wochen'};
-export function unitMs(c:FantasyCalendar,unit:AgendaUnit){return unit==='second'?1000n:unit==='minute'?60000n:unit==='hour'?3600000n:BigInt(c.daySeconds)*1000n*(unit==='week'?BigInt(c.weekdays.length||7):1n);}
+export function unitMs(c:FantasyCalendar,unit:AgendaUnit){
+ if(unit==='second')return 1000n;if(unit==='minute')return 60000n;if(unit==='hour')return 3600000n;if(unit==='day')return BigInt(c.daySeconds)*1000n;if(unit==='week')return BigInt(c.daySeconds)*1000n*BigInt(c.weekdays.length||7);
+ throw new Error('Zeiteinheit ist ungültig.');
+}
 export function agendaDuration(c:FantasyCalendar,value:string,unit:AgendaUnit){if(!/^\d+(\.\d{1,3})?$/.test(value))throw new Error('Eine positive Zahl mit höchstens drei Nachkommastellen eingeben.');const [whole,fraction='']=value.split('.'),scale=10n**BigInt(fraction.length),numerator=(BigInt(whole!)*scale+BigInt(fraction||'0'))*unitMs(c,unit);if(numerator%scale)throw new Error('Die Zeit muss sich in ganze Millisekunden umrechnen lassen.');return numerator/scale;}
 export function durationInput(c:FantasyCalendar,ms:string){const value=BigInt(ms);for(const unit of ['day','hour','minute'] as const)if(value%unitMs(c,unit)===0n)return{value:String(value/unitMs(c,unit)),unit};return{value:String(value/1000n)+(value%1000n?'.'+String(value%1000n).padStart(3,'0'):''),unit:'second' as const};}
 export function calendarParts(c:FantasyCalendar,ms:string){const dayMs=unitMs(c,'day'),days=BigInt(ms)/dayMs,yearDays=BigInt(c.months.reduce((n,m)=>n+m.days,0));let day=Number(days%yearDays),month=0;while(month<c.months.length-1&&day>=c.months[month]!.days)day-=c.months[month++]!.days;const seconds=BigInt(ms)%dayMs/1000n;return{year:String(BigInt(c.startYear)+days/yearDays),month:String(month),day:String(day+1),hour:String(seconds/3600n),minute:String(seconds/60n%60n)};}
