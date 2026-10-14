@@ -100,7 +100,7 @@ async function resolveWorldWrite(): Promise<WorldReconciliation|null> {
   checkingWorldWrite = operation;
   return operation;
 }
-export async function reconcileWorldWrite():Promise<boolean>{return !uncertain||!!await resolveWorldWrite();}
+export async function reconcileWorldWrite():Promise<boolean>{return !uncertain&&!checkingWorldWrite||!!await resolveWorldWrite();}
 export function agendaWritePending(eventId:string,token:string){return workspace?.token===token&&uncertain?.command.action.kind==='calendar-event'&&uncertain.command.action.event.id===eventId;}
 export async function recoverAgendaEvent(eventId:string,token:string){
  if(!agendaWritePending(eventId,token))throw new Error('Kein ungeklärter Speicherauftrag für dieses Ereignis.');
@@ -359,6 +359,6 @@ export function initWorld(status:typeof tell,flushLive:typeof before,reloadLive:
  el('weather-release').onclick=()=>run(()=>submitWeather(null));el('weather-discard-input').onclick=()=>run(discardWeatherInput);
 }
 
-export async function saveAgendaEvent(event:CalendarEvent,expectedRevision:number|null,basis:import('./agenda-contracts').AgendaBasis,token:string){if(workspace?.token!==token||!await flushWorld())throw new Error('Offene Welt-Eingaben zuerst abschließen.');const ack=await raw({kind:'calendar-event',event,expectedRevision,basis},()=>workspace?.token===token);const saved=ack.world.events.find(e=>e.id===event.id);if(!saved)throw new Error('Ereignisbestätigung fehlt.');try{await after();}catch(e){tell('Ereignis gespeichert; Live-Anzeige später aktualisieren: '+(e as Error).message,true);}return saved;}
+export async function saveAgendaEvent(event:CalendarEvent,expectedRevision:number|null,basis:import('./agenda-contracts').AgendaBasis,token:string,stillCurrent:()=>boolean=()=>true){if(workspace?.token!==token||!stillCurrent()||!await flushWorld())throw new Error('Offene Welt-Eingaben zuerst abschließen.');const ack=await raw({kind:'calendar-event',event,expectedRevision,basis},()=>workspace?.token===token&&stillCurrent());const saved=ack.world.events.find(e=>e.id===event.id);if(!saved||saved.revision!==(expectedRevision??0)+1)throw new Error('Ereignisbestätigung fehlt.');try{await after();}catch(e){tell('Ereignis gespeichert; Live-Anzeige später aktualisieren: '+(e as Error).message,true);}return saved;}
 
 async function renderLiveAgenda(token:string,sceneId:string,request:number){const root=document.getElementById('live-agenda-upcoming');if(!root)return;root.replaceChildren();try{const result=unwrap(await window.campaign.agenda(token,{sceneId,search:'',location:'current',horizonDays:1,includePast:false,after:null}));if(workspace?.token!==token||request!==liveRequest)return;for(const item of result.items.slice(0,3)){const p=document.createElement('p'),delta=String(BigInt(item.state==='active'?item.endMs:item.startMs)-BigInt(result.scene?.instantMs??'0'));p.textContent=item.event.name+' · '+(item.state==='active'?'jetzt aktiv, noch ':'in ')+agendaCountdown(result.calendar,delta);root.append(p);}if(!result.items.length){const p=document.createElement('p');p.className='caption';p.textContent='Keine Kalenderereignisse am Gruppenort im nächsten Tag.';root.append(p);}}catch(e){if(workspace?.token===token&&request===liveRequest)root.textContent='Agenda nicht verfügbar: '+(e as Error).message;}}

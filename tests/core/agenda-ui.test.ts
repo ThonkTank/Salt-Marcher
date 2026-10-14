@@ -11,7 +11,7 @@ import {CampaignStore} from '../../src/app/storage/store';
 import {newLocation} from '../../src/features/location/location-schema';
 const tick=()=>new Promise<void>(resolve=>setImmediate(resolve));
 async function until(check:()=>boolean){for(let i=0;i<40;i++){if(check())return;await tick();}assert.ok(check(),'expected agenda UI state');}
-async function fixture(t:TestContext){
+async function fixture(t:TestContext,worldDrain=async()=>true){
  const root=mkdtempSync(join(tmpdir(),'agenda-ui-')),store=new CampaignStore(join(root,'campaign.sqlite'));
  const campaign=store.create('Kalenderprobe'),workspace=store.activate(campaign.id),command=(action:any)=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,action});
  const {document,window}=parseHTML(readFileSync('src/app/index.html','utf8')),prior={document:globalThis.document,window:globalThis.window,HTMLInputElement:globalThis.HTMLInputElement,HTMLSelectElement:globalThis.HTMLSelectElement,HTMLTextAreaElement:globalThis.HTMLTextAreaElement,Option:globalThis.Option,Event:globalThis.Event};
@@ -23,7 +23,7 @@ async function fixture(t:TestContext){
  const location=newLocation('north','Nordtor','poi',['description','notes']);store.changePreparation({...command(null),change:{kind:'location',expectedRevision:null,document:location}});
  const wrap=(f:()=>any)=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:(e as Error).message};}};
  window.campaign={preparation:async(...a:any[])=>wrap(()=>store.preparation(a[0],a[1])),agenda:async(token,query)=>wrap(()=>store.agenda(token,query)),reconcileWorld:async(c,token)=>wrap(()=>store.reconcileWorld(c,token)),executeWorld:async c=>wrap(()=>store.executeWorld(c))} as typeof window.campaign;
- const messages:string[]=[];initWorld(s=>messages.push(s),async()=>true,async()=>{},async()=>{},async()=>{});activateWorld(workspace);
+ const messages:string[]=[];initWorld(s=>messages.push(s),worldDrain,async()=>{},async()=>{},async()=>{});activateWorld(workspace);
  const agenda=new CampaignAgenda(()=>workspace,async()=>true,s=>messages.push(s),async()=>{},async()=>{}),dialog=document.getElementById('campaign-agenda') as HTMLDialogElement;
  Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
  const el=(id:string)=>document.getElementById(id) as HTMLInputElement,click=(label:string)=>{const b=[...dialog.querySelectorAll('button')].find(b=>b.textContent===label) as HTMLButtonElement;assert.ok(b,label);b.onclick?.(new window.Event('click') as any);};
@@ -94,4 +94,36 @@ test('equivalent duration units do not require a redundant save',async t=>{
 test('equivalent date spelling preserves the exact instant without a redundant save',async t=>{
  const x=await fixture(t);x.click('Ereignis bearbeiten');x.el('agenda-year').value='001';x.el('agenda-hour').value='01';x.el('agenda-event-form').dispatchEvent(new Event('input'));x.click('Schließen');
  assert.equal(x.dialog.open,false);assert.equal(x.store.world(x.workspace.token).events[0]?.startMs,x.event.startMs);
+});
+test('typing during a save preserves newer raw input and advances only the confirmed event revision',async t=>{
+ const x=await fixture(t),execute=window.campaign.executeWorld;let release!:()=>void,seen=false;const held=new Promise<void>(r=>release=r);
+ window.campaign.executeWorld=async c=>{const result=await execute(c);seen=true;await held;return result;};
+ x.click('Ereignis bearbeiten');x.el('agenda-name').value='Gesendeter Name';x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>seen);
+ assert.equal(x.el('agenda-name').disabled,false);x.el('agenda-name').value='Danach eingegeben';release();await until(()=>x.el('agenda-status').textContent?.includes('Spätere Eingaben bleiben offen')===true);
+ assert.equal(x.el('agenda-name').value,'Danach eingegeben');assert.equal(x.store.world(x.workspace.token).events[0]?.name,'Gesendeter Name');
+ window.campaign.executeWorld=execute;x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.store.world(x.workspace.token).events[0]?.revision===3);
+ assert.equal(x.store.world(x.workspace.token).events[0]?.name,'Danach eingegeben');
+});
+test('failed receipt reads can be retried while resending and closing remain blocked',async t=>{
+ const x=await fixture(t),execute=window.campaign.executeWorld,reconcile=window.campaign.reconcileWorld;let writes=0,reads=0;
+ window.campaign.executeWorld=async c=>{writes++;await execute(c);throw new Error('Antwort verloren');};
+ x.click('Ereignis bearbeiten');x.el('agenda-name').value='Ein Originalauftrag';x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.el('agenda-status').textContent?.includes('Eingaben bleiben erhalten')===true);
+ window.campaign.reconcileWorld=async()=>{reads++;throw new Error('Lesefehler');};x.click('Speicherauftrag prüfen');await until(()=>x.el('agenda-status').textContent?.includes('Speicherauftrag bleibt ungeklärt')===true);assert.ok(x.messages.some(message=>message.includes('Lesefehler')));await tick();
+ assert.ok([...x.el('agenda-status').querySelectorAll('button')].some(b=>b.textContent==='Speicherauftrag prüfen'));x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));x.click('Eingaben verwerfen');assert.equal(x.el('agenda-name').value,'Ein Originalauftrag');x.click('Schließen');assert.equal(x.dialog.open,true);assert.equal(writes,1);
+ const database=(x.store as unknown as {db:{serialize:()=>Buffer}}).db,before=database.serialize();window.campaign.reconcileWorld=reconcile;x.click('Speicherauftrag prüfen');await until(()=>x.el('agenda-status').textContent?.includes('Speicherauftrag bestätigt')===true);x.click('Schließen');
+ assert.equal(x.dialog.open,false);assert.equal(writes,1);assert.equal(reads,1);assert.ok(database.serialize().equals(before));
+});
+test('time rebase rejects another group and preserves the original relative time basis',async t=>{
+ const x=await fixture(t),agenda=window.campaign.agenda,execute=window.campaign.executeWorld,original=x.store.live(x.workspace.token).scene!;
+ x.click('Neue Frist / Ereignis');x.el('agenda-name').value='Gruppenfrist';window.campaign.executeWorld=async()=>({ok:false,error:'Zeitkonflikt'});x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.el('agenda-status').textContent?.includes('Zeitkonflikt')===true);
+ window.campaign.agenda=async(token,query)=>{const result=await agenda(token,query);assert.ok(result.ok);return{ok:true,value:{...result.value,scene:{...result.value.scene!,id:'andere-gruppe',clockRevision:100,instantMs:'90000000'}}};};
+ x.click('Nur Zeitbasis und Vorschau aktualisieren');await until(()=>x.el('agenda-status').textContent?.includes('Zeitantwort gehört nicht')===true);await tick();
+ let basis:any;window.campaign.executeWorld=async c=>{if(c.action.kind==='calendar-event')basis=c.action.basis;return execute(c);};x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>!!basis);
+ assert.equal(basis.sceneId,original.id);assert.equal(basis.clockRevision,original.clock.revision);assert.equal(basis.instantMs,original.clock.instantMs);
+});
+test('reset during world flush cancels an event write before it reaches SQLite',async t=>{
+ let release!:(value:boolean)=>void;const x=await fixture(t,()=>new Promise(r=>release=r)),execute=window.campaign.executeWorld;let writes=0;
+ window.campaign.executeWorld=async c=>{writes++;return execute(c);};x.click('Ereignis bearbeiten');x.el('agenda-name').value='Alter Auftrag';x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>!!release);
+ x.agenda.reset();await x.open();x.click('Neue Frist / Ereignis');x.el('agenda-name').value='Neuer Entwurf';release(true);for(let i=0;i<12;i++)await tick();
+ assert.equal(writes,0);assert.equal(x.el('agenda-name').value,'Neuer Entwurf');assert.equal(x.store.world(x.workspace.token).events[0]?.revision,1);
 });

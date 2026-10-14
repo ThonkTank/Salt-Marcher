@@ -39,20 +39,36 @@ Save; unveränderte Daten behalten auch Sekunden und Millisekunden. Nach einem
 bestätigten Receipt kann der Editor direkt schließen, sofern keine späteren
 Änderungen vorliegen.
 
+## Kontext und Speicherbestätigung
+
+Editor und Antworten gehören zu Campaigntoken, Dialoganfrage und Entwurf.
+Während eines Saves bleiben Rohfelder editierbar; dessen Bestätigung übernimmt
+nur die eigene Eventrevision. Neuere Eingaben behalten ihre gezeigte Zeitbasis.
+Der Writer prüft diese Bindung erneut nach Flush. Rebase liest dieselbe Gruppe;
+eine andere Scene, ältere Clockrevision oder andere Kalenderregeln bleiben
+sichtbare Konflikte. Ein offener Auftrag blockiert weitere Saves und Schließen;
+fehlgeschlagene Receiptlesungen lassen denselben Auftrag erneut prüfen.
+Rohentwürfe und unbekannte Ausgänge sind noch nicht über Fresh/Neustart gesichert.
+
+Der Mainwriter führt die SQLite-Transaktion synchron aus. Bei späteren externen
+Writern darf Receiptabwesenheit keine abgeschlossene Nichtausführung beweisen.
+Receiptidentität, Eventrevision und Kalender-/Clockautorität bleiben getrennt.
+Die tatsächlichen DOM-/Worldbridge-/SQLite-Prüfungen stehen gemeinsam in
+`agenda-ui.test.ts`; sie ersetzen keine native Abnahme.
+
 ## Nächste konkrete Prüfungen und Lieferung
 
-1. Die lokalen Guards für Editorabsicht und Eventrevision in `agenda-ui.ts`
-   nativ gegen Dialog-, Kampagnen- und Lesefassungswechsel prüfen. Bei verzögertem Load/Save/Refresh/Rebase
-   dürfen neue Rohfelder oder eine neuere Eventauswahl nicht ersetzt werden.
-   Relative Fristen behalten ausdrücklich ihre gezeigte Ursprungsscene;
-   Fokuswechsel ist keine Zustimmung zu einer anderen Zeitbasis. Kleinste
-   Gegenproben: Gruppen-/Campaignwechsel während Flush, weiterer Text während
-   Pending und gleiche Campaign mit neu geöffneter Agenda.
-2. Rohentwürfe samt Kalender-/Scene-/Eventbasis vor Close/Fresh sichern und
-   unbekannte Worldcommandausgänge anhand des ursprünglichen Receipts klären.
-   Kein erneutes Anlegen derselben Frist zur Aufklärung. Vorwärts-/Rückwärts-
-   Clockänderung, Kalenderänderung, gelöschter Ort und Zeitbasis-Update behalten
-   ihre unterschiedlichen Ursachen und sichtbaren Konflikte.
+1. Rohentwürfe vor Close/Fresh sichern; bestehende Entwurfspersistenz samt
+   Backup-/Campaign-Lebenszyklus zuerst auf einen passenden Anschluss prüfen.
+   Rohe Felder, ursprüngliche Event-/Kalender-/Clockbasis und ungeklärter
+   Originalcommand samt ID bleiben erhalten. Altentwürfe ohne Basis verlangen
+   sichtbare Prüfung. Abnahme: ungültige Eingaben/verlorene Antwort → Neustart
+   → unveränderte Felder und Basen, genau ein Effekt.
+2. Relative Frist, Reisen/Weiterreise, Rast/Warten, Shoprestock und zeitgebundene
+   Autonomie gemeinsam gegen Kalender-/Scenezeit prüfen. Fokuswechsel ist keine
+   Zustimmung zur Zeit einer anderen Gruppe. Vorwärts-/Rückwärts-Clockänderung,
+   Kalenderänderung, gelöschter Ort und Eventänderung brauchen unterscheidbare
+   Konflikte; nur ein ausdrücklicher neuer Plan darf Effekte auslösen.
 3. Aktuelle/grenzenübergreifende und wiederholte Ereignisse mit kundenspezifischen
    Tages-/Monats-/Wochenlängen gegen Daten-/Backupregeln prüfen. Den Scan am
    relevanten Größenprofil messen; erst einen bestätigten Engpass durch
