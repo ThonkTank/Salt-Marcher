@@ -1,3 +1,4 @@
+import {readWorldLinks} from './world-links';
 import {readNpcCast,readNpcDossier} from './npc-cast';
 import {previewSceneTime} from './time-plan';
 import {readAgenda} from './agenda';
@@ -9,7 +10,7 @@ import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
 import {installNpcRecords} from './npc-record';
-import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
+import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc,validateNpcRecovery} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
 import {migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
@@ -446,7 +447,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateNpcRecovery(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
@@ -538,14 +539,16 @@ export class CampaignStore {
       return { notes, plans, locations, maps: this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=? ORDER BY name,id').all(campaignId), problems, selection };
     })();
   }
-  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery){const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
-  npcDossier(token:string,sceneId:string,id:string){const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
+  worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery){const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
+  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
+  npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}
   npcDraft(token:string,id:string){return npcDraft(this.db,this.guard(token),id);}
   keepNpcDraft(token:string,d:NpcDraft,expected:string|null){return keepNpcDraft(this.db,this.guard(token),d,expected);}
   discardNpcDraft(token:string,id:string,writeId:string){return discardNpcDraft(this.db,this.guard(token),id,writeId);}
   npcs(token:string,q:NpcQuery){return readNpcs(this.db,this.guard(token),q);}
   npc(token:string,id:string){return readNpc(this.db,this.guard(token),id);}
+  reconcileNpc(c:NpcCommand,token:string){return reconcileNpc(this.db,c,()=>{this.guard(token,c.campaignId);});}
   executeNpc(c:NpcCommand){return executeNpc(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   generationSources(token:string){return readWorldSources(this.db,this.guard(token));}
   sceneVisits(token:string,sceneId:string,after:string|null){return readSceneVisits(this.db,this.guard(token),sceneId,after);}
@@ -809,7 +812,10 @@ export class CampaignStore {
     });
     return manualPlan({ version: 1, id: row.id, revision: row.revision, name: row.name, scenes });
   }
-  changePreparation(command: PreparationCommand): Preparation {
+  changePreparation(command: PreparationCommand): Preparation {this.commitPreparation(command);return this.preparation(command.token);}
+  changePreparationContent(command:PreparationCommand){if(command.change.kind!=='note'&&command.change.kind!=='location')throw new Error('Gezielte Änderung benötigt Notiz oder Ort.');this.commitPreparation(command);const cam=this.guard(command.token);return deskContent(this.db,cam,command.change.kind==='note'?{kind:'note',id:command.change.note.id}:{kind:'location',id:command.change.document.id});}
+  reconcilePreparationContent(command:PreparationCommand,token:string){const cam=this.guard(token,command.campaignId),target=preparationTarget(command.change),r=this.db.prepare('SELECT * FROM receipt WHERE command_id=?').get(command.commandId),table=target.kind==='note'?'world_note':target.kind==='location'?'location':'plan',current=this.db.prepare(`SELECT revision FROM ${table} WHERE campaign_id=? AND id=?`).get(cam,target.id);if(r){if(r.campaign_id!==cam||!matchesReceipt(r,command))throw new Error('Änderungskennung anders verwendet.');return{outcome:'applied' as const,targetChanged:current?.revision!==r.revision};}const changed=(current?.revision??null)!==command.change.expectedRevision;return{outcome:changed?'conflict' as const:'not-applied' as const,targetChanged:changed};}
+  private commitPreparation(command: PreparationCommand): void {
     if (typeof command.commandId !== 'string' || !command.commandId) throw new Error('Änderungskennung fehlt.');
     const change = validatePreparation(command.change), fingerprint = commandFingerprint(command);
     this.db.transaction(() => {
@@ -889,7 +895,6 @@ export class CampaignStore {
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
       if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);
     }).immediate();
-    return this.preparation(command.token);
   }
   selectPreparation(token: string, selection: PreparationSelection): void {
     this.db.transaction(() => {

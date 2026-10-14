@@ -801,3 +801,21 @@ Gespräch festhalten führt mit Kalenderdatum und Gruppe in den vorhandenen NPC-
 Jeder vorbereitete Besuch bietet nun einen ausdrücklichen Startweg. „Spielabend beginnen + Text in Szene“ fokussiert die zugehörige Gruppe, schreibt den normalen Sitzungsmarker, übernimmt den vorbereiteten Eröffnungstext in die laufende Szene und öffnet die GM-Mappe direkt bei diesem Besuch. Fehlt ein Eröffnungstext, beginnt derselbe Ablauf mit der Mappe.
 
 Besuchsübernahme, Spielerfreigabe und Audio bleiben weiterhin getrennte Bestätigungen. Der Start erzeugt weder Begegnung noch Belohnung und zeigt Spielern den Text nicht automatisch; der GM kann erst in der geöffneten Mappe prüfen und anschließend die vorhandenen Aktionen verwenden.
+
+### Desktopstand 0.78: Zusammenhangsplan für die Kampagne
+
+Zusammenhänge verbindet NSCs, Fraktionen, Quests, Gerüchte, Regeln und Orte in einer zoombaren, per Maus und Tastatur verschiebbaren Karte. Suche und 40er-Seiten liefern begrenzte Metadaten; nur die ausgewählte Quelle lädt ihre vollständige Prosa. Ein Fokus erweitert eingehende und ausgehende Beziehungen und liest bestehende NPC-/Fraktions-/Orts- und Auftragsbindungen. Abgeleitete Bindungen bleiben bei ihren bestehenden Besitzern. Karte und Verbindungen sind eine Sicht auf dieselben Kampagnenidentitäten.
+
+Gerichtete Beziehungen lassen sich unmittelbar hinzufügen und lösen. Gültige Eingaben werden im bestehenden Notizentwurf gesichert; die ausdrückliche Bestätigung verwendet denselben Vorbereitungs-Schreiber, dieselben Receipts und Revisionen wie der World-Editor. Originaltexte und weitere Metadaten werden nicht ersetzt. Bei Konflikten bleiben Ziel und Beziehungsname erhalten; Statusprüfung und ausdrückliches Laden der aktuellen Basis ermöglichen die Fortsetzung. Neue Weltinhalte können direkt angelegt und in ihrem bestehenden Editor weiterbearbeitet werden. Der gezielte Schreibanschluss gibt nur die betroffene Quelle zurück, statt den gesamten Vorbereitungsbestand mitzuschicken. Kein zusätzlicher Beziehungs-, Orts-, NPC- oder Fraktionsstore.
+
+### Desktopstand 0.77: Die nächste Übergabe aus dem Spielstand
+
+Der Abschluss des Spielabends baut seinen Übergabevorschlag nun aus dem aktuellen Leitungsstand. Er verbindet Fokusgruppe und Ort mit dem nächsten vorbereiteten Besuch, einer laufenden Reise, den nächsten drei lokalen Fristen, bis zu vier offenen Aufträgen und Weltentscheidungen sowie den bereits geprüften Kämpfen, Verfolgungen, Beute- und XP-Punkten.
+
+Der Vorschlag bleibt neben der editierbaren Übergabe sichtbar und lässt sich nach einer erneuten Prüfung ausdrücklich übernehmen. Nur der Text im Übergabefeld wird mit dem Endmarker gespeichert; die Vorschau verändert weder Besuch, Reise, Auftrag, Agenda noch andere Gruppenstände.
+
+### Desktopstand 0.79: Kataloge im Zusammenhangsplan
+
+Der Zusammenhangsplan erschließt zusätzlich Kreaturen, Gegenstände und Encounter-Vorlagen. Er folgt den vorhandenen Statblock-, Teilnehmer- und Belohnungsreferenzen in beide Richtungen: vom NSC zur Kreatur und ihren Begegnungen, vom Auftrag zur Gegenstandsquelle und zurück. Die Suche lädt jeweils höchstens 40 Metadaten; Einzeltexte und Katalogdetails erst bei Auswahl. Kampagneninhalte bleiben der anfängliche Suchbereich.
+
+„Referenz lesen / am Spieltisch verwenden“ öffnet die bestehende Schnellsuche an genau dieser Quelle. „Katalog / Vorlage öffnen“ führt zum bestehenden Editor, inklusive Gegenstandsvergabe und Encounter-Vorbereitung. Die Schnellsuche führt umgekehrt zu den Zusammenhängen ihrer Quelle. Aktuelle Katalogdefinitionen und eingefrorene Vorlagen-/Belohnungsstände werden ausdrücklich bezeichnet; Graphnavigation ändert keine Zeit, Teilnehmer oder Belohnungen. Beziehungen zwischen Weltinhalten bleiben beim vorhandenen Notizschreiber.
