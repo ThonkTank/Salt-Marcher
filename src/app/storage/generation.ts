@@ -1,4 +1,4 @@
-import {installWorldSources,saveWorldSource,pruneWorldStock,resolveWorldSources} from './world-sources';
+import {installWorldSources,saveWorldSource,pruneWorldStock,resolveWorldSources,validateWorldSources} from './world-sources';
 import {createHash,randomUUID} from 'node:crypto';
 import artifact from '../generation/system-preset.json';
 import {checkedGeneratorConfig} from '../generation/config';
@@ -45,6 +45,7 @@ export function validateGenerationBackup(db:any){
  for(const row of db.prepare('SELECT * FROM encounter_table').iterate())decodeTable(row);
  for(const row of db.prepare('SELECT * FROM loot_table').iterate())decodeLootTable(row);
  for(const row of db.prepare('SELECT * FROM generator_preset').iterate())decodePreset(row);
+ validateWorldSources(db);
  for(const row of db.prepare('SELECT campaign_id,id FROM encounter_plan').iterate())readEncounterPlan(db,row.campaign_id,row.id);
 }
 export function readGeneratorRegistry(db:any,cam:string):GeneratorRegistry{const presets=db.prepare('SELECT * FROM generator_preset ORDER BY system DESC,id').all().map((r:any)=>decodePreset(r)),assignedId=db.prepare('SELECT preset_id FROM generator_assignment WHERE campaign_id=?').get(cam)?.preset_id??null;return{revision:db.prepare('SELECT revision FROM generator_meta WHERE id=1').get().revision,presets,assignedId,effectiveId:assignedId??systemId};}
