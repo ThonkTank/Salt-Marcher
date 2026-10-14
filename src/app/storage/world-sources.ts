@@ -70,6 +70,10 @@ export function resolveWorldSources(db:any,cam:string,r:Pick<GenerationRequest,'
 }
 
 export function canonicalSourceSnapshot(snapshot:import('../generation-contracts').WorldSourceSnapshot|null){
- if(!snapshot)return null;const source=(s:WorldSource)=>({...s,tableIds:s.tableIds.slice().sort(),factionIds:s.factionIds.slice().sort(),stock:s.stock.slice().sort((a,b)=>a.creatureId.localeCompare(b.creatureId))});
+ if(snapshot===null)return null;
+ const id=(v:unknown)=>typeof v==='string'&&!!v&&v.length<=1000;
+ if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot)||!Array.isArray(snapshot.involved)||!Array.isArray(snapshot.tableIds)||snapshot.tableIds.some(v=>!id(v))||new Set(snapshot.tableIds).size!==snapshot.tableIds.length||!Array.isArray(snapshot.caps)||snapshot.caps.some(c=>!c||typeof c!=='object'||!id(c.creatureId)||!Number.isSafeInteger(c.limit)||c.limit<0)||new Set(snapshot.caps.map(c=>c.creatureId)).size!==snapshot.caps.length)throw new Error('Weltquellenbasis der Vorschau beschädigt.');
+ if(snapshot.location!==null&&checkedSource(snapshot.location).kind!=='location'||snapshot.involved.some(s=>checkedSource(s).kind!=='faction')||new Set(snapshot.involved.map(s=>s.id)).size!==snapshot.involved.length)throw new Error('Weltquellenbasis der Vorschau widersprüchlich.');
+ const source=(s:WorldSource)=>({...s,tableIds:s.tableIds.slice().sort(),factionIds:s.factionIds.slice().sort(),stock:s.stock.slice().sort((a,b)=>a.creatureId.localeCompare(b.creatureId))});
  return{location:snapshot.location?source(snapshot.location):null,involved:snapshot.involved.map(source).sort((a,b)=>a.id.localeCompare(b.id)),tableIds:snapshot.tableIds.slice().sort(),caps:snapshot.caps.slice().sort((a,b)=>a.creatureId.localeCompare(b.creatureId))};
 }

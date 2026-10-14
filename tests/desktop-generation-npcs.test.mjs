@@ -35,6 +35,7 @@ for(const change of ['health','lifecycle','new opponent'])test(`named ${change} 
 for(const [name,damage]of [
  ['identity',r=>{r.id=randomUUID();}],
  ['seed',r=>{r.seed='different';}],
+ ['world source shape',r=>{r.sourceSnapshot={location:null,involved:[],tableIds:[],caps:[{creatureId:'guard',limit:-1}]};}],
  ['proposal count',r=>{r.request.count++;}],
  ['assessment',r=>{r.plans[0].assessment.adjustedXp++;}],
  ['candidate closure',r=>{r.candidates[0].creatureId='missing';}],
@@ -55,4 +56,21 @@ test('historical named preview stays readable and backup-safe after NPC and pres
 
 test('ordinary catalog previews remain readable, acceptable and copy-safe',async t=>{
  const x=fixture(t),request={...x.request,npcOnly:false},run=x.store.generateEncounters(x.w.token,request);assert.equal(run.npcBasis,undefined);assert.deepEqual(x.store.generationRun(x.w.token,run.id),run);x.accept(x.w.token,x.cam.id,run.id);const accepted=x.store.generationRun(x.w.token,run.id);assert.ok(accepted.acceptedPlanIds[0]);const snapshot=path.join(x.root,'catalog.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=x.store.acceptCampaignSnapshot(snapshot,'Copied catalog',{}),w=x.store.activate(copy.id),copied=x.store.generationRun(w.token,x.store.generationRuns(w.token)[0].id);assert.ok(copied.acceptedPlanIds[0]);assert.notEqual(copied.acceptedPlanIds[0],accepted.acceptedPlanIds[0]);await x.store.backup(path.join(x.root,'catalog-safe.sqlite'));
+});
+
+for(const mode of ['required only','mixed empty pool','mixed partial pool'])test(`${mode} preview reads, accepts and copies with its exact NPC identities`,async t=>{
+ const x=fixture(t),request={...x.request,npcOnly:false,filters:{text:mode==='required only'?'does not exist':'guard'},...(mode==='required only'?{requiredNpcIds:[x.id]}:{includeNpcs:true,...(mode==='mixed empty pool'?{excludedNpcIds:[x.id]}:{})})};
+ if(mode==='mixed partial pool'){
+  const registry=x.store.generatorRegistry(x.w.token),preset=structuredClone(registry.presets.find(p=>p.id===registry.effectiveId));preset.config.composition.monsters.min={value:3,perPlayer:false};preset.config.composition.monsters.max={value:3,perPlayer:false};for(const range of Object.values(preset.config.composition.roleQuantities))range.min=range.max=3;x.store.executeGeneration(x.command({kind:'preset-save',preset,expectedRegistryRevision:registry.revision}));request.targetXp=150;
+ }
+ const run=x.store.generateEncounters(x.w.token,request),ids=run.plans[0].entries.flatMap(e=>e.worldActorIds??[]);assert.deepEqual(ids,mode==='mixed empty pool'?[]:[x.id]);if(mode==='required only')assert.equal(run.candidates.length,0);if(mode==='mixed partial pool'){assert.equal(run.plans[0].entries[0].count,3);assert.equal(run.plans[0].entries[0].allowAnonymous,true);}
+ assert.deepEqual(x.store.generationRun(x.w.token,run.id),run);const accepted=x.accept(x.w.token,x.cam.id,run.id);assert.deepEqual(accepted.entries.flatMap(e=>e.worldActorIds??[]),ids);
+ if(mode==='mixed partial pool'){
+  const planId=randomUUID(),visitId=randomUUID(),locationId=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Mixed evening',scenes:[{id:visitId,title:'Watch',notes:'',locationId:null}]}}});x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id:locationId,name:'Gate',type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});
+  const group=x.store.executeSession(x.command({kind:'attach',planId,visitId,expectedVisitRevision:0,encounterId:accepted.id,expectedEncounterRevision:accepted.revision})).groups[0],before=x.store.db.prepare('SELECT count(*) n FROM world_actor').get().n;x.store.executeSession(x.command({kind:'place',planId,groupId:group.id,expectedRevision:group.revision,locationId,expectedLocationRevision:1}));const placed=x.store.groupView(x.w.token,group.id);assert.equal(placed.actors.length,3);assert.equal(placed.actors.find(a=>a.id===x.id).hp,5);assert.equal(placed.actors.find(a=>a.id===x.id).tempHp,2);assert.equal(x.store.db.prepare('SELECT count(*) n FROM world_actor').get().n,before+2);
+ }
+ const file=path.join(x.root,'new-mode.sqlite');await x.store.campaignSnapshot(x.w.token,file);const copy=x.store.acceptCampaignSnapshot(file,'Independent',{}),w=x.store.activate(copy.id),copied=x.store.generationRun(w.token,x.store.generationRuns(w.token)[0].id);assert.equal(copied.npcBasis.length,run.npcBasis.length);if(ids.length)assert.notEqual(copied.plans[0].entries[0].worldActorIds[0],x.id);await x.store.backup(path.join(x.root,'new-mode-safe.sqlite'));
+});
+test('a named-only encounter cannot silently clone missing NPC identities',t=>{
+ const x=fixture(t),run=x.store.generateEncounters(x.w.token,x.request),plan=structuredClone(run.plans[0]);plan.entries[0].count=2;const bytes=x.store.db.serialize();assert.throws(()=>x.store.saveEncounterPlan({...x.command(null),plan,expectedRevision:null}),/NPCs/);assert.ok(bytes.equals(x.store.db.serialize()));
 });

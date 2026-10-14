@@ -88,30 +88,39 @@ function generationRunRow(db:any,row:any):GenerationRun {
  const fail=()=>{throw new Error('Generierungsvorschau beschädigt. Originaldaten bleiben erhalten.');};
  if(!object(run)||run.id!==row.id||!id(run.id)||run.revision!==1||!id(run.seed)||!object(run.request)||run.seed!==run.request.seed||!object(run.preset)||!id(run.preset.id)||typeof run.preset.name!=='string'||!revision(run.preset.revision)||!digest(run.preset.hash)||!unsigned(run.preset.mobThreshold)||!digest(run.catalogHash)||run.sourceBasis!==undefined&&run.sourceBasis!==null&&!digest(run.sourceBasis))fail();
  const r=run.request;
- if(!unsigned(r.count)||r.count<1||r.count>20||typeof r.title!=='string'||r.title.length>1000||typeof r.habitat!=='string'||!['any','day','night'].includes(r.time)||!Array.isArray(r.party)||!r.party.length||!Array.isArray(r.tableIds)||r.tableIds.length>1000||r.tableIds.some(v=>!id(v))||new Set(r.tableIds).size!==r.tableIds.length||!object(r.filters)||r.npcOnly!==undefined&&typeof r.npcOnly!=='boolean'||!Array.isArray(run.plans)||run.plans.length!==r.count||new Set(run.plans.map(p=>p?.id)).size!==run.plans.length||!Array.isArray(run.warnings)||run.warnings.some(s=>typeof s!=='string')||!Array.isArray(run.acceptedPlanIds)||run.acceptedPlanIds.length>run.plans.length||!Array.isArray(run.candidates)||!run.candidates.length||new Set(run.candidates.map(c=>c?.creatureId)).size!==run.candidates.length)fail();
+ if(!unsigned(r.count)||r.count<1||r.count>20||typeof r.title!=='string'||r.title.length>1000||typeof r.habitat!=='string'||!['any','day','night'].includes(r.time)||!Array.isArray(r.party)||!r.party.length||!Array.isArray(r.tableIds)||r.tableIds.length>1000||r.tableIds.some(v=>!id(v))||new Set(r.tableIds).size!==r.tableIds.length||!object(r.filters)||r.npcOnly!==undefined&&typeof r.npcOnly!=='boolean'||!Array.isArray(run.plans)||run.plans.length!==r.count||new Set(run.plans.map(p=>p?.id)).size!==run.plans.length||!Array.isArray(run.warnings)||run.warnings.some(s=>typeof s!=='string')||!Array.isArray(run.acceptedPlanIds)||run.acceptedPlanIds.length>run.plans.length||!Array.isArray(run.candidates)||new Set(run.candidates.map(c=>c?.creatureId)).size!==run.candidates.length)fail();
  for(const refs of [run.tables,run.lootTables??[]]){
   if(!Array.isArray(refs)||refs.length>1000||new Set(refs.map(v=>v?.id)).size!==refs.length||refs.some(v=>!object(v)||!id(v.id)||!revision(v.revision)))fail();
  }
  for(const c of run.candidates)if(!object(c)||!id(c.creatureId)||integerWeights([exactWeight(c.weight)])[0]!<=0n)fail();
- const basis=run.npcBasis;
- if(r.npcOnly===true? !Array.isArray(basis):basis!==undefined)fail();
+ const required=r.requiredNpcIds??[],excluded=r.excludedNpcIds??[],basis=run.npcBasis;
+ for(const ids of [required,excluded])if(!Array.isArray(ids)||ids.length>100||ids.some(v=>!id(v))||new Set(ids).size!==ids.length)fail();
+ if(required.some(v=>excluded.includes(v))||r.includeNpcs!==undefined&&typeof r.includeNpcs!=='boolean')fail();
+ const usesNpcs=r.npcOnly===true||r.includeNpcs===true||required.length>0;
+ if(usesNpcs? !Array.isArray(basis):basis!==undefined)fail();
+ if(!run.candidates.length&&!required.length)fail();
  if(basis!==undefined){
-  if(!basis.length||new Set(basis.map(n=>n?.id)).size!==basis.length)fail();
+  if(new Set(basis.map(n=>n?.id)).size!==basis.length)fail();
   for(const n of basis){
    if(!object(n)||!id(n.id)||typeof n.name!=='string'||n.name.length>1000||!id(n.creatureId)||!revision(n.noteRevision)||!revision(n.recordRevision)||!revision(n.actorRevision)||n.positionRevision!==null&&!revision(n.positionRevision)||n.locationId!==null&&!id(n.locationId)||n.role!=='hostile'||!db.prepare('SELECT 1 FROM world_actor WHERE campaign_id=? AND id=?').get(cam,n.id))fail();
   }
  }
+ if(required.some(v=>!basis?.some(n=>n.id===v))||basis?.some(n=>excluded.includes(n.id)))fail();
+ if(run.sourceSnapshot!==undefined)canonicalSourceSnapshot(run.sourceSnapshot);
  const party=(rows:EncounterPlan['party'])=>rows.map(({id,...p})=>p);
  for(const p of run.plans){
   if(!object(p)||!id(p.id)||p.revision!==0||p.catalogHash!==run.catalogHash||!Array.isArray(p.sources)||new Set(p.sources.map(c=>c?.id)).size!==p.sources.length)fail();
   validateEncounterPlanInput(p);
   if(canonicalJson(party(p.party))!==canonicalJson(party(r.party)))fail();
   const opponents=p.entries.map(e=>{
-   const source=p.sources.find(c=>c.id===e.creatureId);if(!source||!unsigned(source.xp)||!run.candidates.some(c=>c.creatureId===e.creatureId))fail();
-   if(basis){if(!e.worldActorIds||!e.actorNames)fail();for(const [i,actorId]of e.worldActorIds!.entries()){const n=basis.find(n=>n.id===actorId);if(!n||n.creatureId!==e.creatureId||n.name!==e.actorNames![i])fail();}}
-   else if(e.worldActorIds!==undefined||e.actorNames!==undefined)fail();
+   const source=p.sources.find(c=>c.id===e.creatureId);if(!source||!unsigned(source.xp))fail();
+   const named=e.worldActorIds??[],anonymous=e.count-named.length;
+   if(r.npcOnly&&anonymous||!run.candidates.some(c=>c.creatureId===e.creatureId)&&(anonymous||named.some(actorId=>!required.includes(actorId))))fail();
+   if(named.length){if(!basis||!e.actorNames)fail();for(const [i,actorId]of named.entries()){const n=basis!.find(n=>n.id===actorId);if(!n||n.creatureId!==e.creatureId||n.name!==e.actorNames![i]||!r.npcOnly&&!r.includeNpcs&&!required.includes(actorId))fail();}}
+   else if(e.actorNames?.length)fail();
    return{xp:source!.xp,count:e.count};
   });
+  if(required.some(v=>!p.entries.some(e=>e.worldActorIds?.includes(v))))fail();
   if(canonicalJson(assessEncounter(p.party,opponents))!==canonicalJson(p.assessment))fail();
  }
  const accepted=new Map<number,string>();

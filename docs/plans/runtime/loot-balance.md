@@ -32,68 +32,40 @@ Profilintegrität ab. [DOM-Prüfungen](../../../tests/desktop-loot-balance-dom.t
 prüfen Kontextwechsel und die offene Anzeige. Native Bedienabnahme und
 vollständige Rewardqualifikation bleiben offen.
 
-## Neuer Sessionanschluss vom 14.10.2026
+## Sessionvorschläge
 
-`storage/session-rewards.ts` verbindet jetzt bestätigte Roster-XP, effektive
-Ledgerwerte und die Fortschrittskurve des wirksamen Presets mit dem erwarteten
-Session-XP. `applyLootGuidance` verteilt daraus Vorschlagsbudgets;
-`fitRewardItems` erhält passende Tabellenitems und füllt den Rest mit Münzen.
-Der Sessionwriter/Editor trägt die Quellenbasis weiter. Dieser integrierte
-Anschluss ersetzt die frühere Aussage, es gebe noch keinen XP-basierten Code.
-Er ist noch kein Beleg für vollständige D&D-2014-Guidance, Transfer-/Korrektur-
-semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
+`storage/session-rewards.ts` verbindet bestätigte Roster-XP, geprüfte Ledgerwerte
+und die Fortschrittskurve des wirksamen Presets mit den erwarteten Session-XP.
+Goldbudgets werden auf die Vorschläge verteilt; passende Tabellenitems bleiben
+erhalten, der Rest wird mit Münzen ergänzt. Optional berechnet `session-magic.ts`
+kumulative Seltenheitsquoten und ergänzt revisionierte Katalogdefinitionen.
+Fehlende Seltenheiten bleiben mit Warnung offen.
 
-Der ebenfalls integrierte `storage/session-magic.ts` berechnet optionale
-kumulative Seltenheitsquoten vor/nach erwartetem XP, zieht erhaltene magische
-Beute ab und verteilt den offenen Zielbetrag auf Vorschläge. `fitMagicItems`
-erhält passende Tabellenitems und ergänzt revisionierte Katalogdefinitionen;
-fehlende Seltenheiten bleiben mit Warnung offen. Sessioneditor und Writer tragen
-`SessionMagicGuidance` weiter. Diese Aussage ist Codebefund, keine vollständige
-Magie-/Quellen-/Bedienqualifikation.
+Erzeugung, Lesen und Sicherung prüfen dieselbe gespeicherte Rechnung:
+Presetidentität, Figuren, Erwartung vor/nach dem Abend, erhaltene Beute, Differenz,
+Ziel und Szenenanteile. Spätere XP-, Preis- oder Rewardänderungen schreiben diese
+ursprüngliche Rechnung nicht um. Die Quellledger verwenden `checkedLedgerRow`;
+kein zusätzlicher Ledgerreader. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
+und [Rewardprüfungen](../../../tests/desktop-session-reward-integrity.test.mjs)
+belegen beschädigte Daten, atomaren Generatorrollback, Weitergaben mit Verkauf,
+Käufe, Definition-/Mengenkorrekturen, Überschuss, Fresh und unabhängige Kopie.
+Quellpaket und vorhandene Sicherungen bleiben unverändert.
 
-## Gemeinsame Integritätsprüfung am Session-Rewardanschluss
-
-Der neue Sessionreader verwendete eine eigene Prüfsummen-/JSONleseoperation.
-Dadurch passierten korrekt gehashte Ledgerpayloads mit ungültigem Status,
-Herkunft oder Mengentyp sowie widersprüchlicher ID, Figurenidentität oder
-Revision. Sie konnten Gold-/Magieziele beeinflussen und einen Sessionrun erzeugen.
-`sessionLootGuidance` verwendet nun `progression.ts.checkedLedgerRow`, denselben
-Reader wie Ledger, Bilanz und Backup. Die vorhandenen Wert-/Herkunftsregeln
-bleiben maßgeblich; keine neue Validatorvariante, Migration oder Datenreparatur.
-
-Neun Storeprüfungen in `desktop-session-reward-integrity.test.mjs` belegen die
-sechs beschädigten Formen in beiden Guidancewegen. Der echte Sessiongenerator
-rollt seine vorher erzeugten Teilruns bei beschädigter Beute zurück; nach
-Wiederherstellung gültiger Fixturebytes gelingt die Generierung und ihr Run
-bleibt nach Fresh identisch. Mehrfache/partielle Weitergabe mit Verkauf zählt die
-magische Menge genau einmal zur Erstvergabe, Käufe nicht. Aktuelle Definitions-
-und Mengenberichtigungen ändern die Guidance ohne Umdeutung der aufgezeichneten
-Ledgerrevision. Fresh und unabhängige Campaignkopie erhalten Credit/Mengen und
-unveränderte Quellpaketbytes. Die isolierten Guidanceproben besitzen keinen
-zusätzlichen Produktwriter; der Generatorrollback ist ausdrücklich separat geprüft.
-
-Das schließt diesen Integritätsanschluss lokal. Vollständige Seltenheits-/Profil-
-ableitung, sämtliche Quellenbindungen, Annahme nach geänderter Ledgerbasis und
-native UI/Prozessabbruch bleiben offen. Insbesondere werden magische Werte im
-Gold-only-Modus aktuell monetär berücksichtigt, im kombinierten Modus dagegen
-nach Seltenheit. Diese Moduskopplung braucht eine ausdrückliche Fachentscheidung
+Vollständige Regel-/Profilherleitung, Quellenbindungen, Annahme nach geänderter
+Ledgerbasis und native Bedien-/Prozessabbruchprüfung bleiben offen. Magische
+Werte werden im Gold-only-Modus monetär, im kombinierten Modus nach Seltenheit
+berücksichtigt. Diese Moduskopplung braucht eine ausdrückliche Fachentscheidung
 gegen das versionierte Profil, bevor bestehende Vorschläge umgedeutet werden.
 
 ## Nächste ausführbare Schritte
 
-1. **Vorhandene Guidance vollständig qualifizieren.** `storage/session-rewards.ts`
-   verbindet bestätigte Roster-XP, die versionierte Presetkurve und geprüfte
-   Ledgerwerte zu einer gespeicherten Rechnung: Erwartung vor/nach dem
-   Spielabend, erhaltene Beute, Differenz, Ziel und Szenenanteile. Erzeugung,
-   Lesen und Sicherung verwenden dieselbe Prüfung für Summen, Figuren und
-   Presetidentität. Spätere XP-, Ledger- oder manuelle Rewardänderungen schreiben
-   diese ursprüngliche Rechnung nicht um. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
-   decken beschädigte Rechnung/Quellledger, Überschuss, unabhängige Kopie und
-   unveränderte Sicherungen ab. Magie-Seltenheitskontingente sind ebenfalls integriert. Noch offen: vollständige Regelherleitung und native Qualifikation des Gesamtverlaufs.
-   Native Abnahme: unterschiedliche XP-Stände, korrigierte/weitergereichte/verkaufte Grants, fehlende Werte, individuelle Vorschlagsänderungen und normaler Neustart.
-   Weitere Abnahme: verkaufte, weitergegebene und verbrauchbare magische Grants,
-   korrigierte Definitionen, einmalige Herkunftswertung, Seltenheitsrundung
-   und endlicher Katalogpool ohne stille Ersatzitems.
+1. **Guidance vollständig qualifizieren.** Regel-/Profilversion, XP-/Preset-/
+   Katalogbasis, erwartete/tatsächliche Beute und Defizit gemeinsam erklären.
+   Native Abnahme: unterschiedliche XP-Stände, korrigierte, weitergegebene,
+   verkaufte und verbrauchbare Grants, fehlende Werte/Seltenheiten, kumulative
+   Rundung, endlicher Katalogpool, individuelle Vorschlagsänderungen, Annahme
+   und normaler Neustart. Keine stillen Ersatzitems oder Änderungen bestehender
+   Awards.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
