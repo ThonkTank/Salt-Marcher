@@ -344,7 +344,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       const latest=latestSessionMarker(db,campaignId);if(action.marker==='start'?latest==='start':latest!=='start')throw new Error(action.marker==='start'?'Ein Spielabend läuft bereits.':'Kein laufender Spielabend zum Beenden.');
       targetId=before.id;revision=before.revision;scene=before;
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND active=1 ORDER BY ordinal,id').all(campaignId).map((row:any)=>row.id);
-      recordPartyHistory(db,campaignId,targetId,action.marker==='start'?'Spielabend begonnen':'Spielabend beendet',{kind:'session-marker',marker:action.marker,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs});
+      recordPartyHistory(db,campaignId,targetId,action.marker==='start'?'Spielabend begonnen':'Spielabend beendet',{kind:'session-marker',marker:action.marker,summary:action.summary,handoff:action.handoff??'',characterIds,locationId:before.locationId,instantMs:before.clock.instantMs});
     } else if (action.kind === 'advance-clock') {
       const before = currentScene(db, campaignId, action.sceneId);
       if (before.clock.revision !== action.expectedRevision || action.calendarVersion !== 'relative-v1') throw new Error('Scenezeit oder Kalenderinterpretation wurde inzwischen geändert.');
