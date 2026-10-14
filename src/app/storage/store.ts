@@ -929,7 +929,8 @@ export class CampaignStore {
     if (state !== undefined && !['shown', 'finished', 'skipped'].includes(state)) throw new Error('Ungültiger Tutorialstatus.');
     return this.db.transaction(() => {
       const key = `tutorial:app:${this.applicationVersion}`, saved = this.db.prepare('SELECT value FROM settings WHERE key=?').get(key);
-      const run: TutorialRun = saved ? checkedTutorialRun(JSON.parse(saved.value), this.applicationVersion) : { version: this.applicationVersion, lessonRevision: tutorialLessonRevision, runId: randomUUID(), state: 'new' };
+      const prior: TutorialRun | null = saved ? checkedTutorialRun(JSON.parse(saved.value), this.applicationVersion) : null;
+      const run: TutorialRun = prior?.lessonRevision === tutorialLessonRevision ? prior : { version: this.applicationVersion, lessonRevision: tutorialLessonRevision, runId: randomUUID(), state: 'new' };
       if (state && run.state !== 'finished' && run.state !== 'skipped') run.state = state;
       this.db.prepare('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, json(run));
       return run;

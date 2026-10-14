@@ -1,7 +1,11 @@
 import {createHash} from "node:crypto";
 import assert from "node:assert/strict";
+import {mkdtempSync,rmSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join} from "node:path";
 import test from "node:test";
 import {readChronicle} from "../../src/app/storage/chronicle";
+import {CampaignStore} from "../../src/app/storage/store";
 
 const envelope=(value:object)=>{
   const payload=JSON.stringify(value);
@@ -71,4 +75,27 @@ test("chronicle shows confirmed time but does not duplicate travel steps",()=>{
   const result=readChronicle(database([], [], [], [travel,direct], [{id:"scene-1",title:"Lager",location_id:null}]),"campaign-1");
   assert.deepEqual(result.entries.map(entry=>entry.id),["time:time-1"]);
   assert.equal(result.entries[0]!.summary,"+2 Stunden · Wache abgewartet");
+});
+
+test("chronicle retains a live moment with its scene, party and location",()=>{
+  const hero={id:"hero-1",...envelope({name:"Ada"})};
+  const location={id:"place-1",...envelope({name:"Alte Mühle"})};
+  const event={id:"moment-1",scene_id:"scene-1",...envelope({text:"Der Müller kennt den Kult",recordedAt:"2026-10-14T13:00:00.000Z",facts:{kind:"live-moment",category:"narrative",summary:"Ada verspricht, nachts wiederzukommen.",characterIds:["hero-1"],locationId:"place-1",instantMs:"3600000"}})};
+  const db=database([], [hero], [event], [], [{id:"scene-1",title:"Ermittler",location_id:null}]);
+  const original=db.prepare;db.prepare=(sql:string)=>sql.includes("FROM location")?({get:()=>undefined,all:()=>[location],iterate:()=>[]}):original(sql);
+  const result=readChronicle(db,"campaign-1");
+  assert.deepEqual(result.entries[0],{id:"world:moment-1",recordedAt:"2026-10-14T13:00:00.000Z",category:"narrative",title:"Der Müller kennt den Kult",summary:"Ada verspricht, nachts wiederzukommen.",people:["Ada"],scene:"Ermittler",location:"Alte Mühle"});
+});
+
+test("live play records a confirmed moment directly in the campaign chronicle",()=>{
+  const root=mkdtempSync(join(tmpdir(),"live-moment-")),store=new CampaignStore(join(root,"campaign.sqlite"),"test");
+  try{
+    const campaign=store.create("Abendrunde"),token=store.activate(campaign.id).token;
+    const hero=store.executeLive({commandId:"hero",campaignId:campaign.id,token,action:{kind:"create-character",profile:{name:"Ada"}}}).character!;
+    const scene=store.executeLive({commandId:"scene",campaignId:campaign.id,token,action:{kind:"initialize",expectedRosterRevision:1}}).scene!;
+    store.executeLive({commandId:"active",campaignId:campaign.id,token,action:{kind:"membership",characterId:hero.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+    store.executeLive({commandId:"moment",campaignId:campaign.id,token,action:{kind:"live-moment",sceneId:scene.id,expectedRevision:0,category:"narrative",title:"Der Müller kennt den Kult",summary:"Ada kommt nachts zurück."}});
+    const entry=store.chronicle(token).entries.find(item=>item.title==="Der Müller kennt den Kult");
+    assert.deepEqual(entry&&{category:entry.category,summary:entry.summary,people:entry.people},{category:"narrative",summary:"Ada kommt nachts zurück.",people:["Ada"]});
+  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
