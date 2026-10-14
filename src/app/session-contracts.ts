@@ -8,7 +8,7 @@ export interface VisitDetail {visitId:string;revision:number;readAloud:string;no
 export interface WorldActor {id:string;name:string;creatureId:string;revision:number;hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean;unavailable:boolean;entryId:string}
 export interface PreparedGroup {id:string;revision:number;title:string;notes:string;sourceEncounterId:string;sourceRevision:number;locationId:string|null;plan:EncounterPlan;actors:WorldActor[]}
 export interface SessionView {profile:SessionProfile;visits:VisitDetail[];groups:PreparedGroup[];encounters:{id:string;revision:number;name:string}[]}
-export interface ScenePreparation {groups:PreparedGroup[];treasures:{id:string;title:string}[];nextVisit:{planId:string;planRevision:number;visitId:string;title:string}|null}
+export interface ScenePreparation {groups:PreparedGroup[];treasures:{id:string;title:string}[];noteIds:string[];nextVisit:{planId:string;planRevision:number;visitId:string;title:string}|null}
 export interface SessionProposal {id:string;index:number;title:string;notes:string;readAloud:string;locationId:string|null;noteIds:string[];encounter:EncounterPlan&{assessment:EncounterAssessment};acceptedVisitId:string|null}
 export interface SessionRun {id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
 export type SessionAction=
