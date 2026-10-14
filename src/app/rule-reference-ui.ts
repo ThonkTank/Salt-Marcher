@@ -1,7 +1,7 @@
 import type {Workspace,Result} from './contracts';
 import type {Note} from './preparation-contracts';
 import type {SceneRuleCommand,SceneRules} from './rule-reference-contracts';
-import type {SceneCheckCommand,SceneChecks} from './scene-check-contracts';
+import type {SceneCheck,SceneCheckCommand,SceneChecks} from './scene-check-contracts';
 import {formatInstant} from './live-contracts';
 
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
@@ -52,11 +52,11 @@ export async function refreshRuleReferences(nextSceneId:string|null){
 }
 
 export function prepareSceneCheck(input:{label:string;dc:number}){ensure();if(!workspace||!sceneId||!checks){tell('Öffne zuerst die laufende Gruppe.',true);return;}el<HTMLInputElement>('live-check-label').value=input.label;el<HTMLSelectElement>('live-check-rule').value='';el<HTMLSelectElement>('live-check-mode').value='normal';el<HTMLInputElement>('live-check-modifier').value='0';el<HTMLInputElement>('live-check-dc').value=String(input.dc);el('live-check-form').scrollIntoView({behavior:'smooth',block:'center'});el<HTMLInputElement>('live-check-modifier').select();tell('Rettungswurf vorbereitet: Modifikator des Ziels eintragen und würfeln.');}
-export async function rollSceneFormula(action:Omit<Extract<SceneCheckCommand['action'],{kind:'formula'}>,'kind'>){
+export async function rollSceneFormula(action:Omit<Extract<SceneCheckCommand['action'],{kind:'formula'}>,'kind'>,onResult?:(check:SceneCheck)=>void){
  const o=owner(),basis=checks;if(busy)return false;if(!o||!basis){tell('Wurf derzeit nicht verfügbar.',true);return false;}
  busy=true;readRequest++;lock();
  try{
   const result=await window.campaign.executeSceneCheck({commandId:crypto.randomUUID(),campaignId:o.campaignId,token:o.token,sceneId:o.sceneId,expectedRevision:basis.revision,action:{kind:'formula',...action}});
-  if(!current(o))return false;readRequest++;acceptChecks(unwrap(result),o);tell('Statblock-Wurf ausgeführt und bei der Gruppe gespeichert.');return true;
+  if(!current(o))return false;readRequest++;const next=unwrap(result);acceptChecks(next,o);if(next.checks[0])onResult?.(next.checks[0]);tell('Statblock-Wurf ausgeführt und bei der Gruppe gespeichert.');return true;
  }catch(error){if(current(o))tell((error as Error).message,true);return false;}finally{busy=false;lock();}
 }

@@ -28,7 +28,8 @@ export type CombatAction =
   | { kind: 'add-creature'; creatureId: string; count: number; grouped: boolean; groupId?: string }
   | { kind: 'add'; name: string; count: number; grouped: boolean; maxHp: number; armorClass: number; initiativeBonus: number }
   | { kind: 'edit'; participantId: string; changes: Partial<Pick<Combatant, 'name' | 'initiative' | 'initiativeBonus' | 'armorClass' | 'hp' | 'maxHp' | 'tempHp' | 'conditions' | 'concentrating' | 'xp' | 'countForMultiplier'>> }
-  | { kind: 'damage' | 'heal'; participantId: string; amount: number }
+  | { kind: 'damage'; participantId: string; amount: number; sourceCheckId?:string; sourceScale?:'full'|'half'|'double' }
+  | { kind: 'heal'; participantId: string; amount: number }
   | { kind: 'remove'; participantId: string }
   | { kind: 'roll'; mode: 'normal' | 'advantage' | 'disadvantage' }
   | { kind: 'start' | 'next' | 'undo' }
