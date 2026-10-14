@@ -97,4 +97,5 @@ import "./core/player-chase-projection.test";
 import "./core/player-scene-projection.test";
 import "./core/autonomy-scene-time-boundary.test";
 import "./core/autonomy-time-conflict-ui.test";
+import "./core/autonomy-owner-atomicity.test";
 import "./core/music-scene-context.test";
