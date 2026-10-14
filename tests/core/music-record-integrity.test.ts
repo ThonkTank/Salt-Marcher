@@ -56,7 +56,7 @@ test('music row identities remain valid after campaign remapping',async()=>{
   const imported=destination.acceptCampaignSnapshot(snapshot,'Importierte Musik',{},'music-import'),opened=destination.activate(imported.id),music=destination.music(opened.token),subject=destination.musicSubject(opened.token,'creature','fixture-creature');
   assert.equal(music.sceneSettings?.revision,1);
   assert.deepEqual(music.sceneSettings?.vibes,['Gewitter']);
-  assert.deepEqual(music.registry.axes.map(axis=>axis.id),['tension']);
+  assert.deepEqual(music.registry.axes.map((axis:{id:string})=>axis.id),['tension']);
   assert.equal(subject.revision,1);
   assert.equal(subject.genreMode,'replace');
   const db=(destination as unknown as {db:any}).db;
