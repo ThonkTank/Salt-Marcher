@@ -11,6 +11,10 @@ test("advantage and disadvantage results name the mode and the kept die",()=>{
   assert.equal(describeSceneCheck({...check,mode:"disadvantage",total:5,outcome:"failure"}),"Athletik: 3 / 17 · Nachteil wählt 3 + 2 = 5 · Fehlschlag gegen SG 12");
 });
 
+test('attack formula results describe armor class as hit or miss',()=>{
+  assert.match(describeSceneCheck({rollKind:'formula',formulaKind:'attack',actor:'Oger',label:'Keule · Angriff',formula:'1d20 + 4',rolls:[16],modifier:4,total:20,dc:18,outcome:'success'} as any),/Treffer gegen RK 18/);
+});
+
 test("rapid duplicate scene-tool writes are ignored while the first host write is pending",async()=>{
   const parsed=parseHTML("<html><body><section id='scene-preparation-panel'></section></body></html>"),priorDocument=globalThis.document,priorWindow=globalThis.window,priorOption=globalThis.Option;
   function TestOption(text:string,value:string){const option=parsed.document.createElement("option");option.textContent=text;option.setAttribute("value",value);return option;}
