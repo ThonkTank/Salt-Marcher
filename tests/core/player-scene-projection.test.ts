@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
+const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};};
 
 test('the player display publishes only the focused scene read-aloud text',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-scene-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
@@ -37,7 +38,9 @@ test('published scene read-aloud stays bound to the group the GM showed',()=>{
   store.executeLive({commandId:'secondary-content',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:secondaryId,expectedRevision:0,title:'Nachhut',readAloud:'Die Nachhut entdeckt den geheimen Hinterhalt.',notes:'',locationId:null}});
   let player=store.executePlayer({...focus(store,token),commandId:'show-primary',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings:{blank:false,mode:'scene',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
   assert.equal(player.settings.boundSceneId,primary.id);assert.equal(player.frame.mode,'scene');assert.equal(player.frame.scene?.text,'Die Vorhut sieht das offene Basalttor.');
+  const stale={...focus(store,token),commandId:'stale-republish',campaignId:campaign.id,token,expectedRevision:player.settings.revision,action:{kind:'settings',settings:{blank:false,mode:'scene',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}} as const;
   store.executeLive({commandId:'focus-secondary',campaignId:campaign.id,token,action:{kind:'focus',sceneId:secondaryId,expectedRevision:0}});
+  assert.throws(()=>store.executePlayer(stale),/Fokussierte Gruppe geändert/);
   player=store.playerView(token);assert.equal(player.frame.mode,'blank');assert.match(player.frame.reason??'',/anderen Gruppe/);assert.doesNotMatch(JSON.stringify(player.frame),/geheimen Hinterhalt/);
   store.executeLive({commandId:'focus-primary',campaignId:campaign.id,token,action:{kind:'focus',sceneId:primary.id,expectedRevision:1}});
   player=store.playerView(token);assert.equal(player.frame.mode,'scene');assert.equal(player.frame.scene?.text,'Die Vorhut sieht das offene Basalttor.');

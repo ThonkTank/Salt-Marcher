@@ -96,26 +96,30 @@ am Intervallende sowie konkurrierende Jobs mit erhaltener Vergangenheit.
 Längere manuelle Pause mit ausstehenden Intervallen, ein beim Resume belegtes
 Ziel und Positionsoverride gegen beide Buchungstabellen bleiben zu prüfen.
 
+## 200-Actor-Baselines
+
+`npm run bench:autonomy` misst je 20 unabhängige Läufe mit 200 aktivierten Actors,
+15 Minuten bestätigter Zeit und höchstens zwölf Catch-up-Schritten je Actor.
+Die Minimalbaseline hat einen unplatzierten Guard-Job; die räumliche Baseline
+fünf erreichbare Guard-Angebote, einen Dungeon-Snapshot und höchstens etwa elf
+Meter Abstand zum Ziel. Der dokumentierte lokale Lauf vom 14.10.2026 ergab p95
+Capture/Catch-up samt View/separate View: 25,61/348,31/13,37 ms beziehungsweise
+38,65/1.094,55/16,90 ms. Höchster beobachteter Worker-RSS: 112.799.744 bzw.
+204.947.456 Bytes. Das qualifiziert diese Quellzustände, keine beliebige Last.
+
+Ein atomarer Bewegungsabschnitt publiziert einen Trace mit vollständigem Pfad
+und ein Signal statt einer Publikation je 1,5-m-Routenpunkt. Der dokumentierte
+mediane SQLite-Seitenzuwachs der räumlichen Erstbewegung sank dadurch von
+2.359.296 auf 1.171.456 Bytes; der Minimalfall belegte 344.064 Bytes. Erstschritte
+sind keine Langzeit-Wachstumsrate. Der DOM-Test prüft sofortigen Status und einen
+gesperrten Startknopf bei offener Antwort, keine native Reaktionszeit.
+
 ## Nächste ausführbare Schritte
 
 1. Mehractor-/Mehrowner-Rollback prüfen: eine Ownerwirkung erst nach einer
-   vorher abgeschlossenen Wirkung eines anderen Actors scheitern lassen; Logs,
-   HP, Featureladung, Reservierungen und Cursor gemeinsam vergleichen.
-2. 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
-   Nur belegte Engstellen ändern; keine zusätzliche persistierte Simulation oder
-   Hintergrundlaufzeit einführen.
-3. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
-
-## 200-Actor-Baseline
-
-`npm run bench:autonomy` misst 20 unabhängige Läufe mit 200 aktivierten,
-unplatzierten Actors, einem global erreichbaren, nicht exklusiven Guard-Angebot,
-15 Minuten bestätigter Zeit und höchstens zwölf Catch-up-Schritten je Actor.
-Der dokumentierte lokale Lauf vom 14.10.2026 ergab p95 25,13 ms für Capture,
-349,46 ms für Catch-up samt View und 13,29 ms für einen separaten View; höchster
-beobachteter Worker-RSS: 112.451.584 Bytes. Ein erster bestätigter Schritt belegte
-median 344.064 Bytes inklusive SQLite-Seitenzuwachs, keine Langzeit-Wachstumsrate.
-Mehrere lokale Kandidaten, räumliche Adapter, Kamerafreiheit und unabhängige Reads
-sind damit nicht qualifiziert. Der DOM-Test prüft sofortigen Status und gesperrten
-Startknopf bei offener Commandantwort, keine native Reaktionszeit.
-   laufenden Catch-ups prüfen.
+   vorher abgeschlossenen Wirkung eines anderen Actors scheitern lassen;
+   Logs, HP, Featureladung, Reservierungen und Cursor gemeinsam vergleichen.
+2. Nativ Fokus, Kamerafreiheit, unabhängige Reads, lange Begründungen und Abbruch
+   eines laufenden Catch-ups prüfen.
+3. Wiederholtes räumliches Wachstum über längere bestätigte Campaignzeit messen;
+   Erstschrittwerte nicht als lineare Prognose verwenden. Nur belegte Engstellen ändern.
