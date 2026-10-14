@@ -47,7 +47,7 @@ export async function openNpcs(reset=true,target=reset?0:offset){
   const root=el('npc-list');for(const row of result.rows){const b=document.createElement('button');b.type='button';b.textContent=row.name+' · '+(row.lifecycle==='defeated'?'besiegt':{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[row.role])+(row.factionId?' · '+(refs.factions.find(f=>f.id===row.factionId)?.name??'Fraktion nicht verfügbar'):'');b.onclick=()=>run(()=>select(row.id,false,row.name));root.append(b);}
   offset=result.total===0?0:target;total=result.total;listKey=key;el('npc-page').textContent=total?(offset+1)+'–'+Math.min(offset+50,total)+' von '+total+' NSCs':'Keine passenden NSCs.';
   const draftsRoot=el('npc-drafts');draftsRoot.replaceChildren();for(const d of entries){const b=document.createElement('button');b.textContent='Entwurf: '+d.name;b.onclick=()=>run(()=>select(d.id,false,d.name));draftsRoot.append(b);}
- }catch(error){if(current()){listError=(error as Error).message;tell(listError,true);}}
+ }catch(error){if(current()){listError=(error as Error).message;}}
  finally{if(current()){listLoading=false;lock();}}
 }
 
