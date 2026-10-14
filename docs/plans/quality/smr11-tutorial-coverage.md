@@ -19,6 +19,10 @@ Eine ausführbare Invariante bindet die primären Arbeitsbereiche und die ausgew
 | Party und Leiten | Party und laufender Spielabend |
 | Kampagnenchronik | Bestätigte Kampagnenfolgen nachlesen |
 | Katalog und Encounter | Begegnungen vorbereiten und leiten |
+| NSCs und Monstergruppen | Monstergruppen dauerhaft vorbereiten |
+| Schätze | Schätze bearbeiten und verschieben |
+| Party öffnen | Party direkt am Tisch verwalten |
+| Rastbudget | Tagesbudget und Level-Prognose immer griffbereit |
 | Gegenstände und Shops | Gegenstände, Beute und Shops |
 | Dungeon leiten | Grundriss, Geschosse und gebundene Details zeichnen |
 | NPC-Verhalten | NPCs mit begrenztem Verhalten beauftragen |

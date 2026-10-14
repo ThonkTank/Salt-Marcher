@@ -68,8 +68,8 @@ export const lessons = [
 ];
 
 export const tutorialSurfaceLessons={
-  atlas:'drawing-and-key',preparation:'world-notes',live:'live-party',chronicle:'chronicle',catalog:'encounter-catalog',items:'items-trade',dungeon:'dungeon-tools',autonomy:'npc-autonomy',city:'city-infill',world:'atlas-hex',music:'music-library',
-  'player-open-controls':'player-display','campaign-manager':'campaign-transfer',import:'campaign','extensions-open':'extensions',
+  atlas:'drawing-and-key',preparation:'world-notes',live:'live-party',chronicle:'chronicle',catalog:'encounter-catalog',groups:'prepared-groups',treasury:'treasury',items:'items-trade',dungeon:'dungeon-tools',autonomy:'npc-autonomy',city:'city-infill',world:'atlas-hex',music:'music-library',
+  'player-open-controls':'player-display','campaign-manager':'campaign-transfer',import:'campaign','extensions-open':'extensions','party-shortcut':'party-topbar','day-trigger':'adventuring-day',
 } as const;
 
 export async function initTutorial() {
