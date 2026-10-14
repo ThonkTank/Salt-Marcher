@@ -1,4 +1,4 @@
-import {SessionReview} from './session-review-ui';
+import {SessionReview,sameSessionReviewBasis,type SessionReviewBasis} from './session-review-ui';
 import {initSessionPacket,closePreparationPacket} from './session-packet-ui';
 import {magicPoolPicker} from './session-magic-pool-ui';
 import {requiredNpcPicker} from './required-npc-picker';
@@ -194,11 +194,13 @@ async function acceptProposal(source:SessionRun,index:number){
   run=accepted;renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
-async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[]){
- const owner=previewOwner(),request=previewRequest;if(!owner||run!==source)return false;
+function sessionReviewBasis():SessionReviewBasis|null{return workspace&&plan?{token:workspace.token,planId:plan.id,planRevision:plan.revision,request:previewRequest}:null;}
+async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[],reviewed:SessionReviewBasis){
+ const owner=previewOwner(),request=previewRequest;if(!owner||run!==source||!sameSessionReviewBasis(reviewed,sessionReviewBasis()))return false;
  try{
-  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source||!plan)return false;
-  const action:SessionAction={kind:'accept-proposals',planId:owner.planId,expectedPlanRevision:plan.revision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
+  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source)return false;
+  if(!sameSessionReviewBasis(reviewed,sessionReviewBasis())){tell('Planstand nach dem Speichern geändert. Auswahl erneut prüfen.',true);return false;}
+  const action:SessionAction={kind:'accept-proposals',planId:reviewed.planId,expectedPlanRevision:reviewed.planRevision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
   if(!await execute(action))return false;
   if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
   const accepted=unwrap(await window.campaign.sessionRun(owner.token,source.id));
@@ -336,7 +338,7 @@ export async function clearSessionTimeline(){
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
-proposalReview=new SessionReview(acceptSelectedProposals);
+proposalReview=new SessionReview(acceptSelectedProposals,sessionReviewBasis);
 initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession());
 initProposalEditor();tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));

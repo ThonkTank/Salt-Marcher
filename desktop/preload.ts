@@ -85,6 +85,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   discardFinishDraft:(token:string,owner:unknown,writeId:string)=>ipcRenderer.invoke('campaign:discard-finish-draft',token,owner,writeId),
   keepNarrativeDraft:(token:string,draft:unknown,expected:string|null)=>ipcRenderer.invoke('campaign:keep-narrative-draft',token,draft,expected),
   discardNarrativeDraft:(token:string,id:string,writeId:string)=>ipcRenderer.invoke('campaign:discard-narrative-draft',token,id,writeId),
+  narrativeJournal:(token:string,query:import('../src/app/narrative-journal-contracts').NarrativeJournalQuery)=>ipcRenderer.invoke('campaign:narrative-journal',token,query),
   narrative:(token:string,id:string)=>ipcRenderer.invoke('campaign:narrative',token,id),
   progressHistory: (token: string, characterId: string, after: string | null) => ipcRenderer.invoke('campaign:progress-history', token, characterId, after),
   chronicle:(token:string,category:import('../src/app/chronicle-contracts').ChronicleCategory|'all'='all',search='')=>ipcRenderer.invoke('campaign:chronicle',token,category,search),

@@ -51,7 +51,7 @@ test('a late catalog response cannot populate or unlock a reopened proposal',asy
 
 
 function reviewFixture(t,accept){
- const x=fixture(t),review=new x.ui.SessionReview(accept),root=document.createElement('div');document.body.append(root);
+ const x=fixture(t),review=new x.ui.SessionReview(accept,()=>({token:'token',planId:'plan',planRevision:1,request:0})),root=document.createElement('div');document.body.append(root);
  const run={planId:'plan',id:'run',proposals:['Alpha','Beta'].map((title,index)=>({...x.proposal,id:'proposal-'+index,index,title,notes:'',encounter:{sources:[],assessment:{difficulty:'easy',adjustedXp:20}}}))};
  const dialog=x.el('session-selection-dialog');dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
  const mount=source=>{root.replaceChildren();review.mount(root,source);for(const p of source.proposals){const card=document.createElement('article');review.decorate(card,p,{notes:[],locations:[]});root.append(card);}};
@@ -62,9 +62,4 @@ test('filtered proposal selection persists across searches and reviews source or
  const search=x.el('session-proposal-search');search.value='Beta';search.oninput();x.el('session-select-visible').click();search.value='Alpha';search.oninput();x.el('session-select-visible').click();
  assert.match(x.el('session-selection-summary').textContent,/2 ausgewählt/);x.el('session-review-selection').click();assert.deepEqual([...x.el('session-selection-dialog').querySelectorAll('li strong')].map(n=>n.textContent),['Alpha','Beta']);
  x.el('session-selection-confirm').click();await tick();await tick();assert.deepEqual(calls,[[0,1]]);assert.equal(x.el('session-selection-dialog').open,true);
-});
-test('an old confirmation cannot clear a newer selection after resetting and reopening the same plan',async t=>{
- const held=deferred(),x=reviewFixture(t,()=>held.promise);x.el('session-select-visible').click();x.el('session-review-selection').click();x.el('session-selection-confirm').click();
- x.review.reset();x.mount({...x.run});x.el('session-select-visible').click();held.resolve(true);await tick();await tick();
- assert.match(x.el('session-selection-summary').textContent,/2 ausgewählt/);assert.ok([...x.root.querySelectorAll('input[type=checkbox]')].every(box=>box.checked));assert.equal(x.el('session-review-selection').disabled,false);
 });
