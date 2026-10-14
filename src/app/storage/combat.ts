@@ -16,7 +16,6 @@ export function installCombatSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS combat(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scene_id TEXT NOT NULL, ordinal INTEGER NOT NULL, revision INTEGER NOT NULL, phase TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
     DROP INDEX IF EXISTS combat_active_scene;
     CREATE INDEX IF NOT EXISTS combat_scene_masks ON combat(campaign_id,scene_id,phase,ordinal);
-
     CREATE TABLE IF NOT EXISTS combat_undo(campaign_id TEXT NOT NULL, combat_id TEXT NOT NULL, ordinal INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,combat_id,ordinal), FOREIGN KEY(campaign_id,combat_id) REFERENCES combat(campaign_id,id)) STRICT;
     CREATE TABLE IF NOT EXISTS combat_receipt(command_id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL REFERENCES campaign(id), fingerprint TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL) STRICT;`);
 }
@@ -74,14 +73,13 @@ function priorPartyParticipant(db:any,cam:string,state:CombatState,characterId:s
 export function readCombat(db: any, campaignId: string, sceneId: string, id?: string): CombatView {
   return db.transaction(() => {
     readLiveScene(db, campaignId, sceneId);
-    const row = id ? db.prepare('SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND id=?').get(campaignId, sceneId, id) : db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase!='finished' DESC,ordinal DESC LIMIT 1").get(campaignId, sceneId);
+    const row = id ? db.prepare('SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND id=?').get(campaignId, sceneId, id) : db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase IN('preparing','running') DESC,ordinal DESC LIMIT 1").get(campaignId, sceneId);
     if (id && !row) throw new Error('Kampf nicht gefunden.');
     const combat=row?decode(row):null;
     const partyCandidates=combat&&['preparing','running'].includes(combat.phase)?readLive(db,campaignId).roster.filter(c=>c.active&&c.sceneId===sceneId&&!combat.participants.some(p=>p.characterId===c.id)).map(c=>{const p=readProgressCharacter(db,campaignId,c.id);return {characterId:c.id,name:c.profile.name,membershipRevision:c.membershipRevision,progressRevision:p.revision,health:p.health};}):[];
     return { combat, partyCandidates, assessment: combat ? assessment(db,campaignId,combat) : undefined,
       canUndo: !!row && ['preparing','running'].includes(row.phase) && !!db.prepare('SELECT 1 FROM combat_undo WHERE campaign_id=? AND combat_id=? LIMIT 1').get(campaignId, row.id),
       recent: db.prepare("SELECT id,payload FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase IN('preparing','running') DESC,ordinal DESC LIMIT 100").all(campaignId, sceneId).map((r: any) => { const c = JSON.parse(r.payload); return { id: r.id, title: c.title, phase: c.phase }; }) };
-
   })();
 }
 export function executeCombat(db: any, command: CombatCommand, guard: () => void): CombatView {
@@ -107,7 +105,6 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
     if (a.kind === 'create') {
       const scene = readLiveScene(db, cam, a.sceneId);
       if (scene.retired || scene.membershipRevision !== a.expectedMembershipRevision) throw new Error('Gruppe geändert. Bitte aktualisieren.');
-
       const party = a.includeParty ? readLive(db, cam).roster.filter(c => c.active && c.sceneId === scene.id) : [];
       // Conditions and temporary HP remain usable when players keep their own HP.
       // Read only validated history and stop once every unknown-health PC is found.

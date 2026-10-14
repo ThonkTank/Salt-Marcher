@@ -142,7 +142,6 @@ function render() {
   const combat = view?.combat;
   get('combat-creation').hidden = false;
   get('combat-shared-notice').textContent=combat?.sharedNotice??'';
-
   get('combat-workspace').hidden = !combat;
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
   get('combat-assessment').textContent = view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '';
