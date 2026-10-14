@@ -158,7 +158,11 @@ allein beschreibt keine historisch zeitgebundene Konkurrenz.
 an der geprüften bestätigten Actorzeit: Cursor/Offset bestimmen die tatsächlich
 ausgeführte Grenze, nicht Wall-clock oder eine vorauslaufende andere Scene.
 Einzel- und Gruppen-Deaktivierung sowie manuelle Pause verwenden dieselbe
-Freigabe. Vergangene Buchungsteile, Jobidentität, Fortschritt und Dungeonreise
+Freigabe. Auch der ausdrückliche Jobabbruch benutzt diese Actorgrenze: der alte
+Writer suchte ausschließlich ein nächstes Intervall und löste am bereits
+ausgeführten Intervallende keine künftige Buchung. Zwei weitere Gegenproben
+bestätigten ebenfalls 600 statt 60 Sekunden belegter Zeit. Der Abbruch löscht
+den Jobfortschritt ausdrücklich; die ausgeführte Buchungsgeschichte bleibt erhalten. Vergangene Buchungsteile, Jobidentität, Fortschritt und Dungeonreise
 bleiben erhalten. Fehlende oder ungültige Zeitgrundlagen werden nicht erfunden.
 
 Die Live-Reservierung wurde bei Wiederaufnahme bereits erneut gesetzt.
@@ -169,8 +173,8 @@ Zielbuchung gemeinsam an den verbleibenden Zeitraum. Bereits abgedeckte Bereiche
 erzeugen keine weitere Zeile. Kandidatenausschluss und deterministische Wahl
 bleiben vor der Buchung wirksam; ein belegter Job wird nicht gewaltsam übernommen.
 
-Sechs zusätzliche Fälle in `desktop-autonomy-disable-time.test.mjs` prüfen
-Einzel-Pause/Deaktivierung, zwei Actors mit demselben oder unterschiedlichen Jobs
+Acht zusätzliche Fälle in `desktop-autonomy-disable-time.test.mjs` prüfen
+Einzel-Pause/Deaktivierung/Abbruch, zwei Actors mit demselben oder unterschiedlichen Jobs
 am selben Ort, erhaltene Vergangenheit und Fortschritt, Fresh, Backup und die
 erneute Buchung. Die Gruppenprobe prüft ebenfalls die Reaktivierung nach Fresh.
 Eine Stunde ohne Simulation wird im Deaktivierungsfall geprüft; bei manueller
@@ -260,8 +264,9 @@ native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
    Ownerprüfungen sind kein vollständiger Abschluss. Einzel-/Gruppen-Deaktivierung und unmittelbares manuelles Resume mit
    erneuter exklusiver Buchung sind lokal geprüft. Als nächste Gegenproben
    eine längere manuelle Pause mit ausstehenden bestätigten Intervallen,
-   vorübergehende Belegung beim Resume, ausdrücklichen Jobabbruch am Intervallende
-   und Positionsoverride gegen beide Buchungstabellen prüfen. Historische Targetbindungen erhalten; fehlende
+   vorübergehende Belegung beim Resume sowie Positionsoverride gegen beide
+   Buchungstabellen prüfen. Der ausdrückliche Abbruch am Intervallende ist mit
+   derselben Freigabe jetzt lokal geschlossen. Historische Targetbindungen erhalten; fehlende
    aktuelle Aktivität nicht mit fehlender historischer Identität verwechseln.
    Fehler erklären und nicht still reparieren.
    Abnahme: zwei konkurrierende Jobs, unterbrochene Reservierung, Positionsoverride,
