@@ -33,6 +33,15 @@ hat keinen Anschluss an die passive Spieleranzeige.
   geschrieben wird der zuvor geprüfte Stand. Dialogabbruch schreibt nichts.
   Das ist noch kein nativer Dateifehler-/Dialognachweis.
 
+Der integrierte Besuchsnavigator (`session-progress-ui.ts`,
+`storage/visit-outcomes.ts`) und `LiveAction.visit-outcome` zeichnen jetzt
+manuell bestätigte Besuchsergebnisse in der Kampagnenhistorie auf. Die Mappe
+zeigt die Anzahl der Übernahmen und höchstens die fünf neuesten Ergebnisse je
+Besuch, mit ausdrücklichem Hinweis bei weiteren Übernahmen. Dies ist Codebefund;
+vollständige Ergebnishistorie, Verlaufsexport und native Wiederaufnahme bleiben
+separat abzunehmen. Die nächste Lastprobe muss auch die zusätzlichen Reads pro
+Besuch und Ergebnis berücksichtigen.
+
 Der benachbarte Live-Wissensbereich übernimmt Vorlesetext in den GM-Sceneentwurf
 und speichert ihn über den bestehenden Autosaveweg. Der entfernte
 Textprojektionsknopf ist keine Voraussetzung. Wird ein übernommener Besuch

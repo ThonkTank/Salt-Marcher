@@ -82,6 +82,12 @@ export interface LedgerItem {
   sourceTreasureId?:string;sourceTreasureItemId?:string;rewardCreditId?:string; creditedCopper?:string|null; recipientCharacterId?:string; sourceCharacterId?:string; sourceNoteId?:string; awardId?:string; provenance?:string; mergeTargetId?:string; counterpartyLink?:{kind:'shop'|'npc'|'location'|'faction';id:string};paidCopper?: string; instanceId?: string | null; counterpartyReference?: {shopId:string;owner:{kind:'npc'|'location';id:string}};
   currentName?:string; currentUnitCopper?:string|null;
 }
+/** Allocate the recorded total price before quantity changes; whole copper stays in the remainder. */
+export function partitionLedgerPaidPrice(source:LedgerItem,portion:LedgerItem):void {
+  if(source.paidCopper===undefined)return;
+  const total=BigInt(source.paidCopper),share=total*BigInt(portion.quantity)/BigInt(source.quantity);
+  portion.paidCopper=share.toString();source.paidCopper=(total-share).toString();
+}
 export const ledgerDefinitionId=(item:Pick<LedgerItem,'reference'>)=>item.reference.historicalDefinitionId??item.reference.definitionId;
 export function ledgerStacksMatch(a:LedgerItem,b:LedgerItem):boolean{
   const key=(item:LedgerItem)=>JSON.stringify([

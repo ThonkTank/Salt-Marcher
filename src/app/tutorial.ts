@@ -1,4 +1,4 @@
-export const tutorialLessonRevision = 'desktop-tutorial-session-progress-shortcuts-v34';
+export const tutorialLessonRevision = 'desktop-tutorial-session-progress-workspace-shortcuts-v34';
 export interface TutorialRun { version: string; lessonRevision: string; runId: string; state: 'new' | 'shown' | 'finished' | 'skipped' }
 export function checkedTutorialRun(value: unknown, applicationVersion: string): TutorialRun {
   if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Tutoriallauf ist beschädigt.');
