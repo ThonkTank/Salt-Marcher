@@ -16,7 +16,8 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
   const person=row.character_id?names.get(row.character_id)??'Unbekannte Figur':null;
   let category:ChronicleCategory='party',title='',summary='',people=person?[person]:[],sceneId:string|null=null,locationId:string|null=null;
   const item=f.entry??f.portion??f.handed;
-  if(row.kind==='narrative-award'){category='narrative';title='Quest abgeschlossen: '+text(f.title,'Ohne Titel');summary=text(f.outcome,'Ergebnis bestätigt.');people=nameList(f.recipientIds,names);sceneId=f.sceneId??null;locationId=narrativeLocations.get(String(f.noteId))??null;}
+  if(row.kind==='party-award'){category='party';title='XP-Abrechnung: '+text(f.reason,'Spielabend');summary=String(f.poolXp)+' Gruppen-XP → '+String(f.shareXp)+' je Figur / '+String(f.totalXp)+' insgesamt · Tagesbelastung '+String(f.loadXp)+' → '+String(f.shareLoad)+' je beteiligter Figur';people=nameList(f.recipientIds,names);}
+  else if(row.kind==='narrative-award'){category='narrative';title='Quest abgeschlossen: '+text(f.title,'Ohne Titel');summary=text(f.outcome,'Ergebnis bestätigt.');people=nameList(f.recipientIds,names);sceneId=f.sceneId??null;locationId=narrativeLocations.get(String(f.noteId))??null;}
   else if(row.kind==='combat-award'){const combat=combats.get(String(f.combatId));category='combat';title='Kampf abgeschlossen: '+(combat?.title??'Begegnung');summary=(combat?.outcome||'Ergebnis bestätigt.')+(Number(f.xp)>0?' · '+f.xp+' XP für '+person:'');sceneId=combat?.sceneId??null;}
   else if(row.kind==='treasure-created'){const treasure=f.treasure;category='reward';title='Beute gesichert: '+text(treasure?.title,'Fund');summary=Array.isArray(treasure?.items)&&treasure.items.length?treasure.items.map(quantity).join(', '):'Leerer Fund';sceneId=treasure?.sceneId??null;locationId=treasure?.locationId??null;}
   else if(row.kind==='loot-award'){category='reward';title='Beute zugewiesen';summary=(person?person+': ':'')+quantity(item);sceneId=item?.sceneId??null;locationId=item?.locationId??null;}
@@ -40,7 +41,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
 }
 
 // Stream relevant source records in bounded portions under the same read snapshot.
-const progressKinds=['group-created','group-edited','narrative-award','combat-award','treasure-created','treasure-edited','treasure-moved','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
+const progressKinds=['party-award','group-created','group-edited','narrative-award','combat-award','treasure-created','treasure-edited','treasure-moved','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
 const sourceLimit=2000;
 function* sourceRows(db:any,cam:string,table:'progress_event'|'world_history'|'scene_time_step',kinds?:string[]){
   let before=Number.MAX_SAFE_INTEGER;
