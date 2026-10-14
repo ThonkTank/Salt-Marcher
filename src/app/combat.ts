@@ -33,9 +33,10 @@ export function retainPendingAttack<T>(current:T|null,next:T){return current??ne
 let pendingAttack:PendingAttack|null=null,attackPending=false;
 type PendingSave={combatId:string;attackerId:string;creatureId:string;actionId:string;actor:string;preset:CreatureRollPreset;damages:CreatureRollPreset[];rolledDamage:string[];resolvedTargets:string[];targetId:string|null;check:SceneCheck|null;legendary?:PendingLegendary};
 let pendingSave:PendingSave|null=null,savePending=false;
+export function pendingRollStillValid(pending:{combatId:string;attackerId:string}|null,combat:CombatView['combat']){return !!pending&&!!combat&&editableCombat(combat)&&pending.combatId===combat.id&&combat.participants.some(participant=>participant.id===pending.attackerId);}
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
-function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&pendingAttack.combatId!==result.combat?.id)pendingAttack=null;if(pendingSave&&pendingSave.combatId!==result.combat?.id)pendingSave=null;}
+function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
