@@ -17,7 +17,8 @@ import {initKeys,activateKeys,flushKeys} from './key-ui';
 import {initPaths,activatePaths,flushPaths} from './path-ui';
 import {initCommitControls} from './commit-confirmation';
 import {initVolume,activateVolume,flushVolume} from './volume-ui';
-import {initDungeon,activateDungeon,openDungeon,flushDungeon} from './dungeon-ui';
+import {DungeonBinder} from './dungeon-binder-ui';
+import {initDungeon,activateDungeon,openDungeon,flushDungeon,selectDungeonRoom} from './dungeon-ui';
 import {initDrawing,activateDrawing,reloadDrawing,drawingOverlay,roomDrawingStyle,flushDrawing} from './drawing-ui';
 import {initAutonomy,activateAutonomy,openAutonomy,flushAutonomy} from './autonomy-ui';
 import {initPlayerUI,deactivatePlayer} from './player-ui';
@@ -96,6 +97,7 @@ initGraph(status,()=>workspace,()=>draft,async()=>{if(activating||activationFail
 initKeys(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},selectRoom);
 initPaths(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
 initDungeon(status,id=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await openExistingCombat(id);})().catch(error=>status(error.message,true));});
+const dungeonBinder=new DungeonBinder(()=>workspace,leaveWorkspace,status,async(id,action)=>{const token=workspace?.token;if(!token||!await leaveWorkspace()||workspace?.token!==token)return;if(action==='target'){showTab('dungeon');await selectDungeonRoom(id);}else{showTab('atlas');await selectRoom(id);if(action==='edit'&&workspace?.token===token&&workspace.selectedId===id)el('key-open').click();}});
 el('dungeon-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('dungeon');await openDungeon();})().catch(error=>status(error.message,true));};
 initAutonomy(status);
 el('autonomy-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('autonomy');await openAutonomy();})().catch(error=>status(error.message,true));};
@@ -420,7 +422,7 @@ async function drainActivation(): Promise<void> {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
+        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';

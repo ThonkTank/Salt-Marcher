@@ -231,3 +231,5 @@ export async function flushDungeon(){
  if(dirtyFields()||trackDrafts.size){status('Offene Dungeon-Einstellungen zuerst anwenden oder verwerfen.',true);return false;}
  return true;
 }
+
+export async function selectDungeonRoom(id:string){await openDungeon();if(!data?.rooms.some(r=>r.id===id))throw new Error('Raum ist kein aktuelles Reiseziel.');select('dungeon-room').value=id;invalidatePreview();chosen();}

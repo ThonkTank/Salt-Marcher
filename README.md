@@ -757,3 +757,7 @@ Rückblick und Übergabe werden gemeinsam mit dem bestätigten Endmarker gespeic
 „Nächsten Abend vorbereiten…“ öffnet vor dem Start einen gemeinsamen Leitungsstand. Er zeigt die letzte gültige Übergabe, alle fortbestehenden Gruppen mit Besetzung und Weltzeit, laufende Kämpfe und Verfolgungen sowie unverteilte Beute. Offene Masken, Schatzverteilung und XP-Abrechnung führen direkt in ihre bestehenden Arbeitsbereiche.
 
 Jede Gruppe kann den neuen Spielabend mit einem Klick als Fokusgruppe beginnen. Der Start verwendet weiterhin denselben bestätigten Session-Marker und Gruppenfokus; die Übersicht erzeugt keinen parallelen Sitzungs- oder Szenenstand. Kampagnenwechsel und Schließen entwerten laufende Leseanfragen, damit kein alter Leitungsstand in eine andere Kampagne hineinwirkt.
+
+### Desktopstand 0.68: Dungeon-Binder am Spieltisch
+
+Der Dungeon-Binder ist über Karte und Dungeon leiten erreichbar. Er durchsucht sämtliche Raum- und Vorlagentexte sowie platzierte Fallen/Inhalte, filtert Dungeon/Geschoss und zeigt GM-Key, Geheimnishinweise, Attribute, Verbindungen und bestehende Fallenstände. Raumlinks blättern im Binder; Reiseziel und Keybearbeitung führen in die bestehenden Besitzer. Die öffentliche Textvorschau ist eine GM-Lesehilfe, keine neue Spielerfreigabe. Lesen verändert weder Gruppenposition noch Uhr, Entdeckung, Charges, XP oder Beute.
