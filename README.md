@@ -801,3 +801,9 @@ Gespräch festhalten führt mit Kalenderdatum und Gruppe in den vorhandenen NPC-
 Jeder vorbereitete Besuch bietet nun einen ausdrücklichen Startweg. „Spielabend beginnen + Text in Szene“ fokussiert die zugehörige Gruppe, schreibt den normalen Sitzungsmarker, übernimmt den vorbereiteten Eröffnungstext in die laufende Szene und öffnet die GM-Mappe direkt bei diesem Besuch. Fehlt ein Eröffnungstext, beginnt derselbe Ablauf mit der Mappe.
 
 Besuchsübernahme, Spielerfreigabe und Audio bleiben weiterhin getrennte Bestätigungen. Der Start erzeugt weder Begegnung noch Belohnung und zeigt Spielern den Text nicht automatisch; der GM kann erst in der geöffneten Mappe prüfen und anschließend die vorhandenen Aktionen verwenden.
+
+### Desktopstand 0.77: Die nächste Übergabe aus dem Spielstand
+
+Der Abschluss des Spielabends baut seinen Übergabevorschlag nun aus dem aktuellen Leitungsstand. Er verbindet Fokusgruppe und Ort mit dem nächsten vorbereiteten Besuch, einer laufenden Reise, den nächsten drei lokalen Fristen, bis zu vier offenen Aufträgen und Weltentscheidungen sowie den bereits geprüften Kämpfen, Verfolgungen, Beute- und XP-Punkten.
+
+Der Vorschlag bleibt neben der editierbaren Übergabe sichtbar und lässt sich nach einer erneuten Prüfung ausdrücklich übernehmen. Nur der Text im Übergabefeld wird mit dem Endmarker gespeichert; die Vorschau verändert weder Besuch, Reise, Auftrag, Agenda noch andere Gruppenstände.
