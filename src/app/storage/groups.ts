@@ -4,7 +4,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import type {GroupAction,GroupDraft,GroupView} from '../groups-contracts';
 import {checkedHealth} from '../progression';
 import {worldNoteDocument} from '../../features/world/world-notes';
-import {readPreparedGroup,readWorldActor,writeWorldActorHealth,saveGroup,newGroup,materialize} from './session';
+import {readPreparedGroup,checkedPreparedGroupRow,readWorldActor,writeWorldActorHealth,saveGroup,newGroup,materialize} from './session';
 import {readCreature,readEncounterPlan,creatureInfo} from './encounters';
 import {placeNpcGroup,npcPosition} from './npc-world';
 import {event} from './progression';
@@ -17,15 +17,61 @@ export function groupView(db:any,cam:string,id:string):GroupView {
 export function preparedGroups(db:any,cam:string,search:string,after:string|null){
  if(typeof search!=='string'||search.length>1000||after!==null&&typeof after!=='string')throw new Error('Gruppensuche ungültig.');
  let title:string|null=null;
- if(after!==null){const anchor=db.prepare("SELECT payload,checksum FROM prepared_group WHERE campaign_id=? AND id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0").get(cam,after,search);if(!anchor)throw new Error('Suchseite veraltet. Suche neu starten.');if(hash(anchor.payload)!==anchor.checksum)throw new Error('Gruppe beschädigt.');title=JSON.parse(anchor.payload).title;}
+ if(after!==null){const anchor=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0").get(cam,after,search);if(!anchor)throw new Error('Suchseite veraltet. Suche neu starten.');title=checkedPreparedGroupRow(anchor).title;}
  const rows=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0 AND (? IS NULL OR json_extract(payload,'$.title') COLLATE NOCASE > ? OR (json_extract(payload,'$.title') COLLATE NOCASE = ? AND id>?)) ORDER BY json_extract(payload,'$.title') COLLATE NOCASE,id LIMIT 26").all(cam,search,after,title,title,after);
- return {items:rows.slice(0,25).map((r:any)=>{if(hash(r.payload)!==r.checksum)throw new Error('Gruppe beschädigt.');const g=JSON.parse(r.payload);return{id:g.id,title:g.title,locationId:g.locationId,count:g.actors.length};}),next:rows.length>25?rows[24].id:null};
+ return {items:rows.slice(0,25).map((r:any)=>{const g=checkedPreparedGroupRow(r);return{id:g.id,title:g.title,locationId:g.locationId,count:g.actors.length};}),next:rows.length>25?rows[24].id:null};
+}
+function checkDraft(d:GroupDraft):GroupDraft{
+ const text=(v:unknown,n=1000)=>typeof v==='string'&&v.length<=n,id=(v:unknown)=>text(v)&&!!(v as string).trim();
+ if(!d||!id(d.writeId)||!id(d.groupId)||!Number.isSafeInteger(d.revision)||d.revision<1||!text(d.title)||!text(d.notes,2000000)||
+    d.locationId!==null&&!id(d.locationId)||!Array.isArray(d.actors)||d.actors.length>200||
+    d.actors.some(a=>!a||a.id!==null&&!id(a.id)||!id(a.creatureId)||!text(a.name)||!text(a.hp)||!text(a.maxHp)||!text(a.tempHp)||
+      !text(a.conditions,4000)||!text(a.gmNotes,2000000)||!text(a.readAloud,2000000)||typeof a.concentrating!=='boolean'||
+      !Number.isSafeInteger(a.revision)||!Number.isSafeInteger(a.profileRevision)||
+      (a.id===null?a.revision!==0||a.profileRevision!==0:a.revision<1||a.profileRevision<1))||
+    Buffer.byteLength(JSON.stringify(d))>4000000)throw new Error('Gruppenentwurf ungültig oder zu groß.');
+ return d;
+}
+function validateDraft(db:any,cam:string,d:GroupDraft){
+ const g=readPreparedGroup(db,cam,d.groupId);
+ if(d.revision>g.revision)throw new Error('Gruppenentwurf aus neuerem Stand.');
+ if(d.locationId!==null&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,d.locationId))throw new Error('Gruppenentwurfsort gehört nicht zur Kampagne.');
+ const seen=new Set<string>();
+ for(const row of d.actors){
+  if(row.id===null){readCreature(row.creatureId);continue;}
+  const actor=readWorldActor(db,cam,row.id),profile=db.prepare('SELECT revision FROM world_note WHERE campaign_id=? AND id=?').get(cam,row.id);
+  if(seen.has(row.id)||actor.creatureId!==row.creatureId||row.revision>actor.revision||row.profileRevision>profile.revision||
+     d.revision===g.revision&&!g.actors.some(a=>a.id===row.id))throw new Error('Gruppenentwurfsfigur falsch zugeordnet oder aus neuerem Stand.');
+  seen.add(row.id);
+ }
+}
+function checkedDraftRow(db:any,row:any):GroupDraft{
+ if(hash(row.payload)!==row.checksum)throw new Error('Gruppenentwurf beschädigt.');
+ const d=checkDraft(JSON.parse(row.payload));
+ if(d.groupId!==row.group_id)throw new Error('Gruppenentwurf falsch zugeordnet.');
+ validateDraft(db,row.campaign_id,d);return d;
 }
 export function groupDraft(db:any,cam:string,id:string):GroupDraft|null {
- readPreparedGroup(db,cam,id);const r=db.prepare('SELECT * FROM group_draft WHERE campaign_id=? AND group_id=?').get(cam,id);if(!r)return null;if(hash(r.payload)!==r.checksum)throw new Error('Gruppenentwurf beschädigt.');const d=JSON.parse(r.payload);if(d.groupId!==id)throw new Error('Gruppenentwurf falsch zugeordnet.');return d;
+ readPreparedGroup(db,cam,id);
+ const row=db.prepare('SELECT * FROM group_draft WHERE campaign_id=? AND group_id=?').get(cam,id);
+ return row?checkedDraftRow(db,row):null;
 }
-function checkDraft(d:GroupDraft){const text=(v:unknown,n=1000)=>typeof v==='string'&&v.length<=n;if(!d||!text(d.writeId)||!d.writeId||!text(d.groupId)||!Number.isSafeInteger(d.revision)||d.revision<1||!text(d.title)||!text(d.notes,2000000)||d.locationId!==null&&!text(d.locationId)||!Array.isArray(d.actors)||d.actors.length>200||d.actors.some(a=>!a||!text(a.name)||!text(a.creatureId)||!text(a.hp)||!text(a.maxHp)||!text(a.tempHp)||!text(a.conditions,4000)||!text(a.gmNotes,2000000)||!text(a.readAloud,2000000)||typeof a.concentrating!=='boolean')||Buffer.byteLength(JSON.stringify(d))>4000000)throw new Error('Gruppenentwurf ungültig oder zu groß.');}
-export function keepGroupDraft(db:any,cam:string,d:GroupDraft,expected:string|null){return db.transaction(()=>{checkDraft(d);const g=readPreparedGroup(db,cam,d.groupId);if(d.revision>g.revision)throw new Error('Gruppenentwurf aus neuerem Stand.');const old=groupDraft(db,cam,d.groupId),payload=JSON.stringify(d);if(old?.writeId===d.writeId&&JSON.stringify(old)===payload)return;if((old?.writeId??null)!==expected)throw new Error('Gruppenentwurf inzwischen geändert.');db.prepare('INSERT INTO group_draft VALUES(?,?,?,?) ON CONFLICT(campaign_id,group_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(cam,d.groupId,payload,hash(payload));}).immediate();}
+export function validateGroups(db:any){
+ for(const row of db.prepare('SELECT campaign_id,id FROM prepared_group').iterate())readPreparedGroup(db,row.campaign_id,row.id);
+ for(const row of db.prepare('SELECT campaign_id,id FROM world_actor').iterate())readWorldActor(db,row.campaign_id,row.id);
+ if(!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='group_draft'").get()){
+  if(db.pragma('user_version',{simple:true})<40)return;
+  throw new Error('Gruppenentwurfsspeicher fehlt.');
+ }
+ for(const row of db.prepare('SELECT * FROM group_draft').iterate())checkedDraftRow(db,row);
+}
+export function keepGroupDraft(db:any,cam:string,d:GroupDraft,expected:string|null){return db.transaction(()=>{
+ checkDraft(d);validateDraft(db,cam,d);
+ const old=groupDraft(db,cam,d.groupId),payload=JSON.stringify(d);
+ if(old?.writeId===d.writeId&&JSON.stringify(old)===payload)return;
+ if((old?.writeId??null)!==expected)throw new Error('Gruppenentwurf inzwischen geändert.');
+ db.prepare('INSERT INTO group_draft VALUES(?,?,?,?) ON CONFLICT(campaign_id,group_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(cam,d.groupId,payload,hash(payload));
+}).immediate();}
 export function discardGroupDraft(db:any,cam:string,id:string,writeId:string){return db.transaction(()=>{const d=groupDraft(db,cam,id);if(d?.writeId!==writeId)throw new Error('Gruppenentwurf inzwischen geändert.');db.prepare('DELETE FROM group_draft WHERE campaign_id=? AND group_id=?').run(cam,id);}).immediate();}
 export function editGroup(db:any,cam:string,a:GroupAction):string {
  if(a.kind==='group-create'){
@@ -51,6 +97,14 @@ export function editGroup(db:any,cam:string,a:GroupAction):string {
  g.actors=actors;g.title=d.title;g.notes=d.notes;g.locationId=d.locationId;g.plan={...g.plan,name:d.title,notes:d.notes,entries,sources:sources.filter(c=>entries.some(e=>e.creatureId===c.id))};g.revision++;
  // Explicitly accepting this group makes it independent of any old planning draft.
  saveGroup(db,cam,g,null,null);
- if(d.locationId)placeNpcGroup(db,cam,actors.map(x=>x.id),d.locationId);else for(const actor of actors){const pos=npcPosition(db,cam,actor.id);db.prepare('DELETE FROM npc_dungeon_position WHERE campaign_id=? AND actor_id=?').run(cam,actor.id);db.prepare('INSERT INTO npc_position VALUES(?,?,?,?) ON CONFLICT(campaign_id,actor_id) DO UPDATE SET location_id=excluded.location_id,revision=excluded.revision').run(cam,actor.id,null,(pos.revision??0)+1);}
+ const previousIds=new Set(before.actors.map(a=>a.id));
+ const relocated=before.locationId!==d.locationId?actors:actors.filter(a=>d.locationId!==null&&!previousIds.has(a.id));
+ if(d.locationId)placeNpcGroup(db,cam,relocated.map(a=>a.id),d.locationId);
+ else for(const actor of relocated){
+  const pos=npcPosition(db,cam,actor.id);
+  if(pos.locationId===null&&pos.revision!==null&&!pos.dungeon)continue;
+  db.prepare('DELETE FROM npc_dungeon_position WHERE campaign_id=? AND actor_id=?').run(cam,actor.id);
+  db.prepare('INSERT INTO npc_position VALUES(?,?,?,?) ON CONFLICT(campaign_id,actor_id) DO UPDATE SET location_id=excluded.location_id,revision=excluded.revision').run(cam,actor.id,null,(pos.revision??0)+1);
+ }
  db.prepare('DELETE FROM group_draft WHERE campaign_id=? AND group_id=?').run(cam,g.id);event(db,cam,null,'group-edited',{groupId:g.id,before,after:g});return g.id;
 }

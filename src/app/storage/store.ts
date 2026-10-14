@@ -1,5 +1,5 @@
 import {migrateMaskHealth} from './mask-health';
-import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
+import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft,validateGroups} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
 import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft,validateFinishDrafts} from './finish-drafts';
@@ -425,7 +425,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateMaskReconciliations(db);validateRuleReferences(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);

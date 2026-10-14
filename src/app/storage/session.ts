@@ -4,7 +4,7 @@ import {campaignLocalId} from '../../features/campaign/campaign-contracts';
 import {manualPlan,type ManualPlan} from '../../features/planner/manual-planner';
 import {worldNoteDocument} from '../../features/world/world-notes';
 import {assessEncounter,type EncounterPlan} from '../encounter-contracts';
-import {dailyXp} from '../progression';
+import {dailyXp,checkedHealth} from '../progression';
 import {exactWeight,integerWeights} from '../generation-contracts';
 import {generateEncounters,readGenerationRun,assertGenerationSourcesCurrent} from './generation';
 import {readEncounterPlan,readEncounterPlans} from './encounters';
@@ -28,9 +28,33 @@ function detail(db:any,cam:string,planId:string,visitId:string):VisitDetail{if(!
 function saveDetail(db:any,cam:string,planId:string,d:VisitDetail){d.revision++;const payload=json(d);db.prepare('INSERT INTO session_visit VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,planId,d.visitId,d.revision,payload,hash(payload));}
 function availableLocation(db:any,cam:string,id:string,revision?:number){const row=db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(cam,id);if(!row||row.trashed||revision!==undefined&&revision!==row.revision)throw new Error('Ort geändert oder nicht verfügbar.');return decoded<any>(row);}
 function note(db:any,cam:string,id:string){const row=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);if(!row||row.trashed)throw new Error('Gebundener Weltinhalt nicht verfügbar.');return worldNoteDocument(decoded(row));}
-export function readWorldActor(db:any,cam:string,id:string):WorldActor{const row=db.prepare('SELECT * FROM world_actor WHERE campaign_id=? AND id=?').get(cam,id),actor=decoded<WorldActor>(row),n=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);if(!n)throw new Error('NPC-Profil fehlt.');const document=worldNoteDocument(decoded(n));return{...actor,name:document.title,unavailable:!!n.trashed};}
+export function readWorldActor(db:any,cam:string,id:string):WorldActor{
+ const row=db.prepare('SELECT * FROM world_actor WHERE campaign_id=? AND id=?').get(cam,id),actor=decoded<WorldActor>(row);
+ const validId=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=1000;
+ if(actor.id!==row.id||actor.revision!==row.revision||!Number.isSafeInteger(actor.revision)||actor.revision<1||
+    !validId(actor.id)||!validId(actor.creatureId)||!validId(actor.entryId)||typeof actor.unavailable!=='boolean')throw new Error('NPC-Zuordnung oder Revision widersprüchlich.');
+ checkedHealth(actor);
+ const n=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);
+ if(!n)throw new Error('NPC-Profil fehlt.');
+ const document=worldNoteDocument(decoded(n));
+ if(document.id!==n.id||document.revision!==n.revision)throw new Error('NPC-Profilzuordnung widersprüchlich.');
+ return {...actor,name:document.title,unavailable:!!n.trashed};
+}
 export function writeWorldActorHealth(db:any,cam:string,id:string,expectedRevision:number,health:Pick<WorldActor,'hp'|'maxHp'|'tempHp'|'conditions'|'concentrating'>){const actor=readWorldActor(db,cam,id);if(actor.revision!==expectedRevision||actor.unavailable)throw new Error('NPC-Zustand wurde geändert. Kampfabschluss zuerst mit dem aktuellen NPC-Stand abgleichen.');const next={...actor,...health,revision:actor.revision+1},payload=json(next);db.prepare('UPDATE world_actor SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(next.revision,payload,hash(payload),cam,id);return next;}
-export function readPreparedGroup(db:any,cam:string,id:string):PreparedGroup{const g=decoded<PreparedGroup>(db.prepare('SELECT * FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,id));return{...g,actors:g.actors.map(a=>readWorldActor(db,cam,a.id))};}
+export function checkedPreparedGroupRow(row:any):PreparedGroup{
+ const g=decoded<PreparedGroup>(row),id=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=1000;
+ if(!g||g.id!==row.id||g.revision!==row.revision||g.locationId!==row.location_id||!id(g.id)||!Number.isSafeInteger(g.revision)||g.revision<1||
+    typeof g.title!=='string'||g.title.length>1000||typeof g.notes!=='string'||g.notes.length>2000000||
+    typeof g.sourceEncounterId!=='string'||g.sourceEncounterId.length>1000||!Number.isSafeInteger(g.sourceRevision)||g.sourceRevision<0||
+    g.locationId!==null&&!id(g.locationId)||!g.plan||!Array.isArray(g.plan.entries)||!Array.isArray(g.plan.sources)||
+    !Array.isArray(g.actors)||g.actors.some(a=>!a||!id(a.id))||new Set(g.actors.map(a=>a.id)).size!==g.actors.length)
+  throw new Error('Gruppenzuordnung, Revision oder Figurenliste beschädigt.');
+ return g;
+}
+export function readPreparedGroup(db:any,cam:string,id:string):PreparedGroup{
+ const g=checkedPreparedGroupRow(db.prepare('SELECT * FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,id));
+ return {...g,actors:g.actors.map(a=>readWorldActor(db,cam,a.id))};
+}
 export function saveGroup(db:any,cam:string,g:PreparedGroup,draftPlan:string|null,draftVisit:string|null){const payload=json(g);db.prepare('INSERT INTO prepared_group VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET draft_plan_id=excluded.draft_plan_id,draft_visit_id=excluded.draft_visit_id,location_id=excluded.location_id,revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,g.id,draftPlan,draftVisit,g.locationId,g.revision,payload,hash(payload));}
 export function newGroup(db:any,cam:string,source:EncounterPlan,planId:string|null,visitId:string|null):PreparedGroup{const g:PreparedGroup={id:randomUUID(),revision:1,title:source.name,notes:source.notes,sourceEncounterId:source.id,sourceRevision:source.revision,locationId:null,plan:structuredClone(source),actors:[]};saveGroup(db,cam,g,planId,visitId);return g;}
 export function materialize(db:any,cam:string,g:PreparedGroup){if(g.actors.length)return;for(const entry of g.plan.entries){const c=g.plan.sources.find(c=>c.id===entry.creatureId);if(!c)throw new Error('Kreaturquelle der vorbereiteten Gruppe fehlt.');for(let i=0;i<entry.count;i++){const id=randomUUID(),name=c.name+' '+(i+1)+' · '+g.title,npc=worldNoteDocument({version:1,id:campaignLocalId(id),revision:1,kind:'npc',title:name,readAloud:'',gmNotes:g.notes,relations:[],creatureId:c.id,deleted:false}),payload=json(npc);db.prepare('INSERT INTO world_note VALUES(?,?,1,0,?,?)').run(cam,id,payload,hash(payload));db.prepare('INSERT INTO note_search(campaign_id,note_id,title,body) VALUES(?,?,?,?)').run(cam,id,name,npc.gmNotes);const actor:WorldActor={id,name,creatureId:c.id,revision:1,hp:c.hp,maxHp:c.hp,tempHp:0,conditions:'',concentrating:false,unavailable:false,entryId:entry.id},body=json(actor);db.prepare('INSERT INTO world_actor VALUES(?,?,1,?,?)').run(cam,id,body,hash(body));g.actors.push(actor);}}}
