@@ -21,7 +21,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Party und LiveSession | [Fachvertrag und Kernumsetzung](plans/runtime/smr03-live-scene-contract.md) |
 | Adventuring Day und XP-Vorschau | [Aktive Party, Rechengrenzen und nächste Abnahmen](plans/runtime/adventuring-day.md) |
 | Passive Spielerprojektion | [Datenfreigabe, große Karten und nächste Schritte](plans/runtime/player-projection.md) |
-| Regelreferenzen an Scenes | [Aktueller Regelweg und nächste Schritte](plans/runtime/rule-references.md) |
+| GM-Referenzsuche und Regeln | [Lesen, Übergabe und nächste Schritte](plans/runtime/rule-references.md) |
 | Beutewertung und Vergleich | [Gemeinsame Ledger-/Lootbilanz](plans/runtime/loot-balance.md) |
 | Shopbesitzer, Wiederherstellung und Restock | [Aktueller Zeitweg und nächste vollständige Lieferungen](plans/runtime/shops-and-restock.md) |
 | Actor Autonomy und Jobintegrität | [Aktueller Anschluss und nächste Schritte](plans/runtime/actor-autonomy.md) |
