@@ -38,3 +38,21 @@ test('session packet freezes readable preparation and changes its basis after a 
  assert.ok(x.store.db.serialize().equals(changedBytes));assert.notEqual(next.basis,packet.basis);assert.equal(next.visits[0].blocks.find(block=>block.kind==='gm').text,'Neue Vorbereitungsnotiz');
  assert.equal(packet.visits[0].blocks.find(block=>block.kind==='gm').text,'  Exact prose\r\n');assert.equal(x.store.session(x.w.token,x.planId).groups[0].id,x.id);
 });
+
+test('adopted visit contents survive plan removal, Fresh and an independent campaign copy',async t=>{
+ const x=fixture(t),noteId=randomUUID();
+ x.store.changePreparation({...x.command(null),change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:'quest',title:'Gebundene Spur',readAloud:'',gmNotes:'Weltwissen',relations:[],creatureId:null,deleted:false}}});
+ const detail=x.store.session(x.w.token,x.planId).visits[0];
+ x.store.executeSession(x.command({kind:'visit',planId:x.planId,expectedRevision:detail.revision,detail:{...detail,readAloud:'  Original zum Vorlesen\r\n',noteIds:[noteId]}}));
+ const scene=x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:0})).scene;
+ const visit=x.store.session(x.w.token,x.planId).visits[0];
+ const adopted=x.store.executeLive(x.command({kind:'apply-visit',planId:x.planId,visitId:x.visitId,expectedPlanRevision:1,expectedVisitRevision:visit.revision,sceneId:scene.id,expectedRevision:scene.revision})).scene;
+ const original=x.store.sceneVisits(x.w.token,scene.id,null).items[0];
+ assert.equal(original.captured,true);assert.equal(original.readAloud,'  Original zum Vorlesen\r\n');assert.equal(original.references[0].id,noteId);
+ const plan=read(x).plan;x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:plan.revision,plan:{...plan,name:'Nächster Abend',scenes:[]}}});
+ const bytes=x.store.db.serialize(),retained=x.store.sceneVisits(x.w.token,scene.id,null).items[0];
+ assert.ok(x.store.db.serialize().equals(bytes));assert.equal(retained.planName,'Evening');assert.equal(retained.readAloud,original.readAloud);assert.equal(retained.notes,original.notes);assert.deepEqual(retained.references,original.references);assert.match(retained.warnings.join(' '),/nicht mehr/);assert.deepEqual(x.store.scenePreparation(x.w.token,scene.id).noteIds,[noteId]);
+ const fresh=new CampaignStore(path.join(x.root,'source.sqlite'));try{const w=fresh.activate(x.cam.id);assert.equal(fresh.sceneVisits(w.token,scene.id,null).items[0].readAloud,original.readAloud);}finally{fresh.close();}
+ const snapshot=path.join(x.root,'visit-snapshot.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=new CampaignStore(path.join(x.root,'visit-copy.sqlite'));
+ try{const cam=copy.acceptCampaignSnapshot(snapshot,'Copy',{}),w=copy.activate(cam.id),current=copy.live(w.token).scene,visit=copy.sceneVisits(w.token,current.id,null).items[0];assert.notEqual(visit.adoptionId,adopted.adoption.id);assert.notEqual(visit.references[0].id,noteId);assert.equal(visit.references[0].available,true);assert.equal(visit.readAloud,original.readAloud);assert.equal(visit.planName,'Evening');assert.deepEqual(copy.scenePreparation(w.token,current.id).noteIds,[visit.references[0].id]);}finally{copy.close();}
+});

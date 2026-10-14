@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   keepGroupDraft:(token:string,draft:import('../src/app/groups-contracts').GroupDraft,expected:string|null)=>ipcRenderer.invoke('campaign:keep-group-draft',token,draft,expected),
   discardGroupDraft:(token:string,id:string,writeId:string)=>ipcRenderer.invoke('campaign:discard-group-draft',token,id,writeId),
   preparedGroup:(token:string,id:string)=>ipcRenderer.invoke('campaign:prepared-group',token,id),
+  sceneVisits:(token:string,sceneId:string,after:string|null)=>ipcRenderer.invoke('campaign:scene-visits',token,sceneId,after),
   sessionProgress:(token:string,id:string,sceneId?:string)=>ipcRenderer.invoke('campaign:session-progress',token,id,sceneId),
   sessionPacket:(token:string,id:string)=>ipcRenderer.invoke('campaign:session-packet',token,id),
   exportSessionPacket:(token:string,id:string,basis:string)=>ipcRenderer.invoke('campaign:session-packet-export',token,id,basis),

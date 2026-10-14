@@ -17,6 +17,12 @@ Gruppen, Belohnungen sowie Ersetzung und Wiederverwendung. Die reinen
 und seine Browservorschau sind flüchtige Prototypen; ihre Memory-Tests belegen
 keine native Desktoppersistenz.
 
+Der Live-Besuchsbinder zeigt übernommene Besuche seitenweise mit festgehaltenen
+Texten, Ergebnissen und Weltverweisen. Planänderungen ersetzen diese Übernahmen
+nicht; ältere Übernahmen ohne vollständige Bindung werden als solche markiert.
+Datenbank-Reopen und unabhängige Kopie sind geprüft; die native Bedienprobe
+bleibt offen.
+
 ## Daten- und Bedienvertrag
 
 - Pläne behalten ihre Identität und monotone Revision. Neue oder kopierte

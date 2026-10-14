@@ -1,3 +1,4 @@
+import {readSceneVisits} from './scene-visits';
 import {readNarrativeJournal} from './narrative-journal';
 import {readSessionProgress} from './visit-outcomes';
 import {readSessionPacket} from './session-packet';
@@ -543,6 +544,7 @@ export class CampaignStore {
   npc(token:string,id:string){return readNpc(this.db,this.guard(token),id);}
   executeNpc(c:NpcCommand){return executeNpc(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   generationSources(token:string){return readWorldSources(this.db,this.guard(token));}
+  sceneVisits(token:string,sceneId:string,after:string|null){return readSceneVisits(this.db,this.guard(token),sceneId,after);}
   sessionProgress(token:string,planId:string,sceneId?:string){return readSessionProgress(this.db,this.guard(token),planId,sceneId);}
   sessionPacket(token:string,planId:string){return readSessionPacket(this.db,this.guard(token),planId);}
   session(token: string,planId: string) { return readSession(this.db,this.guard(token),planId); }
