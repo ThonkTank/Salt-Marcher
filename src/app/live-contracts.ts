@@ -35,7 +35,8 @@ export type LiveAction =
       target: { kind: 'new'; title: string; expectedContentRevision: number } | { kind: 'existing'; sceneId: string; expectedClockRevision: number; expectedMembershipRevision: number } }
   | { kind: 'live-moment'; sceneId: string; expectedRevision: number; category: 'combat'|'narrative'|'reward'|'travel'|'party'|'world'; title: string; summary: string; followUp?:{kind:'quest'|'rumor';id:string}|null }
   | { kind: 'session-marker'; sceneId: string; expectedRevision: number; marker: 'start'|'end'; summary: string; handoff?:string }
-  | { kind: 'advance-clock'; sceneId: string; expectedRevision: number; amount: number; unit: TimeUnit; calendarVersion: 'relative-v1'; reason: string };
+  | { kind: 'advance-clock'; sceneId: string; expectedRevision: number; amount: number; unit: TimeUnit; calendarVersion: 'relative-v1'; reason: string }
+  | {kind:'advance-clock';sceneId:string;expectedRevision:number;calendarVersion:'campaign-calendar-v1';calendar:{revision:number;daySeconds:number};toInstantMs:string;expectedFocusRevision:number;eventTarget?:import('./time-plan-contracts').ClockEventTarget;reason:string};
 export interface LiveCommand { commandId: string; campaignId: string; token: string; action: LiveAction }
 export interface LiveAck {
   commandId: string; targetId: string; revision: number; rosterRevision: number; archivedRosterCount?:number; scene?: LiveScene; character?: Character;
@@ -51,10 +52,10 @@ export function advanceInstant(instantMs: string, amount: number, unit: TimeUnit
   if (next.toString().length > 30) throw new Error('Zeitwert zu groß.');
   return next.toString();
 }
-export function formatInstant(instantMs: string): string {
+export function formatInstant(instantMs: string, daySeconds=86400): string {
   const seconds = BigInt(instantMs) / 1000n;
   const pad = (n: bigint) => n.toString().padStart(2, '0');
-  return 'Tag ' + (seconds / 86400n) + ' · ' + pad(seconds / 3600n % 24n) + ':' + pad(seconds / 60n % 60n) + ':' + pad(seconds % 60n);
+  return 'Tag ' + (seconds / BigInt(daySeconds)) + ' · ' + pad(seconds % BigInt(daySeconds) / 3600n) + ':' + pad(seconds / 60n % 60n) + ':' + pad(seconds % 60n);
 }
 export interface LiveAPI {
   archivedRoster(token:string,after:string|null,search:string):Promise<Result<{items:Character[];next:string|null;total:number}>>;
