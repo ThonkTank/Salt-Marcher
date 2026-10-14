@@ -1,27 +1,29 @@
 {
   "results": {
     "duringSwitch": {
-      "selected": "a351265b-ca83-4aac-84bb-beb60ffc64cf",
+      "selected": "12d8baef-e73a-49b8-bda9-bb6c52e28aa0",
       "visible": "Torwache",
       "damageEnabled": false
     },
+    "nativeStatblockRoll": "Letztes Ergebnis · Goblin A · Scimitar · Angriff: 1d20 + 4 → 20 + 4 = 24",
     "failedReadRetrySameTarget": true,
     "unfinishedNotesRetained": true,
     "hpAfter": {
       "a": 10,
       "b": 7
     },
+    "formulaOwnershipAndNoImplicitDamage": true,
     "aBytesUnchanged": true,
     "nativeDraftRestart": true
   },
   "launches": [
     {
-      "pid": 304392,
-      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-99260df226624607bab3652d66477709.service"
+      "pid": 311159,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-d521c3c24e90486195ab2e90ca42ff76.service"
     },
     {
-      "pid": 304492,
-      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-99260df226624607bab3652d66477709.service"
+      "pid": 311257,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-d521c3c24e90486195ab2e90ca42ff76.service"
     }
   ],
   "normalClose": true

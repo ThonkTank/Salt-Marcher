@@ -33,3 +33,9 @@ beide Proben prüfen ursprüngliche Textbytes und Fresh.
 Grenzen: bewusste Verzögerung und Lesefehler sind kontrollierte Gegenproben,
 kein Latenzbenchmark oder Hard-Crash-Test. Vollständige GM-, Atlas-, Import-,
 OS- und Konkurrenzabnahme bleiben offen.
+
+Letzter Integrationsstand: 50 Prüfungen sowie Desktop-Typecheck/Build bestanden.
+Zusätzlich zwei native Starts mit Goblin im Keller: erkannter Angriff aus dem
+Statblock wird mit Formel und Quellenbezug protokolliert; die Summe wurde im
+frischen Store geprüft. Kein impliziter HP-Schaden. Torwache und ihr Entwurf
+bleiben unverändert. Alle eigenen nativen Prozesse sind beendet.
