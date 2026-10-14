@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
 import type {AtlasCell,AtlasMap} from '../../src/app/world-contracts';
+const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};};
 
 const cell=(q:number):AtlasCell=>({q,r:0,level:0,terrain:q===2?'forest':'plains',elevationM:0,climate:null,road:false,river:false,label:'',faction:'',interrupt:''});
 

@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 import type {CombatState} from '../../src/app/combat-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
+const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};};
 
 test('combat mechanics stay GM-owned while the passive display keeps its visual context',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-combat-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
