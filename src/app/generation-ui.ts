@@ -1,3 +1,4 @@
+import {initWorldSourceUI,setWorldSources,worldSourceFilters,worldSourceOpen} from './world-source-ui';
 import type {Workspace,Result} from './contracts';
 import type {Creature,CreatureCatalogQuery} from '../features/catalog/creature-catalog';
 import type {CatalogInfo,EncounterPlan} from './encounter-contracts';
@@ -17,21 +18,23 @@ let brush:GeneratorRoleCell='standard',painting=false,paintFrame:number|null=nul
 let catalogParent:Node|null=null,catalogNext:Node|null=null;const names=new Map<string,string>();
 export function activateGeneration(next:Workspace){
  lock(false);pending=null;clearPaint();workspace=next;generation++;previewRequest++;refreshRequest++;tableRequest++;
+ setWorldSources({sources:[],factions:[],locations:[]},[],true);
  tables=[];lootTables=[];registry=null;run=null;tableDraft=null;lootDraft=null;presetDraft=null;previewDirty=false;
  for(const id of ['table-manager','loot-table-manager','preset-manager','generation-discard'])if(get<HTMLDialogElement>(id).open)get<HTMLDialogElement>(id).close();
  restoreCatalog();get('generation-workspace').hidden=false;renderPreview();void refreshGeneration();
 }
 export async function flushGeneration(){
  const w=workspace,g=generation;if(!w)return true;
+ if(worldSourceOpen()){tell('Speichere oder schließe die offenen Weltquellen zuerst.',true);return false;}
  if(pending&&!await pending)return false;if(!owned(w.token,g))return false;finishPaint();
  if(tableDraft&&get<HTMLDialogElement>('table-manager').open&&JSON.stringify(tableDraft)!==tableBaseline||lootDraft&&get<HTMLDialogElement>('loot-table-manager').open&&JSON.stringify(lootDraft)!==lootBaseline||presetDraft&&get<HTMLDialogElement>('preset-manager').open&&JSON.stringify(presetDraft)!==presetBaseline){tell('Speichere oder schließe den offenen Generator-Entwurf zuerst.',true);return false;}return true;
 }
 export async function refreshGeneration(){
  const w=workspace,g=generation,request=++refreshRequest;if(!w)return;
- try{const results=await Promise.all([window.campaign.encounterTables(w.token,true),window.campaign.lootTables(w.token,true),window.campaign.generatorRegistry(w.token),window.campaign.generationRuns(w.token)]);
+ try{const results=await Promise.all([window.campaign.encounterTables(w.token,true),window.campaign.lootTables(w.token,true),window.campaign.generatorRegistry(w.token),window.campaign.generationRuns(w.token),window.campaign.generationSources(w.token)]);
   if(!owned(w.token,g)||request!==refreshRequest)return;
   const nextTables=unwrap(results[0]),nextLootTables=unwrap(results[1]),nextRegistry=unwrap(results[2]),history=unwrap(results[3]);
-  tables=nextTables;lootTables=nextLootTables;registry=nextRegistry;renderOverview();const runs=get<HTMLSelectElement>('generation-history'),selected=runs.value;runs.replaceChildren();option(runs,'','Frühere Vorschau auswählen');for(const r of history)option(runs,r.id,r.title+' · '+r.count+' · Seed '+r.seed);if(history.some(r=>r.id===selected))runs.value=selected;
+  setWorldSources(unwrap(results[4]),nextTables);tables=nextTables;lootTables=nextLootTables;registry=nextRegistry;renderOverview();const runs=get<HTMLSelectElement>('generation-history'),selected=runs.value;runs.replaceChildren();option(runs,'','Frühere Vorschau auswählen');for(const r of history)option(runs,r.id,r.title+' · '+r.count+' · Seed '+r.seed);if(history.some(r=>r.id===selected))runs.value=selected;
  }catch(error){if(owned(w.token,g)&&request===refreshRequest)tell((error as Error).message,true);}
 }
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
@@ -43,11 +46,11 @@ function operation(fn:()=>Promise<boolean>):Promise<boolean>{
 function command(action:GenerationCommand['action']){
  const w=workspace,g=generation;if(!w)return Promise.resolve(false);
  const request={commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,action:structuredClone(action)};
- return operation(async()=>{refreshRequest++;const response=await window.campaign.executeGeneration(request);if(!owned(w.token,g))return false;const result=unwrap(response);refreshRequest++;tables=result.tables;lootTables=result.lootTables;registry=result.registry;renderOverview();tell('Tabellen und Generator gespeichert.');return true;});
+ return operation(async()=>{refreshRequest++;const response=await window.campaign.executeGeneration(request);if(!owned(w.token,g))return false;const result=unwrap(response),sources=unwrap(await window.campaign.generationSources(w.token));if(!owned(w.token,g))return false;refreshRequest++;tables=result.tables;lootTables=result.lootTables;registry=result.registry;setWorldSources(sources,tables);renderOverview();tell('Tabellen, Weltquellen und Generator gespeichert.');return true;});
 }
 function lock(on:boolean){
  if(!on){for(const [control,disabled]of lockedControls)control.disabled=disabled;lockedControls.clear();return;}
- for(const root of ['table-manager','loot-table-manager','preset-manager','generation-workspace'])for(const c of get(root).querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement>('button,input,select,textarea')){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
+ for(const root of ['world-source-manager','table-manager','loot-table-manager','preset-manager','generation-workspace'])for(const c of get(root).querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement>('button,input,select,textarea')){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
 }
 export function sourceActionAvailability(selectedId:string,sources:readonly {id:string;trashed:boolean}[]){const selected=sources.find(source=>source.id===selectedId);return{selected:!!selected,usable:!!selected&&!selected.trashed};}
 function renderSourceActions(){const encounter=sourceActionAvailability(value('encounter-table-list'),tables),loot=sourceActionAvailability(value('loot-table-list'),lootTables);get<HTMLButtonElement>('encounter-table-open').disabled=!encounter.selected;get<HTMLButtonElement>('encounter-table-trash').disabled=!encounter.selected;get<HTMLButtonElement>('loot-table-open').disabled=!loot.selected;get<HTMLButtonElement>('loot-table-trash').disabled=!loot.selected;get<HTMLButtonElement>('loot-table-roll').disabled=!loot.usable;}
@@ -55,7 +58,7 @@ function renderOverview(){const list=get<HTMLSelectElement>('encounter-table-lis
  const lootList=get<HTMLSelectElement>('loot-table-list'),lootOld=lootList.value;lootList.replaceChildren();option(lootList,'','Beutetabelle auswählen');for(const t of lootTables)if(!t.trashed||get<HTMLInputElement>('loot-trash-visible').checked)option(lootList,t.id,t.name+(t.trashed?' · Papierkorb':''));if(lootTables.some(t=>t.id===lootOld&&(!t.trashed||get<HTMLInputElement>('loot-trash-visible').checked)))lootList.value=lootOld;
  sourceLabel();renderSourceActions();
  const presets=get<HTMLSelectElement>('generator-preset-list'),current=presets.value;presets.replaceChildren();for(const p of registry?.presets??[])option(presets,p.id,p.name+(p.system?' · geschützt':''));presets.value=current||registry?.effectiveId||'';get('generator-effective').textContent='Wirksam für diese Kampagne: '+(registry?.presets.find(p=>p.id===registry?.effectiveId)?.name??'Systempreset');const habitat=get<HTMLSelectElement>('generation-habitat');if(habitat.options.length===1)for(const h of bridge.info()?.habitats??[])option(habitat,h,h);if(pending)lock(true);}
-function sourceLabel(){get('generation-source').textContent=get('generation-tables').querySelectorAll('input:checked').length?'Nur die ausgewählten Tabellen, Umgebung und Katalogfilter.':'Keine Tabelle ausgewählt: normaler Monsterkatalog mit Umgebung und Katalogfiltern.';}
+function sourceLabel(){const world=worldSourceFilters();get('generation-source').textContent=world.locationId||world.factionIds?.length?'Nur gemeinsame Quellen des Weltkontexts, gewählter Tabellen, Umgebung und Katalogfilter.':get('generation-tables').querySelectorAll('input:checked').length?'Nur die ausgewählten Tabellen, Umgebung und Katalogfilter.':'Keine Tabelle ausgewählt: normaler Monsterkatalog mit Umgebung und Katalogfiltern.';}
 function restoreCatalog(){const browser=get('catalog-browser');if(catalogParent){catalogParent.insertBefore(browser,catalogNext);catalogParent=null;catalogNext=null;}}
 function closeTable(){tableRequest++;get<HTMLDialogElement>('table-manager').close();restoreCatalog();tableDraft=null;get('encounter-table-open').focus();}
 function requestTableClose(){if(pending)return;if(tableDraft&&JSON.stringify(tableDraft)!==tableBaseline){discard=closeTable;get<HTMLDialogElement>('generation-discard').showModal();}else closeTable();}
@@ -91,7 +94,7 @@ function accept(index:number){
 function generationFields(){return JSON.stringify({fields:[...get('generation-fields').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')].map(c=>[c.id,c.type==='checkbox'?c.checked:c.value]),filters:bridge.filters()});}
 function generate(){
  const w=workspace,g=generation;if(!w||pending)return;const requestId=++previewRequest,fields=generationFields();
- const request:GenerationRequest={seed:value('generation-seed'),title:value('generation-title'),count:Number(value('generation-count')),xpCeiling:value('generation-xp-ceiling')?Number(value('generation-xp-ceiling')):null,tableIds:[...get('generation-tables').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),filters:structuredClone(bridge.filters()),habitat:value('generation-habitat'),time:value('generation-time') as GenerationRequest['time'],party:[],difficulty:value('generation-difficulty') as GenerationRequest['difficulty'],amount:value('generation-amount') as GenerationRequest['amount'],balance:value('generation-balance') as GenerationRequest['balance'],diversity:value('generation-diversity') as GenerationRequest['diversity']};
+ const request:GenerationRequest={...worldSourceFilters(),seed:value('generation-seed'),title:value('generation-title'),count:Number(value('generation-count')),xpCeiling:value('generation-xp-ceiling')?Number(value('generation-xp-ceiling')):null,tableIds:[...get('generation-tables').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),filters:structuredClone(bridge.filters()),habitat:value('generation-habitat'),time:value('generation-time') as GenerationRequest['time'],party:[],difficulty:value('generation-difficulty') as GenerationRequest['difficulty'],amount:value('generation-amount') as GenerationRequest['amount'],balance:value('generation-balance') as GenerationRequest['balance'],diversity:value('generation-diversity') as GenerationRequest['diversity']};
  void operation(async()=>{const plan=await bridge.plan();if(!owned(w.token,g)||requestId!==previewRequest)return false;if(!plan){tell('Lege zuerst eine Encounter-Vorlage mit Planungsparty an.',true);return false;}request.party=structuredClone(plan.party);const response=await window.campaign.generateEncounters(w.token,request);if(!owned(w.token,g)||requestId!==previewRequest)return false;run=unwrap(response);previewDirty=fields!==generationFields();renderPreview();await refreshGeneration();if(!owned(w.token,g)||requestId!==previewRequest)return false;tell('Encounter-Vorschau erzeugt. Noch keine Vorlage oder Kampf übernommen.');return true;});
 }
 async function loadHistory(){
@@ -124,6 +127,7 @@ function rollSelectedLoot(){const table=lootTables.find(t=>t.id===value('loot-ta
 
 export function initGeneration(status:typeof tell,callbacks:Bridge){tell=status;bridge=callbacks;
  ensureLootUI();
+ initWorldSourceUI(command,()=>{previewDirty=true;sourceLabel();renderPreview();});
  get('encounter-table-list').oninput=renderSourceActions;get('loot-table-list').oninput=renderSourceActions;renderSourceActions();
  get('encounter-table-new').onclick=()=>{report(()=>openTable());};get('encounter-table-open').onclick=()=>{const t=tables.find(t=>t.id===value('encounter-table-list'));if(t)report(()=>openTable(t));};get('table-close').onclick=requestTableClose;get<HTMLDialogElement>('table-manager').addEventListener('cancel',event=>{event.preventDefault();requestTableClose();});get<HTMLDialogElement>('table-manager').addEventListener('close',restoreCatalog);
  for(const id of ['table-name','table-description','table-scope','table-habitats','table-time','table-loot-link'])get(id).oninput=()=>{if(tableDraft){tableDraft.name=value('table-name');tableDraft.description=value('table-description');tableDraft.scope=value('table-scope') as EncounterTable['scope'];tableDraft.habitats=value('table-habitats').split(',').map(s=>s.trim()).filter(Boolean);tableDraft.time=value('table-time') as EncounterTable['time'];const loot=get<HTMLSelectElement>('table-loot-link');loot.disabled=tableDraft.scope==='installation';if(loot.disabled)loot.value='';tableDraft.lootTableId=loot.value||null;}};

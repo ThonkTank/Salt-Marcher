@@ -277,3 +277,23 @@ Rückgängig bleibt für Schritte der gewählten Begegnung verfügbar. Eine spä
 „Plan ersetzen / wiederverwenden…“ bietet eine leere Timeline oder einen vorhandenen Plan als Vorlage. Die Vorschau zeigt die Besuchszahl vor und nach dem Wechsel; Planungsparty und Adventure Day lassen sich auf Wunsch aus der Vorlage übernehmen. Besuche erhalten neue Kennungen und übernehmen Reihenfolge, Ortsverweise, Notizen, Vorlesetexte und Wissensbezüge. Noch nicht angenommene Monstergruppen werden als unabhängige Entwürfe kopiert. Angenommene Gruppen und platzierte Schätze werden weiter referenziert; ihre Figuren, HP und Gegenstände werden nicht dupliziert. Bereits vergebene Besuchsbelohnungen bleiben abgeschlossen, offene Belohnungen erhalten eine neue Vorbereitungskennung.
 
 Der Ersatz entfernt die bisherige Timeline, ihre Besuchsvorbereitung und die zugehörigen Session-Vorschläge. Angenommene Weltinhalte, globale Generatorquellen und bisherige Fakten bleiben erhalten. Gespeicherte, unbestätigte Gruppeneingaben bleiben beim Ersetzen, Löschen eines Besuchs oder Lösen einer Gruppe als unabhängige Monstergruppe erhalten. Laufende Scenes behalten ihren übernommenen Inhalt und die ursprüngliche Herkunft. Die Vorschau wird abgewiesen, wenn die betrachtete Vorbereitung zwischenzeitlich geändert wurde. „Timeline leeren“ benutzt dieselbe Ersetzung ohne Vorlage und behält den Plannamen sowie die bisherige Planungsparty. Der Vorgang erscheint im Weltverlauf und der Chronik. Datenbankformat 41 bleibt unverändert. Diese Datenhaltung prüfen die [Spielabend-Regressionen](tests/desktop-session-retention.test.mjs).
+
+### Desktopstand 0.39: Begegnungen aus der Kampagnenwelt
+
+In „Katalog und Encounter“ verknüpft die Spielleitung vorhandene Fraktionen mit
+einer Haupttabelle und optionalen Beständen pro Kreatur. Leer bedeutet unbegrenzt,
+0 bedeutet nicht verfügbar. Orte verknüpfen eigene Tabellen und Fraktionen.
+Der Generator schneidet Ort, gewählte Fraktionen, explizite Tabellen und bestehende
+Katalog-/Umgebungsfilter. Mehrere Fraktionen bündeln ihren Bestand; direkte
+Ortstabellen liefern unbegrenzte Quellen. Ohne gemeinsame Quellen gibt es eine
+lesbare Fehlermeldung, keinen Rückfall auf den Gesamtkatalog. Vorschläge verbrauchen
+keinen Bestand; Weltfolgen bleiben ausdrückliche GM-Entscheidungen.
+
+Die gespeicherte Vorschau hält ihren Weltquellenstand fest. Änderungen an Links
+oder Beständen erfordern eine neue Vorschau vor Übernahme. Tabellenänderungen
+entfernen nicht mehr zulässige Bestandseinträge in derselben Transaktion.
+Kampagnenpakete behalten und remappen Quellen und Fraktions-/Ortsreferenzen.
+Noch offen: NPC-Fraktionsmitgliedschaft/Disposition und direkte Weltfilter im
+Spielabend-Generator; der Encounter-Generator besitzt den vollständigen neuen Ablauf.
+
+Die [Quellen-Kopierprüfung](tests/desktop-world-source-transfer.test.mjs) prüft eigene Fraktions-/Ortskennungen, erhaltene Verknüpfungen, unveränderte Prosa und erneutes Öffnen.

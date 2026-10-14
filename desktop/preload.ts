@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   executeSceneRule:(command:import('../src/app/rule-reference-contracts').SceneRuleCommand)=>ipcRenderer.invoke('campaign:execute-scene-rule',command),
   sceneChecks:(token:string,id:string)=>ipcRenderer.invoke('campaign:scene-checks',token,id),
   executeSceneCheck:(command:import('../src/app/scene-check-contracts').SceneCheckCommand)=>ipcRenderer.invoke('campaign:execute-scene-check',command),
+  generationSources: (token:string)=>ipcRenderer.invoke('campaign:generation-sources',token),
   encounterTables: (token: string, includeTrashed: boolean) => ipcRenderer.invoke('campaign:encounter-tables',token,includeTrashed),
   lootTables: (token: string, includeTrashed: boolean) => ipcRenderer.invoke('campaign:loot-tables',token,includeTrashed),
   generatorRegistry: (token: string) => ipcRenderer.invoke('campaign:generator-registry',token),

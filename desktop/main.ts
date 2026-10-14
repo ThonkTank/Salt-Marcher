@@ -118,6 +118,7 @@ else {
     handle('campaign:execute-scene-rule',(command:SceneRuleCommand)=>store.executeSceneRule(command));
     handle('campaign:scene-checks',(token:string,id:string)=>store.sceneChecks(token,id));
     handle('campaign:execute-scene-check',(command:SceneCheckCommand)=>store.executeSceneCheck(command));
+    handle('campaign:generation-sources', (token:string)=>store.generationSources(token));
     handle('campaign:encounter-tables', (token: string, trashed: boolean) => store.encounterTables(token,trashed));
     handle('campaign:loot-tables', (token: string, trashed: boolean) => store.lootTables(token,trashed));
     handle('campaign:generator-registry', (token: string) => store.generatorRegistry(token));
