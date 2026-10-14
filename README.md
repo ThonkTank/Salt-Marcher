@@ -733,7 +733,7 @@ An einen Spielabend gebundene Quests und Gerüchte zeigen nun auch ihren bestät
 
 ### Desktopstand 0.60: Zentrale GM-Schnellsuche und Referenzleser
 
-„Schnellsuche“ in der oberen Leiste oder Strg+K findet Weltinhalte und Regeln, Kreaturen, Gegenstände und Begegnungen über ihre bestehenden Suchquellen. Ein gemeinsamer Suchtext und der Quellenfilter ersetzen die Suche in vier getrennten Arbeitsbereichen. Je Quelle wird eine begrenzte Seite geladen; weitere Treffer lassen sich separat nachladen. Höchstens zwei Suchanfragen laufen zugleich. Während ein anderer modaler Editor offen ist, bleibt dessen Bedienung vorrangig.
+„Schnellsuche“ in der oberen Leiste oder Strg+K findet Weltinhalte und Regeln, Kreaturen, Gegenstände und Begegnungen über ihre bestehenden Suchquellen. Ein gemeinsamer Suchtext und der Quellenfilter ersetzen die Suche in vier getrennten Arbeitsbereichen. Je Quelle wird eine begrenzte Seite geladen; weitere Treffer lassen sich separat nachladen. Pro Suchlauf laufen höchstens zwei Suchanfragen zugleich. Während ein anderer modaler Editor offen ist, bleibt dessen Bedienung vorrangig.
 
 Der Leser zeigt private Notizen und Vorlesetext getrennt, Ortsabschnitte in ihrer Reihenfolge, vollständige Kreaturdetails, Gegenstandsbeschreibungen mit Herkunft und Begegnungsteilnehmer. Benannte Weltverweise öffnen weitere Inhalte im selben Fenster. Zurück/Vorwärts halten einen Verlauf von Verweisen und lesen beim Wiederöffnen den aktuellen gespeicherten Stand. Der Verlauf ist vorläufig und wird beim Kampagnenwechsel gelöscht.
 

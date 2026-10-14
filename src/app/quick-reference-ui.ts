@@ -9,14 +9,15 @@ const unwrap=<T>(r:Result<T>)=>{if(!r.ok)throw new Error(r.error);return r.value
 type Kind='world'|'creature'|'item'|'encounter';
 const kinds:Kind[]=['world','creature','item','encounter'],labels:Record<Kind,string>={world:'Welt und Regeln',creature:'Kreaturen',item:'Gegenstände',encounter:'Begegnungen'};
 export interface QuickReferenceAction {kind:'edit'|'read-aloud'|'creature'|'encounter';content:DeskContent;sceneId:string|null;count?:number;grouped?:boolean}
+let searching=false;
 let workspace:Workspace|null=null,searchRequest=0,contentRequest=0,timer:ReturnType<typeof setTimeout>|null=null,history:DeskRef[]=[],position=-1;
 let tell:(s:string,error?:boolean)=>void,drain:()=>Promise<boolean>,handoff:(action:QuickReferenceAction)=>Promise<void>;
 const owned=(token:string,n:number)=>workspace?.token===token&&contentRequest===n&&el<HTMLDialogElement>('quick-reference').open;
 function button(text:string,action:()=>Promise<unknown>){const b=node('button',text);b.type='button';b.onclick=()=>{b.disabled=true;void action().catch(e=>tell(e.message,true)).finally(()=>{if(b.isConnected)b.disabled=false;});};return b;}
 function selectedKinds():Kind[]{const k=el<HTMLSelectElement>('quick-kind').value;return k==='all'?kinds:[k as Kind];}
-function invalidate(){searchRequest++;if(timer)clearTimeout(timer);el('quick-results').replaceChildren(node('p','Suche…'));timer=setTimeout(()=>void search(),180);}
+function invalidate(){searchRequest++;if(timer)clearTimeout(timer);el('quick-results').replaceChildren(node('p','Suche…'));timer=setTimeout(()=>{timer=null;void search();},180);}
 async function search(){
- const w=workspace;if(!w)return;const n=++searchRequest,query=el<HTMLInputElement>('quick-search').value,selected=selectedKinds(),root=el('quick-results');root.replaceChildren();el('quick-search-status').textContent='Quellen werden gelesen…';
+ const w=workspace;if(!w)return;const n=++searchRequest,query=el<HTMLInputElement>('quick-search').value,selected=selectedKinds(),root=el('quick-results');root.replaceChildren();searching=true;el('quick-search-status').textContent='Quellen werden gelesen…';
  const current=()=>workspace?.token===w.token&&n===searchRequest&&el<HTMLDialogElement>('quick-reference').open;
  let total=0;const sections=new Map<Kind,HTMLElement>();for(const kind of selected){const section=node('section');section.append(node('h3',labels[kind]));sections.set(kind,section);root.append(section);}
  // At most two requests at once; each source returns one bounded page.
@@ -24,7 +25,7 @@ async function search(){
   const section=sections.get(kind)!;try{const r=unwrap(await window.campaign.searchDesk(w.token,kind,query,0));if(!current())return;total+=r.entries.length;appendResults(section,r.entries);if(!r.entries.length)section.append(node('p','Keine Treffer.'));if(r.notice)section.append(node('p',r.notice));if(r.next!==null)more(section,kind,query,r.next,w.token,n);
   }catch(e){if(current())section.append(node('p',(e as Error).message));}
  }));if(!current())return;}
- if(current())el('quick-search-status').textContent=total+' Treffer geladen · weitere je Quelle nachladen';
+ if(current()){searching=false;el('quick-search-status').textContent=total+' Treffer geladen · weitere je Quelle nachladen';}
 }
 function appendResults(section:HTMLElement,entries:DeskEntry[]){for(const entry of entries){const b=button(entry.title,()=>openContent(entry.ref));b.dataset.refKind=entry.ref.kind;b.dataset.refId=entry.ref.id;b.append(node('span',entry.label));section.append(b);}}
 function more(section:HTMLElement,kind:Kind,query:string,offset:number,token:string,n:number){const b=button('Weitere '+labels[kind],async()=>{const r=unwrap(await window.campaign.searchDesk(token,kind,query,offset));if(workspace?.token!==token||searchRequest!==n||!el<HTMLDialogElement>('quick-reference').open)return;b.remove();appendResults(section,r.entries);if(r.next!==null)more(section,kind,query,r.next,token,n);});b.className='quick-more';section.append(b);}
@@ -60,7 +61,7 @@ export function initQuickReference(status:typeof tell,flush:typeof drain,use:typ
  async function open(){if(!workspace)return;if(document.querySelector('dialog:modal:not(#quick-reference)'))return;if(dialog.open){el<HTMLInputElement>('quick-search').select();return;}const token=workspace.token;if(!await drain()||workspace?.token!==token)return;dialog.showModal();el<HTMLInputElement>('quick-search').focus();void search();if(position>=0)void openContent(history[position]!,false);}
  shortcut.onclick=()=>void open().catch(e=>tell(e.message,true));el('quick-close').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  el('quick-search').oninput=invalidate;el('quick-kind').onchange=invalidate;
- el<HTMLFormElement>('quick-search-form').onsubmit=e=>{e.preventDefault();document.querySelector<HTMLButtonElement>('#quick-results button:not(.quick-more)')?.click();};
+ el<HTMLFormElement>('quick-search-form').onsubmit=e=>{e.preventDefault();const first=()=>document.querySelector<HTMLButtonElement>('#quick-results button:not(.quick-more)')?.click();if(timer||searching){if(timer)clearTimeout(timer);timer=null;const token=workspace?.token,q=el<HTMLInputElement>('quick-search').value,k=el<HTMLSelectElement>('quick-kind').value;void search().then(()=>{if(workspace?.token===token&&dialog.open&&el<HTMLInputElement>('quick-search').value===q&&el<HTMLSelectElement>('quick-kind').value===k)first();});}else first();};
  el('quick-back').onclick=()=>{if(position>0)void openContent(history[--position]!,false);};el('quick-forward').onclick=()=>{if(position<history.length-1)void openContent(history[++position]!,false);};
  el('quick-refresh').onclick=()=>{if(position>=0)void openContent(history[position]!,false);};
  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='k'&&!e.isComposing&&workspace){e.preventDefault();void open().catch(error=>tell(error.message,true));}});
