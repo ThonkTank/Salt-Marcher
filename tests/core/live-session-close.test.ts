@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import type {ChronicleEntry} from '../../src/app/chronicle-contracts';
-import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls} from '../../src/app/live-session-close';
+import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls,settleSessionCloseSources} from '../../src/app/live-session-close';
 
 function fixture(){
   const {document}=parseHTML('<dialog open></dialog><textarea id="draft"></textarea><textarea id="review"></textarea>');
@@ -50,4 +50,11 @@ test('session workflows override the narrow default dialog cap',()=>{
   const css=readFileSync('src/app/app.css','utf8');
   assert.match(css,/#live-session-close-dialog\{[^}]*max-width:56rem/);
   assert.match(css,/#live-session-resume-dialog\{[^}]*max-width:68rem/);
+});
+
+test('optional handoff sources cannot block a verified session close',async()=>{
+  const reviewed=Promise.resolve({masks:2}),unavailable=Promise.reject(new Error('Journal nicht lesbar'));
+  const result=await settleSessionCloseSources(reviewed,unavailable);
+  assert.deepEqual(result.audit,{masks:2});assert.equal(result.preparation,null);assert.match(String(result.preparationError),/Journal nicht lesbar/);
+  await assert.rejects(()=>settleSessionCloseSources(Promise.reject(new Error('Abschlussprüfung nicht lesbar')),Promise.resolve({})),/Abschlussprüfung nicht lesbar/);
 });
