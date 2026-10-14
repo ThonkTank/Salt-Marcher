@@ -634,6 +634,8 @@ Restart und Import dürfen nie zuletzt bekannte unsafe Ausgabe reaktivieren.
 
 Persistenz, Recovery und GM-Anwendung des Party-/LiveSession-Kerns sind Kandidat in [PR160](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/160). Integration, Gesamt-E2E-02 und weitere Plattformen bleiben getrennt zu belegen. Die providerunabhängige immutable Sourceprojektion aktiviert keine Playerausgabe: absent/disabled bleibt Default-Deny. Vor einer SMR-10-Bridge sind Knowledge-/Perception-/Fog-/Camera-Filter sowie TN-21/TN-24/TN-31 und AC-L10/AC-T07 zu belegen. Music/Weather/Shops erhalten immutable Focus-/LiveScene-Consumer mit none/stale/Fehlerzuständen; Capability-, Cancellation- und Recoverygrenzen bleiben erforderlich.
 
+Der integrierte SQLite-Adapter entfernt bei bestätigtem Move oder Deactivate verfügbare Character-Teilnahmen aus offenen Combat- und Chase-Masken atomar mit der Partyänderung und speichert je betroffenem Owner einen revisionsgebundenen Reconciliation-Beleg unter derselben CommandId. Provider-Ausfall mit sichtbarem `pending`, explizite Masken-Lifecycle-Projektion bei Scene-Retirement sowie Character-Tombstone/Closure bleiben davon unberührt offene Produktanschlüsse; dieser Teilstand ist keine vollständige SMR-03- oder E2E-02-Abnahme.
+
 ## Kernverträge und Umsetzung
 
 Der heutige reine Party-/Scene-Kern und seine Code-/DOMbelege bleiben

@@ -1,4 +1,4 @@
-import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
+import {publishCombatHealth,syncOpenMaskHealth,removePartyFromMasks} from './mask-health';
 import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';
 import { randomUUID, randomInt, createHash } from 'node:crypto';
@@ -25,6 +25,8 @@ function decode(row: any): CombatState {
   if (state.id !== row.id || state.sceneId !== row.scene_id || state.revision !== row.revision || state.phase !== row.phase) throw new Error('Kampfzuordnung widersprüchlich.');
   return state;
 }
+export function reconcileCombatParticipants(db:any,cam:string,ids:string[],commandId:string){removePartyFromMasks(db,cam,ids,commandId);}
+
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));
