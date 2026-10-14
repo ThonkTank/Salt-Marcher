@@ -6,6 +6,7 @@ import {join} from "node:path";
 import test from "node:test";
 import {readChronicle} from "../../src/app/storage/chronicle";
 import {CampaignStore} from "../../src/app/storage/store";
+import {newLocation} from "../../src/features/location/location-schema";
 
 const envelope=(value:object)=>{
   const payload=JSON.stringify(value);
@@ -91,14 +92,17 @@ test("live play records a confirmed moment directly in the campaign chronicle",(
   const root=mkdtempSync(join(tmpdir(),"live-moment-")),store=new CampaignStore(join(root,"campaign.sqlite"),"test");
   try{
     const campaign=store.create("Abendrunde"),token=store.activate(campaign.id).token;
+    const locationId=randomUUID();store.changePreparation({commandId:"location",campaignId:campaign.id,token,change:{kind:"location",expectedRevision:null,document:newLocation(locationId,"Alte Mühle","poi",[randomUUID(),randomUUID()])}});
     const hero=store.executeLive({commandId:"hero",campaignId:campaign.id,token,action:{kind:"create-character",profile:{name:"Ada"}}}).character!;
     const scene=store.executeLive({commandId:"scene",campaignId:campaign.id,token,action:{kind:"initialize",expectedRosterRevision:1}}).scene!;
     store.executeLive({commandId:"active",campaignId:campaign.id,token,action:{kind:"membership",characterId:hero.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+    store.executeLive({commandId:"location-scene",campaignId:campaign.id,token,action:{kind:"scene-content",sceneId:scene.id,expectedRevision:0,title:scene.title,notes:scene.notes,readAloud:scene.readAloud,locationId}});
     const followUpId=randomUUID();
-    store.executeLive({commandId:"moment",campaignId:campaign.id,token,action:{kind:"live-moment",sceneId:scene.id,expectedRevision:0,category:"narrative",title:"Der Müller kennt den Kult",summary:"Ada kommt nachts zurück.",followUp:{kind:"quest",id:followUpId}}});
+    store.executeLive({commandId:"moment",campaignId:campaign.id,token,action:{kind:"live-moment",sceneId:scene.id,expectedRevision:1,category:"narrative",title:"Der Müller kennt den Kult",summary:"Ada kommt nachts zurück.",followUp:{kind:"quest",id:followUpId}}});
     const entry=store.chronicle(token).entries.find(item=>item.title==="Der Müller kennt den Kult");
     assert.deepEqual(entry&&{category:entry.category,summary:entry.summary,people:entry.people,followUp:entry.followUp},{category:"narrative",summary:"Ada kommt nachts zurück.",people:["Ada"],followUp:{kind:"quest",id:followUpId}});
     const quest=store.preparation(token).notes.find(row=>row.note.id===followUpId)?.note;
     assert.deepEqual(quest&&{kind:quest.kind,title:quest.title,gmNotes:quest.gmNotes},{kind:"quest",title:"Der Müller kennt den Kult",gmNotes:"Ada kommt nachts zurück."});
+    assert.deepEqual(store.narrative(token,followUpId).state,{noteId:followUpId,revision:0,status:"open",locationId,contributors:[hero.id],poolXp:0,items:[],awardId:null});
   }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

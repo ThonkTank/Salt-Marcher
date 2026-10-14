@@ -10,7 +10,7 @@ import { readProgressCharacter, finishCombatRewards, latestCombatStatuses, detac
 import {applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../progression';
 import { assessEncounter } from '../encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
-import { readGeneratorRegistry } from './generation';
+import { readGeneratorRegistry,readGenerationRun,acceptGeneration } from './generation';
 import {readWorldActor,readPreparedGroup} from './session';
 import type { Creature } from '../../features/catalog/creature-catalog';
 import {legendaryActionCost} from '../dice-formula';
@@ -135,8 +135,16 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
       const progress = new Map(party.map(c => [c.id, readProgressCharacter(db,cam,c.id)]));
       const statuses=latestCombatStatuses(db,cam,party.filter(c=>progress.get(c.id)!.health===null&&!progress.get(c.id)!.combatStatus).map(c=>c.id));
       state = { id: randomUUID(), sceneId: scene.id, revision: 1, title: a.title || 'Neue Begegnung', phase: 'preparing', round: 0, turnId: null, notes: '', outcome: '', participants: party.map(c=>partyCombatant(c,progress.get(c.id)!,statuses.get(c.id))) };
-      if (a.planId) {
-        const plan=readEncounterPlan(db,cam,a.planId);if(plan.revision!==a.expectedPlanRevision)throw new Error('Encounter-Vorlage geändert. Bitte erneut öffnen.');
+      let generated:import('../encounter-contracts').EncounterPlan|null=null;
+      if(a.generation){
+        const live=readLive(db,cam),g=a.generation;
+        if(a.planId||a.preparedGroupId||!a.includeParty||live.focusId!==scene.id||live.focusRevision!==g.expectedFocusRevision||scene.locationId!==g.locationId)throw new Error('Fokussierte Gruppe oder Ort geändert. Begegnung erneut ansehen.');
+        const run=readGenerationRun(db,cam,g.runId);if(run.request.locationId&&run.request.locationId!==scene.locationId)throw new Error('Ortsquellen gehören zu einem anderen Ort. Neu erzeugen.');const actual=party.map(c=>({id:c.id,name:c.profile.name,level:progress.get(c.id)!.xp===null?null:xpLevel(progress.get(c.id)!.xp!).level,count:1})).sort((x,y)=>x.id.localeCompare(y.id));
+        if(JSON.stringify(actual)!==JSON.stringify([...run.request.party].sort((x,y)=>x.id.localeCompare(y.id))))throw new Error('Aktuelle Gruppe oder Level passen nicht mehr zur Vorschau. Neu erzeugen.');
+        generated=acceptGeneration(db,{commandId:command.commandId+'|generation',campaignId:cam,token:command.token,runId:g.runId,index:g.index,expectedRegistryRevision:g.expectedRegistryRevision},guard);if(generated.revision!==1)throw new Error('Die übernommene Vorlage wurde bearbeitet. Neue Vorschau erzeugen oder die aktuelle Vorlage öffnen.');
+      }
+      if (a.planId||generated) {
+        const plan=generated??readEncounterPlan(db,cam,a.planId!);if(!generated&&plan.revision!==a.expectedPlanRevision)throw new Error('Encounter-Vorlage geändert. Bitte erneut öffnen.');
         if(plan.generationOrigin){const registry=readGeneratorRegistry(db,cam),preset=registry.presets.find(p=>p.id===registry.effectiveId)!;state.generatorPreset={id:preset.id,revision:preset.revision,hash:preset.hash,mobThreshold:preset.config.combat.mobThreshold};}
         for(const entry of plan.entries){const creature=plan.sources.find(c=>c.id===entry.creatureId);if(!creature)throw new Error('Vorlage hat eine fehlende Kreaturquelle.');const grouped=state.generatorPreset?state.generatorPreset.mobThreshold>0&&entry.count>=state.generatorPreset.mobThreshold:entry.grouped;if(entry.worldActorIds?.length){const shared=grouped?randomUUID():undefined;for(const id of entry.worldActorIds){if(readWorldActor(db,cam,id).creatureId!==entry.creatureId)throw new Error('NPC-Statblock passt nicht zur Vorlage.');addNamedActor(db,cam,state,id,scene.locationId,entry.id,shared);}if(entry.count>entry.worldActorIds.length)addCreature(state,creature,entry.count-entry.worldActorIds.length,grouped,shared,entry.id);}else addCreature(state,creature,entry.count,grouped,undefined,entry.id);}
         state.notes=plan.notes;state.title=a.title||plan.name;state.planOrigin={id:plan.id,revision:plan.revision,name:plan.name};
