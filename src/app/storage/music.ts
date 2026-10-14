@@ -26,8 +26,13 @@ function checkedAudioRow(row:any):AudioAsset{
 }
 export function readAudioAsset(db:any,root:string,id:string):AudioAsset{const a=checkedAudioRow(db.prepare('SELECT * FROM audio_asset WHERE id=?').get(id));let available=false;try{const file=statSync(audioFile(root,a));available=file.isFile()&&file.size===a.media.bytes;}catch{}return{...a,available};}
 export function readAudioAssets(db:any,root:string,q:AudioQuery):AudioPage{if(typeof q.search!=='string'||q.search.length>1000||!['','song','ambience'].includes(q.kind)||q.after!==null&&!/^[1-9][0-9]*$/.test(q.after))throw new Error('Audiosuche ungültig.');const rows=db.prepare("SELECT rowid AS cursor,* FROM audio_asset WHERE (? OR trashed=0) AND (?='' OR kind=?) AND (?='' OR instr(lower(search_text),lower(?))>0) AND (? IS NULL OR rowid>?) ORDER BY rowid LIMIT 51").all(q.includeTrashed?1:0,q.kind,q.kind,q.search,q.search.toLocaleLowerCase(),q.after,q.after),problems:string[]=[],items:AudioAsset[]=[];for(const r of rows.slice(0,50))try{items.push(readAudioAsset(db,root,r.id));}catch(error){problems.push(r.id+': '+(error as Error).message);}return{items,next:rows.length>50?String(rows[49].cursor):null,problems};}
-export function readAudioRegistry(db:any):AudioRegistry{const r=db.prepare("SELECT * FROM audio_registry WHERE id='main'").get();return r?decoded(r):{revision:0,catalogRevision:0,axes:[]};}
-function saveRegistry(db:any,r:AudioRegistry){const payload=json(r);db.prepare("INSERT INTO audio_registry VALUES('main',?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum").run(r.revision,payload,hash(payload));}
+function validateAudioRegistry(r:AudioRegistry,revision:number){
+ if(!r||typeof r!=='object'||!Number.isSafeInteger(r.revision)||r.revision<0||r.revision!==revision||!Number.isSafeInteger(r.catalogRevision)||r.catalogRevision<0||!Array.isArray(r.axes)||r.axes.length>30)throw new Error('Musikregister ist ungültig.');
+ validateAxes(r.axes);
+}
+export function checkedAudioRegistry(row:any):AudioRegistry{const r=decoded<AudioRegistry>(row);if(row.id!=='main')throw new Error('Musikregisteridentität ist widersprüchlich.');validateAudioRegistry(r,row.revision);return r;}
+export function readAudioRegistry(db:any):AudioRegistry{const r=db.prepare("SELECT * FROM audio_registry WHERE id='main'").get();return r?checkedAudioRegistry(r):{revision:0,catalogRevision:0,axes:[]};}
+function saveRegistry(db:any,r:AudioRegistry){validateAudioRegistry(r,r.revision);const payload=json(r);db.prepare("INSERT INTO audio_registry VALUES('main',?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum").run(r.revision,payload,hash(payload));}
 function touchCatalog(db:any){const r=readAudioRegistry(db);r.catalogRevision++;saveRegistry(db,r);}
 const tags=(v:string[])=>{if(!Array.isArray(v)||v.length>100||v.some(t=>typeof t!=='string'||t.length>1000))throw new Error('Audiotags ungültig.');return[...new Set(v.map(t=>t.trim()).filter(Boolean))];};
 const norm=(v:string)=>v.trim().toLocaleLowerCase();
@@ -70,6 +75,7 @@ function validateMusicState(db:any,s:MusicState,revision:number){
 }
 function checkedMusicState(db:any,cam:string,row:any):MusicState{const s=decoded<MusicState>(row);if(row.campaign_id!==cam)throw new Error('Musikkampagne ist widersprüchlich.');validateMusicState(db,s,row.revision);return s;}
 function state(db:any,cam:string):MusicState{const row=db.prepare('SELECT * FROM music_state WHERE campaign_id=?').get(cam);return row?checkedMusicState(db,cam,row):defaultState();}
+export function musicStateAssetCount(db:any,cam:string){const s=state(db,cam);return new Set([s.current?.assetId,...s.queue.map(entry=>entry.assetId),...s.forcedAmbience,...s.mutedAmbience,...(s.automaticAmbience??[]),...s.history].filter((id):id is string=>!!id)).size;}
 function saveState(db:any,cam:string,s:MusicState){s.revision++;const data=structuredClone(s);if(data.current)data.current.positionSeconds=0;validateMusicState(db,data,s.revision);const payload=json(data);db.prepare('INSERT INTO music_state VALUES(?,?,?,?) ON CONFLICT(campaign_id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,s.revision,payload,hash(payload));}
 function normalizedTags(value:unknown){if(!Array.isArray(value))throw new Error('Musiktags ungültig.');const next=tags(value as string[]);if(json(next)!==json(value))throw new Error('Musiktags sind nicht normalisiert.');}
 function validateSceneSettings(s:MusicSceneSettings,id:string,revision:number){if(!s||typeof s!=='object'||s.sceneId!==id||!Number.isSafeInteger(s.revision)||s.revision<1||s.revision!==revision)throw new Error('Szenenmusikidentität ist widersprüchlich.');moods(s.moods);numeric(s.intensity);normalizedTags(s.vibes);normalizedTags(s.genres);}
@@ -132,5 +138,5 @@ export function validateMusicBackup(db:any){
  for(const r of db.prepare('SELECT * FROM music_subject').iterate()){subjectName(db,r.campaign_id,r.kind,r.id);checkedMusicSubject(r,r.campaign_id,r.kind,r.id);}
  for(const r of db.prepare('SELECT * FROM music_receipt').iterate())checkedMusicReceipt(db,r);
  for(const r of db.prepare('SELECT * FROM music_position').iterate())if(typeof r.campaign_id!=='string'||!db.prepare('SELECT 1 FROM campaign WHERE id=?').get(r.campaign_id)||typeof r.playback_id!=='string'||!r.playback_id||r.playback_id.length>1000||!Number.isFinite(r.seconds)||r.seconds<0||r.seconds>100000000)throw new Error('Musikwiedergabeposition ist ungültig.');
- for(const r of db.prepare('SELECT * FROM audio_registry').iterate())decoded(r);
+ for(const r of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(r);
 }
