@@ -49,6 +49,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
         faction: "Fraktion",
         quest: "Quest",
         rumor: "Gerücht",
+        rule: "Regel",
       }[note.kind],
       revision: note.revision,
       note,
@@ -249,6 +250,7 @@ export function searchDesk(
               faction: "Fraktion",
               quest: "Quest",
               rumor: "Gerücht",
+        rule: "Regel",
             } as Record<string, string>
           )[r.label] ?? r.label,
       })),

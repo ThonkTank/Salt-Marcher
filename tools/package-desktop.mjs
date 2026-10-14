@@ -63,6 +63,8 @@ Umfang
   Monstergruppen lassen sich unabhängig vom Plan mit einzelnen NPC-Figuren,
   HP, Zuständen und Notizen vorbereiten und platzieren. Am Szenenort wählst du
   die Figuren für eine Begegnung ausdrücklich aus.
+  Mehrere Begegnungen derselben Scene teilen Figuren-HP und Zustände.
+  Partywechsel entfernen PCs aus allen offenen Begegnungs-/Verfolgungsmasken.
   Kampagnen lassen sich als .kwcampaign mit
   ihren Medien übertragen.
 

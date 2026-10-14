@@ -113,6 +113,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
       const entry:ChronicleEntry={id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+String(f.amount)+' '+timeUnit(f.unit)+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;timeEntries.push(entry);if(timeEntries.length>2000){timeTruncated=true;break;}
     }
     const entries=[...progressEntries,...combatEntries,...worldEntries,...timeEntries];
+
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id));
     return{campaignName:campaign.name,entries:entries.slice(0,2000),truncated:progressTruncated||worldTruncated||timeTruncated||entries.length>2000};
   })();

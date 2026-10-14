@@ -16,7 +16,9 @@ export function groupView(db:any,cam:string,id:string):GroupView {
 }
 export function preparedGroups(db:any,cam:string,search:string,after:string|null){
  if(typeof search!=='string'||search.length>1000||after!==null&&typeof after!=='string')throw new Error('Gruppensuche ungültig.');
- const rows=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0 AND (? IS NULL OR id>?) ORDER BY id LIMIT 26").all(cam,search,after,after);
+ let title:string|null=null;
+ if(after!==null){const anchor=db.prepare("SELECT payload,checksum FROM prepared_group WHERE campaign_id=? AND id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0").get(cam,after,search);if(!anchor)throw new Error('Suchseite veraltet. Suche neu starten.');if(hash(anchor.payload)!==anchor.checksum)throw new Error('Gruppe beschädigt.');title=JSON.parse(anchor.payload).title;}
+ const rows=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0 AND (? IS NULL OR json_extract(payload,'$.title') COLLATE NOCASE > ? OR (json_extract(payload,'$.title') COLLATE NOCASE = ? AND id>?)) ORDER BY json_extract(payload,'$.title') COLLATE NOCASE,id LIMIT 26").all(cam,search,after,title,title,after);
  return {items:rows.slice(0,25).map((r:any)=>{if(hash(r.payload)!==r.checksum)throw new Error('Gruppe beschädigt.');const g=JSON.parse(r.payload);return{id:g.id,title:g.title,locationId:g.locationId,count:g.actors.length};}),next:rows.length>25?rows[24].id:null};
 }
 export function groupDraft(db:any,cam:string,id:string):GroupDraft|null {
