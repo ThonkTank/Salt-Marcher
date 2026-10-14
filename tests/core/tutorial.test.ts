@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {parseHTML} from 'linkedom';
 import {CampaignStore} from '../../src/app/storage/store';
-import {initTutorial,lessons,tutorialLessonRevision,tutorialSurfaceLessons,type TutorialRun} from '../../src/app/tutorial';
+import {initTutorial,lessons,tutorialCapabilityLessons,tutorialLessonRevision,tutorialSurfaceLessons,type TutorialRun} from '../../src/app/tutorial';
 
 const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
 
@@ -20,7 +20,7 @@ test('application updates start once and skip remains a terminal choice',()=>{
 });
 
 test('every primary workspace and independent header capability has a current tutorial lesson',()=>{
- const html=readFileSync(join(process.cwd(),'src/app/index.html'),'utf8'),{document}=parseHTML(html),ids=lessons.map(lesson=>lesson.id);assert.equal(new Set(ids).size,ids.length);for(const [surface,lesson] of Object.entries(tutorialSurfaceLessons)){assert.ok(document.getElementById(surface),surface);assert.ok(ids.includes(lesson),`${surface} -> ${lesson}`);}const workspaces=[...document.querySelectorAll<HTMLButtonElement>('nav[aria-label="Arbeitsbereich"] button')].map(button=>button.id.replace(/-tab$/,''));for(const surface of workspaces)assert.ok(surface in tutorialSurfaceLessons,`Arbeitsbereich ohne Lektion: ${surface}`);for(const id of ['campaign-transfer','chronicle','extensions'])assert.ok(ids.includes(id));
+ const html=readFileSync(join(process.cwd(),'src/app/index.html'),'utf8'),dynamic=readFileSync(join(process.cwd(),'src/app/rule-reference-ui.ts'),'utf8'),{document}=parseHTML(html),ids=lessons.map(lesson=>lesson.id);assert.equal(new Set(ids).size,ids.length);for(const [surface,lesson] of Object.entries(tutorialSurfaceLessons)){assert.ok(document.getElementById(surface),surface);assert.ok(ids.includes(lesson),`${surface} -> ${lesson}`);}const workspaces=[...document.querySelectorAll<HTMLButtonElement>('nav[aria-label="Arbeitsbereich"] button')].map(button=>button.id.replace(/-tab$/,''));for(const surface of workspaces)assert.ok(surface in tutorialSurfaceLessons,`Arbeitsbereich ohne Lektion: ${surface}`);for(const [entry,lesson] of Object.entries(tutorialCapabilityLessons)){assert.match(html+'\n'+dynamic,new RegExp(`id=["']${entry}["']`),entry);assert.ok(ids.includes(lesson),`${entry} -> ${lesson}`);}for(const id of ['campaign-transfer','chronicle','extensions','session-generation','combat-rewards','dungeon-structure','live-rules'])assert.ok(ids.includes(id));
 });
 
 test('the first-run dialog opens automatically and skip closes it without blocking help',async()=>{
