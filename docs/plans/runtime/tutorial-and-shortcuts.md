@@ -62,3 +62,6 @@ keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.
 Die Einstiege für Gegenstände und Shops erklären Definitionen, Bestand und
 Handel; Schatzverwaltung und gemeinsame Verteilung bleiben eigene Lektionen.
 Native Bedienung dieser neuen Lektionen ist weiterhin separat zu prüfen.
+
+Die Musiklektionen erfassen Datei-/Transferfehler, manuelle Wiedergabe,
+Automatikfreigabe und Soundboard; deren native Bedienung bleibt zu prüfen.
