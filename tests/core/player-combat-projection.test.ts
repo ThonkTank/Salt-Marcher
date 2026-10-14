@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 import type {CombatState} from '../../src/app/combat-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
-const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};};
+const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision};};
 
 test('the follow display shows a reduced combat initiative and respects hidden opponents',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-combat-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
