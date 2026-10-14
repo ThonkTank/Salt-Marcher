@@ -36,16 +36,27 @@ offene Anzeige. Zusammen mit 42 bestehenden Shop-/Ledgerprüfungen bestanden
 49 Tests und der Desktop-Typecheck. Das ist lokale Store-/DOM-Evidenz; eine
 native Bedienabnahme oder vollständige Rewardqualifikation folgt daraus nicht.
 
+## Neuer Sessionanschluss vom 14.10.2026
+
+`storage/session-rewards.ts` verbindet jetzt bestätigte Roster-XP, effektive
+Ledgerwerte und die Fortschrittskurve des wirksamen Presets mit dem erwarteten
+Session-XP. `applyLootGuidance` verteilt daraus Vorschlagsbudgets;
+`fitRewardItems` erhält passende Tabellenitems und füllt den Rest mit Münzen.
+Der Sessionwriter/Editor trägt die Quellenbasis weiter. Dieser integrierte
+Anschluss ersetzt die frühere Aussage, es gebe noch keinen XP-basierten Code.
+Er ist noch kein Beleg für vollständige D&D-2014-Guidance, Transfer-/Korrektur-
+semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
+
 ## Nächste ausführbare Schritte
 
-1. **Vollständige Guidance anschließen.** Der jetzige Vergleich zeigt relative
-   Charactergrants. Die verlangte Erwartung für sämtliche erhaltenen XP aus
-   dem versionierten D&D-2014-Profil fehlt weiterhin. Den vorhandenen
-   XP-/Sessionforecast in `progression.ts`, `storage/session.ts` und dessen UI
-   mit einem gemeinsamen erklärbaren Read verbinden: verwendete Profilversion,
-   XP-Basis, erwartete und tatsächliche Beute, Defizit. Fehlende XP-/Regel-/
-   Wertbasis bleibt offen. Abnahme: unterschiedliche XP-Stände, korrigierte
-   Grants und fehlender Wert; keine automatische Änderung bestehender Awards.
+1. **Vollständige Guidance qualifizieren.** `storage/session-rewards.ts`,
+   `storage/session.ts` und die Session-UI gegen das versionierte D&D-2014-Profil
+   prüfen: tatsächlich sämtliche bestätigten XP, effektive erhaltene Beute,
+   Forecast, unbekannte Werte und konsistente Rundung. Regel-/Profilversion,
+   XP-Basis, erwartete/tatsächliche Beute und Defizit gemeinsam erklären.
+   Abnahme: unterschiedliche XP-Stände, korrigierte/weitergereichte/verkaufte
+   Grants, fehlender Wert, individuelle Vorschlagsänderung und Neustart;
+   keine automatische Änderung bestehender Awards.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
