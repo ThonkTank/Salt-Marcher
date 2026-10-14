@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, stat, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import {
   assertCatalogMainJsBudget,
@@ -9,6 +9,7 @@ import {
 } from "./tools/catalog-build-asset.mjs";
 const test = process.argv.includes("--test");
 const catalogAsset = await prepareCatalogBuildAsset();
+if(test){await mkdir('.build/catalog',{recursive:true});await Promise.all([copyFile('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json'),copyFile('src/features/catalog/SRD-5.1-ATTRIBUTION.md','.build/catalog/SRD-5.1-ATTRIBUTION.md')]);}
 const productBuild = await build({
   entryPoints: [test ? "tests/core.test.ts" : "src/main.ts"],
   outfile: test ? ".build/tests.cjs" : "main.js",

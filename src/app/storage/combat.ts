@@ -45,6 +45,7 @@ function decode(row: any): CombatState {
 }
 export function reconcileCombatParticipants(db:any,cam:string,ids:string[],commandId:string,retiredScenes:Set<string>=new Set()){removePartyFromMasks(db,cam,ids,commandId,retiredScenes);}
 
+
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));
@@ -225,13 +226,13 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const roll=a.kind==='concentration-roll'?randomInt(1,21):null,modifier=a.kind==='concentration-roll'?a.modifier:0;if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>1000)throw new Error('Konzentrationsmodifikator benötigt eine ganze Zahl bis 1000.');const total=roll===null?null:roll+modifier,success=a.kind==='concentration'?a.success:total!>=check.dc;
           p.concentrationLast={...check,roll,modifier,total,success};p.concentrationChecks=p.concentrationChecks!.slice(1);if(!success){p.concentrating=false;delete p.concentrationChecks;}else if(!p.concentrationChecks.length)delete p.concentrationChecks;
         } else if(a.kind==='legendary-action'){
-          const p=participant(),source=legendarySource(state,p),action=source?.legendaryActions.find(action=>action.id===a.actionId),expected=action?legendaryActionCost(action):0;if(state.phase!=='running'||!action)throw new Error('Legendäre Aktion gehört nicht zu dieser laufenden Kreatur.');if(a.cost!==expected)throw new Error('Kosten der legendären Aktion stimmen nicht mit dem Statblock überein.');const points=p.legendaryActions;if(!points||points.remaining<expected)throw new Error('Nicht genügend legendäre Aktionspunkte verfügbar.');points.remaining-=expected;
+          const p=participant(),source=legendarySource(state,p),action=source?.legendaryActions.find(action=>action.id===a.actionId),expected=action?legendaryActionCost(action):0;if(state.phase!=='running'||!action)throw new Error('Legendäre Aktion gehört nicht zu dieser laufenden Kreatur.');if(state.turnId===p.id)throw new Error('Legendäre Aktionen sind nicht im eigenen Zug verfügbar.');if(a.cost!==expected)throw new Error('Kosten der legendären Aktion stimmen nicht mit dem Statblock überein.');const points=p.legendaryActions;if(!points||points.remaining<expected)throw new Error('Nicht genügend legendäre Aktionspunkte verfügbar.');if(points.lastUsedRound===state.round&&points.lastUsedTurnId===state.turnId)throw new Error('Diese Kreatur hat in diesem Zug bereits eine legendäre Aktion eingesetzt.');points.remaining-=expected;points.lastUsedRound=state.round;points.lastUsedTurnId=state.turnId!;
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
           if(p.concentrationChecks?.length)throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           detachCombatHealth(db,cam,state,p,command.commandId);
           state.participants = state.participants.filter(c => c.id !== p.id);
-          if (state.turnId === p.id) { const next = order[index + 1] ?? order[0]; state.turnId = state.participants.length ? (next?.id === p.id ? state.participants[0]!.id : next!.id) : null; if (index === order.length - 1 && state.participants.length) state.round++; }
+          if (state.turnId === p.id) { const next = order[index + 1] ?? order[0]; state.turnId = state.participants.length ? (next?.id === p.id ? state.participants[0]!.id : next!.id) : null; if (index === order.length - 1 && state.participants.length) state.round++;const current=state.participants.find(actor=>actor.id===state.turnId);if(current)resetLegendary(state,current); }
           if (!state.participants.length) { state.phase = 'preparing'; state.round = 0; state.turnId = null; }
         } else if (a.kind === 'roll') {
           if (!['normal', 'advantage', 'disadvantage'].includes(a.mode)) throw new Error('Würfelmodus ungültig.');
