@@ -825,3 +825,9 @@ Der Zusammenhangsplan erschließt zusätzlich Kreaturen, Gegenstände und Encoun
 Hat eine Gruppe noch keinen Besuch übernommen oder das Ende ihrer bisherigen Timeline erreicht, bleibt der Leitungsstand nicht mehr leer. Er prüft die vorhandenen Spielabendpläne in ihrer gespeicherten Reihenfolge und schlägt den ersten für diese Gruppe noch ungespielten oder wieder geöffneten Besuch vor. Abgeschlossene und übersprungene Besuche werden ausgelassen; Planname, Ort, Eröffnung und Mappeninhalt bleiben sichtbar.
 
 Der Vorschlag verwendet dieselben Übernahme-, Mappen- und Startwege wie eine direkte Timeline-Fortsetzung. Er schreibt keine neue Planwahl und verändert keinen Besuchsstatus. Sind alle vorbereiteten Besuche erledigt, benennt der Leitungsstand diesen Zustand ausdrücklich; ohne Plan fordert er zur Vorbereitung eines Spielabendplans auf.
+
+### Desktopstand 0.81: Textverweise und eigene Suchbegriffe
+
+„Textverweis einfügen“ wählt eine Welt-/Katalogquelle, zeigt eine Vorschau und fügt ihren Verweis am Cursor oder an der Markierung der GM-Notiz ein. Eigene Anzeigenamen werden im Bereich „Verknüpfte Begriffe“ der Schnellsuche und des Zusammenhangsplans gefunden. Der Lesetext öffnet die Zielquelle, mit dem bestehenden Verlauf zurück zur Notiz. Umbenannte Ziele bleiben gebunden, nicht verfügbare Ziele bleiben kenntlich.
+
+Verweise werden als Markdown `[Anzeigename](dungeon-ref:kind/URI-kodierte-ID)` im bestehenden Text gespeichert; gewöhnliches Markdown und Prosa werden nicht verändert. Aktuell werden je Dokument die ersten 200 Verweise für die begrenzten Such-/Navigationsprojektionen gelesen. Es gibt keinen zweiten Autoren- oder Aliasspeicher und keine neue Datenbankschemaversion. Unabhängige Kampagnenkopien/-importe binden lokale Ziele innerhalb dieser Syntax an ihre neuen IDs; installationsweite Katalogziele folgen der vorhandenen Definitionzuordnung. Auf Spielertexten erscheinen ausschließlich Anzeigenamen statt der internen Verweisadressen.
