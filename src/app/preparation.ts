@@ -29,7 +29,7 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let pending: Promise<boolean> | null = null;
 const changesPending = new Set<Promise<void>>();
 let composing = false, blocked = false;
-let preparationLoad = 0;
+let preparationLoad = 0, sceneSearchPlan:string|null=null;
 let hasOpenInput = false;
 let failedCommand: PreparationCommand | null = null;
 let tell: (text: string, error?: boolean) => void;
@@ -99,7 +99,7 @@ export async function leavePreparation(): Promise<boolean> {
   catch (error) { tell('Vorbereitung kann noch nicht verlassen werden: ' + (error as Error).message, true); return false; }
 }
 export async function activatePreparation(workspace: Workspace) {
-  const request = ++preparationLoad;
+  const request = ++preparationLoad;sceneSearchPlan=null;get<HTMLInputElement>('scene-search').value='';
   campaignNotes.clear(); noteSearchLoad++; noteSearchError = null;
   context = workspace; blocked = false; failedCommand = null; hasOpenInput = false; noteDraft = null; planDraft = null; locationDraft = null;
   retained.clear(); draftProblems.clear();
@@ -287,17 +287,30 @@ async function renderNotes() {
 }
 function renderSceneList() {
   const list = get('scene-list'); list.replaceChildren();
-  const plan = planDraft ?? originalPlan();
+  const plan = planDraft ?? originalPlan(),token=context?.token;
+  const query=value('scene-search'),terms=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const locations=new Map(data.locations.map(row=>[row.document.id,row.document.name]));
+  let matches=0,selectedVisible=false;
   plan?.scenes.forEach((scene, index) => {
+    const text=[scene.title,scene.notes,scene.locationId?locations.get(scene.locationId)??'':''].join('\n').toLocaleLowerCase();
+    if(!terms.every(term=>text.includes(term)))return;
+    matches++;if(scene.id===selectedScene)selectedVisible=true;
     const button = document.createElement('button'); button.textContent = `${index + 1}. ${scene.title || 'Unbenannte Szene'}`;
     button.setAttribute('aria-pressed', String(scene.id === selectedScene));
-    button.onclick = () => { void (async () => { if (!(await leavePreparation())) return; selectedScene = scene.id; await renderPlans(); get<HTMLInputElement>('scene-title').focus(); })(); }; list.append(button);
+    button.onclick = () => { void (async () => {
+      if(context?.token!==token||selectedPlan!==plan.id||!(await leavePreparation()))return;
+      if(context?.token!==token||selectedPlan!==plan.id)return;
+      selectedScene = scene.id; await renderPlans(); get<HTMLInputElement>('scene-title').focus();
+    })(); }; list.append(button);
   });
+  get('scene-search-clear').hidden=!query;
+  get('scene-search-status').textContent=matches+' von '+(plan?.scenes.length??0)+' Besuchen'+(!matches?' · Keine passenden Besuche.':'')+(selectedScene&&!selectedVisible?' · Der ausgewählte Besuch bleibt im Editor geöffnet.':'');
 }
 async function renderPlans() {
   const select = get<HTMLSelectElement>('plans'); select.replaceChildren();
   for (const plan of data.plans) { const option = document.createElement('option'); option.value = plan.id; option.textContent = plan.name || 'Unbenannter Plan'; select.append(option); }
   select.value = selectedPlan ?? '';
+  if(sceneSearchPlan!==selectedPlan){sceneSearchPlan=selectedPlan;get<HTMLInputElement>('scene-search').value='';}
   const confirmed = originalPlan();
   const token = context?.token, target = selectedPlan, request = preparationLoad;
   const saved = confirmed ? await loadedDraft('plan', confirmed.id) : null;
@@ -355,6 +368,8 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     if (!context || !(await flushPreparation())) return;
     await reloadNoteSearch(true);
   })(); });
+  get('scene-search').addEventListener('input',renderSceneList);
+  get('scene-search-clear').onclick=()=>{get<HTMLInputElement>('scene-search').value='';renderSceneList();get('scene-search').focus();};
   get('plan-create').onclick = () => { void (async () => {
     const token = context?.token;
     if (!context || !(await flushPreparation()) || context?.token !== token) return;
@@ -378,7 +393,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     if (!planDraft || blocked || composing || context?.token !== token || selectedPlan !== planId) return;
     const id = campaignLocalId(crypto.randomUUID());
     const next = { ...planDraft, scenes: [...planDraft.scenes, { id, title: 'Neue Szene', notes: '', locationId: null }] };
-    if (await change({ kind: 'plan', expectedRevision: next.revision, plan: next }, false)) { selectedScene = id; renderPlans(); get('scene-title').focus(); }
+    if (await change({ kind: 'plan', expectedRevision: next.revision, plan: next }, false)) { selectedScene = id; get<HTMLInputElement>('scene-search').value='';renderPlans(); get('scene-title').focus(); }
   })(); };
   for (const [id, field] of [['scene-title', 'title'], ['scene-notes', 'notes']] as const) {
     get(id).addEventListener('input', () => { if (planDraft) { const before = originalPlan()?.scenes.find(s => s.id === selectedScene), text = value(id); planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, [field]: before && text === before[field].replace(/\r\n?/g, '\n') ? before[field] : text } : s) }; schedule(); } });
