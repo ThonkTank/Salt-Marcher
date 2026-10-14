@@ -24,7 +24,7 @@ import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,Live
 import type {NarrativeView} from './narrative-contracts';
 import type {ChronicleView} from './chronicle-contracts';
 import {liveActionUpdatesRecap,liveSessionRecap} from './live-session-recap';
-import {leaveSessionCloseReview,sessionCloseHandoffSuggestion} from './live-session-close';
+import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion} from './live-session-close';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -309,7 +309,7 @@ function renderLiveSession(){
   else if(!recap.marker)status.textContent='Noch kein Spielabend markiert.';
   else{const when=new Date(recap.marker.recordedAt),label=Number.isNaN(when.valueOf())?'':when.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'});status.textContent=recap.open?'Läuft seit '+label+' · '+recap.entries.length+' bestätigte Ereignisse':'Letzter Spielabend beendet '+label+' · '+recap.entries.length+' bestätigte Ereignisse'+(recap.marker.summary?' · '+recap.marker.summary:'');}
   for(const entry of recap.entries.slice(0,12)){const item=document.createElement('li'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=entry.title;span.textContent=[entry.summary,entry.scene&&'Gruppe: '+entry.scene,entry.location&&'Ort: '+entry.location].filter(Boolean).join(' · ');item.append(strong);if(span.textContent)item.append(span);list.append(item);}
-  const handoff=sessionChronicle?.entries.find(entry=>entry.sessionMarker==='end'&&entry.handoff)?.handoff??'';get('live-session-handoff-preview').hidden=!handoff;get('live-session-handoff-text').textContent=handoff;
+  const handoff=latestCompletedSessionHandoff(sessionChronicle?.entries??[]);get('live-session-handoff-preview').hidden=!handoff;get('live-session-handoff-text').textContent=handoff;
   get('live-session-more').hidden=recap.entries.length<=12;
 }
 async function refreshLiveSession(){const token=context?.token;if(!token)return;try{const result=unwrap(await window.campaign.chronicle(token));if(context?.token!==token)return;sessionChronicle=result;sessionChronicleError='';renderLiveSession();}catch(error){if(context?.token===token){sessionChronicleError=(error as Error).message;renderLiveSession();}}}
