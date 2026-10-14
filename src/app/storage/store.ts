@@ -538,8 +538,8 @@ export class CampaignStore {
       return { notes, plans, locations, maps: this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=? ORDER BY name,id').all(campaignId), problems, selection };
     })();
   }
-  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery){const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
-  npcDossier(token:string,sceneId:string,id:string){const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
+  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
+  npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}
   npcDraft(token:string,id:string){return npcDraft(this.db,this.guard(token),id);}
   keepNpcDraft(token:string,d:NpcDraft,expected:string|null){return keepNpcDraft(this.db,this.guard(token),d,expected);}
