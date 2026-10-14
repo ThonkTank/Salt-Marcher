@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {parseHTML} from "linkedom";
-import {activateRuleReferences,describeSceneCheck,initRuleReferences,refreshRuleReferences} from "../../src/app/rule-reference-ui";
+import {activateRuleReferences,describeSceneCheck,initRuleReferences,refreshRuleReferences,rollSceneFormula} from "../../src/app/rule-reference-ui";
 
 const tick=()=>new Promise<void>(resolve=>setTimeout(resolve,0));
 
@@ -21,6 +21,7 @@ test("a rapid second rule pin is ignored while the first host write is pending",
     sceneChecks:async()=>({ok:true,value:{sceneId:"scene",revision:0,checks:[],truncated:false}}),
     preparation:async()=>({ok:true,value:{notes:[{trashed:false,note:{id:"rule",kind:"rule",title:"Festhalten",readAloud:"Bewegungsrate 0",gmNotes:"Vorteil",revision:1}}]}}),
     executeSceneRule:()=>{calls++;return write;},
+    executeSceneCheck:()=>{formulaCalls++;return formulaWrite;},
   };
   try{
     const messages:string[]=[];initRuleReferences(message=>messages.push(message));
@@ -36,6 +37,12 @@ test("a rapid second rule pin is ignored while the first host write is pending",
     await tick();await tick();
     assert.equal((parsed.document.querySelector("#live-rules-panel") as HTMLElement).inert,false);
     assert.match(parsed.document.querySelector("#live-rule-pins")!.textContent,/Festhalten/);
+    messages.length=0;
+    const formula={label:"Scimitar · slashing Schaden",actor:"Goblin A",formula:"1d6 + 2",dc:null,sourceCreatureId:"goblin",sourceActionId:"scimitar"};
+    const first=rollSceneFormula(formula),duplicate=await rollSceneFormula(formula);
+    assert.equal(duplicate,false);assert.equal(formulaCalls,1);assert.deepEqual(messages,[]);
+    resolveFormula({ok:true,value:{sceneId:"scene",revision:1,checks:[{id:"check",sceneId:"scene",ordinal:1,label:formula.label,ruleNoteId:null,ruleTitle:null,ruleSourceRevision:null,mode:"normal",modifier:2,dc:null,rolls:[4],total:6,outcome:null,sceneInstantMs:"0",recordedAt:new Date(0).toISOString(),rollKind:"formula",actor:formula.actor,formula:formula.formula,sourceCreatureId:formula.sourceCreatureId,sourceActionId:formula.sourceActionId}],truncated:false}});
+    assert.equal(await first,true);assert.deepEqual(messages,["Statblock-Wurf ausgeführt und bei der Gruppe gespeichert."]);
   }finally{
     Object.assign(globalThis,{document:priorDocument,window:priorWindow});
   }
