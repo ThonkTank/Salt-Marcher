@@ -44,6 +44,7 @@ function decode(row: any): CombatState {
   return state;
 }
 
+
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));

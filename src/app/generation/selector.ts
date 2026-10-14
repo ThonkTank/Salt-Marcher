@@ -196,6 +196,16 @@ export function selectEncounter(
   let candidateCount = 0
   let fitCandidateCount = 0
 
+  // An explicit roster can already be a complete encounter. Never force filler.
+  if (fixed.units.some(unit => unit.quantity > 0)) {
+    chosenBlocks = []
+    chosenCombinationId = 'fixed-roster'
+    chosenEvaluation = evaluateCandidate([], [], evaluationContext, target)
+    chosenFit = withinTargetBand(chosenEvaluation.delta, target)
+    candidateCount = 1
+    fitCandidateCount = chosenFit ? 1 : 0
+  }
+
   for (const roles of config.composition.roleCombinations) {
     if (
       roles.length < config.composition.crBlocks.min ||
@@ -515,7 +525,7 @@ function evaluateCandidate(
     rangeDistance(statblockCount, config.composition.statblocks) +
     rangeDistance(monsterCount, context.monsterRange) +
     rangeDistance(initiativeSlots, context.initiativeRange)
-  let maxCr = Number.NEGATIVE_INFINITY
+  let maxCr = 0
   let minimumBlockXp = Number.POSITIVE_INFINITY
   let maximumBlockXp = 1
   for (const block of blocks) {
@@ -536,7 +546,7 @@ function evaluateCandidate(
           1,
           config.composition.statblocks.max - config.composition.statblocks.min
         )
-  const spread = (maximumBlockXp - minimumBlockXp) / maximumBlockXp
+  const spread = blocks.length ? (maximumBlockXp - minimumBlockXp) / maximumBlockXp : 0
   const balanceDistance =
     config.generationDefaults.balance === 'even'
       ? spread

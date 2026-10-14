@@ -463,3 +463,27 @@ NPC-Kandidaten halten während der Generierung nur kleine Identitäts-/
 Revisionsprojektionen statt vollständiger Profiltexte im Speicher.
 Schema43 unverändert, Entry-Weltreferenzen können nun einen Teil der gesamten
 Menge belegen; bestehende reine NPC-Vorlagen bleiben gültig.
+
+
+### Desktopstand 0.46: verbindliche NPCs statt zufälliger Besetzung
+
+Im Encounter-Generator und Spielabend lassen sich bestehende feindliche NPCs
+suchen und verbindlich auswählen. Ihr Statblock darf außerhalb der gewählten
+Monsterfilter und Tabellen liegen; die Auswahl der zusätzlichen Gegner bleibt
+an diese Quellen gebunden. Der gemeinsame Selector rechnet die gesetzten XP,
+Kreaturen und Initiativeplätze vor der Ergänzung mit ein. Eine Begegnung kann
+auch allein aus den gesetzten NPCs bestehen. Jeder gesetzte Gegner besitzt
+seinen eigenen Initiativeplatz, seine Weltidentität und den aktuellen HP-Stand.
+Verfügbare Bestandsgrenzen, tatsächlicher Ort und gewählte Fraktionen bleiben
+bindend. Die Vorschau erzeugt keine Weltfiguren.
+
+Ein Spielabend verteilt die verbindlichen NPCs genau einmal: bei ausgewählten
+Orten auf deren ersten Besuch, sonst reihum auf die Szenen. NPCs an einem nicht
+gewählten Ort werden ausdrücklich gemeldet. Einzelne Neugenerierung hält die
+Besetzung fest. Änderungen an den NPCs verlangen vor der Übernahme eine neue
+Vorschau. Kampagnentransfer übersetzt die gesetzten und ausgeschlossenen IDs.
+Das Tutorial erklärt die Auswahl; ältere Requests ohne Auswahl bleiben gültig.
+
+Offen bleiben die vollständige veröffentlichte DMG-Herleitung der Beutequoten,
+gezielte Gegenstandspools und getrennte Kontingente für verbrauchbare und
+permanente Magiebeute. Native Gesamt- und Plattformabnahme bleiben separat.
