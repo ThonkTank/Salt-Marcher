@@ -62,7 +62,7 @@
     </div>
     <section id="combat-panel" hidden>
       <div class="toolbar"><h2 id="combat-title">Begegnung führen</h2><select id="combat-history" aria-label="Frühere Begegnungen" hidden></select><button id="combat-refresh">Kampf aktualisieren</button></div>
-      <p id="combat-status" role="status"></p><p id="combat-assessment" class="caption"></p>
+      <p id="combat-load-status" role="status" hidden></p><p id="combat-status" role="status"></p><p id="combat-assessment" class="caption"></p>
       <div id="combat-creation"><form id="combat-create-form"><div class="time-fields"><div><label for="combat-new-title">Nächste Begegnung</label><input id="combat-new-title" placeholder="Überfall am Basalttor" maxlength="1000"></div><div><label class="check-label"><input id="combat-include-party" type="checkbox" checked> Figuren der Gruppe hinzufügen</label><button type="submit">Begegnung vorbereiten</button></div></div><p class="caption">Bekannte HP werden aus dem letzten Kampf übernommen. Ohne eingetragene HP kannst du nur Initiative und Zustände führen. Für Schaden oder Heilung aktuelle und maximale HP vom Charakterbogen eintragen.</p></form></div>
       <div id="combat-workspace" hidden>
         <div id="combat-controls" class="toolbar"><select id="combat-roll-mode" aria-label="Initiativewürfel"><option value="normal">W20 + Bonus</option><option value="advantage">Mit Vorteil</option><option value="disadvantage">Mit Nachteil</option></select><button id="combat-roll">Initiative würfeln</button><button id="combat-start">Kampf beginnen</button><button id="combat-next">Nächster Zug →</button><button id="combat-undo">Rückgängig</button><button id="combat-finish">Kampf abschließen…</button></div>
