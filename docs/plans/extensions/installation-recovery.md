@@ -20,10 +20,10 @@ keine heutige Grantgeneration. Die Liste liest den aktuellen Stand; frühere
 Bestätigungen heben spätere Widerrufe nicht auf.
 
 Ein beschädigter Vermerk oder ausgefallener Speicherread sperrt ebenfalls.
-Nach erfolgreichem aktuellem Listenread kann die GM einen beschädigten Vermerk
+Nach vollständig gelesenem aktuellem Installationsstand kann die GM einen beschädigten Vermerk
 zurücksetzen: der exakte Originalstring bleibt unter
 `extension-damaged-write:<uuid>` erhalten. Erst danach wird der aktive Vermerk
-entfernt. Änderungen zwischen Read und Reset werden abgewiesen; Speicherfehler
+entfernt; ein erneuter Read muss das Entfernen bestätigen. Änderungen zwischen Read und Reset werden abgewiesen; Speicherfehler
 lassen die Sperre bestehen. Ein gültiger unbekannter Command darf nicht so
 zurückgesetzt werden. Kein DBwrite, Grantwechsel oder stilles Löschen;
 Quarantäne gehört weder in Campaigntransfer noch in Packagecode.

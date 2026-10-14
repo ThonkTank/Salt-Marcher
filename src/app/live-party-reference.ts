@@ -23,5 +23,6 @@ export function partyProgressFacts(row:Pick<Progress,'xp'|'rest'>|undefined){
 export function passivePerceptionResult(characters:{name:string;passivePerception?:number}[],dc:number){
   if(!Number.isSafeInteger(dc))throw new Error('Der Wahrnehmungs-SG muss eine ganze Zahl sein.');
   const known=characters.filter(character=>character.passivePerception!==undefined),noticed=known.filter(character=>character.passivePerception!>=dc),unknown=characters.filter(character=>character.passivePerception===undefined);
-  return 'SG '+dc+' · '+(noticed.length?'Bemerken: '+noticed.map(character=>character.name).join(', ')+'.':'Bemerkt niemand.')+(unknown.length?' Ohne Wert: '+unknown.map(character=>character.name).join(', ')+'.':'');
+  const result=noticed.length?'Bemerken: '+noticed.map(character=>character.name).join(', ')+'.':unknown.length?(known.length?'Mit bekanntem Wert bemerkt niemand.':'Keine passive Wahrnehmung eingetragen.'):'Bemerkt niemand.';
+  return 'SG '+dc+' · '+result+(unknown.length?' Ohne Wert: '+unknown.map(character=>character.name).join(', ')+'.':'');
 }
