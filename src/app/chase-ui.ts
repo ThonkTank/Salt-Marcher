@@ -95,3 +95,4 @@ function draw(){
  for(const x of el('chase-work').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLTextAreaElement|HTMLSelectElement>('input,button,textarea,select'))x.disabled=blocked||!available||c.status!=='running';drawDraftStatus();syncActions();
 }
 export async function flushChase(){return !busy&&(!w||!hasPendingCommit(w.campaign.id)&&await cache.flush(w.campaign.id));}
+export async function openExistingChase(id:string){if(await flushChase())await load(id);}

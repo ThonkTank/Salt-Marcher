@@ -10,7 +10,6 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 - [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): integrierter Atlasstand und offene Lücken.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
 - [Architektur](ARCHITECTURE.md): aktuelle Grenzen und offene Plattformentscheidung.
-- [Beitragen](CONTRIBUTING.md) und [AGENTS.md](AGENTS.md): Entwicklung und Arbeitsgrenzen.
 
 ## Lokal entwickeln
 

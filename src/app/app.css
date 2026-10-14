@@ -89,6 +89,7 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 #day-popover{position:fixed;inset:5rem 1.5rem auto auto;width:min(760px,calc(100vw - 2rem));max-height:80vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:1.4rem;background:var(--paper,#fff);color:var(--ink);box-shadow:0 12px 36px #142c3c33}#day-popover h2{margin:0 auto 0 0}#day-popover .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.7rem 0}#day-popover table{width:100%;border-collapse:collapse;margin:.8rem 0;text-align:left}#day-popover th,#day-popover td{padding:.45rem;border-bottom:1px solid var(--line);font-size:.9rem}#day-popover .day-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.7rem;align-items:center;margin:.6rem 0}#day-popover input[type=number]{width:100%}#day-popover .day-budget{font-size:1.2rem;font-weight:600}#day-popover #day-status{border-left:3px solid var(--blue);padding-left:.6rem}#day-popover li{margin:.45rem 0}#day-popover details{margin-top:1rem}#day-popover button[aria-pressed=true]{background:var(--selected);border-color:var(--blue)}
 
 #party-popover{position:fixed;inset:5rem 1.5rem auto auto;width:min(820px,calc(100vw - 2rem));max-height:82vh;overflow:auto;background:var(--paper,#fff);color:var(--ink);padding:1.3rem;border:1px solid var(--line);border-radius:8px;box-shadow:0 12px 36px #142c3c33}#party-popover h2{margin:0}#party-popover .party-card{margin:.7rem 0;padding:.8rem;border:1px solid var(--line);border-left:4px solid var(--accent,#8b582b);border-radius:5px}#party-popover .party-card p{margin:.4rem 0;font-size:.9rem}#party-popover small{flex:1;overflow-wrap:anywhere;color:var(--muted)}#party-popover .party-level-meter{background:linear-gradient(90deg,#d3e4cf var(--party-xp-fill,0%),#f1eee6 var(--party-xp-fill,0%));color:#243425;min-width:210px}#party-editor,#party-xp-editor{position:sticky;bottom:-1.3rem;background:var(--paper,#fff);border-top:3px solid var(--accent,#8b582b);padding:1rem;box-shadow:0 -8px 20px #142c3c22}#party-popover .error{color:#a42922}#party-popover #party-rest-members{display:flex;gap:1rem;flex-wrap:wrap}
+#live-session-close-dialog{width:min(56rem,calc(100vw - 2rem));max-height:90vh;overflow:auto}#live-session-close-dialog h2,#live-session-close-dialog h3{margin:.2rem 0}#live-session-close-dialog textarea{display:block;width:100%;min-height:5rem;margin-top:.35rem}.session-close-facts{padding:.75rem;background:var(--soft,#f1eee6);border-radius:5px}#live-session-close-masks article,.session-close-check{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.55rem 0;padding:.7rem;border:1px solid var(--line);border-radius:5px}#live-session-close-masks p,.session-close-check p{margin:.25rem 0}.session-close-check>div{min-width:0;flex:1}
 
 #party-archive-confirm{position:sticky;bottom:-1.3rem;background:var(--paper,#fff);border-top:3px solid #9b3e31;padding:1rem;box-shadow:0 -8px 20px #142c3c22}#party-archive-list strong{display:block}#party-archive{border-top:1px solid var(--line);margin-top:1rem;padding-top:1rem}
 #mask-history-dialog{width:min(94vw,900px);max-width:94vw;max-height:90vh;overflow:auto}#mask-history-results{max-height:50vh;overflow:auto;overscroll-behavior:contain}#mask-history-results button{display:block;width:100%;text-align:left;white-space:normal;overflow-wrap:anywhere;margin:.4rem 0}
@@ -180,3 +181,13 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 #distribution-grid td:last-child{min-width:190px}
 .distribution-invalid{background:#ffe5e5}
 #distribution-review{padding:16px;border:1px solid var(--border,#aaa);border-radius:8px;margin:16px 0}
+
+.scene-visit-binder{width:min(1320px,95vw);max-width:min(1320px,95vw)}
+.scene-visit-columns{display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,3fr);gap:24px}
+#scene-visit-list{display:grid;gap:8px;margin:12px 0}
+#scene-visit-list button{text-align:left;white-space:pre-wrap}
+#scene-visit-list button.selected{outline:2px solid #52759b}
+#scene-visit-document{min-width:0}#scene-visit-document pre{white-space:pre-wrap;overflow-wrap:anywhere}
+#scene-visit-document section button{margin:4px}
+.scene-visit-warning{padding:10px;border-left:3px solid #bd913d;background:#fff7e5}
+@media(max-width:850px){.scene-visit-columns{grid-template-columns:1fr}}

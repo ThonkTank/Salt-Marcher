@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
+import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
 const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision,expectedFocusLocationId:view.focusLocationId};};
 
@@ -47,7 +48,7 @@ test('a reviewed location image cannot be released after the focused scene moves
 test('a trashed npc cannot be newly released from retained portrait history',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-npc-active-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
  try{
-  const campaign=store.create('Aktives NSC-Bild'),token=store.activate(campaign.id).token,npc={version:1 as const,id:'00000000-0000-4000-8000-000000000abc',revision:1,kind:'npc' as const,title:'Hafenwache',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};
+  const campaign=store.create('Aktives NSC-Bild'),token=store.activate(campaign.id).token,npc={version:1 as const,id:campaignLocalId(randomUUID()),revision:1,kind:'npc' as const,title:'Hafenwache',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};
   store.changePreparation({commandId:'npc',campaignId:campaign.id,token,change:{kind:'note',expectedRevision:null,note:npc}});
   const character=store.executeLive({commandId:'character',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}}).character!;
   const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
