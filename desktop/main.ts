@@ -109,6 +109,7 @@ else {
     handle('campaign:room-draft', (token: string, roomId: string) => store.roomDraft(token, roomId));
     handle('campaign:keep-room-draft', (token: string, roomId: string, draft: WorkingRoomDraft | null) => store.keepRoomDraft(token, roomId, draft));
     handle('campaign:preparation', (token: string, search: string) => store.preparation(token, search));
+    handle('campaign:session-progress',(token:string,id:string,sceneId?:string)=>store.sessionProgress(token,id,sceneId));
     handle('campaign:session-packet',(token:string,id:string)=>store.sessionPacket(token,id));
     handle('campaign:session-packet-export',async(token:string,id:string,basis:string)=>{const packet=store.sessionPacket(token,id);if(packet.basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');const safe=(packet.planName||'Spielabend').replace(/[\\/:*?"<>|]+/g,'-'),pick=await dialog.showSaveDialog(win,{title:'GM-Spielabendmappe speichern',defaultPath:safe+' – GM-Mappe.md',filters:[{name:'Markdown',extensions:['md']}]});if(pick.canceled||!pick.filePath)return{cancelled:true};if(store.sessionPacket(token,id).basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');await writeFile(pick.filePath,sessionPacketMarkdown(packet));return{cancelled:false};});
     handle('campaign:session', (token: string,id: string)=>store.session(token,id));
