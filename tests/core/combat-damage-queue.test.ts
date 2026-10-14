@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,hasCombatCondition,setCombatCondition} from '../../src/app/combat';
+import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,hasCombatCondition,pendingRollStillValid,setCombatCondition} from '../../src/app/combat';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
   const damage=(id:string)=>({check:{id} as any,combatId:'combat',attackerId:'attacker'});
@@ -16,6 +16,16 @@ test('a second statblock attack cannot replace an unresolved attack',()=>{
   const first={actionId:'scimitar'},second={actionId:'shortbow'};
   assert.equal(retainPendingAttack(null,first),first);
   assert.equal(retainPendingAttack(first,second),first);
+});
+
+test('pending statblock rolls expire when their attacker or editable combat disappears',()=>{
+  const pending={combatId:'combat',attackerId:'attacker'};
+  const combat={id:'combat',phase:'running',participants:[{id:'attacker'}]} as any;
+  assert.equal(pendingRollStillValid(pending,combat),true);
+  assert.equal(pendingRollStillValid(pending,{...combat,participants:[]}),false);
+  assert.equal(pendingRollStillValid(pending,{...combat,phase:'finished'}),false);
+  assert.equal(pendingRollStillValid(pending,{...combat,id:'other'}),false);
+  assert.equal(pendingRollStillValid(null,combat),false);
 });
 
 test('legendary cost waits for a targeted roll but not an immediate damage roll',()=>{
