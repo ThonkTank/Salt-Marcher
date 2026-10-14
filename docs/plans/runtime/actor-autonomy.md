@@ -79,12 +79,36 @@ ausgeführt werden; sein Replay verändert Position, Featureladung, HP, Logs,
 Buchungen und Actorcursor nicht erneut. Diese SQLite- und DOM-Nachweise sind
 keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
 
+## 200-Actor-Baseline
+
+`npm run bench:autonomy` erzeugt für jeden von 20 unabhängigen Läufen denselben
+validierten Quellzustand: 200 aktivierte, unplatzierte Actors, ein erreichbares
+nicht exklusives Guard-Angebot, 15 Minuten bestätigte Zeit und höchstens zwölf
+Catch-up-Schritte je Actor. Die unabhängigen Prozesse verhindern, dass die
+Messung selbst wegen des vorgeschriebenen 512-MiB-Prozessbaumlimits alte V8-Heaps
+mehrerer Läufe ansammelt.
+
+Auf dem lokalen Linux-x64-Prüfrechner vom 14.10.2026 lagen die p95-Werte bei
+25,13 ms für Capture/Intervallbildung, 349,46 ms für den vollständigen
+200-Actor-Catch-up einschließlich Response-View und 13,29 ms für einen separaten
+View. Der höchste Worker-RSS betrug 112.451.584 Bytes. Ein erster bestätigter
+Schritt belegte inklusive SQLite-Seitenzuwachs median 344.064 Bytes; davon waren
+159.690 Bytes historischer Intervallpayload. Dieser Seitenzuwachs ist keine
+Langzeit-Wachstumsrate.
+
+Die Baseline erfüllt die Zwei-Sekunden-p95-Grenze deutlich. Die Oberfläche setzt
+vor dem ersten asynchronen Command sofort einen Status im Live-Bereich und
+deaktiviert den Startknopf; der DOM-Gegenbeleg hält die Commandantwort offen und
+prüft diesen Zwischenzustand. Mehrere lokale Jobkandidaten, räumliche Adapter,
+Kamerafreiheit und unabhängige Reads sind damit noch nicht qualifiziert.
+
 ## Nächste ausführbare Schritte
 
-1. 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
-   Nur belegte Engstellen ändern; keine zusätzliche persistierte Simulation oder
-   Hintergrundlaufzeit einführen.
-2. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
+1. Die 200-Actor-Baseline mit mehreren lokal erreichbaren Kandidaten und einem
+   räumlichen Adapter ergänzen. Capture, Catch-up, View und Wachstum weiterhin
+   getrennt ausweisen und nur belegte Engstellen ändern.
+2. Den Ablauf nativ auf Tastaturfokus, Kamerafreiheit, unabhängige Reads, lange
+   Begründungen und Abbruch eines
    laufenden Catch-ups prüfen.
 3. Die Autonomy-Fachseite anschließend gegen Produktumfang und Roadmap
    rückverlinken und verbleibende Abnahmelücken dort eindeutig zuordnen.
