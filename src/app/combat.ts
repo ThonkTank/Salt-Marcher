@@ -131,6 +131,12 @@ export async function prepareCombatPlan(plan: EncounterPlan) {
   const owner=preparationOwner();if(!owner||!await load()||!owner.current())return;
   if(await execute({kind:'create',sceneId:owner.sceneId,title:name,includeParty:true,expectedMembershipRevision:owner.revision,planId:id,expectedPlanRevision:revision})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
 }
+export async function addWorldNpc(actorId:string){
+ const owner=preparationOwner(),w=workspace;if(!owner||!w||!await load()||!owner.current())return;
+ const r=await window.campaign.npc(w.token,actorId);if(!r.ok)throw new Error(r.error);if(!owner.current())return;const npc=r.value;if(npc.actorRevision===null||npc.record.lifecycle==='defeated'||!npc.health?.hp)throw new Error('NPC benötigt einen Kreaturverweis, aktive Freigabe und positive HP.');
+ if(!editableCombat(view?.combat??null)){if(!await execute({kind:'create',sceneId:owner.sceneId,title:'Begegnung mit '+npc.name,includeParty:true,expectedMembershipRevision:owner.revision})||!owner.current())return;}
+ if(await execute({kind:'add-world-actor',actorId,expectedActorRevision:npc.actorRevision,expectedRecordRevision:npc.record.revision})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
+}
 export async function addCatalogCreature(creatureId:string,count:number,grouped:boolean) {
   const owner=preparationOwner();if(!owner||!await load()||!owner.current())return;
   if (!editableCombat(view?.combat??null)) {
@@ -179,7 +185,7 @@ function render() {
     const tr = document.createElement('tr'); tr.dataset.participantId = p.id;
     if (p.id === combat!.turnId && combat!.phase === 'running') tr.classList.add('current-turn');
     const name = document.createElement('td'), choose = document.createElement('button');
-    choose.textContent = p.name; choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
+    choose.textContent = p.name+(p.role?' · '+{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]:''); choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
     const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; name.append(tag); tr.append(name);
     for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : ''].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
     body.append(tr);

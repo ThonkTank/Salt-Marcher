@@ -297,3 +297,30 @@ Noch offen: NPC-Fraktionsmitgliedschaft/Disposition und direkte Weltfilter im
 Spielabend-Generator; der Encounter-Generator besitzt den vollständigen neuen Ablauf.
 
 Die [Speicher- und Kopierprüfungen](tests/desktop-world-source-transfer.test.mjs) decken beschädigte Quellen, unveränderte Sicherungen, eigene Kennungen, archivierte Verknüpfungen, Vorschauübernahme und erneutes Öffnen ab. [Editorprüfungen](tests/desktop-world-source-ui.test.mjs) sichern sichtbare, ausdrücklich entfernbare Altverknüpfungen und erhaltene Bestandseingaben bei Hintergrundaktualisierungen.
+
+### Desktopstand 0.40: einzelne NPCs vorbereiten und am Tisch benutzen
+
+„NSCs und Monstergruppen“ enthält einen eigenständigen NPC-Katalog mit Namens-,
+Lebenszyklus-, Fraktions- und Ortsfiltern. Name genügt für erzählerische Figuren.
+Ein Kreaturverweis initialisiert dauerhafte HP aus dem bestehenden Katalog.
+Aussehen, Verhalten, Geschichte, Vorlesetext und GM-Notizen bleiben getrennt;
+die Figur besitzt höchstens eine Fraktion und einen Standort. Rohentwürfe bleiben
+auch mit unfertigen Zahlen über Neustart und Kampagnentransfer erhalten.
+„NPC übernehmen“ bestätigt Änderungen gemeinsam; „Entwurf verwerfen“ lädt den
+Autorenstand. Gruppenfiguren und unabhängig angelegte NPCs verwenden dieselben
+Weltidentitäten und dieselbe Gesundheit.
+
+Die Fraktionsquelle besitzt eine Haltung −100 bis 100. Zusammen mit dem
+persönlichen Modifikator ergibt sie die anfängliche Begegnungsrolle. Neue
+Verbündete/neutrale NPCs beginnen mit 0 Gegner-XP und zählen nicht zum
+Gegnermultiplikator; die GM kann XP und Multiplikator im Kampf weiter anpassen.
+Bestehende Masken behalten ihre Rolle, während gemeinsame HP weiter synchron
+sind. „Besiegt“ ist eine manuelle Weltentscheidung: sie sperrt neue Teilnahme,
+beendet keine Maske und ändert keine HP. Reaktivierung heilt ebenfalls nicht.
+Kampfende setzt keinen Lebenszyklus und verbraucht keinen Fraktionsbestand.
+NPCs lassen sich ausdrücklich in die aktuelle Begegnung übernehmen. Eine
+Platzierung an einem anderen Ort muss vorher durch die GM korrigiert werden.
+
+Offen bleiben NPC-basierte Zufallsgenerierung und direkte Weltfilter im
+Spielabendgenerator. Die Fraktionszuordnung ergänzt den bisherigen freien
+Beziehungsgraphen; Fraktionen/Orte werden weiterhin in Welt und Spielabend angelegt.

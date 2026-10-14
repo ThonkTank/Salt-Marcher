@@ -1,3 +1,4 @@
+import {npcRecord,npcDisposition} from './npc-record';
 import {replaceSessionPlan} from './plan-replacement';
 import {placeNpcGroup} from './npc-world';
 import {randomUUID,createHash} from 'node:crypto';
@@ -39,7 +40,7 @@ export function readWorldActor(db:any,cam:string,id:string):WorldActor{
  if(!n)throw new Error('NPC-Profil fehlt.');
  const document=worldNoteDocument(decoded(n));
  if(document.id!==n.id||document.revision!==n.revision)throw new Error('NPC-Profilzuordnung widersprüchlich.');
- return {...actor,name:document.title,unavailable:!!n.trashed};
+ const record=npcRecord(db,cam,id);return {...actor,name:document.title,unavailable:!!n.trashed,defeated:record.lifecycle==='defeated',...npcDisposition(db,cam,record)};
 }
 export function writeWorldActorHealth(db:any,cam:string,id:string,expectedRevision:number,health:Pick<WorldActor,'hp'|'maxHp'|'tempHp'|'conditions'|'concentrating'>){const actor=readWorldActor(db,cam,id);if(actor.revision!==expectedRevision||actor.unavailable)throw new Error('NPC-Zustand wurde geändert. Kampfabschluss zuerst mit dem aktuellen NPC-Stand abgleichen.');const next={...actor,...health,revision:actor.revision+1},payload=json(next);db.prepare('UPDATE world_actor SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(next.revision,payload,hash(payload),cam,id);return next;}
 export function checkedPreparedGroupRow(row:any):PreparedGroup{

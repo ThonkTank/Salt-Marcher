@@ -1,3 +1,4 @@
+import type {NpcCommand,NpcQuery,NpcDraft} from '../src/app/npc-contracts';
 import {audioResponse} from './audio-response';
 import {extensionPackageLimit} from '../src/app/storage/extensions';
 import {dungeonKeyMarkdown,dungeonKeyDocument} from '../src/app/key-document';
@@ -118,6 +119,13 @@ else {
     handle('campaign:execute-scene-rule',(command:SceneRuleCommand)=>store.executeSceneRule(command));
     handle('campaign:scene-checks',(token:string,id:string)=>store.sceneChecks(token,id));
     handle('campaign:execute-scene-check',(command:SceneCheckCommand)=>store.executeSceneCheck(command));
+    handle('campaign:npc-drafts',(token:string)=>store.npcDrafts(token));
+    handle('campaign:npc-draft',(token:string,id:string)=>store.npcDraft(token,id));
+    handle('campaign:keep-npc-draft',(token:string,d:NpcDraft,expected:string|null)=>store.keepNpcDraft(token,d,expected));
+    handle('campaign:discard-npc-draft',(token:string,id:string,writeId:string)=>store.discardNpcDraft(token,id,writeId));
+    handle('campaign:npcs',(token:string,q:NpcQuery)=>store.npcs(token,q));
+    handle('campaign:npc',(token:string,id:string)=>store.npc(token,id));
+    handle('campaign:execute-npc',(c:NpcCommand)=>store.executeNpc(c));
     handle('campaign:generation-sources', (token:string)=>store.generationSources(token));
     handle('campaign:encounter-tables', (token: string, trashed: boolean) => store.encounterTables(token,trashed));
     handle('campaign:loot-tables', (token: string, trashed: boolean) => store.lootTables(token,trashed));
