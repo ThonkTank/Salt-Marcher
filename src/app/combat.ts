@@ -11,10 +11,12 @@ import type { EncounterPlan } from './encounter-contracts';
 import type {PreparedGroup} from './session-contracts';
 import {prepareSceneCheck,rollSceneFormula} from './rule-reference-ui';
 import type {SceneCheck} from './scene-check-contracts';
+import {deathSaveControls,type DeathSaveResult} from './progression';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
 const editableCombat=(combat:CombatView['combat'])=>!!combat&&['preparing','running'].includes(combat.phase);
+const deathResultText=(result:DeathSaveResult)=>({success:'Erfolg',failure:'Fehlschlag','natural-20':'Natürliche 20 · 1 HP','natural-1':'Natürliche 1 · zwei Fehlschläge',stabilize:'Stabilisiert',reset:'Zurückgesetzt',dead:'Als tot markiert'}[result]);
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 type PendingDamage={check:SceneCheck;combatId:string;attackerId:string};
@@ -113,8 +115,9 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
       const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
       acceptCombat(result); applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
-      if(['create','edit','damage','heal','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
-      tell('Kampf gespeichert.'); return true;
+      if(['create','edit','damage','heal','death','death-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
+      const death=action.kind==='death'||action.kind==='death-roll'?result.combat?.participants.find(p=>p.id===action.participantId)?.deathLast:undefined;
+      tell(death?(death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':'Kampf gespeichert.'); return true;
     } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
     finally { pending = null; if (generation === gen) { if (applied) render(); else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
   })();
@@ -182,6 +185,9 @@ function lock() {
   if(notesLoading||!!notesKey()&&draftCache.readFailures.has(notesKey()!))for(const c of get('combat-notes-form').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLTextAreaElement>('input,button,textarea'))c.disabled=true;
   const unknown = view?.combat?.participants.find(p => p.id === selected)?.healthKnown === false;
   for (const id of ['fighter-damage','fighter-heal']) get<HTMLButtonElement>(id).disabled = blocked() || unknown;
+  const fighter=view?.combat?.participants.find(p=>p.id===selected),deathControls=deathSaveControls(fighter?.death),deathUnavailable=blocked()||!fighter?.characterId||fighter.healthKnown===false||fighter.hp!==0;
+  for(const result of ['roll','success','failure','natural-20','natural-1','stabilize','dead'] as const)get<HTMLButtonElement>('fighter-death-'+result).disabled=deathUnavailable||deathControls.terminal;
+  get<HTMLButtonElement>('fighter-death-reset').disabled=deathUnavailable||!deathControls.reset;
   renderDamageEffect();
 }
 function render() {
@@ -212,7 +218,8 @@ function render() {
     const name = document.createElement('td'), choose = document.createElement('button');
     choose.textContent = p.name+(p.role?' · '+{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]:''); choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
     const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; name.append(tag); tr.append(name);
-    for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : ''].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
+    const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
+    for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : ''].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
     body.append(tr);
   }
   if (selected && !combat?.participants.some(p => p.id === selected)) selected = null;
@@ -232,6 +239,10 @@ function renderEditor() {
   get('fighter-concentration-hint').hidden = !p?.concentrating;
   get<HTMLInputElement>('fighter-xp').value = draft?draft.values['fighter-xp']??'':p?.xp === undefined ? '' : String(p.xp);
   get<HTMLInputElement>('fighter-counted').checked = draft?draft.counted:p?.countForMultiplier !== false;
+  const deathPanel=get('fighter-death-saves'),death=p?.death,deathControls=deathSaveControls(death);deathPanel.hidden=!p?.characterId||p.healthKnown===false||p.hp!==0;
+  get('fighter-death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':(death?.successes??0)+' Erfolge · '+(death?.failures??0)+' Fehlschläge'+(p?.deathLast?.roll!==null&&p?.deathLast?.roll!==undefined?' · letzter Wurf '+p.deathLast.roll:'');
+  get<HTMLDetailsElement>('fighter-death-other').open=deathControls.terminal;
+  get<HTMLButtonElement>('fighter-death-reset').hidden=!deathControls.reset;
   const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id; get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{if(preset.kind==='save'||preset.kind==='check')prepareSceneCheck({label:p.name+' · '+preset.label,dc:preset.dc!});else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,formulaKind:preset.kind,dc:null,sourceCreatureId:source.id,sourceActionId:action.id},preset.kind==='damage'?check=>stageDamage(check,p.id,combatId):undefined);});
 }
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
@@ -263,6 +274,8 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-participant-form').onsubmit = event => { event.preventDefault(); const hp=value('fighter-hp').trim(), maximum=value('fighter-max-hp').trim(); if (!!hp !== !!maximum) { tell('Aktuelle und maximale HP gemeinsam eintragen oder beide offen lassen.',true); return; } const health=hp&&maximum?{hp:Number(hp),maxHp:Number(maximum)}:{}; if (selected) void execute({ kind: 'edit', participantId: selected, changes: { name: value('fighter-name'), initiative: Number(value('fighter-initiative')), initiativeBonus: Number(value('fighter-bonus')), armorClass: Number(value('fighter-ac')), ...health, tempHp: Number(value('fighter-temp-hp')), conditions: value('fighter-conditions'), concentrating: get<HTMLInputElement>('fighter-concentration').checked, ...(value('fighter-xp') ? {xp:Number(value('fighter-xp'))} : {}), countForMultiplier:get<HTMLInputElement>('fighter-counted').checked } },draftRevision(fighterKey()?fighterDrafts.get(fighterKey()!):undefined)); };
   get('fighter-damage').onclick = () => { if (selected) void execute({ kind: 'damage', participantId: selected, amount: Number(value('fighter-amount')) }); };
   get('fighter-heal').onclick = () => { if (selected) void execute({ kind: 'heal', participantId: selected, amount: Number(value('fighter-amount')) }); };
+  get('fighter-death-roll').onclick=()=>{if(selected)void execute({kind:'death-roll',participantId:selected});};
+  for(const result of ['success','failure','natural-20','natural-1','stabilize','dead','reset'] as const)get('fighter-death-'+result).onclick=()=>{if(selected)void execute({kind:'death',participantId:selected,result});};
   get('combat-roll-damage').onclick=()=>void applyRolledDamage('full');
   get('combat-roll-half').onclick=()=>void applyRolledDamage('half');
   get('combat-roll-double').onclick=()=>void applyRolledDamage('double');
