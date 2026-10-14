@@ -8,6 +8,7 @@ import {readPreparedGroup,readWorldActor,writeWorldActorHealth,saveGroup,newGrou
 import {readCreature,readEncounterPlan,creatureInfo} from './encounters';
 import {placeNpcGroup,npcPosition} from './npc-world';
 import {event} from './progression';
+import {syncOpenMaskHealth} from './mask-health';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installGroups(db:any){db.exec(`CREATE TABLE IF NOT EXISTS group_draft(campaign_id TEXT NOT NULL,group_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,group_id),FOREIGN KEY(campaign_id,group_id) REFERENCES prepared_group(campaign_id,id) ON DELETE CASCADE) STRICT;`);}
 export function groupView(db:any,cam:string,id:string):GroupView {
@@ -36,7 +37,7 @@ export function editGroup(db:any,cam:string,a:GroupAction):string {
  const d=a.draft;checkDraft(d);const g=readPreparedGroup(db,cam,a.groupId),old=groupDraft(db,cam,g.id);
  if(d.groupId!==g.id||g.revision!==a.expectedRevision||d.revision!==g.revision||!old||old.writeId!==d.writeId||JSON.stringify(old)!==JSON.stringify(d))throw new Error('Gruppe oder Eingabe inzwischen geändert. Gespeicherten Stand laden.');
  if(!d.title.trim())throw new Error('Gruppenname fehlt.');if(d.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(cam,d.locationId))throw new Error('Ort nicht verfügbar.');
- const before=structuredClone(g),ids=new Set<string>(),actors:WorldActor[]=[],sources=[...g.plan.sources],entries:EncounterEntry[]=[];
+ const before=structuredClone(g),ids=new Set<string>(),actors:WorldActor[]=[],sources=[...g.plan.sources],entries:EncounterEntry[]=[],renames=new Map<string,{before:string;after:string}>();
  for(const row of d.actors){
   if(!row.name.trim())throw new Error('Jede Figur benötigt einen Namen.');
   const number=(v:string)=>{if(!/^(0|[1-9][0-9]{0,6})$/.test(v.trim()))throw new Error('HP benötigen ganze Zahlen.');return Number(v);};
@@ -44,6 +45,7 @@ export function editGroup(db:any,cam:string,a:GroupAction):string {
   let actor;if(row.id){if(ids.has(row.id)||!g.actors.some(x=>x.id===row.id))throw new Error('Figur gehört nicht eindeutig zur Gruppe.');ids.add(row.id);actor=readWorldActor(db,cam,row.id);if(actor.creatureId!==row.creatureId||actor.revision!==row.revision||actor.unavailable)throw new Error('Figur inzwischen geändert oder im Papierkorb.');}
   else {const creature=readCreature(row.creatureId);if(!sources.some(c=>c.id===creature.id))sources.push(creature);const entry={id:randomUUID(),creatureId:creature.id,count:1,grouped:false},temp:PreparedGroup={...g,title:d.title,notes:d.notes,plan:{...g.plan,entries:[entry],sources:[creature]},actors:[]};materialize(db,cam,temp);actor=temp.actors[0]!;}
   const profile=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,actor.id);if(hash(profile.payload)!==profile.checksum)throw new Error('NPC-Profil beschädigt.');const note=worldNoteDocument(JSON.parse(profile.payload));if(row.id&&note.revision!==row.profileRevision)throw new Error('NPC-Notizen inzwischen geändert.');
+  if(note.title!==row.name)renames.set(actor.id,{before:note.title,after:row.name});
   if(note.title!==row.name||note.gmNotes!==row.gmNotes||note.readAloud!==row.readAloud){const next=worldNoteDocument({...note,title:row.name,gmNotes:row.gmNotes,readAloud:row.readAloud,revision:note.revision+1}),payload=JSON.stringify(next);db.prepare('UPDATE world_note SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(next.revision,payload,hash(payload),cam,actor.id);db.prepare('UPDATE note_search SET title=?,body=? WHERE campaign_id=? AND note_id=?').run(next.title,next.readAloud+'\n'+next.gmNotes,cam,actor.id);}
   if(JSON.stringify({hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating})!==JSON.stringify(health))actor=writeWorldActorHealth(db,cam,actor.id,actor.revision,health);
   actor={...actor,name:row.name};actors.push(actor);let entry=entries.find(e=>e.id===actor.entryId);if(entry)entry.count++;else entries.push({id:actor.entryId,creatureId:actor.creatureId,count:1,grouped:g.plan.entries.find(e=>e.id===actor.entryId)?.grouped??false});
@@ -52,5 +54,6 @@ export function editGroup(db:any,cam:string,a:GroupAction):string {
  // Explicitly accepting this group makes it independent of any old planning draft.
  saveGroup(db,cam,g,null,null);
  if(d.locationId)placeNpcGroup(db,cam,actors.map(x=>x.id),d.locationId);else for(const actor of actors){const pos=npcPosition(db,cam,actor.id);db.prepare('DELETE FROM npc_dungeon_position WHERE campaign_id=? AND actor_id=?').run(cam,actor.id);db.prepare('INSERT INTO npc_position VALUES(?,?,?,?) ON CONFLICT(campaign_id,actor_id) DO UPDATE SET location_id=excluded.location_id,revision=excluded.revision').run(cam,actor.id,null,(pos.revision??0)+1);}
+ syncOpenMaskHealth(db,cam,undefined,renames);
  db.prepare('DELETE FROM group_draft WHERE campaign_id=? AND group_id=?').run(cam,g.id);event(db,cam,null,'group-edited',{groupId:g.id,before,after:g});return g.id;
 }
