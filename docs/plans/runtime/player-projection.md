@@ -108,12 +108,13 @@ prüfbar; ihr Fortschritt darf keine Mechanik auf den passiven Bildschirm bringe
 Ein falsches früheres Ausgabeergebnis ist keine Regressionserwartung.
 `tools/test-desktop-player-scene-privacy.mjs` wurde an die Ortsartaufgabe statt
 der früheren Text-/Mechanikausgabe angepasst. Der Fokusprüfer verwendet Karten und die aktuelle Mitgliedschaftsbasis.
-Seine lokalen nativen Dialog-/Live-Cue-Läufe vom 14.10.2026 bestanden:
-gehaltene alte Freigabe nach Gruppenwechsel abgewiesen, Neustart blieb Blank,
-Fehler erhielt den Titelentwurf, erneute Bestätigung zeigte die Nachhutkarte,
-Sceneinhalte unverändert; vier Appstarts endeten normal. Das prüft diese beiden
-kleinen Kartenabläufe. Der aktualisierte native Ortsart-/Privacy-Lauf bleibt
-offen; frühere Screenshots qualifizieren ihn nicht.
+Der native Dialog-/Handoutlauf auf dem integrierten Produktstand vom 14.10.2026
+bestand: alte Freigabe abgewiesen, Neustart Blank, Entwurf nach Fehler erhalten,
+Nachhutkarte nach erneuter Bestätigung und ein dekodiertes 80 × 50-Handout.
+Sceneinhalte blieben unverändert; beide Appstarts endeten normal. Der erneute
+native Live-Cue-Lauf blieb im Appstart hängen und ist für diesen Stand offen.
+Die davor erfolgreichen Cue-Läufe ersetzen diese Wiederholung nicht. Der
+aktualisierte native Ortsart-/Privacy-Lauf ist ebenfalls offen.
 Die Nachweise sind lokale Store-/Host-/kontrollierte DOMbelege, keine native
 Gesamt-/Privacy-/Plattformabnahme oder vollständige SMR-AC-14-Freigabe.
 

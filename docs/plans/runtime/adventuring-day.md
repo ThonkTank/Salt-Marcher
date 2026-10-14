@@ -91,7 +91,7 @@ keine bekannte XP-Basis. `party-award-member` hält damalige Vorher-/Nachherwert
 ein späterer manueller XP-Command mit `correctionOf` hängt einen eigenen Eintrag
 an. Er ändert weder den referenzierten Award noch dessen Belastungsfakten.
 
-Fünf Fälle in `tests/desktop-xp-rest-corrections.test.mjs` prüfen den echten Store:
+Vier Fälle in `tests/desktop-xp-rest-corrections.test.mjs` prüfen den echten Store:
 Abwärtskorrektur über Levelgrenzen bis null, erhaltene frühe/zweite/zusätzliche
 Shortsections und Longreset, Vorschau/Writer-Gleichheit, unveränderte verlinkte
 Herkunft, Replay ohne zweite Wirkung und Fresh. Belastung ohne bekannte XP und

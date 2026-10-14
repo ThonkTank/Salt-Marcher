@@ -9,7 +9,7 @@ import { buildSync } from "esbuild";
 buildSync({
   stdin: {
     contents:
-      "export {CampaignStore} from './src/app/storage/store';export {changeCharacterXp} from './src/app/party-xp-model';",
+      "export {CampaignStore} from './src/app/storage/store';",
     resolveDir: process.cwd(),
     loader: "ts",
   },
@@ -19,7 +19,7 @@ buildSync({
   format: "cjs",
   external: ["better-sqlite3"],
 });
-const { CampaignStore, changeCharacterXp } = createRequire(import.meta.url)(
+const { CampaignStore } = createRequire(import.meta.url)(
   "../.build/party-xp.cjs",
 );
 function fixture(t) {
