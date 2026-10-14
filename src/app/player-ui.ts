@@ -55,10 +55,11 @@ function submit(action:PlayerAction,openWindow=false){
 export async function cuePlayer(mode:'follow'|'blank',focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'>|null):Promise<boolean>{
  const o=owner();if(!o)return false;const intent=++actions,request=++presentation;
  try{
-  const latest=unwrap(await window.campaign.playerView(o.token));if(!owns(o)||intent!==actions)return false;
-  if(mode!=='blank'&&(!focus||focus.focusId!==latest.focusId||focus.focusRevision!==latest.focusRevision||focus.focusMembershipRevision!==latest.focusMembershipRevision))throw new Error('Fokussierte Gruppe geändert. Prüfe die Freigabe für die aktuelle Gruppe erneut.');
-  const action:PlayerAction=mode==='blank'?{kind:'blank'}:{kind:'settings',settings:{blank:false,mode,imageId:latest.settings.imageId,title:'',labels:latest.settings.labels,light:latest.settings.light,displayId:latest.settings.displayId,fullscreen:latest.settings.fullscreen}};
-  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus?.focusId??latest.focusId,expectedFocusRevision:focus?.focusRevision??latest.focusRevision,expectedFocusMembershipRevision:focus?.focusMembershipRevision??latest.focusMembershipRevision,action};
+  // Blanking only reduces disclosure and must not wait for unrelated preview reads.
+  const latest=mode==='blank'?null:unwrap(await window.campaign.playerView(o.token));if(!owns(o)||intent!==actions)return false;
+  if(mode!=='blank'&&(!latest||!focus||focus.focusId!==latest.focusId||focus.focusRevision!==latest.focusRevision||focus.focusMembershipRevision!==latest.focusMembershipRevision))throw new Error('Fokussierte Gruppe geändert. Prüfe die Freigabe für die aktuelle Gruppe erneut.');
+  const action:PlayerAction=mode==='blank'?{kind:'blank'}:{kind:'settings',settings:{blank:false,mode,imageId:latest!.settings.imageId,title:'',labels:latest!.settings.labels,light:latest!.settings.light,displayId:latest!.settings.displayId,fullscreen:latest!.settings.fullscreen}};
+  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest?.settings.revision??0,expectedFocusId:focus?.focusId??latest?.focusId??null,expectedFocusRevision:focus?.focusRevision??latest?.focusRevision??null,expectedFocusMembershipRevision:focus?.focusMembershipRevision??latest?.focusMembershipRevision??null,action};
   const confirmed=unwrap(await window.campaign.executePlayer(command));if(!owns(o)||intent!==actions)return false;
   publish(o,confirmed,request);
   if(mode!=='blank'){unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;await reload(o);}
