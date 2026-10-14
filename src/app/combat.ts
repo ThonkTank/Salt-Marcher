@@ -9,6 +9,7 @@ import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from
 import { renderCreatureDetail } from './catalog-ui';
 import type { EncounterPlan } from './encounter-contracts';
 import type {PreparedGroup} from './session-contracts';
+import {prepareSceneCheck,rollSceneFormula} from './rule-reference-ui';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
@@ -200,7 +201,7 @@ function renderEditor() {
   get('fighter-concentration-hint').hidden = !p?.concentrating;
   get<HTMLInputElement>('fighter-xp').value = draft?draft.values['fighter-xp']??'':p?.xp === undefined ? '' : String(p.xp);
   get<HTMLInputElement>('fighter-counted').checked = draft?draft.counted:p?.countForMultiplier !== false;
-  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId); get('fighter-statblock').hidden=!source; if(source)renderCreatureDetail(get('fighter-statblock-content'),source);
+  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId); get('fighter-statblock').hidden=!source; if(source&&p)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{if(preset.kind==='save'||preset.kind==='check')prepareSceneCheck({label:p.name+' · '+preset.label,dc:preset.dc!});else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,dc:null,sourceCreatureId:source.id,sourceActionId:action.id});});
 }
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
