@@ -13,4 +13,5 @@ test("formula results identify the actor and show the actual dice and modifier",
 
 test('attack formula results describe armor class as hit or miss',()=>{
  assert.match(describeSceneCheck({rollKind:'formula',formulaKind:'attack',actor:'Oger',label:'Keule · Angriff',formula:'1d20 + 4',rolls:[16],modifier:4,total:20,dc:18,outcome:'success'} as any),/Treffer gegen RK 18/);
+  assert.match(describeSceneCheck({rollKind:'check',actor:'Alrik',label:'Drache · Feueratem · DEX Rettungswurf',mode:'normal',rolls:[14],modifier:2,total:16,dc:15,outcome:'success'} as any),/^Alrik · .*Erfolg gegen SG 15$/);
 });
