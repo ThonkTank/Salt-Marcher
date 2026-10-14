@@ -14,7 +14,7 @@ function fixture(t){
  x.cam=x.store.create('Wetter');x.w=x.store.activate(x.cam.id);x.command=action=>({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action});x.scene=x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:0})).scene;
  const map={id:randomUUID(),revision:0,name:'Region',hexMeters:1000,climate:'temperate',seed:'weather-review',cells:[]};x.store.executeWorld(x.command({kind:'map',map,expectedRevision:null}));x.map=x.store.world(x.w.token).maps[0];
  x.store.executeWorld(x.command({kind:'place-scene',sceneId:x.scene.id,position:{mapId:x.map.id,q:0,r:0,locationId:null},expectedSceneRevision:x.scene.revision,expectedPositionRevision:0}));
- x.set=value=>x.store.executeWorld(x.command({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:x.store.liveScene(x.w.token,x.scene.id).clock.revision,weather:value}));x.frame=()=>x.store.sceneWorld(x.w.token,x.scene.id);return x;
+ x.set=value=>x.store.executeWorld(x.command({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:x.store.liveScene(x.w.token,x.scene.id).clock.revision,expectedOverrideRevision:x.store.db.prepare("SELECT revision FROM world_record WHERE campaign_id=? AND kind='weather-override' AND id=?").get(x.cam.id,x.scene.id)?.revision??null,weather:value}));x.frame=()=>x.store.sceneWorld(x.w.token,x.scene.id);return x;
 }
 for(const damage of ['unknown kind','negative wind','non-numeric wind','invalid ambience','invalid perception'])test(`weather writer rejects ${damage} without state, history or receipt effects`,t=>{
  const x=fixture(t),value=weather();if(damage==='unknown kind')value.kind='hail';if(damage==='negative wind')value.windKmh=-1;if(damage==='non-numeric wind')value.windKmh='17';if(damage==='invalid ambience')value.effects.ambience='Wind';if(damage==='invalid perception')value.effects.perception={private:true};
@@ -37,4 +37,30 @@ test('an override and clock change in one Scene leave the split Scene weather an
  const current=x.store.liveScene(x.w.token,x.scene.id);x.store.executeLive(x.command({kind:'advance-clock',sceneId:current.id,expectedRevision:current.clock.revision,amount:3,unit:'days',calendarVersion:'relative-v1',reason:'Nur erste Gruppe'}));
  const after=x.store.sceneWorld(x.w.token,split.id);assert.deepEqual(after.weather,before.weather);assert.deepEqual(after.scene.clock,before.scene.clock);assert.deepEqual(x.frame().weather,{...value,source:'GM-Override'});
  const second=x.store.liveScene(x.w.token,split.id);x.store.executeLive(x.command({kind:'advance-clock',sceneId:second.id,expectedRevision:second.clock.revision,amount:1,unit:'days',calendarVersion:'relative-v1',reason:'Nur zweite Gruppe'}));const updated=x.store.sceneWorld(x.w.token,split.id),world=x.store.world(x.w.token);assert.deepEqual(updated.weather,weatherAt(world.maps[0],updated.position,updated.scene.clock.instantMs,world.calendar,world.phenomena));assert.deepEqual(x.frame().weather,{...value,source:'GM-Override'});
+});
+for(const operation of ['set','release'])test(`stale weather ${operation} cannot overwrite a later override at the same Scene clock`,t=>{
+ const x=fixture(t);x.set(weather());const command=x.command({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:0,expectedOverrideRevision:1,weather:operation==='set'?{...weather(),label:'Veraltete Eingabe'}:null});
+ x.set({...weather(),label:'Später bestätigt'});const bytes=x.store.db.serialize();assert.throws(()=>x.store.executeWorld(command),/Wetter.*geändert/i);assert.ok(bytes.equals(x.store.db.serialize()));
+});
+test('an old automatic weather basis cannot overwrite an intervening set and release',t=>{
+ const x=fixture(t),command=x.command({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:0,expectedOverrideRevision:null,weather:weather()});x.set(weather());x.set(null);const bytes=x.store.db.serialize();assert.throws(()=>x.store.executeWorld(command),/Wetter.*geändert/i);assert.ok(bytes.equals(x.store.db.serialize()));
+});
+test('a new weather command without a valid explicit override basis has no effects',t=>{
+ const x=fixture(t);for(const expectedOverrideRevision of [undefined,-1,0,1.5,'1']){const bytes=x.store.db.serialize();assert.throws(()=>x.store.executeWorld(x.command({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:0,expectedOverrideRevision,weather:weather()})),/Wetter/i);assert.ok(bytes.equals(x.store.db.serialize()));}
+});
+
+test('weather receipt replay after Fresh retains its original acknowledgement without overwriting a later override',t=>{
+ const x=fixture(t),command=x.command({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:0,expectedOverrideRevision:null,weather:weather()}),ack=x.store.executeWorld(command);x.set({...weather(),label:'Später bestätigt'});x.store.close();x.store=new CampaignStore(x.filename);x.w=x.store.activate(x.cam.id);const renewed={...command,token:x.w.token},bytes=x.store.db.serialize();assert.deepEqual(x.store.executeWorld(renewed),ack);assert.deepEqual(x.store.reconcileWorld(renewed,x.w.token),{outcome:'applied',ack});assert.ok(bytes.equals(x.store.db.serialize()));assert.equal(x.frame().weather.label,'Später bestätigt');assert.equal(x.frame().weatherOverrideRevision,2);
+});
+
+test('GM weather still governs route duration when the reader also returns override metadata',t=>{
+ const x=fixture(t),character=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Iri'}})).character,live=x.store.live(x.w.token);x.store.executeLive(x.command({kind:'membership',characterId:character.id,expectedRevision:character.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));
+ const value=weather();value.effects.travelFactor=2;x.set(value);const preview=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});assert.equal(preview.durationSeconds,7200);assert.deepEqual(preview.weather,{...value,source:'GM-Override'});
+});
+for(const damage of ['payload revision','nonpositive row revision'])test(`stored weather rejects ${damage} before normal replacement`,t=>{
+ const x=fixture(t);x.set(weather());const row=x.store.db.prepare("SELECT * FROM world_record WHERE kind='weather-override'").get(),value=JSON.parse(row.payload);value.revision=damage==='payload revision'?2:0;const payload=JSON.stringify(value);x.store.db.prepare('UPDATE world_record SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND kind=? AND id=?').run(damage==='payload revision'?1:0,payload,hash(payload),x.cam.id,row.kind,row.id);const bytes=x.store.db.serialize();assert.throws(x.frame,/Wetter|Weltrevision/i);assert.throws(()=>x.set(null),/Wetter|Weltrevision/i);assert.ok(bytes.equals(x.store.db.serialize()));
+});
+
+test('checksummed weather receipt damage cannot be reconciled as the original saved command',t=>{
+ const x=fixture(t),command=x.command({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:0,expectedOverrideRevision:null,weather:weather()});x.store.executeWorld(command);const row=x.store.db.prepare('SELECT * FROM world_receipt WHERE command_id=?').get(command.commandId),ack=JSON.parse(row.payload);ack.scene.weather.effects.combatNote='Fremde Bestätigung';const payload=JSON.stringify(ack);x.store.db.prepare('UPDATE world_receipt SET payload=?,checksum=? WHERE command_id=?').run(payload,hash(payload),command.commandId);const bytes=x.store.db.serialize();assert.throws(()=>x.store.reconcileWorld(command,x.w.token),/Weltbestätigung/);assert.ok(bytes.equals(x.store.db.serialize()));
 });

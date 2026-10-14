@@ -71,6 +71,23 @@ Ein erneuter bestätigter Command bewegt beide Actors genau einmal. Dieser lokal
 Mehractorbeleg erweitert den bisherigen Jobnachweis; Hardcrash, Cancel und alle
 Dungeon-/Trap-/Konfliktownerwirkungen sind weiterhin gesondert zu qualifizieren.
 
+## Scenegrenze beim automatischen Catch-up
+
+Der integrierte Zeitanschluss begrenzt `catchUpAutonomy` nun auf Epoch und
+bestätigten Zeitpunkt der auslösenden Scene. Ein früherer bestätigter längerer
+Zeitrahmen zieht einen Actor in einer zurückliegenden Scene nicht über deren Uhr
+hinaus. Teilintervalle bleiben über Cursor und Offset fortsetzbar. Liegt der
+bestätigte Actorstand schon später, pausiert er mit erklärtem Zeitkonflikt;
+Bedürfnisse und Wirkungen werden nicht rückwärts simuliert.
+
+`checkedIntervalRow` bleibt sowohl vor dieser Grenzauswahl als auch beim Lesen
+des bestätigten Actorzeitpunkts wirksam. Die Zeitgrenze darf beschädigte
+historische Jobs/Intervalle nicht zu scheinbar harmlosen übersprungenen Daten
+machen. `tests/core/autonomy-scene-time-boundary.test.ts` prüft zwei unabhängige
+Sceneuhren mit Teilfortsetzung und die Pause eines bereits späteren Actors.
+Die sechs Intervall-/Mehractor-Rollbackprüfungen ergänzen diesen Anschluss;
+alle Ownerwirkungen und native Zeitkonfliktbedienung bleiben gesondert offen.
+
 ## Nächste ausführbare Schritte
 
 1. **Historische Zeitbasis vervollständigen.** Die Jobs und Intervallgrenzen sind

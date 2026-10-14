@@ -36,23 +36,60 @@ Die Prüfungen ändern keine gespeicherten Nutzertexte oder gültigen Altwerte.
 Es gibt keine Datenmigration. Ein beschädigter Bestand wird nicht still durch
 Standardwetter ersetzt und ersetzt auch keine frühere sichere Exportdatei.
 
+## Konfliktschutz und Bestätigung im Wettereditor
+
+`SceneWorld.weatherOverrideRevision` liefert die gespeicherte Overridebasis,
+`WeatherAction.expectedOverrideRevision` bindet Setzen/Freigeben daran zusätzlich
+zur Uhr. `null` bedeutet, dass noch kein Override-Datensatz existiert. Eine
+Freigabe bleibt als revisionierter Datensatz bestehen: Setzen → Freigeben → alte
+Automatikeingabe kann damit nicht unbemerkt erneut schreiben. Der Reader prüft
+auch positive Rowrevision und Übereinstimmung mit dem Payload. Bestehende gültige
+Datensätze bleiben unverändert; neue Commands benötigen eine ausdrückliche Basis.
+Die Reisevorschau verwendet weiter den tatsächlichen Wetterwert und GM-Reisefaktor.
+
+`world-ui.ts` hält Owner, Auswahlgeneration und beide Revisionen ab der ersten
+Eingabe fest. Ein Refresh ersetzt diese Eingabebasis nicht. Pending blockiert
+weitere Wettercommands; spätere Tastatureingaben bleiben erhalten. Nur die eigene
+passende Bestätigung schreibt ihre Basis fort. Ältere Reads/Acks können einen
+neueren sichtbaren Stand nicht zurücksetzen. Ein Campaign-/Scenewechsel entzieht
+dem alten Auftrag seine aktuelle Editorberechtigung. Fremde neuere Revisionen
+bleiben Konflikte; „Eigene Eingabe verwerfen“ lädt ausdrücklich einen neuen Stand,
+prüft Auswahl und Eingabeversion und setzt erst dann den Entwurf zurück.
+Wetterfreigabe erhält eine daneben offene Wettereingabe.
+
+Bei verlorener Antwort hält die bestehende Weltcommand-Recovery zusätzlich die
+ursprüngliche Wettereingabeversion und den Owner im Speicher. „Auftrag prüfen“
+übernimmt nur die eigene passende Bestätigung, führt den Command nicht nochmals
+aus und erhält spätere Eingaben. Nicht übernommene Commands behalten ihre alte
+Basis. Die Store-Reconciliation prüft neue Wetterbestätigungen gegen Auftrag,
+Scene, Uhr, Overriderevision und gesetzten Wetterwert. Historische Receipts werden
+nicht umgeschrieben. Das ersetzt keinen persistenten Wetter-Workingdraft.
+
 ## Lokaler Nachweis und Grenzen
 
-`tests/desktop-weather-integrity.test.mjs` reproduzierte sechs Gegenbeispiele
-vor der Korrektur. Acht echte SQLite-Storewege prüfen ungültige Eingabe ohne
-State-/History-/Receiptwirkung, beschädigte gespeicherte Art einschließlich
-abgewiesener normaler Änderung/Freigabe mit erhaltenen
-DB-/Backup-/Exportbytes und gültigen Override über bestätigte Zeit,
-Campaignwechsel/Fresh und ausdrückliche Freigabe. Die Automatik danach entspricht
-`weatherAt` am bestätigten aktuellen Scenezeitpunkt und Ort. Ein Split mit zwei
-Actors belegt außerdem voneinander unabhängige Uhren und den Override nur an
-der ursprünglichen Scene. Reise-/Welteditor-
-Prüfungen ergänzen die betroffenen bestehenden Wege.
+`tests/desktop-weather-integrity.test.mjs` prüft echte SQLite-Wege: ungültige
+Werte und revisionierte Hüllformen ohne Teilwirkung, erhaltene Original-/Backup-/
+Exportbytes, gültiger freier GM-Text über Zeit/Campaignwechsel/Fresh/Freigabe,
+unabhängige Split-Sceneuhren, veraltetes Setzen/Freigeben bei gleicher Uhr und
+Automatik-ABA. Weitere Proben prüfen den GM-Reisefaktor sowie Receiptreplay nach
+Fresh ohne Überschreiben eines späteren Overrides und semantisch beschädigte
+Bestätigung bei gültiger Prüfsumme.
 
-Das qualifiziert den Overridevertrag lokal. Zeitliche Wiedervereinigung, unterschiedliche
+`tests/desktop-weather-authority.test.mjs` benutzt die produktive UI mit
+kontrolliertem DOM und echtem Store. Sie prüft offene Eingabe gegen Refresh,
+Campaignwechsel vor Write und vor Ack, spätere Eingabe nach eigener Bestätigung,
+ältere Reads/Acks, ausdrückliches Verwerfen/Freigeben sowie verlorene Antworten
+mit angewendeten und nicht angewendeten Commands. Bestehende Reise-/Welteditor-
+Prüfungen ergänzen die betroffenen Wege. Ausführbar mit `node --test
+--test-concurrency=1 tests/desktop-weather-integrity.test.mjs
+ tests/desktop-weather-authority.test.mjs` im Repository; Ressourcenlimits des
+Arbeitsplatzes gelten für den Aufruf.
+
+Das sind lokale Teilbelege. Zeitliche Wiedervereinigung, unterschiedliche
 Sceneorte, Kalenderänderung, pausierte/wandernde Phänomene, vollständige historische
-Wetterbasis, Playerperception/Musikübergang, native Bedienung und Crash/Cancel
-besitzen weiterhin eigene Fachabnahmen.
+Wetter-/Receiptbasis, Playerperception/Musikübergang, native Bedienung und
+Crash/Cancel besitzen weiterhin eigene Fachabnahmen. Der Wetterentwurf und seine
+unklare Editorbestätigung liegen derzeit nur im Speicher.
 
 ## Nächste ausführbare Abschlüsse
 
@@ -74,12 +111,12 @@ besitzen weiterhin eigene Fachabnahmen.
    erster Zeitwirkung muss den gesamten betreffenden Command zurückrollen.
    Retry erzeugt keine doppelten Hinweise/History-/Zeitfolgen. Playerperception
    und Music/Ambience folgen dem bestätigten Focus ohne GM-Texte im Playerframe.
-4. `world-contracts.ts`, `storage/world.ts`, `world-ui.ts`: ursprüngliche
-   Overridebasis zusätzlich zur Scene-Uhr prüfen. Der jetzige Setter bindet nur
-   `expectedClockRevision`; eine andere Wetteränderung bei unveränderter Uhr
-   wird dadurch noch nicht als Konflikt erkannt. Den Override-Stand im Reader
-   liefern und vor Setzen/Freigeben im Writer vergleichen. Danach offene
-   Wetter-/Phänomeneingaben, ursprüngliche Revision,
-   A/B/A-Antworten und unklarer Commitausgang/Workingdraft prüfen. Native
-   Tastatur/IME/Fokus/Cancel und echter Prozessabbruch gesondert abnehmen;
-   danach Query-/Renderkosten am tatsächlichen Größenfall messen.
+4. `world-ui.ts`, vorhandene Workingdraft-/Weltreceiptports: persistente
+   Wettereingabe mit ursprünglicher Campaign-/Scene-/Clock-/Overridebasis und
+   unklarem Commandausgang anschließen. Nicht mit der aktuellen Revision
+   automatisch neu binden. Gegenprobe: Schreiben bestätigt, Antwort verloren,
+   Prozessabbruch/Fresh, neuere fremde Änderung und anschließendes ausdrückliches
+   Prüfen/Verwerfen; kein doppelter Command und keine verlorene Rohtexteingabe.
+   Native A/B/A, Tastatur/IME/Fokus/Cancel gesondert abnehmen. Phänomeneditor besitzt
+   weiterhin seinen eigenen Draft-/Replyumfang; Weatherguards qualifizieren ihn
+   nicht automatisch. Danach Query-/Renderkosten am tatsächlichen Größenfall messen.
