@@ -33,7 +33,7 @@ export type SessionAction=
  |{kind:'accept-proposal';planId:string;expectedPlanRevision:number;runId:string;index:number};
 export interface SessionCommand {commandId:string;campaignId:string;token:string;action:SessionAction}
 export interface SessionGenerationRequest {magicPool?:{definitionId:string;revision:number}[];compensateMagic?:boolean;compensateLoot?:boolean;worldSourcesByLocation?:boolean;planId:string;expectedProfileRevision:number;count:number;locationIds:string[];noteIds:string[];encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>}
-export interface SessionAPI {sessionProgress(token:string,planId:string,sceneId?:string):Promise<Result<SessionProgress>>;
+export interface SessionAPI {sceneVisits(token:string,sceneId:string,after:string|null):Promise<Result<import('./scene-visit-contracts').SceneVisitPage>>;sessionProgress(token:string,planId:string,sceneId?:string):Promise<Result<SessionProgress>>;
 preparedGroup(token:string,id:string):Promise<Result<PreparedGroup>>;
  session(token:string,planId:string):Promise<Result<SessionView>>;
  executeSession(command:SessionCommand):Promise<Result<SessionView>>;
