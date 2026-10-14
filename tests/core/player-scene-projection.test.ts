@@ -1,3 +1,4 @@
+import {playerFocus as focus} from '../support/player-focus';
 import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -7,7 +8,6 @@ import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
-const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision,expectedFocusLocationId:view.focusLocationId};};
 
 for(const bound of [false,true])test('legacy scene text settings remain valid but neutral, binding='+bound,async()=>{
  const root=mkdtempSync(join(tmpdir(),'player-scene-legacy-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');

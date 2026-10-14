@@ -1,3 +1,4 @@
+import {playerFocus as focus} from '../support/player-focus';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';

@@ -29,3 +29,5 @@ export function sessionCloseHandoffSuggestion(input:SessionCloseHandoffInput){
   return lines.join('\n');
 }
 
+
+export function latestCompletedSessionHandoff(entries:ChronicleEntry[],latest?:ChronicleEntry){return(latest?.sessionMarker==='end'?latest:entries.find(entry=>entry.sessionMarker==='end'))?.handoff??'';}

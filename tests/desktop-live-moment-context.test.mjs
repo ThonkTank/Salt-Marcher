@@ -101,3 +101,10 @@ test('session handoff retains its submitted text while a newer review edit survi
  x.el('live-session-start').click();await settle();assert.equal(x.el('live-session-handoff-text').textContent,end.handoff);assert.equal(x.el('live-session-handoff').value,'Neuere Vorbereitung');
  x.el('live-session-handoff').value='';x.el('live-session-end').click();await settle();x.el('live-session-close-handoff').value='';x.el('live-session-close-confirm').click();await settle();assert.equal(x.el('live-session-handoff-preview').hidden,true);assert.equal(x.el('live-session-handoff-text').textContent,'');
 });
+
+test('a detached next-game group action cannot start a session in another campaign',async t=>{
+ const x=await setup(t);x.el('live-session-resume').click();await settle();assert.equal(x.el('live-session-resume-dialog').open,true);const old=x.el('live-session-resume-groups').querySelector('button');
+ const b=x.store.create('B'),w=x.store.activate(b.id);x.store.executeLive({commandId:randomUUID(),campaignId:b.id,token:w.token,action:{kind:'initialize',expectedRosterRevision:0}});x.ui.activateLive(w);await x.ui.openLive();x.el('live-continue').click();await settle();x.el('live-session-resume').click();await settle();assert.equal(x.el('live-session-resume-dialog').open,true);
+ const before=x.store.db.serialize();old.onclick();await settle();assert.ok(x.store.db.serialize().equals(before));assert.equal(x.el('live-session-resume-dialog').open,true);assert.equal(x.store.chronicle(w.token).entries.filter(e=>e.sessionMarker==='start').length,0);
+ x.el('live-session-resume-groups').querySelector('button').click();await settle();assert.equal(x.el('live-session-resume-dialog').open,false);assert.equal(x.store.chronicle(w.token).entries.filter(e=>e.sessionMarker==='start').length,1);
+});

@@ -86,7 +86,7 @@ export const tutorialSurfaceLessons={
   'live-generation-open':'live-generation',
   'session-copy-open':'session-reuse',
   atlas:'drawing-and-key',preparation:'world-notes',live:'live-party',chronicle:'chronicle',catalog:'encounter-catalog',groups:'prepared-groups',treasury:'treasury',items:'items-trade',dungeon:'dungeon-tools',autonomy:'npc-autonomy',city:'city-infill',world:'atlas-hex',music:'music-library',
-  'soundboard-shortcut':'live-soundboard','quick-reference-open':'quick-reference','narrative-journal-open':'narrative-journal','player-open-controls':'player-display','campaign-manager':'campaign-transfer',import:'campaign','extensions-open':'extensions','party-shortcut':'party-topbar','day-trigger':'adventuring-day',
+  'rename-campaign':'campaign','new-campaign':'campaign','soundboard-shortcut':'live-soundboard','quick-reference-open':'quick-reference','narrative-journal-open':'narrative-journal','player-open-controls':'player-display','campaign-manager':'campaign-transfer',import:'campaign','extensions-open':'extensions','party-shortcut':'party-topbar','day-trigger':'adventuring-day',
 } as const;
 
 export const tutorialCapabilityLessons={
