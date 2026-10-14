@@ -12,6 +12,7 @@ import type { EncounterPlan } from './encounter-contracts';
 import { initProgress, progressionContext, flushProgress, executePartyProgress } from './progression-ui';
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
 import {cuePlayer,cuePlayerImage} from './player-ui';
+import {renderLiveNpcChoices} from './live-player-cues';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -230,14 +231,14 @@ function renderScene() {
   }
   if (current && !sources?.locations.some(l => l.document.id === current)) { const option = document.createElement('option'); option.value = current; option.textContent = 'Ort nicht verfügbar'; option.disabled = true; select.append(option); }
   select.value = current ?? '';
-  const npcSelect=get<HTMLSelectElement>('running-player-npc'),selectedNpc=npcSelect.value;npcSelect.replaceChildren();const emptyNpc=document.createElement('option');emptyNpc.value='';emptyNpc.textContent='NSC auswählen';npcSelect.append(emptyNpc);
-  for(const row of sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]){const option=document.createElement('option');option.value=row.note.id;option.textContent=row.note.title||'Unbenannter NSC';npcSelect.append(option);}npcSelect.value=[...npcSelect.options].some(option=>option.value===selectedNpc)?selectedNpc:'';get<HTMLButtonElement>('running-player-npc-show').disabled=!npcSelect.value;
+  renderNpcChoices();
   renderSceneMeta(); renderGroups();
 }
 function groupPeople(id:string){return data?.roster.filter(c=>c.active&&c.sceneId===id).map(c=>c.profile.name).join(', ')||'Leere Party';}
 function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'|'clock'>){
   return (group.title||'Unbenannte Gruppe')+(group.primary?' · Hauptgruppe':'')+' · '+groupPeople(group.id)+' · '+formatInstant(group.clock.instantMs);
 }
+function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
 function renderGroups() {
   const select = get<HTMLSelectElement>('scene-focus'); select.replaceChildren();
   const cards = get('group-list'); cards.replaceChildren(); cards.hidden = !resumed || (data?.scenes.length ?? 0) < 2;
@@ -327,6 +328,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-open-location').onclick = () => { void (async () => { const token = context?.token; if (await flushLive() && token === context?.token && sceneDraft?.locationId) await openLocation(sceneDraft.locationId); })(); };
   get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(await flushLive()&&context?.token===token)await cuePlayer('follow',focus);})();};
   get('running-player-location').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),locationId=sceneDraft?.locationId;if(!focus||!locationId)return;if(await flushLive()&&context?.token===token&&sceneDraft?.locationId===locationId)await cuePlayerImage('location',locationId,focus);})();};
+  get('running-player-npc-filter').oninput=renderNpcChoices;
   get('running-player-npc').onchange=()=>{get<HTMLButtonElement>('running-player-npc-show').disabled=!value('running-player-npc');};
   get('running-player-npc-show').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),npcId=value('running-player-npc');if(!focus||!npcId)return;if(await flushLive()&&context?.token===token&&value('running-player-npc')===npcId)await cuePlayerImage('npc',npcId,focus);})();};
   get('running-player-handout').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(!focus)return;if(await flushLive()&&context?.token===token)await cuePlayerImage('custom',null,focus);})();};

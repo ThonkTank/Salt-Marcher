@@ -50,3 +50,11 @@ test('job decision facts expose ranked candidates, rejections, and tie-break',as
   assert.equal(facts.querySelector('summary')!.textContent,'Entscheidungsfakten');assert.match(facts.textContent,/Vorräte ordnen · Priorität 30/);assert.match(facts.textContent,/Tor prüfen · Priorität 30/);assert.match(facts.textContent,/2 weitere zulässige Jobs/);assert.match(facts.textContent,/Schmiede bedienen: Rolle wache/);assert.match(facts.textContent,/1 weitere Ablehnungen/);assert.match(facts.textContent,/Gleichstand: Priorität absteigend/);
  }finally{Object.assign(globalThis,{document:priorDocument,window:priorWindow});}
 });
+
+test('group opt-in sends the reviewed group revision',async()=>{
+ const parsed=parseHTML(readFileSync(join(process.cwd(),'src/app/index.html'),'utf8')),priorDocument=globalThis.document,priorWindow=globalThis.window,actions:AutonomyAction[]=[],view:AutonomyView={actors:[],available:[],groups:[{id:'group',revision:7,name:'Torwache',actorIds:[]}],locations:[],routes:[],rooms:[],features:[],jobs:[],logs:[],confirmed:'0',pendingActors:0};
+ try{
+  Object.assign(globalThis,{document:parsed.document,window:parsed.window});(parsed.window as any).campaign={autonomy:async()=>({ok:true,value:view}),executeAutonomy:async(command:any)=>{actions.push(command.action);return{ok:true,value:{view,progressed:0,pending:0}};}};initAutonomy(()=>{});activateAutonomy({token:'token',campaign:{id:'campaign'}} as any);await openAutonomy();
+  [...parsed.document.querySelectorAll('#autonomy-groups button')].find(button=>button.textContent?.includes('aktivieren'))!.dispatchEvent(new parsed.window.Event('click'));await tick();assert.deepEqual(actions,[{kind:'group-enable',groupId:'group',expectedRevision:7,enabled:true}]);
+ }finally{Object.assign(globalThis,{document:priorDocument,window:priorWindow});}
+});

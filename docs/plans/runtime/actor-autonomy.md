@@ -207,7 +207,7 @@ sicheren Vorgänger. Historische Target-/Slotclosure bleibt gesondert offen.
 
 | Originalanforderung | Aktueller Nachweis | Verbleibende Abnahme |
 | --- | --- | --- |
-| Opt-in für bestehende NPCs/Monster und Gruppen; Identität bleibt erhalten | Einzelaktivierung und Aktivierung aller Mitglieder einer bestehenden vorbereiteten Gruppe verwenden dieselben Actor-IDs. | Eine persistente Autonomy-Gruppenidentität mit gemeinsamem Job/Reiseverhalten sowie konfiguriertem Split und Merge fehlt. |
+| Opt-in für bestehende NPCs/Monster und Gruppen; Identität bleibt erhalten | Einzelaktivierung und revisionsgeschützte Aktivierung aller aktuellen Mitglieder einer bestehenden vorbereiteten Gruppe verwenden dieselben Actor-IDs. Aktivierung und Deaktivierung loggen Gruppen-ID und -Revision; Deaktivierung beendet laufende Arbeit und zukünftige Buchungen. | Gemeinsames Job-/Reiseverhalten sowie konfiguriertes Split und Merge fehlen. Der Sessionowner bietet dafür noch keine atomare Mitgliedschaftsoperation an. |
 | Bedürfnisse, Rollen, erreichbare Jobs, Routen sowie exklusive Reservierungen und Zeitbuchungen | Needs und Prioritäten, Rollenfilter, World-/Dungeonpfade, Reservierungen und überlappungsfreie Buchungen liegen im produktiven Store. | Eine längere Campaignmessung muss noch zeigen, wie Intervall-, Buchungs- und Bewegungsdaten wiederholt wachsen. |
 | Erklärbare deterministische Auswahl und stabiler Gleichstand | Jeder Jobwechsel loggt Grundpriorität, NPC-Bonus, konkrete Needbeiträge, bis zu sechs zulässige Kandidaten, bis zu sechs Ablehnungen, Restzähler und den Job-ID-Tie-break. Die Oberfläche zeigt diese Fakten aufklappbar. | Die native Tastatur-/Screenreaderprüfung der aufklappbaren Fakten bleibt offen. Die vollständige Kandidatenauswertung wird vertragsgemäß nicht dauerhaft gespeichert. |
 | Einfache, vom referenzierten Feature angebotene Interaktion über dessen Owner | Der konkrete Trap-Owner bietet den atomaren, geloggten Resetjob an. | Ein allgemeiner Vertrag für weitere einfache Featureinteraktionen fehlt; er darf erst mit einem echten Featureowner ergänzt werden. |
@@ -244,6 +244,12 @@ gespeicherten Dungeon-Snapshot selbst müssen dagegen weiterhin auflösbar sein.
 Campaign-Kopien remappen kampagnenlokale Identitäten. Der fachliche Logwert
 `intervalId: "manual"` bleibt dabei in SQL und Payload unverändert; Actor- und
 Campaignowner werden remappt.
+
+Eine vorbereitete Gruppe bleibt Owner ihrer ID, Revision und aktuellen
+Mitglieder. Gruppen-Opt-in akzeptiert deshalb nur die vom GM gesehene Revision
+und protokolliert diese Identität je betroffenem Actor. Das erzeugt noch keine
+zweite Autonomy-Gruppe: Bis der Sessionowner atomare Mitgliedschaftsänderungen
+anbietet, bleiben gemeinsame Reise sowie Split und Merge ausdrücklich offen.
 
 ## Begründete Pending-Entscheidung
 
@@ -282,7 +288,10 @@ Catch-up an der bestätigten Uhr der auslösenden Scene endet und ein bereits
 späterer Actorstand nicht zurückgerollt wird. Der Test belegt außerdem die
 persistente Pause, die Sperre alternativer Aufhebungswege und die begründete
 Auflösung nach einem Neustart. Ein zusätzlicher Fall belegt Needbeiträge,
-Rollen-Ablehnung und den stabilen Tie-break im begrenzten Joblog.
+Rollen-Ablehnung und den stabilen Tie-break im begrenzten Joblog. Der
+Gruppenfall weist eine veraltete Revision ohne Teilwirkung ab und belegt nach
+Aktivierung die geloggte Gruppenidentität sowie nach Deaktivierung den
+abgebrochenen Job und die abgeschnittene Ressourcenbuchung.
 `tests/core/autonomy-time-conflict-ui.test.ts` prüft am vollständigen DOM die
 Zeit-/Worldinformationen, beide begründeten Entscheidungen und die sichtbare
 Kandidaten-/Ablehnungszusammenfassung.
@@ -367,3 +376,10 @@ noch nicht nativ qualifiziert.
    keinen Erstschrittwert linear fortschreiben. Native freie Kamera/Reads und
    Fortschritt ≤100 ms qualifizieren; Cancel vor Commit ohne Wirkung. Nur konkrete
    gemessene Engstellen ändern, keine zusätzliche persistierte Simulation.
+
+5. **Gruppenreise an bestätigte Mitgliedschaft binden.** Gemeinsame Gruppenreise erst nach einer atomaren Mitgliedschaftsoperation des
+   Sessionowners ergänzen. Diese Operation muss Split und Merge mit stabilen
+   Gruppen-/Actor-IDs, erwarteten Revisionen und eindeutigem Zielverband
+   veröffentlichen; Autonomy darf danach nur deren bestätigten Snapshot binden.
+   Bis dahin stattdessen genau eine weitere einfache Featureinteraktion über
+   einen bestehenden Owner liefern; keine parallele Simulationswahrheit anlegen.
