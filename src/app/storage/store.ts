@@ -1,3 +1,4 @@
+import {readAgenda} from './agenda';
 import {readSceneVisits} from './scene-visits';
 import {readNarrativeJournal} from './narrative-journal';
 import {readSessionProgress} from './visit-outcomes';
@@ -736,6 +737,7 @@ export class CampaignStore {
   audioLibrary(token:string){this.guard(token);return this.db.transaction(()=>audioLibrarySnapshot(this.db,this.audioRoot))();}
   mergeAudioLibrary(token:string,library:ReturnType<typeof audioLibrarySnapshot>){const cam=this.guard(token),ids=mergeAudioLibrary(this.db,this.audioRoot,library);this.updateMusic(cam);return ids;}
   audioFile(id:string){const asset=readAudioAsset(this.db,this.audioRoot,id);if(!asset.available)throw new Error('Mediendatei fehlt oder wurde verändert.');return audioFile(this.audioRoot,asset);}
+  agenda(token:string,query:import('../agenda-contracts').AgendaQuery){return this.db.transaction(()=>readAgenda(this.db,this.guard(token),query))();}
   world(token:string){return this.db.transaction(()=>readWorld(this.db,this.guard(token)))();}
   sceneWorld(token:string,id:string){return this.db.transaction(()=>readSceneWorld(this.db,this.guard(token),id))();}
   previewTravel(token:string,request:TravelRequest){return this.db.transaction(()=>previewTravel(this.db,this.guard(token),request))();}
