@@ -52,8 +52,25 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Shops und Handel | Shopanlage, Bestand und Preise, Auffüllzeit, Kauf, Verkauf und Verlauf | Shops, Bestand und Handel führen |
 | Schatzverwaltung | Anlage, Katalogposten, bestätigter Entwurf, Teilmengenverschiebung, Einzelzuweisung und Verlauf | Schätze bearbeiten und verschieben |
 | Gemeinsame Schatzverteilung | Einstieg im Schatzbereich und am Spieltisch, Gleichverteilung, Einzelkorrektur und Bestätigung | Einen Schatz gemeinsam verteilen |
+| Weltwissen | Suche, Anlage, getrennte Vorlese-/GM-Texte, Papierkorb und Wiederherstellung | Weltwissen wiederfinden |
+| Orte und Kartenbindung | Ortssuche/-anlage, Abschnitte, Dungeonzuordnung, Papierkorb und Navigation aus dem Besuch | Orte, Szenen und Karten verbinden |
+| Beziehungen und Aufträge | ausgehende/eingehende Referenzen sowie eingebetteter und gemeinsamer Quest-/Gerüchteditor | Beziehungen verfolgen; Aufträge und Gerüchte am Tisch führen |
+| Vorbereitungs-Recovery | Sofortspeichern, fortbestehender Entwurf, Statusklärung und gezieltes Verwerfen | Offene Vorbereitung sicher wiederaufnehmen |
+| Roster, aktuelle Party und Profil | Partysuche, Anlage, Profilwerte, Teilnahme sowie gruppengebundene Rast | Party direkt am Tisch verwalten; Party und laufender Spielabend |
+| Figurenarchiv | bestätigtes Archivieren, Suche, paginierte Liste und Wiederherstellung als inaktive Figur | Figuren archivieren und zurückholen |
+| Live-Start und Recovery | ausdrücklicher Start/Wiedereinstieg, Sofortspeichern, Statusklärung und gezieltes Verwerfen | Party und laufender Spielabend; Offene Live-Eingaben sicher klären |
+| Gruppen, Fokus und frühere Scenes | Fokuswahl, Split/Rejoin, neue unabhängige Uhr sowie Archiv mit Kampf- und Verfolgungsmasken | Partygruppen führen |
+| Unabhängige Scene-Zeit | Dauer, Einheit, Vorschau und bestätigte Fortschreibung nur der Fokusgruppe | Zeit einer Gruppe fortsetzen |
+| Szenentisch | gruppengebundene Pins, Suche, direkte Anlage, gemeinsamer Inhaltseditor und Übergabe an Encounter | Kampagnenwissen an der Scene bearbeiten |
+| Kampfmasken | weitere Maske, Maskensuche, ausdrücklicher Start, Initiative und gesicherte offene Eingaben | Mehrere Begegnungen in derselben Scene; Kampf, XP und Beute gemeinsam abschließen |
+| Verfolgungsmasken | Anlage, Teilnehmer, Start, Rundenfortschritt, gesicherte Eingaben, Suche und Abschluss | Eine Verfolgung über Runden führen |
+| Manuelle Timeline und Ersatz | plan-/ort-/partyfreie Besuche, Suche, Reihenfolge sowie Vorschau für Wiederverwendung oder Leeren | Eine Szenenfolge vorbereiten; Einen neuen Abend aus vorhandener Vorbereitung bauen |
+| Besuchsvorbereitung und Übergabe | Vorlesetext, Weltverweise, Gruppen, Belohnung und ausdrückliche Übernahme in die laufende Gruppe | Spielabendinhalte und Vorschläge verwenden; Party und laufender Spielabend |
+| Gemeinsame Auswahl und Mappe | Vorschlagssuche/-auswahl, Reihenfolge, vollständige GM-Mappe, Suche und Markdownexport | Einen Abend gemeinsam vorbereiten; Den ganzen Spielabend griffbereit haben |
+| Wiederverwendung und Ergebnisse | Besuchsauswahl aus früheren Plänen sowie gruppengebundener Status und Ergebnis | Vorbereitete Szenen für den nächsten Abend nutzen; Vom Besuch zum bestätigten Ergebnis |
+| Agenda und Wiedereinstieg | Fristen nach Gruppenzeit; Übergabe, Weltlage, Besuch, Auftrag, Masken und Beute vor neuem Startmarker | Fristen an der Gruppenzeit planen; Einen Spielabend beginnen und mit Rückblick beenden |
 | Live-Momente | gruppengebundener Moment mit optionaler Quest-/Gerüchtspur und Verwaltung aus der Live-Suche | Momente festhalten und Kampagnenfolgen nachlesen |
-| Spielabend-Rückblick | Beginnmarkierung, laufende bestätigte Ereignisse, Ende mit Abschlussnotiz | Einen Spielabend beginnen und mit Rückblick beenden |
+| Spielabend-Rückblick | Beginnmarkierung, laufende bestätigte Ereignisse, Abschlussprüfung sowie Ende mit Rückblick und Übergabe | Einen Spielabend beginnen und mit Rückblick beenden |
 | Direkte Spielerfreigaben | Vorlesetext, Ortsbild, NPC-Porträt, Handout, Live-Automatik und Leeren | Inhalte am Spieltisch ausdrücklich freigeben |
 | Spielerkenntnis und Sicht | Beobachterwerte, Entdecken/Vergessen, Masken und öffentliche Beschriftungen | Kenntnis und aktuelle Sicht der Gruppe trennen |
 | Atlas-Authoring | Karte neu/kopieren/importieren, Hex bearbeiten, Ort markieren, Gruppe platzieren und Kenntnis aufdecken | Hexkarten und Orte bearbeiten |

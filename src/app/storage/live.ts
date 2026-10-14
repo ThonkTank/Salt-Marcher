@@ -1,3 +1,7 @@
+import {readWorldCalendar} from './world';
+import {readClockEvent} from './time-plan';
+import {agendaOccurrence} from '../agenda-model';
+import {validInstant,validClockCalendar} from '../time-plan-model';
 import {readVisitOutcome} from './visit-outcomes';
 import {visitOutcomeLabel} from '../visit-outcome-contracts';
 import { randomUUID, createHash } from 'node:crypto';
@@ -180,6 +184,7 @@ export function liveStatus(db: any, command: LiveCommand): LiveStatus {
       const action = command.action;
       const targetId = 'sceneId' in action ? action.sceneId : 'characterId' in action ? action.characterId : null;
       let changed = targetId !== null && 'expectedRevision' in action && targetRevision(db, command.campaignId, action, targetId) !== action.expectedRevision;
+      if(action.kind==='advance-clock'&&action.calendarVersion==='campaign-calendar-v1'){const calendar=readWorldCalendar(db,command.campaignId),state=db.prepare('SELECT focus_id,focus_revision FROM live_state WHERE campaign_id=?').get(command.campaignId);changed ||= calendar.revision!==action.calendar.revision||calendar.daySeconds!==action.calendar.daySeconds||state?.focus_id!==action.sceneId||state?.focus_revision!==action.expectedFocusRevision;if(action.eventTarget){try{const event=readClockEvent(db,command.campaignId,action.eventTarget.eventId);changed ||= event.revision!==action.eventTarget.expectedRevision;}catch{changed=true;}}}
       if (action.kind === 'focus') changed = db.prepare('SELECT focus_revision FROM live_state WHERE campaign_id=?').get(command.campaignId)?.focus_revision !== action.expectedRevision;
       if (action.kind === 'move') {
         const source = currentScene(db, command.campaignId, action.sceneId);
@@ -210,7 +215,7 @@ export function validateLiveBackup(db: any, campaignId: string) {
   for (const row of db.prepare('SELECT * FROM scene_time_step WHERE campaign_id=? ORDER BY scene_id,ordinal').iterate(campaignId)) {
     if (hash(row.payload) !== row.checksum) throw new Error('Zeitverlauf beschädigt.');
     const step = JSON.parse(row.payload), current = clock(db, campaignId, row.scene_id);
-    if (step.calendarVersion !== 'relative-v1' || step.epochId !== current.epochId || advanceInstant(step.from, step.amount, step.unit) !== step.to ||
+    if (!((step.calendarVersion==='relative-v1'&&advanceInstant(step.from,step.amount,step.unit)===step.to)||(step.calendarVersion==='campaign-calendar-v1'&&validClockCalendar(step.calendar)&&validInstant(step.from)&&validInstant(step.to)&&BigInt(step.to)>BigInt(step.from))) || step.epochId !== current.epochId ||
       !Number.isSafeInteger(step.beforeRevision) || step.beforeRevision < 0 || step.afterRevision !== step.beforeRevision + 1 || step.afterRevision > current.revision ||
       step.recordedAt!==undefined&&(typeof step.recordedAt!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(step.recordedAt)||!Number.isFinite(Date.parse(step.recordedAt)))) throw new Error('Zeitverlauf ist nicht konsistent.');
     const previous = last.get(row.scene_id);
@@ -348,13 +353,22 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       recordPartyHistory(db,campaignId,targetId,action.marker==='start'?'Spielabend begonnen':'Spielabend beendet',{kind:'session-marker',marker:action.marker,summary:action.summary,handoff:action.handoff??'',characterIds,locationId:before.locationId,instantMs:before.clock.instantMs});
     } else if (action.kind === 'advance-clock') {
       const before = currentScene(db, campaignId, action.sceneId);
-      if (before.clock.revision !== action.expectedRevision || action.calendarVersion !== 'relative-v1') throw new Error('Scenezeit oder Kalenderinterpretation wurde inzwischen geändert.');
-      if (typeof action.reason !== 'string' || action.reason.length > 2000) throw new Error('Ungültige Zeitnotiz.');
-      targetId = before.id; revision = before.clock.revision + 1;
-      const to = advanceInstant(before.clock.instantMs, action.amount, action.unit);
+      if(before.clock.revision!==action.expectedRevision)throw new Error('Gruppenzeit geändert. Zeitvorschau aktualisieren.');
+      if(typeof action.reason!=='string'||action.reason.length>2000)throw new Error('Ungültige Zeitnotiz.');
+      let to:string;
+      if(action.calendarVersion==='relative-v1')to=advanceInstant(before.clock.instantMs,action.amount,action.unit);
+      else if(action.calendarVersion==='campaign-calendar-v1'){
+        const calendar=readWorldCalendar(db,campaignId),focus=db.prepare('SELECT focus_id,focus_revision FROM live_state WHERE campaign_id=?').get(campaignId);
+        if(!validClockCalendar(action.calendar)||calendar.revision!==action.calendar.revision||calendar.daySeconds!==action.calendar.daySeconds)throw new Error('Kalender geändert. Zeitvorschau aktualisieren.');
+        if(focus?.focus_id!==before.id||focus.focus_revision!==action.expectedFocusRevision)throw new Error('Fokussierte Gruppe geändert. Zeitvorschau neu öffnen.');
+        if(!validInstant(action.toInstantMs)||BigInt(action.toInstantMs)<=BigInt(before.clock.instantMs))throw new Error('Zeit muss vorwärts gehen.');
+        if(action.eventTarget){const target=action.eventTarget,event=readClockEvent(db,campaignId,target.eventId),occurrence=agendaOccurrence(event,before.clock.instantMs);if(event.revision!==target.expectedRevision||!['start','end'].includes(target.phase)||target.instantMs!==(target.phase==='end'?occurrence.endMs:occurrence.startMs)||action.toInstantMs!==target.instantMs)throw new Error('Ereignis oder Ausführung geändert. Zeitvorschau aktualisieren.');}
+        to=action.toInstantMs;
+      }else throw new Error('Kalenderinterpretation unbekannt.');
+      targetId=before.id;revision=before.clock.revision+1;
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),-1)+1 n FROM scene_time_step WHERE campaign_id=? AND scene_id=?').get(campaignId, targetId).n;
       const payload = json({ epochId: before.clock.epochId, from: before.clock.instantMs, to, beforeRevision: before.clock.revision, afterRevision: revision,
-        amount: action.amount, unit: action.unit, calendarVersion: action.calendarVersion, reason: action.reason,recordedAt:new Date().toISOString() });
+        ...(action.calendarVersion==='relative-v1'?{amount:action.amount,unit:action.unit}:{calendar:action.calendar,eventTarget:action.eventTarget}),calendarVersion:action.calendarVersion,reason: action.reason,recordedAt:new Date().toISOString() });
       db.prepare('INSERT INTO scene_time_step VALUES(?,?,?,?,?,?,?)').run(campaignId, randomUUID(), targetId, command.commandId, ordinal, payload, hash(payload));
       db.prepare('UPDATE scene_clock SET revision=?,instant_ms=? WHERE campaign_id=? AND scene_id=?').run(revision, to, campaignId, targetId);
       scene = currentScene(db, campaignId, targetId);

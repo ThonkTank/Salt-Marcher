@@ -1,0 +1,13 @@
+import type {TravelPreview} from './world-contracts';
+import {hexKey,terrainNames} from './world-model';
+const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
+export function renderTravelBriefing(root:HTMLElement,p:TravelPreview){
+ root.replaceChildren();root.append(node('p','Abreise: '+p.departure));
+ if(p.continuation)root.append(node('p','Bereits gereist: '+p.continuation.completedSteps+(p.continuation.completedSteps===1?' Abschnitt':' Abschnitte')+' · frühere Restzeit '+(p.continuation.previousRemainingSeconds/3600).toFixed(2)+' h · neu '+(p.durationSeconds/3600).toFixed(2)+' h'));
+ root.append(node('h3','Weg, Ankunft und Wetter · erste 40 Abschnitte'));
+ const table=node('table'),head=node('thead'),row=node('tr');for(const title of ['Abschnitt / Ort','Ankunft','Dauer','Gelände / Wetter']){const th=node('th',title);th.scope='col';row.append(th);}head.append(row);table.append(head);const body=node('tbody');
+ for(const stage of p.stages){const tr=node('tr'),place=node('td',stage.index+'. '+hexKey(stage.hex)+(stage.placeName?' · '+stage.placeName:'')),date=node('td',stage.arrival),duration=node('td',Math.round(stage.seconds/60)+' min'),conditions=node('td',terrainNames[stage.terrain]+' · '+stage.weather.label+' · '+stage.weather.effects.temperatureC+' °C');if(stage.interrupt)place.append(node('strong','GM-Halt: '+stage.interrupt));if(stage.weather.effects.combatNote)conditions.append(node('span',stage.weather.effects.combatNote));tr.append(place,date,duration,conditions);body.append(tr);}table.append(body);const scroll=node('div');scroll.className='travel-stage-scroll';scroll.append(table);root.append(scroll);
+ if(p.route.length-1>p.stages.length)root.append(node('p','Weitere '+(p.route.length-1-p.stages.length)+' Abschnitte sind in der Gesamtdauer und Route enthalten.'));
+ if(p.events.length){root.append(node('h3','Kalenderereignisse an Reiseorten · erste 12'));for(const event of p.events)root.append(node('p',event.name+' · '+event.date+(event.state==='active'?' · bei Abreise aktiv':'')));}
+ root.append(node('p','Dies ist eine Reisevorschau. Zeit und Position ändern sich erst beim Bestätigen der einzelnen Reiseabschnitte. Warten und Rast nach einer Pause separat bestätigen.'));
+}

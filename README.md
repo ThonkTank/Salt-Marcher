@@ -769,3 +769,23 @@ Die Agenda (0.69) öffnet Kalenderereignisse und Fristen zur bestätigten Gruppe
 Der Leitungsstand vor dem nächsten Spielabend liest nun für jede fortbestehende Gruppe den nächsten vorbereiteten Besuch und zeigt ihn neben Übergabe, Gruppen, Masken und Beute. „Vorschau öffnen“ wechselt zur richtigen Gruppe und führt in die vorhandene Besuchsübernahme; der Spielabend wird dadurch noch nicht begonnen.
 
 Bis zu sechs offene Quests und Gerüchte sowie ihre Ortsbindung stehen ebenfalls im Leitungsstand. Das gemeinsame Auftragsjournal öffnet von dort mit seinem bestehenden Status-, Ergebnis- und Belohnungsablauf. Alle Reads sind an Kampagne und offenen Leitungsstand gebunden; Schließen oder Kampagnenwechsel verwirft verspätete Ergebnisse.
+
+Der Zeitdialog (0.72) verbindet Warten nach Dauer, Fantasy-Datum, Kalenderereignisbeginn/-ende und nächstem Tagesbeginn mit derselben Live-Clock. Auch normale Live-Tagesangaben folgen dem Kampagnenkalender. Neue Zeitbelege halten ihre Kalender-Tageslänge fest, alte relative-v1-Belege behalten 24h. Ereignis-/Kalender-/Clock-/Fokusbasis wird bei Bestätigung geprüft; dieselben bisherigen Zeitfolgen bleiben zuständig. Wetterereignisse wandern jetzt ebenfalls pro Kampagnentag. Wartezeit erzeugt keine automatische Rastwirkung; Reisewege nach einem manuellen Zeitsprung bei Bedarf im Reisebereich neu planen.
+
+### Desktopstand 0.71: Weltlage vor dem Spielabend
+
+Der Leitungsstand liest für jede Gruppe zusätzlich den bestätigten Kampagnentag, den aktuellen Ort, Wetter und laufende Reise. Offene Weltentscheidungen sowie die nächsten drei ortsgebundenen Kalenderereignisse der kommenden zwei Tage stehen direkt bei der betroffenen Gruppe. Damit sind getrennte Gruppen mit unterschiedlicher Zeit und Position vor dem Start vergleichbar.
+
+Reisekarte und Agenda öffnen aus derselben Gruppenkarte. Vorher wird die gewählte Gruppe über den bestehenden Fokusbesitzer aktiviert; Reise, Zeit, Wetter und Kalender bleiben unverändert, bis der GM in ihrem jeweiligen Arbeitsbereich ausdrücklich bestätigt. Der Spielabend beginnt weiterhin ausschließlich über „Spielabend hier beginnen“.
+
+### Desktopstand 0.73: Lagerpause und Restreise
+
+Die Reisevorschau zeigt einen Kalenderfahrplan mit Gelände, Wetter, benannten Stationen und GM-Halten für die ersten 40 Abschnitte sowie bis zu zwölf Ereignisse an Reiseorten. Die Gesamtroute bleibt vollständig. Pausieren / warten öffnet am Spieltisch den Zeitdialog, Pausieren / rasten die vorhandene Party-Rast; beide nutzen ihre bestehenden Schreiber und bewegen die Gruppe nicht.
+
+Nach einer Pause oder veränderter Uhr, Gruppe, Karte, Kalender oder Wetter lässt sich der Restweg neu bewerten. Bereits zurückgelegte Abschnitte werden nicht erneut gereist; die verbleibende Hexfolge und das Ziel werden erhalten und am aktuellen Stand neu berechnet. Erst die ausdrückliche Annahme ersetzt die alte Reise, mit gespeichertem Bezug zur Vorgängerreise. Frühere Enddauer-Overrides werden nicht automatisch auf den Restweg übertragen. Eine außerhalb der Route versetzte Gruppe oder ein verschobenes Ziel benötigt eine neue Route. Die Vorschau enthält keine automatisch eingeplanten Rast- oder Begegnungswirkungen.
+
+### Desktopstand 0.74: Die Eröffnung vor dem Start lesen
+
+Der Leitungsstand zieht den nächsten vorbereiteten Besuch jeder Gruppe nun aus derselben GM-Spielabendmappe, die später am Tisch verwendet wird. Ort und vollständiger Eröffnungstext stehen direkt am Besuch; Zähler zeigen vorhandene GM-Hinweise, Referenzen, Begegnungsblöcke und Belohnungen. Fehlende oder archivierte Mappenquellen bleiben als konkrete Warnungen sichtbar.
+
+„Übernahme prüfen“ führt weiter in die bestehende bestätigte Besuchsübernahme. „Mappe öffnen“ fokussiert die betroffene Gruppe, bindet den richtigen Plan an den Spieltisch und öffnet die Mappe direkt beim nächsten Besuch. Das Lesen startet keinen Spielabend, übernimmt keinen Besuch und gibt keinen Text an Spieler frei.
