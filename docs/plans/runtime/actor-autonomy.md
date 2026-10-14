@@ -50,6 +50,12 @@ ausgeführte Buchungsteile bleiben erhalten; nur Jobabbruch verwirft den
 Jobfortschritt. Wiederaufnahme bucht den verbleibenden Zeitraum für Job und Ziel
 neu. Ein belegtes Ziel wird dabei nicht gewaltsam übernommen.
 
+Gruppen-Opt-in bindet zusätzlich die aktuelle Revision der vorbereiteten Gruppe
+und loggt ihre ID/Revision je Actor. Deaktivierung pausiert die automatische Arbeit
+und erhält den bestätigten Jobfortschritt; ausdrücklicher Jobabbruch bleibt eine
+eigene Aktion. Gemeinsame Gruppenreise, Split/Merge und weitere Konfliktfolgen
+brauchen noch atomare Operationen ihrer jeweiligen Owner.
+
 ## Begründete Pending-Entscheidung
 
 Ein Zeitkonflikt bleibt als pausierter Actorstand erhalten, bis der GM ihn über
