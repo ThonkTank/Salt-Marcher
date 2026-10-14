@@ -3,7 +3,7 @@ import {fighterDraftBasisMatches,fighterDraftFields,type FighterWorkingDraft,typ
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { Workspace, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
-import { combatOrder, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
+import { combatConditions,combatOrder, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
 import { renderCreatureDetail } from './catalog-ui';
 import type { EncounterPlan } from './encounter-contracts';
@@ -18,7 +18,6 @@ const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
 const editableCombat=(combat:CombatView['combat'])=>!!combat&&['preparing','running'].includes(combat.phase);
 const deathResultText=(result:DeathSaveResult)=>({success:'Erfolg',failure:'Fehlschlag','natural-20':'Natürliche 20 · 1 HP','natural-1':'Natürliche 1 · zwei Fehlschläge',stabilize:'Stabilisiert',reset:'Zurückgesetzt',dead:'Als tot markiert'}[result]);
-export const combatConditions=[['Blind','Blinded'],['Bezaubert','Charmed'],['Taub','Deafened'],['Verängstigt','Frightened'],['Gepackt','Grappled'],['Handlungsunfähig','Incapacitated'],['Unsichtbar','Invisible'],['Gelähmt','Paralyzed'],['Versteinert','Petrified'],['Vergiftet','Poisoned'],['Liegend','Prone'],['Festgesetzt','Restrained'],['Betäubt','Stunned'],['Bewusstlos','Unconscious']] as const;
 const conditionParts=(text:string)=>text.split(/\s*[,;\n]\s*/).map(part=>part.trim()).filter(Boolean);
 export function hasCombatCondition(text:string,label:string,source:string){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]);return conditionParts(text).some(part=>aliases.has(part.toLocaleLowerCase()));}
 export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
