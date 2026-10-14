@@ -61,8 +61,13 @@ Die unabhängige Kopie remappt zusätzlich `removedCharacterIds`. Eine Gegenprob
 mit Combat und Chase vor Deaktivierung fand zunächst alte IDs; danach gehörten
 beide Abgleichbelege zu den kopierten Characters. Party-/Scenehistorie, freie
 Scenetitel und Quellpaketbytes bleiben erhalten; Folgebackup ist geprüft.
-Provider-Pending, Retirement-/Tombstoneabschluss, echter Roundzeitport und native
-Crossworkflowabnahme bleiben offen.
+Der weitere integrierte Abgleich archiviert Masken beim Retirement ihrer Scene
+mit unverändertem Ergebnis-/Rewardstand: `retired` ist kein Abschluss. Der
+Shared-Health-Writer und Statusqueries konsumieren nur aktive Masken; alte
+Archivfakten werden nicht durch spätere HP-Änderungen neu geschrieben. Core-/
+SQLitebelege decken Split, erhaltene NPCs und fehlende abgeleitete Rewards ab.
+Provider-Pending, vollständiger Tombstone-/Archivabschluss, echter Roundzeitport
+und native Crossworkflowabnahme bleiben offen.
 
 ## Nächste ausführbare Schritte
 
