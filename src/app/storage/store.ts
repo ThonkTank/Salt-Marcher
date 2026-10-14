@@ -1,3 +1,4 @@
+import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
 import {installNpcRecords,validateNpcRecords} from './npc-record';
@@ -67,7 +68,7 @@ import { manualPlan, type ManualPlan } from '../../features/planner/manual-plann
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
-import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
+import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, readArchivedRoster, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
 
@@ -159,7 +160,7 @@ export class CampaignStore {
       if (schema < 6) for (const row of this.db.prepare('SELECT id FROM campaign').all()) ensureLiveOwners(this.db, row.id);
       if (schema < 7) migrateLiveClock(this.db);
       if (schema < 8) this.db.exec('INSERT OR IGNORE INTO scene_lifecycle(campaign_id,id,membership_revision,retired) SELECT campaign_id,id,0,0 FROM live_scene;');
-      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installMaskReconciliationSchema(this.db);installRuleReferenceSchema(this.db);installSceneCheckSchema(this.db);
+      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installMaskHistoryIndexes(this.db);installMaskReconciliationSchema(this.db);installRuleReferenceSchema(this.db);installSceneCheckSchema(this.db);
       installProgressSchema(this.db);
       if (schema < 10) migrateProgress(this.db);
       installEncounterSchema(this.db);
@@ -564,6 +565,7 @@ export class CampaignStore {
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   progressHistory(token: string, characterId: string, after: string | null) { return readProgressHistory(this.db, this.guard(token), characterId, after); }
   keepChaseDraft(token:string,draft:import('../chase-draft-contracts').ChaseWorkingDraft,expected:string|null){return keepChaseDraft(this.db,this.guard(token),draft,expected);}
+  maskHistory(token:string,sceneId:string,query:import('../mask-history-contracts').MaskHistoryQuery){return readMaskHistory(this.db,this.guard(token),sceneId,query);}
   chase(token:string,sceneId:string,id?:string){return readChase(this.db,this.guard(token),sceneId,id);}
   executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
@@ -759,6 +761,7 @@ export class CampaignStore {
   keepCombatDraft(token:string,draft:CombatWorkingDraft,expected:string|null){keepCombatDraft(this.db,this.guard(token),draft,expected);}
   discardCombatDraft(token:string,combatId:string,kind:CombatDraftKind,targetId:string,writeId:string){discardCombatDraft(this.db,this.guard(token),combatId,kind,targetId,writeId);}
   executeCombat(command: CombatCommand) { return this.db.transaction(()=>{const ack=executeCombat(this.db, command, () => { this.guard(command.token, command.campaignId); });this.updateMusic(command.campaignId);return ack;}).immediate(); }
+  archivedRoster(token:string,after:string|null,search:string){return readArchivedRoster(this.db,this.guard(token),after,search);}
   live(token: string) { return readLive(this.db, this.guard(token)); }
   liveScene(token: string, id: string) { return this.db.transaction(() => readLiveScene(this.db, this.guard(token), id))(); }
   liveArchives(token: string, after: string | null) { return readArchives(this.db, this.guard(token), after); }
@@ -770,7 +773,7 @@ export class CampaignStore {
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){
       const a=command.action;
-      if(a.kind==='move'||a.kind==='membership'&&!a.active){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
+      if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'&&ack.session?.createdScene)inheritScenePosition(this.db,command.campaignId,a.sceneId,ack.session.createdScene.id);
       const sceneId=a.kind==='advance-clock'||a.kind==='scene-content'||a.kind==='apply-visit'?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
       if(sceneId)syncSceneWorld(this.db,command.campaignId,sceneId);

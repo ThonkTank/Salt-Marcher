@@ -1,3 +1,4 @@
+import {openMaskHistory,closeMaskHistory} from './mask-history-ui';
 import type {Result} from './contracts';
 import {formatInstant} from './live-contracts';
 import type {CombatState} from './combat-contracts';
@@ -32,15 +33,15 @@ function renderChase(root:HTMLElement,chase:ChaseState) {
 }
 
 /** Read-only archive navigation has its own request lifetime, independent of live focus. */
-export function initLiveArchives(token:()=>string|null,flush:()=>Promise<boolean>) {
+export function initLiveArchives(token:()=>string|null,flush:()=>Promise<boolean>,campaignId:()=>string|null=()=>null) {
   let epoch=0,sceneRequest=0,cursor:string|null=null,listBusy=false;
   const current=(owner:string,run:number)=>token()===owner&&epoch===run;
-  const invalidate=()=>{epoch++;sceneRequest++;listBusy=false;};
+  const invalidate=()=>{closeMaskHistory();epoch++;sceneRequest++;listBusy=false;};
   const list=get('archive-list'),detail=get('archive-detail'),more=get<HTMLButtonElement>('archive-more'),dialog=get<HTMLDialogElement>('archive-dialog');
   const listStatus=document.createElement('div');listStatus.id='archive-list-status';list.before(listStatus);
 
   async function openScene(owner:string,item:{id:string;title:string}) {
-    const run=epoch,request=++sceneRequest,valid=()=>current(owner,run)&&request===sceneRequest;
+    closeMaskHistory();const run=epoch,request=++sceneRequest,valid=()=>current(owner,run)&&request===sceneRequest;
     loading(detail,(item.title||'Frühere Gruppe')+' wird geladen…');
     try {
       const [sceneResult,combatResult,chaseResult]=await Promise.all([window.campaign.liveScene(owner,item.id),window.campaign.combat(owner,item.id),window.campaign.chase(owner,item.id)]);
@@ -50,7 +51,7 @@ export function initLiveArchives(token:()=>string|null,flush:()=>Promise<boolean
       detail.replaceChildren();const heading=document.createElement('h3');heading.textContent=scene.title||'Unbenannte frühere Gruppe';detail.append(heading);
       paragraph(detail,formatInstant(scene.clock.instantMs),'caption');if(scene.notes)paragraph(detail,scene.notes);
       const masks=document.createElement('section'),title=document.createElement('h4'),buttons=document.createElement('div'),maskDetail=document.createElement('div');
-      let maskRequest=0;title.textContent='Letzte gespeicherte Laufzeitstände';buttons.className='selection-list';maskDetail.id='archive-mask-detail';masks.append(title,buttons,maskDetail);detail.append(masks);
+      let maskRequest=0;title.textContent='Gespeicherte Laufzeitstände';buttons.className='selection-list';maskDetail.id='archive-mask-detail';const searches=document.createElement('div');searches.className='toolbar';masks.append(title,searches,maskDetail);paragraph(masks,'Direktauswahl: bis zu zehn Stände je Art; weitere über die Suche.','caption');masks.append(buttons);detail.append(masks);
       async function openMask(kind:'combat'|'chase',entry:{id:string;title:string}) {
         const selection=++maskRequest,selected=()=>valid()&&selection===maskRequest;
         loading(maskDetail,(kind==='combat'?'Kampf: ':'Verfolgung: ')+entry.title+' wird geladen…');
@@ -65,14 +66,15 @@ export function initLiveArchives(token:()=>string|null,flush:()=>Promise<boolean
             renderChase(maskDetail,result.chase);
           }
         } catch(error) {if(selected())failure(maskDetail,error,()=>{void openMask(kind,entry);},(kind==='combat'?'Kampf: ':'Verfolgung: ')+entry.title);}
-        finally {if(selected())maskDetail.setAttribute('aria-busy','false');}
+        finally {if(selected()){maskDetail.setAttribute('aria-busy','false');maskDetail.scrollIntoView?.({block:'nearest'});}}
       }
-      for(const entry of combat.recent) {
+      for(const entry of combat.recent.slice(0,10)) {
         const button=document.createElement('button');button.textContent='Kampf: '+entry.title+' · '+(entry.phase==='retired'?'archiviert':entry.phase==='finished'?'abgeschlossen':entry.phase==='running'?'laufend':'vorbereitet');button.onclick=()=>{void openMask('combat',entry);};buttons.append(button);
       }
-      for(const entry of chase.recent) {
+      for(const entry of chase.recent.slice(0,10)) {
         const button=document.createElement('button');button.textContent='Verfolgung: '+entry.title+' · '+(entry.status==='retired'?'archiviert':entry.status==='finished'?'abgeschlossen':'laufend');button.onclick=()=>{void openMask('chase',entry);};buttons.append(button);
       }
+      for(const kind of ['combat','chase'] as const){const all=document.createElement('button');all.type='button';all.textContent=kind==='combat'?'Alle Kämpfe suchen':'Alle Verfolgungen suchen';all.onclick=()=>{const cam=campaignId();if(!valid()||!cam)return;openMaskHistory({token:owner,campaignId:cam,sceneId:item.id,kind,current:valid,select:entry=>openMask(kind,entry)});};searches.append(all);}
       if(combat.combat)renderCombat(maskDetail,combat.combat);
       else if(chase.chase)renderChase(maskDetail,chase.chase);
       else paragraph(maskDetail,!combat.recent.length&&!chase.recent.length?'Für diese frühere Gruppe sind keine Kämpfe oder Verfolgungen gespeichert.':'Wähle einen gespeicherten Laufzeitstand aus.','caption');
