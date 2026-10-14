@@ -42,4 +42,6 @@ test('passive perception check names successes and missing values',()=>{
     {name:'Cora'},
   ],15),'SG 15 · Bemerken: Ada. Ohne Wert: Cora.');
   assert.equal(passivePerceptionResult([{name:'Borin',passivePerception:12}],15),'SG 15 · Bemerkt niemand.');
+  assert.equal(passivePerceptionResult([{name:'Borin',passivePerception:12},{name:'Cora'}],15),'SG 15 · Mit bekanntem Wert bemerkt niemand. Ohne Wert: Cora.');
+  assert.equal(passivePerceptionResult([{name:'Cora'}],15),'SG 15 · Keine passive Wahrnehmung eingetragen. Ohne Wert: Cora.');
 });
