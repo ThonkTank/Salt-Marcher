@@ -26,6 +26,7 @@ type HealthDraft={revision:number;basis:string;values:Record<string,string>;conc
 const healthDrafts=new Map<string,HealthDraft>();
 const progressListeners=new Set<()=>void>();
 export function onProgressChanged(listener:()=>void){progressListeners.add(listener);}
+export function progressCharacters(){return view?.characters??[];}
 function publishProgress(){for(const listener of progressListeners)listener();}
 const healthKey=()=>workspace&&selected?workspace.campaign.id+':'+selected:null;
 export function progressionContext(next: Workspace | null, data: LiveView | null, characterId: string | null) {
@@ -43,7 +44,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
 export async function refreshProgress(deliverNotices=true) {
   if (!workspace) return;
   const gen = generation, request = ++loadNumber;
-  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result; const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
+  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result;publishProgress(); const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
   catch (error) { if (gen === generation) tell((error as Error).message, true); }
 }
 async function execute(action: ProgressAction): Promise<boolean> {
@@ -233,7 +234,7 @@ async function recoveredProgress(event:CommitResolution){
   const action=meta.action,key=workspace.campaign.id+':'+action.characterId,draft=healthDrafts.get(key),saved=(event.value as ProgressAck).characters.find(c=>c.characterId===action.characterId);
   if(draft&&draft.revision===meta.action.expectedRevision&&saved){if(JSON.stringify(draft)===JSON.stringify(meta.healthDraft))healthDrafts.delete(key);else draft.revision=saved.revision;}
  }
- await refreshProgress(false);publishProgress();
+ await refreshProgress(false);
 }
 export function initProgress(status: typeof tell) {
   tell=status;initCommitControls(()=>workspace,status);onCommitState(lock);onCommitResolved(recoveredProgress);
