@@ -12,6 +12,9 @@ export function parseDiceFormula(input:string):ParsedDiceFormula{
   return{count,sides,modifier,formula:count+'d'+sides+(modifier>0?' + '+modifier:modifier<0?' - '+Math.abs(modifier):'')};
 }
 
+export function formulaOutcome(kind:CreatureRollPreset['kind']|undefined,natural:number,total:number,dc:number|null){return dc===null?null:kind==='attack'&&natural===20?'success':kind==='attack'&&natural===1?'failure':total>=dc?'success':'failure';}
+export function criticalDamageFormula(input:string){const parsed=parseDiceFormula(input),count=parsed.count*2;if(count>100)throw new Error('Kritischer Schaden überschreitet 100 Würfel.');return count+'d'+parsed.sides+(parsed.modifier>0?' + '+parsed.modifier:parsed.modifier<0?' - '+Math.abs(parsed.modifier):'');}
+
 export function creatureActionRolls(action:CreatureAction):CreatureRollPreset[]{
   const found:CreatureRollPreset[]=[];
   const attack=/([+-]\s*\d+)\s+to hit/i.exec(action.description);

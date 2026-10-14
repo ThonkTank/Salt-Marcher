@@ -10,3 +10,7 @@ test("advantage and disadvantage results name the mode and the kept die",()=>{
 test("formula results identify the actor and show the actual dice and modifier",()=>{
  assert.equal(describeSceneCheck({rollKind:"formula",actor:"Guard",label:"Spear",formula:"2d6 + 3",rolls:[2,5],modifier:3,total:10,dc:null,outcome:null} as any),"Guard · Spear: 2d6 + 3 → 2 + 5 + 3 = 10");
 });
+
+test('attack formula results describe armor class as hit or miss',()=>{
+ assert.match(describeSceneCheck({rollKind:'formula',formulaKind:'attack',actor:'Oger',label:'Keule · Angriff',formula:'1d20 + 4',rolls:[16],modifier:4,total:20,dc:18,outcome:'success'} as any),/Treffer gegen RK 18/);
+});
