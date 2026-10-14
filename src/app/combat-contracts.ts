@@ -13,7 +13,7 @@ export interface Combatant {
 }
 export interface CombatState {
   id: string; sceneId: string; revision: number; title: string;
-  phase: 'preparing' | 'running' | 'finished'; round: number; turnId: string | null;
+  phase: 'preparing' | 'running' | 'finished' | 'retired'; round: number; turnId: string | null;
   sharedNotice?:string;
   participants: Combatant[]; notes: string; outcome: string; rewards?: CombatReward; sources?: Creature[]; sourceSerials?: Record<string,number>; assessment?: EncounterAssessment; partyBasis?: EncounterParty[]; generatorPreset?: {id:string;revision:number;hash:string;mobThreshold:number}; planOrigin?: { id: string; revision: number; name: string };
 }
@@ -43,8 +43,9 @@ export function combatOrder(combat: CombatState): Combatant[] {
   return combat.participants.map((p, index) => ({ p, index })).sort((a, b) => b.p.initiative - a.p.initiative || a.index - b.index).map(({ p }) => p);
 }
 export function checkedCombat(state: CombatState): CombatState {
-  if (!state || !state.id || !state.sceneId || !['preparing', 'running', 'finished'].includes(state.phase) || !Number.isSafeInteger(state.revision) || state.revision < 1 || !Number.isSafeInteger(state.round) || state.round < 0) throw new Error('Ungültiger Kampfstand.');
+  if (!state || !state.id || !state.sceneId || !['preparing', 'running', 'finished', 'retired'].includes(state.phase) || !Number.isSafeInteger(state.revision) || state.revision < 1 || !Number.isSafeInteger(state.round) || state.round < 0) throw new Error('Ungültiger Kampfstand.');
   if (typeof state.title !== 'string' || state.title.length > 1000 || typeof state.notes !== 'string' || state.notes.length > 2000000 || typeof state.outcome !== 'string' || state.outcome.length > 10000 || !Array.isArray(state.participants) || state.participants.length > 1000) throw new Error('Ungültige Kampfinhalte.');
+  if(state.phase==='retired'&&(!!state.outcome||state.rewards!==undefined))throw new Error('Archivierter Kampf darf kein abgeleitetes Ergebnis besitzen.');
   const ids = new Set<string>(), characterIds=new Set<string>(),initiatives = new Map<string, number>();
   for (const p of state.participants) {
     checkedCombatant(p);if(ids.has(p.id))throw new Error('Doppelter Initiativeeintrag.');ids.add(p.id);

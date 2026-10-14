@@ -34,6 +34,13 @@ test("party movement removes linked characters from every running chase and reco
   const after=JSON.parse(saved[5]),proof=JSON.parse(receipt[5]);assert.equal(after.revision,state.revision+1);assert.equal(after.participants.some((p:any)=>p.characterId==="character-1"),false);assert.deepEqual(proof.removedCharacterIds,["character-1"]);assert.equal(proof.commandId,"move-1");
 });
 
+test("retiring a scene archives its chase without inventing an outcome",()=>{
+  const state=running(),payload=JSON.stringify(state),row={campaign_id:"campaign-1",id:state.id,scene_id:state.sceneId,revision:state.revision,status:state.status,payload,checksum:createHash("sha256").update(payload).digest("hex")};let saved:any[]=[],receipt:any[]=[];
+  const db={prepare:(sql:string)=>sql.startsWith("SELECT")?{all:()=>[row]}:{run:(...values:any[])=>{if(sql.startsWith("INSERT INTO chase"))saved=values;else receipt=values;}}};
+  reconcileChaseParticipants(db,"campaign-1",[],"move-1",new Set(["scene-1"]));
+  const after=JSON.parse(saved[5]),proof=JSON.parse(receipt[5]);assert.equal(after.status,"retired");assert.equal(after.outcome,"");assert.deepEqual(after.participants,state.participants);assert.equal(proof.retired,true);assert.deepEqual(proof.removedCharacterIds,[]);assert.throws(()=>applyChaseAction(after,{kind:"finish",outcome:"Erfunden"}),/archivierten/);
+});
+
 test("unknown chase actions cannot masquerade as completion",()=>{
   const forged={kind:"complete",outcome:"Entkommen"} as unknown as Parameters<typeof applyChaseAction>[1];
   assert.throws(()=>applyChaseAction(running(),forged),/Unbekannte Verfolgungsaktion/);

@@ -12,6 +12,7 @@ import type {PreparedGroup} from './session-contracts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
+const editableCombat=(combat:CombatView['combat'])=>!!combat&&['preparing','running'].includes(combat.phase);
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
@@ -58,11 +59,11 @@ async function listDrafts(more=false){
   for(const problem of page.problems){const p=document.createElement('p');p.textContent='Entwurf nicht lesbar: '+problem.message;root.append(p);}draftCursor=page.next;get('combat-draft-more').hidden=!draftCursor;
  }catch(error){if(g===generation)tell((error as Error).message,true);}
 }
-function renderPartyCandidates(){const select=get<HTMLSelectElement>('combat-party-select'),previous=select.value,items=view?.partyCandidates??[];select.replaceChildren();for(const p of items){const option=document.createElement('option');option.value=p.characterId;option.textContent=p.name+' · '+(p.health?p.health.hp+'/'+p.health.maxHp+' HP':'HP offen');select.append(option);}select.value=items.some(p=>p.characterId===previous)?previous:items[0]?.characterId??'';if(select.value!==previous)get<HTMLInputElement>('combat-party-initiative').value='';get('combat-party-form').hidden=!view?.combat||view.combat.phase==='finished'||!items.length;}
+function renderPartyCandidates(){const select=get<HTMLSelectElement>('combat-party-select'),previous=select.value,items=view?.partyCandidates??[];select.replaceChildren();for(const p of items){const option=document.createElement('option');option.value=p.characterId;option.textContent=p.name+' · '+(p.health?p.health.hp+'/'+p.health.maxHp+' HP':'HP offen');select.append(option);}select.value=items.some(p=>p.characterId===previous)?previous:items[0]?.characterId??'';if(select.value!==previous)get<HTMLInputElement>('combat-party-initiative').value='';get('combat-party-form').hidden=!editableCombat(view?.combat??null)||!items.length;}
 async function refreshPartyCandidates(){
- if(pending){candidatePending=true;return;}if(!workspace||!scene||!view?.combat||view.combat.phase==='finished')return;
- const gen=generation,request=++candidateRequest,id=view.combat.id,token=workspace.token;candidateLoading=true;lock();
- try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==generation||request!==candidateRequest||view?.combat?.id!==id||pending||result.combat?.revision!==view.combat.revision)return;view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
+ if(pending){candidatePending=true;return;}const combat=view?.combat;if(!workspace||!scene||!editableCombat(combat??null)||!combat)return;
+ const gen=generation,request=++candidateRequest,id=combat.id,token=workspace.token;candidateLoading=true;lock();
+ try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==generation||request!==candidateRequest||view?.combat?.id!==id||pending||result.combat?.revision!==combat.revision)return;view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
  catch(error){if(gen===generation&&request===candidateRequest)tell('Party-Auswahl konnte nicht aktualisiert werden: '+(error as Error).message,true);}
  finally{if(gen===generation&&request===candidateRequest){candidateLoading=false;lock();}}
 }
@@ -121,7 +122,7 @@ export async function prepareCombatPlan(plan: EncounterPlan) {
 }
 export async function addCatalogCreature(creatureId:string,count:number,grouped:boolean) {
   const owner=preparationOwner();if(!owner||!await load()||!owner.current())return;
-  if (!view?.combat || view.combat.phase==='finished') {
+  if (!editableCombat(view?.combat??null)) {
     if(!await execute({kind:'create',sceneId:owner.sceneId,title:'Neue Begegnung',includeParty:true,expectedMembershipRevision:owner.revision})||!owner.current())return;
   }
   if(await execute({kind:'add-creature',creatureId,count,grouped})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
@@ -144,20 +145,20 @@ function render() {
   get('combat-workspace').hidden = !combat;
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
   get('combat-assessment').textContent = view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '';
-  get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : 'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
+  get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
-  for (const item of view?.recent ?? []) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
+  for (const item of view?.recent ?? []) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'retired'?' · archiviert':item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
   history.value = combat?.id ?? ''; history.hidden = (view?.recent.length ?? 0) < 2;
-  const finished = combat?.phase === 'finished';
-  get('combat-controls').hidden = !combat || !!finished;
+  const terminal=!!combat&&!editableCombat(combat);
+  get('combat-controls').hidden = !combat || terminal;
   get('combat-start').hidden = combat?.phase !== 'preparing';
   get('combat-next').hidden = combat?.phase !== 'running';
-  get('combat-finish').hidden = !combat || !!finished;
+  get('combat-finish').hidden = !combat || terminal;
   get('combat-finish').textContent = combat?.phase === 'preparing' ? 'Vorbereitung beenden…' : 'Kampf abschließen…';
-  get('combat-add-details').hidden = !combat || !!finished;
-  get('combat-notes-details').hidden = !combat || !!finished;
+  get('combat-add-details').hidden = !combat || terminal;
+  get('combat-notes-details').hidden = !combat || terminal;
   renderNotes();
-  get('combat-final-notes').hidden = !finished; get('combat-final-notes').textContent = combat?.notes ?? '';
+  get('combat-final-notes').hidden = !terminal; get('combat-final-notes').textContent = combat?.notes ?? '';
   const body = get('combat-rows'); body.replaceChildren();
   for (const p of combat ? combatOrder(combat) : []) {
     const tr = document.createElement('tr'); tr.dataset.participantId = p.id;
@@ -176,7 +177,7 @@ function renderSelection() { for (const row of get('combat-rows').querySelectorA
 function renderEditor() {
   const p = view?.combat?.participants.find(p => p.id === selected),key=fighterKey(),draft=key?fighterDrafts.get(key):undefined;
   get('fighter-draft-status').textContent=draft?(JSON.stringify(draft.basis)===JSON.stringify(p)?'Eingabe offen – mit „Werte übernehmen“ bestätigen.':'Gespeicherte Werte wurden geändert. Eingabe bleibt offen; zuerst den aktuellen Stand laden.') : '';
-  get('combat-participant').hidden = !p || view?.combat?.phase === 'finished';
+  get('combat-participant').hidden = !p || !editableCombat(view?.combat??null);
   get('combat-selected-name').textContent = p?.name ?? '';
   get('fighter-health-hint').hidden = p?.healthKnown !== false;
   for (const id of ['fighter-damage','fighter-heal']) get<HTMLButtonElement>(id).disabled = blocked() || p?.healthKnown === false;
