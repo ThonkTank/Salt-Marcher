@@ -1,3 +1,4 @@
+import {sessionPacketMarkdown} from '../src/app/session-packet-contracts';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../src/app/npc-contracts';
 import {audioResponse} from './audio-response';
 import {extensionPackageLimit} from '../src/app/storage/extensions';
@@ -108,6 +109,8 @@ else {
     handle('campaign:room-draft', (token: string, roomId: string) => store.roomDraft(token, roomId));
     handle('campaign:keep-room-draft', (token: string, roomId: string, draft: WorkingRoomDraft | null) => store.keepRoomDraft(token, roomId, draft));
     handle('campaign:preparation', (token: string, search: string) => store.preparation(token, search));
+    handle('campaign:session-packet',(token:string,id:string)=>store.sessionPacket(token,id));
+    handle('campaign:session-packet-export',async(token:string,id:string,basis:string)=>{const packet=store.sessionPacket(token,id);if(packet.basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');const safe=(packet.planName||'Spielabend').replace(/[\\/:*?"<>|]+/g,'-'),pick=await dialog.showSaveDialog(win,{title:'GM-Spielabendmappe speichern',defaultPath:safe+' – GM-Mappe.md',filters:[{name:'Markdown',extensions:['md']}]});if(pick.canceled||!pick.filePath)return{cancelled:true};if(store.sessionPacket(token,id).basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');await writeFile(pick.filePath,sessionPacketMarkdown(packet));return{cancelled:false};});
     handle('campaign:session', (token: string,id: string)=>store.session(token,id));
     handle('campaign:execute-session', (command: SessionCommand)=>store.executeSession(command));
     handle('campaign:generate-session', (token: string,request: SessionGenerationRequest)=>store.generateSession(token,request));

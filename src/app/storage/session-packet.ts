@@ -1,0 +1,53 @@
+import {createHash} from 'node:crypto';
+import {readPlan,readSession} from './session';
+import {checkedLocationDocument} from '../../features/location/location-schema';
+import {worldNoteDocument} from '../../features/world/world-notes';
+import {SRD_5_1_NOTICE} from '../../features/catalog/creature-catalog';
+import {assessEncounter,encounterEntryLabel} from '../encounter-contracts';
+import type {SessionPacket,SessionPacketBlock} from '../session-packet-contracts';
+const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
+function payload(row:any){if(hash(row.payload)!==row.checksum)throw new Error('Eine Mappenquelle ist beschädigt.');return JSON.parse(row.payload);}
+export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket{return db.transaction(()=>{
+ const plan=readPlan(db,cam,planId),session=readSession(db,cam,planId,false),warnings:string[]=[];
+ const cache=new Map<string,SessionPacketBlock[]>(),locations=new Map<string,string>();
+ const note=(id:string):SessionPacketBlock[]=>{
+  const key='note:'+id;if(cache.has(key))return cache.get(key)!;
+  const row=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);
+  if(!row||row.trashed){warnings.push('Weltverweis '+id+' fehlt oder liegt im Papierkorb.');cache.set(key,[]);return [];}
+  const n=worldNoteDocument(payload(row)),blocks:SessionPacketBlock[]=[{heading:n.title+' · '+n.kind,text:n.gmNotes,kind:'reference'}];
+  if(n.readAloud.trim())blocks.unshift({heading:n.title+' · Zum Vorlesen',text:n.readAloud,kind:'read-aloud'});
+  if(n.relations.length)blocks.push({heading:n.title+' · Beziehungen',text:n.relations.map(r=>{const target=db.prepare('SELECT payload,checksum,trashed FROM world_note WHERE campaign_id=? AND id=?').get(cam,r.targetId);return r.label+' → '+(target&&!target.trashed?worldNoteDocument(payload(target)).title:r.targetId);}).join('\n'),kind:'reference'});
+  cache.set(key,blocks);return blocks;
+ };
+ const location=(id:string):SessionPacketBlock[]=>{
+  const key='location:'+id;if(cache.has(key))return cache.get(key)!;
+  const row=db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(cam,id);
+  if(!row||row.trashed){warnings.push('Ort '+id+' fehlt oder liegt im Papierkorb.');cache.set(key,[]);return [];}
+  const l=checkedLocationDocument(payload(row));locations.set(id,l.name);
+  const blocks=l.sections.map(s=>({heading:l.name+' · '+s.title,text:s.markdown,kind:'reference' as const}));cache.set(key,blocks);return blocks;
+ };
+ const visits=plan.scenes.map((v,index)=>{
+  const detail=session.visits[index]!,blocks:SessionPacketBlock[]=[];
+  if(detail.readAloud.trim())blocks.push({heading:'Zum Vorlesen',text:detail.readAloud,kind:'read-aloud'});
+  if(v.notes.trim())blocks.push({heading:'GM-Notizen',text:v.notes,kind:'gm'});
+  if(v.locationId)blocks.push(...location(v.locationId));
+  const noteIds=new Set(detail.noteIds);
+  for(const id of detail.groupIds){
+   const g=session.groups.find(g=>g.id===id);if(!g){warnings.push('Begegnung '+id+' fehlt.');continue;}
+   const assessment=assessEncounter(session.profile.party,g.plan.entries.map(e=>({xp:g.plan.sources.find(c=>c.id===e.creatureId)?.xp,count:e.count})));
+   const text=[g.notes, 'Status: '+(g.locationId?'am Ort platziert':'vorbereitet, noch nicht platziert'), 'XP '+assessment.baseXp+' · gewichtet '+assessment.adjustedXp+' · '+(assessment.difficulty??'keine bewertbare Planungsparty'),...g.plan.entries.map(e=>encounterEntryLabel(e,g.plan.sources)),...g.actors.map(a=>a.name+': HP '+a.hp+'/'+a.maxHp+(a.tempHp?' + '+a.tempHp+' temporär':'')+(a.conditions?' · '+a.conditions:'')+(a.defeated?' · besiegt':'')+(a.unavailable?' · nicht verfügbar':''))].filter(Boolean).join('\n');
+   blocks.push({heading:'Begegnung: '+g.title,text,kind:'encounter'});
+   for(const a of g.actors)noteIds.add(a.id);
+   for(const c of g.plan.sources){
+    if(!g.plan.entries.some(e=>e.creatureId===c.id))continue;
+    const text=[`${c.size} ${c.type} · HG ${c.challengeRating} · ${c.xp} XP`, `RK ${c.ac} · HP ${c.hp} (${c.hitDice}) · Tempo ${c.speed}`,Object.entries(c.abilities).map(([k,v])=>k.toUpperCase()+' '+v).join(' · '),...[[ 'Rettungswürfe',c.savingThrows],['Fertigkeiten',c.skills],['Sinne',c.senses],['Sprachen',c.languages],['Empfindlichkeiten',c.damageVulnerabilities],['Resistenzen',c.damageResistances],['Immunitäten',c.damageImmunities],['Zustandsimmunitäten',c.conditionImmunities]].filter(([,v])=>v).map(([k,v])=>k+': '+v),...c.traits.map(a=>'Merkmal: '+a.name+'\n'+a.description),...c.actions.map(a=>'Aktion: '+a.name+'\n'+a.description),...c.legendaryActions.map(a=>'Legendäre Aktion: '+a.name+'\n'+a.description),c.details,'Quelle: '+c.sourceLabel+' · '+c.sourceVersion+'\n'+SRD_5_1_NOTICE].filter(Boolean).join('\n\n');
+    blocks.push({heading:'Statblock: '+c.name,text,kind:'encounter'});
+   }
+  }
+  for(const id of noteIds)blocks.push(...note(id));
+  const r=detail.reward;if(r)blocks.push({heading:'Belohnung',kind:'reward',text:[r.poolXp+' Gruppen-XP',r.awarded?'XP bereits vergeben':'XP noch nicht vergeben',r.placedTreasureId?'Beute bereits platziert':'Beute noch nicht platziert',...r.items.map(i=>`${i.quantity} × ${i.name} · ${i.valueGold} GM je Stück · ${i.category}`)].join('\n')});
+  return {id:v.id,title:v.title||'Besuch '+(index+1),location:v.locationId?locations.get(v.locationId)??'Nicht verfügbarer Ort':null,blocks};
+ });
+ const p={planId:plan.id,planName:plan.name,planRevision:plan.revision,campaignName:db.prepare('SELECT name FROM campaign WHERE id=?').get(cam).name,party:session.profile.party.map(p=>p.count+' × '+(p.name||'Figur')+' · Stufe '+(p.level??'?')),visits,warnings};
+ return {...p,basis:hash(JSON.stringify(p))};
+})();}

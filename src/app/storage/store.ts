@@ -1,3 +1,4 @@
+import {readSessionPacket} from './session-packet';
 import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
@@ -537,6 +538,7 @@ export class CampaignStore {
   npc(token:string,id:string){return readNpc(this.db,this.guard(token),id);}
   executeNpc(c:NpcCommand){return executeNpc(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   generationSources(token:string){return readWorldSources(this.db,this.guard(token));}
+  sessionPacket(token:string,planId:string){return readSessionPacket(this.db,this.guard(token),planId);}
   session(token: string,planId: string) { return readSession(this.db,this.guard(token),planId); }
   executeSession(command: SessionCommand) { return executeSession(this.db,command,()=>{this.guard(command.token,command.campaignId);},(plan,expectedRevision)=>{this.changePreparation({commandId:command.commandId+'|timeline',campaignId:command.campaignId,token:command.token,change:{kind:'plan',plan,expectedRevision}});}); }
   generateSession(token: string,request: SessionGenerationRequest) { return generateSession(this.db,this.guard(token),request); }

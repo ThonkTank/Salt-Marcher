@@ -660,3 +660,21 @@ Routenvorschau und Ziele. Änderungen an Uhr, Position oder Mitgliedern verwerfe
 veraltete Vorschau. Einklappen und Wechsel zwischen Atlas und Spieltisch erhalten den
 Routenentwurf derselben Gruppe und Karte. Angenommene Reisen bleiben nach Neustart
 verfügbar; offene Routeneingaben sind weiterhin lokale Entwürfe.
+
+
+### Desktopstand 0.55: Eine vollständige Spielabendmappe
+
+„Spielabendmappe öffnen“ fasst den gewählten Plan in seiner Besuchsreihenfolge
+zusammen. Jeder Besuch enthält getrennten Vorlesetext und GM-Notizen, die Abschnitte
+seines Ortes, gebundene Weltverweise und NPC-Notizen sowie vorbereitete Begegnungen
+mit Besetzung, aktuellem NPC-Zustand, Bewertung und gespeicherten Statblocks.
+Belohnungen zeigen XP, Gegenstände und ihren Vergabe-/Platzierungsstand.
+Die Planungsparty bleibt von der laufenden Party getrennt. Fehlende oder archivierte
+Verweise werden als Lücken genannt.
+
+Die Suche findet Inhalte aller Besuche; die Ansicht rendert jeweils den ausgewählten
+Besuch. Offene Plan-/Besuchs-/Gruppeneingaben werden vor dem Lesen gespeichert.
+„Aktualisieren“ holt die aktuellen Quellen. Die Markdownausgabe enthält denselben
+Quellenstand einschließlich Quellenangaben der Statblocks; zwischenzeitliche Änderungen
+erfordern eine Aktualisierung. Vorlesetexte und Autorenprosa behalten ihre Leerzeichen
+und Zeilenumbrüche. Die Mappe enthält GM-Inhalte und ist keine Spielerfreigabe.
