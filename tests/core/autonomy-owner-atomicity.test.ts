@@ -19,14 +19,13 @@ function fixture(kind:Kind){
  store.changePreparation({commandId:'location',campaignId:campaign.id,token,change:{kind:'location',expectedRevision:null,document:location}});
  const sourceId=campaignLocalId('00000000-0000-4000-8000-000000000301'),targetId=campaignLocalId('00000000-0000-4000-8000-000000000302');
  for(const [id,name] of [[sourceId,'Wache'],[targetId,'Rivale']] as const){
-  store.changePreparation({commandId:'note-'+id,campaignId:campaign.id,token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title:name,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});
-  const world={id,name,creatureId:null,revision:1,hp:10,maxHp:10,tempHp:0,conditions:'',concentrating:false,unavailable:false,entryId:'test'};const payload=JSON.stringify(world);db.prepare('INSERT INTO world_actor VALUES(?,?,1,?,?)').run(campaign.id,id,payload,checksum(payload));
+  store.executeNpc({commandId:'npc-'+id,campaignId:campaign.id,token,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name,creatureId:'guard',readAloud:'',gmNotes:'',locationId:'place',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},health:{hp:10,maxHp:10,tempHp:0,conditions:'',concentrating:false}}});
   const actor:AutonomyActor={id,revision:0,enabled:true,paused:false,role:'',needs:standardNeeds(),jobPriorities:{},assignedJobId:null,allowConflict:true,defense:10,attackBonus:id===sourceId?100:0,maxHpLossPercent:25,cursor:0,offsetSeconds:0,jobId:null,progressSeconds:0,pending:null};
   store.executeAutonomy({commandId:'actor-'+id,campaignId:campaign.id,token,action:{kind:'actor',actor,expectedRevision:null,initialLocationId:'place'}});
  }
  const sourcePose={scopeId:'local',floorId:'ground',roomId:'room',x:1,y:1,z:0},targetPose={...sourcePose,x:7,y:7};
- store.executeDungeon({commandId:'place-source',campaignId:campaign.id,token,action:{kind:'npc-place',actorId:sourceId,expectedRevision:1,pose:sourcePose}});
- store.executeDungeon({commandId:'place-target',campaignId:campaign.id,token,action:{kind:'npc-place',actorId:targetId,expectedRevision:1,pose:targetPose}});
+ store.executeDungeon({commandId:'place-source',campaignId:campaign.id,token,action:{kind:'npc-place',actorId:sourceId,expectedRevision:store.npc(token,sourceId).positionRevision,pose:sourcePose}});
+ store.executeDungeon({commandId:'place-target',campaignId:campaign.id,token,action:{kind:'npc-place',actorId:targetId,expectedRevision:store.npc(token,targetId).positionRevision,pose:targetPose}});
  let featureId:string|null=null;
  if(kind==='reset'){
   featureId='trap';const element:DrawingElement={id:featureId,revision:0,scopeId:'local',floorId:'ground',roomId:'room',kind:'feature',points:[{x:5,y:5}],name:'Fallgrube',notes:'',secret:true,color:'#000000',width:1,height:1,angle:0,variant:'',blocksSight:false,blocksSound:false,passable:true,state:'open',targetRoomId:null,targetFloorId:null,anchor:null,feature:'trap',maxCharges:1,resetSeconds:0,resetMode:'empty',triggerRadius:0,triggerHeight:0,assetId:null,archived:false};

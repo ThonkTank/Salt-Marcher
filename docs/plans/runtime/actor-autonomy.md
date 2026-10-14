@@ -103,5 +103,3 @@ Ziel und Positionsoverride gegen beide Buchungstabellen bleiben zu prüfen.
    Hintergrundlaufzeit einführen.
 2. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
    laufenden Catch-ups prüfen.
-3. Die Autonomy-Fachseite anschließend gegen Produktumfang und Roadmap
-   rückverlinken und verbleibende Abnahmelücken dort eindeutig zuordnen.
