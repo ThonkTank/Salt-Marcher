@@ -777,3 +777,9 @@ Der Zeitdialog (0.72) verbindet Warten nach Dauer, Fantasy-Datum, Kalenderereign
 Der Leitungsstand liest für jede Gruppe zusätzlich den bestätigten Kampagnentag, den aktuellen Ort, Wetter und laufende Reise. Offene Weltentscheidungen sowie die nächsten drei ortsgebundenen Kalenderereignisse der kommenden zwei Tage stehen direkt bei der betroffenen Gruppe. Damit sind getrennte Gruppen mit unterschiedlicher Zeit und Position vor dem Start vergleichbar.
 
 Reisekarte und Agenda öffnen aus derselben Gruppenkarte. Vorher wird die gewählte Gruppe über den bestehenden Fokusbesitzer aktiviert; Reise, Zeit, Wetter und Kalender bleiben unverändert, bis der GM in ihrem jeweiligen Arbeitsbereich ausdrücklich bestätigt. Der Spielabend beginnt weiterhin ausschließlich über „Spielabend hier beginnen“.
+
+### Desktopstand 0.73: Lagerpause und Restreise
+
+Die Reisevorschau zeigt einen Kalenderfahrplan mit Gelände, Wetter, benannten Stationen und GM-Halten für die ersten 40 Abschnitte sowie bis zu zwölf Ereignisse an Reiseorten. Die Gesamtroute bleibt vollständig. Pausieren / warten öffnet am Spieltisch den Zeitdialog, Pausieren / rasten die vorhandene Party-Rast; beide nutzen ihre bestehenden Schreiber und bewegen die Gruppe nicht.
+
+Nach einer Pause oder veränderter Uhr, Gruppe, Karte, Kalender oder Wetter lässt sich der Restweg neu bewerten. Bereits zurückgelegte Abschnitte werden nicht erneut gereist; die verbleibende Hexfolge und das Ziel werden erhalten und am aktuellen Stand neu berechnet. Erst die ausdrückliche Annahme ersetzt die alte Reise, mit gespeichertem Bezug zur Vorgängerreise. Frühere Enddauer-Overrides werden nicht automatisch auf den Restweg übertragen. Eine außerhalb der Route versetzte Gruppe oder ein verschobenes Ziel benötigt eine neue Route. Die Vorschau enthält keine automatisch eingeplanten Rast- oder Begegnungswirkungen.

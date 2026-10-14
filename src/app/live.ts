@@ -1,3 +1,4 @@
+import {openPartyRest} from './party-topbar-ui';
 import {TimeNavigator} from './time-plan-ui';
 import type {TimePreview} from './time-plan-contracts';
 import type {FantasyCalendar} from './world-contracts';
@@ -590,6 +591,7 @@ function livePacketSource():LivePacketSource|null{
 function syncLivePacketContext(){syncLiveSessionPacket(livePacketSource());}
 async function openLivePacket(){const source=livePacketSource();if(!source){tell('Wähle einen Spielabendplan für die laufende Gruppe.',true);return;}await openLiveSessionPacket(source);}
 
-export async function openTimeNavigator(target?:{eventId:string;expectedRevision:number;phase:'start'|'end';sceneId:string;title?:string}){if(!await ensureLiveRuntime())return;await timeNavigator.open(target);}
+export async function openTimeNavigator(target?:{eventId:string;expectedRevision:number;phase:'start'|'end';sceneId:string;title?:string},expectedSceneId?:string){if(!await ensureLiveRuntime())return;if(expectedSceneId&&data?.scene?.id!==expectedSceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await timeNavigator.open(target);}
+export async function openTravelRest(sceneId:string){if(!await ensureLiveRuntime()||!await flushLive())return;if(data?.scene?.id!==sceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await openPartyRest(sceneId);}
 
 async function recoverTimeWrite(){const command=failed,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failed!==command)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failed=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}
