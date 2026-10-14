@@ -1,0 +1,17 @@
+{
+  "kind": "qa_infrastructure_start",
+  "tested_product_commit": "263ff0af32aacbe1d00a31a8cdd309aa451f754f",
+  "product_version": "0.63.0",
+  "separate_management_and_detached_pilot_copy": true,
+  "desktop_build_exit": 0,
+  "built_file_count": 13,
+  "offline_qa_tests": {
+    "passed": 86,
+    "failed": 0,
+    "product_ui_evidence": false
+  },
+  "cloud_native_desktop_pilot": "blocked",
+  "local_recorder_pilot": "in_progress",
+  "scored_product_runs": 0,
+  "claim": "No product usability, parity or human-load claim. Runtime trial state and private contracts remain outside the public repository."
+}
