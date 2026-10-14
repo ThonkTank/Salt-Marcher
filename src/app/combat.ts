@@ -102,6 +102,7 @@ async function load(id?: string):Promise<boolean> {
 async function execute(action: CombatAction, expectedRevision?:number): Promise<boolean> {
   if (!workspace || !scene || blocked()) return false;
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='notes'?notesDraft():editDraft;
+  const priorDamageDeath=action.kind==='damage'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
   const gen = generation;
   const command: CombatCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token,
     combatId: action.kind === 'create' ? null : view?.combat?.id ?? null,
@@ -114,8 +115,8 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
       if (generation !== gen) return false;
       acceptCombat(result); applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
       if(['create','edit','damage','heal','death','death-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
-      const death=action.kind==='death'||action.kind==='death-roll'?result.combat?.participants.find(p=>p.id===action.participantId)?.deathLast:undefined;
-      tell(death?(death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':'Kampf gespeichert.'); return true;
+      const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
+      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':'Kampf gespeichert.'); return true;
     } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
     finally { pending = null; if (generation === gen) { if (applied) render(); else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
   })();
