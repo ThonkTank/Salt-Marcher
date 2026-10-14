@@ -46,4 +46,3 @@ export async function refreshRuleReferences(nextSceneId:string|null){
  catch(error){if(current()){message(el('live-rule-pins'),(error as Error).message,true);tell((error as Error).message,true);}}
  finally{if(current())busy(!!pending);}
 }
-
