@@ -20,9 +20,13 @@ auch bei verspätetem Shown. `tutorial.ts.initTutorial` bindet Hilfe und Dismiss
 vor der Statusquery, öffnet den Modal, fokussiert die Überschrift und gibt Fokus
 an den Opener zurück. Ein verzögerter oder fehlgeschlagener Statuswrite hält
 Dismiss nicht auf. Die Rendererinitialisierung wartet nicht auf Tutorialreads.
-Eine veränderte Lessonrevision ist keine neue Appversion; sie überschreibt
-keine alten Runs und löst keine zusätzliche automatische Runde derselben
-Appversion aus. Die aktuell angebotene Hilfe liest die aktuellen Lektionen.
+Die integrierte Tutorialabdeckung beginnt bei einer veränderten Lessonrevision
+nun einen neuen optionalen Lauf auch innerhalb derselben Appversion. Davor wird
+der ursprüngliche Record unter seiner Run-ID unverändert archiviert; frühere
+Finished-/Skipped-Entscheidungen bleiben am alten Lauf erhalten. Die neue
+Lektion setzt keinen alten Lauf zurück. Hilfe liest die aktuellen Lektionen.
+Die Abdeckungszuordnung und noch fehlende native Qualifikation stehen im
+[SMR-11-Fachplan](../quality/smr11-tutorial-coverage.md).
 
 ## Geschlossene Tastatur- und Inhaltslücken
 
@@ -54,7 +58,7 @@ Widerruf, schreibfreier Outcomeprüfung und gesicherter Wiederaufnahme-Reparatur
 auffindbar. Sie benennt den noch fehlenden zusätzlichen Inhaltseditor. Die
 Journallektion ergänzt den Zugang zu Quests/Gerüchten mit demselben bestehenden
 Status-/Belohnungseditor; sie führt keinen weiteren Rewardwriter ein. Die
-Lessonrevision ist `desktop-tutorial-quick-reference-narrative-journal-session-review-live-packet-workspace-shortcuts-v38`.
+Lessonrevision ist `desktop-tutorial-capability-coverage-quick-reference-narrative-journal-session-review-live-packet-workspace-shortcuts-v39`.
 
 ## Aussagekräftige lokale Belege
 
