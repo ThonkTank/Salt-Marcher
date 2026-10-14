@@ -1,5 +1,6 @@
 import type {GraphContentCounts} from './graph-contracts';
 export const budgetRarities=['Common','Uncommon','Rare','Very Rare','Legendary'] as const;
+export function budgetRarity(value:string):BudgetRarity|null{const plain=value.toLowerCase().replace(/[\s_-]/g,'');return budgetRarities.find(r=>r.toLowerCase().replaceAll(' ','')===plain)??({gewöhnlich:'Common',ungewöhnlich:'Uncommon',selten:'Rare',sehrselten:'Very Rare',legendär:'Legendary'} as Record<string,BudgetRarity>)[plain]??null;}
 export type BudgetRarity=typeof budgetRarities[number];
 export interface DungeonBudgetSetting {ownerId:string;level:number|null;sessions:number|null;partySize:number|null;dayFraction:string|null;rewardXpPerSession:number|null;mutedWarnings:boolean}
 export interface DungeonContent {reference:{kind:'encounter'|'group'|'treasure';id:string}|null;sourceReference?:{kind:'encounter'|'group'|'treasure';id:string}|null;search?:{method:string;dc:number|null;notes:string;revealedText:string};publicText:string;categories:string[];tags:string[];trapXp:number|null;anchor:{volumeId:string;x:number;y:number;z:number}}
