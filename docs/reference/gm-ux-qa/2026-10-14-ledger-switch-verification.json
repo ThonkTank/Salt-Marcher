@@ -23,5 +23,15 @@
     "src/app/index.html": "d83ef34017455b65b52e41fb9aa6070c050a9aea05ec743f5d332970611dd119",
     "tests/desktop-ledger-switch.test.mjs": "fd4e8baa8a27665ea72606a7a4177129c4120cff26fc211f255d62ba8c0d2e55",
     "tests/desktop-rule-context.test.mjs": "bc593a20d4d07a9e6d4e7a663ac724f7abef5f159728535f03debbc3f40b7056"
+  },
+  "lateIntegration": {
+    "sourceCommit": "0b085809b587bd4fd1ebf6e4dc8a579294948122",
+    "remoteCommit": "dc08abff4a68b785e0e41c2011200c8ab1783ab7",
+    "change": "Preserve music selection when scene environment is unavailable",
+    "tests": 13,
+    "commands": "import {build} from 'esbuild';import {spawnSync} from 'node:child_process';\nawait build({entryPoints:['tests/core/music-scene-context.test.ts'],outfile:'.build/ledger-late-music.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});\nfor(const args of [['--test','--test-concurrency=1','.build/ledger-late-music.cjs','tests/desktop-music-stop.test.mjs','tests/desktop-audio-response.test.mjs'],['node_modules/typescript/lib/tsc.js','--noEmit','-p','desktop/tsconfig.json'],['tools/build-desktop.mjs'],['tools/test-desktop-music-stop.mjs']]){const r=spawnSync(process.execPath,args,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1);}\n",
+    "resourceJournal": "Oct 14 06:53:46 bastelstation systemd[1306]: Started codex-dungeon-qa-f757b424a349441ab9ec2fc8eb65efca.service - [systemd-run] /home/aaron/.nvm/versions/node/v22.22.0/bin/node .qa-regression/check-ledger-late-sync.mjs.\nOct 14 06:54:15 bastelstation systemd[1306]: codex-dungeon-qa-f757b424a349441ab9ec2fc8eb65efca.service: Consumed 32.762s CPU time over 28.313s wall clock time, 606.5M memory peak.\n",
+    "nativeAudioEvidenceScope": "Decoded digital media and UI, no physical hearing claim",
+    "status": "passed"
   }
 }

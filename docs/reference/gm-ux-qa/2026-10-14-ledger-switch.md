@@ -49,5 +49,12 @@ Abnahme des neuen Rettungswurf-Workflows.
 [Lesefehler mit Wiederholen](2026-10-14-ledger-switch-retry.png),
 [Ein-Stück-Stapel](2026-10-14-ledger-switch-one-unit.png).
 
+Später Remote-Nachtrag: dc08abff (Musikauswahl bei unlesbarem Umfeld behalten)
+integriert. Weitere 13 Regressionen, Typprüfung, Build und nativer Musikablauf
+grün ([Nachtragslog](2026-10-14-ledger-switch-late-sync.log)); zusammen 64 Tests.
+Musikbeleg gilt für UI und dekodierte digitale Medien, nicht physische Hörabnahme.
+Alle eigenen schweren Jobs liefen einzeln mit Launcher; höchster dokumentierter
+Spitzenverbrauch dieser Runde: 877,4 MiB.
+
 Offen: vollständige Produkt-/Kombinationsabdeckung und reale Konkurrenzparität;
 dieser begrenzte Befund ersetzt keine Gesamtproduktabnahme.
