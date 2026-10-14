@@ -20,6 +20,6 @@ test('the follow display projects a reduced live chase and keeps hidden particip
   assert.equal(player.frame.mode,'chase');assert.equal(player.frame.title,'Flucht durch den Markt');assert.deepEqual(player.frame.chase?.participants.map(p=>p.name),['Ada']);assert.doesNotMatch(JSON.stringify(player.frame),/Geheimes Ziel|Privater Plan|Geheime Verstärkung/);
   chase=store.executeChase({commandId:'reveal',campaignId:campaign.id,token,sceneId:scene.id,chaseId:chase.id,expectedRevision:chase.revision,action:{kind:'visibility',participantId:'guard',hidden:false}}).chase!;
   chase=store.executeChase({commandId:'round',campaignId:campaign.id,token,sceneId:scene.id,chaseId:chase.id,expectedRevision:chase.revision,action:{kind:'round',changes:[{participantId:'ada',distance:27,exhaustion:0},{participantId:'guard',distance:15,exhaustion:1}],complication:'Verdeckte Abkürzung'}}).chase!;
-  player=store.playerView(token);assert.equal(player.frame.chase?.round,1);assert.deepEqual(player.frame.chase?.participants.map(p=>[p.name,p.distance,p.exhaustion]),[['Ada',27,0],['Stadtwache',15,1]]);assert.doesNotMatch(JSON.stringify(player.frame),/Verdeckte Abkürzung/);
+  player=store.playerView(token);assert.equal(player.frame.chase?.round,1);assert.deepEqual(player.frame.chase?.participants.map((p:{name:string;distance:number;exhaustion:number})=>[p.name,p.distance,p.exhaustion]),[['Ada',27,0],['Stadtwache',15,1]]);assert.doesNotMatch(JSON.stringify(player.frame),/Verdeckte Abkürzung/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
