@@ -334,7 +334,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       const before=currentScene(db,campaignId,action.sceneId);if(before.revision!==action.expectedRevision)throw new Error('Sceneinhalt wurde inzwischen geändert.');
       targetId=before.id;revision=before.revision;scene=before;
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1 ORDER BY ordinal,id').all(campaignId,targetId).map((row:any)=>row.id);
-      recordPartyHistory(db,campaignId,targetId,action.title.trim(),{kind:'live-moment',category:action.category,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs});
+      recordPartyHistory(db,campaignId,targetId,action.title.trim(),{kind:'live-moment',category:action.category,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs,followUpKind:action.followUp?.kind??null,followUpId:action.followUp?.id??null});
     } else if (action.kind === 'advance-clock') {
       const before = currentScene(db, campaignId, action.sceneId);
       if (before.clock.revision !== action.expectedRevision || action.calendarVersion !== 'relative-v1') throw new Error('Scenezeit oder Kalenderinterpretation wurde inzwischen geändert.');

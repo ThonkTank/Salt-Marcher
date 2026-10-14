@@ -52,7 +52,7 @@ let importPreview: ImportPreview | null = null;
 let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
 const status = (text: string, error = false) => { el('status').textContent = text; el('status').dataset.error = String(error); };
 initExtensions(status);
-initChronicle(status);
+initChronicle(status,async(id,token)=>{if(!(await leaveWorkspace())||workspace?.token!==token)return;showTab('preparation');await openPreparedNote(id);});
 initPreparation(status, async scopeId => {
   if (!workspace || !(await leaveWorkspace())) return;
   const room = workspace.rooms.find(room => room.scopeId === scopeId);

@@ -36,8 +36,19 @@ Eine ausführbare Invariante bindet die primären Arbeitsbereiche und die ausgew
 
 Weitere Lektionen trennen unter anderem Autosave/Recovery, Beziehungen, manuelle Planung, Partygruppen, Scene-Zeit, Chase, Kalender, Wetter, Travel-Checkpoints, Autonomy und Music-Transport. Lektionstexte beschreiben nur heute vorhandene Bedienwirkung und benennen wichtige Grenzen wie Vorschau vor Übernahme, ausdrückliche Bestätigung und fehlende Extensionausführung.
 
+Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt nur ihre Hauptfläche:
+
+| Capabilitygruppe | Geprüfte Einstiege | Lektion |
+| --- | --- | --- |
+| Sessiongenerierung | Planungsprofil, bindende Generierung, gespeicherte Vorschauen | Spielabendvorschläge mit bindenden Vorgaben erzeugen |
+| Kampf und Rewards | Kampfabschluss, vorbereitete Rewardvergabe, Rewardpanel | Kampf, XP und Beute gemeinsam abschließen |
+| Live-Momente | gruppengebundener Moment mit optionaler Quest-/Gerüchtspur | Momente festhalten und Kampagnenfolgen nachlesen |
+| Live-Regeln | dynamisches Regelpanel und d20-Probenformular | Regelreferenzen und Proben bei der Gruppe halten |
+| Erweiterter Dungeon | 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
+
 ## Verbleibende Abnahme
 
-Diese Mindestinvariante beweist noch nicht, dass jede einzelne Unterfähigkeit fachlich verständlich erklärt wird. Dynamisch erzeugte Kopfzeilencontrols wie Questjournal und Schnellsuche sind durch diese HTML-Invariante noch nicht erfasst; ihre vorhandenen Lektionen und ihre tatsächliche Erzeugung müssen zusätzlich gemeinsam geprüft werden. Als nächster Schritt ist ein Inventar der tatsächlich sichtbaren Capability-Gruppen pro Arbeitsbereich nötig; jede Gruppe wird einer konkreten Lektion oder einer begründeten gemeinsamen Lektion zugeordnet. Neue Hauptoberflächen dürfen die Invariante nicht ohne Lektion passieren.
+Die Hauptflächen- und erste Unterfähigkeitsinvariante beweisen noch nicht, dass jede einzelne Capability fachlich verständlich erklärt wird. Das Inventar wird arbeitsbereichsweise fortgeführt; jede weitere Gruppe wird einer konkreten Lektion oder einer begründeten gemeinsamen Lektion zugeordnet. Neue Hauptoberflächen sowie die oben inventarisierten Einstiege dürfen die Invariante nicht ohne vorhandene Lektion passieren.
+Dynamisch erzeugte Kopfzeilencontrols wie Questjournal und Schnellsuche sind durch die HTML-Invariante noch nicht erfasst; ihre vorhandenen Lektionen und ihre tatsächliche Erzeugung müssen zusätzlich gemeinsam geprüft werden.
 
 Die DOM-/Storebelege ersetzen keine native Bedienabnahme. Offen bleiben ein echter Erstinstallations- und Update-Lauf im gepackten Desktopprodukt, vollständige Tastaturbedienung einschließlich Escape und Fokusrückgabe, 200-%-Darstellung bei üblicher Laptopauflösung, Screenreader-Reihenfolge, Kontrast sowie die Prüfung, dass der lange Dialog schnelle Arbeitsabläufe nicht behindert.

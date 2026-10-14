@@ -69,6 +69,7 @@ import { validateRoom, validateRoomDraftContent, type Campaign, type CampaignRen
 import { validatePreparation, checkedPreparationDraft, preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationCommand, type PreparationSelection, type Note } from '../preparation-contracts';
 import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
 import { worldNoteDocument } from '../../features/world/world-notes';
+import {campaignLocalId} from '../../features/campaign/campaign-contracts';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, readArchivedRoster, validateLiveBackup, executeLive, liveStatus } from './live';
@@ -774,6 +775,7 @@ export class CampaignStore {
     const replay=!!this.db.prepare('SELECT 1 FROM live_receipt WHERE command_id=?').get(command.commandId);
     const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
     const ack = executeLive(this.db, command, () => {this.guard(command.token, command.campaignId);});
+    if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!;this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:campaignLocalId(followUp.id),revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});}
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){

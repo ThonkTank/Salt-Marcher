@@ -17,7 +17,7 @@ import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
 import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
-import {emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import {canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -80,7 +80,7 @@ function busy(on: boolean, structural = false, textSave = false) {
   for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save']) get<HTMLButtonElement>(id).disabled = on && !textSave;
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
-  for(const id of ['live-moment-category','live-moment-title','live-moment-summary'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
+  for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
   if (structural) for (const id of [...profileFields.map(([id]) => id), 'running-title', 'running-notes', 'running-read-aloud', 'running-location']) get<HTMLInputElement>(id).disabled = on;
   if (structural) {
     for (const id of ['move-title', 'move-target']) get<HTMLInputElement>(id).disabled = on;
@@ -375,15 +375,16 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('live-passive-form').onsubmit=event=>{event.preventDefault();renderPassivePerception();};
   get('live-moment-form').onsubmit=event=>{
-    event.preventDefault();const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,title=value('live-moment-title'),summary=value('live-moment-summary'),category=value('live-moment-category') as Extract<LiveAction,{kind:'live-moment'}>['category'];
+    event.preventDefault();const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,draft=currentLiveMomentDraft(),{category,title,summary,followUp}=draft;
     const current=()=>context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focusRevision;
     if(!token||!sceneId)return;
     void(async()=>{try{
       if(!await flushLive()||!current())return;
-      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary});if(!ack)return;liveMomentDrafts.saved(sceneId,{category,title,summary});if(!current())return;
-      const unchanged=value('live-moment-title')===title&&value('live-moment-summary')===summary&&value('live-moment-category')===category;
-      if(unchanged){get<HTMLInputElement>('live-moment-title').value='';get<HTMLTextAreaElement>('live-moment-summary').value='';get<HTMLInputElement>('live-moment-title').focus();}
-      get('live-moment-result').textContent=unchanged?'In der Kampagnenchronik gespeichert.':'Vorheriger Moment gespeichert. Neuere Eingabe bleibt offen.';
+      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;liveMomentDrafts.saved(sceneId,draft);if(!current())return;
+      let refreshProblem=false;if(followUp){const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}
+      const unchanged=canClearSavedLiveMoment(sceneId,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());
+      if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());get<HTMLInputElement>('live-moment-title').focus();}
+      get('live-moment-result').textContent=(unchanged?'Moment gespeichert.':'Vorheriger Moment gespeichert. Neuere Eingabe bleibt offen.')+(followUp?(followUp==='quest'?' Offene Quest angelegt.':' Gerücht angelegt.'):'')+(refreshProblem?' Wissensbinder aktualisieren.':'');
     }catch(error){if(current())tell((error as Error).message,true);}})();
   };
   get('adoption-plan').onchange = renderVisits;
