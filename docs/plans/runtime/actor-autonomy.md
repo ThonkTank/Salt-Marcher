@@ -258,8 +258,15 @@ späterer Actorstand nicht zurückgerollt wird. Der Test belegt außerdem die
 persistente Pause, die Sperre alternativer Aufhebungswege und die begründete
 Auflösung nach einem Neustart. `tests/core/autonomy-time-conflict-ui.test.ts`
 prüft am vollständigen DOM die Zeit-/Worldinformationen und beide begründeten
-Entscheidungen. Diese SQLite- und DOM-Nachweise sind keine native Bedien-,
-Hardcrash-, Größen- oder vollständige Produktabnahme.
+Entscheidungen.
+
+`tests/core/autonomy-owner-atomicity.test.ts` lässt Dungeonbewegung,
+Fallenreset und begrenzten NPC-Konflikt jeweils erst nach einer Ownerwirkung an
+der folgenden Logschreibung scheitern. Der komplette SQLite-Stand bleibt dabei
+unverändert und ohne Receipt. Derselbe Command kann anschließend erfolgreich
+ausgeführt werden; sein Replay verändert Position, Featureladung, HP, Logs,
+Buchungen und Actorcursor nicht erneut. Diese SQLite- und DOM-Nachweise sind
+keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
 
 
 ## Nächste ausführbare Schritte
