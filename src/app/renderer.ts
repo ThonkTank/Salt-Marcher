@@ -1,3 +1,4 @@
+import {setSessionPacketSurface} from './session-packet-ui';
 import {initPartyTopbar,activatePartyTopbar} from './party-topbar-ui';
 import {initDayCalculator,activateDayCalculator} from './adventuring-day-ui';
 import {initNpcs,activateNpcs,openNpcs,flushNpcs} from './npc-ui';
@@ -95,7 +96,7 @@ el('items-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;
 el('catalog-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('catalog');await openCatalog();})();};
 el('chronicle-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('chronicle');await openChronicle();})().catch(error=>status(error.message,true));};
 function showTab(selected: 'groups' | 'treasury' | 'atlas' | 'preparation' | 'live' | 'chronicle' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
-  setWorldSurface(selected);
+  setWorldSurface(selected);setSessionPacketSurface(selected);
   for (const id of ['groups','treasury','atlas', 'preparation', 'live', 'chronicle', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);

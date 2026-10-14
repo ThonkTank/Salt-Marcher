@@ -1,4 +1,4 @@
-import {initSessionPacket,closeSessionPacket} from './session-packet-ui';
+import {initSessionPacket,closePreparationPacket} from './session-packet-ui';
 import {magicPoolPicker} from './session-magic-pool-ui';
 import {requiredNpcPicker} from './required-npc-picker';
 import {budgetRarities} from './dungeon-budget-contracts';
@@ -28,7 +28,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
  const key=JSON.stringify([next?.token,current?.id,selected]);
  workspace=next;plan=current;visitId=selected;sources=data;
- if(parentChanged){closeSessionPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
+ if(parentChanged){closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
  if(key===basis)return;
  basis=key;generation++;loadRequest++;closeStoryAward();
