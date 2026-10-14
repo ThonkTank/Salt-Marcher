@@ -33,6 +33,20 @@ prüft diese zehn Store-/DOMfälle einschließlich Originalerhalt, Storagefehler
 fehlender Liste, verändertem Vermerk und Receiptbestätigung ohne Writerreplay.
 Native Restart-/Tastaturabnahme und operativer Erweiterungszugriff bleiben offen.
 
+## Installation und Campaigndaten
+
+Pakete bis 1 MiB und Grants liegen installationweit in `settings`; Widerruf
+und Entfernen erhalten opaque `campaign_capability`-Bytes, Codec, Version und
+Referenzhülle. Entfernen löscht Paketcode und Rechte. Fehlende Installation,
+Campaigntransfer und spätere Neuinstallation dürfen Nutzerbytes nicht verlieren.
+Vollständiges Backup prüft auch Installationseinträge; ein Campaignexport entfernt
+diese Einträge und prüft seinen eigenen Datenstand nach der Abgrenzung.
+Beschädigte fremde Installation darf ihn nicht blockieren.
+[extension-lifecycle.test.ts](../../../tests/core/extension-lifecycle.test.ts)
+prüft Entfernen/Neuinstallation, Byteerhalt, Import ohne Paket, fehlerhafte Commands
+und erhaltene sichere Backups. Paketcode wird noch nicht ausgeführt; Sandbox,
+Runtime-Masken und neue Consumer gehören zur folgenden Lieferung.
+
 ## Nächste konkrete Lieferung
 
 Eine gespeicherte Wegnotiz mit dem bestehenden `campaign_capability`-/
