@@ -23,7 +23,7 @@ async function fixture(t:TestContext){
  const location=newLocation('north','Nordtor','poi',['description','notes']);store.changePreparation({...command(null),change:{kind:'location',expectedRevision:null,document:location}});
  const wrap=(f:()=>any)=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:(e as Error).message};}};
  window.campaign={preparation:async(...a:any[])=>wrap(()=>store.preparation(a[0],a[1])),agenda:async(token,query)=>wrap(()=>store.agenda(token,query)),reconcileWorld:async(c,token)=>wrap(()=>store.reconcileWorld(c,token)),executeWorld:async c=>wrap(()=>store.executeWorld(c))} as typeof window.campaign;
- const messages:string[]=[];initWorld(s=>messages.push(s),async()=>true,async()=>{},async()=>{});activateWorld(workspace);
+ const messages:string[]=[];initWorld(s=>messages.push(s),async()=>true,async()=>{},async()=>{},async()=>{});activateWorld(workspace);
  const agenda=new CampaignAgenda(()=>workspace,async()=>true,s=>messages.push(s),async()=>{},async()=>{}),dialog=document.getElementById('campaign-agenda') as HTMLDialogElement;
  Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
  const el=(id:string)=>document.getElementById(id) as HTMLInputElement,click=(label:string)=>{const b=[...dialog.querySelectorAll('button')].find(b=>b.textContent===label) as HTMLButtonElement;assert.ok(b,label);b.onclick?.(new window.Event('click') as any);};
