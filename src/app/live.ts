@@ -21,7 +21,7 @@ import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './liv
 import {liveMomentSavedMessage,canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 import type {NarrativeView} from './narrative-contracts';
 import type {ChronicleView} from './chronicle-contracts';
-import {liveSessionRecap} from './live-session-recap';
+import {liveActionUpdatesRecap,liveSessionRecap} from './live-session-recap';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -59,6 +59,7 @@ export function activateLive(workspace: Workspace) {
   adoption = null; moveBasis = null;preparedNotesSceneId=null;preparedNoteIds.clear();
   narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear();
   liveMomentDrafts.reset();writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent='';
+  get('live-session-result').textContent='';
   for (const id of ['adoption-dialog', 'move-dialog', 'archive-dialog', 'character-dialog']) if (get<HTMLDialogElement>(id).open) get<HTMLDialogElement>(id).close();
 }
 export async function openLive(planId?: string, visitId?: string) {
@@ -139,7 +140,7 @@ function mergeAck(ack: LiveAck, action: LiveAction) {
 }
 async function execute(action: LiveAction): Promise<LiveAck | null> {
   if (!context || blocked || request) return null;
-  const focusRevision = data?.focusRevision, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
+  const focusRevision = data?.focusRevision,previousLocationId=data?.scene?.locationId, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
   const structural = ['focus', 'move', 'membership', 'archive-character'].includes(action.kind);
   // Blur starts a text save before the user's button click arrives. Keep queued
   // intents available; their handlers await flushLive before writing.
@@ -150,7 +151,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
       const ack = unwrap(await window.campaign.executeLive(command));
       if (context?.token !== token) return null;
       if((action.kind==='live-moment'||action.kind==='scene-content'||action.kind==='session-marker')&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
-      mergeAck(ack, action); tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
+      mergeAck(ack, action);if(liveActionUpdatesRecap(action)||action.kind==='scene-content'&&ack.scene?.locationId!==previousLocationId)void refreshLiveSession();tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;
       failed = command; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
@@ -313,7 +314,7 @@ async function markLiveSession(marker:'start'|'end'){
  if(!token||!sceneId||sessionChronicleError||!sessionChronicle)return;
  try{if(!await flushLive()||!current())return;const ack=await execute({kind:'session-marker',sceneId,expectedRevision:data!.scene!.revision,marker,summary});if(!ack||!current())return;
   const unchanged=value('live-session-summary')===summary;if(marker==='end'&&unchanged)get<HTMLTextAreaElement>('live-session-summary').value='';
-  get('live-session-result').textContent=(marker==='start'?'Spielabend begonnen.':'Spielabend beendet. Rückblick gespeichert.')+(marker==='end'&&!unchanged?' Neuere Notiz bleibt erhalten.':'');await refreshLiveSession();
+  get('live-session-result').textContent=(marker==='start'?'Spielabend begonnen.':'Spielabend beendet. Rückblick gespeichert.')+(marker==='end'&&!unchanged?' Neuere Notiz bleibt erhalten.':'');
  }catch(error){if(current()){tell((error as Error).message,true);await refreshLiveSession();}}
 }
 function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
@@ -352,7 +353,7 @@ function render() {
   renderVisits();
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation,openNote:(id:string)=>Promise<void> = async()=>{}) {
-  tell=status;openLocation=navigate;openKnowledgeNote=openNote;initSessionNavigator(status,previewPlannedVisit,async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);liveGenerator=new LiveEncounterGenerator(status,()=>context&&data?.scene&&resumed?{workspace:context,live:data}:null,flushLive,prepareGeneratedCombat);initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(renderPartyReference);initRuleReferences(status);
+  tell=status;openLocation=navigate;openKnowledgeNote=openNote;initSessionNavigator(status,previewPlannedVisit,async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);liveGenerator=new LiveEncounterGenerator(status,()=>context&&data?.scene&&resumed?{workspace:context,live:data}:null,flushLive,prepareGeneratedCombat);initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status,refreshLiveSession);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(()=>{renderPartyReference();void refreshLiveSession();});initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
@@ -423,7 +424,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
       let refreshProblem=false;if(followUp){try{const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(!current())return;refreshProblem=true;}}
       const unchanged=canClearSavedLiveMoment(sceneId,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());
       if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());get<HTMLInputElement>('live-moment-title').focus();}
-      get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);await refreshLiveSession();
+      get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
     }catch(error){if(current())tell((error as Error).message,true);}})();
   };
   get('live-session-start').onclick=()=>void markLiveSession('start');

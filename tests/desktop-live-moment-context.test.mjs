@@ -69,3 +69,9 @@ test('a delayed session ending cannot restore its scene over the newer focused g
 test('recap drafts stay with their campaign when switching away and back',async t=>{
  const x=await setup(t);x.el('live-session-summary').value='Notiz für A';const next=x.store.create('B'),b=x.store.activate(next.id);x.ui.activateLive(b);await x.ui.openLive();assert.equal(x.el('live-session-summary').value,'');x.el('live-session-summary').value='Notiz für B';const a=x.store.activate(x.w.campaign.id);x.ui.activateLive(a);await x.ui.openLive();assert.equal(x.el('live-session-summary').value,'Notiz für A');
 });
+
+test('a pending recap read does not block the next confirmed moment and older results cannot replace it',async t=>{
+ const x=await setup(t),reads=[];x.window.campaign.chronicle=token=>{const value={ok:true,value:x.store.chronicle(token)};return new Promise(resolve=>{reads.push({resolve,value});x.releases.push(()=>resolve(value));});};
+ x.el('live-session-start').click();await settle();assert.equal(reads.length,1);x.fields('Während Rückblick lädt','Eigenständige Eingabe');x.submit();await settle();assert.ok(x.commands.some(c=>c.action.kind==='live-moment'));assert.equal(reads.length,2);
+ reads[1].resolve(reads[1].value);await settle();assert.match(x.el('live-session-events').textContent,/Während Rückblick lädt/);reads[0].resolve(reads[0].value);await settle();assert.match(x.el('live-session-events').textContent,/Während Rückblick lädt/);
+});

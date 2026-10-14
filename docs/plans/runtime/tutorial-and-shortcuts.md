@@ -36,7 +36,7 @@ Die ausführbare Tutorialzuordnung bindet Hauptarbeitsbereiche und ausgewählte
 statische Kopfzeilenaktionen aus `index.html` an vorhandene Lektionen, darunter
 Monstergruppen und Schätze. Weitere Einstiege decken Sessiongenerierung,
 Kampfabschluss/Rewards, HP/Zustände, XP/Rastbudget, persönliche Beute, Live-Momente,
-Regelpanel/Proben und erweiterte Dungeonwerkzeuge
+Regelpanel/Proben, Spieleranzeige/Freigaben und erweiterte Dungeonwerkzeuge
 ab. Die Zuordnung steht im Code; dynamische Controls wie Journal und Schnellsuche
 brauchen zusätzliche Zuordnungsprüfungen. Eine zugeordnete Lektion belegt noch
 keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.
