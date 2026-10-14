@@ -68,7 +68,7 @@ async function ensureLiveRuntime() {
 export async function prepareLiveEncounter(plan:EncounterPlan) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await prepareCombatPlan(plan); }
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
-  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel']) get<HTMLButtonElement>(id).disabled = on && !textSave;
+  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save']) get<HTMLButtonElement>(id).disabled = on && !textSave;
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   if (structural) for (const id of [...profileFields.map(([id]) => id), 'running-title', 'running-notes', 'running-read-aloud', 'running-location']) get<HTMLInputElement>(id).disabled = on;
@@ -345,6 +345,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('live-passive-form').onsubmit=event=>{event.preventDefault();renderPassivePerception();};
+  get('live-moment-form').onsubmit=event=>{event.preventDefault();void(async()=>{const token=context?.token;if(!await flushLive()||context?.token!==token||!data?.scene)return;const title=value('live-moment-title'),summary=value('live-moment-summary'),category=value('live-moment-category') as Extract<LiveAction,{kind:'live-moment'}>['category'];const ack=await execute({kind:'live-moment',sceneId:data.scene.id,expectedRevision:data.scene.revision,category,title,summary});if(!ack)return;get<HTMLInputElement>('live-moment-title').value='';get<HTMLTextAreaElement>('live-moment-summary').value='';get('live-moment-result').textContent='In der Kampagnenchronik gespeichert.';get<HTMLInputElement>('live-moment-title').focus();})();};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');

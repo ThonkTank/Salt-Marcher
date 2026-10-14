@@ -30,6 +30,7 @@ export type LiveAction =
   | { kind: 'focus'; sceneId: string; expectedRevision: number }
   | { kind: 'move'; sceneId: string; expectedRosterRevision: number; expectedFocusRevision: number; expectedClockRevision: number; expectedSceneMembershipRevision: number; memberIds: string[];
       target: { kind: 'new'; title: string; expectedContentRevision: number } | { kind: 'existing'; sceneId: string; expectedClockRevision: number; expectedMembershipRevision: number } }
+  | { kind: 'live-moment'; sceneId: string; expectedRevision: number; category: 'combat'|'narrative'|'reward'|'travel'|'party'|'world'; title: string; summary: string }
   | { kind: 'advance-clock'; sceneId: string; expectedRevision: number; amount: number; unit: TimeUnit; calendarVersion: 'relative-v1'; reason: string };
 export interface LiveCommand { commandId: string; campaignId: string; token: string; action: LiveAction }
 export interface LiveAck {
@@ -82,4 +83,5 @@ export function validateLiveCommand(command: LiveCommand) {
     if (key in fields && (typeof id !== 'string' || !id || id.length > 1000)) throw new Error('Ungültiges Änderungsziel.');
   }
   if ('locationId' in action && action.locationId !== null && (typeof action.locationId !== 'string' || !action.locationId || action.locationId.length > 1000)) throw new Error('Ungültiger Szenenort.');
+  if(action.kind==='live-moment'&&(!['combat','narrative','reward','travel','party','world'].includes(action.category)||typeof action.title!=='string'||!action.title.trim()||action.title.length>1000||typeof action.summary!=='string'||action.summary.length>10000))throw new Error('Chronikeintrag benötigt einen Titel und höchstens 10.000 Zeichen Notiz.');
 }
