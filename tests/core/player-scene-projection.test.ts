@@ -85,5 +85,3 @@ test('read-aloud keeps authored whitespace and only the explicitly public headin
   player=store.playerView(next);assert.equal(player.frame.mode,'blank');assert.doesNotMatch(JSON.stringify(player.frame),/Vampir|Falltür|Der Wirt/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
-
-function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};}
