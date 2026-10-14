@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
+import {newLocation} from '../../src/features/location/location-schema';
 
 test('the player display publishes only the focused scene read-aloud text',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-scene-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
@@ -19,6 +20,24 @@ test('the player display publishes only the focused scene read-aloud text',()=>{
   assert.equal(player.frame.mode,'scene');assert.equal(player.frame.title,'');assert.equal(player.frame.scene?.text,'  Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.\n');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Fehltritten|Vampir/);
   const updated=store.live(token).scene!;store.executeLive({commandId:'clear-text',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:updated.id,expectedRevision:updated.revision,title:updated.title,readAloud:' \n ',notes:updated.notes,locationId:null}});
   player=store.playerView(token);assert.equal(player.frame.mode,'blank');assert.match(player.frame.reason??'',/kein Vorlesetext/);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+test('a reviewed location image cannot be released after the focused scene moves',()=>{
+ const root=mkdtempSync(join(tmpdir(),'player-location-bound-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Gebundenes Ortsbild'),token=store.activate(campaign.id).token;
+  for(const [id,name] of [['place-a','Vorhut'],['place-b','Hinterland']] as const)store.changePreparation({commandId:'location-'+id,campaignId:campaign.id,token,change:{kind:'location',expectedRevision:null,document:newLocation(id,name,'poi',[id+'-description',id+'-notes'])}});
+  const character=store.executeLive({commandId:'character',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}}).character!;
+  const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
+  store.executeLive({commandId:'activate',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+  store.executeLive({commandId:'place-a',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:scene.id,expectedRevision:0,title:'Vorhut',readAloud:'',notes:'',locationId:'place-a'}});
+  store.registerPlayerAsset(token,{id:'art-a',kind:'location',subjectId:'place-a',title:'Vorhut',sha256:'a'.repeat(64),extension:'.png',bytes:1});
+  const stale={...focus(store,token),commandId:'show-place-a',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings' as const,settings:{blank:false,mode:'image' as const,imageId:'art-a',title:'',labels:false,light:'daylight' as const,displayId:null,fullscreen:false}}};
+  store.executeLive({commandId:'place-b',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:scene.id,expectedRevision:1,title:'Hinterland',readAloud:'',notes:'',locationId:'place-b'}});
+  assert.equal(store.playerView(token).focusLocationId,'place-b');
+  assert.throws(()=>store.executePlayer(stale),/Fokussierte Gruppe geändert/);
+  assert.equal(store.playerView(token).settings.blank,true);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
@@ -85,4 +104,4 @@ test('read-aloud keeps authored whitespace and only the explicitly public headin
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
-function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision};}
+function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision,expectedFocusLocationId:view.focusLocationId};}
