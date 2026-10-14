@@ -13,6 +13,7 @@ import { initProgress, progressionContext, flushProgress } from './progression-u
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
 import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
+import {findLiveKnowledge} from './live-knowledge';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -217,7 +218,7 @@ async function showLiveNpc(npcId:string,isCurrent=()=>true){const token=context?
 function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
 function renderLiveKnowledge(){
   const root=get('live-knowledge-results');root.replaceChildren();const query=value('live-knowledge-search').trim().toLocaleLowerCase('de');
-  const rows=(sources?.notes??[]).filter(row=>!row.trashed&&row.note.kind!=='rule'&&(!query||[row.note.title,row.note.readAloud,row.note.gmNotes].some(text=>text.toLocaleLowerCase('de').includes(query)))).sort((a,b)=>Number(preparedNoteIds.has(b.note.id))-Number(preparedNoteIds.has(a.note.id))).slice(0,30);
+  const found=findLiveKnowledge((sources?.notes??[]).filter(row=>!row.trashed&&row.note.kind!=='rule'),query,30,row=>preparedNoteIds.has(row.note.id)),rows=found.rows;get('live-knowledge-result').textContent=rows.length===found.total?found.total+' Einträge angezeigt.':rows.length+' von '+found.total+' Einträgen angezeigt – Suche präzisieren.';
   for(const row of rows){const note=row.note,card=document.createElement('article'),heading=document.createElement('div'),title=document.createElement('h4'),kind=document.createElement('small'),actions=document.createElement('div');heading.className='toolbar';title.textContent=note.title||'Unbenannter Eintrag';kind.textContent=({npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht'})[note.kind as 'npc'|'faction'|'quest'|'rumor']+(preparedNoteIds.has(note.id)?' · Mit aktuellem Besuch verknüpft':'');heading.append(title,kind);actions.className='toolbar';
     if(note.readAloud){const publicText=document.createElement('pre'),use=document.createElement('button');publicText.textContent=note.readAloud;publicText.className='live-knowledge-public';use.type='button';use.textContent='Als Vorlesetext einsetzen';use.onclick=()=>useKnowledgeReadAloud(note.readAloud,note.title);card.append(heading,publicText);actions.append(use);}else card.append(heading);
     if(note.kind==='npc'){const portrait=document.createElement('button');portrait.type='button';portrait.textContent='Porträt zeigen';portrait.onclick=()=>void showLiveNpc(note.id);actions.append(portrait);}

@@ -99,4 +99,5 @@ import "./core/music-state-integrity.test";
 import "./core/music-record-integrity.test";
 import "./core/autonomy-persistence-integrity.test";
 import "./core/live-player-cues.test";
+import "./core/live-knowledge.test";
 import "./core/object-gestures.test";
