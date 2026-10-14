@@ -8,7 +8,7 @@ import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from
 import { renderCreatureDetail } from './catalog-ui';
 import type { EncounterPlan } from './encounter-contracts';
 import type {PreparedGroup} from './session-contracts';
-import {prepareSceneCheck,rollSceneFormula} from './rule-reference-ui';
+import {rollSceneCheck,rollSceneFormula} from './rule-reference-ui';
 import type {SceneCheck} from './scene-check-contracts';
 import {deathSaveControls,type DeathSaveResult} from './progression';
 import {creatureActionRolls,creatureRollKey,criticalDamageFormula,type CreatureRollPreset} from './dice-formula';
@@ -20,15 +20,17 @@ const editableCombat=(combat:CombatView['combat'])=>!!combat&&['preparing','runn
 const deathResultText=(result:DeathSaveResult)=>({success:'Erfolg',failure:'Fehlschlag','natural-20':'Natürliche 20 · 1 HP','natural-1':'Natürliche 1 · zwei Fehlschläge',stabilize:'Stabilisiert',reset:'Zurückgesetzt',dead:'Als tot markiert'}[result]);
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
-type PendingDamage={check:SceneCheck;combatId:string;attackerId:string;targetId?:string};
+type PendingDamage={check:SceneCheck;combatId:string;attackerId:string;targetId?:string;appliedTargets?:string[]};
 export function enqueuePendingDamage(queue:readonly PendingDamage[],next:PendingDamage,currentCombatId:string){return next.combatId!==currentCombatId||queue.some(damage=>damage.check.id===next.check.id)?[...queue]:[...queue,next];}
 let pendingDamage:PendingDamage[]=[];
 type PendingAttack={combatId:string;attackerId:string;creatureId:string;actionId:string;actor:string;preset:CreatureRollPreset;damages:CreatureRollPreset[];rolledDamage:string[];targetId:string|null;check:SceneCheck|null};
 export function retainPendingAttack<T>(current:T|null,next:T){return current??next;}
 let pendingAttack:PendingAttack|null=null,attackPending=false;
+type PendingSave={combatId:string;attackerId:string;creatureId:string;actionId:string;actor:string;preset:CreatureRollPreset;damages:CreatureRollPreset[];rolledDamage:string[];resolvedTargets:string[];targetId:string|null;check:SceneCheck|null};
+let pendingSave:PendingSave|null=null,savePending=false;
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
-function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&pendingAttack.combatId!==result.combat?.id)pendingAttack=null;}
+function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&pendingAttack.combatId!==result.combat?.id)pendingAttack=null;if(pendingSave&&pendingSave.combatId!==result.combat?.id)pendingSave=null;}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
@@ -86,7 +88,7 @@ export function combatContext(next: Workspace | null, current: LiveScene | null,
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
   get('combat-panel').hidden = !current;
-  if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false; view = null; render(); if (next && current) void load(); }
+  if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
   else if(partyChanged)void refreshPartyCandidates();
 }
 async function load(id?: string):Promise<boolean> {
@@ -173,6 +175,25 @@ async function rollAttackDamage(damage:CreatureRollPreset){
   const attack=pendingAttack,check=attack?.check,key=creatureRollKey(damage);if(!attack||!check||check.outcome!=='success'||!attack.targetId||!view?.combat?.participants.some(p=>p.id===attack.targetId)||attack.rolledDamage.includes(key))return;const critical=check.rolls[0]===20;attackPending=true;renderAttackEffect();let rolled=false;
   await rollSceneFormula({label:damage.label+(critical?' · Kritisch':''),actor:attack.actor,formula:critical?criticalDamageFormula(damage.formula):damage.formula,formulaKind:'damage',dc:null,sourceCreatureId:attack.creatureId,sourceActionId:attack.actionId},result=>{if(pendingAttack===attack&&view?.combat?.id===attack.combatId){rolled=true;stageDamage(result,attack.attackerId,attack.combatId,attack.targetId!);}});attackPending=false;if(rolled)attack.rolledDamage.push(key);if(attack.rolledDamage.length===attack.damages.length)pendingAttack=null;renderAttackEffect();
 }
+function stageSave(action:CreatureAction,preset:CreatureRollPreset,attackerId:string,actor:string,creatureId:string,combatId:string){
+  if(savePending||view?.combat?.id!==combatId)return;const next:PendingSave={combatId,attackerId,creatureId,actionId:action.id,actor,preset,damages:creatureActionRolls(action).filter(p=>p.kind==='damage'),rolledDamage:[],resolvedTargets:[],targetId:null,check:null},retained=retainPendingAttack(pendingSave,next);if(retained===pendingSave){renderSaveEffect();get('combat-save-effect').scrollIntoView({block:'nearest'});tell('Offenen Rettungswurf zuerst abschließen oder verwerfen.',true);return;}pendingSave=retained;get<HTMLInputElement>('combat-save-modifier').value='0';renderSaveEffect();get('combat-save-effect').scrollIntoView({block:'nearest'});
+}
+function renderSaveEffect(){
+  const box=get('combat-save-effect'),combat=view?.combat,save=pendingSave;if(!save||!combat||save.combatId!==combat.id||!editableCombat(combat)){box.hidden=true;return;}box.hidden=false;
+  const target=get<HTMLSelectElement>('combat-save-target'),previous=target.value,candidates=combat.participants.filter(p=>p.id!==save.attackerId&&!save.resolvedTargets.includes(p.id));target.replaceChildren();for(const p of candidates){const option=document.createElement('option');option.value=p.id;option.textContent=p.name;target.append(option);}const preferred=save.targetId??(candidates.some(p=>p.id===previous)?previous:null)??candidates.find(p=>!!p.characterId)?.id??candidates[0]?.id??'';target.value=preferred;
+  const chosen=combat.participants.find(p=>p.id===(save.targetId??target.value)),modifier=get<HTMLInputElement>('combat-save-modifier'),outcome=save.check?.outcome;get('combat-save-result').textContent=save.check?(save.actor+' · '+save.preset.label+' für '+(chosen?.name??'entferntes Ziel')+': '+save.check.total+' gegen SG '+save.check.dc+' · '+(outcome==='success'?'Bestanden':'Fehlgeschlagen')):(save.actor+' · '+save.preset.label+' · SG '+save.preset.dc);
+  target.disabled=blocked()||savePending||!!save.check;modifier.disabled=blocked()||savePending||!!save.check;const roll=get<HTMLButtonElement>('combat-save-roll'),modifierValue=Number(modifier.value);roll.hidden=!!save.check;roll.disabled=blocked()||savePending||!target.value||!Number.isSafeInteger(modifierValue)||Math.abs(modifierValue)>1000;
+  const damages=get('combat-save-damage');damages.replaceChildren();if(save.check&&chosen)for(const damage of save.damages){const button=document.createElement('button'),done=save.rolledDamage.includes(creatureRollKey(damage));button.type='button';button.textContent=damage.label+' ('+damage.formula+') würfeln'+(done?' ✓':'');button.disabled=blocked()||savePending||done;button.onclick=()=>void rollSaveDamage(damage);damages.append(button);}
+  const repeat=get<HTMLButtonElement>('combat-save-repeat');repeat.hidden=!save.check;repeat.disabled=blocked()||savePending||!candidates.some(p=>p.id!==save.targetId);get<HTMLButtonElement>('combat-save-discard').disabled=blocked()||savePending;
+}
+async function rollSave(){
+  const save=pendingSave,combat=view?.combat,target=combat?.participants.find(p=>p.id===value('combat-save-target')),modifier=Number(value('combat-save-modifier'));if(!save||!combat||!target||save.combatId!==combat.id||save.check||!Number.isSafeInteger(modifier)||Math.abs(modifier)>1000)return;save.targetId=target.id;savePending=true;renderSaveEffect();
+  await rollSceneCheck({label:save.actor+' · '+save.preset.label,actor:target.name,mode:'normal',modifier,dc:save.preset.dc,sourceCreatureId:save.creatureId,sourceActionId:save.actionId},check=>{if(pendingSave===save&&view?.combat?.id===save.combatId)save.check=check;});savePending=false;renderSaveEffect();
+}
+async function rollSaveDamage(damage:CreatureRollPreset){
+  const save=pendingSave,key=creatureRollKey(damage);if(!save?.check||!save.targetId||!view?.combat?.participants.some(p=>p.id===save.targetId)||save.rolledDamage.includes(key))return;savePending=true;renderSaveEffect();let rolled=false;await rollSceneFormula({label:damage.label,actor:save.actor,formula:damage.formula,formulaKind:'damage',dc:null,sourceCreatureId:save.creatureId,sourceActionId:save.actionId},result=>{if(pendingSave===save&&view?.combat?.id===save.combatId){rolled=true;stageDamage(result,save.attackerId,save.combatId,save.targetId!);}});savePending=false;if(rolled)save.rolledDamage.push(key);renderSaveEffect();
+}
+function repeatSave(){const save=pendingSave;if(!save?.check||!save.targetId)return;if(!save.resolvedTargets.includes(save.targetId))save.resolvedTargets.push(save.targetId);save.targetId=null;save.check=null;save.rolledDamage=[];get<HTMLInputElement>('combat-save-modifier').value='0';renderSaveEffect();}
 function stageDamage(check:SceneCheck,attackerId:string,combatId:string,targetId?:string){
   const combat=view?.combat;
   if(!combat||!editableCombat(combat)||check.sceneId!==combat.sceneId||check.rollKind!=='formula'||check.formulaKind!=='damage'||!Number.isSafeInteger(check.total)||check.total<=0)return;
@@ -181,17 +202,17 @@ function stageDamage(check:SceneCheck,attackerId:string,combatId:string,targetId
 function renderDamageEffect(){
   const box=get('combat-roll-effect'),combat=view?.combat,damage=pendingDamage[0];
   if(!damage||!combat||damage.combatId!==combat.id||!editableCombat(combat)){box.hidden=true;return;}
-  box.hidden=false;get('combat-roll-effect-result').textContent=(damage.check.actor?damage.check.actor+' · ':'')+damage.check.label+': '+damage.check.total+' Schaden gewürfelt'+(pendingDamage.length>1?' · 1 von '+pendingDamage.length+' offenen Würfen':'');
-  const target=get<HTMLSelectElement>('combat-roll-target'),previous=target.dataset.checkId===damage.check.id?target.value:'',candidates=combat.participants.filter(p=>p.healthKnown!==false);target.replaceChildren();target.dataset.checkId=damage.check.id;
+  const applied=damage.appliedTargets??[];box.hidden=false;get('combat-roll-effect-result').textContent=(damage.check.actor?damage.check.actor+' · ':'')+damage.check.label+': '+damage.check.total+' Schaden gewürfelt'+(applied.length?' · auf '+applied.length+' Ziel'+(applied.length===1?'':'e')+' angewendet':'')+(pendingDamage.length>1?' · 1 von '+pendingDamage.length+' offenen Würfen':'');
+  const target=get<HTMLSelectElement>('combat-roll-target'),previous=target.dataset.checkId===damage.check.id?target.value:'',candidates=combat.participants.filter(p=>p.healthKnown!==false&&!applied.includes(p.id));target.replaceChildren();target.dataset.checkId=damage.check.id;
   for(const p of candidates){const option=document.createElement('option');option.value=p.id;option.textContent=p.name+' · '+p.hp+' / '+p.maxHp+' HP'+(p.tempHp?' + '+p.tempHp+' temp.':'');target.append(option);}
   const fallback=candidates.find(p=>p.id===damage.targetId)??candidates.find(p=>p.id!==damage.attackerId&&!!p.characterId)??candidates.find(p=>p.id!==damage.attackerId)??candidates[0];target.value=candidates.some(p=>p.id===previous)?previous:fallback?.id??'';
-  const unavailable=blocked()||!target.value;get<HTMLButtonElement>('combat-roll-damage').disabled=unavailable;get<HTMLButtonElement>('combat-roll-half').disabled=unavailable||Math.floor(damage.check.total/2)<1;get<HTMLButtonElement>('combat-roll-double').disabled=unavailable||damage.check.total*2>1000000;get<HTMLButtonElement>('combat-roll-discard').disabled=blocked();
+  const keep=get<HTMLInputElement>('combat-roll-keep');if(keep.dataset.checkId!==damage.check.id){keep.dataset.checkId=damage.check.id;keep.checked=false;}const unavailable=blocked()||!target.value;get<HTMLButtonElement>('combat-roll-damage').disabled=unavailable;get<HTMLButtonElement>('combat-roll-half').disabled=unavailable||Math.floor(damage.check.total/2)<1;get<HTMLButtonElement>('combat-roll-double').disabled=unavailable||damage.check.total*2>1000000;keep.disabled=blocked();const discard=get<HTMLButtonElement>('combat-roll-discard');discard.textContent=applied.length?'Wurf abschließen':'Verwerfen';discard.disabled=blocked();
 }
 async function applyRolledDamage(scale:'full'|'half'|'double'){
   const damage=pendingDamage[0],target=value('combat-roll-target');if(!damage||!target||view?.combat?.id!==damage.combatId)return;
   const amount=scale==='half'?Math.floor(damage.check.total/2):scale==='double'?damage.check.total*2:damage.check.total;
   if(amount<1||amount>1000000)return;
-  if(await execute({kind:'damage',participantId:target,amount,sourceCheckId:damage.check.id,sourceScale:scale})&&pendingDamage[0]?.check.id===damage.check.id){pendingDamage=pendingDamage.slice(1);renderDamageEffect();}
+  if(await execute({kind:'damage',participantId:target,amount,sourceCheckId:damage.check.id,sourceScale:scale})&&pendingDamage[0]?.check.id===damage.check.id){if(get<HTMLInputElement>('combat-roll-keep').checked){damage.appliedTargets=[...(damage.appliedTargets??[]),target];const available=view?.combat?.participants.some(p=>p.healthKnown!==false&&!damage.appliedTargets!.includes(p.id));if(!available)pendingDamage=pendingDamage.slice(1);}else pendingDamage=pendingDamage.slice(1);renderDamageEffect();}
 }
 function renderConcentrationEffect(){
   const box=get('combat-concentration-effect'),combat=view?.combat,actor=combat?.participants.find(p=>p.concentrationChecks?.length),check=actor?.concentrationChecks?.[0];if(!combat||!actor||!check||!editableCombat(combat)){box.hidden=true;return;}box.hidden=false;get('combat-concentration-result').textContent=actor.name+' · Konzentration SG '+check.dc+' nach '+check.damage+' Schaden'+(actor.concentrationChecks!.length>1?' · 1 von '+actor.concentrationChecks!.length+' offenen Prüfungen':'');
@@ -217,6 +238,7 @@ function lock() {
   for(const result of ['roll','success','failure','natural-20','natural-1','stabilize','dead'] as const)get<HTMLButtonElement>('fighter-death-'+result).disabled=deathUnavailable||deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').disabled=deathUnavailable||!deathControls.reset;
   renderAttackEffect();
+  renderSaveEffect();
   renderDamageEffect();
   renderConcentrationEffect();
 }
@@ -252,7 +274,7 @@ function render() {
     body.append(tr);
   }
   if (selected && !combat?.participants.some(p => p.id === selected)) selected = null;
-  renderPartyCandidates();renderEditor();renderAttackEffect();renderDamageEffect();renderConcentrationEffect();lock();
+  renderPartyCandidates();renderEditor();renderAttackEffect();renderSaveEffect();renderDamageEffect();renderConcentrationEffect();lock();
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
 }
 function renderSelection() { for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
@@ -272,7 +294,7 @@ function renderEditor() {
   get('fighter-death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':(death?.successes??0)+' Erfolge · '+(death?.failures??0)+' Fehlschläge'+(p?.deathLast?.roll!==null&&p?.deathLast?.roll!==undefined?' · letzter Wurf '+p.deathLast.roll:'');
   get<HTMLDetailsElement>('fighter-death-other').open=deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').hidden=!deathControls.reset;
-  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id; get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{if(preset.kind==='save'||preset.kind==='check')prepareSceneCheck({label:p.name+' · '+preset.label,dc:preset.dc!});else if(preset.kind==='attack')stageAttack(action,preset,p.id,p.name,source.id,combatId);else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,formulaKind:'damage',dc:null,sourceCreatureId:source.id,sourceActionId:action.id},check=>stageDamage(check,p.id,combatId));});
+  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id; get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{if(preset.kind==='save'||preset.kind==='check')stageSave(action,preset,p.id,p.name,source.id,combatId);else if(preset.kind==='attack')stageAttack(action,preset,p.id,p.name,source.id,combatId);else void rollSceneFormula({label:preset.label,actor:p.name,formula:preset.formula,formulaKind:'damage',dc:null,sourceCreatureId:source.id,sourceActionId:action.id},check=>stageDamage(check,p.id,combatId));});
 }
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
@@ -313,6 +335,11 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-attack-target').onchange=renderAttackEffect;
   get('combat-attack-roll').onclick=()=>void rollAttack();
   get('combat-attack-discard').onclick=()=>{pendingAttack=null;renderAttackEffect();};
+  get('combat-save-target').onchange=renderSaveEffect;
+  get('combat-save-modifier').oninput=renderSaveEffect;
+  get('combat-save-roll').onclick=()=>void rollSave();
+  get('combat-save-repeat').onclick=repeatSave;
+  get('combat-save-discard').onclick=()=>{pendingSave=null;renderSaveEffect();};
   get('combat-concentration-roll').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration-roll',participantId:actor.id,modifier:Number(value('combat-concentration-modifier'))});};
   get('combat-concentration-pass').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration',participantId:actor.id,success:true});};
   get('combat-concentration-fail').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration',participantId:actor.id,success:false});};
