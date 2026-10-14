@@ -9,7 +9,7 @@ import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
 
 function fixture(sharedLocation=false){
-  const root=mkdtempSync(join(tmpdir(),'autonomy-scene-time-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+  const root=mkdtempSync(join(tmpdir(),'autonomy-scene-time-')),path=join(root,'campaign.sqlite'),store=new CampaignStore(path,'test');
   const campaign=store.create('Autonomiezeit'),token=store.activate(campaign.id).token;
   for(const [id,name] of [['place-a','Vorhut'],['place-b','Hinterland']] as const)store.changePreparation({commandId:'location-'+id,campaignId:campaign.id,token,change:{kind:'location',expectedRevision:null,document:newLocation(id,name,'poi',[id+'-description',id+'-notes'])}});
   const actorId=campaignLocalId('00000000-0000-4000-8000-000000000101');
@@ -25,7 +25,7 @@ function fixture(sharedLocation=false){
   store.executeLive({commandId:'secondary-place',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:secondaryId,expectedRevision:0,title:'Zweite Gruppe',notes:'',readAloud:'',locationId:'place-b'}});
   const actor:AutonomyActor={id:actorId,revision:1,enabled:true,paused:false,role:'',needs:standardNeeds(),jobPriorities:{},assignedJobId:null,allowConflict:false,defense:12,attackBonus:0,maxHpLossPercent:10,cursor:0,offsetSeconds:0,jobId:null,progressSeconds:0,pending:null};
   store.executeAutonomy({commandId:'actor',campaignId:campaign.id,token,action:{kind:'actor',actor,expectedRevision:null,initialLocationId:'place-b'}});
-  return{root,store,campaignId:campaign.id,token,actorId,primaryId:primary.id,secondaryId};
+  return{root,path,store,campaignId:campaign.id,token,actorId,primaryId:primary.id,secondaryId};
 }
 
 const advance=(f:ReturnType<typeof fixture>,commandId:string,sceneId:string,expectedRevision:number,amount:number)=>f.store.executeLive({commandId,campaignId:f.campaignId,token:f.token,action:{kind:'advance-clock',sceneId,expectedRevision,amount,unit:'hours',calendarVersion:'relative-v1',reason:'Testzeit'}});
@@ -49,8 +49,8 @@ test('automatic autonomy catch-up stops at the advancing scene clock',()=>{
   }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
-test('an already newer actor state pauses at a lagging scene instead of rolling back',()=>{
-  const f=fixture(true);
+test('an already newer actor state requires a reasoned decision that survives restart',()=>{
+  const f=fixture(true);let reopened:CampaignStore|undefined,originalClosed=false;
   try{
     advance(f,'lead-two-hours',f.primaryId,0,2);
     assert.equal(hunger(f),8);
@@ -60,5 +60,11 @@ test('an already newer actor state pauses at a lagging scene instead of rolling 
     assert.equal(actor.paused,true);
     assert.match(actor.pending??'',/Zeitkonflikt/);
     assert.equal(actor.cursor,1);
-  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+    const decision=f.store.autonomy(f.token).logs.find(entry=>entry.actorId===f.actorId&&entry.kind==='decision')!;
+    assert.equal(decision.facts.actorInstantMs,'7200000');assert.equal(decision.facts.sceneInstantMs,'3600000');
+    assert.throws(()=>f.store.executeAutonomy({commandId:'bypass-pending',campaignId:f.campaignId,token:f.token,action:{kind:'pause',actorId:f.actorId,paused:false,expectedRevision:actor.revision}}),/GM-Entscheidung/);
+    assert.throws(()=>f.store.executeAutonomy({commandId:'bypass-pending-config',campaignId:f.campaignId,token:f.token,action:{kind:'actor',actor:{...actor,paused:false},expectedRevision:actor.revision,initialLocationId:null}}),/Autonomielaufstand/);
+    f.store.close();originalClosed=true;reopened=new CampaignStore(f.path,'test');const workspace=reopened.activate(f.campaignId),fresh=reopened.autonomy(workspace.token).actors.find(value=>value.id===f.actorId)!;assert.equal(fresh.pending,actor.pending);assert.equal(fresh.paused,true);
+    reopened.executeAutonomy({commandId:'resume-pending',campaignId:f.campaignId,token:workspace.token,action:{kind:'accept-pending',actorId:f.actorId,expectedRevision:fresh.revision,resolution:'resume',reason:'Aktuellen Worldstand geprüft'}});const resumed=reopened.autonomy(workspace.token);assert.equal(resumed.actors.find(value=>value.id===f.actorId)!.pending,null);assert.equal(resumed.actors.find(value=>value.id===f.actorId)!.paused,false);assert.match(resumed.logs[0]!.text,/Aktuellen Worldstand geprüft/);
+  }finally{reopened?.close();if(!originalClosed)f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
