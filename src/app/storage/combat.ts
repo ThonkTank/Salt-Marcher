@@ -8,13 +8,19 @@ import { randomUUID, randomInt, createHash } from 'node:crypto';
 import { checkedCombat, combatOrder, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
 import { readLiveScene, readLive } from './live';
 import { readProgressCharacter, finishCombatRewards, latestCombatStatuses, detachCombatHealth, resumeCombatHealth, lastCombatPartyParticipant, event } from './progression';
-import { xpLevel } from '../progression';
+import {applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../progression';
 import { assessEncounter } from '../encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry } from './generation';
 import {readWorldActor,readPreparedGroup} from './session';
 import type { Creature } from '../../features/catalog/creature-catalog';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
+function applyDamageDeath(p:Combatant,result:'failure'|'dead'){
+  let health=checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})});
+  if(health.death?.dead)return;
+  if(health.death?.stable)health=applyDeathSave(health,'reset');
+  health=applyDeathSave(health,result);p.hp=health.hp;p.death=health.death;p.deathLast={result,roll:null};
+}
 export function installCombatSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS combat(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scene_id TEXT NOT NULL, ordinal INTEGER NOT NULL, revision INTEGER NOT NULL, phase TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
     DROP INDEX IF EXISTS combat_active_scene;
@@ -170,6 +176,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if (!a.changes || Object.keys(a.changes).some(k => !fields.includes(k))) throw new Error('Unbekanntes Kampffeld.');
           if (p.healthKnown === false && ('hp' in a.changes || 'maxHp' in a.changes) && !('hp' in a.changes && 'maxHp' in a.changes)) throw new Error('Aktuelle und maximale HP gemeinsam eintragen.');
           Object.assign(p, a.changes); if ('hp' in a.changes && 'maxHp' in a.changes) p.healthKnown = true; p.hp = Math.min(p.hp, p.maxHp);
+          if(p.hp>0){delete p.death;delete p.deathLast;}
           if ('initiative' in a.changes) for (const peer of state.participants.filter(peer => peer.groupId === p.groupId)) peer.initiative = p.initiative;
         } else if (a.kind === 'damage' || a.kind === 'heal') {
           const p = participant();
@@ -185,9 +192,15 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
               const expected=a.sourceScale==='half'?Math.floor(source.total/2):a.sourceScale==='double'?source.total*2:a.sourceScale==='full'?source.total:NaN;
               if(a.amount!==expected)throw new Error('Der Schadensbetrag stimmt nicht mit dem gespeicherten Wurf überein.');
             }
-            const absorbed = Math.min(p.tempHp, a.amount); p.tempHp -= absorbed; p.hp = Math.max(0, p.hp - (a.amount - absorbed));
+            const absorbed=Math.min(p.tempHp,a.amount),remaining=a.amount-absorbed,beforeHp=p.hp;p.tempHp-=absorbed;p.hp=Math.max(0,beforeHp-remaining);
+            if(p.characterId&&remaining>0){const overflow=Math.max(0,remaining-beforeHp);if((beforeHp===0?remaining:overflow)>=p.maxHp)applyDamageDeath(p,'dead');else if(beforeHp===0)applyDamageDeath(p,'failure');}
           }
-          else p.hp = Math.min(p.maxHp, p.hp + a.amount);
+          else {p.hp = Math.min(p.maxHp, p.hp + a.amount);if(p.hp>0){delete p.death;delete p.deathLast;}}
+        } else if(a.kind==='death'||a.kind==='death-roll'){
+          const p=participant();if(!p.characterId)throw new Error('Todesrettungswürfe sind nur für Party-Figuren verfügbar.');if(p.healthKnown===false)throw new Error('Todesrettungswürfe benötigen bekannte HP.');
+          const roll=a.kind==='death-roll'?randomInt(1,21):null,result:DeathSaveResult=a.kind==='death'?a.result:roll===20?'natural-20':roll===1?'natural-1':roll!>=10?'success':'failure';
+          const next=applyDeathSave(checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})}),result);
+          p.hp=next.hp;p.maxHp=next.maxHp;p.tempHp=next.tempHp;p.conditions=next.conditions;p.concentrating=next.concentrating;p.death=next.death;p.deathLast={result,roll};
         } else if (a.kind === 'remove') {
           const p = participant(), order = combatOrder(state), index = order.findIndex(c => c.id === p.id);
           detachCombatHealth(db,cam,state,p,command.commandId);
