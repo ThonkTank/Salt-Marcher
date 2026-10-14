@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {executeSceneRule} from "../../src/app/storage/rule-references";
+import {criticalDamageFormula,formulaOutcome} from '../../src/app/dice-formula';
 
 const db={transaction:(run:()=>unknown)=>({immediate:run})};
 const base={commandId:"command-1",campaignId:"campaign-1",token:"token-1",sceneId:"scene-1",expectedRevision:0};
@@ -13,4 +14,11 @@ test("scene rules reject unknown actions before reading or writing storage",()=>
 test("scene rules reject malformed command identities before storage",()=>{
   const command={...base,commandId:7,action:{kind:"pin",noteId:"rule-1"}} as unknown as Parameters<typeof executeSceneRule>[1];
   assert.throws(()=>executeSceneRule(db,command,()=>{}),/Ungültiger Regelreferenz-Auftrag/);
+});
+
+test('attack outcomes honor natural rolls and critical damage doubles only dice',()=>{
+  assert.equal(formulaOutcome('attack',1,12,10),'failure');
+  assert.equal(formulaOutcome('attack',20,21,25),'success');
+  assert.equal(formulaOutcome('attack',12,17,16),'success');
+  assert.equal(criticalDamageFormula('2d6 + 3'),'4d6 + 3');
 });
