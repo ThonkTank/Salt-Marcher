@@ -678,3 +678,21 @@ Besuch. Offene Plan-/Besuchs-/Gruppeneingaben werden vor dem Lesen gespeichert.
 Quellenstand einschließlich Quellenangaben der Statblocks; zwischenzeitliche Änderungen
 erfordern eine Aktualisierung. Vorlesetexte und Autorenprosa behalten ihre Leerzeichen
 und Zeilenumbrüche. Die Mappe enthält GM-Inhalte und ist keine Spielerfreigabe.
+
+
+### Desktopstand 0.56: Spielabendfortschritt und Besuchsergebnisse
+
+Der Spieltisch zeigt die Besuchsfolge eines Plans mit dem Stand der Fokusgruppe.
+Besuche lassen sich direkt über die vorhandene Übernahmevorschau starten; erneute
+Übernahmen bleiben eigenständige Durchläufe. Für den aktuell übernommenen Besuch
+kann der GM ein Ergebnis bestätigen und ihn als abgeschlossen, übersprungen oder
+wieder offen markieren. Änderungen hängen weitere Einträge an die Chronik an.
+Die bisherige Ergebnisgeschichte bleibt erhalten; der neueste Eintrag bestimmt
+den angezeigten Status dieses Durchlaufs. XP, Beute und Weltzeit ändern sich dabei
+nicht. Ergebnisse und Besuchsstände erscheinen auch in der Spielabendmappe und
+deren Markdownausgabe. Die fünf neuesten Übernahmen je Besuch sind dort sichtbar.
+
+Ein Ergebnis gehört zur konkreten Gruppe und Übernahme, nicht zum Ort oder zu
+gleichnamigen Besuchen. Fokus-/Übernahmewechsel und Scene-Revisionen werden bei
+der Bestätigung geprüft. Unbestätigte Ergebnisfelder bleiben beim Fokuswechsel
+in diesem Prozess als Entwurf erhalten; erst Bestätigen speichert sie dauerhaft.

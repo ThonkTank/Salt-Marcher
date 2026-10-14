@@ -1,3 +1,5 @@
+import {readSessionProgress} from './visit-outcomes';
+import {visitOutcomeLabel} from '../visit-outcome-contracts';
 import {createHash} from 'node:crypto';
 import {readPlan,readSession} from './session';
 import {checkedLocationDocument} from '../../features/location/location-schema';
@@ -26,6 +28,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
   const l=checkedLocationDocument(payload(row));locations.set(id,l.name);
   const blocks=l.sections.map(s=>({heading:l.name+' · '+s.title,text:s.markdown,kind:'reference' as const}));cache.set(key,blocks);return blocks;
  };
+ const progress=readSessionProgress(db,cam,planId);
  const visits=plan.scenes.map((v,index)=>{
   const detail=session.visits[index]!,blocks:SessionPacketBlock[]=[];
   if(detail.readAloud.trim())blocks.push({heading:'Zum Vorlesen',text:detail.readAloud,kind:'read-aloud'});
@@ -46,6 +49,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
   }
   for(const id of noteIds)blocks.push(...note(id));
   const r=detail.reward;if(r)blocks.push({heading:'Belohnung',kind:'reward',text:[r.poolXp+' Gruppen-XP',r.awarded?'XP bereits vergeben':'XP noch nicht vergeben',r.placedTreasureId?'Beute bereits platziert':'Beute noch nicht platziert',...r.items.map(i=>`${i.quantity} × ${i.name} · ${i.valueGold} GM je Stück · ${i.category}`)].join('\n')});
+  const played=progress.visits[index]!;if(played.count)blocks.push({heading:'Spielverlauf · '+played.count+' Übernahmen',kind:'gm',text:played.occurrences.map(o=>(o.sceneTitle||'Gruppe')+' · '+(o.outcome?visitOutcomeLabel(o.outcome.status):'Begonnen, Ergebnis noch offen')+(o.outcome?' · '+o.outcome.recordedAt+'\n'+o.outcome.text:'')).join('\n\n')+(played.count>5?'\n\nNur die fünf neuesten Übernahmen angezeigt.':'')});
   return {id:v.id,title:v.title||'Besuch '+(index+1),location:v.locationId?locations.get(v.locationId)??'Nicht verfügbarer Ort':null,blocks};
  });
  const p={planId:plan.id,planName:plan.name,planRevision:plan.revision,campaignName:db.prepare('SELECT name FROM campaign WHERE id=?').get(cam).name,party:session.profile.party.map(p=>p.count+' × '+(p.name||'Figur')+' · Stufe '+(p.level??'?')),visits,warnings};
