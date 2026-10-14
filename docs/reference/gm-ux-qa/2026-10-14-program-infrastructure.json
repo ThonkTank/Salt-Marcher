@@ -7,30 +7,38 @@
   "isolation": "Separate management and detached pilot copy; shared development untouched.",
   "scenario_contract": "nebelmark 2.0.1 separates visual player handout from GM read-aloud retrieval.",
   "review_candidate": {
-    "id": "INFRA-FIX-02-CANDIDATE-02",
-    "files": 1102,
-    "original_native_frames": 266,
-    "inventory_sha256": "b853df4719e7c8d66de1b470a42b5e4a0e42884c98b436aa797acc8c25023972",
-    "independent_reviews": 0,
-    "status": "technical_evidence_secured_not_accepted"
+    "id": "INFRA-READINESS-CANDIDATE-04",
+    "new_files": 27,
+    "inventory_sha256": "055a294d2f8464a3b495a57e189adae931eab11c290bc959cbea3ae71ef54c1a",
+    "independent_reviews_started": 2,
+    "status": "in_progress_not_accepted",
+    "native_base": "Immutable fix03 lifecycle and fix02 original product pilots; changed offline checker does not imply new GUI execution."
   },
   "confirmed_infrastructure_issues": [
-    "Future audit must preserve historical manifest bytes and reject unverified claim conditions.",
-    "Attached recorder and empty transport evidence need fail-closed checks.",
-    "Delayed successful UI effects need attribution without accepting later corrective inputs."
+    "Scored cohort conditions and initial profile emptiness still require direct proof.",
+    "Timed cold launch must include setup; private display identity is not a semantic UI-view label."
   ],
-  "repair": "Source consolidation in a separate infrastructure chat; original native evidence retained. Documented raw-input index loading corrected and 18 targeted tests passed.",
+  "repair": "Originals retained. New wire checker rejects corrupted prefix/completion receipts; 37 related offline tests passed and all three original complete transport traces remain consistent. Independent native review underway.",
   "scored_product_runs": 0,
   "claim": "No product usability, parity, superiority or human-load claim. Private cases and raw personal filesystem views remain outside this repository.",
   "offline_checks": {
     "historical_package_tests_passed": 86,
     "targeted_input_loader_tests_passed": 18,
-    "scope": "Offline method checks; not product acceptance."
+    "scope": "Offline method checks; not product acceptance.",
+    "targeted_wire_and_adapter_tests_passed": 37
   },
   "previous_review_candidate": {
     "id": "INFRA-REVIEW-CANDIDATE-01",
     "files": 304,
     "independent_reviews": 2,
     "verdict": "agreed_blocked"
+  },
+  "next_fixed_product": {
+    "commit": "92e487387291a87702d8e20672d489ca0b784c67",
+    "version": "0.68.0",
+    "desktop_build_exit": 0,
+    "artifact_files": 13,
+    "native_pilot": "in_progress",
+    "scored_runs": 0
   }
 }
