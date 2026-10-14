@@ -30,6 +30,6 @@ test('retiring a scene archives its combat without completion or rewards',()=>{
   const foe={id:'foe-turn',characterId:null,groupId:'foe-turn',name:'Wache',initiative:10,initiativeBonus:0,armorClass:12,hp:8,maxHp:8,tempHp:0,conditions:'',concentrating:false};
   const state={id:'combat-1',sceneId:'scene-1',revision:4,title:'Torwache',phase:'running',round:2,turnId:foe.id,participants:[foe],notes:'offen',outcome:''},combat={campaign_id:'campaign-1',id:state.id,scene_id:state.sceneId,revision:state.revision,phase:state.phase,...envelope(state)};let updated:any[]=[],proof:any[]=[];
   const db={prepare:(sql:string)=>({all:()=>sql.includes('FROM combat WHERE')?[combat]:[],run:(...values:any[])=>{if(sql.startsWith('UPDATE combat SET'))updated=values;else if(sql.startsWith('INSERT INTO mask_reconciliation'))proof=values;}})};
-  reconcileCombatParticipants(db,'campaign-1',[],'move-1',new Set(['scene-1']));
+  removePartyFromMasks(db,'campaign-1',[],'move-1',new Set(['scene-1']));
   const after=JSON.parse(updated[2]),receipt=JSON.parse(proof[5]);assert.equal(after.phase,'retired');assert.equal(after.outcome,'');assert.equal(after.rewards,undefined);assert.equal(after.round,2);assert.equal(receipt.retired,true);assert.deepEqual(receipt.removedCharacterIds,[]);
 });
