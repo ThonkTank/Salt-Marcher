@@ -44,6 +44,12 @@ Campaign-Kopien remappen kampagnenlokale Identitäten. Der fachliche Logwert
 `intervalId: "manual"` bleibt dabei in SQL und Payload unverändert; Actor- und
 Campaignowner werden remappt.
 
+Einzel-/Gruppen-Deaktivierung, manuelle Pause und ausdrücklicher Jobabbruch
+geben zukünftige exklusive Buchungen an der bestätigten Actorzeit frei. Bereits
+ausgeführte Buchungsteile bleiben erhalten; nur Jobabbruch verwirft den
+Jobfortschritt. Wiederaufnahme bucht den verbleibenden Zeitraum für Job und Ziel
+neu. Ein belegtes Ziel wird dabei nicht gewaltsam übernommen.
+
 ## Begründete Pending-Entscheidung
 
 Ein Zeitkonflikt bleibt als pausierter Actorstand erhalten, bis der GM ihn über
@@ -77,7 +83,11 @@ belegen übersprungene inaktive Zeit, erhaltene Standard-/Custom-Needs nach Kopi
 Deaktivierung mit gelöster Reservierung und erhaltenem Jobfortschritt sowie
 atomare zeitgebundene Rasten: Autonomieablehnung rollt Fortschritt, Scenezeit und
 beide Bestätigungen zurück; Replay wirkt genau einmal. Native Wirkung/Recovery
-und Reaktivierung mit erneuter exklusiver Zuweisung bleiben gemeinsam abzunehmen.
+bleiben gesondert abzunehmen. Weitere Fälle prüfen Einzel-/Gruppen-Wiederaufnahme
+nach Fresh mit erneuter exklusiver Buchung, Pause/Deaktivierung und Jobabbruch
+am Intervallende sowie konkurrierende Jobs mit erhaltener Vergangenheit.
+Längere manuelle Pause mit ausstehenden Intervallen, ein beim Resume belegtes
+Ziel und Positionsoverride gegen beide Buchungstabellen bleiben zu prüfen.
 
 ## Nächste ausführbare Schritte
 
