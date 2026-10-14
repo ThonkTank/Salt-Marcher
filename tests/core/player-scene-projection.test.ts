@@ -14,9 +14,9 @@ test('the player display publishes only the focused scene read-aloud text',()=>{
   const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
   store.executeLive({commandId:'activate',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
   const current=store.live(token).scene!;
-  store.executeLive({commandId:'content',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:current.id,expectedRevision:current.revision,title:'Das Basalttor',readAloud:'Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.',notes:'Hinterhalt der Wachen bei drei Fehltritten.',locationId:null}});
+  store.executeLive({commandId:'content',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:current.id,expectedRevision:current.revision,title:'Hinterhalt: Der freundliche Wirt ist ein Vampir',readAloud:'Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.',notes:'Hinterhalt der Wachen bei drei Fehltritten.',locationId:null}});
   let player=store.executePlayer({commandId:'show-scene',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings:{blank:false,mode:'scene',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
-  assert.equal(player.frame.mode,'scene');assert.equal(player.frame.title,'Das Basalttor');assert.equal(player.frame.scene?.text,'Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Fehltritten/);
+  assert.equal(player.frame.mode,'scene');assert.equal(player.frame.title,'');assert.equal(player.frame.scene?.text,'Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Fehltritten|Vampir/);
   const updated=store.live(token).scene!;store.executeLive({commandId:'clear-text',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:updated.id,expectedRevision:updated.revision,title:updated.title,readAloud:'',notes:updated.notes,locationId:null}});
   player=store.playerView(token);assert.equal(player.frame.mode,'blank');assert.match(player.frame.reason??'',/kein Vorlesetext/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
@@ -59,4 +59,26 @@ test('player settings saved before scene binding remain readable and fail closed
   const republished=reopened.executePlayer({commandId:'republish',campaignId:campaign.id,token:workspace.token,expectedRevision:shown.settings.revision,action:{kind:'settings',settings:{blank:false,mode:'scene',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
   assert.equal(republished.settings.boundSceneId,scene.id);assert.equal(republished.frame.scene?.text,'Nur bewusst erneut veröffentlichen.');
  }finally{reopened?.close();if(!closed)store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+test('read-aloud keeps authored whitespace and only the explicitly public heading after reopening',()=>{
+ const root=mkdtempSync(join(tmpdir(),'player-public-heading-')),file=join(root,'campaign.sqlite');let store=new CampaignStore(file,'test');
+ try{
+  const campaign=store.create('Öffentliche Überschrift'),token=store.activate(campaign.id).token;
+  const character=store.executeLive({commandId:'character',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}}).character!;
+  const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
+  store.executeLive({commandId:'activate',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+  const text='  Der Wirt winkt.\r\n\r\n  <Einladung>  ',internal='Vampir-Hinterhalt',notes='Schlüssel in der Falltür';
+  store.executeLive({commandId:'content',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:scene.id,expectedRevision:0,title:internal,readAloud:text,notes,locationId:null}});
+  const settings={blank:false,mode:'scene' as const,imageId:null,title:'Am Stadttor',labels:false,light:'daylight' as const,displayId:null,fullscreen:false};
+  let player=store.executePlayer({commandId:'show',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings}});
+  assert.deepEqual(player.frame,{mode:'scene',title:'Am Stadttor',scene:{text}});assert.doesNotMatch(JSON.stringify(player.frame),/Vampir|Falltür/);
+  store.close();store=new CampaignStore(file,'test');const next=store.activate(campaign.id).token;player=store.playerView(next);
+  assert.deepEqual(player.frame,{mode:'scene',title:'Am Stadttor',scene:{text}});
+  player=store.executePlayer({commandId:'without-heading',campaignId:campaign.id,token:next,expectedRevision:player.settings.revision,action:{kind:'settings',settings:{...settings,title:''}}});
+  assert.deepEqual(player.frame,{mode:'scene',title:'',scene:{text}});
+  const original=store.live(next).scene!;assert.equal(original.title,internal);assert.equal(original.notes,notes);assert.equal(original.readAloud,text);
+  store.executeLive({commandId:'empty',campaignId:campaign.id,token:next,action:{kind:'scene-content',sceneId:scene.id,expectedRevision:original.revision,title:internal,readAloud:' \r\n \t',notes,locationId:null}});
+  player=store.playerView(next);assert.equal(player.frame.mode,'blank');assert.doesNotMatch(JSON.stringify(player.frame),/Vampir|Falltür|Der Wirt/);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
