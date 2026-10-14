@@ -43,3 +43,31 @@ test("a rapid second rule pin is ignored while the first host write is pending",
     Object.assign(globalThis,{document:priorDocument,window:priorWindow,Option:priorOption});
   }
 });
+
+test("a late scene refresh cannot replace the active scene revision",async()=>{
+  const parsed=parseHTML("<html><body><section id='scene-preparation-panel'></section></body></html>"),priorDocument=globalThis.document,priorWindow=globalThis.window,priorOption=globalThis.Option;
+  function TestOption(text:string,value:string){const option=parsed.document.createElement("option");option.textContent=text;option.setAttribute("value",value);return option;}
+  Object.assign(globalThis,{document:parsed.document,window:parsed.window,Option:TestOption});
+  let resolveA!:(value:unknown)=>void,resolveB!:(value:unknown)=>void,submitted:any;
+  const rulesA=new Promise(resolve=>{resolveA=resolve;}),rulesB=new Promise(resolve=>{resolveB=resolve;});
+  (parsed.window as any).campaign={
+    sceneRules:async(_token:string,id:string)=>await(id==="scene-a"?rulesA:rulesB),
+    sceneChecks:async(_token:string,id:string)=>({ok:true,value:{sceneId:id,revision:0,checks:[],truncated:false}}),
+    preparation:async()=>({ok:true,value:{notes:[{trashed:false,note:{id:"rule",kind:"rule",title:"Festhalten",readAloud:"Bewegungsrate 0",gmNotes:"Vorteil",revision:1}}]}}),
+    executeSceneRule:async(command:any)=>{submitted=command;return{ok:true,value:{sceneId:"scene-b",revision:23,pins:[]}};},
+  };
+  try{
+    initRuleReferences(()=>{});
+    const ruleSelect=parsed.document.querySelector("#live-check-rule") as HTMLSelectElement;let selectedRule="";
+    Object.defineProperty(ruleSelect,"value",{configurable:true,get:()=>selectedRule,set:(value:string)=>{selectedRule=value;}});
+    activateRuleReferences({campaign:{id:"campaign"},token:"token"} as any);
+    const stale=refreshRuleReferences("scene-a"),current=refreshRuleReferences("scene-b");
+    resolveB({ok:true,value:{sceneId:"scene-b",revision:22,pins:[]}});await current;
+    resolveA({ok:true,value:{sceneId:"scene-a",revision:11,pins:[]}});await stale;
+    parsed.document.querySelector<HTMLButtonElement>("#live-rule-results button")!.click();await tick();
+    assert.equal(submitted.sceneId,"scene-b");
+    assert.equal(submitted.expectedRevision,22);
+  }finally{
+    Object.assign(globalThis,{document:priorDocument,window:priorWindow,Option:priorOption});
+  }
+});
