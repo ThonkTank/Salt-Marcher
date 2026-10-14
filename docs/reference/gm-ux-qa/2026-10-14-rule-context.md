@@ -31,6 +31,12 @@ Die Gruppe-Regel-Zuordnung ist damit gezielt geprüft. Vollständige Regelverwal
 gesamter Kampagnentransfer, Crash-Recovery, OS-Parität und das Gesamtprodukt
 bleiben eigene offene Abnahmen.
 
-50 gezielte Tests bestanden; Desktop-Typecheck und Build erfolgreich. Zwei native
+51 gezielte Tests einschließlich GM-Probenintegration bestanden; Desktop-Typecheck und Build erfolgreich. Zwei native
 Starts endeten normal; alle eigenen Electron-PIDs beendet. Ein serieller QA-Job
-blieb laut systemd bei 924 MiB Spitze unter 4 GiB Limit, ohne Swap.
+blieb im Abschlusslauf laut systemd bei 624,6 MiB Spitze unter 4 GiB Limit, ohne Swap.
+
+Der letzte Merge erhält persistente GM-Proben: native Probe mit Vorteil, +2,
+SG 10 und angeheftetem Sichtschutz. Zwei Würfel, Maximum +2 und Gruppenzuordnung
+wurden im frischen Store geprüft; das Ergebnis blieb beim nativen Neustart in B.
+Ein zusätzlicher UI-Fall verwirft die späte Würfelantwort aus A vor der nächsten
+Probe in B. [Abschlussbeleg](2026-10-14-rule-context-sync.json).

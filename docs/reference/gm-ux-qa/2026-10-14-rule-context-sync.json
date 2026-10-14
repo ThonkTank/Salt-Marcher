@@ -1,0 +1,40 @@
+{
+  "testedCodeCommit": "f5184fd54c791012011324b3cfa8c65c3155225c",
+  "qualifiedAfterLastCodeMerge": true,
+  "testsPassed": 51,
+  "updatedBrowserFixtureChecks": 5,
+  "typecheck": true,
+  "desktopBuild": true,
+  "native": {
+    "results": {
+      "bPinned": true,
+      "status": "Regelreferenzen der Gruppe gespeichert.",
+      "focus": "c1b5deb4-6d83-4600-a3b1-d1dacd564e77",
+      "nativeCheckLogged": "Letztes Ergebnis · Sichtschutz prüfen: 12 / 19 + 2 = 21 · Erfolg gegen SG 10",
+      "checkFormulaAndOwnership": true,
+      "aPinsUnchanged": true,
+      "originalNoteBytesUnchanged": true,
+      "nativeRestartPinB": true,
+      "nativeCheckRestart": true,
+      "nativeRestartPinsA": true
+    },
+    "launches": [
+      {
+        "pid": 268709,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-637343ff4fa547e48a7a6ce691bc3d33.service"
+      },
+      {
+        "pid": 268829,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-637343ff4fa547e48a7a6ce691bc3d33.service"
+      }
+    ],
+    "normalClose": true
+  },
+  "ownNativePidsExited": true,
+  "resourceReceipt": "Oct 14 02:54:08 bastelstation systemd[1306]: Started codex-dungeon-qa-637343ff4fa547e48a7a6ce691bc3d33.service - [systemd-run] /home/aaron/.nvm/versions/node/v22.22.0/bin/node .qa-regression/check-rule-context.mjs.\nOct 14 02:54:35 bastelstation systemd[1306]: codex-dungeon-qa-637343ff4fa547e48a7a6ce691bc3d33.service: Consumed 37.164s CPU time over 27.176s wall clock time, 624.6M memory peak.\n",
+  "limits": {
+    "memoryMaxBytes": 4294967296,
+    "swapMaxBytes": 0,
+    "ownHeavyJobsAtOnce": 1
+  }
+}
