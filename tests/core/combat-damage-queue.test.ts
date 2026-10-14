@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,hasCombatCondition,pendingRollStillValid,setCombatCondition} from '../../src/app/combat';
+import {fighterDraftBasisMatches} from '../../src/app/combat-draft-contracts';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
   const damage=(id:string)=>({check:{id} as any,combatId:'combat',attackerId:'attacker'});
@@ -41,4 +42,10 @@ test('condition shortcuts preserve free notes and recognize catalog language',()
   assert.equal(hasCombatCondition(added,'Vergiftet','Poisoned'),true);
   assert.equal(setCombatCondition(added,'Vergiftet','Poisoned',false),'Fluch des Sehers, Liegend');
   assert.equal(setCombatCondition(added,'Liegend','Prone',true),added);
+});
+
+test('automatic round state does not conflict with fighter drafts',()=>{
+  const before={id:'fighter',name:'Goblin',conditions:'',legendaryActions:{remaining:3},timedEffects:[{id:'effect',remaining:2}]} as any;
+  assert.equal(fighterDraftBasisMatches(before,{...before,legendaryActions:{remaining:2},timedEffects:[{id:'effect',remaining:1}]}),true);
+  assert.equal(fighterDraftBasisMatches(before,{...before,conditions:'Liegend'}),false);
 });

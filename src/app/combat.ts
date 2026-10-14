@@ -1,6 +1,6 @@
 import {finishDraftCommit,finishDraftConsumed,flushFinishDraft} from './finish-draft-ui';
 import {CombatDraftCache,combatDraftKey} from './combat-draft-cache';
-import {fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
+import {fighterDraftBasisMatches,fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { Workspace, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
@@ -129,7 +129,7 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
       const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
-      acceptCombat(result); applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
+      acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
       if(['create','edit','damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
@@ -313,7 +313,7 @@ function renderConditionShortcuts(p:Combatant|undefined,source:Creature|undefine
 function renderTimedEffects(p:Combatant|undefined){const section=get('fighter-effects'),root=get('fighter-effect-list');section.hidden=!p;root.replaceChildren();for(const effect of p?.timedEffects??[]){const row=document.createElement('p'),text=document.createElement('span'),remove=document.createElement('button');text.textContent=effect.name+' · '+effect.remaining+' Runde'+(effect.remaining===1?'':'n')+' · am '+(effect.tick==='start'?'Anfang':'Ende')+' des Zugs';remove.type='button';remove.textContent='Entfernen';remove.disabled=blocked();remove.onclick=()=>{if(p)void execute({kind:'effect-remove',participantId:p.id,effectId:effect.id});};row.append(text,remove);root.append(row);}if(p&&!p.timedEffects?.length){const empty=document.createElement('p');empty.className='caption';empty.textContent='Kein Rundeneffekt aktiv.';root.append(empty);}}
 function renderEditor() {
   const p = view?.combat?.participants.find(p => p.id === selected),key=fighterKey(),draft=key?fighterDrafts.get(key):undefined;
-  get('fighter-draft-status').textContent=draft?(JSON.stringify(draft.basis)===JSON.stringify(p)?'Eingabe offen – mit „Werte übernehmen“ bestätigen.':'Gespeicherte Werte wurden geändert. Eingabe bleibt offen; zuerst den aktuellen Stand laden.') : '';
+  get('fighter-draft-status').textContent=draft?(p&&fighterDraftBasisMatches(draft.basis,p)?'Eingabe offen – mit „Werte übernehmen“ bestätigen.':'Gespeicherte Werte wurden geändert. Eingabe bleibt offen; zuerst den aktuellen Stand laden.') : '';
   get('combat-participant').hidden = !p || !editableCombat(view?.combat??null);
   get('combat-selected-name').textContent = p?.name ?? '';
   get('fighter-health-hint').hidden = p?.healthKnown !== false;
@@ -329,7 +329,7 @@ function renderEditor() {
   get<HTMLButtonElement>('fighter-death-reset').hidden=!deathControls.reset;
   const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id;renderConditionShortcuts(p,source);renderTimedEffects(p);get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});
 }
-function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
+function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes},matches=d.kind==='fighter'&&basis?fighterDraftBasisMatches(d.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(d.basis);return matches?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
   if(event.ref.family!=='combat'||workspace?.campaign.id!==event.ref.campaignId)return;
   const result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft}|undefined;

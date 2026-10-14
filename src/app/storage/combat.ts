@@ -14,6 +14,7 @@ import { readGeneratorRegistry } from './generation';
 import {readWorldActor,readPreparedGroup} from './session';
 import type { Creature } from '../../features/catalog/creature-catalog';
 import {legendaryActionCost} from '../dice-formula';
+import {fighterDraftBasisMatches} from '../combat-draft-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function applyDamageDeath(p:Combatant,result:'failure'|'dead'){
   let health=checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})});
@@ -123,7 +124,8 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
       consumedDraft=readCombatDraft(db,cam,command.combatId,a.kind==='edit'?'fighter':'notes',a.kind==='edit'?a.participantId:command.combatId);
       if(!consumedDraft||consumedDraft.writeId!==command.draftWriteId)throw new Error('Kampfeingabe inzwischen geändert.');
       const current=decode(db.prepare('SELECT * FROM combat WHERE campaign_id=? AND id=?').get(cam,command.combatId)),basis=consumedDraft.kind==='fighter'?current.participants.find(p=>p.id===consumedDraft!.targetId):{title:current.title,notes:current.notes};
-      if(JSON.stringify(basis)!==JSON.stringify(consumedDraft.basis))throw new Error('Gespeicherte Werte des Entwurfs wurden geändert. Zuerst abgleichen.');
+      const matches=consumedDraft.kind==='fighter'&&basis?fighterDraftBasisMatches(consumedDraft.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(consumedDraft.basis);
+      if(!matches)throw new Error('Gespeicherte Werte des Entwurfs wurden geändert. Zuerst abgleichen.');
     }
     let state: CombatState;
     if (a.kind === 'create') {
