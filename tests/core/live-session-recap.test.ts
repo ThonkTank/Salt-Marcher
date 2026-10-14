@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type {ChronicleEntry} from '../../src/app/chronicle-contracts';
-import {liveSessionRecap} from '../../src/app/live-session-recap';
+import type {LiveAction} from '../../src/app/live-contracts';
+import {liveActionUpdatesRecap,liveSessionRecap} from '../../src/app/live-session-recap';
 
 const entry=(id:string,sessionMarker?:'start'|'end'):ChronicleEntry=>({id,recordedAt:'2026-10-14T12:00:00.000Z',category:'world',title:id,summary:'',people:[],scene:null,location:null,...(sessionMarker?{sessionMarker}:{})});
 
@@ -11,4 +12,9 @@ test('live session recap contains only events after the active start marker',()=
 
 test('live session recap retains the most recently completed session',()=>{
   assert.deepEqual(liveSessionRecap([entry('end','end'),entry('event'),entry('start','start'),entry('older')]),{open:false,marker:entry('end','end'),entries:[entry('event')]});
+});
+
+test('every live action that records a chronicle event refreshes the recap',()=>{
+  for(const kind of ['membership','move','live-moment','session-marker','advance-clock'])assert.equal(liveActionUpdatesRecap({kind} as LiveAction),true,kind);
+  for(const kind of ['initialize','create-character','profile','apply-visit','scene-content','focus'])assert.equal(liveActionUpdatesRecap({kind} as LiveAction),false,kind);
 });

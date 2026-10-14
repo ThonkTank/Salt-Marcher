@@ -1,4 +1,5 @@
 import type {ChronicleEntry} from './chronicle-contracts';
+import type {LiveAction} from './live-contracts';
 
 export interface LiveSessionRecap {
   open:boolean;
@@ -14,3 +15,5 @@ export function liveSessionRecap(entries:ChronicleEntry[]):LiveSessionRecap{
   const startIndex=entries.findIndex((entry,index)=>index>markerIndex&&entry.sessionMarker==='start');
   return{open:false,marker,entries:entries.slice(markerIndex+1,startIndex<0?entries.length:startIndex).filter(entry=>!entry.sessionMarker)};
 }
+
+export const liveActionUpdatesRecap=(action:LiveAction)=>['membership','move','live-moment','session-marker','advance-clock'].includes(action.kind);
