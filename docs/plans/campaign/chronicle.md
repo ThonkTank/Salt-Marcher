@@ -54,6 +54,37 @@ Szenentisch- und Todesrettungswurfprüfungen bestanden zuletzt 37 gezielte Tests
 Fresh und kontrollierter IPC-Lesefehler. Kein Hard-Crash-, umfassender
 Dateidialog- oder vollständiger Produktnachweis.
 
+Historische `narrative-state`-Records ohne einen tatsächlich erfassten
+`after.status` bleiben interne Statusbelege und verbrauchen kein sichtbares
+Ergebnisfenster. Bestätigte offene/geschlossene Statusänderungen bleiben auch
+ohne den erst später eingeführten Award-/Auftragstitel sichtbar. Ein ausdrücklich
+ungültiger Status ist ein Quellfehler, kein Anlass zum stillen Auslassen. Die
+Windowproben unterscheiden diese Fälle und erhalten die ursprünglichen Records.
+
+## Manuelle Momente am Spieltisch
+
+`LiveAction.live-moment` schreibt ausdrücklich bestätigte Notizen als
+`world_history` mit Bereich, Ursprungsscene, damaligen Figuren, Ort und Weltzeit.
+Der Chronikreader behält die vorhandenen Besuchsergebnisse, Quellenprüfungen
+und Filter vor dem Ergebnislimit bei. Ein Moment bestätigt weder Kampfabschluss
+noch XP oder Loot; diese Fakten bleiben bei ihren bestehenden Writern.
+
+Der Renderer bindet Scene und Fokus bereits beim Submit und kopiert Titel,
+Notiz und Bereich vor dem Flush. Geänderter Fokus vor dem Senden verhindert
+diesen Submit. Ein bereits bestätigter älterer Moment bleibt in der Historie;
+seine spätere Antwort ersetzt keine neuere fokussierte Scene und leert keine
+weiter eingegebene Notiz. Nur eine unveränderte Formfassung wird nach Erfolg
+geleert. Drei kontrollierte DOM-/SQLiteproben in
+`desktop-live-moment-context.test.mjs` prüfen ursprünglichen Wortlaut samt CRLF,
+Fokuswechsel während Flush und spätere Antwort mit weiter nutzbarer neuer Scene.
+
+Die Momentfelder sind noch temporäre Eingaben. Nächster Anschluss: Rohfelder
+an Campaign und Ursprungsscene binden, vor Contextwechsel/Fresh sichern und
+nach einem nicht eindeutig bestätigten Command dessen Status prüfen. Einen
+unbekannten Ausgang nicht durch erneutes Festhalten verdoppeln. Native IME,
+Fokus-/Tastaturbedienung und wiederaufgenommene unvollständige Notizen bleiben
+separat abzunehmen; lokale Storebelege schließen diese Schritte nicht.
+
 ## Party- und Zeitanschluss vom 14.10.2026
 
 Der Livewriter protokolliert Aktivierung, Deaktivierung und Scenemove mit
