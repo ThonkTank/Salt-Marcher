@@ -49,6 +49,7 @@ export async function refreshProgress(deliverNotices=true) {
   try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result; const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
   catch (error) { if (gen === generation) tell((error as Error).message, true); }
 }
+export async function executePartyProgress(action: ProgressAction){return execute(action);}
 async function execute(action: ProgressAction): Promise<boolean> {
   if (!workspace || pending||hasPendingCommit(workspace.campaign.id)) return false;
   if ((action.kind==='ledger'||action.kind==='ledger-split'||action.kind==='ledger-merge'||action.kind==='ledger-transfer') && (!ledgerEditable()||action.entryId!==selectedLedger)) return false;

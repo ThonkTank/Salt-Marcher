@@ -1,3 +1,4 @@
+import {initPartyTopbar,activatePartyTopbar} from './party-topbar-ui';
 import {initDayCalculator,activateDayCalculator} from './adventuring-day-ui';
 import {initNpcs,activateNpcs,openNpcs,flushNpcs} from './npc-ui';
 import {initGroups,activateGroups,openGroups,flushGroups} from './groups-ui';
@@ -60,6 +61,7 @@ initPreparation(status, async scopeId => {
 });
 setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());
+initPartyTopbar(()=>el<HTMLButtonElement>('live-tab').click());
 initLive(status, async id => {
   if (!(await leaveWorkspace())) return;
   await openPreparedLocation(id); showTab('preparation');
@@ -402,7 +404,7 @@ async function drainActivation(): Promise<void> {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        activateLive(next);activateDayCalculator(next); activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
+        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next); activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';
