@@ -130,6 +130,7 @@ function sessionRunRow(db:any,row:any):SessionRun{
  for(const a of db.prepare('SELECT * FROM session_proposal_acceptance WHERE campaign_id=? AND run_id=?').all(cam,run.id)){if(!unsigned(a.proposal_index)||!run.proposals[a.proposal_index]||!identity(a.visit_id))throw new Error('Vorschlagsübernahme beschädigt.');accepted.set(a.proposal_index,a.visit_id);}
  for(const p of run.proposals){if(p.acceptedVisitId!==null&&p.acceptedVisitId!==accepted.get(p.index))throw new Error('Vorschlagsübernahme widersprüchlich.');p.acceptedVisitId=accepted.get(p.index)??null;}
  if(run.lootGuidance!==undefined){const g=checkedSessionLootGuidance(run.lootGuidance,run.proposals.length);
+  for(const item of g.magic?.pool??[])readItemDefinition(db,item.definitionId,item.revision);
   for(const c of g.characters)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,c.characterId))throw new Error('Figur des Beuteausgleichs gehört nicht zur Kampagne.');
  }
 

@@ -496,6 +496,12 @@ permanente Magiebeute. Native Gesamt- und Plattformabnahme bleiben separat.
 
 ### Desktopstand 0.47: gezielte, vielfältige Magiebeute
 
+[Auswahlprüfungen](tests/desktop-session-magic-pool.test.mjs) binden laufende
+Suche und Auswahl an den Planwechsel. Die [Vorschlagsprüfungen](tests/desktop-session-proposal-store.test.mjs)
+prüfen gespeicherte Pools und Beutegrundlagen, leere Pools, archivierte Versionen,
+Kopie und unveränderte Sicherungen. Ohne offene Magiequote wird kein
+Katalogiterator geöffnet.
+
 Die Spielabendplanung kann einen eigenen Gegenstandspool benutzen. Suche und
 Seltenheitsfilter finden aktive magische Katalogdefinitionen; die Auswahl
 aktiviert den Magiebeuteausgleich. Der gespeicherte Lauf bindet die konkreten

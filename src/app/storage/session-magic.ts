@@ -33,14 +33,16 @@ export function fitMagicItems(db:any,items:ItemInput[],target:Record<BudgetRarit
  }
  type Choice=Pick<ItemDefinition,'id'|'revision'|'name'|'category'|'unitCopper'>&{rank:string};
  const pools=new Map<BudgetRarity,Choice[]>(),active=budgetRarities.filter(r=>remaining[r]>0),slots=Math.max(0,maxEntries-result.length),perRarity=Math.min(12,Math.max(1,Math.floor(slots/Math.max(1,active.length))));let blocked=0;
+ if(slots&&active.length){
  const candidates:Iterable<{id:string;revision?:number}>=scope===undefined?db.prepare('SELECT id FROM authored_item UNION SELECT id FROM item_definition').iterate():scope.map(r=>({id:r.definitionId,revision:r.revision}));
- if(slots&&active.length)for(const row of candidates){
+ for(const row of candidates){
   try{
    const current=readItemDefinition(db,row.id);if(current.trashed)throw new Error('liegt im Papierkorb');if(row.revision!==undefined&&row.revision!==current.revision)throw new Error('gewählte Version geändert; Pool für einen neuen Vorschlag erneut zusammenstellen');const d=row.revision===undefined?current:readItemDefinition(db,row.id,row.revision),r=budgetRarity(d.rarity);
    if(!d.magic||!r||!remaining[r])continue;
    const rank=(used.has(d.id)?'1':'0')+createHash('sha256').update(seed+'|magic|'+r+'|'+d.id).digest('hex'),pool=pools.get(r)??[];
    pool.push({id:d.id,revision:d.revision,name:d.name,category:d.category,unitCopper:d.unitCopper,rank});pool.sort((a,b)=>a.rank.localeCompare(b.rank));pool.length=Math.min(pool.length,perRarity,remaining[r]);pools.set(r,pool);
   }catch(error){blocked++;if(blocked<=20)warnings.push('Kataloggegenstand '+row.id+' gesperrt: '+(error as Error).message);}
+ }
  }
  if(blocked>20)warnings.push((blocked-20)+' weitere gesperrte Kataloggegenstände wurden ausgelassen.');
  for(const r of active){

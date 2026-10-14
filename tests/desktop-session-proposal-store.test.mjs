@@ -56,10 +56,10 @@ test('stale profile and archived world references preserve valid proposals',asyn
  const x=fixture(t),id=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'rumor',title:'Harbor',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});x.store.executeSession(x.command({...x.action,noteIds:[id]}));const profile=x.store.session(x.w.token,x.planId).profile;x.store.executeSession(x.command({kind:'profile',expectedRevision:profile.revision,profile:{...profile,seed:'Changed'}}));x.store.changePreparation({...x.command(null),change:{kind:'note-trash',id,expectedRevision:1,trashed:true}});assert.deepEqual(x.store.sessionRun(x.w.token,x.run.id).proposals[0].noteIds,[id]);await x.store.backup(path.join(x.root,'stale-safe.sqlite'));
 });
 
-function guided(x,magic=false){
+function guided(x,magic=false,magicPool){
  const progress=x.store.progress(x.w.token).characters.find(c=>c.characterId===x.hero.id);x.store.executeProgress(x.command({kind:'xp',characterId:x.hero.id,expectedRevision:progress.revision,mode:'set',amount:0,reason:'Known planning XP'}));
  const profile=x.store.session(x.w.token,x.planId).profile,encounter=x.store.generationRun(x.w.token,x.run.generationRunId).request;
- return x.store.generateSession(x.w.token,{planId:x.planId,expectedProfileRevision:profile.revision,count:2,locationIds:[],noteIds:[],compensateLoot:true,compensateMagic:magic,encounter});
+ return x.store.generateSession(x.w.token,{planId:x.planId,expectedProfileRevision:profile.revision,count:2,locationIds:[],noteIds:[],compensateLoot:true,compensateMagic:magic,magicPool,encounter});
 }
 test('cumulative loot snapshots copy with independent roster and generator identities',async t=>{
  const x=fixture(t),run=guided(x);assert.ok(run.lootGuidance);const snapshot=path.join(x.root,'guided.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=x.store.acceptCampaignSnapshot(snapshot,'Guided copy',{}),w=x.store.activate(copy.id),id=x.store.sessionRuns(w.token,x.store.preparation(w.token).plans[0].id)[0].id,copied=x.store.sessionRun(w.token,id);assert.notEqual(copied.lootGuidance.characters[0].characterId,x.hero.id);assert.deepEqual(copied.lootGuidance.allocationsCopper,run.lootGuidance.allocationsCopper);assert.notEqual(copied.generationRunId,run.generationRunId);await x.store.backup(path.join(x.root,'guided-safe.sqlite'));
@@ -85,4 +85,23 @@ test('magic quota snapshots copy with roster identities and preserve their origi
 });
 for(const [name,mutate]of [['allocation',g=>g.magic.allocations[0].Common++],['received',g=>g.magic.received.Common++],['owner',g=>g.magic.characters[0].characterId=randomUUID()]])test(`checksummed magic ${name} damage preserves the safe snapshot`,async t=>{
  const x=fixture(t),run=guided(x,true),safe=path.join(x.root,'magic-safe.sqlite');await x.store.backup(safe);const original=readFileSync(safe),row=x.store.db.prepare('SELECT payload FROM session_run WHERE campaign_id=? AND id=?').get(x.cam.id,run.id),body=JSON.parse(row.payload);mutate(body.lootGuidance);const payload=JSON.stringify(body);x.store.db.prepare('UPDATE session_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,run.id);assert.throws(()=>x.store.sessionRun(x.w.token,run.id));await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(original));
+});
+
+for(const [name,damage]of [
+ ['pool revision',g=>g.magic.pool=[{definitionId:'missing',revision:0,name:'Magic',rarity:'Common'}]],
+ ['pool rarity',g=>g.magic.pool=[{definitionId:'missing',revision:1,name:'Magic',rarity:'invented'}]],
+ ['missing pool definition',g=>g.magic.pool=[{definitionId:'missing',revision:1,name:'Magic',rarity:'Common'}]],
+ ['basis shape',g=>g.basis.ledger={}],
+ ['basis owner',g=>g.basis.ledger=[{id:'missing',characterId:'foreign',revision:1}]],
+ ['basis revision',g=>g.basis.definitions=[{definitionId:'missing',revision:-1}]],
+])test(`saved ${name} corruption cannot replace a safe backup`,async t=>{
+ const x=fixture(t),run=guided(x,true),safe=path.join(x.root,'pool-safe.sqlite');await x.store.backup(safe);const saved=readFileSync(safe),body=structuredClone(run);damage(body.lootGuidance);const payload=JSON.stringify(body);x.store.db.prepare('UPDATE session_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,run.id);const bytes=x.store.db.serialize();assert.throws(()=>x.store.sessionRun(x.w.token,run.id));await assert.rejects(x.store.backup(safe));assert.ok(saved.equals(readFileSync(safe)));assert.ok(bytes.equals(x.store.db.serialize()));
+});
+test('an explicit empty magic pool remains empty and copy-safe without creating World items',async t=>{
+ const x=fixture(t),before=x.store.db.prepare('SELECT count(*) n FROM authored_item').get().n,run=guided(x,true,[]);assert.deepEqual(run.lootGuidance.magic.pool,[]);assert.deepEqual(x.store.sessionRun(x.w.token,run.id),run);assert.ok(run.proposals.every(p=>p.reward.items.every(i=>i.category!=='magic')));assert.equal(x.store.db.prepare('SELECT count(*) n FROM authored_item').get().n,before);const file=path.join(x.root,'empty-pool.sqlite');await x.store.campaignSnapshot(x.w.token,file);const copy=x.store.acceptCampaignSnapshot(file,'Empty pool copy',{}),w=x.store.activate(copy.id),planId=x.store.preparation(w.token).plans[0].id,id=x.store.sessionRuns(w.token,planId)[0].id;assert.deepEqual(x.store.sessionRun(w.token,id).lootGuidance.magic.pool,[]);await x.store.backup(path.join(x.root,'empty-pool-safe.sqlite'));
+});
+
+test('a pinned magic pool remains readable and copy-safe after its definition is archived',async t=>{
+ const x=fixture(t),definition=x.store.executeItemShop(x.command({kind:'definition',expectedRevision:null,definition:{id:randomUUID(),revision:0,name:'  Lantern',category:'magic',magic:true,rarity:'Common',attunement:'no',unitCopper:'100',weightText:'',properties:[],description:'  GM prose\r\n',source:{kind:'authored',label:'GM',license:null,url:null},trashed:false}})).definition,run=guided(x,true,[{definitionId:definition.id,revision:definition.revision}]);assert.equal(run.lootGuidance.magic.pool[0].definitionId,definition.id);
+ x.store.executeItemShop(x.command({kind:'definition',expectedRevision:definition.revision,definition:{...definition,trashed:true}}));assert.deepEqual(x.store.sessionRun(x.w.token,run.id),run);const file=path.join(x.root,'archived-pool.sqlite');await x.store.campaignSnapshot(x.w.token,file);const bytes=readFileSync(file),copy=x.store.acceptCampaignSnapshot(file,'Pinned pool copy',{}),w=x.store.activate(copy.id),planId=x.store.preparation(w.token).plans[0].id,id=x.store.sessionRuns(w.token,planId)[0].id;assert.equal(x.store.sessionRun(w.token,id).lootGuidance.magic.pool[0].name,definition.name);assert.ok(bytes.equals(readFileSync(file)));await x.store.backup(path.join(x.root,'pinned-pool-safe.sqlite'));
 });
