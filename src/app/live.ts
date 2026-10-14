@@ -75,7 +75,7 @@ export async function addLiveNpc(id:string){if(await ensureLiveRuntime())await a
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
   sessionNavigatorBusy(on&&!textSave);
-  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel']) get<HTMLButtonElement>(id).disabled = on && !textSave;
+  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save']) get<HTMLButtonElement>(id).disabled = on && !textSave;
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   if (structural) for (const id of [...profileFields.map(([id]) => id), 'running-title', 'running-notes', 'running-read-aloud', 'running-location']) get<HTMLInputElement>(id).disabled = on;
@@ -121,7 +121,7 @@ function mergeAck(ack: LiveAck, action: LiveAction) {
 }
 async function execute(action: LiveAction): Promise<LiveAck | null> {
   if (!context || blocked || request) return null;
-  const token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
+  const focusRevision = data?.focusRevision, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
   const structural = ['focus', 'move', 'membership', 'archive-character'].includes(action.kind);
   // Blur starts a text save before the user's button click arrives. Keep queued
   // intents available; their handlers await flushLive before writing.
@@ -131,6 +131,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
     try {
       const ack = unwrap(await window.campaign.executeLive(command));
       if (context?.token !== token) return null;
+      if(action.kind==='live-moment'&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
       mergeAck(ack, action); tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;
@@ -365,6 +366,18 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('live-passive-form').onsubmit=event=>{event.preventDefault();renderPassivePerception();};
+  get('live-moment-form').onsubmit=event=>{
+    event.preventDefault();const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,title=value('live-moment-title'),summary=value('live-moment-summary'),category=value('live-moment-category') as Extract<LiveAction,{kind:'live-moment'}>['category'];
+    const current=()=>context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focusRevision;
+    if(!token||!sceneId)return;
+    void(async()=>{try{
+      if(!await flushLive()||!current())return;
+      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary});if(!ack||!current())return;
+      const unchanged=value('live-moment-title')===title&&value('live-moment-summary')===summary&&value('live-moment-category')===category;
+      if(unchanged){get<HTMLInputElement>('live-moment-title').value='';get<HTMLTextAreaElement>('live-moment-summary').value='';get<HTMLInputElement>('live-moment-title').focus();}
+      get('live-moment-result').textContent=unchanged?'In der Kampagnenchronik gespeichert.':'Vorheriger Moment gespeichert. Neuere Eingabe bleibt offen.';
+    }catch(error){if(current())tell((error as Error).message,true);}})();
+  };
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick=()=>void previewPlannedVisit(value('adoption-plan'),value('adoption-visit')).catch(e=>tell(e.message,true));
   get('adoption-cancel').onclick = () => { adoption = null; get<HTMLDialogElement>('adoption-dialog').close(); };

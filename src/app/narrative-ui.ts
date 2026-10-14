@@ -85,6 +85,7 @@ export async function showNarrative(
   loading.textContent = "Narrative Angaben werden geladen…";
   panel.replaceChildren(loading);
   panel.setAttribute("aria-busy", "true");
+  let renderVersion = 0;
   let writeId: string | null = null,
     raw: NarrativeDraft | null = null,
     persisting: Promise<boolean> | null = null,
@@ -118,7 +119,7 @@ export async function showNarrative(
     persisting = run;
     return run.then(async (ok) => {
       persisting = null;
-      return ok && savedVersion !== draftVersion ? persist() : ok;
+      return ok && current() && savedVersion !== draftVersion ? persist() : ok;
     });
   }
   const draftStatus = document.createElement("p");
@@ -162,6 +163,7 @@ export async function showNarrative(
     return run;
   }
   async function writeAction(action: ProgressAction) {
+    if (!current()) return false;
     if (persistHook && !(await persistHook())) return false;
     if (action.kind === "narrative-state" || action.kind === "narrative-award")
       action.draftWriteId = writeId ?? undefined;
@@ -174,6 +176,7 @@ export async function showNarrative(
         action.kind === "narrative-award"
       ) {
         const fresh = await window.campaign.narrative(w!.token, note!.id);
+        if (!current()) return false;
         if (!fresh.ok) throw new Error(fresh.error);
         action.expectedNoteRevision = fresh.value.noteRevision;
       }
@@ -211,6 +214,7 @@ export async function showNarrative(
   }
   function draw() {
     if (!data || !progress) return;
+    const rendered = ++renderVersion, active = () => current() && rendered === renderVersion;
     panel.setAttribute("aria-busy", "false");
     const d = data,
       s: NarrativeDraft = structuredClone(
@@ -256,6 +260,7 @@ export async function showNarrative(
     }
     place.value = s.locationId ?? "";
     place.onchange = () => {
+      if (!active()) return;
       s.locationId = place.value || null;
       markDirty();
     };
@@ -273,6 +278,7 @@ export async function showNarrative(
     status.value = s.status;
     status.setAttribute("aria-label", "Narrativer Status");
     status.onchange = () => {
+      if (!active()) return;
       s.status = status.value as "open" | "closed";
       markDirty();
     };
@@ -281,6 +287,7 @@ export async function showNarrative(
     pool.value = s.poolXp;
     pool.setAttribute("aria-label", "Quest-XP-Pool");
     pool.oninput = () => {
+      if (!active()) return;
       s.poolXp = pool.value;
       markDirty();
     };
@@ -295,6 +302,7 @@ export async function showNarrative(
       label.className = "check-label";
       label.append(box, c.name + (c.active ? "" : " · inaktiv"));
       box.onchange = () => {
+        if (!active()) return;
         s.contributors = Array.from(
           contributors.querySelectorAll<HTMLInputElement>("input:checked"),
         ).map((b) => b.value);
@@ -302,7 +310,7 @@ export async function showNarrative(
       };
       contributors.append(label);
     }
-    rewardItemsEditor(items, s.items, markDirty, true);
+    rewardItemsEditor(items, s.items, () => {if (active()) markDirty();}, true);
     readyHook = () => {
       try {
         if (
@@ -326,6 +334,7 @@ export async function showNarrative(
     };
     save.textContent = "Narrative Angaben speichern";
     saveHook = async () => {
+      if (!active()) return false;
       try {
         if (
           !/^[0-9]+$/.test(s.poolXp) ||
@@ -358,14 +367,15 @@ export async function showNarrative(
         return false;
       }
     };
-    save.onclick = () => void saveHook!();
+    const saveCurrent = saveHook;
+    save.onclick = () => {if (active()) void saveCurrent();};
     resolve.textContent = d.award
       ? "Belohnung bereits vergeben"
       : "Manuell abschließen und Belohnung verteilen…";
     resolve.disabled = !!d.award;
     resolve.onclick = () => {
       void (async () => {
-        if (!(await flushNarrative())) return;
+        if (!active() || !(await flushNarrative()) || !active()) return;
         if (dirty) {
           tell(
             "Eingabe gesichert. Vor Abschluss die Belohnungsfelder vervollständigen und übernehmen.",
@@ -404,10 +414,11 @@ export async function showNarrative(
         message.textContent =
           "Manuelles Ergebnis, XP und Beute werden gemeinsam gespeichert. Gegenstände anschließend ausdrücklich zuweisen.";
 
-        form.onsubmit = (event) => {
+        const submit = (event:SubmitEvent) => {
           event.preventDefault();
+          if (!current() || !dialog.open || form.onsubmit !== submit) return;
           void (async () => {
-            try{const draft=await finishDraftCommit();const rewards = finishRewards();
+            try{const draft=await finishDraftCommit();if(!current()||!dialog.open||form.onsubmit!==submit)return;const rewards = finishRewards();
             if (
               await execute({
                 kind: "narrative-award",
@@ -428,6 +439,7 @@ export async function showNarrative(
             }}catch(e){tell((e as Error).message,true);}
           })();
         };
+        form.onsubmit = submit;
         dialog.addEventListener(
           "close",
           () => {
@@ -457,13 +469,14 @@ export async function showNarrative(
     discard.textContent = "Eingabe verwerfen";
     discard.onclick = () =>
       void (async () => {
-        if (!(await persist())) return;
+        if (!active() || !(await persist()) || !active()) return;
         if (writeId) {
           const r = await window.campaign.discardNarrativeDraft(
             w!.token,
             note!.id,
             writeId,
           );
+          if (!active()) return;
           if (!r.ok) {
             tell(r.error, true);
             return;
@@ -479,7 +492,7 @@ export async function showNarrative(
       adopt.textContent = "Geprüften Entwurf auf aktuellen Stand übernehmen";
       adopt.onclick = () => {
         void (async () => {
-          if (!await persist()) return;
+          if (!active() || !await persist() || !active()) return;
           data!.draft = { ...s, writeId: writeId!, revision: data!.state.revision };
           draw();
           markDirty();

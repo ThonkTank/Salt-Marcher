@@ -12,8 +12,9 @@ Campaignprosa bleibt unabhängig von der UI-Sprache.
 
 `store.ts.tutorial` hält Runs je tatsächlicher Appversion. Der geprüfte Reader
 überschreibt keine korrupten Originals. Finished/Skipped bleiben terminal,
-auch nach verspätetem Shown. Eine neue Lessonrevision überschreibt keinen Run
-und startet kein zweites Tutorial derselben Appversion.
+auch nach verspätetem Shown. Eine neue Lessonrevision archiviert den ursprünglichen Run samt Originalbytes
+unter seiner Run-ID und beginnt auch bei gleicher Appversion einen neuen
+optionalen Lauf; frühere Abschlüsse bleiben erhalten.
 
 Hilfe/Dismiss werden vor der Statusquery gebunden. Der Modal fokussiert seine
 Überschrift und gibt Fokus an den Opener zurück; verzögerte oder ausgefallene
@@ -30,6 +31,12 @@ und Optionen werden entfernt, nicht durch zusätzliche Lektionen überdeckt.
 prüft diese kontrollierten Kontextgrenzen. Vorhandene Tutorial-/Storeprüfungen
 belegen Versionsruns, terminale Zustände und erhaltene Korruption. Das schließt
 weder native Tastatur-/IME-/Screenreaderwirkung noch Feature- oder Localeabnahme.
+
+Die ausführbare Tutorialzuordnung bindet Hauptarbeitsbereiche und ausgewählte
+statische Kopfzeilenaktionen aus `index.html` an vorhandene Lektionen, darunter
+Monstergruppen und Schätze. Dynamische Controls wie Journal und Schnellsuche
+brauchen zusätzliche Zuordnungsprüfungen. Eine zugeordnete Lektion belegt noch
+keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.
 
 ## Nächste konkrete Prüfungen
 

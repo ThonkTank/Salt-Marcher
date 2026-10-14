@@ -18,7 +18,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
   let category:ChronicleCategory='party',title='',summary='',people=person?[person]:[],sceneId:string|null=null,locationId:string|null=null;
   const item=f.entry??f.portion??f.handed;
   if(row.kind==='party-award'){category='party';title='XP-Abrechnung: '+text(f.reason,'Spielabend');summary=String(f.poolXp)+' Gruppen-XP → '+String(f.shareXp)+' je Figur / '+String(f.totalXp)+' insgesamt · Tagesbelastung '+String(f.loadXp)+' → '+String(f.shareLoad)+' je beteiligter Figur';people=nameList(f.recipientIds,names);}
-  else if(row.kind==='narrative-state'){category='narrative';title='Auftragsstatus: '+text(f.title,'Quest oder Gerücht');summary=(f.after?.status==='closed'?'Geschlossen':'Offen')+' · '+String(f.after?.poolXp??0)+' Gruppen-XP vorbereitet'+(f.after?.items?.length?' · '+f.after.items.map(quantity).join(', '):'');people=nameList(f.after?.contributors,names);locationId=f.after?.locationId??null;}
+  else if(row.kind==='narrative-state'){if(f.after?.status===undefined)return null;if(!['open','closed'].includes(f.after.status))throw new Error('Narrativer Chronikstatus ist beschädigt.');category='narrative';title='Auftragsstatus: '+text(f.title,'Quest oder Gerücht');summary=(f.after?.status==='closed'?'Geschlossen':'Offen')+' · '+String(f.after?.poolXp??0)+' Gruppen-XP vorbereitet'+(f.after?.items?.length?' · '+f.after.items.map(quantity).join(', '):'');people=nameList(f.after?.contributors,names);locationId=f.after?.locationId??null;}
   else if(row.kind==='narrative-award'){category='narrative';title='Quest abgeschlossen: '+text(f.title,'Ohne Titel');summary=text(f.outcome,'Ergebnis bestätigt.');people=nameList(f.recipientIds,names);sceneId=f.sceneId??null;locationId=narrativeLocations.get(String(f.noteId))??null;}
   else if(row.kind==='combat-award'){const combat=combats.get(String(f.combatId));category='combat';title='Kampf abgeschlossen: '+(combat?.title??'Begegnung');summary=(combat?.outcome||'Ergebnis bestätigt.')+(Number(f.xp)>0?' · '+f.xp+' XP für '+person:'');sceneId=combat?.sceneId??null;}
   else if(row.kind==='treasure-created'){const treasure=f.treasure;category='reward';title='Beute gesichert: '+text(treasure?.title,'Fund');summary=Array.isArray(treasure?.items)&&treasure.items.length?treasure.items.map(quantity).join(', '):'Leerer Fund';sceneId=treasure?.sceneId??null;locationId=treasure?.locationId??null;}
@@ -49,7 +49,7 @@ function* sourceRows(db:any,cam:string,table:'progress_event'|'world_history'|'s
   let before=Number.MAX_SAFE_INTEGER;
   for(;;){
     let count=0,cursor=before;
-    const filter=kinds?' AND kind IN ('+kinds.map(()=>'?').join(',')+')':'';
+    const filter=kinds?" AND kind IN ("+kinds.map(()=>'?').join(',')+") AND (kind<>'narrative-state' OR json_type(payload,'$.after.status') IS NOT NULL)":'';
     for(const row of db.prepare('SELECT rowid AS cursor,* FROM '+table+' WHERE campaign_id=? AND rowid<?'+filter+' ORDER BY rowid DESC LIMIT ?').iterate(cam,before,...(kinds??[]),sourceLimit+1)){
       count++;cursor=row.cursor;yield row;
     }
@@ -101,12 +101,13 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
     const worldEntries:ChronicleEntry[]=[];let worldTruncated=false;
     for(const row of sourceRows(db,cam,'world_history')){
       const f=payload(row),facts=f.facts??{},sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=facts.locationId??facts.after?.position?.locationId??facts.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;
-      const title=text(f.text,'Weltereignis'),party=facts.kind==='party-membership'||facts.kind==='party-move',travel=!party&&/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title);
-      let summary='';
+      const title=text(f.text,'Weltereignis'),party=facts.kind==='party-membership'||facts.kind==='party-move',travel=!party&&/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title),manualCategory=facts.kind==='live-moment'&&['combat','narrative','reward','travel','party','world'].includes(facts.category)?facts.category as ChronicleCategory:null;
+      if(facts.kind==='live-moment'&&!manualCategory)throw new Error('Chronikquelle hat einen ungültigen Bereich.');
+      let summary=facts.kind==='live-moment'?text(facts.summary):'';
       if(facts.kind==='visit-outcome')summary=text(facts.outcome)+' · Weltzeit '+formatInstant(text(facts.sceneInstantMs,'0'));
       else if(facts.kind==='party-membership')summary=facts.active?'Aktiviert'+(sceneName(facts.toSceneId,scenes)?' in '+sceneName(facts.toSceneId,scenes):''):'Deaktiviert'+(sceneName(facts.fromSceneId,scenes)?' aus '+sceneName(facts.fromSceneId,scenes):'');
       else if(facts.kind==='party-move')summary=(sceneName(facts.fromSceneId,scenes)??'Unbekannte Gruppe')+' → '+(sceneName(facts.toSceneId,scenes)??'Unbekannte Gruppe')+(facts.createdScene?' · neue Gruppe':'');
-      const entry:ChronicleEntry={id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:facts.kind==='visit-outcome'?'narrative':party?'party':travel?'travel':'world',title,summary,people:party||facts.kind==='visit-outcome'?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}
+      const entry:ChronicleEntry={id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:manualCategory??(facts.kind==='visit-outcome'?'narrative':party?'party':travel?'travel':'world'),title,summary,people:party||facts.kind==='visit-outcome'||facts.kind==='live-moment'?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}
     }
     const timeEntries:ChronicleEntry[]=[];let timeTruncated=false;
     for(const row of sourceRows(db,cam,'scene_time_step')){

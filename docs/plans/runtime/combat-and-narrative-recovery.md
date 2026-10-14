@@ -58,7 +58,12 @@ Rohfeldtypen, Ziel, Revision, Empfänger und Gegenstandsreferenzen beim Lesen,
 Schreiben und Backup. Beschädigte Daten ersetzen keine gültige Sicherung.
 Kopie und Fresh remappen strukturierte IDs, erhalten Prosa und unfertige Zahlen;
 archivierte Ziele bleiben zulässige historische Eigentümer.
-Die vollständige native Abschluss- und Recoveryabnahme bleibt offen.
+Das Journal teilt den bestehenden Editor. Auswahl, Navigation und Close binden
+Campaign, Öffnung und Listen-/Detailstand; parallele Closeaktionen teilen einen
+Auftrag. Ein gesendeter Save wiederholt nach Ownerwechsel keine neuen Rohfelder.
+Die Kontextgegenproben in `desktop-narrative-journal-context.test.mjs` ergänzen
+die Store-/DOMprüfungen; die vollständige native Abschluss- und Recoveryabnahme
+bleibt offen.
 
 ## Legendäre Aktion nach unabhängiger Kopie
 
@@ -102,7 +107,13 @@ nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
 
 ## Nächste ausführbare Schritte
 
-1. **Narrative Wiederaufnahme vervollständigen.** Metadatenrohentwürfe und
+1. **Narrative Wiederaufnahme vervollständigen.** Zuerst die ursprüngliche
+   Revisionsbasis und Commandstatus liefern, danach Journal → Metadatenentwurf →
+   Abschluss → Welttexteditor → Rückkehr nativ gemeinsam abnehmen. Esc, langsame
+   Datenträger, nicht lesbarer Entwurf und Campaignwechsel erhalten Rohwerte und
+   schließen keine neuere Ansicht. Lokale Journalguards erfüllen diese native
+   Qualifikation noch nicht.
+ Metadatenrohentwürfe und
    der gemeinsame Kampf-/Questabschluss besitzen inzwischen persistente Eingaben
    einschließlich Ergebnistext in `finish_draft`. Ursprüngliche Notizbasis und
    unbekannter Commandausgang bleiben offen. `NarrativeDraft` enthält bisher keine ursprüngliche
