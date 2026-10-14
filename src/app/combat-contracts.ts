@@ -9,6 +9,7 @@ export interface Combatant {
   hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean;
   death?:CharacterHealth['death'];deathLast?:{result:DeathSaveResult;roll:number|null};
   concentrationChecks?:{damage:number;dc:number}[];concentrationLast?:{damage:number;dc:number;roll:number|null;modifier:number;total:number|null;success:boolean};
+  legendaryActions?:{remaining:number;maximum:number;lastResetRound:number};
   /** Missing means a legacy known value; false denotes an uninitialized PC. */
   healthKnown?: boolean;
   xp?: number; countForMultiplier?: boolean; sourceId?: string; sourceOrdinal?: number; worldActorId?:string;worldActorRevision?:number;sourceEntryId?:string; partitionKind?:'mob'|'individual';
@@ -35,6 +36,7 @@ export type CombatAction =
   | { kind: 'death-roll'; participantId:string }
   | { kind:'concentration-roll';participantId:string;modifier:number }
   | { kind:'concentration';participantId:string;success:boolean }
+  | { kind:'legendary-action';participantId:string;actionId:string;cost:number }
   | { kind: 'remove'; participantId: string }
   | { kind: 'roll'; mode: 'normal' | 'advantage' | 'disadvantage' }
   | { kind: 'start' | 'next' | 'undo' }
@@ -74,5 +76,6 @@ export function checkedCombatant(p:Combatant):Combatant {
     if(p.deathLast!==undefined&&(!p.characterId||!['success','failure','natural-20','natural-1','stabilize','reset','dead'].includes(p.deathLast.result)||p.deathLast.roll!==null&&(!Number.isSafeInteger(p.deathLast.roll)||p.deathLast.roll<1||p.deathLast.roll>20)))throw new Error('Letzter Todesrettungswurf ungültig.');
     if(p.concentrationChecks!==undefined&&(!Array.isArray(p.concentrationChecks)||!p.concentrating||p.concentrationChecks.length>100||p.concentrationChecks.some(check=>!Number.isSafeInteger(check.damage)||check.damage<1||check.damage>1000000||check.dc!==concentrationDc(check.damage))))throw new Error('Offene Konzentrationsprüfungen ungültig.');
     if(p.concentrationLast!==undefined){const c=p.concentrationLast;if(!Number.isSafeInteger(c.damage)||c.damage<1||c.damage>1000000||c.dc!==concentrationDc(c.damage)||c.roll!==null&&(!Number.isSafeInteger(c.roll)||c.roll<1||c.roll>20)||!Number.isSafeInteger(c.modifier)||Math.abs(c.modifier)>1000||c.total!==null&&!Number.isSafeInteger(c.total)||c.roll===null&&c.total!==null||c.roll!==null&&c.total!==c.roll+c.modifier||typeof c.success!=='boolean'||c.total!==null&&c.success!==(c.total>=c.dc))throw new Error('Letzte Konzentrationsprüfung ungültig.');}
+    if(p.legendaryActions!==undefined){const l=p.legendaryActions;if(!Number.isSafeInteger(l.maximum)||l.maximum<1||l.maximum>10||!Number.isSafeInteger(l.remaining)||l.remaining<0||l.remaining>l.maximum||!Number.isSafeInteger(l.lastResetRound)||l.lastResetRound<0)throw new Error('Legendäre Aktionspunkte ungültig.');}
   return p;
 }
