@@ -380,6 +380,8 @@ Ausgleich bleiben offen. Schema43 bleibt unverändert.
 
 ### Desktopstand 0.43: Begegnungen mit vorhandenen NPCs
 
+[Speicherprüfungen](tests/desktop-generation-npcs.test.mjs) sichern eigene NPC-Kennungen in Kampagnenkopien, Übernahme ohne Klonen oder Heilung und unverändert gesperrte Vorschauen nach Zustandsänderungen. Die Generierung respektiert auch Mengen- und Statblockgrenzen des gewählten Presets.
+
 Encounter- und Spielabend-Vorschauen besitzen einen Modus für bereits vorhandene
 feindliche Weltfiguren. Positive HP, aktiver Lebensstatus und ein Statblock sind
 erforderlich. Ortsfilter beziehen sich auf den tatsächlichen Standort,

@@ -1,12 +1,31 @@
-import {emptyMagic,magicRules,magicGuidance,rewardIsMagic,fitMagicItems} from './session-magic';
-import {budgetRarity,budgetRarities} from '../dungeon-budget-contracts';
-import type {SessionProfile,SessionLootGuidance,SessionProposal} from '../session-contracts';
-import type {ItemInput} from '../progression';
-import {copper,xpShare} from '../progression';
-import {cumulativeGoldCopper,type RewardGuidanceRules} from '../generation/reward-guidance';
-import {readGeneratorRegistry} from './generation';
-import {readProgressCharacter,ledgerRewardValue,readLedgerDefinition,ledgerRewardQuantity,checkedLedgerRow} from './progression';
-import {readItemDefinition} from './item-definitions';
+import {
+  emptyMagic,
+  magicRules,
+  magicGuidance,
+  rewardIsMagic,
+  fitMagicItems,
+} from "./session-magic";
+import { budgetRarity, budgetRarities } from "../dungeon-budget-contracts";
+import type {
+  SessionProfile,
+  SessionLootGuidance,
+  SessionProposal,
+} from "../session-contracts";
+import type { ItemInput } from "../progression";
+import { copper, xpShare } from "../progression";
+import {
+  cumulativeGoldCopper,
+  type RewardGuidanceRules,
+} from "../generation/reward-guidance";
+import { readGeneratorRegistry } from "./generation";
+import {
+  readProgressCharacter,
+  ledgerRewardValue,
+  readLedgerDefinition,
+  ledgerRewardQuantity,
+  checkedLedgerRow,
+} from "./progression";
+import { readItemDefinition } from "./item-definitions";
 /** Validate the saved calculation itself; current XP, prices and presets may have changed. */
 export function checkedSessionLootGuidance(
   g: SessionLootGuidance,
@@ -81,29 +100,218 @@ export function checkedSessionLootGuidance(
     throw new Error(
       "Beuteausgleich hat widersprüchliche Summen oder doppelte Figuren.",
     );
-  if(g.version==='cumulative-gold-magic-v2'){
-    const m=g.magic,counts=(v:any)=>object(v)&&budgetRarities.every(r=>unsigned(v[r])),expectation=(v:any)=>object(v)&&budgetRarities.every(r=>Number.isFinite(v[r])&&v[r]>=0);
-    if(!object(m)||!expectation(m!.expectedBefore)||!expectation(m!.expectedAfter)||!counts(m!.received)||!counts(m!.target)||!counts(m!.missing)||!Array.isArray(m!.allocations)||m!.allocations.length!==count||!m!.allocations.every(counts)||!Array.isArray(m!.warnings)||m!.warnings.some(w=>typeof w!=='string')||!Array.isArray(m!.characters)||m!.characters.length!==g.characters.length||new Set(m!.characters.map(c=>c.characterId)).size!==m!.characters.length)throw new Error('Magischer Beuteausgleich beschädigt.');
-    for(const c of m!.characters)if(!object(c)||!counts(c.received)||!g.characters.some(a=>a.characterId===c.characterId))throw new Error('Magischer Beuteausgleich gehört zu anderen Figuren.');
-    for(const r of budgetRarities)if(m!.expectedAfter[r]<m!.expectedBefore[r]||m!.characters.reduce((n,c)=>n+c.received[r],0)!==m!.received[r]||m!.allocations.reduce((n,c)=>n+c[r],0)!==m!.target[r]||m!.missing[r]>m!.target[r])throw new Error('Magischer Beuteausgleich hat widersprüchliche Summen.');
-  }else if(g.magic!==undefined)throw new Error('Magischer Beuteausgleich benötigt Version 2.');
+  if (g.version === "cumulative-gold-magic-v2") {
+    const m = g.magic,
+      counts = (v: any) =>
+        object(v) && budgetRarities.every((r) => unsigned(v[r])),
+      expectation = (v: any) =>
+        object(v) &&
+        budgetRarities.every((r) => Number.isFinite(v[r]) && v[r] >= 0);
+    if (
+      !object(m) ||
+      !expectation(m!.expectedBefore) ||
+      !expectation(m!.expectedAfter) ||
+      !counts(m!.received) ||
+      !counts(m!.target) ||
+      !counts(m!.missing) ||
+      !Array.isArray(m!.allocations) ||
+      m!.allocations.length !== count ||
+      !m!.allocations.every(counts) ||
+      !Array.isArray(m!.warnings) ||
+      m!.warnings.some((w) => typeof w !== "string") ||
+      !Array.isArray(m!.characters) ||
+      m!.characters.length !== g.characters.length ||
+      new Set(m!.characters.map((c) => c.characterId)).size !==
+        m!.characters.length
+    )
+      throw new Error("Magischer Beuteausgleich beschädigt.");
+    for (const c of m!.characters)
+      if (
+        !object(c) ||
+        !counts(c.received) ||
+        !g.characters.some((a) => a.characterId === c.characterId)
+      )
+        throw new Error("Magischer Beuteausgleich gehört zu anderen Figuren.");
+    for (const r of budgetRarities)
+      if (
+        m!.expectedAfter[r] < m!.expectedBefore[r] ||
+        m!.characters.reduce((n, c) => n + c.received[r], 0) !==
+          m!.received[r] ||
+        m!.allocations.reduce((n, c) => n + c[r], 0) !== m!.target[r] ||
+        m!.missing[r] > m!.target[r]
+      )
+        throw new Error(
+          "Magischer Beuteausgleich hat widersprüchliche Summen.",
+        );
+  } else if (g.magic !== undefined)
+    throw new Error("Magischer Beuteausgleich benötigt Version 2.");
   return g;
 }
-function rulesOf(value:unknown):RewardGuidanceRules{const r=value as RewardGuidanceRules;if(!r||!Array.isArray(r.progression)||r.progression.length!==20||r.progression.some((p,i)=>p.level!==i+1||!Number.isSafeInteger(p.xpAtLevel)||p.xpAtLevel<0||!Number.isSafeInteger(p.goldAtLevelCp)||p.goldAtLevelCp<0||i>0&&(p.xpAtLevel<=r.progression[i-1]!.xpAtLevel||p.goldAtLevelCp<r.progression[i-1]!.goldAtLevelCp))||r.progression[0]!.xpAtLevel!==0)throw new Error('Das wirksame Preset benötigt die vollständige Beute-Fortschrittskurve. Automatischen Beuteausgleich ausschalten oder Preset korrigieren.');return r;}
-export function sessionLootGuidance(db:any,cam:string,p:SessionProfile,proposals:SessionProposal[],withMagic=false):SessionLootGuidance{
- if(!p.party.length||new Set(p.party.map(c=>c.id)).size!==p.party.length||p.party.some(c=>c.count!==1))throw new Error('Automatischer Beuteausgleich benötigt einzelne Roster-Figuren, jede mit Anzahl 1. Freie Planungszeilen weiter ohne automatischen Ausgleich verwenden.');
- const registry=readGeneratorRegistry(db,cam),preset=registry.presets.find(p=>p.id===registry.effectiveId)!,rules=rulesOf(preset.config.loot),ids=new Set(p.party.map(c=>c.id)),received=new Map<string,bigint>();for(const id of ids)received.set(id,0n);
- const magicReceived=new Map(p.party.map(c=>[c.id,emptyMagic()]));if(withMagic)magicRules(rules);
- const members=db.prepare('SELECT id FROM roster_member WHERE campaign_id=?').all(cam).map((r:any)=>r.id);for(const id of ids)if(!members.includes(id))throw new Error('Planungsfigur fehlt im Roster. Für Beuteausgleich vorhandene Figuren wählen.');
- for(const row of db.prepare('SELECT * FROM character_ledger WHERE campaign_id=?').iterate(cam)){if(!ids.has(row.character_id))continue;const item=checkedLedgerRow(row),definition=withMagic?readLedgerDefinition(db,item):null;if(definition?.magic){const quantity=ledgerRewardQuantity(db,cam,item),rarity=budgetRarity(definition.rarity);if(quantity&&!rarity)throw new Error('Erhaltene Magiebeute besitzt keine bekannte Seltenheit: '+definition.name+'. Im Katalog klären oder magischen Ausgleich ausschalten.');if(rarity)magicReceived.get(row.character_id)![rarity]+=quantity;continue;}const value=ledgerRewardValue(db,cam,item);if(value===null)throw new Error('Ein erhaltener Beutewert ist unbekannt. Wert im Ledger/Katalog klären oder automatischen Ausgleich ausschalten.');received.set(row.character_id,received.get(row.character_id)!+value);}
- const rewardXp=proposals.reduce((n,p)=>n+p.encounter.assessment.baseXp+(p.reward?.poolXp??0),0),perCharacter=proposals.reduce((n,p)=>n+xpShare(p.encounter.assessment.baseXp+(p.reward?.poolXp??0),ids.size).share,0),characters=p.party.map(c=>{const progress=readProgressCharacter(db,cam,c.id);if(progress.xp===null)throw new Error('Für '+c.name+' fehlen bestätigte XP. Beuteausgleich benötigt XP, nicht nur ein Planungslevel.');return{characterId:c.id,name:c.name,xp:progress.xp,revision:progress.revision,receivedCopper:String(received.get(c.id)!),expectedBeforeCopper:cumulativeGoldCopper(progress.xp,rules),expectedAfterCopper:cumulativeGoldCopper(progress.xp+perCharacter,rules)};});
- const sum=(key:'expectedBeforeCopper'|'expectedAfterCopper'|'receivedCopper')=>characters.reduce((n,c)=>n+BigInt(c[key]),0n),before=sum('expectedBeforeCopper'),after=sum('expectedAfterCopper'),actual=sum('receivedCopper'),target=after>actual?after-actual:0n,part=target/BigInt(proposals.length),rest=target%BigInt(proposals.length);
- return checkedSessionLootGuidance({...(withMagic?{magic:magicGuidance(characters,magicReceived,perCharacter,proposals.length,rules)}:{}),version:withMagic?'cumulative-gold-magic-v2':'cumulative-gold-v1',preset:{id:preset.id,revision:preset.revision,hash:preset.hash},rewardXp,expectedBeforeCopper:String(before),expectedAfterCopper:String(after),receivedCopper:String(actual),baselineCopper:String(after-before),differenceCopper:String(before-actual),targetCopper:String(target),allocationsCopper:proposals.map((_,i)=>String(part+(BigInt(i)<rest?1n:0n))),characters},proposals.length);
+function rulesOf(value: unknown): RewardGuidanceRules {
+  const r = value as RewardGuidanceRules;
+  if (
+    !r ||
+    !Array.isArray(r.progression) ||
+    r.progression.length !== 20 ||
+    r.progression.some(
+      (p, i) =>
+        p.level !== i + 1 ||
+        !Number.isSafeInteger(p.xpAtLevel) ||
+        p.xpAtLevel < 0 ||
+        !Number.isSafeInteger(p.goldAtLevelCp) ||
+        p.goldAtLevelCp < 0 ||
+        (i > 0 &&
+          (p.xpAtLevel <= r.progression[i - 1]!.xpAtLevel ||
+            p.goldAtLevelCp < r.progression[i - 1]!.goldAtLevelCp)),
+    ) ||
+    r.progression[0]!.xpAtLevel !== 0
+  )
+    throw new Error(
+      "Das wirksame Preset benötigt die vollständige Beute-Fortschrittskurve. Automatischen Beuteausgleich ausschalten oder Preset korrigieren.",
+    );
+  return r;
 }
-export function rewardItemCopper(db:any,item:ItemInput):bigint{
- const value=item.reference?readItemDefinition(db,item.reference.definitionId,item.reference.revision).unitCopper:copper(item.valueGold);
- if(value===null)throw new Error('Geplante Beute benötigt einen bekannten Wert.');
- return BigInt(value)*BigInt(item.quantity);
+export function sessionLootGuidance(
+  db: any,
+  cam: string,
+  p: SessionProfile,
+  proposals: SessionProposal[],
+  withMagic = false,
+): SessionLootGuidance {
+  if (
+    !p.party.length ||
+    new Set(p.party.map((c) => c.id)).size !== p.party.length ||
+    p.party.some((c) => c.count !== 1)
+  )
+    throw new Error(
+      "Automatischer Beuteausgleich benötigt einzelne Roster-Figuren, jede mit Anzahl 1. Freie Planungszeilen weiter ohne automatischen Ausgleich verwenden.",
+    );
+  const registry = readGeneratorRegistry(db, cam),
+    preset = registry.presets.find((p) => p.id === registry.effectiveId)!,
+    rules = rulesOf(preset.config.loot),
+    ids = new Set(p.party.map((c) => c.id)),
+    received = new Map<string, bigint>();
+  for (const id of ids) received.set(id, 0n);
+  const magicReceived = new Map(p.party.map((c) => [c.id, emptyMagic()]));
+  if (withMagic) magicRules(rules);
+  const members = db
+    .prepare("SELECT id FROM roster_member WHERE campaign_id=?")
+    .all(cam)
+    .map((r: any) => r.id);
+  for (const id of ids)
+    if (!members.includes(id))
+      throw new Error(
+        "Planungsfigur fehlt im Roster. Für Beuteausgleich vorhandene Figuren wählen.",
+      );
+  for (const row of db
+    .prepare("SELECT * FROM character_ledger WHERE campaign_id=?")
+    .iterate(cam)) {
+    if (!ids.has(row.character_id)) continue;
+    const item = checkedLedgerRow(row),
+      definition = withMagic ? readLedgerDefinition(db, item) : null;
+    if (definition?.magic) {
+      const quantity = ledgerRewardQuantity(db, cam, item),
+        rarity = budgetRarity(definition.rarity);
+      if (quantity && !rarity)
+        throw new Error(
+          "Erhaltene Magiebeute besitzt keine bekannte Seltenheit: " +
+            definition.name +
+            ". Im Katalog klären oder magischen Ausgleich ausschalten.",
+        );
+      if (rarity) magicReceived.get(row.character_id)![rarity] += quantity;
+      continue;
+    }
+    const value = ledgerRewardValue(db, cam, item);
+    if (value === null)
+      throw new Error(
+        "Ein erhaltener Beutewert ist unbekannt. Wert im Ledger/Katalog klären oder automatischen Ausgleich ausschalten.",
+      );
+    received.set(row.character_id, received.get(row.character_id)! + value);
+  }
+  const rewardXp = proposals.reduce(
+      (n, p) => n + p.encounter.assessment.baseXp + (p.reward?.poolXp ?? 0),
+      0,
+    ),
+    perCharacter = proposals.reduce(
+      (n, p) =>
+        n +
+        xpShare(
+          p.encounter.assessment.baseXp + (p.reward?.poolXp ?? 0),
+          ids.size,
+        ).share,
+      0,
+    ),
+    characters = p.party.map((c) => {
+      const progress = readProgressCharacter(db, cam, c.id);
+      if (progress.xp === null)
+        throw new Error(
+          "Für " +
+            c.name +
+            " fehlen bestätigte XP. Beuteausgleich benötigt XP, nicht nur ein Planungslevel.",
+        );
+      return {
+        characterId: c.id,
+        name: c.name,
+        xp: progress.xp,
+        revision: progress.revision,
+        receivedCopper: String(received.get(c.id)!),
+        expectedBeforeCopper: cumulativeGoldCopper(progress.xp, rules),
+        expectedAfterCopper: cumulativeGoldCopper(
+          progress.xp + perCharacter,
+          rules,
+        ),
+      };
+    });
+  const sum = (
+      key: "expectedBeforeCopper" | "expectedAfterCopper" | "receivedCopper",
+    ) => characters.reduce((n, c) => n + BigInt(c[key]), 0n),
+    before = sum("expectedBeforeCopper"),
+    after = sum("expectedAfterCopper"),
+    actual = sum("receivedCopper"),
+    target = after > actual ? after - actual : 0n,
+    part = target / BigInt(proposals.length),
+    rest = target % BigInt(proposals.length);
+  return checkedSessionLootGuidance(
+    {
+      ...(withMagic
+        ? {
+            magic: magicGuidance(
+              characters,
+              magicReceived,
+              perCharacter,
+              proposals.length,
+              rules,
+            ),
+          }
+        : {}),
+      version: withMagic ? "cumulative-gold-magic-v2" : "cumulative-gold-v1",
+      preset: { id: preset.id, revision: preset.revision, hash: preset.hash },
+      rewardXp,
+      expectedBeforeCopper: String(before),
+      expectedAfterCopper: String(after),
+      receivedCopper: String(actual),
+      baselineCopper: String(after - before),
+      differenceCopper: String(before - actual),
+      targetCopper: String(target),
+      allocationsCopper: proposals.map((_, i) =>
+        String(part + (BigInt(i) < rest ? 1n : 0n)),
+      ),
+      characters,
+    },
+    proposals.length,
+  );
+}
+export function rewardItemCopper(db: any, item: ItemInput): bigint {
+  const value = item.reference
+    ? readItemDefinition(
+        db,
+        item.reference.definitionId,
+        item.reference.revision,
+      ).unitCopper
+    : copper(item.valueGold);
+  if (value === null)
+    throw new Error("Geplante Beute benötigt einen bekannten Wert.");
+  return BigInt(value) * BigInt(item.quantity);
 }
 /** Keep table flavor when it fits, reduce quantities to the slice, fill the exact remainder with coin stacks. */
 export function fitRewardItems(
@@ -155,27 +363,64 @@ export function fitRewardItems(
     throw new Error("Höchstens 100 Beuteeinträge pro Vorschlag.");
   return result;
 }
+export function fitSessionReward(
+  db: any,
+  items: ItemInput[],
+  guidance: SessionLootGuidance,
+  index: number,
+  seed: string,
+) {
+  if (!guidance.magic)
+    return {
+      items: fitRewardItems(db, items, guidance.allocationsCopper[index]!),
+      warnings: [],
+      missing: emptyMagic(),
+    };
+  const mundane = items.filter((i) => !rewardIsMagic(db, i)),
+    magic = fitMagicItems(
+      db,
+      items.filter((i) => rewardIsMagic(db, i)),
+      guidance.magic.allocations[index]!,
+      seed,
+    ),
+    combined = [
+      ...fitRewardItems(db, mundane, guidance.allocationsCopper[index]!),
+      ...magic.items,
+    ];
+  if (combined.length > 100)
+    throw new Error("Höchstens100 Beuteeinträge pro Vorschlag.");
+  return { ...magic, items: combined };
+}
 export function applyLootGuidance(
   db: any,
   cam: string,
   profile: SessionProfile,
   proposals: SessionProposal[],
+  withMagic = false,
 ) {
-  const guidance = sessionLootGuidance(db, cam, profile, proposals);
+  const guidance = sessionLootGuidance(db, cam, profile, proposals, withMagic);
   for (const [index, p] of proposals.entries()) {
-    p.reward = {
-      poolXp: p.reward?.poolXp ?? 0,
-      items: fitRewardItems(
-        db,
-        p.reward?.items ?? [],
-        guidance.allocationsCopper[index]!,
-      ),
-    };
+    const result = fitSessionReward(
+      db,
+      p.reward?.items ?? [],
+      guidance,
+      index,
+      profile.seed + "|reward|" + index,
+    );
+    p.reward = { poolXp: p.reward?.poolXp ?? 0, items: result.items };
+    if (guidance.magic) {
+      p.rewardWarnings = result.warnings;
+      p.rewardMissingMagic = result.missing;
+    }
+    if (guidance.magic) {
+      for (const r of Object.keys(
+        result.missing,
+      ) as (keyof typeof result.missing)[])
+        guidance.magic.missing[r] += result.missing[r];
+      guidance.magic.warnings.push(...result.warnings);
+    }
   }
+  if (guidance.magic)
+    guidance.magic.warnings = [...new Set(guidance.magic.warnings)];
   return guidance;
 }
-export function fitSessionReward(db:any,items:ItemInput[],guidance:SessionLootGuidance,index:number,seed:string){
- if(!guidance.magic)return{items:fitRewardItems(db,items,guidance.allocationsCopper[index]!),warnings:[],missing:emptyMagic()};
- const mundane=items.filter(i=>!rewardIsMagic(db,i)),magic=fitMagicItems(db,items.filter(i=>rewardIsMagic(db,i)),guidance.magic.allocations[index]!,seed),combined=[...fitRewardItems(db,mundane,guidance.allocationsCopper[index]!),...magic.items];if(combined.length>100)throw new Error('Höchstens100 Beuteeinträge pro Vorschlag.');return{...magic,items:combined};
-}
-export function applyLootGuidance(db:any,cam:string,profile:SessionProfile,proposals:SessionProposal[],withMagic=false){const guidance=sessionLootGuidance(db,cam,profile,proposals,withMagic);for(const [index,p]of proposals.entries()){const result=fitSessionReward(db,p.reward?.items??[],guidance,index,profile.seed+'|reward|'+index);p.reward={poolXp:p.reward?.poolXp??0,items:result.items};if(guidance.magic){p.rewardWarnings=result.warnings;p.rewardMissingMagic=result.missing;}if(guidance.magic){for(const r of Object.keys(result.missing) as (keyof typeof result.missing)[])guidance.magic.missing[r]+=result.missing[r];guidance.magic.warnings.push(...result.warnings);}}if(guidance.magic)guidance.magic.warnings=[...new Set(guidance.magic.warnings)];return guidance;}

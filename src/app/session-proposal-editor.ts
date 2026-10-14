@@ -1,4 +1,4 @@
-import {budgetRarities} from './dungeon-budget-contracts';
+import { budgetRarities } from "./dungeon-budget-contracts";
 import type { Preparation } from "./preparation-contracts";
 import type { SessionProposal, SessionAction } from "./session-contracts";
 import type { ItemInput } from "./progression";
@@ -15,12 +15,15 @@ let save:
   | null = null;
 type DraftItem = Omit<ItemInput, "quantity"> & { quantity: string };
 let items: DraftItem[] = [];
-let catalogRequest=0,catalogNext:number|null=null,catalogCurrent=()=>true;
+let catalogRequest = 0,
+  catalogNext: number | null = null,
+  catalogCurrent = () => true;
 let generation = 0,
   busy = false;
 export const proposalEditorOpen = () => !!opened;
 export function closeProposalEditor() {
-  generation++;catalogRequest++;
+  generation++;
+  catalogRequest++;
   opened = null;
   save = null;
   busy = false;
@@ -31,9 +34,26 @@ export function initProposalEditor() {
   dialog.id = "session-proposal-editor";
   dialog.innerHTML =
     '<form id="proposal-edit-form"><h2>Spielabend-Vorschlag bearbeiten</h2><label>Titel <input id="proposal-edit-title" maxlength="1000" required></label><label>Ort <select id="proposal-edit-location"></select></label><label>Zum Vorlesen <textarea id="proposal-edit-public" rows="4"></textarea></label><label>GM-Notizen <textarea id="proposal-edit-notes" rows="6"></textarea></label><details><summary>Wissensverweise</summary><div id="proposal-edit-refs"></div></details><label><input id="proposal-edit-has-reward" type="checkbox"> Eigene Belohnung vorbereiten</label><div id="proposal-edit-reward"><label>Story-XP <input id="proposal-edit-xp" type="number" min="0" value="0"></label><div id="proposal-edit-items"></div><button id="proposal-edit-item-add" type="button">Beuteeintrag ergänzen</button><details id="proposal-catalog"><summary>Gegenstände aus dem Katalog ergänzen</summary><label>Suche <input id="proposal-catalog-search" maxlength="1000"></label><label>Magie <select id="proposal-catalog-magic"><option value="">Alle Gegenstände</option><option value="yes">Nur magische Gegenstände</option></select></label><label>Seltenheit <select id="proposal-catalog-rarity"><option value="">Alle Seltenheiten</option></select></label><button id="proposal-catalog-find" type="button">Im Katalog suchen</button><div id="proposal-catalog-results"></div><button id="proposal-catalog-next" type="button" hidden>Weitere Katalogtreffer</button><p id="proposal-catalog-status" role="status"></p></details></div><p class="caption">Speichern ändert nur diesen Vorschlag. Die Timeline, World-Gruppen und platzierte Schätze entstehen durch ihre ausdrücklichen Übergaben.</p><p id="proposal-edit-status" role="status"></p><div class="toolbar"><button type="submit">Vorschlag speichern</button><button id="proposal-edit-cancel" type="button">Abbrechen</button></div></form>';
-  document.body.append(dialog);for(const r of budgetRarities){const o=document.createElement('option');o.value=r;o.textContent=r;el('proposal-catalog-rarity').append(o);}el('proposal-catalog-find').onclick=()=>void searchCatalog(0);el('proposal-catalog-next').onclick=()=>{if(catalogNext!==null)void searchCatalog(catalogNext);};el('proposal-catalog-search').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();void searchCatalog(0);}};
+  document.body.append(dialog);
+  for (const r of budgetRarities) {
+    const o = document.createElement("option");
+    o.value = r;
+    o.textContent = r;
+    el("proposal-catalog-rarity").append(o);
+  }
+  el("proposal-catalog-find").onclick = () => void searchCatalog(0);
+  el("proposal-catalog-next").onclick = () => {
+    if (catalogNext !== null) void searchCatalog(catalogNext);
+  };
+  el("proposal-catalog-search").onkeydown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void searchCatalog(0);
+    }
+  };
   dialog.addEventListener("cancel", () => {
-    generation++;catalogRequest++;
+    generation++;
+    catalogRequest++;
     opened = null;
     save = null;
     busy = false;
@@ -119,7 +139,8 @@ function renderItems() {
       input.type = key === "quantity" ? "text" : type;
       if (key === "quantity") input.inputMode = "numeric";
       input.value = String(item[key]);
-      input.disabled=!!item.reference&&key!=="quantity";if(item.reference&&key==="valueGold")wrap.hidden=true;
+      input.disabled = !!item.reference && key !== "quantity";
+      if (item.reference && key === "valueGold") wrap.hidden = true;
       input.setAttribute("aria-label", label);
       input.oninput = () => {
         item[key] = input.value;
@@ -142,7 +163,8 @@ function renderItems() {
       o.textContent = name;
       select.append(o);
     }
-    select.value = item.category;select.disabled=!!item.reference;
+    select.value = item.category;
+    select.disabled = !!item.reference;
     select.oninput = () => {
       item.category = select.value as ItemInput["category"];
     };
@@ -156,7 +178,19 @@ function renderItems() {
       renderItems();
     };
     row.append(remove);
-    if(item.reference){const info=document.createElement('p');info.textContent='Katalogreferenz · Revision '+item.reference.revision;const detach=document.createElement('button');detach.type='button';detach.textContent='Als eigenen Eintrag bearbeiten';detach.onclick=()=>{delete item.reference;renderItems();};row.append(info,detach);}
+    if (item.reference) {
+      const info = document.createElement("p");
+      info.textContent =
+        "Katalogreferenz · Revision " + item.reference.revision;
+      const detach = document.createElement("button");
+      detach.type = "button";
+      detach.textContent = "Als eigenen Eintrag bearbeiten";
+      detach.onclick = () => {
+        delete item.reference;
+        renderItems();
+      };
+      row.append(info, detach);
+    }
     root.append(row);
   }
 }
@@ -164,12 +198,18 @@ export function openProposalEditor(
   proposal: SessionProposal,
   sources: Preparation,
   onSave: NonNullable<typeof save>,
-  current=()=>true,
+  current = () => true,
 ) {
-  generation++;catalogRequest++;
+  generation++;
+  catalogRequest++;
   busy = false;
   el<HTMLFormElement>("proposal-edit-form").inert = false;
-  catalogCurrent=current;catalogNext=null;el('proposal-catalog-results').replaceChildren();el('proposal-catalog-status').textContent='';el('proposal-catalog-next').hidden=true;
+  catalogCurrent = current;
+  el<HTMLButtonElement>("proposal-catalog-find").disabled=false;el<HTMLButtonElement>("proposal-catalog-next").disabled=false;
+  catalogNext = null;
+  el("proposal-catalog-results").replaceChildren();
+  el("proposal-catalog-status").textContent = "";
+  el("proposal-catalog-next").hidden = true;
   opened = proposal;
   save = onSave;
   items = (proposal.reward?.items ?? []).map((item) => ({
@@ -237,4 +277,86 @@ export function openProposalEditor(
   el<HTMLDialogElement>("session-proposal-editor").showModal();
 }
 
-async function searchCatalog(after:number){const owner=opened,request=++catalogRequest;if(!owner||!catalogCurrent())return;const status=el('proposal-catalog-status');status.textContent='Katalog wird geladen…';el<HTMLButtonElement>('proposal-catalog-find').disabled=true;el<HTMLButtonElement>('proposal-catalog-next').disabled=true;try{const response=await window.campaign.itemDefinitions({search:el<HTMLInputElement>('proposal-catalog-search').value,category:'',magic:el<HTMLSelectElement>('proposal-catalog-magic').value as ''|'yes',rarity:el<HTMLSelectElement>('proposal-catalog-rarity').value,attunement:'',sort:'name',direction:'asc',after,includeTrashed:false});if(opened!==owner||request!==catalogRequest||!catalogCurrent()||busy)return;if(!response.ok)throw new Error(response.error);const page=response.value,root=el('proposal-catalog-results');if(!after)root.replaceChildren();for(const d of page.items){const button=document.createElement('button');button.type='button';button.textContent=d.name+(d.magic?' · '+(d.rarity||'Seltenheit unbekannt'):'');button.onclick=()=>{if(opened!==owner||request!==catalogRequest||!catalogCurrent()||busy)return;items.push({name:d.name,quantity:'1',category:d.category,valueGold:d.unitCopper===null?'0':String(BigInt(d.unitCopper)/100n)+'.'+String(BigInt(d.unitCopper)%100n).padStart(2,'0'),reference:{kind:'authored',definitionId:d.id,revision:d.revision}});renderItems();status.textContent=d.name+' zur geplanten Belohnung ergänzt.';};root.append(button);}catalogNext=page.next;el('proposal-catalog-next').hidden=catalogNext===null;status.textContent=page.total+' Treffer'+(page.problems.length?' · '+page.problems.join(' '):'');}catch(error){if(opened===owner&&request===catalogRequest&&catalogCurrent())status.textContent=(error as Error).message;}finally{if(opened===owner&&request===catalogRequest){el<HTMLButtonElement>('proposal-catalog-find').disabled=false;el<HTMLButtonElement>('proposal-catalog-next').disabled=false;}}}
+async function searchCatalog(after: number) {
+  const owner = opened,
+    request = ++catalogRequest;
+  if (!owner || !catalogCurrent()) return;
+  const status = el("proposal-catalog-status");
+  status.textContent = "Katalog wird geladen…";
+  el<HTMLButtonElement>("proposal-catalog-find").disabled = true;
+  el<HTMLButtonElement>("proposal-catalog-next").disabled = true;
+  try {
+    const response = await window.campaign.itemDefinitions({
+      search: el<HTMLInputElement>("proposal-catalog-search").value,
+      category: "",
+      magic: el<HTMLSelectElement>("proposal-catalog-magic").value as
+        | ""
+        | "yes",
+      rarity: el<HTMLSelectElement>("proposal-catalog-rarity").value,
+      attunement: "",
+      sort: "name",
+      direction: "asc",
+      after,
+      includeTrashed: false,
+    });
+    if (
+      opened !== owner ||
+      request !== catalogRequest ||
+      !catalogCurrent() ||
+      busy
+    )
+      return;
+    if (!response.ok) throw new Error(response.error);
+    const page = response.value,
+      root = el("proposal-catalog-results");
+    if (!after) root.replaceChildren();
+    for (const d of page.items) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent =
+        d.name + (d.magic ? " · " + (d.rarity || "Seltenheit unbekannt") : "");
+      button.onclick = () => {
+        if (
+          opened !== owner ||
+          request !== catalogRequest ||
+          !catalogCurrent() ||
+          busy
+        )
+          return;
+        items.push({
+          name: d.name,
+          quantity: "1",
+          category: d.category,
+          valueGold:
+            d.unitCopper === null
+              ? "0"
+              : String(BigInt(d.unitCopper) / 100n) +
+                "." +
+                String(BigInt(d.unitCopper) % 100n).padStart(2, "0"),
+          reference: {
+            kind: "authored",
+            definitionId: d.id,
+            revision: d.revision,
+          },
+        });
+        renderItems();
+        status.textContent = d.name + " zur geplanten Belohnung ergänzt.";
+      };
+      root.append(button);
+    }
+    catalogNext = page.next;
+    el("proposal-catalog-next").hidden = catalogNext === null;
+    status.textContent =
+      page.total +
+      " Treffer" +
+      (page.problems.length ? " · " + page.problems.join(" ") : "");
+  } catch (error) {
+    if (opened === owner && request === catalogRequest && catalogCurrent())
+      status.textContent = (error as Error).message;
+  } finally {
+    if (opened === owner && request === catalogRequest) {
+      el<HTMLButtonElement>("proposal-catalog-find").disabled = false;
+      el<HTMLButtonElement>("proposal-catalog-next").disabled = false;
+    }
+  }
+}

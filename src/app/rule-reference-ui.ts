@@ -4,6 +4,7 @@ import type {SceneRuleCommand,SceneRules} from './rule-reference-contracts';
 import type {SceneCheck,SceneCheckCommand,SceneChecks} from './scene-check-contracts';
 import {formatInstant} from './live-contracts';
 
+type CheckAction=Extract<SceneCheckCommand['action'],{kind:'roll'}>;
 type FormulaAction=Extract<SceneCheckCommand['action'],{kind:'formula'}>;
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const unwrap=<T>(result:Result<T>):T=>{if(!result.ok)throw new Error(result.error);return result.value;};
@@ -88,3 +89,5 @@ export function prepareSceneCheck(input:{label:string;dc:number}){
  el<HTMLInputElement>('live-check-label').value=input.label;el<HTMLSelectElement>('live-check-rule').value='';el<HTMLSelectElement>('live-check-mode').value='normal';el<HTMLInputElement>('live-check-modifier').value='0';el<HTMLInputElement>('live-check-dc').value=String(input.dc);el('live-check-form').scrollIntoView({behavior:'smooth',block:'center'});el<HTMLInputElement>('live-check-modifier').select();tell('Rettungswurf vorbereitet: Modifikator des Ziels eintragen und würfeln.');
 }
 export async function rollSceneFormula(action:Omit<FormulaAction,'kind'>,onResult?:(check:SceneCheck)=>void){return sendCheck({kind:'formula',...action},onResult);}
+
+export async function rollSceneCheck(action:Omit<CheckAction,'kind'|'ruleNoteId'>,onResult?:(check:SceneCheck)=>void){return sendCheck({kind:'roll',ruleNoteId:null,...action},onResult);}

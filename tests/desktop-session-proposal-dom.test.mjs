@@ -7,7 +7,7 @@ buildSync({entryPoints:['src/app/session-proposal-editor.ts'],outfile:'.build/se
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};}
 function fixture(t){
- const previous={document:globalThis.document}, {document}=parseHTML('<html><body></body></html>');globalThis.document=document;const create=document.createElement.bind(document);document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='select')Object.defineProperty(node,'value',{value:'',writable:true});return node;};
+ const previous={document:globalThis.document,window:globalThis.window}, {document}=parseHTML('<html><body></body></html>');globalThis.window={campaign:{}};globalThis.document=document;const create=document.createElement.bind(document);document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='select')Object.defineProperty(node,'value',{value:'',writable:true});return node;};
  const file=require.resolve('../.build/session-proposal-dom.cjs');delete require.cache[file];const ui=require(file);ui.initProposalEditor();
  const el=id=>document.getElementById(id),dialog=el('session-proposal-editor');dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};Object.defineProperty(el('proposal-edit-location'),'value',{value:'',writable:true});
  const proposal={id:'a',index:0,title:'Alpha',notes:'Author notes\r\n',readAloud:'',locationId:null,noteIds:[],encounter:{},acceptedVisitId:null,reward:{poolXp:0,items:[{name:'Coins',quantity:1,valueGold:'2',category:'coins'}]}};
@@ -38,4 +38,12 @@ for(const outcome of ['success','failure'])test(`old ${outcome} cannot close, un
 test('successful submit closes its own dialog and failure retains editable input',async t=>{
  const x=fixture(t);x.open(x.proposal,async()=>{throw new Error('Conflict');});x.el('proposal-edit-notes').value='  New author text\r\n';x.submit();await tick();assert.equal(x.dialog.open,true);assert.equal(x.el('proposal-edit-notes').value,'  New author text\r\n');assert.equal(x.el('proposal-edit-status').textContent,'Conflict');
  x.open(x.proposal,async()=>true);x.submit();await tick();assert.equal(x.dialog.open,false);assert.equal(x.ui.proposalEditorOpen(),false);
+});
+
+const catalogPage={ok:true,value:{items:[{id:'ring',revision:3,name:'Ring',category:'magic',magic:true,rarity:'common',unitCopper:'250'}],next:null,total:1,problems:[]}};
+test('catalog insertion and explicit detachment retain unfinished quantities',async t=>{
+ const x=fixture(t);window.campaign.itemDefinitions=async()=>catalogPage;x.open();x.quantity().value='01';x.quantity().oninput();x.el('proposal-catalog-find').click();await tick();x.el('proposal-catalog-results').querySelector('button').click();assert.equal(x.quantity().value,'01');const row=x.el('proposal-edit-items').querySelectorAll('fieldset')[1];assert.equal(row.querySelector('input[aria-label="Name"]').disabled,true);const detach=[...row.querySelectorAll('button')].find(b=>b.textContent==='Als eigenen Eintrag bearbeiten');detach.click();assert.equal(x.quantity().value,'01');assert.equal(x.el('proposal-edit-items').querySelectorAll('fieldset')[1].querySelector('input[aria-label="Name"]').disabled,false);
+});
+test('a late catalog response cannot populate or unlock a reopened proposal',async t=>{
+ const x=fixture(t),old=deferred(),current=deferred();window.campaign.itemDefinitions=async()=>old.promise;x.open();x.el('proposal-catalog-find').click();assert.equal(x.el('proposal-catalog-find').disabled,true);x.ui.closeProposalEditor();x.open();assert.equal(x.el('proposal-catalog-find').disabled,false);window.campaign.itemDefinitions=async()=>current.promise;x.el('proposal-catalog-find').click();old.resolve(catalogPage);await tick();assert.equal(x.el('proposal-catalog-results').childNodes.length,0);assert.equal(x.el('proposal-catalog-find').disabled,true);current.resolve(catalogPage);await tick();assert.equal(x.el('proposal-catalog-find').disabled,false);assert.ok(x.el('proposal-catalog-results').querySelector('button'));
 });
