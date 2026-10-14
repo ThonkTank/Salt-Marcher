@@ -6,7 +6,6 @@ import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
 import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, partitionLedgerPaidPrice, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ProgressAction, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
-import {checkedCharacterProfile} from '../live-contracts';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene, readCharacter } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
