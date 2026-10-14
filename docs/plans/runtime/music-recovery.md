@@ -27,6 +27,14 @@ Back, Loop und deaktiviertes Autoplay haben Vorrang vor Automatik.
   neue Wiedergabe. Alte Fehlercallbacks beeinflussen sie nicht. `retry-asset`
   klärt den aufgezeichneten Fehler; es ersetzt keine fehlenden Medienbytes.
 
+Das Live-Soundboard verwendet denselben Musikstand und Writer für Transport,
+Favoriten, gemeinsame Queueauswahl und Ambience. Seine paginierte Bibliothek
+bleibt installationweit; Favoriten gehören zur Campaign. Suchwechsel entfernen
+alte Treffer sofort, entfernte Controls dürfen keine andere Campaign bedienen.
+Die [Soundboardprüfung](../../../tests/desktop-soundboard-context.test.mjs)
+verbindet den echten Controller mit dem Store; der Audioport ist kontrolliert.
+Das beweist keine hörbare native Ausgabe.
+
 ## Nachweise und nächste Arbeit
 
 [Runtime-Prüfungen](../../../tests/desktop-audio-layer-recovery.test.mjs) prüfen

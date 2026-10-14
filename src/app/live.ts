@@ -17,7 +17,8 @@ import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
 import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
-import {liveMomentSavedMessage,canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import type {NarrativeView} from './narrative-contracts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -28,13 +29,14 @@ let resumed = false, composing = false, blocked = false, timer: ReturnType<typeo
 let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
 let requestIsTextSave = false;
 const liveMomentDrafts=new LiveMomentDraftBook();
+let narrativeGeneration=0,narrativeCache=new Map<string,NarrativeView>(),narrativeProblems=new Map<string,string>(),narrativeLoading=new Set<string>();
 const intentBlocked = () => !!request && !requestIsTextSave;
 let adoption: Extract<LiveAction, { kind: 'apply-visit' }> | null = null;
 let moveBasis: Omit<Extract<LiveAction, { kind: 'move' }>, 'memberIds' | 'target'> | null = null;
 let moveTargets: LiveView['scenes'] = [];
 let resetLiveArchives=()=>{};
 let preparedNotesSceneId:string|null=null,preparedNoteIds=new Set<string>();
-let tell: (text: string, error?: boolean) => void, openLocation: (id: string) => Promise<void>;
+let tell: (text: string, error?: boolean) => void, openLocation: (id: string) => Promise<void>,openKnowledgeNote:(id:string)=>Promise<void>;
 const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
@@ -48,6 +50,7 @@ export function activateLive(workspace: Workspace) {
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
   get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
   adoption = null; moveBasis = null;preparedNotesSceneId=null;preparedNoteIds.clear();
+  narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear();
   liveMomentDrafts.reset();writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent='';
   for (const id of ['adoption-dialog', 'move-dialog', 'archive-dialog', 'character-dialog']) if (get<HTMLDialogElement>(id).open) get<HTMLDialogElement>(id).close();
 }
@@ -57,7 +60,7 @@ export async function openLive(planId?: string, visitId?: string) {
   try {
     const live = unwrap(await window.campaign.live(token)), prep = unwrap(await window.campaign.preparation(token, ''));
     if (context?.token !== token) return;
-    data = live; sources = prep; selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
+    data = live; sources = prep;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
     characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
     sceneDraft = resumed && live.scene ? structuredClone(live.scene) : null;
     render();
@@ -248,12 +251,15 @@ export async function useLiveReferenceReadAloud(text:string,title:string,expecte
  useKnowledgeReadAloud(text,title);if(!await flushLive())throw new Error('Vorlesetext konnte noch nicht gespeichert werden. Eingabe bleibt offen.');
 }
 function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
+function loadLiveNarrative(noteId:string){if(!context||narrativeCache.has(noteId)||narrativeProblems.has(noteId)||narrativeLoading.has(noteId))return;const token=context.token,generation=narrativeGeneration;narrativeLoading.add(noteId);void window.campaign.narrative(token,noteId).then(result=>{if(context?.token!==token||generation!==narrativeGeneration)return;if(result.ok)narrativeCache.set(noteId,result.value);else narrativeProblems.set(noteId,result.error);}).catch(error=>{if(context?.token===token&&generation===narrativeGeneration)narrativeProblems.set(noteId,(error as Error).message);}).finally(()=>{if(generation===narrativeGeneration){narrativeLoading.delete(noteId);renderLiveKnowledge();}});}
+function narrativeFacts(view:NarrativeView){const state=view.state,location=state.locationId?sources?.locations.find(row=>row.document.id===state.locationId)?.document.name??'Ort nicht verfügbar':'Ohne Ortsbindung',contributors=state.contributors.map(id=>data?.roster.find(character=>character.id===id)?.profile.name??'Unbekannte Figur');return(state.status==='closed'?'Abgeschlossen':'Offen')+' · '+location+(contributors.length?' · Beteiligte: '+contributors.join(', '):'')+(state.poolXp?' · '+state.poolXp+' XP vorgemerkt':'')+(view.award?' · Belohnung vergeben':'');}
 function renderLiveKnowledge(){
   const root=get('live-knowledge-results');root.replaceChildren();const query=value('live-knowledge-search').trim().toLocaleLowerCase('de');
   const found=findLiveKnowledge((sources?.notes??[]).filter(row=>!row.trashed&&row.note.kind!=='rule'),query,30,row=>preparedNoteIds.has(row.note.id)),rows=found.rows;get('live-knowledge-result').textContent=rows.length===found.total?found.total+' Einträge angezeigt.':rows.length+' von '+found.total+' Einträgen angezeigt – Suche präzisieren.';
   for(const row of rows){const note=row.note,card=document.createElement('article'),heading=document.createElement('div'),title=document.createElement('h4'),kind=document.createElement('small'),actions=document.createElement('div');heading.className='toolbar';title.textContent=note.title||'Unbenannter Eintrag';kind.textContent=({npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht'})[note.kind as 'npc'|'faction'|'quest'|'rumor']+(preparedNoteIds.has(note.id)?' · Mit aktuellem Besuch verknüpft':'');heading.append(title,kind);actions.className='toolbar';
     if(note.readAloud){const publicText=document.createElement('pre'),use=document.createElement('button');publicText.textContent=note.readAloud;publicText.className='live-knowledge-public';use.type='button';use.textContent='Als Vorlesetext einsetzen';use.onclick=()=>useKnowledgeReadAloud(note.readAloud,note.title);card.append(heading,publicText);actions.append(use);}else card.append(heading);
     if(note.kind==='npc'){const portrait=document.createElement('button');portrait.type='button';portrait.textContent='Porträt zeigen';portrait.onclick=()=>void showLiveNpc(note.id);actions.append(portrait);}
+    if(note.kind==='quest'||note.kind==='rumor'){const status=document.createElement('p'),open=document.createElement('button'),view=narrativeCache.get(note.id),problem=narrativeProblems.get(note.id);status.className='caption';status.textContent=view?narrativeFacts(view):problem?'Status nicht verfügbar: '+problem:'Status wird geladen…';open.type='button';open.textContent=view?.award?'Abschluss ansehen':'Verwalten / abschließen';open.onclick=()=>void openKnowledgeNote(note.id);card.append(status);actions.append(open);if(!view&&!problem)loadLiveNarrative(note.id);}
     if(note.gmNotes){const details=document.createElement('details'),summary=document.createElement('summary'),gm=document.createElement('pre');summary.textContent='GM-Notizen';gm.textContent=note.gmNotes;details.append(summary,gm);card.append(details);}card.append(actions);root.append(card);
   }
   if(!rows.length){const empty=document.createElement('p');empty.className='caption';empty.textContent=query?'Kein vorbereitetes Wissen gefunden.':'Noch keine NSCs, Fraktionen, Quests oder Gerüchte vorbereitet.';root.append(empty);}
@@ -317,8 +323,8 @@ function render() {
   if (sources?.plans.some(p => p.id === current)) select.value = current;
   renderVisits();
 }
-export function initLive(status: typeof tell, navigate: typeof openLocation) {
-  tell=status;openLocation=navigate;initSessionNavigator(status,previewPlannedVisit,async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(renderPartyReference);initRuleReferences(status);
+export function initLive(status: typeof tell, navigate: typeof openLocation,openNote:(id:string)=>Promise<void>=async()=>{}) {
+  tell=status;openLocation=navigate;openKnowledgeNote=openNote;initSessionNavigator(status,previewPlannedVisit,async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(renderPartyReference);initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};

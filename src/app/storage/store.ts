@@ -53,7 +53,7 @@ import {openSync as openSnapshot, readSync, closeSync as closeSnapshot} from 'no
 import type {ConflictChoice} from '../campaign-contracts';
 import {canonicalJson} from '../generation/canonical-json';
 import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicFavorites,readMusicSubject,executeMusic,saveMusicPosition,refreshMusicContext,ingestAudio,audioLibrarySnapshot,mergeAudioLibrary,audioFile,validateMusicBackup,audioMediaFiles} from './music';
-import type {AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
+import type {MusicView,AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
 import {installWorldSchema,readWorld,readSceneWorld,previewTravel,executeWorld,reconcileWorld,syncSceneWorld,inheritScenePosition,validateWorldBackup} from './world';
 import type {TravelRequest,WorldCommand} from '../world-contracts';
 import {installItemsSchema,readShop,readShops,sceneShops,executeItemShop,restockDue,validateItemsBackup} from './items';
