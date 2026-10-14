@@ -357,7 +357,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
     const token=context?.token,scene=data?.scene,draft=currentLiveMomentDraft();if(!scene||liveMomentDrafts.currentSceneId!==scene.id)return;
     if(!await flushLive()||context?.token!==token||data?.scene?.id!==scene.id){get('live-moment-result').textContent='Gruppenfokus geändert. Der Moment bleibt bei seiner Gruppe offen.';return;}
     const{followUp,...moment}=draft,ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...moment,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;
-    let refreshProblem=false;if(followUp){const refreshed=await window.campaign.preparation(token!,'');if(context?.token===token&&refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}
+    let refreshProblem=false;if(followUp){try{const refreshed=await window.campaign.preparation(token!,'');if(context?.token!==token)return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(context?.token!==token)return;refreshProblem=true;}}
     const clear=canClearSavedLiveMoment(scene.id,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());liveMomentDrafts.saved(scene.id);if(clear)writeLiveMomentDraft(emptyLiveMomentDraft());
     get('live-moment-result').textContent=liveMomentSavedMessage(followUp,clear,refreshProblem);get<HTMLInputElement>('live-moment-title').focus();
   })();};
