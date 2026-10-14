@@ -88,6 +88,74 @@ Sceneuhren mit Teilfortsetzung und die Pause eines bereits späteren Actors.
 Die sechs Intervall-/Mehractor-Rollbackprüfungen ergänzen diesen Anschluss;
 alle Ownerwirkungen und native Zeitkonfliktbedienung bleiben gesondert offen.
 
+## Aktivierungszeiten und Bedürfnisidentitäten bei Wiederaufnahme
+
+Die Quellen L12–14, L79–86 und L167–176 binden Simulation an ausdrücklich
+aktivierte Actors, bestätigte Campaignzeit und die damals geltenden Regeln.
+`recordAutonomyTime` hielt zuvor bei einer leeren Actorbasis sofort an. War der
+letzte Actor deaktiviert, blieb dadurch die Zeitfront stehen. Nach Reaktivierung
+wurde der deaktivierte Zeitraum mit der neuen aktiven Konfiguration gefüllt.
+Ein zweiter, unabhängiger aktiver NPC verhinderte den Fehler, weil dann weiterhin
+Intervalle entstanden. Derselbe Aktivierungsablauf durfte davon nicht abhängen.
+
+Die bestätigte monotone Zeitfront wird nun auch ohne aktive Actors gespeichert.
+Es entsteht dafür kein erfundenes Actorintervall. Nach Reaktivierung beginnen
+neue Regeln am nächsten tatsächlich bestätigten Zeitraum; vorhandene historische
+Intervalle und Cursor bleiben erhalten. Die bestehende Epoch-/Scenegrenze und
+konkurrierende frühere Scenezeiten werden weiterhin geprüft, nicht zurückgerollt.
+Das verändert keine bereits gespeicherten Bedürfniswerte und repariert keine
+historischen Intervalle automatisch.
+
+Bei der Campaignkopie remappte der allgemeine IDwalker außerdem
+`AutonomyActor.needs[].id` und dieselben historischen Konfigurationsslots.
+Jobwirkungen benutzen diese fachlichen IDs jedoch als Schlüssel in `needEffects`.
+`hunger` oder ein eigener Bedarf ist keine Campaignunitidentität. Der Corewalker
+bewahrt diese Bedürfnisdefinitionen im konkreten Autonomiekontext jetzt exakt;
+Actor-, Job- und Positionsreferenzen werden weiterhin auf die Kopie gebunden.
+Manuelle Autonomielogs bewahren zusätzlich ihren festen `manual`-Intervallmarker
+in SQL und Payload. Er ist keine zu remappende historische Intervall-ID.
+
+`desktop-autonomy-disable-time.test.mjs` prüft zwei Minuten aktive Zeit mit einer
+Stunde deaktivierter Zeit dazwischen: Hunger wächst um 0,1333 statt zuvor 4,1333,
+mit und ohne unabhängigen NPC, nach Fresh sowie unabhängiger Kopie. Die Copyprobe
+bewahrt normale und eigene Bedürfnisdefinitionen, historische Regeln und
+Jobwirkungsschlüssel; ein bereits begonnener exklusiver Job wird fertig und
+wendet seine Wirkungen auf beide Bedürfnisse an. Paketbytes bleiben unverändert.
+Das qualifiziert diesen lokalen Aktivierungs-/Copyübergang, keinen vollständigen
+Pause-/Gruppen-/200-Actor- oder nativen Wiederaufnahmevertrag.
+
+Eine zusätzliche reale Gruppenprobe zeigte einen Writer-/Validatorwiderspruch:
+Gruppen-Deaktivierung ließ eine aktive Reservierung des nun deaktivierten Actors
+stehen. Die neue Persistenzprüfung lehnte dadurch ein vorher gesundes Backup ab.
+`group-enable(false)` löst jetzt dieselbe aktive Reservierung wie die einzelne
+Actor-Deaktivierung. Jobidentität, Fortschritt und historische Buchungen bleiben
+erhalten; ein ausdrücklicher Gruppenbefehl setzt sie nicht zurück. Die Probe
+führt den echten Gruppeneditor-/Draft-/NPC-/Jobweg aus und prüft Backup, Fresh
+sowie anschließendes inaktives Catch-up. Erneute exklusive Resume-Zuweisung ist
+weiterhin eine eigene Abnahme.
+
+## Neuer Persistenzgraph und Buchungsowner
+
+Die integrierte Prüfung kontrolliert nun Zeitfronten, Receipts, Reservierungen,
+Buchungsformen/-überschneidungen und Logs sowie deren erreichbare Corebezüge.
+Die Prüfung erhält gültige historische Werte; ungültige Records werden weder
+neu gehasht noch gelöscht. Backup und ausgewählter Export bleiben streng.
+Catch-up darf eine widersprüchliche Buchungsgrundlage nicht als freien Job lesen.
+
+Die SQL-Fremdschlüssel verhindern Buchungen mit fehlendem Actor oder Job im
+normalen Schreibweg; Backup/Export erkennen sie bereits strukturell. Zwei
+kontrollierte Gegenproben an beschädigten Arbeitsstores zeigten aber, dass
+Catch-up solche formal gültigen Buchungen noch akzeptierte. Nur zur
+Faultinjektion wurden Fremdschlüssel aus- und danach wieder eingeschaltet;
+der normale Writer wurde nicht gelockert. `validateRuntimeLinks` prüft nun
+vor der Verwendung beider Buchungstabellen, dass Actor und Job im selben
+Campaignowner existieren. Eine SQL-Abfrage je Tabelle prüft diese Beziehung,
+statt zusätzliche Ownerreader für jede historische Zeile aufzurufen.
+Die Prüfung bindet erhaltene Identitäten, nicht allein heutige Aktivität;
+alte Jobs dürfen deaktiviert bleiben. Catch-up hat bei Fehler keine Teilwirkung,
+Backup/Export behalten ihren bestehenden strukturellen Schutz und erhalten den
+sicheren Vorgänger. Historische Target-/Slotclosure bleibt gesondert offen.
+
 ## Nächste ausführbare Schritte
 
 1. **Historische Zeitbasis vervollständigen.** Die Jobs und Intervallgrenzen sind
@@ -97,10 +165,15 @@ alle Ownerwirkungen und native Zeitkonfliktbedienung bleiben gesondert offen.
    gegen ausschließlich heutige aktive Inhalte zu prüfen. Archivierte Herkunft
    muss erhalten bleiben. Abnahme: gültige alte Revisionen, korrekt gehashte
    beschädigte Snapshot-/Actorwerte und Fresh; keine Teilwirkung oder Umdeutung.
-2. **Reservierungs-/Receipt-/Logabschluss prüfen.** `autonomy_booking`,
+2. **Reservierungs-/Receipt-/Logabschluss vervollständigen.** `autonomy_booking`,
    `autonomy_reservation`, `autonomy_log` und `autonomy_receipt` bei Backup und
-   Transfer fachlich prüfen. IDs und Campaignowner, Zeitbereiche sowie historische
-   Target-/Jobbindungen bewahren; Fehler erklären und nicht still reparieren.
+   Transfer weiter gemeinsam mit ihren Writern prüfen. Die vorhandenen Form-/
+   Ownerprüfungen sind kein vollständiger Abschluss. Die geprüfte Gruppen-
+   Deaktivierung mit gelöster Reservierung auf Reaktivierung erweitern;
+   manuelle Pause/Resume und erneute exklusive Zuweisung gegen Reservierungen
+   und Zeitbuchungen abnehmen. Historische Targetbindungen erhalten; fehlende
+   aktuelle Aktivität nicht mit fehlender historischer Identität verwechseln.
+   Fehler erklären und nicht still reparieren.
    Abnahme: zwei konkurrierende Jobs, unterbrochene Reservierung, Positionsoverride,
    unabhängige Kopie, Receiptreplay und erklärbare erhaltene Konfliktrollen.
 3. **Zeit-/Ownerwirkung gemeinsam qualifizieren.** Den realen
