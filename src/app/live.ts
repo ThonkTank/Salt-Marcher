@@ -385,7 +385,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
     void(async()=>{try{
       if(!await flushLive()||!current())return;
       const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;liveMomentDrafts.saved(sceneId,draft);if(!current())return;
-      let refreshProblem=false;if(followUp){const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}
+      let refreshProblem=false;if(followUp){try{const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(!current())return;refreshProblem=true;}}
       const unchanged=canClearSavedLiveMoment(sceneId,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());
       if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());get<HTMLInputElement>('live-moment-title').focus();}
       get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
