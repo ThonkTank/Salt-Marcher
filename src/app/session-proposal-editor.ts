@@ -1,12 +1,232 @@
-import type {Preparation} from './preparation-contracts';
-import type {SessionProposal,SessionAction} from './session-contracts';
-import type {ItemInput} from './progression';
-const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
-let opened:SessionProposal|null=null;
-let save:((value:Omit<Extract<SessionAction,{kind:'edit-proposal'}>,'kind'|'planId'|'runId'|'index'|'expectedRevision'>)=>Promise<boolean>)|null=null;
-let items:ItemInput[]=[];
-export const proposalEditorOpen=()=>!!opened;
-export function closeProposalEditor(){opened=null;save=null;el<HTMLDialogElement>('session-proposal-editor').close();}
-export function initProposalEditor(){const dialog=document.createElement('dialog');dialog.id='session-proposal-editor';dialog.innerHTML='<form id="proposal-edit-form"><h2>Spielabend-Vorschlag bearbeiten</h2><label>Titel <input id="proposal-edit-title" maxlength="1000" required></label><label>Ort <select id="proposal-edit-location"></select></label><label>Zum Vorlesen <textarea id="proposal-edit-public" rows="4"></textarea></label><label>GM-Notizen <textarea id="proposal-edit-notes" rows="6"></textarea></label><details><summary>Wissensverweise</summary><div id="proposal-edit-refs"></div></details><label><input id="proposal-edit-has-reward" type="checkbox"> Eigene Belohnung vorbereiten</label><div id="proposal-edit-reward"><label>Story-XP <input id="proposal-edit-xp" type="number" min="0" value="0"></label><div id="proposal-edit-items"></div><button id="proposal-edit-item-add" type="button">Beuteeintrag ergänzen</button></div><p class="caption">Speichern ändert nur diesen Vorschlag. Die Timeline, World-Gruppen und platzierte Schätze entstehen durch ihre ausdrücklichen Übergaben.</p><p id="proposal-edit-status" role="status"></p><div class="toolbar"><button type="submit">Vorschlag speichern</button><button id="proposal-edit-cancel" type="button">Abbrechen</button></div></form>';document.body.append(dialog);dialog.addEventListener('cancel',()=>{opened=null;save=null;});el('proposal-edit-cancel').onclick=closeProposalEditor;el('proposal-edit-has-reward').oninput=()=>{el('proposal-edit-reward').hidden=!el<HTMLInputElement>('proposal-edit-has-reward').checked;};el('proposal-edit-item-add').onclick=()=>{items.push({name:'',quantity:1,valueGold:'0',category:'other'});renderItems();};el<HTMLFormElement>('proposal-edit-form').onsubmit=e=>{e.preventDefault();if(!save||!opened)return;const fn=save,npc=opened,form=el<HTMLFormElement>('proposal-edit-form');form.inert=true;void(async()=>{try{const value={title:el<HTMLInputElement>('proposal-edit-title').value,notes:el<HTMLTextAreaElement>('proposal-edit-notes').value,readAloud:el<HTMLTextAreaElement>('proposal-edit-public').value,locationId:el<HTMLSelectElement>('proposal-edit-location').value||null,noteIds:[...el('proposal-edit-refs').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),reward:el<HTMLInputElement>('proposal-edit-has-reward').checked?{poolXp:Number(el<HTMLInputElement>('proposal-edit-xp').value),items:structuredClone(items)}:null};if(await fn(value)&&opened===npc)closeProposalEditor();}catch(e){el('proposal-edit-status').textContent=(e as Error).message;}finally{form.inert=false;}})();};}
-function renderItems(){const root=el('proposal-edit-items');root.replaceChildren();for(const [index,item]of items.entries()){const row=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='Eintrag '+(index+1);row.append(legend);for(const [key,label,type]of [['name','Name','text'],['quantity','Menge','number'],['valueGold','Gold pro Stück','text']] as const){const wrap=document.createElement('label'),input=document.createElement('input');wrap.textContent=label;input.type=type;input.value=String(item[key]);input.setAttribute('aria-label',label);input.oninput=()=>{if(key==='quantity')item.quantity=Number(input.value);else item[key]=input.value;};wrap.append(input);row.append(wrap);}const wrap=document.createElement('label'),select=document.createElement('select');wrap.textContent='Kategorie';for(const [id,name]of [['coins','Münzen'],['equipment','Ausrüstung'],['trade-goods','Handelsware'],['magic','Magisch'],['other','Sonstiges']] as const){const o=document.createElement('option');o.value=id;o.textContent=name;select.append(o);}select.value=item.category;select.oninput=()=>{item.category=select.value as ItemInput['category'];};wrap.append(select);row.append(wrap);const remove=document.createElement('button');remove.type='button';remove.textContent='Entfernen';remove.onclick=()=>{items.splice(index,1);renderItems();};row.append(remove);root.append(row);}}
-export function openProposalEditor(proposal:SessionProposal,sources:Preparation,onSave:NonNullable<typeof save>){opened=proposal;save=onSave;items=structuredClone(proposal.reward?.items??[]);el<HTMLInputElement>('proposal-edit-title').value=proposal.title;el<HTMLTextAreaElement>('proposal-edit-notes').value=proposal.notes;el<HTMLTextAreaElement>('proposal-edit-public').value=proposal.readAloud;const locations=el<HTMLSelectElement>('proposal-edit-location');locations.replaceChildren();for(const l of [{id:'',name:'Ohne Ort'},...sources.locations.filter(l=>!l.trashed).map(l=>({id:l.document.id,name:l.document.name}))]){const o=document.createElement('option');o.value=l.id;o.textContent=l.name;locations.append(o);}if(proposal.locationId&&!sources.locations.some(l=>l.document.id===proposal.locationId&&!l.trashed)){const o=document.createElement('option');o.value=proposal.locationId;o.textContent='Ort nicht mehr verfügbar';locations.append(o);}locations.value=proposal.locationId??'';const refs=el('proposal-edit-refs');refs.replaceChildren();for(const row of sources.notes.filter(n=>!n.trashed)){const l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.value=row.note.id;c.checked=proposal.noteIds.includes(row.note.id);l.className='check-label';l.append(c,document.createTextNode(row.note.title));refs.append(l);}el<HTMLInputElement>('proposal-edit-has-reward').checked=!!proposal.reward;el('proposal-edit-reward').hidden=!proposal.reward;el<HTMLInputElement>('proposal-edit-xp').value=String(proposal.reward?.poolXp??0);el('proposal-edit-status').textContent='';renderItems();el<HTMLDialogElement>('session-proposal-editor').showModal();}
+import type { Preparation } from "./preparation-contracts";
+import type { SessionProposal, SessionAction } from "./session-contracts";
+import type { ItemInput } from "./progression";
+const el = <T extends HTMLElement>(id: string) =>
+  document.getElementById(id) as T;
+let opened: SessionProposal | null = null;
+let save:
+  | ((
+      value: Omit<
+        Extract<SessionAction, { kind: "edit-proposal" }>,
+        "kind" | "planId" | "runId" | "index" | "expectedRevision"
+      >,
+    ) => Promise<boolean>)
+  | null = null;
+type DraftItem = Omit<ItemInput, "quantity"> & { quantity: string };
+let items: DraftItem[] = [];
+let generation = 0,
+  busy = false;
+export const proposalEditorOpen = () => !!opened;
+export function closeProposalEditor() {
+  generation++;
+  opened = null;
+  save = null;
+  busy = false;
+  el<HTMLDialogElement>("session-proposal-editor").close();
+}
+export function initProposalEditor() {
+  const dialog = document.createElement("dialog");
+  dialog.id = "session-proposal-editor";
+  dialog.innerHTML =
+    '<form id="proposal-edit-form"><h2>Spielabend-Vorschlag bearbeiten</h2><label>Titel <input id="proposal-edit-title" maxlength="1000" required></label><label>Ort <select id="proposal-edit-location"></select></label><label>Zum Vorlesen <textarea id="proposal-edit-public" rows="4"></textarea></label><label>GM-Notizen <textarea id="proposal-edit-notes" rows="6"></textarea></label><details><summary>Wissensverweise</summary><div id="proposal-edit-refs"></div></details><label><input id="proposal-edit-has-reward" type="checkbox"> Eigene Belohnung vorbereiten</label><div id="proposal-edit-reward"><label>Story-XP <input id="proposal-edit-xp" type="number" min="0" value="0"></label><div id="proposal-edit-items"></div><button id="proposal-edit-item-add" type="button">Beuteeintrag ergänzen</button></div><p class="caption">Speichern ändert nur diesen Vorschlag. Die Timeline, World-Gruppen und platzierte Schätze entstehen durch ihre ausdrücklichen Übergaben.</p><p id="proposal-edit-status" role="status"></p><div class="toolbar"><button type="submit">Vorschlag speichern</button><button id="proposal-edit-cancel" type="button">Abbrechen</button></div></form>';
+  document.body.append(dialog);
+  dialog.addEventListener("cancel", () => {
+    generation++;
+    opened = null;
+    save = null;
+    busy = false;
+  });
+  el("proposal-edit-cancel").onclick = closeProposalEditor;
+  el("proposal-edit-has-reward").oninput = () => {
+    el("proposal-edit-reward").hidden = !el<HTMLInputElement>(
+      "proposal-edit-has-reward",
+    ).checked;
+  };
+  el("proposal-edit-item-add").onclick = () => {
+    items.push({ name: "", quantity: "1", valueGold: "0", category: "other" });
+    renderItems();
+  };
+  el<HTMLFormElement>("proposal-edit-form").onsubmit = (e) => {
+    e.preventDefault();
+    if (!save || !opened || busy) return;
+    const fn = save,
+      g = generation,
+      form = el<HTMLFormElement>("proposal-edit-form");
+    busy = true;
+    form.inert = true;
+    void (async () => {
+      try {
+        const integer = (raw: string, label: string) => {
+          if (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw)))
+            throw new Error(label + " benötigt eine ganze Zahl.");
+          return Number(raw);
+        };
+        const value = {
+          title: el<HTMLInputElement>("proposal-edit-title").value,
+          notes: el<HTMLTextAreaElement>("proposal-edit-notes").value,
+          readAloud: el<HTMLTextAreaElement>("proposal-edit-public").value,
+          locationId:
+            el<HTMLSelectElement>("proposal-edit-location").value || null,
+          noteIds: [
+            ...el("proposal-edit-refs").querySelectorAll<HTMLInputElement>(
+              "input:checked",
+            ),
+          ].map((c) => c.value),
+          reward: el<HTMLInputElement>("proposal-edit-has-reward").checked
+            ? {
+                poolXp: integer(
+                  el<HTMLInputElement>("proposal-edit-xp").value,
+                  "Story-XP",
+                ),
+                items: items.map((item) => ({
+                  ...structuredClone(item),
+                  quantity: integer(item.quantity, "Menge"),
+                })),
+              }
+            : null,
+        };
+        if ((await fn(value)) && g === generation) closeProposalEditor();
+      } catch (e) {
+        if (g === generation)
+          el("proposal-edit-status").textContent = (e as Error).message;
+      } finally {
+        if (g === generation) {
+          busy = false;
+          form.inert = false;
+        }
+      }
+    })();
+  };
+}
+function renderItems() {
+  const root = el("proposal-edit-items");
+  root.replaceChildren();
+  for (const [index, item] of items.entries()) {
+    const row = document.createElement("fieldset"),
+      legend = document.createElement("legend");
+    legend.textContent = "Eintrag " + (index + 1);
+    row.append(legend);
+    for (const [key, label, type] of [
+      ["name", "Name", "text"],
+      ["quantity", "Menge", "number"],
+      ["valueGold", "Gold pro Stück", "text"],
+    ] as const) {
+      const wrap = document.createElement("label"),
+        input = document.createElement("input");
+      wrap.textContent = label;
+      input.type = key === "quantity" ? "text" : type;
+      if (key === "quantity") input.inputMode = "numeric";
+      input.value = String(item[key]);
+      input.setAttribute("aria-label", label);
+      input.oninput = () => {
+        item[key] = input.value;
+      };
+      wrap.append(input);
+      row.append(wrap);
+    }
+    const wrap = document.createElement("label"),
+      select = document.createElement("select");
+    wrap.textContent = "Kategorie";
+    for (const [id, name] of [
+      ["coins", "Münzen"],
+      ["equipment", "Ausrüstung"],
+      ["trade-goods", "Handelsware"],
+      ["magic", "Magisch"],
+      ["other", "Sonstiges"],
+    ] as const) {
+      const o = document.createElement("option");
+      o.value = id;
+      o.textContent = name;
+      select.append(o);
+    }
+    select.value = item.category;
+    select.oninput = () => {
+      item.category = select.value as ItemInput["category"];
+    };
+    wrap.append(select);
+    row.append(wrap);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Entfernen";
+    remove.onclick = () => {
+      items.splice(index, 1);
+      renderItems();
+    };
+    row.append(remove);
+    root.append(row);
+  }
+}
+export function openProposalEditor(
+  proposal: SessionProposal,
+  sources: Preparation,
+  onSave: NonNullable<typeof save>,
+) {
+  generation++;
+  busy = false;
+  el<HTMLFormElement>("proposal-edit-form").inert = false;
+  opened = proposal;
+  save = onSave;
+  items = (proposal.reward?.items ?? []).map((item) => ({
+    ...structuredClone(item),
+    quantity: String(item.quantity),
+  }));
+  el<HTMLInputElement>("proposal-edit-title").value = proposal.title;
+  el<HTMLTextAreaElement>("proposal-edit-notes").value = proposal.notes;
+  el<HTMLTextAreaElement>("proposal-edit-public").value = proposal.readAloud;
+  const locations = el<HTMLSelectElement>("proposal-edit-location");
+  locations.replaceChildren();
+  for (const l of [
+    { id: "", name: "Ohne Ort" },
+    ...sources.locations
+      .filter((l) => !l.trashed)
+      .map((l) => ({ id: l.document.id, name: l.document.name })),
+  ]) {
+    const o = document.createElement("option");
+    o.value = l.id;
+    o.textContent = l.name;
+    locations.append(o);
+  }
+  if (
+    proposal.locationId &&
+    !sources.locations.some(
+      (l) => l.document.id === proposal.locationId && !l.trashed,
+    )
+  ) {
+    const o = document.createElement("option");
+    o.value = proposal.locationId;
+    o.textContent = "Ort nicht mehr verfügbar";
+    locations.append(o);
+  }
+  locations.value = proposal.locationId ?? "";
+  const refs = el("proposal-edit-refs");
+  refs.replaceChildren();
+  const notes: { id: string; title: string }[] = sources.notes
+    .filter((n) => !n.trashed)
+    .map((n) => ({ id: n.note.id, title: n.note.title }));
+  for (const id of proposal.noteIds)
+    if (!notes.some((n) => n.id === id))
+      notes.push({
+        id,
+        title:
+          "Nicht mehr verfügbar: " +
+          (sources.notes.find((n) => n.note.id === id)?.note.title ?? id),
+      });
+  for (const note of notes) {
+    const l = document.createElement("label"),
+      c = document.createElement("input");
+    c.type = "checkbox";
+    c.value = note.id;
+    c.checked = proposal.noteIds.includes(note.id);
+    l.className = "check-label";
+    l.append(c, document.createTextNode(note.title));
+    refs.append(l);
+  }
+  el<HTMLInputElement>("proposal-edit-has-reward").checked = !!proposal.reward;
+  el("proposal-edit-reward").hidden = !proposal.reward;
+  el<HTMLInputElement>("proposal-edit-xp").value = String(
+    proposal.reward?.poolXp ?? 0,
+  );
+  el("proposal-edit-status").textContent = "";
+  renderItems();
+  el<HTMLDialogElement>("session-proposal-editor").showModal();
+}

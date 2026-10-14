@@ -116,7 +116,7 @@ export function executeSession(db:any,command:SessionCommand,guard:()=>void,publ
   if(a.kind==='reject-proposal'){if(typeof a.rejected!=='boolean')throw new Error('Vorschlagsstatus prüfen.');p.rejected=a.rejected;p.revision=(p.revision??1)+1;}else{
   if(typeof a.title!=='string'||!a.title.trim()||a.title.length>1000||typeof a.notes!=='string'||a.notes.length>2000000||typeof a.readAloud!=='string'||a.readAloud.length>2000000||!Array.isArray(a.noteIds)||a.noteIds.length>1000)throw new Error('Vorschlag benötigt Titel und gültige Texte/Verweise.');
   if(a.locationId)availableLocation(db,cam,a.locationId);for(const id of a.noteIds)note(db,cam,id);
-  let reward=null;if(a.reward){if(!Number.isSafeInteger(a.reward.poolXp)||a.reward.poolXp<0||!Array.isArray(a.reward.items)||a.reward.items.length>1000)throw new Error('Belohnung prüfen.');for(const item of a.reward.items)validateItemInput(db,item);reward=structuredClone(a.reward);}
+  let reward=null;if(a.reward){if(typeof a.reward!=='object'||Array.isArray(a.reward)||!Number.isSafeInteger(a.reward.poolXp)||a.reward.poolXp<0||!Array.isArray(a.reward.items)||a.reward.items.length>100)throw new Error('Belohnung prüfen.');for(const item of a.reward.items)validateItemInput(db,item);reward=structuredClone(a.reward);}
   Object.assign(p,{title:a.title,notes:a.notes,readAloud:a.readAloud,locationId:a.locationId,noteIds:[...new Set(a.noteIds)],reward,rewardEdited:p.rewardEdited||json(p.reward??null)!==json(reward),needsEncounterRefresh:p.needsEncounterRefresh||!!run.worldSourcesByLocation&&p.locationId!==a.locationId,revision:(p.revision??1)+1});
   }
   const payload=json(run);db.prepare('UPDATE session_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),cam,run.id);

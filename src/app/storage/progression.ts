@@ -322,12 +322,12 @@ export function readLootBalance(db:any,cam:string){
  })();
 }
 export function validateItemInput(db:any,input:ItemInput){
- if(!input||typeof input.name!=='string'||!input.name.trim()||input.name.length>1000||!Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>1000000||!['coins','equipment','trade-goods','magic','other'].includes(input.category))throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
- if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');}else copper(input.valueGold);
+ if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.name!=='string'||!input.name.trim()||input.name.length>1000||!Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>1000000||!['coins','equipment','trade-goods','magic','other'].includes(input.category))throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
+ if(input.reference){if(typeof input.reference!=='object'||Array.isArray(input.reference)||input.reference.kind!=='authored'||typeof input.reference.definitionId!=='string'||!input.reference.definitionId.trim()||!Number.isSafeInteger(input.reference.revision)||input.reference.revision<1)throw new Error('Gegenstandsreferenz prüfen.');const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');return d;}copper(input.valueGold);return null;
 }
 export function checkedItem(db: any, input: ItemInput) {
-  if (!input || typeof input.name !== 'string' || !input.name.trim() || input.name.length > 1000 || !Number.isSafeInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000 || !['coins','equipment','trade-goods','magic','other'].includes(input.category)) throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
-  if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');return{id:randomUUID(),reference:{kind:'authored' as const,definitionId:d.id,revision:d.revision},name:d.name,category:d.category,quantity:input.quantity,allocated:0,unitCopper:d.unitCopper};}
+  const definition=validateItemInput(db,input);
+  if(definition)return{id:randomUUID(),reference:{kind:'authored' as const,definitionId:definition.id,revision:definition.revision},name:definition.name,category:definition.category,quantity:input.quantity,allocated:0,unitCopper:definition.unitCopper};
   const id = randomUUID(), unitCopper = copper(input.valueGold);
   db.prepare('INSERT INTO authored_item VALUES(?,1,?,?,?)').run(id, input.name, input.category, unitCopper);
   recordItemDefinitionVersion(db,readItemDefinition(db,id));
