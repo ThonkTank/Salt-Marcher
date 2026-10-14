@@ -28,7 +28,7 @@ async function fixture(t:TestContext){
  t.after(()=>{binder.reset();Object.assign(globalThis,prior);});await binder.open();await until(()=>el('document').querySelector('h3')?.textContent==='Ada');return{...x,x,binder,dialog,el,button,click};
 }
 test('detached dossier actions cannot edit the newly selected NPC',async t=>{
- const f=await fixture(t),old=f.button('Profil bearbeiten…');(f.el('list').querySelector(`[data-npc-id="${f.ids.borin}"]`) as HTMLButtonElement).click();await until(()=>f.el('document').querySelector('h3')?.textContent==='Borin');
+ const f=await fixture(t),old=f.button('Profil bearbeiten…');assert.equal(f.el('search').parentElement?.tagName,'LABEL');assert.equal(f.el('scope').parentElement?.tagName,'LABEL');(f.el('list').querySelector(`[data-npc-id="${f.ids.borin}"]`) as HTMLButtonElement).click();await until(()=>f.el('document').querySelector('h3')?.textContent==='Borin');
  old.onclick?.(new f.window.Event('click') as any);for(let i=0;i<8;i++)await tick();assert.deepEqual(f.edits,[]);
  f.click('Profil bearbeiten…');await until(()=>f.edits.length===1);assert.deepEqual(f.edits,[f.ids.borin]);
 });
