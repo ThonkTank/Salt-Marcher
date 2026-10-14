@@ -41,6 +41,22 @@ test('a reviewed location image cannot be released after the focused scene moves
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
+test('a trashed npc cannot be newly released from retained portrait history',()=>{
+ const root=mkdtempSync(join(tmpdir(),'player-npc-active-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Aktives NSC-Bild'),token=store.activate(campaign.id).token,npc={version:1 as const,id:'npc',revision:1,kind:'npc' as const,title:'Hafenwache',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};
+  store.changePreparation({commandId:'npc',campaignId:campaign.id,token,change:{kind:'note',expectedRevision:null,note:npc}});
+  const character=store.executeLive({commandId:'character',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}}).character!;
+  const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
+  store.executeLive({commandId:'activate',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+  store.registerPlayerAsset(token,{id:'npc-art',kind:'npc',subjectId:npc.id,title:npc.title,sha256:'b'.repeat(64),extension:'.png',bytes:1});
+  const release={...focus(store,token),commandId:'show-npc',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings' as const,settings:{blank:false,mode:'image' as const,imageId:'npc-art',title:'',labels:false,light:'daylight' as const,displayId:null,fullscreen:false}}};
+  store.changePreparation({commandId:'trash-npc',campaignId:campaign.id,token,change:{kind:'note-trash',id:npc.id,expectedRevision:1,trashed:true}});
+  assert.throws(()=>store.executePlayer(release),/Bildziel fehlt/);
+  assert.equal(store.playerView(token).settings.blank,true);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
+
 test('published scene read-aloud stays bound to the group the GM showed',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-scene-bound-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
  try{
