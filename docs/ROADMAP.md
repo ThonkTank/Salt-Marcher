@@ -69,6 +69,21 @@ Der [Quellenabgleich](SCOPE.md) führt den gesamten erfassten Umfang. Diese Funk
 
 Die vier E2E-Gates ersetzen keine Fachabnahme. Der vollständige Abschluss verlangt alle SMR-00–11 und SMR-AC-01–18 aus der [SaltMarcher-Lieferplanung](../ROADMAP-SALTMARCHER-REPLACEMENT.md#lieferphasen). Die detaillierte Themen-, Quellen- und Abnahmezuordnung steht ausschließlich in [SCOPE](SCOPE.md) und dem Quellenregister.
 
+| Fachfolge / Pflichtabnahme | Zusätzliche vollständige Lieferung | Fachquellen |
+| --- | --- | --- |
+| SMR-00 / SMR-AC-01 | Quellen-/Originalinventur und belegte Hostentscheidung | ADR-Plattformvertrag/#44 |
+| SMR-01 / SMR-AC-02/15 | Autosave, Crash-Recovery, Backup, Trash/Restore/Löschung, Copy/Complete-Import und offengelegte Salvage | #40/#41; [Campaign-Datenvertrag](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) |
+| SMR-02 / SMR-AC-03 | Creature/Item/Rules und World-/Notizinhalte; Katalog→Inspector→Scene, verschachtelte Referenzvorschauen/Details-History, eingefrorene Verwendung | #58/#68; [Katalog-/Encountervertrag](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md); [Campaign-Datenvertrag](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); Full-S01 für Itemverbraucher |
+| SMR-03 / SMR-AC-04 | Roster/aktuelle/erwartete Party, Adventuring Day/XP/Rest; dauerhafte LiveSession, Primary/Split/Rejoin, Fokus/Masken und fehlertolerante Party-/Scene-Reconciliation | #60; [LiveScene-Vertrag](plans/runtime/smr03-live-scene-contract.md); keine Planner-Rückwirkung |
+| SMR-04 / SMR-AC-05 | Vollständiger bearbeitbarer Hex→Stadt→Haus→Dungeon→Raum-Atlas; Originalparität, FTG-Lebensdaten, 3D/Graph/Vererbung/Templates, Beschreibungen/Traps/Ausgabe | Hex-/Stadtatlas und [Dungeonanforderungen](plans/dungeon/smr04-spatial-coverage.md); #44; räumlicher Fachplan und Originalinventare |
+| SMR-05 / SMR-AC-06 | Kontextgewichtete Encounter Tables, Combat/Chase, atomarer Abschluss, XP/Level/Treasures, manuelle Gruppenlootbearbeitung, Verteilung/Charakterledger, kumulative Guidance und Korrekturen | Katalog-/Encountervertrag und [LiveScene-Vertrag](plans/runtime/smr03-live-scene-contract.md); D&D-2014, CE-03–06 |
+| SMR-06 / SMR-AC-07 | Manuelle Timeline sowie reproduzierbare Vorschlags-/Reward-Generierung, erwartete Party, Annahme/Neugenerierung und Platzierung ohne Worldverlust | #69; [Campaign-Datenvertrag](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); Generierung konsumiert Quellen/Encounter/Loot/World |
+| SMR-07 / SMR-AC-08/09 | Hex-/Dungeonreise, Tracks/Perception/Overrides, kausales Undo; konfigurierbarer Kalender, unabhängige Scene-Zeit, einmalige Folgen bei Retry/Restart | Campaign/Clock; Eingänge für Wetter/Restock/CITY/Autonomy |
+| SMR-08 / SMR-AC-10/11/12 | Shop-/Ledgerhandel/Restock; regionales Klima/Wetter/Effekte; portable Musik/Player/Autoplay/Ambience mit manueller Priorität | Campaign-/Clock-Vertrag und [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md); drei eigenständige Fachabnahmen |
+| SMR-09 / SMR-AC-13 | Opt-in-Bedürfnisse/Jobs/Reservierungen, begrenzte Nicht-Party-Konflikte, Pause/atomare Steps/Erklärung/einmaliges Catch-up | Campaign/Clock; World/Scene/Raum/Zeit |
+| SMR-10 / SMR-AC-14/15/16 | Sichere Spielerprojektion mit Kenntnis/Perception; Complete-/Salvage-Portabilität; widerrufbare Extensions mit Fail/Remove/Replace/Restore | ADR-Plattformvertrag/#73; [ausführbare Extension-/Capability-Grenze](plans/extensions/smr10-capability-boundary.md); P03 ersetzt keine Produkt-/Extensionabnahme |
+| SMR-11 / SMR-AC-17/18 | Versionierte In-game-Tutorials, OS-Auslieferung, Lokalisierung/Tastatur/200 %/Kontrast/Screenreader, Größe/Latenz/Cancel/Offline/Privacy und Originalvergleich; gemeinsame Popup-/Dialog-/Meterbedienung mit ihren Features | Plattformvertrag und [E2E-Kriterien](../ROADMAP-E2E-GATES-CANDIDATE.md); alle exponierten Features |
+
 Automatische Speicherung, vollständige Wiederaufnahme, Datenlebenszyklus und Import sind querschnittliche Anforderungen. Ein manueller Save/Reopen-Beleg ersetzt sie nicht. Jeder Fachbereich liefert seine nötigen Fähigkeiten und Nachweise; die fachlichen Abhängigkeiten oben bestimmen, welche Funktionen sich bereits verbinden lassen.
 
 ## Welche Quelle gilt?

@@ -413,8 +413,8 @@ export class CampaignStore {
     }).immediate();
     return this.workspace();
   }
-  private validateDatabase(db: any) {
-    validateExtensionSettings(db);
+  private validateDatabase(db: any,validateExtensions=true) {
+    if(validateExtensions)validateExtensionSettings(db);
     validateCapabilityBytes(db);
     if (db.pragma('integrity_check', { simple: true }) !== 'ok' || db.pragma('foreign_key_check').length) throw new Error('Wiederherstellungskopie ist strukturell beschädigt.');
     for (const row of db.prepare('SELECT * FROM room').iterate()) this.decode(row);
@@ -466,13 +466,13 @@ export class CampaignStore {
       }
     }
   }
-  async backup(filename: string) {
+  private async backupDatabase(filename:string,validateExtensions:boolean){
     const epoch=this.backupEpoch,candidate = filename + '.candidate-' + randomUUID();
     try {
       await this.db.backup(candidate);
       const db = new Database(candidate, { readonly: true, fileMustExist: true });
       try {
-        this.validateDatabase(db);
+        this.validateDatabase(db,validateExtensions);
       } finally { db.close(); }
       const fd = openSync(candidate, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
       if(epoch!==this.backupEpoch)throw new Error('Wiederherstellungskopie durch Löschung überholt.');
@@ -485,6 +485,7 @@ export class CampaignStore {
       for (const suffix of ['-wal', '-shm']) rmSync(candidate + suffix, { force: true });
     }
   }
+  async backup(filename:string){await this.backupDatabase(filename,true);}
   reconcile(edit: Edit, token = edit.token): { outcome: 'applied' | 'not-applied' | 'conflict'; targetChanged: boolean; workspace: Workspace } {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.reconcile(edit,token));
     return this.db.transaction(() => {
@@ -658,7 +659,7 @@ export class CampaignStore {
   async campaignSnapshot(token:string,filename:string){
     const id=this.guard(token),fence=this.db.prepare('SELECT revision FROM campaign_lifecycle WHERE campaign_id=?').get(id).revision,candidate=filename+'.snapshot-'+randomUUID();
     try{
-      await this.backup(candidate);this.campaignFence(id,fence);
+      await this.backupDatabase(candidate,false);this.campaignFence(id,fence);
       const db=new Database(candidate,{fileMustExist:true});let snapshot;
       try{
         db.pragma('journal_mode=DELETE');pruneCampaignSnapshot(db,id);this.validateDatabase(db);
