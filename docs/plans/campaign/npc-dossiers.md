@@ -41,15 +41,49 @@ stillschweigend rückgängig gemacht oder erneut gesendet werden.
 `NpcDraft.fields.contact` hält Gespräch/Beobachtung als Rohtext getrennt von der
 bestätigten Geschichte. Der bestehende Draftwriter sichert unvollständige
 Eingaben; erst ausdrückliches „NPC übernehmen“ hängt den Text an die Geschichte
-und konsumiert genau den passenden CAS-Entwurf. Altentwürfe ohne dieses optionale
+und übernimmt genau den passenden CAS-Entwurf. Altentwürfe ohne dieses optionale
 Feld bleiben lesbar; fehlender Text wird nicht als historische Tatsache ergänzt.
 Alte Dialogantworten melden oder entsperren keine neue Übergabe.
 
+Vor Dispatch sichert `npc-ui.ts` den Originalauftrag einschließlich Command-ID,
+Payload und Draft-CAS als optionales `NpcDraft.pendingCommand`. Solange sein
+Ausgang offen ist, bleibt das Profil gesperrt und der Rohtext lesbar; „Originalauftrag
+prüfen“ bleibt außerhalb des gesperrten Formulars erreichbar. Der NPCwriter
+behält diesen Entwurf auch nach erfolgreichem Write. Ein abgewiesener oder
+verlorener Response erlaubt keinen erneuten Gesprächsanhang.
+
+`reconcileNpc` prüft Campaigntoken, Originalfingerprint ohne Aktivierungstoken,
+Receiptchecksum, NPC-Identität und passende Draftkennung in einer Writertransaktion.
+Bei passendem Beleg räumt sie ausschließlich den Originalentwurf auf. Danach
+liest der Editor das aktuelle Profil; der historische Beleg darf einen späteren
+Notiz-/HP-/Ortsstand nicht zurücksetzen. Ohne Beleg rotiert die Transaktion die
+Draftkennung und gibt denselben Rohtext frei. Ein verspäteter ursprünglicher
+Write scheitert dann vor jeder Weltwirkung an seinem alten CAS. Keine automatische
+Wiederholung; „NPC übernehmen“ ist eine neue ausdrückliche Aktion.
+`rejectedCommand` hält die Zuordnung für eine verlorene Prüfantwort; erneut
+Prüfen ist idempotent und erzeugt keine Produktfakten. Fehlerhafte/anders verwendete
+Belege bleiben offen, ohne Verwerfen oder Überschreiben durch einen anderen Draftwriter.
+
+Die vorhandene Backup-/Snapshotprüfung prüft die Draft-/Receiptbindung.
+Unabhängige Kopien remappen Campaign-, NPC-, Command- und Draftkennungen über den
+bestehenden Transfer und passen nur den vor Remap geprüften Pendingreceipt-
+Fingerprint an den kopierten Auftrag an. Eine Kopie hat keine ursprüngliche
+Tokenautorität; sie führt keinen Auftrag automatisch aus. Autorenfelder inklusive
+Kontakt-/CRLF-Prosa bleiben unverändert. Optionalfelder brauchen keine neue
+SQL-Tabelle; Altentwürfe bleiben Rohentwürfe, der bisherige direkte Writer für
+Entwürfe ohne Pendingauftrag bleibt kompatibel. Ein schon durch eine alte Version
+konsumierter Rohentwurf lässt sich damit nicht rückwirkend rekonstruieren.
+Die bisherigen 4 MB Rohentwurf werden durch den zusätzlichen Command nicht halbiert;
+die gebundene Gesamtpayloadgrenze beträgt 12 MB. Downgrade/Releasequalifikation
+und native Wiederaufnahme sind separat zu prüfen.
+
 ## Nächste Lieferung und Abnahme
 
-- Unbekannte Ausgänge beim Übernehmen eines NPC-Profils mit der ursprünglichen Command-ID, unverändertem
-  Payload und CAS-Entwurf über Reopen/Fresh prüfen. Ein verschwundener Draft ist
-  kein alleiniger Erfolgsbeleg; erneuter Gesprächsanhang darf nicht duplizieren.
+- Native Antwortverluste vor/nach Dispatch und beim Prüfen mit kontrollierter
+  Transportbedingung → normaler Close/Fresh → Originalauftrag prüfen → Rohtext
+  oder genau einmalige Geschichte. Technische Renderer-/SQLiteproben decken diese
+  Fälle samt unabhängiger Kopie und späterem Profil ab; sie ersetzen keinen
+  unabhängigen Bedienlauf. Ein verschwundener Draft allein ist kein Erfolgsbeleg.
 - Gespräch als freien Autorenrohtext von strukturierten späteren Zeit-/Quest-
   Folgen unterscheiden. Eine spätere strukturierte Gesprächschronik braucht
   Scene-/NPC-Identität, Kalender-/Clockbasis und Migration; bestehende Prosa wird
@@ -66,4 +100,6 @@ Alte Dialogantworten melden oder entsperren keine neue Übergabe.
 Lokale Kontexttests sowie echter NPC-Renderer/SQLitewriter prüfen diese engeren
 Übergänge und Entwurfsbytes. Frischer SQLite-Leser, Rendereraktivierung und
 native Appwiederaufnahme sind getrennte Belege; vollständige Produktabnahme,
-unbekannte Ausgänge beim Übernehmen eines Profils und native Erreichbarkeit bleiben offen.
+native Wiederaufnahme und Erreichbarkeit bleiben offen. Die lokalen Faultproben
+belegen den engeren Originalauftrag-/Rohentwurfsvertrag; sie sind keine vollständige
+Produkt- oder Datenlebenszyklusabnahme.

@@ -10,7 +10,7 @@ import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
 import {installNpcRecords} from './npc-record';
-import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
+import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc,validateNpcRecovery} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
 import {migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
@@ -447,7 +447,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateNpcRecovery(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
@@ -548,6 +548,7 @@ export class CampaignStore {
   discardNpcDraft(token:string,id:string,writeId:string){return discardNpcDraft(this.db,this.guard(token),id,writeId);}
   npcs(token:string,q:NpcQuery){return readNpcs(this.db,this.guard(token),q);}
   npc(token:string,id:string){return readNpc(this.db,this.guard(token),id);}
+  reconcileNpc(c:NpcCommand,token:string){return reconcileNpc(this.db,c,()=>{this.guard(token,c.campaignId);});}
   executeNpc(c:NpcCommand){return executeNpc(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   generationSources(token:string){return readWorldSources(this.db,this.guard(token));}
   sceneVisits(token:string,sceneId:string,after:string|null){return readSceneVisits(this.db,this.guard(token),sceneId,after);}
