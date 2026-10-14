@@ -6,7 +6,7 @@ import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,
 import type { Workspace, Result } from './contracts';
 import {formatInstant,advanceInstant,type LiveScene,type LiveView} from './live-contracts';
 import type { EncounterAssessment } from './encounter-contracts';
-import { deathSaveControls, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
+import { deathSaveControls, xpInput, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
@@ -157,7 +157,7 @@ function keepHealthDraft() {
 }
 function xpPreview() {
   const p = view?.characters.find(p=>p.characterId===selected); if (!p) return;
-  try { const amount = Number(value('xp-amount')); if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('Nichtnegative ganze XP eingeben.'); const next = value('xp-mode') === 'set' ? amount : Math.max(0,(p.xp ?? 0)+(value('xp-mode')==='subtract'?-amount:amount)); const level = xpLevel(next); get('xp-preview').textContent = 'Danach: ' + next + ' XP · Level ' + level.level + ' · Rastverbrauch bleibt erhalten.'; }
+  try { const amount = xpInput(value('xp-amount')); const next = value('xp-mode') === 'set' ? amount : Math.max(0,(p.xp ?? 0)+(value('xp-mode')==='subtract'?-amount:amount)); const level = xpLevel(next); get('xp-preview').textContent = 'Danach: ' + next + ' XP · Level ' + level.level + ' · Rastverbrauch bleibt erhalten.'; }
   catch (error) { get('xp-preview').textContent=(error as Error).message; }
 }
 function renderTreasure() {
@@ -291,7 +291,7 @@ export function initProgress(status: typeof tell,onRestSaved?:(scene:LiveScene)=
   get('health-reload').onclick=()=>{const key=healthKey();if(key)healthDrafts.delete(key);void refreshProgress();};
   for(const operation of ['damage','heal'] as const)get('health-'+operation).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected),key=healthKey();if(!p||!key)return;if(healthDrafts.has(key)){tell('HP-Eingabe zuerst speichern.',true);return;}void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation,amount:Number(value('health-amount')),reason:''});};
   get('xp-amount').oninput=xpPreview;get('xp-mode').onchange=xpPreview;
-  get('xp-form').onsubmit=event=>{event.preventDefault();const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'xp',characterId:p.characterId,expectedRevision:p.revision,mode:value('xp-mode') as 'add'|'subtract'|'set',amount:Number(value('xp-amount')),reason:value('xp-reason'),correctionOf:value('xp-correction-source')||undefined});};
+  get('xp-form').onsubmit=event=>{event.preventDefault();try{const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'xp',characterId:p.characterId,expectedRevision:p.revision,mode:value('xp-mode') as 'add'|'subtract'|'set',amount:xpInput(value('xp-amount')),reason:value('xp-reason'),correctionOf:value('xp-correction-source')||undefined});}catch(error){tell((error as Error).message,true);}};
   for(const rest of ['short','long'] as const)get('rest-'+rest).onclick=()=>{
     try{if(!workspace||!live?.scene||!view)throw new Error('Aktuellen Spieltisch laden.');const recipients=[...get('rest-members').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:view!.characters.find(c=>c.characterId===b.value)!.revision})),restoreHp=rest==='long'&&get<HTMLInputElement>('rest-restore-hp').checked;
     if(restoreHp&&recipients.some(r=>healthDrafts.has(workspace!.campaign.id+':'+r.characterId)))throw new Error('Offene HP-Eingaben vor der Erholung speichern oder verwerfen.');

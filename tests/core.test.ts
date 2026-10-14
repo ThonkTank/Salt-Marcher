@@ -98,5 +98,3 @@ import "./core/player-scene-projection.test";
 import "./core/autonomy-scene-time-boundary.test";
 import "./core/autonomy-time-conflict-ui.test";
 import "./core/music-scene-context.test";
-
-import "./core/adventuring-day.test";

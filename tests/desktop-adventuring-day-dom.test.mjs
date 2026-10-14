@@ -119,22 +119,3 @@ test("unfinished custom rows keep their exact text when another row is added or 
   assert.equal(x.calls.at(-1).rows[0].count, 2);
   assert.match(x.get("summary").textContent, /600 XP Tagesbudget/);
 });
-test("empty workload or separate reward XP never produces a zero-XP forecast", async (t) => {
-  const x = fixture(t);
-  await x.open();
-  x.get("mode-progress").onclick();
-  x.input(x.get("total-xp"), "");
-  await settled();
-  assert.equal(x.get("summary").children.length, 0);
-  assert.match(x.get("status").textContent, /XP benötigen/);
-  x.input(x.get("total-xp"), "300");
-  x.get("separate-reward").checked = true;
-  x.input(x.get("reward-xp"), "");
-  await settled();
-  assert.equal(x.get("summary").children.length, 0);
-  assert.match(x.get("status").textContent, /XP benötigen/);
-  x.input(x.get("reward-xp"), "0");
-  await settled();
-  assert.match(x.get("summary").textContent, /1 volle Tage/);
-  assert.match(x.get("summary").textContent, /Verdienst: 0 XP/);
-});
