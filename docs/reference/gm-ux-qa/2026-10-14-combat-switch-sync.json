@@ -1,0 +1,77 @@
+{
+  "testedFinalCodeCommit": "f56d46b9e0730a7614a063c90b40117f9fb554d9",
+  "fullSuiteBasis": "21f5187b5e90fb65393f6f196c44174605b3deec",
+  "testsPassed": 50,
+  "finalAffectedCasesPassed": 5,
+  "qualifiedAfterLastCodeMerge": true,
+  "typecheck": true,
+  "desktopBuild": true,
+  "native": {
+    "results": {
+      "duringSwitch": {
+        "selected": "af07d9b3-35f6-445c-a030-41c73ceb7f4d",
+        "visible": "Torwache",
+        "damageEnabled": false
+      },
+      "nativeStatblockRoll": "Letztes Ergebnis · Goblin A · Scimitar · Angriff: 1d20 + 4 → 8 + 4 = 12",
+      "failedReadRetrySameTarget": true,
+      "unfinishedNotesRetained": true,
+      "hpAfter": {
+        "a": 10,
+        "b": 7
+      },
+      "formulaOwnershipAndNoImplicitDamage": true,
+      "aBytesUnchanged": true,
+      "nativeDraftRestart": true
+    },
+    "launches": [
+      {
+        "pid": 312825,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-a3a1c92e2d5743588bf252964ec68e92.service"
+      },
+      {
+        "pid": 313091,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-a3a1c92e2d5743588bf252964ec68e92.service"
+      }
+    ],
+    "normalClose": true
+  },
+  "ruleNative": {
+    "results": {
+      "bPinned": true,
+      "status": "Regelreferenzen der Gruppe gespeichert.",
+      "focus": "120b1a24-4b5c-4384-8e92-e3f5ee2009b4",
+      "nativeCheckLogged": "Letztes Ergebnis · Sichtschutz prüfen: 15 / 10 · Vorteil wählt 15 + 2 = 17 · Erfolg gegen SG 10",
+      "checkFormulaAndOwnership": true,
+      "aPinsUnchanged": true,
+      "originalNoteBytesUnchanged": true,
+      "nativeRestartPinB": true,
+      "nativeCheckRestart": true,
+      "nativeRestartPinsA": true
+    },
+    "launches": [
+      {
+        "pid": 309234,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-618dc83610184d15904ea61740bc4f44.service"
+      },
+      {
+        "pid": 309319,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-618dc83610184d15904ea61740bc4f44.service"
+      }
+    ],
+    "normalClose": true
+  },
+  "ownNativePidsExited": true,
+  "maxQualificationMemoryPeakMiB": 661.1,
+  "resourceReceipts": [
+    "Oct 14 03:33:39 bastelstation systemd[1306]: Started codex-dungeon-qa-a3a1c92e2d5743588bf252964ec68e92.service - [systemd-run] /usr/bin/bash -c \"node --test --test-concurrency=1 tests/desktop-combat-switch.test.mjs && node tools/build-desktop.mjs && node tools/test-desktop-combat-switch.mjs\".\nOct 14 03:33:46 bastelstation systemd[1306]: codex-dungeon-qa-a3a1c92e2d5743588bf252964ec68e92.service: Consumed 10.525s CPU time over 7.817s wall clock time, 539.9M memory peak.\n",
+    "Oct 14 03:30:56 bastelstation systemd[1306]: Started codex-dungeon-qa-618dc83610184d15904ea61740bc4f44.service - [systemd-run] /home/aaron/.nvm/versions/node/v22.22.0/bin/node .qa-regression/check-combat-switch.mjs.\nOct 14 03:31:28 bastelstation systemd[1306]: codex-dungeon-qa-618dc83610184d15904ea61740bc4f44.service: Consumed 43.354s CPU time over 32.079s wall clock time, 636.1M memory peak.\n",
+    "Oct 14 03:27:52 bastelstation systemd[1306]: Started codex-dungeon-qa-99260df226624607bab3652d66477709.service - [systemd-run] /home/aaron/.nvm/versions/node/v22.22.0/bin/node .qa-regression/check-combat-switch.mjs.\nOct 14 03:28:23 bastelstation systemd[1306]: codex-dungeon-qa-99260df226624607bab3652d66477709.service: Consumed 43.172s CPU time over 31.662s wall clock time, 661.1M memory peak.\n",
+    "Oct 14 03:34:51 bastelstation systemd[1306]: Started codex-dungeon-qa-735432efa32247cb800d90a835b439db.service - [systemd-run] /home/aaron/.nvm/versions/node/v22.22.0/bin/node node_modules/typescript/lib/tsc.js --noEmit -p desktop/tsconfig.json.\nOct 14 03:35:03 bastelstation systemd[1306]: codex-dungeon-qa-735432efa32247cb800d90a835b439db.service: Consumed 17.520s CPU time over 11.829s wall clock time, 434.6M memory peak.\n"
+  ],
+  "limits": {
+    "memoryMaxBytes": 4294967296,
+    "swapMaxBytes": 0,
+    "ownHeavyJobsAtOnce": 1
+  }
+}

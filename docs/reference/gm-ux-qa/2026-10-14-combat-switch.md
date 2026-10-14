@@ -39,3 +39,12 @@ Zusätzlich zwei native Starts mit Goblin im Keller: erkannter Angriff aus dem
 Statblock wird mit Formel und Quellenbezug protokolliert; die Summe wurde im
 frischen Store geprüft. Kein impliziter HP-Schaden. Torwache und ihr Entwurf
 bleiben unverändert. Alle eigenen nativen Prozesse sind beendet.
+
+In der Fehleransicht entfallen außerdem die Aufforderung und die leeren Felder
+für eine neue Begegnung. Sichtbar bleiben die betroffene Auswahl, der Fehler
+und der gezielte Retry. Dieser Zustand wurde erneut nativ geprüft.
+
+[Abschlussbeleg](2026-10-14-combat-switch-sync.json): 50 Gesamtprüfungen,
+fünf betroffene Fälle nach der letzten Änderung erneut bestanden; nativer Build
+und Typecheck erfolgreich. Höchstens rund 661 MiB je dokumentiertem
+Qualifikationsjob bei 4 GiB Limit; ein eigener schwerer Job gleichzeitig.
