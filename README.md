@@ -714,3 +714,11 @@ nehmen keine alten Mappenaktionen mit. Suche und Leseposition bleiben bei einer
 Aktualisierung derselben Gruppe erhalten. Auf schmalen Fenstern steht die Mappe
 unter dem Spieltisch. Markdownausgabe und Prüfung des angezeigten Quellenstands
 verwenden weiterhin denselben bestehenden Exportablauf.
+
+### Desktopstand 0.58: Vorschläge zum spielbaren Abend zusammenstellen
+
+Die Spielabend-Vorschau hat eine gemeinsame Auswahl mit Textsuche und Statusfilter. Die Suche umfasst Titel, GM- und Vorlesetext, Orte, Weltverweise und Gegner. „Sichtbare auswählen“ nimmt nur aktuell angezeigte, übernehmbare Vorschläge in die Auswahl auf. Verdeckte ausgewählte Szenen bleiben ausdrücklich im Zähler sichtbar. Vorlesetext und Verweise lassen sich direkt auf jeder Karte aufklappen; die bestehenden Einzelbearbeitungen und Regenerationen bleiben verfügbar.
+
+„Szenen prüfen“ zeigt die vollständige Auswahl in ihrer Vorschlagsreihenfolge. Die Bestätigung fügt alle gewählten Besuche mit ihren Inhalten, Begegnungsgruppen und vorbereiteten Belohnungen gemeinsam hinten an die Timeline an. Eine überholte Timeline oder ausgewählte Vorschlagsrevision wird abgewiesen; eine fehlgeschlagene gemeinsame Übernahme schreibt keine Teilauswahl. Bestätigte Wiederholung derselben Änderung erzeugt keine doppelten Besuche. Gruppen am Spieltisch, Zeit, Weltplatzierung und XP-/Lootvergabe werden dadurch nicht ausgeführt.
+
+Übernommene und verworfene Vorschläge bleiben über den Statusfilter erreichbar. Die Auswahl ist ein vorläufiger UI-Zustand; nach Neustart wählst du erneut. Gespeicherte Vorschau und angenommene Timeline bleiben erhalten. „Spielabendmappe öffnen“ führt direkt zur vorbereiteten GM-Mappe.
