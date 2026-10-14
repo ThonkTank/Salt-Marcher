@@ -12,7 +12,7 @@ import type {PreparedGroup} from './session-contracts';
 import {prepareSceneCheck,rollSceneFormula} from './rule-reference-ui';
 import type {SceneCheck} from './scene-check-contracts';
 import {deathSaveControls,type DeathSaveResult} from './progression';
-import {creatureActionRolls,criticalDamageFormula,type CreatureRollPreset} from './dice-formula';
+import {creatureActionRolls,creatureRollKey,criticalDamageFormula,type CreatureRollPreset} from './dice-formula';
 import type {CreatureAction} from '../features/catalog/creature-catalog';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
@@ -169,7 +169,7 @@ function renderAttackEffect(){
   const chosen=candidates.find(p=>p.id===target.value),resolvedTarget=attack.targetId?candidates.find(p=>p.id===attack.targetId):undefined,die=attack.check?.rolls[0],critical=die===20,miss=attack.check?.outcome==='failure';
   get('combat-attack-result').textContent=attack.check?(attack.actor+' · '+attack.preset.label+': '+attack.check.total+' gegen RK '+attack.check.dc+' · '+(critical?'Kritischer Treffer':miss?'Verfehlt':'Treffer')+(resolvedTarget?'':' · Ziel nicht mehr in der Initiative')):(attack.actor+' · '+attack.preset.label+' gegen '+(chosen?.name??'Ziel')+' (RK '+(chosen?.armorClass??'—')+')');
   target.disabled=blocked()||attackPending||!!attack.check;const roll=get<HTMLButtonElement>('combat-attack-roll');roll.hidden=!!attack.check;roll.disabled=blocked()||attackPending||!chosen;
-  const damageRoot=get('combat-attack-damage');damageRoot.replaceChildren();if(attack.check?.outcome==='success'&&resolvedTarget)for(const damage of attack.damages){const button=document.createElement('button');button.type='button';const done=attack.rolledDamage.includes(damage.label);button.textContent=(critical?'Kritischen ':'')+damage.label+' würfeln'+(done?' ✓':'');button.disabled=blocked()||attackPending||done;button.onclick=()=>void rollAttackDamage(damage);damageRoot.append(button);}
+  const damageRoot=get('combat-attack-damage');damageRoot.replaceChildren();if(attack.check?.outcome==='success'&&resolvedTarget)for(const damage of attack.damages){const button=document.createElement('button'),formula=critical?criticalDamageFormula(damage.formula):damage.formula,done=attack.rolledDamage.includes(creatureRollKey(damage));button.type='button';button.textContent=(critical?'Kritisch · ':'')+damage.label+' ('+formula+') würfeln'+(done?' ✓':'');button.disabled=blocked()||attackPending||done;button.onclick=()=>void rollAttackDamage(damage);damageRoot.append(button);}
   const discard=get<HTMLButtonElement>('combat-attack-discard');discard.textContent=attack.check?'Angriff abschließen':'Verwerfen';discard.disabled=blocked()||attackPending;
 }
 async function rollAttack(){
@@ -177,8 +177,8 @@ async function rollAttack(){
   await rollSceneFormula({label:attack.preset.label+' gegen '+target.name,actor:attack.actor,formula:attack.preset.formula,formulaKind:'attack',dc:target.armorClass,sourceCreatureId:attack.creatureId,sourceActionId:attack.actionId},check=>{if(pendingAttack===attack&&view?.combat?.id===attack.combatId)attack.check=check;});attackPending=false;renderAttackEffect();
 }
 async function rollAttackDamage(damage:CreatureRollPreset){
-  const attack=pendingAttack,check=attack?.check;if(!attack||!check||check.outcome!=='success'||!attack.targetId||!view?.combat?.participants.some(p=>p.id===attack.targetId)||attack.rolledDamage.includes(damage.label))return;const critical=check.rolls[0]===20;attackPending=true;renderAttackEffect();let rolled=false;
-  await rollSceneFormula({label:damage.label+(critical?' · Kritisch':''),actor:attack.actor,formula:critical?criticalDamageFormula(damage.formula):damage.formula,formulaKind:'damage',dc:null,sourceCreatureId:attack.creatureId,sourceActionId:attack.actionId},result=>{if(pendingAttack===attack&&view?.combat?.id===attack.combatId){rolled=true;stageDamage(result,attack.attackerId,attack.combatId,attack.targetId!);}});attackPending=false;if(rolled)attack.rolledDamage.push(damage.label);if(attack.rolledDamage.length===attack.damages.length)pendingAttack=null;renderAttackEffect();
+  const attack=pendingAttack,check=attack?.check,key=creatureRollKey(damage);if(!attack||!check||check.outcome!=='success'||!attack.targetId||!view?.combat?.participants.some(p=>p.id===attack.targetId)||attack.rolledDamage.includes(key))return;const critical=check.rolls[0]===20;attackPending=true;renderAttackEffect();let rolled=false;
+  await rollSceneFormula({label:damage.label+(critical?' · Kritisch':''),actor:attack.actor,formula:critical?criticalDamageFormula(damage.formula):damage.formula,formulaKind:'damage',dc:null,sourceCreatureId:attack.creatureId,sourceActionId:attack.actionId},result=>{if(pendingAttack===attack&&view?.combat?.id===attack.combatId){rolled=true;stageDamage(result,attack.attackerId,attack.combatId,attack.targetId!);}});attackPending=false;if(rolled)attack.rolledDamage.push(key);if(attack.rolledDamage.length===attack.damages.length)pendingAttack=null;renderAttackEffect();
 }
 function stageDamage(check:SceneCheck,attackerId:string,combatId:string,targetId?:string){
   const combat=view?.combat;
