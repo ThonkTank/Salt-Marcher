@@ -89,3 +89,4 @@ import "./core/generation-source-actions.test";
 import "./core/rule-reference-ui.test";
 import "./core/rule-reference-storage.test";
 import "./core/combat-damage-roll.test";
+import "./core/combat-damage-queue.test";
