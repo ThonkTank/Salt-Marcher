@@ -3,6 +3,7 @@ import type {DeskContent} from './scene-desk-contracts';
 import type {WorldLinksPage,WorldLinkRef,WorldLinksQuery} from './world-links-contracts';
 import {worldLinkKey,worldLinkKinds} from './world-links-contracts';
 import {WorldLinksMap} from './world-links-map';
+import {openQuickReference} from './quick-reference-ui';
 
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 const button=(text:string,fn:()=>void)=>{const n=node('button',text);n.type='button';n.onclick=fn;return n;};
@@ -23,7 +24,7 @@ export class WorldLinksWorkbench {
   const head=node('div');head.className='toolbar';head.append(heading,button('Stand aktualisieren',()=>void this.read()),button('Schließen',()=>this.reset()));
   this.status.id='world-links-status';this.status.setAttribute('role','status');
   this.search.id='world-links-search';this.search.type='search';this.search.placeholder='Name, Notiz oder Ort suchen';this.search.setAttribute('aria-label','Kampagnenzusammenhänge durchsuchen');
-  this.kind.id='world-links-kind';this.kind.setAttribute('aria-label','Inhaltsart');this.kind.add(new Option('Alle Inhalte','all'));
+  this.kind.id='world-links-kind';this.kind.setAttribute('aria-label','Inhaltsart');this.kind.add(new Option('Welt der Kampagne','world'));this.kind.add(new Option('Welt und Kataloge','all'));
   for(const [id,label]of Object.entries(worldLinkKinds))this.kind.add(new Option(label,id));
   this.list.id='world-links-list';const pages=node('div');pages.className='toolbar';pages.append(this.prev,this.next);
   const nav=node('section');nav.className='world-links-nav';nav.append(this.search,this.kind,this.caption,this.list,pages);
@@ -36,7 +37,7 @@ export class WorldLinksWorkbench {
  }
  reset(){this.request++;this.owner=null;this.focus=null;this.history=[];this.list.replaceChildren();this.inspector.replaceChildren();this.graph.root.replaceChildren();this.dialog.close();}
  private current(owner:Workspace,request:number){return this.owner===owner&&this.workspace()?.token===owner.token&&this.request===request&&this.dialog.open;}
- async open(){if(this.dialog.open)return;const w=this.workspace(),n=++this.request;if(!w||!await this.drain()||this.workspace()?.token!==w.token||this.request!==n)return;this.owner=w;this.search.value='';this.kind.value='all';this.offset=0;this.dialog.showModal();await this.read();}
+ async open(ref?:WorldLinkRef){if(this.dialog.open){if(ref)this.select(ref);return;}const w=this.workspace(),n=++this.request;if(!w||!await this.drain()||this.workspace()?.token!==w.token||this.request!==n)return;this.owner=w;this.search.value='';this.kind.value='world';this.focus=ref??null;this.offset=0;this.dialog.showModal();await this.read();}
  contextChanged(){if(this.owner&&this.workspace()?.token!==this.owner.token)this.reset();}
  private select(ref:WorldLinkRef){if(this.focus&&worldLinkKey(this.focus)!==worldLinkKey(ref)){this.history.push(this.focus);if(this.history.length>30)this.history.shift();}this.focus=ref;void this.read();}
  private async read(selectFirst=true){
@@ -60,6 +61,7 @@ export class WorldLinksWorkbench {
  private renderContent(content:DeskContent,page:WorldLinksPage,control:(text:string,fn:()=>void)=>HTMLButtonElement){
   const tools=node('div');tools.className='toolbar';
   tools.append(control(content.note?'Quelle und Beziehungen bearbeiten…':'Quelle bearbeiten…',()=>{const w=this.owner!;this.reset();const n=this.request;void this.openSource(content.ref as WorldLinkRef).catch(e=>{if(this.request===n&&this.workspace()?.token===w.token)this.tell((e as Error).message,true);});}));
+  if(content.creature||content.item||content.encounter)tools.append(control('Referenz lesen…',()=>{const w=this.owner!;this.reset();const n=this.request;void openQuickReference(content.ref).catch(e=>{if(this.request===n&&this.workspace()?.token===w.token)this.tell((e as Error).message,true);});}));
   if(this.history.length)tools.append(control('Zurück',()=>{this.focus=this.history.pop()!;void this.read();}));
   this.inspector.append(node('h3',content.title),node('p',content.label+(content.unavailable?' · nicht verfügbar':'')),tools);
   const text=(title:string,value:string)=>{if(value)this.inspector.append(node('h4',title),node('pre',value));};
