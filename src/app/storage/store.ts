@@ -1,3 +1,4 @@
+import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
 import {installNpcRecords} from './npc-record';
@@ -159,7 +160,7 @@ export class CampaignStore {
       if (schema < 6) for (const row of this.db.prepare('SELECT id FROM campaign').all()) ensureLiveOwners(this.db, row.id);
       if (schema < 7) migrateLiveClock(this.db);
       if (schema < 8) this.db.exec('INSERT OR IGNORE INTO scene_lifecycle(campaign_id,id,membership_revision,retired) SELECT campaign_id,id,0,0 FROM live_scene;');
-      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installMaskReconciliationSchema(this.db);installRuleReferenceSchema(this.db);installSceneCheckSchema(this.db);
+      installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installMaskHistoryIndexes(this.db);installMaskReconciliationSchema(this.db);installRuleReferenceSchema(this.db);installSceneCheckSchema(this.db);
       installProgressSchema(this.db);
       if (schema < 10) migrateProgress(this.db);
       installEncounterSchema(this.db);
@@ -562,6 +563,7 @@ export class CampaignStore {
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   progressHistory(token: string, characterId: string, after: string | null) { return readProgressHistory(this.db, this.guard(token), characterId, after); }
   keepChaseDraft(token:string,draft:import('../chase-draft-contracts').ChaseWorkingDraft,expected:string|null){return keepChaseDraft(this.db,this.guard(token),draft,expected);}
+  maskHistory(token:string,sceneId:string,query:import('../mask-history-contracts').MaskHistoryQuery){return readMaskHistory(this.db,this.guard(token),sceneId,query);}
   chase(token:string,sceneId:string,id?:string){return readChase(this.db,this.guard(token),sceneId,id);}
   executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
