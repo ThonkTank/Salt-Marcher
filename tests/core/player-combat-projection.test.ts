@@ -45,4 +45,4 @@ test('the follow display shows a reduced combat initiative and respects hidden o
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
-function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};}
+function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision};}

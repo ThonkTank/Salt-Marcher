@@ -19,7 +19,7 @@ function fixture(){
  const split=store.executeLive(command({kind:'move',sceneId:primary.id,expectedRosterRevision:4,expectedFocusRevision:0,expectedClockRevision:0,expectedSceneMembershipRevision:2,memberIds:[b.id],target:{kind:'new',title:'Nachhut',expectedContentRevision:0}})),secondary=split.session.createdScene.id;
  for(const [id,text]of [[primary.id,'Öffentliches Tor'],[secondary,'Geheime Nachhut']])store.executeLive(command({kind:'scene-content',sceneId:id,expectedRevision:0,title:'Interner Titel',readAloud:text,notes:'GM-Privat',locationId:null}));
  const settings={blank:false,mode:'scene',imageId:null,title:'Vorhut',labels:false,light:'daylight',displayId:null,fullscreen:false};
- const basis=()=>{const v=store.playerView(w.token);return{expectedRevision:v.settings.revision,expectedFocusId:v.focusId,expectedFocusRevision:v.focusRevision};};
+ const basis=()=>{const v=store.playerView(w.token);return{expectedRevision:v.settings.revision,expectedFocusId:v.focusId,expectedFocusRevision:v.focusRevision,expectedFocusMembershipRevision:v.focusMembershipRevision};};
  const request=action=>({...command(action),...basis()});
  const focus=id=>{const live=store.live(w.token);store.executeLive(command({kind:'focus',sceneId:id,expectedRevision:live.focusRevision}));};
  const rows=()=>store.db.prepare('SELECT * FROM player_record ORDER BY kind,id').all();
