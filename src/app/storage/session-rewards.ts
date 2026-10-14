@@ -26,6 +26,7 @@ export function assertSessionRewardBasisCurrent(db:any,cam:string,p:SessionProfi
  const prior=run.lootGuidance;
  if(prior){
   if(!prior.basis)throw new Error('Beutevorschlag besitzt keine prüfbare Grundlage. Vorschau neu erzeugen; gespeicherte Inhalte bleiben erhalten.');
+  if(prior.magic?.pool)checkedMagicPool(db,prior.magic.pool);
   const current=sessionLootGuidance(db,cam,p,run.proposals,!!prior.magic);
   const inputs=(g:SessionLootGuidance)=>({preset:g.preset,characters:g.characters.map(c=>({characterId:c.characterId,xp:c.xp,revision:c.revision})),basis:{ledger:[...g.basis!.ledger].sort((a,b)=>a.id.localeCompare(b.id)),definitions:[...g.basis!.definitions].sort((a,b)=>a.definitionId.localeCompare(b.definitionId))},receivedCopper:g.receivedCopper,magic:g.magic?.received});
   if(canonicalJson(inputs(prior))!==canonicalJson(inputs(current)))throw new Error('Beutegrundlage oder XP geändert. Vorschau neu erzeugen; eigene Bearbeitungen bleiben erhalten.');
