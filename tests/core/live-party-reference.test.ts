@@ -23,3 +23,9 @@ test('party quick reference shows terminal death-save state',()=>{
     health:{hp:0,maxHp:12,tempHp:0,conditions:'',concentrating:false,death:{successes:1,failures:3,stable:false,dead:true}},
   }),'0 / 12 HP · Tot');
 });
+
+test('party quick reference shows unresolved death-save counts',()=>{
+  assert.equal(partyHealthFacts({
+    health:{hp:0,maxHp:12,tempHp:0,conditions:'',concentrating:false,death:{successes:1,failures:2,stable:false,dead:false}},
+  }),'0 / 12 HP · Todesrettung 1✓ / 2✗');
+});
