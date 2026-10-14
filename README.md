@@ -819,3 +819,9 @@ Der Vorschlag bleibt neben der editierbaren Übergabe sichtbar und lässt sich n
 Der Zusammenhangsplan erschließt zusätzlich Kreaturen, Gegenstände und Encounter-Vorlagen. Er folgt den vorhandenen Statblock-, Teilnehmer- und Belohnungsreferenzen in beide Richtungen: vom NSC zur Kreatur und ihren Begegnungen, vom Auftrag zur Gegenstandsquelle und zurück. Die Suche lädt jeweils höchstens 40 Metadaten; Einzeltexte und Katalogdetails erst bei Auswahl. Kampagneninhalte bleiben der anfängliche Suchbereich.
 
 „Referenz lesen / am Spieltisch verwenden“ öffnet die bestehende Schnellsuche an genau dieser Quelle. „Katalog / Vorlage öffnen“ führt zum bestehenden Editor, inklusive Gegenstandsvergabe und Encounter-Vorbereitung. Die Schnellsuche führt umgekehrt zu den Zusammenhängen ihrer Quelle. Aktuelle Katalogdefinitionen und eingefrorene Vorlagen-/Belohnungsstände werden ausdrücklich bezeichnet; Graphnavigation ändert keine Zeit, Teilnehmer oder Belohnungen. Beziehungen zwischen Weltinhalten bleiben beim vorhandenen Notizschreiber.
+
+### Desktopstand 0.80: Einen Einstieg auch ohne vorige Übernahme finden
+
+Hat eine Gruppe noch keinen Besuch übernommen oder das Ende ihrer bisherigen Timeline erreicht, bleibt der Leitungsstand nicht mehr leer. Er prüft die vorhandenen Spielabendpläne in ihrer gespeicherten Reihenfolge und schlägt den ersten für diese Gruppe noch ungespielten oder wieder geöffneten Besuch vor. Abgeschlossene und übersprungene Besuche werden ausgelassen; Planname, Ort, Eröffnung und Mappeninhalt bleiben sichtbar.
+
+Der Vorschlag verwendet dieselben Übernahme-, Mappen- und Startwege wie eine direkte Timeline-Fortsetzung. Er schreibt keine neue Planwahl und verändert keinen Besuchsstatus. Sind alle vorbereiteten Besuche erledigt, benennt der Leitungsstand diesen Zustand ausdrücklich; ohne Plan fordert er zur Vorbereitung eines Spielabendplans auf.
