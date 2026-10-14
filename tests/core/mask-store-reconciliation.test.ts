@@ -23,3 +23,21 @@ test('a confirmed deactivation reconciles combat once under the party command re
     }finally{db.close();}
   }finally{try{store.close();}catch{}rmSync(root,{recursive:true,force:true});}
 });
+
+test('a split that retires its source archives combat and chase without completing them',()=>{
+  const root=mkdtempSync(join(tmpdir(),'mask-retirement-')),filename=join(root,'campaign.sqlite'),store=new CampaignStore(filename,'test');
+  try{
+    const campaign=store.create('Retirement'),token=store.activate(campaign.id).token;
+    const one=store.executeLive({commandId:'create-one',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}}).character!,two=store.executeLive({commandId:'create-two',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Borin'}}}).character!;
+    const scene=store.executeLive({commandId:'initialize',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:2}}).scene!;
+    store.executeLive({commandId:'activate-one',campaignId:campaign.id,token,action:{kind:'membership',characterId:one.id,expectedRevision:0,expectedRosterRevision:2,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+    store.executeLive({commandId:'activate-two',campaignId:campaign.id,token,action:{kind:'membership',characterId:two.id,expectedRevision:0,expectedRosterRevision:3,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+    const combat=store.executeCombat({commandId:'combat',campaignId:campaign.id,token,combatId:null,expectedRevision:null,action:{kind:'create',sceneId:scene.id,title:'Torwache',includeParty:true,expectedMembershipRevision:2}}).combat!;
+    const chase=store.executeChase({commandId:'chase',campaignId:campaign.id,token,sceneId:scene.id,chaseId:null,expectedRevision:null,action:{kind:'create',title:'Flucht',goal:'Tor'}}).chase!;
+    const command={commandId:'split-all',campaignId:campaign.id,token,action:{kind:'move' as const,sceneId:scene.id,expectedRosterRevision:4,expectedFocusRevision:0,expectedClockRevision:0,expectedSceneMembershipRevision:2,memberIds:[one.id,two.id],target:{kind:'new' as const,title:'Zielgruppe',expectedContentRevision:0}}};
+    const ack=store.executeLive(command);assert.deepEqual(ack.session?.retired.map((item:{id:string})=>item.id),[scene.id]);store.close();const db=new Database(filename,{readonly:true});try{
+      const combatState=JSON.parse(db.prepare('SELECT payload FROM combat WHERE campaign_id=? AND id=?').get(campaign.id,combat.id).payload),chaseState=JSON.parse(db.prepare('SELECT payload FROM chase WHERE campaign_id=? AND id=?').get(campaign.id,chase.id).payload);
+      assert.equal(combatState.phase,'retired');assert.equal(combatState.outcome,'');assert.equal(chaseState.status,'retired');assert.equal(chaseState.outcome,'');assert.equal(db.prepare('SELECT count(*) n FROM mask_reconciliation_receipt WHERE command_id=?').get(command.commandId).n,2);
+    }finally{db.close();}
+  }finally{try{store.close();}catch{}rmSync(root,{recursive:true,force:true});}
+});

@@ -16,6 +16,7 @@ export function installCombatSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS combat(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scene_id TEXT NOT NULL, ordinal INTEGER NOT NULL, revision INTEGER NOT NULL, phase TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
     DROP INDEX IF EXISTS combat_active_scene;
     CREATE INDEX IF NOT EXISTS combat_scene_masks ON combat(campaign_id,scene_id,phase,ordinal);
+
     CREATE TABLE IF NOT EXISTS combat_undo(campaign_id TEXT NOT NULL, combat_id TEXT NOT NULL, ordinal INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,combat_id,ordinal), FOREIGN KEY(campaign_id,combat_id) REFERENCES combat(campaign_id,id)) STRICT;
     CREATE TABLE IF NOT EXISTS combat_receipt(command_id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL REFERENCES campaign(id), fingerprint TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL) STRICT;`);
 }
@@ -25,8 +26,7 @@ function decode(row: any): CombatState {
   if (state.id !== row.id || state.sceneId !== row.scene_id || state.revision !== row.revision || state.phase !== row.phase) throw new Error('Kampfzuordnung widersprüchlich.');
   return state;
 }
-export function reconcileCombatParticipants(db:any,cam:string,ids:string[],commandId:string){removePartyFromMasks(db,cam,ids,commandId);}
-
+export function reconcileCombatParticipants(db:any,cam:string,ids:string[],commandId:string,retiredScenes:Set<string>=new Set()){removePartyFromMasks(db,cam,ids,commandId,retiredScenes);}
 
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
@@ -79,10 +79,11 @@ export function readCombat(db: any, campaignId: string, sceneId: string, id?: st
     const row = id ? db.prepare('SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND id=?').get(campaignId, sceneId, id) : db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase!='finished' DESC,ordinal DESC LIMIT 1").get(campaignId, sceneId);
     if (id && !row) throw new Error('Kampf nicht gefunden.');
     const combat=row?decode(row):null;
-    const partyCandidates=combat&&combat.phase!=='finished'?readLive(db,campaignId).roster.filter(c=>c.active&&c.sceneId===sceneId&&!combat.participants.some(p=>p.characterId===c.id)).map(c=>{const p=readProgressCharacter(db,campaignId,c.id);return {characterId:c.id,name:c.profile.name,membershipRevision:c.membershipRevision,progressRevision:p.revision,health:p.health};}):[];
+    const partyCandidates=combat&&['preparing','running'].includes(combat.phase)?readLive(db,campaignId).roster.filter(c=>c.active&&c.sceneId===sceneId&&!combat.participants.some(p=>p.characterId===c.id)).map(c=>{const p=readProgressCharacter(db,campaignId,c.id);return {characterId:c.id,name:c.profile.name,membershipRevision:c.membershipRevision,progressRevision:p.revision,health:p.health};}):[];
     return { combat, partyCandidates, assessment: combat ? assessment(db,campaignId,combat) : undefined,
-      canUndo: !!row && row.phase !== 'finished' && !!db.prepare('SELECT 1 FROM combat_undo WHERE campaign_id=? AND combat_id=? LIMIT 1').get(campaignId, row.id),
-      recent: db.prepare("SELECT id,payload FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase!='finished' DESC,ordinal DESC LIMIT 100").all(campaignId, sceneId).map((r: any) => { const c = JSON.parse(r.payload); return { id: r.id, title: c.title, phase: c.phase }; }) };
+      canUndo: !!row && ['preparing','running'].includes(row.phase) && !!db.prepare('SELECT 1 FROM combat_undo WHERE campaign_id=? AND combat_id=? LIMIT 1').get(campaignId, row.id),
+      recent: db.prepare("SELECT id,payload FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase IN('preparing','running') DESC,ordinal DESC LIMIT 100").all(campaignId, sceneId).map((r: any) => { const c = JSON.parse(r.payload); return { id: r.id, title: c.title, phase: c.phase }; }) };
+
   })();
 }
 export function executeCombat(db: any, command: CombatCommand, guard: () => void): CombatView {
@@ -108,6 +109,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
     if (a.kind === 'create') {
       const scene = readLiveScene(db, cam, a.sceneId);
       if (scene.retired || scene.membershipRevision !== a.expectedMembershipRevision) throw new Error('Gruppe geändert. Bitte aktualisieren.');
+
       const party = a.includeParty ? readLive(db, cam).roster.filter(c => c.active && c.sceneId === scene.id) : [];
       // Conditions and temporary HP remain usable when players keep their own HP.
       // Read only validated history and stop once every unknown-health PC is found.
@@ -130,7 +132,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
     } else {
       state = decode(db.prepare('SELECT * FROM combat WHERE campaign_id=? AND id=?').get(cam, command.combatId));
       if (state.revision !== command.expectedRevision) throw new Error('Kampf wurde geändert. Bitte aktualisieren.');
-      if (state.phase === 'finished') throw new Error('Der abgeschlossene Kampf bleibt als Ergebnis erhalten. Beginne eine neue Begegnung.');
+      if (!['preparing','running'].includes(state.phase)) throw new Error(state.phase==='finished'?'Der abgeschlossene Kampf bleibt als Ergebnis erhalten. Beginne eine neue Begegnung.':'Der Kampf gehört zu einer archivierten Scene.');
       if (readLiveScene(db, cam, state.sceneId).retired) throw new Error('Diese Gruppe ist nicht mehr aktiv.');
       const before = JSON.stringify(state);
       const participant = (): Combatant => { const id = 'participantId' in a ? a.participantId : null; const p = state.participants.find(p => p.id === id); if (!p) throw new Error('Teilnehmer nicht gefunden.'); return p; };
