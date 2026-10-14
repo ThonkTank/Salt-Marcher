@@ -104,3 +104,5 @@ jeweils ihren eigenen Nachweis. Lokale Store- und kontrollierte DOMtests belegen
 nur die dort geprüften Abläufe. Verbindlich sind die betroffenen Einträge in
 `acceptance.json` und die Fachpläne; Build, Push oder Paketierung sind keine
 Produktabnahme.
+
+Kampagnenagenda: Fristen nach Fantasiedatum und Gruppenzeit; die Vorbereitung zeigt nächste Besuche sowie offene Quests und Gerüchte. Native Abnahme dieser Abläufe bleibt offen.

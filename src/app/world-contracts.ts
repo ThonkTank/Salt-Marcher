@@ -23,7 +23,7 @@ export type WorldAction=
  |{kind:'map';map:AtlasMap;expectedRevision:number|null}
  |{kind:'cell';mapId:string;expectedRevision:number;cell:AtlasCell}
  |{kind:'place';mapId:string;locationId:string;expectedRevision:number|null;hex:Hex}
- |{kind:'calendar-event';event:CalendarEvent;expectedRevision:number|null}
+ |{kind:'calendar-event';event:CalendarEvent;expectedRevision:number|null;basis?:import('./agenda-contracts').AgendaBasis}
  |{kind:'phenomenon';phenomenon:WeatherPhenomenon;expectedRevision:number|null}
  |{kind:'weather-override';sceneId:string;expectedClockRevision:number;expectedOverrideRevision:number|null;weather:Weather|null}
  |{kind:'notice-dismiss';sceneId:string;id:string}
