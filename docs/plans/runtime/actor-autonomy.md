@@ -134,6 +134,17 @@ führt den echten Gruppeneditor-/Draft-/NPC-/Jobweg aus und prüft Backup, Fresh
 sowie anschließendes inaktives Catch-up. Erneute exklusive Resume-Zuweisung ist
 weiterhin eine eigene Abnahme.
 
+Der integrierte zeitgebundene Rastwriter bestätigt Partyfortschritt, Scenezeit
+und World-/Autonomiefolgen in derselben Transaktion. Zwei zusätzliche reale
+Storeproben verbinden ihn mit diesem Aktivierungsweg: eine kurze Rast nach einer
+Stunde deaktivierter Autonomie simuliert ausschließlich die aktive Rastzeit.
+Receipt-Replay nach Fresh hat dieselben JSON-Ergebniswerte und keine neue
+Zeit-/Bedürfniswirkung. Ein abgelehnter Autonomieowner rollt Partyrest, Scenezeit,
+Autonomiestand und beide Receipts gemeinsam zurück. Diese Proben verwenden einen
+tatsächlichen gemeinsamen Scene-/NPC-Ort; unplatzierte NPCs werden nicht als
+aktive lokale Owner ausgegeben. HP-/Slot-/D&D-Rastvollständigkeit und native
+Gruppenbedienung sind damit nicht qualifiziert.
+
 ## Neuer Persistenzgraph und Buchungsowner
 
 Die integrierte Prüfung kontrolliert nun Zeitfronten, Receipts, Reservierungen,
