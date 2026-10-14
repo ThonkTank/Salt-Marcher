@@ -51,9 +51,6 @@ belegen beschädigte Daten, atomaren Generatorrollback, Weitergaben mit Verkauf,
 Käufe, Definition-/Mengenkorrekturen, Überschuss, Fresh und unabhängige Kopie.
 Quellpaket und vorhandene Sicherungen bleiben unverändert.
 
-Vor Übernahme werden XP, Ledger, Definitionen, Preset und der gewählte
-Pool erneut geprüft. Eigene Rewardbearbeitung umgeht diese Prüfung nicht.
-
 Vollständige Regel-/Profilherleitung, vollständige Quellenbindungen
 und native Bedien-/Prozessabbruchprüfung bleiben offen. Magische
 Werte werden im Gold-only-Modus monetär, im kombinierten Modus nach Seltenheit
@@ -62,60 +59,33 @@ gegen das versionierte Profil, bevor bestehende Vorschläge umgedeutet werden.
 
 ## Aktuelle Grundlage vor Vorschlagsannahme
 
-`SessionLootGuidance.basis` enthält jetzt die beobachteten IDs/Revisionen der
-vergebenden Ledgerwurzeln und ihrer aktuellen Definitionen. Kauffakten und
-Transferempfang erzeugen keinen neuen Rewardcredit und invalidieren die Grundlage
-nicht allein durch ihre Aufnahme. Bestehende Leser prüfen deren Integrität weiter.
-Die Grundlage ist ein strukturierter Teil des vorhandenen Sessionruns, kein
-zusätzlicher Ledgerstand und kein opaker ID-Hash. Campaignkopien remappen ihre
-Referenzen über die vorhandenen Slots; beim Vergleich werden ungeordnete
-Referenzlisten normalisiert.
+`SessionLootGuidance.basis` speichert die beobachteten IDs/Revisionen der
+vergebenden Ledgerwurzeln und ihrer Definitionen. Käufe und Transferempfang
+begründen keinen neuen Rewardcredit. Campaignkopien remappen strukturierte
+Referenzen; der Vergleich normalisiert ungeordnete Listen.
 
-`assertSessionRewardBasisCurrent` bindet eine neue Annahme an die aktuelle
-Planungspartyrevision und, bei automatischem Ausgleich, an den erneut gelesenen
-Fortschritts-/XPstand, die effektiven Credits/Magiezahlen, Preset und
-aufgezeichnete Ledger-/Definitionsrevisionen. Die tatsächlich ausgewählten
-Rewardreferenzen müssen noch derselben verfügbaren Katalogrevision entsprechen.
-Ein ausdrücklich gewählter Magiebeutepool wird ebenfalls vollständig mit
-`checkedMagicPool` erneut geprüft. Das betrifft auch aktuell nicht verteilte
-Poolgegenstände: geänderte Revision oder Papierkorb invalidiert diese
-Quellenauswahl, statt sie bei der Annahme stillschweigend zu verkleinern.
-Die Prüfung läuft vor Timeline-/Gruppen-/Reward-/Acceptancewirkungen im
-bestehenden Writer. Sie ersetzt keine Items, ändert keine Budgets und schreibt
-keine älteren Vorschläge um. Bestätigungsreplay und bereits angenommene Inhalte
-behalten den ursprünglichen Ergebnisweg. Ältere geführte Runs ohne prüfbare
-Grundlage bleiben lesbar; ihre neue Annahme verlangt eine neue Vorschau.
-Es gibt keine Migration und keine automatische Neubindung an heutige Revisionen.
+`assertSessionRewardBasisCurrent` prüft vor der Übernahme Planungspartyrevision,
+**bestätigte XP**, effektive Credits/Magiezahlen, Preset, Ledger-/Definitionsbasis
+und gewählte Rewardreferenzen. Ein eigener Magiebeutepool wird vollständig mit
+`checkedMagicPool` geprüft, auch seine aktuell nicht verteilten Gegenstände.
+Reine HP-, Heilungs- und Raständerungen der Party-Figuren invalidieren die
+Beutegrundlage nicht. Die
+aufgezeichneten Fortschrittsrevisionen bleiben als historische Metadaten erhalten.
 
-Ergänzende Storeproben in `desktop-session-reward-integrity.test.mjs` belegen
-XP-/Beute-/gleichwertige Mengen-/Seltenheits-/Planungspartykonflikte ohne
-Teilwirkung, eine geänderte zusätzlich gewählte Katalogdefinition sowie gültige
-Annahme nach Fresh und unabhängiger Kopie. Receipt-Replay nach späterer
-XPänderung, unbeeinflusste andere Figuren/Käufe und der ungeführte manuelle
-Vorschlag bleiben wirksam. Ein eigener Gegenbefund am neuen Prüfweg zeigte
-zunächst unnötige Invalidierung durch einen Kauf; die Eingabebasis zählt jetzt
-nur Rewardwurzeln. Native Interaktion und gesamte Guidanceabnahme bleiben offen.
+Die Prüfung läuft vor Timeline-, Gruppen- und Rewardwirkungen. Sie verändert
+keine Budgets oder Autoreninhalte. Bestätigungsreplay und bereits angenommene
+Inhalte behalten den ursprünglichen Ergebnisweg. Ältere geführte Runs ohne
+prüfbare Grundlage bleiben lesbar; eine neue Übernahme verlangt eine neue Vorschau.
 
-Drei zusätzliche Poolproben belegen Zurückweisung geänderter oder entfernter,
-aktuell nicht verteilter Poolquellen ohne Teilwirkungen sowie gültige Annahme
-mit unverändertem Pool nach Fresh und unabhängiger Kopie. Zwei Gegenproben
-scheiterten vor diesem Integrationsanschluss an der fehlenden Zurückweisung.
+[Storeprüfungen](../../../tests/desktop-session-reward-integrity.test.mjs) belegen
+geänderte XP, Beute, Katalog-/Poolquellen und Planungsparty ohne Teilwirkung,
+Annahme nach unabhängiger Kopie/Fresh, Replay sowie gültige Übernahme nach
+Schaden, Heilung und kurzer/langer Rast. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
+prüfen Integrität und erhaltene Sicherungen. Native Gesamtabnahme bleibt offen.
 
-Die Integration des Pools zeigte zusätzlich einen offenen SQLite-Iterator,
-der bereits bei erfülltem Ziel ohne Kandidatenbedarf erzeugt wurde. Er blockierte
-den Commit des Sessiongenerators. `fitMagicItems` öffnet den Iterator jetzt erst
-innerhalb des tatsächlichen Kandidatenwegs. Die bestehende gültige
-Generator-/Annahmeprobe deckt diesen Fall mit bereits ausreichender Beute ab.
-Die festen Pool- und Vorschlagsformulare liegen in `index.html`; die Picker/
-Editoren binden Verhalten und Katalogergebnisse daran, statt ganze Formulare
-und Dialoge nachträglich zu erzeugen.
-Bestehende Storeproben werden unverändert mitgeprüft. Die Session-DOMfixture
-benötigt inzwischen die echten Aktionsbeschriftungen statt alter Buttonpositionen
-und die hinzugekommenen NPC-/Quellenreader in ihrer Storefacade. Eine externe
-Testkopie ergänzt ausschließlich diese Anschlüsse; die bestehenden Assertions
-und die fremde ursprüngliche Testdatei bleiben erhalten. Dies qualifiziert den
-aktuellen lokalen Ablauf, nicht einen unverändert grünen Gesamttestlauf oder
-eine native Bedienabnahme.
+`fitMagicItems` öffnet den Katalogiterator erst bei tatsächlichem Kandidatenbedarf.
+Die festen Pool- und Vorschlagsformulare stehen einmalig in `index.html`; ihre
+Picker und Editoren binden Verhalten und Ergebnisse an diese Vorlage.
 
 ## Nächste ausführbare Schritte
 
@@ -128,7 +98,6 @@ eine native Bedienabnahme.
    Awards.
    Einzelregeneration und manuell geänderte XP benötigen weiterhin einen
    konsistenten Forecast-/Budgetabschluss ohne Neubudgetierung anderer Entwürfe.
-   Reine HP-/Reständerungen auf sachfremde Pflichtregeneration prüfen.
 2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und

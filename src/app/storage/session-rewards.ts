@@ -400,7 +400,6 @@ export function assertSessionRewardBasisCurrent(
       characters: g.characters.map((c) => ({
         characterId: c.characterId,
         xp: c.xp,
-        revision: c.revision,
       })),
       basis: {
         ledger: [...g.basis!.ledger].sort((a, b) => a.id.localeCompare(b.id)),
