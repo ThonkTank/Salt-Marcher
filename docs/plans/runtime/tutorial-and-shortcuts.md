@@ -103,3 +103,7 @@ Bedienung, Paketinstallation und vollständiger Feature-Tutorialabdeckung.
    Status ist kein bestätigter gespeicherter Abschluss. Linux/Windows/macOS,
    Screenreader, Laptop-/200 %-Layout, Kontrast und Nicht-Farbsignale brauchen
    die eigenen betroffenen Feature-/Gesamtabnahmen.
+
+Der [Dungeon-Binder](../dungeon/binder.md) führt seine angezeigten Raum- und
+Inhaltsaktionen mit eigener Kontextgrenze. Sein weiterer Query-/Gruppenanschluss
+und die native Abnahme bleiben von der Tutorialzuordnung getrennt.
