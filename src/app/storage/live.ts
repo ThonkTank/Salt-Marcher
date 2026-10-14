@@ -345,7 +345,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       recordPartyHistory(db,campaignId,targetId,action.title.trim(),{kind:'live-moment',category:action.category,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs,followUpKind:action.followUp?.kind??null,followUpId:action.followUp?.id??null});
     } else if(action.kind==='session-marker'){
       const boundary=readSessionBoundary(db,campaignId),open=boundary?.body.facts.marker==='start';
-      if((action.marker==='start')===open)throw new Error(open?'Spielabend bereits begonnen. Rückblick aktualisieren.':'Kein offener Spielabend. Rückblick aktualisieren.');
+      if((action.marker==='start')===open)throw new Error(open?'Ein Spielabend läuft bereits. Rückblick aktualisieren.':'Kein laufender Spielabend. Rückblick aktualisieren.');
       const before=currentScene(db,campaignId,action.sceneId);if(before.revision!==action.expectedRevision)throw new Error('Sceneinhalt wurde inzwischen geändert.');
       targetId=before.id;revision=before.revision;scene=before;
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND active=1 ORDER BY ordinal,id').all(campaignId).map((row:any)=>row.id);

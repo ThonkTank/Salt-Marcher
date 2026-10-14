@@ -28,7 +28,10 @@ Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
 - **Spielabend abgrenzen:** Anfang und Ende werden ausdrücklich in der Chronik
   gespeichert. Der Writer erlaubt nur einen offenen Abend und bewahrt Replay.
   Die letzte Grenze wird unabhängig vom 2.000-Ereignis-Ausschnitt gelesen;
-  gekürzte Rückblicke sind sichtbar markiert. Ein ausgefallener Chronikread
+  gekürzte Rückblicke sind sichtbar markiert. Vor dem Ende zeigt eine Übersicht
+  laufende Kämpfe/Verfolgungen, sichtbare XP-Buchungen und unverteilte Beute;
+  deren offene Zustände bleiben erhalten. Abbruch erhält die Abschlussnotiz.
+  Ein ausgefallener Chronikread
   sperrt diese Aktionen, lässt die laufende Gruppe und ihre Notizen nutzbar.
 - **Entwürfe behalten:** Momentfelder bleiben innerhalb des laufenden Prozesses
   bei ihrer Gruppe, Rückblicknotizen bei ihrer Campaign. Submit bindet Wortlaut, Folgespur und Fokus vor dem Flush;
