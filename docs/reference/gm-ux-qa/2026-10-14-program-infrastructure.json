@@ -11,7 +11,7 @@
     "product_ui_evidence": false
   },
   "cloud_native_desktop_pilot": "blocked",
-  "local_recorder_pilot": "in_progress; two operator-reported save/fresh cycles await independent review; interruption retained as abnormal",
+  "local_recorder_pilot": "Three native pilot candidates frozen for two independent readiness reviews. Failed and incomplete attempts retained; no scored run or readiness pass.",
   "scored_product_runs": 0,
   "claim": "No product usability, parity or human-load claim. Runtime trial state and private contracts remain outside the public repository.",
   "scenario_contract_alignment": "Distinguish GM read-aloud retrieval from visual-only passive player projection; no scored wave existed when wording was corrected.",
@@ -21,5 +21,7 @@
     "recorder continuity across guarded process restarts",
     "verified Obsidian process containment",
     "two independent readiness reviews"
-  ]
+  ],
+  "readiness_review": "two fresh reviewer chats active; reports pending",
+  "snapshot_file_count": 304
 }
