@@ -69,7 +69,13 @@ Ein vorhandener Rohentwurf wird als solcher angekündigt; er ersetzt den
 bestätigten Mappenstand nicht. Die lokale Storeprobe vergleicht Journal und
 Mappe vor/nach einem ausdrücklich bestätigten Abschluss samt erhaltenem CRLF.
 Eine weitere Probe liest 42 Aufträge in zwei geordneten Seiten ohne Writes und
-prüft Fresh. Native Journalnavigation und Entwurfswechsel bleiben offen.
+prüft Fresh. Neue Suche entfernt alte Treffer und Zähler; Seitenfortsetzung behält bereits
+gelesene Zeilen. Aktionen benötigen die aktuelle Campaign, sichtbare Zeile,
+Filter und offenen Dialog. Eine alte Zeile darf dieselbe lokale ID einer anderen
+Campaign nicht verwenden. Suchtimer werden bei Close/Contextwechsel beendet.
+[Journalprüfungen](../../../tests/desktop-narrative-journal.test.mjs) verwenden
+die produktiven Handler und den echten Store für diese Grenzen. Native
+Journalnavigation und Entwurfswechsel bleiben offen.
 
 Die Besuchsübersicht am Spieltisch zeigt den Stand der Fokusgruppe. Plan- oder
 Gruppenwechsel und fehlgeschlagene Aktualisierung entfernen alte Besuchsaktionen;

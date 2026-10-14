@@ -8,32 +8,43 @@ let resumeOwner:(()=>Promise<void>)|null=null;
 let tell:(s:string,error?:boolean)=>void,drain:()=>Promise<boolean>,ownerDrain:()=>Promise<boolean>,editNote:(id:string)=>Promise<void>;
 function query(after:string|null):NarrativeJournalQuery{return{search:el<HTMLInputElement>('journal-search').value,kind:el<HTMLSelectElement>('journal-kind').value as NarrativeJournalQuery['kind'],status:el<HTMLSelectElement>('journal-status').value as NarrativeJournalQuery['status'],after};}
 async function loadPage(after:string|null=null){
- const w=workspace;if(!w||!el<HTMLDialogElement>('narrative-journal').open)return;const n=++request;
+ const w=workspace;if(!w||!el<HTMLDialogElement>('narrative-journal').open)return;const n=++request,q=query(after),criteria=JSON.stringify({...q,after:null});
+ const current=()=>workspace?.token===w.token&&n===request&&el<HTMLDialogElement>('narrative-journal').open&&criteria===JSON.stringify(query(null));
+ if(after===null)clearList();
  el<HTMLButtonElement>('journal-more').disabled=true;el('journal-list-status').textContent='Aufträge werden gelesen…';
- try{const r=await window.campaign.narrativeJournal(w.token,query(after));if(workspace?.token!==w.token||n!==request||!el<HTMLDialogElement>('narrative-journal').open)return;if(!r.ok)throw new Error(r.error);
+ try{const r=await window.campaign.narrativeJournal(w.token,q);if(!current())return;if(!r.ok)throw new Error(r.error);
   entries=after?[...entries,...r.value.entries.filter(e=>!entries.some(p=>p.note.id===e.note.id))]:r.value.entries;next=r.value.next;
   el('journal-counts').textContent=r.value.counts.open+' offen · '+r.value.counts.closed+' geschlossen';renderList();
- }catch(e){if(n===request)el('journal-list-status').textContent=(e as Error).message;}
- finally{if(n===request)el<HTMLButtonElement>('journal-more').disabled=false;}
+ }catch(e){if(current())el('journal-list-status').textContent=(e as Error).message;}
+ finally{if(current())el<HTMLButtonElement>('journal-more').disabled=false;}
 }
-function renderList(){const root=el('journal-list');root.replaceChildren();
- for(const entry of entries){const b=node('button');b.type='button';b.dataset.noteId=entry.note.id;b.setAttribute('aria-pressed',String(entry.note.id===selected));b.append(node('strong',entry.note.title),node('span',(entry.note.kind==='quest'?'Quest':'Gerücht')+' · '+(entry.view.state.status==='closed'?'Geschlossen':'Offen')+(entry.view.award?' · Belohnung vergeben':'')+(entry.view.draft?' · Eingabe gesichert':'')));b.onclick=()=>void selectEntry(entry);root.append(b);}
+function clearList(){entries=[];next=null;el('journal-counts').replaceChildren();renderList();}
+function cancelQuery(){if(queryTimer)clearTimeout(queryTimer);queryTimer=null;}
+function renderList(){const root=el('journal-list'),token=workspace?.token,criteria=JSON.stringify(query(null));root.replaceChildren();
+ for(const entry of entries){const b=node('button');b.type='button';b.dataset.noteId=entry.note.id;b.setAttribute('aria-pressed',String(entry.note.id===selected));b.append(node('strong',entry.note.title),node('span',(entry.note.kind==='quest'?'Quest':'Gerücht')+' · '+(entry.view.state.status==='closed'?'Geschlossen':'Offen')+(entry.view.award?' · Belohnung vergeben':'')+(entry.view.draft?' · Eingabe gesichert':'')));b.onclick=()=>{if(workspace?.token!==token||criteria!==JSON.stringify(query(null))||!el<HTMLDialogElement>('narrative-journal').open||!root.contains(b))return;void selectEntry(entry).catch(e=>{if(workspace?.token===token)tell(e.message,true);});};root.append(b);}
  el('journal-list-status').textContent=entries.length+' angezeigt'+(selected&&!entries.some(e=>e.note.id===selected)?' · Der geöffnete Auftrag bleibt rechts sichtbar.':'');el('journal-more').hidden=!next;
 }
 async function selectEntry(entry:NarrativeJournalEntry){
- const w=workspace,n=++detailRequest;if(!w||!await flushNarrative()||n!==detailRequest||workspace?.token!==w.token)return;selected=entry.note.id;renderList();
+ const w=workspace,n=++detailRequest;if(!w||!await flushNarrative()||n!==detailRequest||workspace?.token!==w.token||!el<HTMLDialogElement>('narrative-journal').open)return;selected=entry.note.id;renderList();
  const root=el('journal-document');root.replaceChildren(node('h2',entry.note.title));
  const facts=node('p',(entry.note.kind==='quest'?'Quest':'Gerücht')+(entry.locationName?' · '+entry.locationName:'')+(entry.contributorNames.length?' · Mitwirkende: '+entry.contributorNames.join(', '):''));root.append(facts);
  if(entry.note.readAloud.trim()){const publicText=node('p',entry.note.readAloud);publicText.className='journal-read-aloud';root.append(node('h3','Zum Vorlesen'),publicText);}
  const notes=node('p',entry.note.gmNotes||'Keine GM-Notizen.');notes.className='journal-gm-notes';root.append(node('h3','Notizen für die Spielleitung'),notes);
- if(entry.note.relations.length){const details=node('details');details.append(node('summary','Weltverweise'));for(const relation of entry.note.relations){const b=node('button',relation.label+' → Weltinhalt öffnen');b.type='button';b.onclick=()=>void navigate(relation.targetId);details.append(b);}root.append(details);}
- const edit=node('button','Texte und Weltverweise bearbeiten…');edit.type='button';edit.onclick=()=>void navigate(entry.note.id);root.append(edit);
+ if(entry.note.relations.length){const details=node('details');details.append(node('summary','Weltverweise'));for(const relation of entry.note.relations){const b=node('button',relation.label+' → Weltinhalt öffnen');b.type='button';b.onclick=()=>{if(workspace?.token===w.token&&root.contains(b)&&el<HTMLDialogElement>('narrative-journal').open)void navigate(relation.targetId);};details.append(b);}root.append(details);}
+ const edit=node('button','Texte und Weltverweise bearbeiten…');edit.type='button';edit.onclick=()=>{if(workspace?.token===w.token&&root.contains(edit)&&el<HTMLDialogElement>('narrative-journal').open)void navigate(entry.note.id);};root.append(edit);
  await showNarrative(w,entry.note,false,ownerDrain,tell,el('journal-narrative-editor'),()=>{void loadPage();});
 }
-async function navigate(id:string){if(!await closeJournal())return;await editNote(id);}
+async function navigate(id:string){const token=workspace?.token;if(!await closeJournal()||workspace?.token!==token)return;await editNote(id);}
 function clearDetail(){selected=null;el('journal-document').replaceChildren(node('p','Wähle links einen Auftrag.'));el('journal-narrative-editor').hidden=true;}
-async function closeJournal(){if(!await flushNarrative())return false;request++;detailRequest++;el<HTMLDialogElement>('narrative-journal').close();await showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));clearDetail();const resume=resumeOwner;resumeOwner=null;if(resume)await resume();return true;}
-export function activateNarrativeJournal(w:Workspace){workspace=w;resumeOwner=null;request++;detailRequest++;entries=[];selected=null;next=null;clearDetail();const dialog=el<HTMLDialogElement>('narrative-journal');if(dialog.open){dialog.close();void showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));}}
+async function closeJournal(){
+ const token=workspace?.token;if(!token||!await flushNarrative()||workspace?.token!==token)return false;
+ cancelQuery();request++;detailRequest++;el<HTMLDialogElement>('narrative-journal').close();
+ const resume=resumeOwner;resumeOwner=null;
+ await showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));
+ if(workspace?.token!==token||el<HTMLDialogElement>('narrative-journal').open)return true;
+ clearDetail();if(resume)await resume();return true;
+}
+export function activateNarrativeJournal(w:Workspace){cancelQuery();workspace=w;resumeOwner=null;request++;detailRequest++;entries=[];selected=null;next=null;clearDetail();const dialog=el<HTMLDialogElement>('narrative-journal');if(dialog.open){dialog.close();void showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));}}
 export function initNarrativeJournal(status:typeof tell,flush:typeof drain,flushOwner:typeof ownerDrain,openNote:typeof editNote){
  tell=status;drain=flush;ownerDrain=flushOwner;editNote=openNote;
  const button=node('button','Aufträge und Gerüchte');button.id='narrative-journal-open';button.type='button';button.disabled=true;el('party-shortcut').after(button);
@@ -42,6 +53,6 @@ export function initNarrativeJournal(status:typeof tell,flush:typeof drain,flush
  el('journal-close').onclick=()=>void closeJournal();dialog.addEventListener('cancel',e=>{e.preventDefault();void closeJournal();});
  el('journal-refresh').onclick=()=>{void(async()=>{if(await flushNarrative())await loadPage();})().catch(e=>tell(e.message,true));};
  el('journal-more').onclick=()=>void loadPage(next);
- el('journal-search').oninput=()=>{if(queryTimer)clearTimeout(queryTimer);queryTimer=setTimeout(()=>void loadPage(),200);};
+ el('journal-search').oninput=()=>{cancelQuery();request++;clearList();el('journal-list-status').textContent='Aufträge werden gelesen…';queryTimer=setTimeout(()=>{queryTimer=null;void loadPage();},200);};
  for(const id of ['journal-kind','journal-status'])el(id).onchange=()=>void loadPage();
 }
