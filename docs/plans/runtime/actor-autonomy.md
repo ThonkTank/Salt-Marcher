@@ -58,6 +58,13 @@ Catch-up an der bestätigten Uhr der auslösenden Scene endet und ein bereits
 späterer Actorstand nicht zurückgerollt wird. Diese SQLite-Nachweise sind keine
 native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
 
+[Aktivierungs-/Rastprüfungen](../../../tests/desktop-autonomy-disable-time.test.mjs)
+belegen übersprungene inaktive Zeit, erhaltene Standard-/Custom-Needs nach Kopie,
+Deaktivierung mit gelöster Reservierung und erhaltenem Jobfortschritt sowie
+atomare zeitgebundene Rasten: Autonomieablehnung rollt Fortschritt, Scenezeit und
+beide Bestätigungen zurück; Replay wirkt genau einmal. Native Wirkung/Recovery
+und Reaktivierung mit erneuter exklusiver Zuweisung bleiben gemeinsam abzunehmen.
+
 ## Nächste ausführbare Schritte
 
 1. Den manuellen Zeitkonflikt in `autonomy-ui.ts` als vollständigen GM-Ablauf
