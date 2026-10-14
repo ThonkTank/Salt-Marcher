@@ -1,0 +1,28 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {randomUUID} from 'node:crypto';
+import {createRequire} from 'node:module';
+import {buildSync} from 'esbuild';
+buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {resolveWorldSources} from './src/app/storage/world-sources';",resolveDir:process.cwd(),sourcefile:'world-source-constraints.ts',loader:'ts'},outfile:'.build/world-source-constraints.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,resolveWorldSources}=createRequire(import.meta.url)('../.build/world-source-constraints.cjs');
+function fixture(t){
+ const root=mkdtempSync(path.join(tmpdir(),'world-source-constraints-')),store=new CampaignStore(path.join(root,'store.sqlite')),cam=store.create('Weltquellen'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});
+ const factions=['A','B'].map(title=>{const note={version:1,id:randomUUID(),revision:1,kind:'faction',title,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};store.changePreparation({...command(null),change:{kind:'note',note,expectedRevision:null}});return note.id;});
+ const tables=factions.map((id,i)=>{const table={id:randomUUID(),revision:0,scope:'campaign',name:'Tabelle '+i,description:'',entries:[{creatureId:i?'wolf':'goblin',weight:'1'}],habitats:[],time:'any',lootTableId:null,trashed:false};store.executeGeneration(command({kind:'table-save',table,expectedRevision:null}));return table.id;});
+ const save=(kind,id,tableIds,factionIds=[],stock=[],expectedRevision=null)=>store.executeGeneration(command({kind:'source-save',source:{kind,id,revision:0,tableIds,factionIds,stock},expectedRevision}));
+ const request={tableIds:[],factionIds:factions,locationId:null},resolve=changes=>resolveWorldSources(store.db,cam.id,{...request,...changes},store.encounterTables(w.token,true));
+ return{root,store,cam,w,command,factions,tables,save,resolve};
+}
+for(const excluded of ['missing source','explicit table filter','location filter','zero stock'])test(`every selected faction must retain a source after ${excluded}`,t=>{
+ const x=fixture(t);x.save('faction',x.factions[0],[x.tables[0]]);if(excluded!=='missing source')x.save('faction',x.factions[1],[x.tables[1]],[],excluded==='zero stock'?[{creatureId:'wolf',limit:0}]:[]);
+ let changes={};if(excluded==='explicit table filter')changes.tableIds=[x.tables[0]];
+ if(excluded==='location filter'){const location={kind:'location',version:1,id:randomUUID(),name:'Tor',type:'poi',sections:[],detailMaps:[],keyLinks:[]};x.store.changePreparation({...x.command(null),change:{kind:'location',document:location,expectedRevision:null}});x.save('location',location.id,[x.tables[0]]);changes.locationId=location.id;}
+ const bytes=x.store.db.serialize();assert.throws(()=>x.resolve(changes),/Gewählte Fraktion.*B.*keine.*Encounter-Tabelle/);assert.ok(x.store.db.serialize().equals(bytes),'Rejected binding must not mutate campaign data');
+});
+test('valid faction sources keep finite stock and change the source basis when stock changes',t=>{
+ const x=fixture(t);x.save('faction',x.factions[0],[x.tables[0]],[],[{creatureId:'goblin',limit:3}]);const before=x.resolve({factionIds:[x.factions[0]]});assert.deepEqual(before.tableIds,[x.tables[0]]);assert.equal(before.caps.get('goblin'),3);
+ x.save('faction',x.factions[0],[x.tables[0]],[],[{creatureId:'goblin',limit:2}],1);const after=x.resolve({factionIds:[x.factions[0]]});assert.equal(after.caps.get('goblin'),2);assert.notEqual(after.basis,before.basis);
+});

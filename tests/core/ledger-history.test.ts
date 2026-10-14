@@ -32,3 +32,9 @@ test('ledger inventory validates remapped history while projecting the chosen cu
     const page=readLedgerInventory(db,'campaign',{characterId:'hero',after:null});assert.equal(page.items.length,1);assert.equal(page.items[0]!.name,'Importiertes Seil');assert.equal(page.items[0]!.currentName,'Lokales Seil');assert.deepEqual(page.problems.map(p=>p.id),['ledger-bad']);
   }finally{db.close();}
 });
+
+test('stack matching preserves reward credits and original treasure portions',()=>{
+ const original=ledger({origin:'award',rewardCreditId:'credit-a',sourceTreasureId:'treasure-a',sourceTreasureItemId:'portion-a'});
+ for(const change of [{rewardCreditId:'credit-b'},{sourceTreasureId:'treasure-b'},{sourceTreasureItemId:'portion-b'}])assert.equal(ledgerStacksMatch(original,{...original,...change}),false);
+ assert.equal(ledgerStacksMatch(original,{...original,id:'another-ledger',quantity:3}),true);
+});
