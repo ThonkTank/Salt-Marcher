@@ -72,6 +72,17 @@ export interface LedgerItem {
   recipientCharacterId?:string; sourceCharacterId?:string; sourceNoteId?:string; awardId?:string; provenance?:string; mergeTargetId?:string; counterpartyLink?:{kind:'shop'|'npc'|'location'|'faction';id:string};paidCopper?: string; instanceId?: string | null; counterpartyReference?: {shopId:string;owner:{kind:'npc'|'location';id:string}};
   currentName?:string; currentUnitCopper?:string|null;
 }
+export const ledgerDefinitionId=(item:Pick<LedgerItem,'reference'>)=>item.reference.historicalDefinitionId??item.reference.definitionId;
+export function ledgerStacksMatch(a:LedgerItem,b:LedgerItem):boolean{
+  const key=(item:LedgerItem)=>JSON.stringify([
+    item.reference.definitionId,item.reference.revision,item.reference.historicalDefinitionId??null,item.name,item.category,item.unitCopper,item.origin,
+    item.treasureId,item.combatId,item.sceneId,item.locationId,item.instantMs,item.sourceNoteId??null,item.awardId??null,
+    item.provenance??null,item.sourceCharacterId??null,item.mergeTargetId??null,item.counterparty,
+    item.counterpartyLink?[item.counterpartyLink.kind,item.counterpartyLink.id]:null,
+    item.counterpartyReference?[item.counterpartyReference.shopId,item.counterpartyReference.owner.kind,item.counterpartyReference.owner.id]:null,
+  ]);
+  return !a.instanceId&&!b.instanceId&&a.characterId===b.characterId&&a.status==='received'&&b.status==='received'&&key(a)===key(b);
+}
 export function ledgerCopper(item: LedgerItem): bigint | null {
   if (item.status === 'sold') return item.actualSaleCopper === null ? null : BigInt(item.actualSaleCopper);
   if (item.quantity === 0) return 0n;
