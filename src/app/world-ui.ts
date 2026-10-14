@@ -3,7 +3,7 @@ import {agendaCountdown} from './agenda-model';
 import type {Workspace,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
 import type {LiveView} from './live-contracts';
-import type {WorldView,SceneWorld,AtlasMap,AtlasCell,Hex,WorldAction,WorldCommand,WorldAck,TravelPreview,CalendarEvent,WeatherPhenomenon,Weather,Climate,Terrain} from './world-contracts';
+import type {WorldView,SceneWorld,AtlasMap,AtlasCell,Hex,WorldAction,WorldCommand,WorldAck,WorldReconciliation,TravelPreview,CalendarEvent,WeatherPhenomenon,Weather,Climate,Terrain} from './world-contracts';
 import {hexKey,hexPoint,pointHex,hexDistance,cellAt,terrainNames,terrainColors,terrainFactor,climateNames,weatherEffects,calendarDate} from './world-model';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>el<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
@@ -65,7 +65,7 @@ function number(id:string){const v=Number(value(id));if(!Number.isFinite(v))thro
 function daysMs(days:number){if(!world||!Number.isFinite(days)||days<0||days>100000000)throw new Error('Zeit benötigt 0 bis 100.000.000 Tage.');return Math.round(days*world.calendar.daySeconds*1000).toString();}
 const msDays=(ms:string)=>world?Number(BigInt(ms))/world.calendar.daySeconds/1000:0;
 let uncertain: { command: WorldCommand; versions: typeof edits; weatherIntent?:WeatherIntent } | null = null;
-let checkingWorldWrite: Promise<boolean> | null = null;
+let checkingWorldWrite: Promise<WorldReconciliation|null> | null = null;
 let worldWrites = new Set<Promise<void>>();
 function showUncertainWorldWrite() { el('world-write-recovery').hidden = !uncertain; }
 function adoptConfirmedWorldWrite(command: WorldCommand, ack: WorldAck, versions: typeof edits,weatherIntent?:WeatherIntent) {
@@ -82,26 +82,27 @@ function adoptConfirmedWorldWrite(command: WorldCommand, ack: WorldAck, versions
     phenomenonDraft = structuredClone(ack.world.phenomena.find(p => p.id === a.phenomenon.id)!); dirtyPhenomenon = edits.phenomenon !== versions.phenomenon;
   }
 }
-export async function reconcileWorldWrite(): Promise<boolean> {
+async function resolveWorldWrite(): Promise<WorldReconciliation|null> {
   if (checkingWorldWrite) return checkingWorldWrite;
-  if (!uncertain || !workspace) return !uncertain;
+  if (!uncertain || !workspace) return null;
   const captured = uncertain, token = workspace.token;
   const operation = Promise.resolve().then(async () => {
     try {
       const result = unwrap(await window.campaign.reconcileWorld(captured.command, token));
-      if (workspace?.token !== token || uncertain !== captured) return false;
+      if (workspace?.token !== token || uncertain !== captured) return null;
       if (result.outcome === 'applied') adoptConfirmedWorldWrite(captured.command, result.ack, captured.versions,captured.weatherIntent);
       uncertain = null; showUncertainWorldWrite();
       tell(result.outcome === 'applied' ? 'Weltänderung bestätigt. Spätere Eingaben bleiben offen.' : 'Weltänderung wurde nicht übernommen. Eingabe bleibt offen.');
-      return true;
+      return result;
     } catch (error) {
       if (workspace?.token === token) tell((error as Error).message + ' Weltänderung bleibt unklar.', true);
-      return false;
+      return null;
     } finally { if (checkingWorldWrite === operation) checkingWorldWrite = null; }
   });
   checkingWorldWrite = operation;
   return operation;
 }
+export async function reconcileWorldWrite():Promise<boolean>{if(!uncertain&&!checkingWorldWrite)return true;return !!await resolveWorldWrite();}
 async function raw(action: WorldAction, stillCurrent:()=>boolean=()=>true,weatherIntent?:WeatherIntent) {
   if (!workspace) throw new Error('Öffne eine Kampagne.');
   if (uncertain) throw new Error('Unklare Weltänderung zuerst über Auftrag prüfen klären.');
@@ -362,6 +363,17 @@ export function initWorld(status:typeof tell,flushLive:typeof before,reloadLive:
  el('weather-release').onclick=()=>run(()=>submitWeather(null));el('weather-discard-input').onclick=()=>run(discardWeatherInput);
 }
 
-export async function saveAgendaEvent(event:CalendarEvent,expectedRevision:number|null,basis:import('./agenda-contracts').AgendaBasis,token:string){if(workspace?.token!==token||!await flushWorld())throw new Error('Offene Welt-Eingaben zuerst abschließen.');const ack=await raw({kind:'calendar-event',event,expectedRevision,basis},()=>workspace?.token===token);const saved=ack.world.events.find(e=>e.id===event.id);if(!saved)throw new Error('Ereignisbestätigung fehlt.');try{await after();}catch(e){tell('Ereignis gespeichert; Live-Anzeige später aktualisieren: '+(e as Error).message,true);}return saved;}
+export class AgendaWriteUncertain extends Error {constructor(message:string){super(message);this.name='AgendaWriteUncertain';}}
+function ownsAgendaWrite(event:CalendarEvent,revision:number|null,basis:import('./agenda-contracts').AgendaBasis,token:string){const c=uncertain?.command,a=c?.action;return !!c&&c.token===token&&workspace?.token===token&&a?.kind==='calendar-event'&&JSON.stringify([a.event,a.expectedRevision,a.basis])===JSON.stringify([event,revision,basis]);}
+export async function saveAgendaEvent(event:CalendarEvent,expectedRevision:number|null,basis:import('./agenda-contracts').AgendaBasis,token:string,stillCurrent:()=>boolean=()=>true){
+ if(workspace?.token!==token||!await flushWorld())throw new Error('Offene Welt-Eingaben zuerst abschließen.');
+ try{const ack=await raw({kind:'calendar-event',event,expectedRevision,basis},()=>workspace?.token===token&&stillCurrent());const saved=ack.world.events.find(e=>e.id===event.id);if(!saved)throw new Error('Ereignisbestätigung fehlt.');if(stillCurrent())try{await after();}catch(e){if(stillCurrent())tell('Ereignis gespeichert; Live-Anzeige später aktualisieren: '+(e as Error).message,true);}return saved;}
+ catch(e){if(ownsAgendaWrite(event,expectedRevision,basis,token))throw new AgendaWriteUncertain((e as Error).message);throw e;}
+}
+export async function reconcileAgendaEventWrite(event:CalendarEvent,revision:number|null,basis:import('./agenda-contracts').AgendaBasis,token:string):Promise<CalendarEvent|null>{
+ if(!ownsAgendaWrite(event,revision,basis,token))throw new Error('Kein zugehöriger ungeklärter Ereignisauftrag.');
+ const result=await resolveWorldWrite();if(!result)throw new Error('Ereignisauftrag bleibt unklar.');if(result.outcome==='not-applied')return null;
+ const saved=result.ack.world.events.find(e=>e.id===event.id);if(!saved||saved.revision!==(revision??0)+1)throw new Error('Ereignisreceipt widerspricht seiner Fassung.');return saved;
+}
 
 async function renderLiveAgenda(token:string,sceneId:string,request:number){const root=document.getElementById('live-agenda-upcoming');if(!root)return;root.replaceChildren();try{const result=unwrap(await window.campaign.agenda(token,{sceneId,search:'',location:'current',horizonDays:1,includePast:false,after:null}));if(workspace?.token!==token||request!==liveRequest)return;for(const item of result.items.slice(0,3)){const p=document.createElement('p'),delta=String(BigInt(item.state==='active'?item.endMs:item.startMs)-BigInt(result.scene?.instantMs??'0'));p.textContent=item.event.name+' · '+(item.state==='active'?'jetzt aktiv, noch ':'in ')+agendaCountdown(result.calendar,delta);root.append(p);}if(!result.items.length){const p=document.createElement('p');p.className='caption';p.textContent='Keine Kalenderereignisse am Gruppenort im nächsten Tag.';root.append(p);}}catch(e){if(workspace?.token===token&&request===liveRequest)root.textContent='Agenda nicht verfügbar: '+(e as Error).message;}}

@@ -110,6 +110,7 @@ import "./core/live-session-recap.test";
 import "./core/live-session-close.test";
 import "./core/dungeon-binder-model.test";
 import "./core/agenda-ui.test";
+import "./core/agenda-context.test";
 import "./core/agenda-time.test";
 import "./core/agenda-storage.test";
 import "./core/object-gestures.test";
