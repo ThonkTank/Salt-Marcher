@@ -5,7 +5,7 @@ import type {GenerationRequest} from './generation-contracts';
 import type {ManualPlan} from '../features/planner/manual-planner';
 export interface SessionProfile {planId:string;revision:number;party:EncounterParty[];adventureDayFraction:string;seed:string}
 export interface VisitDetail {visitId:string;revision:number;readAloud:string;noteIds:string[];groupIds:string[];reward:{id:string;poolXp:number;items:ItemInput[];placedTreasureId:string|null;awarded:boolean}|null}
-export interface WorldActor {id:string;name:string;creatureId:string;revision:number;hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean;unavailable:boolean;entryId:string}
+export interface WorldActor {defeated?:boolean;disposition?:number;role?:import('./npc-contracts').NpcRole;id:string;name:string;creatureId:string;revision:number;hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean;unavailable:boolean;entryId:string}
 export interface PreparedGroup {id:string;revision:number;title:string;notes:string;sourceEncounterId:string;sourceRevision:number;locationId:string|null;plan:EncounterPlan;actors:WorldActor[]}
 export interface SessionView {replacementBasis?:string;profile:SessionProfile;visits:VisitDetail[];groups:PreparedGroup[];encounters:{id:string;revision:number;name:string}[]}
 export interface ScenePreparation {groups:PreparedGroup[];treasures:{id:string;title:string}[];nextVisit:{planId:string;planRevision:number;visitId:string;title:string}|null}

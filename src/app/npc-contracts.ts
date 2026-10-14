@@ -1,0 +1,10 @@
+import type {Result} from './contracts';
+import type {CharacterHealth} from './progression';
+export interface NpcRecord {id:string;revision:number;factionId:string|null;modifier:number;lifecycle:'active'|'defeated';appearance:string;behavior:string;history:string}
+export type NpcRole='friendly'|'neutral'|'hostile';
+export interface NpcView {id:string;name:string;noteRevision:number;creatureId:string|null;readAloud:string;gmNotes:string;record:NpcRecord;locationId:string|null;positionRevision:number|null;actorRevision:number|null;health:CharacterHealth|null;disposition:number;role:NpcRole}
+export interface NpcQuery {text:string;lifecycle:'all'|'active'|'defeated';factionId:string|null;locationId:string|null;offset:number}
+export interface NpcPage {rows:{id:string;name:string;creatureId:string|null;lifecycle:NpcRecord['lifecycle'];factionId:string|null;locationId:string|null;disposition:number;role:NpcRole}[];total:number;offset:number}
+export interface NpcDraft {id:string;writeId:string;basis:NpcView|null;fields:Record<string,string>;concentrating:boolean}
+export interface NpcCommand {draftWriteId?:string;commandId:string;campaignId:string;token:string;expectedNoteRevision:number|null;expectedRecordRevision:number;expectedActorRevision:number|null;expectedPositionRevision:number|null;npc:Omit<NpcView,'disposition'|'role'|'noteRevision'|'actorRevision'|'positionRevision'>}
+export interface NpcAPI {npcDrafts(token:string):Promise<Result<{id:string;name:string}[]>>;npcDraft(token:string,id:string):Promise<Result<NpcDraft|null>>;keepNpcDraft(token:string,draft:NpcDraft,expected:string|null):Promise<Result<void>>;discardNpcDraft(token:string,id:string,writeId:string):Promise<Result<void>>;npcs(token:string,query:NpcQuery):Promise<Result<NpcPage>>;npc(token:string,id:string):Promise<Result<NpcView>>;executeNpc(command:NpcCommand):Promise<Result<NpcView>>}

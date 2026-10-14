@@ -1,4 +1,4 @@
-export const tutorialLessonRevision = 'desktop-tutorial-world-sources-v16';
+export const tutorialLessonRevision = 'desktop-tutorial-npc-world-v17';
 export interface TutorialRun { version: string; lessonRevision: string; runId: string; state: 'new' | 'shown' | 'finished' | 'skipped' }
 export function checkedTutorialRun(value: unknown, applicationVersion: string): TutorialRun {
   if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Tutoriallauf ist beschädigt.');
@@ -10,6 +10,7 @@ export function checkedTutorialRun(value: unknown, applicationVersion: string): 
   return { ...row };
 }
 export const lessons = [
+ {id:'npc-world',title:'NSCs als bestehende Individuen führen',text:'Unter NSCs und Monstergruppen suchst du einzelne Figuren nach Name, Status, Fraktion und Ort. Lege erzählerische NSCs mit Aussehen, Verhalten und Geschichte an; ein optionaler Kreaturverweis eröffnet dauerhafte HP und Begegnungsteilnahme. Fraktionshaltung plus persönlicher Modifikator ergeben verbündet, neutral oder feindlich. Besiegt sperrt neue Teilnahme, verändert keine HP und beendet keine laufende Maske. Reaktiviere die Figur ausdrücklich. Formulare werden als Arbeitsentwürfe gesichert, auch mit noch ungültigen Zahlen; NPC übernehmen bestätigt die Weltänderung.'},
   {id:'world-sources',title:'Begegnungen aus Ort und Fraktion',text:'Lege Fraktionen und Orte in Welt und Spielabend an. Unter Katalog und Encounter verbindest du die Fraktion mit einer Haupttabelle und ihren Beständen: leer ist unbegrenzt, 0 ist nicht verfügbar. Orte verknüpfen eigene Tabellen und Fraktionen. Wähle den Weltkontext für neue Vorschläge; alle gewählten Filter schneiden ihre Quellen. Vorschläge verbrauchen keinen Bestand. Nach Änderungen an Quellen oder Beständen erzeugst du die Vorschau neu.'},
   { id: 'campaign', title: 'Kampagne als Arbeitsraum', text: 'Lege eine Kampagne an oder übernimm eine v4-Dungeondatei als neue Kampagne. Der Import zeigt seine Grenzen vor der Übernahme. Die Quelldatei bleibt unverändert.' },
   { id: 'drawing-and-key', title: 'Raum und Key zusammen bearbeiten', text: 'Suche nach Raumname, Nummer oder Keytext. Ziehe Eckpunkte oder gib Meterkoordinaten ein. Der Text bleibt daneben bearbeitbar. Geschosse werden getrennt angezeigt. Gezeichnete Konturen sind noch keine physischen 3D-Räume.' },

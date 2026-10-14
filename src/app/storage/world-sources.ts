@@ -11,6 +11,7 @@ export function saveWorldSource(db:any,cam:string,input:WorldSource,expected:num
  const view=readWorldSources(db,cam),s=structuredClone(input),old=view.sources.find(x=>x.kind===s.kind&&x.id===s.id);
  if((old?.revision??null)!==expected)throw new Error('Weltquelle geändert. Gespeicherten Stand neu öffnen.');
  if(!['faction','location'].includes(s.kind)||!(s.kind==='faction'?view.factions:view.locations).some(x=>x.id===s.id)||!Array.isArray(s.tableIds)||!Array.isArray(s.factionIds)||!Array.isArray(s.stock)||s.tableIds.length>1000||s.factionIds.length>1000||s.stock.length>1000||new Set(s.tableIds).size!==s.tableIds.length||new Set(s.factionIds).size!==s.factionIds.length||new Set(s.stock.map(x=>x.creatureId)).size!==s.stock.length)throw new Error('Weltquelle und Verknüpfungen prüfen.');
+ if(s.disposition!==undefined&&(!Number.isSafeInteger(s.disposition)||Math.abs(s.disposition)>100))throw new Error('Fraktionshaltung benötigt −100 bis 100.');
  if(s.kind==='faction'&&(s.tableIds.length>1||s.factionIds.length)||s.kind==='location'&&s.stock.length)throw new Error('Fraktionen besitzen eine Haupttabelle; Orte verknüpfen Tabellen und Fraktionen.');
  for(const id of s.tableIds)if(!tables.some(t=>t.id===id&&(!t.trashed||old?.tableIds.includes(id))))throw new Error('Quelltabelle fehlt oder liegt im Papierkorb.');
  for(const id of s.factionIds)if(!view.factions.some(f=>f.id===id))throw new Error('Verknüpfte Fraktion fehlt.');

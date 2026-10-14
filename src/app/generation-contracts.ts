@@ -4,7 +4,7 @@ import type { EncounterParty, EncounterPlan, EncounterAssessment } from './encou
 import type { GeneratorPresetConfigV3 } from './generation/config';
 import type { EncounterComposition } from './generation/selector';
 import type { ItemCategory,ItemInput } from './progression';
-export interface WorldSource {kind:'faction'|'location';id:string;revision:number;tableIds:string[];factionIds:string[];stock:{creatureId:string;limit:number}[]}
+export interface WorldSource {disposition?:number;kind:'faction'|'location';id:string;revision:number;tableIds:string[];factionIds:string[];stock:{creatureId:string;limit:number}[]}
 export interface WorldSources {sources:WorldSource[];factions:{id:string;name:string}[];locations:{id:string;name:string}[]}
 export interface EncounterTable { id:string;revision:number;scope:'campaign'|'installation';name:string;description:string;entries:{creatureId:string;weight:string}[];habitats:string[];time:'any'|'day'|'night';lootTableId:string|null;trashed:boolean }
 export interface LootTableEntry {id:string;weight:string;minimum:number;maximum:number;item:{name:string;valueGold:string;category:ItemCategory}}
