@@ -4,9 +4,10 @@ import {enqueuePendingDamage} from '../../src/app/combat';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
   const damage=(id:string)=>({check:{id} as any,combatId:'combat',attackerId:'attacker'});
-  let queue=enqueuePendingDamage([],damage('first'));
-  queue=enqueuePendingDamage(queue,damage('second'));
-  queue=enqueuePendingDamage(queue,damage('first'));
+  let queue=enqueuePendingDamage([],damage('first'),'combat');
+  queue=enqueuePendingDamage(queue,damage('second'),'combat');
+  queue=enqueuePendingDamage(queue,damage('first'),'combat');
   assert.deepEqual(queue.map(entry=>entry.check.id),['first','second']);
   assert.deepEqual(queue.slice(1).map(entry=>entry.check.id),['second']);
+  assert.deepEqual(enqueuePendingDamage(queue,{...damage('stale'),combatId:'previous'},'combat'),queue);
 });
