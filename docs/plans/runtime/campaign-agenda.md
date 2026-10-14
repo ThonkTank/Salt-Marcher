@@ -33,6 +33,11 @@ Offene Entwürfe blockieren erneutes Öffnen. Refresh entfernt die alten Control
 verzögerte Bestätigungen gehören ausschließlich zu ihrem ursprünglichen Entwurf.
 Bei verlorener Antwort prüft die Agenda denselben Worldreceipt schreibfrei;
 spätere Rohfelder bleiben erhalten und die Frist wird nicht erneut angelegt.
+Die Änderungsprüfung vergleicht Ereignisdaten mit dem bestätigten Stand:
+gleichwertige Zeiteinheiten oder Datumsschreibweisen benötigen keinen weiteren
+Save; unveränderte Daten behalten auch Sekunden und Millisekunden. Nach einem
+bestätigten Receipt kann der Editor direkt schließen, sofern keine späteren
+Änderungen vorliegen.
 
 ## Nächste konkrete Prüfungen und Lieferung
 

@@ -79,3 +79,19 @@ test('an unknown event save is reconciled from its receipt without resending or 
  await until(()=>x.el('agenda-status').textContent?.includes('Speicherauftrag bestätigt')===true);
  assert.equal(x.el('agenda-name').value,'Spätere eigene Eingabe');assert.equal(writes,1);assert.equal(x.store.world(x.workspace.token).events[0]?.name,'Bestätigtes Ereignis');
 });
+
+test('a confirmed save recovery can close directly without saving the same event again',async t=>{
+ const x=await fixture(t),execute=window.campaign.executeWorld;let writes=0;
+ window.campaign.executeWorld=async c=>{writes++;await execute(c);throw new Error('Antwort verloren');};
+ x.click('Ereignis bearbeiten');x.el('agenda-name').value='Bestätigtes Ereignis';x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));
+ await until(()=>x.el('agenda-status').textContent?.includes('Eingaben bleiben erhalten')===true);x.click('Speicherauftrag prüfen');
+ await until(()=>x.el('agenda-status').textContent?.includes('Speicherauftrag bestätigt')===true);x.click('Schließen');
+ assert.equal(x.dialog.open,false);assert.equal(writes,1);
+});
+test('equivalent duration units do not require a redundant save',async t=>{
+ const x=await fixture(t);x.click('Ereignis bearbeiten');x.el('agenda-duration').value='60';x.el('agenda-duration-unit').value='second';x.el('agenda-event-form').dispatchEvent(new Event('input'));x.click('Schließen');assert.equal(x.dialog.open,false);
+});
+test('equivalent date spelling preserves the exact instant without a redundant save',async t=>{
+ const x=await fixture(t);x.click('Ereignis bearbeiten');x.el('agenda-year').value='001';x.el('agenda-hour').value='01';x.el('agenda-event-form').dispatchEvent(new Event('input'));x.click('Schließen');
+ assert.equal(x.dialog.open,false);assert.equal(x.store.world(x.workspace.token).events[0]?.startMs,x.event.startMs);
+});
