@@ -165,10 +165,18 @@ nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
    inzwischen im Metadatenentwurf erhalten; der Renderer behält sie beim Submit
    und der Writer bindet den Entwurfsverbrauch daran. `NarrativeDraft` und
    `FinishDraft` speichern jedoch noch keinen ungeklärten Command. Der separate
-   Abschlussentwurf bindet bisher nur die Statusrevision; seine eigene
-   ursprüngliche Notizbasis ist ohne Metadatenentwurf noch nicht persistent.
-   Zuerst diesen Anschluss bis Fresh und ausdrücklicher Legacyprüfung ergänzen,
-   dann den unbekannten Ausgang gemeinsam schließen. Nächster
+   Abschlussentwurf bindet jetzt ebenfalls Status- und ursprüngliche Notizrevision.
+   `finish-draft-contracts.ts` hält `noteRevision` optional für historische Rohdaten;
+   `finish-draft-ui.ts` erhält fehlende/alte Basen bei gewöhnlichem Editieren und
+   bietet ausdrückliche Übernahme. `narrative-ui.ts` übergibt die tatsächlich
+   geprüfte Notizbasis an den Abschluss und verwendet sie im Awardcommand.
+   `storage/finish-drafts.ts` prüft positive sichere Revisionswerte sowie die
+   gespeicherte Basis beim atomaren Consume; `storage/progression.ts` übergibt
+   beide Actionbasen. Kein SQLschemawechsel oder automatisches Legacyrewrite.
+   Fresh-/DOM-/SQLiteproben in `desktop-finish-note-basis.test.mjs` prüfen
+   verworfene Publikation mit unveränderten DBbytes, Legacyprüfung, rohe ungültige
+   Zahlen/Wortlaut, unabhängige Kopie, ausdrücklichen Abschluss und Receiptreplay.
+   Diese lokalen Belege ersetzen keine native Abschlussabnahme. Nächster
    Anschluss in `narrative-ui.ts` und bestehender Entwurfsspeicherung: vor dem
    Senden Command-ID, `progress`-Fingerprint, bestätigte Actionbasis und die
    betroffene Write-ID dauerhaft an das Entwurfsziel binden. Nach Replyverlust

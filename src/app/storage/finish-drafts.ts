@@ -15,7 +15,8 @@ function checkedOwner(o: FinishOwner) {
     !o.targetId ||
     o.targetId.length > 1000 ||
     !Number.isSafeInteger(o.revision) ||
-    o.revision < 0
+    o.revision < 0 ||
+    (o.noteRevision !== undefined && (!Number.isSafeInteger(o.noteRevision) || o.noteRevision < 1))
   )
     throw new Error("Abschlussziel ungültig.");
 }
@@ -23,7 +24,7 @@ function currentOwner(db: any, cam: string, o: FinishOwner) {
   checkedOwner(o);
   if (o.kind === "narrative") {
     const n = readNarrative(db, cam, o.targetId);
-    return { revision: n.state.revision, closed: !!n.state.awardId };
+    return { revision: n.state.revision, noteRevision: n.noteRevision, closed: !!n.state.awardId };
   }
   const r = db
     .prepare("SELECT * FROM combat WHERE campaign_id=? AND id=?")
@@ -86,7 +87,7 @@ function stored(db: any, cam: string, o: FinishOwner): FinishDraft | null {
 export function readFinishDraft(db: any, cam: string, o: FinishOwner) {
   const current = currentOwner(db, cam, o),
     d = stored(db, cam, o);
-  if (d && d.revision > current.revision)
+  if (d && (d.revision > current.revision || d.kind === "narrative" && d.noteRevision !== undefined && d.noteRevision > current.noteRevision!))
     throw new Error("Abschlussentwurf stammt aus einem neueren Stand.");
   return d;
 }
@@ -103,7 +104,7 @@ export function keepFinishDraft(
         old = stored(db, cam, d),
         payload = JSON.stringify(d);
       if (old?.writeId === d.writeId && JSON.stringify(old) === payload) return;
-      if (current.closed || d.revision > current.revision)
+      if (current.closed || d.revision > current.revision || d.kind === "narrative" && d.noteRevision !== undefined && d.noteRevision > current.noteRevision!)
         throw new Error("Abschlussziel bereits abgeschlossen oder geändert.");
       if ((old?.writeId ?? null) !== expected)
         throw new Error("Abschlusseingabe inzwischen geändert.");
@@ -121,7 +122,7 @@ export function consumeFinishDraft(
 ) {
   const d = stored(db, cam, o);
   if (
-    (d && (d.writeId !== writeId || d.revision !== o.revision)) ||
+    (d && (d.writeId !== writeId || d.revision !== o.revision || o.kind === "narrative" && (d.noteRevision === undefined || d.noteRevision !== o.noteRevision))) ||
     (!d && writeId !== undefined)
   )
     throw new Error(

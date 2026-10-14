@@ -4,6 +4,8 @@ export type FinishOwner = {
   kind: "combat" | "narrative";
   targetId: string;
   revision: number;
+  // Historical narrative drafts can have an unknown note basis.
+  noteRevision?: number;
 };
 export type RewardItemDraft = Omit<ItemInput, "quantity"> & {
   quantity: string;

@@ -398,7 +398,7 @@ export async function showNarrative(
         const basis = data;
         await prepareFinish(basis.state.contributors, undefined, {
           workspace: w!,
-          owner:{kind:'narrative',targetId:note!.id,revision:basis.state.revision},
+          owner:{kind:'narrative',targetId:note!.id,revision:basis.state.revision,noteRevision:basis.noteRevision},
           poolXp: basis.state.poolXp,
           items: basis.state.items,
         });
@@ -436,7 +436,7 @@ export async function showNarrative(
                 noteId: note!.id,
                 expectedRevision: draft.revision,
                 finishDraftWriteId:draft.writeId,
-                expectedNoteRevision: basis.noteRevision,
+                expectedNoteRevision: draft.noteRevision!,
                 sceneId: null,
                 poolXp: rewards.poolXp,
                 noXp: rewards.noXp,
