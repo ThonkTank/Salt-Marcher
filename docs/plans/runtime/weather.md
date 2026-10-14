@@ -28,7 +28,9 @@ für Schreibweg und gespeicherte Overrides: bekannte Art, endliche Werte,
 gültige Textfelder und eine Liste aus Ambiencetexten. Vorhandene Wirkungsgrenzen
 bleiben erhalten. Für Wind gibt es keine erfundene Höchstgeschwindigkeit.
 `weatherOverride` prüft auch den gespeicherten Wrapper und den ausdrücklichen
-Automatikwert `null`. Die Backupprüfung benutzt denselben Reader.
+Automatikwert `null`. Die Backupprüfung benutzt denselben Reader. Vor Setzen oder Freigeben prüft
+der Writer auch den bisherigen Datensatz, sodass normale Änderungen keine
+beschädigten Originalbytes überschreiben.
 
 Die Prüfungen ändern keine gespeicherten Nutzertexte oder gültigen Altwerte.
 Es gibt keine Datenmigration. Ein beschädigter Bestand wird nicht still durch
@@ -38,7 +40,8 @@ Standardwetter ersetzt und ersetzt auch keine frühere sichere Exportdatei.
 
 `tests/desktop-weather-integrity.test.mjs` reproduzierte sechs Gegenbeispiele
 vor der Korrektur. Acht echte SQLite-Storewege prüfen ungültige Eingabe ohne
-State-/History-/Receiptwirkung, beschädigte gespeicherte Art mit erhaltenen
+State-/History-/Receiptwirkung, beschädigte gespeicherte Art einschließlich
+abgewiesener normaler Änderung/Freigabe mit erhaltenen
 DB-/Backup-/Exportbytes und gültigen Override über bestätigte Zeit,
 Campaignwechsel/Fresh und ausdrückliche Freigabe. Die Automatik danach entspricht
 `weatherAt` am bestätigten aktuellen Scenezeitpunkt und Ort. Ein Split mit zwei
@@ -71,7 +74,12 @@ besitzen weiterhin eigene Fachabnahmen.
    erster Zeitwirkung muss den gesamten betreffenden Command zurückrollen.
    Retry erzeugt keine doppelten Hinweise/History-/Zeitfolgen. Playerperception
    und Music/Ambience folgen dem bestätigten Focus ohne GM-Texte im Playerframe.
-4. `world-ui.ts`: offene Wetter-/Phänomeneingaben, ursprüngliche Revision,
+4. `world-contracts.ts`, `storage/world.ts`, `world-ui.ts`: ursprüngliche
+   Overridebasis zusätzlich zur Scene-Uhr prüfen. Der jetzige Setter bindet nur
+   `expectedClockRevision`; eine andere Wetteränderung bei unveränderter Uhr
+   wird dadurch noch nicht als Konflikt erkannt. Den Override-Stand im Reader
+   liefern und vor Setzen/Freigeben im Writer vergleichen. Danach offene
+   Wetter-/Phänomeneingaben, ursprüngliche Revision,
    A/B/A-Antworten und unklarer Commitausgang/Workingdraft prüfen. Native
    Tastatur/IME/Fokus/Cancel und echter Prozessabbruch gesondert abnehmen;
    danach Query-/Renderkosten am tatsächlichen Größenfall messen.
