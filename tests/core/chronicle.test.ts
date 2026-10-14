@@ -103,6 +103,21 @@ test("live play records a confirmed moment directly in the campaign chronicle",(
     assert.deepEqual(entry&&{category:entry.category,summary:entry.summary,people:entry.people,followUp:entry.followUp},{category:"narrative",summary:"Ada kommt nachts zurück.",people:["Ada"],followUp:{kind:"quest",id:followUpId}});
     const quest=store.preparation(token).notes.find(row=>row.note.id===followUpId)?.note;
     assert.deepEqual(quest&&{kind:quest.kind,title:quest.title,gmNotes:quest.gmNotes},{kind:"quest",title:"Der Müller kennt den Kult",gmNotes:"Ada kommt nachts zurück."});
-    assert.deepEqual(store.narrative(token,followUpId).state,{noteId:followUpId,revision:0,status:"open",locationId,contributors:[hero.id],poolXp:0,items:[],awardId:null});
+    assert.deepEqual(store.narrative(token,followUpId).state,{noteId:followUpId,revision:1,status:"open",locationId,contributors:[hero.id],poolXp:0,items:[],awardId:null});
+  }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+test("live play brackets a session recap with persistent markers",()=>{
+  const root=mkdtempSync(join(tmpdir(),"live-session-marker-")),store=new CampaignStore(join(root,"campaign.sqlite"),"test");
+  try{
+    const campaign=store.create("Abendrunde"),token=store.activate(campaign.id).token;
+    const scene=store.executeLive({commandId:"scene",campaignId:campaign.id,token,action:{kind:"initialize",expectedRosterRevision:0}}).scene!;
+    store.executeLive({commandId:"start",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"start",summary:""}});
+    store.executeLive({commandId:"end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:"Weiter im Keller."}});
+    const markers=store.chronicle(token).entries.filter(entry=>entry.sessionMarker);
+    assert.deepEqual(markers.map(entry=>({marker:entry.sessionMarker,title:entry.title,summary:entry.summary})),[
+      {marker:"end",title:"Spielabend beendet",summary:"Weiter im Keller."},
+      {marker:"start",title:"Spielabend begonnen",summary:""},
+    ]);
   }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import type {ChronicleEntry} from '../../src/app/chronicle-contracts';
+import {liveSessionRecap} from '../../src/app/live-session-recap';
+
+const entry=(id:string,sessionMarker?:'start'|'end'):ChronicleEntry=>({id,recordedAt:'2026-10-14T12:00:00.000Z',category:'world',title:id,summary:'',people:[],scene:null,location:null,...(sessionMarker?{sessionMarker}:{})});
+
+test('live session recap contains only events after the active start marker',()=>{
+  assert.deepEqual(liveSessionRecap([entry('new'),entry('start','start'),entry('old')]),{open:true,marker:entry('start','start'),entries:[entry('new')]});
+});
+
+test('live session recap retains the most recently completed session',()=>{
+  assert.deepEqual(liveSessionRecap([entry('end','end'),entry('event'),entry('start','start'),entry('older')]),{open:false,marker:entry('end','end'),entries:[entry('event')]});
+});
+
+test('the latest boundary preserves session status outside the visible history window',()=>{
+ const events=[entry('newest'),entry('older')],start=entry('outside','start');assert.deepEqual(liveSessionRecap(events,start),{open:true,marker:start,entries:events});const end=entry('finished','end');assert.deepEqual(liveSessionRecap(events,end),{open:false,marker:end,entries:[]});
+});

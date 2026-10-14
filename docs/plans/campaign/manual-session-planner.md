@@ -40,6 +40,27 @@ keine native Desktoppersistenz.
   Freie Texte, Quellpakete und archivierte Originalbytes bleiben unverändert.
   Laufende Scenes behalten ihren übernommenen Inhalt und ihre Herkunft.
 
+## Einzelne Szenen wiederverwenden
+
+`session-copy-ui.ts` lässt Besuche auswählen, ordnen und als neuen Abend oder
+am Ende eines bestehenden Plans übernehmen. `copy-visits` prüft Quell- und
+Zielbasis in derselben Transaktion wie neue Besuchsdetails und Receipt.
+Dialog-, Source-/Target- und Controlstände bleiben getrennt gebunden; entfernte
+Controls und verspätete Reads/Writes ändern keine neuere Auswahl.
+[Dialogprüfung](../../../tests/desktop-session-copy-context.test.mjs) und
+[Speicherprüfung](../../../tests/desktop-session-copy-integrity.test.mjs) prüfen
+Reopen, Auswahl, Antwortreihenfolge, Quellschutz, Append, unabhängige offene
+Rewards, Replay und atomaren Rollback.
+
+Offen: den Sessionreceipt an den bestehenden Commitstatus anschließen und
+ungeklärte Originalcommands vor Send dauerhaft sichern. Auswahländerung/Reset
+verwerfen bisher den lokalen Retrystand. Nach Fresh muss eine verlorene Antwort
+am gleichen Command geklärt werden, damit Append keine Besuche verdoppelt.
+Die Quellenliste liest weiterhin die vollständige Preparation; 40 sichtbare
+Karten begrenzen den Quellaufwand nicht. Gebuchte Beute, mehrfach referenzierte
+Worldgruppen, Trash/Restore sowie native Fokus-, Tastatur- und Lastgrenzen
+benötigen ihre betroffenen Abnahmen.
+
 ## Geprüft und noch offen
 
 [Ersetzung und Kopie](../../../tests/desktop-plan-replacement-copy.test.mjs)

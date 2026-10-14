@@ -106,6 +106,7 @@ import "./core/live-player-cues.test";
 import "./core/live-knowledge.test";
 import "./core/live-party-reference.test";
 import "./core/live-moment-drafts.test";
+import "./core/live-session-recap.test";
 import "./core/object-gestures.test";
 import "./core/extension-lifecycle.test";
 import "./core/extension-recovery-ui.test";

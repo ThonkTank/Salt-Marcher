@@ -12,13 +12,19 @@ const require = createRequire(import.meta.url);
 buildSync({ stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {newLocation} from './src/features/location/location-schema';",resolveDir:process.cwd(),loader:'ts'}, outfile: '.build/planner-player-visual-contract/live-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'] });
 buildSync({ stdin: { contents: "export * from './live'; export { initWorld, activateWorld } from './world-ui';export {initPlayerUI,deactivatePlayer} from './player-ui';", resolveDir: path.resolve('src/app'), sourcefile: 'live-world-dom.ts' }, outfile: '.build/planner-player-visual-contract/live-ui.cjs', bundle: true, platform: 'node', format: 'cjs' });
 const tick = () => new Promise(resolve => setImmediate(resolve));
+function liveDOM(){
+ const result=parseHTML(readFileSync('src/app/index.html','utf8')),decorate=d=>{d.close=()=>{d.open=false;};d.showModal=()=>{d.open=true;};return d;},create=result.document.createElement.bind(result.document);
+ for(const dialog of result.document.querySelectorAll('dialog'))decorate(dialog);
+ result.document.createElement=(tag,...args)=>{const n=create(tag,...args);return tag==='dialog'?decorate(n):n;};return result;
+}
+
 
 for (const field of ['character-name', 'running-notes', 'running-read-aloud']) {
   test(`leaving live view saves ${field} input made during a delayed acknowledgement`, async () => {
     const root = mkdtempSync(path.join(tmpdir(), 'live-dom-'));
     const { CampaignStore } = require('../.build/planner-player-visual-contract/live-store.cjs');
     const store = new CampaignStore(path.join(root, 'store.sqlite'));
-    const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+    const { window, document } = liveDOM();
     const persisted=new Map();window.localStorage={getItem:key=>persisted.get(key)??null,setItem:(key,value)=>persisted.set(key,String(value)),removeItem:key=>persisted.delete(key)};
     for (const select of document.querySelectorAll('select')) Object.defineProperty(select, 'value', { value: '', writable: true });
     const saved = { Event:globalThis.Event,window: globalThis.window, document: globalThis.document, setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout };
@@ -71,7 +77,7 @@ for (const field of ['character-name', 'running-notes', 'running-read-aloud']) {
 for(const field of ['character-name','running-notes','running-read-aloud'])test(`text autosaving permits the first create-character intent and serializes its write: ${field}`,async()=>{
   const root=mkdtempSync(path.join(tmpdir(),'live-intent-'));
   const {CampaignStore}=require('../.build/planner-player-visual-contract/live-store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite'));
-  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
+  const {window,document}=liveDOM();
   const persisted=new Map();window.localStorage={getItem:key=>persisted.get(key)??null,setItem:(key,value)=>persisted.set(key,String(value)),removeItem:key=>persisted.delete(key)};
   for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});
   const saved=Object.fromEntries(['window','document','Event','setTimeout','clearTimeout'].map(k=>[k,globalThis[k]]));
@@ -108,7 +114,7 @@ for(const field of ['character-name','running-notes','running-read-aloud'])test(
 
 for(const {kind,saveFails} of [{kind:'follow'},{kind:'location'},{kind:'location',saveFails:true},{kind:'knowledge'}])test(kind==='knowledge'?'prepared read-aloud text is adopted and saved without publishing player content':saveFails?'failed location save cannot grant publication authority':`immediate ${kind} publication uses the visible location draft after saving it`,async t=>{
  const root=mkdtempSync(path.join(tmpdir(),'live-player-location-')),{CampaignStore,newLocation}=require('../.build/planner-player-visual-contract/live-store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite'));
- const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved=Object.fromEntries(['window','document','Event','setTimeout','clearTimeout'].map(k=>[k,globalThis[k]]));
+ const {window,document}=liveDOM(),saved=Object.fromEntries(['window','document','Event','setTimeout','clearTimeout'].map(k=>[k,globalThis[k]]));
  const persisted=new Map();window.localStorage={getItem:key=>persisted.get(key)??null,setItem:(key,value)=>persisted.set(key,String(value)),removeItem:key=>persisted.delete(key)};
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});
  Object.assign(globalThis,{window,document,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
@@ -122,7 +128,7 @@ for(const {kind,saveFails} of [{kind:'follow'},{kind:'location'},{kind:'location
  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aTfcAAAAASUVORK5CYII=','base64'),sha256=createHash('sha256').update(image).digest('hex');mkdirSync(root+'/player-images');writeFileSync(root+'/player-images/'+sha256+'.png',image);store.registerPlayerAsset(context.token,{id:artId,kind:'location',subjectId:locationId,title:'Ortsbild',sha256,extension:'.png',bytes:image.length});
  const readAloud='  Öffentlich vorlesen.\r\n';if(kind==='knowledge')store.changePreparation({...command(null),change:{kind:'note',expectedRevision:null,note:{version:1,id:randomUUID(),revision:1,kind:'rumor',title:'Gerücht',readAloud,gmNotes:'Nur für den GM',relations:[],creatureId:null,deleted:false}}});
  const writes=[],messages=[],ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
- window.campaign={live:async token=>ok(()=>store.live(token)),preparation:async token=>ok(()=>store.preparation(token)),progress:async token=>ok(()=>store.progress(token)),ledgerParties:async token=>ok(()=>store.ledgerParties(token)),sceneWorld:async(token,id)=>ok(()=>store.sceneWorld(token,id)),executeLive:async c=>saveFails&&c.action.kind==='scene-content'?{ok:false,error:'Ortswechsel nicht gespeichert'}:ok(()=>store.executeLive(c)),playerView:async token=>ok(()=>store.playerView(token)),executePlayer:async c=>{writes.push(c);return ok(()=>store.executePlayer(c));},playerWindow:async(token,open)=>ok(()=>store.playerWindowOpen(token,open))};
+ window.campaign={chronicle:async token=>ok(()=>store.chronicle(token)),narrative:async(token,id)=>ok(()=>store.narrative(token,id)),live:async token=>ok(()=>store.live(token)),preparation:async token=>ok(()=>store.preparation(token)),progress:async token=>ok(()=>store.progress(token)),ledgerParties:async token=>ok(()=>store.ledgerParties(token)),sceneWorld:async(token,id)=>ok(()=>store.sceneWorld(token,id)),executeLive:async c=>saveFails&&c.action.kind==='scene-content'?{ok:false,error:'Ortswechsel nicht gespeichert'}:ok(()=>store.executeLive(c)),playerView:async token=>ok(()=>store.playerView(token)),executePlayer:async c=>{writes.push(c);return ok(()=>store.executePlayer(c));},playerWindow:async(token,open)=>ok(()=>store.playerWindowOpen(token,open))};
  for(const method of ['treasures','treasure','sceneDesk','combat','chase','scenePreparation','sceneShops','sceneRules','progressHistory','ledger','ledgerItem'])window.campaign[method]=async(...args)=>ok(()=>store[method](...args));
  delete require.cache[require.resolve('../.build/planner-player-visual-contract/live-ui.cjs')];ui=require('../.build/planner-player-visual-contract/live-ui.cjs');
  const status=(text,error)=>messages.push({text,error});ui.initWorld(status,()=>ui.flushLive(),async()=>{},async()=>{});ui.activateWorld(context);ui.initLive(status,async()=>{});ui.initPlayerUI(status,()=>context,()=>ui.flushLive());ui.activateLive(context);await ui.openLive();

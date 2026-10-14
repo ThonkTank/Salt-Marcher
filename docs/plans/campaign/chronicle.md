@@ -25,8 +25,13 @@ Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
   damalige Figuren, Ort und Weltzeit. Er bestätigt keine XP, Beute oder Kampfenden.
   Optional entsteht atomar eine offene Quest oder ein Gerücht im vorhandenen
   Wissensbinder; die Chronik öffnet diesen Inhalt über seinen Verweis.
+- **Spielabend abgrenzen:** Anfang und Ende werden ausdrücklich in der Chronik
+  gespeichert. Der Writer erlaubt nur einen offenen Abend und bewahrt Replay.
+  Die letzte Grenze wird unabhängig vom 2.000-Ereignis-Ausschnitt gelesen;
+  gekürzte Rückblicke sind sichtbar markiert. Ein ausgefallener Chronikread
+  sperrt diese Aktionen, lässt die laufende Gruppe und ihre Notizen nutzbar.
 - **Entwürfe behalten:** Momentfelder bleiben innerhalb des laufenden Prozesses
-  bei ihrer Gruppe. Submit bindet Wortlaut, Folgespur und Fokus vor dem Flush;
+  bei ihrer Gruppe, Rückblicknotizen bei ihrer Campaign. Submit bindet Wortlaut, Folgespur und Fokus vor dem Flush;
   ältere Bestätigungen leeren keine neueren Eingaben. Campaignwechsel/Fresh
   besitzen noch keine dauerhafte Sicherung dieser Rohfelder.
 - **Kopieren:** Unabhängige Kopien binden strukturelle Gruppen-, Figuren- und
@@ -43,7 +48,7 @@ Speicher-/Controllerpfade, Replay, Rollback, Fresh, Kopie, Filter und verspätet
 Antworten. Der [native Suchnachweis](../../reference/gm-ux-qa/2026-10-13-chronicle-search.md)
 umfasst einen älteren Treffer hinter 2.000 Ereignissen, gefilterte Markdownausgabe,
 Fresh und kontrollierten IPC-Lesefehler. Er belegt keine vollständige Historie,
-Hard-Crash-Wiederaufnahme oder native Abnahme der neuen Folgespur.
+Hard-Crash-Wiederaufnahme oder native Abnahme der neuen Folgespur/Spielabendgrenzen.
 
 ## Nächste ausführbare Lieferung
 
@@ -61,7 +66,7 @@ Hard-Crash-Wiederaufnahme oder native Abnahme der neuen Folgespur.
    Kontextmaps laden derzeit ganze Kampagnentabellen. Kampfawardgruppen dürfen
    an Seitengrenzen keine Beteiligten verlieren. Vollständiger Export benötigt
    denselben Snapshot, begrenzte Portionen, Abbruch und Fortschritt.
-4. **Moment-Wiederaufnahme schließen.** Rohfelder vor Campaignwechsel/Fresh
+4. **Live-Wiederaufnahme schließen.** Moment- und Rückblickrohfelder vor Fresh
    dauerhaft sichern. Einen unbekannten Commandausgang am gleichen Command prüfen,
    keine neue ID als automatischer Retry. Native IME, Gruppenwechsel, Folgespur-
    Navigation und neue Eingaben während Speichern/Refresh prüfen.

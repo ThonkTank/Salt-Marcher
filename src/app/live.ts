@@ -20,11 +20,15 @@ import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
 import {liveMomentSavedMessage,canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 import type {NarrativeView} from './narrative-contracts';
+import type {ChronicleView} from './chronicle-contracts';
+import {liveSessionRecap} from './live-session-recap';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 let context: Workspace | null = null, data: LiveView | null = null, sources: Preparation | null = null;
+let sessionChronicle:ChronicleView|null=null,sessionChronicleError='',sessionChronicleRequest=0;
+const recapDrafts=new Map<string,string>();
 let selected: string | null = null, characterDraft: Character | null = null, sceneDraft: LiveScene | null = null;
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
 let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
@@ -43,9 +47,11 @@ const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes,
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:(sceneDraft??data.scene)?.locationId??null}:null;
 export function activateLive(workspace: Workspace) {
+  if(context)recapDrafts.set(context.campaign.id,value('live-session-summary'));
+  get<HTMLTextAreaElement>('live-session-summary').value=workspace?recapDrafts.get(workspace.campaign.id)??'':'';
   liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
-  context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
+  context = workspace; data = null; sources = null;sessionChronicle=null;sessionChronicleError='';sessionChronicleRequest++; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
   get<HTMLInputElement>('live-knowledge-search').value='';
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
@@ -57,11 +63,11 @@ export function activateLive(workspace: Workspace) {
 }
 export async function openLive(planId?: string, visitId?: string) {
   if (!context) { tell('Bitte zuerst eine Kampagne öffnen.', true); return; }
-  const token = context.token;
+  const token = context.token,recapRequest=++sessionChronicleRequest;
   try {
-    const live = unwrap(await window.campaign.live(token)), prep = unwrap(await window.campaign.preparation(token, ''));
+    const [liveResult,prepResult,chronicleResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, ''),readSessionChronicle(token)]),live=unwrap(liveResult),prep=unwrap(prepResult);
     if (context?.token !== token) return;
-    data = live; sources = prep;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
+    data = live; sources = prep;if(recapRequest===sessionChronicleRequest){sessionChronicle=chronicleResult.ok?chronicleResult.value:null;sessionChronicleError=chronicleResult.ok?'':chronicleResult.error;}narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
     characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
     sceneDraft = resumed && live.scene ? structuredClone(live.scene) : null;
     render();
@@ -86,7 +92,7 @@ export async function addLiveNpc(id:string){if(await ensureLiveRuntime())await a
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
   sessionNavigatorBusy(on&&!textSave);
-  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save']) get<HTMLButtonElement>(id).disabled = on && !textSave;
+  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-');
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
@@ -143,7 +149,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
     try {
       const ack = unwrap(await window.campaign.executeLive(command));
       if (context?.token !== token) return null;
-      if((action.kind==='live-moment'||action.kind==='scene-content')&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
+      if((action.kind==='live-moment'||action.kind==='scene-content'||action.kind==='session-marker')&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
       mergeAck(ack, action); tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;
@@ -257,10 +263,10 @@ function narrativeFacts(view:NarrativeView){const state=view.state,location=stat
 function renderLiveKnowledge(){
   const root=get('live-knowledge-results');root.replaceChildren();const query=value('live-knowledge-search').trim().toLocaleLowerCase('de');
   const found=findLiveKnowledge((sources?.notes??[]).filter(row=>!row.trashed&&row.note.kind!=='rule'),query,30,row=>preparedNoteIds.has(row.note.id)),rows=found.rows;get('live-knowledge-result').textContent=rows.length===found.total?found.total+' Einträge angezeigt.':rows.length+' von '+found.total+' Einträgen angezeigt – Suche präzisieren.';
-  for(const row of rows){const note=row.note,card=document.createElement('article'),heading=document.createElement('div'),title=document.createElement('h4'),kind=document.createElement('small'),actions=document.createElement('div');heading.className='toolbar';title.textContent=note.title||'Unbenannter Eintrag';kind.textContent=({npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht'})[note.kind as 'npc'|'faction'|'quest'|'rumor']+(preparedNoteIds.has(note.id)?' · Mit aktuellem Besuch verknüpft':'');heading.append(title,kind);actions.className='toolbar';
-    if(note.readAloud){const publicText=document.createElement('pre'),use=document.createElement('button');publicText.textContent=note.readAloud;publicText.className='live-knowledge-public';use.type='button';use.textContent='Als Vorlesetext einsetzen';use.onclick=()=>useKnowledgeReadAloud(note.readAloud,note.title);card.append(heading,publicText);actions.append(use);}else card.append(heading);
-    if(note.kind==='npc'){const portrait=document.createElement('button');portrait.type='button';portrait.textContent='Porträt zeigen';portrait.onclick=()=>void showLiveNpc(note.id);actions.append(portrait);}
-    if(note.kind==='quest'||note.kind==='rumor'){const status=document.createElement('p'),open=document.createElement('button'),view=narrativeCache.get(note.id),problem=narrativeProblems.get(note.id);status.className='caption';status.textContent=view?narrativeFacts(view):problem?'Status nicht verfügbar: '+problem:'Status wird geladen…';open.type='button';open.textContent=view?.award?'Abschluss ansehen':'Verwalten / abschließen';open.onclick=()=>void openKnowledgeNote(note.id);card.append(status);actions.append(open);if(!view&&!problem)loadLiveNarrative(note.id);}
+  for(const row of rows){const note=row.note,card=document.createElement('article'),heading=document.createElement('div'),title=document.createElement('h4'),kind=document.createElement('small'),actions=document.createElement('div');heading.className='toolbar';title.textContent=note.title||'Unbenannter Eintrag';kind.textContent=({npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht'})[note.kind as 'npc'|'faction'|'quest'|'rumor']+(preparedNoteIds.has(note.id)?' · Mit aktuellem Besuch verknüpft':'');heading.append(title,kind);actions.className='toolbar';const token=context?.token,sceneId=data?.scene?.id,focus=data?.focusRevision,current=()=>context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focus&&root.contains(card);
+    if(note.readAloud){const publicText=document.createElement('pre'),use=document.createElement('button');publicText.textContent=note.readAloud;publicText.className='live-knowledge-public';use.type='button';use.textContent='Als Vorlesetext einsetzen';use.onclick=()=>{if(current())useKnowledgeReadAloud(note.readAloud,note.title);};card.append(heading,publicText);actions.append(use);}else card.append(heading);
+    if(note.kind==='npc'){const portrait=document.createElement('button');portrait.type='button';portrait.textContent='Porträt zeigen';portrait.onclick=()=>{if(current())void showLiveNpc(note.id,current).catch(error=>{if(current())tell((error as Error).message,true);});};actions.append(portrait);}
+    if(note.kind==='quest'||note.kind==='rumor'){const status=document.createElement('p'),open=document.createElement('button'),view=narrativeCache.get(note.id),problem=narrativeProblems.get(note.id);status.className='caption';status.textContent=view?narrativeFacts(view):problem?'Status nicht verfügbar: '+problem:'Status wird geladen…';open.type='button';open.textContent=view?.award?'Abschluss ansehen':'Verwalten / abschließen';open.onclick=()=>{if(current())void openKnowledgeNote(note.id).catch(error=>{if(current())tell((error as Error).message,true);});};card.append(status);actions.append(open);if(!view&&!problem)loadLiveNarrative(note.id);}
     if(note.gmNotes){const details=document.createElement('details'),summary=document.createElement('summary'),gm=document.createElement('pre');summary.textContent='GM-Notizen';gm.textContent=note.gmNotes;details.append(summary,gm);card.append(details);}card.append(actions);root.append(card);
   }
   if(!rows.length){const empty=document.createElement('p');empty.className='caption';empty.textContent=query?'Kein vorbereitetes Wissen gefunden.':'Noch keine NSCs, Fraktionen, Quests oder Gerüchte vorbereitet.';root.append(empty);}
@@ -279,7 +285,7 @@ function renderScene() {
   }
   if (current && !sources?.locations.some(l => l.document.id === current)) { const option = document.createElement('option'); option.value = current; option.textContent = 'Ort nicht verfügbar'; option.disabled = true; select.append(option); }
   select.value = current ?? '';
-  renderNpcChoices();
+  renderNpcChoices();renderLiveSession();
   renderLiveKnowledge();renderSceneMeta(); renderGroups();
 }
 function groupPeople(id:string){return data?.roster.filter(c=>c.active&&c.sceneId===id).map(c=>c.profile.name).join(', ')||'Leere Party';}
@@ -289,6 +295,27 @@ function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'
 function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-moment-category') as LiveMomentCategory,title:value('live-moment-title'),summary:value('live-moment-summary'),followUp:value('live-moment-follow-up') as LiveMomentDraft['followUp']};}
 function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;get<HTMLSelectElement>('live-moment-follow-up').value=draft.followUp;}
 function renderLiveMomentDraft(){const next=liveMomentDrafts.switchTo(data?.scene?.id??null,currentLiveMomentDraft());if(next.changed){writeLiveMomentDraft(next.draft);get('live-moment-result').textContent='';}}
+function renderLiveSession(){
+  const recap=liveSessionRecap(sessionChronicle?.entries??[],sessionChronicle?.latestSessionMarker),status=get('live-session-status'),list=get('live-session-events');list.replaceChildren();
+  get<HTMLButtonElement>('live-session-start').hidden=recap.open;get<HTMLButtonElement>('live-session-end').hidden=!recap.open;get<HTMLButtonElement>('live-session-start').disabled=!!sessionChronicleError||intentBlocked();get<HTMLButtonElement>('live-session-end').disabled=!!sessionChronicleError||intentBlocked();get<HTMLTextAreaElement>('live-session-summary').hidden=!recap.open;
+  if(sessionChronicleError)status.textContent='Rückblick nicht verfügbar: '+sessionChronicleError;
+  else if(!recap.marker)status.textContent='Noch kein Spielabend markiert.';
+  else{const when=new Date(recap.marker.recordedAt),label=Number.isNaN(when.valueOf())?'':when.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'});status.textContent=recap.open?'Läuft seit '+label+' · '+recap.entries.length+' bestätigte Ereignisse':'Letzter Spielabend beendet '+label+' · '+recap.entries.length+' bestätigte Ereignisse'+(recap.marker.summary?' · '+recap.marker.summary:'');}
+  if(sessionChronicle?.truncated)status.textContent+=' · Gekürzter Chronikausschnitt; weitere Ereignisse über die Chroniksuche.';
+  for(const entry of recap.entries.slice(0,12)){const item=document.createElement('li'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=entry.title;span.textContent=[entry.summary,entry.scene&&'Gruppe: '+entry.scene,entry.location&&'Ort: '+entry.location].filter(Boolean).join(' · ');item.append(strong);if(span.textContent)item.append(span);list.append(item);}
+  get('live-session-more').hidden=recap.entries.length<=12;
+}
+async function readSessionChronicle(token:string):Promise<Result<ChronicleView>>{try{return await window.campaign.chronicle(token);}catch(error){return{ok:false,error:(error as Error).message};}}
+async function refreshLiveSession(){const token=context?.token,n=++sessionChronicleRequest;if(!token)return;const result=await readSessionChronicle(token);if(context?.token!==token||n!==sessionChronicleRequest)return;if(result.ok){sessionChronicle=result.value;sessionChronicleError='';}else sessionChronicleError=result.error;renderLiveSession();}
+async function markLiveSession(marker:'start'|'end'){
+ const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,summary=marker==='end'?value('live-session-summary'):'';
+ const current=()=>context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focusRevision;
+ if(!token||!sceneId||sessionChronicleError||!sessionChronicle)return;
+ try{if(!await flushLive()||!current())return;const ack=await execute({kind:'session-marker',sceneId,expectedRevision:data!.scene!.revision,marker,summary});if(!ack||!current())return;
+  const unchanged=value('live-session-summary')===summary;if(marker==='end'&&unchanged)get<HTMLTextAreaElement>('live-session-summary').value='';
+  get('live-session-result').textContent=(marker==='start'?'Spielabend begonnen.':'Spielabend beendet. Rückblick gespeichert.')+(marker==='end'&&!unchanged?' Neuere Notiz bleibt erhalten.':'');await refreshLiveSession();
+ }catch(error){if(current()){tell((error as Error).message,true);await refreshLiveSession();}}
+}
 function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
 function renderGroups() {
   const select = get<HTMLSelectElement>('scene-focus'); select.replaceChildren();
@@ -396,9 +423,11 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
       let refreshProblem=false;if(followUp){try{const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(!current())return;refreshProblem=true;}}
       const unchanged=canClearSavedLiveMoment(sceneId,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());
       if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());get<HTMLInputElement>('live-moment-title').focus();}
-      get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
+      get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);await refreshLiveSession();
     }catch(error){if(current())tell((error as Error).message,true);}})();
   };
+  get('live-session-start').onclick=()=>void markLiveSession('start');
+  get('live-session-end').onclick=()=>void markLiveSession('end');
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick=()=>void previewPlannedVisit(value('adoption-plan'),value('adoption-visit')).catch(e=>tell(e.message,true));
   get('adoption-cancel').onclick = () => { adoption = null; get<HTMLDialogElement>('adoption-dialog').close(); };
