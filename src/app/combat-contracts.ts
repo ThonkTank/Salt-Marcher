@@ -8,6 +8,7 @@ export interface Combatant {role?:import('./npc-contracts').NpcRole;
   initiative: number; initiativeBonus: number; armorClass: number;
   hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean;
   death?:CharacterHealth['death'];deathLast?:{result:DeathSaveResult;roll:number|null};
+  concentrationChecks?:{damage:number;dc:number}[];concentrationLast?:{damage:number;dc:number;roll:number|null;modifier:number;total:number|null;success:boolean};
   /** Missing means a legacy known value; false denotes an uninitialized PC. */
   healthKnown?: boolean;
   xp?: number; countForMultiplier?: boolean; sourceId?: string; sourceOrdinal?: number; worldActorId?:string;worldActorRevision?:number;sourceEntryId?:string; partitionKind?:'mob'|'individual';
@@ -35,6 +36,8 @@ export type CombatAction =
   | { kind: 'heal'; participantId: string; amount: number }
   | { kind: 'death'; participantId:string;result:DeathSaveResult }
   | { kind: 'death-roll'; participantId:string }
+  | { kind:'concentration-roll';participantId:string;modifier:number }
+  | { kind:'concentration';participantId:string;success:boolean }
   | { kind: 'remove'; participantId: string }
   | { kind: 'roll'; mode: 'normal' | 'advantage' | 'disadvantage' }
   | { kind: 'start' | 'next' | 'undo' }
@@ -48,6 +51,7 @@ export interface CombatAPI extends CombatDraftAPI {
 export function combatOrder(combat: CombatState): Combatant[] {
   return combat.participants.map((p, index) => ({ p, index })).sort((a, b) => b.p.initiative - a.p.initiative || a.index - b.index).map(({ p }) => p);
 }
+export const concentrationDc=(damage:number)=>Math.max(10,Math.floor(damage/2));
 export function checkedCombat(state: CombatState): CombatState {
   if (!state || !state.id || !state.sceneId || !['preparing', 'running', 'finished', 'retired'].includes(state.phase) || !Number.isSafeInteger(state.revision) || state.revision < 1 || !Number.isSafeInteger(state.round) || state.round < 0) throw new Error('Ungültiger Kampfstand.');
   if (typeof state.title !== 'string' || state.title.length > 1000 || typeof state.notes !== 'string' || state.notes.length > 2000000 || typeof state.outcome !== 'string' || state.outcome.length > 10000 || !Array.isArray(state.participants) || state.participants.length > 1000) throw new Error('Ungültige Kampfinhalte.');
@@ -72,5 +76,7 @@ export function checkedCombatant(p:Combatant):Combatant {
     if (p.maxHp < 1 || p.hp < 0 || p.hp > p.maxHp || p.tempHp < 0 || p.armorClass < 0) throw new Error('Trefferpunkte oder Rüstungsklasse ungültig.');
     if(p.death!==undefined){if(!p.characterId)throw new Error('Todesrettungswürfe gehören zu einer Party-Figur.');checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,death:p.death});}
     if(p.deathLast!==undefined&&(!p.characterId||!['success','failure','natural-20','natural-1','stabilize','reset','dead'].includes(p.deathLast.result)||p.deathLast.roll!==null&&(!Number.isSafeInteger(p.deathLast.roll)||p.deathLast.roll<1||p.deathLast.roll>20)))throw new Error('Letzter Todesrettungswurf ungültig.');
+    if(p.concentrationChecks!==undefined&&(!Array.isArray(p.concentrationChecks)||!p.concentrating||p.concentrationChecks.length>100||p.concentrationChecks.some(check=>!Number.isSafeInteger(check.damage)||check.damage<1||check.damage>1000000||check.dc!==concentrationDc(check.damage))))throw new Error('Offene Konzentrationsprüfungen ungültig.');
+    if(p.concentrationLast!==undefined){const c=p.concentrationLast;if(!Number.isSafeInteger(c.damage)||c.damage<1||c.damage>1000000||c.dc!==concentrationDc(c.damage)||c.roll!==null&&(!Number.isSafeInteger(c.roll)||c.roll<1||c.roll>20)||!Number.isSafeInteger(c.modifier)||Math.abs(c.modifier)>1000||c.total!==null&&!Number.isSafeInteger(c.total)||c.roll===null&&c.total!==null||c.roll!==null&&c.total!==c.roll+c.modifier||typeof c.success!=='boolean'||c.total!==null&&c.success!==(c.total>=c.dc))throw new Error('Letzte Konzentrationsprüfung ungültig.');}
   return p;
 }
