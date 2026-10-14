@@ -8,7 +8,7 @@ import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
 const base='.build/planner-live-moment',require=createRequire(import.meta.url);
-mkdirSync(base,{recursive:true});buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({entryPoints:['src/app/live.ts'],outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
+mkdirSync(base,{recursive:true});buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
 async function setup(t){
  const root=mkdtempSync(path.join(tmpdir(),'moment-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite')),campaign=store.create('Abend'),w=store.activate(campaign.id);
@@ -20,8 +20,9 @@ async function setup(t){
  const x={store,w,scene,heroes,root,CampaignStore,command,window,document,commands:[],messages:[],reply:async ack=>ack,releases:[]};
  const wrap=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  window.campaign={sessionPacket:async(token,id)=>wrap(()=>store.sessionPacket(token,id)),previewTime:async(token,query)=>wrap(()=>store.previewTime(token,query)),world:async token=>wrap(()=>store.world(token)),agenda:async(token,query)=>wrap(()=>store.agenda(token,query)),scenePreparation:async(token,id)=>wrap(()=>store.scenePreparation(token,id)),narrativeJournal:async(token,query)=>wrap(()=>store.narrativeJournal(token,query)),chronicle:async(token,category,search)=>wrap(()=>store.chronicle(token,category,search)),narrative:async(token,id)=>wrap(()=>store.narrative(token,id)),live:async token=>wrap(()=>store.live(token)),progress:async token=>wrap(()=>store.progress(token)),ledgerParties:async token=>wrap(()=>store.ledgerParties(token)),preparation:async token=>wrap(()=>store.preparation(token)),sceneWorld:async(token,id)=>wrap(()=>store.sceneWorld(token,id)),executeLive:async cmd=>{x.commands.push(cmd);return x.reply(wrap(()=>store.executeLive(cmd)),cmd);}};
- delete require.cache[require.resolve('../'+base+'/ui.cjs')];x.ui=require('../'+base+'/ui.cjs');x.ui.initLive((text,error)=>x.messages.push({text,error}),async()=>{});for(const dialog of document.querySelectorAll('dialog')){dialog.close=()=>{dialog.open=false;};dialog.showModal=()=>{dialog.open=true;};}x.ui.activateLive(w);await x.ui.openLive();document.getElementById('live-continue').click();await settle();
- for(const method of ['combat','chase','treasures'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));x.el=id=>document.getElementById(id);x.fields=(title,summary)=>{x.el('live-moment-title').value=title;x.el('live-moment-summary').value=summary;x.el('live-moment-category').value='narrative';};x.submit=()=>x.el('live-moment-form').onsubmit(new window.Event('submit',{cancelable:true}));x.end=async()=>{x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-dialog').open,true);assert.equal(x.el('live-session-close-confirm').disabled,false);x.el('live-session-close-confirm').click();await settle();};
+ for(const method of ['combat','chase','treasures','sceneDesk','sceneRules','sceneShops','sceneChecks','ledger','lootBalance','progressHistory'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
+ delete require.cache[require.resolve('../'+base+'/ui.cjs')];x.ui=require('../'+base+'/ui.cjs');x.ui.initSessionPacket((text,error)=>x.messages.push({text,error}),()=>null,async()=>true);x.ui.setSessionPacketSurface('live');x.ui.initLive((text,error)=>x.messages.push({text,error}),async()=>{});for(const dialog of document.querySelectorAll('dialog')){dialog.close=()=>{dialog.open=false;};dialog.showModal=()=>{dialog.open=true;};}x.ui.activateLive(w);await x.ui.openLive();document.getElementById('live-continue').click();await settle();
+ x.el=id=>document.getElementById(id);x.fields=(title,summary)=>{x.el('live-moment-title').value=title;x.el('live-moment-summary').value=summary;x.el('live-moment-category').value='narrative';};x.submit=()=>x.el('live-moment-form').onsubmit(new window.Event('submit',{cancelable:true}));x.end=async()=>{x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-dialog').open,true);assert.equal(x.el('live-session-close-confirm').disabled,false);x.el('live-session-close-confirm').click();await settle();};
  x.defer=kind=>{let release;const promise=new Promise(r=>release=r);x.releases.push(()=>release());let held=false;x.reply=async(ack,cmd)=>{if(cmd.action.kind===kind&&!held){held=true;await promise;}return ack;};return release;};
  x.focusOther=async()=>{let v=store.live(w.token);const ack=store.executeLive(command({kind:'move',sceneId:v.scene.id,expectedRosterRevision:v.rosterRevision,expectedFocusRevision:v.focusRevision,expectedClockRevision:v.scene.clock.revision,expectedSceneMembershipRevision:v.scene.membershipRevision,memberIds:[heroes[1].id],target:{kind:'new',title:'Andere Gruppe',expectedContentRevision:v.scene.revision}}));const id=ack.session.createdScene.id;v=store.live(w.token);store.executeLive(command({kind:'focus',sceneId:id,expectedRevision:v.focusRevision}));await x.ui.openLive();return id;};
  t.after(async()=>{for(const release of x.releases)release();await settle();x.ui.activateLive(null);Object.assign(globalThis,saved);store.close();rmSync(root,{recursive:true,force:true});});return x;
@@ -121,4 +122,39 @@ test('next-game prep shows the exact opening prose and detached visit actions ca
  const b=x.store.create('B'),w=x.store.activate(b.id);x.store.executeLive({commandId:randomUUID(),campaignId:b.id,token:w.token,action:{kind:'initialize',expectedRosterRevision:0}});x.ui.activateLive(w);await x.ui.openLive();await settle();
  let reads=0;const packet=x.window.campaign.sessionPacket;x.window.campaign.sessionPacket=async(...args)=>{reads++;return packet(...args);};const before=x.store.db.serialize(),messages=x.messages.length;
  for(const button of old)button.onclick();await settle();assert.equal(reads,0);assert.equal(x.messages.length,messages);assert.ok(x.store.db.serialize().equals(before));
+});
+
+test('starting the prepared opening docks its packet and keeps exact prose without adopting the visit or moving time',async t=>{
+ const x=await setup(t),planId=randomUUID(),first=randomUUID(),next=randomUUID(),text='  Am Tor\r\n**Originaltext**  ';
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Am Tor',scenes:[{id:first,title:'Ankunft',notes:'',locationId:null},{id:next,title:'Torwache',notes:'GM-Hinweis',locationId:null}]}}});
+ const detail=x.store.session(x.w.token,planId).visits.find(v=>v.visitId===next);
+ x.store.executeSession(x.command({kind:'visit',planId,expectedRevision:detail.revision,detail:{...detail,readAloud:text}}));
+ const firstDetail=x.store.session(x.w.token,planId).visits.find(v=>v.visitId===first),scene=x.store.live(x.w.token).scene;
+ x.store.executeLive(x.command({kind:'apply-visit',planId,visitId:first,expectedPlanRevision:1,expectedVisitRevision:firstDetail.revision,sceneId:scene.id,expectedRevision:scene.revision}));
+ await x.ui.openLive();x.el('live-session-start').click();await settle();await x.end();x.el('live-session-resume').click();await settle();
+ const before=x.store.live(x.w.token).scene,starts=x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='start').length;
+ [...x.el('live-session-resume-visits').querySelectorAll('button')].find(b=>b.textContent==='Spielabend beginnen + Text in Szene').click();await settle();await x.ui.flushLive();await settle();
+ assert.equal(x.el('live-session-resume-dialog').open,false);assert.equal(x.el('session-packet-dialog').parentElement.id,'live-packet-host');
+ assert.equal(x.el('session-packet-content').querySelector('h3').textContent,'Torwache');
+ assert.equal(x.el('session-packet-content').querySelector('.packet-read-aloud .packet-text').textContent,text);
+ const after=x.store.live(x.w.token).scene;assert.equal(after.readAloud,text);assert.deepEqual(after.adoption,before.adoption);assert.deepEqual(after.clock,before.clock);
+ assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='start').length,starts+1);assert.deepEqual(x.messages.filter(m=>m.error),[]);
+});
+
+test('a late handoff suggestion preserves a newer raw edit and can be explicitly adopted',async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();const read=x.window.campaign.narrativeJournal;let release;
+ x.window.campaign.narrativeJournal=async(...args)=>{const result=await read(...args);return new Promise(r=>{release=()=>r(result);x.releases.push(release);});};
+ x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-use-suggestion').disabled,true);
+ x.el('live-session-close-handoff').value='  Eigene Planung\r\n';release();await settle();
+ assert.equal(x.el('live-session-close-handoff').value,'  Eigene Planung\r\n');const suggestion=x.el('live-session-close-suggestion').textContent;assert.match(suggestion,/Nächster Einstieg:/);
+ x.el('live-session-close-use-suggestion').click();assert.equal(x.el('live-session-close-handoff').value,suggestion);
+ x.el('live-session-close-x').click();assert.equal(x.el('live-session-handoff').value,suggestion);assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='end').length,0);
+});
+
+test('unavailable next-session advice does not prevent closing an audited evening with authored notes',async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-handoff').value='  Eigene Übergabe\r\n';
+ x.window.campaign.narrativeJournal=async()=>({ok:false,error:'Journal vorübergehend nicht lesbar'});
+ x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-confirm').disabled,false);
+ assert.match(x.el('live-session-close-suggestion').textContent,/nicht verfügbar/);assert.equal(x.el('live-session-close-use-suggestion').disabled,true);
+ x.el('live-session-close-confirm').click();await settle();assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.sessionMarker==='end')?.handoff,'  Eigene Übergabe\r\n');
 });

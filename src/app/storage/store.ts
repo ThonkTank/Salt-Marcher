@@ -1,3 +1,4 @@
+import {readWorldLinks} from './world-links';
 import {readNpcCast,readNpcDossier} from './npc-cast';
 import {previewSceneTime} from './time-plan';
 import {readAgenda} from './agenda';
@@ -539,6 +540,7 @@ export class CampaignStore {
       return { notes, plans, locations, maps: this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=? ORDER BY name,id').all(campaignId), problems, selection };
     })();
   }
+  worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery){const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
   npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery){const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
   npcDossier(token:string,sceneId:string,id:string){const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}

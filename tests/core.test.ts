@@ -114,8 +114,11 @@ import "./core/time-plan-ui.test";
 import "./core/time-plan-context.test";
 import "./core/npc-cast-ui.test";
 import "./core/time-plan-storage.test";
+import "./core/npc-cast-storage.test";
 import "./core/agenda-storage.test";
 import "./core/object-gestures.test";
 import "./core/extension-lifecycle.test";
 import "./core/extension-recovery-ui.test";
 import "./core/tutorial.test";
+
+import "./core/world-links.test";

@@ -1,4 +1,5 @@
 import {bindAtlasHistoryShortcut} from './workspace-shortcuts';
+import {WorldLinksWorkbench} from './world-links-ui';
 import {CampaignAgenda} from './agenda-ui';
 import {initSoundboard,activateSoundboard} from './live-soundboard-ui';
 import {initQuickReference,activateQuickReference} from './quick-reference-ui';
@@ -70,6 +71,7 @@ setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('trea
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());
 initPartyTopbar(()=>el<HTMLButtonElement>('live-tab').click());
 initNarrativeJournal(status,leaveWorkspace,async()=>await flushPreparation(true,true),async id=>{if(!await leaveWorkspace())return;showTab('preparation');await openPreparedNote(id);});
+const worldLinks=new WorldLinksWorkbench(()=>workspace,leaveWorkspace,status,async ref=>{if(!await leaveWorkspace())return;showTab('preparation');if(ref.kind==='note')await openPreparedNote(ref.id);else await openPreparedLocation(ref.id);});el('world-links-open').onclick=()=>void worldLinks.open().catch(e=>status(e.message,true));
 initQuickReference(status,leaveWorkspace,async action=>{
  const token=workspace?.token;if(!token)return;
  if(action.kind==='edit'){showTab('preparation');if(action.content.note)await openPreparedNote(action.content.ref.id);else if(action.content.location)await openPreparedLocation(action.content.ref.id);return;}
@@ -426,7 +428,7 @@ async function drainActivation(): Promise<void> {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
+        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);worldLinks.contextChanged();el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';
