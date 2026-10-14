@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {mkdtempSync,readFileSync,rmSync,mkdirSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
@@ -18,7 +18,7 @@ function fixture(){
  for(const [i,c]of [a,b].entries())store.executeLive(command({kind:'membership',characterId:c.id,expectedRevision:0,expectedRosterRevision:2+i,active:true,targetSceneId:primary.id,expectedFocusRevision:0}));
  const split=store.executeLive(command({kind:'move',sceneId:primary.id,expectedRosterRevision:4,expectedFocusRevision:0,expectedClockRevision:0,expectedSceneMembershipRevision:2,memberIds:[b.id],target:{kind:'new',title:'Nachhut',expectedContentRevision:0}})),secondary=split.session.createdScene.id;
  for(const [id,text]of [[primary.id,'Öffentliches Tor'],[secondary,'Geheime Nachhut']])store.executeLive(command({kind:'scene-content',sceneId:id,expectedRevision:0,title:'Interner Titel',readAloud:text,notes:'GM-Privat',locationId:null}));
- const artId=randomUUID();store.registerPlayerAsset(w.token,{id:artId,kind:'custom',subjectId:null,title:'Öffentliche Art',sha256:'a'.repeat(64),extension:'.png',bytes:1});
+ const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aTfcAAAAASUVORK5CYII=','base64'),sha256=createHash('sha256').update(bytes).digest('hex'),artId=randomUUID();mkdirSync(root+'/player-images');writeFileSync(root+'/player-images/'+sha256+'.png',bytes);store.registerPlayerAsset(w.token,{id:artId,kind:'custom',subjectId:null,title:'Freigegebene Art',sha256,bytes:bytes.length,extension:'.png'});
  const settings={blank:false,mode:'image',imageId:artId,title:'Vorhut',labels:false,light:'daylight',displayId:null,fullscreen:false};
  const basis=()=>{const v=store.playerView(w.token);return{expectedRevision:v.settings.revision,expectedFocusId:v.focusId,expectedFocusRevision:v.focusRevision,expectedFocusMembershipRevision:v.focusMembershipRevision};};
  const request=action=>({...command(action),...basis()});

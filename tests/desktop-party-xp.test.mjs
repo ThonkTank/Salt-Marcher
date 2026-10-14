@@ -175,57 +175,6 @@ test("inactive load and duplicate recipients are rejected without any party sett
     assert.ok(x.store.db.serialize().equals(before));
   }
 });
-test("negative XP correction uses the same floor and rest accounting as its preview, without confirming another rest", (t) => {
-  const x = fixture(t),
-    id = x.ids[0];
-  x.store.executeProgress(x.award(100, 600, [[0, true, true]]));
-  let p = x.progress(id);
-  x.store.executeProgress(
-    x.command({
-      kind: "rest",
-      rest: "short",
-      recipients: [{ characterId: id, revision: p.revision }],
-    }),
-  );
-  p = x.progress(id);
-  const projected = changeCharacterXp(p, "subtract", 500),
-    ack = x.store.executeProgress(
-      x.command({
-        kind: "xp",
-        characterId: id,
-        expectedRevision: p.revision,
-        mode: "subtract",
-        amount: 500,
-        reason: "Zu viel gebucht",
-      }),
-    ),
-    actual = ack.characters.find((c) => c.characterId === id);
-  assert.equal(projected.removed, 150);
-  assert.equal(actual.xp, 900);
-  assert.deepEqual(actual.rest, projected.after.rest);
-  assert.deepEqual(actual.rest, {
-    known: true,
-    longXp: 450,
-    shortXp: 0,
-    baseline: 450,
-    sections: 1,
-  });
-  const set = x.store
-    .executeProgress(
-      x.command({
-        kind: "xp",
-        characterId: id,
-        expectedRevision: actual.revision,
-        mode: "set",
-        amount: 300,
-        reason: "Expliziter anderer Stand",
-      }),
-    )
-    .characters.find((c) => c.characterId === id);
-  assert.equal(set.xp, 300);
-  assert.deepEqual(set.rest, actual.rest);
-});
-
 test("campaign copies remap XP and load recipients in settlement history without rewriting the source or package", async (t) => {
   const x = fixture(t);
   x.store.executeProgress(

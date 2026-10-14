@@ -58,43 +58,24 @@ diesen Zustand nicht nebenbei aufheben. Die Oberfläche zeigt den Abstand zwisch
 Actor- und Scenezeit aus den persistierten Entscheidungsfakten sowie den aktuellen
 World- und gegebenenfalls Dungeonstand. Fortsetzen mit diesem Worldstand und das
 Auslassen des Zeitraums verlangen beide eine Begründung; Auflösung und Begründung
-werden geloggt und bleiben nach Fresh nachvollziehbar.
+werden geloggt und bleiben nach Fresh nachvollziehbar. Wiederaufnahme endet an
+der bestätigten Scenezeit; spätere Intervalle bleiben ausstehend. Ist der Actor
+bereits weiter, darf Resume ihn nicht zurückrollen: der GM lässt den veralteten
+Zeitraum begründet aus.
 
-## Lokaler Nachweis und Aussagegrenze
+## Lokale Belege und verbleibende Grenzen
 
-`tests/core/autonomy-persistence-integrity.test.ts` belegt korrekt neu gehashte
-Beschädigungen an historischen Jobs, Actorregeln, Positionen, Routen, Features,
-Dungeonreferenzen und Dungeon-Snapshots. Die Fälle prüfen Catch-up-Rollback,
-unveränderten früheren Backupbestand, Ablehnung eines neuen Backups, Fresh sowie
-eine gültige exklusive Ressourcenbuchung. Weitere Fälle prüfen Frontiers,
-Reservierungen, beide Buchungstypen, Logs, Receipts und Campaign-Remap.
+| Verhalten | Bestehende Prüfungen |
+| --- | --- |
+| Historische Jobs, Regeln, Positionen, Routen, Features und Dungeonstruktur; unveränderte Fakten und Backupschutz | `tests/core/autonomy-persistence-integrity.test.ts` |
+| Unabhängige Sceneuhren, begrenzte Fortsetzung, persistente Pause und begründete Auflösung nach Fresh | `tests/core/autonomy-scene-time-boundary.test.ts`, `tests/core/autonomy-time-conflict-ui.test.ts` |
+| Bewegung, Trap-Reset und Konfliktwirkung mit spätem Logfehler; vollständiger Rollback, Retry und Replay | `tests/core/autonomy-owner-atomicity.test.ts` |
+| Inaktive Zeit übersprungen, Standard-/Custom-Needs bei Kopie erhalten, Einzel-/Gruppenreservierungen freigegeben und neu gebucht; atomare Rasten | `tests/desktop-autonomy-disable-time.test.mjs` |
 
-`tests/core/autonomy-scene-time-boundary.test.ts` belegt, dass automatischer
-Catch-up an der bestätigten Uhr der auslösenden Scene endet und ein bereits
-späterer Actorstand nicht zurückgerollt wird. Der Test belegt außerdem die
-persistente Pause, die Sperre alternativer Aufhebungswege und die begründete
-Auflösung nach einem Neustart. `tests/core/autonomy-time-conflict-ui.test.ts`
-prüft am vollständigen DOM die Zeit-/Worldinformationen und beide begründeten
-Entscheidungen.
-
-`tests/core/autonomy-owner-atomicity.test.ts` lässt Dungeonbewegung,
-Fallenreset und begrenzten NPC-Konflikt jeweils erst nach einer Ownerwirkung an
-der folgenden Logschreibung scheitern. Der komplette SQLite-Stand bleibt dabei
-unverändert und ohne Receipt. Derselbe Command kann anschließend erfolgreich
-ausgeführt werden; sein Replay verändert Position, Featureladung, HP, Logs,
-Buchungen und Actorcursor nicht erneut. Diese SQLite- und DOM-Nachweise sind
-keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
-
-[Aktivierungs-/Rastprüfungen](../../../tests/desktop-autonomy-disable-time.test.mjs)
-belegen übersprungene inaktive Zeit, erhaltene Standard-/Custom-Needs nach Kopie,
-Deaktivierung mit gelöster Reservierung und erhaltenem Jobfortschritt sowie
-atomare zeitgebundene Rasten: Autonomieablehnung rollt Fortschritt, Scenezeit und
-beide Bestätigungen zurück; Replay wirkt genau einmal. Native Wirkung/Recovery
-bleiben gesondert abzunehmen. Weitere Fälle prüfen Einzel-/Gruppen-Wiederaufnahme
-nach Fresh mit erneuter exklusiver Buchung, Pause/Deaktivierung und Jobabbruch
-am Intervallende sowie konkurrierende Jobs mit erhaltener Vergangenheit.
-Längere manuelle Pause mit ausstehenden Intervallen, ein beim Resume belegtes
-Ziel und Positionsoverride gegen beide Buchungstabellen bleiben zu prüfen.
+Diese SQLite-/kontrollierten DOMbelege schließen weder alle Ownerwirkungen noch
+native Bedienung, echten Prozessabbruch, Cancel oder die Gesamtqualifikation.
+Historische Fakten bleiben erhalten; fehlende aktuelle Aktivität ist keine
+fehlende historische Identität. Defekte Daten werden erklärt, nicht still repariert.
 
 ## 200-Actor-Baselines
 
@@ -116,10 +97,12 @@ gesperrten Startknopf bei offener Antwort, keine native Reaktionszeit.
 
 ## Nächste ausführbare Schritte
 
-1. Mehractor-/Mehrowner-Rollback prüfen: eine Ownerwirkung erst nach einer
-   vorher abgeschlossenen Wirkung eines anderen Actors scheitern lassen;
-   Logs, HP, Featureladung, Reservierungen und Cursor gemeinsam vergleichen.
-2. Nativ Fokus, Kamerafreiheit, unabhängige Reads, lange Begründungen und Abbruch
-   eines laufenden Catch-ups prüfen.
-3. Wiederholtes räumliches Wachstum über längere bestätigte Campaignzeit messen;
-   Erstschrittwerte nicht als lineare Prognose verwenden. Nur belegte Engstellen ändern.
+1. Mehractor-/Mehrowner-Rollback nach einer bereits abgeschlossenen Wirkung eines
+   anderen Actors prüfen; Logs, HP, Featureladung, Buchungen und Cursor gemeinsam
+   vergleichen. Historische Configänderung und Aktivierungsgrenzen mit ausstehenden
+   Intervallen sowie Fresh prüfen, ohne alte Geschichte neu zu berechnen.
+2. Lange manuelle Pause, vorübergehend belegtes Resumeziel und Positionsoverride
+   gegen beide Buchungstabellen prüfen. Alte Buchungsteile bleiben erhalten.
+3. Nativ Fokus, Rohwerte, A/B/A, Kamerafreiheit, unabhängige Reads, Begründungen,
+   Replyverlust und Cancel prüfen. Längeres räumliches Wachstum und Reaktionszeit
+   messen; nur belegte Engstellen ändern, keine zweite persistierte Simulation.
