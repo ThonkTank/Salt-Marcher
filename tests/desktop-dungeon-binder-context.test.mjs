@@ -45,6 +45,13 @@ test('navigation failure from a retired binder does not report into a newer dial
  const x=fixture(t);x.open();await until(x.loaded);let reject;x.setNavigate(()=>new Promise((resolve,fail)=>reject=fail));x.mapButton().onclick();await until(()=>!!reject);x.open();await until(x.loaded);const status=x.el('dungeon-binder-status').textContent;reject(Error('Alte Kartennavigation'));await tick();assert.deepEqual(x.messages,[]);assert.equal(x.el('dungeon-binder-status').textContent,status);
 });
 
-test('changing filters during refresh cannot give the previous read new authority',async t=>{
- const x=fixture(t);x.open();await until(x.loaded);let release;window.campaign.dungeon=()=>new Promise(r=>release=()=>r({ok:true,value:x.view}));[...x.el('dungeon-binder').querySelectorAll('button')].find(b=>b.textContent==='Aktualisieren').onclick();await until(()=>!!release);x.el('dungeon-binder-filter').value='all';x.el('dungeon-binder-filter').onchange();const row=x.el('dungeon-binder-list').querySelector('[data-room-id="'+x.rooms[1].id+'"]');row.onclick();x.mapButton().onclick();await tick();assert.deepEqual(x.calls,[]);release();await tick();assert.equal(x.el('dungeon-binder').open,true);
+test('refresh clears old contents and filters cannot restore actions after a failed read',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);const old=x.mapButton();let release;window.campaign.dungeon=()=>new Promise(r=>release=r);
+ [...x.el('dungeon-binder').querySelectorAll('button')].find(b=>b.textContent==='Aktualisieren').onclick();await until(()=>!!release);
+ assert.equal(x.el('dungeon-binder-document').children.length,0);assert.equal(x.el('dungeon-binder-list').children.length,0);
+ x.el('dungeon-binder-filter').value='all';x.el('dungeon-binder-filter').onchange();old.onclick();await tick();assert.deepEqual(x.calls,[]);
+ release({ok:false,error:'Lesen unterbrochen'});await tick();await tick();assert.equal(x.el('dungeon-binder').open,true);
+ assert.equal(x.el('dungeon-binder-document').children.length,0);assert.equal(x.el('dungeon-binder-list').children.length,0);assert.match(x.el('dungeon-binder-status').textContent,/Lesen unterbrochen/);
+ window.campaign.dungeon=async()=>({ok:true,value:x.view});[...x.el('dungeon-binder').querySelectorAll('button')].find(b=>b.textContent==='Aktualisieren').onclick();await until(x.loaded);
+ x.choose(x.rooms[1].id);x.mapButton().onclick();await tick();assert.deepEqual(x.calls,[[x.rooms[1].id,'map']]);
 });
