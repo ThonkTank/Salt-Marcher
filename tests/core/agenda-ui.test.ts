@@ -1,26 +1,81 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test,{type TestContext} from 'node:test';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {randomUUID} from 'node:crypto';
 import {parseHTML} from 'linkedom';
 import {CampaignAgenda} from '../../src/app/agenda-ui';
-import type {AgendaPage} from '../../src/app/agenda-contracts';
+import {activateWorld,initWorld} from '../../src/app/world-ui';
+import {CampaignStore} from '../../src/app/storage/store';
+import {newLocation} from '../../src/features/location/location-schema';
+const tick=()=>new Promise<void>(resolve=>setImmediate(resolve));
+async function until(check:()=>boolean){for(let i=0;i<40;i++){if(check())return;await tick();}assert.ok(check(),'expected agenda UI state');}
+async function fixture(t:TestContext){
+ const root=mkdtempSync(join(tmpdir(),'agenda-ui-')),store=new CampaignStore(join(root,'campaign.sqlite'));
+ const campaign=store.create('Kalenderprobe'),workspace=store.activate(campaign.id),command=(action:any)=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,action});
+ const {document,window}=parseHTML(readFileSync('src/app/index.html','utf8')),prior={document:globalThis.document,window:globalThis.window,HTMLInputElement:globalThis.HTMLInputElement,HTMLSelectElement:globalThis.HTMLSelectElement,HTMLTextAreaElement:globalThis.HTMLTextAreaElement,Option:globalThis.Option,Event:globalThis.Event};
+ function Option(text='',value=''){const o=document.createElement('option');o.textContent=text;o.value=value;return o;}
+ window.HTMLSelectElement.prototype.add=function(o:HTMLOptionElement){this.append(o);};
+ const values=new WeakMap<object,string>();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return values.get(this)??this.querySelector('option')?.value??'';},set(v:string){values.set(this,v);}});
+ Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option,Event:window.Event});
+ store.executeLive(command({kind:'initialize',expectedRosterRevision:0}));
+ const location=newLocation('north','Nordtor','poi',['description','notes']);store.changePreparation({...command(null),change:{kind:'location',expectedRevision:null,document:location}});
+ const wrap=(f:()=>any)=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:(e as Error).message};}};
+ window.campaign={preparation:async(...a:any[])=>wrap(()=>store.preparation(a[0],a[1])),agenda:async(token,query)=>wrap(()=>store.agenda(token,query)),reconcileWorld:async(c,token)=>wrap(()=>store.reconcileWorld(c,token)),executeWorld:async c=>wrap(()=>store.executeWorld(c))} as typeof window.campaign;
+ const messages:string[]=[];initWorld(s=>messages.push(s),async()=>true,async()=>{},async()=>{});activateWorld(workspace);
+ const agenda=new CampaignAgenda(()=>workspace,async()=>true,s=>messages.push(s),async()=>{},async()=>{}),dialog=document.getElementById('campaign-agenda') as HTMLDialogElement;
+ Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
+ const el=(id:string)=>document.getElementById(id) as HTMLInputElement,click=(label:string)=>{const b=[...dialog.querySelectorAll('button')].find(b=>b.textContent===label) as HTMLButtonElement;assert.ok(b,label);b.onclick?.(new window.Event('click') as any);};
+ t.after(()=>{agenda.reset();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});
+ const event={id:'market',revision:0,name:'Markt schließt',startMs:'3600012',durationMs:'60000',repeatMs:null,locationId:null,notes:'  Original\r\n',trashed:false};
+ store.executeWorld(command({kind:'calendar-event',event,expectedRevision:null}));
+ const open=async()=>{el('world-agenda-open').click();await until(()=>dialog.open&&el('agenda-status').textContent?.includes('Countdowns')===true);};await open();
+ return{store,workspace,command,location,agenda,dialog,el,click,open,messages,event};
+}
+test('one calendar event editor preserves exact dates and notes, any location, trash and restoration',async t=>{
+ const x=await fixture(t);assert.ok(!x.el('calendar-event-editor'));assert.ok(!x.el('event-new'));
+ x.click('Ereignis bearbeiten');const select=x.el('agenda-location') as unknown as HTMLSelectElement;assert.ok([...select.options].some(o=>o.value===x.location.id));select.value=x.location.id;
+ x.el('agenda-event-form').dispatchEvent(new Event('input'));x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.store.world(x.workspace.token).events[0]?.revision===2);
+ const saved=x.store.world(x.workspace.token).events[0]!;assert.equal(saved.startMs,x.event.startMs);assert.equal(saved.notes,x.event.notes);assert.equal(saved.locationId,x.location.id);
+ await until(()=>x.el('agenda-status').textContent==='Ereignis gespeichert. Gruppenzeit und Position bleiben unverändert.');x.click('Ereignis bearbeiten');x.click('Ereignis in den Papierkorb');await until(()=>x.store.world(x.workspace.token).events[0]?.trashed===true);await until(()=>x.el('agenda-status').textContent==='Ereignis gespeichert. Gruppenzeit und Position bleiben unverändert.');
+ x.el('agenda-trash').checked=true;x.el('agenda-trash').dispatchEvent(new Event('change'));await until(()=>!!x.el('agenda-list').querySelector('[data-event-id="market"]'));
+ x.click('Ereignis bearbeiten');x.click('Ereignis wiederherstellen');await until(()=>x.store.world(x.workspace.token).events[0]?.trashed===false);
+ const restored=x.store.world(x.workspace.token).events[0]!;assert.equal(restored.notes,x.event.notes);assert.equal(restored.startMs,x.event.startMs);assert.equal(restored.locationId,x.location.id);
+});
+test('a new agenda draft offers no inert trash action and cannot be discarded by reopening',async t=>{
+ const x=await fixture(t);x.click('Neue Frist / Ereignis');const trash=[...x.dialog.querySelectorAll('button')].find(b=>b.textContent==='Ereignis in den Papierkorb')!;assert.equal(trash.hidden,true);
+ x.el('agenda-name').value='Noch nicht gespeichert';x.el('world-agenda-open').click();await tick();assert.equal(x.el('agenda-name').value,'Noch nicht gespeichert');assert.match(x.el('agenda-status').textContent!,/zuerst speichern/);
+ x.click('Eingaben verwerfen');x.click('Ereignis bearbeiten');assert.equal(trash.hidden,false);
+});
+test('closing during a pending open cancels its read without reopening the editor',async t=>{
+ const x=await fixture(t);x.agenda.reset();let release!:(value:any)=>void;window.campaign.preparation=()=>new Promise(r=>release=r);
+ x.el('world-agenda-open').click();await until(()=>!!release);x.agenda.reset();release({ok:true,value:x.store.preparation(x.workspace.token)});await tick();assert.equal(x.dialog.open,false);
+});
+test('refresh removes the clean editor before a delayed page can replace new input',async t=>{
+ const x=await fixture(t);x.click('Ereignis bearbeiten');const read=window.campaign.agenda;let release!:(value:any)=>void;
+ window.campaign.agenda=()=>new Promise(r=>release=r);x.click('Zeit und Agenda aktualisieren');await until(()=>!!release);
+ assert.ok(!x.el('agenda-event-form'));assert.equal(x.el('agenda-list').children.length,0);
+ release(await read(x.workspace.token,{sceneId:null,search:'',location:'all',horizonDays:5,includePast:false,after:null}));await tick();
+});
+test('a detached event row cannot replace the current document in a reopened agenda',async t=>{
+ const x=await fixture(t),old=x.el('agenda-list').querySelector('button')!;x.agenda.reset();const current=x.store.world(x.workspace.token).events[0]!;
+ x.store.executeWorld(x.command({kind:'calendar-event',event:{...current,name:'Neu bestätigter Titel'},expectedRevision:current.revision}));await x.open();
+ old.onclick?.(new Event('click') as any);assert.match(x.el('agenda-document').textContent!,/Neu bestätigter Titel/);
+});
+test('an old save acknowledgement cannot replace the reopened editor draft',async t=>{
+ const x=await fixture(t),execute=window.campaign.executeWorld;let release!:()=>void,seen=false;const held=new Promise<void>(r=>release=r);
+ window.campaign.executeWorld=async c=>{const result=await execute(c);seen=true;await held;return result;};
+ x.click('Ereignis bearbeiten');x.el('agenda-name').value='Gespeicherter Auftrag';x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>seen);
+ x.agenda.reset();await x.open();x.click('Neue Frist / Ereignis');x.el('agenda-name').value='Neuer Rohentwurf';release();for(let i=0;i<12;i++)await tick();
+ assert.equal(x.el('agenda-name')?.value,'Neuer Rohentwurf');assert.equal(x.el('agenda-name').disabled,false);
+});
 
-const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
-async function until(check:()=>boolean){for(let i=0;i<20;i++){if(check())return;await settle();}assert.ok(check(),'expected agenda UI state');}
-
-test('a new agenda entry does not offer an inert trash action',async()=>{
-  const parsed=parseHTML('<button id="agenda-open"></button><button id="live-agenda-open"></button>'),prior={document:globalThis.document,window:globalThis.window,HTMLInputElement:globalThis.HTMLInputElement,HTMLSelectElement:globalThis.HTMLSelectElement,HTMLTextAreaElement:globalThis.HTMLTextAreaElement,Option:globalThis.Option,Event:globalThis.Event},{document,window}=parsed;
-  function TestOption(text='',value=''){const option=document.createElement('option');option.textContent=text;option.value=value;return option;}
-  window.HTMLSelectElement.prototype.add=function(option:HTMLOptionElement){this.append(option);};
-  const selectValues=new WeakMap<object,string>();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return selectValues.get(this)??this.querySelector('option')?.value??'';},set(value:string){selectValues.set(this,value);}});
-  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option:TestOption,Event:window.Event});
-  const event={id:'event-1',revision:1,name:'Markt schließt',startMs:'3600000',durationMs:'3600000',repeatMs:null,locationId:null,notes:'',trashed:false};
-  const page:AgendaPage={calendar:{revision:1,name:'Kalender',startYear:1,daySeconds:86400,months:[{name:'Frühmond',days:30}],weekdays:['Erster Tag']},scene:{id:'scene-1',title:'Vorhut',clockRevision:1,instantMs:'0',locationId:null,locationTitle:''},items:[{event,state:'upcoming',startMs:event.startMs,endMs:'7200000',sortMs:event.startMs,locationTitle:'',locationAvailable:true}],next:null,total:1};
-  window.campaign={agenda:async()=>({ok:true as const,value:page})} as unknown as typeof window.campaign;
-  const agenda=new CampaignAgenda(()=>({token:'token'} as any),async()=>true,()=>{},async()=>{}),dialog=document.getElementById('campaign-agenda') as HTMLDialogElement;Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
-  const click=(label:string)=>{const target=[...dialog.querySelectorAll('button')].find(button=>button.textContent===label) as HTMLButtonElement;assert.ok(target,label);target.onclick?.(new window.Event('click') as any);};
-  try{
-    (document.getElementById('agenda-open') as HTMLButtonElement).onclick?.(new window.Event('click') as any);await until(()=>dialog.open&&document.getElementById('agenda-status')?.textContent?.includes('Countdowns')===true);
-    click('Neue Frist / Ereignis');const trash=dialog.querySelector('#agenda-event-form .toolbar:last-child button:last-child') as HTMLButtonElement;assert.equal(trash.textContent,'Ereignis in den Papierkorb');assert.equal(trash.hidden,true);
-    click('Eingaben verwerfen');click('Ereignis bearbeiten');assert.equal(trash.hidden,false);
-  }finally{agenda.reset();Object.assign(globalThis,prior);}
+test('an unknown event save is reconciled from its receipt without resending or losing later input',async t=>{
+ const x=await fixture(t),execute=window.campaign.executeWorld;let writes=0;
+ window.campaign.executeWorld=async c=>{writes++;await execute(c);throw new Error('Antwort verloren');};
+ x.click('Ereignis bearbeiten');x.el('agenda-name').value='Bestätigtes Ereignis';x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));
+ await until(()=>x.el('agenda-status').textContent?.includes('Eingaben bleiben erhalten')===true);x.el('agenda-name').value='Spätere eigene Eingabe';x.click('Speicherauftrag prüfen');
+ await until(()=>x.el('agenda-status').textContent?.includes('Speicherauftrag bestätigt')===true);
+ assert.equal(x.el('agenda-name').value,'Spätere eigene Eingabe');assert.equal(writes,1);assert.equal(x.store.world(x.workspace.token).events[0]?.name,'Bestätigtes Ereignis');
 });

@@ -26,13 +26,18 @@ Ein Countdown zieht zuerst vollständige Fantasy-Tage ab und zerlegt nur den
 verbleibenden Rest in Stunden und Minuten. Bei einem gespeicherten 90-Minuten-Tag
 sind 90 Minuten genau ein Tag, nicht zusätzlich 30 Minuten. `agenda-time.test.ts`
 prüft den echten Kalenderwriter, nichtstündige Tage, positive/negative Restzeiten,
-Subminutenanzeige und den üblichen 24-Stunden-Tag. Der bestehende Agenda-UItest
-prüft separat Papierkorbaktionen für neue bzw. gespeicherte Ereignisse.
+Subminutenanzeige und den üblichen 24-Stunden-Tag. Der Agenda-UItest prüft den einzigen Ereigniseditor mit echten Storeabfragen:
+exakte Zeitpunkte/Notizen, Ortswahl, Papierkorb und Wiederherstellung. Der
+frühere zweite Editor im Weltbereich entfällt; dort öffnet derselbe Agendaeinstieg.
+Offene Entwürfe blockieren erneutes Öffnen. Refresh entfernt die alten Controls;
+verzögerte Bestätigungen gehören ausschließlich zu ihrem ursprünglichen Entwurf.
+Bei verlorener Antwort prüft die Agenda denselben Worldreceipt schreibfrei;
+spätere Rohfelder bleiben erhalten und die Frist wird nicht erneut angelegt.
 
 ## Nächste konkrete Prüfungen und Lieferung
 
-1. Die Editorabsicht und angezeigte Eventrevision in `agenda-ui.ts` an Dialog,
-   Campaigntoken und Lesefassung binden. Bei verzögertem Load/Save/Refresh/Rebase
+1. Die lokalen Guards für Editorabsicht und Eventrevision in `agenda-ui.ts`
+   nativ gegen Dialog-, Kampagnen- und Lesefassungswechsel prüfen. Bei verzögertem Load/Save/Refresh/Rebase
    dürfen neue Rohfelder oder eine neuere Eventauswahl nicht ersetzt werden.
    Relative Fristen behalten ausdrücklich ihre gezeigte Ursprungsscene;
    Fokuswechsel ist keine Zustimmung zu einer anderen Zeitbasis. Kleinste
