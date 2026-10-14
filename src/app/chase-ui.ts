@@ -31,7 +31,7 @@ export function initChase(status:typeof tell){
  document.querySelector('#combat-panel')!.after(root);onCommitState(draw);onCommitResolved(recovered);
  root.addEventListener('input',event=>{const input=event.target as HTMLInputElement;if(!ready()||pending())return;const d=draft();if(!d)return;if(fieldIds.includes(input.id))d.fields[input.id]=input.value;const row=input.closest<HTMLElement>('[data-id]');if(row&&(input.hasAttribute('data-distance')||input.hasAttribute('data-exhaustion'))){const r=d.rows[row.dataset.id!]??={};r[input.hasAttribute('data-distance')?'distance':'exhaustion']=input.value;}queueDraft();syncActions();});
  el('chase-side').onchange=()=>{if(ready()&&!pending()){const d=draft();if(d){d.fields['chase-side']=val('chase-side');queueDraft();}}};
- el('chase-draft-retry').onclick=()=>{if(w&&!pending()&&!loading)void cache.retry(w.token,w.campaign.id);};
+ el('chase-draft-retry').onclick=()=>void(async()=>{if(!w||pending()||loading)return;const token=w.token,request=nonce;if(await cache.retry(token,w.campaign.id)&&w?.token===token&&nonce===request)await load(requestedId??view?.chase?.id);})();
  el('chase-new').onclick=()=>void(async()=>{if(!w||!scene||pending()||loading)return;const currentToken=w.token,request=++nonce;loading=true;draw();const saved=await cache.flush(w.campaign.id);if(nonce!==request||w?.token!==currentToken)return;loading=false;if(!saved){draw();return;}requestedId=undefined;loadError='';if(view)view={...view,chase:null,draft:null};rendered='';clearWorkInput();draw();})();
  el('chase-refresh').onclick=()=>{if(!pending())void load(requestedId??view?.chase?.id);};
  el<HTMLSelectElement>('chase-recent').onchange=()=>{if(!pending())void load(val('chase-recent')||undefined);};
