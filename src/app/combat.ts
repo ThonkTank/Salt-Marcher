@@ -1,3 +1,4 @@
+import {openMaskHistory,closeMaskHistory} from './mask-history-ui';
 import {finishDraftCommit,finishDraftConsumed,flushFinishDraft} from './finish-draft-ui';
 import {CombatDraftCache,combatDraftKey} from './combat-draft-cache';
 import {fighterDraftBasisMatches,fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
@@ -94,7 +95,7 @@ export function combatContext(next: Workspace | null, current: LiveScene | null,
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
   get('combat-panel').hidden = !current;
-  if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
+  if (changed) { closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
   else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
 }
 async function load(id?: string):Promise<boolean> {
@@ -242,7 +243,7 @@ function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked()||control.dataset.statblockDisabled==='true';
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
   const contextBlocked=!workspace||!scene||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
-  get<HTMLButtonElement>('combat-refresh').disabled=contextBlocked;get<HTMLSelectElement>('combat-history').disabled=contextBlocked;
+  get<HTMLButtonElement>('combat-refresh').disabled=contextBlocked;get<HTMLButtonElement>('combat-history-open').disabled=contextBlocked||loadPending;get<HTMLSelectElement>('combat-history').disabled=contextBlocked;
   const status=get('combat-load-status'),title=knownRecent.find(c=>c.id===requestedCombatId)?.title;status.hidden=!loadPending&&!loadError;status.setAttribute('role',loadError?'alert':'status');status.textContent=loadError?'Begegnung konnte nicht geladen werden: '+loadError+' Erneut laden oder eine andere Begegnung wählen.':loadPending?(title?'„'+title+'“ wird geladen…':'Begegnung wird geladen…'):'';get('combat-panel').setAttribute('aria-busy',String(loadPending));
   if(candidateLoading)for(const c of get('combat-party-form').querySelectorAll<HTMLButtonElement|HTMLSelectElement|HTMLInputElement>('select,button,input'))c.disabled=true;
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
@@ -273,8 +274,9 @@ function render() {
   get('combat-assessment').textContent = view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '';
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
-  for (const item of view?.recent ?? knownRecent) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'retired'?' · archiviert':item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
-  history.value = combat?.id ?? requestedCombatId ?? ''; history.hidden = (view?.recent.length ?? knownRecent.length) < 2;
+  const recent=[...(view?.recent??knownRecent)];if(combat&&!recent.some(item=>item.id===combat.id))recent.unshift({id:combat.id,title:combat.title,phase:combat.phase});
+  for (const item of recent) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'retired'?' · archiviert':item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
+  history.value = combat?.id ?? requestedCombatId ?? ''; history.hidden = recent.length < 2;
   const terminal=!!combat&&!editableCombat(combat);
   get('combat-controls').hidden = !combat || terminal;
   get('combat-start').hidden = combat?.phase !== 'preparing';
@@ -349,6 +351,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-party-select').onchange=()=>{get<HTMLInputElement>('combat-party-initiative').value='';};
   get('combat-create-form').onsubmit = event => { event.preventDefault(); if (scene) void execute({ kind: 'create', sceneId: scene.id, expectedMembershipRevision: scene.membershipRevision, title: value('combat-new-title'), includeParty: get<HTMLInputElement>('combat-include-party').checked }); };
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
+  get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
   get('combat-add-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }); };
   get('combat-roll').onclick = () => void execute({ kind: 'roll', mode: value('combat-roll-mode') as 'normal' | 'advantage' | 'disadvantage' });
