@@ -216,12 +216,12 @@ function renderSceneMeta() {
     origin.append(title, notes, place);
   } else origin.textContent = 'Noch kein vorbereiteter Besuch übernommen.';
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
+  get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }
 function renderScene() {
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
   get<HTMLButtonElement>('running-player-scene').disabled=!(sceneDraft?.readAloud?.trim());
-  get<HTMLButtonElement>('running-player-location').disabled=!sceneDraft?.locationId;
   const select = get<HTMLSelectElement>('running-location'); select.replaceChildren();
   const none = document.createElement('option'); none.value = ''; none.textContent = 'Kein Ort'; select.append(none);
   const current = sceneDraft?.locationId;
