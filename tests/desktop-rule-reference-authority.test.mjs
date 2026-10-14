@@ -17,3 +17,18 @@ const checkView=(sceneId,revision,label)=>({sceneId,revision,checks:label?[{id:'
 function rollCheck(x,label){x.document.getElementById('live-check-label').value=label;x.document.getElementById('live-check-form').onsubmit(new x.window.Event('submit',{cancelable:true}));}
 test('late GM check reply cannot replace the history or revision basis of another scene',async t=>{const x=fixture(t),checks=[];x.window.campaign.executeSceneCheck=command=>{const d=deferred();checks.push({...d,command});return d.promise;};x.context('A');x.reads[0].resolve({ok:true,value:rules('A','A')});await until(()=>x.text().includes('Vorlesen A'));rollCheck(x,'A roll');await until(()=>checks.length===1);x.context('B');x.reads[1].resolve({ok:true,value:rules('B','B')});await until(()=>x.text().includes('Vorlesen B'));checks[0].resolve({ok:true,value:checkView('A',1,'A roll')});await tick();await tick();assert.equal(x.document.getElementById('live-check-latest').textContent,'');assert.ok(!x.messages.some(m=>m.text.includes('GM-Probe')));rollCheck(x,'B roll');await until(()=>checks.length===2);assert.equal(checks[1].command.sceneId,'B');assert.equal(checks[1].command.expectedRevision,0);checks[1].resolve({ok:true,value:checkView('B',1,'B roll')});await tick();});
 test('a pending GM check prevents duplicate rolls and concurrent rule writes',async t=>{const x=fixture(t),checks=[];x.window.campaign.executeSceneCheck=command=>{const d=deferred();checks.push({...d,command});return d.promise;};x.context('A');x.reads[0].resolve({ok:true,value:rules('A','A')});await until(()=>x.text().includes('Vorlesen A'));rollCheck(x,'First');rollCheck(x,'Second');x.remove();await tick();assert.equal(checks.length,1);assert.equal(x.writes.length,0);checks[0].resolve({ok:true,value:checkView('A',1,'First')});await tick();});
+
+const formula={label:'Biss',formula:'2d6+3',dc:null,actor:'Wolf',sourceCreatureId:'wolf',sourceActionId:'bite'};
+test('late statblock formula reply cannot update another Scene or report success',async t=>{
+ const x=fixture(t),reply=deferred();x.window.campaign.executeSceneCheck=()=>reply.promise;
+ x.context('A');x.reads[0].resolve({ok:true,value:rules('A','A')});await until(()=>x.text().includes('Vorlesen A'));
+ const pending=x.ui.rollSceneFormula(formula);x.context('B');x.reads[1].resolve({ok:true,value:rules('B','B')});await until(()=>x.text().includes('Vorlesen B'));
+ reply.resolve({ok:true,value:checkView('A',1,'Old formula')});assert.equal(await pending,false);
+ assert.equal(x.document.getElementById('live-check-latest').textContent,'');assert.equal(x.messages.length,0);
+});
+test('failed statblock formula reports failure and unlocks the shared writer',async t=>{
+ const x=fixture(t);x.window.campaign.executeSceneCheck=async()=>({ok:false,error:'Formula unavailable'});
+ x.context('A');x.reads[0].resolve({ok:true,value:rules('A','A')});await until(()=>x.text().includes('Vorlesen A'));
+ assert.equal(await x.ui.rollSceneFormula(formula),false);assert.ok(x.messages.some(m=>m.error&&m.text==='Formula unavailable'));
+ x.remove();await until(()=>x.writes.length===1);x.writes[0].resolve({ok:true,value:{sceneId:'A',revision:2,pins:[]}});
+});
