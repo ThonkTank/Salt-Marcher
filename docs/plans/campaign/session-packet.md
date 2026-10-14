@@ -60,6 +60,17 @@ oder Folgebesuch; historische Sceneinhalte bleiben erhalten. Der lokale Test
 `tests/desktop-live-visual-context.test.mjs` prüft diesen tatsächlichen
 Übernahme-/Speicherweg und erhält Autorenwortlaut ohne Playercommand.
 
+Die neue Sessionauswahl (`session-review-ui.ts`) erlaubt Suche und Filter über
+Vorschläge sowie eine gemeinsam bestätigte Übernahme. `accept-proposals` bindet
+Plan und jede gewählte Vorschlagsrevision, prüft alle ursprünglichen Quellen-
+und Rewardgrundlagen vor dem ersten Publish und schreibt die geordnete Auswahl
+in einer Transaktion. Der Einzelweg bleibt kompatibel. Drei gezielte SQLite-
+Prüfungen in `desktop-session-reward-integrity.test.mjs` belegen verweigerte
+Annahme nach XPänderung ohne Teilwirkung, ursprüngliche Reihenfolge samt Fresh/
+Receiptreplay sowie Rollback eines Fehlers beim zweiten Gruppenwrite. Ein
+aktiver Reviewdialog, Entwürfe nach Neustart und die vollständige beauftragte
+Ein-Klick-Vorbereitung sind dadurch noch nicht nativ oder vollständig abgenommen.
+
 ## Nächste ausführbare Schritte
 
 1. **Vollständigkeit am Spielabend prüfen:** Eine konkrete Vorbereitung mit
