@@ -2,7 +2,8 @@
 
 Stand: 14.10.2026. Gesamtumfang: [SCOPE](../../SCOPE.md),
 [SMR-08](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-08--shops-wetter-und-musik)
-und [Scenezeit](smr03-live-scene-contract.md).
+und [Scenezeit](smr03-live-scene-contract.md). Der gemeinsame Fehler-/Fokusanschluss
+zu Musik und Ambience steht im [Audio-Wiederaufnahmeplan](music-recovery.md).
 Die gepinnten Program Capabilities, Revision
 `9de85c1a26f526acbc1af332ac5962e185c0aab2`, L175–179 und L270–287, verlangen
 Wetter ohne Sessionvorbereitung, unabhängig aus jeder Scenezeit, Ort, Gelände

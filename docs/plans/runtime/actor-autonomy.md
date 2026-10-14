@@ -292,14 +292,14 @@ keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
    Fehler erklären und nicht still reparieren.
    Abnahme: zwei konkurrierende Jobs, unterbrochene Reservierung, Positionsoverride,
    unabhängige Kopie, Receiptreplay und erklärbare erhaltene Konfliktrollen.
-3. **Zeit-/Ownerwirkung gemeinsam qualifizieren.** Den realen
-   `CampaignStore.executeLive`-/Catch-up-Anschluss mit World-/Dungeon-/Trap-/Actor-
-   Effekten prüfen: vor Partygefahr pausieren, auf Ownerfehler den ganzen
-   betreffenden Step zurückrollen, damalige Grundlage nicht umdeuten. Der geprüfte
-   Zwei-Actor-Positionsfehler ist ein lokaler Teilbeleg. Dungeonbewegung,
-   Trap-Reset und Zufallskonflikte jeweils nach vorheriger anderer Actorwirkung
-   fehlschlagen lassen; Logs, Buchungen, Gesundheit und Zeitcursor vergleichen.
-   Prozessabbruch/Cancel sowie Resume nach Fresh zusätzlich prüfen.
+3. **Zeit-/Ownerwirkung gemeinsam qualifizieren.** Der integrierte lokale
+   Nachweis prüft Dungeonbewegung, Trap-Reset und Konfliktwirkung mit einem
+   anschließenden Logfehler, vollständigem Rollback und genau einmal wirksamem
+   Retry/Replay. Er ersetzt keine Fehlerprobe nach einer bereits vorher
+   abgeschlossenen Wirkung eines anderen Actors im selben Catch-up-Command.
+   Diesen Mehractor-/Mehrownerfall ergänzen; Logs, Gesundheit, Featureladung,
+   Reservierung und Cursor gemeinsam vergleichen. Partygrenzen, echter
+   Prozessabbruch/Cancel sowie Resume nach Fresh zusätzlich qualifizieren.
 4. **Bedienbarkeit und Größenfall messen.** `autonomy-ui.ts` mit A/B/A,
    unbestätigten Rohwerten, Pending/Replyverlust, erklärtem Jobausschluss und
    Tastatur prüfen. Danach 200 Actors unter der Quellbedingung für ≤2 s p95 und

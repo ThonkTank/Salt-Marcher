@@ -73,6 +73,30 @@ Verlust des Rundenvorschlags; ein Handler der zuvor gewählten Maske bleibt nach
 Wechsel wirkungslos. Native Mehrmonitor-/Fokus-/Neustartbedienung dieser beiden
 Anzeigevarianten ist dadurch noch nicht qualifiziert.
 
+## Offener Widerspruch zur gebundenen Displayquelle
+
+Die integrierten Combat-/Chasepakete enthalten Initiative, HP-/Statuswerte,
+Tempo und Erschöpfung. Die neue ausdrückliche Sceneanzeige liefert außerdem
+Vorlesetext. Ihre Storetests belegen jeweils reduzierte Daten, gebundene Gruppe
+und fehlende private Notizen. Das belegt keine Übereinstimmung mit dem Umfang
+von Program Capabilities L299–302: Dort sind ausschließlich Karten und NPC-/
+Ortsart erlaubt, Mechanik und Text ausdrücklich ausgeschlossen. Der vorhandene
+Quellenabschnitt dieser Seite und ARCHITECTURE tragen diese Einschränkung weiter.
+Die Tests und die aktuelle Implementation dürfen diese Quellentscheidung nicht
+stillschweigend ersetzen. Die frühere Einordnung als integrierte Anzeige war
+insoweit zu weitgehend.
+
+Vor einer Displayfreigabe den gesamten Publiccomposer und seine tatsächlichen
+Host-/Rendererverbraucher gemeinsam gegen diesen Vertrag prüfen. Konkreter
+Anschluss: `projectPlayer` darf automatisch nur zulässige Karte/Art projizieren;
+Encounter/Chase benötigen gegebenenfalls ausdrücklich freigegebene Actorart,
+keine Mechaniktabelle. Die Scene-/GMtexte bleiben in ihren vorhandenen lokalen
+Ownerdaten. Für einen abweichenden Text-/Mechanikkanal fehlt hier eine gebundene
+Produktentscheidung. Die vorhandenen Varianten sind deshalb bis zum geklärten
+Quellen-/Composerabschluss nicht als qualifizierter passiver Displayumfang zu
+führen. Der aktuelle Code enthält sie weiterhin; dies ist ein offener
+Produktbefund, kein bereits wirksamer Ausgabefilter.
+
 ## Nächste ausführbare Schritte
 
 1. **Bounded Query und Darstellung gemeinsam liefern.** `projectPlayer`,
