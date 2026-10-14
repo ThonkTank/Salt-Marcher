@@ -56,7 +56,7 @@ initPreparation(status, async scopeId => {
 initLive(status, async id => {
   if (!(await leaveWorkspace())) return;
   await openPreparedLocation(id); showTab('preparation');
-});
+},async id=>{if(!(await leaveWorkspace()))return;showTab('preparation');await openPreparedNote(id);});
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
 initItems(status,async id=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems(id);});
 initDrawing(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();},draw);
