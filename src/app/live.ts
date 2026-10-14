@@ -11,7 +11,7 @@ import { addWorldNpc,initCombat, combatContext, flushCombat, prepareCombatPlan, 
 import {initChase,chaseContext,flushChase} from './chase-ui';
 import {initLiveArchives} from './live-archive-ui';
 import type { EncounterPlan } from './encounter-contracts';
-import { initProgress, progressionContext, flushProgress, executePartyProgress } from './progression-ui';
+import { initProgress, progressionContext, flushProgress, executePartyProgress,onProgressChanged,progressCharacters } from './progression-ui';
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
 import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
@@ -211,7 +211,7 @@ function renderSceneMeta() {
   chaseContext(context,resumed?scene??null:null,data?.roster??[]);
   const active = data?.roster.filter(c => c.active && c.sceneId === scene?.id) ?? [];
   get('live-party').textContent = active.length ? 'Dabei: ' + active.map(c => c.profile.name).join(', ') : 'Leere Party – Scene bleibt verfügbar.';
-  const reference=get('live-party-reference');reference.replaceChildren();for(const character of active){const button=document.createElement('button'),name=document.createElement('strong'),facts=document.createElement('span'),profile=character.profile;name.textContent=profile.name;facts.textContent='RK '+(profile.armorClass??'—')+' · Passive Wahrnehmung '+(profile.passivePerception??'—')+' · Bewegung '+(profile.speedFeet===undefined?'—':profile.speedFeet+' ft')+(profile.characterClass?' · '+profile.characterClass:'');button.type='button';button.append(name,facts);button.setAttribute('aria-label',profile.name+' im Partyprofil öffnen');button.onclick=()=>{void(async()=>{const token=context?.token,id=character.id;if(!await flushLive()||context?.token!==token||!data?.roster.some(row=>row.id===id))return;selected=id;characterDraft=structuredClone(originalCharacter()!);renderCharacter();renderList();get('character-editor').scrollIntoView({block:'nearest'});get<HTMLInputElement>('character-name').focus({preventScroll:true});})();};reference.append(button);}get('live-party-reference-empty').hidden=!!active.length;
+  renderPartyReference();
   get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatInstant(scene.clock.instantMs) : '';
   renderTimePreview();
   void refreshScenePreparation();
@@ -226,6 +226,7 @@ function renderSceneMeta() {
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
   get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }
+function renderPartyReference(){const scene=data?.scene,active=data?.roster.filter(c=>c.active&&c.sceneId===scene?.id)??[],progress=new Map(progressCharacters().map(row=>[row.characterId,row])),reference=get('live-party-reference');reference.replaceChildren();for(const character of active){const button=document.createElement('button'),name=document.createElement('strong'),facts=document.createElement('span'),profile=character.profile,row=progress.get(character.id),status=row?.healthCombat?undefined:row?.health??row?.lastCombatStatus,health=row?.healthCombat?'HP im Kampf „'+row.healthCombat.title+'“':row?.health?row.health.hp+' / '+row.health.maxHp+' HP':'HP offen',effects=[status?.tempHp?status.tempHp+' temp. HP':'',status?.conditions??'',status?.concentrating?'Konzentration':'',row?.health?.death?.dead?'Tot':row?.health?.death?.stable?'Stabilisiert':''].filter(Boolean).join(' · ');name.textContent=profile.name;facts.textContent=health+(effects?' · '+effects:'')+' · RK '+(profile.armorClass??'—')+' · Passive Wahrnehmung '+(profile.passivePerception??'—')+' · Bewegung '+(profile.speedFeet===undefined?'—':profile.speedFeet+' ft')+(profile.characterClass?' · '+profile.characterClass:'');button.type='button';button.append(name,facts);button.setAttribute('aria-label',profile.name+' im Partyprofil öffnen');button.onclick=()=>{void(async()=>{const token=context?.token,id=character.id;if(!await flushLive()||context?.token!==token||!data?.roster.some(row=>row.id===id))return;selected=id;characterDraft=structuredClone(originalCharacter()!);renderCharacter();renderList();get('character-editor').scrollIntoView({block:'nearest'});get<HTMLInputElement>('character-name').focus({preventScroll:true});})();};reference.append(button);}get('live-party-reference-empty').hidden=!!active.length;}
 async function showLiveNpc(npcId:string,isCurrent=()=>true){const token=context?.token,focus=playerFocus();if(!focus||!npcId)return;if(await flushLive()&&context?.token===token&&isCurrent())await cuePlayerImage('npc',npcId,focus);}
 function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
 function renderLiveKnowledge(){

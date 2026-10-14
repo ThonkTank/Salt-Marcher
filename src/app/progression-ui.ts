@@ -30,6 +30,7 @@ type HealthDraft={revision:number;basis:string;values:Record<string,string>;conc
 const healthDrafts=new Map<string,HealthDraft>();
 const progressListeners=new Set<()=>void>();
 export function onProgressChanged(listener:()=>void){progressListeners.add(listener);}
+export function progressCharacters(){return view?.characters??[];}
 function publishProgress(){for(const listener of progressListeners)listener();}
 const healthKey=()=>workspace&&selected?workspace.campaign.id+':'+selected:null;
 export function progressionContext(next: Workspace | null, data: LiveView | null, characterId: string | null) {
@@ -47,7 +48,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
 export async function refreshProgress(deliverNotices=true) {
   if (!workspace) return;
   const gen = generation, request = ++loadNumber;
-  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result; const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
+  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result;publishProgress(); const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
   catch (error) { if (gen === generation) tell((error as Error).message, true); }
 }
 export async function executePartyProgress(action: ProgressAction){return execute(action);}
