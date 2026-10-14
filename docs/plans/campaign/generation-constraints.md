@@ -16,6 +16,10 @@ der ausdrücklichen Tabellenauswahl; `storage/generation.ts` benutzt deren
 Kandidaten und Mengengrenzen. `sourceBasis` bindet die Weltquellen an einen
 Generierungsrun. Vor Annahme prüfen `assertGenerationSourcesCurrent` und der
 Sessionwriter erneut Quellen, Preset, Katalog und Tabellenrevisionen.
+Der integrierte `generateSession` kann Ortsquellen je Besuch (`worldSourcesByLocation`)
+auflösen und trägt jeden tatsächlichen Generierungsrun am Encounter weiter.
+Scene- und Rewardvorschläge sind unabhängig editierbar; die Gesamtbudgets und
+verbindliche Quellenbeiträge benötigen weiterhin den unten beschriebenen Abschluss.
 
 Die Vereinigungsmenge mehrerer Fraktionsquellen konnte bislang vollständig nur
 A enthalten, obwohl der GM A und B ausgewählt hatte: B hatte keine Hauptquelle
