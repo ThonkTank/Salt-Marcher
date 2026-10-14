@@ -58,6 +58,48 @@ Antwortgeneration und Workspace-Token verhindern, dass ältere Reads nach
 Reaktivierung eine neuere Partybasis überschreiben. Diese Vorschau erteilt
 keine Autorität für einen späteren XP-/Rastcommand.
 
+## XP-Korrektur und getrennte Abrechnung
+
+Die aktuelle `requirements-party-window.md`, gleiche Quellrevision wie oben,
+Hash `e02994fea23b879f478de2b6656aff88f0b79d048a608785ff61f09829569395`,
+L31–48, ersetzt ausdrücklich die historischen Dropdownregeln: XP dürfen bis
+null sinken, das Level wird dabei neu abgeleitet. Manuelle XP verändern weder
+Long-/Short-Verbrauch noch A/k. Das Levelminimum begrenzt nur die grafische
+Levelanzeige. Es ist keine Untergrenze für Korrekturen.
+
+Der zuletzt ergänzte `party-xp-model.ts.changeCharacterXp` hatte die alte
+Leveluntergrenze wieder eingeführt und negative Korrekturen auch von Long-/
+Short-Verbrauch und A abgezogen. Gegenbeispiel: 1.000 XP mit 240 bestätigten
+Belastungs-XP, früher kurzer Rast und weiteren 100 Belastungs-XP. Ein Abzug von
+950 muss 50 XP / Level 1 ergeben; Longverbrauch 340, Shortverbrauch 100, A=240
+und k=1 bleiben erhalten. Das kleinere aktuelle Budget 300 ist damit bereits
+überzogen. Verbrauch zu löschen würde die nötige lange Rast verstecken.
+
+Der gemeinsame Rechner begrenzt Abzüge jetzt ausschließlich auf null und
+bewahrt alle Rastfakten. Party- und Charaktervorschau erklären die gleiche
+Wirkung wie `executeProgress`; „Setzen“ und „Hinzufügen“ erhalten ebenfalls
+Verbrauch und A/k. Ein unbekannter XP-Stand erlaubt weiterhin keinen Abzug;
+ein ausdrückliches Setzen schafft die XP-Basis ohne eine Rast zu erfinden.
+Keine Migration: bestehende bestätigte Fakten werden nicht nachträglich aus
+früheren Awards rekonstruiert oder umgeschrieben.
+
+Die neue `party-award`-Abrechnung verteilt Verdienst und Tagesbelastung mit
+getrennten Empfängerlisten und gemeinsamer Aufrundung. Sie prüft Roster-,
+Mitgliedschafts- und Fortschrittsrevisionen; Belastung benötigt aktive Figuren,
+Verdienst kann ausdrücklich Reservefiguren erreichen. Belastung allein erzeugt
+keine bekannte XP-Basis. `party-award-member` hält damalige Vorher-/Nachherwerte;
+ein späterer manueller XP-Command mit `correctionOf` hängt einen eigenen Eintrag
+an. Er ändert weder den referenzierten Award noch dessen Belastungsfakten.
+
+Fünf Fälle in `tests/desktop-xp-rest-corrections.test.mjs` prüfen den echten Store:
+Abwärtskorrektur über Levelgrenzen bis null, erhaltene frühe/zweite/zusätzliche
+Shortsections und Longreset, Vorschau/Writer-Gleichheit, unveränderte verlinkte
+Herkunft, Replay ohne zweite Wirkung und Fresh. Belastung ohne bekannte XP und
+Rollback der ersten Teilnehmerwirkung bei einem späteren stale Empfänger sind
+getrennte Gegenproben. Eine tatsächliche Party-DOMvorschau zeigt den Abzug und
+erklärt erhaltenen Verbrauch. Diese kontrollierten Fälle ersetzen keine native
+XP-/Rast-/Abrechnungsabnahme.
+
 ## Lokale Belege und Grenzen
 
 Neun Fälle in `tests/desktop-day-calculator.test.mjs` verwenden den echten Store,
@@ -86,13 +128,17 @@ native Popover-, IPC-, Tastatur-, Monitor-, Last- und Produktabnahmen bleiben of
    Profillabel und XP-/Rastbasis atomar halten. Alte Vorschauen dürfen nie als
    Schreibgrundlage dienen. Abnahme: XP-Korrektur, Mitgliedschaftsänderung,
    unbekannte Basis und Refresh im selben Workspace; keine Sceneänderung.
-2. **Rast-/Levelregeln gemeinsam prüfen.** `progression.ts`, Fortschrittswriter
-   und Daymodell an bekannten Regelbeispielen verbinden: A/k nach vorgezogener
-   kurzer Rast, Level-up und manuelle XP-Korrektur ohne Zählerrücksetzung,
-   Überverbrauch, separates Verdienst-XP und ausgewählte zeitgebundene Rasten.
-   Feste Vorschau-Startbudgets gegen die Originalrechnung prüfen; theoretische
-   Etappen niemals als bestätigte Rastgeschichte ausgeben. Gleiche Rundung bei
-   Forecast, Completion und tatsächlichem Award prüfen.
+2. **Verbleibende Rast-/Awardübergänge prüfen.** Feste Dayvorschau-Startbudgets
+   gegen die Originalrechnung und `restFrame` nach Leveländerung prüfen;
+   theoretische Etappen bleiben von bestätigten Rasten getrennt. In
+   `storage/progression.ts`/`progression-ui.ts` gültige XP-Herkunftstypen und
+   prüfbare Referenzen einschließlich Storyawards konsistent schließen; der
+   aktuelle Referenzguard prüft nur Campaign-/Characterzuordnung. Defekte
+   Quellfacts, Health-/Lootfremdreferenzen und ältere Verlaufseiten prüfen.
+   Getrennte Rundung bei Dayforecast, Completion und Partyaward mit gemischten
+   aktiven/Reserve-/Load-only-/XP-only-Empfängern vergleichen. Zeitgebundene
+   ausgewählte Rasten am realen Clock-/Autonomieanschluss abnehmen; spätere
+   XP-/Loot-Ereignisse dürfen die ursprünglichen Rast-/Awardfacts nicht ändern.
 3. **Oberfläche am Host abnehmen.** Popoveröffnung/-schließen, Fokus zurück zum
    Trigger, Escape, Tastatur, 200 %, Scrollen vieler Zeilen, lange Namen,
    Storage-/IPCfehler und tatsächliche numerische Browserfelder prüfen. Für

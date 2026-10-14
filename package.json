@@ -52,6 +52,7 @@
     "test:desktop-npc-search": "node --test --test-concurrency=1 tests/desktop-npc-search.test.mjs",
     "test:desktop-npc-search-ui": "node tools/test-desktop-npc-search.mjs",
     "test:desktop-chase-switch": "node --test --test-concurrency=1 tests/desktop-chase-switch.test.mjs",
+    "test:desktop-xp-rest-corrections": "node --test --test-concurrency=1 tests/desktop-xp-rest-corrections.test.mjs",
     "test:desktop-day-calculator": "node --test --test-concurrency=1 tests/desktop-day-calculator.test.mjs",
     "test:desktop-audio-recovery": "node --test --test-concurrency=1 tests/desktop-audio-layer-recovery.test.mjs tests/desktop-music-stop.test.mjs",
     "test:desktop-player-privacy-ui": "node tools/test-desktop-player-scene-privacy.mjs && node tools/test-desktop-player-scene-privacy.mjs --combat && node tools/test-desktop-player-scene-privacy.mjs --chase",

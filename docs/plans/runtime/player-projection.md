@@ -10,8 +10,8 @@ L289–302 und L388–406, verlangen einen passiven Bildschirm für Karten und
 NPC-/Ortsart. Er folgt der fokussierten Scene, kombiniert dauerhafte
 Characterkenntnis mit aktueller Wahrnehmung und bleibt durch GM-Blank und
 Artoverride kontrollierbar. Neue Anzeigeänderungen binden zusätzlich an die
-tatsächlich vorgesehene Focus-ID und Focusrevision; der GMdialog benennt diese
-Gruppe ausdrücklich. Ein A/B/A-Wechsel erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
+tatsächlich vorgesehene Focus-ID, Focusrevision und Mitgliedschaftsrevision; der GMdialog benennt diese
+Gruppe ausdrücklich. Ein A/B/A-Wechsel oder geänderte Mitgliedschaft bei gleichem Fokus erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
 Notizen ausdrücklich aus. Die gebundenen Scene-/LiveSessionanforderungen
 beschreiben die GM-Arbeitsflächen; sie erweitern diesen Displaykanal nicht.
 Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
@@ -59,7 +59,7 @@ keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 
 Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
-ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
+direkte Ortsart-/Handoutwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
 gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Scene-
 Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
 in ihren bisherigen Ownertabellen erhalten. Keine Datenmigration erforderlich.
@@ -77,7 +77,9 @@ Gesamtkosten großer Frames sind weiterhin zu messen und gemeinsam zu begrenzen.
 `desktop-player-visual-contract.test.mjs` belegt mit echtem Store:
 Ortsart bleibt trotz aktiver Masken, Mechanik bleibt GM-owned, neue Textaufträge
 haben keine Teilwirkung/Receipt und alte Textsettings bleiben über Fresh,
-Backup/Copy erhalten und neutral. Renderer-Gegenproben prüfen alte Pakete
+Backup/Copy erhalten und neutral. Eine weitere Storegegenprobe verwirft alte Freigaben bei neuer Mitgliedschaft
+ohne Fokuswechsel atomar; nach erneutem Prüfen ist dieselbe visuelle Freigabe gültig.
+Renderer-Gegenproben prüfen alte Pakete
 samt Überschrift. `desktop-player-visual-host.test.mjs` prüft echte Hostmethoden mit
 kontrollierten Fenstern: Push/Pull, erlaubte Feldmenge und verschachtelte Daten.
 Der vorhandene Windowtest ergänzt die Lebenszyklusfälle. Die weiteren

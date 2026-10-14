@@ -157,7 +157,7 @@ function keepHealthDraft() {
 }
 function xpPreview() {
   const p = view?.characters.find(p=>p.characterId===selected); if (!p) return;
-  try { const amount = Number(value('xp-amount')); if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('Nichtnegative ganze XP eingeben.'); const changed=changeCharacterXp(p,value('xp-mode') as 'add'|'subtract'|'set',amount),next=changed.after.xp!; const level = xpLevel(next); get('xp-preview').textContent = 'Danach: ' + next + ' XP · Level ' + level.level + (value('xp-mode')==='subtract'?' · Abzug '+changed.removed+' XP; Rastzähler sinken bis mindestens 0.':' · Rastverbrauch bleibt erhalten.'); }
+  try { const amount = Number(value('xp-amount')); if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('Nichtnegative ganze XP eingeben.'); const changed=changeCharacterXp(p,value('xp-mode') as 'add'|'subtract'|'set',amount),next=changed.after.xp!; const level = xpLevel(next); get('xp-preview').textContent = 'Danach: ' + next + ' XP · Level ' + level.level + (value('xp-mode')==='subtract'?' · Abzug '+changed.removed+' XP':'')+' · Rastverbrauch bleibt erhalten.'; }
   catch (error) { get('xp-preview').textContent=(error as Error).message; }
 }
 function renderTreasure() {
