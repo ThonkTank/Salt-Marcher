@@ -11,7 +11,15 @@
     "product_ui_evidence": false
   },
   "cloud_native_desktop_pilot": "blocked",
-  "local_recorder_pilot": "in_progress",
+  "local_recorder_pilot": "in_progress; two operator-reported save/fresh cycles await independent review; interruption retained as abnormal",
   "scored_product_runs": 0,
-  "claim": "No product usability, parity or human-load claim. Runtime trial state and private contracts remain outside the public repository."
+  "claim": "No product usability, parity or human-load claim. Runtime trial state and private contracts remain outside the public repository.",
+  "scenario_contract_alignment": "Distinguish GM read-aloud retrieval from visual-only passive player projection; no scored wave existed when wording was corrected.",
+  "scenario_version": "nebelmark 2.0.1",
+  "open_infrastructure_requirements": [
+    "generic whole-work-goal timers",
+    "recorder continuity across guarded process restarts",
+    "verified Obsidian process containment",
+    "two independent readiness reviews"
+  ]
 }
