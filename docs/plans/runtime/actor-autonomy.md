@@ -98,8 +98,11 @@ Ziel und Positionsoverride gegen beide Buchungstabellen bleiben zu prüfen.
 
 ## Nächste ausführbare Schritte
 
-1. 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
+1. Mehractor-/Mehrowner-Rollback prüfen: eine Ownerwirkung erst nach einer
+   vorher abgeschlossenen Wirkung eines anderen Actors scheitern lassen; Logs,
+   HP, Featureladung, Reservierungen und Cursor gemeinsam vergleichen.
+2. 200 aktivierte Actors unter der dokumentierten Quellbedingung messen.
    Nur belegte Engstellen ändern; keine zusätzliche persistierte Simulation oder
    Hintergrundlaufzeit einführen.
-2. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
+3. Den Ablauf nativ auf Tastaturfokus, lange Begründungen und Abbruch eines
    laufenden Catch-ups prüfen.

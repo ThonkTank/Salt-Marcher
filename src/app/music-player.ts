@@ -159,7 +159,9 @@ export class LocalAudioPlayer {
     if(this.layers.get(id)===layer)this.layers.delete(id);
   }
   private fadeLayer(id:string,to:number,seconds:number,remove:boolean) {
-    const layer=this.layers.get(id);if(!layer||layer.failed)return;
+    const layer=this.layers.get(id);if(!layer)return;
+    // A failed layer stays silent while selected, but must release its media when removed.
+    if(layer.failed){if(remove)this.removeLayer(id,layer);return;}
     if(!layer.ready) {
       layer.target=to;layer.seconds=seconds;layer.removing=remove;
       if(remove)this.removeLayer(id,layer);
