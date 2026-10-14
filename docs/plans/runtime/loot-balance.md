@@ -140,6 +140,46 @@ und die fremde ursprüngliche Testdatei bleiben erhalten. Dies qualifiziert den
 aktuellen lokalen Ablauf, nicht einen unverändert grünen Gesamttestlauf oder
 eine native Bedienabnahme.
 
+## Gezahlter Kaufpreis bei Teilmengen
+
+Der bestätigte Shopworkflow (Program Capabilities L576–586) zeichnet den
+gezahlten Preis auf, bucht aber keine Münzen automatisch ab. `paidCopper`
+ist der insgesamt auf diese Ledgerteilmenge entfallende Kaufpreis, kein
+Stückpreis und kein Verkaufserlös. Der ursprüngliche Kauf bleibt im
+unveränderten `shop-purchase`-Ereignis erklärt.
+
+Shopverkauf und manuelles Markieren als verkauft/weitergegeben kopierten
+bisher den gesamten gezahlten Kaufpreis in jede neue Teilmenge. Ein Kauf von
+3 Stück für 101 Kupfer zeigte nach dem ersten Teilverkauf insgesamt 202 Kupfer.
+Split und anschließender Merge hinterließen außerdem 33 Kupfer auf dem leeren
+Quellstapel: angezeigt wurden 134 statt 101 Kupfer. Der bestehende Splitweg
+hatte bereits eine korrekte proportionale Teilberechnung.
+
+`progression.ts.partitionLedgerPaidPrice` verwendet diese Berechnung jetzt für
+Shopverkauf, manuelle Verkauf-/Geschenkmarkierung, Split und Charakterweitergabe.
+Die neue Teilmenge erhält `floor(gesamt × teilmenge / vorherige menge)`;
+der ganzzahlige Rest bleibt auf dem verbleibenden Stapel. Die Writers rufen
+die Funktion nach ihren Mengen-/Quellenprüfungen und vor der Mengenänderung
+in derselben Transaktion auf. Beim Merge werden die bekannten Preise addiert
+und vom geleerten Quellstapel entfernt. Sobald ein Beitrag unbekannt ist,
+bleibt auch der gesamte Preis unbekannt. Fehlend und ausdrücklich null sind
+unterschiedliche Fakten; es gibt keine automatische Münzbuchung.
+
+Eine Charakterweitergabe trägt den Kaufpreisanteil auf der erklärenden
+Abgabezeile; der Empfang erzeugt keine weitere Zahlung. Tatsächlicher
+Verkaufserlös bleibt separat autoritativ für vergebene Beute. Käufe erhalten
+weiterhin keine Rewardgutschrift. Alte Ledgerbytes, Kaufereignisse und Receipts
+werden nicht migriert oder rückwirkend neu berechnet. Bereits vor dieser
+Korrektur falsch vervielfachte Anteile sind dadurch noch nicht repariert.
+
+`tests/desktop-trade-paid-price.test.mjs` prüft echte SQLitewrites einschließlich
+101-Kupfer-Rundung, vollständigem Verkauf, Split/Merge, Geschenk und Weitergabe,
+unbekanntem Preis, null und einem großen exakten Betrag. Dazu kommen Fresh,
+exakte Receiptreplays, Lootausschluss und ein kontrollierter Fehler nach den
+Ledgerwrites: die Transaktion rollt vollständig zurück; Statusklärung nach
+Neustart bestätigt genau einen wirksamen Verkauf. Dies ist Storeevidenz,
+keine native Prüfung einer verlorenen IPC-Antwort oder vollständige Handelsabnahme.
+
 ## Nächste ausführbare Schritte
 
 1. **Vollständige Guidance qualifizieren.** `storage/session-rewards.ts`,
@@ -163,7 +203,17 @@ eine native Bedienabnahme.
    endlicher zulässiger Katalogpool und explizit fehlende Definition. Seed,
    Preset-/XP-/Katalogbasis sowie manuelle Itemänderung bis Annahme/Fresh binden;
    keine stillen Ersatzitems außerhalb bindender Quellenvorgaben.
-2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
+2. **Historie und Transfer schließen.** Für frühere Teilverkäufe mit doppelt
+   aufgezeichnetem `paidCopper` zuerst die unveränderten Kauf-/Split-/Verkauf-
+   ereignisse und Herkunftskette in `progress_event`/`shop_event` vergleichen.
+   Nur eindeutig belegbare Anteile als ausdrückliche, revisionsgebundene
+   Korrektur anbieten; ungeklärte Preise offen halten. Eine Erklärung und der
+   vorherige Zustand müssen erhalten bleiben. Kein heuristischer Transfer-
+   oder Startuprewrite. Die aktuellen Writes verhindern neue Doppelung;
+   eine vollständige historische Reparatur ist noch nicht geliefert.
+   Native verlorene Antwort → Buchungsstatus → erneutes Öffnen des gleichen
+   Shops und Ledgerempfängers prüfen; keine automatische erneute Buchung.
+   Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
    erklärende Korrekturen stimmen; freie Prosa und Quellpaketbytes bleiben erhalten.

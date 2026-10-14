@@ -52,7 +52,7 @@ Level und erhaltenen bestätigten Rastverbrauch/Abschnitte. Eine neue Lektion
 macht die vorhandene Erweiterungsinstallation samt ausdrücklicher Rechteannahme,
 Widerruf, schreibfreier Outcomeprüfung und gesicherter Wiederaufnahme-Reparatur
 auffindbar. Sie benennt den noch fehlenden zusätzlichen Inhaltseditor. Die
-Lessonrevision ist `desktop-tutorial-workspace-shortcuts-v33`.
+Lessonrevision ist `desktop-tutorial-session-progress-workspace-shortcuts-v34`.
 
 ## Aussagekräftige lokale Belege
 
