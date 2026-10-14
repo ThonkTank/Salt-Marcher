@@ -37,7 +37,7 @@ function profile(db: any, campaignId: string, id: string): Character {
   const row = db.prepare('SELECT m.*,p.revision AS profile_revision,p.payload,p.checksum FROM roster_member m JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id WHERE m.campaign_id=? AND m.id=?').get(campaignId, id);
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Charakterprofil nicht verfügbar oder beschädigt.');
   if (![row.ordinal, row.membership_revision].every(v => Number.isSafeInteger(v) && v >= 0) || !Number.isSafeInteger(row.profile_revision) || row.profile_revision < 1) throw new Error('Charakterrevision oder Partyreihenfolge beschädigt.');
-  return { id: row.id, ordinal: row.ordinal, profile: checkedCharacterProfile(JSON.parse(row.payload)), profileRevision: row.profile_revision, active: !!row.active, membershipRevision: row.membership_revision, sceneId: row.scene_id };
+  return { id: row.id, ordinal: row.ordinal, profile: checkedCharacterProfile(JSON.parse(row.payload)), profileRevision: row.profile_revision, archived:!!JSON.parse(row.payload).archive, active: !!row.active, membershipRevision: row.membership_revision, sceneId: row.scene_id };
 }
 export function readCampaignTime(db:any,campaignId:string){
  const anchor=db.prepare('SELECT epoch_id,instant_ms FROM campaign_time WHERE campaign_id=?').get(campaignId);
@@ -67,11 +67,13 @@ export function readLive(db: any, campaignId: string): LiveView {
     if (!party || !Number.isSafeInteger(party.revision) || party.revision < 0) throw new Error('Partyquelle ist nicht verfügbar.');
     const time = db.prepare('SELECT * FROM campaign_time WHERE campaign_id=?').get(campaignId);
     if (!time || !time.epoch_id || !/^(0|[1-9][0-9]*)$/.test(time.instant_ms)) throw new Error('Bestätigter Kampagnenzeitanker nicht verfügbar.');
-    const roster = db.prepare('SELECT id FROM roster_member WHERE campaign_id=? ORDER BY ordinal,id').all(campaignId).map((row: any) => profile(db, campaignId, row.id));
+    const allRoster = db.prepare('SELECT id FROM roster_member WHERE campaign_id=? ORDER BY ordinal,id').all(campaignId).map((row: any) => profile(db, campaignId, row.id));
+    if(allRoster.some((c:Character)=>c.archived&&(c.active||c.sceneId!==null)))throw new Error('Archivierte Figur ist noch einer Party oder Scene zugeordnet.');
+    const roster=allRoster.filter((c:Character)=>!c.archived),archivedRosterCount=allRoster.length-roster.length;
     const state = db.prepare('SELECT * FROM live_state WHERE campaign_id=?').get(campaignId);
     if (!state) {
       if (db.prepare('SELECT 1 FROM live_scene WHERE campaign_id=?').get(campaignId) || roster.some((c: Character) => c.sceneId !== null)) throw new Error('Runtime ohne bestätigte Primary/Focus-Zuordnung. Recovery erforderlich.');
-      return { rosterRevision: party.revision, roster, primaryId: null, focusId: null, focusRevision: null, scenes: [], scene: null, archiveCount: 0 };
+      return { rosterRevision: party.revision, roster, archivedRosterCount, primaryId: null, focusId: null, focusRevision: null, scenes: [], scene: null, archiveCount: 0 };
     }
     if (!Number.isSafeInteger(state.focus_revision) || state.focus_revision < 0) throw new Error('Focusrevision ist beschädigt.');
     const scene = readLiveScene(db, campaignId, state.focus_id);
@@ -87,7 +89,7 @@ export function readLive(db: any, campaignId: string): LiveView {
     }
     for (const character of roster) if ((character.active && (!character.sceneId || !sceneIds.has(character.sceneId))) || (!character.active && character.sceneId)) throw new Error('Party und Scenezuordnung widersprechen sich.');
     if (roster.some((c: Character) => c.active) && !roster.some((c: Character) => c.active && c.sceneId === state.primary_id)) throw new Error('Primary ist leer, obwohl eine andere Gruppe aktiv ist.');
-    return { rosterRevision: party.revision, roster, primaryId: state.primary_id, focusId: state.focus_id, focusRevision: state.focus_revision,
+    return { rosterRevision: party.revision, roster, archivedRosterCount, primaryId: state.primary_id, focusId: state.focus_id, focusRevision: state.focus_revision,
       scenes: activeSummaries(db, campaignId, state.primary_id), archiveCount: archiveCount(db, campaignId), scene };
   })();
 }
@@ -147,7 +149,7 @@ function recordPartyHistory(db:any,campaignId:string,sceneId:string|null,text:st
   db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(campaignId,randomUUID(),sceneId,value,hash(value));
 }
 function targetRevision(db: any, campaignId: string, action: LiveCommand['action'], targetId: string): number | null {
-  const table = action.kind === 'membership' ? 'roster_member' : action.kind === 'profile' || action.kind === 'create-character' ? 'character_profile' : 'live_scene';
+  const table = action.kind === 'membership' ? 'roster_member' : action.kind === 'profile' || action.kind === 'archive-character' || action.kind === 'create-character' ? 'character_profile' : 'live_scene';
   if (!db.prepare('SELECT 1 FROM ' + table + ' WHERE campaign_id=? AND id=?').get(campaignId, targetId)) return null;
   if (action.kind === 'move') return db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision ?? null;
   if (table === 'live_scene') {
@@ -237,17 +239,32 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
         scene = readLiveScene(db, campaignId, targetId);
       }
     } else if (action.kind === 'create-character') {
-      const checked = checkedCharacterProfile(action.profile), payload = json(checked); targetId = randomUUID(); revision = 1;
+      const checked = checkedCharacterProfile(action.profile);if(checked.archive)throw new Error('Neue Figuren beginnen im Roster.');const payload = json(checked); targetId = randomUUID(); revision = 1;
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),-1)+1 n FROM roster_member WHERE campaign_id=?').get(campaignId).n;
       db.prepare('INSERT INTO roster_member VALUES(?,?,?,0,0,NULL)').run(campaignId, targetId, ordinal);
       db.prepare('INSERT INTO character_profile VALUES(?,?,?,?,?)').run(campaignId, targetId, 1, payload, hash(payload));
       db.prepare('UPDATE roster_state SET revision=revision+1 WHERE campaign_id=?').run(campaignId); character = profile(db, campaignId, targetId);
     } else if (action.kind === 'profile') {
       const before = profile(db, campaignId, action.characterId); if (before.profileRevision !== action.expectedRevision) throw new Error('Charakterprofil wurde inzwischen geändert.');
+      if(before.archived||action.profile.archive)throw new Error('Archivierte Figuren zuerst wiederherstellen. Archivstatus nur über Archivieren ändern.');
       const payload = json(checkedCharacterProfile(action.profile)); targetId = before.id; revision = before.profileRevision + 1;
       db.prepare('UPDATE character_profile SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(revision, payload, hash(payload), campaignId, targetId); character = profile(db, campaignId, targetId);
+    } else if(action.kind==='archive-character'){
+      const before=profile(db,campaignId,action.characterId),state=db.prepare('SELECT * FROM live_state WHERE campaign_id=?').get(campaignId);
+      if(before.profileRevision!==action.expectedRevision||before.membershipRevision!==action.expectedMembershipRevision||db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision!==action.expectedRosterRevision||(state?.focus_revision??null)!==action.expectedFocusRevision)throw new Error('Figur oder Fokus wurde inzwischen geändert. Archivansicht aktualisieren.');
+      if(typeof action.archived!=='boolean'||action.confirmName!==before.profile.name||typeof action.reason!=='string'||action.reason.length>4000)throw new Error('Archivieren benötigt den genauen Figurennamen und einen gültigen Grund.');
+      if(!!before.archived===action.archived)throw new Error(action.archived?'Figur ist bereits archiviert.':'Figur ist bereits im Roster.');
+      const next={...before.profile};if(action.archived)next.archive={recordedAt:new Date().toISOString(),reason:action.reason};else delete next.archive;
+      const payload=json(checkedCharacterProfile(next));targetId=before.id;revision=before.profileRevision+1;
+      db.prepare('UPDATE character_profile SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(revision,payload,hash(payload),campaignId,targetId);
+      db.prepare('UPDATE roster_member SET active=0,scene_id=NULL,membership_revision=membership_revision+1 WHERE campaign_id=? AND id=?').run(campaignId,targetId);
+      db.prepare('UPDATE roster_state SET revision=revision+1 WHERE campaign_id=?').run(campaignId);
+      if(before.sceneId)db.prepare('UPDATE scene_lifecycle SET membership_revision=membership_revision+1 WHERE campaign_id=? AND id=?').run(campaignId,before.sceneId);
+      character=profile(db,campaignId,targetId);
+      if(state){const retired=cleanupScenes(db,campaignId,null);session=sessionDelta(db,campaignId,[before.id],retired,before.sceneId?[before.sceneId]:[]);scene=currentScene(db,campaignId,session.focusId);}
+      recordPartyHistory(db,campaignId,before.sceneId,'Figur '+(action.archived?'archiviert: ':'wiederhergestellt: ')+before.profile.name,{kind:'party-archive',characterIds:[before.id],archived:action.archived,reason:action.reason});
     } else if (action.kind === 'membership') {
-      const before = profile(db, campaignId, action.characterId); if (before.membershipRevision !== action.expectedRevision || typeof action.active !== 'boolean') throw new Error('Partymitgliedschaft wurde inzwischen geändert.');
+      const before = profile(db, campaignId, action.characterId);if(before.archived)throw new Error('Archivierte Figur zuerst wiederherstellen.'); if (before.membershipRevision !== action.expectedRevision || typeof action.active !== 'boolean') throw new Error('Partymitgliedschaft wurde inzwischen geändert.');
       if (db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision !== action.expectedRosterRevision) throw new Error('Partyquelle wurde verändert oder ist nicht verfügbar.');
       const state = db.prepare('SELECT * FROM live_state WHERE campaign_id=?').get(campaignId);
       if ((state?.focus_revision ?? null) !== action.expectedFocusRevision || action.active && (state?.focus_id ?? null) !== action.targetSceneId || !action.active && action.targetSceneId !== null) throw new Error('Sceneauswahl ist inzwischen veraltet.');
@@ -345,10 +362,17 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
     } else throw new Error('Unbekannte Liveaktion.');
     const rosterRevision = db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision;
     if (!Number.isSafeInteger(rosterRevision)) throw new Error('Partyquelle nicht verfügbar.');
-    const ack: LiveAck = { commandId: command.commandId, targetId, revision, rosterRevision, ...(scene ? { scene } : {}), ...(character ? { character } : {}), ...(session ? { session } : {}) };
+    const archivedRosterCount=db.prepare("SELECT count(*) n FROM character_profile WHERE campaign_id=? AND json_type(payload,'$.archive')='object'").get(campaignId).n;
+    const ack: LiveAck = { archivedRosterCount, commandId: command.commandId, targetId, revision, rosterRevision, ...(scene ? { scene } : {}), ...(character ? { character } : {}), ...(session ? { session } : {}) };
     const payload = json(ack);
     db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(command.commandId, fingerprint(command), campaignId, targetId, revision);
     db.prepare('INSERT INTO live_receipt VALUES(?,?,?)').run(command.commandId, payload, hash(payload));
     return ack;
   }).immediate();
+}
+
+export function readArchivedRoster(db:any,campaignId:string,after:string|null,search:string){
+ if(typeof search!=='string'||search.length>1000||after!==null&&(typeof after!=='string'||!/^\d+:[^:]+$/.test(after)))throw new Error('Ungültige Archivsuche.');
+ const ordinal=after===null?-1:Number(after.slice(0,after.indexOf(':'))),id=after===null?'':after.slice(after.indexOf(':')+1);if(!Number.isSafeInteger(ordinal))throw new Error('Ungültiger Archivcursor.');
+ return db.transaction(()=>{const pattern='%'+search.replace(/[\\%_]/g,'\\$&')+'%',rows=db.prepare("SELECT m.id,m.ordinal FROM roster_member m JOIN character_profile p USING(campaign_id,id) WHERE m.campaign_id=? AND json_type(p.payload,'$.archive')='object' AND (p.payload LIKE ? ESCAPE '\\' OR m.id LIKE ? ESCAPE '\\') AND (m.ordinal>? OR m.ordinal=? AND m.id>?) ORDER BY m.ordinal,m.id LIMIT 41").all(campaignId,pattern,pattern,ordinal,ordinal,id),items=rows.slice(0,40).map((r:any)=>profile(db,campaignId,r.id)),last=rows[39];return{items,next:rows.length>40?last.ordinal+':'+last.id:null,total:db.prepare("SELECT count(*) n FROM character_profile WHERE campaign_id=? AND json_type(payload,'$.archive')='object'").get(campaignId).n};})();
 }

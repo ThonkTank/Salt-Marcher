@@ -133,7 +133,7 @@ export function lastCombatPartyParticipant(db:any,cam:string,state:CombatState,c
 
 export function readProgress(db: any, cam: string): ProgressView {
   return db.transaction(() => {
-    const rows=db.prepare('SELECT m.*,p.payload AS profile FROM roster_member m JOIN character_profile p ON m.campaign_id=p.campaign_id AND m.id=p.id WHERE m.campaign_id=? ORDER BY m.ordinal,m.id').all(cam);
+    const rows=db.prepare('SELECT m.*,p.payload AS profile FROM roster_member m JOIN character_profile p ON m.campaign_id=p.campaign_id AND m.id=p.id WHERE m.campaign_id=? AND json_type(p.payload,\'$.archive\') IS NULL ORDER BY m.ordinal,m.id').all(cam);
     const progress=new Map<string,Progress>(rows.map((r:any)=>[r.id,readProgressCharacter(db,cam,r.id)]));
     const open=openHealthCombats(db,cam),statuses=latestCombatStatuses(db,cam,rows.filter((r:any)=>progress.get(r.id)!.health===null&&!progress.get(r.id)!.combatStatus).map((r:any)=>r.id));
     return {characters:rows.map((r:any)=>{
@@ -277,7 +277,7 @@ export function readProgressHistory(db: any, cam: string, characterId: string, a
   const page = rows.slice(0,50);
   return { items: page.map((r: any) => ({ id: r.id, kind: r.kind, facts: decoded<Record<string, any>>(r) })), next: rows.length > 50 ? String(page[49].cursor) : null };
 }
-export function readLootBalance(db:any,cam:string){return db.transaction(()=>{const members=db.prepare('SELECT m.id,m.active,p.payload,p.checksum FROM roster_member m JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id WHERE m.campaign_id=? ORDER BY m.ordinal').all(cam).map((m:any)=>{if(hash(m.payload)!==m.checksum)throw new Error('Charakterprofil für Beutebilanz beschädigt.');return{...m,name:checkedCharacterProfile(JSON.parse(m.payload)).name};}),totals=new Map<string,bigint>(),unknown=new Map<string,number>();for(const m of members){totals.set(m.id,0n);unknown.set(m.id,0);}for(const row of db.prepare('SELECT * FROM character_ledger WHERE campaign_id=?').iterate(cam)){try{const item=checkedLedgerRow(row);const value=ledgerRewardValue(db,cam,item);if(value===null)unknown.set(item.characterId,(unknown.get(item.characterId)??0)+1);else totals.set(item.characterId,(totals.get(item.characterId)??0n)+value);}catch{unknown.set(row.character_id,(unknown.get(row.character_id)??0)+1);}}const leader=[...totals.values()].reduce((a,b)=>a>b?a:b,0n),characters=members.map((m:any)=>({characterId:m.id,name:m.name,active:!!m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));return{characters,leaderCopper:leader.toString(),suggestedCharacterIds:lootBalanceSuggestions(characters,leader.toString())};})();}
+export function readLootBalance(db:any,cam:string){return db.transaction(()=>{const members=db.prepare('SELECT m.id,m.active,p.payload,p.checksum FROM roster_member m JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id WHERE m.campaign_id=? AND json_type(p.payload,\'$.archive\') IS NULL ORDER BY m.ordinal').all(cam).map((m:any)=>{if(hash(m.payload)!==m.checksum)throw new Error('Charakterprofil für Beutebilanz beschädigt.');return{...m,name:checkedCharacterProfile(JSON.parse(m.payload)).name};}),totals=new Map<string,bigint>(),unknown=new Map<string,number>();for(const m of members){totals.set(m.id,0n);unknown.set(m.id,0);}for(const row of db.prepare('SELECT * FROM character_ledger WHERE campaign_id=?').iterate(cam)){if(!totals.has(row.character_id))continue;try{const item=checkedLedgerRow(row);const value=ledgerRewardValue(db,cam,item);if(value===null)unknown.set(item.characterId,(unknown.get(item.characterId)??0)+1);else totals.set(item.characterId,(totals.get(item.characterId)??0n)+value);}catch{unknown.set(row.character_id,(unknown.get(row.character_id)??0)+1);}}const leader=[...totals.values()].reduce((a,b)=>a>b?a:b,0n),characters=members.map((m:any)=>({characterId:m.id,name:m.name,active:!!m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));return{characters,leaderCopper:leader.toString(),suggestedCharacterIds:lootBalanceSuggestions(characters,leader.toString())};})();}
 export function validateItemInput(db:any,input:ItemInput){
  if(!input||typeof input.name!=='string'||!input.name.trim()||input.name.length>1000||!Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>1000000||!['coins','equipment','trade-goods','magic','other'].includes(input.category))throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
  if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');}else copper(input.valueGold);
@@ -299,9 +299,10 @@ export function makeTreasure(db: any, cam: string, title: string, sceneId: strin
   const treasure: Treasure = { id: randomUUID(), revision: 1, title: title || 'Beute', sceneId, locationId: locationId ?? scene?.locationId ?? null, combatId, items: inputs.map(i => checkedItem(db, i)) };
   saveTreasure(db, cam, treasure); event(db, cam, null, 'treasure-created', { treasure }); return treasure.id;
 }
+function availableRecipient(db:any,cam:string,id:string){if(db.prepare("SELECT 1 FROM character_profile WHERE campaign_id=? AND id=? AND json_type(payload,'$.archive')='object'").get(cam,id))throw new Error('Archivierte Belohnungsempfänger zuerst wiederherstellen.');}
 export function awardXpPool(db:any,cam:string,pool:number,recipients:{characterId:string;revision:number}[],sourceKind:string,sourceId:string) {
   if(new Set(recipients.map(r=>r.characterId)).size!==recipients.length)throw new Error('XP-Empfänger dürfen nicht doppelt vorkommen.');const award=xpShare(pool,recipients.length);
-  for(const recipient of recipients){const p=readProgressCharacter(db,cam,recipient.characterId),before=structuredClone(p);if(p.revision!==recipient.revision)throw new Error('XP-Empfänger geändert. Belohnung erneut ansehen.');p.xp=(p.xp??0)+award.share;xpLevel(p.xp);saveProgress(db,cam,p);notice(db,cam,p.characterId,award.share);event(db,cam,p.characterId,'story-award',{sourceKind,sourceId,before,after:p,xp:award.share});}
+  for(const recipient of recipients){availableRecipient(db,cam,recipient.characterId);const p=readProgressCharacter(db,cam,recipient.characterId),before=structuredClone(p);if(p.revision!==recipient.revision)throw new Error('XP-Empfänger geändert. Belohnung erneut ansehen.');p.xp=(p.xp??0)+award.share;xpLevel(p.xp);saveProgress(db,cam,p);notice(db,cam,p.characterId,award.share);event(db,cam,p.characterId,'story-award',{sourceKind,sourceId,before,after:p,xp:award.share});}
   return award;
 }
 export function finishCombatRewards(db: any, cam: string, state: CombatState, rewards: FinishRewards | undefined): CombatReward {
@@ -312,7 +313,7 @@ export function finishCombatRewards(db: any, cam: string, state: CombatState, re
   const affected = [...new Set([...participants, ...r.recipients.map(p => p.characterId)])];
   const load = xpShare(r.loadXp, participants.length).share;
   for (const id of affected) {
-    const p = readProgressCharacter(db, cam, id), before = structuredClone(p), recipient = r.recipients.find(c => c.characterId === id);
+    availableRecipient(db,cam,id);const p = readProgressCharacter(db, cam, id), before = structuredClone(p), recipient = r.recipients.find(c => c.characterId === id);
     if (recipient && recipient.revision !== p.revision) throw new Error('XP-Empfänger wurde geändert. Abschluss erneut ansehen.');
     if (recipient) { p.xp = (p.xp ?? 0) + divided.share; xpLevel(p.xp); notice(db, cam, id, divided.share); }
     const actor = state.participants.find(p => p.characterId === id);
@@ -334,6 +335,8 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
     const cam = command.campaignId, fp = hash(json({ ...command, token: undefined })), prior = db.prepare('SELECT * FROM progress_receipt WHERE command_id=?').get(command.commandId);
     if (prior) { if (prior.campaign_id !== cam || prior.fingerprint !== fp || hash(prior.payload) !== prior.checksum) throw new Error('Auftragskennung bereits anders verwendet.'); return JSON.parse(prior.payload); }
     const a = command.action;
+    if('characterId' in a&&db.prepare("SELECT 1 FROM character_profile WHERE campaign_id=? AND id=? AND json_type(payload,'$.archive')='object'").get(cam,a.characterId))throw new Error('Archivierte Figur zuerst wiederherstellen.');
+    if('recipients' in a&&Array.isArray(a.recipients))for(const r of a.recipients)if(db.prepare("SELECT 1 FROM character_profile WHERE campaign_id=? AND id=? AND json_type(payload,'$.archive')='object'").get(cam,r.characterId))throw new Error('Archivierte Belohnungsempfänger zuerst wiederherstellen.');
     let groupId:string|undefined;
     let treasureId: string | null = null; const ledgerIds: string[] = [];const restWarnings:string[]=[];
     if(a.kind==='narrative-state'){
