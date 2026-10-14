@@ -216,6 +216,7 @@ function renderSceneMeta() {
     origin.append(title, notes, place);
   } else origin.textContent = 'Noch kein vorbereiteter Besuch übernommen.';
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
+  get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }
 function renderScene() {
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
