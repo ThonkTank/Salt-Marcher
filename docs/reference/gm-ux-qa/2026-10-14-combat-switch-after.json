@@ -1,0 +1,28 @@
+{
+  "results": {
+    "duringSwitch": {
+      "selected": "a351265b-ca83-4aac-84bb-beb60ffc64cf",
+      "visible": "Torwache",
+      "damageEnabled": false
+    },
+    "failedReadRetrySameTarget": true,
+    "unfinishedNotesRetained": true,
+    "hpAfter": {
+      "a": 10,
+      "b": 7
+    },
+    "aBytesUnchanged": true,
+    "nativeDraftRestart": true
+  },
+  "launches": [
+    {
+      "pid": 304392,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-99260df226624607bab3652d66477709.service"
+    },
+    {
+      "pid": 304492,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-dungeon.slice/codex-dungeon-jobs.slice/codex-dungeon-qa-99260df226624607bab3652d66477709.service"
+    }
+  ],
+  "normalClose": true
+}

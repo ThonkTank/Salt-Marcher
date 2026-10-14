@@ -16,6 +16,8 @@ const editableCombat=(combat:CombatView['combat'])=>!!combat&&['preparing','runn
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
+let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
+function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
@@ -73,19 +75,27 @@ export function combatContext(next: Workspace | null, current: LiveScene | null,
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
   get('combat-panel').hidden = !current;
-  if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null; view = null; render(); if (next && current) void load(); }
+  if (changed) { if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null; view = null; render(); if (next && current) void load(); }
   else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
 }
 async function load(id?: string):Promise<boolean> {
   if (!workspace || !scene) return false;
   candidateRequest++;candidateLoading=false;
-  const gen = generation,request=++loadNumber,basis=partyContext;
-  try { const result = unwrap(await window.campaign.combat(workspace.token, scene.id, id??view?.combat?.id)); if (generation === gen&&request===loadNumber) { view = result; render();await loadNotes();if(generation!==gen||request!==loadNumber)return false;void listDrafts();if(basis!==partyContext)void refreshPartyCandidates();return true; } }
-  catch (error) { if (generation === gen) tell((error as Error).message, true); }
+  const gen=generation,request=++loadNumber,basis=partyContext,token=workspace.token,sceneId=scene.id,target=id??view?.combat?.id??requestedCombatId;
+  requestedCombatId=target??null;loadPending=true;loadError=null;lock();
+  const current=()=>generation===gen&&request===loadNumber&&workspace?.token===token&&scene?.id===sceneId;
+  try {
+    const result=unwrap(await window.campaign.combat(token,sceneId,target??undefined));if(!current())return false;
+    if(result.combat&&(result.combat.sceneId!==sceneId||target&&result.combat.id!==target)||target&&!result.combat)throw new Error('Begegnungsantwort passt nicht zur gewählten Begegnung.');
+    acceptCombat(result);render();await loadNotes();if(!current())return false;
+    void listDrafts();if(basis!==partyContext)void refreshPartyCandidates();return true;
+  }catch(error){if(current()){loadError=(error as Error).message;view=null;selected=null;render();tell(loadError,true);}}
+  finally{if(current()){loadPending=false;lock();}}
   return false;
 }
+
 async function execute(action: CombatAction, expectedRevision?:number): Promise<boolean> {
-  if (!workspace || !scene || pending || hasPendingCommit(workspace.campaign.id)) return false;
+  if (!workspace || !scene || blocked()) return false;
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='notes'?notesDraft():editDraft;
   const gen = generation;
   const command: CombatCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token,
@@ -97,7 +107,7 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
       const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
-      view = result; applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
+      acceptCombat(result); applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
       if(['create','edit','damage','heal','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       tell('Kampf gespeichert.'); return true;
     } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
@@ -128,9 +138,12 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
   if(await execute({kind:'add-creature',creatureId,count,grouped})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
 }
 export async function flushCombat(): Promise<boolean> { if(!await flushFinishDraft())return false; if(pending)return await pending;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
-const blocked=()=>!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
+const blocked=()=>loadPending||!!loadError||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked();
+  const contextBlocked=!workspace||!scene||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
+  get<HTMLButtonElement>('combat-refresh').disabled=contextBlocked;get<HTMLSelectElement>('combat-history').disabled=contextBlocked;
+  const status=get('combat-load-status'),title=knownRecent.find(c=>c.id===requestedCombatId)?.title;status.hidden=!loadPending&&!loadError;status.setAttribute('role',loadError?'alert':'status');status.textContent=loadError?'Begegnung konnte nicht geladen werden: '+loadError+' Erneut laden oder eine andere Begegnung wählen.':loadPending?(title?'„'+title+'“ wird geladen…':'Begegnung wird geladen…'):'';get('combat-panel').setAttribute('aria-busy',String(loadPending));
   if(candidateLoading)for(const c of get('combat-party-form').querySelectorAll<HTMLButtonElement|HTMLSelectElement|HTMLInputElement>('select,button,input'))c.disabled=true;
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
   if(editorLoading||!!fighterKey()&&draftCache.readFailures.has(fighterKey()!))for(const c of get('combat-participant-form').querySelectorAll<HTMLInputElement|HTMLButtonElement>('input,button'))c.disabled=true;
@@ -148,8 +161,8 @@ function render() {
   get('combat-assessment').textContent = view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '';
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
-  for (const item of view?.recent ?? []) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'retired'?' · archiviert':item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
-  history.value = combat?.id ?? ''; history.hidden = (view?.recent.length ?? 0) < 2;
+  for (const item of view?.recent ?? knownRecent) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'retired'?' · archiviert':item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
+  history.value = combat?.id ?? requestedCombatId ?? ''; history.hidden = (view?.recent.length ?? knownRecent.length) < 2;
   const terminal=!!combat&&!editableCombat(combat);
   get('combat-controls').hidden = !combat || terminal;
   get('combat-start').hidden = combat?.phase !== 'preparing';
@@ -208,7 +221,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-party-form').onsubmit=event=>{event.preventDefault();const p=view?.partyCandidates?.find(p=>p.characterId===value('combat-party-select'));if(p)void execute({kind:'add-party',characterId:p.characterId,expectedMembershipRevision:p.membershipRevision,expectedProgressRevision:p.progressRevision,...(value('combat-party-initiative').trim()?{initiative:Number(value('combat-party-initiative'))}:{})});};
   get('combat-party-select').onchange=()=>{get<HTMLInputElement>('combat-party-initiative').value='';};
   get('combat-create-form').onsubmit = event => { event.preventDefault(); if (scene) void execute({ kind: 'create', sceneId: scene.id, expectedMembershipRevision: scene.membershipRevision, title: value('combat-new-title'), includeParty: get<HTMLInputElement>('combat-include-party').checked }); };
-  get('combat-refresh').onclick = () => { if (!pending) void load(view?.combat?.id); };
+  get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
   get('combat-add-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }); };
   get('combat-roll').onclick = () => void execute({ kind: 'roll', mode: value('combat-roll-mode') as 'normal' | 'advantage' | 'disadvantage' });
