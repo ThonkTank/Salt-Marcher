@@ -22,7 +22,7 @@ export function validateBudgetSettings(values:unknown):asserts values is Dungeon
 export function validateDungeonContentValue(value:unknown):asserts value is DungeonContent{
  const object=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
  const id=(v:unknown)=>typeof v==='string'&&v.length>0&&v.length<=1000;
- const reference=(v:unknown)=>v===null||object(v)&&['encounter','treasure'].includes(v.kind)&&id(v.id);
+ const reference=(v:unknown)=>v===null||object(v)&&['encounter','group','treasure'].includes(v.kind)&&id(v.id);
  const strings=(v:unknown)=>Array.isArray(v)&&v.length<=1000&&v.every(s=>typeof s==='string'&&s.length<=2000000);
  if(!object(value))throw new Error('Dungeon-Inhalt prüfen.');
  if(typeof value.publicText!=='string'||value.publicText.length>2000000||!strings(value.categories)||!strings(value.tags)||!reference(value.reference)||value.sourceReference!==undefined&&!reference(value.sourceReference)||value.trapXp!==null&&(!Number.isSafeInteger(value.trapXp)||value.trapXp<0||value.trapXp>100000000)||!object(value.anchor)||!id(value.anchor.volumeId)||![value.anchor.x,value.anchor.y,value.anchor.z].every(Number.isSafeInteger))throw new Error('Dungeon-Inhalt, Quellenbezug oder Voxelanker prüfen.');
