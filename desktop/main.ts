@@ -292,6 +292,7 @@ else {
     handle('campaign:chase',(token:string,sceneId:string,id?:string)=>store.chase(token,sceneId,id));
     handle('campaign:execute-chase',(command:import('../src/app/chase-contracts').ChaseCommand)=>commits.execute('chase',command,()=>store.executeChase(command)));
     handle('campaign:execute-combat', (command: CombatCommand) => commits.execute('combat',command,()=>store.executeCombat(command)));
+    handle('campaign:archived-roster',(token:string,after:string|null,search:string)=>store.archivedRoster(token,after,search));
     handle('campaign:live', (token: string) => store.live(token));
     handle('campaign:live-scene', (token: string, id: string) => store.liveScene(token, id));
     handle('campaign:live-archives', (token: string, after: string | null) => store.liveArchives(token, after));

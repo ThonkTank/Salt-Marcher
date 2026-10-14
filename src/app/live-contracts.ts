@@ -1,11 +1,11 @@
 import type { Result } from './contracts';
 export interface CharacterProfile {
-  name: string; playerName?: string; species?: string; characterClass?: string;
+  name: string; archive?:{recordedAt:string;reason:string}; playerName?: string; species?: string; characterClass?: string;
   armorClass?: number; passivePerception?: number; passiveInsight?:number; passiveInvestigation?:number; languages?:string[]; speedFeet?: number;
 }
 export interface Character {
   id: string; ordinal: number; profile: CharacterProfile; profileRevision: number;
-  active: boolean; membershipRevision: number; sceneId: string | null;
+  archived?:boolean; active: boolean; membershipRevision: number; sceneId: string | null;
 }
 export interface LiveScene {
   id: string; revision: number; title: string; notes: string; readAloud?:string; locationId: string | null;
@@ -15,7 +15,7 @@ export interface LiveScene {
   adoption: { id: string; planId: string; planRevision: number; visitId: string; title: string; notes: string; locationId: string | null } | null;
 }
 export interface LiveView {
-  rosterRevision: number; roster: Character[]; primaryId: string | null; focusId: string | null; focusRevision: number | null;
+  rosterRevision: number; roster: Character[]; archivedRosterCount?:number; primaryId: string | null; focusId: string | null; focusRevision: number | null;
   scenes: { id: string; title: string; primary: boolean; members: number; membershipRevision: number; clock: LiveScene['clock'] }[];
   archiveCount: number;
   scene: LiveScene | null;
@@ -24,6 +24,7 @@ export type LiveAction =
   | { kind: 'initialize'; expectedRosterRevision: number }
   | { kind: 'create-character'; profile: CharacterProfile }
   | { kind: 'profile'; characterId: string; expectedRevision: number; profile: CharacterProfile }
+  | {kind:'archive-character';characterId:string;expectedRevision:number;expectedMembershipRevision:number;expectedRosterRevision:number;expectedFocusRevision:number|null;archived:boolean;confirmName:string;reason:string}
   | { kind: 'membership'; characterId: string; expectedRevision: number; expectedRosterRevision: number; active: boolean; targetSceneId: string | null; expectedFocusRevision: number | null }
   | { kind: 'apply-visit'; planId: string; expectedPlanRevision: number; visitId: string; sceneId: string; expectedRevision: number;expectedVisitRevision?:number }
   | { kind: 'scene-content'; sceneId: string; expectedRevision: number; title: string; notes: string; readAloud?:string; locationId: string | null }
@@ -33,7 +34,7 @@ export type LiveAction =
   | { kind: 'advance-clock'; sceneId: string; expectedRevision: number; amount: number; unit: TimeUnit; calendarVersion: 'relative-v1'; reason: string };
 export interface LiveCommand { commandId: string; campaignId: string; token: string; action: LiveAction }
 export interface LiveAck {
-  commandId: string; targetId: string; revision: number; rosterRevision: number; scene?: LiveScene; character?: Character;
+  commandId: string; targetId: string; revision: number; rosterRevision: number; archivedRosterCount?:number; scene?: LiveScene; character?: Character;
   session?: { primaryId: string; focusId: string; focusRevision: number; retired: { id: string; clock: LiveScene['clock'] }[];
     members: Pick<Character, 'id' | 'active' | 'membershipRevision' | 'sceneId'>[]; groups: { id: string; membershipRevision: number; members: number }[];
     createdScene?: LiveView['scenes'][number]; archiveCount: number };
@@ -52,6 +53,7 @@ export function formatInstant(instantMs: string): string {
   return 'Tag ' + (seconds / 86400n) + ' · ' + pad(seconds / 3600n % 24n) + ':' + pad(seconds / 60n % 60n) + ':' + pad(seconds % 60n);
 }
 export interface LiveAPI {
+  archivedRoster(token:string,after:string|null,search:string):Promise<Result<{items:Character[];next:string|null;total:number}>>;
   live(token: string): Promise<Result<LiveView>>;
   liveScene(token: string, id: string): Promise<Result<LiveScene>>;
   liveArchives(token: string, after: string | null): Promise<Result<{ items: { id: string; title: string }[]; next: string | null }>>;
@@ -61,13 +63,14 @@ export interface LiveAPI {
 export interface LiveStatus { outcome: 'applied' | 'not-applied' | 'conflict'; receipt: LiveAck | null; targetChanged: boolean; currentScene?: LiveScene; currentCharacter?: Character }
 export function checkedCharacterProfile(value: CharacterProfile): CharacterProfile {
   if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Ungültiges Charakterprofil.');
-  const keys = ['name', 'playerName', 'species', 'characterClass', 'armorClass', 'passivePerception', 'passiveInsight', 'passiveInvestigation', 'languages', 'speedFeet'];
+  const keys = ['name', 'archive', 'playerName', 'species', 'characterClass', 'armorClass', 'passivePerception', 'passiveInsight', 'passiveInvestigation', 'languages', 'speedFeet'];
   if (Reflect.ownKeys(value).some(key => typeof key !== 'string' || !keys.includes(key))) throw new Error('Unbekanntes Profilfeld.');
   for (const key of Reflect.ownKeys(value)) if (!('value' in Object.getOwnPropertyDescriptor(value, key)!)) throw new Error('Profil benötigt eigene Werte.');
   if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 1000) throw new Error('Charaktername fehlt.');
   for (const text of [value.playerName, value.species, value.characterClass]) if (text !== undefined && (typeof text !== 'string' || text.length > 1000)) throw new Error('Ungültiger Profiltext.');
   for (const number of [value.armorClass, value.passivePerception, value.passiveInsight, value.passiveInvestigation, value.speedFeet]) if (number !== undefined && (!Number.isSafeInteger(number) || number < 0)) throw new Error('Profilwerte müssen nichtnegative ganze Zahlen sein.');
   if(value.languages!==undefined&&(!Array.isArray(value.languages)||value.languages.length>100||value.languages.some(t=>typeof t!=='string'||!t.trim()||t.length>1000)))throw new Error('Sprachen benötigen geordnete, nichtleere Namen.');
+  if(value.archive!==undefined){const a=value.archive;if(!a||Object.getPrototypeOf(a)!==Object.prototype||Reflect.ownKeys(a).some(k=>k!=='recordedAt'&&k!=='reason')||typeof a.recordedAt!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(a.recordedAt)||!Number.isFinite(Date.parse(a.recordedAt))||typeof a.reason!=='string'||a.reason.length>4000)throw new Error('Charakterarchiv ist ungültig.');}
   return { ...value };
 }
 export function validateLiveCommand(command: LiveCommand) {

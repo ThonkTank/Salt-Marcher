@@ -576,3 +576,25 @@ und Belegwege halten den Spieltisch, Rastbudget und Chronik aktuell. Offene gül
 Spieltischeingaben werden vor einer bestätigten Partyänderung gespeichert.
 Löschen/Archivieren von Rosterfiguren und ein wieder löschbarer unbekannter XP-Stand
 sind noch offen; Teilnahme entfernen ist ausdrücklich keine Charakterlöschung.
+
+
+### Desktopstand 0.51: Figuren archivieren und wiederherstellen
+
+„Archivieren…“ in der Party-Oberfläche verlangt den genauen Figurennamen. Der Owner
+entfernt die Figur und ihre Teilnahme atomar aus Party, Scenezuordnung und offenen
+Kampf-/Verfolgungsmasken. Leere Split Scenes verwenden dieselbe vorhandene Retirement-
+und Fokuslogik wie das Entfernen aus der Party. Ein erneuter Auftrag mit derselben
+Command-ID verwendet den bestehenden Beleg.
+
+Das Profil trägt Archivzeitpunkt und optionalen Grund. Stabile ID, XP, Raststand,
+Inventar, Wissen, Reiseverlauf und abgeschlossene Kampfhistorie bleiben erhalten.
+Die aktuelle Fortschritts-/Empfängerauswahl und die Beutebilanz berücksichtigen nur
+Rosterfiguren. Neue Profil-, Teilnahme-, XP- und Belohnungsänderungen an archivierten
+Figuren verlangen zuerst eine Wiederherstellung. Archivsuche zeigt jeweils 40 Treffer
+mit weiterer Seite; Namen und IDs bleiben unterscheidbar.
+
+„Inaktiv wiederherstellen“ holt die gleiche Figur ins Roster, ohne automatische
+Teilnahme, Scenezuordnung oder erneute Aufnahme in frühere Kampfmasken. Kampagnenkopie
+und -transfer erhalten den Archivstatus zusammen mit dem Profil und remappen dieselbe
+Charakteridentität durch alle Verweise. Archivieren und Wiederherstellen erscheinen
+in der Kampagnenchronik. Endgültiges Löschen einzelner Figuren bleibt offen.

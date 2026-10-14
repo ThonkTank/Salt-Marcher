@@ -78,10 +78,11 @@ function busy(on: boolean, structural = false, textSave = false) {
 function mergeAck(ack: LiveAck, action: LiveAction) {
   if (!data) return;
   const priorScene = data.scene, priorCharacter = originalCharacter();
-  data.rosterRevision = ack.rosterRevision;
+  data.rosterRevision = ack.rosterRevision;if(ack.archivedRosterCount!==undefined)data.archivedRosterCount=ack.archivedRosterCount;
   if (ack.character) {
     const current = ack.character;
     data.roster = data.roster.some(c => c.id === current.id) ? data.roster.map(c => c.id === current.id ? current : c) : [...data.roster, current];
+    if(current.archived){data.roster=data.roster.filter(c=>c.id!==current.id);if(selected===current.id){selected=data.roster[0]?.id??null;characterDraft=originalCharacter()?structuredClone(originalCharacter()!):null;}}
     if (characterDraft?.id === current.id) {
       const dirty = priorCharacter && !equal(characterDraft.profile, priorCharacter.profile);
       characterDraft = action.kind === 'profile' ? { ...current, profile: characterDraft.profile } :
@@ -105,13 +106,13 @@ function mergeAck(ack: LiveAck, action: LiveAction) {
     else sceneDraft = structuredClone(ack.scene);
     data.scenes = data.scenes.map(s => s.id === ack.scene!.id ? { ...s, title: ack.scene!.title, members: ack.scene!.members.length, membershipRevision: ack.scene!.membershipRevision, clock: ack.scene!.clock } : s);
   }
-  renderList(); renderMembership(); renderSceneMeta(); renderGroups();
+  renderList();renderCharacter(); renderMembership(); renderSceneMeta(); renderGroups();
   document.dispatchEvent(new Event('campaign-party-changed'));
 }
 async function execute(action: LiveAction): Promise<LiveAck | null> {
   if (!context || blocked || request) return null;
   const token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
-  const structural = ['focus', 'move', 'membership'].includes(action.kind);
+  const structural = ['focus', 'move', 'membership', 'archive-character'].includes(action.kind);
   // Blur starts a text save before the user's button click arrives. Keep queued
   // intents available; their handlers await flushLive before writing.
   requestIsTextSave = action.kind === 'profile' || action.kind === 'scene-content';

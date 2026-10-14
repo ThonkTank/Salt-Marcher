@@ -150,6 +150,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   keepCombatDraft:(token:string,draft:unknown,expected:string|null)=>ipcRenderer.invoke('campaign:keep-combat-draft',token,draft,expected),
   discardCombatDraft:(token:string,id:string,kind:unknown,target:string,writeId:string)=>ipcRenderer.invoke('campaign:discard-combat-draft',token,id,kind,target,writeId),
   executeCombat: (command: unknown) => ipcRenderer.invoke('campaign:execute-combat', command),
+  archivedRoster:(token:string,after:string|null,search:string)=>ipcRenderer.invoke('campaign:archived-roster',token,after,search),
   live: (token: string) => ipcRenderer.invoke('campaign:live', token),
   liveScene: (token: string, id: string) => ipcRenderer.invoke('campaign:live-scene', token, id),
   liveArchives: (token: string, after: string | null) => ipcRenderer.invoke('campaign:live-archives', token, after),
