@@ -280,7 +280,7 @@ async function renderNotes() {
   get<HTMLInputElement>('note-title').value = shown.title;
   get<HTMLTextAreaElement>('note-read-aloud').value = shown.readAloud;
   get<HTMLTextAreaElement>('note-gm').value = shown.gmNotes;
-  get('note-kind').textContent = ({ npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht' })[row.note.kind];
+  get('note-kind').textContent = ({ npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht', rule: 'Regel' })[row.note.kind];
   for (const id of ['note-title', 'note-read-aloud', 'note-gm']) get<HTMLInputElement>(id).disabled = row.trashed || draftProblems.has(draftKey('note', row.note.id));
   get('note-remove').hidden = row.trashed; get('note-restore').hidden = !row.trashed;
   renderRelations();void showNarrative(context,row.note,row.trashed,()=>flushPreparation(true,true),tell);
@@ -329,6 +329,7 @@ function preservePlanInput(confirmed: ManualPlan, sent: ManualPlan, current: Man
 }
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string) => Promise<void>) {
   tell = status;
+  if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
   initSession(status,()=>flushPreparation(true),async id=>{if(!context)return;usePreparation(unwrap(await window.campaign.preparation(context.token,value('world-search'))), !!value('world-search').trim());if(id)selectedScene=id;await renderPlans();await renderNotes();await renderLocations();},openPreparedNote);
   openMap = navigateMap;
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
