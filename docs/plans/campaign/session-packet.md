@@ -60,6 +60,15 @@ oder Folgebesuch; historische Sceneinhalte bleiben erhalten. Der lokale Test
 `tests/desktop-live-visual-context.test.mjs` prüft diesen tatsächlichen
 Übernahme-/Speicherweg und erhält Autorenwortlaut ohne Playercommand.
 
+Das integrierte Quest-/Gerüchtjournal verwendet den bestehenden Narrativeowner
+für Status und Belohnungsvergabe. Gebundene Quest-/Gerüchtblöcke der Mappe
+zeigen nun bestätigten Status, vorbereitete Belohnung oder das vergebene Ergebnis.
+Ein vorhandener Rohentwurf wird als solcher angekündigt; er ersetzt den
+bestätigten Mappenstand nicht. Die lokale Storeprobe vergleicht Journal und
+Mappe vor/nach einem ausdrücklich bestätigten Abschluss samt erhaltenem CRLF.
+Eine weitere Probe liest 42 Aufträge in zwei geordneten Seiten ohne Writes und
+prüft Fresh. Native Journalnavigation und Entwurfswechsel bleiben offen.
+
 Die neue Sessionauswahl (`session-review-ui.ts`) erlaubt Suche und Filter über
 Vorschläge sowie eine gemeinsam bestätigte Übernahme. `accept-proposals` bindet
 Plan und jede gewählte Vorschlagsrevision, prüft alle ursprünglichen Quellen-

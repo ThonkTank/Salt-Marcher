@@ -18,7 +18,7 @@ function setup(t){
  const x={window,document,commands:[],messages:[],plan:{id:'plan',revision:1,scenes:[]},workspace:{token:'token',campaign:{id:'campaign'}},flush:async()=>true,read:async id=>run(id)};
  let profile={planId:'plan',revision:0,party:[],adventureDayFraction:'0.5',seed:'seed'};
  const view=()=>({profile,visits:[],groups:[],encounters:[]});
- window.campaign={session:async()=>result(view()),progress:async()=>result({characters:[]}),encounterTables:async()=>result([]),sessionRuns:async()=>result([]),generationSources:async()=>result({factions:[]}),sessionRun:async(_,id)=>result(await x.read(id)),executeSession:async cmd=>{x.commands.push(cmd);if(cmd.action.kind==='profile')profile={...cmd.action.profile,revision:profile.revision+1};return result(view());}};
+ window.campaign={session:async()=>result(view()),progress:async()=>result({characters:[]}),encounterTables:async()=>result([]),sessionRuns:async()=>result([]),npcs:async()=>result({rows:[],total:0}),generationSources:async()=>result({factions:[]}),sessionRun:async(_,id)=>result(await x.read(id)),executeSession:async cmd=>{x.commands.push(cmd);if(cmd.action.kind==='profile')profile={...cmd.action.profile,revision:profile.revision+1};return result(view());}};
  x.ui=require('../'+base+'/ui.cjs');x.ui.initSession((text,error)=>x.messages.push({text,error}),()=>x.flush(),async()=>{},async()=>{});
  for(const dialog of document.querySelectorAll('dialog')){dialog.open=false;dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  x.context=()=>x.ui.sessionContext(x.workspace,x.plan,null,{locations:[],notes:[]});

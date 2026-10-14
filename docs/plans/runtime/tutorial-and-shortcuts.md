@@ -52,6 +52,8 @@ Level und erhaltenen bestätigten Rastverbrauch/Abschnitte. Eine neue Lektion
 macht die vorhandene Erweiterungsinstallation samt ausdrücklicher Rechteannahme,
 Widerruf, schreibfreier Outcomeprüfung und gesicherter Wiederaufnahme-Reparatur
 auffindbar. Sie benennt den noch fehlenden zusätzlichen Inhaltseditor. Die
+Journallektion ergänzt den Zugang zu Quests/Gerüchten mit demselben bestehenden
+Status-/Belohnungseditor; sie führt keinen weiteren Rewardwriter ein. Die
 Lessonrevision ist `desktop-tutorial-narrative-journal-session-review-live-packet-workspace-shortcuts-v37`.
 
 ## Aussagekräftige lokale Belege
