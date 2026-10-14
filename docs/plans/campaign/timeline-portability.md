@@ -34,22 +34,37 @@ werden für die neue Kopie neu gebildet. Keine Formatmigration ist erforderlich.
 Export, unabhängigen Import und Fresh aus, jeweils für Ersetzen aus einer
 Vorlage und vollständiges Leeren. Es prüft historische und aktuelle
 Besuchszuordnung, unveränderte Notiztexte/Paketbytes und Backupfähigkeit.
-Dieser Nachweis qualifiziert die Referenzkorrektur. Worldplatzierungen,
-angenommene Gruppen, vergebene Rewards, Undo/Redo und offene Eingaben brauchen
-weiter eigene kombinierte Szenarien; vollständige Produktabnahme bleibt offen.
+Dieser Nachweis qualifiziert die Referenzkorrektur.
+
+`tests/desktop-plan-replacement-world.test.mjs` ergänzt vier lokale Storewege:
+angenommene World-NPCs und unabhängige Entwurfskopie; bereits vergebene und
+noch unvergebene Belohnungen; veraltete Vorlagenbasis und atomarer Rollback bei
+Receiptfehler; platzierte, noch unvergebene Beute mit erhaltener Worldidentität.
+Timelineleerung/Fresh/Backup erhalten die geprüften Worldgruppen, Treasures und
+XP. Retry erzeugt keine weiteren NPCs, Treasures oder Gutschriften. Eine neue
+noch unvergebene Belohnung bekommt eine eigene Reward-ID; ihre bereits
+platzierte Beute bleibt derselbe Worldbestand. Die Vergabe in der Kopie setzt
+nicht den Vergabestatus der Vorlage. Das sind unterschiedliche Sachverhalte,
+keine Pflicht zur erneuten Anlage akzeptierter Worldinhalte.
+
+Diese Prüfungen enthalten noch keine zuvor beschädigten NPC-HP, Beuteallokation
+oder spätere Ledgerkorrektur, keine vollständige Kopie dieser kombinierten
+Worldzustände und keine native Bedien-/Crash-/Undoabnahme.
 
 ## Nächste ausführbare Abschlüsse
 
-1. `plan-replacement.ts`, `session.ts`, `npc-world.ts`: kombinierte Vorlage mit
-   unplatziertem Entwurf und bereits angenommenen World-NPCs ersetzen. Entwurf
-   unabhängig kopieren; Worldidentität/HP erhalten, keine erneute NPCanlage.
-   Abnahme: Original editieren, Kopie unverändert; Timeline leeren und Fresh,
-   Worldinhalte/Übernahmehistorie bleiben erhalten.
-2. `plan-replacement.ts`, `progression.ts`, `campaign-data.ts`: vorbereitete und
-   bereits vergebene Rewards gemeinsam prüfen. Vorbereitete Belohnung bekommt
-   unabhängige Identität; vergebene Fakten bleiben historische Fakten. Ersatz,
-   Retry, Kopie und Fresh dürfen XP/Loot nicht erneut gutschreiben. Abnahme:
-   tatsächliche Ledger-/Receiptzeilen und Bestände vergleichen.
+1. `plan-replacement.ts`, `session.ts`, `npc-world.ts`, `mask-health.ts`:
+   fortentwickelte Worldgruppen mit Schaden, Zuständen und mehrfachen
+   Besuchsreferenzen prüfen, einschließlich Ersatz eines Plans aus sich selbst.
+   Abnahme: bestehende Worldidentität/HP erhalten; geänderte Entwurfskopie
+   unabhängig; Leeren, Fresh und vollständiger Campaignimport erzeugen keine
+   weiteren NPCs und verlieren keine Übernahmehistorie.
+2. `plan-replacement.ts`, `progression.ts`, `campaign-data.ts`: bereits
+   allokierte/verkaufte Beute und korrigierte Gutschriften kombinieren. Vorbereitete
+   Rewards bleiben unabhängig; wirksame historische Fakten werden nicht erneut
+   ausgeführt. Abnahme: Ersatz, Retry, Kopie und Fresh mit tatsächlichen
+   Ledger-/Receiptzeilen und effektiven Beständen vergleichen; native
+   Rewardinteraktion und Undo/Redo gesondert prüfen.
 3. `session-ui.ts` und persistente Vorbereitung: offenen Profil-/Besuchs-/Gruppen-
    und Rewardtext vor Ersatz sichern; Preview unter ursprünglichem Context und
    Basis bestätigen. Geänderte Vorlage/Zielbasis verwirft die Vorschau ohne
