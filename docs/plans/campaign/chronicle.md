@@ -95,7 +95,9 @@ Ein bestätigter Moment kann optional eine Quest oder ein Gerücht anlegen.
 Transaktion; ein belegtes Ziel darf keine Teilhistorie hinterlassen. Derselbe
 Command wird über sein ursprüngliches Receipt wiederholt, ohne einen zweiten
 Wissenseintrag anzulegen. Die Chronik hält den Zielverweis und bietet Navigation
-in den Wissensbinder. Das Ziel erhält den unveränderten Rohtext als GM-Notiz;
+in den Wissensbinder. Bei einer unabhängigen Kampagnenkopie remappt
+`campaign-data.ts` den strukturellen `followUpId` auf die kopierte Worldnote;
+Quellrecords und Snapshotbytes bleiben erhalten. Das Ziel erhält den unveränderten Rohtext als GM-Notiz;
 Vorlesetext bleibt leer. Die Folgespurauswahl gehört zum selben Sceneentwurf wie
 Titel und Notiz. Neue Auswahl nach dem Senden bleibt offen und wird beim
 Fokuswechsel mitgeführt. Entfernte Chronikbuttons prüfen Campaign und die
