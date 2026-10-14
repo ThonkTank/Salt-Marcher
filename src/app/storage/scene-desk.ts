@@ -53,6 +53,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
       }[note.kind],
       revision: note.revision,
       note,
+      links: note.relations.map(relation=>{const target=db.prepare("SELECT id,trashed,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.title') END AS title FROM world_note WHERE campaign_id=? AND id=?").get(cam,relation.targetId);return{label:relation.label,entry:{ref:{kind:'note' as const,id:relation.targetId},title:target?.title??'Nicht verfügbarer Weltinhalt',label:'Weltverweis',unavailable:!target||!!target.trashed}};}),
       unavailable: !!row.trashed,
     };
   }
