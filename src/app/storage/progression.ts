@@ -234,7 +234,7 @@ function transferCredit(db:any,cam:string,item:LedgerItem):string{
  }
  return current.id;
 }
-function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
+function transferredValue(db:any,cam:string,root:LedgerItem,quantityOnly=false):bigint|null{
  let total=0n;
  // A transferred stack stays credited to its first handout. Quantity is counted
  // only at its current holder, or by the final sale/gift, never at intermediate handouts.
@@ -246,11 +246,12 @@ function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
   const item=checkedLedgerRow(row);if(item.origin!=='transfer'||item.status==='given'&&item.recipientCharacterId)continue;
   if(transferCredit(db,cam,item)!==root.id)continue;
   item.currentUnitCopper=readLedgerDefinition(db,item).unitCopper;
-  const value=ledgerCopper(item);if(value===null)return null;total+=value;
+  const value=quantityOnly?BigInt(item.quantity):ledgerCopper(item);if(value===null)return null;total+=value;
  }
  return total;
 }
 // One current reward valuation for the personal ledger and cross-character balance.
+export function ledgerRewardQuantity(db:any,cam:string,item:LedgerItem):number{readLedgerDefinition(db,item);if(item.origin==='purchase'||item.origin==='transfer')return 0;const quantity=item.status==='given'&&item.recipientCharacterId?Number(transferredValue(db,cam,item,true)):item.quantity;if(!Number.isSafeInteger(quantity)||quantity<0)throw new Error('Erhaltene Gegenstandsmenge nicht verfügbar.');return quantity;}
 export function ledgerRewardValue(db:any,cam:string,item:LedgerItem):bigint|null {
   const definition=readLedgerDefinition(db,item);
   item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;

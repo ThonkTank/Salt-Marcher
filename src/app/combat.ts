@@ -218,6 +218,10 @@ function lock() {
   const unknown = view?.combat?.participants.find(p => p.id === selected)?.healthKnown === false;
   for (const id of ['fighter-damage','fighter-heal']) get<HTMLButtonElement>(id).disabled = blocked() || unknown;
   const fighter=view?.combat?.participants.find(p=>p.id===selected),deathControls=deathSaveControls(fighter?.death),deathUnavailable=blocked()||!fighter?.characterId||fighter.healthKnown===false||fighter.hp!==0;
+  const concentrationPending=!!view?.combat?.participants.some(p=>p.concentrationChecks?.length);
+  for(const id of ['combat-start','combat-next','combat-finish'])get<HTMLButtonElement>(id).disabled=blocked()||concentrationPending;
+  get<HTMLButtonElement>('fighter-remove').disabled=blocked()||!fighter||!!fighter.concentrationChecks?.length;
+  get<HTMLInputElement>('fighter-concentration').disabled=blocked()||!!fighter?.concentrationChecks?.length;
   for(const result of ['roll','success','failure','natural-20','natural-1','stabilize','dead'] as const)get<HTMLButtonElement>('fighter-death-'+result).disabled=deathUnavailable||deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').disabled=deathUnavailable||!deathControls.reset;
   renderAttackEffect();
