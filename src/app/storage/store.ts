@@ -52,7 +52,7 @@ import {installCampaignSchema,validateCapabilityBytes,validateCampaignSnapshotSe
 import {openSync as openSnapshot, readSync, closeSync as closeSnapshot} from 'node:fs';
 import type {ConflictChoice} from '../campaign-contracts';
 import {canonicalJson} from '../generation/canonical-json';
-import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicSubject,executeMusic,saveMusicPosition,refreshMusicContext,ingestAudio,audioLibrarySnapshot,mergeAudioLibrary,audioFile,validateMusicBackup,audioMediaFiles} from './music';
+import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicFavorites,readMusicSubject,executeMusic,saveMusicPosition,refreshMusicContext,ingestAudio,audioLibrarySnapshot,mergeAudioLibrary,audioFile,validateMusicBackup,audioMediaFiles} from './music';
 import type {AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
 import {installWorldSchema,readWorld,readSceneWorld,previewTravel,executeWorld,reconcileWorld,syncSceneWorld,inheritScenePosition,validateWorldBackup} from './world';
 import type {TravelRequest,WorldCommand} from '../world-contracts';
@@ -727,6 +727,7 @@ export class CampaignStore {
     return !!this.db.prepare(`SELECT 1 FROM ${table} WHERE json_extract(payload,'${prefix}.sha256')||json_extract(payload,'${prefix}.extension')=? LIMIT 1`).get(name.slice(name.indexOf('/')+1));
   }
   audioAsset(id:string){return readAudioAsset(this.db,this.audioRoot,id);}
+  musicFavorites(token:string,after:string|null){return this.db.transaction(()=>readMusicFavorites(this.db,this.audioRoot,this.guard(token),after))();}
   music(token:string){return this.db.transaction(()=>readMusic(this.db,this.audioRoot,this.guard(token)))();}
   musicSubject(token:string,kind:MusicSubject['kind'],id:string){return readMusicSubject(this.db,this.guard(token),kind,id);}
   executeMusic(command:MusicCommand){return executeMusic(this.db,this.audioRoot,command,()=>{this.guard(command.token,command.campaignId);});}

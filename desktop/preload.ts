@@ -98,6 +98,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   ledger: (token: string, query: import('../src/app/progression').LedgerQuery) => ipcRenderer.invoke('campaign:ledger', token, query),
   ledgerInventory:(token:string,query:import('../src/app/progression').LedgerInventoryQuery)=>ipcRenderer.invoke('campaign:ledger-inventory',token,query),
   ledgerItem: (token: string, id: string) => ipcRenderer.invoke('campaign:ledger-item', token, id),
+  musicFavorites:(token:string,after:string|null)=>ipcRenderer.invoke('campaign:music-favorites',token,after),
   audioAssets:(query:import('../src/app/music-contracts').AudioQuery)=>ipcRenderer.invoke('music:assets',query),
   audioAsset:(id:string)=>ipcRenderer.invoke('music:asset',id),
   pickAudio:(token:string)=>ipcRenderer.invoke('music:pick',token),

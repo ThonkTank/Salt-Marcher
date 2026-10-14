@@ -233,6 +233,7 @@ else {
     handle('campaign:transfer-cancel',async(ticketId?:string)=>{campaignCancelled=true;if(ticketId){const ticket=campaignTickets.get(ticketId);if(ticket){campaignTickets.delete(ticketId);await rm(ticket.dir,{recursive:true,force:true});}}});
     const hooks:TransferHooks={cancelled:()=>audioCancelled,progress:p=>{if(!win.isDestroyed())win.webContents.send('music:progress',p);}};
     async function transfer<T>(task:()=>Promise<T>){if(audioBusy||campaignBusy)throw new Error('Eine Kampagnen- oder Medienübertragung läuft bereits.');audioBusy=true;audioCancelled=false;try{return await task();}finally{audioBusy=false;hooks.progress({phase:audioCancelled?'Abgebrochen':'Fertig',bytes:0,files:0,busy:false});}}
+    handle('campaign:music-favorites',(token:string,after:string|null)=>store.musicFavorites(token,after));
     handle('music:assets',(query:import('../src/app/music-contracts').AudioQuery)=>store.audioAssets(query));
     handle('music:asset',(id:string)=>store.audioAsset(id));
     handle('music:view',(token:string)=>store.music(token));

@@ -9,9 +9,10 @@ export interface MusicSceneSettings {sceneId:string;revision:number;moods:Record
 export interface MusicSubject {id:string;kind:'location'|'note'|'creature';revision:number;name:string;vibes:string[];genres:string[];vibeMode:'add'|'replace';genreMode:'add'|'replace'}
 export interface MusicContext {sceneId:string|null;name:string;moods:Record<string,number>;intensity:number;vibes:string[];genres:string[];environment:string[];signature:string;problems:string[]}
 export interface QueueEntry {id:string;assetId:string;mode:'manual'|'auto'}
-export interface MusicState {revision:number;autoplay:boolean;autoAmbience:boolean;current:{assetId:string;playbackId:string;mode:'manual'|'auto';positionSeconds:number}|null;queue:QueueEntry[];history:string[];status:'playing'|'paused'|'stopped';loop:'none'|'track'|'queue';manualHold:'none'|'stop'|'track'|'queue';volume:number;ambienceVolume:number;fadeSeconds:number;forcedAmbience:string[];mutedAmbience:string[];automaticAmbience?:string[];contextSignature:string;lastError:string|null}
+export interface MusicState {favoriteAssets?:string[];revision:number;autoplay:boolean;autoAmbience:boolean;current:{assetId:string;playbackId:string;mode:'manual'|'auto';positionSeconds:number}|null;queue:QueueEntry[];history:string[];status:'playing'|'paused'|'stopped';loop:'none'|'track'|'queue';manualHold:'none'|'stop'|'track'|'queue';volume:number;ambienceVolume:number;fadeSeconds:number;forcedAmbience:string[];mutedAmbience:string[];automaticAmbience?:string[];contextSignature:string;lastError:string|null}
 export interface MusicView {registry:AudioRegistry;state:MusicState;context:MusicContext;sceneSettings:MusicSceneSettings|null;assets:AudioAsset[];layers:{assetId:string;gain:number;manual:boolean}[];problems:string[]}
 export type MusicAction=
+ |{kind:'favorite';expectedRevision:number;assetId:string;favorite:boolean}
  |{kind:'asset';asset:AudioAsset;expectedRevision:number}
  |{kind:'clone';id:string;expectedRevision:number}
  |{kind:'retry-asset';id:string}
@@ -30,6 +31,7 @@ export type MusicAction=
 export interface MusicCommand {commandId:string;campaignId:string;token:string;action:MusicAction}
 export interface AudioTransferProgress {phase:string;bytes:number;files:number;busy:boolean}
 export interface MusicAPI {
+ musicFavorites(token:string,after:string|null):Promise<Result<AudioPage>>;
  audioAssets(query:AudioQuery):Promise<Result<AudioPage>>;
  audioAsset(id:string):Promise<Result<AudioAsset>>;
  pickAudio(token:string):Promise<Result<{ids:string[];cancelled:boolean}>>;
