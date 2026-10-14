@@ -131,8 +131,8 @@ stehen. Die neue Persistenzprüfung lehnte dadurch ein vorher gesundes Backup ab
 Actor-Deaktivierung. Jobidentität, Fortschritt und historische Buchungen bleiben
 erhalten; ein ausdrücklicher Gruppenbefehl setzt sie nicht zurück. Die Probe
 führt den echten Gruppeneditor-/Draft-/NPC-/Jobweg aus und prüft Backup, Fresh
-sowie anschließendes inaktives Catch-up. Erneute exklusive Resume-Zuweisung ist
-weiterhin eine eigene Abnahme.
+sowie anschließendes inaktives Catch-up. Die anschließende Gruppen-Reaktivierung und erneute exklusive Buchung nach Fresh
+sind inzwischen in derselben Storeprobe geprüft; native Gruppenbedienung bleibt offen.
 
 Der integrierte zeitgebundene Rastwriter bestätigt Partyfortschritt, Scenezeit
 und World-/Autonomiefolgen in derselben Transaktion. Zwei zusätzliche reale
@@ -144,6 +144,39 @@ Autonomiestand und beide Receipts gemeinsam zurück. Diese Proben verwenden eine
 tatsächlichen gemeinsamen Scene-/NPC-Ort; unplatzierte NPCs werden nicht als
 aktive lokale Owner ausgegeben. HP-/Slot-/D&D-Rastvollständigkeit und native
 Gruppenbedienung sind damit nicht qualifiziert.
+
+## Exklusive Pause, Deaktivierung und erneute Buchung
+
+Eine reale Zweiactorprobe zeigte, dass Einzel-Deaktivierung und manuelle Pause
+zwar die Live-Reservierung lösten, aber den ursprünglich bis Jobende gebuchten
+Zeitraum behielten. Nach 60 ausgeführten Sekunden blockierten dadurch noch
+540 nicht ausgeführte Sekunden andere Actors. Das betraf sowohl denselben Job
+als auch einen anderen exklusiven Job am selben Ort. Die Live-Reservierung
+allein beschreibt keine historisch zeitgebundene Konkurrenz.
+
+`releaseActorReservation` in `storage/autonomy.ts` kürzt beide Buchungstabellen
+an der geprüften bestätigten Actorzeit: Cursor/Offset bestimmen die tatsächlich
+ausgeführte Grenze, nicht Wall-clock oder eine vorauslaufende andere Scene.
+Einzel- und Gruppen-Deaktivierung sowie manuelle Pause verwenden dieselbe
+Freigabe. Vergangene Buchungsteile, Jobidentität, Fortschritt und Dungeonreise
+bleiben erhalten. Fehlende oder ungültige Zeitgrundlagen werden nicht erfunden.
+
+Die Live-Reservierung wurde bei Wiederaufnahme bereits erneut gesetzt.
+`autonomy_booking` entstand dagegen nur bei Jobwechsel. Nach einer deaktivierten
+Stunde setzte derselbe Job seine 60 Sekunden fort, ohne den neuen verbleibenden
+Zeitraum zu buchen. `bookTarget` in `autonomy-resources.ts` bindet nun Job- und
+Zielbuchung gemeinsam an den verbleibenden Zeitraum. Bereits abgedeckte Bereiche
+erzeugen keine weitere Zeile. Kandidatenausschluss und deterministische Wahl
+bleiben vor der Buchung wirksam; ein belegter Job wird nicht gewaltsam übernommen.
+
+Sechs zusätzliche Fälle in `desktop-autonomy-disable-time.test.mjs` prüfen
+Einzel-Pause/Deaktivierung, zwei Actors mit demselben oder unterschiedlichen Jobs
+am selben Ort, erhaltene Vergangenheit und Fortschritt, Fresh, Backup und die
+erneute Buchung. Die Gruppenprobe prüft ebenfalls die Reaktivierung nach Fresh.
+Eine Stunde ohne Simulation wird im Deaktivierungsfall geprüft; bei manueller
+Pause wird unmittelbar nach Fresh wiederaufgenommen. Eine länger pausierte,
+bereits bestätigte historische Basis sowie pausenbedingte Entscheidungen bleiben
+separate Fälle. Historische Daten werden nicht nachträglich korrigiert.
 
 ## Neuer Persistenzgraph und Buchungsowner
 
@@ -224,10 +257,11 @@ native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
 2. **Reservierungs-/Receipt-/Logabschluss vervollständigen.** `autonomy_booking`,
    `autonomy_reservation`, `autonomy_log` und `autonomy_receipt` bei Backup und
    Transfer weiter gemeinsam mit ihren Writern prüfen. Die vorhandenen Form-/
-   Ownerprüfungen sind kein vollständiger Abschluss. Die geprüfte Gruppen-
-   Deaktivierung mit gelöster Reservierung auf Reaktivierung erweitern;
-   manuelle Pause/Resume und erneute exklusive Zuweisung gegen Reservierungen
-   und Zeitbuchungen abnehmen. Historische Targetbindungen erhalten; fehlende
+   Ownerprüfungen sind kein vollständiger Abschluss. Einzel-/Gruppen-Deaktivierung und unmittelbares manuelles Resume mit
+   erneuter exklusiver Buchung sind lokal geprüft. Als nächste Gegenproben
+   eine längere manuelle Pause mit ausstehenden bestätigten Intervallen,
+   vorübergehende Belegung beim Resume, ausdrücklichen Jobabbruch am Intervallende
+   und Positionsoverride gegen beide Buchungstabellen prüfen. Historische Targetbindungen erhalten; fehlende
    aktuelle Aktivität nicht mit fehlender historischer Identität verwechseln.
    Fehler erklären und nicht still reparieren.
    Abnahme: zwei konkurrierende Jobs, unterbrochene Reservierung, Positionsoverride,

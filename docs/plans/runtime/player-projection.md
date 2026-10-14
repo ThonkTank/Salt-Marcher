@@ -52,6 +52,27 @@ Mit Größen-, Knowledge- und GM-Dialogprüfungen bestanden 44 lokale Tests und
 der Desktop-Typecheck. Eine vollständige Player-/Privacy-/Plattformabnahme
 folgt daraus nicht.
 
+## Integrierte Kampf- und Verfolgungsanzeige
+
+`storage/player.ts` projiziert inzwischen aktive Kampf- und Verfolgungsmasken
+vor der Kartenansicht. Der Vertrag und Renderer besitzen dafür explizite
+öffentliche Felder; GM-Blank und Bildoverride behalten Vorrang. Combat zeigt
+Initiative, aktuellen Zug und öffentliche Gesundheits-/Zustandswerte; private
+freie Kampfnotizen bleiben durch `publicCombatConditionText` ausgeschlossen.
+Chase zeigt Runde, Seiten, Abstand, Tempo und Erschöpfung. Verborgene NPCs,
+GM-Ziel-/Komplikations-/Ergebnisprosa und Teilnehmernotizen gelangen nicht in
+dieses Paket. Die neuen Varianten dürfen weder Dungeonprosa wieder einschließen
+noch die iterative Grenzberechnung großer Karten durch Argumentlisten ersetzen.
+
+`tests/core/player-chase-projection.test.ts` und
+`player-combat-projection.test.ts` prüfen die Storeprojektionen. Der integrierte
+Chase-Editor bewahrt weiterhin Masken-/Sceneautorität, Pending-Sperren und
+Rundenvorschläge. Eine zusätzliche tatsächliche Store-/DOMprobe in
+`desktop-chase-switch.test.mjs` bestätigt die NPC-Sichtbarkeitsänderung ohne
+Verlust des Rundenvorschlags; ein Handler der zuvor gewählten Maske bleibt nach
+Wechsel wirkungslos. Native Mehrmonitor-/Fokus-/Neustartbedienung dieser beiden
+Anzeigevarianten ist dadurch noch nicht qualifiziert.
+
 ## Nächste ausführbare Schritte
 
 1. **Bounded Query und Darstellung gemeinsam liefern.** `projectPlayer`,
@@ -62,7 +83,7 @@ folgt daraus nicht.
    begrenzen. Abnahme: viele entfernte bekannte Orte, Fokuswechsel und denselben
    Ausschnitt nach Fresh; keine neue GM-Wahrheit in ungesehenen Bereichen.
 2. **Öffentliches Paket vollständig prüfen.** Für jede tatsächlich gelieferte
-   Hex-/Dungeon-/Bildvariante eine explizite Feldfreigabe und negative Payload-
+   Hex-/Dungeon-/Bild-/Combat-/Chasevariante eine explizite Feldfreigabe und negative Payload-
    Gegenproben verwenden. Labels müssen ausdrücklich freigegebene Kartenlabels
    sein; Beschreibung, Secrets, private Notiz-/Mechanikfelder und lokale Pfade
    dürfen nicht durch weitere verschachtelte Felder zurückkehren. Bestehende
