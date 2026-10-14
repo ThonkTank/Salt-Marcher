@@ -76,7 +76,7 @@ async function recovered(event:CommitResolution){
  const own=meta?.token===w.token&&meta.sceneId===scene.id&&(meta.chaseId===c.id||meta.actionKind==='create');
 
  if(requestedId===c.id||own&&meta.actionKind==='create'&&!requestedId)await load(c.id);
- if(own&&meta.actionKind==='finish'&&afterFinished)await afterFinished();
+if(own&&meta.actionKind==='finish'&&afterFinished)await afterFinished();
 }
 function syncActions(){const c=view?.chase,blocked=pending()||!ready(),closed=blocked||!c||c.status!=='running',controls=chaseActionControls({title:val('chase-title'),participantName:val('chase-name'),participantCount:c?.participants.length??0,outcome:val('chase-outcome')});el<HTMLButtonElement>('chase-start').disabled=blocked||!!c&&c.status==='running'||!controls.start;el<HTMLButtonElement>('chase-party').disabled=closed||!sceneCharacters().length;el<HTMLButtonElement>('chase-add').disabled=closed||!controls.addParticipant||!speedValid();el<HTMLButtonElement>('chase-round').disabled=closed||!controls.advanceRound||!roundInputsValid();el<HTMLButtonElement>('chase-finish').disabled=closed||!controls.finish;}
 function draw(){
