@@ -293,8 +293,7 @@ Die gespeicherte Vorschau hält ihren Weltquellenstand fest. Änderungen an Link
 oder Beständen erfordern eine neue Vorschau vor Übernahme. Tabellenänderungen
 entfernen nicht mehr zulässige Bestandseinträge in derselben Transaktion.
 Kampagnenpakete behalten und remappen Quellen und Fraktions-/Ortsreferenzen. Unveränderte Weltvorschauen bleiben auch in unabhängigen Kopien übernehmbar; bereits veraltete Vorschauen bleiben gesperrt. Lesen und Sicherung prüfen Identitäten, Revisionen, Bestandswerte und kampagnengebundene Verknüpfungen.
-Noch offen: NPC-Fraktionsmitgliedschaft/Disposition und direkte Weltfilter im
-Spielabend-Generator; der Encounter-Generator besitzt den vollständigen neuen Ablauf.
+Noch offen: direkte Weltfilter im Spielabend-Generator; der Encounter-Generator besitzt den vollständigen neuen Ablauf.
 
 Die [Speicher- und Kopierprüfungen](tests/desktop-world-source-transfer.test.mjs) decken beschädigte Quellen, unveränderte Sicherungen, eigene Kennungen, archivierte Verknüpfungen, Vorschauübernahme und erneutes Öffnen ab. [Editorprüfungen](tests/desktop-world-source-ui.test.mjs) sichern sichtbare, ausdrücklich entfernbare Altverknüpfungen und erhaltene Bestandseingaben bei Hintergrundaktualisierungen.
 
@@ -309,6 +308,8 @@ auch mit unfertigen Zahlen über Neustart und Kampagnentransfer erhalten.
 „NPC übernehmen“ bestätigt Änderungen gemeinsam; „Entwurf verwerfen“ lädt den
 Autorenstand. Gruppenfiguren und unabhängig angelegte NPCs verwenden dieselben
 Weltidentitäten und dieselbe Gesundheit.
+
+[Speicherprüfungen](tests/desktop-npc-integrity.test.mjs) kontrollieren Profile, Entwürfe und Auftragsbelege beim Lesen und Sichern sowie eigene Kennungen und unveränderte Rohtexte nach Kopie und erneutem Öffnen. Veraltete oder archivierte Ausgangsprofile erhalten ihre offenen Entwürfe. [Editorprüfungen](tests/desktop-npc-owner-dom.test.mjs) decken Kampagnenwechsel, verspätete Antworten, Verwerfen während neuer Eingaben und doppelte Übernahme ab.
 
 Die Fraktionsquelle besitzt eine Haltung −100 bis 100. Zusammen mit dem
 persönlichen Modifikator ergibt sie die anfängliche Begegnungsrolle. Neue

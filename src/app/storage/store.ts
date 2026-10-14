@@ -1,4 +1,4 @@
-import {installNpcRecords} from './npc-record';
+import {installNpcRecords,validateNpcRecords} from './npc-record';
 import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
@@ -435,7 +435,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
