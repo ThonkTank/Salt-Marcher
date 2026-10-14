@@ -19,6 +19,7 @@ export interface DeskEntry {
   unavailable?: boolean;
 }
 export interface DeskContent extends DeskEntry {
+  links?: {label:string;entry:DeskEntry}[];
   revision: number;
   note?: Note;
   location?: LocationDocument;

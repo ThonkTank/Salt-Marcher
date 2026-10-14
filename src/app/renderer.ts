@@ -1,3 +1,4 @@
+import {initQuickReference,activateQuickReference} from './quick-reference-ui';
 import {initNarrativeJournal,activateNarrativeJournal} from './narrative-journal-ui';
 import {setSessionPacketSurface} from './session-packet-ui';
 import {initPartyTopbar,activatePartyTopbar} from './party-topbar-ui';
@@ -26,7 +27,7 @@ import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './wo
 import {initItems,activateItems,openItems,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote } from './preparation';
-import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc } from './live';
+import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
 import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
@@ -65,6 +66,15 @@ setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('trea
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());
 initPartyTopbar(()=>el<HTMLButtonElement>('live-tab').click());
 initNarrativeJournal(status,leaveWorkspace,async()=>await flushPreparation(true,true),async id=>{if(!await leaveWorkspace())return;showTab('preparation');await openPreparedNote(id);});
+initQuickReference(status,leaveWorkspace,async action=>{
+ const token=workspace?.token;if(!token)return;
+ if(action.kind==='edit'){showTab('preparation');if(action.content.note)await openPreparedNote(action.content.ref.id);else if(action.content.location)await openPreparedLocation(action.content.ref.id);return;}
+ const live=unwrap(await window.campaign.live(token));if(workspace?.token!==token||live.focusId!==action.sceneId)throw new Error('Fokusgruppe geändert. Schnellsuche erneut öffnen.');
+ showTab('live');await openLive();if(workspace?.token!==token)return;
+ if(action.kind==='read-aloud'&&action.content.note)await useLiveReferenceReadAloud(action.content.note.readAloud,action.content.title,action.sceneId!);
+ if(action.kind==='encounter'&&action.content.encounter)await prepareLiveEncounter(action.content.encounter);
+ if(action.kind==='creature'&&action.content.creature)await addLiveCreature(action.content.creature.id,action.count!,action.grouped!);
+});
 initLive(status, async id => {
   if (!(await leaveWorkspace())) return;
   await openPreparedLocation(id); showTab('preparation');
@@ -408,7 +418,7 @@ async function drainActivation(): Promise<void> {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
+        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';

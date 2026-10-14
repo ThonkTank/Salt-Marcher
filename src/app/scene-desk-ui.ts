@@ -100,6 +100,7 @@ export function sceneDeskContext(
   el("desk-search-status").textContent = "";
   if (workspace && current) void refresh();
 }
+export async function refreshSceneDeskPins(id:string){if(scene?.id===id)await refresh();}
 async function refresh() {
   if (!w || !scene) return;
   const token = w.token,
