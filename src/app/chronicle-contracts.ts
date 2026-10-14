@@ -10,6 +10,7 @@ export interface ChronicleEntry {
   people:string[];
   scene:string|null;
   location:string|null;
+  followUp?:{kind:'quest'|'rumor';id:string};
 }
 export interface ChronicleView {campaignName:string;entries:ChronicleEntry[];truncated:boolean}
 export interface ChronicleAPI {

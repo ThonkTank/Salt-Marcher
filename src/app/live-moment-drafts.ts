@@ -1,8 +1,8 @@
 export type LiveMomentCategory='combat'|'narrative'|'reward'|'travel'|'party'|'world';
-export interface LiveMomentDraft {category:LiveMomentCategory;title:string;summary:string}
+export interface LiveMomentDraft {category:LiveMomentCategory;title:string;summary:string;followUp:''|'quest'|'rumor'}
 
-export const emptyLiveMomentDraft=():LiveMomentDraft=>({category:'world',title:'',summary:''});
-export const canClearSavedLiveMoment=(sceneId:string,currentSceneId:string|null,saved:LiveMomentDraft,current:LiveMomentDraft)=>sceneId===currentSceneId&&saved.category===current.category&&saved.title===current.title&&saved.summary===current.summary;
+export const emptyLiveMomentDraft=():LiveMomentDraft=>({category:'world',title:'',summary:'',followUp:''});
+export const canClearSavedLiveMoment=(sceneId:string,currentSceneId:string|null,saved:LiveMomentDraft,current:LiveMomentDraft)=>sceneId===currentSceneId&&saved.category===current.category&&saved.title===current.title&&saved.summary===current.summary&&saved.followUp===current.followUp;
 
 export class LiveMomentDraftBook {
   private drafts=new Map<string,LiveMomentDraft>();
@@ -11,7 +11,7 @@ export class LiveMomentDraftBook {
   switchTo(sceneId:string|null,current:LiveMomentDraft){
     if(sceneId===this.currentSceneId)return{changed:false,draft:structuredClone(current)};
     if(this.currentSceneId){
-      if(current.title||current.summary||current.category!=='world')this.drafts.set(this.currentSceneId,structuredClone(current));
+      if(current.title||current.summary||current.category!=='world'||current.followUp)this.drafts.set(this.currentSceneId,structuredClone(current));
       else this.drafts.delete(this.currentSceneId);
     }
     this.currentSceneId=sceneId;
