@@ -17,7 +17,7 @@ import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './mu
 import {initWorld,activateWorld,openWorld,flushWorld} from './world-ui';
 import {initItems,activateItems,openItems,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
-import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation } from './preparation';
+import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote } from './preparation';
 import { activateLive, initLive, flushLive, openLive, prepareLiveEncounter, addLiveCreature } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, flushCatalog } from './catalog-ui';
@@ -42,7 +42,7 @@ let importPreview: ImportPreview | null = null;
 let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
 const status = (text: string, error = false) => { el('status').textContent = text; el('status').dataset.error = String(error); };
 initExtensions(status);
-initChronicle(status);
+initChronicle(status,async id=>{if(!(await leaveWorkspace()))return;showTab('preparation');await openPreparedNote(id);});
 initPreparation(status, async scopeId => {
   if (!workspace || !(await leaveWorkspace())) return;
   const room = workspace.rooms.find(room => room.scopeId === scopeId);

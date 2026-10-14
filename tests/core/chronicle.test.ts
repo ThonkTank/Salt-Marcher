@@ -1,4 +1,4 @@
-import {createHash} from "node:crypto";
+import {createHash,randomUUID} from "node:crypto";
 import assert from "node:assert/strict";
 import {mkdtempSync,rmSync} from "node:fs";
 import {tmpdir} from "node:os";
@@ -94,8 +94,11 @@ test("live play records a confirmed moment directly in the campaign chronicle",(
     const hero=store.executeLive({commandId:"hero",campaignId:campaign.id,token,action:{kind:"create-character",profile:{name:"Ada"}}}).character!;
     const scene=store.executeLive({commandId:"scene",campaignId:campaign.id,token,action:{kind:"initialize",expectedRosterRevision:1}}).scene!;
     store.executeLive({commandId:"active",campaignId:campaign.id,token,action:{kind:"membership",characterId:hero.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
-    store.executeLive({commandId:"moment",campaignId:campaign.id,token,action:{kind:"live-moment",sceneId:scene.id,expectedRevision:0,category:"narrative",title:"Der Müller kennt den Kult",summary:"Ada kommt nachts zurück."}});
+    const followUpId=randomUUID();
+    store.executeLive({commandId:"moment",campaignId:campaign.id,token,action:{kind:"live-moment",sceneId:scene.id,expectedRevision:0,category:"narrative",title:"Der Müller kennt den Kult",summary:"Ada kommt nachts zurück.",followUp:{kind:"quest",id:followUpId}}});
     const entry=store.chronicle(token).entries.find(item=>item.title==="Der Müller kennt den Kult");
-    assert.deepEqual(entry&&{category:entry.category,summary:entry.summary,people:entry.people},{category:"narrative",summary:"Ada kommt nachts zurück.",people:["Ada"]});
+    assert.deepEqual(entry&&{category:entry.category,summary:entry.summary,people:entry.people,followUp:entry.followUp},{category:"narrative",summary:"Ada kommt nachts zurück.",people:["Ada"],followUp:{kind:"quest",id:followUpId}});
+    const quest=store.preparation(token).notes.find(row=>row.note.id===followUpId)?.note;
+    assert.deepEqual(quest&&{kind:quest.kind,title:quest.title,gmNotes:quest.gmNotes},{kind:"quest",title:"Der Müller kennt den Kult",gmNotes:"Ada kommt nachts zurück."});
   }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

@@ -74,7 +74,7 @@ function busy(on: boolean, structural = false, textSave = false) {
   for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save']) get<HTMLButtonElement>(id).disabled = on && !textSave;
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
-  for(const id of ['live-moment-category','live-moment-title','live-moment-summary'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
+  for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
   if (structural) for (const id of [...profileFields.map(([id]) => id), 'running-title', 'running-notes', 'running-read-aloud', 'running-location']) get<HTMLInputElement>(id).disabled = on;
   if (structural) {
     for (const id of ['move-title', 'move-target']) get<HTMLInputElement>(id).disabled = on;
@@ -252,8 +252,8 @@ function renderScene() {
   renderNpcChoices();
   renderLiveKnowledge();renderSceneMeta(); renderGroups();
 }
-function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-moment-category') as LiveMomentCategory,title:value('live-moment-title'),summary:value('live-moment-summary')};}
-function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;}
+function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-moment-category') as LiveMomentCategory,title:value('live-moment-title'),summary:value('live-moment-summary'),followUp:value('live-moment-follow-up') as LiveMomentDraft['followUp']};}
+function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;get<HTMLSelectElement>('live-moment-follow-up').value=draft.followUp;}
 function renderLiveMomentDraft(){const next=liveMomentDrafts.switchTo(data?.scene?.id??null,currentLiveMomentDraft());if(next.changed){writeLiveMomentDraft(next.draft);get('live-moment-result').textContent='';}}
 function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
 function renderGroups() {
@@ -353,7 +353,15 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('live-passive-form').onsubmit=event=>{event.preventDefault();renderPassivePerception();};
-  get('live-moment-form').onsubmit=event=>{event.preventDefault();void(async()=>{const token=context?.token,scene=data?.scene,draft=currentLiveMomentDraft();if(!scene||liveMomentDrafts.currentSceneId!==scene.id)return;if(!await flushLive()||context?.token!==token||data?.scene?.id!==scene.id){get('live-moment-result').textContent='Gruppenfokus geändert. Der Moment bleibt bei seiner Gruppe offen.';return;}const ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...draft});if(!ack)return;const clear=canClearSavedLiveMoment(scene.id,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());liveMomentDrafts.saved(scene.id);if(clear)writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent=clear?'In der Kampagnenchronik gespeichert.':'In der Kampagnenchronik gespeichert. Neuere Eingabe bleibt offen.';get<HTMLInputElement>('live-moment-title').focus();})();};
+  get('live-moment-form').onsubmit=event=>{event.preventDefault();void(async()=>{
+    const token=context?.token,scene=data?.scene,draft=currentLiveMomentDraft();if(!scene||liveMomentDrafts.currentSceneId!==scene.id)return;
+    if(!await flushLive()||context?.token!==token||data?.scene?.id!==scene.id){get('live-moment-result').textContent='Gruppenfokus geändert. Der Moment bleibt bei seiner Gruppe offen.';return;}
+    const{followUp,...moment}=draft,ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...moment,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;
+    let refreshProblem=false;if(followUp){const refreshed=await window.campaign.preparation(token!,'');if(context?.token===token&&refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}
+    const clear=canClearSavedLiveMoment(scene.id,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());liveMomentDrafts.saved(scene.id);if(clear)writeLiveMomentDraft(emptyLiveMomentDraft());
+    const saved=followUp?(followUp==='quest'?' und als offene Quest vorbereitet.':' und als Gerücht vorbereitet.'):' in der Kampagnenchronik gespeichert.',refresh=refreshProblem?' Wissensbinder bei Bedarf aktualisieren.':'';
+    get('live-moment-result').textContent=(clear?'Moment gespeichert'+saved:'Moment gespeichert'+saved+' Neuere Eingabe bleibt offen.')+refresh;get<HTMLInputElement>('live-moment-title').focus();
+  })();};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');
