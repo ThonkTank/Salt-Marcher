@@ -1,137 +1,71 @@
 # Erklärbare Kampagnenhistorie und Chronik
 
-Stand: 13.10.2026. Verbindlicher Gesamtumfang: [SCOPE](../../SCOPE.md),
+Stand: 14.10.2026. Verbindlicher Umfang: [SCOPE](../../SCOPE.md),
 [Campaign/Data](../../../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md)
 und [Gesamtportfolio](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md).
-Die Chronikanzeige ist ein Zugang zur Historie; sie ersetzt deren Fachvertrag nicht.
 
-## Quelle und Ziel
+## Ziel und vorhandene Nutzerwege
 
-Die gepinnten Program Capabilities, Revision
-`9de85c1a26f526acbc1af332ac5962e185c0aab2`, Abschnitte
+Program Capabilities, Revision `9de85c1a26f526acbc1af332ac5962e185c0aab2`,
 „Corrections And History“ (L530–535) und „Explanatory Campaign History“
 (L887–904), verlangen bestätigte Zeit-, Reise-, Encounter-, XP-, Party-, NPC-,
-Stock- und Korrekturfolgen. Eine Korrektur hängt einen verknüpften Eintrag an;
-frühere Fakten bleiben erhalten. Rückdatierte Weltzeit und späterer Zeitpunkt
-am Spieltisch sind getrennt. Reise-Undo und ausdrückliche Löschung besitzen
-enge eigene Regeln. Das Quellenregister bindet die Datei an SHA256
-`714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`;
-der lokale Quellenstand wurde damit verglichen.
+Stock- und Korrekturfolgen. Frühere Fakten bleiben erhalten; Korrekturen hängen
+verknüpfte Einträge an. Weltzeit und Erfassungszeit am Spieltisch sind getrennt.
+Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
 
-## Aktueller Anschluss und Korrektur
+- **Nachlesen:** Die Chronik verbindet `progress_event`, `world_history` und
+  `scene_time_step` unter einem Lesesnapshot. Kategorie und Text filtern vor der
+  Ergebnisgrenze, sodass auch ältere passende Ereignisse gefunden werden.
+  Partywechsel, Zeit, Besuchsergebnisse, narrative Statusänderungen und
+  Todesrettungswürfe bleiben sichtbar; interne Records verdrängen sie nicht.
+- **Ausgeben:** UI und Markdown zeigen höchstens 2.000 passende Ereignisse und
+  kennzeichnen Kürzungen. Zusammengehörige Kampfawards bleiben vollständig.
+  Beschädigte Quellen oder Kontextlabels führen zu einem sichtbaren Lesefehler.
+- **Festhalten:** Ein manueller Moment speichert Bereich, Wortlaut, Ursprungsscene,
+  damalige Figuren, Ort und Weltzeit. Er bestätigt keine XP, Beute oder Kampfenden.
+  Optional entsteht atomar eine offene Quest oder ein Gerücht im vorhandenen
+  Wissensbinder; die Chronik öffnet diesen Inhalt über seinen Verweis.
+- **Entwürfe behalten:** Momentfelder bleiben innerhalb des laufenden Prozesses
+  bei ihrer Gruppe. Submit bindet Wortlaut, Folgespur und Fokus vor dem Flush;
+  ältere Bestätigungen leeren keine neueren Eingaben. Campaignwechsel/Fresh
+  besitzen noch keine dauerhafte Sicherung dieser Rohfelder.
+- **Kopieren:** Unabhängige Kopien binden strukturelle Gruppen-, Figuren- und
+  Folgespurverweise an ihre kopierten Inhalte; freie Prosa bleibt unverändert.
 
-`src/app/storage/chronicle.ts` kombiniert bestätigte `progress_event`-,
-`world_history`- und `scene_time_step`-Records in einer Lesetransaktion. `chronicle-contracts.ts`,
-Main/preload und `chronicle-ui.ts` bieten Kategorien, Textfilter und Markdown.
-Der aktuelle Ausschnitt liest relevante Records in Portionen von höchstens
-2001 unter demselben Snapshot. Kategorie und Text werden vor der Ergebnisgrenze
-angewendet; eine Suche erreicht damit auch ältere Portionen. Die Ausgabe zeigt
-höchstens 2000 passende, zusammengefasste Einträge. Das ist keine vollständige
-Historiennavigation oder vollständige Exportqualifikation.
+## Belege und offene Grenzen
 
-Drei Gegenproben fanden zwei zusammenhängende Fehler: 2500 interne Statusrecords
-verdrängten einen älteren sichtbaren XP-Eintrag aus dem Rohfenster; 2002
-zusammengefasste Awardrecords meldeten den verbliebenen Eintrag als vollständig;
-ein gekürzter Markdownexport trug keinen Hinweis. Der Reader filtert jetzt die
-von `progressEntry` dargestellten Eventarten vor dem SQL-Limit. Die Lookahead-Grenze betrifft nun passende Einträge, nicht einzelne
-Beteiligtenbelege. Ein vollständig gelesenes Award mit mehr als 2000 Belegen
-ist deshalb vollständig; mehr als 2000 passende Ereignisse bleiben als
-`truncated` markiert. Markdown übernimmt diesen Hinweis auch bei leerem Suchergebnis.
-Datenquellen und ihre Textinhalte werden dabei nicht verändert. Integrierte
-Kontextlabels werden ebenfalls gegen ihren Bytehash geprüft. Die begrenzten
-Quellen werden nacheinander gestreamt; ein noch unbenutzter SQLiteiterator darf
-bei einem Quellfehler den Transaktionsrollback nicht mit einer Busy-Meldung
-verdecken. Die vorhandene Fehlergegenprobe prüft diese Grenze.
-
-`tests/desktop-chronicle-window.test.mjs` bewahrt die SQLite-Gegenproben für
-interne Records, 2000/2001-Grenze, Quellenüberlauf, gemeinsame Ausgabegrenze
-und beschädigte Quellen einschließlich Rollback. Vollständig gruppierte Awards
-werden vollständig gelesen und lösen ohne ausgelassene Ereignisse keinen
-Kürzungshinweis aus. Zusammen mit den neuen Filter-, Gruppen-, UI-, Chase-,
-Szenentisch- und Todesrettungswurfprüfungen bestanden zuletzt 37 gezielte Tests.
-[Nativer Nachweis](../../reference/gm-ux-qa/2026-10-13-chronicle-search.md):
-älterer Treffer hinter 2000 neueren Ereignissen, gefilterte Markdownausgabe,
-Fresh und kontrollierter IPC-Lesefehler. Kein Hard-Crash-, umfassender
-Dateidialog- oder vollständiger Produktnachweis.
-
-Historische `narrative-state`-Records ohne einen tatsächlich erfassten
-`after.status` bleiben interne Statusbelege und verbrauchen kein sichtbares
-Ergebnisfenster. Bestätigte offene/geschlossene Statusänderungen bleiben auch
-ohne den erst später eingeführten Award-/Auftragstitel sichtbar. Ein ausdrücklich
-ungültiger Status ist ein Quellfehler, kein Anlass zum stillen Auslassen. Die
-Windowproben unterscheiden diese Fälle und erhalten die ursprünglichen Records.
-
-## Manuelle Momente am Spieltisch
-
-`LiveAction.live-moment` schreibt ausdrücklich bestätigte Notizen als
-`world_history` mit Bereich, Ursprungsscene, damaligen Figuren, Ort und Weltzeit.
-Der Chronikreader behält die vorhandenen Besuchsergebnisse, Quellenprüfungen
-und Filter vor dem Ergebnislimit bei. Ein Moment bestätigt weder Kampfabschluss
-noch XP oder Loot; diese Fakten bleiben bei ihren bestehenden Writern.
-
-Der Renderer bindet Scene und Fokus bereits beim Submit und kopiert Titel,
-Notiz und Bereich vor dem Flush. Geänderter Fokus vor dem Senden verhindert
-diesen Submit. Ein bereits bestätigter älterer Moment bleibt in der Historie;
-seine spätere Antwort ersetzt keine neuere fokussierte Scene und leert keine
-weiter eingegebene Notiz. Nur eine unveränderte Formfassung wird nach Erfolg
-geleert. Drei kontrollierte DOM-/SQLiteproben in
-`desktop-live-moment-context.test.mjs` prüfen ursprünglichen Wortlaut samt CRLF,
-Fokuswechsel während Flush und spätere Antwort mit weiter nutzbarer neuer Scene.
-
-Momententwürfe bleiben innerhalb des laufenden Prozesses bei ihrer
-Ursprungsscene und werden beim Gruppenwechsel getrennt wiederhergestellt.
-Nächster Anschluss: Rohfelder dauerhaft vor Campaignwechsel/Fresh sichern und
-nach einem nicht eindeutig bestätigten Command dessen Status prüfen. Einen
-unbekannten Ausgang nicht durch erneutes Festhalten verdoppeln. Native IME,
-Fokus-/Tastaturbedienung und wiederaufgenommene unvollständige Notizen bleiben
-separat abzunehmen; lokale Storebelege schließen diese Schritte nicht.
-
-## Party- und Zeitanschluss vom 14.10.2026
-
-Der Livewriter protokolliert Aktivierung, Deaktivierung und Scenemove mit
-Character-/Scene-IDs sowie bestätigte Zeit mit eigener Erfassungszeit. Die
-Chronik unterscheidet Party- und Reisefakten und zeigt bestätigte Zeit ohne
-zusätzliche Kopie derselben Reisefolge. Alle drei Quellen wenden Kategorie und
-Text vor ihrem passenden Ergebnislimit an; vollständige Combat-Awardgruppen
-bleiben erhalten. Fünf Coreprüfungen und 13 Store-/DOM-Prüfungen qualifizieren
-diesen integrierten Reader lokal.
-
-Eine SQLite-Gegenprobe fand alte `fromSceneId`-/`toSceneId`-Verweise in der
-unabhängigen Kampagnenkopie. `campaign-data.ts` remappt jetzt beide strukturellen
-Slots zusammen mit den Character-IDs. Move- und Deaktivierungshistorie zeigen
-kopierte Scenes; authored Scenetitel und Quellpaketbytes bleiben identisch.
-Kopie und anschließender Backup sind lokal geprüft. Historische Linkkorrekturen,
-vollständige Navigation und native Abnahme bleiben offen.
+[Storeprüfung](../../../tests/desktop-chronicle-store.test.mjs),
+[Fenstergrenzen](../../../tests/desktop-chronicle-window.test.mjs),
+[UI-Suche](../../../tests/desktop-chronicle-search.test.mjs),
+[Momentkontext](../../../tests/desktop-live-moment-context.test.mjs) und
+[Gruppenkopie](../../../tests/desktop-party-history-copy.test.mjs) prüfen reale
+Speicher-/Controllerpfade, Replay, Rollback, Fresh, Kopie, Filter und verspätete
+Antworten. Der [native Suchnachweis](../../reference/gm-ux-qa/2026-10-13-chronicle-search.md)
+umfasst einen älteren Treffer hinter 2.000 Ereignissen, gefilterte Markdownausgabe,
+Fresh und kontrollierten IPC-Lesefehler. Er belegt keine vollständige Historie,
+Hard-Crash-Wiederaufnahme oder native Abnahme der neuen Folgespur.
 
 ## Nächste ausführbare Lieferung
 
-1. **Alle bestätigten Fachfolgen erschließen.** Quellenmatrix an den tatsächlichen
-   Commands in `storage/live.ts`, `world.ts`, `progression.ts`, Shop- und
-   Autonomieports erstellen. Fehlende Party-/Zeit-/Stock-/NPCfolgen aus dem
-   jeweiligen autoritativen Commit publizieren; Fachwirkung, History und Receipt
-   bleiben atomar. Bereits gespeicherte Events lesen, keine zweite allgemeine
-   Eventarchitektur beginnen. Abnahme: je ein bestätigter Nutzerweg mit Fresh,
-   Receiptreplay und kontrolliertem Rollback; keine doppelten Historieneinträge.
-2. **Verknüpfte Korrekturen und Zeit zeigen.** `ChronicleEntry` braucht Quell-/
-   Korrekturverweise sowie vorhandene Scene-/Weltzeit; `recordedAt` bleibt der
-   Zeitpunkt am Spieltisch. Reader und UI unterscheiden ursprünglichen Fakt,
-   Korrektur und aktuelle Wahrheit. Bestehende `correctionOf`-Verträge konsumieren.
-   Abnahme: HP-/XP-/Lootkorrektur und rückdatierte Weltfolge behalten ihre
-   ursprünglichen Records; kausales Reise-Undo entfernt nur erlaubte Folgen.
-3. **Begrenzte Navigation und vollständige Ausgabe schließen.** Serverseitige Kategorie-/Textfilter sind angeschlossen. API, Reader und
-   UI zusätzlich auf öffentliche stabile Cursor umstellen,
-   beide Quellen deterministisch zusammenführen und nur die benötigten Namen/
-   Orte/Kämpfe lesen. Momentan laden diese Kontextmaps ganze Kampagnentabellen;
-   ein Quellenlimit allein begrenzt diesen Aufwand nicht. Gruppierte Kampfawards
-   dürfen an einer Seitengrenze keine Beteiligten verlieren. Ein vollständiger
-   Export läuft unter einem festgelegten Snapshot in begrenzten Portionen mit
-   Abbruch/Fortschritt; bis dahin bleibt der Ausschnitt ausdrücklich markiert.
-   Abnahme: mehr als 2000 Fakten, viele interne Records, zwei Quellen, verschiedene
-   Suchfilter und ein über die Grenze reichender Kampf liefern weder Lücken noch
-   Duplikate; ein älterer Suchtreffer bleibt erreichbar.
-4. **Daten- und Bedienabschluss.** Kampagnenkopie remappt strukturelle Quell-/
-   Korrekturverweise, bewahrt Prosa und schützt den originalen Snapshot. Erasure
-   entfernt eigene Fakten und verdeckte Rekonstruktionen; Konflikte nach erlaubter
-   Ziellöschung bleiben erkennbar. Archivierte Eigentümer sind historische
-   Referenzen. Abschließend tatsächliche Desktopprobe mit Kampagnenwechsel,
-   Fresh, Tastatur, Skalierung und Markdownausgabe; lokale Tests ersetzen sie nicht.
+1. **Fehlende Fachfolgen erschließen.** Tatsächliche Live-/World-/Progression-/
+   Shop-/Autonomiecommands gegen den Pflichtumfang prüfen. Fehlende Fakten im
+   autoritativen Commit publizieren; Fachwirkung, History und Receipt bleiben
+   atomar. Vorhandene Events lesen, keine zweite Eventarchitektur bauen.
+   Abnahme je Nutzerweg: Fresh, Replay, kontrollierter Rollback, keine Duplikate.
+2. **Korrekturen und Weltzeit verbinden.** Vorhandene `correctionOf`-Verträge
+   sowie Scene-/Weltzeit im Reader und UI darstellen. HP-/XP-/Lootkorrekturen und
+   rückdatierte Folgen erhalten ihre ursprünglichen Records; Reise-Undo folgt
+   seinen eigenen erlaubten Wirkungen.
+3. **Navigation und vollständige Ausgabe schließen.** Stabile Cursor, begrenzte
+   Kontextqueries und deterministische Zusammenführung liefern weitere Seiten.
+   Kontextmaps laden derzeit ganze Kampagnentabellen. Kampfawardgruppen dürfen
+   an Seitengrenzen keine Beteiligten verlieren. Vollständiger Export benötigt
+   denselben Snapshot, begrenzte Portionen, Abbruch und Fortschritt.
+4. **Moment-Wiederaufnahme schließen.** Rohfelder vor Campaignwechsel/Fresh
+   dauerhaft sichern. Einen unbekannten Commandausgang am gleichen Command prüfen,
+   keine neue ID als automatischer Retry. Native IME, Gruppenwechsel, Folgespur-
+   Navigation und neue Eingaben während Speichern/Refresh prüfen.
+5. **Daten- und Bedienabschluss.** Kopie erhält alle strukturellen Quell-/
+   Korrekturverweise und Snapshotbytes. Erasure entfernt eigene Fakten; fehlende
+   Ziele bleiben erkennbar, archivierte Eigentümer historische Referenzen.
+   Native Tastatur, Skalierung und Markdownausgabe separat abnehmen.

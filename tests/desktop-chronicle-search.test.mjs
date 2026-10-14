@@ -8,11 +8,11 @@ const require=createRequire(import.meta.url);
 buildSync({entryPoints:[process.env.CHRONICLE_UI_SOURCE??'src/app/chronicle-ui.ts'],outfile:'.build/chronicle-dom.cjs',bundle:true,platform:'node',format:'cjs'});
 const tick=()=>new Promise(r=>setImmediate(r));
 const entry=title=>({id:title,recordedAt:new Date(1).toISOString(),category:'party',title,summary:'',people:[],scene:null,location:null});
-function fixture(){
+function fixture(openFollowUp){
  const saved={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});
  const el=id=>document.getElementById(id);Object.defineProperty(el('chronicle-category'),'value',{value:'all',writable:true});el('chronicle-search').value='';const pending=[],calls=[],exports=[];
  window.campaign={chronicle:async(token,category,search)=>{calls.push({token,category,search});return new Promise(resolve=>pending.push(resolve));},exportChronicle:async(...args)=>{exports.push(args);return{ok:true,value:{cancelled:false}};}};
- delete require.cache[require.resolve('../.build/chronicle-dom.cjs')];const ui=require('../.build/chronicle-dom.cjs');ui.initChronicle(()=>{});ui.activateChronicle({token:'one'});
+ delete require.cache[require.resolve('../.build/chronicle-dom.cjs')];const ui=require('../.build/chronicle-dom.cjs');ui.initChronicle(()=>{},openFollowUp);ui.activateChronicle({token:'one'});
  const answer=(title,which=0)=>{const done=pending.splice(which,1)[0];done({ok:true,value:{campaignName:'Test',entries:[entry(title)],truncated:false}});};
  return{ui,el,pending,calls,exports,answer,query(text){el('chronicle-search').value=text;el('chronicle-search').oninput();},cleanup(){ui.activateChronicle(null);Object.assign(globalThis,saved);}};
 }
@@ -37,5 +37,13 @@ test('rapid typing coalesces reads but immediately invalidates accepted results'
 
 test('an unavailable native bridge shows its usable cause without internal method names',async()=>{
  const x=fixture();try{const task=x.ui.openChronicle();x.pending.shift()({ok:false,error:"Error invoking remote method 'campaign:chronicle': Error: Quelle nicht lesbar"});await task;const text=x.el('chronicle-list').querySelector('[role=alert]').textContent;assert.match(text,/Quelle nicht lesbar/);assert.doesNotMatch(text,/campaign:|remote method/);assert.equal(x.el('chronicle-export').disabled,true);
+ }finally{x.cleanup();}
+});
+
+test('follow-up navigation accepts the current event but ignores removed rows after campaign changes',async()=>{
+ const opened=[],x=fixture(async id=>opened.push(id));try{
+  const task=x.ui.openChronicle();x.pending.shift()({ok:true,value:{campaignName:'A',entries:[{...entry('Spur'),followUp:{kind:'quest',id:'shared-local-id'}}],truncated:false}});await task;
+  const button=x.el('chronicle-list').querySelector('button');assert.ok(button);button.click();await tick();assert.deepEqual(opened,['shared-local-id']);
+  x.ui.activateChronicle({token:'two'});button.onclick();await tick();assert.deepEqual(opened,['shared-local-id']);
  }finally{x.cleanup();}
 });
