@@ -18,7 +18,7 @@ import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './liv
 import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 import type {NarrativeView} from './narrative-contracts';
 import type {ChronicleView} from './chronicle-contracts';
-import {liveSessionRecap} from './live-session-recap';
+import {liveActionUpdatesRecap,liveSessionRecap} from './live-session-recap';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -50,6 +50,7 @@ export function activateLive(workspace: Workspace) {
   adoption = null; moveBasis = null;preparedNotesSceneId=null;preparedNoteIds.clear();
   narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear();
   liveMomentDrafts.reset();writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent='';
+  get<HTMLTextAreaElement>('live-session-summary').value='';get('live-session-result').textContent='';
   for (const id of ['adoption-dialog', 'move-dialog', 'archive-dialog', 'character-dialog']) if (get<HTMLDialogElement>(id).open) get<HTMLDialogElement>(id).close();
 }
 export async function openLive(planId?: string, visitId?: string) {
@@ -132,7 +133,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
     try {
       const ack = unwrap(await window.campaign.executeLive(command));
       if (context?.token !== token) return null;
-      mergeAck(ack, action); tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
+      mergeAck(ack, action);if(liveActionUpdatesRecap(action))await refreshLiveSession();tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;
       failed = command; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
@@ -310,7 +311,7 @@ function render() {
   renderVisits();
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation,openNote:(id:string)=>Promise<void>) {
-  tell = status; openLocation = navigate;openKnowledgeNote=openNote; initCombat(status,refreshScenePreparation);initChase(status); initProgress(status);onProgressChanged(renderPartyReference);initRuleReferences(status);
+  tell = status; openLocation = navigate;openKnowledgeNote=openNote; initCombat(status,refreshScenePreparation);initChase(status,refreshLiveSession); initProgress(status);onProgressChanged(()=>{renderPartyReference();void refreshLiveSession();});initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
@@ -378,10 +379,10 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
     const{followUp,...moment}=draft,ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...moment,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;
     let refreshProblem=false;if(followUp){try{const refreshed=await window.campaign.preparation(token!,'');if(context?.token!==token)return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(context?.token!==token)return;refreshProblem=true;}}
     const clear=canClearSavedLiveMoment(scene.id,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());liveMomentDrafts.saved(scene.id);if(clear)writeLiveMomentDraft(emptyLiveMomentDraft());
-    get('live-moment-result').textContent=liveMomentSavedMessage(followUp,clear,refreshProblem);get<HTMLInputElement>('live-moment-title').focus();await refreshLiveSession();
+    get('live-moment-result').textContent=liveMomentSavedMessage(followUp,clear,refreshProblem);get<HTMLInputElement>('live-moment-title').focus();
   })();};
-  get('live-session-start').onclick=()=>{void(async()=>{const token=context?.token,scene=data?.scene;if(!scene||sessionChronicleError||!await flushLive()||context?.token!==token)return;const recap=liveSessionRecap(sessionChronicle?.entries??[]);if(recap.open){renderLiveSession();return;}if(await execute({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'start',summary:''})){get('live-session-result').textContent='Spielabend begonnen. Neue Ereignisse fließen in diesen Rückblick.';await refreshLiveSession();}})();};
-  get('live-session-end').onclick=()=>{void(async()=>{const token=context?.token,scene=data?.scene,summary=value('live-session-summary');if(!scene||sessionChronicleError||!await flushLive()||context?.token!==token)return;const recap=liveSessionRecap(sessionChronicle?.entries??[]);if(!recap.open){renderLiveSession();return;}if(await execute({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'end',summary})){get<HTMLTextAreaElement>('live-session-summary').value='';get('live-session-result').textContent='Spielabend beendet. Der Rückblick bleibt in der Chronik erhalten.';await refreshLiveSession();}})();};
+  get('live-session-start').onclick=()=>{void(async()=>{const token=context?.token,scene=data?.scene;if(!scene||sessionChronicleError||!await flushLive()||context?.token!==token)return;const recap=liveSessionRecap(sessionChronicle?.entries??[]);if(recap.open){renderLiveSession();return;}if(await execute({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'start',summary:''}))get('live-session-result').textContent='Spielabend begonnen. Neue Ereignisse fließen in diesen Rückblick.';})();};
+  get('live-session-end').onclick=()=>{void(async()=>{const token=context?.token,scene=data?.scene,summary=value('live-session-summary');if(!scene||sessionChronicleError||!await flushLive()||context?.token!==token)return;const recap=liveSessionRecap(sessionChronicle?.entries??[]);if(!recap.open){renderLiveSession();return;}if(await execute({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'end',summary})){get<HTMLTextAreaElement>('live-session-summary').value='';get('live-session-result').textContent='Spielabend beendet. Der Rückblick bleibt in der Chronik erhalten.';}})();};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');

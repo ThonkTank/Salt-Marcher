@@ -4,7 +4,7 @@ import {chaseActionControls,checkedChaseView,type ChaseCommand,type ChaseView} f
 import {hasPendingCommit,onCommitResolved,onCommitState,writeConfirmed,type CommitResolution} from './commit-confirmation';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const val=(id:string)=>el<HTMLInputElement>(id).value;
-let w:Workspace|null=null,scene:LiveScene|null=null,roster:Character[]=[],rosterBasis='',view:ChaseView|null=null,tell:(s:string,e?:boolean)=>void,busy=false;
+let w:Workspace|null=null,scene:LiveScene|null=null,roster:Character[]=[],rosterBasis='',view:ChaseView|null=null,tell:(s:string,e?:boolean)=>void,busy=false,afterFinished:(()=>Promise<void>)|undefined;
 let nonce=0,requestedId:string|undefined,loading=false,loadError='',rendered='';
 type Draft={fields:Record<string,string>;rows:Record<string,{distance?:string;exhaustion?:string}>};
 // Unconfirmed rounds remain explicit proposals, separate from the durable round counter.
@@ -17,8 +17,8 @@ function pending(){return busy||!!w&&hasPendingCommit(w.campaign.id);}
 function ready(){return !!w&&!!scene&&!loading&&!loadError&&(!requestedId||view?.chase?.id===requestedId);}
 function clearWorkInput(){for(const id of fieldIds)el<HTMLInputElement>(id).value=id==='chase-speed'?'9':id==='chase-side'?'pursuer':'';}
 function restoreWorkInput(){clearWorkInput();for(const [id,value]of Object.entries(draft()?.fields??{}))el<HTMLInputElement>(id).value=value;}
-export function initChase(status:typeof tell){
- tell=status;const root=document.createElement('section');root.id='chase-panel';root.hidden=true;
+export function initChase(status:typeof tell,refreshRecap?:()=>Promise<void>){
+ tell=status;afterFinished=refreshRecap;const root=document.createElement('section');root.id='chase-panel';root.hidden=true;
  root.innerHTML='<div class="toolbar"><h2>Verfolgung führen</h2><button id="chase-new">Neue Verfolgung</button><button id="chase-refresh">Aktualisieren</button></div><p id="chase-load-status" role="status" hidden></p><label id="chase-recent-row" hidden>Verfolgung auswählen<select id="chase-recent"></select></label><div id="chase-create"><label>Titel<input id="chase-title" value="Verfolgungsjagd" maxlength="1000"></label><label>Ziel / Abbruchbedingung<input id="chase-goal" placeholder="Tor erreichen oder 60 m Abstand" maxlength="4000"></label><button id="chase-start">Verfolgung beginnen</button></div><div id="chase-work" hidden><p id="chase-status"></p><div id="chase-people"></div><details><summary>Teilnehmer hinzufügen</summary><label>Name<input id="chase-name" maxlength="1000"></label><label>Rolle<select id="chase-side"><option value="pursuer">Verfolger</option><option value="quarry">Flüchtend</option></select></label><button id="chase-party" type="button">Scene-Gruppe als diese Rolle übernehmen</button><label>Tempo pro Runde (m)<input id="chase-speed" type="number" value="9" min="0" max="1000000"></label><button id="chase-add">Hinzufügen</button></details><label>Komplikation dieser Runde<input id="chase-complication" placeholder="Marktstand versperrt den Weg" maxlength="4000"></label><button id="chase-round">Runde bestätigen</button><label>Ergebnis<textarea id="chase-outcome" maxlength="10000"></textarea></label><button id="chase-finish">Verfolgung abschließen</button></div>';
  document.querySelector('#combat-panel')!.after(root);onCommitState(draw);onCommitResolved(recovered);
  root.addEventListener('input',event=>{const input=event.target as HTMLInputElement;if(!ready()||pending())return;const d=draft();if(!d)return;if(fieldIds.includes(input.id))d.fields[input.id]=input.value;const row=input.closest<HTMLElement>('[data-id]');if(row&&(input.hasAttribute('data-distance')||input.hasAttribute('data-exhaustion'))){const r=d.rows[row.dataset.id!]??={};r[input.hasAttribute('data-distance')?'distance':'exhaustion']=input.value;}syncActions();});
@@ -58,7 +58,7 @@ async function command(action:ChaseCommand['action'],ownerId=view?.chase?.id){
   const d=key?drafts.get(key):undefined;if(action.kind==='participant'){el<HTMLInputElement>('chase-name').value='';if(d)delete d.fields['chase-name'];}
   if(action.kind==='round'){el<HTMLInputElement>('chase-complication').value='';if(d){d.rows={};delete d.fields['chase-complication'];}}
   if(action.kind==='finish'){if(key)drafts.delete(key);clearWorkInput();}
-  view=result;requestedId=result.chase.id;tell('Verfolgung gespeichert.');
+  view=result;requestedId=result.chase.id;if(action.kind==='finish'&&afterFinished)await afterFinished();tell('Verfolgung gespeichert.');
  }catch(e){if(current())tell((e as Error).message,true);}finally{busy=false;draw();}
 }
 async function recovered(event:CommitResolution){
@@ -67,7 +67,7 @@ async function recovered(event:CommitResolution){
  if(!c||c.sceneId!==scene.id)return;
  const own=meta?.token===w.token&&meta.sceneId===scene.id&&(meta.chaseId===c.id||meta.actionKind==='create');
  if(own){const key=scene.id+':'+c.id,d=drafts.get(key);if(meta.actionKind==='round'&&d){d.rows={};delete d.fields['chase-complication'];}if(meta.actionKind==='finish')drafts.delete(key);if(requestedId===c.id){if(meta.actionKind==='round')el<HTMLInputElement>('chase-complication').value='';if(meta.actionKind==='finish')clearWorkInput();}}
- if(requestedId===c.id||own&&meta.actionKind==='create'&&!requestedId)await load(c.id);
+ if(requestedId===c.id||own&&meta.actionKind==='create'&&!requestedId)await load(c.id);if(own&&meta.actionKind==='finish'&&afterFinished)await afterFinished();
 }
 function syncActions(){const c=view?.chase,blocked=pending()||!ready(),closed=blocked||!c||c.status!=='running',controls=chaseActionControls({title:val('chase-title'),participantName:val('chase-name'),participantCount:c?.participants.length??0,outcome:val('chase-outcome')});el<HTMLButtonElement>('chase-start').disabled=blocked||!!c&&c.status==='running'||!controls.start;el<HTMLButtonElement>('chase-party').disabled=closed||!sceneCharacters().length;el<HTMLButtonElement>('chase-add').disabled=closed||!controls.addParticipant;el<HTMLButtonElement>('chase-round').disabled=closed||!controls.advanceRound;el<HTMLButtonElement>('chase-finish').disabled=closed||!controls.finish;}
 function draw(){
