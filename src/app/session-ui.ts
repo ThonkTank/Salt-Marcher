@@ -1,3 +1,4 @@
+import {SessionReview} from './session-review-ui';
 import {initSessionPacket,closePreparationPacket} from './session-packet-ui';
 import {magicPoolPicker} from './session-magic-pool-ui';
 import {requiredNpcPicker} from './required-npc-picker';
@@ -9,8 +10,9 @@ import type {Preparation} from './preparation-contracts';
 import type {ManualPlan} from '../features/planner/manual-planner';
 import {dailyXp,xpLevel,xpShare,type ItemInput} from './progression';
 import {exactWeight,type GenerationRequest} from './generation-contracts';
-import type {SessionProfile,VisitDetail,PreparedGroup,SessionView,SessionAction,SessionRun} from './session-contracts';
+import type {SessionProfile,VisitDetail,PreparedGroup,SessionView,SessionAction,SessionRun,SessionProposal} from './session-contracts';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>get<HTMLInputElement>(id).value,unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
+let proposalReview:SessionReview;
 let magicPick:ReturnType<typeof magicPoolPicker>;
 let requiredPick:ReturnType<typeof requiredNpcPicker>;
 let workspace:Workspace|null=null,plan:ManualPlan|null=null,visitId:string|null=null,sources:Preparation|null=null,view:SessionView|null=null,profileDraft:SessionProfile|null=null,visitDraft:VisitDetail|null=null,run:SessionRun|null=null;
@@ -192,6 +194,17 @@ async function acceptProposal(source:SessionRun,index:number){
   run=accepted;renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
+async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[]){
+ const owner=previewOwner(),request=previewRequest;if(!owner||run!==source)return false;
+ try{
+  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source||!plan)return false;
+  const action:SessionAction={kind:'accept-proposals',planId:owner.planId,expectedPlanRevision:plan.revision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
+  if(!await execute(action))return false;
+  if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
+  run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();
+  tell(picks.length+' Szenen in die Timeline übernommen. Die Spielabendmappe ist bereit.');return true;
+ }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);return false;}
+}
 async function regenerateProposal(source:SessionRun,index:number){
  const owner=previewOwner();if(!owner||run!==source)return;
  const request=++previewRequest,seed=value('session-seed')+'|'+crypto.randomUUID();
@@ -225,7 +238,7 @@ async function generatePreview(){
 }
 function gold(copper:string){const n=BigInt(copper),sign=n<0n?'-':'',v=n<0n?-n:n;return sign+(v/100n)+','+(v%100n).toString().padStart(2,'0');}
 function renderRun(){
- const root=get('session-preview');root.replaceChildren();if(!run)return;
+ const root=get('session-preview');root.replaceChildren();if(!run){proposalReview?.reset();return;}proposalReview.mount(root,run);
  const source=run,history=get<HTMLSelectElement>('session-history');if(![...history.options].some(o=>o.value===source.id))option(history,source.id,source.seed+' · '+source.proposals.length+' Szenen');history.value=source.id;const caption=document.createElement('p');caption.textContent='Seed '+source.seed+' · '+source.usedXp+' von '+source.budget+' XP · '+source.proposals.length+' Szenen';root.append(caption);
  if(source.lootGuidance){const g=source.lootGuidance,details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Beuteausgleich · Ziel '+gold(g.targetCopper)+' Gold · Presetrevision '+g.preset.revision;details.append(summary);const facts=document.createElement('p');facts.textContent='Bisher erwartet '+gold(g.expectedBeforeCopper)+' Gold · erhalten '+gold(g.receivedCopper)+' Gold · Basis für neue XP '+gold(g.baselineCopper)+' Gold · kumulierte Differenz '+gold(g.differenceCopper)+' Gold.';details.append(facts);for(const c of g.characters){const p=document.createElement('p');p.textContent=c.name+' · '+c.xp+' bestätigte XP · erhalten '+gold(c.receivedCopper)+' Gold · erwartet nach dem Abend '+gold(c.expectedAfterCopper)+' Gold';details.append(p);}const note=document.createElement('p');note.className='caption';note.textContent='Gespeicherte Empfehlung für '+g.rewardXp+' geplante Belohnungs-XP. Eigene Änderungen bleiben möglich; Begegnungsregeneration ändert Beute nicht automatisch. '+(g.magic?'Magische Gegenstände werden nach Seltenheit gezählt und nicht als Münzwert abgezogen.':'Magische Seltenheiten sind hier kein automatisches Kontingent.');details.append(note);if(g.magic?.pool!==undefined){const p=document.createElement('p');p.textContent='Verbindlicher Gegenstandspool ('+g.magic.pool.length+'): '+(g.magic.pool.map(d=>d.name+' · r'+d.revision).join(', ')||'leer – Magiekontingente bleiben offen');details.append(p);}if(g.magic){const m=g.magic,table=document.createElement('table'),head=document.createElement('tr');for(const label of ['Seltenheit','Erwartet nach dem Abend','Bisher erhalten','Neuer Vorschlag','Bei Erstellung offen']){const th=document.createElement('th');th.textContent=label;head.append(th);}table.append(head);for(const r of budgetRarities){const tr=document.createElement('tr');for(const value of [r,m.expectedAfter[r].toFixed(2),m.received[r],m.target[r],m.missing[r]]){const td=document.createElement('td');td.textContent=String(value);tr.append(td);}table.append(tr);}details.append(table);const rounding=document.createElement('p');rounding.className='caption';rounding.textContent='Kontingente werden einmal für den ganzen Abend kaufmännisch gerundet. Erwartungswerte bleiben als Bruchteile sichtbar. Offene Mengen beziehen sich auf die ursprüngliche Erstellung; spätere Vorschläge zeigen eigene Quellenhinweise.';details.append(rounding);for(const warning of m.warnings){const text=document.createElement('p');text.textContent=warning;details.append(text);}}root.append(details);}
  for(const warning of source.warnings){const p=document.createElement('p');p.textContent=warning;root.append(p);}
@@ -242,8 +255,9 @@ function renderRun(){
   const edit=document.createElement('button');edit.textContent='Inhalte und Belohnung bearbeiten…';edit.disabled=!!p.acceptedVisitId;edit.onclick=()=>{const owner=previewOwner();if(!owner||run!==source||!sources)return;openProposalEditor(p,sources,async value=>{if(!ownsPreview(owner)||run!==source)throw new Error('Vorschlagskontext geändert.');if(!await execute({kind:'edit-proposal',planId:owner.planId,runId:source.id,index:p.index,expectedRevision:p.revision??1,...value})||!ownsPreview(owner)||run!==source)return false;const updated=unwrap(await window.campaign.sessionRun(owner.token,source.id));if(!ownsPreview(owner)||run!==source)return false;run=updated;renderRun();return true;},()=>ownsPreview(owner)&&run===source);};
   const loot=document.createElement('button');loot.textContent='Nur Beute neu erzeugen';loot.disabled=!!p.acceptedVisitId||(!p.rewardOrigin&&!source.lootGuidance);loot.onclick=()=>{void regenerateReward(source,p.index);};
   const reject=document.createElement('button');reject.textContent=p.rejected?'Vorschlag wiederherstellen':'Vorschlag verwerfen';reject.disabled=!!p.acceptedVisitId;reject.onclick=()=>{void rejectProposal(source,p.index);};
-  card.append(title,text,encounter,reward,edit,accept,regenerate,loot,reject);if(!p.rewardEdited)for(const warning of p.rewardWarnings??[]){const message=document.createElement('p');message.textContent=warning;card.append(message);}if(p.needsEncounterRefresh){const warning=document.createElement('p');warning.textContent='Ort geändert: Begegnung neu erzeugen, damit die Ortsquellen gelten.';card.append(warning);}root.append(card);
+  card.append(title,text,encounter,reward,edit,accept,regenerate,loot,reject);if(!p.rewardEdited)for(const warning of p.rewardWarnings??[]){const message=document.createElement('p');message.textContent=warning;card.append(message);}if(p.needsEncounterRefresh){const warning=document.createElement('p');warning.textContent='Ort geändert: Begegnung neu erzeugen, damit die Ortsquellen gelten.';card.append(warning);}proposalReview.decorate(card,p,sources);root.append(card);
  }
+ const mappe=document.createElement('button');mappe.type='button';mappe.textContent='Spielabendmappe öffnen';mappe.id='session-review-open-packet';mappe.onclick=()=>get<HTMLButtonElement>('session-packet-open').click();root.append(mappe);
 }
 function closeStoryAward(){
  storyRequest++;storyAward=null;
@@ -320,6 +334,7 @@ export async function clearSessionTimeline(){
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
+proposalReview=new SessionReview(acceptSelectedProposals);
 initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession());
 initProposalEditor();tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));

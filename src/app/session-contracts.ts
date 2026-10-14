@@ -18,6 +18,7 @@ export interface SessionMagicGuidance {pool?:SessionMagicPoolItem[];expectedBefo
 export interface SessionLootGuidance {basis?:SessionLootBasis;magic?:SessionMagicGuidance;version:'cumulative-gold-v1'|'cumulative-gold-magic-v2';preset:{id:string;revision:number;hash:string};rewardXp:number;expectedBeforeCopper:string;expectedAfterCopper:string;receivedCopper:string;baselineCopper:string;differenceCopper:string;targetCopper:string;allocationsCopper:string[];characters:{characterId:string;name:string;xp:number;revision:number;receivedCopper:string;expectedBeforeCopper:string;expectedAfterCopper:string}[]}
 export interface SessionRun {lootGuidance?:SessionLootGuidance;worldSourcesByLocation?:boolean;id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
 export type SessionAction=
+ |{kind:'accept-proposals';planId:string;expectedPlanRevision:number;runId:string;proposals:{index:number;expectedRevision:number}[]}
  |{kind:'reject-proposal';planId:string;runId:string;index:number;expectedRevision:number;rejected:boolean}
  |{kind:'edit-proposal';planId:string;runId:string;index:number;expectedRevision:number;title:string;notes:string;readAloud:string;locationId:string|null;noteIds:string[];reward:SessionProposal['reward']}
  |{kind:'replace-plan';planId:string;expectedBasis:string;name:string;sourcePlanId:string|null;expectedSourceBasis:string|null;copyParty:boolean}
