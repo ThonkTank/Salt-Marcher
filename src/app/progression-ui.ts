@@ -17,6 +17,7 @@ let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = 
 let lootBalance:LootBalance|null=null;
 let selectedTreasure: string | null = null;
 let ledgerRequest=0, treasureRequest=0;
+let ledgerDetailLoading=false, ledgerDetailError='', ledgerFormOwner:string|null=null;
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
 let finishBasis: ProgressView | null = null;let finishItems:RewardItemDraft[]=[];
 let history: ProgressHistory = { items: [], next: null };
@@ -35,7 +36,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
   const changed = basis !== contextBasis; contextBasis = basis;
   const selectionChanged = characterId !== selected;
   const activationChanged = next?.token !== workspace?.token;
-  if (selectionChanged || next?.token !== workspace?.token) { ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; ledgerDetail=null; selectedLedger=null; ledgerLoaded=false; }
+  if (selectionChanged || activationChanged) { ledgerDetailRequest++;ledgerRequest++;ledgerFormOwner=null;ledgerDetailLoading=false;ledgerDetailError=''; ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; ledgerDetail=null; selectedLedger=null; ledgerLoaded=false; }
   if (next?.token !== workspace?.token) { generation++;pending=null; view = null;lootBalance=null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
   workspace = next; live = data; selected = characterId;updateCommitControls();
   get('reward-panel').hidden = !data; get('character-progression').hidden = !data || !selected;
@@ -50,6 +51,7 @@ export async function refreshProgress(deliverNotices=true) {
 }
 async function execute(action: ProgressAction): Promise<boolean> {
   if (!workspace || pending||hasPendingCommit(workspace.campaign.id)) return false;
+  if ((action.kind==='ledger'||action.kind==='ledger-split'||action.kind==='ledger-merge'||action.kind==='ledger-transfer') && (!ledgerEditable()||action.entryId!==selectedLedger)) return false;
   loadNumber++; // Pending reads cannot replace the receipt of this confirmed write.
   const gen = generation, command: ProgressCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token, action:structuredClone(action) };
   const meta={owner:'progress',token:workspace.token,generation:gen,action:command.action,healthDraft:action.kind==='health'?structuredClone(healthDrafts.get(workspace.campaign.id+':'+action.characterId)):undefined};
@@ -71,10 +73,14 @@ async function execute(action: ProgressAction): Promise<boolean> {
 }
 export async function flushProgress() { if(!await flushFinishDraft())return false; if(pending)return await pending;return !workspace||!hasPendingCommit(workspace.campaign.id); }
 function ledgerUnavailable(){return !!selectedLedger&&ledger.problems.some(p=>p.id===selectedLedger);}
+function ledgerEditable(){return ledgerLoaded&&!ledgerDetailLoading&&!ledgerDetailError&&!ledgerUnavailable()&&!!ledgerDetail&&ledgerDetail.id===selectedLedger&&ledgerDetail.characterId===selected;}
 function lock() {
   const blocked=!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
-  for (const root of ['character-progression','reward-panel']) for (const c of get(root).querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) c.disabled = blocked;
-  for(const button of get('ledger-form').querySelectorAll<HTMLButtonElement>('button'))button.disabled=blocked||!!selectedLedger&&(!ledgerLoaded||ledgerUnavailable());
+  for (const root of ['character-progression','reward-panel']) for (const c of get(root).querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!c.closest('#ledger-stack-tools'))c.disabled = blocked;
+  const itemBlocked=blocked||!ledgerEditable();
+  for(const control of get('ledger-form').querySelectorAll<HTMLInputElement|HTMLButtonElement>('button,input,select,textarea'))control.disabled=itemBlocked;
+  get<HTMLFieldSetElement>('ledger-stack-tools').disabled=itemBlocked;
+  get<HTMLButtonElement>('ledger-retry').disabled=blocked||ledgerDetailLoading;
   const p=view?.characters.find(p=>p.characterId===selected),key=healthKey(),dirty=key?healthDrafts.has(key):false;
   for(const c of get('health-form').querySelectorAll<HTMLInputElement|HTMLButtonElement>('input,button'))c.disabled=blocked||!!p?.healthCombat;
   for(const id of ['health-amount','health-damage','health-heal'])get<HTMLInputElement|HTMLButtonElement>(id).disabled=blocked||!p?.health||!!p.healthCombat||dirty;
@@ -156,6 +162,8 @@ function renderLedger() {
   }
   for(const problem of ledger.problems){const p=document.createElement('p');p.className='error';p.setAttribute('role','status');p.textContent='Eintrag nicht verfügbar: '+problem.id+' · '+problem.message;root.append(p);}
   get('ledger-more').hidden=!ledger.next;
+  const status=get('ledger-load-status');status.hidden=!ledgerDetailLoading&&!ledgerDetailError;status.setAttribute('role',ledgerDetailError?'alert':'status');status.textContent=ledgerDetailError|| (ledgerDetailLoading?'Beuteeintrag wird geladen: '+(ledger.items.find(l=>l.id===selectedLedger)?.currentName??ledger.items.find(l=>l.id===selectedLedger)?.name??'Ausgewählter Eintrag'):'');
+  get('ledger-retry').hidden=!ledgerDetailError||!selectedLedger;
   const l=ledgerDetail; get('ledger-editor').hidden=!l;
   get('ledger-detail').textContent=l?l.name+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.sourceTreasureId?' · Ursprünglicher Schatz '+l.sourceTreasureId.slice(0,8):'')+(l.rewardCreditId?' · Loot-Gutschrift bei ursprünglichem Empfänger · Herkunft '+l.rewardCreditId.slice(0,8):'')+(l.creditedCopper!==undefined?' · Aktueller gutgeschriebener Lootwert: '+(l.creditedCopper===null?'unbekannt':gold(l.creditedCopper)):'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
   drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute);lock();
@@ -189,11 +197,19 @@ async function loadLedger(more=false) {
   ledger=more?{...result,items:[...new Map([...before.items,...result.items].map(item=>[item.id,item])).values()],problems:[...new Map([...before.problems,...result.problems].map(problem=>[problem.id,problem])).values()]}:result;ledgerLoaded=true;renderLedger();
 }
 async function loadLedgerItem(id:string){
-  if(!workspace||!selected)return;const token=workspace.token,characterId=selected,request=++ledgerDetailRequest;
-  const detail=unwrap(await window.campaign.ledgerItem(token,id));
-  if(workspace?.token!==token||selected!==characterId||request!==ledgerDetailRequest)return;
-  if(detail.characterId!==characterId)throw new Error('Dieser Eintrag gehört zu einer anderen Figur.');
-  if(selectedLedger!==id){get<HTMLInputElement>('ledger-counterparty').value=detail.status==='received'?'':detail.counterparty;get<HTMLSelectElement>('ledger-linked-counterparty').value=detail.counterpartyLink?detail.counterpartyLink.kind+':'+detail.counterpartyLink.id:'';}ledgerDetail=detail;selectedLedger=id;renderLedger();
+  if(!workspace||!selected)return;
+  const token=workspace.token,characterId=selected,request=++ledgerDetailRequest;
+  const current=()=>workspace?.token===token&&selected===characterId&&request===ledgerDetailRequest;
+  selectedLedger=id;ledgerDetail=null;ledgerDetailLoading=true;ledgerDetailError='';renderLedger();
+  try{
+    const reply=await window.campaign.ledgerItem(token,id);
+    if(!current())return;
+    const detail=unwrap(reply);
+    if(detail.id!==id||detail.characterId!==characterId)throw new Error('Der gelesene Beuteeintrag gehört nicht zur Auswahl.');
+    if(ledgerFormOwner!==id){get<HTMLInputElement>('ledger-counterparty').value=detail.status==='received'?'':detail.counterparty;get<HTMLSelectElement>('ledger-linked-counterparty').value=detail.counterpartyLink?detail.counterpartyLink.kind+':'+detail.counterpartyLink.id:'';}
+    ledgerDetail=detail;ledgerFormOwner=id;
+  }catch(error){if(current())ledgerDetailError=(error as Error).message;}
+  finally{if(current()){ledgerDetailLoading=false;renderLedger();}}
 }
 async function loadHistory(more = false) {
   if (!workspace || !selected) { get('progress-history-list').replaceChildren(); return; }
@@ -262,6 +278,7 @@ export function initProgress(status: typeof tell) {
   get('loot-allocate-form').onsubmit=event=>{event.preventDefault();const t=treasure,c=view?.characters.find(c=>c.characterId===value('loot-recipient'));const i=t?.items.find(i=>i.id===value('treasure-item'));if(t&&c&&i?.currentDefinition)void execute({kind:'allocate',treasureId:t.id,expectedRevision:t.revision,expectedDefinitionRevision:i.currentDefinition.revision,itemId:i.id,quantity:Number(value('loot-quantity')),characterId:c.characterId,expectedMembershipRevision:c.membershipRevision});else tell('Beute und Empfänger wählen und aktuellen Gegenstand laden.',true);};
   get('manual-loot-form').onsubmit=event=>{event.preventDefault();const c=view?.characters.find(c=>c.characterId===value('manual-loot-recipient'));if(c)void execute({kind:'manual-item',characterId:c.characterId,expectedMembershipRevision:c.membershipRevision,origin:value('manual-loot-origin') as 'award'|'purchase'|'manual',item:item('manual-loot'),note:value('manual-loot-note')});};
   get('ledger-search').oninput=()=>{void loadLedger().catch(error=>tell(error.message,true));};get('ledger-filter').onchange=()=>{void loadLedger().catch(error=>tell(error.message,true));};
-  get('ledger-form').onsubmit=event=>{event.preventDefault();if(!ledgerLoaded||ledgerUnavailable()){tell('Beuteeintrag derzeit nicht verfügbar. Eingaben bleiben erhalten.',true);return;}const l=ledgerDetail;if(l)void execute({kind:'ledger',entryId:l.id,expectedRevision:l.revision,operation:value('ledger-operation') as 'sold'|'given'|'correct',quantity:Number(value('ledger-quantity')),correctedQuantity:Number(value('ledger-quantity')),actualGold:value('ledger-price'),counterparty:value('ledger-counterparty'),counterpartyLink:value('ledger-linked-counterparty')?{kind:value('ledger-linked-counterparty').split(':')[0] as 'shop'|'npc'|'location'|'faction',id:value('ledger-linked-counterparty').slice(value('ledger-linked-counterparty').indexOf(':')+1)}:undefined,reason:value('ledger-reason')});};
+  get('ledger-retry').onclick=()=>{if(selectedLedger)void loadLedgerItem(selectedLedger);};
+  get('ledger-form').onsubmit=event=>{event.preventDefault();if(!ledgerEditable()){tell('Beuteeintrag derzeit nicht verfügbar. Eingaben bleiben erhalten.',true);return;}const l=ledgerDetail;if(l)void execute({kind:'ledger',entryId:l.id,expectedRevision:l.revision,operation:value('ledger-operation') as 'sold'|'given'|'correct',quantity:Number(value('ledger-quantity')),correctedQuantity:Number(value('ledger-quantity')),actualGold:value('ledger-price'),counterparty:value('ledger-counterparty'),counterpartyLink:value('ledger-linked-counterparty')?{kind:value('ledger-linked-counterparty').split(':')[0] as 'shop'|'npc'|'location'|'faction',id:value('ledger-linked-counterparty').slice(value('ledger-linked-counterparty').indexOf(':')+1)}:undefined,reason:value('ledger-reason')});};
   for(const id of ['finish-xp','finish-no-xp','finish-has-loot'])get(id).oninput=finishPreview;
 }
