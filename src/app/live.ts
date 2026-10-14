@@ -320,9 +320,9 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   }
   get('running-location').onchange = () => { if (sceneDraft) { sceneDraft = { ...sceneDraft, locationId: value('running-location') || null }; renderSceneMeta(); schedule(); } };
   get('running-open-location').onclick = () => { void (async () => { const token = context?.token; if (await flushLive() && token === context?.token && sceneDraft?.locationId) await openLocation(sceneDraft.locationId); })(); };
-  get('running-player-scene').onclick=()=>{void(async()=>{const token=context?.token;if(!sceneDraft?.readAloud?.trim()){tell('Trage zuerst einen Vorlesetext ein.',true);return;}if(await flushLive()&&context?.token===token)await cuePlayer('scene');})();};
-  get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token;if(await flushLive()&&context?.token===token)await cuePlayer('follow');})();};
-  get('running-player-blank').onclick=()=>{void cuePlayer('blank');};
+  get('running-player-scene').onclick=()=>{void(async()=>{const token=context?.token,focus=data?{focusId:data.focusId,focusRevision:data.focusRevision}:null;if(!sceneDraft?.readAloud?.trim()){tell('Trage zuerst einen Vorlesetext ein.',true);return;}if(await flushLive()&&context?.token===token)await cuePlayer('scene',focus);})();};
+  get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token,focus=data?{focusId:data.focusId,focusRevision:data.focusRevision}:null;if(await flushLive()&&context?.token===token)await cuePlayer('follow',focus);})();};
+  get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');

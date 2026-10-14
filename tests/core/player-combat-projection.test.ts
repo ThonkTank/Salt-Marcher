@@ -22,7 +22,7 @@ test('the follow display shows a reduced combat initiative and respects hidden o
   combat=store.executeCombat({commandId:'hero-init',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:hero.id,changes:{initiative:15,hp:12,maxHp:20}}}).combat!;
   combat=store.executeCombat({commandId:'enemy-init',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:enemy.id,changes:{initiative:10,hp:4,conditions:'Liegend, Fluch des Sehers, Poisoned'}}}).combat!;
   combat=store.executeCombat({commandId:'start',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'start'}}).combat!;
-  let player:PlayerView=store.executePlayer({commandId:'show',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
+  let player:PlayerView=store.executePlayer({...focus(store,token),commandId:'show',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
   assert.equal(player.frame.mode,'combat');assert.equal(player.frame.title,'');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Vampir/);assert.equal(player.frame.combat?.currentName,'Ada');
   assert.deepEqual(player.frame.combat?.participants.map((p:{name:string;health:string;status:string})=>[p.name,p.health,p.status]),[['Ada','12 / 20 HP','—'],['Schatten','Angeschlagen','Liegend, Vergiftet']]);
   combat=store.executeCombat({commandId:'down-hero',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage',participantId:hero.id,amount:12}}).combat!;
@@ -41,7 +41,9 @@ test('the follow display shows a reduced combat initiative and respects hidden o
   player=store.playerView(token);assert.equal(player.frame.combat?.currentName,'Schatten');assert.equal(player.frame.combat?.participants.at(-1)?.current,true);
   assert.throws(()=>store.executeCombat({commandId:'hide-party',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'visibility',participantId:hero.id,hidden:true}}),/Partyfiguren/);
 
-  player=store.executePlayer({commandId:'public-heading',campaignId:campaign.id,token,expectedRevision:player.settings.revision,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'Am Stadttor',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
+  player=store.executePlayer({...focus(store,token),commandId:'public-heading',campaignId:campaign.id,token,expectedRevision:player.settings.revision,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'Am Stadttor',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
   assert.equal(player.frame.title,'Am Stadttor');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Vampir/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};}
