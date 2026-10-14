@@ -270,26 +270,36 @@ keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
 
 ## 200-Actor-Baseline
 
-`npm run bench:autonomy` erzeugt für jeden von 20 unabhängigen Läufen denselben
-validierten Quellzustand: 200 aktivierte, unplatzierte Actors, ein erreichbares
-nicht exklusives Guard-Angebot, 15 Minuten bestätigte Zeit und höchstens zwölf
-Catch-up-Schritte je Actor. Die unabhängigen Prozesse verhindern, dass die
-Messung selbst wegen des vorgeschriebenen 512-MiB-Prozessbaumlimits alte V8-Heaps
-mehrerer Läufe ansammelt.
+`npm run bench:autonomy` erzeugt für je 20 unabhängige Läufe zwei validierte
+Quellzustände mit 200 aktivierten Actors, 15 Minuten bestätigter Zeit und
+höchstens zwölf Catch-up-Schritten je Actor. Die Minimalbaseline verwendet einen
+unplatzierten Guard-Job. Die räumliche Baseline verwendet fünf gleichzeitig
+erreichbare Guard-Angebote, einen Dungeon-Snapshot und Actors, die höchstens rund
+elf Meter vom Jobziel entfernt stehen. Die unabhängigen Prozesse verhindern,
+dass die Messung selbst wegen des vorgeschriebenen 512-MiB-Prozessbaumlimits alte
+V8-Heaps mehrerer Läufe ansammelt.
 
-Auf dem lokalen Linux-x64-Prüfrechner vom 14.10.2026 lagen die p95-Werte bei
-25,13 ms für Capture/Intervallbildung, 349,46 ms für den vollständigen
-200-Actor-Catch-up einschließlich Response-View und 13,29 ms für einen separaten
-View. Der höchste Worker-RSS betrug 112.451.584 Bytes. Ein erster bestätigter
-Schritt belegte inklusive SQLite-Seitenzuwachs median 344.064 Bytes; davon waren
-159.690 Bytes historischer Intervallpayload. Dieser Seitenzuwachs ist keine
-Langzeit-Wachstumsrate.
+Auf dem lokalen Linux-x64-Prüfrechner vom 14.10.2026 lagen die p95-Werte der
+Minimalbaseline bei 25,61 ms für Capture/Intervallbildung, 348,31 ms für den
+vollständigen Catch-up einschließlich Response-View und 13,37 ms für einen
+separaten View. Die räumliche Baseline benötigte 38,65 ms, 1.094,55 ms und
+16,90 ms. Die höchsten Worker-RSS-Werte betrugen 112.799.744 beziehungsweise
+204.947.456 Bytes.
 
-Die Baseline erfüllt die Zwei-Sekunden-p95-Grenze deutlich. Die Oberfläche setzt
+Die räumliche Gegenprobe deckte zunächst eine interne Vervielfachung auf: Jeder
+1,5-m-Routenpunkt publizierte eine eigene Spur und ein eigenes Geräusch. Ein
+atomarer Bewegungsabschnitt publiziert nun genau einen Trace und ein Signal; der
+Trace enthält weiterhin den vollständigen zurückgelegten Pfad. Dadurch sank der
+mediane SQLite-Seitenzuwachs der räumlichen Erstbewegung von 2.359.296 auf
+1.171.456 Bytes. Die Minimalbaseline belegt 344.064 Bytes; die historischen
+Intervallpayloads belegen 159.708 beziehungsweise 180.207 Bytes. Diese ersten
+Seitenzuwächse sind keine Langzeit-Wachstumsraten.
+
+Beide Baselines erfüllen die Zwei-Sekunden-p95-Grenze. Die Oberfläche setzt
 vor dem ersten asynchronen Command sofort einen Status im Live-Bereich und
 deaktiviert den Startknopf; der DOM-Gegenbeleg hält die Commandantwort offen und
-prüft diesen Zwischenzustand. Mehrere lokale Jobkandidaten, räumliche Adapter,
-Kamerafreiheit und unabhängige Reads sind damit noch nicht qualifiziert.
+prüft diesen Zwischenzustand. Kamerafreiheit und unabhängige Reads sind damit
+noch nicht nativ qualifiziert.
 
 
 ## Nächste ausführbare Schritte
@@ -325,6 +335,8 @@ Kamerafreiheit und unabhängige Reads sind damit noch nicht qualifiziert.
    Prozessabbruch/Cancel sowie Resume nach Fresh zusätzlich qualifizieren.
 4. **Bedienbarkeit und Größenfall messen.** `autonomy-ui.ts` mit A/B/A,
    unbestätigten Rohwerten, Pending/Replyverlust, erklärtem Jobausschluss und
-   Tastatur prüfen. Die integrierte 200-Actor-Baseline um mehrere lokale Kandidaten und
-   einen räumlichen Adapter erweitern; ≤2 s p95 und Fortschritt ≤100 ms erneut prüfen; Cancel vor Commit ohne Wirkung. Nur konkrete
+   Tastatur prüfen. Die integrierten einfachen und räumlichen 200-Actor-Baselines sind lokale
+   Messungen. Längere bestätigte Campaignzeit und Wachstum gesondert messen;
+   keinen Erstschrittwert linear fortschreiben. Native freie Kamera/Reads und
+   Fortschritt ≤100 ms qualifizieren; Cancel vor Commit ohne Wirkung. Nur konkrete
    gemessene Engstellen ändern, keine zusätzliche persistierte Simulation.
