@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,mkdirSync,copyFileSync,readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 mkdirSync('.build/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json');
@@ -30,4 +30,29 @@ for(const change of ['health','lifecycle','new opponent'])test(`named ${change} 
  if(change==='new opponent'){const id=randomUUID();x.store.executeNpc({...x.command(null),expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{...x.view,id,name:'Borin',record:{...x.view.record,id,revision:0}}});}
  else x.store.executeNpc({...x.command(null),expectedNoteRevision:x.view.noteRevision,expectedRecordRevision:x.view.record.revision,expectedActorRevision:x.view.actorRevision,expectedPositionRevision:x.view.positionRevision,npc:{...x.view,health:{...x.view.health,hp:4},record:{...x.view.record,lifecycle:change==='lifecycle'?'defeated':'active'}}});
  let bytes=x.store.db.serialize();assert.throws(()=>x.accept(x.w.token,x.cam.id,run.id),/NPC-Zustand/);assert.ok(x.store.db.serialize().equals(bytes));const snapshot=path.join(x.root,'stale.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=x.store.acceptCampaignSnapshot(snapshot,'Stale copy',{}),w=x.store.activate(copy.id),id=x.store.generationRuns(w.token)[0].id;bytes=x.store.db.serialize();assert.throws(()=>x.accept(w.token,copy.id,id),/NPC-Zustand/);assert.ok(x.store.db.serialize().equals(bytes));
+});
+
+for(const [name,damage]of [
+ ['identity',r=>{r.id=randomUUID();}],
+ ['seed',r=>{r.seed='different';}],
+ ['proposal count',r=>{r.request.count++;}],
+ ['assessment',r=>{r.plans[0].assessment.adjustedXp++;}],
+ ['candidate closure',r=>{r.candidates[0].creatureId='missing';}],
+ ['NPC basis missing',r=>{delete r.npcBasis;}],
+ ['NPC identity foreign',r=>{r.npcBasis[0].id=randomUUID();}],
+ ['NPC name disagreement',r=>{r.npcBasis[0].name='Other';}],
+ ['NPC revision',r=>{r.npcBasis[0].recordRevision=-1;}],
+ ['accepted proposal outside run',r=>{r.acceptedPlanIds=['foreign'];}],
+])test(`checksummed ${name} corruption rejects read, list, acceptance and backup without changing bytes`,async t=>{
+ const x=fixture(t),run=x.store.generateEncounters(x.w.token,x.request),backup=path.join(x.root,'protected.sqlite');await x.store.backup(backup);const saved=readFileSync(backup),broken=structuredClone(run);damage(broken);const payload=JSON.stringify(broken);x.store.db.prepare('UPDATE generation_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,run.id);
+ const bytes=x.store.db.serialize();for(const read of [()=>x.store.generationRun(x.w.token,run.id),()=>x.store.generationRuns(x.w.token),()=>x.accept(x.w.token,x.cam.id,run.id)])assert.throws(read);assert.ok(bytes.equals(x.store.db.serialize()));
+ await assert.rejects(x.store.backup(backup));assert.ok(readFileSync(backup).equals(saved));assert.ok(bytes.equals(x.store.db.serialize()));
+});
+test('historical named preview stays readable and backup-safe after NPC and preset changes',async t=>{
+ const x=fixture(t),run=x.store.generateEncounters(x.w.token,x.request);x.store.executeNpc({...x.command(null),expectedNoteRevision:x.view.noteRevision,expectedRecordRevision:x.view.record.revision,expectedActorRevision:x.view.actorRevision,expectedPositionRevision:x.view.positionRevision,npc:{...x.view,name:'Renamed',health:{...x.view.health,hp:0},record:{...x.view.record,lifecycle:'defeated'}}});
+ const registry=x.store.generatorRegistry(x.w.token);x.store.executeGeneration(x.command({kind:'preset-delete',id:run.preset.id,expectedRegistryRevision:registry.revision}));assert.deepEqual(x.store.generationRun(x.w.token,run.id),run);assert.equal(x.store.generationRuns(x.w.token)[0].id,run.id);await x.store.backup(path.join(x.root,'history-safe.sqlite'));
+});
+
+test('ordinary catalog previews remain readable, acceptable and copy-safe',async t=>{
+ const x=fixture(t),request={...x.request,npcOnly:false},run=x.store.generateEncounters(x.w.token,request);assert.equal(run.npcBasis,undefined);assert.deepEqual(x.store.generationRun(x.w.token,run.id),run);x.accept(x.w.token,x.cam.id,run.id);const accepted=x.store.generationRun(x.w.token,run.id);assert.ok(accepted.acceptedPlanIds[0]);const snapshot=path.join(x.root,'catalog.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=x.store.acceptCampaignSnapshot(snapshot,'Copied catalog',{}),w=x.store.activate(copy.id),copied=x.store.generationRun(w.token,x.store.generationRuns(w.token)[0].id);assert.ok(copied.acceptedPlanIds[0]);assert.notEqual(copied.acceptedPlanIds[0],accepted.acceptedPlanIds[0]);await x.store.backup(path.join(x.root,'catalog-safe.sqlite'));
 });

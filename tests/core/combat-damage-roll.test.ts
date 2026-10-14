@@ -4,13 +4,14 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
+import type {CombatState} from '../../src/app/combat-contracts';
 
 test('a combat applies a persisted damage roll at the confirmed scale',()=>{
   const root=mkdtempSync(join(tmpdir(),'combat-damage-roll-')),filename=join(root,'campaign.sqlite');let store=new CampaignStore(filename,'test');
   try{
     const campaign=store.create('Schadenswurf'),workspace=store.activate(campaign.id),token=workspace.token;
     const scene=store.executeLive({commandId:'live',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:0}}).scene!;
-    let combat=store.executeCombat({commandId:'combat',campaignId:campaign.id,token,combatId:null,expectedRevision:null,action:{kind:'create',sceneId:scene.id,title:'Probe',includeParty:false,expectedMembershipRevision:scene.membershipRevision}}).combat!;
+    let combat:CombatState=store.executeCombat({commandId:'combat',campaignId:campaign.id,token,combatId:null,expectedRevision:null,action:{kind:'create',sceneId:scene.id,title:'Probe',includeParty:false,expectedMembershipRevision:scene.membershipRevision}}).combat!;
     combat=store.executeCombat({commandId:'target',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'add',name:'Ziel',count:1,grouped:false,maxHp:20,armorClass:10,initiativeBonus:0}}).combat!;
     combat=store.executeCombat({commandId:'aboleth',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'add-creature',creatureId:'aboleth',count:1,grouped:false}}).combat!;
     combat=store.executeCombat({commandId:'concentrating',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:combat.participants[0]!.id,changes:{concentrating:true}}}).combat!;
