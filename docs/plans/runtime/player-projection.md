@@ -10,7 +10,7 @@ L289–302 und L388–406, verlangen einen passiven Bildschirm für Karten und
 NPC-/Ortsart. Er folgt der fokussierten Scene, kombiniert dauerhafte
 Characterkenntnis mit aktueller Wahrnehmung und bleibt durch GM-Blank und
 Artoverride kontrollierbar. Neue Anzeigeänderungen binden zusätzlich an die
-tatsächlich vorgesehene Focus-ID, Focusrevision und Mitgliedschaftsrevision; der GMdialog benennt diese
+tatsächlich vorgesehene Focus-ID, Focusrevision, Mitgliedschaftsrevision und aktuellen Ort; der GMdialog benennt diese
 Gruppe ausdrücklich. Ein A/B/A-Wechsel oder geänderte Mitgliedschaft bei gleichem Fokus erhält keine alte Freigabeautorität. Die Quelle schließt Mechanik, Erzähltext und private
 Notizen ausdrücklich aus. Die gebundenen Scene-/LiveSessionanforderungen
 beschreiben die GM-Arbeitsflächen; sie erweitern diesen Displaykanal nicht.
@@ -108,7 +108,7 @@ prüfbar; ihr Fortschritt darf keine Mechanik auf den passiven Bildschirm bringe
 Ein falsches früheres Ausgabeergebnis ist keine Regressionserwartung.
 `tools/test-desktop-player-scene-privacy.mjs` wurde an die Ortsartaufgabe statt
 der früheren Text-/Mechanikausgabe angepasst. Der Fokusprüfer verwendet Karten und die aktuelle Mitgliedschaftsbasis.
-Der native Dialog-/Handoutlauf auf dem integrierten Produktstand vom 14.10.2026
+Der native Dialog-/Handoutlauf auf dem Stand `ea0d616c` vom 14.10.2026
 bestand: alte Freigabe abgewiesen, Neustart Blank, Entwurf nach Fehler erhalten,
 Nachhutkarte nach erneuter Bestätigung und ein dekodiertes 80 × 50-Handout.
 Sceneinhalte blieben unverändert; beide Appstarts endeten normal. Der erneute
