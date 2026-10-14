@@ -59,7 +59,7 @@ keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 
 Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
-direkte Ortsart-/Handoutwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
+direkte Ortsart-/NPC-Porträt-/Handoutwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
 gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Blank
 benötigt keinen vorgelagerten Previewread; es bleibt bei ausgefallener oder
 hängender Steuerungsquery sofort als eigener Command benutzbar. Die aktuelle
@@ -82,6 +82,8 @@ Ortsart bleibt trotz aktiver Masken, Mechanik bleibt GM-owned, neue Textaufträg
 haben keine Teilwirkung/Receipt und alte Textsettings bleiben über Fresh,
 Backup/Copy erhalten und neutral. Eine weitere Storegegenprobe verwirft alte Freigaben bei neuer Mitgliedschaft
 ohne Fokuswechsel atomar; nach erneutem Prüfen ist dieselbe visuelle Freigabe gültig.
+Die direkte NPC-Bildprobe verwendet vorhandene freigegebene PNGart ohne neue
+Dateiwahl; private NPC-/Scenerecords bleiben exakt erhalten.
 Renderer-Gegenproben prüfen alte Pakete
 samt Überschrift. `desktop-player-visual-host.test.mjs` prüft echte Hostmethoden mit
 kontrollierten Fenstern: Push/Pull, erlaubte Feldmenge und verschachtelte Daten.
