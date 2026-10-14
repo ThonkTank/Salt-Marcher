@@ -1,6 +1,7 @@
 import type {Combatant} from './combat-contracts';
 import type {Result} from './contracts';
 export const fighterDraftFields=['fighter-name','fighter-initiative','fighter-bonus','fighter-ac','fighter-hp','fighter-max-hp','fighter-temp-hp','fighter-conditions','fighter-xp'] as const;
+export function fighterDraftBasisMatches(before:Combatant,after:Combatant){const stable=(participant:Combatant)=>{const copy=structuredClone(participant);delete copy.legendaryActions;delete copy.timedEffects;return copy;};return JSON.stringify(stable(before))===JSON.stringify(stable(after));}
 interface DraftOwner {version:1;writeId:string;combatId:string;sceneId:string;targetId:string;revision:number}
 export interface FighterWorkingDraft extends DraftOwner {kind:'fighter';basis:Combatant;values:Record<typeof fighterDraftFields[number],string>;concentrating:boolean;counted:boolean}
 export interface NotesWorkingDraft extends DraftOwner {kind:'notes';basis:{title:string;notes:string};values:{title:string;notes:string}}

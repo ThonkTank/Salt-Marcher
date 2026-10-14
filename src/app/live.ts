@@ -264,7 +264,7 @@ function render() {
   renderVisits();
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation) {
-  tell=status;openLocation=navigate;initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status);initRuleReferences(status);
+  tell=status;openLocation=navigate;initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status);initProgress(status,scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};

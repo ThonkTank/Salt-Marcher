@@ -1,6 +1,6 @@
 import {finishDraftCommit,flushFinishDraft} from './finish-draft-ui';
 import {CombatDraftCache,combatDraftKey} from './combat-draft-cache';
-import {fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
+import {fighterDraftBasisMatches,fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { Workspace, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
@@ -41,17 +41,11 @@ function acceptCombat(result:CombatView){view=result;requestedCombatId=result.co
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
-export function rebaseFighterDraft(draft:FighterWorkingDraft,basis:Combatant,revision:number,writeId:string):FighterWorkingDraft{return {...draft,writeId,basis:structuredClone(basis),revision};}
 const draftCache=new CombatDraftCache((cam,message)=>{if(workspace?.campaign.id===cam)tell(message,true);});
 const fighterDrafts={get:(key:string)=>draftCache.values.get(key) as FighterDraft|undefined};
 const fighterKey=()=>workspace&&view?.combat&&selected?combatDraftKey(workspace.campaign.id,view.combat.id,'fighter',selected):null;
 const notesKey=()=>workspace&&view?.combat?combatDraftKey(workspace.campaign.id,view.combat.id,'notes',view.combat.id):null;
 const notesDraft=()=>{const key=notesKey();return key?draftCache.values.get(key) as NotesWorkingDraft|undefined:undefined;};
-function rebaseOpenFighterDraft(key:string|undefined,draft:FighterDraft|undefined,result:CombatView){
- if(!key||!draft||!workspace||fighterDrafts.get(key)?.writeId!==draft.writeId)return;
- const basis=result.combat?.participants.find(participant=>participant.id===draft.targetId);if(!basis)return;
- void draftCache.put(workspace.token,workspace.campaign.id,rebaseFighterDraft(draft,basis,result.combat!.revision,crypto.randomUUID()));
-}
 let editorLoading=false,notesLoading=false,editorRequest=0,draftPageRequest=0,draftCursor:string|null=null;
 function keepFighterDraft(){
  const p=view?.combat?.participants.find(p=>p.id===selected),key=fighterKey();if(!p||!key||!view?.combat||!workspace||editorLoading||draftCache.readFailures.has(key))return;
@@ -91,7 +85,7 @@ function renderPartyCandidates(){const select=get<HTMLSelectElement>('combat-par
 async function refreshPartyCandidates(){
  if(pending){candidatePending=true;return;}const combat=view?.combat;if(!workspace||!scene||!editableCombat(combat??null)||!combat)return;
  const gen=generation,request=++candidateRequest,id=combat.id,token=workspace.token;candidateLoading=true;lock();
- try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==generation||request!==candidateRequest||view?.combat?.id!==id||pending||result.combat?.revision!==combat.revision)return;view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
+ try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==generation||request!==candidateRequest||view?.combat?.id!==id||pending)return;if(result.combat?.revision!==combat.revision){await load(id);return;}view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
  catch(error){if(gen===generation&&request===candidateRequest)tell('Party-Auswahl konnte nicht aktualisiert werden: '+(error as Error).message,true);}
  finally{if(gen===generation&&request===candidateRequest){candidateLoading=false;lock();}}
 }
@@ -123,7 +117,6 @@ async function load(id?: string):Promise<boolean> {
 async function execute(action: CombatAction, expectedRevision?:number): Promise<boolean> {
   if (!workspace || !scene || blocked()) return false;
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='notes'?notesDraft():editDraft;
-  const effectTarget=action.kind==='effect-add'||action.kind==='effect-remove'?action.participantId:undefined,effectKey=effectTarget&&workspace&&view?.combat?combatDraftKey(workspace.campaign.id,view.combat.id,'fighter',effectTarget):undefined,effectDraft=effectKey?fighterDrafts.get(effectKey):undefined;
   const priorDamageDeath=action.kind==='damage'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
   const priorEffects=action.kind==='next'||action.kind==='start'?view?.combat?.participants.flatMap(actor=>(actor.timedEffects??[]).map(effect=>({actorId:actor.id,actor:actor.name,...effect})))??[]:[];
   const gen = generation;
@@ -134,9 +127,9 @@ async function execute(action: CombatAction, expectedRevision?:number): Promise<
   pending = (async () => {
     try {
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
-      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft,effectKey,effectDraft});
+      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
-      acceptCombat(result);rebaseOpenFighterDraft(effectKey,effectDraft,result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
+      acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
       if(['create','edit','damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
@@ -319,7 +312,7 @@ function renderConditionShortcuts(p:Combatant|undefined,source:Creature|undefine
 function renderTimedEffects(p:Combatant|undefined){const section=get('fighter-effects'),root=get('fighter-effect-list');section.hidden=!p;root.replaceChildren();for(const effect of p?.timedEffects??[]){const row=document.createElement('p'),text=document.createElement('span'),remove=document.createElement('button');text.textContent=effect.name+' · '+effect.remaining+' Runde'+(effect.remaining===1?'':'n')+' · am '+(effect.tick==='start'?'Anfang':'Ende')+' des Zugs';remove.type='button';remove.textContent='Entfernen';remove.disabled=blocked();remove.onclick=()=>{if(p)void execute({kind:'effect-remove',participantId:p.id,effectId:effect.id});};row.append(text,remove);root.append(row);}if(p&&!p.timedEffects?.length){const empty=document.createElement('p');empty.className='caption';empty.textContent='Kein Rundeneffekt aktiv.';root.append(empty);}}
 function renderEditor() {
   const p = view?.combat?.participants.find(p => p.id === selected),key=fighterKey(),draft=key?fighterDrafts.get(key):undefined;
-  get('fighter-draft-status').textContent=draft?(JSON.stringify(draft.basis)===JSON.stringify(p)?'Eingabe offen – mit „Werte übernehmen“ bestätigen.':'Gespeicherte Werte wurden geändert. Eingabe bleibt offen; zuerst den aktuellen Stand laden.') : '';
+  get('fighter-draft-status').textContent=draft?(p&&fighterDraftBasisMatches(draft.basis,p)?'Eingabe offen – mit „Werte übernehmen“ bestätigen.':'Gespeicherte Werte wurden geändert. Eingabe bleibt offen; zuerst den aktuellen Stand laden.') : '';
   get('combat-participant').hidden = !p || !editableCombat(view?.combat??null);
   get('combat-selected-name').textContent = p?.name ?? '';
   get('fighter-health-hint').hidden = p?.healthKnown !== false;
@@ -335,12 +328,11 @@ function renderEditor() {
   get<HTMLButtonElement>('fighter-death-reset').hidden=!deathControls.reset;
   const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id;renderConditionShortcuts(p,source);renderTimedEffects(p);get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});
 }
-function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes};return JSON.stringify(basis)===JSON.stringify(d.basis)?c.revision:d.revision;}
+function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes},matches=d.kind==='fighter'&&basis?fighterDraftBasisMatches(d.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(d.basis);return matches?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
   if(event.ref.family!=='combat'||workspace?.campaign.id!==event.ref.campaignId)return;
-  const result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft;effectKey?:string;effectDraft?:FighterDraft}|undefined;
+  const result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft}|undefined;
   if(meta?.token===workspace.token&&meta.editorDraft)draftCache.consumed(workspace.campaign.id,meta.editorDraft);
-  if(meta?.token===workspace.token)rebaseOpenFighterDraft(meta.effectKey,meta.effectDraft,result);
   if(result.combat&&scene&&result.combat.sceneId===scene.id&&(!view?.combat||view.combat.id===result.combat.id))await load(result.combat.id);
   await refreshProgress();if(afterSaved)await afterSaved();
 }
