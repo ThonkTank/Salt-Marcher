@@ -107,3 +107,7 @@ Bedienung, Paketinstallation und vollständiger Feature-Tutorialabdeckung.
 Der [Dungeon-Binder](../dungeon/binder.md) führt seine angezeigten Raum- und
 Inhaltsaktionen mit eigener Kontextgrenze. Sein weiterer Query-/Gruppenanschluss
 und die native Abnahme bleiben von der Tutorialzuordnung getrennt.
+
+Die [Kampagnenagenda](campaign-agenda.md) verwendet den konfigurierten
+Fantasy-Tag für Fristen; ihre Entwurfs-/Zeitbasis- und Wiederaufnahmeabnahme
+bleibt zusätzlich zur Tutorialzuordnung erforderlich.
