@@ -100,7 +100,8 @@ export function sceneDeskContext(
   el("desk-search-status").textContent = "";
   if (workspace && current) void refresh();
 }
-async function refresh() {
+export async function refreshSceneDeskPins(id:string){if(scene?.id===id)await refresh(false);}
+async function refresh(openInitial=true) {
   if (!w || !scene) return;
   const token = w.token,
     id = scene.id,
@@ -110,7 +111,7 @@ async function refresh() {
     if (!owns(token, id) || n !== request) return;
     desk = result;
     drawPins();
-    if (!content) {
+    if (!content&&openInitial) {
       const initial = result.pins.find((p) => !p.unavailable) ?? result.place;
       if (initial && !initial.unavailable) await open(initial.ref);
     }
