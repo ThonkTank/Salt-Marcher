@@ -653,5 +653,21 @@ Bestätigte Abschnitte, Pause, Fortsetzen und Abbruch verwenden weiterhin diesel
 persistierte Reise und gemeinsame Gruppenzeit mit ihren Weltfolgen. Aktive, pausierte
 und unterbrochene Reisen zeigen ihre Route; nach Ankunft oder Abbruch bleibt nur
 Position und Historie. Die Statuszeile zeigt die geplante Restdauer. Weitere automatische
-Präsentationsgeschwindigkeiten und ein gemeinsames Reise-Cockpit in der Session sind
-noch offen; diese Version ergänzt den vorhandenen Atlasablauf.
+Präsentationsgeschwindigkeiten bleiben offen. Der direkte Anschluss an den Spieltisch
+folgt in Desktopstand 0.54.
+
+
+### Desktopstand 0.54: Die Reise am laufenden Spieltisch
+
+„Reisekarte am Spieltisch“ öffnet Hexkarte und Reisekonsole direkt bei der Fokusgruppe.
+Die vorhandenen Atlas-Controls werden dafür an den Spieltisch versetzt: Route,
+Vorschau und angenommene Reise bleiben derselbe Zustand. Ziele, Wegpunkte, Zoom,
+Kartenwissen, ausdrückliches Platzieren, Reiseabschnitte, Pause und Fortsetzen
+verwenden dieselben World-Befehle wie im Atlas. Kalender und Geländebearbeitung
+bleiben im Atlas erreichbar.
+
+Ein Fokuswechsel folgt der Kartenposition der neuen Gruppe und verwirft die vorherige
+Routenvorschau und Ziele. Änderungen an Uhr, Position oder Mitgliedern verwerfen eine
+veraltete Vorschau. Einklappen und Wechsel zwischen Atlas und Spieltisch erhalten den
+Routenentwurf derselben Gruppe und Karte. Angenommene Reisen bleiben nach Neustart
+verfügbar; offene Routeneingaben sind weiterhin lokale Entwürfe.
