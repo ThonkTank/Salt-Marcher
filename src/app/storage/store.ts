@@ -85,7 +85,7 @@ import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEnco
 import type { EncounterPlanCommand } from '../encounter-contracts';
 import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
-import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal, readSessionRuns, readSessionRun, scenePreparation, cleanSessionVisits } from './session';
+import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, scenePreparation, cleanSessionVisits } from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
 const noteTitleOrder = new Intl.Collator('de', {numeric: true, sensitivity: 'base'});
@@ -535,6 +535,7 @@ export class CampaignStore {
   session(token: string,planId: string) { return readSession(this.db,this.guard(token),planId); }
   executeSession(command: SessionCommand) { return executeSession(this.db,command,()=>{this.guard(command.token,command.campaignId);},(plan,expectedRevision)=>{this.changePreparation({commandId:command.commandId+'|timeline',campaignId:command.campaignId,token:command.token,change:{kind:'plan',plan,expectedRevision}});}); }
   generateSession(token: string,request: SessionGenerationRequest) { return generateSession(this.db,this.guard(token),request); }
+  regenerateSessionReward(token:string,runId:string,index:number,seed:string){return regenerateSessionReward(this.db,this.guard(token),runId,index,seed);}
   regenerateSessionProposal(token: string,runId: string,index: number,seed: string) { return regenerateSessionProposal(this.db,this.guard(token),runId,index,seed); }
   sessionRuns(token: string,planId: string) { return readSessionRuns(this.db,this.guard(token),planId); }
   sessionRun(token: string,id: string) { return readSessionRun(this.db,this.guard(token),id); }

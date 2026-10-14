@@ -217,7 +217,7 @@ function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
  for(const row of db.prepare(sql).iterate(cam,root.id,cam,cam,root.id)){
   const item=checkedLedgerRow(row);if(item.origin!=='transfer'||item.status==='given'&&item.recipientCharacterId)continue;
   if(transferCredit(db,cam,item)!==root.id)continue;
-  item.currentUnitCopper=readItemDefinition(db,item.reference.definitionId).unitCopper;
+  item.currentUnitCopper=readLedgerDefinition(db,item).unitCopper;
   const value=ledgerCopper(item);if(value===null)return null;total+=value;
  }
  return total;
@@ -292,6 +292,9 @@ export function readLootBalance(db:any,cam:string){
   const characters=members.map((m:any)=>({characterId:m.id,name:m.profile.name,active:m.active,copper:(totals.get(m.id)??0n).toString(),unknownEntries:unknown.get(m.id)??0,gapCopper:(leader-(totals.get(m.id)??0n)).toString()}));
   return{characters,leaderCopper:leader.toString(),suggestedCharacterIds:lootBalanceSuggestions(characters,leader.toString())};
  })();
+export function validateItemInput(db:any,input:ItemInput){
+ if(!input||typeof input.name!=='string'||!input.name.trim()||input.name.length>1000||!Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>1000000||!['coins','equipment','trade-goods','magic','other'].includes(input.category))throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
+ if(input.reference){const d=readItemDefinition(db,input.reference.definitionId);if(d.trashed||d.revision!==input.reference.revision)throw new Error('Gegenstandsdefinition geändert oder im Papierkorb.');}else copper(input.valueGold);
 }
 export function checkedItem(db: any, input: ItemInput) {
   if (!input || typeof input.name !== 'string' || !input.name.trim() || input.name.length > 1000 || !Number.isSafeInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000 || !['coins','equipment','trade-goods','magic','other'].includes(input.category)) throw new Error('Beute benötigt Name, Kategorie und positive ganze Menge.');
