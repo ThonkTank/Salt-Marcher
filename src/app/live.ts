@@ -403,7 +403,7 @@ function initGroups() {
     try { advanceInstant(scene.clock.instantMs, amount, unit); } catch (error) { tell((error as Error).message, true); return; }
     if (await execute({ kind: 'advance-clock', sceneId: scene.id, expectedRevision: scene.clock.revision, calendarVersion: 'relative-v1', amount, unit, reason })) renderSceneMeta();
   })(); };
-  resetLiveArchives=initLiveArchives(()=>context?.token??null,flushLive);
+  resetLiveArchives=initLiveArchives(()=>context?.token??null,flushLive,()=>context?.campaign.id??null);
 }
 
 // Topbar commands share the existing writer, draft flushing and receipt recovery.

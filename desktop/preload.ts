@@ -142,6 +142,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   executeProgress: (command: unknown) => ipcRenderer.invoke('campaign:execute-progress', command),
   combat: (token: string, sceneId: string, id?: string) => ipcRenderer.invoke('campaign:combat', token, sceneId, id),
   keepChaseDraft:(token:string,draft:import('../src/app/chase-draft-contracts').ChaseWorkingDraft,expected:string|null)=>ipcRenderer.invoke('campaign:keep-chase-draft',token,draft,expected),
+  maskHistory:(token:string,sceneId:string,query:import('../src/app/mask-history-contracts').MaskHistoryQuery)=>ipcRenderer.invoke('campaign:mask-history',token,sceneId,query),
   chase:(token:string,sceneId:string,id?:string)=>ipcRenderer.invoke('campaign:chase',token,sceneId,id),
   executeChase:(command:import('../src/app/chase-contracts').ChaseCommand)=>ipcRenderer.invoke('campaign:execute-chase',command),
   combatDraft:(token:string,id:string,kind:unknown,target:string)=>ipcRenderer.invoke('campaign:combat-draft',token,id,kind,target),
