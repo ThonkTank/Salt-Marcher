@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
-buildSync({entryPoints:['src/app/session-proposal-editor.ts'],outfile:'.build/session-proposal-dom.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:"export * from './src/app/session-proposal-editor';export {SessionReview} from './src/app/session-review-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/session-proposal-dom.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};}
 function fixture(t){
@@ -47,4 +47,24 @@ test('catalog insertion and explicit detachment retain unfinished quantities',as
 });
 test('a late catalog response cannot populate or unlock a reopened proposal',async t=>{
  const x=fixture(t),old=deferred(),current=deferred();window.campaign.itemDefinitions=async()=>old.promise;x.open();x.el('proposal-catalog-find').click();assert.equal(x.el('proposal-catalog-find').disabled,true);x.ui.closeProposalEditor();x.open();assert.equal(x.el('proposal-catalog-find').disabled,false);window.campaign.itemDefinitions=async()=>current.promise;x.el('proposal-catalog-find').click();old.resolve(catalogPage);await tick();assert.equal(x.el('proposal-catalog-results').childNodes.length,0);assert.equal(x.el('proposal-catalog-find').disabled,true);current.resolve(catalogPage);await tick();assert.equal(x.el('proposal-catalog-find').disabled,false);assert.ok(x.el('proposal-catalog-results').querySelector('button'));
+});
+
+
+function reviewFixture(t,accept){
+ const x=fixture(t),review=new x.ui.SessionReview(accept),root=document.createElement('div');document.body.append(root);
+ const run={planId:'plan',id:'run',proposals:['Alpha','Beta'].map((title,index)=>({...x.proposal,id:'proposal-'+index,index,title,notes:'',encounter:{sources:[],assessment:{difficulty:'easy',adjustedXp:20}}}))};
+ const dialog=x.el('session-selection-dialog');dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
+ const mount=source=>{root.replaceChildren();review.mount(root,source);for(const p of source.proposals){const card=document.createElement('article');review.decorate(card,p,{notes:[],locations:[]});root.append(card);}};
+ mount(run);t.after(()=>review.reset());return{...x,review,root,run,mount};
+}
+test('filtered proposal selection persists across searches and reviews source order',async t=>{
+ const calls=[],x=reviewFixture(t,async(source,picks)=>{calls.push(picks.map(p=>p.index));return false;});
+ const search=x.el('session-proposal-search');search.value='Beta';search.oninput();x.el('session-select-visible').click();search.value='Alpha';search.oninput();x.el('session-select-visible').click();
+ assert.match(x.el('session-selection-summary').textContent,/2 ausgewählt/);x.el('session-review-selection').click();assert.deepEqual([...x.el('session-selection-dialog').querySelectorAll('li strong')].map(n=>n.textContent),['Alpha','Beta']);
+ x.el('session-selection-confirm').click();await tick();await tick();assert.deepEqual(calls,[[0,1]]);assert.equal(x.el('session-selection-dialog').open,true);
+});
+test('an old confirmation cannot clear a newer selection after resetting and reopening the same plan',async t=>{
+ const held=deferred(),x=reviewFixture(t,()=>held.promise);x.el('session-select-visible').click();x.el('session-review-selection').click();x.el('session-selection-confirm').click();
+ x.review.reset();x.mount({...x.run});x.el('session-select-visible').click();held.resolve(true);await tick();await tick();
+ assert.match(x.el('session-selection-summary').textContent,/2 ausgewählt/);assert.ok([...x.root.querySelectorAll('input[type=checkbox]')].every(box=>box.checked));assert.equal(x.el('session-review-selection').disabled,false);
 });

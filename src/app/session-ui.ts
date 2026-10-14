@@ -201,7 +201,9 @@ async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[]
   const action:SessionAction={kind:'accept-proposals',planId:owner.planId,expectedPlanRevision:plan.revision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
   if(!await execute(action))return false;
   if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
-  run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();
+  const accepted=unwrap(await window.campaign.sessionRun(owner.token,source.id));
+  if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
+  run=accepted;renderRun();
   tell(picks.length+' Szenen in die Timeline übernommen. Die Spielabendmappe ist bereit.');return true;
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);return false;}
 }
@@ -215,7 +217,7 @@ async function regenerateProposal(source:SessionRun,index:number){
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
 async function regenerateReward(source:SessionRun,index:number){const owner=previewOwner();if(!owner||run!==source)return;const request=++previewRequest;try{const next=unwrap(await window.campaign.regenerateSessionReward(owner.token,source.id,index,value('session-seed')+'|reward|'+crypto.randomUUID()));if(!ownsPreview(owner)||request!==previewRequest||run!==source)return;run=next;renderRun();}catch(e){if(ownsPreview(owner))tell((e as Error).message,true);}}
-async function rejectProposal(source:SessionRun,index:number){const owner=previewOwner(),p=source.proposals[index];if(!owner||run!==source||!p)return;if(await execute({kind:'reject-proposal',planId:owner.planId,runId:source.id,index,expectedRevision:p.revision??1,rejected:!p.rejected})&&ownsPreview(owner)){run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();}}
+async function rejectProposal(source:SessionRun,index:number){const owner=previewOwner(),p=source.proposals[index];if(!owner||run!==source||!p)return;const request=previewRequest;if(await execute({kind:'reject-proposal',planId:owner.planId,runId:source.id,index,expectedRevision:p.revision??1,rejected:!p.rejected})&&ownsPreview(owner)&&request===previewRequest&&run===source){const updated=unwrap(await window.campaign.sessionRun(owner.token,source.id));if(!ownsPreview(owner)||request!==previewRequest||run!==source)return;run=updated;renderRun();}}
 async function selectRun(){
  const owner=previewOwner(),id=value('session-history'),request=++previewRequest;
  run=null;renderRun();if(!owner||!id)return;

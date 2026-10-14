@@ -15,13 +15,14 @@ export class SessionReview {
  private dialog=element('dialog');
  private submit=button('Auswahl in Timeline übernehmen',()=>{});
  private busy=false;
+ private epoch=0;
  constructor(private accept:(source:SessionRun,picks:SessionProposal[])=>Promise<boolean>){
   this.status.id='session-selection-summary';this.status.setAttribute('aria-live','polite');
   this.take.id='session-review-selection';this.dialog.id='session-selection-dialog';this.dialog.className='session-selection-dialog';
   this.submit.id='session-selection-confirm';
   document.body.append(this.dialog);
  }
- reset(){this.selected.clear();this.query='';this.filter='open';this.run=null;this.rows=[];if(this.dialog.open)this.dialog.close();}
+ reset(){this.epoch++;this.selected.clear();this.query='';this.filter='open';this.run=null;this.rows=[];if(this.dialog.open)this.dialog.close();}
  mount(root:HTMLElement,source:SessionRun){
   if(this.run?.planId!==source.planId)this.reset();
   if(this.run!==source&&this.dialog.open)this.dialog.close();
@@ -60,12 +61,12 @@ export class SessionReview {
   this.take.disabled=this.busy||!picks.length;this.take.textContent=picks.length+' Szenen prüfen…';
  }
  private review(){
-  const source=this.run,picks=source?.proposals.filter(p=>this.selected.has(p.id)&&ready(p));if(!source||!picks?.length||this.busy)return;
+  const epoch=this.epoch,source=this.run,picks=source?.proposals.filter(p=>this.selected.has(p.id)&&ready(p));if(!source||!picks?.length||this.busy)return;
   this.dialog.replaceChildren(element('h2','Ausgewählten Spielabend übernehmen'),element('p',picks.length+' Besuche werden in dieser Reihenfolge hinten an die Timeline angefügt.'));
   const list=element('ol');for(const p of picks){const row=element('li');row.append(element('strong',p.title),element('p',p.notes||'Keine GM-Notizen.'),element('p',p.encounter.assessment.difficulty+' · '+p.encounter.assessment.adjustedXp+' angepasste XP · '+(p.reward?.poolXp??0)+' Story-XP'));list.append(row);}this.dialog.append(list,element('p','Vorlesetexte, Weltverweise, Begegnungen und vorbereitete Belohnungen werden mit übernommen. Die laufende Gruppe, Weltplatzierungen und Belohnungsvergabe bleiben eigenständige Schritte.'));
   const cancel=button('Zurück zur Auswahl',()=>this.dialog.close()),actions=element('div');actions.className='toolbar';actions.append(cancel,this.submit);this.dialog.append(actions);
   this.submit.disabled=false;
-  this.submit.onclick=()=>{if(this.busy||this.run!==source)return;this.busy=true;this.submit.disabled=true;cancel.disabled=true;this.update();void this.accept(source,picks).then(ok=>{if(ok&&this.run?.planId===source.planId){for(const p of picks)this.selected.delete(p.id);this.dialog.close();}}).finally(()=>{this.busy=false;this.submit.disabled=false;cancel.disabled=false;this.update();});};
+  this.submit.onclick=()=>{if(this.busy||this.run!==source)return;this.busy=true;this.submit.disabled=true;cancel.disabled=true;this.update();void this.accept(source,picks).then(ok=>{if(ok&&this.epoch===epoch&&this.run?.planId===source.planId){for(const p of picks)this.selected.delete(p.id);this.dialog.close();}}).finally(()=>{this.busy=false;this.submit.disabled=false;cancel.disabled=false;this.update();});};
   this.dialog.showModal();cancel.focus();
  }
 }

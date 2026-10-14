@@ -6,6 +6,8 @@ import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
+import {parseHTML} from 'linkedom';
+buildSync({entryPoints:['src/app/session-ui.ts'],outfile:'.build/session-review-owner.cjs',bundle:true,platform:'node',format:'cjs'});
 mkdirSync('.build/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json');
 buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {validateItemInput,checkedItem} from './src/app/storage/progression';",resolveDir:process.cwd(),sourcefile:'proposal-store.ts'},outfile:'.build/session-proposal-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,validateItemInput,checkedItem}=createRequire(import.meta.url)('../.build/session-proposal-store.cjs');
@@ -104,4 +106,43 @@ test('an explicit empty magic pool remains empty and copy-safe without creating 
 test('a pinned magic pool remains readable and copy-safe after its definition is archived',async t=>{
  const x=fixture(t),definition=x.store.executeItemShop(x.command({kind:'definition',expectedRevision:null,definition:{id:randomUUID(),revision:0,name:'  Lantern',category:'magic',magic:true,rarity:'Common',attunement:'no',unitCopper:'100',weightText:'',properties:[],description:'  GM prose\r\n',source:{kind:'authored',label:'GM',license:null,url:null},trashed:false}})).definition,run=guided(x,true,[{definitionId:definition.id,revision:definition.revision}]);assert.equal(run.lootGuidance.magic.pool[0].definitionId,definition.id);
  x.store.executeItemShop(x.command({kind:'definition',expectedRevision:definition.revision,definition:{...definition,trashed:true}}));assert.deepEqual(x.store.sessionRun(x.w.token,run.id),run);const file=path.join(x.root,'archived-pool.sqlite');await x.store.campaignSnapshot(x.w.token,file);const bytes=readFileSync(file),copy=x.store.acceptCampaignSnapshot(file,'Pinned pool copy',{}),w=x.store.activate(copy.id),planId=x.store.preparation(w.token).plans[0].id,id=x.store.sessionRuns(w.token,planId)[0].id;assert.equal(x.store.sessionRun(w.token,id).lootGuidance.magic.pool[0].name,definition.name);assert.ok(bytes.equals(readFileSync(file)));await x.store.backup(path.join(x.root,'pinned-pool-safe.sqlite'));
+});
+
+
+test('batch adoption preserves proposal order and contents with one timeline revision and replay',async t=>{
+ const x=fixture(t);x.store.executeSession(x.command(x.action));const run=x.store.sessionRun(x.w.token,x.run.id),plan=x.store.preparation(x.w.token).plans.find(p=>p.id===x.planId);
+ const command=x.command({kind:'accept-proposals',planId:x.planId,expectedPlanRevision:plan.revision,runId:run.id,proposals:[...run.proposals].reverse().map(p=>({index:p.index,expectedRevision:p.revision??1}))}),ack=x.store.executeSession(command),after=x.store.db.serialize();
+ const updated=x.store.preparation(x.w.token).plans.find(p=>p.id===x.planId);assert.equal(updated.revision,plan.revision+1);assert.deepEqual(updated.scenes.map(s=>s.title),run.proposals.map(p=>p.title));assert.equal(ack.groups.length,2);assert.equal(ack.visits[0].readAloud,x.action.readAloud);assert.deepEqual(ack.visits[0].reward.items,x.action.reward.items);assert.equal(x.store.treasures(x.w.token,null).items.length,0);
+ assert.deepEqual(x.store.executeSession(command),ack);assert.ok(x.store.db.serialize().equals(after));
+ const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.cam.id);assert.deepEqual(fresh.executeSession({...command,token:w.token}),ack);assert.equal(fresh.sessionRun(w.token,run.id).proposals.filter(p=>p.acceptedVisitId).length,2);}finally{fresh.close();}
+});
+test('stale batch member prevents every timeline, group and reward effect',t=>{
+ const x=fixture(t),before=x.store.db.serialize(),command=x.command({kind:'accept-proposals',planId:x.planId,expectedPlanRevision:1,runId:x.run.id,proposals:[{index:0,expectedRevision:1},{index:1,expectedRevision:99}]});
+ assert.throws(()=>x.store.executeSession(command),/geändert/);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.session(x.w.token,x.planId).groups.length,0);
+});
+test('failure while recording the second batch member rolls back the entire adoption',t=>{
+ const x=fixture(t);x.store.db.exec("CREATE TRIGGER fail_second_adoption BEFORE INSERT ON session_proposal_acceptance WHEN NEW.proposal_index=1 BEGIN SELECT RAISE(ABORT, 'second adoption fault'); END");
+ const before=x.store.db.serialize(),command=x.command({kind:'accept-proposals',planId:x.planId,expectedPlanRevision:1,runId:x.run.id,proposals:x.run.proposals.map(p=>({index:p.index,expectedRevision:p.revision??1}))});
+ assert.throws(()=>x.store.executeSession(command),/second adoption fault/);assert.ok(x.store.db.serialize().equals(before));assert.ok(x.store.sessionRun(x.w.token,x.run.id).proposals.every(p=>p.acceptedVisitId===null));
+});
+
+
+test('a delayed accepted batch read cannot populate the next plan in the real session UI',async t=>{
+ const x=fixture(t),{window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={window:globalThis.window,document:globalThis.document};Object.assign(globalThis,{window,document});
+ const create=document.createElement.bind(document);document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='select')Object.defineProperty(node,'value',{value:'',writable:true});if(tag==='dialog'){node.showModal=()=>{node.open=true;};node.close=()=>{node.open=false;};}return node;};
+ for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
+ const requireUI=createRequire(import.meta.url),file=requireUI.resolve('../.build/session-review-owner.cjs');delete requireUI.cache[file];const ui=requireUI(file),messages=[];
+ let held=false,release;const tick=()=>new Promise(r=>setImmediate(r)),until=async fn=>{for(let i=0;i<100&&!fn();i++)await tick();assert.ok(fn());};
+ t.after(async()=>{if(release)release();ui.sessionContext(null,null,null,null);await tick();Object.assign(globalThis,saved);});
+ const nextId=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:nextId,revision:1,name:'Next evening',scenes:[]}}});
+ const ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};window.campaign={};
+ for(const method of ['session','progress','encounterTables','sessionRuns','generationSources','executeSession'])window.campaign[method]=async(...args)=>ok(()=>x.store[method](...args));
+ window.campaign.sessionRun=async(...args)=>{const result=ok(()=>x.store.sessionRun(...args));if(!held)return result;return new Promise(resolve=>{release=()=>resolve(result);});};
+ ui.initSession((...args)=>messages.push(args),async()=>true,async()=>{},async()=>{});
+ const context=async id=>{const sources=x.store.preparation(x.w.token);await ui.sessionContext(x.w,sources.plans.find(p=>p.id===id),null,sources);};
+ await context(x.planId);const history=document.getElementById('session-history');history.value=x.run.id;history.onchange();await until(()=>document.querySelectorAll('.session-proposal').length===2);
+ document.getElementById('session-select-visible').click();document.getElementById('session-review-selection').click();held=true;document.getElementById('session-selection-confirm').click();await until(()=>typeof release==='function');
+ assert.equal(x.store.preparation(x.w.token).plans.find(p=>p.id===x.planId).scenes.length,2);
+ await context(nextId);assert.equal(document.getElementById('session-preview').textContent,'');release();await tick();await tick();await tick();
+ assert.equal(document.getElementById('session-preview').textContent,'');assert.ok(!messages.some(([text])=>text.includes('Die Spielabendmappe ist bereit')));assert.equal(x.store.preparation(x.w.token).plans.find(p=>p.id===nextId).scenes.length,0);
 });

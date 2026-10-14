@@ -62,6 +62,16 @@ einer laufenden Bestätigung; sie sind noch kein dauerhafter Entwurf.
 `tests/desktop-session-progress.test.mjs` prüft die Rendererhandler sowie echten
 Store mit Revision, Wiederholung, erneuter Öffnung und unabhängiger Kampagnenkopie.
 
+Die Vorschlagsprüfung behält Auswahlen außerhalb des Suchfilters und übernimmt
+sie nach gemeinsamer Vorschau in ihrer ursprünglichen Reihenfolge. Einzel- und
+Mehrfachübernahme verwenden dieselben Quellen-/Beuteprüfungen; Timeline, Gruppen,
+Besuchsdetails und Receipts werden gemeinsam bestätigt. Ein veralteter Vorschlag
+oder ein Fehler beim zweiten Besuch lässt den ganzen Auftrag ohne Wirkung.
+Nach dem anschließenden Read wird der Plancontext erneut geprüft; alte
+Bestätigungen dürfen weder eine neue Vorschau noch deren Auswahl überschreiben.
+Die bestehenden Vorschlags-/Beuteprüfungen testen dies mit echter SQLite und
+produktiven Rendererhandlern. Native Gesamtabnahme bleibt offen.
+
 ## Nächste ausführbare Schritte
 
 1. **Vollständigkeit am Spielabend prüfen:** Eine konkrete Vorbereitung mit
