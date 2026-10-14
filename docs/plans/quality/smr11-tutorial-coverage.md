@@ -71,6 +71,10 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Encounter-Generierung | Party, Katalogfilter, Tabellen, Weltkontext, Preset, Seed, gespeicherte Vorschau und Vorlagenübernahme | Reproduzierbare Encounter-Vorschläge prüfen |
 | Benannte Weltgegner | verbindliche Auswahl, reiner NPC-Modus und gemischte Tabellenbegegnung | Einen Gegner verbindlich einplanen; Benannte Gegner für den Spielabend; Benannte Gegner mit einer Eskorte |
 | Live-Encounter-Generierung | aktuelle Fokusgruppe, Quellenwahl, gespeicherte Vorschau und ausdrückliche Übernahme in eine neue Kampfmaske | Begegnungen direkt für die laufende Gruppe erzeugen |
+| NPC-Weltprofile | Suche/Filter/Pagination, dauerhafte Identität, optionaler Statblock und HP, Profilentwurf, gezieltes Verwerfen sowie Übergabe an die aktuelle Begegnung | NSCs als bestehende Individuen führen |
+| Vorbereitete Monstergruppen | Suche/Pagination, Anlage aus Vorlage, gruppengebundener Entwurf, Katalogergänzung, Standort und bestätigte Weltfiguren | Monstergruppen dauerhaft vorbereiten |
+| NPC-Dossier am Spieltisch | Gruppenort-/Kampagnensuche, Dossier, Gesprächsentwurf, Profil-, Autonomy-, Vorlese- und Encounterübergabe | NSCs am Spieltisch führen |
+| NPC-Autonomy-Übergang | einzelne Weltfiguren und bestehende Gruppen aktivieren, konfigurieren und über bestätigte Zeit fortsetzen | NPCs mit begrenztem Verhalten beauftragen |
 | Manuelle Timeline und Ersatz | plan-/ort-/partyfreie Besuche, Suche, Reihenfolge sowie Vorschau für Wiederverwendung oder Leeren | Eine Szenenfolge vorbereiten; Einen neuen Abend aus vorhandener Vorbereitung bauen |
 | Besuchsvorbereitung und Übergabe | Vorlesetext, Weltverweise, Gruppen, Belohnung und ausdrückliche Übernahme in die laufende Gruppe | Spielabendinhalte und Vorschläge verwenden; Party und laufender Spielabend |
 | Gemeinsame Auswahl und Mappe | Vorschlagssuche/-auswahl, Reihenfolge, vollständige GM-Mappe, Suche und Markdownexport | Einen Abend gemeinsam vorbereiten; Den ganzen Spielabend griffbereit haben |
