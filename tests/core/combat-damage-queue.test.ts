@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,hasCombatCondition,pendingRollStillValid,setCombatCondition} from '../../src/app/combat';
+import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,hasCombatCondition,pendingRollStillValid,rebaseFighterDraft,setCombatCondition} from '../../src/app/combat';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
   const damage=(id:string)=>({check:{id} as any,combatId:'combat',attackerId:'attacker'});
@@ -41,4 +41,17 @@ test('condition shortcuts preserve free notes and recognize catalog language',()
   assert.equal(hasCombatCondition(added,'Vergiftet','Poisoned'),true);
   assert.equal(setCombatCondition(added,'Vergiftet','Poisoned',false),'Fluch des Sehers, Liegend');
   assert.equal(setCombatCondition(added,'Liegend','Prone',true),added);
+});
+
+test('round effect changes rebase an open fighter draft without losing its inputs',()=>{
+  const originalBasis={id:'fighter',name:'Goblin',timedEffects:[]} as any;
+  const draft={version:1,kind:'fighter',writeId:'old-write',combatId:'combat',sceneId:'scene',targetId:'fighter',basis:originalBasis,revision:4,values:{'fighter-name':'Goblin Entwurf'},concentrating:false,counted:true} as any;
+  const updatedBasis={...originalBasis,timedEffects:[{id:'effect',name:'Brennend',remaining:2,tick:'end'}]};
+  const rebased=rebaseFighterDraft(draft,updatedBasis,5,'new-write');
+  assert.equal(rebased.writeId,'new-write');
+  assert.equal(rebased.revision,5);
+  assert.deepEqual(rebased.basis,updatedBasis);
+  assert.equal(rebased.values['fighter-name'],'Goblin Entwurf');
+  assert.equal(draft.writeId,'old-write');
+  assert.deepEqual(draft.basis,originalBasis);
 });
