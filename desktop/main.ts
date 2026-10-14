@@ -31,6 +31,7 @@ import type { EncounterPlanCommand } from '../src/app/encounter-contracts';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../src/app/generation-contracts';
 import type { SessionCommand, SessionGenerationRequest } from '../src/app/session-contracts';
 import type {SceneRuleCommand} from '../src/app/rule-reference-contracts';
+import type {SceneCheckCommand} from '../src/app/scene-check-contracts';
 declare const __APP_VERSION__: string;
 
 const dataFlag = process.argv.indexOf('--data-dir');
@@ -115,6 +116,8 @@ else {
     handle('campaign:scene-preparation', (token: string,id: string)=>store.scenePreparation(token,id));
     handle('campaign:scene-rules',(token:string,id:string)=>store.sceneRules(token,id));
     handle('campaign:execute-scene-rule',(command:SceneRuleCommand)=>store.executeSceneRule(command));
+    handle('campaign:scene-checks',(token:string,id:string)=>store.sceneChecks(token,id));
+    handle('campaign:execute-scene-check',(command:SceneCheckCommand)=>store.executeSceneCheck(command));
     handle('campaign:encounter-tables', (token: string, trashed: boolean) => store.encounterTables(token,trashed));
     handle('campaign:loot-tables', (token: string, trashed: boolean) => store.lootTables(token,trashed));
     handle('campaign:generator-registry', (token: string) => store.generatorRegistry(token));
