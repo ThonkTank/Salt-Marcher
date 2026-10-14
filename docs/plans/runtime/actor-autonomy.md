@@ -203,7 +203,6 @@ alte Jobs dürfen deaktiviert bleiben. Catch-up hat bei Fehler keine Teilwirkung
 Backup/Export behalten ihren bestehenden strukturellen Schutz und erhalten den
 sicheren Vorgänger. Historische Target-/Slotclosure bleibt gesondert offen.
 
-## Geprüfte historische Basis nach Integration
 ## Abdeckung und verbleibende Produktlücken
 
 | Originalanforderung | Aktueller Nachweis | Verbleibende Abnahme |
