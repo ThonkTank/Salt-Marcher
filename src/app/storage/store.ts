@@ -592,7 +592,7 @@ export class CampaignStore {
   keepNarrativeDraft(token:string,draft:import('../narrative-contracts').NarrativeDraft,expected:string|null){return keepNarrativeDraft(this.db,this.guard(token),draft,expected);}
   discardNarrativeDraft(token:string,id:string,writeId:string){return discardNarrativeDraft(this.db,this.guard(token),id,writeId);}
   narrative(token:string,id:string){return this.db.transaction(()=>readNarrative(this.db,this.guard(token),id))();}
-  adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest){return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
+  adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest):import('../adventuring-day-contracts').DayView{return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
   executeProgress(command: ProgressCommand) { return this.db.transaction(() => {
     this.guard(command.token,command.campaignId);
     const a=command.action,guard=()=>{this.guard(command.token,command.campaignId);};

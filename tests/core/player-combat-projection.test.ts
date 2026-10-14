@@ -3,7 +3,6 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
-import type {CombatState} from '../../src/app/combat-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
 import type {CombatState} from '../../src/app/combat-contracts';
 import type {PlayerView} from '../../src/app/player-contracts';
