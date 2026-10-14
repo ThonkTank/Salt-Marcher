@@ -5,6 +5,8 @@ und [Quellenregister](../../scope-sources.json). Manuelle Planung benötigt wede
 Planungsparty noch Generator; Generierung und Übernahme ins Live-Spiel sind
 zusätzliche Abläufe.
 
+Bindende Generierungsvorgaben: [Iststand, Quellenprüfung und nächste Schritte](generation-constraints.md).
+
 ## Aktueller Anschluss
 
 Die Desktopvorbereitung speichert Pläne, geordnete Besuche, exakte Notizen und

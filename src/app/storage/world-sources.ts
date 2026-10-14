@@ -52,6 +52,13 @@ export function resolveWorldSources(db:any,cam:string,r:Pick<GenerationRequest,'
  const location=locationId?source('location',locationId):null,linked=location?.factionIds.filter(id=>view.factions.some(f=>f.id===id))??[];
  let ids=tables.filter(t=>!t.trashed).map(t=>t.id);
  for(const dimension of [r.tableIds.length?r.tableIds:null,factionIds.length?factionTables(factionIds):null,location?[...location.tableIds,...factionTables(linked)]:null])if(dimension)ids=ids.filter(id=>dimension.includes(id));
+ // Every explicitly selected faction is binding. A union can retain A while
+ // filters remove B entirely; reject that partial input before generating work.
+ for(const id of factionIds){
+  const faction=source('faction',id);
+  const available=faction.tableIds.some(tid=>ids.includes(tid)&&tables.find(t=>t.id===tid)?.entries.some(e=>e.weight!=='0'&&(faction.stock.find(stock=>stock.creatureId===e.creatureId)?.limit??Infinity)>0));
+  if(!available)throw new Error('Gewählte Fraktion '+view.factions.find(f=>f.id===id)!.name+' hat keine verfügbare Encounter-Tabelle mit positivem Bestand für diese Weltfilter.');
+ }
  if(!ids.length)throw new Error('Keine gemeinsame Encounter-Tabelle für diese Weltfilter. Verknüpfe zuerst die gewünschten Quellen.');
  const capacity=(creatureId:string,owners:string[],direct:string[])=>{
   if(direct.some(id=>ids.includes(id)&&tables.find(t=>t.id===id)?.entries.some(e=>e.creatureId===creatureId)))return Infinity;
