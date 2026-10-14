@@ -2,6 +2,7 @@ import type {CreatureAction} from '../features/catalog/creature-catalog';
 
 export interface ParsedDiceFormula {count:number;sides:number;modifier:number;formula:string}
 export interface CreatureRollPreset {kind:'attack'|'damage'|'save'|'check';label:string;formula:string;dc:number|null}
+export const creatureRollKey=(preset:CreatureRollPreset)=>[preset.kind,preset.label,preset.formula,preset.dc??''].join('\0');
 
 export function parseDiceFormula(input:string):ParsedDiceFormula{
   if(typeof input!=='string'||input.length>100)throw new Error('Würfelformel ist zu lang.');
@@ -16,12 +17,12 @@ export function formulaOutcome(kind:CreatureRollPreset['kind']|undefined,natural
 export function criticalDamageFormula(input:string){const parsed=parseDiceFormula(input),count=parsed.count*2;if(count>100)throw new Error('Kritischer Schaden überschreitet 100 Würfel.');return count+'d'+parsed.sides+(parsed.modifier>0?' + '+parsed.modifier:parsed.modifier<0?' - '+Math.abs(parsed.modifier):'');}
 
 export function creatureActionRolls(action:CreatureAction):CreatureRollPreset[]{
-  const found:CreatureRollPreset[]=[];
+  const found:CreatureRollPreset[]=[],keys=new Set<string>(),add=(preset:CreatureRollPreset)=>{const key=creatureRollKey(preset);if(!keys.has(key)){keys.add(key);found.push(preset);}};
   const attack=/([+-]\s*\d+)\s+to hit/i.exec(action.description);
-  if(attack){const modifier=Number(attack[1]!.replace(/\s/g,''));found.push({kind:'attack',label:action.name+' · Angriff',formula:'1d20'+(modifier>=0?'+':'')+modifier,dc:null});}
+  if(attack){const modifier=Number(attack[1]!.replace(/\s/g,''));add({kind:'attack',label:action.name+' · Angriff',formula:'1d20'+(modifier>=0?'+':'')+modifier,dc:null});}
   const damage=/\d+\s*\((\d{1,3}d\d{1,5}(?:\s*[+-]\s*\d{1,6})?)\)\s*([a-z]+)\s+damage/gi;
-  for(let match; (match=damage.exec(action.description));)found.push({kind:'damage',label:action.name+' · '+match[2]+' Schaden',formula:match[1]!,dc:null});
+  for(let match; (match=damage.exec(action.description));)add({kind:'damage',label:action.name+' · '+match[2]+' Schaden',formula:parseDiceFormula(match[1]!).formula,dc:null});
   const resisted=/DC\s+(\d+)\s+([A-Za-z]+)\s+(saving throw|check)/gi;
-  for(let match; (match=resisted.exec(action.description));){const kind=match[3]!.toLowerCase()==='check'?'check':'save';found.push({kind,label:action.name+' · '+match[2]+' '+(kind==='save'?'Rettungswurf':'Probe'),formula:'1d20',dc:Number(match[1])});}
+  for(let match; (match=resisted.exec(action.description));){const kind=match[3]!.toLowerCase()==='check'?'check':'save';add({kind,label:action.name+' · '+match[2]+' '+(kind==='save'?'Rettungswurf':'Probe'),formula:'1d20',dc:Number(match[1])});}
   return found;
 }
