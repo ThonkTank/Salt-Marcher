@@ -14,10 +14,10 @@ test('the player display publishes only the focused scene read-aloud text',()=>{
   const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
   store.executeLive({commandId:'activate',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
   const current=store.live(token).scene!;
-  store.executeLive({commandId:'content',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:current.id,expectedRevision:current.revision,title:'Hinterhalt: Der freundliche Wirt ist ein Vampir',readAloud:'Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.',notes:'Hinterhalt der Wachen bei drei Fehltritten.',locationId:null}});
+  store.executeLive({commandId:'content',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:current.id,expectedRevision:current.revision,title:'Hinterhalt: Der freundliche Wirt ist ein Vampir',readAloud:'  Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.\n',notes:'Hinterhalt der Wachen bei drei Fehltritten.',locationId:null}});
   let player=store.executePlayer({commandId:'show-scene',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings:{blank:false,mode:'scene',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
-  assert.equal(player.frame.mode,'scene');assert.equal(player.frame.title,'');assert.equal(player.frame.scene?.text,'Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Fehltritten|Vampir/);
-  const updated=store.live(token).scene!;store.executeLive({commandId:'clear-text',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:updated.id,expectedRevision:updated.revision,title:updated.title,readAloud:'',notes:updated.notes,locationId:null}});
+  assert.equal(player.frame.mode,'scene');assert.equal(player.frame.title,'');assert.equal(player.frame.scene?.text,'  Der schwarze Torbogen glüht im Abendlicht.\nEin Horn erklingt.\n');assert.doesNotMatch(JSON.stringify(player.frame),/Hinterhalt|Fehltritten|Vampir/);
+  const updated=store.live(token).scene!;store.executeLive({commandId:'clear-text',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:updated.id,expectedRevision:updated.revision,title:updated.title,readAloud:' \n ',notes:updated.notes,locationId:null}});
   player=store.playerView(token);assert.equal(player.frame.mode,'blank');assert.match(player.frame.reason??'',/kein Vorlesetext/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
