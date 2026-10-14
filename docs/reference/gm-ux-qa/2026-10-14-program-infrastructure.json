@@ -1,50 +1,33 @@
 {
-  "kind": "qa_infrastructure_review",
-  "pilot_product": {
-    "commit": "263ff0af32aacbe1d00a31a8cdd309aa451f754f",
-    "version": "0.63.0"
+  "kind": "qa_infrastructure_status",
+  "as_of": "2026-10-14T22:00:12Z",
+  "isolation": "Separate management and fixed test copies; ongoing development and original evidence unchanged.",
+  "latest_infrastructure_result": {
+    "candidate": "final-candidate05 / stable06",
+    "status": "independently_passed_bounded_local_routine",
+    "independent_reviewers": 2,
+    "scope": "Original native UI inputs, window/focus/dialog handling and recorded Save/Close/Fresh; guarded positive and negative claim paths.",
+    "limits": "No complete GM workflow acceptance, formal W01 comparison, general host guarantee or human-load evidence."
   },
-  "isolation": "Separate management and detached pilot copy; shared development untouched.",
-  "scenario_contract": "nebelmark 2.0.1 separates visual player handout from GM read-aloud retrieval.",
-  "review_candidate": {
-    "id": "INFRA-READINESS-CANDIDATE-04",
-    "new_files": 27,
-    "inventory_sha256": "055a294d2f8464a3b495a57e189adae931eab11c290bc959cbea3ae71ef54c1a",
-    "independent_reviews_started": 2,
-    "status": "agreed_partial_bounded_recording_usable_conditions_open",
-    "native_base": "Immutable fix03 lifecycle and fix02 original product pilots; changed offline checker does not imply new GUI execution.",
-    "independent_reviews_completed": 2
+  "historical_failures": {
+    "stable05": "Obsidian Location dialog caused X_GetProperty BadWindow; interrupted original remains a failure.",
+    "resolution": "stable06 native disappearing-window probes and Obsidian Save/Close/Fresh originals independently reviewed; historical attempts unchanged.",
+    "prior_candidate_inventory_sha256": "055a294d2f8464a3b495a57e189adae931eab11c290bc959cbea3ae71ef54c1a"
   },
-  "confirmed_infrastructure_issues": [
-    "Managed-window behavior must be established; private display geometry is not a substitute for working native maximize/focus.",
-    "A universal browser zoom percentage is inapplicable to some native editors; display contract proposal is isolated and inactive.",
-    "Cold-start/profile evidence exists in separate pilot, with timing and process limits still awaiting current-build independent qualification."
-  ],
-  "repair": "New offline audit rejects invalid/backward/out-of-event receipt clocks; 8 tests passed and 12 original traces remain consistent. Existing pilot chat is qualifying a managed private desktop; original artifacts unchanged.",
+  "active_product_exploration": {
+    "run": "CLOSURE-FIRST-GM-01",
+    "scenario": "Muehlenau small session",
+    "commit": "1a06f6ebd546cee5ca73c5e61b11a89f3c31a5ce",
+    "version": "0.70.0",
+    "status": "running; preparation/play/resumption result pending",
+    "build_files_read_only_verified": 13,
+    "full_reveal_or_cold_start_time_comparison": false
+  },
+  "later_integration": {
+    "commit": "99df370ca0a5c3c72aab65265ba3c7154fbdbb6b",
+    "version": "0.74.0",
+    "status": "queued for later reproduction; ongoing test build not updated"
+  },
   "scored_product_runs": 0,
-  "claim": "No product usability, parity, superiority or human-load claim. Private cases and raw personal filesystem views remain outside this repository.",
-  "offline_checks": {
-    "historical_package_tests_passed": 86,
-    "targeted_input_loader_tests_passed": 18,
-    "scope": "Offline method checks; not product acceptance.",
-    "targeted_wire_and_adapter_tests_passed": 37,
-    "wire_clock_corruption_tests_passed": 8,
-    "original_traces_clock_checked": 12
-  },
-  "previous_review_candidate": {
-    "id": "INFRA-REVIEW-CANDIDATE-01",
-    "files": 304,
-    "independent_reviews": 2,
-    "verdict": "agreed_blocked"
-  },
-  "next_fixed_product": {
-    "commit": "92e487387291a87702d8e20672d489ca0b784c67",
-    "version": "0.68.0",
-    "desktop_build_exit": 0,
-    "artifact_files": 13,
-    "native_pilot": "partial_completed; products/guards closed normally, later supervisor watchdog timeout retained",
-    "scored_runs": 0,
-    "original_frames": 181,
-    "input_events": 61
-  }
+  "claim": "Infrastructure readiness does not establish product usability, parity, superiority or human-load reduction. Private cases and raw personal filesystem views remain outside this repository."
 }
