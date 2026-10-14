@@ -25,6 +25,7 @@ let readyHook: (() => boolean) | null = null;
 let draftVersion = 0,
   persistHook: (() => Promise<boolean>) | null = null,
   timer: ReturnType<typeof setTimeout> | null = null;
+let displayedNoteRevision:number|null=null;
 let resumeOwner:(()=>Promise<void>)|null=null;
 export function captureNarrativeOwner(){return resumeOwner;}
 function markDirty() {
@@ -59,11 +60,17 @@ export async function showNarrative(
     key = w && note ? panel.id+":"+w.token + ":" + note.id : "";
   panel.hidden =
     !w || !note || trashed || !["quest", "rumor"].includes(note.kind);
-  if (!panel.hidden && key === ownerKey && (dirty || pending)) return;
+  if (!panel.hidden && key === ownerKey && (dirty || pending)) {
+    if(pending||note!.revision===displayedNoteRevision)return;
+    const prior=request;
+    if(persistHook&&!await persistHook())return;
+    if(ownerKey!==key||request!==prior)return;
+  }
   resumeOwner=panel.hidden?null:()=>showNarrative(w,note,trashed,drain,tell,panel,onSaved);
   const n = ++request;
   if (panel.hidden) {
     ownerKey = "";
+    displayedNoteRevision = null;
     data = null;
     dirty = false;
     saveHook = null;
@@ -73,6 +80,7 @@ export async function showNarrative(
     return;
   }
   ownerKey = key;
+  displayedNoteRevision = note!.revision;
   data = null;
   dirty = false;
   saveHook = null;
@@ -164,10 +172,10 @@ export async function showNarrative(
   }
   async function writeAction(action: ProgressAction) {
     if (!current()) return false;
+    const version = draftVersion;
     if (persistHook && !(await persistHook())) return false;
     if (action.kind === "narrative-state" || action.kind === "narrative-award")
       action.draftWriteId = writeId ?? undefined;
-    const version = draftVersion;
     if (!current() || pending || !(await drain()) || !current()) return false;
     pending = true;
     try {
@@ -178,8 +186,9 @@ export async function showNarrative(
         const fresh = await window.campaign.narrative(w!.token, note!.id);
         if (!current()) return false;
         if (!fresh.ok) throw new Error(fresh.error);
-        action.expectedNoteRevision = fresh.value.noteRevision;
+        if(fresh.value.noteRevision!==action.expectedNoteRevision)throw new Error('Narrative Notiz wurde inzwischen geändert. Notiz und gesicherten Entwurf erneut prüfen.');
       }
+      if(draftVersion!==version){if(persistHook&&!await persistHook())return false;if(!current())return false;throw new Error('Eingabe während der Prüfung geändert. Der neuere Entwurf ist gesichert; erneut bestätigen.');}
       const r = await window.campaign.executeProgress({
         commandId: crypto.randomUUID(),
         token: w!.token,
@@ -199,7 +208,7 @@ export async function showNarrative(
         draw();
       } else {
         dirty = true;
-        if (raw) raw.revision = data.state.revision;
+        if (raw && (action.kind === "narrative-state" || action.kind === "narrative-award")) raw.revision = action.expectedRevision + 1;
         savedVersion = -1;
         void persist();
       }
@@ -220,6 +229,7 @@ export async function showNarrative(
       s: NarrativeDraft = structuredClone(
         d.draft ?? {
           ...d.state,
+          noteRevision: note!.revision,
           locationId: d.state.locationId ?? null,
           writeId: crypto.randomUUID(),
           poolXp: String(d.state.poolXp),
@@ -235,10 +245,11 @@ export async function showNarrative(
     draftStatus.textContent = d.draft
       ? "Gesicherte Eingabe wieder geöffnet."
       : "Änderungen werden als Eingabe automatisch gesichert.";
-    const stale = d.draft && d.draft.revision !== d.state.revision;
+    const stale = s.revision !== d.state.revision || s.noteRevision !== d.noteRevision;
+    const displayed = note!.revision === d.noteRevision;
     if (stale)
       draftStatus.textContent =
-        "Gesicherte Eingabe und bestätigter Stand unterscheiden sich. Vor Übernahme den Entwurf prüfen.";
+        displayed?"Gesicherte Eingabe und aktuelle Notiz-/Statusbasis unterscheiden sich oder die frühere Basis fehlt. Vor Übernahme den Entwurf prüfen.":"Notiz seit dem Öffnen geändert. Welttext aktualisieren und den gesicherten Entwurf erneut prüfen.";
     panel.replaceChildren();
     const heading = document.createElement("h3"),
       status = document.createElement("select"),
@@ -360,7 +371,7 @@ export async function showNarrative(
             items: s.items.map((i) => ({ ...i, quantity: Number(i.quantity) })),
           },
           expectedRevision: s.revision,
-          expectedNoteRevision: data!.noteRevision,
+          expectedNoteRevision: s.noteRevision!,
         });
       } catch (e) {
         tell((e as Error).message, true);
@@ -372,10 +383,10 @@ export async function showNarrative(
     resolve.textContent = d.award
       ? "Belohnung bereits vergeben"
       : "Manuell abschließen und Belohnung verteilen…";
-    resolve.disabled = !!d.award;
+    resolve.disabled = !!d.award || stale;
     resolve.onclick = () => {
       void (async () => {
-        if (!active() || !(await flushNarrative()) || !active()) return;
+        if (stale || !active() || !(await flushNarrative()) || !active()) return;
         if (dirty) {
           tell(
             "Eingabe gesichert. Vor Abschluss die Belohnungsfelder vervollständigen und übernehmen.",
@@ -387,7 +398,7 @@ export async function showNarrative(
         const basis = data;
         if(!await prepareFinish(basis.state.contributors, undefined, {
           workspace: w!,
-          owner:{kind:'narrative',targetId:note!.id,revision:basis.state.revision},
+          owner:{kind:'narrative',targetId:note!.id,revision:basis.state.revision,noteRevision:basis.noteRevision},
           poolXp: basis.state.poolXp,
           items: basis.state.items,
         }))return;
@@ -425,7 +436,7 @@ export async function showNarrative(
                 noteId: note!.id,
                 expectedRevision: draft.revision,
                 finishDraftWriteId:draft.writeId,
-                expectedNoteRevision: basis.noteRevision,
+                expectedNoteRevision: draft.noteRevision!,
                 sceneId: null,
                 poolXp: rewards.poolXp,
                 noXp: rewards.noXp,
@@ -490,10 +501,11 @@ export async function showNarrative(
     if (stale) {
       const adopt = document.createElement("button");
       adopt.textContent = "Geprüften Entwurf auf aktuellen Stand übernehmen";
+      adopt.disabled = !displayed;
       adopt.onclick = () => {
         void (async () => {
-          if (!active() || !await persist() || !active()) return;
-          data!.draft = { ...s, writeId: writeId!, revision: data!.state.revision };
+          if (!displayed || !active() || !await persist() || !active()) return;
+          data!.draft = { ...s, writeId: writeId!, revision: data!.state.revision, noteRevision:note!.revision };
           draw();
           markDirty();
         })();

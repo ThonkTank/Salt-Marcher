@@ -3,6 +3,7 @@ import {canonicalJson} from '../generation/canonical-json';
 import {readItemDefinition} from './item-definitions';
 import {applyLootGuidance,fitSessionReward,checkedSessionLootGuidance,assertSessionRewardBasisCurrent} from './session-rewards';
 import {npcRecord,npcDisposition} from './npc-record';
+import {copySessionVisits} from './session-copy';
 import {replaceSessionPlan} from './plan-replacement';
 import {placeNpcGroup} from './npc-world';
 import {randomUUID,createHash} from 'node:crypto';
@@ -169,6 +170,7 @@ export function executeSession(db:any,command:SessionCommand,guard:()=>void,publ
   Object.assign(p,{title:a.title,notes:a.notes,readAloud:a.readAloud,locationId:a.locationId,noteIds:[...new Set(a.noteIds)],reward,rewardEdited:p.rewardEdited||json(p.reward??null)!==json(reward),needsEncounterRefresh:p.needsEncounterRefresh||!!run.worldSourcesByLocation&&p.locationId!==a.locationId,revision:(p.revision??1)+1});
   }
   const payload=json(run);db.prepare('UPDATE session_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),cam,run.id);
+ }else if(a.kind==='copy-visits'){planId=a.planId;copySessionVisits(db,cam,a,publish);
  }else if(a.kind==='replace-plan'){planId=a.planId;replaceSessionPlan(db,cam,a,publish);
  }else if(a.kind==='profile'){planId=a.profile.planId;const old=profile(db,cam,planId),p=structuredClone(a.profile);if(old.revision!==a.expectedRevision)throw new Error('Spielabendprofil geändert.');assessEncounter(p.party,[]);const fraction=Number(exactWeight(p.adventureDayFraction));if(!Number.isFinite(fraction)||fraction<=0||fraction>10||typeof p.seed!=='string'||!p.seed.trim()||p.seed.length>1000)throw new Error('Adventure Day benötigt einen Anteil zwischen 0 und 10 sowie einen Seed.');p.revision=old.revision+1;p.adventureDayFraction=exactWeight(p.adventureDayFraction);const payload=json(p);db.prepare('INSERT INTO session_profile VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,plan_id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,planId,p.revision,payload,hash(payload));
  }else if(a.kind==='accept-proposal'||a.kind==='accept-proposals'){

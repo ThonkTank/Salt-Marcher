@@ -11,7 +11,8 @@ Kampfteilnehmerfelder und Kampfnotizen besitzen eigene Rohentwürfe in
 `combat_working_draft`. `src/app/combat-draft-contracts.ts` beschreibt ursprüngliche
 Basis, Ziel und Schreib-ID; `src/app/storage/combat-drafts.ts` prüft Eigentümer,
 Byteintegrität und CAS. `src/app/combat-draft-cache.ts` hält pro Editor höchstens
-einen laufenden Schreibauftrag und den neuesten Folgestand. Rohe Zwischenwerte
+einen laufenden Schreibauftrag und den neuesten Folgestand. Seine Statusbasis darf nur um den eigenen bestätigten Schritt
+fortschreiten; ein späterer Read eines fremden Updates darf sie nicht ersetzen. Rohe Zwischenwerte
 wie `-` und `1,5` bleiben Eingaben; sie ändern keinen bestätigten Kampfwert.
 Ein ausdrücklicher Kampfcommand bestätigt Fachwerte, Receipt und Verbrauch nur
 der passenden Entwurfs-ID gemeinsam. Ein Receipt-Replay verbraucht keine spätere
@@ -65,6 +66,13 @@ Die Kontextgegenproben in `desktop-narrative-journal-context.test.mjs` ergänzen
 die Store-/DOMprüfungen; die vollständige native Abschluss- und Recoveryabnahme
 bleibt offen.
 
+Narrative Rohentwürfe binden ihre ursprüngliche Notiz- und Statusrevision.
+Frische Reads prüfen diese Basis; erst ausdrückliches Übernehmen bestätigt einen
+geänderten Stand. Altentwürfe ohne Notizrevision bleiben lesbar und verlangen
+eine ausdrückliche Prüfung. Status/Award konsumieren genau den geprüften Entwurf;
+neuere Rohfelder werden durch ältere Speicherklicks nicht überschrieben.
+`desktop-narrative-basis.test.mjs` prüft diesen Weg mit echtem Store und Controller.
+
 ## Legendäre Aktion nach unabhängiger Kopie
 
 Der neue legendäre Aktionsstand speichert `lastUsedRound` und `lastUsedTurnId`.
@@ -107,27 +115,36 @@ nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
 
 ## Nächste ausführbare Schritte
 
-1. **Narrative Wiederaufnahme vervollständigen.** Zuerst die ursprüngliche
-   Revisionsbasis und Commandstatus liefern, danach Journal → Metadatenentwurf →
-   Abschluss → Welttexteditor → Rückkehr nativ gemeinsam abnehmen. Esc, langsame
-   Datenträger, nicht lesbarer Entwurf und Campaignwechsel erhalten Rohwerte und
-   schließen keine neuere Ansicht. Lokale Journalguards erfüllen diese native
-   Qualifikation noch nicht.
- Metadatenrohentwürfe und
-   der gemeinsame Kampf-/Questabschluss besitzen inzwischen persistente Eingaben
-   einschließlich Ergebnistext in `finish_draft`. Ursprüngliche Notizbasis und
-   unbekannter Commandausgang bleiben offen. `NarrativeDraft` enthält bisher keine ursprüngliche
-   Notizrevision und keinen ungeklärten Command. In `src/app/narrative-ui.ts`
-   überschreibt `writeAction` zudem vor dem Senden die erwartete Notizrevision mit
-   einem neuen Read. Das bietet keine ursprüngliche Notizkonfliktbasis.
-   Nächster Anschluss: Note-/Statebasis und Command-ID unter dem Entwurfsziel
-   sichern; ursprüngliche erwartete Revisionen beim Submit erhalten; verlorene
-   Antworten durch `commitStatus` lesen und erst danach ausdrücklich fortsetzen.
-   Ein früheres Receipt darf spätere Eingaben nicht rebasieren oder verbrauchen.
+1. **Unbekannten Narrative-Commandausgang schließen.** Notiz-/Statusbasis sind
+   inzwischen im Metadatenentwurf erhalten; der Renderer behält sie beim Submit
+   und der Writer bindet den Entwurfsverbrauch daran. `NarrativeDraft` und
+   `FinishDraft` speichern jedoch noch keinen ungeklärten Command. Der separate
+   Abschlussentwurf bindet jetzt ebenfalls Status- und ursprüngliche Notizrevision.
+   `finish-draft-contracts.ts` hält `noteRevision` optional für historische Rohdaten;
+   `finish-draft-ui.ts` erhält fehlende/alte Basen bei gewöhnlichem Editieren und
+   bietet ausdrückliche Übernahme. `narrative-ui.ts` übergibt die tatsächlich
+   geprüfte Notizbasis an den Abschluss und verwendet sie im Awardcommand.
+   `storage/finish-drafts.ts` prüft positive sichere Revisionswerte sowie die
+   gespeicherte Basis beim atomaren Consume; `storage/progression.ts` übergibt
+   beide Actionbasen. Kein SQLschemawechsel oder automatisches Legacyrewrite.
+   Fresh-/DOM-/SQLiteproben in `desktop-finish-note-basis.test.mjs` prüfen
+   verworfene Publikation mit unveränderten DBbytes, Legacyprüfung, rohe ungültige
+   Zahlen/Wortlaut, unabhängige Kopie, ausdrücklichen Abschluss und Receiptreplay.
+   Diese lokalen Belege ersetzen keine native Abschlussabnahme. Nächster
+   Anschluss in `narrative-ui.ts` und bestehender Entwurfsspeicherung: vor dem
+   Senden Command-ID, `progress`-Fingerprint, bestätigte Actionbasis und die
+   betroffene Write-ID dauerhaft an das Entwurfsziel binden. Nach Replyverlust
+   `CampaignAPI.commitStatus` mit dem bestehenden Progressreceipt lesen; erst
+   danach eine ausdrückliche Fortsetzung freigeben. Ein früheres Receipt darf
+   spätere Eingaben nicht rebasieren oder verbrauchen. Nicht bestätigte Commands
+   und neuere Rohwerte müssen dabei nebeneinander erhalten bleiben.
    Abnahme: ungültige XP/Preiswerte und Ergebnistext → Wechsel/Close/Fresh →
-   korrigieren → einmal bestätigen; zwischenzeitliche Notizänderung und
-   Replyverlust erzeugen keine automatische Belohnungswiederholung und verlieren
-   keine spätere Eingabe. Vorhandene Vorbereitung-/Kampfverträge nutzen.
+   korrigieren → einmal bestätigen; verlorene Antwort nach bestätigtem Write,
+   Quellenänderung vor Publish und spätere Eingabe während Recovery erzeugen
+   keine automatische Belohnungswiederholung. Danach Journal → Metadatenentwurf
+   → Abschluss → Welttexteditor → Rückkehr nativ gemeinsam abnehmen. Esc,
+   langsamer Datenträger und nicht lesbarer Entwurf erhalten Rohwerte und
+   schließen keine neuere Ansicht.
 2. **Kampfanlage und Abschluss schließen.** In `src/app/combat-contracts.ts`,
    `src/app/combat.ts` und bestehendem Draftstore Anlage- und Gegnerfelder
    ergänzen; die integrierten Abschlussentwürfe gegen Konflikte/Replyverlust prüfen. Anlage bindet Scene und Membershipbasis ohne erfundene Kampf-ID;

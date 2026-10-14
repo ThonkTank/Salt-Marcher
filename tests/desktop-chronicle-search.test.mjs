@@ -8,13 +8,13 @@ const require=createRequire(import.meta.url);
 buildSync({entryPoints:[process.env.CHRONICLE_UI_SOURCE??'src/app/chronicle-ui.ts'],outfile:'.build/chronicle-dom.cjs',bundle:true,platform:'node',format:'cjs'});
 const tick=()=>new Promise(r=>setImmediate(r));
 const entry=title=>({id:title,recordedAt:new Date(1).toISOString(),category:'party',title,summary:'',people:[],scene:null,location:null});
-function fixture(openFollowUp){
+function fixture(){
  const saved={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});
- const el=id=>document.getElementById(id);Object.defineProperty(el('chronicle-category'),'value',{value:'all',writable:true});el('chronicle-search').value='';const pending=[],calls=[],exports=[];
+ const el=id=>document.getElementById(id);Object.defineProperty(el('chronicle-category'),'value',{value:'all',writable:true});el('chronicle-search').value='';const pending=[],calls=[],exports=[],opened=[];
  window.campaign={chronicle:async(token,category,search)=>{calls.push({token,category,search});return new Promise(resolve=>pending.push(resolve));},exportChronicle:async(...args)=>{exports.push(args);return{ok:true,value:{cancelled:false}};}};
- delete require.cache[require.resolve('../.build/chronicle-dom.cjs')];const ui=require('../.build/chronicle-dom.cjs');ui.initChronicle(()=>{},openFollowUp);ui.activateChronicle({token:'one'});
- const answer=(title,which=0)=>{const done=pending.splice(which,1)[0];done({ok:true,value:{campaignName:'Test',entries:[entry(title)],truncated:false}});};
- return{ui,el,pending,calls,exports,answer,query(text){el('chronicle-search').value=text;el('chronicle-search').oninput();},cleanup(){ui.activateChronicle(null);Object.assign(globalThis,saved);}};
+ delete require.cache[require.resolve('../.build/chronicle-dom.cjs')];const ui=require('../.build/chronicle-dom.cjs');ui.initChronicle(()=>{},async(id,token)=>{opened.push({id,token});});ui.activateChronicle({token:'one'});
+ const answer=(title,which=0,extra={})=>{const done=pending.splice(which,1)[0];done({ok:true,value:{campaignName:'Test',entries:[{...entry(title),...extra}],truncated:false}});};
+ return{ui,el,pending,calls,exports,opened,answer,query(text){el('chronicle-search').value=text;el('chronicle-search').oninput();},cleanup(){ui.activateChronicle(null);Object.assign(globalThis,saved);}};
 }
 test('search and category reach Core; typing supersedes the old result before its reply arrives',async()=>{
  const x=fixture();try{const first=x.ui.openChronicle();assert.equal(x.el('chronicle-export').disabled,true);x.query('Bronze');x.answer('Alt');await first;assert.equal(x.el('chronicle-list').childElementCount,0);assert.equal(x.el('chronicle-export').disabled,true);
@@ -40,10 +40,8 @@ test('an unavailable native bridge shows its usable cause without internal metho
  }finally{x.cleanup();}
 });
 
-test('follow-up navigation accepts the current event but ignores removed rows after campaign changes',async()=>{
- const opened=[],x=fixture(async id=>opened.push(id));try{
-  const task=x.ui.openChronicle();x.pending.shift()({ok:true,value:{campaignName:'A',entries:[{...entry('Spur'),followUp:{kind:'quest',id:'shared-local-id'}}],truncated:false}});await task;
-  const button=x.el('chronicle-list').querySelector('button');assert.ok(button);button.click();await tick();assert.deepEqual(opened,['shared-local-id']);
-  x.ui.activateChronicle({token:'two'});button.onclick();await tick();assert.deepEqual(opened,['shared-local-id']);
+test('detached follow-up controls cannot navigate after search or campaign changes',async()=>{
+ const x=fixture();try{let task=x.ui.openChronicle();x.answer('Spur',0,{followUp:{id:'quest-one',kind:'quest'}});await task;const old=x.el('chronicle-list').querySelector('button');old.click();await tick();assert.deepEqual(x.opened,[{id:'quest-one',token:'one'}]);x.query('Neu');old.click();await tick();assert.equal(x.opened.length,1);
+ task=x.ui.openChronicle();x.answer('Neue Spur',0,{followUp:{id:'quest-two',kind:'quest'}});await task;const next=x.el('chronicle-list').querySelector('button');x.ui.activateChronicle({token:'two'});next.click();await tick();assert.equal(x.opened.length,1);
  }finally{x.cleanup();}
 });

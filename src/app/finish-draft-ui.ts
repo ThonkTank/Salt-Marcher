@@ -61,18 +61,26 @@ function restore(s: Session, v: Values) {
   s.restoreItems(structuredClone(v.items));
   s.preview();
 }
+function changedBasis(s: Session) {
+  return !!s.draft && (
+    s.draft.revision !== s.owner.revision ||
+    s.owner.kind === "narrative" && (
+      s.draft.noteRevision === undefined ||
+      s.draft.noteRevision !== s.owner.noteRevision
+    )
+  );
+}
 function status(s: Session, text?: string) {
   if (active !== s) return;
   get("finish-draft-status").textContent =
     text ??
     s.error ??
-    (s.draft && s.draft.revision !== s.owner.revision
-      ? "Der Kampf-/Queststand hat sich geändert. Eingabe prüfen und ausdrücklich auf den aktuellen Stand übernehmen."
+    (changedBasis(s)
+      ? "Der Kampf-/Queststand oder die Notizbasis hat sich geändert oder ist unbekannt. Eingabe prüfen und ausdrücklich auf den aktuellen Stand übernehmen."
       : s.draft
         ? "Gesicherte Abschlusseingabe wieder geöffnet."
         : "Eingaben werden automatisch gesichert; Schließen behält den Entwurf.");
-  get("finish-draft-adopt").hidden =
-    !s.draft || s.draft.revision === s.owner.revision;
+  get("finish-draft-adopt").hidden = !changedBasis(s);
 }
 export function markFinishDraft() {
   const s = active;
@@ -93,6 +101,7 @@ async function save(s: Session): Promise<boolean> {
     d: FinishDraft = {
       ...s.owner,
       revision: s.draft?.revision ?? s.owner.revision,
+      ...(s.owner.kind === "narrative" ? {noteRevision: s.draft ? s.draft.noteRevision : s.owner.noteRevision} : {}),
       ...snapshot(s),
       writeId: crypto.randomUUID(),
     };
@@ -187,13 +196,14 @@ export async function finishDraftCommit() {
   if (!(await save(s)))
     throw new Error(s.error ?? "Abschlusseingabe noch nicht gesichert.");
   if(active!==s)throw new Error("Abschlussziel inzwischen gewechselt.");
-  if (s.draft && s.draft.revision !== s.owner.revision)
+  if (changedBasis(s) || s.owner.kind === "narrative" && s.owner.noteRevision === undefined)
     throw new Error(
       "Abschlussstand geändert. Gesicherte Eingabe zuerst prüfen und übernehmen.",
     );
   return {
     writeId:s.draft?.writeId,
     revision:s.owner.revision,
+    noteRevision:s.owner.noteRevision,
     consume:()=>{
       if(active!==s)return false;
       deactivateFinishDraft();
@@ -245,7 +255,9 @@ function init() {
     void (async () => {
       const s = active;
       if (!s || !(await save(s)) || active!==s || !s.draft) return;
+      if(s.owner.kind === "narrative" && s.owner.noteRevision === undefined){s.error="Notizbasis zuerst erneut lesen.";status(s);return;}
       s.draft.revision = s.owner.revision;
+      if (s.owner.kind === "narrative") s.draft.noteRevision = s.owner.noteRevision;
       s.version++;
       await save(s);
       status(s);

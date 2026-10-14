@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {emptyLiveMomentDraft,LiveMomentDraftBook} from '../../src/app/live-moment-drafts';
+import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,LiveMomentDraftBook} from '../../src/app/live-moment-drafts';
 
 test('live moment drafts remain with their scene across focus changes',()=>{
   const book=new LiveMomentDraftBook();
@@ -17,4 +17,25 @@ test('saved and reset live moments cannot reappear in another context',()=>{
   book.switchTo('scene-a',emptyLiveMomentDraft());book.switchTo('scene-b',draft);book.switchTo('scene-a',emptyLiveMomentDraft());book.saved('scene-a');
   assert.deepEqual(book.switchTo('scene-b',emptyLiveMomentDraft()).draft,emptyLiveMomentDraft());
   book.reset();assert.equal(book.currentSceneId,null);assert.deepEqual(book.switchTo('scene-a',emptyLiveMomentDraft()).draft,emptyLiveMomentDraft());
+});
+
+test('an older acknowledgement clears only its identical cached moment',()=>{
+ const book=new LiveMomentDraftBook(),submitted={category:'narrative' as const,title:'Erster Moment',summary:'Alt',followUp:'' as const},newer={...submitted,title:'Weitere Eingabe'};
+ book.switchTo('a',emptyLiveMomentDraft());book.switchTo('b',submitted);book.saved('a',submitted);
+ assert.deepEqual(book.switchTo('a',emptyLiveMomentDraft()).draft,emptyLiveMomentDraft());
+ book.switchTo('b',newer);book.saved('a',submitted);assert.deepEqual(book.switchTo('a',emptyLiveMomentDraft()).draft,newer);
+});
+
+test('a confirmed moment clears only the unchanged draft for the same scene',()=>{
+  const saved={category:'narrative' as const,title:'Siegel erkannt',summary:'Ada kennt das Zeichen.',followUp:'quest' as const};
+  assert.equal(canClearSavedLiveMoment('scene-a','scene-a',saved,structuredClone(saved)),true);
+  assert.equal(canClearSavedLiveMoment('scene-a','scene-a',saved,{...saved,summary:'Ada kennt jetzt auch den Träger.'}),false);
+  assert.equal(canClearSavedLiveMoment('scene-a','scene-a',saved,{...saved,followUp:'rumor'}),false);
+  assert.equal(canClearSavedLiveMoment('scene-a','scene-b',saved,structuredClone(saved)),false);
+});
+
+test('live moment confirmation names one completed action without duplicating saved',()=>{
+  assert.equal(liveMomentSavedMessage('',true),'Moment in der Kampagnenchronik gespeichert.');
+  assert.equal(liveMomentSavedMessage('quest',true),'Moment gespeichert und als offene Quest vorbereitet.');
+  assert.equal(liveMomentSavedMessage('rumor',false,true),'Moment gespeichert und als Gerücht vorbereitet. Neuere Eingabe bleibt offen. Wissensbinder bei Bedarf aktualisieren.');
 });

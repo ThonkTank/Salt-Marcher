@@ -17,7 +17,7 @@ import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
 import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
-import {emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import {liveMomentSavedMessage,canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -72,6 +72,10 @@ async function ensureLiveRuntime() {
   if (!data) {await openLive();if(!current())return false;} if (!data) return false;
   if (!data.scene) {if(!await execute({kind:'initialize',expectedRosterRevision:data.rosterRevision})||!current())return false;}
   resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();return !!data.scene;
+}
+export async function openLiveSoundboard(){
+ if(!data?.scene){get('live-continue').scrollIntoView({block:'center'});get<HTMLButtonElement>('live-continue').focus();tell('Öffne zuerst eine Gruppe am Spieltisch.');return;}
+ if(!await ensureLiveRuntime())return;get<HTMLDetailsElement>('live-soundboard').open=true;get('live-soundboard').scrollIntoView({block:'start'});
 }
 export async function prepareLiveEncounter(plan:EncounterPlan) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await prepareCombatPlan(plan); }
 export async function addLiveNpc(id:string){if(await ensureLiveRuntime())await addWorldNpc(id);}
@@ -135,7 +139,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
     try {
       const ack = unwrap(await window.campaign.executeLive(command));
       if (context?.token !== token) return null;
-      if(action.kind==='live-moment'&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
+      if((action.kind==='live-moment'||action.kind==='scene-content')&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
       mergeAck(ack, action); tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;
@@ -258,6 +262,7 @@ function renderScene() {
   if(preparedNotesSceneId!==data?.scene?.id){preparedNotesSceneId=data?.scene?.id??null;preparedNoteIds.clear();}
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
+  get<HTMLButtonElement>('running-player-location').disabled=!sceneDraft?.locationId;
   renderLiveMomentDraft();
   const select = get<HTMLSelectElement>('running-location'); select.replaceChildren();
   const none = document.createElement('option'); none.value = ''; none.textContent = 'Kein Ort'; select.append(none);
@@ -375,16 +380,16 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('live-passive-form').onsubmit=event=>{event.preventDefault();renderPassivePerception();};
   get('live-moment-form').onsubmit=event=>{
-    event.preventDefault();const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,title=value('live-moment-title'),summary=value('live-moment-summary'),category=value('live-moment-category') as Extract<LiveAction,{kind:'live-moment'}>['category'],followUp=value('live-moment-follow-up') as LiveMomentDraft['followUp'];
+    event.preventDefault();const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,draft=currentLiveMomentDraft(),{category,title,summary,followUp}=draft;
     const current=()=>context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focusRevision;
     if(!token||!sceneId||liveMomentDrafts.currentSceneId!==sceneId)return;
     void(async()=>{try{
       if(!await flushLive()||!current())return;
-      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack||!current())return;
+      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;liveMomentDrafts.saved(sceneId,draft);if(!current())return;
       let refreshProblem=false;if(followUp){try{const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(!current())return;refreshProblem=true;}}
-      const unchanged=value('live-moment-follow-up')===followUp&&value('live-moment-title')===title&&value('live-moment-summary')===summary&&value('live-moment-category')===category;
-      if(unchanged){liveMomentDrafts.saved(sceneId);writeLiveMomentDraft(emptyLiveMomentDraft());get<HTMLInputElement>('live-moment-title').focus();}
-      get('live-moment-result').textContent='In der Kampagnenchronik gespeichert.'+(followUp?(followUp==='quest'?' Offene Quest vorbereitet.':' Gerücht vorbereitet.'):'')+(!unchanged?' Neuere Eingabe bleibt offen.':'')+(refreshProblem?' Wissensbinder bei Bedarf aktualisieren.':'');
+      const unchanged=canClearSavedLiveMoment(sceneId,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());
+      if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());get<HTMLInputElement>('live-moment-title').focus();}
+      get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
     }catch(error){if(current())tell((error as Error).message,true);}})();
   };
   get('adoption-plan').onchange = renderVisits;

@@ -2,6 +2,13 @@ export type LiveMomentCategory='combat'|'narrative'|'reward'|'travel'|'party'|'w
 export interface LiveMomentDraft {category:LiveMomentCategory;title:string;summary:string;followUp:''|'quest'|'rumor'}
 
 export const emptyLiveMomentDraft=():LiveMomentDraft=>({category:'world',title:'',summary:'',followUp:''});
+export const canClearSavedLiveMoment=(sceneId:string,currentSceneId:string|null,saved:LiveMomentDraft,current:LiveMomentDraft)=>sceneId===currentSceneId&&saved.category===current.category&&saved.title===current.title&&saved.summary===current.summary&&saved.followUp===current.followUp;
+export function liveMomentSavedMessage(followUp:LiveMomentDraft['followUp'],cleared:boolean,refreshProblem=false){
+  let message=followUp?`Moment gespeichert und als ${followUp==='quest'?'offene Quest':'Gerücht'} vorbereitet.`:'Moment in der Kampagnenchronik gespeichert.';
+  if(!cleared)message+=' Neuere Eingabe bleibt offen.';
+  if(refreshProblem)message+=' Wissensbinder bei Bedarf aktualisieren.';
+  return message;
+}
 
 export class LiveMomentDraftBook {
   private drafts=new Map<string,LiveMomentDraft>();
@@ -16,5 +23,5 @@ export class LiveMomentDraftBook {
     this.currentSceneId=sceneId;
     return{changed:true,draft:sceneId?structuredClone(this.drafts.get(sceneId)??emptyLiveMomentDraft()):emptyLiveMomentDraft()};
   }
-  saved(sceneId:string){this.drafts.delete(sceneId);}
+  saved(sceneId:string,submitted?:LiveMomentDraft){const cached=this.drafts.get(sceneId);if(!submitted||cached&&JSON.stringify(cached)===JSON.stringify(submitted))this.drafts.delete(sceneId);}
 }

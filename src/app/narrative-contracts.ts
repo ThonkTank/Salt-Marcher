@@ -22,6 +22,8 @@ export interface NarrativeAward {
   recordedAt: string;
 }
 export interface NarrativeDraft {
+  /** Absent on historical drafts; approval requires explicit review of that basis. */
+  noteRevision?: number;
   noteId: string;
   writeId: string;
   revision: number;
