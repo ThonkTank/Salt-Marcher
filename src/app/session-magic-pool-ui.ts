@@ -5,8 +5,7 @@ export function magicPoolPicker(
   tell: (text: string, error?: boolean) => void,
   onEnable: () => void,
 ) {
-  const host = document.getElementById("session-magic-pool")!,
-    picked = new Map<
+  const picked = new Map<
       string,
       { definitionId: string; revision: number; name: string }
     >();
@@ -15,8 +14,6 @@ export function magicPoolPicker(
     contextVersion = 0,
     next: number | null = null,
     signature = "";
-  host.innerHTML =
-    '<label class="check-label"><input id="session-magic-pool-enabled" type="checkbox"> Nur meinen Gegenstandspool verwenden</label><p class="caption">Ohne Auswahl bleiben die Kontingente offen. Eine spätere Beute-Neugenerierung verwendet die gespeicherten Gegenstandsversionen dieses Pools. Eigene Änderungen am Szenenvorschlag bleiben möglich.</p><div id="session-magic-pool-selected"></div><button id="session-magic-pool-clear" type="button">Auswahl leeren</button><label>Suche <input id="session-magic-pool-search" maxlength="1000"></label><label>Seltenheit <select id="session-magic-pool-rarity"><option value="">Alle Seltenheiten</option></select></label><button id="session-magic-pool-find" type="button">Im Katalog suchen</button><div id="session-magic-pool-results"></div><button id="session-magic-pool-next" type="button" hidden>Weitere Gegenstände</button><p id="session-magic-pool-status" role="status"></p>';
   const get = <T extends HTMLElement>(id: string) =>
       document.getElementById("session-magic-pool-" + id) as T,
     mode = get<HTMLInputElement>("enabled");

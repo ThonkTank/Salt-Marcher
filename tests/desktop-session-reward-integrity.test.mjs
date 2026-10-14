@@ -38,10 +38,10 @@ test('current definition and quantity corrections update guidance without rewrit
  x.store.executeProgress(x.command({kind:'ledger',entryId:x.id,expectedRevision:1,operation:'correct',quantity:0,correctedQuantity:0,actualGold:'',counterparty:'',reason:'Menge berichtigt'}));assert.equal(x.guidance(true).magic.received.Rare,0);assert.equal(x.guidance(false).receivedCopper,'0');
 });
 
-function generateGuided(x,guided=true){
+function generateGuided(x,guided=true,magicPool){
  const plan={version:1,id:x.profile.planId,revision:1,name:'Geprüfte Annahme',scenes:[]};x.store.changePreparation({...x.command(null),change:{kind:'plan',plan,expectedRevision:null}});x.store.executeSession(x.command({kind:'profile',expectedRevision:0,profile:{...x.profile,revision:0}}));
  const table={id:randomUUID(),revision:0,scope:'campaign',name:'Goblinquelle',description:'',entries:[{creatureId:'goblin',weight:'1'}],habitats:[],time:'any',lootTableId:null,trashed:false};x.store.executeGeneration(x.command({kind:'table-save',table,expectedRevision:null}));
- const run=x.store.generateSession(x.w.token,{planId:plan.id,expectedProfileRevision:1,count:1,locationIds:[],noteIds:[],compensateMagic:guided,encounter:{tableIds:[table.id],filters:{},habitat:'',time:'any',difficulty:'medium',amount:'neutral',balance:'neutral',diversity:'neutral',xpCeiling:500}});return run;
+ const run=x.store.generateSession(x.w.token,{planId:plan.id,expectedProfileRevision:1,count:1,locationIds:[],noteIds:[],compensateMagic:guided,...(magicPool===undefined?{}:{magicPool}),encounter:{tableIds:[table.id],filters:{},habitat:'',time:'any',difficulty:'medium',amount:'neutral',balance:'neutral',diversity:'neutral',xpCeiling:500}});return run;
 }
 function acceptCommand(x,run,index=0){const revision=x.store.db.prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?').get(x.cam.id,run.planId).revision;return x.command({kind:'accept-proposal',planId:run.planId,expectedPlanRevision:revision,runId:run.id,index});}
 for(const change of ['XP','new loot','same-value correction','rarity','planning party'])test(`guided proposal rejects changed ${change} before timeline or acceptance effects`,t=>{
@@ -71,4 +71,13 @@ test('acceptance rejects a revised referenced reward definition outside the pers
 
 test('purchased items do not invalidate the effective received-loot basis of a guided proposal',t=>{
  const x=fixture(t),run=generateGuided(x);x.add(x.characters[0],'purchase',3);x.store.executeSession(acceptCommand(x,run));assert.equal(x.store.session(x.w.token,run.planId).visits.length,1);
+});
+
+for(const fault of ['revision','trashed'])test(`guided acceptance rejects changed scoped magic pool ${fault} even when no selected reward uses it`,t=>{
+ const x=fixture(t),definition=x.store.executeItemShop(x.command({kind:'definition',expectedRevision:null,definition:{...x.definition,id:randomUUID(),revision:0,name:'Seltener Poolgegenstand',rarity:'Rare'}})).definition;
+ const run=generateGuided(x,true,[{definitionId:definition.id,revision:definition.revision}]);assert.ok(run.lootGuidance.magic.pool.some(r=>r.definitionId===definition.id));assert.ok(run.proposals.every(p=>!p.reward.items.some(i=>i.reference?.definitionId===definition.id)));
+ x.store.executeItemShop(x.command({kind:'definition',expectedRevision:definition.revision,definition:{...definition,...(fault==='revision'?{name:'Geänderte Poolquelle'}:{trashed:true})}}));const command=acceptCommand(x,run),bytes=x.store.db.serialize();assert.throws(()=>x.store.executeSession(command),/Poolauswahl/);assert.ok(bytes.equals(x.store.db.serialize()));assert.equal(x.store.sessionRun(x.w.token,run.id).proposals[0].acceptedVisitId,null);
+});
+test('unchanged scoped magic pool and reward basis accept after Fresh and independent copy',async t=>{
+ const x=fixture(t),run=generateGuided(x,true,[{definitionId:x.definition.id,revision:x.definition.revision}]);x.store.close();x.store=new CampaignStore(x.filename);x.w=x.store.activate(x.cam.id);const snapshot=path.join(x.root,'pool.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const bytes=readFileSync(snapshot),copy=x.store.acceptCampaignSnapshot(snapshot,'Poolkopie',{});x.cam=copy;x.w=x.store.activate(copy.id);const row=x.store.db.prepare('SELECT id FROM session_run WHERE campaign_id=?').get(copy.id),copied=x.store.sessionRun(x.w.token,row.id);assert.deepEqual(copied.lootGuidance.magic.pool,run.lootGuidance.magic.pool);x.store.executeSession(acceptCommand(x,copied));assert.equal(x.store.session(x.w.token,copied.planId).visits.length,1);assert.ok(bytes.equals(readFileSync(snapshot)));
 });

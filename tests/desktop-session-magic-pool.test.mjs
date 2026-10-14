@@ -1,4 +1,5 @@
 import test from "node:test";
+import {readFileSync} from "node:fs";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { buildSync } from "esbuild";
@@ -29,7 +30,7 @@ function fixture(t) {
       document: globalThis.document,
       CSS: globalThis.CSS,
     },
-    dom = parseHTML('<div id="session-magic-pool"></div>');
+    dom = parseHTML(readFileSync("src/app/index.html","utf8"));
   Object.assign(globalThis, {
     window: dom.window,
     document: dom.document,

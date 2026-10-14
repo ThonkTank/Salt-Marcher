@@ -387,6 +387,7 @@ export function assertSessionRewardBasisCurrent(
       throw new Error(
         "Beutevorschlag besitzt keine prüfbare Grundlage. Vorschau neu erzeugen; gespeicherte Inhalte bleiben erhalten.",
       );
+    if(prior.magic?.pool)checkedMagicPool(db,prior.magic.pool);
     const current = sessionLootGuidance(
       db,
       cam,

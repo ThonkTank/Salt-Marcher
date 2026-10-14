@@ -51,8 +51,11 @@ belegen beschädigte Daten, atomaren Generatorrollback, Weitergaben mit Verkauf,
 Käufe, Definition-/Mengenkorrekturen, Überschuss, Fresh und unabhängige Kopie.
 Quellpaket und vorhandene Sicherungen bleiben unverändert.
 
-Vollständige Regel-/Profilherleitung, Quellenbindungen, Annahme nach geänderter
-Ledgerbasis und native Bedien-/Prozessabbruchprüfung bleiben offen. Magische
+Vor Übernahme werden XP, Ledger, Definitionen, Preset und der gewählte
+Pool erneut geprüft. Eigene Rewardbearbeitung umgeht diese Prüfung nicht.
+
+Vollständige Regel-/Profilherleitung, vollständige Quellenbindungen
+und native Bedien-/Prozessabbruchprüfung bleiben offen. Magische
 Werte werden im Gold-only-Modus monetär, im kombinierten Modus nach Seltenheit
 berücksichtigt. Diese Moduskopplung braucht eine ausdrückliche Fachentscheidung
 gegen das versionierte Profil, bevor bestehende Vorschläge umgedeutet werden.
@@ -73,6 +76,10 @@ Planungspartyrevision und, bei automatischem Ausgleich, an den erneut gelesenen
 Fortschritts-/XPstand, die effektiven Credits/Magiezahlen, Preset und
 aufgezeichnete Ledger-/Definitionsrevisionen. Die tatsächlich ausgewählten
 Rewardreferenzen müssen noch derselben verfügbaren Katalogrevision entsprechen.
+Ein ausdrücklich gewählter Magiebeutepool wird ebenfalls vollständig mit
+`checkedMagicPool` erneut geprüft. Das betrifft auch aktuell nicht verteilte
+Poolgegenstände: geänderte Revision oder Papierkorb invalidiert diese
+Quellenauswahl, statt sie bei der Annahme stillschweigend zu verkleinern.
 Die Prüfung läuft vor Timeline-/Gruppen-/Reward-/Acceptancewirkungen im
 bestehenden Writer. Sie ersetzt keine Items, ändert keine Budgets und schreibt
 keine älteren Vorschläge um. Bestätigungsreplay und bereits angenommene Inhalte
@@ -88,6 +95,27 @@ XPänderung, unbeeinflusste andere Figuren/Käufe und der ungeführte manuelle
 Vorschlag bleiben wirksam. Ein eigener Gegenbefund am neuen Prüfweg zeigte
 zunächst unnötige Invalidierung durch einen Kauf; die Eingabebasis zählt jetzt
 nur Rewardwurzeln. Native Interaktion und gesamte Guidanceabnahme bleiben offen.
+
+Drei zusätzliche Poolproben belegen Zurückweisung geänderter oder entfernter,
+aktuell nicht verteilter Poolquellen ohne Teilwirkungen sowie gültige Annahme
+mit unverändertem Pool nach Fresh und unabhängiger Kopie. Zwei Gegenproben
+scheiterten vor diesem Integrationsanschluss an der fehlenden Zurückweisung.
+
+Die Integration des Pools zeigte zusätzlich einen offenen SQLite-Iterator,
+der bereits bei erfülltem Ziel ohne Kandidatenbedarf erzeugt wurde. Er blockierte
+den Commit des Sessiongenerators. `fitMagicItems` öffnet den Iterator jetzt erst
+innerhalb des tatsächlichen Kandidatenwegs. Die bestehende gültige
+Generator-/Annahmeprobe deckt diesen Fall mit bereits ausreichender Beute ab.
+Die festen Pool- und Vorschlagsformulare liegen in `index.html`; die Picker/
+Editoren binden Verhalten und Katalogergebnisse daran, statt ganze Formulare
+und Dialoge nachträglich zu erzeugen.
+Bestehende Storeproben werden unverändert mitgeprüft. Die Session-DOMfixture
+benötigt inzwischen die echten Aktionsbeschriftungen statt alter Buttonpositionen
+und die hinzugekommenen NPC-/Quellenreader in ihrer Storefacade. Eine externe
+Testkopie ergänzt ausschließlich diese Anschlüsse; die bestehenden Assertions
+und die fremde ursprüngliche Testdatei bleiben erhalten. Dies qualifiziert den
+aktuellen lokalen Ablauf, nicht einen unverändert grünen Gesamttestlauf oder
+eine native Bedienabnahme.
 
 ## Nächste ausführbare Schritte
 

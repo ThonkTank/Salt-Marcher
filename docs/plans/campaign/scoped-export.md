@@ -48,6 +48,33 @@ Zusammen mit Installations-/DOM- und Campaignintegritäts-/Annahmeprüfungen:
 für einen laufenden Extensionprovider, vollständige Medientransfers, Hard-Crash,
 Dateisystem-Durabilität unter Stromverlust oder die erforderlichen Plattformen.
 
+## Erhaltene Referenzmetadaten ohne Provider
+
+Der allgemeine Core-Remapper interpretierte auch `campaign_capability.references_json`:
+`token` wurde durch einen Aktivierungstext ersetzt, serialisierter `payload` als
+Core-JSON geöffnet und ein begleitender `checksum` neu berechnet. Bei fehlendem
+Provider gibt es keine fachliche Autorität für diese Umdeutung. Drei Copyproben
+zeigten tatsächlich geänderte Metadaten trotz unveränderter Bodybytes.
+
+`campaign-data.walkCapabilityReferences` verwendet nun für Ermittlung und
+Umschreibung ausschließlich die vorhandenen Legacy-Referenzslotnamen. Bekannte
+IDs und Listen werden weiterhin auf lokale bzw. gemeinsame Kopieziele gebunden.
+Providerzeichenketten und bestehende opaque Payload-/Config-/Medien-/
+Quellfelder bleiben opaque: kein Öffnen eingebetteter JSONstrings,
+kein Tokenersatz, keine Neuberechnung darin enthaltener Prüfsummen und keine
+automatisch eingefügten Core-Historienaliasfelder. Ein weiterer Gegenbefund
+zeigte solche Aliasergänzungen in opaque Objekten bei Definitionskonflikten. Der
+Core-Remapper für eigene Records bleibt unverändert. Bodybytes/Bodychecksum,
+Quellstore und Quellpaket werden nicht geändert.
+
+`desktop-extension-reference-transfer.test.mjs` prüft die drei Gegenbeispiele
+sowie opaque Objekt-/Quellmetadaten und einen Definitionskonflikt über Export, unabhängige Annahme und Fresh, einschließlich wirklich vorhandener
+kopierter Raumziele und fehlender lokaler Installation. Mit bestehenden
+Campaignintegritäts-/Export- und Installations-/DOMproben bestehen 63 gezielte
+Prüfungen. Das ist Originalschutz am Legacyadapter, keine Qualifikation seiner
+beliebigen Slotsemantik oder eines ausgeführten Providers. Vorhandene Records
+werden weder migriert noch zu einem geprüften neuen Unitformat erklärt.
+
 ## Ursprüngliche Ursache beim Paketfehler erhalten
 
 `desktop/zip-files.ts.readArchive` ließ nach einem fehlerhaften Manifest weitere
@@ -66,7 +93,21 @@ Cancel-/Crash-/Publish-Durabilität und Plattformabnahmen bleiben eigene Ziele.
 
 ## Nächste konkrete Lieferungen
 
-1. **Provider und Rechtebroker anschließen.** `storage/extensions.ts` und die
+1. **Konkrete Unit vor Providerzugriff schließen.** Ein eigener versionierter
+   Wegnotizvertrag in `extension-contracts.ts` und `storage/extension-units.ts`
+   muss Package-/Codecbindung, Unit-/Campaignidentität, Revision, Bodyhash und
+   typisierte Referenzslots gemeinsam binden. Der Ort ist ein benannter lokaler
+   Slot; Titel, öffentlicher Text und GM-Notiz bleiben Inhaltsfelder. Im Body
+   genannte kanonische IDs verleihen keinen Zugriff. Erst der Core prüft, ob der
+   deklarierte Ort zur aktiven Kampagne gehört. Neue Units bekommen einen
+   ausdrücklichen Formathinweis; vorhandene `campaign_capability`-Records bleiben
+   unverifizierte Legacydaten. Reader, Writer, Backup, Copy und Erasure müssen
+   dieselbe konkrete Closure kennen. Copy remappt ausschließlich deklarierte
+   Slots und erstellt die neue Gesamtbindung; opaque Bodybytes bleiben exakt.
+   Kleinste Abnahme: gültige Wegnotiz, geänderter Header/Slot bei gültigem
+   Bodyhash, fremder Ort, fehlender Codec nach Fresh sowie unabhängige Kopie.
+   Fehler erhalten die Originalunit und sperren nur deren operativen Zugriff.
+2. **Provider und Rechtebroker anschließen.** `storage/extensions.ts` und die
    privilegierte Hostgrenze benötigen vor jedem Unitread/-write die aktuelle
    Package-/Grantgeneration, den Kampagnencontext und eigene Unitowner. Die erste
    Installation allein bietet noch keinen operativen Codec oder ausgeführten
@@ -75,14 +116,14 @@ Cancel-/Crash-/Publish-Durabilität und Plattformabnahmen bleiben eigene Ziele.
    Antworten vor einer Wirkung. Fehler deaktivieren nur den betroffenen Provider.
    Kleinste Abnahme: eigene Wegnotiz anlegen, Fresh, Widerruf während laufendem
    Auftrag, fremdes Ziel ablehnen und Originalbytes bei fehlendem Codec bewahren.
-2. **Abschluss des Datenwegs prüfen.** Hostexport/-import mit Audio und Playerart,
+3. **Abschluss des Datenwegs prüfen.** Hostexport/-import mit Audio und Playerart,
    Cancel, Fullcopy/Subset und unabhängiger Annahme gegen dieselbe Scope-/Fencegrenze
    prüfen. Unterbrochene eigene temporäre Kopien beim Start bereinigen, ohne fremde
    Dateien zu berühren. Verlust der Antwort vor/nach Publish muss gezielt lesbar
    geklärt werden; keine automatische Wiederholung oder Rechteübernahme. Ein
    Fehler nach Rename, aber vor bestätigtem Verzeichnissync, ist ein ungeklärter
    Ausgabestand; das tatsächliche Ziel muss gelesen werden.
-3. **Reale Fehler- und Plattformabnahme.** Schreib-/Rename-/Syncfehler,
+4. **Reale Fehler- und Plattformabnahme.** Schreib-/Rename-/Syncfehler,
    fehlenden Speicherplatz und kontrollierten Prozessabbruch am fertigen Paketweg
    prüfen. Linux-/Windows-/macOS-Dateisysteme und die native Bedienung bleiben
    eigene Nachweise. Ein vorhandener gültiger Export wird vor verifiziertem
