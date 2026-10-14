@@ -113,6 +113,7 @@ export type ProgressAction = GroupAction|NarrativeAction|TreasuryAction
   | { kind: 'xp'; characterId: string; expectedRevision: number; mode: 'add' | 'subtract' | 'set'; amount: number; reason: string; correctionOf?: string }
   | { kind: 'rest'; rest: 'short' | 'long'; recipients: ProgressGuard[];restoreHp?:boolean;scene?:{id:string;expectedMembershipRevision:number;expectedClockRevision:number;expectedFocusRevision:number;amount:number;unit:TimeUnit} }
   | { kind: 'treasure'; title: string; sceneId: string | null; items: ItemInput[] }
+  | {kind:'allocate-batch';treasureId:string;expectedRevision:number;allocations:{itemId:string;expectedDefinitionRevision:number;quantity:number;characterId:string;expectedMembershipRevision:number}[]}
   | { kind: 'allocate'; treasureId: string; expectedRevision: number; expectedDefinitionRevision: number; itemId: string; quantity: number; characterId: string; expectedMembershipRevision: number }
   | { kind: 'manual-item'; characterId: string; expectedMembershipRevision: number; origin: 'award' | 'purchase' | 'manual'; item: ItemInput; note: string }
   | { kind: 'ledger'; entryId: string; expectedRevision: number; operation: 'sold' | 'given' | 'correct'; quantity: number; actualGold: string; counterparty: string; correctedQuantity?: number;counterpartyLink?:LedgerItem['counterpartyLink']; reason: string }
