@@ -59,6 +59,10 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Persistente Reise | Vorschau/Annahme, Abschnitte, Pause/Fortsetzen, Grenze und Ende | Eine Reise wirklich fortsetzen |
 | Kalender und Ereignisse | Kalenderregeln sowie einmalige/wiederkehrende örtliche Ereignisse | Kalender und örtliche Ereignisse |
 | Wetter | bewegte Wettergebiete, gruppengebundener GM-Override und Freigabe | Wetter entwickeln und ausdrücklich vorgeben |
+| Musikbibliothek | lokale Medienaufnahme, Suche, Beschreibung/Kopie, Stimmungsachsen sowie abbrechbarer Export und Import samt Medien | Lokale Musik und Umgebungs-Sounds |
+| Musiktransport | großer und kleiner Player, Position, Einstellungen, Queue, Loop, Stopp und Automatikfreigabe | Manuelle Wiedergabe hat Vorrang |
+| Scene-Musik und Ambience | gruppengebundene Scene-Regler, Weltquellen, Wetter-/Umweltlayer sowie manuelles Hinzufügen, Unterdrücken und Freigeben | Musik und Wetter zur Gruppe passen lassen |
+| Live-Soundboard | gemeinsamer Transport, Kampagnenfavoriten, Bibliotheksauswahl und Mehrfach-Queue am Spieltisch | Den Spielabend direkt am Tisch vertonen |
 | Live-Regeln | dynamisches Regelpanel und d20-Probenformular | Regelreferenzen und Proben bei der Gruppe halten |
 | Erweiterter Dungeon | 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
 
