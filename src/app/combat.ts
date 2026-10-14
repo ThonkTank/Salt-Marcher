@@ -247,6 +247,7 @@ function lock() {
   const concentrationPending=!!view?.combat?.participants.some(p=>p.concentrationChecks?.length);
   for(const id of ['combat-start','combat-next','combat-finish'])get<HTMLButtonElement>(id).disabled=blocked()||concentrationPending;
   get<HTMLButtonElement>('fighter-remove').disabled=blocked()||!fighter||!!fighter.concentrationChecks?.length;
+  get<HTMLButtonElement>('fighter-visibility').disabled=blocked()||!fighter||!!fighter.characterId;
   get<HTMLInputElement>('fighter-concentration').disabled=blocked()||!!fighter?.concentrationChecks?.length;
   for(const result of ['roll','success','failure','natural-20','natural-1','stabilize','dead'] as const)get<HTMLButtonElement>('fighter-death-'+result).disabled=deathUnavailable||deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').disabled=deathUnavailable||!deathControls.reset;
@@ -281,7 +282,7 @@ function render() {
     if (p.id === combat!.turnId && combat!.phase === 'running') tr.classList.add('current-turn');
     const name = document.createElement('td'), choose = document.createElement('button');
     choose.textContent = p.name; choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
-    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; name.append(tag); tr.append(name);
+    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : (combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative')+(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); name.append(tag); tr.append(name);
     const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
     for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:'',p.timedEffects?.map(effect=>effect.name+' '+effect.remaining+'R').join(', ')].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
     body.append(tr);
@@ -317,7 +318,7 @@ function renderEditor() {
   get('fighter-death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':(death?.successes??0)+' Erfolge · '+(death?.failures??0)+' Fehlschläge'+(p?.deathLast?.roll!==null&&p?.deathLast?.roll!==undefined?' · letzter Wurf '+p.deathLast.roll:'');
   get<HTMLDetailsElement>('fighter-death-other').open=deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').hidden=!deathControls.reset;
-  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id;renderConditionShortcuts(p,source);renderTimedEffects(p);get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});
+  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id;renderConditionShortcuts(p,source);renderTimedEffects(p);const visibility=get<HTMLButtonElement>('fighter-visibility');visibility.hidden=!p||!!p.characterId;visibility.disabled=blocked();visibility.textContent=p?.hiddenFromPlayers?'Auf Spieleranzeige zeigen':'Auf Spieleranzeige verbergen';get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});
 }
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes},matches=d.kind==='fighter'&&basis?fighterDraftBasisMatches(d.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(d.basis);return matches?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
@@ -368,6 +369,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-concentration-pass').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration',participantId:actor.id,success:true});};
   get('combat-concentration-fail').onclick=()=>{const actor=view?.combat?.participants.find(p=>p.concentrationChecks?.length);if(actor)void execute({kind:'concentration',participantId:actor.id,success:false});};
   get('fighter-remove').onclick = () => { if (selected) void execute({ kind: 'remove', participantId: selected }); };
+  get('fighter-visibility').onclick=()=>{const p=view?.combat?.participants.find(actor=>actor.id===selected);if(p&&!p.characterId)void execute({kind:'visibility',participantId:p.id,hidden:!p.hiddenFromPlayers});};
   get('combat-notes-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'notes', title: value('combat-edit-title'), notes: value('combat-notes') },draftRevision(notesDraft())); };
   get('combat-finish').onclick = () => { void (async () => { try { const gen = generation; await prepareFinish(view?.combat?.participants.map(p => p.characterId).filter((id): id is string => !!id) ?? [], view?.assessment); if (gen !== generation) return; get<HTMLDialogElement>('combat-finish-dialog').showModal(); get('combat-outcome').focus(); } catch (error) { tell((error as Error).message, true); } })(); };
   get('combat-finish-cancel').onclick = () => get<HTMLDialogElement>('combat-finish-dialog').close();
