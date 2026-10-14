@@ -65,6 +65,11 @@ async function execute(action:SessionAction){
    committed=true;
    if(gen!==generation)return false;
    view=result;
+   if(action.kind==='replace-plan'){
+    profileDirty=visitDirty=false;groupDrafts.clear();profileDraft=structuredClone(result.profile);visitDraft=null;run=null;previewRequest++;renderRun();get('session-history').replaceChildren();
+    replacement=null;get<HTMLDialogElement>('plan-replacement-dialog').close();
+    await refreshBase();if(workspace?.token===token&&plan?.id===ownerPlan)await load();tell('Plan ersetzt. Angenommene Weltinhalte bleiben erhalten.');return true;
+   }
    if(action.kind==='profile'){
     const latest=profileDraft;
     profileDirty=!!latest&&JSON.stringify({...latest,revision:action.profile.revision})!==JSON.stringify(action.profile);
@@ -96,7 +101,8 @@ async function execute(action:SessionAction){
 }
 const lockedControls=new WeakMap<HTMLInputElement|HTMLSelectElement|HTMLButtonElement,boolean>();
 function lock(on:boolean){
- for(const id of ['session-panel','visit-preparation'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
+ get<HTMLButtonElement>('plan-replace').disabled=on||!workspace||!plan;
+ for(const id of ['session-panel','visit-preparation','plan-replacement-dialog'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
   if(on){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
   else if(lockedControls.has(c)){c.disabled=lockedControls.get(c)!;lockedControls.delete(c);}
  }
@@ -272,7 +278,34 @@ async function confirmStoryAward(){
   }
  }catch(error){if(storyAward===basis&&sameVisit(basis.owner,basis.visitId))tell((error as Error).message,true);}
 }
+let replacement:{owner:PreviewOwner;target:SessionView;source:SessionView|null}|null=null, replacementRequest=0;
+async function replacementSource(){
+ const preview=replacement;if(!preview)return;const n=++replacementRequest,id=value('plan-replacement-source');get<HTMLButtonElement>('plan-replacement-confirm').disabled=true;
+ const source=id?unwrap(await window.campaign.session(preview.owner.token,id)):null;
+ if(replacement!==preview||n!==replacementRequest||!ownsPreview(preview.owner))return;
+ preview.source=source;get<HTMLInputElement>('plan-replacement-name').value=sources?.plans.find(p=>p.id===id)?.name??'';
+ get<HTMLInputElement>('plan-replacement-party').disabled=!source;if(!source)get<HTMLInputElement>('plan-replacement-party').checked=false;
+ get('plan-replacement-summary').textContent='Bisher: '+preview.target.visits.length+' Besuche. Danach: '+(source?.visits.length??0)+' Besuche und '+(source?.groups.length??0)+' vorbereitete Gruppen.';
+ get<HTMLButtonElement>('plan-replacement-confirm').disabled=false;
+}
+async function openReplacement(){
+ const owner=previewOwner();if(!owner||!await flushSession()||!await flushBase()||!ownsPreview(owner))return;
+ const target=unwrap(await window.campaign.session(owner.token,owner.planId));if(!ownsPreview(owner))return;replacement={owner,target,source:null};
+ const select=get<HTMLSelectElement>('plan-replacement-source');select.replaceChildren();option(select,'','Leere Timeline');for(const p of sources?.plans??[])option(select,p.id,(p.name||'Unbenannter Plan')+(p.id===owner.planId?' · aktuellen Plan wiederverwenden':''));
+ get<HTMLInputElement>('plan-replacement-party').checked=false;await replacementSource();get<HTMLDialogElement>('plan-replacement-dialog').showModal();
+}
+export async function clearSessionTimeline(){
+ const owner=previewOwner();if(!owner||!await flushSession()||!await flushBase()||!ownsPreview(owner)||!plan)return false;
+ const target=unwrap(await window.campaign.session(owner.token,owner.planId));if(!ownsPreview(owner)||!target.replacementBasis)return false;
+ return execute({kind:'replace-plan',planId:owner.planId,expectedBasis:target.replacementBasis,name:plan.name,sourcePlanId:null,expectedSourceBasis:null,copyParty:false});
+}
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){tell=status;flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
+ const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
+ get('plan-replace').onclick=()=>report(openReplacement);get('plan-replacement-source').onchange=()=>report(replacementSource);
+ get('plan-replacement-cancel').onclick=()=>{replacement=null;replacementRequest++;get<HTMLDialogElement>('plan-replacement-dialog').close();};
+ get<HTMLDialogElement>('plan-replacement-dialog').addEventListener('cancel',()=>{replacement=null;replacementRequest++;});
+ get('plan-replacement-form').onsubmit=e=>{e.preventDefault();report(async()=>{const preview=replacement;if(!preview||!ownsPreview(preview.owner)||!preview.target.replacementBasis)return;const id=value('plan-replacement-source');if(id&&!preview.source?.replacementBasis)return;await execute({kind:'replace-plan',planId:preview.owner.planId,expectedBasis:preview.target.replacementBasis,name:value('plan-replacement-name'),sourcePlanId:id||null,expectedSourceBasis:preview.source?.replacementBasis??null,copyParty:get<HTMLInputElement>('plan-replacement-party').checked});});};
+
  for(const id of ['session-fraction','session-seed'])get(id).oninput=()=>{if(profileDraft){profileDraft.adventureDayFraction=value('session-fraction');profileDraft.seed=value('session-seed');profileDirty=true;scheduleSession('Planungseingabe offen.');budget();}};get('session-profile-form').onsubmit=event=>{event.preventDefault();void flushSession();};get('session-free-party').onclick=()=>{if(profileDraft){profileDraft.party.push({id:crypto.randomUUID(),name:'Geplante Figuren',level:null,count:1});profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();}};
  get('visit-read-aloud').oninput=()=>{if(visitDraft){visitDraft.readAloud=value('visit-read-aloud');scheduleVisit();}};
  get('visit-attach').onclick=()=>{void attachEncounter();};
