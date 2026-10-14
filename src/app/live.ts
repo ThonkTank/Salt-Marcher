@@ -134,7 +134,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
     try {
       const ack = unwrap(await window.campaign.executeLive(command));
       if (context?.token !== token) return null;
-      if(action.kind==='live-moment'&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
+      if((action.kind==='live-moment'||action.kind==='scene-content')&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
       mergeAck(ack, action); tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;

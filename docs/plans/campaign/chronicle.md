@@ -78,7 +78,12 @@ geleert. Drei kontrollierte DOM-/SQLiteproben in
 `desktop-live-moment-context.test.mjs` prüfen ursprünglichen Wortlaut samt CRLF,
 Fokuswechsel während Flush und spätere Antwort mit weiter nutzbarer neuer Scene.
 
-Die Momentfelder sind noch temporäre Eingaben. Nächster Anschluss: Rohfelder
+Die Momentfelder liegen jetzt in einem temporären Rendererbestand je Scene;
+Fokuswechsel erhält die jeweilige Eingabe, Campaignwechsel setzt den Bestand
+zurück. Ein bestätigter Moment entfernt nur die tatsächlich gesendete Fassung
+aus diesem Bestand; spätere Texte bleiben erhalten. Auch eine verspätete
+Scene-Content-Antwort darf die neuere Fokusprojektion nicht ersetzen. Das
+ist noch keine persistierte Wiederaufnahme. Nächster Anschluss: Rohfelder
 an Campaign und Ursprungsscene binden, vor Contextwechsel/Fresh sichern und
 nach einem nicht eindeutig bestätigten Command dessen Status prüfen. Einen
 unbekannten Ausgang nicht durch erneutes Festhalten verdoppeln. Native IME,
