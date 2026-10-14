@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
@@ -20,6 +20,7 @@ function splitFixture(){
 }
 
 const enableAutomaticMusic=(f:ReturnType<typeof splitFixture>)=>f.store.executeMusic({commandId:'music-settings',campaignId:f.campaignId,token:f.token,action:{kind:'settings',expectedRevision:0,autoplay:true,autoAmbience:true,volume:.7,ambienceVolume:.3,fadeSeconds:2,loop:'none'}});
+function addRainAmbience(f:ReturnType<typeof splitFixture>){const bytes=Buffer.from('rain ambience fixture'),sha256=createHash('sha256').update(bytes).digest('hex'),directory=join(f.root,'audio');mkdirSync(directory,{recursive:true});writeFileSync(join(directory,sha256+'.ogg'),bytes);const asset=f.store.ingestAudio(f.token,{sha256,extension:'.ogg',bytes:bytes.length,mime:'audio/ogg',originalName:'regen.ogg'});f.store.executeMusic({commandId:'rain-ambience',campaignId:f.campaignId,token:f.token,action:{kind:'asset',expectedRevision:asset.revision,asset:{...asset,kind:'ambience',vibes:['Regen']}}});return asset.id;}
 
 test('automatic music follows the focused scene clock rather than another scene future',()=>{
   const f=splitFixture();
@@ -47,8 +48,9 @@ test('automatic music follows the focused scene clock rather than another scene 
 test('damaged focused weather cannot rewrite the last valid automatic music state',()=>{
   const f=splitFixture(),weather:Weather={label:'Regen am Hafen',kind:'rain',intensity:.5,windKmh:20,effects:{visibilityMeters:3500,travelFactor:1.2,perception:'Regen',temperatureC:12,ambience:['Regen'],combatNote:''},source:'GM'};
   try{
+    const rainId=addRainAmbience(f);
     f.store.executeWorld({commandId:'weather',campaignId:f.campaignId,token:f.token,action:{kind:'weather-override',sceneId:f.primaryId,expectedClockRevision:0,weather}});
-    const before=enableAutomaticMusic(f).state;
+    const beforeView=enableAutomaticMusic(f),before=beforeView.state;assert.deepEqual(beforeView.layers.map((layer:{assetId:string})=>layer.assetId),[rainId]);
     const db=(f.store as unknown as {db:any}).db,payload=JSON.stringify({weather});
     db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='weather-override' AND id=?").run(payload,createHash('sha256').update(payload+'-damaged').digest('hex'),f.campaignId,f.primaryId);
 
@@ -60,5 +62,6 @@ test('damaged focused weather cannot rewrite the last valid automatic music stat
     assert.equal(after.state.revision,before.revision);
     assert.equal(after.state.contextSignature,before.contextSignature);
     assert.deepEqual(after.state.queue,before.queue);
+    assert.deepEqual(after.layers.map((layer:{assetId:string})=>layer.assetId),[rainId]);
   }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
