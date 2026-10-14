@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {enqueuePendingDamage,retainPendingAttack} from '../../src/app/combat';
+import {enqueuePendingDamage,retainPendingAttack,hasCombatCondition,setCombatCondition} from '../../src/app/combat';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
   const damage=(id:string)=>({check:{id} as any,combatId:'combat',attackerId:'attacker'});
@@ -16,4 +16,12 @@ test('a second statblock attack cannot replace an unresolved attack',()=>{
   const first={actionId:'scimitar'},second={actionId:'shortbow'};
   assert.equal(retainPendingAttack(null,first),first);
   assert.equal(retainPendingAttack(first,second),first);
+});
+
+test('condition shortcuts preserve free notes and recognize catalog language',()=>{
+  const added=setCombatCondition('Fluch des Sehers; Poisoned','Liegend','Prone',true);
+  assert.equal(added,'Fluch des Sehers, Poisoned, Liegend');
+  assert.equal(hasCombatCondition(added,'Vergiftet','Poisoned'),true);
+  assert.equal(setCombatCondition(added,'Vergiftet','Poisoned',false),'Fluch des Sehers, Liegend');
+  assert.equal(setCombatCondition(added,'Liegend','Prone',true),added);
 });
