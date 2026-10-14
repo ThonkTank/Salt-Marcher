@@ -53,7 +53,7 @@ async function command(action:ChaseCommand['action'],ownerId=view?.chase?.id){
  const token=w!.token,campaignId=w!.campaign.id,sceneId=scene!.id,requestNonce=nonce,key=draftKey(),request:ChaseCommand={commandId:crypto.randomUUID(),campaignId,token,sceneId,chaseId:creating?null:c!.id,expectedRevision:creating?null:c!.revision,action};
  const current=()=>w?.token===token&&scene?.id===sceneId&&nonce===requestNonce;
  busy=true;draw();
- try{const result=checkedChaseView(await writeConfirmed('chase',request,()=>window.campaign.executeChase(request),current,{owner:'chase',token,sceneId}));if(!current())return;if(!result.chase||result.chase.sceneId!==sceneId||!creating&&result.chase.id!==c!.id)throw new Error('Buchungsantwort gehört zu einer anderen Verfolgung. Neu laden.');
+ try{const result=checkedChaseView(await writeConfirmed('chase',request,()=>window.campaign.executeChase(request),current,{owner:'chase',token,sceneId,chaseId:request.chaseId,actionKind:action.kind}));if(!current())return;if(!result.chase||result.chase.sceneId!==sceneId||!creating&&result.chase.id!==c!.id){loadError='Buchungsantwort gehört zu einer anderen Verfolgung. Neu laden.';throw new Error(loadError);}
   if(creating){el<HTMLInputElement>('chase-title').value='Verfolgungsjagd';el<HTMLInputElement>('chase-goal').value='';clearWorkInput();}
   const d=key?drafts.get(key):undefined;if(action.kind==='participant'){el<HTMLInputElement>('chase-name').value='';if(d)delete d.fields['chase-name'];}
   if(action.kind==='round'){el<HTMLInputElement>('chase-complication').value='';if(d){d.rows={};delete d.fields['chase-complication'];}}
@@ -61,7 +61,14 @@ async function command(action:ChaseCommand['action'],ownerId=view?.chase?.id){
   view=result;requestedId=result.chase.id;tell('Verfolgung gespeichert.');
  }catch(e){if(current())tell((e as Error).message,true);}finally{busy=false;draw();}
 }
-async function recovered(event:CommitResolution){const recovered=event.value as ChaseView;if(event.ref.family==='chase'&&w?.campaign.id===event.ref.campaignId&&scene&&recovered.chase?.sceneId===scene.id&&requestedId===recovered.chase.id)await load(requestedId);}
+async function recovered(event:CommitResolution){
+ if(event.ref.family!=='chase'||w?.campaign.id!==event.ref.campaignId||!scene)return;
+ const result=checkedChaseView(event.value as ChaseView),c=result.chase,meta=event.meta as {token?:string;sceneId?:string;chaseId?:string;actionKind?:string}|undefined;
+ if(!c||c.sceneId!==scene.id)return;
+ const own=meta?.token===w.token&&meta.sceneId===scene.id&&(meta.chaseId===c.id||meta.actionKind==='create');
+ if(own){const key=scene.id+':'+c.id,d=drafts.get(key);if(meta.actionKind==='round'&&d){d.rows={};delete d.fields['chase-complication'];}if(meta.actionKind==='finish')drafts.delete(key);if(requestedId===c.id){if(meta.actionKind==='round')el<HTMLInputElement>('chase-complication').value='';if(meta.actionKind==='finish')clearWorkInput();}}
+ if(requestedId===c.id||own&&meta.actionKind==='create'&&!requestedId)await load(c.id);
+}
 function syncActions(){const c=view?.chase,blocked=pending()||!ready(),closed=blocked||!c||c.status!=='running',controls=chaseActionControls({title:val('chase-title'),participantName:val('chase-name'),participantCount:c?.participants.length??0,outcome:val('chase-outcome')});el<HTMLButtonElement>('chase-start').disabled=blocked||!!c&&c.status==='running'||!controls.start;el<HTMLButtonElement>('chase-party').disabled=closed||!sceneCharacters().length;el<HTMLButtonElement>('chase-add').disabled=closed||!controls.addParticipant;el<HTMLButtonElement>('chase-round').disabled=closed||!controls.advanceRound;el<HTMLButtonElement>('chase-finish').disabled=closed||!controls.finish;}
 function draw(){
  const c=view?.chase,blocked=pending(),available=ready(),select=el<HTMLSelectElement>('chase-recent');el('chase-panel').setAttribute('aria-busy',String(loading));
