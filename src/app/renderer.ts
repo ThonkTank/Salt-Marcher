@@ -1,3 +1,4 @@
+import {bindAtlasHistoryShortcut} from './workspace-shortcuts';
 import {initPartyTopbar,activatePartyTopbar} from './party-topbar-ui';
 import {initDayCalculator,activateDayCalculator} from './adventuring-day-ui';
 import {initNpcs,activateNpcs,openNpcs,flushNpcs} from './npc-ui';
@@ -495,11 +496,7 @@ async function history(direction: 'undo' | 'redo') {
   } catch (error) { if (roomContextCurrent(token)) status((error as Error).message, true); }
 }
 el('undo').onclick = () => { void history('undo'); }; el('redo').onclick = () => { void history('redo'); };
-document.addEventListener('keydown', event => {
-  if (el('atlas').hidden) return;
-  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z' || composing || (event.target instanceof HTMLElement && ['INPUT', 'TEXTAREA'].includes(event.target.tagName))) return;
-  event.preventDefault(); void history(event.shiftKey ? 'redo' : 'undo');
-});
+bindAtlasHistoryShortcut(()=>!el('atlas').hidden,()=>composing,direction=>{void history(direction);});
 el('import').onclick = () => {
   const intent = ++activationIntent, token = workspace?.token;
   const owns = () => intent === activationIntent && token === workspace?.token && !activationJob;
