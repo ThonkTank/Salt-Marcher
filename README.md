@@ -745,3 +745,11 @@ Die laufende Szene hat ein Soundboard für Musik und Umgebungsgeräusche. „Sou
 Ein Titel startet ausdrücklich, Songs lassen sich einzeln oder als gemeinsame Auswahl vormerken, und Umgebungsgeräusche lassen sich hinzufügen, entfernen oder gegen die Automatik unterdrücken. Die Warteschlange bleibt über denselben Owner sortierbar. Favoriten, Queue und manuelle Wahl werden in den bestehenden Musikdaten gespeichert und beim Campaign-Copy/Import mit ihren Medienreferenzen erhalten. Favoriten merken verändert keine Ausgabefreigabe.
 
 Das Soundboard verwendet denselben LocalAudioPlayer und dessen manuelle Priorität wie der Musikbereich. Ein Stopp hält auch die Automatik an. Nach erneutem Öffnen bleibt die tatsächliche Ausgabe bis zum ausdrücklichen Start stumm. „Bibliothek und Musikbezug bearbeiten“ führt zu den vorhandenen Import-, Beschreibungs-, Lautstärke- und Szenenreglern. Die GM-Mappe kann dabei am Spieltisch geöffnet bleiben.
+
+### Desktopstand 0.67: Übergabe an den nächsten Spielabend
+
+Der Abschluss trennt den Rückblick auf das Geschehene von der Vorbereitung des nächsten Einstiegs. Aus laufenden Kämpfen und Verfolgungen, unverteilten Schätzen, fehlender XP-Abrechnung sowie der aktuellen Gruppe und ihrem Ort entsteht eine editierbare Übergabe. Der GM kann offene Punkte weiterhin direkt öffnen und danach in denselben Abschlussentwurf zurückkehren.
+
+Rückblick und Übergabe werden gemeinsam mit dem bestätigten Endmarker gespeichert. Die letzte Übergabe bleibt am Spieltisch sichtbar, auch nachdem der nächste Abend begonnen hat. Chronik, Suche und Markdownausgabe führen sie als eigenen Abschnitt; ältere Marker ohne Übergabe bleiben unverändert lesbar.
+
+Der Dungeon-Binder (0.68) ist über Karte und Dungeon leiten erreichbar. Er durchsucht sämtliche Raum- und Vorlagentexte sowie platzierte Fallen/Inhalte, filtert Dungeon/Geschoss und zeigt GM-Key, Geheimnishinweise, Attribute, Verbindungen und bestehende Fallenstände. Raumlinks blättern im Binder; Reiseziel/Keybearbeitung führen in die bestehenden Besitzer. Die öffentliche Textvorschau ist eine GM-Lesehilfe, keine neue Spielerfreigabe. Lesen verändert weder Gruppenposition noch Uhr, Entdeckung, Charges, XP oder Beute.
