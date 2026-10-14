@@ -80,12 +80,13 @@ Produktabnahme. Bedienung, Grenzen und nächste Schritte stehen in den verlinkte
 | Weltwissen | NPCs, Fraktionen, Quests, Gerüchte und Regeln mit Beziehungen, Ort und getrennten GM-/Vorlesetexten. Gemeinsame Schnellsuche für Welt, Regeln, Kreaturen, Gegenstände und Begegnungen. Quest-/Gerüchtjournal mit Status und bestehenden Belohnungsabläufen. Live-Suche bevorzugt Verweise des aktuellen Besuchs; Vorlesetext wird in den GM-Entwurf übernommen. |
 | Encounter | Katalog-, Orts-, Fraktions- und Tabellenfilter, endlicher Weltbestand, verbindliche/exkludierte NPCs und benannte Gegner. Vorbereitung, Vorschauübernahme und laufende Initiative bleiben getrennte Schritte. |
 | Wiederaufnahme | Übergabe, Gruppen, laufende Szenen und unverteilte Beute gemeinsam ansehen; für eine gewählte Gruppe den nächsten Abend beginnen. |
-| Spielabendplanung | Besuchsfolge manuell bearbeiten oder erzeugen; Vorschläge durchsuchen, bearbeiten, verwerfen und einzeln oder gemeinsam nach Vorschau übernehmen. Gruppen platzieren, vorhandene Figuren auswählen, Plan ersetzen oder wiederverwenden; akzeptierte Weltfiguren und offene Eingaben bleiben erhalten. |
+| Spielabendplanung | Besuchsfolge manuell bearbeiten oder erzeugen; Vorschläge durchsuchen, bearbeiten, verwerfen und einzeln oder gemeinsam nach Vorschau übernehmen. Für den nächsten Abend nächste Besuche und offene Quests/Gerüchte anzeigen. Gruppen platzieren, vorhandene Figuren auswählen, Plan ersetzen oder wiederverwenden; akzeptierte Weltfiguren und offene Eingaben bleiben erhalten. |
 | Spielabendmappe | Besuchsfolge im Planner oder angedockt am Spieltisch mit Wortlaut, Orten, Weltverweisen, Statblocks, Belohnungen und den fünf neuesten Übernahmen durchsuchen und als Markdown ausgeben. Quellenänderungen verlangen Aktualisierung vor Export. |
 | Besuchsergebnisse | Besuch für die Fokusgruppe über Vorschau übernehmen; Ergebnis als abgeschlossen, übersprungen oder wieder offen bestätigen. Chronik erhält frühere Ergebnisse. Erneute Übernahmen sind eigene Durchläufe. Offene Ergebnisfelder bleiben nur im aktuellen Prozess erhalten. |
 | Party und Szenen | Roster, Teilnahme, Gruppenteilung, Fokuswechsel, freie Kampf-/Verfolgungsmasken und Archivierung. Wiederherstellen erhält die Figur und aktiviert sie nicht automatisch. |
 | Fortschritt und Rast | Adventure-Day-Rechner, gemeinsame XP-/Belastungsabrechnung mit Vorschau und getrennten Empfängern; Rast, Szenenzeit und Erholung gemeinsam bestätigen. Manuelle XP-Korrekturen erhalten Rast-/Belastungsfakten, Abzug endet bei 0. |
 | Beute und Gegenstände | Manuelle Quest-/Gerüchtebelohnungen, kumulierter Gold-/Magiebeuteausgleich, Katalogauswahl, Schätze vorbereiten/platzieren, unterbrochene Verteilung fortsetzen, Mengen teilen/zusammenführen und ausdrücklich weitergeben. |
+| Agenda | Fristen nach Fantasiedatum und Gruppenzeit suchen, planen und wiederholen; bestätigt keine neue Gruppenzeit. |
 | Reise und Weltfolgen | Ziele und bis zu 20 Wegpunkte im Atlas oder auf der Reisekarte am Spieltisch wählen, Vorschau prüfen und Reise bestätigen. Abschnitte, Pause, Fortsetzen und Abbruch verwenden dieselbe Gruppenzeit; Shops, Kalender und Wetter hängen daran. Offene Routeneingaben sind lokale Entwürfe. |
 | Spieleranzeige | Getrenntes passives Fenster für ausdrücklich freigegebene Ortsbilder, NPC-Porträts, Handouts und gefilterte Dungeongeometrie; Blank jederzeit. Keine Übernahme privater Notizen, Kampf-/Verfolgungsdaten oder Vorlesetexte. |
 | Musik und Extensions | Kontextbezogene lokale Medien und ein eng begrenzter Erweiterungsanschluss; vollständige Anforderungen, Rechte, Datenwege und offene Lieferungen im [Dokumentationsindex](docs/INDEX.md). |
@@ -104,5 +105,3 @@ jeweils ihren eigenen Nachweis. Lokale Store- und kontrollierte DOMtests belegen
 nur die dort geprüften Abläufe. Verbindlich sind die betroffenen Einträge in
 `acceptance.json` und die Fachpläne; Build, Push oder Paketierung sind keine
 Produktabnahme.
-
-Kampagnenagenda: Fristen nach Fantasiedatum und Gruppenzeit; die Vorbereitung zeigt nächste Besuche sowie offene Quests und Gerüchte. Native Abnahme dieser Abläufe bleibt offen.
