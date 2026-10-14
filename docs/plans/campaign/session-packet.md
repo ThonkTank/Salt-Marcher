@@ -42,6 +42,15 @@ oder Folgebesuch; historische Sceneinhalte bleiben erhalten. Der lokale Test
 `tests/desktop-live-visual-context.test.mjs` prüft diesen tatsächlichen
 Übernahme-/Speicherweg und erhält Autorenwortlaut ohne Playercommand.
 
+Die Besuchsübersicht am Spieltisch zeigt den Stand der Fokusgruppe. Plan- oder
+Gruppenwechsel und fehlgeschlagene Aktualisierung entfernen alte Besuchsaktionen;
+verspätete oder fremde Antworten werden verworfen. Bestätigte Ergebnisse gehören
+zur konkreten Übernahme, erscheinen in Mappe/Chronik und vergeben weder XP noch
+Beute oder Zeit. Offene Ergebnisfelder bleiben im Prozess erhalten, auch während
+einer laufenden Bestätigung; sie sind noch kein dauerhafter Entwurf.
+`tests/desktop-session-progress.test.mjs` prüft die Rendererhandler sowie echten
+Store mit Revision, Wiederholung, erneuter Öffnung und unabhängiger Kampagnenkopie.
+
 ## Nächste ausführbare Schritte
 
 1. **Vollständigkeit am Spielabend prüfen:** Eine konkrete Vorbereitung mit
