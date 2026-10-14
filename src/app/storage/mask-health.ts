@@ -23,17 +23,17 @@ export function publishCombatHealth(db:any,cam:string,state:CombatState,before?:
  }
 }
 /** Mirror shared facts into other masks; their older undo cannot reverse a later owner edit. */
-export function syncOpenMaskHealth(db:any,cam:string,exceptId?:string){
+export function syncOpenMaskHealth(db:any,cam:string,exceptId?:string,renames:ReadonlyMap<string,{before:string;after:string}>=new Map()){
  const people=new Map<string,ReturnType<typeof readProgressCharacter>>(),npcs=new Map<string,ReturnType<typeof readWorldActor>>();
  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase IN('preparing','running') ORDER BY ordinal").all(cam)){
   if(row.id===exceptId)continue;const s=decode(row);let changed=false;
   for(const actor of s.participants){const previous=json(actor);
    if(actor.characterId){if(!people.has(actor.characterId))people.set(actor.characterId,readProgressCharacter(db,cam,actor.characterId));const p=people.get(actor.characterId)!;
     if(p.health){Object.assign(actor,health(p.health));actor.healthKnown=true;}else{Object.assign(actor,status(p.combatStatus??{tempHp:0,conditions:'',concentrating:false}));actor.healthKnown=false;}
-   }else if(actor.worldActorId){if(!npcs.has(actor.worldActorId))npcs.set(actor.worldActorId,readWorldActor(db,cam,actor.worldActorId));const p=npcs.get(actor.worldActorId)!;Object.assign(actor,health(p));actor.worldActorRevision=p.revision;}
+   }else if(actor.worldActorId){if(!npcs.has(actor.worldActorId))npcs.set(actor.worldActorId,readWorldActor(db,cam,actor.worldActorId));const p=npcs.get(actor.worldActorId)!,rename=renames.get(actor.worldActorId);if(rename&&actor.name===rename.before)actor.name=rename.after;Object.assign(actor,health(p));actor.worldActorRevision=p.revision;}
    if(json(actor)!==previous)changed=true;
   }
-  if(changed){s.revision++;s.sharedNotice='HP oder Zustände wurden in einer anderen Maske oder am Weltinhalt geändert. Ältere Schritte dieser Begegnung sind nicht mehr rückgängig verfügbar.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);}
+  if(changed){s.revision++;s.sharedNotice='Name, HP oder Zustände wurden in einer anderen Maske oder am Weltinhalt geändert. Ältere Schritte dieser Begegnung sind nicht mehr rückgängig verfügbar.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);}
  }
 }
 /** PCs leave every ongoing mask as part of the same transaction as a party move. */

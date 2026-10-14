@@ -26,6 +26,7 @@ function observed(db:any){
   return{
     authoredItems:db.prepare("SELECT * FROM authored_item ORDER BY id").all(),
     campaigns:db.prepare("SELECT count(*) n FROM campaign").get().n,
+    authored:db.prepare("SELECT * FROM authored_item ORDER BY id").all(),
     definitions:db.prepare("SELECT count(*) n FROM item_definition").get().n,
     versions:db.prepare("SELECT count(*) n FROM item_definition_version").get().n,
     origins:db.prepare("SELECT count(*) n FROM campaign_origin").get().n,

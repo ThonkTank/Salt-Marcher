@@ -2,7 +2,7 @@ import {installNpcRecords,validateNpcRecords} from './npc-record';
 import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
-import {removePartyFromMasks,migrateMaskHealth} from './mask-health';
+import {removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
 import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft,validateGroups} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
@@ -795,6 +795,7 @@ export class CampaignStore {
         this.db.prepare('INSERT INTO world_note VALUES(?,?,?,0,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(campaignId, targetId, revision, payload, hash(payload));
         this.db.prepare('DELETE FROM note_search WHERE campaign_id=? AND note_id=?').run(campaignId, targetId);
         this.db.prepare('INSERT INTO note_search(campaign_id,note_id,title,body) VALUES(?,?,?,?)').run(campaignId, targetId, note.title, note.readAloud + '\n' + note.gmNotes);
+        if(oldNote?.kind==='npc'&&oldNote.title!==note.title)syncOpenMaskHealth(this.db,campaignId,undefined,new Map([[targetId,{before:oldNote.title,after:note.title}]]));
       } else if (change.kind === 'note-trash') {
         targetId = change.id;
         const old = this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, targetId);
