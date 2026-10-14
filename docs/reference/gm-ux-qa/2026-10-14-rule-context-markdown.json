@@ -1,0 +1,11 @@
+{
+  "control": "two actual local Markdown files, written and reopened independently; no editor timing or human speed claim",
+  "Hafen": [
+    "Festhalten",
+    "Deckung"
+  ],
+  "Keller": [
+    "Sichtschutz"
+  ],
+  "independentRoundTrip": true
+}

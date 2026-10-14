@@ -30,7 +30,7 @@ export function keepCombatDraft(db:any,cam:string,value:CombatWorkingDraft,expec
  const d=checkedCombatDraft(value),c=owner(db,cam,d.combatId),old=readCombatDraft(db,cam,d.combatId,d.kind,d.targetId),payload=JSON.stringify(d);
  if(old?.writeId===d.writeId){if(JSON.stringify(old)!==payload)throw new Error('Entwurfskennung anders verwendet.');return;}
  if(expected!==null&&!id(expected)||(old?.writeId??null)!==expected)throw new Error('Kampfeingabe inzwischen geändert. Rohwerte bleiben erhalten.');
- if(d.revision>c.revision||d.sceneId!==c.sceneId||c.phase==='finished'||d.kind==='fighter'&&!c.participants.some(p=>p.id===d.targetId))throw new Error('Entwurfsziel ist nicht mehr bearbeitbar.');
+ if(d.revision>c.revision||d.sceneId!==c.sceneId||!['preparing','running'].includes(c.phase)||d.kind==='fighter'&&!c.participants.some(p=>p.id===d.targetId))throw new Error('Entwurfsziel ist nicht mehr bearbeitbar.');
  references(db,cam,d);
  db.prepare('INSERT INTO combat_working_draft VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,combat_id,kind,target_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(cam,d.combatId,d.kind,d.targetId,payload,hash(payload));
 }).immediate();}

@@ -64,6 +64,8 @@ import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '..
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+
+
 import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
 import {installMaskReconciliationSchema,validateMaskReconciliations} from './mask-reconciliation';
 import {installRuleReferenceSchema,readSceneRules,executeSceneRule,validateRuleReferences} from './rule-references';
@@ -729,16 +731,13 @@ export class CampaignStore {
   executeLive(command: LiveCommand) { return this.db.transaction(() => {
     const replay=!!this.db.prepare('SELECT 1 FROM live_receipt WHERE command_id=?').get(command.commandId);
     const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
-    const ack = executeLive(this.db, command, () => {
-    this.guard(command.token, command.campaignId);
-    const a = command.action;
+    const ack = executeLive(this.db, command, () => {this.guard(command.token, command.campaignId);});
 
-    if(!replay&&(a.kind==='move'||a.kind==='membership'&&!a.active)){const ids=a.kind==='move'?a.memberIds:[a.characterId];removePartyFromMasks(this.db,command.campaignId,ids,command.commandId);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId);}
-  });
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){
       const a=command.action;
+      if(a.kind==='move'||a.kind==='membership'&&!a.active){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'&&ack.session?.createdScene)inheritScenePosition(this.db,command.campaignId,a.sceneId,ack.session.createdScene.id);
       const sceneId=a.kind==='advance-clock'||a.kind==='scene-content'||a.kind==='apply-visit'?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
       if(sceneId)syncSceneWorld(this.db,command.campaignId,sceneId);

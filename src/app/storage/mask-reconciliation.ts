@@ -2,14 +2,14 @@ import {createHash} from 'node:crypto';
 
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 export type MaskOwnerKind='combat'|'chase';
-export interface MaskReconciliationReceipt{version:1;commandId:string;campaignId:string;ownerKind:MaskOwnerKind;ownerId:string;sceneId:string;beforeRevision:number;afterRevision:number;removedCharacterIds:string[];}
+export interface MaskReconciliationReceipt{version:1;commandId:string;campaignId:string;ownerKind:MaskOwnerKind;ownerId:string;sceneId:string;beforeRevision:number;afterRevision:number;removedCharacterIds:string[];retired?:boolean;}
 
 export function installMaskReconciliationSchema(db:any){db.exec(`CREATE TABLE IF NOT EXISTS mask_reconciliation_receipt(command_id TEXT NOT NULL REFERENCES receipt(command_id) DEFERRABLE INITIALLY DEFERRED,campaign_id TEXT NOT NULL REFERENCES campaign(id),owner_kind TEXT NOT NULL CHECK(owner_kind IN('combat','chase')),owner_id TEXT NOT NULL,scene_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(command_id,owner_kind,owner_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;`);}
 
 function checked(value:any):MaskReconciliationReceipt{
   const ids=[value?.commandId,value?.campaignId,value?.ownerId,value?.sceneId];
   if(!value||value.version!==1||ids.some(id=>typeof id!=='string'||!id||id.length>1000)||!['combat','chase'].includes(value.ownerKind))throw new Error('Maskenabgleichbeleg ist ungültig.');
-  if(!Number.isSafeInteger(value.beforeRevision)||value.beforeRevision<1||value.afterRevision!==value.beforeRevision+1||!Array.isArray(value.removedCharacterIds)||!value.removedCharacterIds.length||value.removedCharacterIds.length>10000||value.removedCharacterIds.some((id:unknown)=>typeof id!=='string'||!id||id.length>1000)||new Set(value.removedCharacterIds).size!==value.removedCharacterIds.length)throw new Error('Maskenabgleichbeleg ist ungültig.');
+  if(!Number.isSafeInteger(value.beforeRevision)||value.beforeRevision<1||value.afterRevision!==value.beforeRevision+1||!Array.isArray(value.removedCharacterIds)||value.removedCharacterIds.length>10000||value.removedCharacterIds.some((id:unknown)=>typeof id!=='string'||!id||id.length>1000)||new Set(value.removedCharacterIds).size!==value.removedCharacterIds.length||value.retired!==undefined&&typeof value.retired!=='boolean'||!value.removedCharacterIds.length&&!value.retired)throw new Error('Maskenabgleichbeleg ist ungültig.');
   return value;
 }
 function decoded(row:any){if(!row||typeof row.payload!=='string'||hash(row.payload)!==row.checksum)throw new Error('Maskenabgleichbeleg ist beschädigt.');return checked(JSON.parse(row.payload));}

@@ -1,5 +1,5 @@
-import {recordMaskReconciliation} from './mask-reconciliation';
 import {createHash} from 'node:crypto';
+import {recordMaskReconciliation} from './mask-reconciliation';
 import {checkedCombat,combatOrder,type CombatState} from '../combat-contracts';
 import {checkedHealth,checkedHealthStatus} from '../progression';
 import {readProgressCharacter,saveProgress,event} from './progression';
@@ -25,7 +25,7 @@ export function publishCombatHealth(db:any,cam:string,state:CombatState,before?:
 /** Mirror shared facts into other masks; their older undo cannot reverse a later owner edit. */
 export function syncOpenMaskHealth(db:any,cam:string,exceptId?:string){
  const people=new Map<string,ReturnType<typeof readProgressCharacter>>(),npcs=new Map<string,ReturnType<typeof readWorldActor>>();
- for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished' ORDER BY ordinal").all(cam)){
+ for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase IN('preparing','running') ORDER BY ordinal").all(cam)){
   if(row.id===exceptId)continue;const s=decode(row);let changed=false;
   for(const actor of s.participants){const previous=json(actor);
    if(actor.characterId){if(!people.has(actor.characterId))people.set(actor.characterId,readProgressCharacter(db,cam,actor.characterId));const p=people.get(actor.characterId)!;
@@ -37,21 +37,21 @@ export function syncOpenMaskHealth(db:any,cam:string,exceptId?:string){
  }
 }
 /** PCs leave every ongoing mask as part of the same transaction as a party move. */
-export function removePartyFromMasks(db:any,cam:string,ids:string[],commandId:string){
+export function removePartyFromMasks(db:any,cam:string,ids:string[],commandId:string,retiredScenes:Set<string>=new Set()){
  const moving=new Set(ids);
- for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase!='finished' ORDER BY ordinal").all(cam)){
-  const s=decode(row),removed=s.participants.filter(p=>p.characterId&&moving.has(p.characterId));if(!removed.length)continue;
-  const beforeRevision=s.revision;publishCombatHealth(db,cam,{...s,participants:removed});const order=combatOrder(s),turnIndex=order.findIndex(p=>p.id===s.turnId);s.participants=s.participants.filter(p=>!p.characterId||!moving.has(p.characterId));
+ for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase IN('preparing','running') ORDER BY ordinal").all(cam)){
+  const s=decode(row),removed=s.participants.filter(p=>p.characterId&&moving.has(p.characterId)),retired=retiredScenes.has(s.sceneId);if(!removed.length&&!retired)continue;
+  publishCombatHealth(db,cam,{...s,participants:removed});const order=combatOrder(s),turnIndex=order.findIndex(p=>p.id===s.turnId);s.participants=s.participants.filter(p=>!p.characterId||!moving.has(p.characterId));
   if(s.turnId&&!s.participants.some(p=>p.id===s.turnId)){const candidates=[...order.slice(turnIndex+1),...order.slice(0,turnIndex+1)];s.turnId=candidates.find(p=>s.participants.some(left=>left.id===p.id))?.id??null;}
-  if(!s.participants.length){s.phase='preparing';s.round=0;s.turnId=null;}
-  s.revision++;s.sharedNotice='Party-Figuren wurden in eine andere Scene verschoben oder deaktiviert und aus dieser Begegnung entfernt.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);
-  recordMaskReconciliation(db,{version:1,commandId,campaignId:cam,ownerKind:'combat',ownerId:s.id,sceneId:s.sceneId,beforeRevision,afterRevision:s.revision,removedCharacterIds:removed.map(p=>p.characterId!)});
+  if(retired)s.phase='retired';else if(!s.participants.length){s.phase='preparing';s.round=0;s.turnId=null;}
+  const beforeRevision=s.revision;s.revision++;s.sharedNotice='Party-Figuren wurden in eine andere Scene verschoben oder deaktiviert und aus dieser Begegnung entfernt.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);
+  recordMaskReconciliation(db,{version:1,commandId,campaignId:cam,ownerKind:'combat',ownerId:s.id,sceneId:s.sceneId,beforeRevision,afterRevision:s.revision,removedCharacterIds:removed.map(p=>p.characterId!),retired});
   for(const actor of removed)event(db,cam,actor.characterId,'combat-exit',{commandId,combatId:s.id,title:s.title,participant:actor,reason:'Party-Zuordnung geändert'});
  }
 }
 /** Old databases stored active PC health in the encounter; adopt those facts once. */
 export function migrateMaskHealth(db:any){
- const seen=new Set<string>();for(const row of db.prepare("SELECT * FROM combat WHERE phase!='finished' ORDER BY ordinal DESC").all()){
+ const seen=new Set<string>();for(const row of db.prepare("SELECT * FROM combat WHERE phase IN('preparing','running') ORDER BY ordinal DESC").all()){
   const s=decode(row),participants=s.participants.filter(p=>{if(!p.characterId)return false;const key=row.campaign_id+':'+p.characterId;if(seen.has(key))return false;seen.add(key);return true;});publishCombatHealth(db,row.campaign_id,{...s,participants});
  }
  for(const row of db.prepare('SELECT id FROM campaign').all())syncOpenMaskHealth(db,row.id);
