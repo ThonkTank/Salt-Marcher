@@ -268,6 +268,29 @@ ausgeführt werden; sein Replay verändert Position, Featureladung, HP, Logs,
 Buchungen und Actorcursor nicht erneut. Diese SQLite- und DOM-Nachweise sind
 keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
 
+## 200-Actor-Baseline
+
+`npm run bench:autonomy` erzeugt für jeden von 20 unabhängigen Läufen denselben
+validierten Quellzustand: 200 aktivierte, unplatzierte Actors, ein erreichbares
+nicht exklusives Guard-Angebot, 15 Minuten bestätigte Zeit und höchstens zwölf
+Catch-up-Schritte je Actor. Die unabhängigen Prozesse verhindern, dass die
+Messung selbst wegen des vorgeschriebenen 512-MiB-Prozessbaumlimits alte V8-Heaps
+mehrerer Läufe ansammelt.
+
+Auf dem lokalen Linux-x64-Prüfrechner vom 14.10.2026 lagen die p95-Werte bei
+25,13 ms für Capture/Intervallbildung, 349,46 ms für den vollständigen
+200-Actor-Catch-up einschließlich Response-View und 13,29 ms für einen separaten
+View. Der höchste Worker-RSS betrug 112.451.584 Bytes. Ein erster bestätigter
+Schritt belegte inklusive SQLite-Seitenzuwachs median 344.064 Bytes; davon waren
+159.690 Bytes historischer Intervallpayload. Dieser Seitenzuwachs ist keine
+Langzeit-Wachstumsrate.
+
+Die Baseline erfüllt die Zwei-Sekunden-p95-Grenze deutlich. Die Oberfläche setzt
+vor dem ersten asynchronen Command sofort einen Status im Live-Bereich und
+deaktiviert den Startknopf; der DOM-Gegenbeleg hält die Commandantwort offen und
+prüft diesen Zwischenzustand. Mehrere lokale Jobkandidaten, räumliche Adapter,
+Kamerafreiheit und unabhängige Reads sind damit noch nicht qualifiziert.
+
 
 ## Nächste ausführbare Schritte
 
@@ -302,6 +325,6 @@ keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
    Prozessabbruch/Cancel sowie Resume nach Fresh zusätzlich qualifizieren.
 4. **Bedienbarkeit und Größenfall messen.** `autonomy-ui.ts` mit A/B/A,
    unbestätigten Rohwerten, Pending/Replyverlust, erklärtem Jobausschluss und
-   Tastatur prüfen. Danach 200 Actors unter der Quellbedingung für ≤2 s p95 und
-   Fortschritt ≤100 ms messen; Cancel vor Commit ohne Wirkung. Nur konkrete
+   Tastatur prüfen. Die integrierte 200-Actor-Baseline um mehrere lokale Kandidaten und
+   einen räumlichen Adapter erweitern; ≤2 s p95 und Fortschritt ≤100 ms erneut prüfen; Cancel vor Commit ohne Wirkung. Nur konkrete
    gemessene Engstellen ändern, keine zusätzliche persistierte Simulation.
