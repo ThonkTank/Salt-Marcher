@@ -696,3 +696,21 @@ Ein Ergebnis gehört zur konkreten Gruppe und Übernahme, nicht zum Ort oder zu
 gleichnamigen Besuchen. Fokus-/Übernahmewechsel und Scene-Revisionen werden bei
 der Bestätigung geprüft. Unbestätigte Ergebnisfelder bleiben beim Fokuswechsel
 in diesem Prozess als Entwurf erhalten; erst Bestätigen speichert sie dauerhaft.
+
+
+### Desktopstand 0.57: Die GM-Mappe neben dem laufenden Spiel
+
+„Mappe am Spieltisch öffnen“ zeigt die gewählte Spielabendmappe neben den weiterhin
+bedienbaren Leitungsfunktionen. Dieselbe Mappe bleibt auch als Vorbereitungsdialog
+nutzbar; es gibt keinen zweiten Plan- oder Ergebnisstand. Besuche lassen sich
+durchblättern, über alle Inhalte durchsuchen und aus der Mappe über die vorhandene
+Vorschau übernehmen. Vorlesetexte werden auf ausdrücklichen Klick exakt in die
+laufende Scene kopiert und gespeichert. Das löst keinen Freigabebefehl aus; eine
+bereits für diese Scene aktive Textanzeige folgt ihrem bestehenden Modus. Ergebnisse und neue Übernahmen aktualisieren die angebundene Mappe.
+
+Die Party-Bearbeitung ist bei geöffneter Mappe zunächst eingeklappt und lässt sich
+einblenden; die Party-Kopfleiste bleibt verfügbar. Fokus-, Plan- und Kampagnenwechsel
+nehmen keine alten Mappenaktionen mit. Suche und Leseposition bleiben bei einer
+Aktualisierung derselben Gruppe erhalten. Auf schmalen Fenstern steht die Mappe
+unter dem Spieltisch. Markdownausgabe und Prüfung des angezeigten Quellenstands
+verwenden weiterhin denselben bestehenden Exportablauf.
