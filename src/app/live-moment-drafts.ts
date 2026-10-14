@@ -3,6 +3,12 @@ export interface LiveMomentDraft {category:LiveMomentCategory;title:string;summa
 
 export const emptyLiveMomentDraft=():LiveMomentDraft=>({category:'world',title:'',summary:'',followUp:''});
 export const canClearSavedLiveMoment=(sceneId:string,currentSceneId:string|null,saved:LiveMomentDraft,current:LiveMomentDraft)=>sceneId===currentSceneId&&saved.category===current.category&&saved.title===current.title&&saved.summary===current.summary&&saved.followUp===current.followUp;
+export function liveMomentSavedMessage(followUp:LiveMomentDraft['followUp'],cleared:boolean,refreshProblem=false){
+  let message=followUp?`Moment gespeichert und als ${followUp==='quest'?'offene Quest':'Gerücht'} vorbereitet.`:'Moment in der Kampagnenchronik gespeichert.';
+  if(!cleared)message+=' Neuere Eingabe bleibt offen.';
+  if(refreshProblem)message+=' Wissensbinder bei Bedarf aktualisieren.';
+  return message;
+}
 
 export class LiveMomentDraftBook {
   private drafts=new Map<string,LiveMomentDraft>();
