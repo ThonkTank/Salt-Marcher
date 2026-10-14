@@ -20,7 +20,7 @@ import {initPlayerUI,deactivatePlayer} from './player-ui';
 import {initCity,activateCity,openCity,flushCity} from './city-ui';
 import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
-import {initWorld,activateWorld,openWorld,flushWorld} from './world-ui';
+import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './world-ui';
 import {initItems,activateItems,openItems,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation } from './preparation';
@@ -95,6 +95,7 @@ el('items-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;
 el('catalog-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('catalog');await openCatalog();})();};
 el('chronicle-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('chronicle');await openChronicle();})().catch(error=>status(error.message,true));};
 function showTab(selected: 'groups' | 'treasury' | 'atlas' | 'preparation' | 'live' | 'chronicle' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
+  setWorldSurface(selected);
   for (const id of ['groups','treasury','atlas', 'preparation', 'live', 'chronicle', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
