@@ -4,6 +4,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import type {PlayerSettings,PlayerObserver,PlayerAsset,PlayerView,PlayerFrame,PlayerCommand,PlayerAction} from '../player-contracts';
 import type {Hex,SceneWorld} from '../world-contracts';
 import {readLive} from './live';import {readSceneWorld,readWorld} from './world';import {cellAt,hexDistance} from '../world-model';
+import {activeCombat} from './combat';import {combatOrder} from '../combat-contracts';
 const hash=(p:string)=>createHash('sha256').update(p).digest('hex');
 export function installPlayerSchema(db:any){db.exec(`CREATE TABLE IF NOT EXISTS player_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),kind TEXT NOT NULL,id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,kind,id)) STRICT;
 CREATE TABLE IF NOT EXISTS player_asset(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,kind TEXT NOT NULL,subject_id TEXT,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
@@ -79,8 +80,10 @@ function mapLine(a:Hex,b:Hex):Hex[]{const n=hexDistance(a,b),out:Hex[]=[];if(n>2
 function light(frame:SceneWorld,s:PlayerSettings,daySeconds:number){if(s.light!=='auto')return s.light;const hour=Number(BigInt(frame.scene.clock.instantMs)%(BigInt(daySeconds)*1000n))/(daySeconds*1000)*24;return hour>=6&&hour<18?'daylight':hour>=5&&hour<19?'dim':'darkness';}
 export function projectPlayer(db:any,cam:string):PlayerFrame{return db.transaction(()=>{
  const s=playerSettings(db,cam),{live,list}=observers(db,cam);if(s.blank||!live.scene||!list.length)return{mode:'blank',title:'',reason:s.blank?'GM hat die Anzeige ausgeblendet.':'Keine fokussierte Gruppe.'} as PlayerFrame;
- const assets=playerAssets(db,cam),frame=readSceneWorld(db,cam,live.scene.id),world=readWorld(db,cam),position=frame.position;
+ const assets=playerAssets(db,cam);
  if(s.mode==='image'){if(s.boundSceneId!==live.scene.id)return{mode:'blank',title:'',reason:'Bildauswahl gehört zu einer anderen Gruppe.'};const asset=assets.find(a=>a.id===s.imageId);return asset?{mode:'image',title:s.title||asset.title,imageId:asset.id}:{mode:'blank',title:'',reason:'Bild fehlt.'};}
+ const combat=activeCombat(db,cam,live.scene.id);if(combat){const current=combat.participants.find(p=>p.id===combat.turnId),participants=combatOrder(combat).filter(p=>!p.hiddenFromPlayers).map(p=>{const party=!!p.characterId,health=party?(p.healthKnown===false?'Trefferpunkte offen':p.hp+' / '+p.maxHp+' HP'+(p.tempHp?' + '+p.tempHp+' temporär':'')):p.hp<=0?'Kampfunfähig':p.hp<=p.maxHp/2?'Angeschlagen':'Einsatzbereit',status=[p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).join(' · ')||'—';return{id:p.id,name:p.name,initiative:p.initiative,party,health,status,current:p.id===combat.turnId};});return{mode:'combat',title:s.title||combat.title,combat:{round:combat.round,currentName:current?.hiddenFromPlayers?'Verborgener Zug':current?.name??'—',participants}};}
+ const frame=readSceneWorld(db,cam,live.scene.id),world=readWorld(db,cam),position=frame.position;
  if(position.dungeon){const dungeon=dungeonDisplay(db,cam,live.scene.id,s,list);return dungeon?{mode:'dungeon',title:s.title||'Dungeon',dungeon}:{mode:'blank',title:'',reason:'Dungeonposition nicht verfügbar.'};}
  if(frame.scene.locationId&&!frame.journey?.status.match(/active|paused|interrupted/)){const asset=assets.filter(a=>a.kind==='location'&&a.subjectId===frame.scene.locationId).at(-1);return asset?{mode:'image',title:s.title||asset.title,imageId:asset.id}:{mode:'blank',title:'',reason:'Für diesen Ort ist noch kein freigegebenes Bild hinterlegt.'};}
  const map=world.maps.find(m=>m.id===position.mapId);if(!map)return{mode:'blank',title:'',reason:'Keine Reisekarte für diese Gruppe.'};
