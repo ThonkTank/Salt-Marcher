@@ -10,7 +10,7 @@ let baseline=new Map<string,FieldValue>();
 function owner():Owner|null{const w=context();return w?{id:w.campaign.id,token:w.token,generation}:null;}
 function owns(o:Owner){const w=context();return o.generation===generation&&w?.token===o.token&&w.campaign.id===o.id;}
 function hasView(o:Owner){return !!view&&viewOwner?.token===o.token&&viewOwner.id===o.id;}
-function run(o:Owner|null,task:(o:Owner)=>Promise<unknown>|void){if(!o)return;void Promise.resolve().then(()=>{if(owns(o))return task(o);}).catch(error=>{if(owns(o))tell(error.message,true);});}
+function run(o:Owner|null,task:(o:Owner)=>Promise<unknown>|void){if(!o)return;void Promise.resolve().then(()=>{if(owns(o))return task(o);}).catch(error=>{if(owns(o)){if(el<HTMLDialogElement>('player-dialog').open){el('player-feedback').textContent=error.message;el('player-feedback').hidden=false;}tell(error.message,true);}});}
 function options(id:string,rows:{id:string;name:string}[],selected:string|null,empty=false){const s=el<HTMLSelectElement>(id);s.replaceChildren();for(const row of [...(empty?[{id:'',name:'Keine Auswahl'}]:[]),...rows]){const o=document.createElement('option');o.value=row.id;o.textContent=row.name;s.append(o);}s.value=selected&&rows.some(r=>r.id===selected)?selected:empty?'':rows[0]?.id??'';}
 function controls(){return [...el('player-dialog').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')];}
 function key(control:HTMLInputElement|HTMLSelectElement){return control.id||control.dataset.playerKey||'';}
@@ -19,6 +19,7 @@ function dirty(){return new Map([...snapshot()].filter(([k,v])=>baseline.has(k)&
 function subjectOptions(){if(!view)return;const kind=value('player-art-kind');options('player-art-subject',kind==='location'?view.locations:kind==='npc'?view.npcs:[],value('player-art-subject')||null,true);el('player-art-subject-label').hidden=kind==='custom';}
 function paint(){
  if(!view)return;
+ el('player-feedback').hidden=true;el('player-target').textContent=view.focusId?'Freigabe für: '+(view.focusTitle||'Unbenannte Gruppe')+' · '+(view.observers.map(o=>o.name).join(', ')||'Leere Party'):'Keine fokussierte Gruppe.';
  const edits=dirty(),focused=document.activeElement as HTMLInputElement|null,focusKey=focused&&el('player-dialog').contains(focused)?key(focused):'',selection=focused?.selectionStart,selectionEnd=focused?.selectionEnd;
  const s=view.settings;input('player-title').value=s.title;input('player-labels').checked=s.labels;input('player-fullscreen').checked=s.fullscreen;input('player-light').value=s.light;input('player-screen').value=s.displayId===null?'':String(s.displayId);
  options('player-image',view.assets.map(a=>({id:a.id,name:a.title||a.kind})),s.imageId,true);options('player-map',view.maps,value('player-map')||null);options('player-place',view.locations,value('player-place')||null,true);subjectOptions();
@@ -43,7 +44,7 @@ export function deactivatePlayer(){closeControls();view=null;viewOwner=null;base
 function settings(mode:PlayerSettings['mode'],blank:boolean):PlayerAction{return{kind:'settings',settings:{blank,mode,imageId:value('player-image')||null,title:value('player-title'),labels:input('player-labels').checked,light:value('player-light') as PlayerSettings['light'],displayId:value('player-screen')?Number(value('player-screen')):null,fullscreen:input('player-fullscreen').checked}};}
 function submit(action:PlayerAction,openWindow=false){
  const o=owner();if(!o||!hasView(o))return;
- const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:view!.settings.revision,action},intent=++actions,request=++presentation;
+ const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:view!.settings.revision,expectedFocusId:view!.focusId,expectedFocusRevision:view!.focusRevision,action},intent=++actions,request=++presentation;
  run(o,async o=>{
   const result=await window.campaign.executePlayer(command);if(!owns(o))return;
   const confirmed=unwrap(result);publish(o,confirmed,request);
