@@ -3,6 +3,9 @@ import type { Result } from './contracts';
 import {checkedHealth,type FinishRewards,type CombatReward,type CharacterHealth,type DeathSaveResult} from './progression';
 import type { Creature } from '../features/catalog/creature-catalog';
 import type { EncounterAssessment, EncounterParty } from './encounter-contracts';
+export const combatConditions=[['Blind','Blinded'],['Bezaubert','Charmed'],['Taub','Deafened'],['Verängstigt','Frightened'],['Gepackt','Grappled'],['Handlungsunfähig','Incapacitated'],['Unsichtbar','Invisible'],['Gelähmt','Paralyzed'],['Versteinert','Petrified'],['Vergiftet','Poisoned'],['Liegend','Prone'],['Festgesetzt','Restrained'],['Betäubt','Stunned'],['Bewusstlos','Unconscious']] as const;
+const conditionParts=(text:string)=>text.split(/\s*[,;\n]\s*/).map(part=>part.trim()).filter(Boolean);
+export function publicCombatConditionText(text:string){const labels=new Map<string,string>();for(const[label,english]of combatConditions){labels.set(label.toLocaleLowerCase('de'),label);labels.set(english.toLocaleLowerCase('en'),label);}return[...new Set(conditionParts(text).map(part=>labels.get(part.toLocaleLowerCase())).filter((label):label is string=>!!label))].join(', ');}
 export interface Combatant {role?:import('./npc-contracts').NpcRole;
   id: string; characterId: string | null; groupId: string; name: string;
   initiative: number; initiativeBonus: number; armorClass: number;

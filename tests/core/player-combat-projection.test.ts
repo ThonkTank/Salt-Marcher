@@ -19,11 +19,11 @@ test('the follow display shows a reduced combat initiative and respects hidden o
   combat=store.executeCombat({commandId:'enemy',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'add',name:'Schatten',count:1,grouped:false,maxHp:10,armorClass:14,initiativeBonus:2}}).combat!;
   const enemy=combat.participants.find(p=>!p.characterId)!;
   combat=store.executeCombat({commandId:'hero-init',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:hero.id,changes:{initiative:15,hp:12,maxHp:20}}}).combat!;
-  combat=store.executeCombat({commandId:'enemy-init',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:enemy.id,changes:{initiative:10,hp:4,conditions:'Liegend'}}}).combat!;
+  combat=store.executeCombat({commandId:'enemy-init',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'edit',participantId:enemy.id,changes:{initiative:10,hp:4,conditions:'Liegend, Fluch des Sehers, Poisoned'}}}).combat!;
   combat=store.executeCombat({commandId:'start',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'start'}}).combat!;
   let player=store.executePlayer({commandId:'show',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings:{blank:false,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
   assert.equal(player.frame.mode,'combat');assert.equal(player.frame.title,'Basalttor');assert.equal(player.frame.combat?.currentName,'Ada');
-  assert.deepEqual(player.frame.combat?.participants.map((p:{name:string;health:string;status:string})=>[p.name,p.health,p.status]),[['Ada','12 / 20 HP','—'],['Schatten','Angeschlagen','Liegend']]);
+  assert.deepEqual(player.frame.combat?.participants.map((p:{name:string;health:string;status:string})=>[p.name,p.health,p.status]),[['Ada','12 / 20 HP','—'],['Schatten','Angeschlagen','Liegend, Vergiftet']]);
   combat=store.executeCombat({commandId:'down-hero',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage',participantId:hero.id,amount:12}}).combat!;
   combat=store.executeCombat({commandId:'death-success',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'death',participantId:hero.id,result:'success'}}).combat!;
   player=store.playerView(token);assert.equal(player.frame.combat?.participants[0]?.health,'0 / 20 HP');assert.equal(player.frame.combat?.participants[0]?.status,'Todesrettung 1✓ / 0✗');
