@@ -1,3 +1,4 @@
+import {requiredNpcPicker} from './required-npc-picker';
 import {budgetRarities} from './dungeon-budget-contracts';
 import {encounterEntryLabel} from './encounter-contracts';
 import {initProposalEditor,openProposalEditor,proposalEditorOpen,closeProposalEditor} from './session-proposal-editor';
@@ -8,6 +9,7 @@ import {dailyXp,xpLevel,xpShare,type ItemInput} from './progression';
 import {exactWeight,type GenerationRequest} from './generation-contracts';
 import type {SessionProfile,VisitDetail,PreparedGroup,SessionView,SessionAction,SessionRun} from './session-contracts';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>get<HTMLInputElement>(id).value,unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
+let requiredPick:ReturnType<typeof requiredNpcPicker>;
 let workspace:Workspace|null=null,plan:ManualPlan|null=null,visitId:string|null=null,sources:Preparation|null=null,view:SessionView|null=null,profileDraft:SessionProfile|null=null,visitDraft:VisitDetail|null=null,run:SessionRun|null=null;
 type GroupDraft=Pick<PreparedGroup,'id'|'revision'|'title'|'notes'>;
 const groupDrafts=new Map<string,GroupDraft>();
@@ -23,6 +25,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
  const key=JSON.stringify([next?.token,current?.id,selected]);
  workspace=next;plan=current;visitId=selected;sources=data;
+ if(parentChanged)requiredPick.context(next&&current?next.token:null,true);
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
  if(key===basis)return;
  basis=key;generation++;loadRequest++;closeStoryAward();
@@ -211,7 +214,7 @@ async function generatePreview(){
  const request=++previewRequest;
  try{
   if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||!view)return;
-  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={includeNpcs:get<HTMLInputElement>('session-npc-mixed').checked,npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
+  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={requiredNpcIds:requiredPick.ids(),includeNpcs:get<HTMLInputElement>('session-npc-mixed').checked,npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
   const generated=unwrap(await window.campaign.generateSession(owner.token,{compensateMagic:get<HTMLInputElement>('session-magic-compensate').checked,compensateLoot:get<HTMLInputElement>('session-loot-compensate').checked,worldSourcesByLocation:get<HTMLInputElement>('session-world-sources').checked,planId:owner.planId,expectedProfileRevision:view.profile.revision,count:Number(value('session-scene-count')),locationIds:[...get('session-locations').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),noteIds:[...get('session-notes').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),encounter}));
   if(!ownsPreview(owner)||request!==previewRequest)return;
   run=generated;renderRun();tell('Spielabend-Vorschau erzeugt. Noch keine Szenen übernommen.');
@@ -314,7 +317,7 @@ export async function clearSessionTimeline(){
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked)get<HTMLInputElement>('session-magic-compensate').checked=false;});
-initProposalEditor();tell=status;flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
+initProposalEditor();tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
  get('plan-replace').onclick=()=>report(openReplacement);get('plan-replacement-source').onchange=()=>report(replacementSource);
  get('plan-replacement-cancel').onclick=()=>{replacement=null;replacementRequest++;get<HTMLDialogElement>('plan-replacement-dialog').close();};
