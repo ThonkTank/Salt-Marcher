@@ -108,6 +108,7 @@ import "./core/live-party-reference.test";
 import "./core/live-moment-drafts.test";
 import "./core/live-session-recap.test";
 import "./core/live-session-close.test";
+import "./core/dungeon-binder-model.test";
 import "./core/object-gestures.test";
 import "./core/extension-lifecycle.test";
 import "./core/extension-recovery-ui.test";
