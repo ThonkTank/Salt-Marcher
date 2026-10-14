@@ -29,3 +29,14 @@ test('catch-up exposes progress before the first command completes',async()=>{
   view={...view,actors:[{...actor,revision:2,cursor:1,remaining:0}],pendingActors:0};release({ok:true,value:{view,progressed:1,pending:0}});await new Promise(resolve=>setTimeout(resolve,20));const button=parsed.document.getElementById('autonomy-catchup') as HTMLButtonElement;assert.equal(button.disabled,false);assert.match(parsed.document.getElementById('autonomy-progress')!.textContent,/1 atomare NPC-Schritte/);
  }finally{Object.assign(globalThis,{document:priorDocument,window:priorWindow});}
 });
+
+test('large actor lists can be narrowed by text and operational state',async()=>{
+ const parsed=parseHTML(readFileSync(join(process.cwd(),'src/app/index.html'),'utf8')),priorDocument=globalThis.document,priorWindow=globalThis.window,actors=Array.from({length:200},(_,index)=>({id:'npc-'+index,revision:1,enabled:index%17!==0,paused:index%19===0,role:index%3===0?'Wache':'',needs:standardNeeds(),jobPriorities:{},assignedJobId:null,allowConflict:false,defense:12,attackBonus:0,maxHpLossPercent:10,cursor:0,offsetSeconds:0,jobId:null,progressSeconds:0,pending:null,name:index===137?'Spezielle Hafenwache':'NPC '+String(index+1).padStart(3,'0'),locationId:null,locationName:'Unplatziert',positionRevision:null,dungeonPosition:null,remaining:index%23===0?1:0}));
+ const view:AutonomyView={actors,available:actors.map(actor=>({id:actor.id,name:actor.name,locationId:null})),groups:[],locations:[],routes:[],rooms:[],features:[],jobs:[],logs:[],confirmed:'0',pendingActors:actors.filter(actor=>actor.remaining>0).length};
+ try{
+  Object.assign(globalThis,{document:parsed.document,window:parsed.window});(parsed.window as any).campaign={autonomy:async()=>({ok:true,value:view})};initAutonomy(()=>{});activateAutonomy({token:'token',campaign:{id:'campaign'}} as any);await openAutonomy();const cards=()=>parsed.document.querySelectorAll('#autonomy-actors .autonomy-card');
+  assert.equal(cards().length,200);assert.equal(parsed.document.getElementById('autonomy-actor-result')!.textContent,'200 NPCs angezeigt.');
+  const query=parsed.document.getElementById('autonomy-filter') as HTMLInputElement;query.value='hafenwache';query.dispatchEvent(new parsed.window.Event('input'));assert.equal(cards().length,1);assert.match(cards()[0]!.textContent,/Spezielle Hafenwache/);assert.equal(parsed.document.getElementById('autonomy-actor-result')!.textContent,'1 von 200 NPCs angezeigt.');
+  query.value='';query.dispatchEvent(new parsed.window.Event('input'));const state=parsed.document.getElementById('autonomy-state-filter') as HTMLSelectElement;state.querySelector('[value=remaining]')!.setAttribute('selected','');state.dispatchEvent(new parsed.window.Event('change'));assert.equal(cards().length,9);assert.ok([...cards()].every(card=>/1 ausstehende Intervalle/.test(card.textContent)));
+ }finally{Object.assign(globalThis,{document:priorDocument,window:priorWindow});}
+});
