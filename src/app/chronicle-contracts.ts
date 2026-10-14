@@ -11,6 +11,7 @@ export interface ChronicleEntry {
   scene:string|null;
   location:string|null;
   followUp?:{kind:'quest'|'rumor';id:string};
+  sessionMarker?:'start'|'end';
 }
 export interface ChronicleView {campaignName:string;entries:ChronicleEntry[];truncated:boolean}
 export interface ChronicleAPI {

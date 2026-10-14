@@ -17,11 +17,14 @@ import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
 import {canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentSavedMessage,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 import type {NarrativeView} from './narrative-contracts';
+import type {ChronicleView} from './chronicle-contracts';
+import {liveSessionRecap} from './live-session-recap';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 let context: Workspace | null = null, data: LiveView | null = null, sources: Preparation | null = null;
+let sessionChronicle:ChronicleView|null=null,sessionChronicleError='';
 let selected: string | null = null, characterDraft: Character | null = null, sceneDraft: LiveScene | null = null;
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
 let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
@@ -39,7 +42,7 @@ const changed = () => !!(characterDraft && originalCharacter() && !equal(charact
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:data.scene?.locationId??null}:null;
 export function activateLive(workspace: Workspace) {
   combatContext(null, null);chaseContext(null,null,[]); progressionContext(null, null, null);
-  context = workspace; data = null; sources = null; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
+  context = workspace; data = null; sources = null; sessionChronicle=null;sessionChronicleError=''; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
   get<HTMLInputElement>('live-knowledge-search').value='';
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
@@ -53,9 +56,9 @@ export async function openLive(planId?: string, visitId?: string) {
   if (!context) { tell('Bitte zuerst eine Kampagne öffnen.', true); return; }
   const token = context.token;
   try {
-    const live = unwrap(await window.campaign.live(token)), prep = unwrap(await window.campaign.preparation(token, ''));
+    const [liveResult,prepResult,chronicleResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, ''),window.campaign.chronicle(token)]),live=unwrap(liveResult),prep=unwrap(prepResult);
     if (context?.token !== token) return;
-    data = live; sources = prep;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
+    data = live; sources = prep;sessionChronicle=chronicleResult.ok?chronicleResult.value:null;sessionChronicleError=chronicleResult.ok?'':chronicleResult.error;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
     characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
     sceneDraft = resumed && live.scene ? structuredClone(live.scene) : null;
     render();
@@ -74,7 +77,7 @@ async function ensureLiveRuntime() {
 export async function prepareLiveEncounter(plan:EncounterPlan) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await prepareCombatPlan(plan); }
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
-  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save']) get<HTMLButtonElement>(id).disabled = on && !textSave;
+  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-');
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
@@ -255,12 +258,22 @@ function renderScene() {
   }
   if (current && !sources?.locations.some(l => l.document.id === current)) { const option = document.createElement('option'); option.value = current; option.textContent = 'Ort nicht verfügbar'; option.disabled = true; select.append(option); }
   select.value = current ?? '';
-  renderNpcChoices();
+  renderNpcChoices();renderLiveSession();
   renderLiveKnowledge();renderSceneMeta(); renderGroups();
 }
 function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-moment-category') as LiveMomentCategory,title:value('live-moment-title'),summary:value('live-moment-summary'),followUp:value('live-moment-follow-up') as LiveMomentDraft['followUp']};}
 function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;get<HTMLSelectElement>('live-moment-follow-up').value=draft.followUp;}
 function renderLiveMomentDraft(){const next=liveMomentDrafts.switchTo(data?.scene?.id??null,currentLiveMomentDraft());if(next.changed){writeLiveMomentDraft(next.draft);get('live-moment-result').textContent='';}}
+function renderLiveSession(){
+  const recap=liveSessionRecap(sessionChronicle?.entries??[]),status=get('live-session-status'),list=get('live-session-events');list.replaceChildren();
+  get<HTMLButtonElement>('live-session-start').hidden=recap.open;get<HTMLButtonElement>('live-session-end').hidden=!recap.open;get<HTMLButtonElement>('live-session-start').disabled=!!sessionChronicleError||intentBlocked();get<HTMLButtonElement>('live-session-end').disabled=!!sessionChronicleError||intentBlocked();get<HTMLTextAreaElement>('live-session-summary').hidden=!recap.open;
+  if(sessionChronicleError)status.textContent='Rückblick nicht verfügbar: '+sessionChronicleError;
+  else if(!recap.marker)status.textContent='Noch kein Spielabend markiert.';
+  else{const when=new Date(recap.marker.recordedAt),label=Number.isNaN(when.valueOf())?'':when.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'});status.textContent=recap.open?'Läuft seit '+label+' · '+recap.entries.length+' bestätigte Ereignisse':'Letzter Spielabend beendet '+label+' · '+recap.entries.length+' bestätigte Ereignisse'+(recap.marker.summary?' · '+recap.marker.summary:'');}
+  for(const entry of recap.entries.slice(0,12)){const item=document.createElement('li'),strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=entry.title;span.textContent=[entry.summary,entry.scene&&'Gruppe: '+entry.scene,entry.location&&'Ort: '+entry.location].filter(Boolean).join(' · ');item.append(strong);if(span.textContent)item.append(span);list.append(item);}
+  get('live-session-more').hidden=recap.entries.length<=12;
+}
+async function refreshLiveSession(){const token=context?.token;if(!token)return;try{const result=unwrap(await window.campaign.chronicle(token));if(context?.token!==token)return;sessionChronicle=result;sessionChronicleError='';renderLiveSession();}catch(error){if(context?.token===token){sessionChronicleError=(error as Error).message;renderLiveSession();}}}
 function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
 function renderGroups() {
   const select = get<HTMLSelectElement>('scene-focus'); select.replaceChildren();
@@ -365,8 +378,10 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
     const{followUp,...moment}=draft,ack=await execute({kind:'live-moment',sceneId:scene.id,expectedRevision:data.scene.revision,...moment,followUp:followUp?{kind:followUp,id:crypto.randomUUID()}:null});if(!ack)return;
     let refreshProblem=false;if(followUp){try{const refreshed=await window.campaign.preparation(token!,'');if(context?.token!==token)return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(context?.token!==token)return;refreshProblem=true;}}
     const clear=canClearSavedLiveMoment(scene.id,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());liveMomentDrafts.saved(scene.id);if(clear)writeLiveMomentDraft(emptyLiveMomentDraft());
-    get('live-moment-result').textContent=liveMomentSavedMessage(followUp,clear,refreshProblem);get<HTMLInputElement>('live-moment-title').focus();
+    get('live-moment-result').textContent=liveMomentSavedMessage(followUp,clear,refreshProblem);get<HTMLInputElement>('live-moment-title').focus();await refreshLiveSession();
   })();};
+  get('live-session-start').onclick=()=>{void(async()=>{const token=context?.token,scene=data?.scene;if(!scene||sessionChronicleError||!await flushLive()||context?.token!==token)return;const recap=liveSessionRecap(sessionChronicle?.entries??[]);if(recap.open){renderLiveSession();return;}if(await execute({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'start',summary:''})){get('live-session-result').textContent='Spielabend begonnen. Neue Ereignisse fließen in diesen Rückblick.';await refreshLiveSession();}})();};
+  get('live-session-end').onclick=()=>{void(async()=>{const token=context?.token,scene=data?.scene,summary=value('live-session-summary');if(!scene||sessionChronicleError||!await flushLive()||context?.token!==token)return;const recap=liveSessionRecap(sessionChronicle?.entries??[]);if(!recap.open){renderLiveSession();return;}if(await execute({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'end',summary})){get<HTMLTextAreaElement>('live-session-summary').value='';get('live-session-result').textContent='Spielabend beendet. Der Rückblick bleibt in der Chronik erhalten.';await refreshLiveSession();}})();};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');
