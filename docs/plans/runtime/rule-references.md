@@ -47,6 +47,16 @@ Mit den betroffenen Chase-, Combatdraft-, Autonomy- und Gruppensuchprüfungen
 bestanden 46 lokale Tests und der Desktop-Typecheck. Keine native Bedienabnahme,
 Hard-Crash-, vollständige Referenzgraph- oder Regelkatalogqualifikation.
 
+## Integrierte Writerprüfung vom 14.10.2026
+
+Die erweiterte Commandprüfung bindet jetzt alle Identitäten und die erwartete
+Revision vor dem ersten Storagezugriff. Die Zusammenführung mit dem lesenden
+Reader zeigte eine fehlende State-Anlage beim ersten Pin: Ein Update ohne State
+bestätigte keine steigende Revision. Der Writer legt den State nun ausdrücklich
+innerhalb seines Commands an. Reads und readonly Snapshotprüfung schreiben
+weiterhin nichts. Die Storegegenprobe prüft den ersten bestätigten Revisionswert
+zusätzlich zu Fresh, Replay und unabhängiger Kopie.
+
 ## Nächste ausführbare Schritte
 
 1. **Bestätigungs-/Closeweg schließen.** `executeSceneRule` besitzt lokale
