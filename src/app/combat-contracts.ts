@@ -10,6 +10,7 @@ export interface Combatant {role?:import('./npc-contracts').NpcRole;
   death?:CharacterHealth['death'];deathLast?:{result:DeathSaveResult;roll:number|null};
   concentrationChecks?:{damage:number;dc:number}[];concentrationLast?:{damage:number;dc:number;roll:number|null;modifier:number;total:number|null;success:boolean};
   legendaryActions?:{remaining:number;maximum:number;lastResetRound:number;lastUsedRound?:number;lastUsedTurnId?:string};
+  timedEffects?:{id:string;name:string;remaining:number;tick:'start'|'end'}[];
   /** Missing means a legacy known value; false denotes an uninitialized PC. */
   healthKnown?: boolean;
   xp?: number; countForMultiplier?: boolean; sourceId?: string; sourceOrdinal?: number; worldActorId?:string;worldActorRevision?:number;sourceEntryId?:string; partitionKind?:'mob'|'individual';
@@ -39,6 +40,8 @@ export type CombatAction =
   | { kind:'concentration-roll';participantId:string;modifier:number }
   | { kind:'concentration';participantId:string;success:boolean }
   | { kind:'legendary-action';participantId:string;actionId:string;cost:number }
+  | { kind:'effect-add';participantId:string;name:string;rounds:number;tick:'start'|'end' }
+  | { kind:'effect-remove';participantId:string;effectId:string }
   | { kind: 'remove'; participantId: string }
   | { kind: 'roll'; mode: 'normal' | 'advantage' | 'disadvantage' }
   | { kind: 'start' | 'next' | 'undo' }
@@ -81,5 +84,6 @@ export function checkedCombatant(p:Combatant):Combatant {
     if(p.concentrationChecks!==undefined&&(!Array.isArray(p.concentrationChecks)||!p.concentrating||p.concentrationChecks.length>100||p.concentrationChecks.some(check=>!Number.isSafeInteger(check.damage)||check.damage<1||check.damage>1000000||check.dc!==concentrationDc(check.damage))))throw new Error('Offene Konzentrationsprüfungen ungültig.');
     if(p.concentrationLast!==undefined){const c=p.concentrationLast;if(!Number.isSafeInteger(c.damage)||c.damage<1||c.damage>1000000||c.dc!==concentrationDc(c.damage)||c.roll!==null&&(!Number.isSafeInteger(c.roll)||c.roll<1||c.roll>20)||!Number.isSafeInteger(c.modifier)||Math.abs(c.modifier)>1000||c.total!==null&&!Number.isSafeInteger(c.total)||c.roll===null&&c.total!==null||c.roll!==null&&c.total!==c.roll+c.modifier||typeof c.success!=='boolean'||c.total!==null&&c.success!==(c.total>=c.dc))throw new Error('Letzte Konzentrationsprüfung ungültig.');}
     if(p.legendaryActions!==undefined){const l=p.legendaryActions,used=(l.lastUsedRound===undefined)===(l.lastUsedTurnId===undefined);if(!Number.isSafeInteger(l.maximum)||l.maximum<1||l.maximum>10||!Number.isSafeInteger(l.remaining)||l.remaining<0||l.remaining>l.maximum||!Number.isSafeInteger(l.lastResetRound)||l.lastResetRound<0||!used||l.lastUsedRound!==undefined&&(!Number.isSafeInteger(l.lastUsedRound)||l.lastUsedRound<1)||l.lastUsedTurnId!==undefined&&(typeof l.lastUsedTurnId!=='string'||!l.lastUsedTurnId||l.lastUsedTurnId.length>1000))throw new Error('Legendäre Aktionspunkte ungültig.');}
+    if(p.timedEffects!==undefined){if(!Array.isArray(p.timedEffects)||p.timedEffects.length>100)throw new Error('Rundeneffekte ungültig.');const ids=new Set<string>();for(const effect of p.timedEffects){if(!effect||typeof effect.id!=='string'||!effect.id||ids.has(effect.id)||typeof effect.name!=='string'||!effect.name.trim()||effect.name.length>500||!Number.isSafeInteger(effect.remaining)||effect.remaining<1||effect.remaining>1000||!['start','end'].includes(effect.tick))throw new Error('Rundeneffekt ungültig.');ids.add(effect.id);}}
   return p;
 }
