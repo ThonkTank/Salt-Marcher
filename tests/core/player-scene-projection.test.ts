@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -41,4 +42,21 @@ test('published scene read-aloud stays bound to the group the GM showed',()=>{
   store.executeLive({commandId:'focus-primary',campaignId:campaign.id,token,action:{kind:'focus',sceneId:primary.id,expectedRevision:1}});
   player=store.playerView(token);assert.equal(player.frame.mode,'scene');assert.equal(player.frame.scene?.text,'Die Vorhut sieht das offene Basalttor.');
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+test('player settings saved before scene binding remain readable and fail closed',()=>{
+ const root=mkdtempSync(join(tmpdir(),'player-settings-upgrade-')),path=join(root,'campaign.sqlite');let store=new CampaignStore(path,'test'),reopened:CampaignStore|undefined,closed=false;
+ try{
+  const campaign=store.create('Bestehende Spieleranzeige'),token=store.activate(campaign.id).token;
+  const character=store.executeLive({commandId:'character',campaignId:campaign.id,token,action:{kind:'create-character',profile:{name:'Ada'}}}).character!;
+  const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
+  store.executeLive({commandId:'activate',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
+  store.executeLive({commandId:'content',campaignId:campaign.id,token,action:{kind:'scene-content',sceneId:scene.id,expectedRevision:0,title:'Alte Scene',readAloud:'Nur bewusst erneut veröffentlichen.',notes:'',locationId:null}});
+  const shown=store.executePlayer({commandId:'show',campaignId:campaign.id,token,expectedRevision:0,action:{kind:'settings',settings:{blank:false,mode:'scene',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
+  const db=(store as unknown as {db:any}).db,row=db.prepare("SELECT payload FROM player_record WHERE campaign_id=? AND kind='settings' AND id='main'").get(campaign.id),legacy=JSON.parse(row.payload);delete legacy.boundSceneId;const payload=JSON.stringify(legacy),checksum=createHash('sha256').update(payload).digest('hex');db.prepare("UPDATE player_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='settings' AND id='main'").run(payload,checksum,campaign.id);
+  store.close();closed=true;reopened=new CampaignStore(path,'test');const workspace=reopened.activate(campaign.id),view=reopened.playerView(workspace.token);
+  assert.equal(view.settings.boundSceneId,null);assert.equal(view.frame.mode,'blank');assert.match(view.frame.reason??'',/anderen Gruppe/);
+  const republished=reopened.executePlayer({commandId:'republish',campaignId:campaign.id,token:workspace.token,expectedRevision:shown.settings.revision,action:{kind:'settings',settings:{blank:false,mode:'scene',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}}});
+  assert.equal(republished.settings.boundSceneId,scene.id);assert.equal(republished.frame.scene?.text,'Nur bewusst erneut veröffentlichen.');
+ }finally{reopened?.close();if(!closed)store.close();rmSync(root,{recursive:true,force:true});}
 });

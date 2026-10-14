@@ -50,8 +50,9 @@ function validateDiscoveries(db:any){
 }
 
 function checkedPlayerRecord(db:any,row:any){
- const v=parsed(row),cam=row.campaign_id;
+ let v=parsed(row);const cam=row.campaign_id;
  if(row.kind==='settings'){
+  if(v&&typeof v==='object'&&!Array.isArray(v)&&!Object.hasOwn(v,'boundSceneId'))v={...v,boundSceneId:null};
   validateSettings(v);if(row.id!=='main')throw new Error('Anzeigeoptionskennung widersprüchlich.');
   if(v.imageId!==null&&!db.prepare('SELECT 1 FROM player_asset WHERE campaign_id=? AND id=?').get(cam,v.imageId))throw new Error('Bildauswahl fehlt.');
   if(v.boundSceneId!==null&&!db.prepare('SELECT 1 FROM live_scene WHERE campaign_id=? AND id=?').get(cam,v.boundSceneId))throw new Error('Anzeigeszenenbindung fehlt.');
