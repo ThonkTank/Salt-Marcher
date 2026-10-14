@@ -4,7 +4,8 @@ import {editTreasury} from './treasury';
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
-import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, ledgerCopper, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import {checkedCharacterProfile} from '../live-contracts';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene, readCharacter } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
@@ -214,8 +215,14 @@ function checkedLedgerRow(row:any):LedgerItem{
  if(item.id!==row.id||item.characterId!==row.character_id||item.revision!==row.revision)throw new Error('Beuteeintrag gehört nicht zu seiner Figur oder Revision.');
  return item;
 }
+export function readLedgerDefinition(db:any,item:LedgerItem){
+ const pinned=readItemDefinition(db,ledgerDefinitionId(item),item.reference.revision);
+ if(pinned.name!==item.name||pinned.category!==item.category||pinned.unitCopper!==item.unitCopper)throw new Error('Persönlicher Beuteeintrag widerspricht seiner aufgezeichneten Gegenstandsrevision.');
+ return readItemDefinition(db,item.reference.definitionId);
+}
+function ledgerView(db:any,item:LedgerItem){const definition=readLedgerDefinition(db,item);item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;return item;}
 export function readLedgerItem(db: any, cam: string, id: string): LedgerItem {
-  const item=checkedLedgerRow(db.prepare('SELECT * FROM character_ledger WHERE campaign_id=? AND id=?').get(cam,id));if(item.origin==='transfer'&&!item.rewardCreditId)item.rewardCreditId=transferCredit(db,cam,item);if(item.origin!=='transfer'&&item.status==='given'&&item.recipientCharacterId)item.creditedCopper=transferredValue(db,cam,item)?.toString()??null;return item;
+  const item=checkedLedgerRow(db.prepare('SELECT * FROM character_ledger WHERE campaign_id=? AND id=?').get(cam,id));readLedgerDefinition(db,item);if(item.origin==='transfer'&&!item.rewardCreditId)item.rewardCreditId=transferCredit(db,cam,item);if(item.origin!=='transfer'&&item.status==='given'&&item.recipientCharacterId)item.creditedCopper=transferredValue(db,cam,item)?.toString()??null;return item;
 }
 // Older transfers already record their parent chain. Resolve it lazily so old
 // campaign histories keep their bytes and receipts while new portions carry a stable credit.
@@ -239,7 +246,7 @@ function transferredValue(db:any,cam:string,root:LedgerItem):bigint|null{
  for(const row of db.prepare(sql).iterate(cam,root.id,cam,cam,root.id)){
   const item=checkedLedgerRow(row);if(item.origin!=='transfer'||item.status==='given'&&item.recipientCharacterId)continue;
   if(transferCredit(db,cam,item)!==root.id)continue;
-  item.currentUnitCopper=readItemDefinition(db,item.reference.definitionId).unitCopper;
+  item.currentUnitCopper=readLedgerDefinition(db,item).unitCopper;
   const value=ledgerCopper(item);if(value===null)return null;total+=value;
  }
  return total;
@@ -286,8 +293,7 @@ export function readLedgerInventory(db:any,cam:string,query:LedgerInventoryQuery
   const sql='SELECT rowid AS cursor,* FROM character_ledger WHERE campaign_id=? AND character_id=?'+(cursor===null?'':' AND rowid<?')+' ORDER BY rowid DESC LIMIT 51';
   const rows=db.prepare(sql).all(cam,query.characterId,...(cursor===null?[]:[cursor])),page=rows.slice(0,50),items:LedgerItem[]=[],problems:LedgerPage['problems']=[];
   for(const row of page)try{
-   const item=checkedLedgerRow(row);if(item.status!=='received'||item.quantity===0)continue;
-   const definition=readItemDefinition(db,item.reference.definitionId);item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;items.push(item);
+   const item=checkedLedgerRow(row);if(item.status!=='received'||item.quantity===0)continue;items.push(ledgerView(db,item));
   }catch(error){problems.push({id:row.id,message:(error instanceof Error?error.message:'Beuteeintrag nicht verfügbar.').slice(0,1000)});}
   return{items,problems,visited:page.length,next:rows.length>50?String(page[49].cursor):null};
  })();
@@ -377,7 +383,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
     }else if(a.kind==='ledger-split'||a.kind==='ledger-merge'||a.kind==='ledger-transfer'){
       const l=readLedgerItem(db,cam,a.entryId),before=structuredClone(l);if(l.revision!==a.expectedRevision||l.status!=='received'||typeof a.reason!=='string'||!a.reason.trim()||a.reason.length>10000)throw new Error('Verfügbaren Beuteeintrag und Grund angeben.');
       if(a.kind==='ledger-merge'){
-        const source=readLedgerItem(db,cam,a.sourceId),sourceBefore=structuredClone(source);if(source.id===l.id||source.revision!==a.expectedSourceRevision||source.status!=='received'||source.quantity<1||l.instanceId||source.instanceId||source.characterId!==l.characterId||source.reference.definitionId!==l.reference.definitionId||['origin','unitCopper','treasureId','combatId','sceneId','locationId','instantMs','sourceNoteId','awardId','provenance','rewardCreditId','sourceTreasureId','sourceTreasureItemId'].some(k=>(source as any)[k] !== (l as any)[k])||l.quantity+source.quantity>1000000)throw new Error('Nur passende Mengenstapel derselben Herkunft zusammenführen.');l.quantity+=source.quantity;if(l.paidCopper!==undefined||source.paidCopper!==undefined)l.paidCopper=(BigInt(l.paidCopper??'0')+BigInt(source.paidCopper??'0')).toString();source.quantity=0;source.mergeTargetId=l.id;source.revision++;l.revision++;saveLedger(db,cam,source);saveLedger(db,cam,l);event(db,cam,l.characterId,'loot-merge',{before,sourceBefore,after:l,sourceAfter:source,reason:a.reason});ledgerIds.push(l.id);
+        const source=readLedgerItem(db,cam,a.sourceId),sourceBefore=structuredClone(source);if(source.id===l.id||source.revision!==a.expectedSourceRevision||source.quantity<1||!ledgerStacksMatch(l,source)||l.quantity+source.quantity>1000000)throw new Error('Nur passende Mengenstapel derselben Herkunft zusammenführen.');l.quantity+=source.quantity;if(l.paidCopper!==undefined||source.paidCopper!==undefined)l.paidCopper=(BigInt(l.paidCopper??'0')+BigInt(source.paidCopper??'0')).toString();source.quantity=0;source.mergeTargetId=l.id;source.revision++;l.revision++;saveLedger(db,cam,source);saveLedger(db,cam,l);event(db,cam,l.characterId,'loot-merge',{before,sourceBefore,after:l,sourceAfter:source,reason:a.reason});ledgerIds.push(l.id);
       }else{
         if(!Number.isSafeInteger(a.quantity)||a.quantity<1||a.quantity>l.quantity||a.kind==='ledger-split'&&(a.quantity===l.quantity||l.instanceId))throw new Error('Eine passende Teilmenge angeben.');const part:LedgerItem={...l,id:randomUUID(),revision:1,quantity:a.quantity,parentId:l.id,recordedAt:new Date().toISOString()};if(l.paidCopper!==undefined){part.paidCopper=(BigInt(l.paidCopper)*BigInt(a.quantity)/BigInt(l.quantity)).toString();l.paidCopper=(BigInt(l.paidCopper)-BigInt(part.paidCopper)).toString();}l.quantity-=a.quantity;l.revision++;
         if(a.kind==='ledger-transfer'){const m=db.prepare('SELECT membership_revision FROM roster_member WHERE campaign_id=? AND id=?').get(cam,a.characterId);if(!m||m.membership_revision!==a.expectedMembershipRevision||a.characterId===l.characterId)throw new Error('Andere bestehende Empfängerfigur auswählen.');const handed={...part,status:'given' as const,counterparty:JSON.parse(db.prepare('SELECT payload FROM character_profile WHERE campaign_id=? AND id=?').get(cam,a.characterId).payload).name,recipientCharacterId:a.characterId,counterpartyLink:undefined};saveLedger(db,cam,handed);const received={...part,id:randomUUID(),characterId:a.characterId,origin:'transfer' as const,rewardCreditId:l.rewardCreditId??handed.id,parentId:handed.id,counterparty:JSON.parse(db.prepare('SELECT payload FROM character_profile WHERE campaign_id=? AND id=?').get(cam,l.characterId).payload).name,sourceCharacterId:l.characterId,provenance:'Weitergabe'};delete received.paidCopper;saveLedger(db,cam,received);event(db,cam,a.characterId,'loot-transfer-received',{sourceId:handed.id,entry:received,reason:a.reason});event(db,cam,l.characterId,'loot-transfer',{before,after:l,handed,receivedId:received.id,reason:a.reason});ledgerIds.push(l.id,handed.id,received.id);
