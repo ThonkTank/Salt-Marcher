@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
@@ -7,7 +8,7 @@ buildSync({entryPoints:['src/app/session-proposal-editor.ts'],outfile:'.build/se
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};}
 function fixture(t){
- const previous={document:globalThis.document,window:globalThis.window}, {document}=parseHTML('<html><body></body></html>');globalThis.window={campaign:{}};globalThis.document=document;const create=document.createElement.bind(document);document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='select')Object.defineProperty(node,'value',{value:'',writable:true});return node;};
+ const previous={document:globalThis.document,window:globalThis.window}, {document}=parseHTML(readFileSync('src/app/index.html','utf8'));globalThis.window={campaign:{}};globalThis.document=document;const create=document.createElement.bind(document);document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='select')Object.defineProperty(node,'value',{value:'',writable:true});return node;};
  const file=require.resolve('../.build/session-proposal-dom.cjs');delete require.cache[file];const ui=require(file);ui.initProposalEditor();
  const el=id=>document.getElementById(id),dialog=el('session-proposal-editor');dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};Object.defineProperty(el('proposal-edit-location'),'value',{value:'',writable:true});
  const proposal={id:'a',index:0,title:'Alpha',notes:'Author notes\r\n',readAloud:'',locationId:null,noteIds:[],encounter:{},acceptedVisitId:null,reward:{poolXp:0,items:[{name:'Coins',quantity:1,valueGold:'2',category:'coins'}]}};
