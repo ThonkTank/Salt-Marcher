@@ -42,8 +42,8 @@ function database(progressRows:any[],profiles:any[]=[],worldRows:any[]=[],timeRo
   };
 }
 
-test("chronicle skips non-display events without losing older relevant history",()=>{
-  const ignored=Array.from({length:2001},(_,index)=>progress("ignored-"+index,"narrative-state",new Date(3000-index).toISOString()));
+test("chronicle skips unsupported progress events without losing older relevant history",()=>{
+  const ignored=Array.from({length:2001},(_,index)=>progress("ignored-"+index,"internal-only",new Date(3000-index).toISOString()));
   const relevant=progress("older-xp","xp",new Date(1).toISOString());
   const result=readChronicle(database([...ignored,relevant]),"campaign-1");
   assert.deepEqual(result.entries.map(entry=>entry.id),["progress:older-xp"]);
@@ -114,12 +114,13 @@ test("live play brackets a session recap with persistent markers",()=>{
     const scene=store.executeLive({commandId:"scene",campaignId:campaign.id,token,action:{kind:"initialize",expectedRosterRevision:0}}).scene!;
     store.executeLive({commandId:"start",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"start",summary:""}});
     assert.throws(()=>store.executeLive({commandId:"second-start",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"start",summary:""}}),/läuft bereits/);
-    store.executeLive({commandId:"end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:"Weiter im Keller."}});
+    store.executeLive({commandId:"end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:"Die Gruppe öffnete das Basalttor.",handoff:"Weiter im Keller. Fackeln vorbereiten."}});
     assert.throws(()=>store.executeLive({commandId:"second-end",campaignId:campaign.id,token,action:{kind:"session-marker",sceneId:scene.id,expectedRevision:scene.revision,marker:"end",summary:""}}),/Kein laufender/);
     const markers=store.chronicle(token).entries.filter(entry=>entry.sessionMarker);
-    assert.deepEqual(markers.map(entry=>({marker:entry.sessionMarker,title:entry.title,summary:entry.summary})),[
-      {marker:"end",title:"Spielabend beendet",summary:"Weiter im Keller."},
-      {marker:"start",title:"Spielabend begonnen",summary:""},
+    assert.deepEqual(markers.map(entry=>({marker:entry.sessionMarker,title:entry.title,summary:entry.summary,handoff:entry.handoff??""})),[
+      {marker:"end",title:"Spielabend beendet",summary:"Die Gruppe öffnete das Basalttor.",handoff:"Weiter im Keller. Fackeln vorbereiten."},
+      {marker:"start",title:"Spielabend begonnen",summary:"",handoff:""},
     ]);
+    assert.equal(store.chronicle(token,"all","Fackeln").entries[0]?.sessionMarker,"end");
   }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

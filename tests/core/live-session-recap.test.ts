@@ -16,3 +16,11 @@ test('live session recap retains the most recently completed session',()=>{
 test('the latest boundary preserves session status outside the visible history window',()=>{
  const events=[entry('newest'),entry('older')],start=entry('outside','start');assert.deepEqual(liveSessionRecap(events,start),{open:true,marker:start,entries:events});const end=entry('finished','end');assert.deepEqual(liveSessionRecap(events,end),{open:false,marker:end,entries:[]});
 });
+
+import {sessionCloseHandoffSuggestion} from '../../src/app/live-session-recap';
+
+test('the next-session handoff starts with the current scene and unresolved work',()=>{
+  assert.equal(sessionCloseHandoffSuggestion({sceneTitle:'Nordtor',locationTitle:'Klippenhafen',masks:[{kind:'combat',title:'Wachen am Tor',sceneTitle:'Nordtor'},{kind:'chase',title:'Flucht über die Dächer',sceneTitle:'Späher'}],treasureCount:2,xpBooked:false}),[
+    'Nächster Einstieg: Nordtor · Klippenhafen','- Kampf fortsetzen: Wachen am Tor','- Verfolgung fortsetzen: Flucht über die Dächer (Späher)','- Unverteilte Beute prüfen: 2 Schatzpositionen','- Spielabend-XP prüfen',
+  ].join('\n'));
+});

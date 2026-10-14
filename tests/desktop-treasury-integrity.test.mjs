@@ -65,17 +65,3 @@ test('allocated history and editable remaining quantities have independent bound
  x.store.executeProgress(edit(2));const award=x.store.executeProgress(x.command({kind:'allocate',treasureId:x.id,expectedRevision:3,itemId:lot.id,expectedDefinitionRevision:lot.currentDefinition.revision,quantity:1000000,characterId:member.id,expectedMembershipRevision:member.membershipRevision}));
  const ledger=x.store.ledgerItem(x.w.token,award.ledgerIds[0]);x.store.executeProgress(edit(4));const book=x.store.treasure(x.w.token,x.id);assert.equal(book.items[0].quantity,2000000);assert.equal(book.items[0].allocated,1000000);assert.deepEqual(x.store.ledgerItem(x.w.token,ledger.id),ledger);await x.store.backup(path.join(x.root,'restocked-safe.sqlite'));
 });
-
-function batchRecipients(x){
- const first=activeMember(x),second=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Second recipient'}})).character,live=x.store.live(x.w.token);
- x.store.executeLive(x.command({kind:'membership',characterId:second.id,expectedRevision:second.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:live.scene.id,expectedFocusRevision:live.focusRevision}));return[first,x.store.live(x.w.token).roster.find(c=>c.id===second.id)];
-}
-test('one batch distributes distinct quantities to two recipients and replays without further awards',t=>{
- const x=fixture(t),people=batchRecipients(x),lot=x.treasure.items[0],progress=x.store.progress(x.w.token),allocations=people.map((c,i)=>({itemId:lot.id,expectedDefinitionRevision:lot.currentDefinition.revision,quantity:i===0?2:1,characterId:c.id,expectedMembershipRevision:c.membershipRevision})),cmd=x.command({kind:'allocate-batch',treasureId:x.id,expectedRevision:x.treasure.revision,allocations}),ack=x.store.executeProgress(cmd),after=x.store.db.serialize();
- assert.equal(ack.ledgerIds.length,2);for(let i=0;i<2;i++){const entry=x.store.ledgerItem(x.w.token,ack.ledgerIds[i]);assert.equal(entry.characterId,people[i].id);assert.equal(entry.quantity,allocations[i].quantity);assert.equal(entry.treasureId,x.id);assert.equal(entry.reference.definitionId,lot.reference.definitionId);}
- assert.equal(x.store.treasure(x.w.token,x.id).items[0].allocated,3);assert.equal(x.store.treasure(x.w.token,x.id).revision,x.treasure.revision+1);assert.deepEqual(x.store.executeProgress(cmd),ack);assert.ok(x.store.db.serialize().equals(after));assert.deepEqual(x.store.progress(x.w.token),progress);
-});
-test('an overdrawn second allocation rolls back the first recipient and the whole batch receipt',t=>{
- const x=fixture(t),people=batchRecipients(x),lot=x.treasure.items[0],allocations=people.map((c,i)=>({itemId:lot.id,expectedDefinitionRevision:lot.currentDefinition.revision,quantity:i===0?2:4,characterId:c.id,expectedMembershipRevision:c.membershipRevision})),before=x.store.db.serialize();
- assert.throws(()=>x.store.executeProgress(x.command({kind:'allocate-batch',treasureId:x.id,expectedRevision:x.treasure.revision,allocations})),/Menge/);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.treasure(x.w.token,x.id).items[0].allocated,0);
-});

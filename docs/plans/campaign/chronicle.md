@@ -53,6 +53,12 @@ umfasst einen älteren Treffer hinter 2.000 Ereignissen, gefilterte Markdownausg
 Fresh und kontrollierten IPC-Lesefehler. Er belegt keine vollständige Historie,
 Hard-Crash-Wiederaufnahme oder native Abnahme der neuen Folgespur/Spielabendgrenzen.
 
+Rückblick und Übergabe an den nächsten Spielabend sind getrennte Texte am
+bestätigten Endmarker. Die Übergabe ist suchbar und Teil der Markdownausgabe;
+ihre Rohfelder bleiben bei Dialog- und Kampagnenwechsel sowie neuer Eingabe
+während einer Bestätigung erhalten. Offene Punkte liefern einen editierbaren
+Vorschlag, keine automatische XP- oder Beutebuchung.
+
 ## Nächste ausführbare Lieferung
 
 1. **Fehlende Fachfolgen erschließen.** Tatsächliche Live-/World-/Progression-/

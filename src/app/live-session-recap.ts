@@ -18,3 +18,14 @@ export function liveSessionRecap(entries:ChronicleEntry[],latest?:ChronicleEntry
 }
 
 export const liveActionUpdatesRecap=(action:LiveAction)=>['membership','move','live-moment','session-marker','advance-clock','archive-character','visit-outcome','apply-visit'].includes(action.kind);
+
+export interface SessionCloseHandoffInput{sceneTitle:string;locationTitle?:string|null;masks:{kind:'combat'|'chase';title:string;sceneTitle:string}[];treasureCount:number;xpBooked:boolean}
+
+export function sessionCloseHandoffSuggestion(input:SessionCloseHandoffInput){
+  const lines=['Nächster Einstieg: '+(input.sceneTitle||'Unbenannte Gruppe')+(input.locationTitle?' · '+input.locationTitle:'')];
+  for(const mask of input.masks)lines.push('- '+(mask.kind==='combat'?'Kampf':'Verfolgung')+' fortsetzen: '+mask.title+(mask.sceneTitle&&mask.sceneTitle!==input.sceneTitle?' ('+mask.sceneTitle+')':''));
+  if(input.treasureCount)lines.push('- Unverteilte Beute prüfen: '+input.treasureCount+' '+(input.treasureCount===1?'Schatzposition':'Schatzpositionen'));
+  if(!input.xpBooked)lines.push('- Spielabend-XP prüfen');
+  return lines.join('\n');
+}
+
