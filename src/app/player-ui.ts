@@ -51,7 +51,7 @@ function submit(action:PlayerAction,openWindow=false){
   if(owns(o)&&intent===actions)tell('Spieleranzeige aktualisiert.');
  });
 }
-export async function cuePlayer(mode:'follow'|'scene'|'blank'):Promise<boolean>{
+export async function cuePlayer(mode:'follow'|'blank'):Promise<boolean>{
  const o=owner();if(!o)return false;const intent=++actions,request=++presentation;
  try{
   const latest=unwrap(await window.campaign.playerView(o.token));if(!owns(o)||intent!==actions)return false;

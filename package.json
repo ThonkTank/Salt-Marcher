@@ -55,7 +55,8 @@
     "test:desktop-day-calculator": "node --test --test-concurrency=1 tests/desktop-day-calculator.test.mjs",
     "test:desktop-audio-recovery": "node --test --test-concurrency=1 tests/desktop-audio-layer-recovery.test.mjs tests/desktop-music-stop.test.mjs",
     "test:desktop-player-privacy-ui": "node tools/test-desktop-player-scene-privacy.mjs && node tools/test-desktop-player-scene-privacy.mjs --combat && node tools/test-desktop-player-scene-privacy.mjs --chase",
-    "test:desktop-player-visual": "node --test --test-concurrency=1 tests/desktop-player-visual-contract.test.mjs tests/desktop-player-visual-host.test.mjs"
+    "test:desktop-player-visual": "node --test --test-concurrency=1 tests/desktop-player-visual-contract.test.mjs tests/desktop-player-visual-host.test.mjs",
+    "test:desktop-live-visual-context": "node --test --test-concurrency=1 tests/desktop-live-visual-context.test.mjs"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",

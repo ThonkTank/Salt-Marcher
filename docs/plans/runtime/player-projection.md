@@ -56,8 +56,8 @@ liefert dafür neutral Blank mit einer Erklärung im GMdialog. Er veröffentlich
 keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 
 Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
-produktive Steuerung bietet automatische Karten-/Artansicht, ausdrückliche
-Bildwahl und Blank; der Vorlesetextbutton wurde entfernt. Ein ausdrücklich
+produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
+ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
 gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Scene-
 Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
 in ihren bisherigen Ownertabellen erhalten. Keine Datenmigration erforderlich.
@@ -82,6 +82,10 @@ Der vorhandene Windowtest ergänzt die Lebenszyklusfälle. Die weiteren
 Dungeon-/Knowledge-/Editor- und Größenproben ergänzen
 Karten, gespeicherte Kenntnis, GM-Steuerung und alte asynchrone Antworten.
 
+`desktop-live-visual-context.test.mjs` benutzt die Browser-Event-Realm und
+aktuelle Party-/Ledgerreads für sechs Autosave-/Create-Prüfungen einschließlich
+Vorlesetext. Die ältere untracked Livefixture besitzt diese Anschlüsse nicht;
+ihre vier Fälle sind weiterhin kein grüner Nachweis des aktuellen Stands.
 Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
 gebundenen Vertrag angepasst: GM-Wirkungen und Sichtbarkeitswerte bleiben
 prüfbar; ihr Fortschritt darf keine Mechanik auf den passiven Bildschirm bringen.
