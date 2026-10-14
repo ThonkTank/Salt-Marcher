@@ -5,7 +5,6 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
-const focus=(store:CampaignStore,token:string)=>{const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision};};
 
 test('the player display publishes only the focused scene read-aloud text',()=>{
  const root=mkdtempSync(join(tmpdir(),'player-scene-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
@@ -86,4 +85,4 @@ test('read-aloud keeps authored whitespace and only the explicitly public headin
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
-function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision};}
+function focus(store:CampaignStore,token:string){const view=store.playerView(token);return{expectedFocusId:view.focusId,expectedFocusRevision:view.focusRevision,expectedFocusMembershipRevision:view.focusMembershipRevision};}
