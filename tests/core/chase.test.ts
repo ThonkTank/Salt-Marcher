@@ -27,6 +27,14 @@ test("scene participants keep stable character references and cannot be imported
   assert.throws(()=>applyChaseAction(next,{kind:"participants",participants:[{...participant,id:"p-4"}]}),/bereits/);
 });
 
+test("only non-party chase participants can be hidden from the player display",()=>{
+  const hidden=applyChaseAction(running(),{kind:"visibility",participantId:"p-2",hidden:true});
+  assert.equal(hidden.participants[1]!.hiddenFromPlayers,true);
+  assert.equal(applyChaseAction(hidden,{kind:"visibility",participantId:"p-2",hidden:false}).participants[1]!.hiddenFromPlayers,undefined);
+  const withParty=applyChaseAction(running(),{kind:"participants",participants:[{id:"pc",characterId:"character-1",name:"Ada",side:"pursuer",distance:0,speed:9,exhaustion:0,notes:""}]});
+  assert.throws(()=>applyChaseAction(withParty,{kind:"visibility",participantId:"pc",hidden:true}),/Spielersichtbarkeit/);
+});
+
 test("party movement removes linked characters from every running chase and records the owner result",()=>{
   const state=applyChaseAction(running(),{kind:"participants",participants:[{id:"p-3",characterId:"character-1",name:"Heldin",side:"quarry",distance:0,speed:9,exhaustion:0,notes:""}]}),payload=JSON.stringify(state),row={campaign_id:"campaign-1",id:state.id,scene_id:state.sceneId,revision:state.revision,status:state.status,payload,checksum:createHash("sha256").update(payload).digest("hex")};let saved:any[]=[],receipt:any[]=[];
   const db={prepare:(sql:string)=>sql.startsWith("SELECT")?{all:()=>[row]}:{run:(...values:any[])=>{if(sql.startsWith("INSERT INTO chase"))saved=values;else receipt=values;}}};
