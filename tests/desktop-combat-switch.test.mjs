@@ -34,7 +34,7 @@ test('selecting another encounter blocks old writes and preserves its incomplete
  }finally{x.cleanup();}
 });
 test('a failed selection clears old actions and retries the requested encounter',async()=>{
- const x=await fixture();try{await x.fighter();x.fail();x.choose(x.a.id);await until(()=>x.messages.some(m=>m.includes('nicht lesbar')));assert.equal(x.el('combat-workspace').hidden,true);assert.equal(x.el('combat-history').value,x.a.id);assert.equal(x.el('fighter-damage').disabled,true);assert.equal(x.el('combat-refresh').disabled,false);assert.equal(x.el('combat-load-status').getAttribute('role'),'alert');x.el('combat-refresh').onclick();await until(()=>x.el('combat-title').textContent==='Torwache'&&!x.el('combat-notes').disabled);assert.equal(x.reads.at(-1),x.a.id);assert.equal(x.el('combat-load-status').hidden,true);
+ const x=await fixture();try{await x.fighter();x.fail();x.choose(x.a.id);await until(()=>x.messages.some(m=>m.includes('nicht lesbar')));assert.equal(x.el('combat-workspace').hidden,true);assert.equal(x.el('combat-creation').hidden,true);assert.equal(x.el('combat-status').hidden,true);assert.equal(x.el('combat-history').value,x.a.id);assert.equal(x.el('fighter-damage').disabled,true);assert.equal(x.el('combat-refresh').disabled,false);assert.equal(x.el('combat-load-status').getAttribute('role'),'alert');x.el('combat-refresh').onclick();await until(()=>x.el('combat-title').textContent==='Torwache'&&!x.el('combat-notes').disabled);assert.equal(x.reads.at(-1),x.a.id);assert.equal(x.el('combat-load-status').hidden,true);
  }finally{x.cleanup();}
 });
 test('a superseded failure cannot clear or announce an error over a newer selection',async()=>{
