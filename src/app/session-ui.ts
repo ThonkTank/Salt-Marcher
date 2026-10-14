@@ -1,3 +1,4 @@
+import {encounterEntryLabel} from './encounter-contracts';
 import {initProposalEditor,openProposalEditor,proposalEditorOpen,closeProposalEditor} from './session-proposal-editor';
 import type {Workspace,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
@@ -162,7 +163,7 @@ function renderGroups(){
   title.value=draft.title;title.setAttribute('aria-label','Gruppentitel');notes.value=draft.notes;notes.rows=3;
   const edit=()=>{if(!ownsPreview(owner))return;groupInput(g,title.value,notes.value);scheduleSession('Gruppeneingabe offen.');};
   title.oninput=edit;notes.oninput=edit;
-  facts.textContent=g.plan.entries.map(e=>e.count+' × '+(g.plan.sources.find(c=>c.id===e.creatureId)?.name??e.creatureId)).join(', ')+(g.locationId?' · Platziert bei '+(sources?.locations.find(l=>l.document.id===g.locationId)?.document.name??g.locationId):' · Noch nicht platziert');
+  facts.textContent=g.plan.entries.map(e=>encounterEntryLabel(e,g.plan.sources)).join(', ')+(g.locationId?' · Platziert bei '+(sources?.locations.find(l=>l.document.id===g.locationId)?.document.name??g.locationId):' · Noch nicht platziert');
   save.textContent='Gruppennotizen speichern';save.onclick=()=>{if(!ownsPreview(owner))return;groupInput(g,title.value,notes.value);void flushSession();};
   place.textContent=g.locationId?'An den Besuchsort verschieben':'Am Besuchsort platzieren';place.disabled=!location||location.trashed;
   place.onclick=()=>{void placeGroup(owner,g.id,selectedVisit);};
@@ -209,7 +210,7 @@ async function generatePreview(){
  const request=++previewRequest;
  try{
   if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||!view)return;
-  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
+  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
   const generated=unwrap(await window.campaign.generateSession(owner.token,{compensateLoot:get<HTMLInputElement>('session-loot-compensate').checked,worldSourcesByLocation:get<HTMLInputElement>('session-world-sources').checked,planId:owner.planId,expectedProfileRevision:view.profile.revision,count:Number(value('session-scene-count')),locationIds:[...get('session-locations').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),noteIds:[...get('session-notes').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),encounter}));
   if(!ownsPreview(owner)||request!==previewRequest)return;
   run=generated;renderRun();tell('Spielabend-Vorschau erzeugt. Noch keine Szenen übernommen.');
@@ -225,7 +226,7 @@ function renderRun(){
   const card=document.createElement('article');card.className='session-proposal';
   const title=document.createElement('h3'),text=document.createElement('p'),encounter=document.createElement('p'),accept=document.createElement('button'),regenerate=document.createElement('button');
   title.textContent=p.title+(p.rejected?' · verworfen':'');text.textContent=p.notes;
-  encounter.textContent=p.encounter.entries.map(e=>e.count+' × '+(p.encounter.sources.find(c=>c.id===e.creatureId)?.name??e.creatureId)).join(', ');
+  encounter.textContent=p.encounter.entries.map(e=>encounterEntryLabel(e,p.encounter.sources)).join(', ');
   accept.textContent=p.acceptedVisitId?'Bereits in der Timeline':'Diese Szene in Timeline übernehmen';accept.disabled=!!p.acceptedVisitId||!!p.rejected||!!p.needsEncounterRefresh;
   accept.onclick=()=>{void acceptProposal(source,p.index);};
   regenerate.textContent='Nur diese Begegnung neu erzeugen';regenerate.disabled=!!p.acceptedVisitId;
