@@ -213,7 +213,7 @@ function renderSceneMeta() {
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
   get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }
-async function showLiveNpc(npcId:string){const token=context?.token,focus=playerFocus();if(!focus||!npcId)return;if(await flushLive()&&context?.token===token)await cuePlayerImage('npc',npcId,focus);}
+async function showLiveNpc(npcId:string,isCurrent=()=>true){const token=context?.token,focus=playerFocus();if(!focus||!npcId)return;if(await flushLive()&&context?.token===token&&isCurrent())await cuePlayerImage('npc',npcId,focus);}
 function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
 function renderLiveKnowledge(){
   const root=get('live-knowledge-results');root.replaceChildren();const query=value('live-knowledge-search').trim().toLocaleLowerCase('de');
@@ -333,7 +333,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   get('running-player-location').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),locationId=sceneDraft?.locationId;if(!focus||!locationId)return;if(await flushLive()&&context?.token===token&&sceneDraft?.locationId===locationId)await cuePlayerImage('location',locationId,focus);})();};
   get('running-player-npc-filter').oninput=renderNpcChoices;
   get('running-player-npc').onchange=()=>{get<HTMLButtonElement>('running-player-npc-show').disabled=!value('running-player-npc');};
-  get('running-player-npc-show').onclick=()=>void showLiveNpc(value('running-player-npc'));
+  get('running-player-npc-show').onclick=()=>{const npcId=value('running-player-npc');void showLiveNpc(npcId,()=>value('running-player-npc')===npcId);};
   get('running-player-handout').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(!focus)return;if(await flushLive()&&context?.token===token)await cuePlayerImage('custom',null,focus);})();};
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('live-knowledge-search').oninput=renderLiveKnowledge;
