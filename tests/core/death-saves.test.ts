@@ -82,6 +82,10 @@ test('combat damage at zero HP records a failure and massive damage records deat
     const scene=store.executeLive({commandId:'scene',campaignId:campaign.id,token,action:{kind:'initialize',expectedRosterRevision:1}}).scene!;
     store.executeLive({commandId:'membership',campaignId:campaign.id,token,action:{kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}});
     let combat=store.executeCombat({commandId:'combat',campaignId:campaign.id,token,combatId:null,expectedRevision:null,action:{kind:'create',sceneId:scene.id,title:'Brücke',includeParty:true,expectedMembershipRevision:1}}).combat!,actor=combat.participants[0]!;
+    combat=store.executeCombat({commandId:'revive',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'death',participantId:actor.id,result:'natural-20'}}).combat!;actor=combat.participants[0]!;
+    assert.equal(actor.hp,1);assert.deepEqual(actor.deathLast,{result:'natural-20',roll:null});
+    combat=store.executeCombat({commandId:'knockdown',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage',participantId:actor.id,amount:1}}).combat!;actor=combat.participants[0]!;
+    assert.equal(actor.hp,0);assert.equal(actor.death,undefined);assert.equal(actor.deathLast,undefined);
     combat=store.executeCombat({commandId:'damage',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage',participantId:actor.id,amount:5}}).combat!;actor=combat.participants[0]!;
     assert.deepEqual(actor.death,{successes:0,failures:1,stable:false,dead:false});assert.deepEqual(actor.deathLast,{result:'failure',roll:null});
     combat=store.executeCombat({commandId:'massive',campaignId:campaign.id,token,combatId:combat.id,expectedRevision:combat.revision,action:{kind:'damage',participantId:actor.id,amount:12}}).combat!;actor=combat.participants[0]!;
