@@ -509,3 +509,24 @@ Vorschläge bleiben manuell bearbeitbar. Übernahme, Schatzplatzierung, Neustart
 und Kampagnentransfer behalten die Referenzen. Geänderte, entfernte oder beschädigte Definitionen
 werden bei Neugenerierung als offene Kontingente gemeldet. Die veröffentlichten
 DMG-Quoten und getrennte Verbrauchs-/permanente Magiequoten bleiben offen.
+
+
+### Desktopstand 0.48: Rast, Szenenzeit und Erholung zusammenführen
+
+„Mit der Gruppe rasten“ verbindet die gewählten Figuren mit der Uhr der laufenden
+Szene. Kurze Rast in Minuten und lange Rast in Stunden sind anpassbar; die Vorschau
+zeigt beide Endzeiten. Zeit, Rastbudget und freigegebene Weltfolgen werden gemeinsam
+übernommen. Wetter, Shop-Nachschub und autorisierte Autonomie benutzen den bestehenden
+Zeitablauf. Eine wiederholte identische Bestätigung schreibt nichts ein zweites Mal.
+
+Bei langer Rast kann der GM bekannte Figuren mit positiven HP ausdrücklich auf
+volle HP setzen. 0 HP, unbekannte HP, Zustände und temporäre HP bleiben erhalten;
+weitere Charakterressourcen werden am Charakterbogen geführt. Nur ausgewählte
+aktive Figuren derselben Szene rasten; laufende Kämpfe oder Verfolgungen sind zuvor
+abzuschließen. Ein zwischenzeitlicher Gruppen-/Uhrwechsel verlangt den aktuellen
+Spieltisch. Ohne Zeitoption bleibt die bisherige Rastbudgetkorrektur möglich.
+
+Die Anzeige aktualisiert Uhr, Wetter-/Ortskontext, Party-HP und Budget. Die Chronik
+hält Dauer, Scene und ausdrückliche HP-Erholung fest. Rast und Zeitwirkungen werden
+zusammen gespeichert, einschließlich Receipt; ein konkreter Fehler rollt beide
+zurück. Schema43 unverändert, ältere zeitlose Rastcommands weiterhin nutzbar.

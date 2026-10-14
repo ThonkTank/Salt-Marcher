@@ -4,7 +4,7 @@ import {drawLedgerStacks} from './ledger-stack-ui';
 import {rewardItemsEditor} from './reward-items-ui';
 import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { Workspace, Result } from './contracts';
-import type { LiveView } from './live-contracts';
+import {formatInstant,advanceInstant,type LiveScene,type LiveView} from './live-contracts';
 import type { EncounterAssessment } from './encounter-contracts';
 import { deathSaveControls, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -21,7 +21,7 @@ let ledgerDetailLoading=false, ledgerDetailError='', ledgerFormOwner:string|null
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
 let finishBasis: ProgressView | null = null;let finishItems:RewardItemDraft[]=[];
 let history: ProgressHistory = { items: [], next: null };
-let tell: (text: string, error?: boolean) => void;
+let tell: (text: string, error?: boolean) => void,restSaved:((scene:LiveScene)=>void)|undefined;
 const healthFields=['health-current','health-maximum','health-temporary','health-conditions','health-reason'] as const;
 const deathResults=['success','failure','natural-20','natural-1','stabilize','dead','reset'] as const;
 const deathCount=(count:number,one:string,many:string)=>count+' '+(count===1?one:many);
@@ -58,7 +58,7 @@ async function execute(action: ProgressAction): Promise<boolean> {
   const task=Promise.resolve().then(async () => {
     try {
       const result = await writeConfirmed<ProgressAck>('progress',command,()=>window.campaign.executeProgress(command),()=>workspace?.token===command.token&&gen===generation,meta); if (gen !== generation) return false;
-      view = result; publishProgress();tell(action.kind==='health'?'HP gespeichert.':'Fortschritt und Beute gespeichert.'); void loadHistory();
+      view = result;if(result.restScene)restSaved?.(result.restScene);publishProgress();tell(action.kind==='rest'?'Rast gespeichert'+(result.restScene?' · '+formatInstant(result.restScene.clock.instantMs):'')+(result.restWarnings?.length?' · '+result.restWarnings.join(' · '):'')+'.':action.kind==='health'?'HP gespeichert.':'Fortschritt und Beute gespeichert.'); void loadHistory();
       if (['treasure','allocate','manual-item','ledger','ledger-split','ledger-merge','ledger-transfer','narrative-award'].includes(action.kind)) {
         try {
           await Promise.all([loadTreasures(false,result.treasureId??undefined),loadLedger(),loadLootBalance()]);
@@ -90,6 +90,7 @@ function lock() {
     get<HTMLButtonElement>('death-'+result).disabled=blocked||!p?.health||p.health.hp>0||!!p.healthCombat||controls.terminal&&result!=='reset';
   }
 }
+function renderRestTime(){const root=get('rest-time-preview');if(!get<HTMLInputElement>('rest-time').checked){root.textContent='Nur Rastbudget bestätigen; Szenenzeit bleibt erhalten.';return;}if(!live?.scene){root.textContent='Keine laufende Scene.';return;}try{root.textContent='Danach: kurze Rast '+formatInstant(advanceInstant(live.scene.clock.instantMs,Number(value('rest-short-duration')),'minutes'))+' · lange Rast '+formatInstant(advanceInstant(live.scene.clock.instantMs,Number(value('rest-long-duration')),'hours'));}catch{root.textContent='Positive ganze Rastdauer eintragen.';}}
 function showNotices() {
   if (!view?.notices.length) return;
   const notices = view.notices.slice();
@@ -104,7 +105,7 @@ function render() {
   if (p?.xp !== null && p) { const l = xpLevel(p.xp); meter.max = l.next === null ? 1 : l.next - l.floor; meter.value = l.next === null ? 1 : p.xp - l.floor; }
   const frame = p ? restFrame(p) : null;
   get('rest-summary').textContent = !p ? '' : !frame ? 'Rastbudget noch unbekannt. XP eintragen und bei Altfiguren eine lange Rast bestätigen.' : frame.overdue ? 'Lange Rast fällig · Verbrauch ' + frame.consumed + ' / ' + frame.budget + ' XP' : 'Tagesbelastung ' + frame.consumed + ' / ' + frame.budget + ' · ' + frame.sections + ' Abschnitte · nächste Rast bei ' + Math.ceil(frame.nextRest) + ' XP';
-  const restMeter = get<HTMLProgressElement>('rest-meter'); restMeter.hidden = !frame; restMeter.max = 1; restMeter.value = frame?.fill ?? 0;
+  renderRestTime();const restMeter = get<HTMLProgressElement>('rest-meter'); restMeter.hidden = !frame; restMeter.max = 1; restMeter.value = frame?.fill ?? 0;
   const status=p?.health??p?.lastCombatStatus;
   get('health-summary').textContent = (p?.health?'HP: '+p.health.hp+' / '+p.health.maxHp:'HP noch offen.')+(status?.tempHp?' + '+status.tempHp+' temporär':'')+(status?.conditions?' · '+status.conditions:'')+(status?.concentrating?' · Konzentration':'');
   const death=p?.health?.death,panel=get('death-saves'),controls=deathSaveControls(death);panel.hidden=!p?.health||p.health.hp>0||!!p.healthCombat;if(!panel.hidden){get('death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':'Todesrettungswürfe: '+deathCount(death?.successes??0,'Erfolg','Erfolge')+' · '+deathCount(death?.failures??0,'Fehlschlag','Fehlschläge');get<HTMLDetailsElement>('death-other').open=controls.terminal;}
@@ -265,10 +266,10 @@ async function recoveredProgress(event:CommitResolution){
   const action=meta.action,key=workspace.campaign.id+':'+action.characterId,draft=healthDrafts.get(key),saved=(event.value as ProgressAck).characters.find(c=>c.characterId===action.characterId);
   if(draft&&draft.revision===meta.action.expectedRevision&&saved){if(JSON.stringify(draft)===JSON.stringify(meta.healthDraft))healthDrafts.delete(key);else draft.revision=saved.revision;}
  }
- await refreshProgress(false);publishProgress();
+ if(meta?.owner==='progress'&&meta.token===workspace.token&&meta.generation===generation&&(event.value as ProgressAck)?.restScene)restSaved?.((event.value as ProgressAck).restScene!);await refreshProgress(false);publishProgress();
 }
-export function initProgress(status: typeof tell) {
-  tell=status;initCommitControls(()=>workspace,status);onCommitState(lock);onCommitResolved(recoveredProgress);
+export function initProgress(status: typeof tell,onRestSaved?:(scene:LiveScene)=>void) {
+  tell=status;restSaved=onRestSaved;initCommitControls(()=>workspace,status);onCommitState(lock);onCommitResolved(recoveredProgress);
   const balance=document.createElement('details');balance.id='loot-balance';balance.innerHTML='<summary>Kumulative Beuteverteilung</summary><p class="caption">Zählt erhaltene Belohnungen zum aktuellen Definitionswert oder tatsächlichen Erlös. Käufe und reine Weitergaben erzeugen keinen neuen Kampagnenwert; unbekannte Werte bleiben offen.</p><div id="loot-balance-list"></div>';get('progress-notices').after(balance);
   const death=document.createElement('div');death.id='death-saves';death.hidden=true;death.innerHTML='<p id="death-summary"></p><div class="toolbar"><button id="death-success" type="button">Erfolg</button><button id="death-failure" type="button">Fehlschlag</button></div><details id="death-other"><summary>Sonderfälle und Korrektur</summary><div class="toolbar"><button id="death-natural-20" type="button">Natürliche 20</button><button id="death-natural-1" type="button">Natürliche 1</button><button id="death-stabilize" type="button">Stabilisieren</button><button id="death-dead" type="button">Als tot markieren</button><button id="death-reset" type="button" hidden>Todesrettungswürfe zurücksetzen</button></div></details>';get('health-summary').after(death);
   for(const result of deathResults)get('death-'+result).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation:'death',result,reason:'Todesrettungswurf'});};
@@ -283,7 +284,13 @@ export function initProgress(status: typeof tell) {
   for(const operation of ['damage','heal'] as const)get('health-'+operation).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected),key=healthKey();if(!p||!key)return;if(healthDrafts.has(key)){tell('HP-Eingabe zuerst speichern.',true);return;}void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation,amount:Number(value('health-amount')),reason:''});};
   get('xp-amount').oninput=xpPreview;get('xp-mode').onchange=xpPreview;
   get('xp-form').onsubmit=event=>{event.preventDefault();const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'xp',characterId:p.characterId,expectedRevision:p.revision,mode:value('xp-mode') as 'add'|'subtract'|'set',amount:Number(value('xp-amount')),reason:value('xp-reason'),correctionOf:value('xp-correction-source')||undefined});};
-  for(const rest of ['short','long'] as const)get('rest-'+rest).onclick=()=>{const recipients=[...get('rest-members').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:view!.characters.find(c=>c.characterId===b.value)!.revision}));void execute({kind:'rest',rest,recipients});};
+  for(const rest of ['short','long'] as const)get('rest-'+rest).onclick=()=>{
+    try{if(!workspace||!live?.scene||!view)throw new Error('Aktuellen Spieltisch laden.');const recipients=[...get('rest-members').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:view!.characters.find(c=>c.characterId===b.value)!.revision})),restoreHp=rest==='long'&&get<HTMLInputElement>('rest-restore-hp').checked;
+    if(restoreHp&&recipients.some(r=>healthDrafts.has(workspace!.campaign.id+':'+r.characterId)))throw new Error('Offene HP-Eingaben vor der Erholung speichern oder verwerfen.');
+    const scene=get<HTMLInputElement>('rest-time').checked?{id:live.scene.id,expectedMembershipRevision:live.scene.membershipRevision,expectedClockRevision:live.scene.clock.revision,expectedFocusRevision:live.focusRevision!,amount:Number(value('rest-'+rest+'-duration')),unit:rest==='short'?'minutes' as const:'hours' as const}:undefined;
+    void execute({kind:'rest',rest,recipients,restoreHp,scene});}catch(error){tell((error as Error).message,true);}
+  };
+  for(const id of ['rest-time','rest-short-duration','rest-long-duration'])get(id).addEventListener('input',renderRestTime);
   get('progress-history-more').onclick=()=>void loadHistory(true);
   get('progress-refresh').onclick=()=>void refreshProgress();get('treasure-list').onchange=()=>{void loadSelectedTreasure().catch(error=>tell(error.message,true));};
   get('treasure-more').onclick=()=>{void loadTreasures(true).catch(error=>tell(error.message,true));};get('ledger-more').onclick=()=>{void loadLedger(true).catch(error=>tell(error.message,true));};
