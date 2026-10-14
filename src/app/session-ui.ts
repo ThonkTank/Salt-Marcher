@@ -1,3 +1,4 @@
+import {SessionCopy} from './session-copy-ui';
 import {SessionReview} from './session-review-ui';
 import {initSessionPacket,closePreparationPacket} from './session-packet-ui';
 import {magicPoolPicker} from './session-magic-pool-ui';
@@ -13,13 +14,14 @@ import {exactWeight,type GenerationRequest} from './generation-contracts';
 import type {SessionProfile,VisitDetail,PreparedGroup,SessionView,SessionAction,SessionRun,SessionProposal} from './session-contracts';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>get<HTMLInputElement>(id).value,unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 let proposalReview:SessionReview;
+let sessionCopy:SessionCopy;
 let magicPick:ReturnType<typeof magicPoolPicker>;
 let requiredPick:ReturnType<typeof requiredNpcPicker>;
 let workspace:Workspace|null=null,plan:ManualPlan|null=null,visitId:string|null=null,sources:Preparation|null=null,view:SessionView|null=null,profileDraft:SessionProfile|null=null,visitDraft:VisitDetail|null=null,run:SessionRun|null=null;
 type GroupDraft=Pick<PreparedGroup,'id'|'revision'|'title'|'notes'>;
 const groupDrafts=new Map<string,GroupDraft>();
 let generation=0,loadRequest=0,previewRequest=0,basis='',profileDirty=false,visitDirty=false,timer:ReturnType<typeof setTimeout>|null=null,pending:Promise<boolean>|null=null;
-let tell:(text:string,error?:boolean)=>void,flushBase:()=>Promise<boolean>,refreshBase:(visitId?:string)=>Promise<void>,openNote:(id:string)=>Promise<void>;
+let tell:(text:string,error?:boolean)=>void,flushBase:()=>Promise<boolean>,refreshBase:(visitId?:string,planId?:string)=>Promise<void>,openNote:(id:string)=>Promise<void>;
 let roster:{characterId:string;name:string;xp:number|null;revision:number;active:boolean}[]=[];
 type PreviewOwner={token:string;planId:string};
 type StoryAward={owner:PreviewOwner;visitId:string;revision:number;rewardId:string;poolXp:number;characters:typeof roster};
@@ -30,7 +32,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
  const key=JSON.stringify([next?.token,current?.id,selected]);
  workspace=next;plan=current;visitId=selected;sources=data;
- if(parentChanged){closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
+ if(parentChanged){sessionCopy?.reset();closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
  if(key===basis)return;
  basis=key;generation++;loadRequest++;closeStoryAward();
@@ -336,6 +338,7 @@ export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRe
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
 proposalReview=new SessionReview(acceptSelectedProposals);
 initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession());
+sessionCopy=new SessionCopy(status,()=>workspace&&plan&&sources?{workspace,plan,sources}:null,async()=>await flushSession()&&await flushBase(),async (planId,visitId)=>{await refreshBase(visitId,planId);});
 initProposalEditor();tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
  get('plan-replace').onclick=()=>report(openReplacement);get('plan-replacement-source').onchange=()=>report(replacementSource);
