@@ -44,7 +44,7 @@ export function deactivatePlayer(){closeControls();view=null;viewOwner=null;base
 function settings(mode:PlayerSettings['mode'],blank:boolean):PlayerAction{return{kind:'settings',settings:{blank,mode,imageId:value('player-image')||null,title:value('player-title'),labels:input('player-labels').checked,light:value('player-light') as PlayerSettings['light'],displayId:value('player-screen')?Number(value('player-screen')):null,fullscreen:input('player-fullscreen').checked}};}
 function submit(action:PlayerAction,openWindow=false){
  const o=owner();if(!o||!hasView(o))return;
- const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:view!.settings.revision,expectedFocusId:view!.focusId,expectedFocusRevision:view!.focusRevision,expectedFocusMembershipRevision:view!.focusMembershipRevision,action},intent=++actions,request=++presentation;
+ const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:view!.settings.revision,expectedFocusId:view!.focusId,expectedFocusRevision:view!.focusRevision,expectedFocusMembershipRevision:view!.focusMembershipRevision,expectedFocusLocationId:view!.focusLocationId,action},intent=++actions,request=++presentation;
  run(o,async o=>{
   const result=await window.campaign.executePlayer(command);if(!owns(o))return;
   const confirmed=unwrap(result);publish(o,confirmed,request);
@@ -52,13 +52,13 @@ function submit(action:PlayerAction,openWindow=false){
   if(owns(o)&&intent===actions)tell('Spieleranzeige aktualisiert.');
  });
 }
-export async function cuePlayer(mode:'follow'|'scene'|'blank',focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'>|null):Promise<boolean>{
+export async function cuePlayer(mode:'follow'|'scene'|'blank',focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'|'focusLocationId'>|null):Promise<boolean>{
  const o=owner();if(!o)return false;const intent=++actions,request=++presentation;
  try{
   const latest=unwrap(await window.campaign.playerView(o.token));if(!owns(o)||intent!==actions)return false;
-  if(mode!=='blank'&&(!focus||focus.focusId!==latest.focusId||focus.focusRevision!==latest.focusRevision||focus.focusMembershipRevision!==latest.focusMembershipRevision))throw new Error('Fokussierte Gruppe geändert. Prüfe die Freigabe für die aktuelle Gruppe erneut.');
+  if(mode!=='blank'&&(!focus||focus.focusId!==latest.focusId||focus.focusRevision!==latest.focusRevision||focus.focusMembershipRevision!==latest.focusMembershipRevision||focus.focusLocationId!==latest.focusLocationId))throw new Error('Fokussierte Gruppe geändert. Prüfe die Freigabe für die aktuelle Gruppe erneut.');
   const action:PlayerAction=mode==='blank'?{kind:'blank'}:{kind:'settings',settings:{blank:false,mode,imageId:latest.settings.imageId,title:'',labels:latest.settings.labels,light:latest.settings.light,displayId:latest.settings.displayId,fullscreen:latest.settings.fullscreen}};
-  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus?.focusId??latest.focusId,expectedFocusRevision:focus?.focusRevision??latest.focusRevision,expectedFocusMembershipRevision:focus?.focusMembershipRevision??latest.focusMembershipRevision,action};
+  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus?.focusId??latest.focusId,expectedFocusRevision:focus?.focusRevision??latest.focusRevision,expectedFocusMembershipRevision:focus?.focusMembershipRevision??latest.focusMembershipRevision,expectedFocusLocationId:focus?.focusLocationId??latest.focusLocationId,action};
   const confirmed=unwrap(await window.campaign.executePlayer(command));if(!owns(o)||intent!==actions)return false;
   publish(o,confirmed,request);
   if(mode!=='blank'){unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;await reload(o);}
@@ -66,11 +66,11 @@ export async function cuePlayer(mode:'follow'|'scene'|'blank',focus:Pick<PlayerV
   return owns(o)&&intent===actions;
  }catch(error){if(owns(o)&&intent===actions)tell((error as Error).message,true);return false;}
 }
-export async function cuePlayerImage(kind:'location'|'custom',subjectId:string|null,focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'>):Promise<boolean>{
+export async function cuePlayerImage(kind:'location'|'custom',subjectId:string|null,focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'|'focusLocationId'>):Promise<boolean>{
  const o=owner();if(!o)return false;const intent=++actions,request=++presentation;
  try{
   let latest=unwrap(await window.campaign.playerView(o.token));if(!owns(o)||intent!==actions)return false;
-  const sameFocus=(candidate:PlayerView)=>focus.focusId===candidate.focusId&&focus.focusRevision===candidate.focusRevision&&focus.focusMembershipRevision===candidate.focusMembershipRevision;
+  const sameFocus=(candidate:PlayerView)=>focus.focusId===candidate.focusId&&focus.focusRevision===candidate.focusRevision&&focus.focusMembershipRevision===candidate.focusMembershipRevision&&focus.focusLocationId===candidate.focusLocationId;
   if(!sameFocus(latest))throw new Error('Fokussierte Gruppe geändert. Prüfe die Bildfreigabe für die aktuelle Gruppe erneut.');
   let asset=kind==='location'?latest.assets.filter(a=>a.kind==='location'&&a.subjectId===subjectId).at(-1):undefined;
   if(!asset){
@@ -80,7 +80,7 @@ export async function cuePlayerImage(kind:'location'|'custom',subjectId:string|n
   }
   if(!asset)throw new Error('Bild konnte nicht für die Spieleranzeige vorbereitet werden.');
   const action:PlayerAction={kind:'settings',settings:{blank:false,mode:'image',imageId:asset.id,title:'',labels:latest.settings.labels,light:latest.settings.light,displayId:latest.settings.displayId,fullscreen:latest.settings.fullscreen}};
-  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus.focusId,expectedFocusRevision:focus.focusRevision,expectedFocusMembershipRevision:focus.focusMembershipRevision,action};
+  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus.focusId,expectedFocusRevision:focus.focusRevision,expectedFocusMembershipRevision:focus.focusMembershipRevision,expectedFocusLocationId:focus.focusLocationId,action};
   const confirmed=unwrap(await window.campaign.executePlayer(command));if(!owns(o)||intent!==actions)return false;publish(o,confirmed,request);
   unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;await reload(o);
   if(owns(o)&&intent===actions)tell(kind==='location'?'Ortsbild auf der Spieleranzeige geöffnet.':'Handout auf der Spieleranzeige geöffnet.');
