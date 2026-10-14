@@ -11,6 +11,7 @@ import {initLiveArchives} from './live-archive-ui';
 import type { EncounterPlan } from './encounter-contracts';
 import { initProgress, progressionContext, flushProgress, executePartyProgress } from './progression-ui';
 import {initRuleReferences,activateRuleReferences,refreshRuleReferences} from './rule-reference-ui';
+import {cuePlayer} from './player-ui';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -218,6 +219,7 @@ function renderSceneMeta() {
 function renderScene() {
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
+  get<HTMLButtonElement>('running-player-scene').disabled=!(sceneDraft?.readAloud?.trim());
   const select = get<HTMLSelectElement>('running-location'); select.replaceChildren();
   const none = document.createElement('option'); none.value = ''; none.textContent = 'Kein Ort'; select.append(none);
   const current = sceneDraft?.locationId;
@@ -312,12 +314,15 @@ export function initLive(status: typeof tell, navigate: typeof openLocation) {
   for (const [id, field] of [['running-title', 'title'], ['running-notes', 'notes'], ['running-read-aloud','readAloud']] as const) {
     get(id).oninput = () => { if (sceneDraft) {
       const text = value(id), before = data?.scene?.[field];
-      sceneDraft = { ...sceneDraft, [field]: before !== undefined && text === before.replace(/\r\n?/g, '\n') ? before : text }; schedule();
+      sceneDraft = { ...sceneDraft, [field]: before !== undefined && text === before.replace(/\r\n?/g, '\n') ? before : text }; if(field==='readAloud')get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();
     } };
     get(id).onblur = () => { if (!composing) void flushLive(); };
   }
   get('running-location').onchange = () => { if (sceneDraft) { sceneDraft = { ...sceneDraft, locationId: value('running-location') || null }; renderSceneMeta(); schedule(); } };
   get('running-open-location').onclick = () => { void (async () => { const token = context?.token; if (await flushLive() && token === context?.token && sceneDraft?.locationId) await openLocation(sceneDraft.locationId); })(); };
+  get('running-player-scene').onclick=()=>{void(async()=>{const token=context?.token;if(!sceneDraft?.readAloud?.trim()){tell('Trage zuerst einen Vorlesetext ein.',true);return;}if(await flushLive()&&context?.token===token)await cuePlayer('scene');})();};
+  get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token;if(await flushLive()&&context?.token===token)await cuePlayer('follow');})();};
+  get('running-player-blank').onclick=()=>{void cuePlayer('blank');};
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick = () => { void (async () => {
     const token = context?.token, planId = value('adoption-plan'), visitId = value('adoption-visit');
