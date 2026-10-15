@@ -48,3 +48,19 @@ test('campaign copy remaps structured basis and target while keeping raw prose; 
 test('format 33 store and package upgrade to the current format only on owned copies, preserving package bytes',async t=>{
  const x=fixture(t),currentSchema=x.store.db.pragma('user_version',{simple:true}),snapshot=path.join(x.root,'v33.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const old=new Database(snapshot);old.exec('DROP TABLE finish_draft; DROP TABLE combat_working_draft; DROP TABLE narrative_draft; DROP TABLE narrative_award; DROP TABLE narrative_state; DROP TABLE dungeon_content_signal; DROP TABLE dungeon_feature_knowledge; DROP TABLE dungeon_content_state');old.pragma('user_version=33');old.close();const original=readFileSync(snapshot);assert.equal(x.store.campaignPreview(snapshot).schema,33);const copy=x.store.acceptCampaignSnapshot(snapshot,'Altformatkopie',{});assert.ok(copy.id);assert.ok(readFileSync(snapshot).equals(original));const oldStore=path.join(x.root,'old-store.sqlite');await x.store.db.backup(oldStore);const d=new Database(oldStore);d.exec('DROP TABLE finish_draft; DROP TABLE combat_working_draft; DROP TABLE narrative_draft; DROP TABLE narrative_award; DROP TABLE narrative_state; DROP TABLE dungeon_content_signal; DROP TABLE dungeon_feature_knowledge; DROP TABLE dungeon_content_state');d.pragma('user_version=33');d.close();const reopened=new CampaignStore(oldStore);try{assert.equal(reopened.db.pragma('user_version',{simple:true}),currentSchema);assert.equal(reopened.combatDrafts(reopened.activate(x.campaign.id).token,x.combat.id,null).items.length,0);}finally{reopened.close();}
 });
+
+test('monster initiative rolls preserve player-entered values through modes, undo and fresh storage',t=>{
+ const x=fixture(t),hero=x.combat.participants[0];
+ x.act({kind:'edit',participantId:hero.id,changes:{initiative:137,initiativeBonus:999}});
+ x.act({kind:'add',name:'Zollwache',count:3,grouped:true,maxHp:11,armorClass:12,initiativeBonus:2});
+ for(const mode of ['normal','advantage','disadvantage']){
+  const before=structuredClone(x.combat);x.act({kind:'roll',mode});
+  assert.equal(x.combat.participants.find(p=>p.id===hero.id).initiative,137);
+  const monsters=x.combat.participants.filter(p=>!p.characterId);assert.equal(new Set(monsters.map(p=>p.initiative)).size,1);assert.ok(monsters.every(p=>p.initiative>=3&&p.initiative<=22));
+  assert.equal(x.combat.turnId,before.turnId);assert.equal(x.combat.round,before.round);
+  x.act({kind:'undo'});assert.deepEqual(x.combat.participants,before.participants);
+ }
+ x.act({kind:'roll',mode:'normal'});x.act({kind:'start'});const turn=x.combat.turnId;
+ x.act({kind:'roll',mode:'advantage'});assert.equal(x.combat.turnId,turn);assert.equal(x.combat.participants.find(p=>p.id===hero.id).initiative,137);
+ const fresh=new CampaignStore(x.filename);try{const w=fresh.activate(x.campaign.id),saved=fresh.combat(w.token,x.combat.sceneId,x.combat.id).combat;assert.equal(saved.participants.find(p=>p.id===hero.id).initiative,137);assert.equal(saved.turnId,turn);}finally{fresh.close();}
+});

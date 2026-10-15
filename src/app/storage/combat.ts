@@ -251,7 +251,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
         } else if (a.kind === 'roll') {
           if (!['normal', 'advantage', 'disadvantage'].includes(a.mode)) throw new Error('Würfelmodus ungültig.');
           const rolls = new Map<string, number>();
-          for (const p of state.participants) { if (!rolls.has(p.groupId)) { const x = randomInt(1, 21), y = a.mode === 'normal' ? x : randomInt(1, 21); rolls.set(p.groupId, (a.mode === 'advantage' ? Math.max(x, y) : Math.min(x, y)) + p.initiativeBonus); } p.initiative = rolls.get(p.groupId)!; }
+          for (const p of state.participants.filter(p => !p.characterId)) { if (!rolls.has(p.groupId)) { const x = randomInt(1, 21), y = a.mode === 'normal' ? x : randomInt(1, 21); rolls.set(p.groupId, (a.mode === 'advantage' ? Math.max(x, y) : Math.min(x, y)) + p.initiativeBonus); } p.initiative = rolls.get(p.groupId)!; }
         } else if (a.kind === 'start') {
           if (state.phase !== 'preparing' || !state.participants.length) throw new Error('Füge Teilnehmer hinzu, bevor du den Kampf beginnst.');
           if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');

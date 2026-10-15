@@ -338,15 +338,15 @@ function render() {
     const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
     for (const [index,text] of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:'',p.timedEffects?.map(effect=>effect.name+' '+effect.remaining+'R').join(', ')].filter(Boolean).join(' · ') || '—'].entries()) {
       const td = document.createElement('td');
-      if(index===2){
-        const health=document.createElement('button');health.type='button';health.className='combat-health';health.dataset.combatReadonly=String(!editableCombat(combat!));health.textContent=text;
-        health.setAttribute('aria-label',p.name+' · '+text+' HP · '+(p.healthKnown===false?'Werte eintragen':'Schaden oder Heilung'));
+      if(index===0||index===2){
+        const initiative=index===0,health=document.createElement('button');health.type='button';health.className='combat-value '+(initiative?'combat-initiative':'combat-health');health.dataset.combatReadonly=String(!editableCombat(combat!));health.textContent=text;
+        health.setAttribute('aria-label',p.name+' · '+(initiative?'Initiative '+text+' bearbeiten':text+' HP · '+(p.healthKnown===false?'Werte eintragen':'Schaden oder Heilung')));
         health.onclick=()=>{void(async()=>{
           const gen=generation,id=combat!.id;await chooseFighter(p.id);
           if(generation!==gen||view?.combat?.id!==id||selected!==p.id)return;
-          const target=get<HTMLInputElement>(p.healthKnown===false?'fighter-hp':'fighter-amount');
-          if(p.healthKnown===false)get<HTMLDetailsElement>('fighter-values').open=true;
-          if(!target.disabled){target.focus({preventScroll:true});target.select();}
+          const target=get<HTMLInputElement>(initiative?'fighter-initiative':p.healthKnown===false?'fighter-hp':'fighter-amount');
+          if(initiative||p.healthKnown===false)get<HTMLDetailsElement>('fighter-values').open=true;
+          if(!target.disabled){target.focus({preventScroll:true});target.select();if(initiative||p.healthKnown===false)target.scrollIntoView({block:'center'});}
         })();};td.append(health);
       }else td.textContent=text;
       tr.append(td);

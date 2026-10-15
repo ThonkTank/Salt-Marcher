@@ -125,3 +125,13 @@ test('an HP lookup that completes after a target switch cannot steal the new edi
  replies[1]({ok:true,value:null});await until(()=>focused===1);replies[0]({ok:true,value:null});await tick();await tick();
  assert.equal(focused,1);assert.equal(x.el('combat-selected-name').textContent,x.combat.participants[1].name);assert.equal(x.writes.length,0);
 });
+
+test('initiative cells focus the existing draft editor and save grouped values without changing health',async t=>{
+ const x=await uiFixture(t),target=x.combat.participants[1],input=x.el('fighter-initiative');let focused=false,scrolled=false;
+ input.focus=()=>{focused=true;};input.select=()=>{};input.scrollIntoView=()=>{scrolled=true;};
+ const cells=[...x.el('combat-rows').querySelectorAll('.combat-initiative')];assert.equal(cells.length,3);assert.match(cells[1].getAttribute('aria-label'),/Goblin B.*Initiative 9/);
+ cells[1].onclick();await until(()=>focused&&scrolled);assert.equal(x.el('fighter-values').open,true);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);
+ input.value='17';input.dispatchEvent(new window.Event('input'));x.el('combat-participant-form').onsubmit({preventDefault(){}});
+ await until(()=>x.writes.length===1&&!input.disabled);const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;
+ assert.ok(saved.participants.every(p=>p.initiative===17));assert.deepEqual(saved.participants.map(p=>p.hp),[7,7,7]);assert.equal(saved.turnId,x.combat.turnId);
+});
