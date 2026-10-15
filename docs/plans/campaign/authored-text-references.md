@@ -53,6 +53,24 @@ Es gibt keine Schema- oder Autorenmigration.
 Die Storegegenproben in `world-links-storage.test.ts` öffnen eine neue Storeinstanz,
 prüfen kopierte History und nicht angewandte/angewandte Originalaufträge sowie
 Ablehnung einer fremden Belegbindung. Das ist keine native Recoveryabnahme.
+Die Statusklärung im `WorldLinksWorkbench` bindet jede Antwort an den ursprünglichen
+Dialogaufruf, Campaigntoken und Paarauftrag. Bei `applied` prüft sie den vorhandenen
+Entwurf erneut und entfernt nur dessen passende Write-ID. Bereits entfernte
+Entwürfe sind abgeschlossen; eine verlorene Bereinigungsantwort darf erneut
+lesend geklärt werden. Ein anderer gespeicherter Paarentwurf bleibt erhalten; bei unveränderten
+Formulareingaben wird er zur eigenen Prüfung geladen. Bei zugleich neueren lokalen
+Eingaben bleibt der Konflikt zur ausdrücklichen Auflösung offen. Neuere Formulareingaben werden nicht durch die
+Bestätigung des früheren Commands ersetzt; die aktuelle Basis kann anschließend
+gezielt gelesen werden. Während der Prüfung und des anschließenden Refreshs ist
+das Paarformular gesperrt. Statusklärung führt keinen weiteren Beziehungscommand
+aus und überschreibt keine inzwischen bearbeitete GM-Prosa.
+
+`world-links-recovery.test.ts` verbindet den echten Workbench mit dem echten Store:
+erhaltene/entfernte und tatsächlich kopierte angewandte Aufträge, neuere Eingaben,
+eine andere Write-ID, spätere GM-Prosa, verlorene Bereinigungsantwort und verspätete
+Antwort nach Kontextwechsel. Das ist ein kontrollierter Store-/DOMbeleg; native
+Dialog-, Fokus-/IME-, Crash- und vollständige Kampagnenwechselabnahme bleiben offen.
+
 Bereits mit falschen Historybesitzern erzeugte ältere Kopien sind damit nicht
 rückwirkend repariert. `campaign_origin.original_database` enthält heute einen
 kompakten Herkunftsvermerk mit Hash der angenommenen Datei, keine ursprüngliche

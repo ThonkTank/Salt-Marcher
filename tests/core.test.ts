@@ -133,3 +133,5 @@ import "./core/world-links.test";
 import "./core/npc-building-ui.test";
 
 import "./core/campaign-origin.test";
+
+import "./core/world-links-recovery.test";
