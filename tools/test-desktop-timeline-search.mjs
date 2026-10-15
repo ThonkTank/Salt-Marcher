@@ -1,3 +1,4 @@
+import {assertDungeonJobBudget} from './dungeon-job-budget.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -5,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const source=process.cwd(),before=process.argv.includes('--before'),phase=before?'before':'after',output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/timeline-search-evidence');
-const group=(await readFile('/proc/self/cgroup','utf8')).trim().split('::')[1];assert(group?.match(/\/codex-dungeon-jobs\.slice\/codex-dungeon-(qa|realist|planner|implementer)-/)&&group.endsWith('.service'),'Run through codex-dungeon-job');assert.equal((await readFile('/sys/fs/cgroup'+group+'/memory.max','utf8')).trim(),'4294967296');assert.equal((await readFile('/sys/fs/cgroup'+group+'/memory.swap.max','utf8')).trim(),'0');await mkdir(output,{recursive:true});
+const group=await assertDungeonJobBudget();await mkdir(output,{recursive:true});
 const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/timeline-native-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/timeline-native-store.cjs');
 const profile=await mkdtemp('/tmp/gm-timeline-search-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Den richtigen Besuch wiederfinden'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
 const visits=Array.from({length:65},(_,i)=>({id:randomUUID(),title:'Hafenbesuch',notes:i===63?'  Kupfersiegel\r\n- Die Mühle erneut besuchen':'  Original '+i+'\r\n- Unverändert',locationId:null})),plan={version:1,id:randomUUID(),revision:1,name:'Spuren am Hafen',scenes:visits};store.changePreparation({...command(null),change:{kind:'plan',expectedRevision:null,plan}});const initial=store.preparation(w.token,'').plans.find(p=>p.id===plan.id);store.close();
