@@ -70,7 +70,7 @@ export function catalogFilterSummary(query:CreatureCatalogQuery):string[]{
 }
 function renderCatalogContext(){const filters=catalogFilterSummary(bridge.filters());get('generation-catalog-summary').textContent=filters.length?'Aktive Katalogfilter: '+filters.join(' · '):'Keine zusätzlichen Katalogfilter.';get('generation-clear-catalog').hidden=!filters.length;}
 export function generationPlanningChanged(party:EncounterPlan['party']|null){const next=JSON.stringify(party);if(planningBasis===next)return;planningBasis=next;get('generation-feedback').textContent='';if(run){previewDirty=true;renderPreview();}}
-export function generationCatalogFiltersChanged(){renderCatalogContext();if(run){previewDirty=true;renderPreview();}}
+export function generationCatalogFiltersChanged(){renderCatalogContext();if(!pending)get('generation-feedback').textContent='';if(run){previewDirty=true;renderPreview();}}
 function generationNotice(text:string,error=false){const node=get('generation-feedback');node.textContent=text;node.classList.toggle('generation-warning',error);tell(text,error);}
 
 function restoreCatalog(){const browser=get('catalog-browser');if(catalogParent){catalogParent.insertBefore(browser,catalogNext);catalogParent=null;catalogNext=null;}}

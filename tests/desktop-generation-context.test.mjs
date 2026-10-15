@@ -28,7 +28,7 @@ test('catalog filter changes invalidate old proposal controls and preserve their
 });
 test('missing party and generator failures are explained beside the action, stale errors cannot replace a new workspace',async t=>{
  const x=await fixture(t);x.setParty(false);await x.make();assert.match(x.el('generation-feedback').textContent,/Zur Planungsparty/);assert.equal(x.calls.length,0);
- x.setParty(true);x.setGenerate(async()=>({ok:false,error:'Keine Kreaturen nach Tabellen und Filtern.'}));await x.make();assert.match(x.el('generation-feedback').textContent,/Keine Kreaturen/);
+ x.setParty(true);x.setGenerate(async()=>({ok:false,error:'Keine Kreaturen nach Tabellen und Filtern.'}));await x.make();assert.match(x.el('generation-feedback').textContent,/Keine Kreaturen/);x.setFilters({text:'Dragon'});assert.equal(x.el('generation-feedback').textContent,'');
  let finish;x.setGenerate(()=>new Promise(r=>finish=r));x.el('generation-form').onsubmit({preventDefault(){}});await settle();x.ui.activateGeneration({...x.w,token:'two'});finish({ok:false,error:'ALTER Fehler'});await settle();assert.doesNotMatch(x.el('generation-feedback').textContent,/ALTER/);
 });
 test('actual catalog input and reset notify the generator about their shared filters',async t=>{
