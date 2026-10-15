@@ -122,7 +122,7 @@ export type ProgressAction = GroupAction|NarrativeAction|TreasuryAction
   | ({kind:'health';characterId:string;expectedRevision:number;reason:string} & ({operation:'set';health:CharacterHealth}|{operation:'damage'|'heal';amount:number}|{operation:'death';result:DeathSaveResult}))
   | {kind:'party-award';expectedRosterRevision:number;poolXp:number;loadXp:number;reason:string;participants:{characterId:string;revision:number;membershipRevision:number;receiveXp:boolean;receiveLoad:boolean}[]}
   | { kind: 'xp'; characterId: string; expectedRevision: number; mode: 'add' | 'subtract' | 'set'; amount: number; reason: string; correctionOf?: string }
-  | { kind: 'rest'; rest: 'short' | 'long'; recipients: ProgressGuard[];restoreHp?:boolean;scene?:{id:string;expectedMembershipRevision:number;expectedClockRevision:number;expectedFocusRevision:number;amount:number;unit:TimeUnit} }
+  | { kind: 'rest'; rest: 'short' | 'long'; recipients: ProgressGuard[];restoreHp?:boolean;scene?:{id:string;expectedMembershipRevision:number;expectedClockRevision:number;expectedFocusRevision:number}&({amount:number;unit:TimeUnit}|{amount?:never;unit?:never}) }
   | { kind: 'treasure'; title: string; sceneId: string | null; items: ItemInput[] }
   | {kind:'allocate-batch';treasureId:string;expectedRevision:number;allocations:{itemId:string;expectedDefinitionRevision:number;quantity:number;characterId:string;expectedMembershipRevision:number}[]}
   | { kind: 'allocate'; treasureId: string; expectedRevision: number; expectedDefinitionRevision: number; itemId: string; quantity: number; characterId: string; expectedMembershipRevision: number }

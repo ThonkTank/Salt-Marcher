@@ -469,7 +469,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         if (a.rest === 'long') p.rest = { known: true, longXp: 0, shortXp: 0, baseline: 0, sections: 0 };
         else { p.rest.shortXp = 0; if (p.rest.known && p.rest.sections < 2) { p.rest.baseline = p.rest.longXp; p.rest.sections++; } }
         if(a.restoreHp){if(!p.health||p.health.hp<=0||p.health.death?.dead)restWarnings.push(p.characterId);else p.health.hp=p.health.maxHp;}
-        saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', {commandId:command.commandId,rest:a.rest,before,after:p,restoreHp:a.restoreHp===true,...(a.scene?{sceneId:a.scene.id,duration:{amount:a.scene.amount,unit:a.scene.unit}}:{})});
+        saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', {commandId:command.commandId,rest:a.rest,before,after:p,restoreHp:a.restoreHp===true,...(a.scene?{sceneId:a.scene.id,...(a.scene.amount!==undefined?{duration:{amount:a.scene.amount,unit:a.scene.unit}}:{})}:{})});
       }
     } else if(a.kind==='group-create'||a.kind==='group-edit'){groupId=editGroup(db,cam,a);
     } else if(a.kind==='treasure-create'||a.kind==='treasure-edit'||a.kind==='treasure-move'||a.kind==='treasure-anchor'){treasureId=editTreasury(db,cam,a);

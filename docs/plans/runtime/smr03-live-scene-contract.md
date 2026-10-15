@@ -640,6 +640,29 @@ Die Desktopanwendung verwendet [SQLite-Commands](../../../src/app/storage/live.t
 
 Der integrierte SQLite-Adapter entfernt bei bestätigtem Move oder Deactivate verfügbare Character-Teilnahmen aus offenen Combat- und Chase-Masken atomar mit der Partyänderung und speichert je betroffenem Owner einen revisionsgebundenen Reconciliation-Beleg unter derselben CommandId. Retired der bestätigte Scene-Cleanup die Quell-Scene, wechseln ihre offenen Combat-/Chase-Owner ohne Completion, Ergebnis, Belohnung oder Transfer in den terminalen Zustand `retired`; Fachstand und Reconciliation-Beleg bleiben erhalten. Der bestehende GM-Dialog für frühere Gruppen listet die letzten gespeicherten Combat-/Chase-Owner derselben Scene und öffnet deren terminalen Fachstand schreibgeschützt. Provider-Ausfall mit sichtbarem `pending` sowie Character-Tombstone/Closure bleiben offene Produktanschlüsse; dieser Teilstand ist keine vollständige SMR-03- oder E2E-02-Abnahme.
 
+### Konsolidierte Party: ausführbare Anschlussfolge
+
+Die gebundene `requirements-party-window.md` bleibt vollständig maßgeblich.
+Der aktuelle Topbar-Popup ist eine Teilimplementation; vorhandene XP-/Rast- und
+Scenecommands qualifizieren weder die kompakte Oberfläche noch Party-Undo/Redo.
+Die neue [Rastvormerkung und Scene-Bindung](adventuring-day.md#rastentscheidung-vor-dem-schreiben)
+schließt einen begrenzten Entscheidungsweg. Die weiteren Anschlüsse folgen aus
+der aktuellen Produktstruktur, nicht aus zu kopierenden SaltMarcher-Schemanummern:
+
+| Nutzerwirkung / nächster Schritt | Bereiche und Datenregel | Abnahme und Abhängigkeit |
+|---|---|---|
+| Party auf kleinem Raum lesen | `party-topbar-ui.ts`, `index.html`, bestehende Styles; eingeklappte Zeilen, auswählbare zehn Quickfields, gemeinsame `restFrame`-Projektion und ungewichteter Teilbasis-Mittelwert; keine zweite Fortschrittsrechnung | 360/240 px, 200 %, lange Namen, Tastatur/Fokus; unbekannte und gemischte Rastabschnitte. Bestehende Geometrie-/Shellpräferenzen vor Änderung inventarisieren. |
+| Mehrere Mitglieder bewusst ändern | Party-Rosteroberfläche an bestehende Membership-/Movecommands; stabile CharacterIds, Auswahl außerhalb des Filters erhalten; andere Scenes nur über gemeinsamen Move | 45 Figuren, gleiche Namen, Filter-ABA, Stale Roster/Focus; eine fehlgeschlagene Teilaktion darf keine vermeintlich vollständige Batchbestätigung liefern. Vor Batchadapter Atomarität festlegen und prüfen. |
+| Gruppe gemeinsam bewegen | Bestehender `LiveAction.move` und Scene-/Maskenreconciliation; bestehendes/neues Ziel mit Ort und Mitgliedern, namenlose neue Scene mit geerbtem Ort/Uhr | Split/Rejoin samt divergenten Uhren, letzte Figur, Combat/Journey, Fehler/Replay; keine eigene Movefachlogik im Party-Popup. |
+| Bestätigte Partyaktionen zurücknehmen | Bestehende `executeLive`-/`executeProgress`-/Lootreceipts und gezielte Vorher-/Nachherfelder inventarisieren; Schema und atomaren Historyanschluss in deren vorhandenen Transaktionen ergänzen | Erst echte XP-, Rast-, Profil-, Membership-, Move- und Lootfälle samt Konflikt/Replyverlust/Fresh schließen; danach 100 Schritte, Redobranch und Importinvalidierung. Keine Ableitung inverser Aktionen allein aus Text-/Anzeigehistory. Der normative Historyvertrag oben bleibt unverändert. |
+| History sicher anbieten | Erst nach belastbaren Historycommands im Party-Popup vier Readzustände, aktuelle Undo-/Redoautorität, isoliertes Retry und Originalcommand-Recovery anbinden | Verspätete Antwort nach Close/Workspace-ABA, beschädigter Read ohne neue Schreibautorität, 240 px Fehler/Retry mit Tastatur. Quickfieldpräferenzen an ihrem tatsächlichen Installationsowner beteiligen; keine zweite DB nur wegen der Quellarchitektur einführen. |
+
+Migrationen ändern keine alten XP-/Rastfakten, Profilinhalte oder historischen
+Receipts still. Vor einer Shell-/Historymigration aktuelle lokale Persistenz und
+Import-/Restorepfade prüfen; Source-Window- und Schema-42/43-Beispiele begründen
+keine neue parallele Desktoparchitektur. Die vollständige Produktabnahme bleibt
+offen, bis Nutzerwirkungen einschließlich Recovery und Migration belegt sind.
+
 ## Kernverträge und Umsetzung
 
 Das ungenutzte parallele Party-/Scene-Modell samt seinen Modelltests wurde
