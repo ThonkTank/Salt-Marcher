@@ -59,6 +59,8 @@ Recovery, legt Verlust offen; nur Ambiguität braucht eine Auswahl.
 
 ### Copy-/Complete-Import-Remap und Ownerlieferung
 
+Der Desktop führt Remap und Veröffentlichung im [Campaign-Store](src/app/storage/campaign-data.ts) aus. Der ungenutzte alternative `stageCampaignRemap`-Modellpfad wurde entfernt; die folgenden Anforderungen bleiben verbindlich.
+
 Unabhängige Campaignkopie/-import vergibt neue IDs für alle lokalen Objekte,
 Scenes/Runtime, Checkpoints, Abschnitte und Referenzen. Quelle und bestehende
 Campaigns bleiben unverändert; kein Merge in ein vorhandenes Ziel. Restore

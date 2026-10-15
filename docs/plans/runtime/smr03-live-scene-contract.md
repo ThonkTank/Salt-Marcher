@@ -6,7 +6,7 @@ Aktueller Datenanschluss und konkrete Folgelieferung: [Kampfentwürfe und narrat
 
 Abschnitte: [Normativer Lebenszyklus](#normativer-lebenszyklus) · [Mehrbesitzer-Commit und Recovery](#mehrbesitzer-commit-und-recovery) · [Party-Command-History und kausales Undo/Redo](#party-command-history-und-kausales-undoredo) · [Offene Produktanschlüsse](#offene-produktanschlüsse) · [Kernverträge und Umsetzung](#kernverträge-und-umsetzung)
 
-Lifecycle-/Zeit-, Datenbesitz- und Host-/Security-/Plattformverträge sowie die Trennung der passiven Anzeige besitzen begrenzte PASS-Nachweise. Diese Vertragsnachweise belegen allein weder Produktanschluss noch Hostpersistenz; der genaue Umfang steht in `acceptance.json`.
+Historische Modell- und Hostnachweise stehen in `acceptance.json`. Sie belegen ihren damaligen Umfang, keine aktuelle vollständige Produktabnahme.
 
 ## Technische Anschlussentscheidung vom 11.10.2026
 
@@ -636,19 +636,21 @@ Restart und Import dürfen nie zuletzt bekannte unsafe Ausgabe reaktivieren.
 
 ## Offene Produktanschlüsse
 
-Persistenz, Recovery und GM-Anwendung des Party-/LiveSession-Kerns sind Kandidat in [PR160](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/160). Integration, Gesamt-E2E-02 und weitere Plattformen bleiben getrennt zu belegen. Die providerunabhängige immutable Sourceprojektion aktiviert keine Playerausgabe: absent/disabled bleibt Default-Deny. Vor einer SMR-10-Bridge sind Knowledge-/Perception-/Fog-/Camera-Filter sowie TN-21/TN-24/TN-31 und AC-L10/AC-T07 zu belegen. Music/Weather/Shops erhalten immutable Focus-/LiveScene-Consumer mit none/stale/Fehlerzuständen; Capability-, Cancellation- und Recoverygrenzen bleiben erforderlich.
+Die Desktopanwendung verwendet [SQLite-Commands](../../../src/app/storage/live.ts), [Maskenabgleich](../../../src/app/storage/mask-health.ts) und [GM-Oberfläche](../../../src/app/live.ts). Gesamt-E2E-02 und weitere Plattformen bleiben getrennt zu belegen. Die providerunabhängige immutable Sourceprojektion aktiviert keine Playerausgabe: absent/disabled bleibt Default-Deny. Vor einer SMR-10-Bridge sind Knowledge-/Perception-/Fog-/Camera-Filter sowie TN-21/TN-24/TN-31 und AC-L10/AC-T07 zu belegen. Music/Weather/Shops erhalten immutable Focus-/LiveScene-Consumer mit none/stale/Fehlerzuständen; Capability-, Cancellation- und Recoverygrenzen bleiben erforderlich.
 
 Der integrierte SQLite-Adapter entfernt bei bestätigtem Move oder Deactivate verfügbare Character-Teilnahmen aus offenen Combat- und Chase-Masken atomar mit der Partyänderung und speichert je betroffenem Owner einen revisionsgebundenen Reconciliation-Beleg unter derselben CommandId. Retired der bestätigte Scene-Cleanup die Quell-Scene, wechseln ihre offenen Combat-/Chase-Owner ohne Completion, Ergebnis, Belohnung oder Transfer in den terminalen Zustand `retired`; Fachstand und Reconciliation-Beleg bleiben erhalten. Der bestehende GM-Dialog für frühere Gruppen listet die letzten gespeicherten Combat-/Chase-Owner derselben Scene und öffnet deren terminalen Fachstand schreibgeschützt. Provider-Ausfall mit sichtbarem `pending` sowie Character-Tombstone/Closure bleiben offene Produktanschlüsse; dieser Teilstand ist keine vollständige SMR-03- oder E2E-02-Abnahme.
 
 ## Kernverträge und Umsetzung
 
-Der heutige reine Party-/Scene-Kern und seine Code-/DOMbelege bleiben
-Istbefund. Ein tatsächlich nutzbarer Lauf braucht Storeaktivierung, Commands,
-Reopen, Zeit/Travel-, Masken-/Ledger- und sichere Playeranschlüsse. Readmodels
-sind unveränderliche revisionierte Werte; Preparation aliasiert keine Runtime.
+Das ungenutzte parallele Party-/Scene-Modell samt seinen Modelltests wurde
+entfernt. Sein [letzter vollständiger Stand](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/2deb18b3bfff5e66768299a5b2907a080b1144dc/src/features/live-session)
+bleibt als historischer Beleg verfügbar. Der Produktanschluss und seine
+Store-/UI-Verhaltenstests sind maßgeblich; eine zweite Implementation der alten
+Class-, Envelope- oder Mehrbesitzerformen ist nicht erforderlich.
+
+Die Fachorakel oben bleiben vollständig verbindlich. Readmodels sind
+unveränderliche revisionierte Werte; Preparation aliasiert keine Runtime.
 Rejoin schreibt ausdrücklich gewählte Zeit und Scenezuordnung atomar.
-Neue Module müssen die Fachorakel oben erfüllen, nicht alte interne Class- oder
-Envelopeformen nachbilden.
 
 ### Migration und Bestandsschutz
 
