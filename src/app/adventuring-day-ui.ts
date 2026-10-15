@@ -3,6 +3,7 @@ import type { Workspace } from "./contracts";
 import type { DayView } from "./adventuring-day-contracts";
 import { onProgressChanged } from "./progression-ui";
 import {renderDayPacing} from './adventuring-day-pacing-ui';
+import {initDayItinerary,activateDayItinerary,dayItineraryRequest,renderDayItinerary} from './adventuring-day-itinerary-ui';
 
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -114,6 +115,7 @@ function draw(value: DayView) {
         : "Ø Level " + number(snapshot.averageLevel))
     : "Party öffnen";
   if (!opened()) return;
+  renderDayItinerary(value.itinerary);
   renderDayPacing(el('day-pacing'),value.pacing,source==='active'&&mode==='progress');
   el("day-status").textContent = value.problem ?? snapshot.reason;
   if (source === "active") {
@@ -226,7 +228,7 @@ async function refresh() {
   const owner = workspace,
     request = ++generation;
   if (!owner) return;
-  const open = opened(),
+    const open = opened(),
     input = {
       source: open ? source : ("active" as const),
       rows: open
@@ -246,6 +248,7 @@ async function refresh() {
             rewardXp: numericDraft(el<HTMLInputElement>("day-reward-xp").value),
           }
         : {}),
+      ...(open&&dayItineraryRequest()!==undefined?{encounters:dayItineraryRequest()}:{}),
     };
   if (open) {
     el('day-popover').setAttribute('aria-busy','true');
@@ -256,6 +259,7 @@ async function refresh() {
     el("day-timeline").replaceChildren();
     el('day-current').replaceChildren();
     el('day-pacing').replaceChildren();
+    renderDayItinerary(undefined);
   }
   try {
     const result = await window.campaign.adventuringDay(owner.token, input);
@@ -281,6 +285,7 @@ function schedule() {
     el("day-timeline").replaceChildren();
     el('day-current').replaceChildren();
     el('day-pacing').replaceChildren();
+    renderDayItinerary(undefined);
     el("day-status").textContent = "Berechnung wird aktualisiert…";
   }
   timer = setTimeout(() => {
@@ -289,6 +294,7 @@ function schedule() {
   }, 120);
 }
 export function activateDayCalculator(next: Workspace | null) {
+  activateDayItinerary(next);
   workspace = next;
   generation++;
   if (timer) clearTimeout(timer);
@@ -309,11 +315,13 @@ export function activateDayCalculator(next: Workspace | null) {
   state();
   if (next) void refresh();
 }
-export function initDayCalculator(status: typeof tell, openParty: () => void) {
+export function initDayCalculator(status: typeof tell, openParty: () => void,openEncounters:()=>void=()=>{}) {
+  initDayItinerary(()=>{state();schedule();});
   tell = status;
   const popup=bindAnchoredPopup(el<HTMLButtonElement>('day-trigger'),el('day-popover'),760);
   el('day-trigger').onclick=()=>{if(popup.toggle())void refresh();};
   el('day-close').onclick=popup.close;
+  el('day-plan-open-encounters').onclick=()=>{popup.close();openEncounters();};
   el("day-party-open").onclick = () => {
     el("day-popover").hidePopover();
     openParty();
