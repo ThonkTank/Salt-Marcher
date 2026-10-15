@@ -379,7 +379,12 @@ async function insertNoteTextReference(){
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>) {
   tell = status;
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
-  initSession(status,()=>flushPreparation(true),async (id,planId)=>{if(!context)return;usePreparation(unwrap(await window.campaign.preparation(context.token,value('world-search'))), !!value('world-search').trim());if(planId){selectedPlan=planId;planDraft=null;selectedScene=null;}if(id)selectedScene=id;await renderPlans();await renderNotes();await renderLocations();},openPreparedNote,()=>{preparationInputVersion++;},offerVisit?async(planId,visitId,current)=>offerVisit(planId,visitId,current):undefined);
+  initSession(status,()=>flushPreparation(true),async (id,planId)=>{
+    if(!context)return;const token=context.token,request=preparationLoad,query=value('world-search'),current=()=>context?.token===token&&request===preparationLoad;
+    const next=unwrap(await window.campaign.preparation(token,query));if(!current())return;
+    usePreparation(next,!!query.trim());if(planId){selectedPlan=planId;planDraft=null;selectedScene=null;}if(id)selectedScene=id;
+    await renderPlans();if(!current())return;await renderNotes();if(current())await renderLocations();
+  },openPreparedNote,()=>{preparationInputVersion++;},offerVisit?async(planId,visitId,current)=>offerVisit(planId,visitId,current):undefined);
   openMap = navigateMap;
   get('note-text-reference').onclick=()=>{void insertNoteTextReference();};
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };

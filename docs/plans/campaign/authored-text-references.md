@@ -34,6 +34,31 @@ IDs; Creature-/Itemziele behalten den zugehörigen Katalog-/Definitionsbezug.
 Quelle, Snapshot und opaque Erweiterungsbodies bleiben erhalten. NPC-Rohentwürfe
 und ungeklärte Commands folgen ihrem bestehenden Recoveryvertrag.
 
+## Beziehungspaare beim Kampagnentransfer
+
+Paarhistory und offene Paaraufträge verwenden `sourceId` als lokale World-Notiz.
+Die Kopie bindet diese beiden bekannten Payloadformen zusammen mit ihren SQL-
+Ownern, Gegenrichtungen, Command- und Draftkennungen an die neue Kampagne.
+Externe Quellenkennungen und opaque Inhalte behalten ihre bisherige Bedeutung.
+Freie Prosa mit alten ID-Zeichenfolgen wird dadurch nicht umgeschrieben.
+
+Ein erhaltener Pendingauftrag darf einen vorhandenen Beleg nur weiterführen,
+wenn Campaign, beide Notizen und der tokenlose Originalfingerprint vorher
+zusammenpassen. Erst danach wird dieser Beleg an die kopierten Kennungen
+gebunden. Historische Belege ohne erhaltenen Auftrag werden nicht neu autorisiert.
+Die Kopie erhält keine ursprüngliche Tokenfreigabe und führt nichts automatisch
+aus. Undo/Redo wirken auf die kopierten Notizen; Quelle und Snapshot bleiben gleich.
+Es gibt keine Schema- oder Autorenmigration.
+
+Die Storegegenproben in `world-links-storage.test.ts` öffnen eine neue Storeinstanz,
+prüfen kopierte History und nicht angewandte/angewandte Originalaufträge sowie
+Ablehnung einer fremden Belegbindung. Das ist keine native Recoveryabnahme.
+Bereits mit falschen Historybesitzern erzeugte ältere Kopien sind damit nicht
+rückwirkend repariert: Eine gesonderte Wiederherstellung muss Originalsnapshot,
+geprüfte `campaign_origin.local_map`, Notizidentitäten und Historyzuordnung
+gegeneinander bestätigen und Originalbytes sichern. Keine Freitextheuristik oder
+stille Umschreibung von möglicherweise absichtlich ungebundenen Verweisen.
+
 ## Offene Arbeit
 
 - Native GM-Notiz und Ortsabschnitte: Auswahl, CRLF, IME, Wechsel A → B → A,

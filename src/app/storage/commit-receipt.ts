@@ -6,7 +6,7 @@ import {checkedCommitReference,type CommitReference,type CommitOutcome} from '..
 
 export function readCommitReceipt(db:any,ref:CommitReference):CommitOutcome {
   checkedCommitReference(ref);
-  const table=ref.family==='progress'?'progress_receipt':ref.family==='combat'?'combat_receipt':ref.family==='chase'?'chase_receipt':'shop_receipt';
+  const table=ref.family==='session'?'session_receipt':ref.family==='progress'?'progress_receipt':ref.family==='combat'?'combat_receipt':ref.family==='chase'?'chase_receipt':'shop_receipt';
   const row=db.prepare(`SELECT campaign_id,fingerprint,payload,checksum FROM ${table} WHERE command_id=?`).get(ref.commandId);
   if(!row)return{outcome:'not-applied'};
   if(row.campaign_id!==ref.campaignId||row.fingerprint!==ref.fingerprint)
@@ -15,7 +15,10 @@ export function readCommitReceipt(db:any,ref:CommitReference):CommitOutcome {
     throw new Error('Buchungsbeleg ist beschädigt. Originaldaten bleiben erhalten.');
   const value=JSON.parse(row.payload);
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Buchungsbeleg hat ein ungültiges Format.');
-  if(ref.family==='progress'){
+  if(ref.family==='session'){
+    if(!value.profile||typeof value.profile.planId!=='string'||!Number.isSafeInteger(value.profile.revision)||!Array.isArray(value.visits)||!Array.isArray(value.groups)||!Array.isArray(value.encounters))throw new Error('Spielabendbeleg hat ein unbekanntes Format.');
+    if(!db.prepare('SELECT 1 FROM plan WHERE campaign_id=? AND id=?').get(ref.campaignId,value.profile.planId))throw new Error('Spielabendbeleg gehört nicht zum gespeicherten Plan.');
+  }else if(ref.family==='progress'){
     if(!Array.isArray(value.characters)||!Array.isArray(value.notices)||!Array.isArray(value.ledgerIds)||value.ledgerIds.some((id:unknown)=>typeof id!=='string')||value.treasureId!==null&&typeof value.treasureId!=='string')throw new Error('Fortschrittsbeleg hat ein unbekanntes Format.');
   }else if(ref.family==='combat'){
     if(!value.combat||!Array.isArray(value.recent)||typeof value.canUndo!=='boolean')throw new Error('Kampfbeleg hat ein unbekanntes Format.');

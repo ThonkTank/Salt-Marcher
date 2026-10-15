@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
@@ -68,5 +68,34 @@ test('family pair commands reject mismatched directions and non-NPC endpoints',(
   const base={kind:'add' as const,sourceId:npc,targetId:faction,sourceRevision:1,targetRevision:1,forwardLabel:'Elternteil',reverseLabel:'Kind',forwardFamilyKind:'parent' as const};
   assert.throws(()=>store.executeWorldRelationPair({commandId:'mismatch',campaignId:campaign.id,token:workspace.token,action:{...base,reverseFamilyKind:'partner'}}),/Gegenrichtungen/);
   assert.throws(()=>store.executeWorldRelationPair({commandId:'wrong-kind',campaignId:campaign.id,token:workspace.token,action:{...base,reverseFamilyKind:'child'}}),/ausschließlich NPCs/);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+for(const state of ['history','pending','applied-pending'] as const)test(`an independent copy preserves ${state==='history'?'the pair history owner':state==='pending'?'a pending pair owner':'a pending pair with its applied receipt'} without changing source prose`,async()=>{
+ const pending=state!=='history';
+ const root=mkdtempSync(join(tmpdir(),'pair-transfer-owner-')),store=new CampaignStore(join(root,'source.sqlite'),'test');let copyStore:CampaignStore|null=null;
+ try{
+  const campaign=store.create('Original'),w=store.activate(campaign.id),source=campaignLocalId('00000000-0000-4000-8000-000000000641'),target=campaignLocalId('00000000-0000-4000-8000-000000000642'),raw='  Unveränderte Quelle '+source+'\r\n[[Extern#Original]]  ';
+  for(const [id,title] of [[source,'Orla'],[target,'Pia']] as const)store.changePreparation({commandId:'note-'+id,campaignId:campaign.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title,readAloud:'',gmNotes:raw,relations:[],creatureId:null,deleted:false}}});
+  const command={commandId:'original-pair',campaignId:campaign.id,token:w.token,draftWriteId:'original-pair-draft',action:{kind:'add' as const,sourceId:source,targetId:target,sourceRevision:1,targetRevision:1,forwardLabel:'ist Elternteil',reverseLabel:'ist Kind',forwardFamilyKind:'parent' as const,reverseFamilyKind:'child' as const}};
+  store.keepWorldRelationPairDraft(w.token,{version:1,writeId:command.draftWriteId,command},null);if(state!=='pending')store.executeWorldRelationPair(command);if(state==='applied-pending')store.keepWorldRelationPairDraft(w.token,{version:1,writeId:command.draftWriteId,command},null);
+  const before=store.preparation(w.token,'').notes,history=store.worldRelationPairHistory(w.token),snapshot=join(root,'snapshot.sqlite');await store.campaignSnapshot(w.token,snapshot);const bytes=readFileSync(snapshot);copyStore=new CampaignStore(join(root,'copy.sqlite'),'test');const copied=copyStore.acceptCampaignSnapshot(snapshot,'Kopie',{});copyStore.close();copyStore=new CampaignStore(join(root,'copy.sqlite'),'test');const cw=copyStore.activate(copied.id),notes=copyStore.preparation(cw.token,'').notes,cs=notes.find(row=>row.note.title==='Orla')!.note,ct=notes.find(row=>row.note.title==='Pia')!.note;
+  assert.notEqual(cs.id,source);assert.notEqual(ct.id,target);assert.equal(cs.gmNotes,raw);assert.equal(ct.gmNotes,raw);
+  if(pending){const draft=copyStore.worldRelationPairDraft(cw.token,cs.id)!;assert.ok(draft);assert.equal(draft.command.campaignId,copied.id);assert.equal(draft.command.action.sourceId,cs.id);assert.equal(draft.command.action.targetId,ct.id);assert.notEqual(draft.writeId,command.draftWriteId);assert.notEqual(draft.command.commandId,command.commandId);assert.deepEqual(copyStore.reconcileWorldRelationPair(draft.command,cw.token),{outcome:state==='applied-pending'?'applied':'not-applied',targetChanged:false});assert.throws(()=>copyStore!.executeWorldRelationPair(draft.command));assert.equal(copyStore.worldRelationPairHistory(cw.token).cursor,state==='applied-pending'?1:0);copyStore.executeWorldRelationPair({...draft.command,token:cw.token});assert.equal(copyStore.worldRelationPairHistory(cw.token).cursor,1);assert.equal(copyStore.preparation(cw.token,'').notes.find(row=>row.note.id===cs.id)!.note.relations[0]?.targetId,ct.id);}
+  else{copyStore.executeWorldRelationPairHistory({commandId:'copied-undo',campaignId:copied.id,token:cw.token,expectedCursor:1,direction:'undo'});assert.equal(copyStore.preparation(cw.token,'').notes.find(row=>row.note.id===cs.id)!.note.relations.length,0);copyStore.executeWorldRelationPairHistory({commandId:'copied-redo',campaignId:copied.id,token:cw.token,expectedCursor:0,direction:'redo'});assert.equal(copyStore.preparation(cw.token,'').notes.find(row=>row.note.id===ct.id)!.note.relations[0]?.targetId,cs.id);}
+  assert.deepEqual(store.preparation(w.token,'').notes,before);assert.deepEqual(store.worldRelationPairHistory(w.token),history);assert.ok(readFileSync(snapshot).equals(bytes));
+ }finally{copyStore?.close();store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+test('a pending pair cannot acquire a forged receipt binding during a campaign copy',async()=>{
+ const root=mkdtempSync(join(tmpdir(),'pair-receipt-binding-')),store=new CampaignStore(join(root,'source.sqlite'),'test');
+ try{
+  const campaign=store.create('Original'),w=store.activate(campaign.id),ids=['00000000-0000-4000-8000-000000000651','00000000-0000-4000-8000-000000000652'];
+  for(const id of ids)store.changePreparation({commandId:'note-'+id,campaignId:campaign.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:campaignLocalId(id),revision:1,kind:'npc',title:id,readAloud:'',gmNotes:'Original',relations:[],creatureId:null,deleted:false}}});
+  const command={commandId:'pair',campaignId:campaign.id,token:w.token,draftWriteId:'draft',action:{kind:'add' as const,sourceId:ids[0]!,targetId:ids[1]!,sourceRevision:1,targetRevision:1,forwardLabel:'kennt',reverseLabel:'kennt'}};
+  store.keepWorldRelationPairDraft(w.token,{version:1,writeId:'draft',command},null);store.executeWorldRelationPair(command);store.keepWorldRelationPairDraft(w.token,{version:1,writeId:'draft',command},null);
+  const db=(store as unknown as {db:any}).db;db.prepare('UPDATE world_relation_pair_receipt SET fingerprint=? WHERE command_id=?').run('0'.repeat(64),'pair');const before=db.serialize();
+  assert.throws(()=>store.keepWorldRelationPairDraft(w.token,{version:1,writeId:'draft',command},'draft'),/Beleg/);assert.ok(db.serialize().equals(before));
+  await assert.rejects(store.campaignSnapshot(w.token,join(root,'snapshot.sqlite')),/Beleg/);assert.ok(db.serialize().equals(before));
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

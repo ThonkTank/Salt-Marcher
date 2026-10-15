@@ -65,10 +65,18 @@ Controls und verspätete Reads/Writes ändern keine neuere Auswahl.
 Reopen, Auswahl, Antwortreihenfolge, Quellschutz, Append, unabhängige offene
 Rewards, Replay und atomaren Rollback.
 
-Offen: den Sessionreceipt an den bestehenden Commitstatus anschließen und
-ungeklärte Originalcommands vor Send dauerhaft sichern. Auswahländerung/Reset
-verwerfen bisher den lokalen Retrystand. Nach Fresh muss eine verlorene Antwort
-am gleichen Command geklärt werden, damit Append keine Besuche verdoppelt.
+Spielabend-Eingaben, Ersetzen und Szenenkopien verwenden die vorhandene
+Belegprüfung: Vor Send wird die Referenz mit Originalkennung und Fingerprint
+dauerhaft gesichert. Eine fehlende Antwort wird lesend geklärt; bei ungeklärtem
+Status bleiben weitere Buchungen gesperrt. Dialogwechsel entfernt den Beleg
+nicht. Bestätigte Antworten aktualisieren nur ihren ursprünglichen Editor;
+spätere Texte und neue Kopierauswahlen bleiben offen. Auch nach Dialogreset
+aktualisiert die Statusklärung die Timeline; alte Refreshantworten gehören weiter
+zu ihrer ursprünglichen Aktivierung. Der frühere lokale Kopier-Retry entfällt.
+[Speicher- und Bedienprüfungen](../../../tests/desktop-preparation-context.test.mjs)
+belegen verlorene Antworten, reine Statusabfrage, spätere Texte und genau einen
+Append nach Dialogreset. Ein frischer Store liest denselben Beleg; native
+Prozessende-/Neustartprüfung einschließlich wiedergefundener Referenz bleibt offen.
 Die Quellenliste liest weiterhin die vollständige Preparation; 40 sichtbare
 Karten begrenzen den Quellaufwand nicht. Gebuchte Beute, mehrfach referenzierte
 Worldgruppen, Trash/Restore sowie native Fokus-, Tastatur- und Lastgrenzen
