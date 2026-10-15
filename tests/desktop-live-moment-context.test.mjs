@@ -356,3 +356,51 @@ test('health feedback stays visible inside the desk and a rejected write preserv
  for(const [id,value] of [['health-current','5'],['health-maximum','10'],['health-temporary','0']]){x.el(id).value=value;x.el(id).dispatchEvent(new x.window.Event('input'));}
  x.el('health-form').onsubmit({preventDefault(){}});assert.equal(await x.ui.flushLive(),false);await settle();assert.match(x.el('live-health-status').textContent,/HP konnten nicht gespeichert/);assert.equal(x.el('live-health-status').className,'error');assert.equal(x.el('health-current').value,'5');assert.equal(x.store.progress(x.w.token).characters[0].health,null);
 });
+
+
+test('new live participant joins the explicitly shown group and opens the same health editor',async t=>{
+ const x=await setup(t);x.window.campaign.executeProgress=async cmd=>{try{return{ok:true,value:x.store.executeProgress(cmd)};}catch(error){return{ok:false,error:error.message};}};x.el('live-party-new').click();assert.equal(x.el('character-dialog').open,true);assert.match(x.el('character-create-target').textContent,/Heute dabei/);x.el('new-character-name').value='Cora';
+ x.el('character-form').onsubmit({preventDefault(){},submitter:x.el('character-create-active')});await settle();await x.ui.flushLive();await settle();
+ const live=x.store.live(x.w.token),c=live.roster.find(c=>c.profile.name==='Cora');assert.ok(c.active);assert.equal(c.sceneId,x.scene.id);assert.equal(live.roster.length,3);assert.equal(x.el('character-dialog').open,false);assert.equal(x.el('live-health-dialog').open,true);assert.match(x.el('live-health-title').textContent,/Cora/);assert.equal(x.el('character-health').parentElement.id,'live-health-slot');assert.equal(x.el('health-controls').open,true);assert.deepEqual(x.commands.filter(c=>['create-character','membership'].includes(c.action.kind)).map(c=>c.action.kind),['create-character','membership']);
+ x.el('health-current').value='7';x.el('health-maximum').value='9';x.el('health-current').dispatchEvent(new x.window.Event('input'));x.el('health-form').onsubmit({preventDefault(){}});await settle();await x.ui.flushLive();assert.equal(x.store.progress(x.w.token).characters.find(p=>p.characterId===c.id).health.hp,7);
+});
+test('roster-only creation stays inactive and reveals its next action without adding a live participant',async t=>{
+ const x=await setup(t);x.el('character-toggle').scrollIntoView=()=>{};let shown=false;x.el('character-editor').scrollIntoView=()=>{shown=true;};x.el('character-new').click();x.el('new-character-name').value='Reserve';x.el('character-form').onsubmit({preventDefault(){},submitter:x.el('character-create')});await settle();await x.ui.flushLive();
+ const c=x.store.live(x.w.token).roster.find(c=>c.profile.name==='Reserve');assert.equal(c.active,false);assert.equal(c.sceneId,null);assert.ok(shown);assert.equal(x.el('live-party-details').open,true);assert.equal(x.el('character-name').value,'Reserve');assert.match(x.el('character-result').textContent,/im Roster angelegt/);assert.equal(!!x.el('live-health-dialog').open,false);assert.equal(x.commands.filter(c=>c.action.kind==='membership').length,0);
+});
+test('group switch during creation keeps one inactive figure and never applies the old attendance intent elsewhere',async t=>{
+ const x=await setup(t);x.el('character-toggle').scrollIntoView=()=>{};x.el('character-editor').scrollIntoView=()=>{};const release=x.defer('create-character');x.el('live-party-new').click();x.el('new-character-name').value='Später';const event={preventDefault(){},submitter:x.el('character-create-active')};x.el('character-form').onsubmit(event);await settle();x.el('character-form').onsubmit(event);await x.focusOther();release();await settle();await x.ui.flushLive();
+ const roster=x.store.live(x.w.token).roster.filter(c=>c.profile.name==='Später');assert.equal(roster.length,1);assert.equal(roster[0].active,false);assert.equal(x.commands.filter(c=>c.action.kind==='membership').length,0);assert.match(x.el('character-result').textContent,/Aktivierung nicht bestätigt/);
+});
+test('a rejected attendance write cannot duplicate its already-created figure',async t=>{
+ const x=await setup(t);x.el('character-toggle').scrollIntoView=()=>{};x.el('character-editor').scrollIntoView=()=>{};const original=x.window.campaign.executeLive;x.window.campaign.executeLive=async command=>command.action.kind==='membership'?{ok:false,error:'Nicht übernommen'}:original(command);
+ x.el('live-party-new').click();x.el('new-character-name').value='Bleibt erhalten';const event={preventDefault(){},submitter:x.el('character-create-active')};x.el('character-form').onsubmit(event);await settle();await x.ui.flushLive();x.el('character-form').onsubmit(event);await settle();
+ const roster=x.store.live(x.w.token).roster.filter(c=>c.profile.name==='Bleibt erhalten');assert.equal(roster.length,1);assert.equal(roster[0].active,false);assert.equal(x.el('character-dialog').open,false);assert.match(x.el('character-result').textContent,/Aktivierung nicht bestätigt/);assert.equal(x.el('live-reconcile').hidden,false);
+});
+
+async function packetMoment(t,text){
+ const x=await setup(t),planId=randomUUID(),visitId=randomUUID();
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Originaltexte',scenes:[{id:visitId,title:'Wache',notes:text,locationId:null}]}}});
+ await x.ui.openLive();x.el('live-session-plan').value=planId;x.el('live-session-plan').dispatchEvent(new x.window.Event('change'));await settle();
+ x.el('live-session-packet').click();await settle();
+ const block=[...x.el('session-packet-content').querySelectorAll('.packet-block')].find(b=>b.querySelector('.packet-text').textContent===text);
+ assert.ok(block,'Prepared source appears verbatim in the packet');
+ x.el('live-moment-panel').scrollIntoView=()=>{};
+ return {...x,capture:()=>[...block.querySelectorAll('button')].find(b=>b.textContent==='Als Chronikmoment vormerken').click(),source:()=>x.store.preparation(x.w.token).plans.find(p=>p.id===planId).scenes[0].notes};
+}
+for(const [previous,text] of [['','  Anfang\r\n'+'x'.repeat(6100)+'\r\n  Ende  '],['V'.repeat(98),'Q'.repeat(9900)]])test('packet capture preserves full raw wording up to the moment limit, total='+[previous,text].filter(Boolean).join('\n\n').length,async t=>{
+ const x=await packetMoment(t,text),expected=[previous,text].filter(Boolean).join('\n\n');x.fields('Eigener Moment',previous);const before=x.store.db.serialize();
+ x.capture();await settle();assert.equal(x.el('live-moment-summary').value,expected);assert.equal(x.el('live-moment-title').value,'Eigener Moment');assert.equal(x.el('live-moment-category').value,'narrative');assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.messages.filter(m=>m.error),[]);
+ x.submit();await settle();assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.title==='Eigener Moment').summary,expected);assert.equal(x.source(),text);
+});
+for(const [previous,text] of [['','Q'.repeat(10001)],['  Eigene Notiz\r\n'+'V'.repeat(9850),'Q'.repeat(200)]])test('oversized packet capture leaves authored moment and source untouched, existing='+previous.length,async t=>{
+ const x=await packetMoment(t,text);x.fields('Eigener Moment',previous);x.el('live-moment-follow-up').value='rumor';const before=x.store.db.serialize();
+ x.capture();await settle();assert.equal(x.el('live-moment-summary').value,previous);assert.equal(x.el('live-moment-title').value,'Eigener Moment');assert.equal(x.el('live-moment-category').value,'narrative');assert.equal(x.el('live-moment-follow-up').value,'rumor');assert.match(x.messages.at(-1).text,/10\.000/);assert.equal(x.messages.at(-1).error,true);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.source(),text);
+});
+
+
+test('the empty campaign exposes figure creation and its first submit stays roster-only without a hidden activation default',async t=>{
+ const x=await setup(t),c=x.store.create('Erster Abend'),w=x.store.activate(c.id);x.ui.activateLive(w);await x.ui.openLive();assert.equal(x.el('live-party-details').open,true);x.el('character-editor').scrollIntoView=()=>{};x.el('character-toggle').scrollIntoView=()=>{};const before=x.commands.length;
+ x.el('character-new').click();assert.equal(x.el('character-create-active').hidden,true);const submit=[...x.el('character-form').querySelectorAll('button')].find(button=>button.type==='submit');assert.equal(submit.id,'character-create');x.el('new-character-name').value='Gila';x.el('character-form').onsubmit({preventDefault(){},submitter:submit});await settle();await x.ui.flushLive();
+ const live=x.store.live(w.token);assert.equal(live.scene,null);assert.equal(live.roster.length,1);assert.equal(live.roster[0].profile.name,'Gila');assert.equal(live.roster[0].active,false);assert.deepEqual(x.commands.slice(before).map(c=>c.action.kind),['create-character']);assert.equal(x.el('character-dialog').open,false);
+});

@@ -147,3 +147,31 @@ test('a delayed accepted batch read cannot populate the next plan in the real se
  await context(nextId);assert.equal(document.getElementById('session-preview').textContent,'');release();await tick();await tick();await tick();
  assert.equal(document.getElementById('session-preview').textContent,'');assert.ok(!messages.some(([text])=>text.includes('Die Spielabendmappe ist bereit')));assert.equal(x.store.preparation(x.w.token).plans.find(p=>p.id===nextId).scenes.length,0);
 });
+
+for(const field of ['notes','readAloud'])for(const overflow of [false,true])test(`session generation ${overflow?'rejects unreadable':'preserves boundary-size'} ${field}`,t=>{
+ const x=fixture(t),noteIds=[],source=x.store.generationRun(x.w.token,x.run.generationRunId);
+ const overhead=field==='notes'?[source.plans[0].notes,'Source 0\n','Source 2\n'].join('\n\n').length:2;
+ const size=2000000-overhead+(overflow?1:0),parts=[Math.floor(size/2),0,Math.ceil(size/2)];
+ for(let i=0;i<3;i++){
+  const id=randomUUID();noteIds.push(id);
+  x.store.changePreparation({...x.command(null),change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'quest',title:'Source '+i,readAloud:field==='readAloud'?'R'.repeat(parts[i]):'',gmNotes:field==='notes'?'N'.repeat(parts[i]):'',relations:[],creatureId:null,deleted:false}}});
+ }
+ const request={planId:x.planId,expectedProfileRevision:1,count:2,locationIds:[],noteIds,encounter:source.request},bytes=x.store.db.serialize(),history=x.store.sessionRuns(x.w.token,x.planId);
+ if(overflow){
+  assert.throws(()=>x.store.generateSession(x.w.token,request),/Szenenvorschlag/);
+  assert.ok(x.store.db.serialize().equals(bytes),'no partial encounter or session run');
+  assert.deepEqual(x.store.sessionRuns(x.w.token,x.planId),history);
+ }else{
+  const run=x.store.generateSession(x.w.token,request);assert.equal(run.proposals[0][field].length,2000000);
+  const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.cam.id);assert.deepEqual(fresh.sessionRun(w.token,run.id),run);}finally{fresh.close();}
+ }
+ const note=x.store.preparation(x.w.token).notes.find(n=>n.note.id===noteIds[0]).note;assert.equal(note[field==='notes'?'gmNotes':'readAloud'].length,parts[0]);
+});
+
+test('session saving failure rolls back the already generated encounters',t=>{
+ const x=fixture(t),source=x.store.generationRun(x.w.token,x.run.generationRunId);
+ x.store.db.exec("CREATE TRIGGER session_save_failure BEFORE INSERT ON session_run BEGIN SELECT RAISE(ABORT,'controlled session save failure'); END;");
+ const bytes=x.store.db.serialize();
+ assert.throws(()=>x.store.generateSession(x.w.token,{planId:x.planId,expectedProfileRevision:1,count:2,locationIds:[],noteIds:[],encounter:source.request}),/controlled session save failure/);
+ assert.ok(x.store.db.serialize().equals(bytes));assert.deepEqual(x.store.sessionRun(x.w.token,x.run.id),x.run);
+});

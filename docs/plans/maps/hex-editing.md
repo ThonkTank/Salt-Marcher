@@ -1,0 +1,33 @@
+# Zusammenhängendes Hex-Gelände bearbeiten
+
+Laufzeitreise, unabhängige Kampagnenkopien und verbleibende Reiseziele:
+[Hexreise](hex-travel.md).
+
+Original: [Hex Feature Requirements](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex.md).
+
+Ab0.125 verschiebt direktes Ziehen die vorhandene Hexkamera. Das bestehende
+Mausradzoom ändert ausschließlich die Ansichtsgröße (50–300 Prozent), ebenso
+Näher/Weiter. Ansicht zurücksetzen zeigt den Ursprung bei 100 Prozent, ohne
+Auswahl, offene Hexeingaben, Route oder Karteninhalt zu ändern. Das separate
+Bearbeitungsraster liegt unter Karteneinstellungen und Austausch; dessen Wechsel
+sichert offene Eingaben und wählt ausdrücklich eine andere Autorenebene. Gelände malen zeichnet mit dem gewählten Gelände,
+Radius und Maßstab; ausgelassene Hexes zwischen Pointerpositionen werden verbunden.
+Alt oder die mittlere Taste verschiebt auch bei aktivem Pinsel. Die Kartenfläche
+unterstützt Pfeiltasten zur Hexauswahl, Alt+Pfeiltasten zum Verschieben und lokale Strg+Z/Strg+Umschalt+Z-Tastaturaktionen.
+
+Ein Strich ändert ausschließlich terrain in denselben AtlasMap-Zellen. Ende des
+Strichs bzw. ein notwendiger Flush verwendet die bestehende revisionierte
+World-Schreibgrenze und deren Antwortabgleich. Keine zweite Karte oder Zeituhr.
+Wege, Flüsse, Höhen, Texte, Fraktionen und Unterbrechungen bleiben erhalten.
+Rücknahme/Wiederholung stellt die exakten vorherigen expliziten Zellen bzw. deren
+Abwesenheit wieder her. Eine inzwischen anders geänderte betroffene Zelle sperrt
+Rücknahme, statt fremde Inhalte zu überschreiben.
+
+Lokale History gilt bis Kartenwechsel/Neustart: maximal20Striche bzw.20.000berührte
+Zellen. Ein Strich ist auf5.000Zellen begrenzt; die Grenze wird angezeigt und
+bereits sichtbare Änderungen bleiben im normalen Abschluss. Ein gespeicherter
+Strich bleibt nach Neustart erhalten, die lokale Rücknahmehistorie nicht.
+
+Dies liefert direktes Malen/Kamerabedienung, keinen vollständigen Hex-Paritätsnachweis.
+Installationseigener editierbarer Biomkatalog und Kopplung mit Kreaturenfiltern
+bleiben eigene größere Produktarbeit; native Großwelt-/Touchqualifikation offen.

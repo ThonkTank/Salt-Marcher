@@ -420,13 +420,11 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 
 - Featurequalität mit jeder nutzbaren Lieferung umsetzen; dieser Abschluss
   bündelt die noch offenen Gesamt-/OS-/Lastbeweise.
-- Gemeinsame Popup-/Dropdown-/Dialogmechanik und passive Fortschrittsanzeige mit
-  ihren tatsächlichen World-/Planner-/Party-/Combatverbrauchern liefern, keine
-  eigene Shell-Miniphase. Escape/Auto-hide/Fokusrückgabe, feste Aktionen bei
-  scrollendem Inhalt und zugängliche Amount-Eingaben vereinheitlichen;
-  Geschäftsberechnung/Kommandos bleiben beim Featureowner. Die vier
-  `docs/project/requirements/requirements-{anchored-popup,dropdown-popup,dialog-surface,progress-meter}.md`
-  sind Produktverhalten, keine Pflicht zur Übernahme alter Hostklassen.
+- Ergänzende Informationen und Aktionen in World, Planung, Party und Kampf
+  ohne Kontextverlust erreichen und verlassen; Tastaturfokus nachvollziehbar
+  führen und Aktionen auch bei langen Inhalten erreichbar halten. HP, XP und
+  Rastbudget ablesen sowie Änderungsbeträge vor der Übernahme prüfen können.
+  Die konkrete Oberflächenform folgt den [Produktzielen](docs/PRODUCT.md).
 - Feature-/Versions-Tutorials, Lokalisierung, Tastatur, 200 %, Kontrast und
   Nicht-Farb-Signale vollständig qualifizieren.
 - Latenz-, große Daten-, Speicher-, Abbruch-, Offline- und Privacy-Gates gegen

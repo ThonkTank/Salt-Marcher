@@ -1,12 +1,14 @@
+import {newRestockCatalog,renderRestockCatalog} from './shop-restock-catalog-ui';
 import type {ShopView} from './items-contracts';
 import {weightShares} from './generation-contracts';
 
 export function renderShopRestockTables(root:HTMLElement,view:ShopView,options:{changed:()=>void;rebuild:()=>void;button:(title:string,action:()=>Promise<unknown>|void)=>HTMLButtonElement;roll:(id:string)=>Promise<void>}){
  const section=document.createElement('section');section.className='session-group-card';
  const heading=document.createElement('h3');heading.textContent='Gewichtete Warenauffüllung';section.append(heading);
- const explanation=document.createElement('p');explanation.textContent='Wähle bestehende Mengenstapel, Gewichte und Mengen je Ziehung. Ergebnisse werden zum Bestand hinzugefügt; Preise, Einzelstücke und andere Zeilen bleiben erhalten. Automatische Regeln verwenden bestätigte Kampagnenzeit.';section.append(explanation);root.append(section);
+ const explanation=document.createElement('p');explanation.textContent='Wähle bestehende Mengenstapel, Gewichte und Mengen je Ziehung. Ergebnisse werden zum Bestand hinzugefügt; Preise, Einzelstücke und andere Zeilen bleiben erhalten. Alternativ zieht eine Kataloglieferung neue passende Waren. Automatische Regeln verwenden bestätigte Kampagnenzeit.';section.append(explanation);root.append(section);
  const available=view.shop.stock.filter(e=>!e.unique);
  const add=options.button('Auffülltabelle anlegen',()=>{view.shop.restockTables??=[];view.shop.restockTables.push({id:crypto.randomUUID(),revision:0,name:'Neue Warenlieferung',seed:crypto.randomUUID(),rolls:3,entries:available.slice(0,1).map(e=>({entryId:e.id,weight:'1',minimum:1,maximum:1})),schedule:null});options.changed();options.rebuild();});add.disabled=!available.length||view.unavailable;section.append(add);
+ const addCatalog=options.button('Kataloglieferung anlegen',()=>{view.shop.restockTables??=[];view.shop.restockTables.push({id:crypto.randomUUID(),revision:0,name:'Neue Kataloglieferung',seed:crypto.randomUUID(),rolls:3,entries:[],catalog:newRestockCatalog(),schedule:null});options.changed();options.rebuild();});addCatalog.disabled=view.unavailable;section.append(addCatalog);
  if(!available.length){const p=document.createElement('p');p.textContent='Zuerst einen Gegenstand als Mengenstapel zum Shop hinzufügen.';section.append(p);}
  for(const table of view.shop.restockTables??[]){
   const details=document.createElement('details');details.open=true;const summary=document.createElement('summary');summary.textContent=table.name+' · Revision '+table.revision;details.append(summary);section.append(details);
@@ -16,6 +18,10 @@ export function renderShopRestockTables(root:HTMLElement,view:ShopView,options:{
   field(fields,'Name',table.name,'text',v=>table.name=v);
   field(fields,'Ziehungen je Lieferung (1–100)',String(table.rolls),'number',v=>table.rolls=Number(v)).max='100';
   field(fields,'Zufallsbasis',table.seed,'text',v=>table.seed=v);
+  const sourceLabel=document.createElement('label'),source=document.createElement('select');sourceLabel.textContent='Warenquelle';source.setAttribute('aria-label','Warenquelle');sourceLabel.append(source);details.append(sourceLabel);
+  for(const [value,title] of [['stock','Gewichtete vorhandene Mengenstapel'],['catalog','Gefilterter Gegenstandskatalog']]){const o=document.createElement('option');o.value=value!;o.textContent=title!;source.append(o);}source.value=table.catalog?'catalog':'stock';source.options[0]!.disabled=!available.length;
+  source.onchange=()=>{table.catalog=source.value==='catalog'?newRestockCatalog():null;table.entries=table.catalog?[]:available.slice(0,1).map(e=>({entryId:e.id,weight:'1',minimum:1,maximum:1}));change();options.rebuild();};
+  if(table.catalog)renderRestockCatalog(details,table.catalog,{changed:change,button:options.button});else{
   let shares:string[]=[];try{shares=weightShares(table.entries.map(e=>e.weight));}catch{/* Invalid drafts remain editable. */}
   const entries=document.createElement('div');details.append(entries);
   for(const stock of available){
@@ -23,6 +29,7 @@ export function renderShopRestockTables(root:HTMLElement,view:ShopView,options:{
    check.onchange=()=>{if(check.checked)table.entries.push({entryId:stock.id,weight:'1',minimum:1,maximum:1});else table.entries=table.entries.filter(e=>e.entryId!==stock.id);change();options.rebuild();};
    if(!entry)continue;const selected=entry,index=table.entries.indexOf(selected),weights=field(row,'Gewicht'+(shares[index]?' · '+shares[index]:''),selected.weight,'text',v=>selected.weight=v);weights.inputMode='decimal';
    field(row,'Mindestmenge je Treffer',String(selected.minimum),'number',v=>selected.minimum=Number(v));field(row,'Höchstmenge je Treffer',String(selected.maximum),'number',v=>selected.maximum=Number(v));
+  }
   }
   const triggerLabel=document.createElement('label'),trigger=document.createElement('select');triggerLabel.textContent='Auslöser der Warenlieferung';trigger.setAttribute('aria-label','Auslöser der Warenlieferung');triggerLabel.append(trigger);details.append(triggerLabel);
   for(const [id,title] of [['manual','Nur manuell'],['interval','Nach verstrichener Kampagnenzeit'],['event','Bei Beginn eines Kalenderereignisses']] as const){const o=document.createElement('option');o.value=id;o.textContent=title;trigger.append(o);}

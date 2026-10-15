@@ -1,3 +1,4 @@
+import {treasureAnchor,treasureAnchorLabel} from './treasure-anchors';
 import { createHash, randomUUID } from "node:crypto";
 import type {
   TreasuryDraft,
@@ -150,6 +151,17 @@ export function editTreasury(db: any, cam: string, a: TreasuryAction): string {
     a.reason.length > 10000
   )
     throw new Error("Schatz geändert oder Änderungsgrund fehlt.");
+  if(a.kind==='treasure-anchor'){
+    if(draft(db,cam,t.id))throw new Error('Offene Schatzangaben zuerst übernehmen oder verwerfen.');
+    const anchor=a.anchor;
+    if(!anchor||!['unplaced','scene','location'].includes(anchor.kind)||anchor.kind!=='unplaced'&&(typeof anchor.id!=='string'||!anchor.id||anchor.id.length>1000))throw new Error('Schatzzuordnung prüfen.');
+    const target=treasureAnchorLabel(db,cam,anchor);
+    if(anchor.kind!=='unplaced'&&!target.available)throw new Error('Zielgruppe oder Zielort nicht verfügbar.');
+    // The anchor moves the same instance. Preserve its original award source for future allocations.
+    for(const item of t.items)item.origin??=origin(t,item.id);
+    t.sceneId=anchor.kind==='scene'?anchor.id:null;t.locationId=anchor.kind==='location'?anchor.id:null;t.revision++;
+    saveTreasure(db,cam,t);event(db,cam,null,'treasure-anchored',{treasureId:t.id,from:treasureAnchor(before),to:anchor,targetName:target.name,before,after:t,reason:a.reason});return t.id;
+  }
   if (a.kind === "treasure-edit") {
     place(db, cam, a.locationId);
     if (

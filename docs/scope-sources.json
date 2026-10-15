@@ -270,51 +270,6 @@
       "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/party/requirements/requirements-party-window.md"
     },
     {
-      "path": "docs/project/requirements/requirements-anchored-popup.md",
-      "title": "Anchored Popup",
-      "sha256": "1043a471a40b69651978cacec589f377713bd7fc2669dcfb1f1631730c310d43",
-      "scope_area": "project",
-      "target_phases": [
-        "SMR-00",
-        "SMR-02",
-        "SMR-03",
-        "SMR-05",
-        "SMR-06",
-        "SMR-07",
-        "SMR-11"
-      ],
-      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-anchored-popup.md"
-    },
-    {
-      "path": "docs/project/requirements/requirements-dialog-surface.md",
-      "title": "Dialog Surface",
-      "sha256": "c6d663b502b361637336b990953fe553c0547ad080eba5761de40ecc19640af0",
-      "scope_area": "project",
-      "target_phases": [
-        "SMR-00",
-        "SMR-02",
-        "SMR-03",
-        "SMR-05",
-        "SMR-06",
-        "SMR-07",
-        "SMR-11"
-      ],
-      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-dialog-surface.md"
-    },
-    {
-      "path": "docs/project/requirements/requirements-dropdown-popup.md",
-      "title": "Reusable Top-Bar Dropdown Popup",
-      "sha256": "2c811810fd473b27d183d58c83e45e68b1f55631c923c60549c27ff9f65c4ff1",
-      "scope_area": "project",
-      "target_phases": [
-        "SMR-00",
-        "SMR-02",
-        "SMR-03",
-        "SMR-11"
-      ],
-      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-dropdown-popup.md"
-    },
-    {
       "path": "docs/project/requirements/requirements-program-capabilities.md",
       "title": "SaltMarcher Program Capability Requirements",
       "sha256": "714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e",
@@ -334,19 +289,6 @@
         "SMR-11"
       ],
       "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md"
-    },
-    {
-      "path": "docs/project/requirements/requirements-progress-meter.md",
-      "title": "Progress Meter",
-      "sha256": "80e5bae11e22b0077acc2276785a1c2c398206f0b4b6ad5d338dd0591f1645be",
-      "scope_area": "project",
-      "target_phases": [
-        "SMR-00",
-        "SMR-03",
-        "SMR-05",
-        "SMR-11"
-      ],
-      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-progress-meter.md"
     },
     {
       "path": "docs/project/requirements/requirements-travel-state-tab.md",

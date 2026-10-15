@@ -1,6 +1,6 @@
 # Adventuring Day: Partyvorschau und bestätigte Rastfakten
 
-Stand: 14.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
+Stand: 15.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
 und den [Gesamtumfang](../../SCOPE.md). Der Rechner ist ein Party-/Live-Werkzeug;
 der Atlas ist weder sein Owner noch eine Voraussetzung.
 
@@ -31,6 +31,85 @@ beginnen die Levelvorschau mit ihren tatsächlichen bestätigten XP, eigene
 Levelzeilen mit dem jeweiligen Levelminimum. Die Etappenanzeige begrenzt volle
 Einzeltage auf 30 und fasst weitere Tage zusammen, ohne ihre Summe abzuschneiden.
 Das sind vorhandene Rechenregeln, keine neu bestätigten Rasten oder XP-Awards.
+
+## Leitung ab dem tatsächlichen Raststand
+
+Version 0.126 ergänzt im selben Dropdown eine aktuelle Rastplanung. Der Partyreader
+liefert `pacing` aus `projectDayPacing`, das ausschließlich das bestehende
+`restFrame` und `xpShare` verwendet. Der Rechner besitzt keine eigenen Rastregeln.
+„Heute“ zeigt den verbleibenden individuellen Tagesrahmen nach tatsächlich
+abgeschlossenen kurzen Rasten; eine frühe Rast verschiebt die weiteren Marken.
+Der Mittelwert ist ungewichtet, unbekannte XP/Rasten sind ausdrücklich ausgeschlossen.
+Gemeinsame Marken erscheinen nur bei gleicher verbleibender Abschnittszahl.
+Alle aktiven Figuren einschließlich Split Scenes bleiben die Empfängerbasis.
+
+Im aktiven Modus „XP → Tage“ erscheint zusätzlich „Ab jetzt“: die eingegebene
+Gruppenbelastung wird gleichmäßig aufgerundet verteilt und zu bestätigtem Long-/
+Shortverbrauch addiert. Keine Rasten werden automatisch angenommen und kein
+Verdienst-/Levelwechsel verändert diese Belastungsvorschau. Fällige kurze/lange
+Rasten, numerische Überziehung und die kleinste Gruppen-XP-Menge bis zur ersten
+individuellen Marke bleiben sichtbar. Unbekannte Mitglieder zählen zur Verteilung,
+behaupten aber keinen Verlauf; bekannte Mitglieder bleiben als Teilbasis nutzbar.
+Eigene Rechnerzeilen verändern diese aktuelle Partyprojektion nicht.
+
+Die bisherigen Tagesmodelle/Etappen sind separat als „ab langer Rast“ beschriftet.
+Sie verwenden weiterhin feste Startlevelbudgets. „Party / Rasten öffnen“ öffnet
+den echten Party-Popup; die dort gewählten Mitglieder der Gruppe im Fokus und
+die vorhandenen Commands bestätigen eine Rast. Rechnerreads schreiben weder
+Fortschritt noch Roster, Scene, Weltzeit, Receipts oder Verlauf. Keine Migration.
+Öffnen/Neuberechnen markiert den Trigger und Popup als ausstehend und räumt alte
+Rastdetails ab. Individuelle Verläufe sind in 20er-Schritten nachladbar.
+
+Gezielt geprüft: früher SR-Abschluss bei 240/1200 XP verschiebt die nächste Marke
+auf 720 XP; gemischte Abschnittszahlen, Rundung, dritte SR, Longüberziehung und
+unveränderter Store. Nativer Desktop: drei aktive Figuren, darunter unbekannte XP;
+1141 Gruppenbelastung ergibt 381 je Figur/1143 insgesamt, bekannte Verläufe
+340→721 und 100→481, eigene Zeilen, offengehaltener Detailbereich, Partyübergang
+und Neustart. Zwei normale Exits, keine Rendererfehler, Fortschritts-/Roster-/
+Uhrzeilen bytegleich. Das ist eine gezielte Ablaufprüfung, keine umfassende
+Host-/Großparty-/Layoutabnahme.
+
+## Begegnungen als vollständigen Tagesplan bewerten
+
+Version 0.127 verbindet den bestehenden Rechner mit gespeicherten Encounter-Vorlagen.
+Im selben Dropdown können bis zu 20 Planzeilen mit je 1–99 Wiederholungen gesucht,
+hinzugefügt, umgeordnet und entfernt werden. Die aktuelle aktive oder eigene
+Rechnerparty bestimmt Multiplikator und Schwierigkeit; eine historische
+Planungsparty in der Vorlage wird nicht heimlich übernommen.
+
+`readDayItinerary` liest die gewählten Vorlagen im bestehenden Dayread innerhalb
+der gemeinsamen SQLite-Transaktion. ID und gespeicherte Revision sind gebunden.
+Geänderte Vorlagen liefern ein sichtbares Problem; „Vorlagen aktualisieren“ liest
+bewusst deren aktuelle Revisionen. Fehlende oder beschädigte Quellen und fehlende
+Kreatur-XP erzeugen keine scheinbar vollständige Nullsumme. Es werden weder Vorlagen
+noch NPCs, Party, Kämpfe, Rasten, XP oder Uhren geändert. Keine neue IPC-Operation,
+Datenbank oder Migration.
+
+`assessEncounter` bewertet jede Vorlage mit derselben Rechnerparty. Angepasste XP
+bilden die Belastung, Basis-XP den Verdienst. `xpShare` rundet beide je Begegnung
+auf, bevor Wiederholungen und Planzeilen summiert werden. Beispiel mit drei Figuren:
+zwei einzelne Goblins (50 XP pro Begegnung) und zwei Goblins gemeinsam
+(100 Basis-/150 angepasste XP) ergeben 250 rohe Belastungs-/200 Basis-XP,
+aber 252 tatsächlich verteilte Belastungs-/204 Verdienst-XP. Der Rechner prognostiziert
+84 Belastungs-/68 Verdienst-XP je Figur. Bei sechs Figuren ändern sich Multiplikatoren
+und Rundung: 162 Belastungs-/210 Verdienst-XP. Keine zweite Abrechnungsregel.
+
+Je Etappe werden kumulierte Last/Verdienst und der Rastbedarf bekannter aktiver
+Figuren angezeigt. Dazwischen werden keine Rasten oder Levelwechsel angenommen.
+Bei eigenen Zeilen bleiben aktuelle Party-Raststände unabhängig. Etappen und
+XP→Tage verwenden die verteilten Summen; die ursprünglichen Summen stehen daneben.
+Manuelle XP-Eingaben werden vor Planmodus bewahrt und beim Ausschalten wieder
+hergestellt. Suchantworten sind an Workspace/Antwortgeneration gebunden. Der Plan
+bleibt ein lokaler Rechnerentwurf bis Kampagnenreaktivierung oder Neustart.
+
+Gezielte Prüfung: Storeablauf mit echter Vorlagenspeicherung, abweichender alter
+Vorlagenparty, Wiederholungen, Rundung, eigener Sechserparty, unveränderten
+Datenbankbytes und sichtbarer Ablehnung einer später geänderten Vorlage.
+Nativ geprüft: Hinzufügen, Wiederholungen, Reihenfolge, ungültige leere Anzahl,
+Wechsel zwischen aktiver und eigener Party, gespeicherte Quelländerung mit
+ausdrücklichem Refresh, Rückkehr zu manuellen Eingaben, Übergang zum Encounter-Editor
+und Neustart. Party-, Fortschritts- und Uhrzeilen bleiben unverändert; zwei
+normale Exits, keine Rendererfehler.
 
 ## Geprüfte Daten- und Eingabegrenzen
 

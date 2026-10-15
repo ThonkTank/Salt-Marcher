@@ -75,3 +75,22 @@ UI-Pendingablauf oder portierten Replay eines ursprünglichen Commands.
    25 Posten, acht Spalten und 25 sichtbare Figuren begrenzen die Darstellung,
    nicht bereits die vollständig gelesenen Quellen. Native Tastatur, Dialogscroll,
    Esc/Fokusrückgabe, 200 %, Close/Fresh und langsame Reads separat prüfen.
+
+## Schätze finden und vollständig umhängen ab0.124
+
+Die Schatzliste bietet Titel-/Zuordnungssuche, aktive Gruppen/Orte, einen
+Posteingang für unplatzierte oder nicht verfügbare Zuordnungen und optional nur
+Restmengen. 25erSeiten werden über denselben Filter fortgesetzt; Antworten älterer
+Filter/Aktivierungen werden verworfen. Ein geöffneter Schatz außerhalb der
+geladenen Treffer bleibt ausdrücklich als solcher sichtbar, damit offene Eingaben
+nicht durch eine Suchänderung verschwinden.
+
+`treasure-anchor` ändert an derselben Schatzidentität genau eine Zuordnung:
+Scenegruppe, Ort oder unplaced. Aktuelle Zielverfügbarkeit, Schatzrevision,
+Begründung und offene Mengenentwürfe werden im vorhandenen Progressreceipt geprüft.
+Mengen, Allocations und persönliche Ledger bleiben erhalten; ursprüngliche
+Rewardreferenzen bleiben je Posten nachvollziehbar. Verlauf und Chronik zeigen die
+Umhängung. Alte Scenerewards können zusätzlich einen Herkunftsort enthalten; beim
+Lesen gilt deren Scene als aktueller Anker. Neue explizite Umhängungen setzen beide
+Felder eindeutig. Ein Papierkorbort/archivierte Gruppe bleibt als offene
+Zuordnung auffindbar und wird nicht still auf unplaced umgeschrieben.

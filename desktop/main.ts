@@ -1,4 +1,4 @@
-import {sessionPacketMarkdown} from '../src/app/session-packet-contracts';
+import {exportSessionPacketFile} from './session-packet-export';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../src/app/npc-contracts';
 import {audioResponse} from './audio-response';
 import {extensionPackageLimit} from '../src/app/storage/extensions';
@@ -112,7 +112,7 @@ else {
     handle('campaign:scene-visits',(token:string,sceneId:string,after:string|null)=>store.sceneVisits(token,sceneId,after));
     handle('campaign:session-progress',(token:string,id:string,sceneId?:string)=>store.sessionProgress(token,id,sceneId));
     handle('campaign:session-packet',(token:string,id:string)=>store.sessionPacket(token,id));
-    handle('campaign:session-packet-export',async(token:string,id:string,basis:string)=>{const packet=store.sessionPacket(token,id);if(packet.basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');const safe=(packet.planName||'Spielabend').replace(/[\\/:*?"<>|]+/g,'-'),pick=await dialog.showSaveDialog(win,{title:'GM-Spielabendmappe speichern',defaultPath:safe+' – GM-Mappe.md',filters:[{name:'Markdown',extensions:['md']}]});if(pick.canceled||!pick.filePath)return{cancelled:true};if(store.sessionPacket(token,id).basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');await writeFile(pick.filePath,sessionPacketMarkdown(packet));return{cancelled:false};});
+    handle('campaign:session-packet-export',async(token:string,id:string,basis:string)=>{const packet=store.sessionPacket(token,id);if(packet.basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');const safe=(packet.planName||'Spielabend').replace(/[\\/:*?"<>|]+/g,'-'),pick=await dialog.showSaveDialog(win,{title:'GM-Spielabendmappe speichern',defaultPath:safe+' – GM-Mappe.md',filters:[{name:'Markdown',extensions:['md']}]});if(pick.canceled||!pick.filePath)return{cancelled:true};await exportSessionPacketFile(pick.filePath,packet,()=>{if(store.sessionPacket(token,id).basis!==basis)throw new Error('Mappenquellen geändert. Aktualisiere die Spielabendmappe.');});return{cancelled:false};});
     handle('campaign:session', (token: string,id: string)=>store.session(token,id));
     handle('campaign:execute-session', (command: SessionCommand)=>store.executeSession(command));
     handle('campaign:generate-session', (token: string,request: SessionGenerationRequest)=>store.generateSession(token,request));
@@ -188,7 +188,7 @@ else {
     handle('campaign:progress-history', (token: string, characterId: string, after: string | null) => store.progressHistory(token, characterId, after));
     handle('campaign:adventuring-day',(token:string,request:import('../src/app/adventuring-day-contracts').DayRequest)=>store.adventuringDay(token,request));
     handle('campaign:progress', (token: string) => store.progress(token));
-    handle('campaign:treasures', (token: string, after: string | null) => store.treasures(token, after));
+    handle('campaign:treasures', (token: string, after: string | null,query?:import('../src/app/treasury-contracts').TreasureQuery) => store.treasures(token, after,query));
     handle('campaign:treasure', (token: string, id: string) => store.treasure(token, id));
     handle('campaign:ledger', (token: string, query: import('../src/app/progression').LedgerQuery) => store.ledger(token, query));
     handle('campaign:ledger-inventory',(token:string,query:import('../src/app/progression').LedgerInventoryQuery)=>store.ledgerInventory(token,query));
@@ -280,6 +280,7 @@ else {
     handle('drawing:execute',(c:import('../src/app/drawing-contracts').DrawingCommand)=>store.executeDrawing(c));
     handle('drawing:feature',(token:string,id:string,sceneId:string,expected:number,action:'activate'|'reset'|'correct',charges:number|null,commandId:string)=>store.activateFeature(token,id,sceneId,expected,action,charges,commandId));
     handle('drawing:export',async(token:string,scopeId:string,floorId:string,format:'svg'|'json'|'keys'|'document',publicOnly:boolean)=>{if(!['svg','json','keys','document'].includes(format))throw new Error('Ausgabeformat unbekannt.');store.drawing(token);const g=store.dungeon(token),v=g.drawing,rooms=g.rooms.filter(r=>r.scopeId===scopeId&&r.floorId===floorId),text=format==='svg'?dungeonSvg(rooms.filter(r=>!publicOnly||!v.keyContent?.some(c=>c.id===r.id&&c.secret)),v,scopeId,floorId,publicOnly):format==='document'?dungeonKeyDocument(g,scopeId,publicOnly):format==='keys'?dungeonKeyMarkdown(g,scopeId,publicOnly,floorId):publicOnly?JSON.stringify({format:'Kampagnenwerkstatt Dungeon public',version:1,scopeId,floorId,svg:dungeonSvg(rooms.filter(r=>!v.keyContent?.some(c=>c.id===r.id&&c.secret)),v,scopeId,floorId,true),key:dungeonKeyMarkdown(g,scopeId,true,floorId)},null,2):JSON.stringify({format:'Kampagnenwerkstatt Dungeon',version:1,scopeId,floorId,rooms,view:{...v,keyContent:v.keyContent?.filter(k=>k.scopeId===scopeId),paths:v.paths?.filter(p=>p.scopeId===scopeId),passages:v.passages?.filter(p=>p.scopeId===scopeId),volumes:v.volumes?.filter(p=>p.scopeId===scopeId),elements:v.elements.filter(e=>e.scopeId===scopeId),styles:v.styles.filter(e=>e.scopeId===scopeId),hiddenRooms:v.hiddenRooms.filter(e=>e.scopeId===scopeId),hiddenFloors:v.hiddenFloors.filter(e=>e.scopeId===scopeId),features:[]}},null,2);const extension=format==='keys'?'md':format==='document'?'html':format,selection=await dialog.showSaveDialog(win,{defaultPath:'Dungeon.'+extension,filters:[{name:'Dungeon',extensions:[extension]}]});if(selection.canceled||!selection.filePath)return{cancelled:true};await writeFile(selection.filePath,text);return{cancelled:false};});
+    handle('autonomy:decision',(token:string,actorId:string)=>store.autonomyDecision(token,actorId));
     handle('autonomy:view',(token:string)=>store.autonomy(token));
     handle('autonomy:execute',(c:import('../src/app/autonomy-contracts').AutonomyCommand)=>store.executeAutonomy(c));
     handle('player:view',(token:string)=>store.playerView(token));

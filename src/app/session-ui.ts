@@ -22,6 +22,9 @@ let workspace:Workspace|null=null,plan:ManualPlan|null=null,visitId:string|null=
 type GroupDraft=Pick<PreparedGroup,'id'|'revision'|'title'|'notes'>;
 const groupDrafts=new Map<string,GroupDraft>();
 let generation=0,loadRequest=0,previewRequest=0,basis='',profileDirty=false,visitDirty=false,timer:ReturnType<typeof setTimeout>|null=null,pending:Promise<boolean>|null=null;
+let profileWriting:{token:string;generation:number;planId:string}|null=null;
+let generating:{token:string;planId:string;request:number}|null=null;
+function generationMessage(text:string,error=false){get('session-generation-feedback').textContent=text;get('session-generation-feedback').classList.toggle('error',error);}
 let inputChanged:()=>void=()=>{};
 let tell:(text:string,error?:boolean)=>void,flushBase:()=>Promise<boolean>,refreshBase:(visitId?:string,planId?:string)=>Promise<void>,openNote:(id:string)=>Promise<void>;
 let roster:{characterId:string;name:string;xp:number|null;revision:number;active:boolean}[]=[];
@@ -40,7 +43,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  basis=key;generation++;loadRequest++;closeStoryAward();
  if(timer)clearTimeout(timer);timer=null;
  profileDirty=false;visitDirty=false;view=null;profileDraft=null;visitDraft=null;
- if(parentChanged){closeProposalEditor();get('session-faction-picks').replaceChildren();groupDrafts.clear();previewRequest++;run=null;renderRun();for(const id of ['session-history','session-table-picks','session-locations','session-notes'])get(id).replaceChildren();}
+ if(parentChanged){generating=null;get<HTMLButtonElement>('session-generate').disabled=false;generationMessage('');closeProposalEditor();get('session-faction-picks').replaceChildren();groupDrafts.clear();previewRequest++;run=null;renderRun();for(const id of ['session-history','session-table-picks','session-locations','session-notes'])get(id).replaceChildren();}
  get('visit-groups').replaceChildren();
  lock(true);get<HTMLButtonElement>('session-refresh').disabled=false;
  if(next&&current)return load();
@@ -80,7 +83,10 @@ async function acceptSessionResult(action:SessionAction,result:SessionView,gen:n
  if(action.kind==='profile'){
   const latest=profileDraft;
   profileDirty=!!latest&&JSON.stringify({...latest,revision:action.profile.revision})!==JSON.stringify(action.profile);
-  profileDraft=profileDirty?{...latest!,revision:result.profile.revision}:structuredClone(result.profile);
+  // The writer changes only the revision and exact fraction normalization.
+  // Keep the row objects captured by live input handlers and the focused DOM.
+  profileDraft=latest?{...latest,revision:result.profile.revision}:structuredClone(result.profile);
+  budget();tell(profileDirty?'Neuere Planungseingabe noch offen.':'Planung gespeichert.');return;
  }else if(!profileDirty)profileDraft=structuredClone(result.profile);
  const confirmed=result.visits.find(v=>v.visitId===visitId)??null;
  if(action.kind==='visit'){
@@ -102,6 +108,7 @@ async function acceptSessionResult(action:SessionAction,result:SessionView,gen:n
 async function execute(action:SessionAction){
  if(!workspace||pending)return false;
  const owner=workspace,token=owner.token,gen=generation,ownerPlan=action.kind==='profile'?action.profile.planId:action.planId;
+ const editing=action.kind==='profile'?{token,generation:gen,planId:ownerPlan}:null;profileWriting=editing;
  let committed=false;
  pending=(async()=>{
   try{
@@ -115,7 +122,7 @@ async function execute(action:SessionAction){
   }catch(error){
    if(gen===generation){if(committed)render();tell((committed?'Gespeichert; Ansicht konnte nicht aktualisiert werden: ':'')+(error as Error).message,true);}
    return committed;
-  }finally{pending=null;lock(!view);}
+  }finally{if(profileWriting===editing)profileWriting=null;pending=null;lock(!view);}
  })();
  lock(true);return pending;
 }
@@ -124,6 +131,8 @@ function lock(on:boolean){
  on=on||!!workspace&&hasPendingCommit(workspace.campaign.id);
  get<HTMLButtonElement>('plan-replace').disabled=on||!workspace||!plan;
  for(const id of ['session-panel','visit-preparation','plan-replacement-dialog'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
+  const liveProfile=profileWriting?.token===workspace?.token&&profileWriting?.generation===generation&&profileWriting?.planId===plan?.id&&c instanceof HTMLInputElement&&c.type!=='checkbox'&&!!c.closest('#session-profile-form');
+  if(on&&liveProfile)continue;
   if(on){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
   else if(lockedControls.has(c)){c.disabled=lockedControls.get(c)!;lockedControls.delete(c);}
  }
@@ -154,7 +163,7 @@ function render(){if(!view||!profileDraft)return;get<HTMLInputElement>('session-
  renderRun();lock(!!pending);
 }
 function checkbox(root:HTMLElement,id:string,text:string,checked:boolean){const label=document.createElement('label'),box=document.createElement('input');label.className='check-label';box.type='checkbox';box.value=id;box.checked=checked;label.append(box,document.createTextNode(text));root.append(label);return box;}
-function renderParty(){const root=get('session-party-levels');root.replaceChildren();for(const p of profileDraft?.party??[]){const row=document.createElement('div');row.className='session-party-row';const name=document.createElement('span'),level=document.createElement('input'),count=document.createElement('input');name.textContent=p.name;level.type='number';level.min='1';level.max='20';level.value=p.level===null?'':String(p.level);level.placeholder='Level';level.setAttribute('aria-label','Planungslevel '+p.name);count.type='number';count.min='1';count.value=String(p.count);count.setAttribute('aria-label','Planungsanzahl '+p.name);level.oninput=()=>{p.level=level.value?Number(level.value):null;profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};count.oninput=()=>{p.count=Number(count.value);profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};row.append(name,level,count);root.append(row);}budget();}
+function renderParty(){const root=get('session-party-levels');root.replaceChildren();if(profileDraft?.party.length){const head=document.createElement('div');head.className='session-party-row caption';for(const text of ['Figuren','Level','Anzahl','']){const label=document.createElement('span');label.textContent=text;head.append(label);}root.append(head);}for(const p of profileDraft?.party??[]){const row=document.createElement('div');row.className='session-party-row';const name=document.createElement('span'),level=document.createElement('input'),count=document.createElement('input');name.textContent=p.name;level.type='number';level.min='1';level.max='20';level.value=p.level===null?'':String(p.level);level.placeholder='Level';level.setAttribute('aria-label','Planungslevel '+p.name);count.type='number';count.min='1';count.value=String(p.count);count.setAttribute('aria-label','Planungsanzahl '+p.name);level.oninput=()=>{p.level=level.value?Number(level.value):null;profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};count.oninput=()=>{p.count=Number(count.value);profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};const remove=document.createElement('button');remove.type='button';remove.textContent='Entfernen';remove.setAttribute('aria-label',p.name+' aus der Planung entfernen');remove.onclick=()=>{if(!profileDraft)return;profileDraft.party=profileDraft.party.filter(row=>row.id!==p.id);profileDirty=true;scheduleSession('Planungseingabe offen.');render();};row.append(name,level,count,remove);root.append(row);}budget();}
 function budget(){try{const party=profileDraft?.party??[],known=party.length&&party.every(p=>Number.isInteger(p.level)&&p.level!>=1&&p.level!<=20&&Number.isSafeInteger(p.count)&&p.count>0);if(!known){get('session-budget').textContent='Manuelle Vorbereitung bleibt möglich. Für die Generierung fehlen bekannte Party-Level.';return;}const daily=party.reduce((n,p)=>n+dailyXp[p.level!-1]!*p.count,0),fraction=Number(exactWeight(value('session-fraction')));get('session-budget').textContent='Tagesbudget '+daily+' angepasste XP · Adventure-Day-Anteil '+value('session-fraction')+' · Planungsbudget '+Math.floor(daily*fraction)+' XP. Aktuelle Party bleibt unverändert.';}catch(error){get('session-budget').textContent=(error as Error).message;}}
 function renderRewardItems(){const root=get('visit-reward-items');root.replaceChildren();for(const [index,item]of (visitDraft?.reward?.items??[]).entries()){const row=document.createElement('div');row.className='session-item-row';const name=document.createElement('input'),quantity=document.createElement('input'),cost=document.createElement('input'),remove=document.createElement('button');name.value=item.name;name.placeholder='Gegenstand';quantity.type='number';quantity.min='1';quantity.value=String(item.quantity);cost.value=item.valueGold;cost.placeholder='Gold pro Stück';name.oninput=()=>{item.name=name.value;scheduleVisit();};quantity.oninput=()=>{item.quantity=Number(quantity.value);scheduleVisit();};cost.oninput=()=>{item.valueGold=cost.value;scheduleVisit();};remove.textContent='Entfernen';remove.type='button';remove.onclick=()=>{visitDraft!.reward!.items.splice(index,1);renderRewardItems();scheduleVisit();};row.append(name,quantity,cost,remove);root.append(row);}}
 function groupInput(group:PreparedGroup,title:string,notes:string){
@@ -241,15 +250,17 @@ async function selectRun(){
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
 async function generatePreview(){
- const owner=previewOwner();if(!owner)return;
- const request=++previewRequest;
+ const owner=previewOwner();if(!owner||generating&&generating.token===owner.token&&generating.planId===owner.planId)return;
+ const request=++previewRequest,ticket={...owner,request};generating=ticket;get<HTMLButtonElement>('session-generate').disabled=true;generationMessage('Vorschläge werden erzeugt…');
  try{
-  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||!view)return;
+  if(!await flushSession()){if(ownsPreview(owner)&&request===previewRequest)generationMessage('Planungseingaben zuerst prüfen und speichern. Es wurde keine neue Vorschau erzeugt.',true);return;}
+  if(!ownsPreview(owner)||request!==previewRequest||!view)return;
   const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={requiredNpcIds:requiredPick.ids(),includeNpcs:get<HTMLInputElement>('session-npc-mixed').checked,npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
   const generated=unwrap(await window.campaign.generateSession(owner.token,{magicPool:magicPick.selection(),compensateMagic:get<HTMLInputElement>('session-magic-compensate').checked,compensateLoot:get<HTMLInputElement>('session-loot-compensate').checked,worldSourcesByLocation:get<HTMLInputElement>('session-world-sources').checked,planId:owner.planId,expectedProfileRevision:view.profile.revision,count:Number(value('session-scene-count')),locationIds:[...get('session-locations').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),noteIds:[...get('session-notes').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),encounter}));
   if(!ownsPreview(owner)||request!==previewRequest)return;
-  run=generated;renderRun();tell('Spielabend-Vorschau erzeugt. Noch keine Szenen übernommen.');
- }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
+  run=generated;renderRun();generationMessage('Vorschau gespeichert · '+generated.proposals.length+' Szenen · '+generated.usedXp+' von '+generated.budget+' XP. Noch keine Szene übernommen.');get('session-preview').scrollIntoView({block:'start'});tell('Spielabend-Vorschau erzeugt. Noch keine Szenen übernommen.');
+ }catch(error){if(ownsPreview(owner)&&request===previewRequest){generationMessage((error as Error).message,true);tell((error as Error).message,true);}}
+ finally{if(generating===ticket){generating=null;if(ownsPreview(owner))get<HTMLButtonElement>('session-generate').disabled=false;}}
 }
 function gold(copper:string){const n=BigInt(copper),sign=n<0n?'-':'',v=n<0n?-n:n;return sign+(v/100n)+','+(v%100n).toString().padStart(2,'0');}
 function renderRun(){

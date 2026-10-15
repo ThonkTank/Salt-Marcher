@@ -56,3 +56,19 @@ test('confirmed rewards retain original receipts and linked corrected history th
  }finally{copy.close();}
  assert.ok(x.store.db.serialize().equals(source));assert.ok(readFileSync(snapshot).equals(bytes));
 });
+
+test('whole treasure anchors retain allocations and provenance across filtered inbox pages, restart and copy',async t=>{
+ const x=fixture(t),cam=x.campaign.id,place=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id:place,name:'Hafenlager',type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});
+ const scene=x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:x.store.live(x.w.token).rosterRevision})).scene;x.characters=x.store.live(x.w.token).roster;
+ x.store.executeProgress(x.command(x.action([x.portion(0,0,2)])));const original=x.book(),ledger=x.store.db.prepare('SELECT * FROM character_ledger').all(),itemIds=original.items.map(i=>i.id);
+ for(let i=0;i<30;i++)x.store.executeProgress(x.command({kind:'treasure-create',title:'Inbox '+i,locationId:null}));
+ const first=x.store.treasures(x.w.token,null,{search:'',anchor:'inbox'});assert.equal(first.items.length,25);assert(first.next);const second=x.store.treasures(x.w.token,first.next,{search:'',anchor:'inbox'});assert.equal(second.items.length,6);assert.equal(new Set([...first.items,...second.items].map(t=>t.id)).size,31);
+ const move=anchor=>{const book=x.book(),c=x.command({kind:'treasure-anchor',treasureId:book.id,expectedRevision:book.revision,anchor,reason:'Schatz transportiert'}),result=x.store.executeProgress(c);x.store.executeProgress(c);assert.equal(x.book().revision,book.revision+1);assert.equal(result.treasureId,x.id);};
+ move({kind:'location',id:place});assert.equal(x.book().sceneId,null);assert.equal(x.book().locationId,place);assert.equal(x.store.treasures(x.w.token,null,{search:'Hafenlager',anchor:'location',anchorId:place,remainingOnly:true}).items[0].id,x.id);
+ move({kind:'scene',id:scene.id});assert.equal(x.book().locationId,null);assert.equal(x.store.treasures(x.w.token,null,{search:'Originalfund',anchor:'scene',anchorId:scene.id}).items[0].id,x.id);
+ move({kind:'unplaced'});assert.equal(x.book().sceneId,null);assert.equal(x.book().locationId,null);assert.deepEqual(x.book().items.map(i=>i.id),itemIds);assert.deepEqual(x.book().items.map(i=>i.allocated),original.items.map(i=>i.allocated));assert.equal(x.book().items[0].origin.treasureId,x.id);assert.deepEqual(x.store.db.prepare('SELECT * FROM character_ledger').all(),ledger);
+ const before=x.store.db.serialize();assert.throws(()=>x.store.executeProgress(x.command({kind:'treasure-anchor',treasureId:x.id,expectedRevision:x.book().revision,anchor:{kind:'scene',id:'absent'},reason:'Nicht vorhanden'})),/nicht verfügbar/);assert(x.store.db.serialize().equals(before));
+ move({kind:'location',id:place});x.store.db.prepare('UPDATE location SET trashed=1 WHERE campaign_id=? AND id=?').run(cam,place);assert.equal(x.store.treasures(x.w.token,null,{search:'Originalfund',anchor:'inbox'}).items[0].anchorAvailable,false);
+ const expected=x.book();x.store.close();x.store=new CampaignStore(x.file);x.w=x.store.activate(cam);assert.deepEqual(x.book(),expected);assert.equal(x.store.treasureHistory(x.w.token,x.id,null).items.filter(h=>h.kind==='treasure-anchored').length,4);
+ const snapshot=path.join(x.root,'anchor.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=new CampaignStore(path.join(x.root,'copy-anchor.sqlite'));try{const c=copy.acceptCampaignSnapshot(snapshot,'Unabhängiger Fund',{}),w=copy.activate(c.id),row=copy.treasures(w.token,null,{search:'Originalfund',anchor:'inbox'}).items[0],book=copy.treasure(w.token,row.id);assert.notEqual(book.id,x.id);assert.notEqual(book.locationId,place);assert.equal(book.items[0].origin.treasureId,book.id);assert.equal(book.items[0].allocated,2);}finally{copy.close();}
+});

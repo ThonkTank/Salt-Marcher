@@ -1,11 +1,13 @@
 import type {Result} from './contracts';
 import type {ItemCategory, ItemReference} from './progression';
 export interface ItemDefinition {id:string;revision:number;name:string;category:ItemCategory;magic:boolean;rarity:string;attunement:'no'|'yes'|'unspecified';unitCopper:string|null;weightText:string;properties:string[];description:string;source:{kind:'authored'|'srd51';label:string;license:string|null;url:string|null};trashed:boolean;sourceHash?:string}
-export interface ItemQuery {search:string;category:string;magic:''|'yes'|'no';rarity:string;attunement:string;sort:'name'|'value';direction:'asc'|'desc';after:number;includeTrashed:boolean}
+export interface ItemCatalogFilter {search:string;category:string;magic:''|'yes'|'no';rarity:string;attunement:string;source?:''|'authored'|'srd51'}
+export interface ItemQuery extends ItemCatalogFilter {sort:'name'|'value';direction:'asc'|'desc';after:number;includeTrashed:boolean}
 export interface ItemPage {items:ItemDefinition[];total:number;next:number|null;problems:string[];sourceStatus:{complete:boolean;message:string}}
 export interface ShopStock {id:string;reference:ItemReference;quantity:number;unique:boolean;instanceId:string|null;buyCopper:string;sellCopper:string;notes:string;restock:{mode:'fill'|'add';quantity:number;intervalMs:string;nextDueMs:string}|null}
 export type ShopRestockSchedule={intervalMs:string;nextDueMs:string}|{eventId:string;eventRevision:number;repeatMs:string|null;nextDueMs:string|null};
-export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];schedule:ShopRestockSchedule|null}
+export interface ShopRestockCatalog {filter:ItemCatalogFilter;minimum:number;maximum:number;buyCopper:string;sellCopper:string}
+export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];catalog?:ShopRestockCatalog|null;schedule:ShopRestockSchedule|null}
 export interface Shop {id:string;revision:number;name:string;owner:{kind:'npc'|'location';id:string};notes:string;trashed:boolean;stock:ShopStock[];restockTables?:ShopRestockTable[]}
 export interface ShopSummary {id:string;name:string;ownerName:string;unavailable:boolean;revision:number|null;problem:string|null}
 export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;restockEvents?:Pick<import('./world-contracts').CalendarEvent,'id'|'revision'|'name'|'startMs'|'repeatMs'|'trashed'>[];items:ItemDefinition[];history:{id:string;time:string;description:string}[]}

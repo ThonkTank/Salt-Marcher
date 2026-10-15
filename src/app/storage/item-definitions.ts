@@ -1,7 +1,7 @@
 import {budgetRarity} from '../dungeon-budget-contracts';
 import {srdItemDefinitions,srdItemSourceStatus} from './srd-items';
 import { createHash } from 'node:crypto';
-import type { ItemDefinition, ItemQuery, ItemPage } from '../items-contracts';
+import type { ItemDefinition, ItemQuery, ItemPage, ItemCatalogFilter } from '../items-contracts';
 import { canonicalJson } from '../generation/canonical-json';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const categories = ['coins', 'equipment', 'trade-goods', 'magic', 'other'];
@@ -104,13 +104,17 @@ export function saveItemDefinition(db: any, input: ItemDefinition, expected: num
     return d;
   }).immediate();
 }
+export function matchesItemDefinition(d:ItemDefinition,q:ItemCatalogFilter){
+ const needle=q.search.toLocaleLowerCase();
+ return (!q.source||d.source.kind===q.source)&&(!q.category||d.category===q.category)&&(!q.magic||d.magic===(q.magic==='yes'))&&(!q.rarity||(budgetRarity(q.rarity)?budgetRarity(d.rarity)===budgetRarity(q.rarity):d.rarity.toLocaleLowerCase().includes(q.rarity.toLocaleLowerCase())))&&(!q.attunement||d.attunement===q.attunement)&&(!needle||[d.name,d.description,...d.properties].join(' ').toLocaleLowerCase().includes(needle));
+}
 export function readItemDefinitions(db: any, q: ItemQuery): ItemPage {
   if (!q || typeof q.search !== 'string' || !Number.isSafeInteger(q.after) || q.after < 0 || !['name', 'value'].includes(q.sort) || !['asc', 'desc'].includes(q.direction)) throw new Error('Ungültige Gegenstandssuche.');
-  const needle = q.search.toLocaleLowerCase(), items: ItemDefinition[] = [], problems: string[] = [];
+  const items: ItemDefinition[] = [], problems: string[] = [];
   for (const row of db.prepare('SELECT id FROM authored_item UNION SELECT id FROM item_definition').iterate()) {
     try {
       const d = readItemDefinition(db, row.id);
-      if ((q.includeTrashed || !d.trashed) && (!q.category || d.category === q.category) && (!q.magic || d.magic === (q.magic === 'yes')) && (!q.rarity || (budgetRarity(q.rarity)?budgetRarity(d.rarity)===budgetRarity(q.rarity):d.rarity.toLocaleLowerCase().includes(q.rarity.toLocaleLowerCase()))) && (!q.attunement || d.attunement === q.attunement) && (!needle || [d.name, d.description, ...d.properties].join(' ').toLocaleLowerCase().includes(needle))) items.push(d);
+      if ((q.includeTrashed || !d.trashed) && matchesItemDefinition(d,q)) items.push(d);
     } catch (error) { problems.push('Gegenstand ' + row.id + ' ist gesperrt: ' + (error as Error).message); }
   }
   items.sort((a, b) => { const byValue = q.sort === 'value' ? (BigInt(a.unitCopper ?? '0') < BigInt(b.unitCopper ?? '0') ? -1 : BigInt(a.unitCopper ?? '0') > BigInt(b.unitCopper ?? '0') ? 1 : 0) : a.name.localeCompare(b.name); return (q.direction === 'asc' ? 1 : -1) * (byValue || a.id.localeCompare(b.id)); });

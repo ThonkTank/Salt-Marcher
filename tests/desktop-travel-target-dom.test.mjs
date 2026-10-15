@@ -81,3 +81,50 @@ test('a manually edited coordinate releases a named place binding and previews t
  x.document.getElementById('world-travel-form').onsubmit({preventDefault(){}});await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.deepEqual(requested.destination,{q:2,r:0});assert.equal(requested.destinationLocationId,null);assert.equal(x.document.getElementById('travel-preview-accept').disabled,false);
  }finally{x.cleanup();}
 });
+
+
+test('a fresh travel console derives party pace and the preview explains its speed source',async()=>{
+ const x=await travelFixture();try{const box=x.document.getElementById('travel-party-pace');box.checked=true;box.onchange();assert.equal(x.document.getElementById('travel-pace').disabled,true);assert.match(x.document.getElementById('travel-pace-context').textContent,/Iri.*30 ft/);x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.match(x.document.getElementById('travel-preview-itinerary').textContent,/langsamste Bewegung/);assert.match(x.document.getElementById('travel-preview-warnings').textContent,/Iri.*30 ft/);box.checked=false;box.onchange();assert.equal(x.document.getElementById('travel-pace').disabled,false);}finally{x.cleanup();}
+});
+
+
+test('a paused journey does not tell the GM to pause it first',async()=>{
+ const x=await travelFixture();try{const p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});let j=x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey',preview:p}}).scene.journey;x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}});await x.ui.openWorld();assert.match(x.document.getElementById('world-journey-status').textContent,/Pausiert/);assert.doesNotMatch(x.document.getElementById('world-journey-refresh').textContent,/zuerst pausieren/);assert.match(x.document.getElementById('world-journey-refresh').textContent,/Restweg.*neu bewerten/);}finally{x.cleanup();}
+});
+
+test('camera zoom and reset preserve an off-centre unsaved hex, its level and travel target without writes',async()=>{
+ const x=await fixture();try{
+  x.document.querySelector('#world-map polygon[data-q="3"][data-r="0"]').dispatchEvent(new x.window.Event('click'));await until(()=>x.document.getElementById('travel-q').value==='3');
+  x.enter('hex-label','Alte Fähre');const root=x.document.getElementById('world-map'),initial=root.getAttribute('viewBox'),writes=x.writes;
+  x.document.getElementById('world-zoom-out').onclick();assert.notEqual(root.getAttribute('viewBox'),initial);assert.equal(x.writes,writes);assert.equal(x.document.getElementById('hex-label').value,'Alte Fähre');assert.match(x.document.getElementById('hex-selected').textContent,/Hex 3,0.*4.83/);assert.equal(x.document.getElementById('travel-q').value,'3');
+  x.document.getElementById('world-zoom-in').onclick();assert.equal(root.getAttribute('viewBox'),initial);
+  const wheel=new x.window.Event('wheel',{cancelable:true});Object.assign(wheel,{deltaY:100});root.dispatchEvent(wheel);assert.equal(wheel.defaultPrevented,true);assert.notEqual(root.getAttribute('viewBox'),initial);
+  x.document.getElementById('world-view-reset').onclick();assert.equal(root.getAttribute('viewBox'),initial);assert.equal(x.document.getElementById('hex-label').value,'Alte Fähre');assert.equal(x.writes,writes);
+  for(let i=0;i<30;i++)x.document.getElementById('world-zoom-out').onclick();assert.equal(x.document.getElementById('world-zoom-out').disabled,true);assert.ok(root.querySelectorAll('polygon').length<=631);
+  for(let i=0;i<30;i++)x.document.getElementById('world-zoom-in').onclick();assert.equal(x.document.getElementById('world-zoom-in').disabled,true);
+  x.document.getElementById('hex-form').onsubmit({preventDefault(){}});await until(()=>x.store.world(x.w.token).maps[0].cells.some(c=>c.q===3&&c.r===0&&c.level===0&&c.label==='Alte Fähre'));await until(()=>root.textContent.includes('Alte Fähre'));const children=[...root.children],label=children.findIndex(c=>c.tagName.toLowerCase()==='text'&&c.textContent==='Alte Fähre');assert.ok(children.every((c,i)=>c.tagName.toLowerCase()!=='polygon'||i<label),'neighbouring terrain must not paint over map labels');
+ }finally{x.cleanup();}
+});
+test('explicit edit raster saves the local cell before changing its separate authored layer',async()=>{
+ const x=await fixture();try{x.enter('hex-label','Lokaler Ort');await x.select('world-edit-level','1');await until(()=>/9.66/.test(x.document.getElementById('hex-selected').textContent));assert.equal(x.store.world(x.w.token).maps[0].cells.find(c=>c.level===0).label,'Lokaler Ort');assert.equal(x.document.getElementById('hex-label').value,'');await x.select('world-edit-level','0');await until(()=>x.document.getElementById('hex-label').value==='Lokaler Ort');}finally{x.cleanup();}
+});
+test('arrows select one hex without also panning; Alt arrows pan without changing the selected hex',async()=>{
+ const x=await fixture();try{const root=x.document.getElementById('world-map'),initial=root.getAttribute('viewBox');const key=altKey=>{const e=new x.window.Event('keydown',{cancelable:true});Object.assign(e,{key:'ArrowRight',altKey});root.dispatchEvent(e);};key(false);await until(()=>x.document.getElementById('travel-q').value==='1');assert.equal(root.getAttribute('viewBox'),initial);key(true);assert.notEqual(root.getAttribute('viewBox'),initial);assert.equal(x.document.getElementById('travel-q').value,'1');assert.match(x.document.getElementById('hex-selected').textContent,/Hex 1,0/);}finally{x.cleanup();}
+});
+for(const [field,text]of [['travel-waypoints','1,0,3'],['travel-waypoints','1,'],['travel-waypoints',' ,1'],['travel-q',''],['travel-r','']])test(`incomplete route ${field}=${JSON.stringify(text)} cannot be silently interpreted by the preview`,async()=>{
+ const x=await travelFixture();try{const original=x.window.campaign.previewTravel,requests=[];x.window.campaign.previewTravel=async(...args)=>{requests.push(structuredClone(args[1]));return original(...args);};
+ x.enter('travel-q','2');x.enter('travel-r','0');x.enter('travel-waypoints','1,0');assert.equal(x.document.getElementById('travel-stops').children.length,2);
+ x.enter(field,text);x.preview();await tick();await tick();assert.equal(requests.length,0);assert.equal(x.document.getElementById('travel-preview-dialog').open,false);assert.equal(x.document.getElementById('travel-preview-accept').disabled,true);assert.equal(x.document.getElementById(field).value,text);assert.match(x.document.getElementById('travel-draft-status').textContent,/q.*r|koordinaten/i);assert.equal(x.writes,0);
+ x.enter('travel-q','2');x.enter('travel-r','0');x.enter('travel-waypoints','1,0');x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.deepEqual(requests[0].waypoints,[{q:1,r:0}]);assert.deepEqual(requests[0].destination,{q:2,r:0});assert.equal(x.document.getElementById('travel-preview-accept').disabled,false);assert.equal(x.writes,0);
+ }finally{x.cleanup();}
+});
+
+
+test('a rendered hex label selects its own hex in edit and route modes; location labels keep their place binding',async()=>{
+ const x=await targetFixture();try{
+  x.document.querySelector('#world-map polygon[data-q="3"][data-r="0"]').dispatchEvent(new x.window.Event('click'));await until(()=>/Hex 3,0/.test(x.document.getElementById('hex-selected').textContent));x.enter('hex-label','Alte Fähre');x.document.getElementById('hex-form').onsubmit({preventDefault(){}});await until(()=>[...x.document.querySelectorAll('#world-map text')].some(t=>t.textContent==='Alte Fähre'));
+  const clickText=async(name)=>{const t=[...x.document.querySelectorAll('#world-map text')].find(t=>t.textContent===name);assert.ok(t);assert.notEqual(t.getAttribute('pointer-events'),'none');t.dispatchEvent(new x.window.Event('click',{bubbles:true}));await tick();await tick();};
+  x.document.querySelector('#world-map polygon[data-q="0"][data-r="0"]').dispatchEvent(new x.window.Event('click'));await until(()=>/Hex 0,0/.test(x.document.getElementById('hex-selected').textContent));await clickText('Alte Fähre');await until(()=>/Hex 3,0/.test(x.document.getElementById('hex-selected').textContent));assert.match(x.document.getElementById('hex-selected').textContent,/Hex 3,0/);
+  x.document.getElementById('travel-mode-target').onclick();await clickText('Ruine');assert.equal(x.document.getElementById('world-destination').value,x.locationId);await clickText('Alte Fähre');assert.equal(x.document.getElementById('world-destination').value,'');assert.equal(x.document.getElementById('travel-q').value,'3');
+ }finally{x.cleanup();}
+});

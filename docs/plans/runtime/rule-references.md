@@ -1,7 +1,8 @@
 # GM-Referenzsuche und Regeln am Spieltisch
 
-Stand: 14.10.2026. Ergänzt [Katalog und Regeln](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md),
-[Live-Scenes](smr03-live-scene-contract.md) und [Gesamtumfang](../../SCOPE.md).
+Stand: 15.10.2026. Ergänzt [Katalog und Regeln](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md),
+[Live-Scenes](smr03-live-scene-contract.md), [Katalogsuche und Filterlieferung](catalog-browsing.md)
+und [Gesamtumfang](../../SCOPE.md).
 
 ## Ziel und vorhandene Nutzerwege
 
@@ -43,7 +44,81 @@ Tastatur- und Skalierungsabnahme bleiben offen. Installationsweite Regeldefiniti
 deren Konfliktimport und die Trennung aktueller Definitionen von historischen
 Fakten sind noch nicht vollständig umgesetzt.
 
-## Nächste ausführbare Schritte
+
+## Fehlerisolation der vorhandenen Sessionleser
+
+`rule-reference-ui.refreshRuleReferences` liest Regelpins und Proben unabhängig.
+Ein langsamer Reader verzögert die gesunde Ansicht nicht. Fehler erscheinen beim
+betroffenen Inhalt; dessen Schreibbasis wird verworfen, die andere bleibt nutzbar.
+Ohne Regelansicht zeigt der Regelwähler ausschließlich „Freie Probe“; ein
+Scenewechsel entfernt auch die vorige Auswahl, bevor der Probenreader antwortet.
+Eine beschädigte Probenhistorie sperrt Würfe, nicht Lesen/Aktualisieren/Lösen von
+Regelreferenzen. Der gesunde Probenreader erlaubt freie und Statblockwürfe auch
+bei nicht verfügbarem Regelreader; deren Storewriter benötigen keine aktuelle
+Regelliste. Regelgebundene Würfe verwenden weiterhin die geprüfte eingefrorene
+Pinbasis. Kein stilles Reparieren beschädigter Daten und keine automatische
+Wiederholung von Schreibaufträgen.
+
+Regel- und Probencommands invalidieren jeweils nur ihre eigenen ausstehenden
+Reads. Token, Campaign, Scene und Aktivierungsgeneration begrenzen beide Reader;
+eine alte Antwort oder ein alter Fehler darf weder einen neu bestätigten Stand
+noch die andere Gruppe ersetzen. „Aktualisieren“ fragt beide erneut ab. Es gibt
+keine Schemaänderung oder Migration. Die Authoritygegenproben halten beide
+Reader einzeln zurück, liefern Fehler und fremde Sceneantworten und prüfen
+anschließende Commands/Revisionsbasen. Das ist DOM-/Controllernachweis, keine
+native Fehler-/Fokus-/Recoveryqualifikation.
+
+## Automatische Begriffsreferenzen: nächste zusammenhängende Lieferung
+
+Die [Originalanforderung Reference Graph](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/reference/requirements/requirements-reference-graph.md)
+verlangt mehr als Suche und explizite Autorenverweise. Automatische Erkennung,
+mehrdeutige Kandidaten, verschachtelte Vorschauen und über Scenewechsel erhaltene
+angeheftete Lesekarten sind derzeit offen. Die konkreten alten Tab-/Renderernamen
+sind Umsetzungsmittel; lesbare Session, erhaltene Arbeitskontexte und vollständige
+Navigation bleiben Fachziele. Der World-Beziehungsgraph ersetzt diese Fähigkeit
+nicht.
+
+1. **Quellen und eindeutige Ziele.** `scene-desk-contracts`, `storage/scene-desk`
+   und `storage/text-references` liefern bestehende `DeskRef`-/Detailidentitäten;
+   `features/catalog` liefert Kreaturprojektion samt Version/Attribution.
+   Zunächst den tatsächlich verfügbaren Regelkorpus/Importweg feststellen:
+   Kreaturdaten sind kein vollständiger Regelkorpus. Statische Regeln benötigen
+   stabile Quellidentität und Detailblöcke mit Lizenz/Version, bevor ihr Name als
+   funktionierendes Ziel veröffentlicht wird. Kampagnenorte/-Fraktionen bleiben
+   eigene aktuelle Quellen. Kanonische Namen und ausdrücklich veröffentlichte
+   Aliasse transportieren; freie Beziehungslabels oder zufällige Linktexte nicht
+   automatisch als globale Aliasse umdeuten. Bestehende Autorenprosa und IDs
+   bleiben unverändert. Eine notwendige Aliasdatenmigration erst mit dem
+   bestätigten Autoren-/Importweg festlegen.
+2. **Erkennung als reine Projektion.** Eine gemeinsame Textprojektion neben
+   `text-references.ts` erzeugt stabile nicht überlappende Spannen: Unicode-
+   Normalisierung mit Zuordnung auf Originaloffsets, erlaubte Groß-/Kleinschreibung,
+   Wortgrenzen und längster gültiger Treffer. Kampagnennamen exakt behandeln;
+   identischer Name mit mehreren Zielen bleibt eine Kandidatenmenge. Keine
+   Quelltextumschreibung oder Mutation von Eingabefeldern. Abnahme: kombinierte
+   Unicodezeichen, Emoji vor einem Treffer, „Opportunity Attack“ vor „Attack“,
+   wiederholte Namen, Fraktion/Ort mit gleichem Namen und sehr langer Text.
+3. **Lesen im laufenden Kontext.** Gemeinsame Projektion in Sessionprosa,
+   `catalog-ui.renderCreatureDetail`, Zustandslabels, Gruppennotizen und
+   Referenzdetails anschließen. Detailnavigation über vorhandene Deskreader;
+   Scenezuordnung des Vor-/Zurückverlaufs explizit machen (Schnellsuche besitzt
+   bislang einen Dialogverlauf). Vorschau nach 350 ms Hover/Fokus, 150 ms
+   Übergang zum Karteninhalt, verschachtelte Ziele ohne feste Tiefe; nur bereits
+   im Vorfahrenpfad vorhandene Ziele als Zyklus sperren. Fünf Sekunden direkte
+   Zeigerabsicht oder ausdrückliches Anheften erhalten eine bewegliche Karte im
+   Arbeitsspeicher. Scene-/Tabwechsel bewahren sie; Neustart leert sie. Kein
+   weiterer dauerhafter Wissensbestand. Fokus, Escape und Verschieben brauchen
+   erreichbare Tastaturbedienung und native Nachweise.
+4. **Aktualität und Kosten.** Statischen Index und Kampagnenindex getrennt
+   versionieren; bestätigtes Erstellen/Umbenennen/Löschen invalidiert nur den
+   Kampagnenanteil. Bei jeder Detailnutzung aktuelle Identität/Revision prüfen,
+   entfernte Ziele verständlich als nicht verfügbar zeigen. Kein veralteter
+   Kampagnencache als aktuelle Wahrheit und keine Netzwerkabfrage. Mit zwei
+   Kampagnen, Umbenennen/Löschen bei offener Karte, verspäteten Antworten,
+   Index-/Detailfehlern, Netzsperre, Tastatur und 200 % prüfen. Lange Texte und
+   große Indexmengen messen, bevor zusätzliche Suchstrukturen eingeführt werden.
+
+## Weitere ausführbare Schritte
 
 1. **Speicherbestätigung schließen.** `executeSceneRule` an den gemeinsamen
    `CommitReference`-/Status-/`writeConfirmed`-Weg anschließen und Pendingcommands

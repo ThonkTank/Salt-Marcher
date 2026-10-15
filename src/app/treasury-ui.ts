@@ -9,7 +9,7 @@ import type {
   ProgressAck,
   ProgressCommand,
 } from "./progression";
-import type { TreasuryDraft } from "./treasury-contracts";
+import type { TreasuryDraft,TreasureQuery } from "./treasury-contracts";
 import { rewardItemsEditor } from "./reward-items-ui";
 import {
   writeConfirmed,
@@ -29,6 +29,11 @@ const goldText = (cp: string | null) =>
     ? ""
     : BigInt(cp) / 100n + "." + (BigInt(cp) % 100n).toString().padStart(2, "0");
 let distribution:TreasureDistribution;
+let listQuery:TreasureQuery={search:'',anchor:'all'},listRequest=0,anchorScenes:{id:string;title:string}[]=[];
+function anchorChoices(){const controls=[el<HTMLSelectElement>('treasury-filter-anchor'),el<HTMLSelectElement>('treasury-anchor-target')];for(const select of controls){const prior=select.value;select.replaceChildren();if(select.id==='treasury-filter-anchor'){option(select,'all','Alle Schätze');option(select,'inbox','Posteingang: nicht platziert oder Zuordnung offen');option(select,'scene','Alle Gruppen');option(select,'location','Alle Orte');}else option(select,'unplaced','Nicht platziert');for(const scene of anchorScenes)option(select,'scene:'+scene.id,'Gruppe: '+scene.title);for(const place of places)option(select,'location:'+place.id,'Ort: '+place.name);if([...select.options].some(o=>o.value===prior))select.value=prior;}}
+function queryKey(){return JSON.stringify(listQuery);}
+async function readList(token:string,after:string|null){const query=structuredClone(listQuery),key=queryKey(),request=++listRequest,response=await window.campaign.treasures(token,after,query);if(w?.token!==token||key!==queryKey()||request!==listRequest)return null;return unwrap(response);}
+
 let w: Workspace | null = null,
   book: Treasure | null = null,
   draft: TreasuryDraft | null = null,
@@ -97,7 +102,7 @@ export function activateTreasury(next: Workspace | null) {
   people = null;
   places = [];
   historyCursor = null;
-  list = { items: [], next: null };
+  list = { items: [], next: null };listQuery={search:'',anchor:'all'};listRequest++;anchorScenes=[];el<HTMLInputElement>('treasury-filter-search').value='';el<HTMLInputElement>('treasury-filter-remaining').checked=false;anchorChoices();
   if (timer) clearTimeout(timer);
   el("treasury-editor").hidden = true;
   el("treasury-list").replaceChildren();
@@ -106,15 +111,15 @@ export async function openTreasury(id?: string) {
   if (!w) return;
   const current = editorOwner(), token = w.token;
   if (!(await flushTreasury()) || !current()) return;
-  const [treasures, progress, parties] = await Promise.all([
-    window.campaign.treasures(token, null), window.campaign.progress(token), window.campaign.ledgerParties(token),
+  const [treasures, progress, parties,live] = await Promise.all([
+    readList(token,null), window.campaign.progress(token), window.campaign.ledgerParties(token),window.campaign.live(token),
   ]);
   if (!current()) return;
-  const r = unwrap(treasures), p = unwrap(progress), refs = unwrap(parties);
+  if(!treasures)return;const r=treasures,p=unwrap(progress),refs=unwrap(parties);anchorScenes=unwrap(live).scenes.map(s=>({id:s.id,title:s.title}));
   list = r;
   people = p;
   places = refs.filter((r) => r.kind === "location");
-  drawList();
+  anchorChoices();drawList();
   const target = id ?? book?.id ?? r.items[0]?.id;
   if (target) await select(target);
 }
@@ -145,12 +150,12 @@ function drawList() {
   for (const t of list.items) {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = t.title + " · " + t.available + " unverteilte Einheiten";
+    b.textContent = t.title + " · " + t.available + " unverteilte Einheiten"+(t.anchorLabel?" · "+t.anchorLabel:"");
     b.setAttribute("aria-pressed", String(t.id === book?.id));
     b.onclick = () => run(() => select(t.id));
     root.append(b);
   }
-  el("treasury-more").hidden = !list.next;
+  el("treasury-more").hidden = !list.next;el("treasury-list-status").textContent=list.items.length+" Schätze geladen"+(book&&!list.items.some(t=>t.id===book!.id)?" · geöffneter Schatz liegt außerhalb dieser geladenen Treffer":"")+(list.next?" · weitere Treffer vorhanden":"")+".";
   const target = el<HTMLSelectElement>("treasury-target");
   target.replaceChildren();
   option(target, "", "Neuen Zielschatz anlegen");
@@ -213,6 +218,8 @@ function draw() {
     allocated
       .map((i) => i.allocated + " × " + i.name + " bereits vergeben")
       .join("\n") || "Noch nichts vergeben.";
+  const anchor=el<HTMLSelectElement>('treasury-anchor-target'),anchorValue=book.sceneId?'scene:'+book.sceneId:book.locationId?'location:'+book.locationId:'unplaced';if(![...anchor.options].some(o=>o.value===anchorValue))option(anchor,anchorValue,'Bisherige Zuordnung nicht verfügbar');anchor.value=anchorValue;
+  el('treasury-place').closest('label')!.hidden=!!book.sceneId;
   el("treasury-origin").textContent =
     (book.combatId ? "Kampf " + book.combatId.slice(0, 8) + " · " : "") +
     (book.sourceNoteId
@@ -299,9 +306,9 @@ async function execute(action: ProgressAction) {
       writeId = null;
       await after();
       if (!current()) return false;
-      const response = await window.campaign.treasures(token, null);
+      const response = await readList(token,null);
       if (!current()) return false;
-      const r = unwrap(response);
+      if(!response)return false;const r=response;
       list = r;
       people = ack;
       drawList();
@@ -409,6 +416,7 @@ async function history(more: boolean) {
           "treasure-created": "Schatz angelegt",
           "treasure-edited": "Unverteilte Beute geändert",
           "treasure-moved": "Beute verschoben",
+          "treasure-anchored":"Ganzer Schatz neu zugeordnet",
           "loot-award": "Beute vergeben",
         } as Record<string, string>
       )[entry.kind] ?? entry.kind;
@@ -496,14 +504,16 @@ export function initTreasury(
         locationId: null,
       }),
     );
+  el<HTMLFormElement>('treasury-filter-form').onsubmit=e=>{e.preventDefault();run(async()=>{if(!await flushTreasury())return;const selected=value('treasury-filter-anchor'),parts=selected.split(':');listQuery={search:value('treasury-filter-search'),anchor:parts[0] as TreasureQuery['anchor'],...(parts[1]?{anchorId:parts.slice(1).join(':')}:{}),remainingOnly:el<HTMLInputElement>('treasury-filter-remaining').checked};await openTreasury();});};
+  el('treasury-anchor-apply').onclick=()=>run(async()=>{if(!book||!await flushTreasury())return;if(dirty)throw new Error('Schatzangaben zuerst übernehmen oder verwerfen.');const target=value('treasury-anchor-target'),reason=value('treasury-anchor-reason').trim();if(!reason)throw new Error('Neue Zuordnung begründen.');const [kind,...ids]=target.split(':');if(!['scene','location','unplaced'].includes(kind!))throw new Error('Zielzuordnung auswählen.');await execute({kind:'treasure-anchor',treasureId:book.id,expectedRevision:book.revision,anchor:kind==='unplaced'?{kind:'unplaced'}:{kind:kind as 'scene'|'location',id:ids.join(':')},reason});});
   el("treasury-refresh").onclick = () => run(() => openTreasury());
   el("treasury-more").onclick = () =>
     run(async () => {
       if (!w || !list.next) return;
       const current = editorOwner(), token = w.token, cursor = list.next;
-      const response = await window.campaign.treasures(token, cursor);
+      const response = await readList(token,cursor);
       if (!current() || cursor !== list.next) return;
-      const p = unwrap(response);
+      if(!response)return;const p=response;
       list = {
         items: [
           ...new Map(

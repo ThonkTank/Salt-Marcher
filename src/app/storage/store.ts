@@ -56,7 +56,7 @@ import type {DungeonCommand,DungeonRequest} from '../dungeon-contracts';
 import {installDrawingSchema,drawingView,executeDrawing,drawingHistory,rebaseDrawingRoomHistory,activateDungeonFeature,advanceDungeonFeatures,validateDrawing} from './drawing';
 import type {DrawingCommand} from '../drawing-contracts';
 import {installNpcWorldSchema} from './npc-world';
-import {installAutonomySchema,autonomyView,executeAutonomy,captureAutonomyBasis,recordAutonomyTime,catchUpAutonomy,validateAutonomy} from './autonomy';
+import {installAutonomySchema,autonomyView,autonomyDecision,executeAutonomy,captureAutonomyBasis,recordAutonomyTime,catchUpAutonomy,validateAutonomy} from './autonomy';
 import type {AutonomyCommand} from '../autonomy-contracts';
 import {installPlayerSchema,playerSettings,playerView,projectPlayer,executePlayer,savePlayerAsset,playerAssets,playerMediaFiles,setPlayerWindow,validatePlayer} from './player';
 import type {PlayerCommand,PlayerAsset,PlayerFrame} from '../player-contracts';
@@ -369,8 +369,16 @@ export class CampaignStore {
     this.db.transaction(() => {
       const campaignId = this.guard(token);
       const n = this.db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(campaignId).n + 1;
-      const scopeId=this.db.prepare('SELECT value FROM settings WHERE key=?').get('default-scope:'+campaignId)?.value??'local',floorId=this.db.prepare('SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1').get(campaignId,scopeId)?.id??'ground';
-      const room: Room = { id: randomUUID(), scopeId, floorId, name: 'Neuer Raum', number: String(n), revision: 0, polygons: [{ outer: [{ x: 0, y: 0 }, { x: 6.096, y: 0 }, { x: 6.096, y: 4.572 }, { x: 0, y: 4.572 }], holes: [] }], sections: [{ id: randomUUID(), kind: 'markdown', markdown: '## Beschreibung\n' }] };
+      const current=this.workspace(),selected=current.rooms.find(r=>r.id===current.selectedId);
+      const scopeId=selected?.scopeId??this.db.prepare('SELECT value FROM settings WHERE key=?').get('default-scope:'+campaignId)?.value??'local',floorId=selected?.floorId??this.db.prepare('SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1').get(campaignId,scopeId)?.id??'ground';
+      // A default room is immediately usable geometry, not an overlapping placeholder.
+      const bounds=(r:Room)=>{let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const p of r.polygons)for(const v of p.outer){minX=Math.min(minX,v.x);minY=Math.min(minY,v.y);maxX=Math.max(maxX,v.x);maxY=Math.max(maxY,v.y);}return{minX,minY,maxX,maxY};};
+      const grid=1.524,width=4*grid,height=3*grid,anchor=selected?bounds(selected):null,y=anchor?Math.round(anchor.minY/grid)*grid:0;
+      let x=anchor?Math.ceil((anchor.maxX+grid)/grid-1e-8)*grid:0;
+      const occupied=current.rooms.filter(r=>r.scopeId===scopeId&&r.floorId===floorId).map(bounds).sort((a,b)=>a.minX-b.minX);
+      for(const b of occupied)if(y<b.maxY+grid&&y+height>b.minY-grid&&x<b.maxX+grid&&x+width>b.minX-grid)x=Math.ceil((b.maxX+grid)/grid-1e-8)*grid;
+      const room: Room = { id: randomUUID(), scopeId, floorId, name: 'Neuer Raum', number: String(n), revision: 0, polygons: [{ outer: [{ x, y }, { x:x+width, y }, { x:x+width, y:y+height }, { x, y:y+height }], holes: [] }], sections: [{ id: randomUUID(), kind: 'markdown', markdown: '' }] };
+      validateRoom(room);
       this.insertRoom(campaignId, room); this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(room.id, campaignId);
     }).immediate();
     return this.workspace();
@@ -607,7 +615,7 @@ export class CampaignStore {
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
   lootBalance(token:string){return readLootBalance(this.db,this.guard(token));}
-  treasures(token: string, after: string | null) { return readTreasures(this.db, this.guard(token), after); }
+  treasures(token: string, after: string | null,query?:import('../treasury-contracts').TreasureQuery) { return readTreasures(this.db, this.guard(token), after,query); }
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }
   ledger(token: string, query: LedgerQuery) { return readLedger(this.db, this.guard(token), query); }
   ledgerInventory(token:string,query:LedgerInventoryQuery){return readLedgerInventory(this.db,this.guard(token),query);}
@@ -668,6 +676,7 @@ export class CampaignStore {
     if(a.kind==='raster')shadow.phase='raster';else if(a.kind==='connect')connect(structuredClone(a.intent));else if(a.kind==='resolve'){const intent=graphLayout(shadow.db,cam,c.scopeId).intents.find(i=>i.id===a.intentId);if(!intent)throw new Error('Verbindungsplanung fehlt.');connect({...intent,fromRoomId:a.fromRoomId,toRoomId:a.toRoomId});}else if(a.kind==='reroute'){for(const path of drawingView(shadow.db,cam).paths??[]){if(path.mode==='area'||path.status==='ready')continue;connect({id:path.id,fromRoomId:path.from.roomId,toRoomId:path.to.roomId,fromGroupId:null,toGroupId:null,form:path.segments[0]!.form,name:path.name,problem:''});}}else{draw(a);if(a.kind==='graph-move'||a.kind==='graph-duplicate'){for(const path of drawingView(shadow.db,cam).paths??[]){if(path.mode==='area'||path.status==='ready')continue;connect({id:path.id,fromRoomId:path.from.roomId,toRoomId:path.to.roomId,fromGroupId:null,toGroupId:null,form:path.segments[0]!.form,name:path.name,problem:''});}}}
     return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};
   }
+  autonomyDecision(token:string,actorId:string){return autonomyDecision(this.db,this.guard(token),actorId);}
   autonomy(token:string){return autonomyView(this.db,this.guard(token));}
   executeAutonomy(c:AutonomyCommand){return executeAutonomy(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   playerView(token:string){return playerView(this.db,this.guard(token));}
@@ -826,7 +835,7 @@ export class CampaignStore {
   liveArchives(token: string, after: string | null) { return readArchives(this.db, this.guard(token), after); }
   executeLive(command: LiveCommand) { return this.db.transaction(() => {
     const replay=!!this.db.prepare('SELECT 1 FROM live_receipt WHERE command_id=?').get(command.commandId);
-    const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
+    const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'||command.action.kind==='scene-content'&&!replay?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
     const ack = executeLive(this.db, command, () => {this.guard(command.token, command.campaignId);});
     if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!,noteId=campaignLocalId(followUp.id),scene=ack.scene;if(!scene||scene.id!==a.sceneId)throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});const locationId=scene.locationId&&this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(command.campaignId,scene.locationId)?scene.locationId:null,state={noteId,revision:1,status:'open' as const,locationId,contributors:scene.members,poolXp:0,items:[],awardId:null};validateNarrativeState(this.db,command.campaignId,state);saveNarrative(this.db,command.campaignId,state);}
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
@@ -835,7 +844,8 @@ export class CampaignStore {
       const a=command.action;
       if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'&&ack.session?.createdScene)inheritScenePosition(this.db,command.campaignId,a.sceneId,ack.session.createdScene.id);
-      const sceneId=a.kind==='advance-clock'||a.kind==='scene-content'||a.kind==='apply-visit'?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
+      // Title/notes alone have no World consequence; broken optional weather cannot veto their save.
+      const sceneId=a.kind==='advance-clock'||a.kind==='apply-visit'||a.kind==='scene-content'&&oldScene?.locationId!==ack.scene?.locationId?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
       if(sceneId)syncSceneWorld(this.db,command.campaignId,sceneId);
     }
     if (command.action.kind === 'create-character' && ack.character) createProgress(this.db, command.campaignId, ack.character.id);

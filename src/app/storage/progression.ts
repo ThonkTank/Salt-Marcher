@@ -1,3 +1,5 @@
+import {treasureAnchor,treasureAnchorLabel} from './treasure-anchors';
+import type {TreasureQuery} from '../treasury-contracts';
 import {changeCharacterXp,partyAwardShares} from '../party-xp-model';
 import {syncOpenMaskHealth} from './mask-health';
 import {editGroup} from './groups';
@@ -189,15 +191,20 @@ export function readTreasure(db: any, cam: string, id: string): Treasure {
     return value;
   })();
 }
-export function readTreasures(db: any, cam: string, after: string | null): TreasurePage {
-  const cursor = checkedCursor(after);
-  const rows = db.prepare('SELECT rowid AS cursor,* FROM treasure WHERE campaign_id=? AND (? IS NULL OR rowid<?) ORDER BY rowid DESC LIMIT 26').all(cam, cursor, cursor);
-  const page = rows.slice(0,25);
-  return { items: page.map((row: any) => {
-    const treasure = checkedTreasureRow(row);
-    return { id: treasure.id, title: treasure.title, revision: treasure.revision, available: treasure.items.reduce((sum, item) => sum + item.quantity - item.allocated, 0) };
-  }), next: rows.length > 25 ? String(page[24].cursor) : null };
+export function readTreasures(db:any,cam:string,after:string|null,q:TreasureQuery={search:'',anchor:'all'}):TreasurePage{
+ if(!q||typeof q.search!=='string'||q.search.length>1000||!['all','inbox','scene','location'].includes(q.anchor)||q.anchorId!==undefined&&(typeof q.anchorId!=='string'||!q.anchorId||q.anchorId.length>1000)||q.remainingOnly!==undefined&&typeof q.remainingOnly!=='boolean')throw new Error('Schatzsuche und Zuordnungsfilter prüfen.');
+ const cursor=checkedCursor(after),needle=q.search.toLocaleLowerCase(),items:TreasurePage['items']=[];let last:string|null=null,more=false;
+ const labels=new Map<string,ReturnType<typeof treasureAnchorLabel>>();
+ for(const row of db.prepare('SELECT rowid AS cursor,* FROM treasure WHERE campaign_id=? AND (? IS NULL OR rowid<?) ORDER BY rowid DESC').iterate(cam,cursor,cursor)){
+  const t=checkedTreasureRow(row),anchor=treasureAnchor(t),key=anchor.kind==='unplaced'?'unplaced':anchor.kind+':'+anchor.id;
+  let label=labels.get(key);if(!label){label=treasureAnchorLabel(db,cam,anchor);labels.set(key,label);}
+  const available=t.items.reduce((sum,i)=>sum+i.quantity-i.allocated,0);
+  if(q.anchor==='inbox'&&anchor.kind!=='unplaced'&&label.available||['scene','location'].includes(q.anchor)&&(anchor.kind!==q.anchor||q.anchorId&&('id' in anchor?anchor.id:null)!==q.anchorId)||q.remainingOnly&&!available||needle&&![t.title,label.name].some(v=>v.toLocaleLowerCase().includes(needle)))continue;
+  if(items.length===25){more=true;break;}items.push({id:t.id,title:t.title,revision:t.revision,available,anchor,anchorLabel:label.name,anchorAvailable:label.available});last=String(row.cursor);
+ }
+ return{items,next:more?last:null};
 }
+
 function validateLedgerItem(l:LedgerItem){
  const text=(v:unknown,max:number,nonempty=false)=>typeof v==='string'&&v.length<=max&&(!nonempty||!!v.trim());
  const id=(v:unknown)=>text(v,1000,true),price=(v:unknown)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,17})$/.test(v);
@@ -465,7 +472,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', {commandId:command.commandId,rest:a.rest,before,after:p,restoreHp:a.restoreHp===true,...(a.scene?{sceneId:a.scene.id,duration:{amount:a.scene.amount,unit:a.scene.unit}}:{})});
       }
     } else if(a.kind==='group-create'||a.kind==='group-edit'){groupId=editGroup(db,cam,a);
-    } else if(a.kind==='treasure-create'||a.kind==='treasure-edit'||a.kind==='treasure-move'){treasureId=editTreasury(db,cam,a);
+    } else if(a.kind==='treasure-create'||a.kind==='treasure-edit'||a.kind==='treasure-move'||a.kind==='treasure-anchor'){treasureId=editTreasury(db,cam,a);
     } else if (a.kind === 'treasure') { treasureId = makeTreasure(db, cam, a.title, a.sceneId, null, a.items);
     } else if (a.kind === 'allocate') {
       const t=decoded<Treasure>(db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam,a.treasureId));if(t.revision!==a.expectedRevision)throw new Error('Schatz geändert. Verteilung erneut ansehen.');

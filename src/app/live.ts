@@ -120,6 +120,7 @@ export function activateLive(workspace: Workspace) {
   get<HTMLInputElement>('live-knowledge-search').value='';
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
   placePartyEditor(false);get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
+  newCharacterBasis=null;get('character-result').textContent='';
   adoption = null; moveBasis = null;preparedNotesSceneId=null;preparedNoteIds.clear();
   narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear();
   liveMomentDrafts.reset();writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent='';
@@ -171,7 +172,7 @@ export async function addLiveNpc(id:string,stillCurrent:()=>boolean=()=>true){if
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
   sessionNavigatorBusy(on&&!textSave);
-  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'adoption-confirm-packet', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-') || id==='live-session-end'&&!!recapReadError();
+  for (const id of ['character-new', 'live-party-new', 'character-create-active', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'adoption-confirm-packet', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-') || id==='live-session-end'&&!!recapReadError();
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
@@ -267,6 +268,39 @@ function schedule() {
   tell(blocked ? 'Schreiben gesperrt. Der Entwurf bleibt offen.' : 'Eingabe offen – noch nicht gespeichert.', blocked);
   if (!composing && !blocked) timer = setTimeout(() => { void flushLive(); }, 700);
 }
+type NewCharacterBasis={token:string;sceneId:string|null;focusRevision:number|null};
+let newCharacterBasis:NewCharacterBasis|null=null,creatingCharacter=false;
+function openNewCharacter(){
+  if(!context||!data||creatingCharacter)return;
+  newCharacterBasis={token:context.token,sceneId:data.scene?.id??null,focusRevision:data.focusRevision};
+  get('character-create-target').textContent=data.scene?'Heute dabei in: '+(data.scene.title||'Aktuelle Gruppe'):'Noch keine Gruppe geöffnet. Die Figur wird zunächst im Roster vorgemerkt.';
+  const join=get<HTMLButtonElement>('character-create-active');join.hidden=!data.scene;join.type=data.scene?'submit':'button';get('character-create-status').textContent='';
+  get<HTMLDialogElement>('character-dialog').showModal();get('new-character-name').focus();
+}
+async function createNewCharacter(active:boolean){
+  const basis=newCharacterBasis,dialog=get<HTMLDialogElement>('character-dialog');
+  if(creatingCharacter||!basis||!dialog.open)return;
+  const current=()=>context?.token===basis.token&&!!data&&(!active||data.scene?.id===basis.sceneId&&data.focusRevision===basis.focusRevision);
+  if(!current()||active&&!basis.sceneId){get('character-create-status').textContent='Die Zielgruppe hat sich geändert. Schließe diesen Dialog und wähle die aktuelle Gruppe erneut.';return;}
+  creatingCharacter=true;get<HTMLFormElement>('character-form').inert=true;get('character-create-status').textContent='Wird angelegt…';
+  const name=value('new-character-name');
+  try{
+    if(!await flushLive()||!current()){if(context?.token===basis.token)get('character-create-status').textContent='Nicht angelegt. Prüfe den Speicherstatus und die Zielgruppe.';return;}
+    const ack=await execute({kind:'create-character',profile:{name}});
+    if(!ack?.character){if(context?.token===basis.token)get('character-create-status').textContent='Anlegen nicht bestätigt. Die Eingabe bleibt offen. Prüfe zuerst den Speicherstatus.';return;}
+    if(context?.token!==basis.token)return;
+    selected=ack.character.id;characterDraft=structuredClone(ack.character);dialog.close();newCharacterBasis=null;get<HTMLInputElement>('new-character-name').value='';
+    renderList();renderCharacter();
+    if(active&&current()){
+      const joined=await execute({kind:'membership',characterId:ack.character.id,expectedRevision:ack.character.membershipRevision,expectedRosterRevision:data!.rosterRevision,active:true,targetSceneId:basis.sceneId,expectedFocusRevision:basis.focusRevision});
+      if(context?.token!==basis.token)return;
+      if(joined?.character?.active&&current()){get('character-result').textContent=name+' ist heute dabei.';await openPartyHealth(ack.character.id,basis.token,basis.sceneId!);return;}
+    }
+    if(context?.token!==basis.token)return;
+    get('character-result').textContent=active?'Figur im Roster angelegt; Aktivierung nicht bestätigt. Prüfe den Speicherstatus und aktiviere sie anschließend gezielt.':'Figur im Roster angelegt. Du kannst sie hier für heute aktivieren oder ihr Profil ergänzen.';
+    showCharacterProfile();get('character-toggle').scrollIntoView({block:'center'});get('character-toggle').focus({preventScroll:true});
+  }finally{creatingCharacter=false;get<HTMLFormElement>('character-form').inert=false;}
+}
 function renderList() {
   const list = get('roster-list'); list.replaceChildren();
   const token = context?.token;
@@ -286,6 +320,7 @@ const profileFields = [
   ['character-ac', 'armorClass'], ['character-perception', 'passivePerception'], ['character-speed', 'speedFeet'],
 ] as const;
 function renderCharacter() {
+  get('character-result').textContent='';
   get('character-editor').hidden = !characterDraft;
   for (const [id, field] of profileFields) get<HTMLInputElement>(id).value = String(characterDraft?.profile[field] ?? '');
   renderMembership();
@@ -350,6 +385,16 @@ function initHealthDialog(){
   get('live-health-close').onclick=()=>closeHealthDialog();
   get('live-health-profile').onclick=()=>{closeHealthDialog(false);showCharacterProfile();};
 }
+async function openPartyHealth(id:string,token:string|undefined,sceneId:string|undefined){
+  const dialog=get<HTMLDialogElement>('live-health-dialog');
+  if(dialog.open||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||!activeParty().some(c=>c.id===id))return;
+  selected=id;characterDraft=structuredClone(originalCharacter()!);renderCharacter();renderList();
+  healthOwner={token:token!,sceneId:sceneId!,characterId:id};
+  get('live-health-title').textContent=originalCharacter()!.profile.name+' · HP und Zustände';get('live-health-group').textContent='Gruppe: '+(data?.scene?.title||'Aktuelle Gruppe');
+  get('live-health-status').textContent='';get('live-health-slot').append(get('character-health'));
+  get<HTMLDetailsElement>('health-controls').open=!progressCharacters().find(c=>c.characterId===id)?.health||hasHealthDraft(id);
+  dialog.showModal();get<HTMLInputElement>(get<HTMLDetailsElement>('health-controls').open?'health-current':'health-amount').focus({preventScroll:true});
+}
 function renderPartyReference(){
   const active=activeParty(),progress=new Map(progressCharacters().map(row=>[row.characterId,row])),reference=get('live-party-reference');
   if(healthOwner&&(healthOwner.token!==context?.token||healthOwner.sceneId!==data?.scene?.id||healthOwner.characterId!==selected||!active.some(c=>c.id===healthOwner!.characterId)))closeHealthDialog(false);
@@ -359,16 +404,7 @@ function renderPartyReference(){
     name.textContent=profile.name;facts.textContent=partyHealthFacts(row)+' · '+partyProgressFacts(row)+' · RK '+(profile.armorClass??'—')+' · Passive Wahrnehmung '+(profile.passivePerception??'—')+' · Bewegung '+(profile.speedFeet===undefined?'—':profile.speedFeet+' ft')+(profile.characterClass?' · '+profile.characterClass:'');
     action.textContent=hasHealthDraft(character.id)?'HP-Eingabe offen · weiter bearbeiten →':'HP und Zustände bearbeiten →';button.type='button';button.dataset.characterId=character.id;button.append(name,facts,action);button.setAttribute('aria-label',profile.name+' · HP und Zustände bearbeiten');
     const token=context?.token,sceneId=data?.scene?.id;
-    button.onclick=()=>{void(async()=>{
-      const dialog=get<HTMLDialogElement>('live-health-dialog'),id=character.id;
-      if(dialog.open||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||!activeParty().some(c=>c.id===id))return;
-      selected=id;characterDraft=structuredClone(originalCharacter()!);renderCharacter();renderList();
-      healthOwner={token:token!,sceneId:sceneId!,characterId:id};
-      get('live-health-title').textContent=originalCharacter()!.profile.name+' · HP und Zustände';get('live-health-group').textContent='Gruppe: '+(data?.scene?.title||'Aktuelle Gruppe');
-      get('live-health-status').textContent='';get('live-health-slot').append(get('character-health'));
-      get<HTMLDetailsElement>('health-controls').open=!progressCharacters().find(c=>c.characterId===id)?.health||!!get('health-draft-status').textContent;
-      dialog.showModal();get<HTMLInputElement>(get<HTMLDetailsElement>('health-controls').open?'health-current':'health-amount').focus({preventScroll:true});
-    })().catch(error=>tell((error as Error).message,true));};reference.append(button);
+    button.onclick=()=>{void openPartyHealth(character.id,token,sceneId).catch(error=>tell((error as Error).message,true));};reference.append(button);
   }
   get('live-party-reference-empty').hidden=!!active.length;get<HTMLButtonElement>('live-passive-check').disabled=!active.length;
   const passiveResult=get('live-passive-result');if(!active.length)passiveResult.textContent='';else if(passiveResult.textContent)renderPassivePerception();
@@ -396,6 +432,7 @@ function renderLiveKnowledge(){
 }
 function placePartyEditor(atTable:boolean){const panel=get('live-party-panel'),slot=get(atTable?'live-party-at-table':'live-party-start');if(panel.parentElement!==slot)slot.append(panel);}
 function renderScene() {
+  if(data&&!data.scene&&!data.roster.length)get<HTMLDetailsElement>('live-party-details').open=true;
   placePartyEditor(resumed&&!!sceneDraft);
   if(preparedNotesSceneId!==data?.scene?.id){preparedNotesSceneId=data?.scene?.id??null;preparedNoteIds.clear();}
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
@@ -642,18 +679,10 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
-  get('character-new').onclick = () => { if (context && data) { get<HTMLDialogElement>('character-dialog').showModal(); get('new-character-name').focus(); } };
+  for(const id of ['character-new','live-party-new'])get(id).onclick=openNewCharacter;
   get('character-cancel').onclick = () => get<HTMLDialogElement>('character-dialog').close();
-  get('character-form').onsubmit = event => { event.preventDefault(); void (async () => {
-    const token = context?.token;
-    if (!(await flushLive()) || context?.token !== token) return;
-    const profile = { name: value('new-character-name') };
-    const ack = await execute({ kind: 'create-character', profile });
-    if (ack?.character) {
-      selected = ack.character.id; characterDraft = structuredClone(ack.character);
-      get<HTMLDialogElement>('character-dialog').close(); get<HTMLInputElement>('new-character-name').value = ''; renderList(); renderCharacter();
-    }
-  })(); };
+  get('character-dialog').addEventListener('cancel',event=>{if(creatingCharacter)event.preventDefault();});
+  get('character-form').onsubmit = event => {event.preventDefault();void createNewCharacter((event.submitter as HTMLElement|null)?.id==='character-create-active');};
   for (const [id, field] of profileFields) {
     get(id).oninput = () => {
       if (!characterDraft) return;
@@ -836,7 +865,10 @@ function livePacketSource():LivePacketSource|null{
  if(!w||!s||!p||!resumed)return null;
  const token=w.token,campaignId=w.campaign.id,sceneId=s.id,membership=s.membershipRevision,adoptionId=s.adoption?.id;
  const current=()=>context===w&&context?.token===token&&context?.campaign.id===campaignId&&data?.scene?.id===sceneId&&data.focusRevision===focus&&data.scene.membershipRevision===membership&&data.scene.adoption?.id===adoptionId&&get<HTMLSelectElement>('live-session-plan').value===p;
- return {sceneId:s.id,token:w.token,planId:p,visitId:s.adoption?.planId===p?s.adoption.visitId:null,key:JSON.stringify([w.token,s.id,p,focus,s.membershipRevision,s.revision,s.adoption?.id]),current,flush:flushLive,openVisit:async id=>{if(current())await previewPlannedVisit(p,id);},readAloud:async(text,title,active=()=>true)=>{const before=sceneDraft?.readAloud;if(!current()||!active()||!await flushLive()||!current()||!active())return;if(sceneDraft?.readAloud!==before){tell('Neuerer Szenentext bleibt erhalten. Vorlesetext erneut wählen.',true);return;}useKnowledgeReadAloud(text,title);await flushLive();},openReference:async(ref,active=()=>true)=>{const valid=()=>current()&&active();if(!valid()||!await flushLive()||!valid())return;if(ref.kind==='location')await openLocationNotebook(ref.id,valid);else await openKnowledgeNote(ref.id,valid);},prepareEncounter:async(groupId,visitId,groupRevision,active=()=>true)=>{const valid=()=>current()&&active();if(!valid()||!await flushLive()||!valid())return;if(data?.scene?.adoption?.planId!==p||data.scene.adoption.visitId!==visitId)throw new Error('Übernimm diesen Besuch zuerst, damit Ort und vorbereitete Gruppe zum laufenden Szenenstand gehören.');const preparation=unwrap(await window.campaign.scenePreparation(token,sceneId));if(!valid())return;const group=preparation.groups.find(row=>row.id===groupId&&row.revision===groupRevision);if(!group)throw new Error('Vorbereitete Gruppe ist an diesem Szenenort nicht verfügbar. Besuch oder Ortsstand prüfen.');await prepareWorldGroup(group,undefined,valid);},openReward:async(visitId,active=()=>true)=>{const valid=()=>current()&&active();if(valid())await openPreparedReward(p,visitId,valid);},captureMoment:async(category,title,summary,active=()=>true)=>{if(!current()||!active())return;const draft=currentLiveMomentDraft(),text=summary.trim().slice(0,6000),hasDraft=!!(draft.title||draft.summary||draft.category!=='world'||draft.followUp);writeLiveMomentDraft({...draft,category:hasDraft?draft.category:category,title:draft.title||title,summary:[draft.summary,text].filter(Boolean).join('\n\n').slice(0,10000)});get('live-party-panel').hidden=false;get<HTMLButtonElement>('session-packet-party-toggle').setAttribute('aria-pressed','true');get('live-moment-result').textContent='Mappenabschnitt vorgemerkt. Ergänze den tatsächlichen Ausgang und speichere ihn dann als Chronikmoment.';get<HTMLDetailsElement>('live-moment-panel').open=true;get('live-moment-panel').scrollIntoView({block:'start'});get<HTMLInputElement>('live-moment-title').focus({preventScroll:true});}};
+ return {sceneId:s.id,token:w.token,planId:p,visitId:s.adoption?.planId===p?s.adoption.visitId:null,key:JSON.stringify([w.token,s.id,p,focus,s.membershipRevision,s.revision,s.adoption?.id]),current,flush:flushLive,openVisit:async id=>{if(current())await previewPlannedVisit(p,id);},readAloud:async(text,title,active=()=>true)=>{const before=sceneDraft?.readAloud;if(!current()||!active()||!await flushLive()||!current()||!active())return;if(sceneDraft?.readAloud!==before){tell('Neuerer Szenentext bleibt erhalten. Vorlesetext erneut wählen.',true);return;}useKnowledgeReadAloud(text,title);await flushLive();},openReference:async(ref,active=()=>true)=>{const valid=()=>current()&&active();if(!valid()||!await flushLive()||!valid())return;if(ref.kind==='location')await openLocationNotebook(ref.id,valid);else await openKnowledgeNote(ref.id,valid);},prepareEncounter:async(groupId,visitId,groupRevision,active=()=>true)=>{const valid=()=>current()&&active();if(!valid()||!await flushLive()||!valid())return;if(data?.scene?.adoption?.planId!==p||data.scene.adoption.visitId!==visitId)throw new Error('Übernimm diesen Besuch zuerst, damit Ort und vorbereitete Gruppe zum laufenden Szenenstand gehören.');const preparation=unwrap(await window.campaign.scenePreparation(token,sceneId));if(!valid())return;const group=preparation.groups.find(row=>row.id===groupId&&row.revision===groupRevision);if(!group)throw new Error('Vorbereitete Gruppe ist an diesem Szenenort nicht verfügbar. Besuch oder Ortsstand prüfen.');await prepareWorldGroup(group,undefined,valid);},openReward:async(visitId,active=()=>true)=>{const valid=()=>current()&&active();if(valid())await openPreparedReward(p,visitId,valid);},captureMoment:async(category,title,summary,active=()=>true)=>{if(!current()||!active())return;const draft=currentLiveMomentDraft(),text=[draft.summary,summary].filter(Boolean).join('\n\n');
+  if(text.length>10000)throw new Error('Mappenabschnitt passt nicht in die 10.000 Zeichen des Chronikmoments. Die bisherige Eingabe bleibt unverändert. Kürze sie oder übernimm einen Ausschnitt von Hand.');
+  const hasDraft=!!(draft.title||draft.summary||draft.category!=='world'||draft.followUp);
+  writeLiveMomentDraft({...draft,category:hasDraft?draft.category:category,title:draft.title||title,summary:text});get('live-party-panel').hidden=false;get<HTMLButtonElement>('session-packet-party-toggle').setAttribute('aria-pressed','true');get('live-moment-result').textContent='Mappenabschnitt vorgemerkt. Ergänze den tatsächlichen Ausgang und speichere ihn dann als Chronikmoment.';get<HTMLDetailsElement>('live-moment-panel').open=true;get('live-moment-panel').scrollIntoView({block:'start'});get<HTMLInputElement>('live-moment-title').focus({preventScroll:true});}};
 
 }
 function syncLivePacketContext(){syncLiveSessionPacket(livePacketSource());}

@@ -3,6 +3,7 @@ import {hexKey,terrainNames} from './world-model';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 export function renderTravelBriefing(root:HTMLElement,p:TravelPreview){
  root.replaceChildren();root.append(node('p','Abreise: '+p.departure));
+ root.append(node('p','Reisetempo: '+p.request.paceKmh.toFixed(2)+' km/h · '+(p.request.usePartyPace?'langsamste Bewegung der Reisegruppe (ft / 10 = mph)':'manuelle GM-Vorgabe')+(p.request.finalSeconds!==null?' · Enddauer hat Vorrang':'')));
  if(p.continuation)root.append(node('p','Bereits gereist: '+p.continuation.completedSteps+(p.continuation.completedSteps===1?' Abschnitt':' Abschnitte')+' · frühere Restzeit '+(p.continuation.previousRemainingSeconds/3600).toFixed(2)+' h · neu '+(p.durationSeconds/3600).toFixed(2)+' h'));
  root.append(node('h3','Weg, Ankunft und Wetter · erste 40 Abschnitte'));
  const table=node('table'),head=node('thead'),row=node('tr');for(const title of ['Abschnitt / Ort','Ankunft','Dauer','Gelände / Wetter']){const th=node('th',title);th.scope='col';row.append(th);}head.append(row);table.append(head);const body=node('tbody');
