@@ -115,7 +115,7 @@ el('autonomy-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))retu
 initCity(status);
 el('city-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('city');await openCity();})().catch(error=>status(error.message,true));};
 initWorld(status,flushLive,async()=>{await openLive();},async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();},async(sceneId,kind)=>{if(kind==='wait')await openTimeNavigator(undefined,sceneId);else await openTravelRest(sceneId);});
-const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;showTab(kind);if(kind==='world')await openWorld();else await openLive();},async target=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openTimeNavigator(target);},id=>locationNotebook.open(id));
+const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;showTab(kind);if(kind==='world')await openWorld();else await openLive();},async target=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openTimeNavigator(target);},undefined,undefined,id=>locationNotebook.open(id));
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
 el('music-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();})().catch(error=>status(error.message,true));};

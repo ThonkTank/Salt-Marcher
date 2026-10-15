@@ -1,5 +1,5 @@
 import {documentReferences} from '../text-references';
-import {searchTextReferences,installTextReferenceReader,textReferenceSql} from './text-references';
+import {searchTextReferences,installTextReferenceReader,readTextReferenceRows} from './text-references';
 import {createHash} from 'node:crypto';
 import type {WorldLinkRef,WorldLinkNode,WorldLinksQuery,WorldLinksPage} from '../world-links-contracts';
 import {worldLinkKey,worldLinkKinds} from '../world-links-contracts';
@@ -24,7 +24,7 @@ export function readWorldLinks(db:any,cam:string,q:WorldLinksQuery):WorldLinksPa
   try{const d=ref.kind==='creature'?readCreature(ref.id):ref.kind==='item'?readItemDefinition(db,ref.id):readEncounterPlan(db,cam,ref.id);return{ref,kind:ref.kind,title:d.name,revision:ref.kind==='creature'?1:(d as {revision:number}).revision,available:ref.kind==='item'&&(d as {trashed?:boolean}).trashed?false:true};}catch{return{ref,kind:ref.kind,title:'Quelle nicht verfügbar',revision:0,available:false};}
  };
  installTextReferenceReader(db);const aliasPage=q.kind==='reference'?searchTextReferences(db,cam,q.text,q.offset):null;
- const params={cam,text:q.text,kind:q.kind},list:WorldLinkNode[]=aliasPage?aliasPage.entries.map(e=>({...resolved(e.ref),alias:e.alias})):q.kind==='creature'?[]:db.prepare(indexSql+' ORDER BY title COLLATE NOCASE,refKind,id LIMIT 41 OFFSET @offset').all({...params,offset:q.offset}).map((r:any)=>resolved({kind:r.refKind,id:r.id}));
+ const params={cam,text:q.text,kind:q.kind},list:WorldLinkNode[]=aliasPage?aliasPage.entries.map(e=>e.unavailable?{ref:e.ref,kind:e.ref.kind==='note'?'rule' as const:e.ref.kind,title:e.title,revision:e.revision,available:false,alias:e.alias}:{...resolved(e.ref),alias:e.alias}):q.kind==='creature'?[]:db.prepare(indexSql+' ORDER BY title COLLATE NOCASE,refKind,id LIMIT 41 OFFSET @offset').all({...params,offset:q.offset}).map((r:any)=>resolved({kind:r.refKind,id:r.id}));
  // All sources share a bounded page: database sources first, then the immutable creature catalogue.
  if((q.kind==='all'||q.kind==='creature')&&list.length<41){const skip=q.kind==='creature'?q.offset:list.length?0:Math.max(0,q.offset-db.prepare('SELECT count(*) n FROM ('+indexSql+')').get(params).n);const p=searchCreatures({text:q.text,offset:skip,limit:41-list.length});for(const c of p.rows)list.push({ref:{kind:'creature',id:c.id},kind:'creature',title:c.name,revision:1,available:true});}
  const matches=list.slice(0,40),nodes=new Map<string,WorldLinkNode>(),edges:WorldLinksPage['edges']=[],edgeKeys=new Set<string>();let hiddenLinks=0;
@@ -40,7 +40,9 @@ export function readWorldLinks(db:any,cam:string,q:WorldLinksQuery):WorldLinksPa
  if(ids.length){const placeholders=ids.map(()=>'?').join(',');for(const r of db.prepare("SELECT n.id sourceId,json_extract(j.value,'$.targetId') targetId,json_extract(j.value,'$.label') label FROM world_note n,json_each(n.payload,'$.relations') j WHERE n.campaign_id=? AND n.trashed=0 AND n.id IN("+placeholders+") ORDER BY n.id,j.key").iterate(cam,...ids))if(local.has('note:'+r.targetId))edge({kind:'note',id:r.sourceId},{kind:'note',id:r.targetId},r.label,true);}
  const limited=(sql:string,args:any[],use:(r:any)=>void)=>{const rows=db.prepare(sql+' LIMIT 41').all(...args);for(const row of rows.slice(0,40))use(row);if(rows.length>40)hiddenLinks++;};
  const encounterEdges=(f:WorldLinkRef)=>{const p=readEncounterPlan(db,cam,f.id),counts=new Map<string,number>(),actors=new Set<string>();for(const entry of p.entries){counts.set(entry.creatureId,(counts.get(entry.creatureId)??0)+entry.count);for(const id of entry.worldActorIds??[])actors.add(id);}for(const [id,count] of [...counts].slice(0,40))edge(f,{kind:'creature',id},count+' × Statblock · Vorlage enthält Quellenstand');for(const id of [...actors].slice(0,40))edge(f,{kind:'note',id},'benannter Teilnehmer');hiddenLinks+=Math.max(0,counts.size-40)+Math.max(0,actors.size-40);};
- if(focus){const f=focus.ref,rows=db.prepare('SELECT sourceKind,sourceId,alias,field FROM ('+textReferenceSql+') WHERE kind=@targetKind AND id=@target ORDER BY sourceKind,sourceId,alias LIMIT 41').all({cam,targetKind:f.kind,target:f.id});for(const r of rows.slice(0,40))edge({kind:r.sourceKind,id:r.sourceId},f,'Textverweis · '+r.alias);if(rows.length>40)hiddenLinks++;}
+ let referenceNotice=aliasPage?.notice;
+ if(focus){const f=focus.ref,page=readTextReferenceRows(db,cam,{target:f});referenceNotice=page.notice??referenceNotice;for(const r of page.rows)edge({kind:r.sourceKind,id:r.sourceId},f,'Textverweis · '+r.alias);if(page.next!==null)hiddenLinks++;}
+
 
  if(focus&&focus.available){const f=focus.ref;
   if(f.kind==='note'){
@@ -65,5 +67,5 @@ export function readWorldLinks(db:any,cam:string,q:WorldLinksQuery):WorldLinksPa
    limited("SELECT s.note_id,json_extract(i.value,'$.reference.revision') revision,json_extract(s.payload,'$.status') status FROM narrative_state s,json_each(s.payload,'$.items') i WHERE s.campaign_id=? AND COALESCE(json_extract(i.value,'$.reference.historicalDefinitionId'),json_extract(i.value,'$.reference.definitionId'))=? ORDER BY s.note_id,i.key",[cam,f.id],r=>edge({kind:'note',id:r.note_id},f,'Belohnung · Quellenstand '+r.revision+(r.status==='closed'?' · abgeschlossen':'')));
   }
  }
- return{matches,next:aliasPage?aliasPage.next:list.length>40?q.offset+40:null,nodes:[...nodes.values()],edges,focus,hiddenLinks};
+ return{matches,next:aliasPage?aliasPage.next:list.length>40?q.offset+40:null,nodes:[...nodes.values()],edges,focus,hiddenLinks,...(referenceNotice?{notice:referenceNotice}:{})};
 }
