@@ -24,3 +24,9 @@ test('the next-session handoff starts with the current scene and unresolved work
     'Nächster Einstieg: Nordtor · Klippenhafen','- Kampf fortsetzen: Wachen am Tor','- Verfolgung fortsetzen: Flucht über die Dächer (Späher)','- Unverteilte Beute prüfen: 2 Schatzpositionen','- Spielabend-XP prüfen',
   ].join('\n'));
 });
+
+import {handoffVisitSeed} from '../../src/app/live-session-recap';
+test('a completed handoff becomes a concise authored visit without losing its open work',()=>{
+  assert.deepEqual(handoffVisitSeed('Nächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen','Späher'),{title:'Nordtor · Klippenhafen',notes:'Übergabe vom letzten Spielabend\n\nNächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen'});
+  assert.equal(handoffVisitSeed('','Späher').title,'Nächster Spielabend: Späher');
+});

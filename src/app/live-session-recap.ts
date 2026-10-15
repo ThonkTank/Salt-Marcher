@@ -35,3 +35,8 @@ export function sessionCloseHandoffSuggestion(input:SessionCloseHandoffInput){
 }
 
 export function latestCompletedSessionHandoff(entries:ChronicleEntry[],latest?:ChronicleEntry){return(latest?.sessionMarker==='end'?latest:entries.find(entry=>entry.sessionMarker==='end'))?.handoff??'';}
+
+export function handoffVisitSeed(handoff:string,sceneTitle:string){
+  const text=handoff.trim(),first=text.split(/\r?\n/).map(line=>line.trim()).find(Boolean)??'',named=first.replace(/^Nächster Einstieg:\s*/i,'').replace(/^[-*]\s*/,''),title=(named||'Nächster Spielabend: '+(sceneTitle.trim()||'Unbenannte Gruppe')).slice(0,1000);
+  return{title,notes:('Übergabe vom letzten Spielabend\n\n'+text).slice(0,10000)};
+}

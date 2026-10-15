@@ -102,3 +102,19 @@ test('campaign material search includes other places and unbound narratives with
   assert.equal(found.items[0]?.id,id);assert.equal(found.items[0]?.locationId,places[1]!.id);assert.match(found.items[0]!.detail,/Hafen/);assert.ok(db.serialize().equals(archivedBytes));
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test('location group reads reject checksum-valid actor and profile identity substitutions',()=>{
+ const root=mkdtempSync(join(tmpdir(),'location-notebook-group-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Ortsnotizbuch'),workspace=store.activate(campaign.id),command=(action:any)=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,action});
+  const created=store.executeProgress(command({kind:'group-create',title:'Torwache',encounterId:null,expectedEncounterRevision:null})),group=store.groupView(workspace.token,created.groupId),draft={writeId:randomUUID(),groupId:group.id,revision:group.revision,title:group.title,notes:'',locationId:null,actors:[{id:null,creatureId:'goblin',revision:0,profileRevision:0,name:'Mira',hp:'7',maxHp:'7',tempHp:'0',conditions:'',concentrating:false,gmNotes:'',readAloud:''}]};
+  store.keepGroupDraft(workspace.token,draft,null);store.executeProgress(command({kind:'group-edit',groupId:group.id,expectedRevision:group.revision,draft}));
+  const actorId=store.groupView(workspace.token,group.id).actors[0]!.id,actorRow=(store as unknown as {db:any}).db.prepare('SELECT * FROM world_actor WHERE campaign_id=? AND id=?').get(campaign.id,actorId),actor=JSON.parse(actorRow.payload),forgedActor=JSON.stringify({...actor,id:randomUUID()});
+  (store as unknown as {db:any}).db.prepare('UPDATE world_actor SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(forgedActor,createHash('sha256').update(forgedActor).digest('hex'),campaign.id,actorId);
+  assert.throws(()=>store.groupView(workspace.token,group.id),/NPC-Zuordnung|zugeordnet/);
+  (store as unknown as {db:any}).db.prepare('UPDATE world_actor SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(actorRow.payload,actorRow.checksum,campaign.id,actorId);
+  const noteRow=(store as unknown as {db:any}).db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaign.id,actorId),note=JSON.parse(noteRow.payload),forgedNote=JSON.stringify({...note,id:randomUUID()});
+  (store as unknown as {db:any}).db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(forgedNote,createHash('sha256').update(forgedNote).digest('hex'),campaign.id,actorId);
+  assert.throws(()=>store.groupView(workspace.token,group.id),/NPC-Profilzuordnung|zugeordnet/);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
