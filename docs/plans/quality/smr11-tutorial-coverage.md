@@ -104,12 +104,12 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Dungeon-Binder | Suche, Dungeon-/Geschossfilter, GM-Key, öffentliche Vorschau und Navigation in bestehende Abläufe | Raum-Keys beim Leiten lesen |
 | Stadtstruktur | ortsgebundene Anlage, metrische Straßen/Mauern/Flächen/Häuser, offener Zeichenzug und Stadt-History | Eine Stadt aus metrischen Strukturen aufbauen |
 | Geschützte Stadtregeneration | Viertel und Erzeugungsvorgaben, revisionsgebundene Vorschau, Abbruch und gemeinsame Übernahme | Ein Viertel mit geschützter Vorschau bebauen |
-| Stadtelemente und Ausgabe | Autosave/Reload, Hauspose und Schutz, leere Innenraumhülle, abhängiges Löschen sowie SVG-/Datenausgabe | Stadtelemente bearbeiten, schützen und ausgeben |
+| Stadtelemente, World-NPC-Bindungen und Ausgabe | Autosave/Reload, Hauspose und Schutz, gefilterte World-NPC-Suche, je ein Wohnort/Arbeitsplatz mit atomarem Umzug, leere Innenraumhülle, abhängiges Löschen sowie SVG-/Datenausgabe | Häuser, Bewohner und Arbeitsplätze binden |
 
 ## Verbleibende Abnahme
 
 Die Hauptflächen- und erste Unterfähigkeitsinvariante beweisen noch nicht, dass jede einzelne Capability fachlich verständlich erklärt wird. Das Inventar wird arbeitsbereichsweise fortgeführt; jede weitere Gruppe wird einer konkreten Lektion oder einer begründeten gemeinsamen Lektion zugeordnet. Neue Hauptoberflächen sowie die oben inventarisierten Einstiege dürfen die Invariante nicht ohne vorhandene Lektion passieren.
 
-Die Stadtzuordnung belegt nur den heute sichtbaren räumlichen Teilstand. Bewohner, Haushalte, Berufe, Beziehungen, Fraktionen, Tagespläne und gemeinsame Campaignzeit besitzen in der Stadtoberfläche noch keine Capabilities und daher auch keine ausführbare Tutorialzuordnung. Die drei Stadtlektionen dürfen nicht als CITY-06–09- oder vollständige Produktabnahme gelesen werden.
+Die Stadtzuordnung belegt den sichtbaren räumlichen Teilstand und den ersten CITY-06-Schnitt: vorhandene World-NPC-Identitäten lassen sich als Bewohner und Beschäftigte an Häuser binden; Position und Fraktion bleiben World-Fakten. Haushalte, Berufsobjekte, Beziehungen/Familie, städtische Fraktionsbearbeitung, Demografie, Tagespläne, Sammeländerungen und gemeinsame Campaignzeit besitzen noch keine ausführbare Stadt-Capability. Die drei Stadtlektionen dürfen nicht als CITY-06–09- oder vollständige Produktabnahme gelesen werden.
 
 Die DOM-/Storebelege ersetzen keine native Bedienabnahme. Offen bleiben ein echter Erstinstallations- und Update-Lauf im gepackten Desktopprodukt, vollständige Tastaturbedienung einschließlich Escape und Fokusrückgabe, 200-%-Darstellung bei üblicher Laptopauflösung, Screenreader-Reihenfolge, Kontrast sowie die Prüfung, dass der lange Dialog schnelle Arbeitsabläufe nicht behindert.
