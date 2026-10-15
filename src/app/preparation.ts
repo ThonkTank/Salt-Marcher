@@ -270,8 +270,9 @@ function revealNote(id: string) {
   editor.focus({ preventScroll: true });
   editor.scrollIntoView({ block: 'start' });
 }
-async function renderNotes() {
+async function renderNotes(initialLocationId?:string) {
   noteEditorGeneration++;
+
   const row = noteRow(selectedNote); noteDraft = row && !row.trashed ? structuredClone(row.note) : null;
   const token = context?.token, target = selectedNote, request = preparationLoad;
   const saved = row ? await loadedDraft('note', row.note.id) : null;
@@ -289,7 +290,7 @@ async function renderNotes() {
   get('note-kind').textContent = ({ npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht', rule: 'Regel' })[row.note.kind];
   for (const id of ['note-title', 'note-read-aloud', 'note-gm']) get<HTMLInputElement>(id).disabled = row.trashed || draftProblems.has(draftKey('note', row.note.id));
   get('note-remove').hidden = row.trashed; get('note-restore').hidden = !row.trashed;
-  renderRelations();void showNarrative(context,row.note,row.trashed,()=>flushPreparation(true,true),tell);
+  renderRelations();await showNarrative(context,row.note,row.trashed,()=>flushPreparation(true,true),tell,undefined,undefined,initialLocationId);
 }
 function renderSceneList() {
   const list = get('scene-list'); list.replaceChildren();
@@ -496,6 +497,18 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
   get('scene-location').onchange = () => { if (!planDraft) return; const locationId = value('scene-location') ? campaignLocalId(value('scene-location')) : null; planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, locationId } : s) }; get<HTMLButtonElement>('scene-open-location').disabled = !locationId; schedule(); };
   get('scene-open-location').onclick = () => { void (async () => { if (!(await flushPreparation())) return; const scene = originalPlan()?.scenes.find(s => s.id === selectedScene); if (!scene?.locationId) return; const row = data.locations.find(row => row.document.id === scene.locationId); if (!row) { tell('Szenenort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; } selectedLocation = scene.locationId; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations(); })(); };
 }
+export async function createNarrativeAtLocation(locationId:string,name:string,kind:'quest'|'rumor'){
+ const w=context,request=preparationLoad;if(!w||!await flushPreparation()||context?.token!==w.token||preparationLoad!==request)throw new Error('Vorbereitungskontext geändert.');
+ const place=unwrap(await window.campaign.deskContent(w.token,{kind:'location',id:locationId}));if(place.unavailable||context?.token!==w.token||preparationLoad!==request)throw new Error('Ort für neuen Auftrag nicht verfügbar.');
+ const note:Note={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,kind,title:name,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};
+ if(!await change({kind:'note',expectedRevision:null,note},false))throw new Error('Neue Notiz noch nicht bestätigt. Speicherstatus der Vorbereitung prüfen.');
+ if(context?.token!==w.token)throw new Error('Notiz in früherer Kampagne gespeichert.');
+ selectedNote=note.id;get<HTMLInputElement>('world-trash').checked=false;await renderNotes(locationId);
+ if(context!==w||context?.token!==w.token)throw new Error('Notiz in früherer Kampagne gespeichert.');
+ if(!await flushNarrative())throw new Error('Notiz angelegt; offene Ortsbindung im narrativen Bereich abschließen.');
+ const saved=unwrap(await window.campaign.narrative(w.token,note.id));if(context?.token!==w.token||saved.state.locationId!==locationId)throw new Error('Notiz angelegt; Ortsbindung im narrativen Bereich prüfen.');
+ get('note-title').scrollIntoView({block:'center'});get('note-read-aloud').focus();return note.id;
+}
 export async function openPreparedNote(id:string,stillCurrent=()=>true) {
   const token = context?.token,request=preparationLoad,current=()=>context?.token===token&&preparationLoad===request&&stillCurrent();
   if (!token || !await flushPreparation() || !current()) return;
@@ -516,14 +529,11 @@ export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
   if (!row) { tell('Ort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; }
   selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations();
 }
-export async function openPreparedVisit(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
-  const token=context?.token,load=preparationLoad,current=()=>stillCurrent()&&context?.token===token&&preparationLoad===load;
-  if(!token||!current()||!await flushPreparation()||!current())return;
-  const next=unwrap(await window.campaign.preparation(token,''));if(!current())return;usePreparation(next);
-  const plan=data.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}
-  if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}
-  get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();
-  if(current()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+export async function openPreparedVisit(planId:string,visitId:string,current:()=>boolean=()=>true){
+  const owner=context,token=owner?.token,epoch=preparationLoad,valid=()=>current()&&context===owner&&context?.token===token&&preparationLoad===epoch;
+  if(!token||!valid()||!await flushPreparation()||!valid())return;const next=unwrap(await window.campaign.preparation(token,''));if(!valid())return;
+  const plan=next.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}
+  usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
 function showLocations(show: boolean) {

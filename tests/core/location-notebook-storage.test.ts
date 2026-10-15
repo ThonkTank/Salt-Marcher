@@ -30,3 +30,15 @@ test('checked local events retain text search, stable pages and the original clo
   assert.equal(store.locationMaterials(workspace.token,{...q,text:'Frist 43'}).items[0]?.id,'deadline-43');assert.ok(db.serialize().equals(before));assert.deepEqual(store.live(workspace.token).scene!.clock,scene.clock);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test('location notebook rejects a checksum-valid malformed calendar event',()=>{
+ const root=mkdtempSync(join(tmpdir(),'location-notebook-event-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Ortsnotizbuch'),workspace=store.activate(campaign.id),location=newLocation('place','Nordtor','poi',['description','notes']);
+  store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});
+  store.executeWorld({commandId:'event',campaignId:campaign.id,token:workspace.token,action:{kind:'calendar-event',expectedRevision:null,event:{id:'market-day',revision:0,name:'Markttag',startMs:'3600000',durationMs:'60000',repeatMs:null,locationId:location.id,notes:'',trashed:false}}});
+  const event={id:'market-day',revision:1,name:'Markttag',startMs:'3600000',durationMs:'60000',repeatMs:7,locationId:location.id,notes:'',trashed:false},payload=JSON.stringify(event),checksum=createHash('sha256').update(payload).digest('hex');
+  (store as unknown as {db:any}).db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='calendar-event' AND id=?").run(payload,checksum,campaign.id,event.id);
+  assert.throws(()=>store.locationMaterials(workspace.token,{locationId:location.id,kind:'event',text:'',offset:0}),/Kalenderereignis.*beschädigt/);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});

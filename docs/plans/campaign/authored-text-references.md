@@ -53,3 +53,7 @@ Kontrollierte Store-/DOMtests prüfen Parser, Auswahl, Kopierziele und Teile der
 Wiederaufnahme. Sie ersetzen keine native Editor-, Markdown- oder Produktabnahme.
 Es gibt keine Schema-/Autorenmigration und keinen zweiten dauerhaften Graph.
 Früher veränderte Kopien lassen sich ohne Original nicht automatisch reparieren.
+
+Suche und eingehende Kanten berücksichtigen alle aktiven Textverweise. Begrenzte
+Leser zeigen einen Hinweis auf weitere Ziele; einzelne beschädigte Quellen
+werden als unvollständig gemeldet, gesunde Treffer bleiben erreichbar.

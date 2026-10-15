@@ -56,7 +56,7 @@ export class WorldLinksWorkbench {
    for(const entry of page.matches){const b=control((entry.alias?entry.alias+' → ':'')+entry.title+' · '+worldLinkKinds[entry.kind],()=>this.select(entry.ref));b.dataset.worldRef=worldLinkKey(entry.ref);b.setAttribute('aria-pressed',String(this.focus&&worldLinkKey(this.focus)===worldLinkKey(entry.ref)));this.list.append(b);}
    this.graph.draw(selectFirst?page:{...page,focus:null},current);
    if(content)this.renderContent(content,page,control);else this.inspector.append(node('p',page.matches.length?'Inhalt auswählen, um seine Verbindungen zu lesen.':'Keine Inhalte gefunden.'));
-   this.status.textContent='Knoten auswählen und Verbindungen erkunden. Texte und Beziehungen im vorhandenen Quelleneditor bearbeiten.';
+   this.status.textContent=page.notice??'Knoten auswählen und Verbindungen erkunden. Texte und Beziehungen im vorhandenen Quelleneditor bearbeiten.';
   }catch(e){if(current()){const text=(e as Error).message;this.status.textContent=text;this.tell(text,true);}}
   finally{if(current())this.dialog.setAttribute('aria-busy','false');}
  }

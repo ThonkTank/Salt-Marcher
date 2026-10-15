@@ -7,6 +7,11 @@ export function hexPoint(h:Hex,diameter=1){return{x:diameter*(h.q+h.r/2),y:diame
 export function pointHex(x:number,y:number,diameter=1):Hex{const r=y/(diameter*Math.sqrt(3)/2),q=x/diameter-r/2;let a=Math.round(q),b=Math.round(r),c=Math.round(-q-r);const da=Math.abs(a-q),db=Math.abs(b-r),dc=Math.abs(c+q+r);if(da>db&&da>dc)a=-b-c;else if(db>dc)b=-a-c;else c=-a-b;return{q:a,r:b};}
 export const hexDistance=(a:Hex,b:Hex)=>(Math.abs(a.q-b.q)+Math.abs(a.r-b.r)+Math.abs(a.q+a.r-b.q-b.r))/2;
 export const neighbors=(h:Hex)=>[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]].map(([q,r])=>({q:h.q+q!,r:h.r+r!}));
+export function checkedCalendarEvent(value:unknown,persisted=false):CalendarEvent{
+ const event=value as CalendarEvent,id=(v:unknown)=>typeof v==='string'&&!!v,instant=(v:unknown,positive=false)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,29})$/.test(v)&&(!positive||v!=='0');
+ if(!event||!id(event.id)||!Number.isSafeInteger(event.revision)||event.revision<(persisted?1:0)||typeof event.name!=='string'||!event.name.trim()||!instant(event.startMs)||!instant(event.durationMs,true)||event.repeatMs!==null&&!instant(event.repeatMs,true)||event.locationId!==null&&!id(event.locationId)||typeof event.notes!=='string'||typeof event.trashed!=='boolean')throw new Error('Kalenderereignis ist beschädigt.');
+ return event;
+}
 const indices=new WeakMap<AtlasMap,{cells:AtlasCell[];index:Map<string,AtlasCell>}>();
 function cellIndex(map:AtlasMap){let cached=indices.get(map);if(!cached||cached.cells!==map.cells){cached={cells:map.cells,index:new Map(map.cells.map(c=>[c.level+':'+hexKey(c),c]))};indices.set(map,cached);}return cached.index;}
 export function cellAt(map:AtlasMap,h:Hex,level=0):AtlasCell{for(let l=level;l<=12;l++){const p=hexPoint(h,2**level),parent=pointHex(p.x,p.y,2**l),cell=cellIndex(map).get(l+':'+hexKey(parent));if(cell)return{...cell,...h,level};}return{...h,level,terrain:'plains',elevationM:0,climate:null,road:false,river:false,label:'',faction:'',interrupt:''};}
