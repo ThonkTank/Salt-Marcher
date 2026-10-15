@@ -71,7 +71,7 @@ setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('trea
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());
 initPartyTopbar(()=>el<HTMLButtonElement>('live-tab').click());
 initNarrativeJournal(status,leaveWorkspace,async()=>await flushPreparation(true,true),async id=>{if(!await leaveWorkspace())return;showTab('preparation');await openPreparedNote(id);});
-const worldLinks=new WorldLinksWorkbench(()=>workspace,leaveWorkspace,status,async ref=>{if(!await leaveWorkspace())return;if(ref.kind==='creature'||ref.kind==='encounter'){showTab('catalog');await openCatalogReference({kind:ref.kind,id:ref.id});}else if(ref.kind==='item'){showTab('items');await openItemReference(ref.id);}else{showTab('preparation');if(ref.kind==='note')await openPreparedNote(ref.id);else await openPreparedLocation(ref.id);}});el('world-links-open').onclick=()=>void worldLinks.open().catch(e=>status(e.message,true));
+const worldLinks=new WorldLinksWorkbench(()=>workspace,leaveWorkspace,status,async(ref,current)=>{if(!await leaveWorkspace()||!current())return;if(ref.kind==='creature'||ref.kind==='encounter'){showTab('catalog');await openCatalogReference({kind:ref.kind,id:ref.id},current);}else if(ref.kind==='item'){showTab('items');await openItemReference(ref.id,current);}else{showTab('preparation');if(ref.kind==='note')await openPreparedNote(ref.id,current);else await openPreparedLocation(ref.id,current);}});el('world-links-open').onclick=()=>void worldLinks.open().catch(e=>status(e.message,true));
 initQuickReference(status,leaveWorkspace,async action=>{
  const token=workspace?.token;if(!token)return;
  if(action.kind==='connections'){await worldLinks.open(action.content.ref);return;}
@@ -86,7 +86,7 @@ initQuickReference(status,leaveWorkspace,async action=>{
 initLive(status, async id => {
   if (!(await leaveWorkspace())) return;
   await openPreparedLocation(id); showTab('preparation');
-},async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id);});
+},async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id,current);});
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
 setNpcNavigation(async(id,contact,current)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,contact,current);},async(id,current)=>{if(!await leaveWorkspace()||!current())return;showTab('autonomy');await openAutonomy(id);});

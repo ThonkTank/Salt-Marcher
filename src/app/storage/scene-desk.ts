@@ -1,3 +1,5 @@
+import {documentReferences} from '../text-references';
+import {searchTextReferences,referenceEntry} from './text-references';
 import { createHash } from "node:crypto";
 import type {
   DeskRef,
@@ -32,6 +34,7 @@ function checkedRef(ref: DeskRef) {
     throw new Error("Inhaltsverweis ungültig.");
   return ref;
 }
+const proseLinks=(db:any,cam:string,doc:any)=>documentReferences(doc).slice(0,200).map(r=>({label:r.field+' · '+r.label,entry:referenceEntry(db,cam,r.ref)}));
 export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
   checkedRef(ref);
   if (ref.kind === "note") {
@@ -53,7 +56,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
       }[note.kind],
       revision: note.revision,
       note,
-      links: note.relations.map(relation=>{const target=db.prepare("SELECT id,trashed,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.title') END AS title FROM world_note WHERE campaign_id=? AND id=?").get(cam,relation.targetId);return{label:relation.label,entry:{ref:{kind:'note' as const,id:relation.targetId},title:target?.title??'Nicht verfügbarer Weltinhalt',label:'Weltverweis',unavailable:!target||!!target.trashed}};}),
+      links: [...proseLinks(db,cam,note),...note.relations.map(relation=>{const target=db.prepare("SELECT id,trashed,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.title') END AS title FROM world_note WHERE campaign_id=? AND id=?").get(cam,relation.targetId);return{label:relation.label,entry:{ref:{kind:'note' as const,id:relation.targetId},title:target?.title??'Nicht verfügbarer Weltinhalt',label:'Weltverweis',unavailable:!target||!!target.trashed}};})],
       unavailable: !!row.trashed,
     };
   }
@@ -70,6 +73,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
       label: "Ort",
       revision: row.revision,
       location,
+      links:proseLinks(db,cam,location),
       unavailable: !!row.trashed,
     };
   }
@@ -212,6 +216,7 @@ export function searchDesk(
     offset > 1000000
   )
     throw new Error("Suchanfrage ungültig.");
+  if (kind === "reference") return searchTextReferences(db,cam,search,offset);
   if (kind === "creature") {
     const p = searchCreatures({ text: search, offset, limit: 40 });
     return {

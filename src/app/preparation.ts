@@ -1,3 +1,5 @@
+import {chooseTextReference} from './text-reference-picker';
+import {rawTextOffset} from './text-references';
 import {showNarrative,flushNarrative} from './narrative-ui';
 import type { Workspace, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
@@ -138,7 +140,7 @@ function renderProblems() {
 async function change(change: PreparationChange, redraw = true): Promise<boolean> {
   if (!context || blocked) return false;
   if (changesPending.size) { tell('Vorherige Vorbereitung wird noch gespeichert.'); return false; }
-  const token = context.token;
+  const token = context.token, request = preparationLoad, current=()=>context?.token===token&&preparationLoad===request;
   const target = preparationTarget(change), key = draftKey(target.kind, target.id);
   const command: PreparationCommand = { commandId: crypto.randomUUID(), token, campaignId: context.campaign.id, draftWriteId: retained.get(key)?.writeId, change };
   tell('Wird gespeichert…');
@@ -146,10 +148,10 @@ async function change(change: PreparationChange, redraw = true): Promise<boolean
   const completion = new Promise<void>(resolve => { complete = resolve; }); changesPending.add(completion);
   try {
     const result = unwrap(await window.campaign.changePreparation(command));
-    if (context?.token !== token) return false;
+    if (!current()) return false;
     usePreparation(result);
     if (value('world-search').trim()) await reloadNoteSearch(false);
-    if (context?.token !== token) return false;
+    if (!current()) return false;
     retained.delete(key);
     if (command.change.kind === 'plan' && planDraft?.id === command.change.plan.id) {
       const sent = command.change.plan;
@@ -157,13 +159,13 @@ async function change(change: PreparationChange, redraw = true): Promise<boolean
       if (confirmed) planDraft = preservePlanInput(confirmed, sent, planDraft);
     }
     if (redraw) await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
-    renderProblems(); syncSaveControl(); tell('Gespeichert.'); return true;
+    if(!current())return false;renderProblems(); syncSaveControl(); tell('Gespeichert.'); return true;
   } catch (error) {
-    if (context?.token !== token) return false;
+    if (!current()) return false;
     if (change.kind === 'plan' && planDraft?.id === change.plan.id && originalPlan()) planDraft = preservePlanInput(change.plan, originalPlan()!, planDraft);
     blocked = true; failedCommand = command; get('preparation-refresh').hidden = false; get('preparation-reconcile').hidden = false; syncSaveControl();
-    try { await retainOpenDrafts(); tell((error as Error).message + ' Entwurf gesichert. Kein automatischer Neuversuch.', true); }
-    catch (draftError) { tell((error as Error).message + ' Entwurf bleibt im Speicher: ' + (draftError as Error).message, true); }
+    try { await retainOpenDrafts(); if(!current())return false; tell((error as Error).message + ' Entwurf gesichert. Kein automatischer Neuversuch.', true); }
+    catch (draftError) { if(!current())return false; tell((error as Error).message + ' Entwurf bleibt im Speicher: ' + (draftError as Error).message, true); }
     return false;
   }
   finally { changesPending.delete(completion); complete(); }
@@ -351,6 +353,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
   initSession(status,()=>flushPreparation(true),async (id,planId)=>{if(!context)return;usePreparation(unwrap(await window.campaign.preparation(context.token,value('world-search'))), !!value('world-search').trim());if(planId){selectedPlan=planId;planDraft=null;selectedScene=null;}if(id)selectedScene=id;await renderPlans();await renderNotes();await renderLocations();},openPreparedNote);
   openMap = navigateMap;
+  get('note-text-reference').onclick=()=>{void(async()=>{const token=context?.token,id=selectedNote,area=get<HTMLTextAreaElement>('note-gm'),start=area.selectionStart,end=area.selectionEnd;if(!token||!id||area.disabled||blocked||!await flushPreparation()||context?.token!==token||selectedNote!==id||!noteDraft)return;const before=noteDraft.gmNotes,alias=area.value.slice(start,end),link=await chooseTextReference(token,alias);if(!link)return;if(context?.token!==token||selectedNote!==id||!noteDraft||noteDraft.gmNotes!==before||blocked){tell('Notizkontext geändert. Verweis erneut einfügen.',true);return;}const from=rawTextOffset(before,start),to=rawTextOffset(before,end);noteDraft={...noteDraft,gmNotes:before.slice(0,from)+link+before.slice(to)};area.value=noteDraft.gmNotes;schedule();area.focus();area.setSelectionRange(start+link.length,start+link.length);})().catch(e=>tell(e.message,true));};
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
   get('world-new').onclick = () => { get<HTMLDialogElement>('world-dialog').showModal(); get('world-name').focus(); };
   get('world-cancel').onclick = () => get<HTMLDialogElement>('world-dialog').close();
@@ -473,21 +476,22 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
   get('scene-location').onchange = () => { if (!planDraft) return; const locationId = value('scene-location') ? campaignLocalId(value('scene-location')) : null; planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, locationId } : s) }; get<HTMLButtonElement>('scene-open-location').disabled = !locationId; schedule(); };
   get('scene-open-location').onclick = () => { void (async () => { if (!(await flushPreparation())) return; const scene = originalPlan()?.scenes.find(s => s.id === selectedScene); if (!scene?.locationId) return; const row = data.locations.find(row => row.document.id === scene.locationId); if (!row) { tell('Szenenort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; } selectedLocation = scene.locationId; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations(); })(); };
 }
-export async function openPreparedNote(id:string) {
-  const token = context?.token;
-  if (!token || !await flushPreparation() || context?.token !== token) return;
+export async function openPreparedNote(id:string,stillCurrent=()=>true) {
+  const token = context?.token,request=preparationLoad,current=()=>context?.token===token&&preparationLoad===request&&stillCurrent();
+  if (!token || !await flushPreparation() || !current()) return;
   const next = unwrap(await window.campaign.preparation(token, ''));
-  if (context?.token !== token) return;
+  if (!current()) return;
   usePreparation(next);
   const row = noteRow(id);
   if (!row) { tell('Weltinhalt nicht verfügbar.', true); return; }
   get<HTMLInputElement>('world-search').value = '';
   selectedNote = id; get<HTMLInputElement>('world-trash').checked = row.trashed;
   showLocations(false); await renderNotes();
-  if (context?.token === token) revealNote(id);
+  if (current()) revealNote(id);
 }
-export async function openPreparedLocation(id: string) {
-  if (!(await flushPreparation())) return;
+export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
+  const token=context?.token,request=preparationLoad;
+  if (!token||!(await flushPreparation())||context?.token!==token||preparationLoad!==request||!stillCurrent()) return;
   const row = data.locations.find(row => row.document.id === id);
   if (!row) { tell('Ort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; }
   selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations();

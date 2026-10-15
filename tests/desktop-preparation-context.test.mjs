@@ -26,7 +26,7 @@ async function fixture(t){
  window.campaign={};for(const method of ['preparation','preparationDraft','keepPreparationDrafts','discardPreparationDraft','selectPreparation','reconcilePreparation','worldLinks','deskContent','live'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
  window.campaign.changePreparation=async c=>{writes.push(c);return wrap(()=>store.changePreparation(c));};
  const file=require.resolve('../'+base+'/ui.cjs');delete require.cache[file];const ui=require(file);ui.initPreparation((text,error)=>messages.push({text,error}),async()=>{});
- let owner=workspace;const graph=new ui.WorldLinksWorkbench(()=>owner,()=>ui.leavePreparation(),text=>messages.push({text}),async ref=>ui.openPreparedNote(ref.id));
+ let owner=workspace;const graph=new ui.WorldLinksWorkbench(()=>owner,()=>ui.leavePreparation(),text=>messages.push({text}),async(ref,current)=>ui.openPreparedNote(ref.id,current));
  for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  const el=id=>document.getElementById(id),draft=(failed=false)=>{const note={...original,readAloud:'  Geretteter Text\r\n**Wortlaut**  ',gmNotes:'  Eigene Planung\r\n',relations:[{targetId:ids.ada,label:'  vertraut  '}]},writeId='world-links-'+randomUUID(),change={kind:'note',expectedRevision:original.revision,note},c={...command(change),draftWriteId:writeId};return{version:1,writeId,change,failedCommand:failed?c:null};};
  t.after(async()=>{graph.reset();await settle();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});
@@ -66,4 +66,26 @@ test('a repeated relationship click cannot create an invalid duplicate draft',as
  const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);x.el('relation-target').value=x.ids.ada;x.el('relation-label').value='kennt';
  x.el('relation-add').click();x.el('relation-add').click();await settle();assert.equal(await x.ui.flushPreparation(),true);
  const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.deepEqual(saved.relations,[{targetId:x.ids.ada,label:'kennt'}]);assert.equal(x.writes.length,1);
+});
+
+for(const rejected of [false,true])test(`a late save ${rejected?'failure':'acknowledgement'} cannot replace a freshly reactivated preparation`,async t=>{
+ const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);
+ x.el('note-gm').value='Gesendet';x.el('note-gm').dispatchEvent(new x.window.Event('input'));
+ const save=x.window.campaign.changePreparation;let release;
+ x.window.campaign.changePreparation=async c=>{const result=await save(c);if(!release)return new Promise(r=>release=()=>r(rejected?{ok:false,error:'Antwort verloren'}:result));return result;};
+ const saving=x.ui.flushPreparation();await settle();assert.ok(release);
+ const note=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;
+ x.store.changePreparation(x.command({kind:'note',expectedRevision:note.revision,note:{...note,gmNotes:'Neu geladen'}}));
+ await x.activate();assert.equal(x.el('note-gm').value,'Neu geladen');const count=x.messages.length;
+ release();assert.equal(await saving,false);assert.equal(x.messages.length,count);assert.equal(x.el('note-gm').value,'Neu geladen');
+ x.window.campaign.changePreparation=save;x.el('note-gm').value='  Nach Neustart\r\n';x.el('note-gm').dispatchEvent(new x.window.Event('input'));
+ assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note.gmNotes,'  Nach Neustart\r\n');
+});
+
+for(const reason of ['reload','cancel'])test('a source read cannot select its old note after '+reason,async t=>{
+ const x=await fixture(t);await x.activate();const read=x.window.campaign.preparation;let release;
+ x.window.campaign.preparation=async(...args)=>{const result=await read(...args);if(!release)return new Promise(r=>release=()=>r(result));return result;};
+ let current=true;const opening=x.ui.openPreparedNote(x.ids.borin,()=>current);await settle();assert.ok(release);
+ if(reason==='reload'){x.store.selectPreparation(x.workspace.token,{noteId:x.ids.ada,planId:null,sceneId:null});await x.activate();}else current=false;assert.equal(x.el('note-title').value,'Ada');
+ release();await opening;assert.equal(x.el('note-title').value,'Ada');
 });
