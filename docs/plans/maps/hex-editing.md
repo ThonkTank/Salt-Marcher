@@ -5,9 +5,9 @@ Laufzeitreise, unabhängige Kampagnenkopien und verbleibende Reiseziele:
 
 Original: [Hex Feature Requirements](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex.md).
 
-Ab0.125 verschiebt direktes Ziehen die vorhandene Hexkamera. Das bestehende
-Mausradzoom ändert ausschließlich die Ansichtsgröße (50–300 Prozent), ebenso
-Näher/Weiter. Ansicht zurücksetzen zeigt den Ursprung bei 100 Prozent, ohne
+Ab0.125 verschiebt direktes Ziehen die vorhandene Hexkamera. Mausradzoom ändert ausschließlich die Ansichtsgröße (50–300 Prozent), ebenso
+Näher/Weiter. Verschiebeschaltflächen, Alt+Pfeile und mittleres Ziehen benötigen
+keinen Flush und werden durch ungültige offene Autorenfelder nicht blockiert. Ansicht zurücksetzen zeigt den Ursprung bei 100 Prozent, ohne
 Auswahl, offene Hexeingaben, Route oder Karteninhalt zu ändern. Das separate
 Bearbeitungsraster liegt unter Karteneinstellungen und Austausch; dessen Wechsel
 sichert offene Eingaben und wählt ausdrücklich eine andere Autorenebene. Gelände malen zeichnet mit dem gewählten Gelände,
@@ -19,6 +19,30 @@ Ein Strich ändert ausschließlich terrain in denselben AtlasMap-Zellen. Ende de
 Strichs bzw. ein notwendiger Flush verwendet die bestehende revisionierte
 World-Schreibgrenze und deren Antwortabgleich. Keine zweite Karte oder Zeituhr.
 Wege, Flüsse, Höhen, Texte, Fraktionen und Unterbrechungen bleiben erhalten.
+
+Die gebundenen [Maps Canvas Requirements](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/maps/requirements/requirements-maps-canvas.md)
+verlangen passive Kameraereignisse. Zoom, Resize, Reset und Verschieben beenden
+daher einen gegebenenfalls laufenden Pointerkontext ohne Speicherung. Die bereits
+bemalten Zellen bleiben als genau ein rücknehmbarer, ungespeicherter Strich
+sichtbar. Der Hinweis nennt „Hex speichern“; dessen vorhandener World-Flush
+bestätigt die Änderungen. Nach dem Transformationswechsel wirkt ein verspätetes
+Move/Up der alten Pointer-ID nicht auf neue Kartenkoordinaten. Der gewöhnliche
+Pointerabschluss ohne Kameraunterbrechung speichert weiterhin. Die Änderung ist
+auf diese Kameragrenze beschränkt; Escape/Pointercancel- und explizite Flushwege
+sind damit nicht neu definiert. Keine Daten-/Schema-/Commandmigration.
+
+`desktop-map-camera-passivity.test.mjs` prüft Panbuttons, Alt+Pfeile, Zoombutton,
+Wheel, Resize und Reset mit gültigen/ungültigen Eingaben und offenen Strichen
+gegen den echten SQLiteStore. Kein Worldcommand und unveränderte bestätigte
+Bytes vor ausdrücklicher Übernahme; anschließend genau ein Strich und seine
+exakte Rücknahme/Wiederholung. Der CTM ist dort kontrolliert, keine native
+Koordinatenqualifikation. Zusätzlich nativ am Desktop geprüft: Verschieben mit
+offener Hexprosa, echter Pointerstrich mit Mausradunterbrechung, sichtbarer
+Entwurfshinweis und ausdrückliche Speicherung. Worldrecords/-history/-receipts
+und Positionen bleiben bis zur Übernahme bytegleich; unabhängiges Fresh-Öffnen
+erhält Gelände und exakte Prosa. Ein normaler Exit ohne Rendererfehler. Das
+qualifiziert diesen Nutzerweg, weder alle Host-/Gesturevarianten noch den
+[gemeinsamen passiven Canvasanschluss](../../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#passive-kartenfläche-und-adoptergrenze).
 Rücknahme/Wiederholung stellt die exakten vorherigen expliziten Zellen bzw. deren
 Abwesenheit wieder her. Eine inzwischen anders geänderte betroffene Zelle sperrt
 Rücknahme, statt fremde Inhalte zu überschreiben.
