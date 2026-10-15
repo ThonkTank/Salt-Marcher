@@ -35,7 +35,7 @@ import {initPlayerUI,deactivatePlayer} from './player-ui';
 import {initCity,activateCity,openCity,openCityReference,prepareCityPersonBinding,flushCity} from './city-ui';
 import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
-import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './world-ui';
+import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPlayback} from './world-ui';
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,prepareNextVisit } from './preparation';
@@ -180,6 +180,7 @@ initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=aw
 void initTutorial();
 async function flushAll() { return await flushNpcs() && await flushGroups() && await flushTreasury() && await flushTriggers() && await flushDungeonContent() && await flushGraph() && await flushKeys() && await flushPaths() && await flushVolume() && await flushDungeon() && await flushDrawing() && await flushAutonomy() && await flushCity() && await flushMusic() && await flushWorld() && await flushItems() && await flushCatalog() && await flushLive() && await flushPreparation() && await flush(); }
 async function leaveWorkspace() {
+  await stopWorldPlayback();
   if(!await flushNpcs()||!await flushGroups())return false;
   if(!await flushTreasury())return false;
   if (!(await flushTriggers()) || !(await flushDungeonContent()) || !(await flushGraph()) || !(await flushKeys()) || !(await flushPaths())) return false;
@@ -608,7 +609,7 @@ el('confirm-import').onclick = () => {
   })();
 };
 initCommitControls(()=>workspace,status);
-api.onClose(() => { void (async () => { await activationJob; rememberView(); if (await leaveWorkspace()) api.closeReady(); })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
+api.onClose(() => { void (async () => { await stopWorldPlayback();await activationJob; rememberView(); if (await leaveWorkspace()) api.closeReady(); })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
 for (const id of workspaceTabs) el(id + '-tab').onclick = () => { void (async () => {
   if (await leaveWorkspace()) await reopenView(id);
 })().catch(error => status(error.message, true)); };

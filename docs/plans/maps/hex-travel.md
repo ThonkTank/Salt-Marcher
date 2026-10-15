@@ -51,6 +51,47 @@ Wetterprosa bleiben erhalten. Die angrenzenden Restock-/Dungeonkopieproben
 prüfen weitere Ownerfolgen. Das belegt Store-/Transaktionspfade, keine native
 Reisekonsole, Animationsgeschwindigkeit oder vollständige Produktabnahme.
 
+## Interaktive Wiedergabe (0.128)
+
+Die angenommene Reise startet jetzt eine lokale Präsentationsuhr. 1× entspricht
+nominal einer Echtsekunde je gespeicherter Spielstunde; −/+ verwenden ausschließlich
+1/2/5/10×. Die vor Start gewählte Geschwindigkeit wird optional am bestehenden
+Journeycommand und Journeyrecord festgehalten. Ältere Records ohne dieses Feld
+bleiben gültig. Geschwindigkeit multipliziert weder `segmentSeconds` noch Uhr,
+Weg, Wetter oder Folgen. Keine Schemaänderung oder zweite Position.
+
+`journey-playback.ts` liest den aktuellen Scene-/Map-/Journeycheckpoint und löst
+höchstens einen bestehenden `journey-step(maxSteps:1)` aus. Erst nach bestätigter
+Antwort und aktualisierter Projektion beginnt die Dauer des nächsten Hexes.
+Geschwindigkeitswechsel bewahren den schon angezeigten Abschnittsanteil; ein
+verzögerter Browser holt keine vergangenen Timer mit Stapelbuchungen nach.
+Spielzeit wird vollständig am erreichten Hex gebucht, nie als zweite laufende Uhr.
+
+Pause/Stopp löschen zuerst den Timer, warten einen bereits begonnenen Command ab
+und verwenden dann dessen aktuellen Checkpoint für den bestehenden Statuscommand.
+Unterbrechung/Ankunft beenden die Wiedergabe. Manuelle 1/12-Abschnittsbefehle bleiben
+explizite sofortige Bestätigungen. Warten/Rast stoppen die Wiedergabe ebenfalls.
+Unklare Antworten bleiben beim vorhandenen Worldcommand/Reconciliationweg; der
+Timer erzeugt dafür keinen neuen Command und setzt nicht selbsttätig fort.
+
+Kampagnen-, Gruppen-, Karten- und Bereichswechsel, verborgene Fenster sowie
+Schließen stoppen die lokale Wiedergabe. Ein bereits begonnener Command darf
+seinen einen atomaren Checkpoint abschließen. Nach Neustart wird keine verstrichene
+Zeit nachgebucht; „Wiedergabe pausiert“ und ▶ setzen am letzten bestätigten Hex an.
+Das gespeicherte fachliche Journey kann dabei weiterhin `active` sein; der Renderer
+ändert es beim bloßen Lesen nicht heimlich auf `paused`. Die explizite Pause
+bestätigt weiterhin den kanonischen Pausenstatus. Karten-/Uhr-/Positions-/
+Mitgliedschaftsänderungen sperren die erkennbare veraltete Basis; die bestehenden
+Ownerguards prüfen darüber hinaus Wetter, Bewegung und sonstige Reiseautorität.
+
+Gezielt geprüft: Serialisierung, laufender Geschwindigkeitswechsel, Pause bei
+offenem Command und keine Aufholbuchung; echter Store bestätigt 10× als Startwahl
+bei unverändert exakt neun Spielsekunden. Vorhandene Reise-/DOMfälle bestanden.
+Nativ: erster Stundencheckpoint bei 1×, Pause, alle Geschwindigkeiten, GM-Halt,
+Fortsetzen bis Ankunft, Route ausblenden, Abbruch, Bereichswechsel und Neustart
+am gespeicherten Hex. Zwei normale Exits, keine Rendererfehler. Keine umfassende
+Host-/200%-/Großroutenabnahme und keine behauptete neue Kartengrenzregel.
+
 ## Nächste ausführbare Lieferungen
 
 1. **Kartengrenze und Passierbarkeit klären.** `AtlasMap` enthält derzeit
@@ -63,14 +104,9 @@ Reisekonsole, Animationsgeschwindigkeit oder vollständige Produktabnahme.
    prüfen. Abnahme: außerhalb, gesperrtes Zwischenhex, Wasser ohne bestätigten
    Transport, Wegpunktreihenfolge und geänderte Karte nach Vorschau. Fehler
    verändern weder Position noch Zeit und lassen keinen alten Erfolg stehen.
-2. **Präsentation auf bestehende Checkpoints setzen.** 1/2/5/10x und die
-   Grundrate eine Echtsekunde pro Spielstunde sind noch zu liefern. Ein Timer
-   darf nur bestehende bestätigbare Schritte anfragen; Geschwindigkeit ändert
-   keine gespeicherten Dauern. Nur ein offener Command, Stop/Scenewechsel
-   invalidieren dessen UIfortsetzung; verlorene Antwort am selben Command
-   lesend klären. Neustart pausiert sichtbar am letzten bestätigten Hex statt
-   Zeit nachzubuchen. Zielbereiche: `world-ui`, bestehender Worldcommand-/
-   Reconciliationweg und Kartenprojektion; kein zweiter Journeyzustand.
+2. **Präsentation weiter qualifizieren.** Die vorhandene Wiedergabe auf großen
+   Routen und bei 200% prüfen. Pointerinterpolation ist nicht Bestandteil der
+   autoritativen Checkpoints; jede zusätzliche Animation bleibt reine Darstellung.
 3. **Gemeinsame Bedienung abschließen.** Karte/Token, Drag-Platzierung mit
    Tastaturalternative, Wegpunkte und Auswahl im selben Scene-/Mapkontext
    bedienen. Vorhandene Gesten prüfen, statt einen zweiten Renderer zu bauen.
