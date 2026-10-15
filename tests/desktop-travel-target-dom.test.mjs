@@ -81,3 +81,13 @@ test('a manually edited coordinate releases a named place binding and previews t
  x.document.getElementById('world-travel-form').onsubmit({preventDefault(){}});await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.deepEqual(requested.destination,{q:2,r:0});assert.equal(requested.destinationLocationId,null);assert.equal(x.document.getElementById('travel-preview-accept').disabled,false);
  }finally{x.cleanup();}
 });
+
+
+test('a fresh travel console derives party pace and the preview explains its speed source',async()=>{
+ const x=await travelFixture();try{const box=x.document.getElementById('travel-party-pace');box.checked=true;box.onchange();assert.equal(x.document.getElementById('travel-pace').disabled,true);assert.match(x.document.getElementById('travel-pace-context').textContent,/Iri.*30 ft/);x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.match(x.document.getElementById('travel-preview-itinerary').textContent,/langsamste Bewegung/);assert.match(x.document.getElementById('travel-preview-warnings').textContent,/Iri.*30 ft/);box.checked=false;box.onchange();assert.equal(x.document.getElementById('travel-pace').disabled,false);}finally{x.cleanup();}
+});
+
+
+test('a paused journey does not tell the GM to pause it first',async()=>{
+ const x=await travelFixture();try{const p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});let j=x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey',preview:p}}).scene.journey;x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}});await x.ui.openWorld();assert.match(x.document.getElementById('world-journey-status').textContent,/Pausiert/);assert.doesNotMatch(x.document.getElementById('world-journey-refresh').textContent,/zuerst pausieren/);assert.match(x.document.getElementById('world-journey-refresh').textContent,/Restweg.*neu bewerten/);}finally{x.cleanup();}
+});

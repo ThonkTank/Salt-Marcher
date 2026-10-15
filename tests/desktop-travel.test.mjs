@@ -171,3 +171,23 @@ test('changing focus between journey segments preserves the actual scene time fr
   assert.equal(x.store.liveScene(x.workspace.token,other.id).clock.instantMs,'0');
  }finally{x.cleanup();}
 });
+
+
+test('party-derived travel uses only assigned active PCs, warns about missing movement and retains its mode after reopening',()=>{
+ const x=setup();try{
+  const m={...x.map,hexMeters:4828.032};x.world({kind:'map',map:m,expectedRevision:m.revision});
+  const add=(name,speedFeet,active=true)=>{const c=x.live({kind:'create-character',profile:{name,...(speedFeet===undefined?{}:{speedFeet})}}).character;if(active){const l=x.store.live(x.workspace.token);x.live({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:l.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:l.focusRevision});}return c;};
+  add('Langsam',20);add('Reserve',5,false);x.request={...x.request,destination:{q:2,r:0},finalSeconds:null,usePartyPace:true};const p=x.preview();assert.equal(p.request.paceKmh,3.218688);assert.equal(p.durationSeconds,10800);assert.match(p.warnings.join(' '),/Iri.*30 ft/);assert.equal(p.actorIds.length,2);
+  let j=x.accept();assert.equal(j.usePartyPace,true);x.world(x.step(j).action);j=x.state().journey;x.world({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'});x.reopen();assert.equal(x.state().journey.usePartyPace,true);assert.equal(x.state().position.q,1);assert.equal(x.state().scene.clock.instantMs,'5400000');
+ }finally{x.cleanup();}
+});
+test('movement changes reject stale automatic previews and checkpoints but allow an explicit manual override',()=>{
+ const x=setup();try{
+  x.request={...x.request,finalSeconds:null,usePartyPace:true};const p=x.preview(),c=x.store.live(x.workspace.token).roster[0];x.live({kind:'profile',characterId:c.id,expectedRevision:c.profileRevision,profile:{...c.profile,speedFeet:20}});assert.throws(()=>x.world({kind:'journey',preview:p}),/Reisebasis/);
+  const j=x.accept(),next=x.store.live(x.workspace.token).roster[0];x.live({kind:'profile',characterId:c.id,expectedRevision:next.profileRevision,profile:{...next.profile,speedFeet:0}});const before=x.state();assert.throws(()=>x.world(x.step(j).action),/Gruppentempo/);assert.deepEqual(x.state(),before);assert.throws(()=>x.preview(),/Bewegung 0/);
+  x.request={...x.request,usePartyPace:false,paceKmh:4,finalSeconds:600};const manual=x.preview();assert.equal(manual.durationSeconds,600);assert.equal(manual.request.paceKmh,4);assert.equal(x.world({kind:'journey',preview:manual}).scene.journey.usePartyPace,undefined);
+ }finally{x.cleanup();}
+});
+test('the three-mile missing-speed default is one hour and explicit duration still wins',()=>{
+ const x=setup();try{const m={...x.map,hexMeters:4828.032};x.world({kind:'map',map:m,expectedRevision:m.revision});x.request={...x.request,destination:{q:1,r:0},usePartyPace:true,finalSeconds:null};assert.equal(x.preview().durationSeconds,3600);x.request.finalSeconds=123;assert.equal(x.preview().durationSeconds,123);}finally{x.cleanup();}
+});
