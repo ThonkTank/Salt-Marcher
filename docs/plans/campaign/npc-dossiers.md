@@ -70,8 +70,11 @@ Die vorhandene Backup-/Snapshotprüfung prüft die Draft-/Receiptbindung.
 Unabhängige Kopien remappen Campaign-, NPC-, Command- und Draftkennungen über den
 bestehenden Transfer und passen nur den vor Remap geprüften Pendingreceipt-
 Fingerprint an den kopierten Auftrag an. Eine Kopie hat keine ursprüngliche
-Tokenautorität; sie führt keinen Auftrag automatisch aus. Autorenfelder inklusive
-Kontakt-/CRLF-Prosa bleiben unverändert. Optionalfelder brauchen keine neue
+Tokenautorität; sie führt keinen Auftrag automatisch aus. Autorenwortlaut inklusive
+Kontakt-/CRLF-Prosa bleibt erhalten. Deklarierte lokale `dungeon-ref`-Ziele werden
+auch in Rohfeldern, Pendingauftrag und bestätigter Geschichte an die kopierten
+Identitäten gebunden; Aliastext, Whitespace und externe Vaultlinks bleiben
+unverändert. Eine bloße Klartextprojektion ersetzt diese Autorenquelle nicht. Optionalfelder brauchen keine neue
 SQL-Tabelle; Altentwürfe bleiben Rohentwürfe, der bisherige direkte Writer für
 Entwürfe ohne Pendingauftrag bleibt kompatibel. Ein schon durch eine alte Version
 konsumierter Rohentwurf lässt sich damit nicht rückwirkend rekonstruieren.
