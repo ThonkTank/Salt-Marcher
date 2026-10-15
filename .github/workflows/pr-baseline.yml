@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: baseline-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Finish integration feedback even while other roles keep publishing.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   baseline:
@@ -45,11 +46,11 @@ jobs:
       - name: Type-check
         run: npm run check
 
-      - name: Run complete test suite
-        run: npm test
-
       - name: Build Obsidian plugin
         run: npm run build
 
       - name: Build desktop application
         run: npm run build:desktop
+
+      - name: Run complete test suite
+        run: npm test
