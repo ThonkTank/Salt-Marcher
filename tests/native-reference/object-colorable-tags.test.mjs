@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { discoverColorableObjectPaths } from
-  "../src/features/objekte/colorable-tags.ts";
+  "../../src/features/objekte/colorable-tags.ts";
 
 const fixture = "../dungeon-auswertung/tests/fixtures/" +
   "colorable-object-alpha-solid-probe/own-object-color.dungeondraft_pack";

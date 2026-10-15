@@ -5,7 +5,7 @@ import {
   colorableSettingsFromMetadata,
   recolorColorableObjectPixel,
   recolorColorableObjectRgba,
-} from "../src/features/objekte/colorable-pixels.ts";
+} from "../../src/features/objekte/colorable-pixels.ts";
 
 const root = "../dungeon-auswertung/";
 const modes = ["default", "ramp", "override", "saturation",

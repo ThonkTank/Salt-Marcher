@@ -30,7 +30,8 @@ npm run build:desktop
 ```
 
 `npm run build` erzeugt das Obsidian-Plugin in `main.js`; `npm run build:desktop` erzeugt den Desktopbuild unter `.build/desktop`.
-`npm test` nimmt alle `tests/desktop-*.test.mjs` automatisch auf und führt die Tests nacheinander aus. Native GUI-Prüfungen bleiben getrennte Aufrufe.
+`npm test` nimmt alle lokalen `tests/*.test.mjs` automatisch auf und führt die Tests nacheinander aus. Native GUI-Prüfungen bleiben getrennte Aufrufe.
+Die Tests in `tests/native-reference/` benötigen zusätzlich die ursprünglichen Dungeondraft-Dateien im Nachbarverzeichnis `../dungeon-auswertung/`; mit diesen Quellen separat ausführen: `node --test --test-concurrency=1 "tests/native-reference/*.test.mjs"`.
 
 ### Obsidian-Testlauf
 
