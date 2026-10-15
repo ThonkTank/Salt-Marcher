@@ -212,7 +212,18 @@ function clearTravelPreview(){
 }
 function resetRouteDraft(){routeStops=[];routeCursor={q:0,r:0};clearTravelPreview();if(document.getElementById('travel-waypoints')){el<HTMLInputElement>('travel-waypoints').value='';el<HTMLSelectElement>('world-destination').value='';el<HTMLInputElement>('travel-q').value='0';el<HTMLInputElement>('travel-r').value='0';renderRouteDraft();}}
 function writeRouteStops(stops:Hex[],locationId:string|null=null){if(stops.length>21)throw new Error('Höchstens 20 Wegpunkte plus Reiseziel.');routeStops=stops.map(h=>({...h}));clearTravelPreview();el<HTMLInputElement>('travel-waypoints').value=stops.slice(0,-1).map(hexKey).join('; ');const last=stops.at(-1);el<HTMLInputElement>('travel-q').value=String(last?.q??0);el<HTMLInputElement>('travel-r').value=String(last?.r??0);el<HTMLSelectElement>('world-destination').value=locationId??'';renderRouteDraft();renderMap();}
-function readRouteInputs(){try{const stops=value('travel-waypoints').split(';').filter(t=>t.trim()).map(t=>{const parts=t.split(',').map(Number);if(parts.length!==2)throw new Error('Wegpunkte als q,r eingeben.');return{q:parts[0]!,r:parts[1]!};});stops.push({q:number('travel-q'),r:number('travel-r')});if(stops.length>21||stops.some(h=>!Number.isSafeInteger(h.q)||!Number.isSafeInteger(h.r)))throw new Error('Ganze Hexkoordinaten und höchstens 21 Stationen eingeben.');routeStops=stops;renderRouteDraft();renderMap();}catch(error){el('travel-draft-status').textContent=(error as Error).message;}}
+function readRouteInputs():Hex[]|null{
+ try{
+  const stops=value('travel-waypoints').split(';').filter(t=>t.trim()).map(t=>{
+   const parts=t.split(',');if(parts.length!==2||parts.some(p=>!p.trim()))throw new Error('Wegpunkte vollständig als q,r eingeben.');
+   return{q:Number(parts[0]),r:Number(parts[1])};
+  });
+  if(['travel-q','travel-r'].some(id=>!value(id).trim()))throw new Error('Zielkoordinaten q und r vollständig eingeben.');
+  stops.push({q:number('travel-q'),r:number('travel-r')});
+  if(stops.length>21||stops.some(h=>!Number.isSafeInteger(h.q)||!Number.isSafeInteger(h.r)))throw new Error('Ganze Hexkoordinaten und höchstens 21 Stationen eingeben.');
+  routeStops=stops;renderRouteDraft();renderMap();return stops;
+ }catch(error){routeStops=[];renderRouteDraft();renderMap();el('travel-draft-status').textContent=(error as Error).message;return null;}
+}
 function chooseRouteHex(h:Hex,locationId:string|null=null){routeCursor={...h};const p=hexPoint(h,2**level),fine=pointHex(p.x,p.y);if(routeMode==='route'){if(hexKey(routeStops.at(-1)??{q:Infinity,r:Infinity})!==hexKey(fine))writeRouteStops([...routeStops,fine],locationId);}else writeRouteStops([...routeStops.slice(0,-1),fine],locationId);renderRouteDraft();renderMap();}
 function renderPartyPace(){
  const auto=el<HTMLInputElement>('travel-party-pace').checked,field=el<HTMLInputElement>('travel-pace'),members=live?.roster.filter(c=>c.active&&c.sceneId===value('world-scene'))??[],pace=partyTravelPace(members);field.disabled=!!auto;
@@ -225,9 +236,9 @@ async function makeTravelPreview(continueJourney=false){
  const owner=travelOwner();if(!owner)return;clearTravelPreview();const request=travelRequest;
  try{
   if((liveTravelOpen&&liveSurface&&!await before())||!await flushWorld()||!ownsTravel(owner)||request!==travelRequest||frame?.scene.id!==owner.sceneId||mapDraft?.id!==owner.mapId)return;
-  const waypoints=value('travel-waypoints').split(';').filter(s=>s.trim()).map(s=>{const [q,r]=s.split(',').map(Number);return{q:q!,r:r!};});
   const j=continueJourney?frame.journey:null;if(continueJourney&&(!j||!['active','paused','interrupted'].includes(j.status)))throw new Error('Kein offener Restweg.');
-  const result=unwrap(await window.campaign.previewTravel(owner.token,{sceneId:owner.sceneId,mapId:owner.mapId,destination:j?j.route.at(-1)!:{q:number('travel-q'),r:number('travel-r')},destinationLocationId:j?j.destinationLocationId:value('world-destination')||null,waypoints:j?[]:waypoints,paceKmh:number('travel-pace'),...(el<HTMLInputElement>('travel-party-pace').checked?{usePartyPace:true}:{}),factor:number('travel-factor'),finalSeconds:value('travel-final-hours')?Math.ceil(number('travel-final-hours')*3600):null,...(j?{continuation:{journeyId:j.id,expectedRevision:j.revision}}:{})}));
+  const stops=j?null:readRouteInputs();if(!j&&!stops)return;
+  const result=unwrap(await window.campaign.previewTravel(owner.token,{sceneId:owner.sceneId,mapId:owner.mapId,destination:j?j.route.at(-1)!:stops!.at(-1)!,destinationLocationId:j?j.destinationLocationId:value('world-destination')||null,waypoints:j?[]:stops!.slice(0,-1),paceKmh:number('travel-pace'),...(el<HTMLInputElement>('travel-party-pace').checked?{usePartyPace:true}:{}),factor:number('travel-factor'),finalSeconds:value('travel-final-hours')?Math.ceil(number('travel-final-hours')*3600):null,...(j?{continuation:{journeyId:j.id,expectedRevision:j.revision}}:{})}));
   if(!ownsTravel(owner)||request!==travelRequest)return;
   if(result.request.usePartyPace)el<HTMLInputElement>('travel-pace').value=String(result.request.paceKmh);
   preview=result;el('travel-evaluation').textContent=(result.durationSeconds/3600).toFixed(2)+' Stunden · '+(result.route.length-1)+' Hexabschnitte · '+(result.distanceMeters/1000).toFixed(2)+' km';el('travel-preview-summary').textContent=(result.distanceMeters/1000).toFixed(2)+' km · '+(result.durationSeconds/3600).toFixed(2)+' Stunden · '+(result.route.length-1)+' Abschnitte · Ankunft: '+result.arrival;
