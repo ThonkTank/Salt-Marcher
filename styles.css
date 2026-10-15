@@ -203,12 +203,6 @@
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
 }
-/* The planner replaces controls after actions; keep restored focus visible
-   even when the browser does not retain its :focus-visible heuristic. */
-.dn-manual-planner :is(button, input, select, textarea, summary):focus {
-  outline: 2px solid var(--interactive-accent, Highlight);
-  outline-offset: 2px;
-}
 .dn-inspector {
   grid-column: 3;
   display: flex;

@@ -13,9 +13,7 @@ Die Desktopvorbereitung speichert Pläne, geordnete Besuche, exakte Notizen und
 optionale Ortsverweise im gemeinsamen SQLite-Store. `session-ui.ts`,
 `storage/session.ts` und `storage/plan-replacement.ts` ergänzen Besuchsinhalte,
 Gruppen, Belohnungen sowie Ersetzung und Wiederverwendung. Die reinen
-`ManualPlan`-Codecs prüfen den Planvertrag. Das ältere `ManualPlannerPanel`
-und seine Browservorschau sind flüchtige Prototypen; ihre Memory-Tests belegen
-keine native Desktoppersistenz.
+`ManualPlan`-Codecs prüfen den gemeinsamen Planvertrag.
 
 Der Live-Besuchsbinder zeigt übernommene Besuche seitenweise mit festgehaltenen
 Texten, Ergebnissen und Weltverweisen. Planänderungen ersetzen diese Übernahmen
