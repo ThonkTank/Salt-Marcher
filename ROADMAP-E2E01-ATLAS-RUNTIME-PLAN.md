@@ -29,6 +29,61 @@ und negativen Ankern unterscheidbar. Numerisch unzuverlässige Eingaben werden
 erklärt abgelehnt, niemals still gerundet. Keine Produktgrenze oder zugesagte
 unendliche IEEE-754-Präzision.
 
+## Passive Kartenfläche und Adoptergrenze
+
+Original: [Maps Canvas Requirements](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/maps/requirements/requirements-maps-canvas.md).
+Die Zielregel ist eine gemeinsame passive Fläche, kein zweiter Kartenowner.
+Ein gemeinsamer Scene-Root liefert Zeichnung und Hitbasis; Kamera, Viewport und
+Pointercapture besitzen keine Karten-/Reisecommands. Fachliche Hex-/Raumrefs,
+Koordinatenumrechnung, Werkzeugbedeutung, persistierte Inhalte und Runtimepositionen
+bleiben bei ihren Adoptern. Labels, Actor-/Reisetokens und optionale Overlays
+sind lesende Darstellungen dieser Fakten. Empty/Placeholder legt keine Karte an.
+
+Die Desktopkorrektur in `world-ui.ts`/`hex-map-gestures.ts` verhindert automatische
+Worldwrites durch Kameraereignisse und erhält einen unterbrochenen Strich als
+lokalen Entwurf. [Verhalten und begrenzte Belege](docs/plans/maps/hex-editing.md)
+sind von einer vollständigen gemeinsamen Canvasimplementation getrennt. Desktop
+verwendet `PassiveMapCanvas` gemeinsam für World-/Drawing-SVG und eine weitere
+SVGfläche im Volume-UI; der bestehende
+Hostadapter in `features/atlas` kombiniert Pixi-Renderer, RelativeFrame und
+SpatialCanvas. Diese Wege sind keine gegenseitigen Plattformnachweise und
+begründen keine neue parallele Autoren-/Kamerawahrheit.
+
+Nächste ausführbare Anschlüsse in dieser Reihenfolge:
+
+1. **Passive Eingaben in allen aktuellen Adoptern.** Die vorhandenen
+   `drawing-ui.ts`-/`renderer.ts`-Handler gegen mittlere Taste, ausgewählte
+   Zeichenwerkzeuge und offene Kontur-/Keyentwürfe prüfen. Im Atlas-Host
+   `AtlasEditor.bind`/`applyKeys`/Inspector-Focusout und Tool-/Space-Pan prüfen:
+   reine Navigation darf weder Keyübernahme verlangen noch unerledigte
+   Autorenarbeit bestätigen. Erst die jeweilige Fachaktion erhält ihre
+   bestehenden Current-/Revision-/Flushguards. Abnahme: ungültige Prosa neben
+   Pan/Zoom, Save-/Readfehler, Pointercaptureverlust, Reflow, negative Koordinaten;
+   bestätigte Sourcebytes/History bleiben unverändert. Kein allgemeines neues
+   Eventframework vor zwei tatsächlich benötigten Adoptern.
+2. **Gleiche Render-/Hitbasis vor gemeinsamem Umbau schließen.** Für
+   `AtlasRenderer.schedule`/`screenPoint`, `SpatialCanvas.draw`/`hit` und die
+   SVGadopter eine Änderung von Kamera/Viewport/Source zwischen Draw und Hit
+   kontrolliert nachstellen. Hit darf weder eine neuere Quelle noch eine andere
+   Transformation als das sichtbare Bild verwenden. Ein publikationsfähiger
+   Frame muss Szene und Transformation gemeinsam binden; bei asynchroner
+   Aufbereitung alte Antworten verwerfen. Abnahme: Raum-/Hexgrenzen, Overlays,
+   verdeckte/inaktive Geometrie, Pan→Hit vor dem nächsten Frame und Resize.
+3. **Rendererfehler lokal wiederaufnehmen.** `ui/atlas-view.ts`-Mount und
+   `AtlasEditor.init`/`AtlasRenderer.init`/`destroy` als gemeinsamen vorhandenen
+   Lifecycle prüfen. Die Oberfläche muss bei Initialisierungsfehlern Fakten und
+   Navigation erhalten und einen ausdrücklichen frischen Renderer ermöglichen;
+   ein memoisiertes abgewiesenes Init-Promise ist kein Retry. Abnahme unter
+   echter strikter CSP ohne dynamische Codeauswertung: Initfehler, Retry,
+   Close-während-Init, schneller Workspacewechsel, genau ein Canvas/Observer
+   und keine neue Karte/History. Ein erfolgreicher SQLite-/DOMtest beweist
+   keine CSP-/GPU-/Hostqualifikation.
+
+Die nötigen gemeinsamen Präsentationsmechanismen erst aus diesen bewährten
+Adoptergrenzen herausziehen; bestehende native Formate, IDs, metrische Geometrie
+und autoritative Storecommands bleiben erhalten. Migration betrifft echte
+Persistenzbindungen, nicht die bloße Wiederverwendung einer Renderfläche.
+
 ## Ein Raumvertrag, passende Geometrieformen
 
 **Ein metrischer Raumvertrag** verbindet Roomidentität, räumliches Volumen,
