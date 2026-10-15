@@ -1,6 +1,6 @@
 # Spielabendpläne: bearbeiten, ersetzen und kopieren
 
-Stand: 14.10.2026. Umfang: [SCOPE](../../SCOPE.md), [#69](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69)
+Stand: 15.10.2026. Umfang: [SCOPE](../../SCOPE.md), [#69](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69)
 und [Quellenregister](../../scope-sources.json). Manuelle Planung benötigt weder
 Planungsparty noch Generator; Generierung und Übernahme ins Live-Spiel sind
 zusätzliche Abläufe.
@@ -97,3 +97,36 @@ Die nächsten konkreten Prüfungen und Korrekturen:
 Für Entwürfe und Belohnungen gilt der bestehende
 [Daten- und Recoveryanschluss](../runtime/combat-and-narrative-recovery.md).
 Eine zweite Timelinearchitektur oder generische Historyabstraktion ist nicht nötig.
+
+## Besuchsübergabe und Recovery
+
+`prepareNextVisit` prüft Zielplan, Einfügeposition, angezeigte Revision,
+Workspace/Aktivierung und neuere Eingaben. Im vorgeschlagenen Plan steht der
+Einstieg vor dem nächsten Besuch, in einem anderen gewählten Plan am Ende.
+Ein nicht gelisteter bisheriger Zielplan bleibt ausdrücklich ausgewählt und
+wird beim Speichern geprüft; nur die eigene Neuanlageoption erzeugt einen Plan.
+Keine gültige Select-Auswahl bedeutet keinen Schreibauftrag. Originaltexte
+bleiben vollständig; die Ableitung des kurzen Titels verändert ihre Bytes nicht.
+
+Der optionale `opening`-Teil speichert Planfolge, Vorlesetext und Wissensquellen
+in einer Vorbereitungstransaktion. Ungültige Quellen oder Receiptfehler lassen
+keinen halbfertigen Besuch zurück. Bei ungeklärter Übergabe an einen vorhandenen
+Plan hält `retainOpenDrafts` den Originalauftrag unter dessen Ziel-ID fest;
+der sichtbare Editor ist kein Ersatzowner. Spätere Zieltexte bleiben erhalten.
+Nach neuer Storeinstanz klärt derselbe Beleg angewandt/nicht angewandt ohne
+automatische Wiederholung. Der vorhandene Draftvertrag bleibt unverändert.
+
+[Übergabeprüfungen](../../../tests/desktop-visit-handoff.test.mjs) und
+[Dialogprüfungen](../../../tests/desktop-session-resume-context.test.mjs)
+prüfen Zielbindung, spätere Eingaben und Originalauftrag. Native Gesamtfreigabe
+und vollständige Wiederaufnahme nach Prozessende bleiben offen.
+
+Nächster Recoveryabschluss: Anlageabsicht für einen neuen Plan
+(`expectedRevision=null`) vor Send dauerhaft sichern, nach Crash finden und
+mit demselben Receipt klären. Der bisherige Draftcodec setzt einen vorhandenen
+Owner voraus; eine ungeklärte Anlage blockiert normales Verlassen.
+`preparation-contracts.ts`, `preparation.ts`, Draftwriter/Backupprüfung in
+`storage/store.ts` und Kopie in `storage/campaign-data.ts` gemeinsam prüfen:
+Prozessende vor Send/nach Commit vor Reply, beschädigte Sicherung, späterer
+Zielplan und unabhängige Kopie ohne automatische Ausführung oder Doppelanlage.
+Bestehende Formate und historische Originaltexte erhalten.

@@ -14,10 +14,8 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
   vorbereitete Belohnung oder vergebenes Ergebnis. Offene Entwürfe sind Hinweise
   und ersetzen den bestätigten Quellenstand nicht.
 - Aus der Spielabend-Übergabe einen Einstieg mit Zielplan, privatem Vorlesetext
-  und gebundenen Ortsquellen vorbereiten. Planfolge und Mappeninhalt werden
-  gemeinsam mit einem Vorbereitungsauftrag gespeichert oder vollständig verworfen.
-  Eine entfernte Einfügeposition verlangt eine neue Auswahl; spätere Eingaben
-  bleiben erhalten. Der neue Plan ist eine ausdrückliche Wahl.
+  und Ortsquellen vorbereiten. [Zielwahl, Speicherung und Recovery](manual-session-planner.md#besuchsübergabe-und-recovery)
+  gehören zum vorhandenen Planeditor.
 - Beim Spielabendabschluss die bestätigte Übergabe unmittelbar im selben Editor
   weiterbearbeiten. Der Abschluss wird vor dem Öffnen gespeichert; erst die
   zweite Bestätigung erzeugt Planbesuch und Mappeninhalt gemeinsam.

@@ -547,7 +547,7 @@ export class CampaignStore {
   locationMaterials(token:string,q:import('../location-notebook-contracts').LocationMaterialsQuery){const cam=this.guard(token);return this.db.transaction(()=>readLocationMaterials(this.db,cam,q))();}
   worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery):import('../world-links-contracts').WorldLinksPage{const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
   npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
-  npcBuildingChoices(token:string,id:string,q:import('../npc-places-contracts').NpcBuildingQuery){const cam=this.guard(token);return this.db.transaction(()=>readNpcBuildingChoices(this.db,cam,id,q))();}
+  npcBuildingChoices(token:string,id:string,q:import('../npc-places-contracts').NpcBuildingQuery):import('../npc-places-contracts').NpcBuildingChoices{const cam=this.guard(token);return this.db.transaction(()=>readNpcBuildingChoices(this.db,cam,id,q))();}
   npcPlaces(token:string,id:string,offset:number):import('../npc-places-contracts').NpcPlaces{const cam=this.guard(token);return this.db.transaction(()=>readNpcPlaces(this.db,cam,id,offset))();}
   npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}

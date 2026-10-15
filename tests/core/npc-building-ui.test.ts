@@ -9,7 +9,7 @@ const wait=(ms=0)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
 test('NPC building search is visibly labelled and an older result cannot replace the current query',async()=>{
  const parsed=parseHTML('<html><body></body></html>'),{document,window}=parsed,prior={document:globalThis.document,window:globalThis.window,Event:globalThis.Event};
  const prototype=window.HTMLElement.prototype as unknown as {showModal?:()=>void;close?:()=>void},oldShow=prototype.showModal,oldClose=prototype.close;
- prototype.showModal=function(){this.setAttribute('open','');};prototype.close=function(){this.removeAttribute('open');};
+ prototype.showModal=function(this:HTMLElement){this.setAttribute('open','');};prototype.close=function(this:HTMLElement){this.removeAttribute('open');};
  Object.assign(globalThis,{document,window,Event:window.Event});
  const calls:{query:NpcBuildingQuery;resolve:(value:{ok:true;value:NpcBuildingChoices})=>void}[]=[];
  window.campaign={npcBuildingChoices:async(_token:string,_id:string,query:NpcBuildingQuery)=>await new Promise(resolve=>calls.push({query,resolve}))} as unknown as typeof window.campaign;
