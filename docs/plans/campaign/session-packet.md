@@ -18,6 +18,9 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
   gemeinsam mit einem Vorbereitungsauftrag gespeichert oder vollständig verworfen.
   Eine entfernte Einfügeposition verlangt eine neue Auswahl; spätere Eingaben
   bleiben erhalten. Der neue Plan ist eine ausdrückliche Wahl.
+- Beim Spielabendabschluss die bestätigte Übergabe unmittelbar im selben Editor
+  weiterbearbeiten. Der Abschluss wird vor dem Öffnen gespeichert; erst die
+  zweite Bestätigung erzeugt Planbesuch und Mappeninhalt gemeinsam.
 - Im Live-Spiel einen Besuch übernehmen, Vorlesetext in den GM-Szenenentwurf
   kopieren, die Originalquelle öffnen, eine Begegnung vorbereiten oder die
   Belohnung dieses Besuchs im vorhandenen Fachbereich verwalten.
