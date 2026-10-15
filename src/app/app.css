@@ -415,3 +415,14 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 .world-marker-editor input[type=range] { width:100%; }
 .world-marker-editor .toolbar { flex-wrap:wrap; }
 .world-marker-editor .caption { overflow-wrap:anywhere; }
+/* Keep the operational roster scannable without duplicating the HP editor. */
+#combat-table{table-layout:fixed}
+#combat-table th:nth-child(1){width:48%}
+#combat-table th:nth-child(2),#combat-table th:nth-child(3){width:2.7rem;white-space:nowrap}
+#combat-table th:nth-child(4){width:6.1rem}
+#combat-table td:first-child>button{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#combat-table td small{display:block;margin:.1rem 0 0}
+#combat-table .combat-health{padding:.3rem .4rem;text-align:center;border-color:#8aa5bd;white-space:normal}
+#combat-table .combat-health:hover{background:#e5eff7}
+
+#running-editor{scroll-margin-top:var(--workspace-content-offset)}

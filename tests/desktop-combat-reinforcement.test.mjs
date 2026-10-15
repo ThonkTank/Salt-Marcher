@@ -97,3 +97,31 @@ test('condition shortcuts wait for the selected working draft and stay blocked o
  resolve({ok:false,error:'Working draft unavailable'});await tick();await tick();
  assert.ok(buttons().every(b=>b.disabled));x.el('combat-participant-form').onsubmit({preventDefault(){}});assert.equal(x.writes.length,0);
 });
+
+
+test('HP cells reuse the target editor and Enter applies one damage command to that individual',async t=>{
+ const x=await uiFixture(t),target=x.combat.participants[1],amount=x.el('fighter-amount');let focused=false;
+ amount.focus=()=>{focused=true;};amount.select=()=>{};amount.reportValidity=()=>Number(amount.value)>0;
+ const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];
+ assert.equal(cells.length,3);assert.match(cells[1].getAttribute('aria-label'),/Goblin B.*7 \/ 7/);
+ cells[1].onclick();await until(()=>focused);assert.equal(x.writes.length,0);
+ assert.equal(x.el('combat-selected-name').textContent,target.name);
+ amount.value='3';
+ const enter=(repeat=false)=>{const e=new window.Event('keydown',{cancelable:true});e.key='Enter';e.repeat=repeat;amount.dispatchEvent(e);};
+ enter();enter();await until(()=>x.writes.length===1&&!x.el('fighter-damage').disabled);
+ assert.deepEqual(x.writes[0].action,{kind:'damage',participantId:target.id,amount:3});
+ enter(true);await tick();assert.equal(x.writes.length,1);
+ let actual=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;assert.deepEqual(actual.participants.map(p=>p.hp),[7,4,7]);
+ x.el('combat-undo').onclick();await until(()=>x.writes.length===2&&!x.el('fighter-damage').disabled);
+ actual=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;assert.deepEqual(actual.participants.map(p=>p.hp),[7,7,7]);
+ amount.value='0';enter();await tick();assert.equal(x.writes.length,2);
+});
+
+test('an HP lookup that completes after a target switch cannot steal the new editor focus',async t=>{
+ const x=await uiFixture(t),amount=x.el('fighter-amount'),replies=[];let focused=0;
+ amount.focus=()=>focused++;amount.select=()=>{};
+ window.campaign.combatDraft=()=>new Promise(resolve=>replies.push(resolve));
+ const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];cells[0].onclick();await until(()=>replies.length===1);cells[1].onclick();await until(()=>replies.length===2);
+ replies[1]({ok:true,value:null});await until(()=>focused===1);replies[0]({ok:true,value:null});await tick();await tick();
+ assert.equal(focused,1);assert.equal(x.el('combat-selected-name').textContent,x.combat.participants[1].name);assert.equal(x.writes.length,0);
+});

@@ -273,7 +273,7 @@ async function searchReinforcements(){
  finally{if(g===generation&&request===reinforcementRequest){reinforcementBusy=false;if(load!==loadNumber)get('combat-creature-status').textContent='Kampfstand geändert. Bei Bedarf erneut suchen.';renderReinforcements();lock();}}
 }
 function lock() {
-  for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked()||control.dataset.statblockDisabled==='true';
+  for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
   const contextBlocked=!workspace||!scene||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
   get<HTMLButtonElement>('combat-refresh').disabled=contextBlocked;get<HTMLButtonElement>('combat-history-open').disabled=contextBlocked||loadPending;get<HTMLSelectElement>('combat-history').disabled=contextBlocked;
@@ -304,7 +304,7 @@ function lock() {
 }
 function render() {
   const combat = view?.combat;
-  get('combat-resume').hidden=!combat;
+  get('combat-resume').hidden=!scene;
   const creation=get<HTMLDetailsElement>('combat-creation'),creationId=combat?.id??'';
   if(creation.dataset.combatId!==creationId){creation.dataset.combatId=creationId;creation.open=!combat;}
   renderReinforcements();
@@ -333,10 +333,24 @@ function render() {
     const tr = document.createElement('tr'); tr.dataset.participantId = p.id;
     if (p.id === combat!.turnId && combat!.phase === 'running') tr.classList.add('current-turn');
     const name = document.createElement('td'), choose = document.createElement('button');
-    choose.textContent = p.name+(p.role?' · '+{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]:''); choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
-    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; tag.title=tag.textContent??'';tag.textContent=p.characterId?'Party':combat!.participants.filter(other=>other.groupId===p.groupId).length>1?'gemeinsam':'einzeln';tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); name.append(tag); tr.append(name);
+    choose.textContent = p.name;choose.title=p.name; choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
+    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; tag.title=tag.textContent??'';tag.textContent=p.characterId?'Party':combat!.participants.filter(other=>other.groupId===p.groupId).length>1?'gemeinsam':'einzeln';tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); if(!p.characterId&&p.role)tag.textContent={friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]+' · '+tag.textContent;name.append(tag); tr.append(name);
     const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
-    for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:'',p.timedEffects?.map(effect=>effect.name+' '+effect.remaining+'R').join(', ')].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
+    for (const [index,text] of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:'',p.timedEffects?.map(effect=>effect.name+' '+effect.remaining+'R').join(', ')].filter(Boolean).join(' · ') || '—'].entries()) {
+      const td = document.createElement('td');
+      if(index===2){
+        const health=document.createElement('button');health.type='button';health.className='combat-health';health.dataset.combatReadonly=String(!editableCombat(combat!));health.textContent=text;
+        health.setAttribute('aria-label',p.name+' · '+text+' HP · '+(p.healthKnown===false?'Werte eintragen':'Schaden oder Heilung'));
+        health.onclick=()=>{void(async()=>{
+          const gen=generation,id=combat!.id;await chooseFighter(p.id);
+          if(generation!==gen||view?.combat?.id!==id||selected!==p.id)return;
+          const target=get<HTMLInputElement>(p.healthKnown===false?'fighter-hp':'fighter-amount');
+          if(p.healthKnown===false)get<HTMLDetailsElement>('fighter-values').open=true;
+          if(!target.disabled){target.focus({preventScroll:true});target.select();}
+        })();};td.append(health);
+      }else td.textContent=text;
+      tr.append(td);
+    }
     body.append(tr);
   }
   if (selected && !combat?.participants.some(p => p.id === selected)) selected = null;
@@ -394,6 +408,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-party-select').onchange=()=>{get<HTMLInputElement>('combat-party-initiative').value='';};
   get('combat-create-form').onsubmit = event => { event.preventDefault(); if (scene) void execute({ kind: 'create', sceneId: scene.id, expectedMembershipRevision: scene.membershipRevision, title: value('combat-new-title'), includeParty: get<HTMLInputElement>('combat-include-party').checked }); };
   get('combat-resume').onclick=()=>get('combat-panel').scrollIntoView({block:'start'});
+  get('combat-scene').onclick=()=>get('running-editor').scrollIntoView({block:'start'});
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
@@ -415,6 +430,12 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-participant-form').onsubmit = event => { event.preventDefault(); if(editorLoading||!!fighterKey()&&draftCache.readFailures.has(fighterKey()!))return; const hp=value('fighter-hp').trim(), maximum=value('fighter-max-hp').trim(); if (!!hp !== !!maximum) { tell('Aktuelle und maximale HP gemeinsam eintragen oder beide offen lassen.',true); return; } const health=hp&&maximum?{hp:Number(hp),maxHp:Number(maximum)}:{}; if (selected) void execute({ kind: 'edit', participantId: selected, changes: { name: value('fighter-name'), initiative: Number(value('fighter-initiative')), initiativeBonus: Number(value('fighter-bonus')), armorClass: Number(value('fighter-ac')), ...health, tempHp: Number(value('fighter-temp-hp')), conditions: value('fighter-conditions'), concentrating: get<HTMLInputElement>('fighter-concentration').checked, ...(value('fighter-xp') ? {xp:Number(value('fighter-xp'))} : {}), countForMultiplier:get<HTMLInputElement>('fighter-counted').checked } },draftRevision(fighterKey()?fighterDrafts.get(fighterKey()!):undefined)); };
   get('fighter-effect-form').onsubmit=event=>{event.preventDefault();if(!selected)return;const participantId=selected;void(async()=>{if(await execute({kind:'effect-add',participantId,name:value('fighter-effect-name'),rounds:Number(value('fighter-effect-rounds')),tick:value('fighter-effect-tick') as 'start'|'end'})&&selected===participantId)get<HTMLInputElement>('fighter-effect-name').value='';})();};
   get('fighter-damage').onclick = () => { if (selected) void execute({ kind: 'damage', participantId: selected, amount: Number(value('fighter-amount')) }); };
+  get('fighter-amount').addEventListener('keydown',event=>{
+    if(event.key!=='Enter'||event.repeat||event.isComposing||event.ctrlKey||event.altKey||event.metaKey)return;
+    event.preventDefault();
+    const amount=get<HTMLInputElement>('fighter-amount');
+    if(!get<HTMLButtonElement>('fighter-damage').disabled&&amount.reportValidity())get<HTMLButtonElement>('fighter-damage').click();
+  });
   get('fighter-heal').onclick = () => { if (selected) void execute({ kind: 'heal', participantId: selected, amount: Number(value('fighter-amount')) }); };
   get('fighter-death-roll').onclick=()=>{if(selected)void execute({kind:'death-roll',participantId:selected});};
   for(const result of ['success','failure','natural-20','natural-1','stabilize','dead','reset'] as const)get('fighter-death-'+result).onclick=()=>{if(selected)void execute({kind:'death',participantId:selected,result});};

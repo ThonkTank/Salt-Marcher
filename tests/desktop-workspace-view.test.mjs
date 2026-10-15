@@ -32,3 +32,11 @@ test('old, non-live and malformed writing positions preserve safe numeric naviga
  for(const liveNotesTop of [null,'562',-10001,10001])assert.deepEqual(readWorkspaceView({getItem:()=>JSON.stringify({tab:'live',scrollY:500,liveNotesTop})},'A'),{tab:'live',scrollY:500});
  assert.deepEqual(readWorkspaceView({getItem:()=>JSON.stringify({tab:'preparation',scrollY:500,liveNotesTop:200})},'A'),{tab:'preparation',scrollY:500});
 });
+
+
+test('a combat restart keeps its semantic destination even when the previous inspector changed page height',()=>{
+ const storage=memory();rememberWorkspaceView(storage,'A',{tab:'live',scrollY:5700,liveCombat:true});
+ assert.deepEqual(readWorkspaceView(storage,'A'),{tab:'live',scrollY:5700,liveCombat:true});
+ rememberWorkspaceView(storage,'B',{tab:'world',scrollY:12,liveCombat:true});assert.deepEqual(readWorkspaceView(storage,'B'),{tab:'world',scrollY:12});
+ assert.deepEqual(readWorkspaceView({getItem:()=>'{"tab":"live","scrollY":500,"liveCombat":"true"}'},'A'),{tab:'live',scrollY:500});
+});

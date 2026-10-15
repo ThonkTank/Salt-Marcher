@@ -62,7 +62,9 @@ function rememberView() {
   // Resume visible writing by its own position rather than a pixel in that old layout.
   const notes = activeTab === 'live' ? el('running-notes').getBoundingClientRect() : null;
   const liveNotesTop = notes && notes.height > 0 && notes.bottom > 0 && notes.top < window.innerHeight ? notes.top : undefined;
-  rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY, liveNotesTop});
+  const combat = activeTab === 'live' && !el('combat-panel').hidden ? el('combat-panel').getBoundingClientRect() : null;
+  const liveCombat = combat && Math.min(combat.bottom,window.innerHeight)-Math.max(combat.top,0)>window.innerHeight/2 ? true : undefined;
+  rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY, liveNotesTop, liveCombat});
 }
 let draft: Room | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -153,7 +155,7 @@ function showTab(selected: WorkspaceTab, restored?: number) {
   window.scrollTo(0, 0);
   return scrollY;
 }
-async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: number) {
+async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: number, liveCombat?: boolean) {
   const owner = workspace, intent = activationIntent, scrollY = showTab(tab, restored), request = viewRequest;
   switch (tab) {
     case 'live': await openLive(); break;
@@ -174,7 +176,9 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
   window.requestAnimationFrame(() => {
     if (workspace !== owner || activationIntent !== intent || viewRequest !== request || activationFailed) return;
     const notes = tab === 'live' && liveNotesTop !== undefined ? el('running-notes').getBoundingClientRect() : null;
-    window.scrollTo(0, notes && notes.height > 0 ? window.scrollY + notes.top - liveNotesTop! : scrollY); rememberView();
+    if(tab==='live'&&liveCombat&&!el('combat-panel').hidden)el('combat-panel').scrollIntoView({block:'start'});
+    else window.scrollTo(0, notes && notes.height > 0 ? window.scrollY + notes.top - liveNotesTop! : scrollY);
+    rememberView();
   });
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
@@ -495,7 +499,7 @@ async function drainActivation(): Promise<void> {
         if (queuedActivation !== null) continue;
         renderList(); updateHistory();
         const view = readWorkspaceView(viewStorage, next.campaign.id);
-        await reopenView(view.tab, view.scrollY, view.liveNotesTop);
+        await reopenView(view.tab, view.scrollY, view.liveNotesTop, view.liveCombat);
         if (queuedActivation !== null) continue;
         if (preparationHasDrafts()) status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
         else if (!roomDraftReadFailed && (!draft || !selected() || same(draft, selected()!) && el('points').dataset.changed !== 'true')) status('Gespeichert.');
