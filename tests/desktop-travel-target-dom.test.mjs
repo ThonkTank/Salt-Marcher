@@ -89,7 +89,7 @@ test('a fresh travel console derives party pace and the preview explains its spe
 
 
 test('a paused journey does not tell the GM to pause it first',async()=>{
- const x=await travelFixture();try{const p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});let j=x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey',preview:p}}).scene.journey;x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}});await x.ui.openWorld();assert.match(x.document.getElementById('world-journey-status').textContent,/Pausiert/);assert.doesNotMatch(x.document.getElementById('world-journey-refresh').textContent,/zuerst pausieren/);assert.match(x.document.getElementById('world-journey-refresh').textContent,/Restweg.*neu bewerten/);}finally{x.cleanup();}
+ const x=await travelFixture();try{const p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});let j=x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey',preview:p}}).scene.journey;x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}});await x.ui.openWorld();assert.match(x.document.getElementById('world-journey-status').textContent,/Pausiert/);assert.doesNotMatch(x.document.getElementById('world-journey-refresh').textContent,/zuerst pausieren/);assert.match(x.document.getElementById('world-journey-refresh').textContent,/Restweg.*neu bewerten/);x.ui.activateWorld(x.w);await x.ui.openWorld();assert.equal(x.document.getElementById('world-travel-owner').classList.contains('travel-planning'),true);assert.equal(x.document.getElementById('journey-controls').hidden,false);assert.equal(x.document.querySelector('.world-travel>h3').nextElementSibling.id,'world-journey-console');assert.match(x.document.getElementById('world-journey-status').textContent,/Pausiert/);}finally{x.cleanup();}
 });
 
 test('camera zoom and reset preserve an off-centre unsaved hex, its level and travel target without writes',async()=>{
@@ -169,6 +169,16 @@ test('unpainted map is distinguishable from an explicitly authored plain after r
  }finally{x.cleanup();}
 });
 
+test('travel mode keeps one map and one route form together without discarding working values',async()=>{
+ const x=await travelFixture();try{
+  const doc=x.document,owner=doc.getElementById('world-travel-owner'),form=doc.getElementById('world-travel-form'),map=doc.getElementById('world-map'),columns=map.closest('.world-map-columns');
+  x.enter('hex-label','Offene Kartenbeschriftung');x.enter('travel-waypoints','0,1');const writes=x.writes;
+  doc.getElementById('travel-mode-route').onclick();assert.equal(owner.classList.contains('travel-planning'),true);assert.equal(form.closest('.world-map-columns'),columns);assert.equal(doc.querySelectorAll('#world-travel-form').length,1);assert.equal(doc.querySelectorAll('#world-map').length,1);
+  assert.equal(doc.getElementById('travel-advanced').contains(doc.getElementById('travel-waypoints')),true);assert.equal(doc.getElementById('travel-mode-route').closest('#world-map-modes').parentElement.id,'world-map-workspace');
+  assert.match(doc.getElementById('world-current').textContent,/Hex 0,0/);assert.equal(doc.getElementById('journey-controls').hidden,true);assert.equal(doc.getElementById('journey-faster').closest('#journey-controls'),null);assert.equal(doc.getElementById('journey-faster').disabled,false);assert.equal(form.nextElementSibling.id,'world-journey-console');
+  doc.getElementById('travel-mode-edit').onclick();assert.equal(owner.classList.contains('travel-planning'),false);assert.equal(doc.getElementById('travel-waypoints').value,'0,1');assert.equal(doc.getElementById('hex-label').value,'Offene Kartenbeschriftung');assert.equal(x.writes,writes);
+ }finally{x.cleanup();}
+});
 
 for(const kind of ['wait','rest'])for(const switched of [false,true])test(`pending travel ${kind} ${switched?'is cancelled on focus change':'pauses its latest confirmed checkpoint'}`,async()=>{
  const x=await travelFixture(),command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action});
