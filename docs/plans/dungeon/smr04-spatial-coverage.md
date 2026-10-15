@@ -133,7 +133,9 @@ Eine genaue inklusive X/Y/Z-Bereichseingabe bleibt ausdrücklich Vorschau bis zu
 festgehalten. Nach einem Konflikt kann die Vorschau verworfen und der bestätigte
 Stand neu geladen werden; ein neuer Lesevorgang wertet den alten Zug nicht auf.
 Während einer Speicherung beginnt kein zweiter Zug. Der vorhandene Store schützt
-auch hier atomare History, Identitäten, Keyprosa und Split-Zuordnung.
+auch hier atomare History, Identitäten, Keyprosa und Split-Zuordnung. Auch nach vollständigem Radieren bleiben Room-ID und Key
+lesbar; Neuzeichnen bindet dieselbe Identität wieder an Geometrie. Leeren und
+Neubinden lassen sich einzeln zurücknehmen.
 
 Zoom per Mausrad/Schaltflächen, Verschieben per mittlerer Maustaste/Pfeiltasten
 und Einpassen ändern keine Autorenfakten. Die Kamera bleibt bei Schnittwechseln

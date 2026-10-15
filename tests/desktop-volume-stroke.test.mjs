@@ -28,5 +28,9 @@ test('rectangle, ellipse and matched eraser make complete history actions and su
   store.history(w.token,'undo');assert.equal(JSON.stringify(volume().columns),initial);store.history(w.token,'redo');assert.equal(JSON.stringify(volume().columns),extended);
   const ellipse=volumeArea({x:1,y:1,z:0},{x:3,y:3,z:1},'ellipse');assert.equal(ellipse.length,18);edit('erase',ellipse);assert.equal(volume().columns.length,36);assert.equal(current().id,id);assert.equal(current().number,'7');assert.deepEqual(current().sections,room.sections);
   const erased=JSON.stringify(volume().columns);store.close();store=new CampaignStore(file);w=store.activate(campaign.id);assert.equal(JSON.stringify(volume().columns),erased);assert.deepEqual(current().sections,room.sections);
+  const all=volume().columns.flatMap(c=>c.spans.flatMap(s=>Array.from({length:s.height},(_,i)=>({x:c.x,y:c.y,z:s.z+i}))));edit('erase',all);assert.equal(volume().columns.length,0);assert(!store.workspace().rooms.some(r=>r.id===id));
+  const preserved=store.drawing(w.token).hiddenRooms.find(r=>r.id===id);assert.deepEqual(preserved.sections,room.sections);
+  cmd({kind:'volume-edit',roomId:id,expectedRoomRevision:preserved.revision,expectedVolumeRevision:volume().revision,operation:'fill',cells:[{x:-2,y:-1,z:0}],enabled:true,medium:'air',side:'north'});assert(current());assert.equal(volume().id,volumeId);assert.deepEqual(current().sections,room.sections);
+  store.history(w.token,'undo');assert(!store.workspace().rooms.some(r=>r.id===id));assert.equal(volume().columns.length,0);store.history(w.token,'redo');assert(current());assert.equal(volume().columns[0].x,-2);
  }finally{store.close();rmSync(dir,{recursive:true,force:true});}
 });

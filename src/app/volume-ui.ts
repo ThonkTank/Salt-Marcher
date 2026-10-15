@@ -35,7 +35,7 @@ function message(text:string,error=false){el('volume-stroke-status').textContent
 let acknowledgedRoom:Room|null=null;
 let derived:{room:Room;height:number;volume:DungeonVolume}|null=null;
 let renderedVolume:DungeonVolume|null=null,renderedSlice=NaN,isometricSource:DungeonVolume|null=null;
-function room(){const current=roomId===null?null:workspace()?.rooms.find(r=>r.id===roomId)??null;return acknowledgedRoom?.id===roomId&&(!current||acknowledgedRoom.revision>current.revision)?acknowledgedRoom:current;}
+function room(){const current=roomId===null?null:workspace()?.rooms.find(r=>r.id===roomId)??data?.hiddenRooms.find(r=>r.id===roomId)??null;return acknowledgedRoom?.id===roomId&&(!current||acknowledgedRoom.revision>current.revision)?acknowledgedRoom:current;}
 function currentVolume(){
  const r=room();if(!r)return null;
  const stored=data?.volumes?.find(v=>v.roomId===r.id);if(stored)return stored;
@@ -111,7 +111,7 @@ function render(){
   isometricSource=v;
  }
  renderedVolume=v;renderedSlice=slice;renderCells();
- el('volume-status').textContent=r.number+'. '+r.name+' · '+v.columns.length+' Säulen · '+v.columns.reduce((n,c)=>n+c.spans.reduce((n,s)=>n+s.height,0),0)+' Raumzellen · Schnitt '+slice*5+' bis '+(slice+2)*5+' Fuß relativ zum Zeichnungsanker'+(data.volumes?.some(v=>v.roomId===r.id)?' · gespeichert':' · Konturvorschau');
+ el('volume-status').textContent=r.number+'. '+r.name+' · '+v.columns.length+' Säulen · '+v.columns.reduce((n,c)=>n+c.spans.reduce((n,s)=>n+s.height,0),0)+' Raumzellen · Schnitt '+slice*5+' bis '+(slice+2)*5+' Fuß relativ zum Zeichnungsanker'+(data.volumes?.some(v=>v.roomId===r.id)?' · gespeichert':' · Konturvorschau')+(!v.columns.length?' · Raum-Key erhalten, Geometrie leer. Zum Neuaufbau zeichnen.':'');
 }
 function eventCell(event:PointerEvent){
  const svg=el<SVGSVGElement&HTMLElement>('volume-slice-map'),matrix=svg.getScreenCTM();if(!matrix)throw new Error('Rasterdarstellung ist noch nicht verfügbar.');
