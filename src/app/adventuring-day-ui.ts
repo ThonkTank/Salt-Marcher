@@ -23,7 +23,9 @@ function state() {
   el("day-source").textContent =
     source === "active"
       ? "Aktive Party · bestätigte XP"
-      : "Eigene Rechnerzeilen";
+      : "Eigene Planung · verändert die aktive Party nicht";
+  el("day-pacing").hidden = source !== "active";
+  el("day-current-details").hidden = source !== "active";
   el("day-progress-inputs").hidden = mode !== "progress";
   el("day-reward-field").hidden = !el<HTMLInputElement>("day-separate-reward")
     .checked;
@@ -70,7 +72,10 @@ function renderRows() {
       renderRows();
       schedule();
     };
-    line.append(level, count, remove);
+    const field = (title: string, input: HTMLInputElement) => {
+      const label = document.createElement("label");label.append(document.createTextNode(title),input);return label;
+    };
+    line.append(field("Level",level), field("Anzahl",count), remove);
     root.append(line);
   }
 }
@@ -117,7 +122,7 @@ function draw(value: DayView) {
   if (!opened()) return;
   renderDayItinerary(value.itinerary);
   renderDayPacing(el('day-pacing'),value.pacing,source==='active'&&mode==='progress');
-  el("day-status").textContent = value.problem ?? snapshot.reason;
+  el("day-status").textContent = value.problem ?? (source === "active" ? snapshot.reason : "");
   if (source === "active") {
     rows = snapshot.rows.map((r) => ({
       level: r.level === null ? "" : String(r.level),
@@ -255,10 +260,6 @@ async function refresh() {
     el('day-trigger').setAttribute('aria-busy','true');
     el('day-trigger').textContent='Rastbudget wird geladen…';
     el("day-status").textContent = "Rastbudget wird geladen…";
-    el("day-summary").replaceChildren();
-    el("day-timeline").replaceChildren();
-    el('day-current').replaceChildren();
-    el('day-pacing').replaceChildren();
     renderDayItinerary(undefined);
   }
   try {
@@ -271,7 +272,10 @@ async function refresh() {
     el("day-trigger").textContent = "Rastbudget nicht verfügbar";
     el('day-trigger').setAttribute('aria-busy','false');
     el('day-popover').setAttribute('aria-busy','false');
-    if (opened()) el("day-status").textContent = (error as Error).message;
+    if (opened()) {
+      for (const id of ["day-summary","day-timeline","day-current","day-pacing"]) el(id).replaceChildren();
+      el("day-status").textContent = (error as Error).message;
+    }
   }
 }
 function schedule() {
@@ -281,10 +285,6 @@ function schedule() {
     el('day-trigger').setAttribute('aria-busy','true');
     el('day-trigger').textContent='Rastbudget wird geladen…';
     el('day-popover').setAttribute('aria-busy','true');
-    el("day-summary").replaceChildren();
-    el("day-timeline").replaceChildren();
-    el('day-current').replaceChildren();
-    el('day-pacing').replaceChildren();
     renderDayItinerary(undefined);
     el("day-status").textContent = "Berechnung wird aktualisiert…";
   }
