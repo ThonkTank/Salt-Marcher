@@ -49,6 +49,9 @@ let workspace: Workspace | null = null;
 let activeTab: WorkspaceTab = 'atlas';
 const workspacePositions = new WorkspacePositions();
 let viewRequest = 0;
+// New input owns the view, including while an area is still loading.
+for (const type of ['pointerdown', 'wheel', 'keydown'])
+  window.addEventListener(type, () => { viewRequest++; }, {capture: true, passive: true});
 const viewStorage = {getItem: (key: string) => window.localStorage.getItem(key), setItem: (key: string, value: string) => window.localStorage.setItem(key, value)};
 function rememberView() { if (workspace) { workspacePositions.capture(workspace.campaign.id, window.scrollY); rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY}); } }
 let draft: Room | null = null;
