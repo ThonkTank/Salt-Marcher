@@ -269,6 +269,7 @@ function revealNote(id: string) {
   editor.scrollIntoView({ block: 'start' });
 }
 async function renderNotes() {
+  noteEditorGeneration++;
   const row = noteRow(selectedNote); noteDraft = row && !row.trashed ? structuredClone(row.note) : null;
   const token = context?.token, target = selectedNote, request = preparationLoad;
   const saved = row ? await loadedDraft('note', row.note.id) : null;
@@ -276,6 +277,7 @@ async function renderNotes() {
   if (saved?.change.kind === 'note' && !row?.trashed) noteDraft = structuredClone(saved.change.note);
   get('note-editor').hidden = !row; get('note-empty').hidden = !!row;
   renderNoteList();
+  get<HTMLButtonElement>('note-text-reference').disabled=!row||row.trashed||blocked||draftProblems.has(draftKey('note', row.note.id));
   if (!row) return;
   void checkpoint();
   const shown = noteDraft ?? row.note;
@@ -342,12 +344,28 @@ function preservePlanInput(confirmed: ManualPlan, sent: ManualPlan, current: Man
         locationId: draft.locationId !== before.locationId ? draft.locationId : scene.locationId };
     }) };
 }
+let noteReferenceBusy:{owner:Workspace;run:number}|null=null, noteEditorGeneration=0;
+async function insertNoteTextReference(){
+ const owner=context,token=owner?.token,campaignId=owner?.campaign.id,id=selectedNote,run=preparationLoad,editor=noteEditorGeneration,button=get<HTMLButtonElement>('note-text-reference'),area=get<HTMLTextAreaElement>('note-gm');
+ if(!token||!id||!noteDraft||!button.isConnected||button.disabled||area.disabled||blocked||noteReferenceBusy?.owner===owner&&noteReferenceBusy.run===run)return;
+ // Flush may confirm a revision, but cannot authorize a different text/selection.
+ const before=noteDraft.gmNotes,input=area.value,start=area.selectionStart,end=area.selectionEnd,alias=input.slice(start,end);
+ const current=()=>context===owner&&context?.token===token&&context?.campaign.id===campaignId&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id&&!!noteDraft&&noteDraft.gmNotes===before&&area.isConnected&&!area.disabled&&!blocked;
+ const busy={owner:owner!,run};noteReferenceBusy=busy;button.disabled=true;
+ try{
+  if(!await flushPreparation()||!current())return;
+  const link=await chooseTextReference(token,alias,current);if(!link||!current())return;
+  const from=rawTextOffset(before,start),to=rawTextOffset(before,end);
+  noteDraft={...noteDraft!,gmNotes:before.slice(0,from)+link+before.slice(to)};area.value=noteDraft.gmNotes;schedule();area.focus();const caret=start+link.replace(/\r\n/g,'\n').length;area.setSelectionRange(caret,caret);
+ }catch(error){if(current())tell((error as Error).message,true);}
+ finally{if(noteReferenceBusy===busy)noteReferenceBusy=null;if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
+}
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string) => Promise<void>) {
   tell = status;
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
   initSession(status,()=>flushPreparation(true),async (id,planId)=>{if(!context)return;usePreparation(unwrap(await window.campaign.preparation(context.token,value('world-search'))), !!value('world-search').trim());if(planId){selectedPlan=planId;planDraft=null;selectedScene=null;}if(id)selectedScene=id;await renderPlans();await renderNotes();await renderLocations();},openPreparedNote);
   openMap = navigateMap;
-  get('note-text-reference').onclick=()=>{void(async()=>{const token=context?.token,id=selectedNote,area=get<HTMLTextAreaElement>('note-gm'),start=area.selectionStart,end=area.selectionEnd;if(!token||!id||area.disabled||blocked||!await flushPreparation()||context?.token!==token||selectedNote!==id||!noteDraft)return;const before=noteDraft.gmNotes,alias=area.value.slice(start,end),link=await chooseTextReference(token,alias);if(!link)return;if(context?.token!==token||selectedNote!==id||!noteDraft||noteDraft.gmNotes!==before||blocked){tell('Notizkontext geändert. Verweis erneut einfügen.',true);return;}const from=rawTextOffset(before,start),to=rawTextOffset(before,end);noteDraft={...noteDraft,gmNotes:before.slice(0,from)+link+before.slice(to)};area.value=noteDraft.gmNotes;schedule();area.focus();area.setSelectionRange(start+link.length,start+link.length);})().catch(e=>tell(e.message,true));};
+  get('note-text-reference').onclick=()=>{void insertNoteTextReference();};
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
   get('world-new').onclick = () => { get<HTMLDialogElement>('world-dialog').showModal(); get('world-name').focus(); };
   get('world-cancel').onclick = () => get<HTMLDialogElement>('world-dialog').close();
