@@ -52,6 +52,12 @@ test('outcome acknowledgement preserves newer input and an ongoing command lock'
  x.ui.sessionNavigatorBusy(false);x.context();await tick();assert.equal(input.value,'Newer input');assert.equal(x.el('live-visit-outcome-confirm').disabled,false);
 });
 
+test('a confirmed outcome can continue with the next still-open visit',async t=>{
+ const x=navigator(t);x.window.campaign.sessionProgress=async()=>({ok:true,value:{planId:'plan',planRevision:1,visits:[{id:'visit',title:'Current',count:1,focused:{adoptionId:'adoption',sceneId:'scene',sceneTitle:'Group',outcome:null},occurrences:[]},{id:'done',title:'Already done',count:1,focused:{adoptionId:'old',sceneId:'scene',sceneTitle:'Group',outcome:{status:'skipped',text:'Passed',recordedAt:new Date(0).toISOString()}},occurrences:[]},{id:'next-open',title:'The hidden gate',count:0,focused:null,occurrences:[]}]}});x.context();await tick();
+ const next=x.el('live-visit-outcome-next'),status=x.el('live-visit-outcome-status');assert.equal(next.hidden,false);assert.match(next.textContent,/The hidden gate/);status.value='open';status.oninput();assert.equal(next.hidden,true);status.value='completed';status.oninput();x.el('live-visit-outcome-form').onsubmit({preventDefault(){},submitter:next});await tick();
+ assert.deepEqual(x.calls,[['plan','next-open']]);assert.equal(x.el('live-visit-outcome-confirm').disabled,false);
+});
+
 test('visit outcomes are replayable, guarded and retained through Fresh and independent copy',async t=>{
  const root=mkdtempSync(path.join(tmpdir(),'visit-outcomes-')),file=path.join(root,'source.sqlite');let store=new CampaignStore(file);t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});
  const cam=store.create('Visit history');let w=store.activate(cam.id);const command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});

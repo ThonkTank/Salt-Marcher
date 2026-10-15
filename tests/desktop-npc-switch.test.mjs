@@ -63,6 +63,14 @@ test('daily plan editor preserves weekly input and a rest-day exception through 
  }finally{await x.cleanup();}
 });
 
+test('a malformed raw daily-plan draft stays recoverable instead of breaking the NPC editor',async()=>{
+ const x=await fixture();try{
+  x.input('npc-gmNotes','Entwurf behalten');assert(await x.ui.flushNpcs());const old=x.store.npcDraft(x.w.token,x.a.id),damaged={...old,writeId:randomUUID(),fields:{...old.fields,dailyPlan:'[null]'}};x.store.keepNpcDraft(x.w.token,damaged,old.writeId);
+  x.ui.activateNpcs(x.w);await x.ui.openNpcs();x.choose(x.a.id);await until(()=>x.el('npc-name').value===x.a.name&&!x.el('npc-name').disabled);assert.match(x.el('npc-daily-plan').textContent,/kann nicht angezeigt werden/);assert.equal(x.store.npcDraft(x.w.token,x.a.id).fields.dailyPlan,'[null]');
+  x.el('npc-reload').click();await until(()=>x.store.npcDraft(x.w.token,x.a.id)===null&&!x.el('npc-name').disabled);assert.doesNotMatch(x.el('npc-daily-plan').textContent,/kann nicht angezeigt werden/);assert.equal(x.el('npc-gmNotes').value,x.a.gmNotes);
+ }finally{await x.cleanup();}
+});
+
 test('a canceled dossier contact cannot stage a header after the NPC read returns',async()=>{
  const x=await fixture();try{const held=deferred(),original=window.campaign.npc;let requested=false,current=true;window.campaign.npc=async(...args)=>{if(args[1]===x.b.id){requested=true;return held.promise;}return original(...args);};const opening=x.ui.openNpcProfile(x.b.id,{date:'Tag 7',sceneTitle:'Ferne Gruppe'},()=>current);await until(()=>requested);current=false;held.resolve(await original(x.w.token,x.b.id));await opening;assert(await x.ui.flushNpcs());assert.equal(x.store.npcDraft(x.w.token,x.b.id)?.fields.contact??'','');assert.equal(x.el('npc-contact').value,'');assert.equal(x.writes.length,0);assert.equal(x.store.npc(x.w.token,x.b.id).record.history,'');}finally{await x.cleanup();}
 });

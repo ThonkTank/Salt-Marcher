@@ -265,34 +265,11 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
   beziehen. Quellen: Session Planner, Session Generation, Encounter Generation und
   SRC-P01–03; [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md); [Katalog-/Encountervertrag](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md), SMR-AC-07. Keine zweite öffentliche Generatorpipeline.
 
-#### Arbeitsstand #69
+#### Manuelle Planung (#69)
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-visible-focus-20261011
-Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
-
-Kern/Panel/Preview, Plannamenerhalt, Post-Allocation-Schutz, Tastatur-Aktionsfokus
-und Draftidentitätsschutz sind integriert (PR142/R01, Commit `632c580`).
-Native Speicherung fehlt.
-
-CloudGM-Nachtest6106915673 bestätigt sichtbare Tastaturfortsetzung bei Verwerfen,
-Verschieben und Rand-Fallback zum Szenentitel. Nach Enter→Übernehmen fehlte
-unmittelbar die sichtbare Fokusumrandung; folgendes Tab war korrekt bedienbar.
-Die aktuelle enge Stilreparatur zeigt im Planner Fokus ausdrücklich mit :focus,
-auch wenn der Browser beim Ersatzcontrol :focus-visible nicht beibehält.
-Produktstylesheet und flüchtiger Preview nutzen dieselbe scoped Regelabsicht.
-Payload, Controls, Guards und Tests sind unverändert. Der direkte
-Apply→sichtbarer Fokus→Tab-Nachtest und der Stilnachweis stehen aus.
-
-[PR86](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86)
-führt Dokumentcodec und konkreten Speicheranschlussvorschlag. Für den
-produktiven Consumer fehlen Dokumentinventar, Domainwrite/Bytebindung, Pfad
-und Retirement/Recovery im Campaign-Datenvertrag. Der vorhandene Publisher
-wird wiederverwendet.
-
-Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`.
-[Aktueller Datenanschluss und Abnahmegrenzen](docs/plans/campaign/manual-session-planner.md#geprüft-und-noch-offen).
-Neuladen/Schließen verwirft Arbeit. Native Save/Fresh/Recovery, Pluginmount,
-physische Eingabe und 200%-Zoom bleiben offen.
+Die Desktopvorbereitung und der gemeinsame Store tragen manuelle Pläne,
+Besuchsinhalte, Ersetzung und Wiederverwendung.
+[Aktueller Anschluss und offene Fachabnahmen](docs/plans/campaign/manual-session-planner.md).
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 

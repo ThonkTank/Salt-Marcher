@@ -1,11 +1,11 @@
-import {rawDailyPlan} from './npc-daily-plan';
+import {rawDailyPlan,readDailyPlanRaw,readDailyOverridesRaw} from './npc-daily-plan';
 import type {NpcDailyRaw,NpcDailyOverrideRaw} from './npc-daily-plan';
 import type {FantasyCalendar} from './world-contracts';
 import {calendarDate} from './world-model';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
 export function drawNpcDailyPlan(input:HTMLInputElement,overrideInput:HTMLInputElement,calendar:FantasyCalendar){
  let root=document.getElementById('npc-daily-plan');if(!root){root=node('section');root.id='npc-daily-plan';root.className='npc-daily-plan';input.parentElement!.after(root);}root.replaceChildren(node('h3','Wochenplan und Tagesausnahmen'),node('p','Uhrzeiten folgen dem Kampagnentag. Ein Ende vor dem Beginn reicht in den Folgetag. Wochentage beziehen sich auf den Beginn. Eine Datumsausnahme ersetzt den gesamten Tag, einschließlich Aktivitäten aus der vorherigen Nacht. Wohnhaus und Arbeitsplatz verwenden die bestehenden Stadtbindungen.'));
- let rows:NpcDailyRaw[],overrides:NpcDailyOverrideRaw[];try{rows=JSON.parse(input.value||'[]');overrides=JSON.parse(overrideInput.value||'[]');if(!Array.isArray(rows)||!Array.isArray(overrides))throw new Error();}catch{root.append(node('p','Tagesplanentwurf kann nicht angezeigt werden. Rohtext bleibt erhalten; Entwurf bei Bedarf verwerfen.'));return;}
+ let rows:NpcDailyRaw[],overrides:NpcDailyOverrideRaw[];try{rows=readDailyPlanRaw(input.value);overrides=readDailyOverridesRaw(overrideInput.value);}catch{root.append(node('p','Tagesplanentwurf kann nicht angezeigt werden. Rohtext bleibt erhalten; Entwurf bei Bedarf verwerfen.'));return;}
  const editable=(n:HTMLElement)=>n.isConnected&&!input.disabled&&!input.readOnly&&!overrideInput.disabled&&!overrideInput.readOnly;
  const sync=()=>{input.value=JSON.stringify(rows);overrideInput.value=JSON.stringify(overrides);},emit=()=>{sync();input.dispatchEvent(new Event('input',{bubbles:true}));},redraw=()=>drawNpcDailyPlan(input,overrideInput,calendar);
  const newSlot=()=>rawDailyPlan([{id:crypto.randomUUID(),startMinute:480,endMinute:1020,activity:'Neue Aktivität',place:'work',notes:''}])[0]!;
