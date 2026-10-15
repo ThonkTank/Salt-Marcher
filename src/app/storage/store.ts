@@ -1,3 +1,4 @@
+import {readNpcPlaces} from './npc-places';
 import {readLocationMaterials} from './location-notebook';
 import {readWorldLinks} from './world-links';
 import {readNpcCast,readNpcDossier} from './npc-cast';
@@ -545,6 +546,7 @@ export class CampaignStore {
   worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery):import('../world-links-contracts').WorldLinksPage{const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
   npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
   npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
+  npcPlaces(token:string,id:string,offset:number){const cam=this.guard(token);return this.db.transaction(()=>readNpcPlaces(this.db,cam,id,offset))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}
   npcDraft(token:string,id:string){return npcDraft(this.db,this.guard(token),id);}
   keepNpcDraft(token:string,d:NpcDraft,expected:string|null){return keepNpcDraft(this.db,this.guard(token),d,expected);}

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash,randomUUID} from 'node:crypto';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -80,6 +81,26 @@ test('city jobs own stable identity and move with their workplace bindings',()=>
   const dissolved=f.store.executeCity({commandId:'dissolve-job',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:redone.header.revision,action:{kind:'change',upsert:[{...redone.units.find(u=>u.id==='shop')!,jobs:[]}],remove:[],label:'Beruf auflösen'}});
   assert.deepEqual(dissolved.units.find(u=>u.id==='shop')?.jobs,[]);
   assert.deepEqual(dissolved.units.find(u=>u.id==='shop')?.workerIds,[f.ada,f.bert]);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('NPC places expose canonical city roles and disable hidden dungeon rooms',()=>{
+ const f=fixture('npc-places-');
+ try{
+  f.store.executeCity({commandId:'places',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada],workerIds:[f.ada],households:[{id:'household',name:'Familie Abendrot',memberIds:[f.ada]}],jobs:[{id:'job',name:'Bäcker',workerIds:[f.ada]}]}],remove:[],label:'Schauplätze binden'}});
+  const room=f.store.addRoom(f.workspace.token).rooms[0]!,pose={scopeId:room.scopeId,floorId:room.floorId,roomId:room.id,x:1,y:1,z:0},payload=JSON.stringify(pose),checksum=createHash('sha256').update(payload).digest('hex');
+  f.store.db.prepare('INSERT INTO npc_position VALUES(?,?,?,?)').run(f.campaign.id,f.ada,null,1);
+  f.store.db.prepare('INSERT INTO npc_dungeon_position VALUES(?,?,?,?)').run(f.campaign.id,f.ada,payload,checksum);
+  const page=f.store.npcPlaces(f.workspace.token,f.ada,0);
+  assert.deepEqual(page.sites.map(site=>site.kind),['dungeon','home','work']);
+  assert.match(page.sites.find(site=>site.kind==='home')!.detail,/Familie Abendrot/);
+  assert.match(page.sites.find(site=>site.kind==='work')!.detail,/Bäcker/);
+  assert.equal(page.sites.find(site=>site.kind==='dungeon')!.available,true);
+  f.store.db.prepare("INSERT INTO drawing_hidden VALUES(?,?,?,'room',0,1)").run(f.campaign.id,room.id,room.scopeId);
+  assert.equal(f.store.npcPlaces(f.workspace.token,f.ada,0).sites.find(site=>site.kind==='dungeon')!.available,false);
+  const note=f.store.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(f.campaign.id,f.ada),body=JSON.parse(note.payload),forged=JSON.stringify({...body,id:randomUUID()});
+  f.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(forged,createHash('sha256').update(forged).digest('hex'),f.campaign.id,f.ada);
+  assert.throws(()=>f.store.npcPlaces(f.workspace.token,f.ada,0),/NPC-Profil ist falsch zugeordnet/);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
