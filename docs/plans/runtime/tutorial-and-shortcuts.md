@@ -98,3 +98,7 @@ konkrete Lektionen; die Zuordnung bleibt im bestehenden Tutorialcode.
 Die konsolidierte Lehrrevision `desktop-tutorial-city-family-projection-v83` enthält die integrierten
 Beziehungs-, Stadt- und Übergabelektionen. Neue Lessonrevisionen archivieren
 die früheren Läufe; die Lehrabdeckung bleibt eine Teilprüfung des Produkts.
+
+Die Party- und Tagesrechner-Popups teilen den
+[verankerten Popuphost](anchored-popup.md). Native Auto-Popovers führen Escape,
+Außenklick und Fokusrückgabe; die Fachbereiche behalten ihre Aktionen.

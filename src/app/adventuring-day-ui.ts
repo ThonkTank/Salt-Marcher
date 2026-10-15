@@ -1,3 +1,4 @@
+import {bindAnchoredPopup} from './anchored-popup';
 import type { Workspace } from "./contracts";
 import type { DayView } from "./adventuring-day-contracts";
 import { onProgressChanged } from "./progression-ui";
@@ -281,9 +282,7 @@ export function activateDayCalculator(next: Workspace | null) {
   el<HTMLInputElement>("day-total-xp").value = "0";
   el<HTMLInputElement>("day-reward-xp").value = "0";
   el<HTMLInputElement>("day-separate-reward").checked = false;
-  el<HTMLButtonElement>("day-trigger").disabled = el<HTMLButtonElement>(
-    "party-shortcut",
-  ).disabled = !next;
+  el<HTMLButtonElement>("day-trigger").disabled = !next;
   el("day-trigger").textContent = "Rastbudget";
   el("party-shortcut").textContent = "Party öffnen";
   renderRows();
@@ -292,18 +291,9 @@ export function activateDayCalculator(next: Workspace | null) {
 }
 export function initDayCalculator(status: typeof tell, openParty: () => void) {
   tell = status;
-  el("day-trigger").onclick = () => {
-    if (opened()) el("day-popover").hidePopover();
-    else {
-      el("day-popover").showPopover();
-      void refresh();
-    }
-  };
-  el("day-popover").addEventListener("toggle", () => {
-    el("day-trigger").setAttribute("aria-expanded", String(opened()));
-  });
-  el("day-close").onclick = () => el("day-popover").hidePopover();
-  el("party-shortcut").onclick = openParty;
+  const popup=bindAnchoredPopup(el<HTMLButtonElement>('day-trigger'),el('day-popover'),{width:760,placement:'trailing'});
+  el('day-trigger').onclick=()=>{if(popup.toggle())void refresh();};
+  el('day-close').onclick=popup.close;
   el("day-party-open").onclick = () => {
     el("day-popover").hidePopover();
     openParty();
