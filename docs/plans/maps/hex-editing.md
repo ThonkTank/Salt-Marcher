@@ -31,3 +31,35 @@ Strich bleibt nach Neustart erhalten, die lokale Rücknahmehistorie nicht.
 Dies liefert direktes Malen/Kamerabedienung, keinen vollständigen Hex-Paritätsnachweis.
 Installationseigener editierbarer Biomkatalog und Kopplung mit Kreaturenfiltern
 bleiben eigene größere Produktarbeit; native Großwelt-/Touchqualifikation offen.
+
+## Gemeinsame passive Kartenkamera (0.131, 15.10.2026)
+
+Dungeonraster und Hexkarte verwenden `PassiveMapCanvas` für Viewbox, mittleres
+Ziehen, Mauszeigerzoom und passive Fehler-/Leerzustände. Die Komponente kennt
+weder Hexkoordinaten noch Räume, Reisebefehle, Speicherregeln oder Kartentypen.
+Beide Adapter zeichnen ihre Geometrie, Labels, Relationen und Tokens in denselben
+SVG-Wurzelknoten, an dem auch ihre sichtbaren Treffer hängen. Sie interpretieren
+rohe Szenenpunkte selbst. SVG benötigt unter der bestehenden CSP weder WebGL
+noch dynamische Codeauswertung.
+
+Die Hexkamera verschiebt sich jetzt kontinuierlich statt auf ganze Hexes zu
+springen; der Adapter leitet nur die sichtbare Nachlade-/Zeichenregion daraus
+ab. Rasterwechsel bleibt eine ausdrückliche Autorenentscheidung. Mausrad und
+Kameratasten speichern keine offene Hexeingabe. Im Dungeon bleiben Auswahl,
+bestätigte Kontur-/Keyänderungen und Layoutwechsel im gewählten Ausschnitt;
+Einpassen beziehungsweise Übersicht sind ausdrückliche Navigation. Mittleres
+Ziehen legt auch bei aktivem Zeichenwerkzeug keine Geometrie an. Während eines
+aktiven Kontur-/Pinselzugs übernehmen Kameragesten keinen angefangenen Zug.
+
+Ein Fehler während des Zeichnens erhält die letzte vollständige Szene, sperrt
+ihre Treffer und zeigt einen lokalen Hinweis mit „Karte erneut zeichnen“.
+Navigation und Autorenfakten bleiben erhalten. Die Wiederholung baut die
+aktuelle Szene neu auf, ohne zweite Pointerhandler oder einen anderen
+Kampagnenstand. Eine leere Szene benötigt keine erfundenen Hexes oder Räume.
+
+`tests/desktop-passive-map-canvas.test.mjs` prüft Kamera, Szenen-/Leerzustände und
+lokale Wiederholung; die bestehende Reise-DOMprüfung prüft offene Ziel-/Hexdaten
+bei Zoom und Reset. Physische Treffer-/Dragabnahme erfolgt zusätzlich am
+Desktop. Ein vollständig nahtloser Atlas aller Karten, alle weiteren Canvas-
+Adopter sowie die große Sichtregion-/Performanceabnahme bleiben offen. Diese
+Lieferung behauptet keine vollständige Wonderdraft-/Dungeonqualifikation.

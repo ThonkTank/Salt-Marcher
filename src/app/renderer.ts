@@ -1,3 +1,4 @@
+import {PassiveMapCanvas} from './passive-map-canvas';
 import {roomCameraBox} from './room-camera';
 import {initWorkspaceNavigation,syncWorkspaceNavigation} from './workspace-navigation';
 import {WorkspacePositions,workspaceTabs,readWorkspaceView,rememberWorkspaceView,type WorkspaceTab} from './workspace-view';
@@ -120,6 +121,7 @@ initGroups(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())
 setGroupNavigation(async(id,current=()=>true)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups(id);if(current())await openNpcs(false);});
 initTreasury(status,async()=>{await refreshProgress();await refreshScenePreparation();},async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
 initItems(status,async id=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems(id);});
+const dungeonCanvas=new PassiveMapCanvas(el<SVGSVGElement & HTMLElement>('map'),{initial:{x:0,y:0,width:24,height:18},locked:()=>!!pointer,changed:()=>draw()});
 initDrawing(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();},draw);
 initVolume(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
 initTriggers(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDungeonContent()&&await flushGraph()&&await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
@@ -244,7 +246,7 @@ async function flush(): Promise<boolean> {
       workspace = { ...workspace, rooms: workspace.rooms.map(room => room.id === next.room.id ? next.room : room), canUndo: next.canUndo, canRedo: next.canRedo, selectedId: after.id };
       if (draft?.id === after.id) draft.revision = next.room.revision;
       hasRetainedDraft = false;
-      if (JSON.stringify(before.polygons) !== JSON.stringify(after.polygons)) fit();
+      // A confirmed edit updates the scene without moving the user's camera.
       renderList(); updateHistory(); draw();
       status(draft && !same(after, draft) ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.');
       return true;
@@ -299,7 +301,7 @@ async function setDraft() {
   for (const floor of workspace!.floors) { const option = document.createElement('option'); option.value = JSON.stringify([floor.scopeId, floor.id]); option.textContent = floor.name; floors.append(option); }
   floors.value = JSON.stringify([room.scopeId, room.floorId]);
   renderRoomInputs(room, token);
-  updatePoints(); fit(); draw();
+  updatePoints(); if(dungeonCanvas.context(workspace!.campaign.id+':'+floors.value,{x:0,y:0,width:24,height:18}))fit(true);draw();
   if (room && token) {
     roomDraftLoading = true; roomEditable(false); updateHistory(); status('Arbeitsentwurf wird geprüft und geladen.');
     try {
@@ -310,7 +312,7 @@ async function setDraft() {
       el<HTMLTextAreaElement>('points').value = retained.points; el('points').dataset.changed = String(retained.pointsChanged);
       failedEdit = retained.failedEdit; writeBlocked = !!failedEdit;
       el('error-actions').hidden = !writeBlocked;
-      fit(); draw(); status('Arbeitsentwurf wiederaufgenommen. Die Änderung ist noch nicht als Autorenstand gespeichert.', true);
+      draw(); status('Arbeitsentwurf wiederaufgenommen. Die Änderung ist noch nicht als Autorenstand gespeichert.', true);
     } catch (error) {
       if (workspace?.token !== token || workspace.selectedId !== room.id) return;
       roomDraftReadFailed = true; writeBlocked = true;
@@ -356,7 +358,8 @@ const svgNS = 'http://www.w3.org/2000/svg';
 function svgElement(name: string, attributes: Record<string, string>) {
   const item = document.createElementNS(svgNS, name); Object.entries(attributes).forEach(([key, value]) => item.setAttribute(key, value)); return item;
 }
-function draw() {
+function draw(){const visible=workspace?.rooms.some(r=>JSON.stringify([r.scopeId,r.floorId])===el<HTMLSelectElement>('floors').value);dungeonCanvas.render(drawScene,visible?'':'Noch keine Geometrie in dieser Ansicht. Raum anlegen oder eine andere Ebene wählen.');}
+function drawScene() {
   syncGraphBanner(workspace);
   const map = el<HTMLElement>('map'); map.replaceChildren();
   for (const saved of workspace?.rooms ?? []) {
@@ -373,6 +376,7 @@ function draw() {
       'fill-rule': 'evenodd',
       cursor: 'pointer',
     });
+    shape.setAttribute('data-room-id',room.id);
     const title = svgElement('title', {}); title.textContent = `${room.number}. ${room.name}`; shape.append(title);
     shape.addEventListener('click', () => { void selectRoom(room.id); }); map.append(shape);
   }
@@ -382,14 +386,14 @@ function draw() {
   draft.polygons[0]!.outer.forEach((p, index) => {
     const handle = svgElement('circle', { cx: String(p.x), cy: String(p.y), r: String(box.width / 85), class: 'handle' });
     handle.addEventListener('pointerdown', event => {
-      if (pending || composing || pointer || roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed) return;
+      if ((event as PointerEvent).button!==0 || pending || composing || pointer || roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed) return;
       pointer = { index, id: (event as PointerEvent).pointerId, before: structuredClone(draft!.polygons) }; (map as unknown as SVGSVGElement).setPointerCapture(pointer.id); event.preventDefault();
     }); map.append(handle);
   });
 }
 function fit(all=false) {
   const visible=(workspace?.rooms??[]).map(saved=>draft?.id===saved.id?draft:saved).filter(room=>JSON.stringify([room.scopeId,room.floorId])===el<HTMLSelectElement>('floors').value);
-  const box=roomCameraBox(all?visible:draft?[draft]:visible);if(box)el('map').setAttribute('viewBox',box);
+  const box=roomCameraBox(all?visible:draft?[draft]:visible);if(box){const [x,y,width,height]=box.split(' ').map(Number);dungeonCanvas.set({x:x!,y:y!,width:width!,height:height!});}
 }
 el('map').addEventListener('pointermove', event => {
   if (!pointer || !draft || event.pointerId !== pointer.id) return;
@@ -407,6 +411,7 @@ el('floors').addEventListener('change', () => { void (async () => {
 })(); });
 el('fit').onclick = () => { fit(); draw(); };
 el('fit-all').onclick = () => { fit(true); draw(); };
+el('map-zoom-in').onclick=()=>dungeonCanvas.zoom(1/1.2);el('map-zoom-out').onclick=()=>dungeonCanvas.zoom(1.2);
 el('search').addEventListener('input', renderList);
 el('room-name').addEventListener('input', () => { if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed) return; if (draft) draft.name = el<HTMLInputElement>('room-name').value; schedule(); });
 el('room-name').addEventListener('blur', () => { void flush(); });
