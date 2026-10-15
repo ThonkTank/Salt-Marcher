@@ -7,7 +7,7 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
-for(const [name,entry] of [['store','storage/store'],['ui','key-ui'],['camera','room-camera']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/room-authoring-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+for(const [name,entry] of [['store','storage/store'],['ui','key-ui'],['camera','room-camera'],['key-model','key-model']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/room-authoring-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/room-authoring-store.cjs');
 const tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let i=0;i<120;i++){if(check())return;await tick();}assert.ok(check(),'UI state did not arrive');}
@@ -29,3 +29,5 @@ test('a key-first author creates the next room without closing, saves public/GM 
 test('a rejected key draft cannot create an extra room',async t=>{const x=await editor(t);x.enter('key-attributes','missing equals');x.document.getElementById('key-add-room').onclick();await until(()=>x.document.getElementById('key-save-status').dataset.state==='error');assert.equal(x.creates,0);assert.equal(x.current.rooms.length,1);assert.equal(x.document.getElementById('key-attributes').value,'missing equals');});
 
 test('floor overview includes separate room extents and large sparse contours without changing source geometry',()=>{const{roomCameraBox}=require('../.build/room-authoring-camera.cjs');const rooms=[room('a',0,0),room('b',15,0)],before=structuredClone(rooms);const[x,y,w,h]=roomCameraBox(rooms).split(' ').map(Number);assert.ok(x<0&&x+w>21&&y<0&&y+h>4.572);assert.deepEqual(rooms,before);assert.equal(roomCameraBox([]),null);const large={polygons:[{outer:Array.from({length:150000},(_,i)=>({x:i,y:i%3})),holes:[]}]};assert.ok(roomCameraBox([large]).split(' ').every(n=>Number.isFinite(Number(n))));});
+
+test('a new empty room contributes no invented GM heading to the live key',t=>{const x=setup(t),w=x.store.addRoom(x.workspace.token),r=w.rooms.find(r=>r.id===w.selectedId),{renderDungeonKey}=require('../.build/room-authoring-key-model.cjs');assert.equal(r.sections[0].markdown,'');const text=renderDungeonKey(r,[],x.store.dungeon(w.token),{audience:'gm',discovered:new Set()}).text;assert.doesNotMatch(text,/## Beschreibung/);});

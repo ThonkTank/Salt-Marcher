@@ -377,7 +377,7 @@ export class CampaignStore {
       let x=anchor?Math.ceil((anchor.maxX+grid)/grid-1e-8)*grid:0;
       const occupied=current.rooms.filter(r=>r.scopeId===scopeId&&r.floorId===floorId).map(bounds).sort((a,b)=>a.minX-b.minX);
       for(const b of occupied)if(y<b.maxY+grid&&y+height>b.minY-grid&&x<b.maxX+grid&&x+width>b.minX-grid)x=Math.ceil((b.maxX+grid)/grid-1e-8)*grid;
-      const room: Room = { id: randomUUID(), scopeId, floorId, name: 'Neuer Raum', number: String(n), revision: 0, polygons: [{ outer: [{ x, y }, { x:x+width, y }, { x:x+width, y:y+height }, { x, y:y+height }], holes: [] }], sections: [{ id: randomUUID(), kind: 'markdown', markdown: '## Beschreibung\n' }] };
+      const room: Room = { id: randomUUID(), scopeId, floorId, name: 'Neuer Raum', number: String(n), revision: 0, polygons: [{ outer: [{ x, y }, { x:x+width, y }, { x:x+width, y:y+height }, { x, y:y+height }], holes: [] }], sections: [{ id: randomUUID(), kind: 'markdown', markdown: '' }] };
       validateRoom(room);
       this.insertRoom(campaignId, room); this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(room.id, campaignId);
     }).immediate();
