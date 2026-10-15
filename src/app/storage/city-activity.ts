@@ -1,6 +1,7 @@
 import type {CityActivityPage,CityActivityQuery,CityActivitySite} from '../city-activity-contracts';
 import {readCityHeader,readCitySite} from './city';
 import {readLive,readLiveScene} from './live';
+import {readNpcPlanLocation} from './npc-daily-places';
 import {readNpc} from './npcs';
 import {readNpcPlaces} from './npc-places';
 import {readWorldCalendar} from './world';
@@ -23,7 +24,7 @@ export function readCityActivities(db:any,cam:string,q:CityActivityQuery):CityAc
  const rows=ids.slice(0,40).map((row:any)=>{
   const npc=readNpc(db,cam,row.id),places=readNpcPlaces(db,cam,row.id,0),plan=dailyPlanAt(npc.record.dailyPlan,scene.clock.instantMs,calendar.daySeconds,calendar.weekdays.length,npc.record.dailyOverrides);
   const site=(role:'home'|'work'):CityActivitySite|null=>{const s=places.sites.find(s=>s.kind===role);return s&&s.kind!=='dungeon'?{cityId:s.cityId,unitId:s.unitId,title:s.title,detail:s.detail.slice(0,600),available:s.available}:null;},home=site('home'),work=site('work');
-  return{id:npc.id,name:npc.name,defeated:npc.record.lifecycle==='defeated',actualLocation:places.locationTitle,actualRoom:places.sites.find(s=>s.kind==='dungeon')?.title??null,atCityLocation:npc.locationId===city.locationId,home,work,current:plan.current?{activity:plan.current.activity,time:dailyTime(plan.current.startMinute)+'–'+dailyTime(plan.current.endMinute),place:plan.current.place,notes:plan.current.notes.slice(0,600),target:plan.current.place==='home'?home:plan.current.place==='work'?work:null}:null,next:plan.next&&plan.nextInstantMs?{activity:plan.next.activity,date:calendarDate(calendar,plan.nextInstantMs)}:null,overrideLabel:plan.overrideLabel,problem:plan.problem};
+  return{id:npc.id,name:npc.name,defeated:npc.record.lifecycle==='defeated',actualLocation:places.locationTitle,actualRoom:places.sites.find(s=>s.kind==='dungeon')?.title??null,atCityLocation:npc.locationId===city.locationId,home,work,current:plan.current?{activity:plan.current.activity,time:dailyTime(plan.current.startMinute)+'–'+dailyTime(plan.current.endMinute),place:plan.current.place,locationTarget:plan.current.place==='location'?readNpcPlanLocation(db,cam,plan.current.locationId!):null,notes:plan.current.notes.slice(0,600),target:plan.current.place==='home'?home:plan.current.place==='work'?work:null}:null,next:plan.next&&plan.nextInstantMs?{activity:plan.next.activity,date:calendarDate(calendar,plan.nextInstantMs)}:null,overrideLabel:plan.overrideLabel,problem:plan.problem};
  });
  return{cityId:city.id,cityRevision:city.revision,sceneId:scene.id,sceneTitle:scene.title,date:calendarDate(calendar,scene.clock.instantMs),clockRevision:scene.clock.revision,instantMs:scene.clock.instantMs,scenes,rows,next:ids.length>40?q.offset+40:null};
 }

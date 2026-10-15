@@ -74,7 +74,7 @@ async function select(id:string,fresh=false,label='NSC',initial?:{name:string;lo
   draft=retainInput?prior:loaded;if(fresh&&initial){draft.fields.name=initial.name;draft.fields.location=initial.locationId;}if(!retainInput){writeId=stored?.writeId??null;version=stored||fresh?1:0;saved=stored?1:0;}
   for(const name of names)el<HTMLInputElement>('npc-'+name).value=draft.fields[name]??'';
   const calendar=unwrap(await window.campaign.npcPlanCalendar(w.token));if(!current())return;
-  drawNpcDailyPlan(el<HTMLInputElement>('npc-dailyPlan'),el<HTMLInputElement>('npc-dailyOverrides'),calendar);
+  drawNpcDailyPlan(el<HTMLInputElement>('npc-dailyPlan'),el<HTMLInputElement>('npc-dailyOverrides'),calendar,[...el<HTMLSelectElement>('npc-location').options].filter(o=>o.value).map(o=>({id:o.value,name:o.textContent??o.value})));
   el<HTMLInputElement>('npc-concentrating').checked=draft.concentrating;el('npc-editor').hidden=false;el('npc-creature-results').replaceChildren();el<HTMLInputElement>('npc-creature').readOnly=!!v?.actorRevision;
   el('npc-disposition').textContent=v?'Haltung '+v.disposition+' · '+{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[v.role]:'Neuer NPC · ohne Kreatur auch rein erzählerisch verwendbar.';
   el('npc-save-status').textContent=stored?.pendingCommand?'Übernahme ungeklärt. Originalauftrag prüfen; Eingaben bleiben gesichert.':stored?'Gesicherter Entwurf wiederaufgenommen.':'Gespeicherter Stand.';
@@ -115,7 +115,7 @@ async function finish(c:NpcCommand,w:Workspace,g:number):Promise<boolean>{
   draft=result.draft;writeId=draft.writeId;version++;saved=version;
   for(const name of names)el<HTMLInputElement>('npc-'+name).value=draft.fields[name]??'';
   const resumedDraft=draft,calendar=unwrap(await window.campaign.npcPlanCalendar(w.token));if(workspace?.token!==w.token||g!==generation||draft!==resumedDraft)return false;
-  drawNpcDailyPlan(el<HTMLInputElement>('npc-dailyPlan'),el<HTMLInputElement>('npc-dailyOverrides'),calendar);el<HTMLInputElement>('npc-concentrating').checked=draft.concentrating;
+  drawNpcDailyPlan(el<HTMLInputElement>('npc-dailyPlan'),el<HTMLInputElement>('npc-dailyOverrides'),calendar,[...el<HTMLSelectElement>('npc-location').options].filter(o=>o.value).map(o=>({id:o.value,name:o.textContent??o.value})));el<HTMLInputElement>('npc-concentrating').checked=draft.concentrating;
   el('npc-save-status').textContent='Nicht übernommen. Eingaben gesichert; erneut übernehmen ist eine neue ausdrückliche Aktion.';
   return false;
  }
