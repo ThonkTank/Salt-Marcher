@@ -27,6 +27,6 @@ test('the next-session handoff starts with the current scene and unresolved work
 
 import {handoffVisitSeed} from '../../src/app/live-session-recap';
 test('a completed handoff becomes a concise authored visit without losing its open work',()=>{
-  assert.deepEqual(handoffVisitSeed('Nächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen','Späher'),{title:'Nordtor · Klippenhafen',notes:'Übergabe vom letzten Spielabend\n\nNächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen'});
+  assert.deepEqual(handoffVisitSeed('Nächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen','Späher'),{title:'Nordtor · Klippenhafen',notes:'Nächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen'});
   assert.equal(handoffVisitSeed('','Späher').title,'Nächster Spielabend: Späher');
 });
