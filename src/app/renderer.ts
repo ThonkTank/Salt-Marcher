@@ -1,3 +1,4 @@
+import {workspaceTabs,readWorkspaceView,rememberWorkspaceView,type WorkspaceTab} from './workspace-view';
 import {bindAtlasHistoryShortcut} from './workspace-shortcuts';
 import {chooseNpcPlace} from './npc-places-ui';
 import {openGenerationSource} from './generation-ui';
@@ -44,6 +45,9 @@ const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as
 const api = window.campaign;
 const setWorkspaceAvailable = (available: boolean) => document.body.classList.toggle('has-workspace', available);
 let workspace: Workspace | null = null;
+let activeTab: WorkspaceTab = 'atlas';
+const viewStorage = {getItem: (key: string) => window.localStorage.getItem(key), setItem: (key: string, value: string) => window.localStorage.setItem(key, value)};
+function rememberView() { if (workspace) rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY}); }
 let draft: Room | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let pending: Promise<boolean> | null = null;
@@ -130,9 +134,31 @@ el('world-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;
 el('items-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems();})().catch(error=>status(error.message,true));};
 el('catalog-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('catalog');await openCatalog();})();};
 el('chronicle-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('chronicle');await openChronicle();})().catch(error=>status(error.message,true));};
-function showTab(selected: 'groups' | 'treasury' | 'atlas' | 'preparation' | 'live' | 'chronicle' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
-  if(selected!=='chronicle')suspendChronicle();setWorldSurface(selected);setSessionPacketSurface(selected);
-  for (const id of ['groups','treasury','atlas', 'preparation', 'live', 'chronicle', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
+function showTab(selected: WorkspaceTab) {
+  if(selected!=='chronicle')suspendChronicle();
+  activeTab = selected;
+  if (workspace) rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: selected, scrollY: 0});
+  setWorldSurface(selected);setSessionPacketSurface(selected);
+  for (const id of workspaceTabs) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
+}
+async function reopenView(tab: WorkspaceTab) {
+  showTab(tab);
+  switch (tab) {
+    case 'live': await openLive(); break;
+    case 'atlas': await reloadDrawing(); break;
+    case 'groups': await openGroups(); await openNpcs(); break;
+    case 'treasury': await openTreasury(); break;
+    case 'chronicle': await openChronicle(); break;
+    case 'catalog': await openCatalog(); break;
+    case 'items': await openItems(); break;
+    case 'world': await openWorld(); break;
+    case 'music': await openMusic(); break;
+    case 'city': await openCity(); break;
+    case 'autonomy': await openAutonomy(); break;
+    case 'dungeon': await openDungeon(); break;
+    // activatePreparation already loaded this workspace.
+    case 'preparation': break;
+  }
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
 initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=await refreshCampaigns();if(!list)return;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();showTab('atlas');document.querySelector('main')!.inert=true;}const target=id??(!workspace?list.activeId??list.campaigns[0]?.id:null);if(target)await activate(target);else if(!workspace){setWorkspaceAvailable(false);el('map-title').textContent='Keine Kampagne geöffnet';el('rooms').replaceChildren();el<HTMLSelectElement>('campaigns').value='';}});
@@ -433,6 +459,7 @@ async function drainActivation(): Promise<void> {
   try {
     // Reserve the transition before this asynchronous drain, so a second request joins it.
     if (!(await leaveWorkspace())) { el<HTMLSelectElement>('campaigns').value = workspace?.campaign.id ?? ''; return; }
+    rememberView();
     activating = true; activationFailed = false; deactivateMusic();deactivatePlayer();
     status('Kampagne wird geladen.');
     while (queuedActivation !== null) {
@@ -448,6 +475,14 @@ async function drainActivation(): Promise<void> {
         await setDraft();
         if (queuedActivation !== null) continue;
         renderList(); updateHistory();
+        const view = readWorkspaceView(viewStorage, next.campaign.id), intent = activationIntent;
+        await reopenView(view.tab);
+        if (queuedActivation !== null) continue;
+        window.requestAnimationFrame(() => {
+          if (workspace?.token !== next.token || activationIntent !== intent || activationFailed) return;
+          window.scrollTo(0, view.scrollY);
+          rememberView();
+        });
         if (preparationHasDrafts()) status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
         else if (!roomDraftReadFailed && (!draft || !selected() || same(draft, selected()!) && el('points').dataset.changed !== 'true')) status('Gespeichert.');
       } catch (error) {
@@ -565,7 +600,7 @@ el('confirm-import').onclick = () => {
   })();
 };
 initCommitControls(()=>workspace,status);
-api.onClose(() => { void (async () => { await activationJob; if (await leaveWorkspace()) api.closeReady(); })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
+api.onClose(() => { void (async () => { await activationJob; rememberView(); if (await leaveWorkspace()) api.closeReady(); })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
 for (const id of ['atlas', 'preparation', 'live'] as const) el(id + '-tab').onclick = () => { void (async () => {
   if (!(await leaveWorkspace())) return;
   showTab(id);

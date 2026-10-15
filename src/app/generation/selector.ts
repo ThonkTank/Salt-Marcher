@@ -1,7 +1,6 @@
 // Adapted from the existing SaltMarcher pure generator module.
 import type {
   ChallengeRating,
-  EncounterCatalog,
   EncounterRole
 } from './catalog-types'
 import { encounterXpMultiplier } from '../encounter-contracts';
@@ -296,70 +295,6 @@ export function selectEncounter(
     selectedFit: chosen !== undefined && withinTargetBand(chosen.delta, target),
     selectedSoftFit: chosen?.softFit ?? false
   }
-}
-
-export function buildEncounterIntents(
-  selected: readonly SelectedEncounter[],
-  party: readonly { level: number; count: number }[]
-) {
-  const totalAdjustedXp = selected.reduce(
-    (sum, entry) => sum + entry.candidate!.adjustedXp,
-    0
-  )
-  const maxLevel = Math.max(...party.map((entry) => entry.level))
-  const scores = selected.map((entry) => {
-    const candidate = entry.candidate!
-    const difficulty = difficultyFor(entry.encounterNumber, selected.length)
-    const difficultyMultiplier =
-      difficulty === 'MEDIUM'
-        ? 1.5
-        : difficulty === 'HARD'
-          ? 2
-          : difficulty === 'DEADLY'
-            ? 3
-            : 1
-    return (
-      (candidate.adjustedXp / Math.max(1, totalAdjustedXp)) *
-      difficultyMultiplier *
-      Math.min(2.5, 1 + candidate.maxCr / Math.max(1, maxLevel))
-    )
-  })
-  const ranks = scores.map(
-    (score, index) =>
-      1 +
-      scores.filter(
-        (other, otherIndex) =>
-          other > score || (other === score && otherIndex < index)
-      ).length
-  )
-  return selected.map((entry, index) => {
-    const candidate = entry.candidate!
-    const composition = entry.composition!
-    return {
-      encounterNumber: entry.encounterNumber,
-      targetXp: entry.target,
-      adjustedXp: candidate.adjustedXp,
-      xpDelta: candidate.delta,
-      difficulty: difficultyFor(entry.encounterNumber, selected.length),
-      patternId: candidate.combinationId,
-      blocks: composition.blocks.map((block, blockIndex) => ({
-        role: titleRole(block.role),
-        challengeRating: block.challengeRating,
-        challengeRatingCode: candidate.blocks[blockIndex]!.cr.code,
-        quantity: block.quantity,
-        statblockSlots: block.statblockSlots,
-        unitXp: candidate.blocks[blockIndex]!.cr.xp
-      })),
-      monsterCount: composition.metrics.monsterCount,
-      statblockCount: composition.metrics.statblockCount,
-      effectiveMonsterCount: composition.metrics.effectiveMonsterCount,
-      xpMultiplier: composition.metrics.xpMultiplier,
-      bossinessRank: ranks[index]!,
-      constraintDiagnostics: composition.diagnostics.map((diagnostic) => ({
-        ...diagnostic
-      }))
-    }
-  })
 }
 
 function candidate(
@@ -761,28 +696,6 @@ function titleRole(role: GeneratorRole): EncounterRole {
   return `${role.charAt(0).toUpperCase()}${role.slice(1)}` as EncounterRole
 }
 
-function difficultyFor(
-  number: number,
-  count: number
-): 'EASY' | 'MEDIUM' | 'HARD' | 'DEADLY' {
-  if (count === 1 || number === count) return 'DEADLY'
-  if (number === 1) return 'EASY'
-  return number / (count + 1) <= 0.5 ? 'MEDIUM' : 'HARD'
-}
-
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value))
-}
-
-export function sessionCompositionCatalog(
-  catalog: Pick<EncounterCatalog, 'challengeRatings'>
-): CompositionCatalog {
-  return {
-    challengeRatings: catalog.challengeRatings.map((rating) => ({
-      ...rating,
-      availableQuantity: null,
-      maximumSingleQuantity: null,
-      availableStatblocks: null
-    }))
-  }
 }

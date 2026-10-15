@@ -43,7 +43,7 @@ function restockTimeNotice(db:any,cam:string,id:string):string|null{
  if(!focus)return null;
  let scene;try{scene=readLiveScene(db,cam,focus);}catch{return 'Scenezeit nicht verfügbar. Shopbestand bleibt unverändert.';}
  if(through===null||through<=BigInt(scene.clock.instantMs))return null;
- return 'Auffüllungen bis '+formatInstant(through.toString())+' bleiben erhalten. Die Gruppe im Fokus steht bei '+formatInstant(scene.clock.instantMs)+'.';
+ return 'Auffüllungen bis '+formatInstant(through.toString())+' bleiben erhalten. Die Gruppe im Fokus steht bei '+formatInstant(scene.clock.instantMs)+'. Zeitangaben in Tagen zu je 24 Stunden.';
 }
 export function readShop(db:any,cam:string,id:string):ShopView{
  const s=shopRecord(db,cam,id),o=owner(db,cam,s);

@@ -1,5 +1,5 @@
 import type {Result} from './contracts';
-import {ledgerCopper, type ItemCategory, type ItemReference, type LedgerItem} from './progression';
+import type {ItemCategory, ItemReference} from './progression';
 export interface ItemDefinition {id:string;revision:number;name:string;category:ItemCategory;magic:boolean;rarity:string;attunement:'no'|'yes'|'unspecified';unitCopper:string|null;weightText:string;properties:string[];description:string;source:{kind:'authored'|'srd51';label:string;license:string|null;url:string|null};trashed:boolean;sourceHash?:string}
 export interface ItemQuery {search:string;category:string;magic:''|'yes'|'no';rarity:string;attunement:string;sort:'name'|'value';direction:'asc'|'desc';after:number;includeTrashed:boolean}
 export interface ItemPage {items:ItemDefinition[];total:number;next:number|null;problems:string[];sourceStatus:{complete:boolean;message:string}}
@@ -25,4 +25,3 @@ export interface ItemsAPI {
  executeItemShop(command:ItemShopCommand):Promise<Result<ItemShopAck>>;
  sceneShops(token:string,sceneId:string):Promise<Result<ShopSummary[]>>;
 }
-export function currentLedgerValue(item:LedgerItem,currentCopper:string|null):bigint|null{return ledgerCopper({...item,currentUnitCopper:currentCopper});}

@@ -10,18 +10,18 @@ import {parseHTML} from 'linkedom';
 const base='.build/planner-live-moment',require=createRequire(import.meta.url);
 mkdirSync(base,{recursive:true});buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
-async function setup(t,resume=true){
+async function setup(t,resume=true,initialize=true){
  const root=mkdtempSync(path.join(tmpdir(),'moment-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite')),campaign=store.create('Abend'),w=store.activate(campaign.id);
  const command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character);
- const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
- for(const h of heroes){const v=store.live(w.token);store.executeLive(command({kind:'membership',characterId:h.id,expectedRevision:0,expectedRosterRevision:v.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:v.focusRevision}));}
+ const scene=initialize?store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene:null;
+ if(initialize)for(const h of heroes){const v=store.live(w.token);store.executeLive(command({kind:'membership',characterId:h.id,expectedRevision:0,expectedRosterRevision:v.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:v.focusRevision}));}
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={HTMLInputElement:globalThis.HTMLInputElement,HTMLSelectElement:globalThis.HTMLSelectElement,HTMLTextAreaElement:globalThis.HTMLTextAreaElement,Option:globalThis.Option,window:globalThis.window,document:globalThis.document,Event:globalThis.Event,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout},storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this._value??this.options[0]?.value??'';},set(v){this._value=v;},configurable:true});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});function Option(text='',value=''){const o=document.createElement('option');o.textContent=text;o.value=value;return o;}window.HTMLSelectElement.prototype.add=function(o){this.append(o);};Object.assign(globalThis,{HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option,window,document,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
  const x={store,w,scene,heroes,root,CampaignStore,command,window,document,commands:[],messages:[],reply:async ack=>ack,releases:[],followUps:[],openPacketResult:true};
  const wrap=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  window.campaign={session:async(token,id)=>wrap(()=>store.session(token,id)),sessionPacket:async(token,id)=>wrap(()=>store.sessionPacket(token,id)),previewTime:async(token,query)=>wrap(()=>store.previewTime(token,query)),world:async token=>wrap(()=>store.world(token)),agenda:async(token,query)=>wrap(()=>store.agenda(token,query)),scenePreparation:async(token,id)=>wrap(()=>store.scenePreparation(token,id)),narrativeJournal:async(token,query)=>wrap(()=>store.narrativeJournal(token,query)),chronicle:async(token,category,search)=>wrap(()=>store.chronicle(token,category,search)),narrative:async(token,id)=>wrap(()=>store.narrative(token,id)),live:async token=>wrap(()=>store.live(token)),progress:async token=>wrap(()=>store.progress(token)),ledgerParties:async token=>wrap(()=>store.ledgerParties(token)),preparation:async token=>wrap(()=>store.preparation(token)),sceneWorld:async(token,id)=>wrap(()=>store.sceneWorld(token,id)),executeLive:async cmd=>{x.commands.push(cmd);return x.reply(wrap(()=>store.executeLive(cmd)),cmd);}};
- for(const method of ['combat','chase','treasures','sceneDesk','sceneRules','sceneShops','sceneChecks','ledger','lootBalance','progressHistory','sessionProgress'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
- delete require.cache[require.resolve('../'+base+'/ui.cjs')];x.ui=require('../'+base+'/ui.cjs');x.ui.initSessionPacket((text,error)=>x.messages.push({text,error}),()=>null,async()=>true);x.ui.setSessionPacketSurface('live');x.ui.initLive((text,error)=>x.messages.push({text,error}),async()=>{},async()=>{},async()=>{},async()=>{},async(seed,current)=>{if(current())x.followUps.push(['deadline',seed]);},async(plan,seed,current,openPacket)=>{if(current()){const row=['visit',plan,seed];if(openPacket)row.push(true);x.followUps.push(row);}return openPacket?x.openPacketResult:true;});for(const dialog of document.querySelectorAll('dialog')){dialog.close=()=>{dialog.open=false;};dialog.showModal=()=>{dialog.open=true;};}x.ui.activateLive(w);await x.ui.openLive();if(resume){document.getElementById('live-continue').click();await settle();}
+ for(const method of ['combat','chase','treasures','sceneDesk','sceneRules','sceneShops','sceneChecks','ledger','lootBalance','progressHistory','sessionProgress','keepSessionRecapDraft'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
+ delete require.cache[require.resolve('../'+base+'/ui.cjs')];x.ui=require('../'+base+'/ui.cjs');x.ui.initSessionPacket((text,error)=>x.messages.push({text,error}),()=>null,async()=>true);x.ui.setSessionPacketSurface('live');x.ui.initLive((text,error)=>x.messages.push({text,error}),async()=>{},async()=>{},async()=>{},async()=>{},async(seed,current)=>{if(current())x.followUps.push(['deadline',seed]);},async(plan,seed,current,openPacket)=>{if(current()){const row=['visit',plan,seed];if(openPacket)row.push(true);x.followUps.push(row);}return openPacket?x.openPacketResult:true;});for(const dialog of document.querySelectorAll('dialog')){dialog.close=()=>{dialog.open=false;};dialog.showModal=()=>{dialog.open=true;};}x.ui.activateLive(w);await x.ui.openLive();if(resume&&!initialize){document.getElementById('live-continue').click();await settle();}
  x.el=id=>document.getElementById(id);x.fields=(title,summary)=>{x.el('live-moment-title').value=title;x.el('live-moment-summary').value=summary;x.el('live-moment-category').value='narrative';};x.submit=()=>x.el('live-moment-form').onsubmit(new window.Event('submit',{cancelable:true}));x.end=async()=>{x.el('live-session-end').click();await settle();assert.equal(x.el('live-session-close-dialog').open,true);assert.equal(x.el('live-session-close-confirm').disabled,false);x.el('live-session-close-confirm').click();await settle();};
  x.defer=kind=>{let release;const promise=new Promise(r=>release=r);x.releases.push(()=>release());let held=false;x.reply=async(ack,cmd)=>{if(cmd.action.kind===kind&&!held){held=true;await promise;}return ack;};return release;};
  x.focusOther=async()=>{let v=store.live(w.token);const ack=store.executeLive(command({kind:'move',sceneId:v.scene.id,expectedRosterRevision:v.rosterRevision,expectedFocusRevision:v.focusRevision,expectedClockRevision:v.scene.clock.revision,expectedSceneMembershipRevision:v.scene.membershipRevision,memberIds:[heroes[1].id],target:{kind:'new',title:'Andere Gruppe',expectedContentRevision:v.scene.revision}}));const id=ack.session.createdScene.id;v=store.live(w.token);store.executeLive(command({kind:'focus',sceneId:id,expectedRevision:v.focusRevision}));await x.ui.openLive();return id;};
@@ -261,3 +261,48 @@ for(const changed of ['clock','membership'])test(`a close review needs a new aud
  await x.ui.openLive();x.el('live-session-close-confirm').click();await settle();assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,0);assert.match(x.el('live-session-close-status').textContent,/Erneut prüfen/);
  x.el('live-session-close-refresh').click();await settle();x.el('live-session-close-confirm').click();await settle();const ends=x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end');assert.equal(ends.length,1);assert.equal(ends[0].action.sceneId,x.scene.id);
 });
+
+test('unfinished recap survives a fresh store and does not publish or end the evening',async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();
+ x.el('live-session-summary').value='Mira gab den Brief zurück.';x.el('live-session-summary').dispatchEvent(new x.window.Event('input'));
+ x.el('live-session-handoff').value='Morgen: Zollhaus. Schlüssel bei Ada.';x.el('live-session-handoff').dispatchEvent(new x.window.Event('input'));await settle();assert.equal(await x.ui.flushLive(),true);
+ const fresh=new x.CampaignStore(path.join(x.root,'store.sqlite'));try{const w=fresh.activate(x.w.campaign.id);assert.deepEqual(fresh.live(w.token).recapDraft,{summary:'Mira gab den Brief zurück.',handoff:'Morgen: Zollhaus. Schlüssel bei Ada.'});assert.equal(fresh.chronicle(w.token).latestSessionMarker.sessionMarker,'start');}finally{fresh.close();}
+ const draft=x.store.live(x.w.token).recapDraft;x.store.keepSessionRecapDraft(x.w.token,draft,null); // lost-ack replay is safe
+ assert.throws(()=>x.store.keepSessionRecapDraft(x.w.token,{summary:'stale',handoff:''},null),/anderer Stelle/);
+ assert.deepEqual(x.store.live(x.w.token).recapDraft,draft);
+});
+test('recap save recovers a lost reply, preserves newer input and blocks close on a conflicting draft',async t=>{
+ const x=await setup(t);const original=x.window.campaign.keepSessionRecapDraft;let lost=true;
+ x.window.campaign.keepSessionRecapDraft=async(...args)=>{const result=await original(...args);if(lost){lost=false;throw new Error('lost reply');}return result;};
+ x.el('live-session-summary').value='Erste Notiz';x.el('live-session-summary').dispatchEvent(new x.window.Event('input'));
+ x.el('live-session-summary').value='Neuere Notiz';x.el('live-session-summary').dispatchEvent(new x.window.Event('input'));await settle();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).recapDraft.summary,'Neuere Notiz');
+ const basis=x.store.live(x.w.token).recapDraft;x.store.keepSessionRecapDraft(x.w.token,{summary:'Anderes Fenster',handoff:''},basis);
+ x.el('live-session-summary').value='Eigener neuer Text';x.el('live-session-summary').dispatchEvent(new x.window.Event('input'));await settle();assert.equal(await x.ui.flushLive(),false);assert.equal(x.el('live-session-summary').value,'Eigener neuer Text');assert.equal(x.store.live(x.w.token).recapDraft.summary,'Anderes Fenster');assert.match(x.el('live-session-draft-status').textContent,/nicht gesichert/);
+ x.window.confirm=()=>false;x.el('live-session-draft-retry').click();await settle();assert.equal(x.store.live(x.w.token).recapDraft.summary,'Anderes Fenster');assert.equal(x.el('live-session-summary').value,'Eigener neuer Text');
+ x.window.confirm=()=>true;x.el('live-session-draft-retry').click();await settle();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).recapDraft.summary,'Eigener neuer Text');
+});
+
+test('party setup remains available before starting and moves the same editor beside live notes',async t=>{
+ const x=await setup(t,false,false),panel=x.el('live-party-panel'),profile=x.el('character-name');
+ assert.equal(panel.parentElement.id,'live-party-start');assert.equal(panel.closest('#running-editor'),null);
+ x.el('live-party-details').open=true;
+ profile.value='Ada am Tisch';profile.oninput();
+ x.el('live-continue').click();await settle();
+ assert.equal(x.el('live-party-panel'),panel);assert.equal(x.el('character-name'),profile);
+ assert.equal(panel.parentElement.id,'live-party-at-table');assert.equal(x.el('live-party-details').open,true);
+ assert.equal(profile.value,'Ada am Tisch');assert.equal(await x.ui.flushLive(),true);
+ assert.equal(x.store.live(x.w.token).roster[0].profile.name,'Ada am Tisch');
+});
+
+ test('reopening a saved focused group displays its scene without any session mutation',async t=>{
+ const x=await setup(t,false);assert.equal(x.el('running-editor').hidden,false);assert.equal(x.el('live-continue').hidden,true);assert.equal(x.commands.length,0);
+ x.el('running-notes').value='Ada fragt nach dem Schlüssel';x.el('running-notes').oninput();assert.equal(await x.ui.flushLive(),true);
+ const other=await x.focusOther();const before=x.store.db.serialize(),commands=x.commands.length;
+ x.ui.activateLive(x.w);await x.ui.openLive();await settle();
+ assert.equal(x.el('running-editor').hidden,false);assert.equal(x.el('scene-focus').value,other);assert.equal(x.el('running-title').value,'Andere Gruppe');
+ assert.equal(x.commands.length,commands);assert.ok(x.store.db.serialize().equals(before));
+ });
+ test('an empty campaign still requires explicit group initialization',async t=>{
+ const x=await setup(t,false,false);assert.equal(x.el('running-editor').hidden,true);assert.equal(x.el('live-continue').hidden,false);assert.equal(x.store.live(x.w.token).scene,null);assert.equal(x.commands.length,0);
+ x.el('live-continue').click();await settle();assert.equal(x.el('running-editor').hidden,false);assert.equal(x.commands.filter(c=>c.action.kind==='initialize').length,1);assert.equal(x.commands.filter(c=>c.action.kind==='session-marker').length,0);
+ });

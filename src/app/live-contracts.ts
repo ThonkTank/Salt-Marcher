@@ -15,7 +15,20 @@ export interface LiveScene {
   members: string[];
   adoption: { outcome?:VisitOutcome|null;id: string; planId: string; planRevision: number; visitId: string; title: string; notes: string; locationId: string | null } | null;
 }
+export type SessionRecapDraft = {summary:string;handoff:string};
+export function checkedSessionRecapDraft(draft:SessionRecapDraft):SessionRecapDraft{
+  const invalid=()=>new Error('Rückblickentwurf ist ungültig. Gespeicherte Texte bleiben erhalten.');
+  if(!draft||typeof draft!=='object'||Object.getPrototypeOf(draft)!==Object.prototype)throw invalid();
+  for(const key of Reflect.ownKeys(draft)){
+    if(typeof key!=='string'||!['summary','handoff'].includes(key))throw invalid();
+    const field=Object.getOwnPropertyDescriptor(draft,key)!;
+    if(!('value' in field)||!field.enumerable)throw invalid();
+  }
+  if(typeof draft.summary!=='string'||typeof draft.handoff!=='string'||draft.summary.length>10000||draft.handoff.length>10000)throw invalid();
+  return draft;
+}
 export interface LiveView {
+  recapDraft?: SessionRecapDraft | null;
   rosterRevision: number; roster: Character[]; archivedRosterCount?:number; primaryId: string | null; focusId: string | null; focusRevision: number | null;
   scenes: { id: string; title: string; primary: boolean; members: number; membershipRevision: number; clock: LiveScene['clock'] }[];
   archiveCount: number;
@@ -58,6 +71,7 @@ export function formatInstant(instantMs: string, daySeconds=86400): string {
   return 'Tag ' + (seconds / BigInt(daySeconds)) + ' · ' + pad(seconds % BigInt(daySeconds) / 3600n) + ':' + pad(seconds / 60n % 60n) + ':' + pad(seconds % 60n);
 }
 export interface LiveAPI {
+  keepSessionRecapDraft(token:string,draft:SessionRecapDraft,expected:SessionRecapDraft|null):Promise<Result<void>>;
   archivedRoster(token:string,after:string|null,search:string):Promise<Result<{items:Character[];next:string|null;total:number}>>;
   live(token: string): Promise<Result<LiveView>>;
   liveScene(token: string, id: string): Promise<Result<LiveScene>>;

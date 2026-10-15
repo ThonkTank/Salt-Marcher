@@ -4663,65 +4663,11 @@
       "reloadSaveRegression": "AtlasHistory notify pins current recipients and skips unsubscribed ones: newly rendered CityDraft does not receive prior change. Regression: native Save/model reopen/open Inspector/Apply/UndoRedo/new direct Save, exact Unicode/geometry/IDs, camera, foreign bytes and two History steps; FAIL before/PASS after. Five City regressions PASS, including external ABA/revocation.",
       "imeSaveRegression": "Ctrl/Cmd+S during active IME composition must not publish or save unfinished name. Two Managed/Vaultadapter countercases FAIL before/PASS after isComposing guard; input/focus, History and native bytes retained. After composition same shortcut saves with one History step. PR124 independently reviewed and integrated on Shared10defd5; native IME remains open."
     },
-    "manualPlannerContribution": {
+    "manualSessionPlanner": {
       "issue": 69,
-      "state": "core_dom_candidate_no_persisted_host_acceptance",
+      "state": "desktop_candidate_native_acceptance_open",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "implementation": [
-        "src/features/planner/manual-planner.ts",
-        "src/ui/manual-planner-panel.ts"
-      ],
-      "open": [
-        "Campaign/Data record/reference/file-plan/publish confirmation",
-        "Product host activation",
-        "Real Save/Fresh-Reopen/Recovery",
-        "Keyboard and 200 percent host proof"
-      ],
-      "limits": "Manual owner core/DOM only; no PreparationSnapshot clone, Party/LiveSession/Atlas mutation, runtime transfer or E2E/full-original pass",
-      "reviewRepair": {
-        "findings": "CORE-R02 PASS425afd8; REFRESH-R01 PASS4726d28; ATOMIC-ADD-R01 PASS5480881955 on ca25844",
-        "checks": "18 focused core/DOM PASS; full suite 878 PASS/0 FAIL/1 existing PDF environment skip; type/repository/build PASS",
-        "scope": "External active plan/scene changes reject retained callbacks without payload/draft mutation; codec rejects holes/extra keys/symbols/index accessors before hydration"
-      },
-      "viewRecovery": "Explicit refresh displays current plan/scene without committing/discarding/rebinding drafts; stale drafts remain blocked until explicit user discard. DOM evidence only, no native Host PASS.",
-      "atomicSceneAdd": "Allocator failure, duplicate scene ID and final revision overflow preserve confirmed payload, same authored draft and selection; successful compound add commits exact source prose and selects only new scene.",
-      "syntheticGuiPreview": {
-        "entry": "tools/manual-planner-preview/build.mjs",
-        "output": ".build/manual-planner-preview/index.html",
-        "scope": "Real ManualPlannerPanel memory-only browser host; no alternate native storage",
-        "technicalSmoke": "PASS actual bundle blank/create/exact Unicode whitespace notes/second plan/visible volatile limit",
-        "independentGmUse": "6102831310 manual path and focus P2; 6102960484 focused successful repair retest PASS on59f04fe; 6103955574 found inline help and keyboard path in a synthetic browser with simulated document zoom; no native/physical/200 percent acceptance",
-        "nativeSaveFreshRecovery": "open; Campaign/Data authority missing"
-      },
-      "gmFocusRepair": {
-        "source": "6102831310",
-        "change": "Successful scene selection focuses newly rendered title; failed stale action never redirects focus",
-        "before": "1 FAIL /1 PASS",
-        "after": "11/11 panel DOM PASS",
-        "independentReviewAndBrowserRetest": "PASS5481049475 and Cloud-GM6102960484 on59f04fe; pointer/Enter/title/next Tab/notes/plan order preservation"
-      },
-      "atomicRenameMove": {
-        "before": "2 actual panel revision-failure probes FAIL",
-        "after": "24 focused core/panel PASS, including missing target/final context rejection and successful retry",
-        "scope": "Stage draft edit and rename/move before any publication; retain exact original payload/draft/selection on failure",
-        "independentDeltaReview": "pending"
-      },
-      "allocationContextRepair": {
-        "scope": "Plan creation and last-plan replacement revalidate Campaigncontext and complete workspace after ID allocator callback, before publication. Preserve original draft/selection on revocation and newer confirmed foreign changes on reentry.",
-        "before": "Four core countercases FAIL: context revocation and newer workspace for both create/delete.",
-        "checks": "Four new cases PASS after fix, valid retry and exact draft/selection preservation; full suite1094 PASS/0 FAIL/1 existing optional PDF skip, type/build/repo PASS.",
-        "remaining": "Independent narrow core review; native Campaignstorage/Save/Fresh/Recovery remain open."
-      },
-      "nameSceneActionRepair": {
-        "scope": "Retain exact unsubmitted plan-name text after successful guarded same-plan scene add/apply/discard/move/select; model name changes only through explicit rename. No carry into a new plan or external-basis refresh.",
-        "checks": "Five actual panel countercases FAIL before/PASS after plus new-plan isolation PASS; full suite1090 PASS/0 FAIL/1 existing optional PDF skip; type/build/repository PASS.",
-        "remaining": "Independent delta R01 PASS6106571586, PR133 integrated Shared6df23a7; browser GM retest running, native storage/Save/Fresh/Recovery remain open."
-      },
-      "nameRefreshRepair": {
-        "scope": "Retain an unsubmitted plan name only on view refresh of the identical immutable plan basis; no implicit publication or cross-plan/revision rebase.",
-        "checks": "Independent R03 PASS on ec9d7a4; 16/16 panel tests including direct name retention, other-plan and external-revision cases.",
-        "notAuthorized": "No manual-plan document codec, registered storage schema/path, writer, publish, receipt, Recovery, plugin mount, native Save/Fresh or overall product approval."
-      }
+      "historicalPrototype": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/25cf1136199e6a2770d5a088c5c103d8c374701f/acceptance.json"
     },
     "buildingRotationContribution": {
       "issue": 127,

@@ -43,7 +43,6 @@ function decode(row: any): CombatState {
   if (state.id !== row.id || state.sceneId !== row.scene_id || state.revision !== row.revision || state.phase !== row.phase) throw new Error('Kampfzuordnung widersprüchlich.');
   return state;
 }
-export function activeCombat(db:any,campaignId:string,sceneId:string):CombatState|null{const row=db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY ordinal DESC LIMIT 1").get(campaignId,sceneId);return row?decode(row):null;}
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));

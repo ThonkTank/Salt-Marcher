@@ -56,7 +56,7 @@ test('daily plans follow group time, reject overlaps and search only authored pl
   assert.throws(()=>f.store.executeNpc({commandId:'overlapping-plan',campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:saved.noteRevision,expectedRecordRevision:saved.record.revision,expectedActorRevision:saved.actorRevision,expectedPositionRevision:saved.positionRevision,npc:{id:saved.id,name:saved.name,creatureId:saved.creatureId,readAloud:saved.readAloud,gmNotes:saved.gmNotes,record:{...saved.record,dailyPlan:[...dailyPlan,{id:'overlap',startMinute:60,endMinute:180,activity:'Rundgang',place:'other',notes:''}]},locationId:saved.locationId,health:saved.health}}),/überschneiden/);
   assert.equal(f.store.npc(f.workspace.token,f.npcId).record.revision,saved.record.revision);
   const world=f.store.world(f.workspace.token);f.store.executeWorld({commandId:'short-day',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'calendar',calendar:{...world.calendar,daySeconds:72000},expectedRevision:world.calendar.revision}});
-  assert.match(f.store.npcDossier(f.workspace.token,f.scene.id,f.npcId).dailyPlan?.problem??'',/Tageslänge/);
+  const invalid=f.store.npcDossier(f.workspace.token,f.scene.id,f.npcId).dailyPlan!;assert.match(invalid.problem??'',/Tageslänge/);assert.equal(invalid.current,null);assert.equal(invalid.next,null);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 

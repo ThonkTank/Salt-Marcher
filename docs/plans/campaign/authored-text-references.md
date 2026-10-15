@@ -53,6 +53,54 @@ Es gibt keine Schema- oder Autorenmigration.
 Die Storegegenproben in `world-links-storage.test.ts` öffnen eine neue Storeinstanz,
 prüfen kopierte History und nicht angewandte/angewandte Originalaufträge sowie
 Ablehnung einer fremden Belegbindung. Das ist keine native Recoveryabnahme.
+Die Statusklärung im `WorldLinksWorkbench` bindet jede Antwort an den ursprünglichen
+Dialogaufruf, Campaigntoken und Paarauftrag. Bei `applied` prüft sie den vorhandenen
+Entwurf erneut und entfernt nur dessen passende Write-ID. Bereits entfernte
+Entwürfe sind abgeschlossen; eine verlorene Bereinigungsantwort darf erneut
+lesend geklärt werden. Ein anderer gespeicherter Paarentwurf bleibt erhalten; bei unveränderten
+Formulareingaben wird er zur eigenen Prüfung geladen. Bei zugleich neueren lokalen
+Eingaben bleiben beide Varianten erhalten und die Übernahme ist gesperrt.
+„Eingabe verwerfen“ verwirft dann nur die lokalen Eingaben und lädt den
+gespeicherten Entwurf; dessen persistierte Write-ID wird nicht gelöscht. Neuere Formulareingaben werden nicht durch die
+Bestätigung des früheren Commands ersetzt; die aktuelle Basis kann anschließend
+gezielt gelesen werden. Während der Prüfung und des anschließenden Refreshs ist
+das Paarformular gesperrt. Statusklärung führt keinen weiteren Beziehungscommand
+aus und überschreibt keine inzwischen bearbeitete GM-Prosa.
+
+`world-links-recovery.test.ts` verbindet den echten Workbench mit dem echten Store:
+erhaltene/entfernte und tatsächlich kopierte angewandte Aufträge, neuere Eingaben,
+eine andere Write-ID, spätere GM-Prosa, verlorene Bereinigungsantwort und verspätete
+Antwort nach Kontextwechsel. Das ist ein kontrollierter Store-/DOMbeleg; native
+Dialog-, Fokus-/IME-, Crash- und vollständige Kampagnenwechselabnahme bleiben offen.
+
+## Statusklärung gerichteter Beziehungen und Paarhistory
+
+Auch einzelne Beziehungs- und Paarhistoryaufträge binden die Statusantwort an
+Workspace, Token, ursprünglichen Command und Dialogaufruf. Erneutes Öffnen mit
+demselben Token gibt einer früheren Antwort keine Schreib- oder Anzeigeautorität.
+Die Prüfung führt weder den Beziehungscommand noch Undo/Redo erneut aus.
+
+Ein bereits angewandter Einwegauftrag entfernt nur seinen zugehörigen
+Vorbereitungsentwurf mit der vorhandenen Write-ID-Prüfung. Fehlender Draft ist
+abgeschlossen; verlorene Bereinigungsantworten bleiben lesend klärbar. Ein anderer
+Editorentwurf wird erhalten und als offene Arbeit ausgewiesen. Treffen zugleich
+neuere lokale Eingaben ein, bleibt die Übernahme gesperrt; ausdrückliches
+„Eingabe verwerfen“ lädt den gespeicherten Entwurf ohne dessen Löschung.
+Nach `not-applied` endet die Statusprüfung, und eine weitere Übernahme ist eine
+neue ausdrückliche Aktion auf der passend geprüften Basis. Historykonflikte
+verlangen Standlesen statt eines automatischen zweiten Undo/Redo.
+
+Neuere Beschriftungen bleiben bei bestätigter History oder Einzeländerung offen.
+Der gespeicherte Quellstand wird nur bei unverändertem Formular neu geladen;
+spätere GM-Prosa bleibt maßgeblich. Nach bestätigter Neuanlage wird nur deren noch
+unveränderter Name geleert; ein bereits eingegebener nächster Name bleibt stehen.
+Der bestehende DOM-/Storetest löst Statusklärung über den verbundenen Button aus
+und prüft zusätzlich erhaltene/fremde Drafts, Klärungswiederholung, gleiche
+Aktivierung nach Wiederöffnung und ausdrücklich fortsetzbare Konfliktbedienung.
+Native Fokus-, IME-, Crash- und komplette Workspaceabnahmen bleiben offen.
+
+## Herkunftsprüfung und Grenzen alter Kopien
+
 Bereits mit falschen Historybesitzern erzeugte ältere Kopien sind damit nicht
 rückwirkend repariert. `campaign_origin.original_database` enthält heute einen
 kompakten Herkunftsvermerk mit Hash der angenommenen Datei, keine ursprüngliche
@@ -102,3 +150,37 @@ Früher veränderte Kopien lassen sich ohne Original nicht automatisch repariere
 Suche und eingehende Kanten berücksichtigen alle aktiven Textverweise. Begrenzte
 Leser zeigen einen Hinweis auf weitere Ziele; einzelne beschädigte Quellen
 werden als unvollständig gemeldet, gesunde Treffer bleiben erreichbar.
+
+## Autorenabsicht vor und während der Übernahme
+
+Der Zielread für Anlegen/Lösen eines Paars gehört zu genau einem geladenen
+Quellkontext: Workspace, Dialogrequest, Detailrequest und Inhaltsobjekt.
+Gleiche Quell-ID und gleicher Aktivierungstoken allein genügen nach erneutem
+Öffnen nicht. Zielauswahl, Bezeichnungen, Paarmodus und Familientyp erhalten
+eine lokale Änderungsgeneration. Ändert sie sich während des Zielreads,
+entsteht kein Draft und kein Command; die neue Eingabe verlangt eine erneute
+ausdrückliche Übernahme. Beide Beschriftungen und der Typ stammen aus der
+ursprünglich bestätigten Eingabe, die Zielrevision aus deren geprüftem Read.
+
+Entwurfsbestätigung und Einzel-/Paar-/Historywriter behalten denselben
+Quellkontext über Drain, Persistenz und Antwort. Eine alte Antwort darf weder
+Write-ID noch Prüfauftrag, Formular, Status oder Busyzustand eines neuen
+Dialogaufrufs übernehmen. Der bereits gespeicherte Draft beziehungsweise
+Receipt bleibt für dessen normale Wiederaufnahme erhalten. Reset wartet
+nicht auf einen alten Draftcallback und gibt ihm keine neue Autorität.
+Wiederholtes Bestätigen während der Entwurfs-/Zielprüfung ist gesperrt;
+die Sperre endet erst nach dem eigenen Refresh oder passenden Fehler.
+
+Neuere Eingaben während der eigentlichen Schreibantwort bleiben erhalten;
+der unveränderte ursprüngliche Command wird nicht umgedeutet oder erneut
+ausgeführt. Vor einer weiteren Übernahme muss die gespeicherte Basis gelesen
+werden. Ein neu eingegebener nächster Inhaltsname wird vom Erfolg des vorherigen
+Anlegeauftrags nicht geleert. Keine Schema-/Prosamigration und kein neuer Writer.
+Die Store-/DOMgegenproben in `world-links-recovery.test.ts` halten Zielreads,
+Draftantworten und Erfolge/Fehler der drei Writer kontrolliert zurück. Sie
+prüfen tatsächliche SQLitewirkungen, neue Eingaben, gleiches Token beim
+Wiederöffnen, wiederholtes Bestätigen und weiter bedienbare Erfolgsformulare.
+Rebase, ausdrückliches Verwerfen und Moduswechsel haben weitere asynchrone
+Fortsetzungen; diese sind damit nicht vollständig qualifiziert. Als nächster
+Schritt sind dort dieselben Kontextwechsel samt bedingter Draftlöschung zu
+prüfen. Native Fokus-/IME-/Crash- und vollständige Produktabnahmen bleiben offen.
