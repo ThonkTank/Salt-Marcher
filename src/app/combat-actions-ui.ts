@@ -8,8 +8,8 @@ export function renderCombatActions(root:HTMLElement,creature:Creature,onRoll:(a
  const all=[...creature.actions,...creature.legendaryActions];const chosen=all.some(a=>a.id===previous)?previous!:all[0]?.id??'';const chosenOption=[...select.querySelectorAll('option')].find(option=>option.value===chosen);if(chosenOption)chosenOption.selected=true;
  const draw=()=>{tools.replaceChildren();const original=all.find(a=>a.id===select.value);if(!original)return;const action=creatureActionForRolls(creature,original),presets=creatureActionRolls(action),state=control(action);text.textContent=original.description+(action.description!==original.description?'\n'+action.description:'');
   const add=(label:string,fn:()=>void)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.disabled=state?.disabled??false;button.dataset.statblockDisabled=String(state?.disabled??false);button.onclick=fn;tools.append(button);};
-  if(creatureAverageDamage(action)!==null)add(presets.some(p=>p.kind==='save')?'Ziele & Schaden…':'Treffer eintragen…',()=>onDamage(action));
-  for(const p of presets)add(p.kind==='attack'?'Angriff '+p.formula:p.kind==='damage'?'Schaden '+p.formula:(p.kind==='save'?'Rettungswurf':'Probe')+' SG '+p.dc,()=>onRoll(action,p));
+  const attack=presets.some(p=>p.kind==='attack');if(attack&&presets.some(p=>p.kind==='damage')||creatureAverageDamage(action)!==null)add(presets.some(p=>p.kind==='save')?'Ziele & Schaden…':'Treffer eintragen…',()=>onDamage(action));
+  for(const p of presets.filter(p=>!attack||p.kind!=='damage'))add(p.kind==='attack'?'Angriff '+p.formula:p.kind==='damage'?'Schaden '+p.formula:(p.kind==='save'?'Rettungswurf':'Probe')+' SG '+p.dc,()=>onRoll(action,p));
   if(state){const note=document.createElement('small');note.textContent=state.note;tools.append(note);if(!presets.length)add('Einsetzen',()=>onUse(action));}
  };select.onchange=draw;draw();
 }
