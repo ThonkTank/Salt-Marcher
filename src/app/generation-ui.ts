@@ -156,6 +156,7 @@ export function initGeneration(status:typeof tell,callbacks:Bridge){
  for(const [a,b]of [['generation-npc-only','generation-npc-mixed'],['generation-npc-mixed','generation-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
 tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required-npcs',tell);
  ensureLootUI();
+ get('encounter-generate').onclick=()=>{get('generation-tables').closest('fieldset')!.scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
  get('generation-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');target.focus({preventScroll:true});};
  get('catalog-tables').onclick=()=>{get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};

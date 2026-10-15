@@ -305,3 +305,5 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #table-manager .table-manager-heading{position:sticky;top:-1.7rem;background:#fff;z-index:3;padding:.5rem 0}#table-form{min-width:0}#table-form h3{margin:1.1rem 0 .4rem}#table-options{margin:1rem 0}#table-form .table-save-actions{background:#fff;border-top:1px solid var(--line);padding:.75rem 0;display:flex;align-items:center;justify-content:space-between;gap:1rem}#table-save-status{margin:0}#table-catalog-slot{align-self:start;position:sticky;top:3.5rem}#table-catalog-slot .catalog-table-scroll{max-height:38vh}@media(max-width:950px){#table-catalog-slot{position:static}}
 
 .catalog-heading{flex-wrap:wrap;gap:.75rem}#generation-workspace{scroll-margin-top:5rem}
+
+#encounter-builder{scroll-margin-top:5rem}
