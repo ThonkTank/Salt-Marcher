@@ -845,9 +845,11 @@ export class CampaignStore {
         if (change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision || old.trashed) throw new Error('Notizkonflikt: Der gespeicherte Stand hat sich geändert.');
         const oldNote = old ? this.decodeNote(old, 'Beschädigte Notiz darf nicht überschrieben werden.') : null;
         if (oldNote && oldNote.kind !== change.note.kind) throw new Error('Die Notizart bleibt an ihrer Identität gebunden.');
+        if(oldNote?.relations.some(relation=>relation.familyKind&&!change.note.relations.some(next=>next.targetId===relation.targetId&&next.label===relation.label&&next.familyKind===relation.familyKind)))throw new Error('Familienbeziehungen werden nur als vollständiges Paar geändert.');
         for (const relation of change.note.relations) {
           const target = this.db.prepare('SELECT trashed FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, relation.targetId);
-          const retained = oldNote?.relations.some(r => r.targetId === relation.targetId && r.label === relation.label);
+          const retained = oldNote?.relations.some(r => r.targetId === relation.targetId && r.label === relation.label && r.familyKind === relation.familyKind);
+          if(relation.familyKind&&!retained)throw new Error('Familienbeziehungen werden atomar im Zusammenhangsplan angelegt.');
           if (!target || target.trashed && !retained) throw new Error('Beziehung zeigt nicht auf eine verfügbare Notiz.');
         }
         revision = (old?.revision ?? 0) + 1;

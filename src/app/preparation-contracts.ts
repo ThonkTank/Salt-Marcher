@@ -34,7 +34,7 @@ export function checkedPreparationDraft(value: PreparationDraft): PreparationDra
   if (change.kind === 'note') {
     draftFields(change.note, ['version', 'id', 'revision', 'kind', 'title', 'readAloud', 'gmNotes', 'relations', 'creatureId', 'deleted']);
     if (!Array.isArray(change.note.relations)) throw new Error('Ungültige Entwurfsbeziehungen.');
-    for (const relation of change.note.relations) draftFields(relation, ['targetId', 'label']);
+    for (const relation of change.note.relations) draftFields(relation, ['targetId', 'label'], ['familyKind']);
     if (typeof change.note?.title !== 'string') throw new Error('Ungültiger Entwurfstitel.');
     worldNoteDocument({ ...change.note, title: 'Draftstruktur' });
     if (change.note.deleted || change.note.revision !== change.expectedRevision) throw new Error('Entwurfsbasis stimmt nicht.');

@@ -45,6 +45,9 @@ Ausdrücklich reziproke Beziehungen verlangen zwei Labels, ändern beide World-N
 atomar und besitzen eine eigene Paar-History. Rückgängig/Wiederholen invertiert nur
 diese Kanten; eine spätere Änderung an einer beteiligten Notiz sperrt den Schritt.
 Die Paar-History ist weder Atlas- noch City-History.
+Elternteil/Kind, Geschwister und Partner werden ausdrücklich als Paar typisiert.
+Die Familienansicht filtert nur diese Metadaten; freie Beziehungsnamen bleiben
+unverändert in der Gesamtansicht und werden nicht semantisch interpretiert.
 Textverweise erklären Anzeigenamen, Quellnavigation und die Suche nach verknüpften Begriffen.
 Die Stadtlektionen unterscheiden den offenen Zeichenzug, die ausdrücklich
 übernommene Bebauungsvorschau und die geschützte Einzelbearbeitung samt Ausgabe.
@@ -91,6 +94,6 @@ eigens erklärt. Die Testfixture konstruiert auch die dynamische Welt- und NSC-O
 Katalogsuche, Kreatur-/Begegnungsfilter und manuelle Encounterplanung haben
 konkrete Lektionen; die Zuordnung bleibt im bestehenden Tutorialcode.
 
-Die konsolidierte Lehrrevision `desktop-tutorial-v80` enthält die integrierten
+Die konsolidierte Lehrrevision `desktop-tutorial-city-family-projection-v83` enthält die integrierten
 Beziehungs-, Stadt- und Übergabelektionen. Neue Lessonrevisionen archivieren
 die früheren Läufe; die Lehrabdeckung bleibt eine Teilprüfung des Produkts.

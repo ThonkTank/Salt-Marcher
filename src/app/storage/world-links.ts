@@ -7,6 +7,7 @@ import {npcPosition} from './npc-world';
 import {readCreature,searchCreatures,readEncounterPlan} from './encounters';
 import {readItemDefinition} from './item-definitions';
 import {worldNoteDocument} from '../../features/world/world-notes';
+import type {WorldFamilyRelationKind} from '../../features/world/world-notes';
 import {checkedLocationDocument} from '../../features/location/location-schema';
 const decode=(r:any)=>{if(!r||createHash('sha256').update(r.payload).digest('hex')!==r.checksum)throw new Error('Zusammenhangsquelle beschädigt.');return JSON.parse(r.payload);};
 // Each query returns metadata only. Catalogue bodies and campaign prose load on selection.
@@ -33,11 +34,11 @@ export function readWorldLinks(db:any,cam:string,q:WorldLinksQuery):WorldLinksPa
   const n=resolved(ref);
   nodes.set(key,n);return n;
  };
- const edge=(from:WorldLinkRef,to:WorldLinkRef,label:string,authored=false)=>{if(!add(from)||!add(to))return;const key=JSON.stringify([worldLinkKey(from),worldLinkKey(to),label,authored]);if(edgeKeys.has(key))return;if(edges.length>=160){hiddenLinks++;return;}edgeKeys.add(key);edges.push({source:from,target:to,label,authored});};
+ const edge=(from:WorldLinkRef,to:WorldLinkRef,label:string,authored=false,familyKind?:WorldFamilyRelationKind)=>{if(!add(from)||!add(to))return;const key=JSON.stringify([worldLinkKey(from),worldLinkKey(to),label,authored,familyKind]);if(edgeKeys.has(key))return;if(edges.length>=160){hiddenLinks++;return;}edgeKeys.add(key);edges.push({source:from,target:to,label,authored,...(familyKind?{familyKind}:{})});};
  for(const n of matches)nodes.set(worldLinkKey(n.ref),n);
  const focus=q.focus?add(q.focus):matches[0]??null,local=new Set(nodes.keys());
  const ids=matches.filter(n=>n.ref.kind==='note').map(n=>n.ref.id);
- if(ids.length){const placeholders=ids.map(()=>'?').join(',');for(const r of db.prepare("SELECT n.id sourceId,json_extract(j.value,'$.targetId') targetId,json_extract(j.value,'$.label') label FROM world_note n,json_each(n.payload,'$.relations') j WHERE n.campaign_id=? AND n.trashed=0 AND n.id IN("+placeholders+") ORDER BY n.id,j.key").iterate(cam,...ids))if(local.has('note:'+r.targetId))edge({kind:'note',id:r.sourceId},{kind:'note',id:r.targetId},r.label,true);}
+ if(ids.length){const placeholders=ids.map(()=>'?').join(',');for(const r of db.prepare("SELECT n.id sourceId,json_extract(j.value,'$.targetId') targetId,json_extract(j.value,'$.label') label,json_extract(j.value,'$.familyKind') familyKind FROM world_note n,json_each(n.payload,'$.relations') j WHERE n.campaign_id=? AND n.trashed=0 AND n.id IN("+placeholders+") ORDER BY n.id,j.key").iterate(cam,...ids))if(local.has('note:'+r.targetId))edge({kind:'note',id:r.sourceId},{kind:'note',id:r.targetId},r.label,true,r.familyKind??undefined);}
  const limited=(sql:string,args:any[],use:(r:any)=>void)=>{const rows=db.prepare(sql+' LIMIT 41').all(...args);for(const row of rows.slice(0,40))use(row);if(rows.length>40)hiddenLinks++;};
  const encounterEdges=(f:WorldLinkRef)=>{const p=readEncounterPlan(db,cam,f.id),counts=new Map<string,number>(),actors=new Set<string>();for(const entry of p.entries){counts.set(entry.creatureId,(counts.get(entry.creatureId)??0)+entry.count);for(const id of entry.worldActorIds??[])actors.add(id);}for(const [id,count] of [...counts].slice(0,40))edge(f,{kind:'creature',id},count+' × Statblock · Vorlage enthält Quellenstand');for(const id of [...actors].slice(0,40))edge(f,{kind:'note',id},'benannter Teilnehmer');hiddenLinks+=Math.max(0,counts.size-40)+Math.max(0,actors.size-40);};
  let referenceNotice=aliasPage?.notice;
@@ -46,8 +47,8 @@ export function readWorldLinks(db:any,cam:string,q:WorldLinksQuery):WorldLinksPa
 
  if(focus&&focus.available){const f=focus.ref;
   if(f.kind==='note'){
-   const own=decode(source.get(cam,f.id));const refs=documentReferences(own);for(const r of refs.slice(0,40))edge(f,r.ref,'Textverweis · '+r.label);hiddenLinks+=Math.max(0,refs.length-40);for(const r of own.relations.slice(0,40))edge(f,{kind:'note',id:r.targetId},r.label,true);hiddenLinks+=Math.max(0,own.relations.length-40);
-   limited("SELECT n.id sourceId,json_extract(j.value,'$.label') label FROM world_note n,json_each(n.payload,'$.relations') j WHERE n.campaign_id=? AND n.trashed=0 AND json_extract(j.value,'$.targetId')=? ORDER BY json_extract(n.payload,'$.title'),n.id,j.key",[cam,f.id],r=>edge({kind:'note',id:r.sourceId},f,r.label,true));
+   const own=decode(source.get(cam,f.id));const refs=documentReferences(own);for(const r of refs.slice(0,40))edge(f,r.ref,'Textverweis · '+r.label);hiddenLinks+=Math.max(0,refs.length-40);for(const r of own.relations.slice(0,40))edge(f,{kind:'note',id:r.targetId},r.label,true,r.familyKind);hiddenLinks+=Math.max(0,own.relations.length-40);
+   limited("SELECT n.id sourceId,json_extract(j.value,'$.label') label,json_extract(j.value,'$.familyKind') familyKind FROM world_note n,json_each(n.payload,'$.relations') j WHERE n.campaign_id=? AND n.trashed=0 AND json_extract(j.value,'$.targetId')=? ORDER BY json_extract(n.payload,'$.title'),n.id,j.key",[cam,f.id],r=>edge({kind:'note',id:r.sourceId},f,r.label,true,r.familyKind??undefined));
    if(own.creatureId)edge(f,{kind:'creature',id:own.creatureId},'verwendet Statblock');
    if(own.kind==='npc'){const p=npcPosition(db,cam,f.id);if(p.locationId)edge(f,{kind:'location',id:p.locationId},'steht am Ort');const record=db.prepare('SELECT * FROM npc_record WHERE campaign_id=? AND id=?').get(cam,f.id);if(record){const v=decode(record);if(v.factionId)edge(f,{kind:'note',id:v.factionId},'gehört zur Fraktion');}
     limited("SELECT DISTINCT p.id FROM encounter_plan p,json_each(p.payload,'$.entries') e,json_each(e.value,'$.worldActorIds') a WHERE p.campaign_id=? AND a.value=? ORDER BY p.name,p.id",[cam,f.id],r=>edge({kind:'encounter',id:r.id},f,'benannter Teilnehmer'));
