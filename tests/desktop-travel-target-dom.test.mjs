@@ -102,7 +102,7 @@ test('camera zoom and reset preserve an off-centre unsaved hex, its level and tr
   x.document.getElementById('world-view-reset').onclick();assert.equal(root.getAttribute('viewBox'),initial);assert.equal(x.document.getElementById('hex-label').value,'Alte Fähre');assert.equal(x.writes,writes);
   for(let i=0;i<30;i++)x.document.getElementById('world-zoom-out').onclick();assert.equal(x.document.getElementById('world-zoom-out').disabled,true);assert.ok(root.querySelectorAll('polygon').length<=631);
   for(let i=0;i<30;i++)x.document.getElementById('world-zoom-in').onclick();assert.equal(x.document.getElementById('world-zoom-in').disabled,true);
-  x.document.getElementById('hex-form').onsubmit({preventDefault(){}});await until(()=>x.store.world(x.w.token).maps[0].cells.some(c=>c.q===3&&c.r===0&&c.level===0&&c.label==='Alte Fähre'));
+  x.document.getElementById('hex-form').onsubmit({preventDefault(){}});await until(()=>x.store.world(x.w.token).maps[0].cells.some(c=>c.q===3&&c.r===0&&c.level===0&&c.label==='Alte Fähre'));await until(()=>root.textContent.includes('Alte Fähre'));const children=[...root.children],label=children.findIndex(c=>c.tagName.toLowerCase()==='text'&&c.textContent==='Alte Fähre');assert.ok(children.every((c,i)=>c.tagName.toLowerCase()!=='polygon'||i<label),'neighbouring terrain must not paint over map labels');
  }finally{x.cleanup();}
 });
 test('explicit edit raster saves the local cell before changing its separate authored layer',async()=>{
