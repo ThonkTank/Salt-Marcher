@@ -364,7 +364,7 @@ function renderPartyReference(){
       if(dialog.open||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||!activeParty().some(c=>c.id===id))return;
       selected=id;characterDraft=structuredClone(originalCharacter()!);renderCharacter();renderList();
       healthOwner={token:token!,sceneId:sceneId!,characterId:id};
-      get('live-health-title').textContent=originalCharacter()!.profile.name+' · HP und Zustände';get('live-health-group').textContent=data?.scene?.title||'Aktuelle Gruppe';
+      get('live-health-title').textContent=originalCharacter()!.profile.name+' · HP und Zustände';get('live-health-group').textContent='Gruppe: '+(data?.scene?.title||'Aktuelle Gruppe');
       get('live-health-status').textContent='';get('live-health-slot').append(get('character-health'));
       get<HTMLDetailsElement>('health-controls').open=!progressCharacters().find(c=>c.characterId===id)?.health||!!get('health-draft-status').textContent;
       dialog.showModal();get<HTMLInputElement>(get<HTMLDetailsElement>('health-controls').open?'health-current':'health-amount').focus({preventScroll:true});

@@ -114,6 +114,7 @@ function render() {
   const status=p?.health??p?.lastCombatStatus;
   get('health-summary').textContent = (p?.health?'HP: '+p.health.hp+' / '+p.health.maxHp:'HP noch offen.')+(status?.tempHp?' + '+status.tempHp+' temporär':'')+(status?.conditions?' · '+status.conditions:'')+(status?.concentrating?' · Konzentration':'');
   const death=p?.health?.death,panel=get('death-saves'),controls=deathSaveControls(death);panel.hidden=!p?.health||p.health.hp>0||!!p.healthCombat;if(!panel.hidden){get('death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':'Todesrettungswürfe: '+deathCount(death?.successes??0,'Erfolg','Erfolge')+' · '+deathCount(death?.failures??0,'Fehlschlag','Fehlschläge');get<HTMLDetailsElement>('death-other').open=controls.terminal;}
+  get('health-adjust').hidden=!p?.health;
   renderHealth(p);
   const rest = get('rest-members'); rest.replaceChildren();
   for (const c of view?.characters.filter(c => c.active && c.sceneId === live?.focusId) ?? []) { const label = document.createElement('label'), checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = c.characterId; checkbox.checked = true; label.className = 'check-label'; label.append(checkbox, document.createTextNode(c.name)); rest.append(label); }
