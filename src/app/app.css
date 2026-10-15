@@ -388,6 +388,7 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 /* Result counts must not move the table editor's search field under the pointer. */
 #table-manager{height:92vh}
 
+.map-canvas-state{padding:.8rem;border:1px solid var(--line);background:#fff;display:flex;gap:1rem;align-items:center;justify-content:space-between}.map-canvas-state[role=alert]{border-color:var(--error);color:var(--error)}
 /* Authoring controls must be reachable while the working map stays visible. */
 .world-map-columns{grid-template-columns:minmax(0,1fr) 280px;gap:1rem;align-items:start}
 .world-map-columns>section{padding:.8rem}

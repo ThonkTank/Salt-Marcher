@@ -15,14 +15,15 @@ async function fixture(t){
  store.executeLive(command({kind:'initialize',expectedRosterRevision:store.live(w.token).rosterRevision}));
  const map={id:randomUUID(),revision:0,name:'Originalkarte',hexMeters:1000,climate:'temperate',seed:'unchanged',cells:[]};store.executeWorld(command({kind:'map',map,expectedRevision:null}));
  const previous={window:globalThis.window,document:globalThis.document,DOMPoint:globalThis.DOMPoint},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
+ class Matrix{inverse(){return new Matrix();}}
  class Point{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return new Point(this.x,this.y);}}
  Object.assign(globalThis,{window,document,DOMPoint:Point});const sent=[],messages=[];
  const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  window.campaign={world:async token=>response(()=>store.world(token)),preparation:async token=>response(()=>store.preparation(token)),live:async token=>response(()=>store.live(token)),sceneWorld:async(token,id)=>response(()=>store.sceneWorld(token,id)),executeWorld:async c=>{sent.push(structuredClone(c));return response(()=>store.executeWorld(c));}};
  delete require.cache[require.resolve('../'+base+'/world.cjs')];const ui=require('../'+base+'/world.cjs');ui.initWorld(text=>messages.push(text),async()=>true,async()=>{},async()=>{});
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});ui.activateWorld(w);await ui.openWorld();
- const get=id=>document.getElementById(id),canvas=get('world-map'),captures=new Set();canvas.getScreenCTM=()=>({inverse:()=>({})});canvas.setPointerCapture=id=>captures.add(id);canvas.hasPointerCapture=id=>captures.has(id);canvas.releasePointerCapture=id=>{captures.delete(id);};
- const event=(type,fields={})=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,fields);canvas.dispatchEvent(e);return e;};
+ const get=id=>document.getElementById(id),canvas=get('world-map'),captures=new Set();canvas.getScreenCTM=()=>new Matrix();canvas.setPointerCapture=id=>captures.add(id);canvas.hasPointerCapture=id=>captures.has(id);canvas.releasePointerCapture=id=>{captures.delete(id);};
+ const event=(type,fields={})=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:0,clientY:0},fields);canvas.dispatchEvent(e);return e;};
  const enter=(id,value)=>{get(id).value=value;get(id).dispatchEvent(new window.Event('input',{bubbles:true}));};
  const panButton=()=>document.querySelector('[data-world-pan="5,0"]').onclick();
  const camera={pan:panButton,alt:()=>event('keydown',{key:'ArrowRight',altKey:true}),zoom:()=>get('world-zoom-in').onclick(),wheel:()=>event('wheel',{deltaY:-1}),resize:()=>window.dispatchEvent(new window.Event('resize')),reset:()=>get('world-view-reset').onclick()};
@@ -63,4 +64,10 @@ test('camera interruption releases the old transform and retains one exact undo/
  x.get('hex-form').onsubmit({preventDefault(){}});await x.saved();const saved=x.store.world(x.w.token).maps[0].cells;assert.deepEqual(saved.map(c=>[c.q,c.r]).sort((a,b)=>a[0]-b[0]),[[0,0],[1,0],[2,0]]);
  x.get('hex-paint-undo').onclick();for(let i=0;i<60&&x.store.world(x.w.token).maps[0].cells.length;i++)await tick();assert.deepEqual(x.store.world(x.w.token).maps[0].cells,[]);assert.equal(x.sent.length,2);
  x.get('hex-paint-redo').onclick();for(let i=0;i<60&&x.sent.length<3;i++)await tick();assert.deepEqual(x.store.world(x.w.token).maps[0].cells,saved);assert.equal(x.sent.length,3);
+});
+
+test('Alt arrows retain a fractional camera position and resize releases a shared middle drag',async t=>{
+ const x=await fixture(t),before=x.digest();x.event('pointerdown',{pointerId:12,button:1,clientX:0,clientY:0});x.event('pointermove',{pointerId:12,clientX:50,clientY:0});x.event('pointerup',{pointerId:12,button:1});
+ const left=Number(x.canvas.getAttribute('viewBox').split(' ')[0]);x.camera.alt();assert.equal(Number(x.canvas.getAttribute('viewBox').split(' ')[0]),left+100);
+ x.event('pointerdown',{pointerId:13,button:1,clientX:0,clientY:0});x.event('pointermove',{pointerId:13,clientX:30,clientY:0});const box=x.canvas.getAttribute('viewBox');x.camera.resize();x.event('pointermove',{pointerId:13,clientX:800,clientY:0});x.event('pointerup',{pointerId:13,button:1});assert.equal(x.canvas.getAttribute('viewBox'),box);await tick();assert.equal(x.digest(),before);assert.equal(x.sent.length,0);
 });

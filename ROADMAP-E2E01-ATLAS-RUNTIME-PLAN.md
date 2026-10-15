@@ -43,7 +43,8 @@ Die Desktopkorrektur in `world-ui.ts`/`hex-map-gestures.ts` verhindert automatis
 Worldwrites durch Kameraereignisse und erhält einen unterbrochenen Strich als
 lokalen Entwurf. [Verhalten und begrenzte Belege](docs/plans/maps/hex-editing.md)
 sind von einer vollständigen gemeinsamen Canvasimplementation getrennt. Desktop
-verwendet derzeit SVGflächen in World-, Drawing- und Volume-UI; der bestehende
+verwendet `PassiveMapCanvas` gemeinsam für World-/Drawing-SVG und eine weitere
+SVGfläche im Volume-UI; der bestehende
 Hostadapter in `features/atlas` kombiniert Pixi-Renderer, RelativeFrame und
 SpatialCanvas. Diese Wege sind keine gegenseitigen Plattformnachweise und
 begründen keine neue parallele Autoren-/Kamerawahrheit.
