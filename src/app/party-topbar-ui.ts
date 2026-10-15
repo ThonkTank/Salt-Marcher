@@ -54,7 +54,8 @@ function rest(kind:'short'|'long'){
   });
   const withTime=el<HTMLInputElement>('party-rest-time').checked,amount=Number(value('party-rest-'+kind)),restoreHp=kind==='long'&&el<HTMLInputElement>('party-rest-hp').checked;
   if(withTime&&(!Number.isSafeInteger(amount)||amount<=0))throw new Error('Positive ganze Dauer für die Rast eintragen.');
-  const action:Extract<ProgressAction,{kind:'rest'}>={kind:'rest',rest:kind,recipients,restoreHp,scene:withTime?{id:scene.id,expectedClockRevision:scene.clock.revision,expectedMembershipRevision:scene.membershipRevision,expectedFocusRevision:basis.focusRevision,amount,unit:kind==='short'?'minutes':'hours'}:{id:scene.id,expectedClockRevision:scene.clock.revision,expectedMembershipRevision:scene.membershipRevision,expectedFocusRevision:basis.focusRevision}};
+  const scope={id:scene.id,expectedClockRevision:scene.clock.revision,expectedMembershipRevision:scene.membershipRevision,expectedFocusRevision:basis.focusRevision};
+  const action:Extract<ProgressAction,{kind:'rest'}>={kind:'rest',rest:kind,recipients,restoreHp,scene:withTime?{...scope,amount,unit:kind==='short'?'minutes':'hours'}:scope};
   const key=JSON.stringify({token:workspace.token,action});
   if(restConfirmation!==key){
    clearRestConfirmation();restConfirmation=key;
