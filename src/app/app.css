@@ -460,3 +460,7 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 @media(max-width:650px){.combat-area-row{grid-template-columns:1fr 1fr}.combat-area-row>span{grid-column:2}}
 
 #combat-table{table-layout:fixed;width:100%}#combat-table th:first-child{width:32%}#combat-table th:nth-child(4){width:21%}#combat-table th:last-child{width:27%}#combat-table td:last-child{font-size:.8rem}#combat-table td:first-child button{max-width:100%;overflow-wrap:normal}
+.travel-evaluation-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:.75rem 0}
+.travel-evaluation-facts>div{min-width:0;padding:.5rem;border:1px solid var(--line,#ccd6df);border-radius:.35rem}
+.travel-evaluation-facts dt{font-size:.85rem;overflow-wrap:anywhere}.travel-evaluation-facts dd{margin:.25rem 0 0;font-weight:600;overflow-wrap:anywhere}
+@media(max-width:600px){.travel-evaluation-facts{grid-template-columns:1fr}}
