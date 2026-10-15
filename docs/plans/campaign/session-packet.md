@@ -35,9 +35,12 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
 - Einen Block als Chronikmoment vormerken. Sein Auszug ergänzt den vorhandenen
   lokalen Momententwurf; Titel und Kategorie bleiben bei bestehender Eingabe
   erhalten. Erst die separate Speicherung bucht den tatsächlichen Ausgang.
-- Besuchsergebnisse über den vorhandenen Navigator bestätigen. Mappe und Chronik
-  zeigen Übernahmen und höchstens die fünf neuesten Ergebnisse je Besuch,
-  einschließlich Hinweis auf weitere. Das vergibt keine XP, Beute oder Zeit.
+- Besuchsergebnisse über den vorhandenen Navigator bestätigen. Nach Abschluss
+  oder Überspringen kann derselbe Auftrag unmittelbar die Übernahmeprüfung des
+  nächsten noch offenen Planbesuchs öffnen. Mappe und Chronik zeigen Übernahmen
+  und höchstens die fünf neuesten Ergebnisse je Besuch, einschließlich Hinweis
+  auf weitere. Das vergibt keine XP, Beute oder Zeit und übernimmt den nächsten
+  Besuch noch nicht.
 - Die vollständige Mappe als Markdown ausgeben. Autorenwortlaut, CRLF und
   führende Leerzeichen bleiben erhalten; erzeugte Überschriften sind einzeilig.
 
