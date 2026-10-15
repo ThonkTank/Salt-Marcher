@@ -420,4 +420,4 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #combat-table .combat-health{padding:.3rem .4rem;text-align:center;border-color:#8aa5bd;white-space:normal}
 #combat-table .combat-health:hover{background:#e5eff7}
 
-#live-focus-bar{scroll-margin-top:calc(var(--workspace-header-height,64px) + var(--workspace-nav-height,0px) + .5rem)}
+#running-editor{scroll-margin-top:var(--workspace-content-offset)}

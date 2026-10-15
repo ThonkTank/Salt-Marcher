@@ -408,7 +408,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-party-select').onchange=()=>{get<HTMLInputElement>('combat-party-initiative').value='';};
   get('combat-create-form').onsubmit = event => { event.preventDefault(); if (scene) void execute({ kind: 'create', sceneId: scene.id, expectedMembershipRevision: scene.membershipRevision, title: value('combat-new-title'), includeParty: get<HTMLInputElement>('combat-include-party').checked }); };
   get('combat-resume').onclick=()=>get('combat-panel').scrollIntoView({block:'start'});
-  get('combat-scene').onclick=()=>get('live-focus-bar').scrollIntoView({block:'start'});
+  get('combat-scene').onclick=()=>get('running-editor').scrollIntoView({block:'start'});
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
