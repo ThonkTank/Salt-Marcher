@@ -27,6 +27,15 @@ ein aktiver Step nach Restore kann Perioden nachholen. Diese aktuelle Wirkung
 ist noch keine bestätigte Trashzeitpolitik. Gewichtete Auffüllung und
 Kalenderereignisse fehlen.
 
+Automatische Auffüllungen halten pro Zeile ursprüngliche Regelparameter, Anzahl
+der Perioden, erste/letzte Fälligkeit und Mengen vor/nach dem Vorgang fest.
+Spätere Regeländerungen verändern diese Fakten nicht; alte Einträge bleiben ohne
+Rekonstruktion lesbar. Vor dem Speichern gilt derselbe Strukturvertrag wie beim
+Lesen. Eine nicht darstellbare nächste Fälligkeit verwirft den gesamten Abschluss
+einschließlich Zeit, anderer Auffüllungen, Verlauf und Receipt. Die
+[Storeprüfung](../../../tests/desktop-shop-restock-boundary.test.mjs) deckt
+Mehrzeilenregeln, Korrekturen, Replay, Fresh und vollständigen Rollback ab.
+
 ## Nächste Lieferungen
 
 1. Vor Ownertrash betroffene Shop-IDs/Revisionen zeigen: abbrechen, verfügbarem

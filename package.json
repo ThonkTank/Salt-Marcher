@@ -72,7 +72,7 @@
     "test:desktop-text-references": "node --test --test-concurrency=1 tests/desktop-text-references.test.mjs tests/desktop-text-reference-store.test.mjs tests/desktop-text-reference-completeness.test.mjs tests/desktop-text-reference-readers.test.mjs",
     "test:desktop-session-resume": "node --test --test-concurrency=1 tests/desktop-session-resume-context.test.mjs",
     "test:desktop-trade-price": "node --test --test-concurrency=1 tests/desktop-trade-paid-price.test.mjs",
-    "test:desktop-shop-owner": "node --test --test-concurrency=1 tests/desktop-shop-owner-time.test.mjs"
+    "test:desktop-shop-owner": "node --test --test-concurrency=1 tests/desktop-shop-owner-time.test.mjs tests/desktop-shop-restock-boundary.test.mjs"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",

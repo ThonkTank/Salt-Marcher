@@ -4,8 +4,8 @@ import {join} from 'node:path';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import {activateCity,initCity,openCity} from '../../src/app/city-ui';
-import type {NpcQuery} from '../../src/app/npc-contracts';
 import type {CityOverview,CityView} from '../../src/app/city-contracts';
+import type {NpcQuery} from '../../src/app/npc-contracts';
 
 const wait=(ms=0)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
 async function until(check:()=>boolean){for(let i=0;i<30;i++){if(check())return;await wait(10);}assert.ok(check(),'expected city UI state');}
