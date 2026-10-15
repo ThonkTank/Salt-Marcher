@@ -158,3 +158,9 @@ Das NSC-Dossier und die Stadtaktivitäten zeigen das aktuelle geplante Ortsziel 
 ### Desktop-Arbeitsstand 0.117: veraltete Gruppenuhr sicher neu wählen
 
 Ist die in der Stadtansicht ausgewählte Gruppenuhr bei einer späteren Aktualisierung nicht mehr aktiv, liefert der Lesepfad einen ausdrücklichen leeren Auswahlzustand und die verbleibenden Gruppenuhren. Die Oberfläche entfernt die veraltete Auswahl und verlangt eine neue Wahl. Sie fällt nicht still auf die Fokusgruppe oder die erste sichtbare Gruppe zurück und zeigt bis zur Wahl keine Aktivitäten mit einer falschen Zeitbasis.
+
+### Desktop-Arbeitsstand 0.119: Geplante Ortsbesuche in der Ortsmappe
+
+Jede Ortsmappe besitzt eine aufklappbare Übersicht geplanter NSC-Besuche. Sie berücksichtigt feste Ortsziele und die bestehenden Wohn-/Arbeitsgebäude an diesem Ort. Die gewählte Livegruppenuhr projiziert aktuelle Aktivität und nächsten Besuch mit vollständigem Datum; ein anderer Termin an einem anderen Ort verdeckt den nächsten Besuch hier nicht. Wochenregeln, nächtliche Aktivitäten und vollständige Datumsausnahmen einschließlich Ruhetagen bleiben wirksam.
+
+Die Suche findet Namen und Aktivitätstexte mit diesem Ziel. SQL wählt 40 Profile je Seite vor der kanonischen Projektion; vergangene Ausnahmen können einen NSC ohne weiteren Besuch weiterhin als geplantes Ortsziel auffindbar machen. Tatsächlicher World-Ort und Dungeonraum stehen separat. Profil und geplantes Haus öffnen dieselben vorhandenen Identitäten. Lesen, Aktualisieren und Wahl einer Gruppenuhr schreiben keine Zeit oder Position. Die Übersicht meldet Kalenderprobleme und verlangt bei verschwundener Leseuhr eine neue Wahl.

@@ -1,4 +1,5 @@
 import {checkedSessionRecapDraft} from '../live-contracts';
+import {readLocationActivities} from './location-activity';
 import {readCityActivities} from './city-activity';
 import {readWorldCalendar as readNpcPlanCalendar} from './world';
 import {readNpcPlaces,readNpcBuildingChoices} from './npc-places';
@@ -549,6 +550,7 @@ export class CampaignStore {
       return { notes, plans, locations, maps: this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=? ORDER BY name,id').all(campaignId), problems, selection };
     })();
   }
+  locationActivities(token:string,q:import('../location-activity-contracts').LocationActivityQuery):import('../location-activity-contracts').LocationActivityPage{const cam=this.guard(token);return this.db.transaction(()=>readLocationActivities(this.db,cam,q))();}
   locationMaterials(token:string,q:import('../location-notebook-contracts').LocationMaterialsQuery){const cam=this.guard(token);return this.db.transaction(()=>readLocationMaterials(this.db,cam,q))();}
   worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery):import('../world-links-contracts').WorldLinksPage{const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
   npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
