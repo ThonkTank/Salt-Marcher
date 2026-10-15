@@ -13,7 +13,7 @@ export class LocationNotebook {
  private button(text:string,action:()=>Promise<unknown>,contentBound=true){const b=node('button',text),bound=this.owner,g=this.generation,directory=this.directoryRequest,token=bound?.token,campaignId=bound?.campaign.id;b.type='button';b.onclick=()=>{
   if(!b.isConnected||b.disabled||!this.dialog.open||bound&&(this.owner!==bound||bound.token!==token||bound.campaign.id!==campaignId||(contentBound?this.generation!==g:this.directoryRequest!==directory)))return;
   const owner=this.owner,run=this.generation,clickedToken=owner?.token,clickedCampaign=owner?.campaign.id,current=()=>owner?.token===clickedToken&&owner?.campaign.id===clickedCampaign&&this.dialog.open&&this.owner===owner&&this.workspace()===owner&&this.generation===run;
-  if(!current())return;b.disabled=true;void action().catch(e=>{if(current()){this.status.textContent=e.message;this.tell(e.message,true);}}).finally(()=>{if(b.isConnected&&current())b.disabled=false;});
+  if(!current())return;b.disabled=true;void action().catch(e=>{if(current()){this.status.textContent=e.message;this.tell(e.message,true);}}).finally(()=>{if(b.isConnected&&(!bound||this.workspace()===bound&&(contentBound?this.generation===g:this.directoryRequest===directory)))b.disabled=false;});
  };return b;}
 
  private current(token:string,g:number){return this.dialog.open&&this.owner?.token===token&&this.workspace()===this.owner&&this.workspace()?.token===token&&this.generation===g;}
