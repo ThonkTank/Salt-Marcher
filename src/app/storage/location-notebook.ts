@@ -5,30 +5,19 @@ import {readWorldCalendar} from './world';
 import {readWorldSources} from './world-sources';
 import {deskContent} from './scene-desk';
 import {readNarrative} from './narrative';
-import {checkedPreparedGroupRow,readPreparedGroup} from './session';
+import {readPreparedGroup} from './session';
 import {readShop,shopRecord} from './items';
-import {npcPositionReader} from './npc-world';
+import {npcPositionReader,npcIdsAtLocation} from './npc-world';
 function locationContent(db:any,cam:string,id:string){
  const content=deskContent(db,cam,{kind:'location',id});
  if(content.unavailable)throw new Error('Ort im Papierkorb. Material bleibt erhalten.');
  if(content.location?.id!==id)throw new Error('Ortsmaterialquelle beschädigt.');
  return content;
 }
-// Position overrides group membership. Read group bytes before inspecting their actors.
-function localNpcs(db:any,cam:string,locationId:string){
- const ids=new Set<string>(),position=db.prepare('SELECT 1 FROM npc_position WHERE campaign_id=? AND actor_id=?');
- for(const row of db.prepare('SELECT actor_id FROM npc_position WHERE campaign_id=? AND location_id=?').iterate(cam,locationId))ids.add(row.actor_id);
- for(const row of db.prepare('SELECT * FROM prepared_group WHERE campaign_id=? AND location_id=?').iterate(cam,locationId)){
-  for(const actor of checkedPreparedGroupRow(row).actors){
-   if(!position.get(cam,actor.id))ids.add(actor.id);
-  }
- }
- return ids;
-}
 export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery):LocationMaterialsPage{
  if(!q||q.scope!==undefined&&!['location','campaign'].includes(q.scope)||q.scope==='campaign'&&!['npc','narrative','shop'].includes(q.kind)||!['directory','npc','narrative','group','shop','faction','event'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
  const location=q.kind==='directory'?null:locationContent(db,cam,q.locationId!),items:LocationMaterial[]=[],text=q.text.toLocaleLowerCase();
- const all=q.scope==='campaign',placeName=(id:string|null|undefined)=>id?locationContent(db,cam,id).title:'Ohne Ortsbindung';
+ const all=q.scope==='campaign',placeName=(id:string|null|undefined)=>id?deskContent(db,cam,{kind:'location',id}).title:'Ohne Ortsbindung';
  const add=(item:LocationMaterial)=>{if((item.title+'\n'+item.detail).toLocaleLowerCase().includes(text))items.push(item);};
  if(q.kind==='directory'){
   for(const row of db.prepare('SELECT id FROM location WHERE campaign_id=? AND trashed=0').iterate(cam)){
@@ -39,7 +28,7 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
   const calendar=readWorldCalendar(db,cam);
   for(const event of calendarEvents(db,cam))if(!event.trashed&&event.locationId===q.locationId)add({id:event.id,title:event.name,detail:(event.repeatMs===null?'Einmaliges Ereignis':'Wiederkehrendes Ereignis')+' · Ab '+calendarDate(calendar,event.startMs)});
  }else if(q.kind==='npc'){
-  const ids=all?db.prepare('SELECT id FROM world_note WHERE campaign_id=? AND trashed=0').iterate(cam):[...localNpcs(db,cam,q.locationId!)].map(id=>({id})),position=npcPositionReader(db,cam);
+  const ids=all?db.prepare('SELECT id FROM world_note WHERE campaign_id=? AND trashed=0').iterate(cam):[...npcIdsAtLocation(db,cam,q.locationId!)].map(id=>({id})),position=npcPositionReader(db,cam);
   for(const {id} of ids){
    const content=deskContent(db,cam,{kind:'note',id});
    if(content.note?.kind!=='npc'){if(all)continue;throw new Error('Ortsmaterialquelle beschädigt.');}
@@ -70,7 +59,7 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
   let npcs:Set<string>|undefined;
   for(const row of db.prepare('SELECT id FROM shop WHERE campaign_id=?').iterate(cam)){
    const shop=shopRecord(db,cam,row.id);
-   if(shop.trashed||!all&&(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!(npcs??=localNpcs(db,cam,q.locationId!)).has(shop.owner.id)))continue;
+   if(shop.trashed||!all&&(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!(npcs??=npcIdsAtLocation(db,cam,q.locationId!)).has(shop.owner.id)))continue;
    const view=readShop(db,cam,shop.id);
    if(!view.unavailable||all)add({id:shop.id,title:shop.name,detail:'Shop · '+(all?(shop.owner.kind==='npc'?'NSC: ':'Ort: '):'')+view.ownerName,...(all?{locationId:shop.owner.kind==='location'?shop.owner.id:null}:{})});
   }

@@ -146,3 +146,11 @@ test('typing a new agenda search immediately revokes its previous event actions'
  assert.equal(x.el('agenda-list').querySelectorAll('button').length,0);assert.equal(x.el('agenda-document').textContent,'');
  old.onclick?.(new Event('click') as any);assert.equal(x.el('agenda-event-form'),null);
 });
+
+test('a moment deadline opens raw author text as a draft and cannot replace an existing dirty deadline',async t=>{
+ const x=await fixture(t),before=x.store.world(x.workspace.token).events,clock=x.store.live(x.workspace.token).scene!.clock;
+ await x.agenda.openMomentDraft({name:'Verstärkung',notes:'  Rohtext\r\n- Morgen  '},{id:x.location.id,title:x.location.name});
+ assert.equal(x.el('agenda-name').value,'Verstärkung');assert.equal(x.el('agenda-notes').value,'  Rohtext\r\n- Morgen  ');assert.equal(x.el('agenda-start-mode').value,'relative');
+ await x.agenda.openMomentDraft({name:'Späterer Moment',notes:'Nicht überschreiben'});assert.equal(x.el('agenda-name').value,'Verstärkung');
+ assert.deepEqual(x.store.world(x.workspace.token).events,before);assert.deepEqual(x.store.live(x.workspace.token).scene!.clock,clock);
+});

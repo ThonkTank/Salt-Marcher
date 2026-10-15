@@ -1,3 +1,5 @@
+import {checkedPreparedGroupRow} from './prepared-group';
+export {checkedPreparedGroupRow} from './prepared-group';
 import {captureVisitBinding,readVisitBinding} from './scene-visits';
 import {requiredGenerationNpcs} from './generation-npcs';
 import {canonicalJson} from '../generation/canonical-json';
@@ -49,16 +51,7 @@ export function readWorldActor(db:any,cam:string,id:string):WorldActor{
  const record=npcRecord(db,cam,id);return {...actor,name:document.title,unavailable:!!n.trashed,defeated:record.lifecycle==='defeated',...npcDisposition(db,cam,record)};
 }
 export function writeWorldActorHealth(db:any,cam:string,id:string,expectedRevision:number,health:Pick<WorldActor,'hp'|'maxHp'|'tempHp'|'conditions'|'concentrating'>){const actor=readWorldActor(db,cam,id);if(actor.revision!==expectedRevision||actor.unavailable)throw new Error('NPC-Zustand wurde geändert. Kampfabschluss zuerst mit dem aktuellen NPC-Stand abgleichen.');const next={...actor,...health,revision:actor.revision+1},payload=json(next);db.prepare('UPDATE world_actor SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(next.revision,payload,hash(payload),cam,id);return next;}
-export function checkedPreparedGroupRow(row:any):PreparedGroup{
- const g=decoded<PreparedGroup>(row),id=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=1000;
- if(!g||g.id!==row.id||g.revision!==row.revision||g.locationId!==row.location_id||!id(g.id)||!Number.isSafeInteger(g.revision)||g.revision<1||
-    typeof g.title!=='string'||g.title.length>1000||typeof g.notes!=='string'||g.notes.length>2000000||
-    typeof g.sourceEncounterId!=='string'||g.sourceEncounterId.length>1000||!Number.isSafeInteger(g.sourceRevision)||g.sourceRevision<0||
-    g.locationId!==null&&!id(g.locationId)||!g.plan||!Array.isArray(g.plan.entries)||!Array.isArray(g.plan.sources)||
-    !Array.isArray(g.actors)||g.actors.some(a=>!a||!id(a.id))||new Set(g.actors.map(a=>a.id)).size!==g.actors.length)
-  throw new Error('Gruppenzuordnung, Revision oder Figurenliste beschädigt.');
- return g;
-}
+
 export function readPreparedGroup(db:any,cam:string,id:string):PreparedGroup{
  const g=checkedPreparedGroupRow(db.prepare('SELECT * FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,id));
  return {...g,actors:g.actors.map(a=>({...readWorldActor(db,cam,a.id),entryId:a.entryId}))};

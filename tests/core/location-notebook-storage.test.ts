@@ -82,3 +82,21 @@ test('individual NPC placement controls both the local cast and NPC-owned shops 
   const db=(store as unknown as {db:any}).db,before=db.serialize();assert.equal(read(0,'npc').items.length,0);assert.equal(read(0,'shop').items.length,0);assert.equal(read(1,'npc').items[0]?.id,id);assert.equal(read(1,'shop').items[0]?.id,'shop');assert.ok(db.serialize().equals(before));
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test('campaign material search includes other places and unbound narratives without rebinding them',()=>{
+ const root=mkdtempSync(join(tmpdir(),'material-campaign-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Kampagnenmaterial'),w=store.activate(campaign.id),command=(action:any)=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action}),places=['Tor','Hafen'].map(name=>newLocation(randomUUID(),name,'poi',['description','notes']));
+  for(const document of places)store.changePreparation({commandId:randomUUID(),campaignId:campaign.id,token:w.token,change:{kind:'location',expectedRevision:null,document}});
+  const id=randomUUID(),quest=randomUUID();store.executeNpc({...command(null),expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name:'Wache',creatureId:null,readAloud:'',gmNotes:'',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:places[1]!.id,health:null}});
+  store.changePreparation({commandId:randomUUID(),campaignId:campaign.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:quest as any,revision:1,kind:'quest',title:'Wache suchen',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});
+  store.executeItemShop(command({kind:'shop',expectedRevision:null,shop:{id:'shop',revision:0,name:'Wachbedarf',owner:{kind:'location',id:places[1]!.id},notes:'',trashed:false,stock:[]}}));
+  const db=(store as unknown as {db:any}).db,before=db.serialize();
+  for(const kind of ['npc','narrative','shop'] as const){const q={kind,locationId:places[0]!.id,text:'Wach',offset:0};assert.equal(store.locationMaterials(w.token,q).items.length,0);const page=store.locationMaterials(w.token,{...q,scope:'campaign'});assert.equal(page.items.length,1);assert.equal(page.items[0]?.locationId,kind==='narrative'?null:places[1]!.id);}
+  assert.equal(store.npc(w.token,id).locationId,places[1]!.id);assert.equal(store.narrative(w.token,quest).state.locationId,null);assert.ok(db.serialize().equals(before));
+  assert.throws(()=>store.locationMaterials(w.token,{kind:'group',locationId:places[0]!.id,text:'',offset:0,scope:'campaign'}),/Suche|suche/);
+  const archived=store.preparation(w.token).locations.find(row=>row.document.id===places[1]!.id)!;store.changePreparation({commandId:randomUUID(),campaignId:campaign.id,token:w.token,change:{kind:'location-trash',id:places[1]!.id,expectedRevision:archived.revision,trashed:true}});
+  const archivedBytes=db.serialize(),found=store.locationMaterials(w.token,{kind:'npc',locationId:places[0]!.id,text:'Wache',offset:0,scope:'campaign'});
+  assert.equal(found.items[0]?.id,id);assert.equal(found.items[0]?.locationId,places[1]!.id);assert.match(found.items[0]!.detail,/Hafen/);assert.ok(db.serialize().equals(archivedBytes));
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});

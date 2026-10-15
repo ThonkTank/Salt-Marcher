@@ -23,7 +23,7 @@ async function fixture(t){
  window.HTMLSelectElement.prototype.add=function(o){this.append(o);};window.HTMLElement.prototype.scrollIntoView=()=>{};window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};window.HTMLElement.prototype.setSelectionRange=function(start,end){this.selectionStart=start;this.selectionEnd=end;};
  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
  const messages=[],writes=[],wrap=f=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:e.message};}};
- window.campaign={};for(const method of ['preparation','preparationDraft','keepPreparationDrafts','discardPreparationDraft','selectPreparation','reconcilePreparation','worldLinks','deskContent','searchDesk','live'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
+ window.campaign={};for(const method of ['preparation','preparationDraft','keepPreparationDrafts','discardPreparationDraft','selectPreparation','reconcilePreparation','worldLinks','deskContent','searchDesk','live','session','progress','encounterTables','sessionRuns','generationSources','npcs'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
  window.campaign.changePreparation=async c=>{writes.push(c);return wrap(()=>store.changePreparation(c));};
  const file=require.resolve('../'+base+'/ui.cjs');delete require.cache[file];const ui=require(file);ui.initPreparation((text,error)=>messages.push({text,error}),async()=>{});
  let owner=workspace;const graph=new ui.WorldLinksWorkbench(()=>owner,()=>ui.leavePreparation(),text=>messages.push({text}),async(ref,current)=>ui.openPreparedNote(ref.id,current));
@@ -112,4 +112,15 @@ test('a delayed reference selection preserves an alias already typed by the GM',
 
 test('a reference selected for an old editor generation cannot change the reloaded note',async t=>{
  const x=await picker(t);await x.select(x.ids.ada);await x.activate();x.el('text-reference-insert').click();await settle();assert.equal(x.area.value,'  Roh\r\n**Text**  ');assert.equal(x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note.gmNotes,'  Roh\r\n**Text**  ');
+});
+
+test('next-visit preparation reuses the plan writer with raw notes and cannot fall back from a missing requested plan',async t=>{
+ const x=await fixture(t);await x.activate();await settle();await x.ui.prepareNextVisit(null,{title:'Nächster Morgen',notes:'  Roh\r\n- Spuren  ',locationId:null});await settle();
+ const plans=x.store.preparation(x.workspace.token).plans;assert.equal(plans.length,1);assert.equal(plans[0].scenes.length,1);assert.equal(plans[0].scenes[0].notes,'  Roh\r\n- Spuren  ');assert.equal(x.el('scene-notes').value,'  Roh\r\n- Spuren  ');assert.equal(x.writes.length,1);assert.deepEqual(x.messages.filter(m=>m.error),[]);
+ await assert.rejects(()=>x.ui.prepareNextVisit('missing-plan',{title:'Falscher Plan',notes:'Nicht schreiben',locationId:null}),/nicht verfügbar/);assert.deepEqual(x.store.preparation(x.workspace.token).plans,plans);assert.equal(x.writes.length,1);
+});
+test('a cancelled next-visit source read cannot append to its previous plan',async t=>{
+ const x=await fixture(t);await x.activate();await settle();const read=x.window.campaign.preparation;let release,current=true;
+ x.window.campaign.preparation=async(...args)=>{const result=await read(...args);return new Promise(resolve=>release=()=>resolve(result));};
+ const opening=x.ui.prepareNextVisit(null,{title:'Alter Auftrag',notes:'Alte Notiz',locationId:null},()=>current);await settle();assert.ok(release);current=false;release();await opening;assert.equal(x.store.preparation(x.workspace.token).plans.length,0);assert.equal(x.writes.length,0);
 });
