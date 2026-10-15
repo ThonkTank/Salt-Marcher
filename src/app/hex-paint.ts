@@ -7,7 +7,7 @@ const key=(c:Hex&{level:number})=>c.level+':'+hexKey(c);
 export function beginHexPaint(map:AtlasMap,level:number,terrain:Terrain,radius:number){
  const cells=new Map(map.cells.map(c=>[key(c),c])),changes=new Map<string,HexPaintChange>();let previous:Hex|null=null;
  const paint=(h:Hex)=>{for(let dq=-radius;dq<=radius;dq++)for(let dr=-radius;dr<=radius;dr++){
-  const at={q:h.q+dq,r:h.r+dr};if(hexDistance(at,h)>radius)continue;const id=key({...at,level}),old=cells.get(id)??null,c=old??cellAt(map,at,level);if(c.terrain===terrain)continue;
+  const at={q:h.q+dq,r:h.r+dr};if(hexDistance(at,h)>radius)continue;const id=key({...at,level}),old=cells.get(id)??null,c=old??cellAt(map,at,level);if(old&&c.terrain===terrain)continue;
   if(!changes.has(id)&&changes.size>=5000)throw new Error('Ein Strich erreicht 5.000 Hexes. Strich abschließen und einen weiteren beginnen.');
   const after={...c,...at,level,terrain},prior=changes.get(id);changes.set(id,{key:id,before:prior?prior.before:old,after});cells.set(id,after);
  }};
