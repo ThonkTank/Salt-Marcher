@@ -63,152 +63,46 @@ const productBuild = await build({
     },
   ],
 });
-if (test) await build({
-  entryPoints: ["tests/catalog-creature-view-dom.entry.ts"],
-  outfile: ".build/catalog-creature-view-dom.cjs",
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  target: "es2022",
-  sourcemap: true,
-  logLevel: "info",
-});
-if (test) await build({
-  entryPoints: ["tests/catalog-creature-view-adapter.entry.ts"],
-  outfile: ".build/catalog-creature-view-adapter.cjs",
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  target: "es2022",
-  sourcemap: true,
-  logLevel: "info",
-  plugins: [{
-    name: "obsidian-view-test-stub",
-    setup(builder) {
-      builder.onResolve({ filter: /^obsidian$/ }, () => ({
-        path: new URL("./tests/fixtures/obsidian-view-stub.ts", import.meta.url).pathname,
-      }));
-    },
-  }],
-});
-if (test) await build({
-  entryPoints: ["tests/room-key-search-panel.entry.ts"],
-  outfile: ".build/room-key-search-panel.cjs",
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  target: "es2022",
-  sourcemap: true,
-  logLevel: "info",
-  plugins: [{
-    name: "obsidian-key-panel-test-stub",
-    setup(builder) {
-      builder.onResolve({ filter: /^obsidian$/ }, () => ({
-        path: new URL("./tests/fixtures/obsidian-view-stub.ts", import.meta.url).pathname,
-      }));
-      builder.onResolve({ filter: /^dungeon-compute-worker$/ }, () => ({
-        path: "compute-worker-stub",
-        namespace: "room-key-search-test",
-      }));
-      builder.onLoad({ filter: /.*/, namespace: "room-key-search-test" }, () => ({
-        contents: "export default '';",
-        loader: "js",
-      }));
-    },
-  }],
-});
-if (test) await build({
-  entryPoints: ["tests/atlas-copy-modal.entry.ts"],
-  outfile: ".build/atlas-copy-modal.cjs",
-  bundle: true, format: "cjs", platform: "node", target: "es2022",
-  sourcemap: true, logLevel: "info",
-  plugins: [{
-    name: "obsidian-atlas-modal-test-stub",
-    setup(builder) {
-      builder.onResolve({ filter: /^obsidian$/ }, () => ({
-        path: new URL("./tests/fixtures/obsidian-atlas-modal-stub.ts", import.meta.url).pathname,
-      }));
-    },
-  }],
-});
-if (test) await build({
-  entryPoints: ["tests/dungeon-view-lifecycle.entry.ts"],
-  outfile: ".build/dungeon-view-lifecycle.cjs",
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  target: "es2022",
-  sourcemap: true,
-  logLevel: "info",
-  plugins: [{
-    name: "obsidian-dungeon-view-test-stub",
-    setup(builder) {
-      builder.onResolve({ filter: /^obsidian$/ }, () => ({
-        path: new URL("./tests/fixtures/obsidian-dungeon-view-stub.ts", import.meta.url).pathname,
-      }));
-      builder.onResolve({ filter: /^dungeon-compute-worker$/ }, () => ({
-        path: "compute-worker-stub",
-        namespace: "dungeon-view-test",
-      }));
-      builder.onLoad({ filter: /.*/, namespace: "dungeon-view-test" }, () => ({
-        contents: "export default '';",
-        loader: "js",
-      }));
-    },
-  }],
-});
-if (test) await build({
-  entryPoints: ["tests/campaign-entry-dom.entry.ts"],
-  outfile: ".build/campaign-entry-dom.cjs",
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  target: "es2022",
-  sourcemap: true,
-  logLevel: "info",
-});
-if (test) await build({
-  entryPoints: ["tests/vault-campaign-runtime-source.entry.ts"],
-  outfile: ".build/vault-campaign-runtime-source.cjs",
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  target: "es2022",
-  sourcemap: true,
-  logLevel: "info",
-  plugins: [{
-    name: "obsidian-campaign-test-stub",
-    setup(builder) {
-      builder.onResolve({ filter: /^obsidian$/ }, () => ({
-        path: new URL("./tests/fixtures/obsidian-campaign-stub.ts", import.meta.url).pathname,
-      }));
-    },
-  }],
-});
-if (test) await build({
-  entryPoints: ["tests/atlas-detail-entry.entry.ts"], outfile: ".build/atlas-detail-entry.cjs",
-  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
-});
-if (test) await build({
-  entryPoints: ["tests/world-notes-panel.entry.ts"], outfile: ".build/world-notes-panel.cjs",
-  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
-});
-if (test) await build({
-  entryPoints: ["tests/world-notes-view.entry.ts"], outfile: ".build/world-notes-view.cjs",
-  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
-  plugins: [{ name: "obsidian-world-notes-view-test-stub", setup(builder) {
-    builder.onResolve({ filter: /^obsidian$/ }, () => ({
-      path: new URL("./tests/fixtures/obsidian-view-stub.ts", import.meta.url).pathname,
-    }));
-  } }],
-});
-if (test) await build({
-  entryPoints: ["tests/atlas-campaign-host.entry.ts"], outfile: ".build/atlas-campaign-host.cjs",
-  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
-  plugins: [{ name: "obsidian-atlas-host-test-stub", setup(builder) {
-    builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: new URL("./tests/fixtures/obsidian-atlas-host-stub.ts", import.meta.url).pathname }));
-  } }],
-});
+if (test) {
+  // Keep entry-specific host fixtures isolated and builds sequential.
+  const entries = [
+    ["catalog-creature-view-dom"],
+    ["catalog-creature-view-adapter", "obsidian-view-stub.ts"],
+    ["room-key-search-panel", "obsidian-view-stub.ts", "room-key-search-test"],
+    ["atlas-copy-modal", "obsidian-atlas-modal-stub.ts"],
+    ["dungeon-view-lifecycle", "obsidian-dungeon-view-stub.ts", "dungeon-view-test"],
+    ["campaign-entry-dom"],
+    ["vault-campaign-runtime-source", "obsidian-campaign-stub.ts"],
+    ["atlas-detail-entry"],
+    ["world-notes-panel"],
+    ["world-notes-view", "obsidian-view-stub.ts"],
+    ["atlas-campaign-host", "obsidian-atlas-host-stub.ts"],
+  ];
+  for (const [name, fixture, workerNamespace] of entries) {
+    await build({
+      entryPoints: [`tests/${name}.entry.ts`],
+      outfile: `.build/${name}.cjs`,
+      bundle: true, format: "cjs", platform: "node", target: "es2022",
+      sourcemap: true, logLevel: "info",
+      plugins: fixture ? [{
+        name: "test-host-stubs",
+        setup(builder) {
+          builder.onResolve({ filter: /^obsidian$/ }, () => ({
+            path: new URL(`./tests/fixtures/${fixture}`, import.meta.url).pathname,
+          }));
+          if (workerNamespace) {
+            builder.onResolve({ filter: /^dungeon-compute-worker$/ }, () => ({
+              path: "compute-worker-stub", namespace: workerNamespace,
+            }));
+            builder.onLoad({ filter: /.*/, namespace: workerNamespace }, () => ({
+              contents: "export default '';", loader: "js",
+            }));
+          }
+        },
+      }] : [],
+    });
+  }
+}
 if (!test) {
   const mainBytes = (await stat("main.js")).size;
   const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);
