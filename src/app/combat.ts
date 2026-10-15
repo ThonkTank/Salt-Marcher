@@ -1,3 +1,5 @@
+import {CombatAreaPanel} from './combat-area-ui';
+import {renderCombatActions} from './combat-actions-ui';
 import {CombatResolutionPanel} from './combat-resolution-ui';
 import {openTreasureDistribution,closeStaleTreasureDistribution} from './treasury-ui';
 import {openMaskHistory,closeMaskHistory} from './mask-history-ui';
@@ -15,7 +17,7 @@ import type {PreparedGroup} from './session-contracts';
 import {rollSceneCheck,rollSceneFormula} from './rule-reference-ui';
 import type {SceneCheck} from './scene-check-contracts';
 import {deathSaveControls,type DeathSaveResult} from './progression';
-import {creatureActionRolls,creatureRollKey,criticalDamageFormula,legendaryActionCost,type CreatureRollPreset} from './dice-formula';
+import {isLegendaryAction,creatureActionRolls,creatureRollKey,criticalDamageFormula,legendaryActionCost,type CreatureRollPreset} from './dice-formula';
 import type {Creature,CreatureAction} from '../features/catalog/creature-catalog';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
@@ -27,6 +29,7 @@ export function hasCombatCondition(text:string,label:string,source:string){const
 export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 let resolution:CombatResolutionPanel|null=null;
+let areaPanel:CombatAreaPanel|null=null;
 let reinforcementRequest=0,reinforcementBusy=false;
 let reinforcementResults:{id:string;name:string;challengeRating:string}[]=[];
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
@@ -137,14 +140,15 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
       const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
       acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
-      if(['create','edit','damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
+      if(['create','edit','damage','area-damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:action.kind==='damage'&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
-      const openConcentration=action.kind==='damage'?actor?.concentrationChecks?.[0]:undefined;
+      const concentrationActor=action.kind==='area-damage'?result.combat?.participants.find(p=>p.concentrationChecks?.length):actor;
+      const openConcentration=action.kind==='damage'||action.kind==='area-damage'?concentrationActor?.concentrationChecks?.[0]:undefined;
       const legendary=action.kind==='legendary-action'?actor?.legendaryActions:undefined;
       const effectTicks=priorEffects.flatMap(before=>{const after=result.combat?.participants.find(participant=>participant.id===before.actorId)?.timedEffects?.find(effect=>effect.id===before.id);return !after?[before.name+' bei '+before.actor+' endet']:after.remaining!==before.remaining?[before.name+' bei '+before.actor+': '+after.remaining+' Runde'+(after.remaining===1?'':'n')+' verbleibend']:[];});
       revealConcentration=!!openConcentration;
-      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+actor!.name+' gegen SG '+openConcentration.dc+' offen.'):legendary?('Legendäre Aktion eingesetzt · '+legendary.remaining+' von '+legendary.maximum+' Punkten verbleiben.'):effectTicks.length?'Rundeneffekte: '+effectTicks.join(' · ')+'.':'Kampf gespeichert.'); return true;
+      tell(death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+concentrationActor!.name+' gegen SG '+openConcentration.dc+' offen.'):legendary?('Legendäre Aktion eingesetzt · '+legendary.remaining+' von '+legendary.maximum+' Punkten verbleiben.'):effectTicks.length?'Rundeneffekte: '+effectTicks.join(' · ')+'.':'Kampf gespeichert.'); return true;
     } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
     finally { pending = null; if (generation === gen) { if (applied){render();if(revealConcentration)get('combat-concentration-effect').scrollIntoView({block:'nearest'});}else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
   })();
@@ -296,6 +300,7 @@ function lock() {
   get<HTMLInputElement>('fighter-concentration').disabled=blocked()||!!fighter?.concentrationChecks?.length;
   for(const result of ['roll','success','failure','natural-20','natural-1','stabilize','dead'] as const)get<HTMLButtonElement>('fighter-death-'+result).disabled=deathUnavailable||deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').disabled=deathUnavailable||!deathControls.reset;
+  areaPanel?.context(view?.combat??null,workspace?.token??null,blocked());
   renderAttackEffect();
   renderSaveEffect();
   renderDamageEffect();
@@ -363,7 +368,6 @@ function render() {
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
 }
 function renderSelection() { for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
-const isLegendaryAction=(source:Creature,action:CreatureAction)=>source.legendaryActions.includes(action);
 export const deferLegendaryCost=(kind:CreatureRollPreset['kind'])=>kind==='attack'||kind==='save'||kind==='check';
 function legendaryControl(source:Creature,p:Combatant,action:CreatureAction){if(!isLegendaryAction(source,action))return null;const points=p.legendaryActions,cost=legendaryActionCost(action),combat=view?.combat,running=combat?.phase==='running',ownTurn=running&&combat.turnId===p.id,used=running&&points?.lastUsedRound===combat.round&&points.lastUsedTurnId===combat.turnId;return{disabled:blocked()||!running||ownTurn||used||!points||points.remaining<cost,note:!running?'Ab Kampfbeginn verfügbar':!points?'Ab dem nächsten eigenen Zug verfügbar':ownTurn?'Nicht im eigenen Zug':used?'In diesem Zug bereits eingesetzt':points.remaining+' / '+points.maximum+' Punkte · kostet '+cost};}
 async function spendLegendary(source:Creature,p:Combatant,action:CreatureAction){return !isLegendaryAction(source,action)||await execute({kind:'legendary-action',participantId:p.id,actionId:action.id,cost:legendaryActionCost(action)});}
@@ -391,7 +395,7 @@ function renderEditor() {
   get('fighter-death-summary').textContent=death?.dead?'Tot':death?.stable?'Stabilisiert':(death?.successes??0)+' Erfolge · '+(death?.failures??0)+' Fehlschläge'+(p?.deathLast?.roll!==null&&p?.deathLast?.roll!==undefined?' · letzter Wurf '+p.deathLast.roll:'');
   get<HTMLDetailsElement>('fighter-death-other').open=deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').hidden=!deathControls.reset;
-  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id;renderConditionShortcuts(p,source);renderTimedEffects(p);const visibility=get<HTMLButtonElement>('fighter-visibility');visibility.hidden=!p||!!p.characterId;visibility.disabled=blocked();visibility.textContent=p?.hiddenFromPlayers?'Auf Spieleranzeige zeigen':'Auf Spieleranzeige verbergen';get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});
+  const source = view?.combat?.sources?.find(c=>c.id===p?.sourceId),combatId=view?.combat?.id;renderConditionShortcuts(p,source);renderTimedEffects(p);const visibility=get<HTMLButtonElement>('fighter-visibility');visibility.hidden=!p||!!p.characterId;visibility.disabled=blocked();visibility.textContent=p?.hiddenFromPlayers?'Auf Spieleranzeige zeigen':'Auf Spieleranzeige verbergen';get('fighter-actions').hidden=!source; if(source&&p&&combatId)renderCombatActions(get('fighter-actions'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>{const legendary=isLegendaryAction(source,action)?{participantId:p.id,actionId:action.id,cost:legendaryActionCost(action)}:undefined;areaPanel?.open({participantId:p.id,action,legendary});},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});get('fighter-statblock').hidden=!source; if(source&&p&&combatId)renderCreatureDetail(get('fighter-statblock-content'),source,(action,preset)=>{void useCreatureRoll(source,p,combatId,action,preset);},action=>legendaryControl(source,p,action),action=>{void spendLegendary(source,p,action);});
 }
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes},matches=d.kind==='fighter'&&basis?fighterDraftBasisMatches(d.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(d.basis);return matches?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
@@ -402,7 +406,7 @@ async function recoveredCombat(event:CommitResolution){
   await refreshProgress();if(afterSaved)await afterSaved();
 }
 export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
-  tell = status;afterSaved=refresh;resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution);onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
+  tell = status;afterSaved=refresh;areaPanel=new CombatAreaPanel(get('combat-area-effect'),(action,revision)=>execute(action,revision));get('combat-area-open').onclick=()=>areaPanel?.open();resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution);onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
   for(const id of [...fighterFields,'fighter-concentration','fighter-counted'])get(id).addEventListener('input',keepFighterDraft);
   get('fighter-reload').onclick=()=>{void(async()=>{if(!workspace||!view?.combat||!selected)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,target=selected,g=generation;await draftCache.discard(token,cam,id,'fighter',target);if(g===generation){await chooseFighter(target);await listDrafts();}})().catch(error=>tell(error.message,true));};
   for(const id of ['combat-edit-title','combat-notes'])get(id).addEventListener('input',keepNotesDraft);
