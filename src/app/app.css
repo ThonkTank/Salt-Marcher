@@ -426,3 +426,7 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #combat-table .combat-value:hover{background:#e5eff7}
 
 #running-editor{scroll-margin-top:var(--workspace-content-offset)}
+
+.session-target-table { width:min(100%,40rem); border-collapse:collapse; margin:.75rem 0; }
+.session-target-table :is(th,td) { padding:.35rem .65rem; text-align:right; border-bottom:1px solid #ccd6df; }
+.session-target-table :is(th,td):first-child { text-align:left; }
