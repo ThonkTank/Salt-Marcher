@@ -1,4 +1,4 @@
-# QA workflow maintenance — package 2.1.6
+# QA workflow maintenance — package 2.1.7
 
 Routine product exploration uses an identified original build, isolated data, actual UI, a short report and evidence appropriate to the question. Reproducible observations can lead directly to focused product corrections; a completed formal comparison wave is not a prerequisite. Substantial changes receive an independent targeted retest.
 
@@ -15,5 +15,7 @@ The existing status CLI defaults to current work without completed archived task
 Public task bundles explicitly declare their workflow mode. Ordinary exploratory exports default to product exploration and omit formal timer/rating sections from the tester instructions and response template. Exploratory comparisons use `--mode comparison_study`; existing explicit confirmation calls remain formal, and a confirmation task cannot be disguised as routine exploration. Earlier exported bundles and frozen wave copies remain unchanged.
 
 New formal wave registrations require a nonblank comparison question and related product decision. Those fields are stored in the existing immutable registration; already registered waves remain usable without retroactive rewriting. Prepared drafts remain unregistered until their purpose and existing evidence requirements are satisfied.
+
+The routine workflow now references the existing formal measurement document for the detailed wave execution contract. Ordinary functional retests receive their question, requirements and build directly; no neutral timer bootstrap or timed first disclosure is required. Natural multi-stage gameplay and resource-driven continuation remain supported. All formal execution paragraphs were preserved in the method document; replication counts come from the frozen protocol rather than duplicated constants. The normal workflow is 20.8% shorter in characters. Two redundant internal assignments/checks were removed without changing CLI behavior. Existing running or queued task instructions were preserved.
 
 Validation: package check passed and 142 offline tests passed. Regressions cover routine/formal bundle modes, confirmation compatibility and contradiction rejection, missing registration purpose, pending routing visibility and archive-state conflicts. The adapter, launcher, measurement/evaluation scripts, schemas, scenarios and frozen candidate artifacts were checked unchanged. Protocol parameters changed only in patch version. No new GUI qualification, product study, automation or development freeze was introduced. Private scenarios, answers, raw personal UI data and control judgments are retained locally.
