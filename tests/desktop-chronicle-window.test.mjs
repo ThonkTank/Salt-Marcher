@@ -38,3 +38,10 @@ test('session handoff keeps authored bytes through receipt replay and Fresh with
   const next=kind=>({commandId:randomUUID(),campaignId:campaign.id,token:fresh.token,action:{kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:kind,summary:'',handoff:''}});store.executeLive(next('start'));store.executeLive(next('end'));assert.equal(store.chronicle(fresh.token).entries.find(e=>e.sessionMarker==='end').handoff,undefined);assert.equal(store.chronicle(fresh.token).entries.filter(e=>e.sessionMarker==='end').length,2);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test('a damaged session marker cannot be filtered away to permit another session start',t=>{
+ const x=fixture(t),w=x.store.activate(x.campaign.id),command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:w.token,action}),scene=x.store.executeLive(command({kind:'initialize',expectedRosterRevision:0})).scene;
+ x.store.executeLive(command({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'start',summary:'Original',handoff:''}));
+ const row=x.store.db.prepare("SELECT * FROM world_history WHERE campaign_id=? AND json_extract(payload,'$.facts.kind')='session-marker'").get(x.campaign.id),doc=JSON.parse(row.payload);doc.facts.kind='unrelated';x.store.db.prepare('UPDATE world_history SET payload=? WHERE campaign_id=? AND id=?').run(JSON.stringify(doc),x.campaign.id,row.id);
+ const before=x.store.db.serialize();assert.throws(()=>x.store.executeLive(command({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'start',summary:'Duplicate',handoff:''})),/Chronikquelle.*beschädigt/);assert.ok(x.store.db.serialize().equals(before));
+});

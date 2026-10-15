@@ -27,7 +27,9 @@ Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
   Wissensbinder; die Chronik öffnet diesen Inhalt über seinen Verweis.
 - **Spielabend abgrenzen:** Anfang und Ende werden ausdrücklich in der Chronik
   gespeichert. Der Writer erlaubt nur einen offenen Abend und bewahrt Replay.
-  Die letzte Grenze wird unabhängig vom 2.000-Ereignis-Ausschnitt gelesen;
+  Die letzte Grenze wird unabhängig vom 2.000-Ereignis-Ausschnitt gelesen.
+  Dabei werden Einträge vom neuesten bis zur Grenze vor dem Artfilter geprüft;
+  beschädigte Marker dürfen keinen zweiten Start freigeben.
   gekürzte Rückblicke sind sichtbar markiert. Vor dem Ende zeigt eine Übersicht
   laufende Kämpfe/Verfolgungen, sichtbare XP-Buchungen und unverteilte Beute;
   deren offene Zustände bleiben erhalten. Abbruch erhält die Abschlussnotiz.

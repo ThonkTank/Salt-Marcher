@@ -21,22 +21,17 @@ auflösen und trägt jeden tatsächlichen Generierungsrun am Encounter weiter.
 Scene- und Rewardvorschläge sind unabhängig editierbar; die Gesamtbudgets und
 verbindliche Quellenbeiträge benötigen weiterhin den unten beschriebenen Abschluss.
 
-Die Vereinigungsmenge mehrerer Fraktionsquellen konnte bislang vollständig nur
-A enthalten, obwohl der GM A und B ausgewählt hatte: B hatte keine Hauptquelle
-oder wurde von Tabelle/Ort ausgeschlossen. Ein vorhandener Treffer aus A
-verdeckt diese verlorene Vorgabe. `resolveWorldSources` prüft jetzt jede
-explizite Fraktion nach den gemeinsamen Filtern auf mindestens eine erreichbare
-Tabelle mit positivem Gewicht und positivem bzw. unbegrenztem Bestand.
-Andernfalls nennt es die betroffene Fraktion und lehnt vor Generierung ab.
-Nullbestand zählt nicht als erreichbarer Beitrag. Die Prüfung mutiert weder
-Quellen noch Bestand und verbraucht keine Kreaturen.
+Jede ausdrücklich gewählte Fraktion muss nach gemeinsamen Tabellen-/Ortsfiltern
+mindestens eine erreichbare Tabelle mit positivem Gewicht und positivem oder
+unbegrenztem Bestand behalten. Andernfalls wird sie genannt und die Generierung
+abgewiesen. Die Auswahl von Fraktionen und Orten prüft Dokumentformat,
+Prüfsumme, Identität und Revision vor Projektion oder Fraktionsfilter. Auch
+bestehende Weltquellen prüfen ihre verknüpften Dokumente; archivierte Bindungen
+bleiben erhalten. Reads verändern weder Quellendaten noch Bestände.
 
-`tests/desktop-world-source-constraints.test.mjs` reproduzierte die drei
-verlorenen Bindungen vor der Korrektur. Es prüft fehlende Quelle, ausgeschlossene
-Tabelle, ausgeschlossenen Ort und Nullbestand sowie eine gültige endliche
-Bestandsgrenze und veränderte Quellenbasis nach Bestandsänderung. Der echte
-SQLitewriter legt die Testdaten an; abgewiesene Reads erhalten die Datenbytes.
-Das ist ein lokaler Teilnachweis für die Quellenvorprüfung.
+Die [Storeprüfung](../../../tests/desktop-world-source-constraints.test.mjs)
+deckt fehlende Quellen, ausgeschlossene Tabellen/Orte, Nullbestand, endliche
+Bestände, geänderte Quellenbasis und beschädigte Auswahlquellen ab.
 
 ## Neuer Anschluss für benannte NPCs
 

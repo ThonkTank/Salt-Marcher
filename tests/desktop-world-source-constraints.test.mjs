@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,mkdirSync,copyFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 mkdirSync('.build/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json');
@@ -26,4 +26,12 @@ for(const excluded of ['missing source','explicit table filter','location filter
 test('valid faction sources keep finite stock and change the source basis when stock changes',t=>{
  const x=fixture(t);x.save('faction',x.factions[0],[x.tables[0]],[],[{creatureId:'goblin',limit:3}]);const before=x.resolve({factionIds:[x.factions[0]]});assert.deepEqual(before.tableIds,[x.tables[0]]);assert.equal(before.caps.get('goblin'),3);
  x.save('faction',x.factions[0],[x.tables[0]],[],[{creatureId:'goblin',limit:2}],1);const after=x.resolve({factionIds:[x.factions[0]]});assert.equal(after.caps.get('goblin'),2);assert.notEqual(after.basis,before.basis);
+});
+
+for(const kind of ['faction title','faction kind','faction identity','location title','location identity'])test(`world source choices reject damaged ${kind} before projecting or filtering it`,t=>{
+ const x=fixture(t),location={kind:'location',version:1,id:randomUUID(),name:'Tor',type:'poi',sections:[],detailMaps:[],keyLinks:[]};x.store.changePreparation({...x.command(null),change:{kind:'location',document:location,expectedRevision:null}});
+ const table=kind.startsWith('faction')?'world_note':'location',id=table==='world_note'?x.factions[0]:location.id,row=x.store.db.prepare(`SELECT payload FROM ${table} WHERE campaign_id=? AND id=?`).get(x.cam.id,id),doc=JSON.parse(row.payload);
+ if(kind.endsWith('kind'))doc.kind='rule';else if(kind.endsWith('identity'))doc.id=randomUUID();else if(table==='world_note')doc.title='Gefälschte Fraktion';else doc.name='Gefälschter Ort';
+ const payload=JSON.stringify(doc);if(kind.endsWith('identity'))x.store.db.prepare(`UPDATE ${table} SET payload=?,checksum=? WHERE campaign_id=? AND id=?`).run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,id);else x.store.db.prepare(`UPDATE ${table} SET payload=? WHERE campaign_id=? AND id=?`).run(payload,x.cam.id,id);
+ const before=x.store.db.serialize();assert.throws(()=>x.store.generationSources(x.w.token),/beschädigt|Zuordnung|Identität/);assert.ok(x.store.db.serialize().equals(before));
 });

@@ -1,4 +1,6 @@
 import {createHash,randomUUID} from 'node:crypto';
+import {worldNoteDocument} from '../../features/world/world-notes';
+import {checkedLocationDocument} from '../../features/location/location-schema';
 import type {WorldSource,WorldSources,EncounterTable,GenerationRequest} from '../generation-contracts';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installWorldSources(db:any){db.exec(`CREATE TABLE IF NOT EXISTS world_source(campaign_id TEXT NOT NULL REFERENCES campaign(id),kind TEXT NOT NULL CHECK(kind IN ('faction','location')),id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,kind,id)) STRICT;`);}
@@ -12,10 +14,16 @@ function sourceRow(row:any):WorldSource{
  if(!row||typeof row.payload!=='string'||hash(row.payload)!==row.checksum)throw new Error('Weltquelle beschädigt.');const s=checkedSource(JSON.parse(row.payload));
  if(s.id!==row.id||s.kind!==row.kind||s.revision!==row.revision||s.revision<1)throw new Error('Weltquelle besitzt eine widersprüchliche Identität oder Revision.');return s;
 }
+function sourceDocument(row:any,kind:'note'|'location'){
+ if(!row||typeof row.payload!=='string'||hash(row.payload)!==row.checksum)throw new Error('Weltquellenziel fehlt oder ist beschädigt.');
+ const doc=kind==='note'?worldNoteDocument(JSON.parse(row.payload)):checkedLocationDocument(JSON.parse(row.payload));
+ if(doc.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1||'revision' in doc&&doc.revision!==row.revision)throw new Error('Weltquellenziel hat eine widersprüchliche Identität oder Revision.');
+ return doc;
+}
 function sourceReferences(db:any,cam:string,s:WorldSource){
- const faction=(id:string)=>db.prepare("SELECT 1 FROM world_note WHERE campaign_id=? AND id=? AND json_extract(payload,'$.kind')='faction'").get(cam,id);
- if(!(s.kind==='faction'?faction(s.id):db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,s.id)))throw new Error('Weltquelle besitzt kein Ziel in dieser Kampagne.');
- for(const id of s.factionIds)if(!faction(id))throw new Error('Weltquelle verweist auf eine fehlende Fraktion.');
+ const faction=(id:string)=>{const doc=sourceDocument(db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id),'note');if(doc.kind!=='faction')throw new Error('Weltquelle verweist auf keine Fraktion.');};
+ if(s.kind==='faction')faction(s.id);else sourceDocument(db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(cam,s.id),'location');
+ for(const id of s.factionIds)faction(id);
  let allowed=new Set<string>();
  for(const id of s.tableIds){const row=db.prepare('SELECT * FROM encounter_table WHERE id=? AND (campaign_id IS NULL OR campaign_id=?)').get(id,cam);if(!row||hash(row.payload)!==row.checksum)throw new Error('Encounter-Quelle fehlt oder ist beschädigt.');if(s.kind==='faction')allowed=new Set(JSON.parse(row.payload).entries.map((e:any)=>e.creatureId));}
  if(s.stock.some(e=>!allowed.has(e.creatureId)))throw new Error('Fraktionsbestand enthält Kreaturen außerhalb seiner Haupttabelle.');
@@ -26,7 +34,11 @@ export function validateWorldSources(db:any){
  for(const row of db.prepare('SELECT * FROM world_source').iterate()){const s=sourceRow(row);sourceReferences(db,row.campaign_id,s);}
 }
 export function readWorldSources(db:any,cam:string):WorldSources{
- return{sources:records(db,cam),factions:db.prepare("SELECT id,json_extract(payload,'$.title') name FROM world_note WHERE campaign_id=? AND trashed=0 AND json_extract(payload,'$.kind')='faction' ORDER BY name,id").all(cam),locations:db.prepare("SELECT id,json_extract(payload,'$.name') name FROM location WHERE campaign_id=? AND trashed=0 ORDER BY name,id").all(cam)};
+ const factions:WorldSources['factions']=[],locations:WorldSources['locations']=[];
+ for(const row of db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND trashed=0').iterate(cam)){const doc=sourceDocument(row,'note');if(doc.kind==='faction')factions.push({id:doc.id,name:doc.title});}
+ for(const row of db.prepare('SELECT * FROM location WHERE campaign_id=? AND trashed=0').iterate(cam)){const doc=sourceDocument(row,'location');if(doc.kind==='location')locations.push({id:doc.id,name:doc.name});}
+ const order=(a:{id:string;name:string},b:{id:string;name:string})=>a.name<b.name?-1:a.name>b.name?1:a.id<b.id?-1:a.id>b.id?1:0;
+ return{sources:records(db,cam),factions:factions.sort(order),locations:locations.sort(order)};
 }
 function put(db:any,cam:string,s:WorldSource){checkedSource(s);if(s.revision<1)throw new Error('Ungültige Weltquellenrevision.');const p=JSON.stringify(s);db.prepare('INSERT INTO world_source VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,kind,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,s.kind,s.id,s.revision,p,hash(p));}
 export function saveWorldSource(db:any,cam:string,input:WorldSource,expected:number|null,tables:EncounterTable[]){

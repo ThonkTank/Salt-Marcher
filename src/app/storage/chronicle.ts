@@ -9,8 +9,11 @@ function payload(row:any):Record<string,any>{
   const value=JSON.parse(row.payload);if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Chronikquelle hat ein ungültiges Format.');return value;
 }
 export function readSessionBoundary(db:any,cam:string){
- const row=db.prepare("SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? AND json_extract(payload,'$.facts.kind')='session-marker' ORDER BY rowid DESC LIMIT 1").get(cam);
- if(!row)return null;const body=payload(row);if(!['start','end'].includes(body.facts?.marker))throw new Error('Chronikquelle hat eine ungültige Spielabend-Markierung.');return{row,body};
+ for(const row of db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC').iterate(cam)){
+  const body=payload(row);if(body.facts?.kind!=='session-marker')continue;
+  if(!['start','end'].includes(body.facts.marker))throw new Error('Chronikquelle hat eine ungültige Spielabend-Markierung.');return{row,body};
+ }
+ return null;
 }
 const text=(value:unknown,fallback='')=>typeof value==='string'?value:fallback;
 const quantity=(item:any)=>item&&Number.isSafeInteger(item.quantity)?item.quantity+' × '+text(item.currentName??item.name,'Gegenstand'):'Gegenstand';
