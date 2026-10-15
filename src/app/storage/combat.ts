@@ -13,7 +13,7 @@ import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry,readGenerationRun,acceptGeneration } from './generation';
 import {readWorldActor,readPreparedGroup} from './session';
 import type { Creature } from '../../features/catalog/creature-catalog';
-import {legendaryActionCost} from '../dice-formula';
+import {creatureActionForRolls,creatureActionRolls,creatureRollKey,parseDiceFormula,criticalDamageFormula,legendaryActionCost} from '../dice-formula';
 import {fighterDraftBasisMatches} from '../combat-draft-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function applyDamageDeath(p:Combatant,result:'failure'|'dead'){
@@ -106,10 +106,10 @@ export function readCombat(db: any, campaignId: string, sceneId: string, id?: st
 
   })();
 }
-function applyCombatDamage(p:Combatant,amount:number){
+function applyCombatDamage(p:Combatant,amount:number,critical=false){
   const wasConcentrating=p.concentrating;
   const absorbed=Math.min(p.tempHp,amount),remaining=amount-absorbed,beforeHp=p.hp;p.tempHp-=absorbed;p.hp=Math.max(0,beforeHp-remaining);
-  if(p.characterId&&remaining>0){const overflow=Math.max(0,remaining-beforeHp);if(beforeHp>0&&p.hp===0){delete p.death;delete p.deathLast;}if((beforeHp===0?remaining:overflow)>=p.maxHp)applyDamageDeath(p,'dead');else if(beforeHp===0)applyDamageDeath(p,'failure');}
+  if(p.characterId&&remaining>0){const overflow=Math.max(0,remaining-beforeHp);if(beforeHp>0&&p.hp===0){delete p.death;delete p.deathLast;}if((beforeHp===0?remaining:overflow)>=p.maxHp)applyDamageDeath(p,'dead');else if(beforeHp===0){applyDamageDeath(p,'failure');if(critical)applyDamageDeath(p,'failure');}}
   if(wasConcentrating){if(p.hp===0){p.concentrating=false;delete p.concentrationChecks;}else{p.concentrationChecks??=[];if(p.concentrationChecks.length>=100)throw new Error('Zu viele offene Konzentrationsprüfungen.');p.concentrationChecks.push({damage:amount,dc:concentrationDc(amount)});}}
 }
 function spendLegendaryAction(state:CombatState,participantId:string,actionId:string,cost:number){
@@ -119,7 +119,7 @@ function spendLegendaryAction(state:CombatState,participantId:string,actionId:st
   if(cost!==expected)throw new Error('Kosten der legendären Aktion stimmen nicht mit dem Statblock überein.');
   const points=p.legendaryActions;if(!points||points.remaining<expected)throw new Error('Nicht genügend legendäre Aktionspunkte verfügbar.');
   if(points.lastUsedRound===state.round&&points.lastUsedTurnId===state.turnId)throw new Error('Diese Kreatur hat in diesem Zug bereits eine legendäre Aktion eingesetzt.');
-  points.remaining-=expected;points.lastUsedRound=state.round;points.lastUsedTurnId=state.turnId!;
+  points.remaining-=expected;points.lastUsedRound=state.round;points.lastUsedTurnId=state.turnId!;points.lastUsedActionId=action.id;points.hitResolved=false;
 }
 export function executeCombat(db: any, command: CombatCommand, guard: () => void): CombatView {
   return db.transaction(() => {
@@ -219,6 +219,25 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if(p.hp>0||(beforeHp>0&&p.hp===0)){delete p.death;delete p.deathLast;}
           if(!p.concentrating)delete p.concentrationChecks;
           if ('initiative' in a.changes) for (const peer of state.participants.filter(peer => peer.groupId === p.groupId)) peer.initiative = p.initiative;
+        } else if(a.kind==='hit'){
+          const p=participant(),attacker=state.participants.find(actor=>actor.id===a.source?.participantId),source=state.sources?.find(c=>c.id===attacker?.sourceId),original=source&&[...source.actions,...source.legendaryActions].find(action=>action.id===a.source?.actionId),action=source&&original?creatureActionForRolls(source,original):null;
+          if(!attacker||!source||!action||!creatureActionRolls(action).some(roll=>roll.kind==='attack'))throw new Error('Treffer benötigt einen Angriff aus dem Statblock des Angreifers.');
+          if(p.healthKnown===false||typeof a.critical!=='boolean'||!Array.isArray(a.components)||!a.components.length||a.components.length>20)throw new Error('Treffer benötigt bekannte HP, Kritisch-Markierung und Schadensanteile.');
+          const readCheck=(id:string)=>{const row=db.prepare('SELECT scene_id,payload,checksum FROM scene_check WHERE campaign_id=? AND id=?').get(cam,id);if(!row||row.scene_id!==state.sceneId||hash(row.payload)!==row.checksum)throw new Error('Wurfbeleg gehört nicht zu dieser Scene.');const check=JSON.parse(row.payload);if(check.id!==id||check.sourceCreatureId!==source.id||check.sourceActionId!==action.id||check.actor!==attacker.name||check.rollKind!=='formula')throw new Error('Wurfbeleg gehört nicht zu diesem Angriff.');return check;};
+          if(a.attackCheckId){const check=readCheck(a.attackCheckId);if(check.formulaKind!=='attack'||check.formula!==parseDiceFormula(creatureActionRolls(action).find(roll=>roll.kind==='attack')!.formula).formula||check.outcome!=='success'||check.dc!==p.armorClass||a.critical!==(check.rolls?.[0]===20)||check.label!==creatureActionRolls(action).find(roll=>roll.kind==='attack')!.label+' gegen '+p.name)throw new Error('Angriffswurf passt nicht zu Ziel, RK oder Kritisch-Markierung.');}
+          const legendary=source.legendaryActions.some(candidate=>candidate.id===action.id);
+          if(a.paidLegendary!==undefined&&typeof a.paidLegendary!=='boolean')throw new Error('Legendäre Kostenübernahme ist ungültig.');
+          if(legendary){
+            if(a.paidLegendary){const points=attacker.legendaryActions;if(a.legendary||!a.attackCheckId||!points||points.lastUsedActionId!==action.id||points.lastUsedRound!==state.round||points.lastUsedTurnId!==state.turnId||points.hitResolved)throw new Error('Legendärer Angriff wurde nicht in diesem Zug bezahlt oder bereits aufgelöst.');}
+            else{if(!a.legendary||a.legendary.participantId!==attacker.id||a.legendary.actionId!==action.id)throw new Error('Legendärer Treffer benötigt die passenden Aktionskosten.');spendLegendaryAction(state,attacker.id,action.id,a.legendary.cost);}
+          }else if(a.legendary||a.paidLegendary)throw new Error('Dieser Angriff ist keine legendäre Aktion.');
+          const known=new Map(creatureActionRolls(action).filter(roll=>roll.kind==='damage').map(roll=>[creatureRollKey(roll),roll])),keys=new Set<string>(),checks=new Set<string>();let total=0;
+          for(const part of a.components){const preset=part&&known.get(part.key);if(!preset||keys.has(part.key)||!Number.isSafeInteger(part.amount)||part.amount<0||part.amount>1000000||!['full','half','double','none'].includes(part.scale))throw new Error('Schadensanteile müssen eindeutig aus der Aktion stammen und gültige Beträge enthalten.');keys.add(part.key);
+            if(part.sourceCheckId){const check=readCheck(part.sourceCheckId);if(checks.has(check.id)||check.formulaKind!=='damage'||check.total!==part.amount||check.formula!==(a.critical?criticalDamageFormula(preset.formula):preset.formula)||check.label!==preset.label+(a.critical?' · Kritisch':''))throw new Error('Schadensbetrag passt nicht zum gespeicherten Anteil.');checks.add(check.id);}
+            total+=part.scale==='half'?Math.floor(part.amount/2):part.scale==='double'?part.amount*2:part.scale==='none'?0:part.amount;
+          }
+          if(!Number.isSafeInteger(total)||total>1000000)throw new Error('Gesamtschaden überschreitet 1.000.000.');
+          if(total)applyCombatDamage(p,total,a.critical);if(legendary)attacker.legendaryActions!.hitResolved=true;
         } else if(a.kind==='area-damage'){
           if(!Number.isSafeInteger(a.amount)||a.amount<1||a.amount>1000000||!Array.isArray(a.targets)||!a.targets.length||a.targets.length>1000)throw new Error('Flächenschaden benötigt einen positiven Betrag und Ziele.');
           if(a.source){const actor=state.participants.find(p=>p.id===a.source!.participantId),source=state.sources?.find(c=>c.id===actor?.sourceId);if(!source||![...source.actions,...source.legendaryActions].some(action=>action.id===a.source!.actionId))throw new Error('Aktion gehört nicht zu diesem Teilnehmer.');if(source.legendaryActions.some(action=>action.id===a.source!.actionId)&&!a.legendary)throw new Error('Legendäre Aktion benötigt ihre Aktionskosten.');}
@@ -228,6 +247,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
             const p=state.participants.find(p=>p.id===target.participantId);if(!p||p.healthKnown===false)throw new Error('Schadensziel fehlt oder seine HP sind noch offen.');
             const amount=target.scale==='none'?0:target.scale==='half'?Math.floor(a.amount/2):a.amount;if(amount)applyCombatDamage(p,amount);
           }
+          if(a.legendary)state.participants.find(p=>p.id===a.legendary!.participantId)!.legendaryActions!.hitResolved=true;
         } else if (a.kind === 'damage' || a.kind === 'heal') {
           const p = participant();
           if (p.healthKnown === false) throw new Error('HP noch offen. Aktuelle und maximale HP eintragen, bevor Schaden oder Heilung angewendet wird.');
