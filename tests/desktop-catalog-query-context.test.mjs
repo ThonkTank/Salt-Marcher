@@ -45,3 +45,50 @@ test('an old campaign query cannot overwrite a completed new campaign query',asy
 test('a delayed detail read cannot replace a later query error with a false empty result',async t=>{
  const x=await fixture(t),detail=deferred();window.campaign.creature=()=>detail.promise;await x.resolve(0,'Goblin');x.el('catalog-rows').querySelector('button').click();x.type('Broken');await x.debounce();x.reads[1].reject(new Error('Current search failed'));await tick();await tick();detail.resolve({ok:true,value:{id:'Goblin',name:'Goblin',abilities:{},traits:[],actions:[],legendaryActions:[]}});await tick();await tick();assert.match(x.el('catalog-page').textContent,/Current search failed/);assert.equal(x.el('catalog-page').getAttribute('role'),'alert');assert.equal(x.el('catalog-rows').querySelectorAll('button').length,0);
 });
+
+
+test('table lookups preserve the surrounding filters, paging and generation source even before debounce completes',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Guard');await x.opened;
+ x.type('Guard');x.el('catalog-cr-max').value='2';x.el('catalog-type').value='Humanoid';await x.debounce();await x.resolve(1,'Guard');
+ x.el('catalog-next').click();await until(()=>x.reads.length===3);await x.resolve(2,'Guard page two',25);
+ const context=x.el('generation-catalog-summary').textContent;
+ x.el('encounter-table-new').click();await tick();assert.equal(x.el('table-manager').open,true);
+ x.type('Wolf');await x.debounce();assert.equal(x.reads[3].query.text,'Wolf');
+ assert.equal(x.el('generation-catalog-summary').textContent,context);
+ // Closing also invalidates a lookup still in flight, before the restored query returns.
+ x.el('table-close').click();await until(()=>x.reads.length===5);
+ assert.equal(x.el('table-manager').open,false);assert.equal(x.el('catalog-search').value,'Guard');
+ assert.equal(x.el('catalog-cr-max').value,'2');assert.equal(x.el('catalog-type').value,'Humanoid');
+ assert.equal(x.reads[4].query.text,'Guard');assert.equal(x.reads[4].query.offset,25);assert.deepEqual(x.reads[4].query.types,['Humanoid']);
+ await x.resolve(4,'Restored Guard',25);await x.resolve(3,'Late Wolf');
+ assert.match(x.el('catalog-rows').textContent,/Restored Guard/);assert.doesNotMatch(x.el('catalog-rows').textContent,/Late Wolf/);
+ assert.equal(x.el('generation-catalog-summary').textContent,context);
+ // Reset inside another clean manager is local too and its queued lookup is cancelled on close.
+ x.el('encounter-table-new').click();await tick();x.type('Goblin');x.el('catalog-reset').click();await until(()=>x.reads.length===6);
+ assert.equal(x.reads[5].query.text,'');assert.equal(x.el('generation-catalog-summary').textContent,context);
+ x.el('table-close').click();await until(()=>x.reads.length===7);await x.resolve(6,'Guard again',25);await x.debounce();assert.equal(x.reads.length,7);
+});
+
+test('closing the table manager cannot transfer its late creature selection into the surrounding catalog',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Guard');await x.opened;
+ const detail=id=>({id,name:id,abilities:{},traits:[],actions:[],legendaryActions:[]});
+ window.campaign.creature=async id=>({ok:true,value:detail(id)});x.el('catalog-rows').querySelector('button').click();await tick();await tick();
+ assert.match(x.el('catalog-detail').textContent,/Guard/);
+ x.el('encounter-table-new').click();await tick();x.type('Wolf');await x.debounce();await x.resolve(1,'Wolf');
+ const pending=deferred();window.campaign.creature=()=>pending.promise;x.el('catalog-rows').querySelector('button').click();
+ x.el('table-close').click();await until(()=>x.reads.length===3);pending.resolve({ok:true,value:detail('Wolf')});await tick();await tick();
+ assert.match(x.el('catalog-detail').textContent,/Guard/);assert.doesNotMatch(x.el('catalog-detail').textContent,/Wolf/);
+ await x.resolve(2,'Guard');
+});
+
+test('saving a table keeps its searched entry without making that search a generator filter',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Guard');await x.opened;
+ window.campaign.creature=async id=>({ok:true,value:{id,name:id,abilities:{},traits:[],actions:[],legendaryActions:[]}});
+ const writes=[];window.campaign.executeGeneration=async command=>{writes.push(command);return{ok:true,value:{tables:[{...command.action.table,revision:1}],lootTables:[],registry:{revision:1,presets:[]}}};};
+ x.el('encounter-table-new').click();await tick();x.el('table-name').value='Waldsaum';x.el('table-name').oninput();
+ x.type('Wolf');await x.debounce();await x.resolve(1,'Wolf');x.el('catalog-rows').querySelector('button').click();await tick();await tick();x.el('table-add-creature').click();
+ x.el('table-form').onsubmit({preventDefault(){}});await until(()=>!x.el('table-manager').open);
+ assert.equal(writes.length,1);assert.deepEqual(writes[0].action.table.entries,[{creatureId:'Wolf',weight:'1'}]);
+ assert.equal(x.el('catalog-search').value,'');assert.match(x.el('generation-catalog-summary').textContent,/Keine zusätzlichen/);
+ await x.resolve(2,'Restored catalog');assert.match(x.el('catalog-rows').textContent,/Restored catalog/);
+});
