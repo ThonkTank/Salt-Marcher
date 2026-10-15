@@ -105,6 +105,11 @@ export async function createShopAtLocation(locationId:string,name:string){
  if(!await flushItems()||!owned(w.token,g)||shop?.shop.id!==next.id)throw new Error('Neuer Shop ist noch nicht übernommen. Offene Eingaben im Shop prüfen.');
  await loadShops();el('shop-editor').scrollIntoView({block:'start'});el('shop-notes').focus();return next.id;
 }
+export async function prepareShopLocation(id:string,locationId:string){
+ const w=workspace,g=epoch;await openItems(id);if(!w||!owned(w.token,g)||!shopReady()||shop?.shop.id!==id)throw new Error('Shop für Ortsbindung nicht verfügbar.');
+ if(!sources?.locations.some(l=>l.document.id===locationId&&!l.trashed))throw new Error('Zielort nicht verfügbar.');
+ el<HTMLSelectElement>('shop-owner').value='location:'+locationId;dirtyShop=true;el('shop-owner').focus();tell('Zielort als Shopbesitzer vorbelegt. Shop speichern bestätigt die Zuordnung.');
+}
 export async function openItemReference(id:string){const token=workspace?.token,g=epoch;await openItems();if(owned(token,g))await selectDefinition(id);}
 async function search(){const token=workspace?.token,g=epoch,request=++searchRequest;const q:ItemQuery={search:value('item-search'),category:value('item-filter-category'),magic:value('item-filter-magic') as ItemQuery['magic'],rarity:value('item-filter-rarity'),attunement:value('item-filter-attunement'),sort:value('item-sort') as ItemQuery['sort'],direction:value('item-direction') as ItemQuery['direction'],after:offset,includeTrashed:el<HTMLInputElement>('item-trash-filter').checked};const response=await window.campaign.itemDefinitions(q);if(!owned(token,g)||request!==searchRequest)return;const page=unwrap(response);next=page.next;el('items-source').textContent=[page.sourceStatus.message,...(page.problems??[])].join('\n');el('items-page').textContent=page.total+' Gegenstände · Seite '+(Math.floor(offset/40)+1);el<HTMLButtonElement>('items-prev').disabled=!previous.length;el<HTMLButtonElement>('items-next').disabled=next===null;const root=el('items-results');root.replaceChildren();for(const d of page.items)root.append(button(d.name+' · '+categories[d.category]+' · '+(d.unitCopper===null?'Wert offen':gold(d.unitCopper))+(d.trashed?' · Papierkorb':''),()=>selectDefinition(d.id)));}
 function definitionReady(){return !!definition&&definition.id===requestedDefinition&&!definitionLoading&&!definitionError;}

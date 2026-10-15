@@ -1,6 +1,6 @@
 import {chooseTextReference} from './text-reference-picker';
 import {rawTextOffset} from './text-references';
-import {showNarrative,flushNarrative} from './narrative-ui';
+import {showNarrative,flushNarrative,prepareNarrativeLocation} from './narrative-ui';
 import type { Workspace, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
 import { newLocation } from '../features/location/location-schema';
@@ -492,6 +492,7 @@ export async function openPreparedNote(id:string) {
   showLocations(false); await renderNotes();
   if (context?.token === token) revealNote(id);
 }
+export async function prepareNoteLocation(id:string,locationId:string){const token=context?.token;await openPreparedNote(id);if(!token||context?.token!==token||selectedNote!==id)throw new Error('Auftrag für Ortsbindung nicht verfügbar.');await prepareNarrativeLocation(token,id,locationId);tell('Zielort in den narrativen Angaben vorbelegt. Speichern bestätigt die Ortsbindung.');}
 export async function openPreparedLocation(id: string) {
   if (!(await flushPreparation())) return;
   const row = data.locations.find(row => row.document.id === id);

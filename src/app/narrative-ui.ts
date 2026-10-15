@@ -21,6 +21,8 @@ let request = 0,
   dirty = false;
 let saveHook: (() => Promise<boolean>) | null = null,
   task: Promise<boolean> | null = null;
+let placeHook:((id:string)=>Promise<boolean>)|null=null;
+export async function prepareNarrativeLocation(token:string,noteId:string,locationId:string){if(data?.state.noteId!==noteId||!ownerKey.endsWith(':'+token+':'+noteId)||!placeHook||pending||task)throw new Error('Narrativer Ortskontext nicht verfügbar.');if(!await placeHook(locationId))throw new Error('Ortsbindung konnte nicht vorbereitet werden.');}
 let readyHook: (() => boolean) | null = null;
 let draftVersion = 0,
   persistHook: (() => Promise<boolean>) | null = null,
@@ -67,7 +69,7 @@ export async function showNarrative(
     ownerKey = "";
     data = null;
     dirty = false;
-    saveHook = null;
+    saveHook = null;placeHook=null;
     persistHook = null;
     readyHook = null;
     if (timer) clearTimeout(timer);
@@ -76,7 +78,7 @@ export async function showNarrative(
   ownerKey = key;
   data = null;
   dirty = false;
-  saveHook = null;
+  saveHook = null;placeHook=null;
   persistHook = null;
   readyHook = null;
   if (timer) clearTimeout(timer);
@@ -145,7 +147,7 @@ export async function showNarrative(
   } catch (e) {
     if (current()) {
       data = null;
-      saveHook = null;
+      saveHook = null;placeHook=null;
       persistHook = null;
       readyHook = null;
       panel.setAttribute("aria-busy", "false");
@@ -264,6 +266,7 @@ export async function showNarrative(
       s.locationId = place.value || null;
       markDirty();
     };
+    placeHook=async id=>{if(!current()||!places.some(p=>p.id===id))throw new Error('Zielort nicht verfügbar.');place.value=id;s.locationId=id;markDirty();place.focus();return persist();};
     placeLabel.append(place);
     heading.textContent = "Narrativer Status und Belohnung";
     for (const [id, label] of [
