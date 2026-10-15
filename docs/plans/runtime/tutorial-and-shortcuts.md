@@ -58,7 +58,7 @@ Widerruf, schreibfreier Outcomeprüfung und gesicherter Wiederaufnahme-Reparatur
 auffindbar. Sie benennt den noch fehlenden zusätzlichen Inhaltseditor. Die
 Journallektion ergänzt den Zugang zu Quests/Gerüchten mit demselben bestehenden
 Status-/Belohnungseditor; sie führt keinen weiteren Rewardwriter ein. Die
-Lessonrevision ist `desktop-tutorial-v65`.
+Lessonrevision ist `desktop-tutorial-v67`.
 
 ## Aussagekräftige lokale Belege
 
@@ -117,3 +117,7 @@ führt aktuelle Planwahl, unveränderte gezeigte Autorenbytes, Dialog-/Gruppenba
 fehlende Quellen sowie die getrennten Marker-/Textschritte bis zu ihren nächsten
 Writer-, Fresh- und nativen Abnahmen. Die vorhandene Wiederaufnahmelektion
 ersetzt diese Ausfall-/Ownerprüfung nicht.
+
+Die Autorenverweislektion folgt der [gemeinsamen Textgrenze](../campaign/authored-text-references.md):
+Literalcode und Bilder bleiben Text; Ziel-/Aliasänderungen während eines Reads
+geben keine alte Einfügefreigabe. Native Tastatur-/Modalabnahme bleibt offen.
