@@ -135,6 +135,15 @@ function blank(kind:KeyContent['kind'],id:string=uuid()):KeyContent{return{id,re
 export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected,drain:typeof before,changed:typeof publish,go:typeof navigate){tell=status;workspace=w;selected=r;before=drain;publish=changed;navigate=go;const editing=new Set(['key-name','key-number','key-read-aloud','key-gm-notes','key-attributes','key-zsteps','key-tags','key-status','key-secret','key-level','key-group']);for(const type of ['input','change','click'] as const)el('key-dialog').addEventListener(type,event=>{const target=event.target as HTMLElement;if(type!=='click'&&editing.has(target.id)||target.closest('#key-blocks')||type==='click'&&['key-add-block','key-reference-add'].includes(target.id)||target.closest('#key-references')){editVersion++;blocked=false;schedule();}});
  el('key-dialog').addEventListener('cancel',event=>{event.preventDefault();void moveEditor(()=>el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);});
  el('key-open').onclick=()=>{const o=owner(),room=selected(),intent=++transition;run(async()=>{if(!(await before())||!owns(o)||intent!==transition)return;if(!room)throw new Error('Raum auswählen.');scopeId=room.scopeId;if(!await refresh()||!owns(o)||intent!==transition)return;openRoom(room.id);optionList('key-filter-level',records().filter(r=>r.kind==='level'&&r.scopeId===scopeId),null,'Alle Level');optionList('key-filter-group',records().filter(r=>r.kind==='group'&&r.scopeId===scopeId),null,'Alle Gruppen');el<HTMLDialogElement>('key-dialog').showModal();});};
+ el('key-add-room').onclick=()=>{void moveEditor(async()=>{
+  run(async()=>{const o=owner(),w=workspace();if(!w)return;if(!await before())throw new Error('Andere offene Eingaben zuerst prüfen.');if(!owns(o))return;
+   const result=await window.campaign.addRoom(w.token);if(!owns(o))return;if(!result.ok)throw new Error(result.error);
+   acknowledged=result.value;await publish(result.value);if(!owns(o)||!await refresh()||!owns(o))return;
+   const room=result.value.rooms.find(r=>r.id===result.value.selectedId);if(!room)throw new Error('Neuer Raum konnte nicht geöffnet werden.');
+   field('key-search').value='';select('key-filter-level').value='';select('key-filter-group').value='';select('key-filter').value='';listPage=0;openRoom(room.id);
+   el('key-dialog').scrollTop=0;saveState('saved','Neuer Raum angelegt. Name, Vorlesetext und GM-Notizen direkt eingeben.');
+  },true);await pending;
+ }).then(ok=>{if(ok&&!blocked&&el<HTMLDialogElement>('key-dialog').open)field('key-name').focus();}).catch(reportFailure);};
  el('key-close').onclick=()=>{void moveEditor(()=>el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);};
  el('key-save').onclick=()=>{blocked=false;void flushKeys();};
  el('key-reload').onclick=()=>{void reload();};

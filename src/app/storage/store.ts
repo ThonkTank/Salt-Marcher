@@ -369,8 +369,16 @@ export class CampaignStore {
     this.db.transaction(() => {
       const campaignId = this.guard(token);
       const n = this.db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(campaignId).n + 1;
-      const scopeId=this.db.prepare('SELECT value FROM settings WHERE key=?').get('default-scope:'+campaignId)?.value??'local',floorId=this.db.prepare('SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1').get(campaignId,scopeId)?.id??'ground';
-      const room: Room = { id: randomUUID(), scopeId, floorId, name: 'Neuer Raum', number: String(n), revision: 0, polygons: [{ outer: [{ x: 0, y: 0 }, { x: 6.096, y: 0 }, { x: 6.096, y: 4.572 }, { x: 0, y: 4.572 }], holes: [] }], sections: [{ id: randomUUID(), kind: 'markdown', markdown: '## Beschreibung\n' }] };
+      const current=this.workspace(),selected=current.rooms.find(r=>r.id===current.selectedId);
+      const scopeId=selected?.scopeId??this.db.prepare('SELECT value FROM settings WHERE key=?').get('default-scope:'+campaignId)?.value??'local',floorId=selected?.floorId??this.db.prepare('SELECT id FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid LIMIT 1').get(campaignId,scopeId)?.id??'ground';
+      // A default room is immediately usable geometry, not an overlapping placeholder.
+      const bounds=(r:Room)=>{let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const p of r.polygons)for(const v of p.outer){minX=Math.min(minX,v.x);minY=Math.min(minY,v.y);maxX=Math.max(maxX,v.x);maxY=Math.max(maxY,v.y);}return{minX,minY,maxX,maxY};};
+      const grid=1.524,width=4*grid,height=3*grid,anchor=selected?bounds(selected):null,y=anchor?Math.round(anchor.minY/grid)*grid:0;
+      let x=anchor?Math.ceil((anchor.maxX+grid)/grid-1e-8)*grid:0;
+      const occupied=current.rooms.filter(r=>r.scopeId===scopeId&&r.floorId===floorId).map(bounds).sort((a,b)=>a.minX-b.minX);
+      for(const b of occupied)if(y<b.maxY+grid&&y+height>b.minY-grid&&x<b.maxX+grid&&x+width>b.minX-grid)x=Math.ceil((b.maxX+grid)/grid-1e-8)*grid;
+      const room: Room = { id: randomUUID(), scopeId, floorId, name: 'Neuer Raum', number: String(n), revision: 0, polygons: [{ outer: [{ x, y }, { x:x+width, y }, { x:x+width, y:y+height }, { x, y:y+height }], holes: [] }], sections: [{ id: randomUUID(), kind: 'markdown', markdown: '## Beschreibung\n' }] };
+      validateRoom(room);
       this.insertRoom(campaignId, room); this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(room.id, campaignId);
     }).immediate();
     return this.workspace();

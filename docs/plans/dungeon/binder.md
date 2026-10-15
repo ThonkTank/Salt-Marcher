@@ -57,3 +57,13 @@ keine vollständige native Binder- oder Dungeonabnahme.
 Persistenter Reise-/Gruppenstand und noch offene Tempo-/Rundenregeln stehen im
 [Dungeon-Reiseplan](travel-state.md); Binder- und Geometriebelege ersetzen dessen
 Wiederaufnahme- und Entscheidungsabnahmen nicht.
+
+## Räume ohne Umweg vorbereiten
+
+Der Dungeon-Key bietet die vorhandene Raumanlage direkt in seiner Seitenleiste.
+Vorherige gültige Eingaben werden gesichert; bei ungültigen Eingaben entsteht
+kein weiterer Raum. Der neue Raum bleibt im ausgewählten Dungeon/Geschoss,
+erhält eine freie rechteckige Ausgangskontur neben dem gewählten Kartenraum
+und öffnet unmittelbar Name, Vorlesetext und GM-Notizen. Suchfilter werden dabei
+geleert, damit der gerade angelegte Raum sichtbar bleibt. Vorhandene Räume,
+Texte und Positionen werden nicht versetzt; Verbindungen werden separat geplant.
