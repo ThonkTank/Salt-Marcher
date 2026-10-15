@@ -28,6 +28,7 @@ function fixture(t) {
   const ui = require("../.build/adventuring-day-dom.cjs"),
     get = (id) => dom.document.getElementById("day-" + id),
     calls = [];
+  dom.window.innerWidth=1000;dom.window.innerHeight=800;get("trigger").getBoundingClientRect=()=>({left:700,right:800,top:20,bottom:60,width:100,height:40});
   let open = false;
   get("popover").matches = () => open;
   get("popover").showPopover = () => {

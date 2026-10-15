@@ -21,7 +21,10 @@ Platz bietet. Inline-Popups können dieselbe Mechanik mit `below` verwenden.
 Der Host begrenzt Breite/Höhe und hält Abstand zu den Viewporträndern. Reicht der
 Platz unten nicht, nutzt er den größeren Platz oberhalb. Größenänderungen,
 Scrollen und veränderte Inhaltsmaße positionieren erneut; ein verschwundener
-Auslöser schließt sein Popup. Dafür werden nur während der Anzeige Resize-/
+Auslöser schließt sein Popup. Die Prüfung umfasst beide Viewportachsen und
+positive Breite/Höhe; teilweise sichtbare Auslöser bleiben verwendbar. Auch
+programmatisches Öffnen verweigert einen vollständig außerhalb liegenden
+Auslöser vor der Fokussierung. Das Schließen verändert keine Formulareingabe. Dafür werden nur während der Anzeige Resize-/
 Scrollbeobachtungen gehalten. Position und Sichtbarkeit werden nicht persistiert.
 
 Escape, Außenklick, gegenseitiges Schließen von Auto-Popovers und Fokusrückgabe
@@ -31,15 +34,27 @@ programmatischem Öffnen. Ein Außenklick auf ein anderes Control zieht dessen
 Fokus nicht zurück. Keine eigenen globalen Escape-/Outsideclick-Handler.
 
 `desktop-anchored-popup.test.mjs` prüft Hostzustand, Geometriegrenzen, entfernte/
-gesperrte Auslöser und programmatisches Öffnen; bestehende Party-/Day-/Shortcut-
+gesperrte Auslöser, horizontalen Sichtverlust, Nullhöhe und programmatisches
+Öffnen; bestehende Party-/Day-/Shortcut-
 Proben behalten Fachverhalten und Kontextgrenzen. DOM-Geometriestubs sind kein
 nativer Layout- oder Fokusnachweis.
+
+Eine zusätzliche isolierte Electronprobe scrollt einen echten horizontalen
+Container und verkleinert das Fenster bei geöffnetem Popup. Vor der Korrektur
+blieb das Popup in beiden Fällen am Rand stehen, obwohl der Auslöser vollständig
+außerhalb des Viewports lag. Danach schließt es mit `aria-expanded="false"`;
+programmgesteuertes Wiederöffnen bleibt gesperrt. Der Kontrollfall mit teilweise
+sichtbarem Auslöser bleibt offen. Die native Formulareingabe bleibt erhalten;
+volle Party-/Daydaten und Persistenz sind nicht Teil dieser Probe.
 
 ## Noch ausstehende Abnahmen
 
 - Die native Mechanik zusätzlich im vollständigen ausgelieferten Desktop mit
   echten Daten, langen Profilen, offenen Entwürfen und verschachtelten Dialogen
-  prüfen. Die isolierte Electron-Bedienprobe nutzt echte Popovermechanik und
+  prüfen. Clipping durch kleinere Scrollvorfahren, reine CSS-
+  Sichtbarkeitsänderungen ohne Geometrieereignis und geänderte Auslöserposition
+  ohne Resize-/Scrollereignis sind durch die Viewportprobe nicht qualifiziert.
+  Die isolierte Electron-Bedienprobe nutzt echte Popovermechanik und
   Originaloberflächen mit lesenden APIstubs; sie qualifiziert keine Persistenz.
 - Lange Forminhalte und ihre Aktionen im vollständigen Desktop prüfen.
   Ob ein geteilter Kopf-/Aktionsbereich oder eine andere Oberfläche dafür den

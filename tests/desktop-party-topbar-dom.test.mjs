@@ -21,6 +21,7 @@ test("setting XP requires an explicit number; blank input never becomes a zero-X
   delete require.cache[require.resolve("../.build/party-topbar-dom.cjs")];
   const ui = require("../.build/party-topbar-dom.cjs"),
     get = (id) => dom.document.getElementById("party-" + id);
+  dom.window.innerWidth=1000;dom.window.innerHeight=800;get("shortcut").getBoundingClientRect=()=>({left:700,right:800,top:20,bottom:60,width:100,height:40});
   let open = false;
   get("popover").matches = () => open;
   get("popover").showPopover = () => {

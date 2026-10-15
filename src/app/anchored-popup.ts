@@ -1,11 +1,12 @@
 export function bindAnchoredPopup(trigger:HTMLButtonElement,popup:HTMLElement,options:{width:number;placement?:'below'|'trailing';offset?:number}){
  const view=popup.ownerDocument.defaultView!,gap=8,offset=options.offset??8;
  const opened=()=>popup.matches(':popover-open');
+ const visible=(anchor:DOMRect)=>trigger.isConnected&&anchor.width>0&&anchor.height>0&&anchor.right>0&&anchor.left<view.innerWidth&&anchor.bottom>0&&anchor.top<view.innerHeight;
  const close=()=>{if(opened())popup.hidePopover();trigger.setAttribute('aria-expanded','false');};
  const place=()=>{
   if(!opened())return;
   const anchor=trigger.getBoundingClientRect();
-  if(!trigger.isConnected||!anchor.width||anchor.bottom<=0||anchor.top>=view.innerHeight){close();return;}
+  if(!visible(anchor)){close();return;}
   const below=Math.max(0,view.innerHeight-anchor.bottom-offset-gap),above=Math.max(0,anchor.top-offset-gap);
   const height=popup.scrollHeight+2,under=height<=below||below>=above;
   popup.style.maxHeight=(under?below:above)+'px';
@@ -26,6 +27,6 @@ export function bindAnchoredPopup(trigger:HTMLButtonElement,popup:HTMLElement,op
   if(opened()){place();view.addEventListener('resize',place);view.addEventListener('scroll',place,true);observer?.observe(popup);observer?.observe(trigger);}
   else{view.removeEventListener('resize',place);view.removeEventListener('scroll',place,true);observer?.disconnect();}
  });
- const open=()=>{if(trigger.disabled||!trigger.isConnected)return false;if(!opened())(popup.showPopover as (options:{source:HTMLElement})=>void).call(popup,{source:trigger});trigger.setAttribute('aria-expanded','true');return true;};
+ const open=()=>{if(trigger.disabled||!visible(trigger.getBoundingClientRect()))return false;if(!opened())(popup.showPopover as (options:{source:HTMLElement})=>void).call(popup,{source:trigger});trigger.setAttribute('aria-expanded','true');return true;};
  return{open,close,toggle:()=>{if(opened()){close();return false;}return open();}};
 }
