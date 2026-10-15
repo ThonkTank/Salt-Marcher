@@ -21,12 +21,16 @@ function fixture(label:string){
  const created=store.executeCity({commandId:'buildings',campaignId:campaign.id,token:workspace.token,cityId:'city',expectedRevision:1,action:{kind:'change',upsert:[home,shop],remove:[],label:'Häuser'}});
  return{root,store,campaign,workspace,ada,bert,home,shop,revision:created.header.revision};
 }
+function demographics(f:ReturnType<typeof fixture>,id:string,ancestry:string,gender:string,ageYears:number|null){const old=f.store.npc(f.workspace.token,id);return f.store.executeNpc({commandId:'demographics-'+id+'-'+old.record.revision,campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,demographics:{ancestry,gender,ageYears}},locationId:old.locationId,health:old.health}});}
 
 test('city buildings bind existing World NPC homes and workplaces through exact undo and atomic moves',()=>{
  const f=fixture('city-people-');
  try{
+  demographics(f,f.ada,'Mensch','Frau',32);demographics(f,f.bert,'Zwerg','Mann',32);
   const assigned=f.store.executeCity({commandId:'assign',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada],workerIds:[f.bert]}],remove:[],label:'Personen binden'}});
   assert.deepEqual(assigned.units.find(u=>u.id==='home')?.residentIds,[f.ada]);
+  assert.deepEqual(assigned.demographics,{residentCount:1,profiledCount:1,ancestries:[{value:'Mensch',count:1}],genders:[{value:'Frau',count:1}],ages:[{years:32,count:1}]});
+  const cityRevision=assigned.header.revision;demographics(f,f.ada,'Elf','nichtbinär',44);const projected=f.store.city(f.workspace.token,'city');assert.equal(projected.header.revision,cityRevision);assert.deepEqual(projected.demographics,{residentCount:1,profiledCount:1,ancestries:[{value:'Elf',count:1}],genders:[{value:'nichtbinär',count:1}],ages:[{years:44,count:1}]});assert.throws(()=>demographics(f,f.ada,'Elf','nichtbinär',2001),/Weltprofil prüfen/);assert.equal(f.store.npc(f.workspace.token,f.ada).record.demographics?.ageYears,44);
   assert.deepEqual(f.store.cities(f.workspace.token).assignedPeople.map(p=>p.name),['Ada','Bert']);
   const beforeFailure=assigned.header.revision;
   assert.throws(()=>f.store.executeCity({commandId:'duplicate',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:beforeFailure,action:{kind:'change',upsert:[{...f.shop,residentIds:[f.ada]}],remove:[],label:'Doppelt'}}),/nur einen bestätigten wohnort/i);
@@ -37,7 +41,7 @@ test('city buildings bind existing World NPC homes and workplaces through exact 
   assert.deepEqual(undone.units.find(u=>u.id==='home')?.residentIds,[f.ada]);
   const redone=f.store.executeCity({commandId:'redo-move',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:undone.header.revision,action:{kind:'redo'}});
   assert.deepEqual(redone.units.find(u=>u.id==='shop')?.residentIds,[f.ada]);
-  assert.throws(()=>f.store.changePreparation({commandId:'trash-bound-npc',campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'note-trash',id:f.ada,expectedRevision:1,trashed:true}}),/Bindung zuerst am Haus lösen/);
+  assert.throws(()=>f.store.changePreparation({commandId:'trash-bound-npc',campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'note-trash',id:f.ada,expectedRevision:f.store.npc(f.workspace.token,f.ada).noteRevision,trashed:true}}),/Bindung zuerst am Haus lösen/);
   assert.throws(()=>f.store.executeCity({commandId:'missing',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:redone.header.revision,action:{kind:'change',upsert:[{...f.home,workerIds:['missing-npc']}],remove:[],label:'Fehlend'}}),/fehlenden oder gelöschten World-NPC/);
   assert.equal(f.store.city(f.workspace.token,'city').header.revision,redone.header.revision);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
@@ -153,8 +157,9 @@ test('NPC places expose canonical city roles and disable hidden dungeon rooms',(
 test('campaign transfer remaps city resident and workplace references with their World NPC identities',async()=>{
  const f=fixture('city-people-transfer-source-'),targetRoot=mkdtempSync(join(tmpdir(),'city-people-transfer-target-')),target=new CampaignStore(join(targetRoot,'campaign.sqlite'),'test');
  try{
+  demographics(f,f.ada,'Mensch','Frau',28);demographics(f,f.bert,'Zwerg','Mann',56);
   f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],workerIds:[f.bert],households:[{id:'household-transfer',name:'Familie Fernweg',memberIds:[f.ada,f.bert]}],jobs:[{id:'job-transfer',name:'Bäcker',workerIds:[f.bert]}]}],remove:[],label:'Personen binden'}});
-  f.store.executeWorldRelationPair({commandId:'pair-transfer',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'add',sourceId:f.ada,targetId:f.bert,sourceRevision:1,targetRevision:1,forwardLabel:'beschützt',reverseLabel:'wird beschützt von'}});
+  f.store.executeWorldRelationPair({commandId:'pair-transfer',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'add',sourceId:f.ada,targetId:f.bert,sourceRevision:f.store.npc(f.workspace.token,f.ada).noteRevision,targetRevision:f.store.npc(f.workspace.token,f.bert).noteRevision,forwardLabel:'beschützt',reverseLabel:'wird beschützt von'}});
   const snapshot=join(f.root,'campaign.snapshot.sqlite');await f.store.campaignSnapshot(f.workspace.token,snapshot);
   const imported=target.acceptCampaignSnapshot(snapshot,'Übernommene Stadt',{},'city-people-transfer'),opened=target.activate(imported.id),city=target.cities(opened.token).cities[0]!,view=target.city(opened.token,city.id),people=target.cities(opened.token).assignedPeople;
   const home=view.units.find(u=>u.name==='Wohnhaus')!;
@@ -162,6 +167,7 @@ test('campaign transfer remaps city resident and workplace references with their
   assert.notEqual(home.residentIds?.[0],f.ada);assert.notEqual(home.workerIds?.[0],f.bert);
   assert.deepEqual(new Set(people.map(p=>p.id)),new Set([home.residentIds![0]!,home.workerIds![0]!]));
   assert.deepEqual(people.map(p=>p.name).sort(),['Ada','Bert']);
+  assert.deepEqual(view.demographics,{residentCount:2,profiledCount:2,ancestries:[{value:'Mensch',count:1},{value:'Zwerg',count:1}],genders:[{value:'Frau',count:1},{value:'Mann',count:1}],ages:[{years:28,count:1},{years:56,count:1}]});
   assert.notEqual(home.households?.[0]?.id,'household-transfer');
   assert.deepEqual(new Set(home.households?.[0]?.memberIds),new Set(home.residentIds));
   assert.notEqual(home.jobs?.[0]?.id,'job-transfer');
