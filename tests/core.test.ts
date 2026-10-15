@@ -118,6 +118,8 @@ import "./core/time-plan-storage.test";
 import "./core/npc-cast-ui.test";
 import "./core/npc-cast-context.test";
 import "./core/npc-cast-storage.test";
+import "./core/world-links-ui.test";
+import "./core/world-links-storage.test";
 import "./core/agenda-storage.test";
 import "./core/object-gestures.test";
 import "./core/extension-lifecycle.test";

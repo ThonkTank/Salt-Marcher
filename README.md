@@ -825,3 +825,15 @@ Der Zusammenhangsplan erschließt zusätzlich Kreaturen, Gegenstände und Encoun
 Hat eine Gruppe noch keinen Besuch übernommen oder das Ende ihrer bisherigen Timeline erreicht, bleibt der Leitungsstand nicht mehr leer. Er prüft die vorhandenen Spielabendpläne in ihrer gespeicherten Reihenfolge und schlägt den ersten für diese Gruppe noch ungespielten oder wieder geöffneten Besuch vor. Abgeschlossene und übersprungene Besuche werden ausgelassen; Planname, Ort, Eröffnung und Mappeninhalt bleiben sichtbar.
 
 Der Vorschlag verwendet dieselben Übernahme-, Mappen- und Startwege wie eine direkte Timeline-Fortsetzung. Er schreibt keine neue Planwahl und verändert keinen Besuchsstatus. Sind alle vorbereiteten Besuche erledigt, benennt der Leitungsstand diesen Zustand ausdrücklich; ohne Plan fordert er zur Vorbereitung eines Spielabendplans auf.
+
+### Desktopstand 0.81: Textverweise und eigene Suchbegriffe
+
+„Textverweis einfügen“ wählt eine Welt-/Katalogquelle, zeigt eine Vorschau und fügt ihren Verweis am Cursor oder an der Markierung der GM-Notiz ein. Eigene Anzeigenamen werden im Bereich „Verknüpfte Begriffe“ der Schnellsuche und des Zusammenhangsplans gefunden. Der Lesetext öffnet die Zielquelle, mit dem bestehenden Verlauf zurück zur Notiz. Umbenannte Ziele bleiben gebunden, nicht verfügbare Ziele bleiben kenntlich.
+
+Verweise werden als Markdown `[Anzeigename](dungeon-ref:kind/URI-kodierte-ID)` im bestehenden Text gespeichert; gewöhnliches Markdown und Prosa werden nicht verändert. Aktuell werden je Dokument die ersten 200 Verweise für die begrenzten Such-/Navigationsprojektionen gelesen. Es gibt keinen zweiten Autoren- oder Aliasspeicher und keine neue Datenbankschemaversion. Unabhängige Kampagnenkopien/-importe binden lokale Ziele innerhalb dieser Syntax an ihre neuen IDs; installationsweite Katalogziele folgen der vorhandenen Definitionzuordnung. Auf Spielertexten erscheinen ausschließlich Anzeigenamen statt der internen Verweisadressen.
+
+### Desktopstand 0.82: Gruppenbereitschaft vor dem Start
+
+Der Leitungsstand zeigt für jede fortbestehende Gruppe die aktuellen Partywerte aller aktiven Figuren. Trefferpunkte, temporäre HP, Zustände, Konzentration und Todesrettungen stehen gemeinsam mit Level, Tagesbelastung und Rastbedarf direkt vor der Wahl der Startgruppe. Fehlende Werte, 0 HP, Tod oder Stabilisierung, Zustände und eine fällige Rast werden sichtbar hervorgehoben; eine leere Party bleibt ausdrücklich als leere Startgruppe erkennbar.
+
+„Partywerte öffnen“ fokussiert die zugehörige Gruppe und führt zu den bestehenden Figurenständen am Spieltisch. „Rast planen…“ öffnet nach demselben Fokuswechsel die vorhandene Party-Rast. Die Übersicht selbst schreibt keine HP, XP, Zustände, Rastwirkung, Zeit oder Gruppenmitgliedschaft; Änderungen entstehen weiterhin erst durch die ausdrückliche Bestätigung im jeweiligen Besitzer.

@@ -58,7 +58,7 @@ Widerruf, schreibfreier Outcomeprüfung und gesicherter Wiederaufnahme-Reparatur
 auffindbar. Sie benennt den noch fehlenden zusätzlichen Inhaltseditor. Die
 Journallektion ergänzt den Zugang zu Quests/Gerüchten mit demselben bestehenden
 Status-/Belohnungseditor; sie führt keinen weiteren Rewardwriter ein. Die
-Lessonrevision ist `desktop-tutorial-npc-recovery-source-links-world-links-npc-groups-catalog-encounter-npc-dossier-party-live-coverage-travel-camp-calendar-time-preparation-coverage-music-coverage-campaign-agenda-items-treasury-dungeon-binder-scene-visits-atlas-coverage-treasure-distribution-session-recap-player-cues-live-generation-character-progression-session-copy-live-soundboard-follow-ups-capability-coverage-quick-reference-narrative-journal-session-review-live-packet-workspace-shortcuts-v62`.
+Lessonrevision ist `desktop-tutorial-v65`.
 
 ## Aussagekräftige lokale Belege
 
@@ -111,3 +111,9 @@ und die native Abnahme bleiben von der Tutorialzuordnung getrennt.
 Die [Kampagnenagenda](campaign-agenda.md) verwendet den konfigurierten
 Fantasy-Tag für Fristen; ihre Entwurfs-/Zeitbasis- und Wiederaufnahmeabnahme
 bleibt zusätzlich zur Tutorialzuordnung erforderlich.
+
+Die [Spielabend-Eröffnung und Wiederaufnahme](session-opening-and-resume.md)
+führt aktuelle Planwahl, unveränderte gezeigte Autorenbytes, Dialog-/Gruppenbasis,
+fehlende Quellen sowie die getrennten Marker-/Textschritte bis zu ihren nächsten
+Writer-, Fresh- und nativen Abnahmen. Die vorhandene Wiederaufnahmelektion
+ersetzt diese Ausfall-/Ownerprüfung nicht.

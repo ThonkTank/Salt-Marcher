@@ -1,6 +1,6 @@
 # SMR-11: Versionierte In-game-Tutorials
 
-Stand: 14. Oktober 2026. Normative Quelle: [Program Capability Requirements, fixierter Stand](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md#in-game-capability-tutorials).
+Stand: 15. Oktober 2026. Normative Quelle: [Program Capability Requirements, fixierter Stand](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md#in-game-capability-tutorials).
 
 ## Ausführbarer Stand
 
@@ -96,11 +96,23 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Scene-Musik und Ambience | gruppengebundene Scene-Regler, Weltquellen, Wetter-/Umweltlayer sowie manuelles Hinzufügen, Unterdrücken und Freigeben | Musik und Wetter zur Gruppe passen lassen |
 | Live-Soundboard | gemeinsamer Transport, Kampagnenfavoriten, Bibliotheksauswahl und Mehrfach-Queue am Spieltisch | Den Spielabend direkt am Tisch vertonen |
 | Live-Regeln | dynamisches Regelpanel und d20-Probenformular | Regelreferenzen und Proben bei der Gruppe halten |
-| Erweiterter Dungeon | 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
+| Dungeonstruktur | getrennte Einstiege für 3D-Volumen, Trigger, Inhalte, Graph, Key und Paths | Dungeonstruktur, Inhalte und 3D-Verbindungen vertiefen |
+| 3D-Volumen | Konturvorschau, Schnitte, Zellen/Flächen, Übernahme und Verwerfen | Raumkonturen als 3D-Volumen ausarbeiten |
+| Trigger und Fallenlaufzustand | mehrteilige Triggerfelder, Fallenregel, Chargekorrektur, Reset und bestätigte Aktivierung | Triggerfelder und Fallenlaufzustand getrennt führen |
+| Dungeon-Inhalte | Encounter-/Lootbesitzer, öffentliche und private Texte, Voxelanker, Entdeckung und verlorene Geometrie | Dungeon-Inhalte an Volumen binden |
+| Graphentwurf | Ansichten, Änderungen, Budgetplanung, Rastervorschau, Übernahme und vollständige Wiederherstellung | Dungeonfluss in einer geschützten Vorschau planen |
+| Dungeon-Key und Ausgabe | Suche/Filter, Besitzer und Vererbung, Blöcke/Referenzen, Sammeländerung, öffentliche und GM-Ausgaben | Dungeon-Keys, Vererbung und Ausgabe pflegen |
+| Paths und Passagen | Anker, Wegpunkte, Vorschau/Übernahme sowie getrennte Passagenseiten und Wiederzuordnung | 3D-Paths und gerichtete Passagen verbinden |
+| Dungeon-Binder | Suche, Dungeon-/Geschossfilter, GM-Key, öffentliche Vorschau und Navigation in bestehende Abläufe | Raum-Keys beim Leiten lesen |
+| Stadtstruktur | ortsgebundene Anlage, metrische Straßen/Mauern/Flächen/Häuser, offener Zeichenzug und Stadt-History | Eine Stadt aus metrischen Strukturen aufbauen |
+| Geschützte Stadtregeneration | Viertel und Erzeugungsvorgaben, revisionsgebundene Vorschau, Abbruch und gemeinsame Übernahme | Ein Viertel mit geschützter Vorschau bebauen |
+| Stadtelemente und Ausgabe | Autosave/Reload, Hauspose und Schutz, leere Innenraumhülle, abhängiges Löschen sowie SVG-/Datenausgabe | Stadtelemente bearbeiten, schützen und ausgeben |
 
 ## Verbleibende Abnahme
 
 Die Hauptflächen- und erste Unterfähigkeitsinvariante beweisen noch nicht, dass jede einzelne Capability fachlich verständlich erklärt wird. Das Inventar wird arbeitsbereichsweise fortgeführt; jede weitere Gruppe wird einer konkreten Lektion oder einer begründeten gemeinsamen Lektion zugeordnet. Neue Hauptoberflächen sowie die oben inventarisierten Einstiege dürfen die Invariante nicht ohne vorhandene Lektion passieren.
 Dynamisch erzeugte Kopfzeilencontrols wie Questjournal und Schnellsuche sind durch die HTML-Invariante noch nicht erfasst; ihre vorhandenen Lektionen und ihre tatsächliche Erzeugung müssen zusätzlich gemeinsam geprüft werden.
+
+Die Stadtzuordnung belegt nur den heute sichtbaren räumlichen Teilstand. Bewohner, Haushalte, Berufe, Beziehungen, Fraktionen, Tagespläne und gemeinsame Campaignzeit besitzen in der Stadtoberfläche noch keine Capabilities und daher auch keine ausführbare Tutorialzuordnung. Die drei Stadtlektionen dürfen nicht als CITY-06–09- oder vollständige Produktabnahme gelesen werden.
 
 Die DOM-/Storebelege ersetzen keine native Bedienabnahme. Offen bleiben ein echter Erstinstallations- und Update-Lauf im gepackten Desktopprodukt, vollständige Tastaturbedienung einschließlich Escape und Fokusrückgabe, 200-%-Darstellung bei üblicher Laptopauflösung, Screenreader-Reihenfolge, Kontrast sowie die Prüfung, dass der lange Dialog schnelle Arbeitsabläufe nicht behindert.
