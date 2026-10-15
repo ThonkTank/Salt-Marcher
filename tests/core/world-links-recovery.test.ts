@@ -104,3 +104,13 @@ test('pair recovery shows a new draft arriving during the confirmed source refre
   await f.check();assert.equal(f.store.worldRelationPairDraft(f.workspace.token,f.source)?.writeId,'after-cleanup-draft');assert.equal(f.el<HTMLInputElement>('world-link-label').value,'neu');assert.match(f.el('world-links-status').textContent!,/neuere Paarentwurf/);assert.equal([...f.dialog.querySelectorAll('button')].find(b=>b.textContent==='Auftrag prüfen')!.hidden,false);
  }finally{f.cleanup();}
 });
+
+test('pair recovery keeps local edits beside a newer draft and can explicitly return to that saved draft',async()=>{
+ const f=await fixture();try{
+  const hold=deferred<any>(),original=f.api.reconcileWorldRelationPair;f.api.reconcileWorldRelationPair=async(...args:any[])=>{const result=await original(...args);await hold.promise;return result;};
+  const task=f.check();f.input('world-link-label','lokaler neuer Text');const command={...f.command,commandId:'other-owner',draftWriteId:'other-draft',action:{...f.command.action,sourceRevision:2,targetRevision:2,forwardLabel:'gesicherter neuer Text',reverseLabel:'neue Rückrichtung'}};
+  f.store.keepWorldRelationPairDraft(f.workspace.token,{version:1,writeId:command.draftWriteId,command},f.command.draftWriteId);hold.resolve(null);await task;
+  assert.equal(f.el<HTMLInputElement>('world-link-label').value,'lokaler neuer Text');assert.equal([...f.dialog.querySelectorAll('button')].find(b=>b.textContent==='Beziehung übernehmen')!.disabled,true);assert.equal(f.store.worldRelationPairDraft(f.workspace.token,f.source)?.writeId,'other-draft');
+  await(f.workbench as any).discard();assert.equal(f.el<HTMLInputElement>('world-link-label').value,'gesicherter neuer Text');assert.equal(f.store.worldRelationPairDraft(f.workspace.token,f.source)?.writeId,'other-draft');assert.equal([...f.dialog.querySelectorAll('button')].find(b=>b.textContent==='Auftrag prüfen')!.hidden,false);assert.equal(f.calls.filter(c=>c.method==='discardWorldRelationPairDraft').length,0);
+ }finally{f.cleanup();}
+});

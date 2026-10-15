@@ -63,7 +63,7 @@ export class WorldLinksWorkbench {
    if(result.outcome!=='applied'){this.pairUncertain=null;this.check.hidden=!this.uncertain;this.status.textContent='Paarauftrag nicht gespeichert. Eingaben bleiben; aktuelle Basis laden und erneut bestätigen.';return;}
    const draft=unwrap(await window.campaign.worldRelationPairDraft(w.token,command.action.sourceId));if(!current())return;
    if(draft&&draft.writeId!==command.draftWriteId){
-    if(!unchanged())throw new Error('Ein neuerer Paarentwurf bleibt erhalten. Neuere Eingaben zuerst sichern; Kampagnenkontext erneut öffnen.');
+    if(!unchanged()){this.pairUncertain=null;this.pairWriteId=null;this.foreignDraft=true;this.check.hidden=!this.uncertain;this.status.textContent='Früherer Paarauftrag bestätigt. Neuere lokale Eingaben und ein anderer gespeicherter Paarentwurf bleiben erhalten. Eingabe verwerfen lädt nur den gespeicherten Entwurf.';return;}
     this.pairUncertain=null;this.pairWriteId=null;this.check.hidden=true;await this.read(true);
     if(this.current()&&this.owner===w&&this.request===request+1)this.status.textContent='Früherer Paarauftrag bestätigt; der neuere Paarentwurf bleibt zur Prüfung offen.';
     return;

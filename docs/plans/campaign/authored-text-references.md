@@ -59,7 +59,9 @@ Entwurf erneut und entfernt nur dessen passende Write-ID. Bereits entfernte
 Entwürfe sind abgeschlossen; eine verlorene Bereinigungsantwort darf erneut
 lesend geklärt werden. Ein anderer gespeicherter Paarentwurf bleibt erhalten; bei unveränderten
 Formulareingaben wird er zur eigenen Prüfung geladen. Bei zugleich neueren lokalen
-Eingaben bleibt der Konflikt zur ausdrücklichen Auflösung offen. Neuere Formulareingaben werden nicht durch die
+Eingaben bleiben beide Varianten erhalten und die Übernahme ist gesperrt.
+„Eingabe verwerfen“ verwirft dann nur die lokalen Eingaben und lädt den
+gespeicherten Entwurf; dessen persistierte Write-ID wird nicht gelöscht. Neuere Formulareingaben werden nicht durch die
 Bestätigung des früheren Commands ersetzt; die aktuelle Basis kann anschließend
 gezielt gelesen werden. Während der Prüfung und des anschließenden Refreshs ist
 das Paarformular gesperrt. Statusklärung führt keinen weiteren Beziehungscommand
