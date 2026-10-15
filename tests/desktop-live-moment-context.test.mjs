@@ -10,12 +10,13 @@ import {parseHTML} from 'linkedom';
 const base='.build/planner-live-moment',require=createRequire(import.meta.url);
 mkdirSync(base,{recursive:true});buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
-async function setup(t,resume=true,initialize=true){
+async function setup(t,resume=true,initialize=true,recapRaw){
  const root=mkdtempSync(path.join(tmpdir(),'moment-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite')),campaign=store.create('Abend'),w=store.activate(campaign.id);
  const command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character);
  const scene=initialize?store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene:null;
  if(initialize)for(const h of heroes){const v=store.live(w.token);store.executeLive(command({kind:'membership',characterId:h.id,expectedRevision:0,expectedRosterRevision:v.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:v.focusRevision}));}
+ if(recapRaw!==undefined){store.executeLive(command({kind:'session-marker',sceneId:scene.id,expectedRevision:store.live(w.token).scene.revision,marker:'start',summary:''}));store.db.prepare('INSERT INTO settings VALUES(?,?)').run('session-recap:'+campaign.id,recapRaw);}
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={HTMLInputElement:globalThis.HTMLInputElement,HTMLSelectElement:globalThis.HTMLSelectElement,HTMLTextAreaElement:globalThis.HTMLTextAreaElement,Option:globalThis.Option,window:globalThis.window,document:globalThis.document,Event:globalThis.Event,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout},storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this._value??this.options[0]?.value??'';},set(v){this._value=v;},configurable:true});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});function Option(text='',value=''){const o=document.createElement('option');o.textContent=text;o.value=value;return o;}window.HTMLSelectElement.prototype.add=function(o){this.append(o);};Object.assign(globalThis,{HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option,window,document,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
  const x={store,w,scene,heroes,root,CampaignStore,command,window,document,commands:[],messages:[],reply:async ack=>ack,releases:[],followUps:[],openPacketResult:true};
  const wrap=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
@@ -60,7 +61,7 @@ test('a focus change during recap flush cannot publish the former groups session
  const x=await setup(t),release=x.defer('scene-content');x.el('running-notes').value='Offene Scene';x.el('running-notes').oninput();x.el('live-session-start').click();await settle();await x.focusOther();release();await settle();assert.equal(x.commands.filter(c=>c.action.kind==='session-marker').length,0);
 });
 
-test('a rejected recap read does not prevent the live group from opening or notes from saving',async t=>{
+test('a rejected chronicle read does not prevent the live group from opening or notes from saving',async t=>{
  const x=await setup(t);x.window.campaign.chronicle=async()=>{throw Error('Chronik nicht erreichbar');};await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('live-session-start').disabled,true);assert.match(x.el('live-session-status').textContent,/Chronik nicht erreichbar/);x.el('running-notes').value='Trotzdem spielbereit';x.el('running-notes').oninput();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,'Trotzdem spielbereit');
 });
 
@@ -306,3 +307,25 @@ test('party setup remains available before starting and moves the same editor be
  const x=await setup(t,false,false);assert.equal(x.el('running-editor').hidden,true);assert.equal(x.el('live-continue').hidden,false);assert.equal(x.store.live(x.w.token).scene,null);assert.equal(x.commands.length,0);
  x.el('live-continue').click();await settle();assert.equal(x.el('running-editor').hidden,false);assert.equal(x.commands.filter(c=>c.action.kind==='initialize').length,1);assert.equal(x.commands.filter(c=>c.action.kind==='session-marker').length,0);
  });
+
+for(const raw of ['{"summary":','[]'])test(`unreadable persisted recap ${raw} keeps live notes usable and reloads only the recovered recap`,async t=>{
+ const x=await setup(t,true,true,raw);await settle();assert.equal(x.el('live-workspace').hidden,false);assert.match(x.el('live-session-draft-status').textContent,/Rückblickentwurf/);assert.equal(x.el('live-session-summary').readOnly,true);assert.equal(x.el('live-session-draft-retry').hidden,false);assert.equal(x.el('live-session-end').disabled,true);
+ x.el('running-notes').value='Scene bleibt bedienbar';x.el('running-notes').oninput();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,'Scene bleibt bedienbar');assert.equal(x.store.db.prepare('SELECT value FROM settings WHERE key=?').get('session-recap:'+x.w.campaign.id).value,raw);
+ const restored={summary:'  Wiederhergestellt\r\n',handoff:'Am Tor'};x.store.db.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(restored),'session-recap:'+x.w.campaign.id);
+ x.el('running-notes').value='Noch offene Sceneeingabe';x.el('running-notes').oninput();x.el('live-session-draft-retry').click();await settle();assert.equal(x.el('running-notes').value,'Noch offene Sceneeingabe');assert.equal(x.el('live-session-summary').value,restored.summary);assert.equal(x.el('live-session-handoff').value,restored.handoff);assert.equal(x.el('live-session-summary').readOnly,false);assert.equal(x.el('live-session-end').disabled,false);assert.deepEqual(x.store.live(x.w.token).recapDraft,restored);
+ assert.equal(x.commands.filter(c=>c.action.kind==='session-marker').length,0);assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,'Noch offene Sceneeingabe');
+});
+
+test('unreadable persisted recap preserves a dirty local note and still requires a deliberate replacement',async t=>{
+ const x=await setup(t),keep=x.window.campaign.keepSessionRecapDraft;x.window.campaign.keepSessionRecapDraft=async()=>({ok:false,error:'Write unterbrochen'});
+ x.el('live-session-summary').value='Eigene offene Notiz';x.el('live-session-summary').dispatchEvent(new x.window.Event('input'));await settle();assert.equal(await x.ui.flushLive(),false);
+ x.store.db.prepare('INSERT INTO settings VALUES(?,?)').run('session-recap:'+x.w.campaign.id,'[]');await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('live-session-summary').value,'Eigene offene Notiz');assert.equal(x.el('live-session-summary').readOnly,true);assert.equal(await x.ui.flushLive(),false);
+ const restored={summary:'Andere wiederhergestellte Fassung',handoff:''};x.store.db.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(restored),'session-recap:'+x.w.campaign.id);x.window.campaign.keepSessionRecapDraft=keep;x.window.confirm=()=>false;x.el('live-session-draft-retry').click();await settle();assert.equal(x.el('live-session-summary').value,'Eigene offene Notiz');assert.deepEqual(x.store.live(x.w.token).recapDraft,restored);
+ x.window.confirm=()=>true;x.el('live-session-draft-retry').click();await settle();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).recapDraft.summary,'Eigene offene Notiz');
+});
+
+test('unreadable recap reload cannot put the former campaigns recovered text into the next campaign',async t=>{
+ const x=await setup(t,true,true,'[]'),restored={summary:'Nur in der ersten Kampagne',handoff:'Bleibt dort'};x.store.db.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(restored),'session-recap:'+x.w.campaign.id);
+ const live=x.window.campaign.live;let release,hold=true;const gate=new Promise(r=>release=r);x.releases.push(()=>release());x.window.campaign.live=async token=>{const result=await live(token);if(hold){hold=false;await gate;}return result;};x.el('live-session-draft-retry').click();await settle();
+ const other=x.store.create('Zweiter Tisch'),w=x.store.activate(other.id);x.ui.activateLive(w);await x.ui.openLive();release();await settle();assert.equal(x.el('live-session-summary').value,'');assert.equal(x.el('live-session-handoff').value,'');assert.equal(x.el('live-session-summary').readOnly,false);assert.equal(x.store.live(w.token).recapDraft,null);
+});

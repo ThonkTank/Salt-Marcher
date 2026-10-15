@@ -8,8 +8,9 @@ Der GM aktiviert einzelne NPCs oder Gruppen, konfiguriert Bedürfnisse und
 freigegebene Jobs und bestätigt Campaignzeit über eine Scene. Autonomy verarbeitet
 diese Zeit in begrenzten Schritten. Auswahl, Ausschlüsse, Bewegung, Wartezeiten,
 Unterbrechungen und Wirkungen bleiben geloggt. Partygefahr, eine inzwischen
-geänderte Worldposition und ein Stand vor der lokalen Scenezeit pausieren den NPC
-für eine GM-Entscheidung.
+geänderte Worldposition und ein bestätigter NPC-Stand nach der lokalen Scenezeit
+pausieren den NPC für eine GM-Entscheidung. Ein zeitlich zurückliegender NPC kann
+dagegen nur bis zur bestätigten lokalen Scenezeit aufholen (`catchUpAutonomy`).
 
 Autonomy trifft keine Party- oder Erzählentscheidung, läuft nicht anhand der
 Wall-clock und erzeugt oder löscht keine Autoreninhalte. Konfliktschaden und

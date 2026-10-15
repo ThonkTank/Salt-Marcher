@@ -799,7 +799,11 @@ export class CampaignStore {
   executeCombat(command: CombatCommand) { return this.db.transaction(()=>{const ack=executeCombat(this.db, command, () => { this.guard(command.token, command.campaignId); });this.updateMusic(command.campaignId);return ack;}).immediate(); }
   archivedRoster(token:string,after:string|null,search:string){return readArchivedRoster(this.db,this.guard(token),after,search);}
   previewTime(token:string,request:import('../time-plan-contracts').TimeRequest){return this.db.transaction(()=>previewSceneTime(this.db,this.guard(token),request))();}
-  live(token: string) { const cam=this.guard(token);return {...readLive(this.db,cam),recapDraft:this.readSessionRecapDraft(cam)}; }
+  live(token: string):import('../live-contracts').LiveView {
+    const cam=this.guard(token),live=readLive(this.db,cam);
+    try{return {...live,recapDraft:this.readSessionRecapDraft(cam)};}
+    catch{return {...live,recapDraftError:'Rückblickentwurf nicht lesbar. Gespeicherte Texte bleiben erhalten. Erneut laden oder eine intakte Sicherung verwenden.'};}
+  }
   private readSessionRecapDraft(cam:string):import('../live-contracts').SessionRecapDraft|null {
     const value=this.db.prepare('SELECT value FROM settings WHERE key=?').get('session-recap:'+cam)?.value;
     if(value===undefined)return null;

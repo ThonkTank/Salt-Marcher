@@ -29,6 +29,7 @@ export function checkedSessionRecapDraft(draft:SessionRecapDraft):SessionRecapDr
 }
 export interface LiveView {
   recapDraft?: SessionRecapDraft | null;
+  recapDraftError?: string;
   rosterRevision: number; roster: Character[]; archivedRosterCount?:number; primaryId: string | null; focusId: string | null; focusRevision: number | null;
   scenes: { id: string; title: string; primary: boolean; members: number; membershipRevision: number; clock: LiveScene['clock'] }[];
   archiveCount: number;
