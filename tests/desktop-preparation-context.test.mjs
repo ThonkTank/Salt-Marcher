@@ -207,3 +207,44 @@ test('copy recovery keeps a removed selected visit explicit and blocks writing u
 test('the shared session snapshot leaves historical receipt bytes and their replay contract unchanged',async t=>{
  const x=await fixture(t);await x.activate();await x.ui.prepareNextVisit(null,{title:'Abend',notes:'  Original\r\n',locationId:null});const plan=x.store.preparation(x.workspace.token).plans[0],snapshot=x.store.session(x.workspace.token,plan.id);assert.deepEqual(snapshot.plan,plan);const command={commandId:randomUUID(),campaignId:x.campaign.id,token:x.workspace.token,action:{kind:'profile',profile:{...snapshot.profile,seed:'Neuer Seed'},expectedRevision:snapshot.profile.revision}},ack=x.store.executeSession(command),row=x.store.db.prepare('SELECT * FROM session_receipt WHERE command_id=?').get(command.commandId);assert.equal(Object.hasOwn(ack,'plan'),false);assert.equal(Object.hasOwn(JSON.parse(row.payload),'plan'),false);const fresh=new x.store.constructor(x.store.db.name);try{const w=fresh.activate(x.campaign.id),before=fresh.db.serialize();assert.deepEqual(fresh.executeSession({...command,token:w.token}),ack);assert.ok(fresh.db.serialize().equals(before));assert.equal(fresh.db.prepare('SELECT payload FROM session_receipt WHERE command_id=?').get(command.commandId).payload,row.payload);}finally{fresh.close();}
 });
+
+test('planning area preserves the world editor and profile autosaves preserve live party input nodes and later edits',async t=>{
+ const x=await fixture(t);await x.activate();x.el('preparation-planning').click();await settle();
+ assert.equal(x.el('preparation-knowledge-workspace').hidden,true);assert.equal(x.el('preparation-planning-workspace').hidden,false);
+ x.el('plan-create').click();await until(()=>!!x.el('plans').value);await settle();
+ x.el('session-free-party').click();const [level,count]=x.el('session-party-levels').querySelectorAll('input');level.value='3';level.oninput();count.value='2';count.oninput();
+ const execute=x.window.campaign.executeSession;let release,first=true;
+ x.window.campaign.executeSession=async c=>{if(first&&c.action.kind==='profile'){first=false;await new Promise(r=>release=r);}return execute(c);};
+ const save=x.ui.flushPreparation();await until(()=>!!release);
+ assert.equal(level.disabled,false,'autosave must not disable the field being edited');assert.equal(count.disabled,false);
+ count.value='3';count.oninput();release();assert.equal(await save,true);
+ assert.equal(x.el('session-party-levels').querySelectorAll('input')[0],level,'acknowledgement must not replace focused controls');
+ assert.equal(x.el('session-party-levels').querySelectorAll('input')[1],count);assert.equal(count.value,'3');
+ const profile=x.store.session(x.workspace.token,x.el('plans').value).profile;assert.equal(profile.party[0].count,3);assert.equal(profile.revision,2,'newer edit is saved against the acknowledged revision');
+ // Handlers must still update the current draft after the first acknowledgement.
+ level.value='4';level.oninput();assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.store.session(x.workspace.token,x.el('plans').value).profile.party[0].level,4);
+ const note=x.el('note-title');x.el('preparation-knowledge').click();await settle();assert.equal(x.el('preparation-planning-workspace').hidden,true);assert.equal(x.el('note-title'),note);
+ x.el('preparation-planning').click();await settle();assert.equal(x.el('session-party-levels').querySelector('input'),level);
+ x.el('session-party-levels').querySelector('button').click();assert.equal(await x.ui.flushPreparation(),true);assert.deepEqual(x.store.session(x.workspace.token,x.el('plans').value).profile.party,[]);
+ await x.ui.openPreparedNote(x.ids.ada);assert.equal(x.el('preparation-knowledge-workspace').hidden,false);assert.equal(x.el('preparation-planning-workspace').hidden,true);
+});
+
+test('session generation gives local feedback, avoids duplicate sends and retains explicit optional reward modes',async t=>{
+ const x=await fixture(t);await x.activate();x.el('plan-create').click();await until(()=>!!x.el('plans').value);await settle();
+ assert.equal(x.el('session-generation-options').hasAttribute('open'),false);assert.equal(x.el('session-loot-compensate').hasAttribute('checked'),false);
+ let finish,calls=0,request;x.window.campaign.generateSession=async(_token,r)=>{calls++;request=r;return new Promise(resolve=>finish=resolve);};
+ const submit=()=>x.el('session-generate-form').onsubmit({preventDefault(){}});submit();await until(()=>!!finish);submit();await settle();
+ assert.equal(calls,1);assert.equal(x.el('session-generate').disabled,true);assert.match(x.el('session-generation-feedback').textContent,/werden erzeugt/);
+ finish({ok:false,error:'Keine passende Komposition für diese Quellen.'});await settle();assert.match(x.el('session-generation-feedback').textContent,/Keine passende Komposition/);assert.equal(x.el('session-generate').disabled,false);
+ // The optional modes are still passed exactly as explicitly chosen.
+ x.el('session-loot-compensate').checked=true;x.el('session-magic-compensate').checked=false;submit();await until(()=>calls===2);assert.equal(request.compensateLoot,true);
+ finish({ok:false,error:'Ledger unvollständig.'});await settle();assert.match(x.el('session-generation-feedback').textContent,/Ledger unvollständig/);
+});
+
+test('unresolved profile replies stop further writes without replacing the later draft',async t=>{
+ const x=await fixture(t);await x.activate();x.el('plan-create').click();await until(()=>!!x.el('plans').value);await settle();x.el('session-free-party').click();
+ const level=x.el('session-party-levels').querySelector('input');level.value='3';level.oninput();let writes=0;
+ x.window.campaign.executeSession=async()=>{writes++;throw new Error('transport lost');};x.window.campaign.commitStatus=async()=>({ok:false,error:'status unavailable'});
+ assert.equal(await x.ui.flushPreparation(),false);assert.equal(writes,1);assert.equal(x.el('session-party-levels').querySelector('input'),level);assert.equal(level.disabled,true,'only an actual unresolved write locks the draft');
+ x.el('session-generate-form').onsubmit({preventDefault(){}});await settle();assert.equal(writes,1);assert.match(x.el('session-generation-feedback').textContent,/keine neue Vorschau/);assert.doesNotMatch(x.el('session-generation-feedback').textContent,/werden erzeugt/);
+});

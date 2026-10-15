@@ -9,6 +9,10 @@ import {initSession,sessionContext,flushSession,clearSessionTimeline} from './se
 import { campaignLocalId } from '../features/campaign/campaign-contracts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
+function showPreparationArea(plan:boolean){
+ get('preparation-knowledge-workspace').hidden=plan;get('preparation-planning-workspace').hidden=!plan;
+ get('preparation-knowledge').setAttribute('aria-pressed',String(!plan));get('preparation-planning').setAttribute('aria-pressed',String(plan));
+}
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
 let context: Workspace | null = null;
 let data: Preparation = { notes: [], plans: [], locations: [], maps: [], problems: [], selection: { noteId: null, planId: null, sceneId: null } };
@@ -378,6 +382,7 @@ async function insertNoteTextReference(){
 }
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>) {
   tell = status;
+  for(const [id,plan] of [['preparation-knowledge',false],['preparation-planning',true]] as const)get(id).onclick=()=>{void(async()=>{const owner=context;if(await leavePreparation()&&context===owner)showPreparationArea(plan);})().catch(error=>tell(error.message,true));};
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
   initSession(status,()=>flushPreparation(true),async (id,planId)=>{
     if(!context)return;const token=context.token,request=preparationLoad,query=value('world-search'),current=()=>context?.token===token&&request===preparationLoad;
@@ -416,7 +421,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     const token = context?.token;
     if (!context || !(await flushPreparation()) || context?.token !== token) return;
     const plan: ManualPlan = { version: 1, id: campaignLocalId(crypto.randomUUID()), revision: 1, name: '', scenes: [] };
-    if (await change({ kind: 'plan', expectedRevision: null, plan }, false)) { selectedPlan = plan.id; selectedScene = null; renderPlans(); get('plan-name').focus(); }
+    if (await change({ kind: 'plan', expectedRevision: null, plan }, false)) { selectedPlan = plan.id; selectedScene = null; showPreparationArea(true);renderPlans(); get('plan-name').focus(); }
   })(); };
   get('plans').addEventListener('change', () => { void (async () => { if (!(await leavePreparation())) { get<HTMLSelectElement>('plans').value = selectedPlan ?? ''; return; } selectedPlan = value('plans'); selectedScene = null; await renderPlans(); })(); });
   get('plan-name').addEventListener('input', () => { if (planDraft) { planDraft = { ...planDraft, name: value('plan-name') }; schedule(); } });
@@ -507,7 +512,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     if(await changeNoteRelations([...noteDraft.relations,{targetId:campaignLocalId(target),label}])&&value('relation-label')===label)get<HTMLInputElement>('relation-label').value='';
   })(); };
   get('scene-location').onchange = () => { if (!planDraft) return; const locationId = value('scene-location') ? campaignLocalId(value('scene-location')) : null; planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, locationId } : s) }; get<HTMLButtonElement>('scene-open-location').disabled = !locationId; schedule(); };
-  get('scene-open-location').onclick = () => { void (async () => { if (!(await flushPreparation())) return; const scene = originalPlan()?.scenes.find(s => s.id === selectedScene); if (!scene?.locationId) return; const row = data.locations.find(row => row.document.id === scene.locationId); if (!row) { tell('Szenenort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; } selectedLocation = scene.locationId; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations(); })(); };
+  get('scene-open-location').onclick = () => { void (async () => { if (!(await flushPreparation())) return; const scene = originalPlan()?.scenes.find(s => s.id === selectedScene); if (!scene?.locationId) return; const row = data.locations.find(row => row.document.id === scene.locationId); if (!row) { tell('Szenenort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; } showPreparationArea(false);selectedLocation = scene.locationId; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations(); })(); };
 }
 export async function createNarrativeAtLocation(locationId:string,name:string,kind:'quest'|'rumor'){
  const w=context,request=preparationLoad;if(!w||!await flushPreparation()||context?.token!==w.token||preparationLoad!==request)throw new Error('Vorbereitungskontext geändert.');
@@ -531,7 +536,7 @@ export async function openPreparedNote(id:string,stillCurrent=()=>true) {
   if (!row) { tell('Weltinhalt nicht verfügbar.', true); return; }
   get<HTMLInputElement>('world-search').value = '';
   selectedNote = id; get<HTMLInputElement>('world-trash').checked = row.trashed;
-  showLocations(false); await renderNotes();
+  showPreparationArea(false);showLocations(false); await renderNotes();
   if (current()) revealNote(id);
 }
 export async function prepareNoteLocation(id:string,locationId:string){const token=context?.token;await openPreparedNote(id);if(!token||context?.token!==token||selectedNote!==id)throw new Error('Auftrag für Ortsbindung nicht verfügbar.');await prepareNarrativeLocation(token,id,locationId);tell('Zielort in den narrativen Angaben vorbelegt. Speichern bestätigt die Ortsbindung.');}
@@ -540,13 +545,13 @@ export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
   if (!token||!(await flushPreparation())||context?.token!==token||preparationLoad!==request||!stillCurrent()) return;
   const row = data.locations.find(row => row.document.id === id);
   if (!row) { tell('Ort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; }
-  selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations();
+  showPreparationArea(false);selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations();
 }
 export async function openPreparedVisit(planId:string,visitId:string,current:()=>boolean=()=>true){
   const owner=context,token=owner?.token,epoch=preparationLoad,valid=()=>current()&&context===owner&&context?.token===token&&preparationLoad===epoch;
   if(!token||!valid()||!await flushPreparation()||!valid())return;const next=unwrap(await window.campaign.preparation(token,''));if(!valid())return;
   const plan=next.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}
-  usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+  usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showPreparationArea(true);showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
 export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean},stillCurrent:()=>boolean=()=>true):Promise<{planId:string;visitId:string}|undefined>{
@@ -579,7 +584,7 @@ export async function prepareNextVisit(planId:string|null,seed:{title:string;not
   // The writer retains input made while its reply was pending. Do not discard
   // that draft or move its editor merely because this visit was published.
   if(!sameInput())return;
-  selectedPlan=plan.id;selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
+  selectedPlan=plan.id;selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showPreparationArea(true);showLocations(false);await renderPlans();
   if(current()&&preparationInputVersion===edit){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});return{planId:plan.id,visitId:id};}
 }
 
