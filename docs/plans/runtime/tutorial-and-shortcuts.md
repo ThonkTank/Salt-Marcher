@@ -1,6 +1,6 @@
 # Tutorials und Tastaturkontext
 
-Stand: 14.10.2026. Ergänzt [Gesamtumfang](../../SCOPE.md) und
+Stand: 15.10.2026. Ergänzt [Gesamtumfang](../../SCOPE.md) und
 [Lieferfolge](../../ROADMAP.md). Program Capabilities L775–789/L813–819,
 Revision `9de85c1a26f526acbc1af332ac5962e185c0aab2`, SHA-256
 `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`:
@@ -41,6 +41,10 @@ Weltbeziehungen und erweiterte Dungeonwerkzeuge
 ab. NSC-Profile, Monstergruppen und Verhalten haben eigene Lektionen für Suche,
 Weltidentität, Entwurf/Verwerfen und die Vorbereitung ohne Kampfstart.
 Zusammenhänge erklärt Navigation und den Sprung in den vorhandenen Quelleneditor.
+Textverweise erklären Anzeigenamen, Quellnavigation und die Suche nach verknüpften Begriffen.
+Die Stadtlektionen unterscheiden den offenen Zeichenzug, die ausdrücklich
+übernommene Bebauungsvorschau und die geschützte Einzelbearbeitung samt Ausgabe.
+Eine leere Innenraumhülle enthält noch keine Räume, Bewohner oder Tagespläne.
 Volumen, Trigger/Fallenlaufzustand, Dungeon-Inhalte, Graphentwurf, Key-Ausgabe
 und gerichtete Passagen haben eigene Ablauflektionen mit Vorschau, Bestätigung
 und ihren jeweiligen Grenzen.
