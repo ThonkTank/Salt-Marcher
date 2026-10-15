@@ -607,7 +607,7 @@ export class CampaignStore {
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
   lootBalance(token:string){return readLootBalance(this.db,this.guard(token));}
-  treasures(token: string, after: string | null) { return readTreasures(this.db, this.guard(token), after); }
+  treasures(token: string, after: string | null,query?:import('../treasury-contracts').TreasureQuery) { return readTreasures(this.db, this.guard(token), after,query); }
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }
   ledger(token: string, query: LedgerQuery) { return readLedger(this.db, this.guard(token), query); }
   ledgerInventory(token:string,query:LedgerInventoryQuery){return readLedgerInventory(this.db,this.guard(token),query);}

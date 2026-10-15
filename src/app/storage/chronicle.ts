@@ -38,6 +38,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
   else if(row.kind==='loot-transfer-received'){category='reward';title='Gegenstand erhalten';summary=(person?person+': ':'')+quantity(item);}
   else if(row.kind==='group-created'||row.kind==='group-edited'){category='world';title=(row.kind==='group-created'?'Gruppe angelegt: ':'Gruppe bearbeitet: ')+text(f.after?.title,'Gruppe');summary=String(f.after?.actors?.length??0)+' Figuren';locationId=f.after?.locationId??null;}
   else if(row.kind==='treasure-edited'){category='reward';title='Schatz nachbearbeitet: '+text(f.after?.title,'Fund');summary=text(f.reason,'Unverteilte Beute angepasst.');locationId=f.after?.locationId??null;}
+  else if(row.kind==='treasure-anchored'){category='reward';title='Schatz neu zugeordnet: '+text(f.after?.title,'Fund');summary=text(f.targetName)+' · '+text(f.reason);sceneId=f.after?.sceneId??null;locationId=f.after?.locationId??null;}
   else if(row.kind==='treasure-moved'){category='reward';title='Beute verschoben: '+text(f.before?.title,'Fund')+' → '+text(f.targetAfter?.title,'Zielschatz');summary=String(f.quantity??0)+' Einheiten · '+text(f.reason);locationId=f.targetAfter?.locationId??null;}
   else if(row.kind==='loot-correction'){category='reward';title='Beutestand korrigiert';summary=(person?person+': ':'')+text(f.reason,'Bestand angepasst');}
   else if(row.kind==='xp'){category='party';title='XP korrigiert';summary=(person?person+': ':'')+String(f.before?.xp??'offen')+' → '+String(f.after?.xp??'offen')+(f.reason?' · '+f.reason:'');}
@@ -51,7 +52,7 @@ function progressEntry(row:any,f:any,names:Map<string,string>,scenes:Map<string,
 }
 
 // Stream relevant source records in bounded portions under the same read snapshot.
-const progressKinds=['party-award','group-created','group-edited','narrative-state','narrative-award','combat-award','treasure-created','treasure-edited','treasure-moved','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
+const progressKinds=['party-award','group-created','group-edited','narrative-state','narrative-award','combat-award','treasure-created','treasure-edited','treasure-anchored','treasure-moved','loot-award','manual-loot','loot-sold','shop-sale','shop-purchase','loot-given','loot-transfer','loot-transfer-received','loot-correction','xp','health','death-save','rest','combat-entry','combat-exit','combat-return'];
 const sourceLimit=2000;
 function* sourceRows(db:any,cam:string,table:'progress_event'|'world_history'|'scene_time_step',kinds?:string[],beforeTime?:string){
   let before=Number.MAX_SAFE_INTEGER;

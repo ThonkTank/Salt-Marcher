@@ -1,6 +1,6 @@
 import type {LiveScene,TimeUnit} from './live-contracts';
 import type {GroupsAPI,GroupAction} from './groups-contracts';
-import type {TreasuryAPI,TreasuryAction,TreasureOrigin} from './treasury-contracts';
+import type {TreasuryAPI,TreasuryAction,TreasureOrigin,TreasureAnchor,TreasureQuery} from './treasury-contracts';
 import type {SceneDeskAPI} from './scene-desk-contracts';
 import type {FinishDraftAPI as importFinishDraftAPI} from './finish-draft-contracts';
 import type {NarrativeAction} from './narrative-contracts';
@@ -107,7 +107,7 @@ export function ledgerCopper(item: LedgerItem): bigint | null {
 }
 export interface ProgressView { characters: (Progress & { name: string; active: boolean; membershipRevision: number; sceneId: string | null; healthCombat?: {id:string;sceneId:string;title:string}; lastCombatStatus?: Pick<CharacterHealth,'tempHp'|'conditions'|'concentrating'> })[]; notices: { id: string; characterId: string; text: string }[] }
 export interface ProgressAck extends ProgressView {partyAward?:{poolXp:number;loadXp:number;shareXp:number;totalXp:number;shareLoad:number;totalLoad:number};restScene?:LiveScene;restWarnings?:string[]; treasureId: string | null; groupId?:string; ledgerIds: string[] }
-export interface TreasurePage { items: { id: string; title: string; revision: number; available: number }[]; next: string | null }
+export interface TreasurePage { items: { id: string; title: string; revision: number; available: number;anchor?:TreasureAnchor;anchorLabel?:string;anchorAvailable?:boolean }[]; next: string | null }
 export interface LedgerQuery { characterId: string; after: string | null; search: string; status: '' | LedgerItem['status'] }
 export interface LedgerPage { items: LedgerItem[]; problems: {id:string;message:string}[]; unavailableCount:number; next: string | null; totalCopper: string | null }
 export interface LedgerInventoryQuery {characterId:string;after:string|null}
@@ -142,7 +142,7 @@ export interface ProgressAPI extends importFinishDraftAPI,SceneDeskAPI,TreasuryA
   progressHistory(token: string, characterId: string, after: string | null): Promise<Result<ProgressHistory>>;
   progress(token: string): Promise<Result<ProgressView>>;
   lootBalance(token:string):Promise<Result<LootBalance>>;
-  treasures(token: string, after: string | null): Promise<Result<TreasurePage>>;
+  treasures(token: string, after: string | null,query?:TreasureQuery): Promise<Result<TreasurePage>>;
   treasure(token: string, id: string): Promise<Result<Treasure>>;
   ledger(token: string, query: LedgerQuery): Promise<Result<LedgerPage>>;
   ledgerInventory(token:string,query:LedgerInventoryQuery):Promise<Result<LedgerInventoryPage>>;

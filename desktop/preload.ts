@@ -117,7 +117,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   adventuringDay:(token:string,request:import('../src/app/adventuring-day-contracts').DayRequest)=>ipcRenderer.invoke('campaign:adventuring-day',token,request),
   progress: (token: string) => ipcRenderer.invoke('campaign:progress', token),
   lootBalance:(token:string)=>ipcRenderer.invoke('campaign:loot-balance',token),
-  treasures: (token: string, after: string | null) => ipcRenderer.invoke('campaign:treasures', token, after),
+  treasures: (token: string, after: string | null,query?:import('../src/app/treasury-contracts').TreasureQuery) => ipcRenderer.invoke('campaign:treasures', token, after,query),
   treasure: (token: string, id: string) => ipcRenderer.invoke('campaign:treasure', token, id),
   ledger: (token: string, query: import('../src/app/progression').LedgerQuery) => ipcRenderer.invoke('campaign:ledger', token, query),
   ledgerInventory:(token:string,query:import('../src/app/progression').LedgerInventoryQuery)=>ipcRenderer.invoke('campaign:ledger-inventory',token,query),

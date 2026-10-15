@@ -188,7 +188,7 @@ else {
     handle('campaign:progress-history', (token: string, characterId: string, after: string | null) => store.progressHistory(token, characterId, after));
     handle('campaign:adventuring-day',(token:string,request:import('../src/app/adventuring-day-contracts').DayRequest)=>store.adventuringDay(token,request));
     handle('campaign:progress', (token: string) => store.progress(token));
-    handle('campaign:treasures', (token: string, after: string | null) => store.treasures(token, after));
+    handle('campaign:treasures', (token: string, after: string | null,query?:import('../src/app/treasury-contracts').TreasureQuery) => store.treasures(token, after,query));
     handle('campaign:treasure', (token: string, id: string) => store.treasure(token, id));
     handle('campaign:ledger', (token: string, query: import('../src/app/progression').LedgerQuery) => store.ledger(token, query));
     handle('campaign:ledger-inventory',(token:string,query:import('../src/app/progression').LedgerInventoryQuery)=>store.ledgerInventory(token,query));

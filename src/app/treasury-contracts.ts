@@ -22,7 +22,10 @@ export interface TreasuryDraft {
   reason: string;
   items: TreasuryRow[];
 }
+export type TreasureAnchor={kind:'unplaced'}|{kind:'scene'|'location';id:string};
+export interface TreasureQuery {search:string;anchor:'all'|'inbox'|'scene'|'location';anchorId?:string;remainingOnly?:boolean}
 export type TreasuryAction =
+  |{kind:'treasure-anchor';treasureId:string;expectedRevision:number;anchor:TreasureAnchor;reason:string}
   | { kind: "treasure-create"; title: string; locationId: string | null }
   | {
       kind: "treasure-edit";
