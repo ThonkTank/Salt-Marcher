@@ -53,3 +53,7 @@ keine vollständige native Binder- oder Dungeonabnahme.
    bearbeiten → bestätigte Texte nach Fresh; Tastatur/200 %, verzögerte Reads,
    fehlende Bindungen und unverändert private GM-/Geheimtexte. Kein zusätzlicher
    Binderstore oder zweites Wissen-/Entdeckungsmodell.
+
+Persistenter Reise-/Gruppenstand und noch offene Tempo-/Rundenregeln stehen im
+[Dungeon-Reiseplan](travel-state.md); Binder- und Geometriebelege ersetzen dessen
+Wiederaufnahme- und Entscheidungsabnahmen nicht.
