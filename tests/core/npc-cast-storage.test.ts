@@ -40,6 +40,25 @@ test('npc dossier limits the combined outgoing and incoming relation excerpt',()
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
+test('daily plans follow group time, reject overlaps and search only authored plan text',()=>{
+ const f=fixture();
+ try{
+  const old=f.store.npc(f.workspace.token,f.npcId),dailyPlan=[
+   {id:'night',startMinute:1380,endMinute:120,activity:'Nachtwache',place:'home' as const,notes:'Am Nordtor lauschen'},
+   {id:'day',startMinute:480,endMinute:1020,activity:'Torwache',place:'work' as const,notes:'Besucherbuch führen'},
+  ];
+  const saved=f.store.executeNpc({commandId:'daily-plan',campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,dailyPlan},locationId:old.locationId,health:old.health}});
+  const dossier=f.store.npcDossier(f.workspace.token,f.scene.id,f.npcId);
+  assert.deepEqual(dossier.dailyPlan?.current,dailyPlan[0]);assert.deepEqual(dossier.dailyPlan?.next,dailyPlan[1]);assert.equal(dossier.dailyPlan?.secondsUntilNext,28800);assert.equal(dossier.dailyPlan?.problem,null);
+  const query=(text:string)=>f.store.npcs(f.workspace.token,{text,lifecycle:'all',factionId:null,locationId:null,offset:0});
+  assert.equal(query('Besucherbuch').total,1);assert.equal(query('home').total,0);assert.equal(query('night').total,0);
+  assert.throws(()=>f.store.executeNpc({commandId:'overlapping-plan',campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:saved.noteRevision,expectedRecordRevision:saved.record.revision,expectedActorRevision:saved.actorRevision,expectedPositionRevision:saved.positionRevision,npc:{id:saved.id,name:saved.name,creatureId:saved.creatureId,readAloud:saved.readAloud,gmNotes:saved.gmNotes,record:{...saved.record,dailyPlan:[...dailyPlan,{id:'overlap',startMinute:60,endMinute:180,activity:'Rundgang',place:'other',notes:''}]},locationId:saved.locationId,health:saved.health}}),/überschneiden/);
+  assert.equal(f.store.npc(f.workspace.token,f.npcId).record.revision,saved.record.revision);
+  const world=f.store.world(f.workspace.token);f.store.executeWorld({commandId:'short-day',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'calendar',calendar:{...world.calendar,daySeconds:72000},expectedRevision:world.calendar.revision}});
+  assert.match(f.store.npcDossier(f.workspace.token,f.scene.id,f.npcId).dailyPlan?.problem??'',/außerhalb/);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
 function legacyGroup(f:ReturnType<typeof fixture>){
  const place=newLocation('north','Nordtor','poi',['description','notes']);f.store.changePreparation({commandId:'place',campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'location',expectedRevision:null,document:place}});
  saveGroup(f.db,f.campaign.id,{id:'guard',revision:1,title:'Wache',notes:'',sourceEncounterId:'source',sourceRevision:1,locationId:place.id,actors:[{id:f.npcId,entryId:'entry'}],plan:{entries:[],sources:[]}} as any,null,null);return place;
