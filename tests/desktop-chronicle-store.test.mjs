@@ -28,8 +28,9 @@ test('SQLite searches older time and party events before truncating each source'
  try{
   const campaign=store.create('Zeitnotizen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
   const hero=store.executeLive(command({kind:'create-character',profile:{name:'Iri'}})).character;
-  let scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:store.live(w.token).rosterRevision})).scene;
-  for(let i=0;i<2003;i++)scene=store.executeLive(command({kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:1,unit:'minutes',calendarVersion:'relative-v1',reason:i===0?'Bronzeschlüssel nach der Nachtwache':'Routinenotiz '+i})).scene;
+  const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:store.live(w.token).rosterRevision})).scene,insertReceipt=store.db.prepare('INSERT INTO receipt(command_id,fingerprint,campaign_id,room_id,revision) VALUES(?,?,?,?,?)'),insertStep=store.db.prepare('INSERT INTO scene_time_step(campaign_id,id,scene_id,command_id,ordinal,payload,checksum) VALUES(?,?,?,?,?,?,?)');
+  // Chronicle paging needs valid persisted history, not 2,003 repetitions of the separately tested clock command.
+  store.db.transaction(()=>{for(let i=0;i<2003;i++){const commandId='time-fixture-'+i,payload=JSON.stringify({epochId:scene.clock.epochId,from:String(i*60000),to:String((i+1)*60000),beforeRevision:i,afterRevision:i+1,amount:1,unit:'minutes',calendarVersion:'relative-v1',reason:i===0?'Bronzeschlüssel nach der Nachtwache':'Routinenotiz '+i,recordedAt:new Date(i).toISOString()});insertReceipt.run(commandId,createHash('sha256').update(commandId).digest('hex'),campaign.id,scene.id,i+1);insertStep.run(campaign.id,'time-'+i,scene.id,commandId,i,payload,createHash('sha256').update(payload).digest('hex'));}})();
   const original=store.db.prepare('SELECT id,payload,checksum FROM scene_time_step ORDER BY id').all();
   const match=store.chronicle(w.token,'world','Bronzeschlüssel');assert.equal(match.entries.length,1);assert.match(match.entries[0].summary,/Bronzeschlüssel/);assert.equal(match.truncated,false);
   assert.equal(store.chronicle(w.token,'party','Bronzeschlüssel').entries.length,0);

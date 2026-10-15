@@ -1,8 +1,8 @@
 import {readNpcPlaces,readNpcBuildingChoices} from './npc-places';
 import {readLocationMaterials} from './location-notebook';
 import {readWorldLinks} from './world-links';
-import {installWorldRelationPairs,executeWorldRelationPair,reconcileWorldRelationPair,readWorldRelationPairDraft,keepWorldRelationPairDraft,discardWorldRelationPairDraft,validateWorldRelationPairs} from './world-relation-pair';
-import type {WorldRelationPairCommand,WorldRelationPairDraft} from '../world-relation-pair-contracts';
+import {installWorldRelationPairs,executeWorldRelationPair,reconcileWorldRelationPair,readWorldRelationPairDraft,keepWorldRelationPairDraft,discardWorldRelationPairDraft,readWorldRelationPairHistory,executeWorldRelationPairHistory,reconcileWorldRelationPairHistory,validateWorldRelationPairs} from './world-relation-pair';
+import type {WorldRelationPairCommand,WorldRelationPairDraft,WorldRelationPairHistoryCommand} from '../world-relation-pair-contracts';
 import {readNpcCast,readNpcDossier} from './npc-cast';
 import {previewSceneTime} from './time-plan';
 import {readAgenda} from './agenda';
@@ -828,6 +828,9 @@ export class CampaignStore {
   worldRelationPairDraft(token:string,sourceId:string){return readWorldRelationPairDraft(this.db,this.guard(token),sourceId);}
   keepWorldRelationPairDraft(token:string,draft:WorldRelationPairDraft,expected:string|null){keepWorldRelationPairDraft(this.db,this.guard(token,draft.command.campaignId),draft,expected);}
   discardWorldRelationPairDraft(token:string,sourceId:string,writeId:string){discardWorldRelationPairDraft(this.db,this.guard(token),sourceId,writeId);}
+  worldRelationPairHistory(token:string){return readWorldRelationPairHistory(this.db,this.guard(token));}
+  executeWorldRelationPairHistory(command:WorldRelationPairHistoryCommand){return executeWorldRelationPairHistory(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
+  reconcileWorldRelationPairHistory(command:WorldRelationPairHistoryCommand,token:string){return reconcileWorldRelationPairHistory(this.db,command,this.guard(token,command.campaignId));}
   private commitPreparation(command: PreparationCommand): void {
     if (typeof command.commandId !== 'string' || !command.commandId) throw new Error('Änderungskennung fehlt.');
     const change = validatePreparation(command.change), fingerprint = commandFingerprint(command);

@@ -1,5 +1,5 @@
 import type {Workspace,Result} from './contracts';
-import type {CityView,CityUnit,CityPoint,CityCommand,CityOverview,CityPreview,CityRecipe,CityHousehold,CityJob} from './city-contracts';
+import type {CityView,CityUnit,CityPoint,CityCommand,CityOverview,CityPreview,CityRecipe,CityHousehold,CityJob,CityPersonMove} from './city-contracts';
 import type {NpcPage} from './npc-contracts';
 import {citySvg,generateCity,posed,roadPoints} from './city-model';
 const el=<T extends Element = HTMLElement>(id:string)=>document.getElementById(id) as unknown as T,field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
@@ -8,7 +8,7 @@ let workspace:Workspace|null=null,view:CityView|null=null,overview:CityOverview|
 let epoch=0,readRequest=0,selectionRequest=0,creating=false;
 let generationJob:{token:string;epoch:number;cityId:string;cancelled:boolean}|null=null;
 type PersonRow=NpcPage['rows'][number];type PersonInfo=Pick<PersonRow,'id'|'name'>&Partial<PersonRow>;
-let people:{unitId:string;residents:Set<string>;workers:Set<string>;households:CityHousehold[];jobs:CityJob[];rows:Map<string,PersonInfo>;visible:string[];total:number|null}|null=null,knownPeople=new Map<string,PersonInfo>(),peopleRequest=0,peopleTimer:ReturnType<typeof setTimeout>|null=null;
+let people:{moves:CityPersonMove[];unitId:string;residents:Set<string>;workers:Set<string>;households:CityHousehold[];jobs:CityJob[];rows:Map<string,PersonInfo>;visible:string[];total:number|null}|null=null,knownPeople=new Map<string,PersonInfo>(),peopleRequest=0,peopleTimer:ReturnType<typeof setTimeout>|null=null;
 const owned=(token:string|undefined,g:number)=>epoch===g&&workspace?.token===token;
 const run=(f:()=>Promise<unknown>|void)=>{const token=workspace?.token,g=epoch;void Promise.resolve().then(()=>{if(owned(token,g))return f();}).catch(e=>{if(owned(token,g))tell(e.message,true);});};
 function clearTimer(){if(timer)clearTimeout(timer);timer=null;}
@@ -34,12 +34,13 @@ export async function openCity(){
 export async function openCityReference(id:string,unitId?:string){const w=workspace,g=epoch;if(!w)return;await openCity();if(!owned(w.token,g))return;if(dirty)throw new Error('Neue Stadteingabe bleibt offen. Karte erneut wählen.');if(!unitId&&view?.header.id===id)return;view=null;selected=null;people=null;preview=null;render();el<HTMLSelectElement>('city-select').value=id;await readSelectedCity(id,w.token,g,++readRequest);if(!owned(w.token,g))return;if(unitId){const current=view as CityView|null;if(current?.header.id!==id||!current.units.some(u=>u.id===unitId))throw new Error('Dieses Stadtelement ist nicht mehr verfügbar.');selected=unitId;el<HTMLSelectElement>('city-tool').value='select';if(Number(value('city-zoom'))<2)el<HTMLInputElement>('city-zoom').value='2';render();el('city-inspector').scrollIntoView({block:'start'});el('city-unit-name').focus();}}
 export async function prepareCityPersonBinding(assignment:import('./npc-places-contracts').NpcBuildingAssignment){
  const w=workspace,g=epoch;if(!w||!await flushCity())throw new Error('Offene Stadteingaben zuerst abschließen.');const {npcId,cityId,unitId,role,recordName}=assignment;
- const current=unwrap(await window.campaign.npcPlaces(w.token,npcId,0)),prior=current.sites.find(s=>s.kind===role);if(prior&&prior.kind!=='dungeon'&&prior.cityId!==cityId)throw new Error('Bestehende Bindung in der bisherigen Stadt zuerst lösen.');
+ const current=unwrap(await window.campaign.npcPlaces(w.token,npcId,0)),prior=current.sites.find(s=>s.kind===role);if(prior&&prior.kind!=='dungeon'&&(!assignment.from||prior.cityId!==assignment.from.fromCityId||prior.unitId!==assignment.from.fromUnitId))throw new Error('Bisherige Gebäudebindung geändert. Hausauswahl erneut öffnen.');
  await openCityReference(cityId,unitId);if(!owned(w.token,g)||view?.header.id!==cityId||unit()?.id!==unitId||!people||people.unitId!==unitId)throw new Error('Hauskontext geändert.');const npc=unwrap(await window.campaign.npc(w.token,npcId));if(!owned(w.token,g)||people?.unitId!==unitId)throw new Error('Stadtkontext gewechselt.');
  if(recordName.trim()&&(role==='home'?people.households.length:people.jobs.length)>=100)throw new Error('Haus hat bereits 100 solche Einträge.');
  const person={id:npc.id,name:npc.name,creatureId:npc.creatureId,lifecycle:npc.record.lifecycle,factionId:npc.record.factionId,locationId:npc.locationId,disposition:npc.disposition,role:npc.role};knownPeople.set(npcId,person);people.rows.set(npcId,person);if(role==='home')people.residents.add(npcId);else people.workers.add(npcId);
+ if(assignment.from&&assignment.from.fromCityId!==cityId)people.moves.push({...assignment.from,npcId,role});
  if(recordName.trim()){if(role==='home'){for(const h of people.households)h.memberIds=h.memberIds.filter(id=>id!==npcId);people.households.push({id:crypto.randomUUID(),name:recordName,memberIds:[npcId]});}else{for(const j of people.jobs)j.workerIds=j.workerIds.filter(id=>id!==npcId);people.jobs.push({id:crypto.randomUUID(),name:recordName,workerIds:[npcId]});}}
- peopleRequest++;if(peopleTimer)clearTimeout(peopleTimer);peopleTimer=null;people.visible=[npcId];people.total=null;el<HTMLInputElement>('city-people-search').value=npc.name;dirty=true;clearTimer();drawPeople();el('city-people-results').querySelector<HTMLElement>('[data-city-person-id="'+CSS.escape(npcId)+'"]')?.scrollIntoView({block:'center'});tell('Personenbindung vorbereitet. Hausangaben speichern übernimmt die Änderung.');
+ peopleRequest++;if(peopleTimer)clearTimeout(peopleTimer);peopleTimer=null;people.visible=[npcId];people.total=null;el<HTMLInputElement>('city-people-search').value=npc.name;dirty=true;clearTimer();drawPeople();el('city-people-results').querySelector<HTMLElement>('[data-city-person-id="'+CSS.escape(npcId)+'"]')?.scrollIntoView({block:'center'});tell(assignment.from&&assignment.from.fromCityId!==cityId?'Stadtwechsel vorbereitet. Hausangaben speichern ändert bisherige und neue Bindung gemeinsam.':'Personenbindung vorbereitet. Hausangaben speichern übernimmt die Änderung.');
 }
 async function change(action:CityCommand['action']){
  const w=workspace,g=epoch,source=view;if(!w)throw new Error('Kampagne öffnen.');const id=action.kind==='create'?action.header.id:source?.header.id;if(!id)throw new Error('Stadt öffnen.');
@@ -48,7 +49,7 @@ async function change(action:CityCommand['action']){
  const result=unwrap(response);readRequest++;view=result;preview=null;render();tell('Stadt gespeichert.');return result;
 }
 function unit(){return view?.units.find(u=>u.id===selected);}
-function personDraft(u:CityUnit){if(u.kind!=='building'){people=null;return;}if(people?.unitId===u.id)return;people={unitId:u.id,residents:new Set(u.residentIds??[]),workers:new Set(u.workerIds??[]),households:structuredClone(u.households??[]),jobs:structuredClone(u.jobs??[]),rows:new Map(knownPeople),visible:[],total:null};run(refreshPeople);}
+function personDraft(u:CityUnit){if(u.kind!=='building'){people=null;return;}if(people?.unitId===u.id)return;people={moves:[],unitId:u.id,residents:new Set(u.residentIds??[]),workers:new Set(u.workerIds??[]),households:structuredClone(u.households??[]),jobs:structuredClone(u.jobs??[]),rows:new Map(knownPeople),visible:[],total:null};run(refreshPeople);}
 async function moveHousehold(id:string,fromId:string){if(!await flushCity()||!view||!selected)return;const source=view.units.find(u=>u.id===fromId&&u.kind==='building'),target=unit(),household=source?.households?.find(h=>h.id===id);if(!source||target?.kind!=='building'||!household)throw new Error('Haushalt oder Hausstand geändert. Stadt neu laden.');const members=new Set(household.memberIds),from={...source,households:source.households!.filter(h=>h.id!==id),residentIds:(source.residentIds??[]).filter(n=>!members.has(n)),protected:true},to={...target,households:[...(target.households??[]),structuredClone(household)],residentIds:[...new Set([...(target.residentIds??[]),...household.memberIds])],protected:true};await change({kind:'change',upsert:[from,to],remove:[],label:'Haushalt umziehen'});people=null;render();}
 const counted=(amount:number,one:string,many:string)=>amount+' '+(amount===1?one:many);
 function drawPeopleStatus(){if(!people){el('city-people-status').textContent='';return;}el('city-people-status').textContent=counted(people.residents.size,'Bewohner','Bewohner')+' in '+counted(people.households.length,'Haushalt','Haushalten')+' · '+counted(people.workers.size,'Beschäftigter','Beschäftigte')+' in '+counted(people.jobs.length,'Beruf','Berufen')+' · aktuelle Position bleibt beim World-NPC.'+(people.total===null?'':' · '+people.total+' Treffer, höchstens 50 angezeigt.');}
@@ -71,7 +72,9 @@ function saveInspector():Promise<boolean>{
  const task=Promise.resolve().then(async()=>{try{
   while(owned(w.token,g)&&view?.header.id===id&&selected===unitId&&dirty){
    clearTimer();const u=unit();if(!u)throw new Error('Stadtelement fehlt.');const fields=inspectorFields(),upsert=collectUnit(u);
-   await change({kind:'change',upsert,remove:[],label:'Element bearbeiten'});
+   const draft=people,moves=(draft?.moves??[]).filter(m=>(m.role==='home'?draft!.residents:draft!.workers).has(m.npcId));
+   await change({kind:'change',upsert,remove:[],label:moves.length?'Personenbindung zwischen Städten wechseln':'Element bearbeiten',bindingMoves:moves});
+   if(people===draft&&draft)draft.moves=[];
    if(!owned(w.token,g)||view?.header.id!==id||selected!==unitId)return false;
    dirty=fields!==inspectorFields();inspector();
   }

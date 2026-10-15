@@ -41,10 +41,15 @@ Weltbeziehungen und erweiterte Dungeonwerkzeuge
 ab. NSC-Profile, Monstergruppen und Verhalten haben eigene Lektionen für Suche,
 Weltidentität, Entwurf/Verwerfen und die Vorbereitung ohne Kampfstart.
 Zusammenhänge erklärt Navigation und den Sprung in den vorhandenen Quelleneditor.
+Ausdrücklich reziproke Beziehungen verlangen zwei Labels, ändern beide World-Notizen
+atomar und besitzen eine eigene Paar-History. Rückgängig/Wiederholen invertiert nur
+diese Kanten; eine spätere Änderung an einer beteiligten Notiz sperrt den Schritt.
+Die Paar-History ist weder Atlas- noch City-History.
 Textverweise erklären Anzeigenamen, Quellnavigation und die Suche nach verknüpften Begriffen.
 Die Stadtlektionen unterscheiden den offenen Zeichenzug, die ausdrücklich
 übernommene Bebauungsvorschau und die geschützte Einzelbearbeitung samt Ausgabe.
-Eine leere Innenraumhülle enthält noch keine Räume, Bewohner oder Tagespläne.
+Die Innenraumhülle enthält noch keine modellierten Räume oder Tagespläne;
+Bewohner bleiben als World-NPC-Verweise am Gebäude gebunden.
 Volumen, Trigger/Fallenlaufzustand, Dungeon-Inhalte, Graphentwurf, Key-Ausgabe
 und gerichtete Passagen haben eigene Ablauflektionen mit Vorschau, Bestätigung
 und ihren jeweiligen Grenzen.
