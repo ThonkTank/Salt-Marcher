@@ -1,98 +1,76 @@
-# Gezielte native Nachprüfungen
+# GM-UX-QA: belegter Stand am 15.10.2026
 
-Der frische unabhängige Lauf GRAPH-RETEST-01 prüfte den unveränderten lokalen
-Desktopbuild 0.79.0 aus `a112dc17dbaa3e61905628a08dd723ceff0bdb72`.
-In einem selbst angelegten kleinen Dungeon blieben vollständige längere Namen,
-Inhaltszahlen und Verbindungszuordnung lesbar. Auswahl, Raumöffnung, Einpassen,
-Zoom, Kategorienwechsel und normales Schließen/Wiederöffnen funktionierten.
-Die beiden öffentlichen UI-Exporte waren bytegleich (SHA-256
-`3774ae311d2b6c5be0495977ff350f855b8e853afe743fbf170823395417368e`).
-Zwei normale Produktabschlüsse mit Exit 0 und ohne verbleibende Produktprozesse
-sowie der normale Abschluss der eigenen Umgebung sind aufgezeichnet.
+GRAPH-RETEST-01 bestätigte auf dem festen lokalen Build 0.79.0
+(`a112dc17dbaa3e61905628a08dd723ceff0bdb72`) lesbare vollständige Namen,
+Inhaltszahlen, Auswahl, Raumöffnung, Einpassen, Zoom, Kategorien und normales
+Wiederöffnen eines kleinen Dreiknoten-Dungeons. Die öffentlichen Exporte vor
+und nach Fresh waren bytegleich. Raumplatzierung, zunächst leere
+Verbindungslisten, ein verdeckter Entwurfshinweis und wechselnde gestrichelte
+Kanten bleiben getrennte Fragen; große Graphen und aktuelle Releases sind
+nicht abgenommen.
 
-Die Probe bestätigt nur diesen kleinen lokalen Beschriftungsfall. Sie ist keine
-Abnahme großer Graphen, des aktuellen Integrationsbuilds oder der gesamten
-Graphbedienung. Unabhängig beobachtet wurden überlappende neue Raumkonturen,
-unerklärte leere Verbindungslisten vor der Volumenübernahme, ein verdeckter
-Entwurfshinweis und ein ungeklärter Wechsel zu gestrichelten Kanten nach einer
-Inhaltszuordnung. Ein direkter Verbindungseditor war aus dem Graphen nicht
-auffindbar. Diese Punkte benötigen gezielte Prüfung am aktuellen Produktstand;
-sie werden nicht automatisch der Beschriftungskorrektur zugerechnet.
+HANDOUT-RETEST-01 bestätigte auf dem festen lokalen Build 0.80.0
+(`93f77bdfbc6fb0cd75abd6fc1ce173147d92ae5f`) explizite Bildfreigabe ohne
+Figuren im tatsächlichen Spielerfenster und der Vorschau, normales Fresh,
+Blank, erneute Freigabe und Kampagnenwechsel ohne das erste Bild.
+Der voreingestellte Ortsbildimport scheiterte nach Dateiauswahl zunächst mit
+„Bildziel fehlt.“; „Freies Bild“ ermöglichte den Import. Diese Auffindbarkeit
+muss am aktuellen Stand reproduziert werden. Keine allgemeine Privacy- oder
+Releaseabnahme. Beide lokalen Quellkorrekturen bleiben unveröffentlicht.
 
-HANDOUT-RETEST-01 lief mit einem weiteren frischen Tester auf dem unveränderten
-lokalen Build 0.80.0 aus `93f77bdfbc6fb0cd75abd6fc1ce173147d92ae5f`
-erfolgreich durch: explizite Bildfreigabe ohne Figuren im tatsächlichen
-Spielerfenster und der Vorschau, normales Wiederöffnen, Blank und erneute
-Freigabe sowie Wechsel in eine zweite eigene Kampagne ohne Übernahme des
-ersten Bildes. Zwei QA-Jobs endeten normal. Die registrierte Buildidentität
-blieb unverändert; 17 ausgewählte Originalframes wurden bytegleich geprüft.
-Dies ist eine gezielte lokale Abnahme, keine allgemeine Privacy- oder
-Releaseaussage. Der voreingestellte Ortsbildimport scheiterte nach der
-Dateiauswahl zunächst mit „Bildziel fehlt.“; erst „Freies Bild“ ermöglichte den
-Import. Diese Auffindbarkeitsfrage bleibt zur aktuellen Reproduktion offen.
-Die beiden Produktkorrekturen bleiben lokal; ihre Veröffentlichung ist
-weiterhin gesondert gesperrt.
+MD-MUEHLENAU-01 führte Vorbereitung, Spielleitung und Wiederaufnahme im selben
+frischen Testerchat mit originalem KWrite 26.08.1 vollständig aus. GM-Notiz,
+schematische Karte, getrenntes Handout, Unterbrechungsnotiz und fortgeschriebener
+Spielstand waren nach normalem Close/Fresh erhalten. Kein blockierender Fehler
+oder Inhaltsverlust beobachtet. Manueller Abgleich zwischen Karte, Notizen und
+Spielstand sowie erneutes Dateiöffnen und Suchen blieben nötig. Finale Dateien,
+Originalframes und normale Abschlüsse wurden geprüft, der fertige Chat
+archiviert. Die einfache Textlösung ist für diesen kleinen Fall praktisch
+brauchbar; ein Vorteil des Dungeon Editors folgt daraus nicht.
 
-MD-MUEHLENAU-01 wurde mit einem neuen unabhängigen Tester für denselben
-öffentlichen kurzen Spielabend in originalem KWrite begonnen. Vorbereitung,
-Spielleitung und Wiederaufnahme bleiben im selben Chat; die Darstellung ist
-frei. In originalem KWrite 26.08.1 wurde eine leitbare Vorbereitung erstellt:
-eine GM-Datei mit Ablauf, schematischer Karte, Raumtexten und Anfangsspielstand
-sowie ein separates öffentliches Handout. Normales Speichern und Wiederöffnen
-funktionierten. Die Raumsuche fand die Überschrift am unteren Fensterrand;
-zusätzliches Blättern war nötig. Karte, Beschreibung und Spielstand müssen
-manuell abgeglichen werden; ein daraus entstandener Fehler wurde noch nicht
-beobachtet. Der gleiche Tester führte anschließend die öffentliche
-Spielsituation durch: Die begonnene Untersuchungsnotiz blieb nach der
-Lampenfrage erhalten, die Reparatur wurde festgehalten und das unveränderte
-Handout allein in einem separaten lokalen Fenster gezeigt. Textsuche und
-Rückkehr zur Schreibstelle waren manuell; Spielstand und Sitzungsnotizen
-mussten getrennt aktualisiert werden. Kein blockierender Fehler oder
-Textverlust wurde beobachtet. Normaler Close und Checkpoint sind belegt.
-Der gleiche Tester schloss auch die Wiederaufnahme ab: Auszahlung,
-mitgenommene Lampe, Reparatur, Pegel, Notizen, Geheimnis, Handout und Textkarte
-waren nach normalem Schließen und einem neuen KWrite-Prozess erhalten. Der
-Endstand am Dateianfang war direkt lesbar, Dateiöffnung und Raumsuche mussten
-wiederholt werden. Finale Dateien, Originalframe des frischen Standes und
-normales Run-/Produkt-/Umgebungsende wurden geprüft. Es gab keinen beobachteten
-Inhaltsverlust oder blockierenden Produktfehler. Der fertige Auftrag wurde nach
-Sicherung archiviert. Die einfache Textlösung ist für diesen begrenzten Fall
-praktisch brauchbar; dies belegt keinen Vorteil des Dungeon Editors. Eine
-numerische Auswertung gegen den älteren Produktlauf wäre kein kontrollierter
-Vergleich.
-Dieser einfache Text-/Markdownablauf liefert zunächst qualitative
-Nutzungsbelege, keine kontrollierte Zeitstudie; technische Anlaufkosten und
-Einschränkungen bleiben Teil des Berichts.
+Eine zu breite UI-only-Anweisung führte anfangs auch zum Tippen des technischen
+QA-Berichts in KWrite. Das wurde präzisiert: nur eigentliche GM-Unterlagen
+müssen über die Produkt-UI entstehen. Die früheren Dokumentationsschritte
+bleiben in der Rohspur und zählen nicht als gewöhnliche GM-Arbeit.
 
-Eine zu breite Anweisung zum UI-only-Schreiben führte dazu, dass auch der
-technische Vorbereitungsbericht in KWrite verfasst wurde. Der Vertrag wurde
-präzisiert: GM-Spielunterlagen und Handout entstehen weiterhin ausschließlich
-über normale UI; technische QA-Berichte dürfen separat erzeugt werden. Die
-ursprünglichen Dokumentationsschritte bleiben in den Rohspuren, zählen aber
-nicht als gewöhnliche GM-Arbeit. Es wurden keine Spielsituation oder Lösung
-verändert. Insbesondere werden daraus keine pauschalen Zeit-/Klickvergleiche
-abgeleitet.
+RABENFURT-SOURCE-01 nutzt einen neuen unabhängigen Tester und den eigenen festen
+Build 0.94.0 aus `696417e5a59c4ec33482b8d93dbe854b744e3bc5`. Originalbuild
+und Runtime wurden in einem einzelnen geschützten Job gebaut; alle 112
+registrierten Dateihashes wurden geprüft. Die native Vorbereitung ergab drei
+nutzbare manuelle Szenen und eine übersichtliche GM-Mappe mit getrenntem
+Vorlese-/GM-Text. Wiederholte Frist- und Wegeangaben sind die gewählte
+Organisation des Testers, kein Nachweis fehlender Verweisfunktionen. Lange
+Bearbeitungsseiten und Positionswechsel führten laut Bericht zu korrigierten
+Fehlbedienungen; Produkt-/Umgebungsursache bleibt offen. Ein enger eigener
+Quellauftrag untersucht zunächst die Reproduktion, ohne den Messbuild zu
+ändern oder einen weiteren schweren Job zu starten. PLAY ist gespeichert:
+Die geänderte Abfahrt wurde mehrfach nachgezogen, die unterbrochene Notiz
+blieb erhalten. Zum Schreiben musste die lesende Mappe geschlossen werden;
+beim Wiederöffnen begann sie beim ersten Besuch und hatte eine andere Auswahl
+als der Editor. Das sind Bedienkosten, kein belegter Datenverlust. Der Tester
+leitete aus Mappe und manuellen Notizen, ohne native LiveSession. RESUME läuft
+im selben Chat; der vollständige Fall bleibt offen.
 
-Für die nächste native Erkundung wurde ausschließlich eine eigene Kopie des
-veröffentlichten Integrationscommits
-`696417e5a59c4ec33482b8d93dbe854b744e3bc5` (0.94.0) gebaut. Der einzelne
-geschützte Job endete nach Freigabe des tatsächlich freien QA-Slots normal
-mit Exit 0. Alle 112 gelieferten Produkt-/Runtime-Dateihashes stimmen mit dem
-Manifest überein; die Quellen blieben unverändert. Native Startfähigkeit und
-UX sind dadurch noch nicht belegt. Die Entwicklung wird nicht gesperrt.
+Ein optionaler weiterer Markdown-Export wurde automatisch abgelehnt, weil
+„GM-Unterlagen ausschließlich innerhalb“ als Exportverbot ausgelegt wurde.
+Der Speicherdialog wurde abgebrochen, ohne Ersatz oder Retry. Normal
+gespeicherter Produktstand und UI-Belege erlauben die Wiederaufnahme.
+Ablehnung und Umwege bleiben technische Ablaufkosten, kein Produktfehler
+oder erfolgreicher Export.
 
-RABENFURT-SOURCE-01 beginnt mit einem neuen unabhängigen Tester auf diesem
-festen Build. Der öffentliche Fall betrifft einen kleinen Fährstadt-Spielabend,
-aktuelle Auskünfte, eine unterbrochene Notiz und spätere Wiederaufnahme. Nur
-Vorbereitung und Inhalt wurden zunächst offengelegt; spätere Spielsituationen
-bleiben bis zu den natürlichen Grenzen zurückgehalten. Kein früherer Befund,
-keine Produktquelle oder UI-Schrittfolge wurde dem Tester übergeben. Ergebnisse
-dieses neuen Falls sowie dessen eigene praktische Alternativvergleiche stehen
-noch aus.
+Ein frischer Original-Obsidian-Vergleich ist technisch vorbereitet. Der frühere
+erfolgreiche native UI-/Save-/Fresh-Pilot und unveränderte Programm-/Ressourcen-
+hashes sind vorhanden. Die Trialreservierung wurde wegen der belegten
+Kapazität abgewiesen; die Leitung legte versehentlich trotzdem den technischen
+Vorbereitungschat an. Dieser bleibt unreserviert, ohne Szenario oder GUI-Start,
+bis eine reguläre Reservierung nach Abschluss des aktuellen Trials gelingt.
+Keine Kapazitätsumgehung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
+mangels auflösbarer Gesprächs-ID unbestätigt.
 
-Der bestehende Cloud-Browserpilot ist mangels auflösbarer Gesprächs-ID nicht
-als ausgeführt bestätigt. Es wurde kein Ersatzlauf gestartet. Tatsächliche
-Konkurrenz-/Markdownabläufe sowie menschliche Belastungs- oder
-Geschwindigkeitsvorteile bleiben unbelegt. Die ursprünglichen Berichte,
-UI-Aufzeichnungen und lokalen Artefaktverweise bleiben im Live-Ledger erhalten;
-private Profile und Kampagnendaten werden hier nicht veröffentlicht.
+Rabenfurt braucht noch eigene praktische Konkurrenz- und einfachste
+Alternativabläufe. Es gibt keine qualifizierte Zeit-/Klickauswertung,
+kontrollierte Überlegenheits- oder menschliche Belastungsaussage. Insbesondere
+werden alte Produkt- und neue Textspuren nicht numerisch gegeneinander gewertet.
+Originalberichte, Frames, Receipts, Fehler und nächste Schritte bleiben mit
+Version/Herkunft im lokalen Live-Ledger; private Profile und Kampagnendaten
+werden nicht veröffentlicht. Die Entwicklung läuft ohne QA-Freeze weiter.
