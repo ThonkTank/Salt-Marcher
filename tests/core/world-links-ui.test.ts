@@ -15,7 +15,7 @@ test('campaign connection search clears stale actions while the GM types',async(
  const ref={kind:'note' as const,id:'10000000-0000-4000-8000-000000000001'},entry:WorldLinkNode={ref,kind:'npc',title:'Hafenwache',revision:1,available:true},queries:WorldLinksQuery[]=[];
  const page=(query:WorldLinksQuery):WorldLinksPage=>query.text?{matches:[],next:null,nodes:query.focus?[entry]:[],edges:[],focus:query.focus?entry:null,hiddenLinks:0}:{matches:[entry],next:null,nodes:[entry],edges:[],focus:entry,hiddenLinks:0};
  const note={version:1,id:ref.id,revision:1,kind:'npc',title:'Hafenwache',readAloud:'Halt!',gmNotes:'Kennwort',relations:[],creatureId:null,deleted:false};
- window.campaign={worldLinks:async(_token,query)=>{queries.push(query);return{ok:true as const,value:page(query)};},deskContent:async()=>({ok:true as const,value:{ref,title:'Hafenwache',label:'NSC',revision:1,note}}),preparationDraft:async()=>({ok:true as const,value:null})} as unknown as typeof window.campaign;
+ window.campaign={worldLinks:async(_token:string,query:import('../../src/app/world-links-contracts').WorldLinksQuery)=>{queries.push(query);return{ok:true as const,value:page(query)};},deskContent:async()=>({ok:true as const,value:{ref,title:'Hafenwache',label:'NSC',revision:1,note}}),preparationDraft:async()=>({ok:true as const,value:null})} as unknown as typeof window.campaign;
  const workspace={token:'token',campaign:{id:'campaign'}} as any,workbench=new WorldLinksWorkbench(()=>workspace,async()=>true,()=>{},async()=>{}),dialog=document.getElementById('world-links') as HTMLDialogElement;
  Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
  try{

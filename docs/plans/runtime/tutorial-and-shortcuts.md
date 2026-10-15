@@ -111,3 +111,9 @@ und die native Abnahme bleiben von der Tutorialzuordnung getrennt.
 Die [Kampagnenagenda](campaign-agenda.md) verwendet den konfigurierten
 Fantasy-Tag für Fristen; ihre Entwurfs-/Zeitbasis- und Wiederaufnahmeabnahme
 bleibt zusätzlich zur Tutorialzuordnung erforderlich.
+
+Die [Spielabend-Eröffnung und Wiederaufnahme](session-opening-and-resume.md)
+führt aktuelle Planwahl, unveränderte gezeigte Autorenbytes, Dialog-/Gruppenbasis,
+fehlende Quellen sowie die getrennten Marker-/Textschritte bis zu ihren nächsten
+Writer-, Fresh- und nativen Abnahmen. Die vorhandene Wiederaufnahmelektion
+ersetzt diese Ausfall-/Ownerprüfung nicht.
