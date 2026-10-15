@@ -1,5 +1,8 @@
 # Zusammenhängendes Hex-Gelände bearbeiten
 
+Laufzeitreise, unabhängige Kampagnenkopien und verbleibende Reiseziele:
+[Hexreise](hex-travel.md).
+
 Original: [Hex Feature Requirements](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex.md).
 
 Ab0.125 verschiebt direktes Ziehen die vorhandene Hexkamera. Das bestehende

@@ -191,3 +191,27 @@ test('movement changes reject stale automatic previews and checkpoints but allow
 test('the three-mile missing-speed default is one hour and explicit duration still wins',()=>{
  const x=setup();try{const m={...x.map,hexMeters:4828.032};x.world({kind:'map',map:m,expectedRevision:m.revision});x.request={...x.request,destination:{q:1,r:0},usePartyPace:true,finalSeconds:null};assert.equal(x.preview().durationSeconds,3600);x.request.finalSeconds=123;assert.equal(x.preview().durationSeconds,123);}finally{x.cleanup();}
 });
+
+for(const mode of ['party','weather','stale-party','stale-weather','stale-map','stale-clock'])test('independent paused hex journey copy preserves '+mode+' authority and exact remaining time',async t=>{
+ const x=setup();t.after(()=>x.cleanup());const weather=mode.includes('weather');
+ const companion=x.live({kind:'create-character',profile:{name:'Borin',speedFeet:20}}).character,roster=x.store.live(x.workspace.token);x.live({kind:'membership',characterId:companion.id,expectedRevision:companion.membershipRevision,expectedRosterRevision:roster.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:roster.focusRevision});
+ if(weather)x.world({kind:'phenomenon',expectedRevision:null,phenomenon:{id:randomUUID(),revision:0,mapId:x.map.id,name:'Wandernde Wolke',kind:'rain',intensity:.5,center:{q:0,r:0},radiusHexes:20,movement:{q:0,r:0},startMs:'0',durationMs:'86400000',state:'active',pausedAtMs:null,temperatureC:null,travelFactor:2,notes:'  Wettertext.\r\n'}});
+ if(weather)x.world({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:0,expectedOverrideRevision:x.state().weatherOverrideRevision,weather:null});
+ x.request={...x.request,usePartyPace:!weather};let j=x.accept();x.world(x.step(j).action);j=x.state().journey;x.world({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'});
+ if(mode==='stale-party'){const pc=x.store.live(x.workspace.token).roster[0];x.live({kind:'profile',characterId:pc.id,expectedRevision:pc.profileRevision,profile:{...pc.profile,speedFeet:20}});}
+ if(mode==='stale-weather'){const p=x.store.world(x.workspace.token).phenomena[0];x.world({kind:'phenomenon',expectedRevision:p.revision,phenomenon:{...p,intensity:.8}});}
+ if(mode==='stale-map')x.world({kind:'cell',mapId:x.map.id,expectedRevision:x.map.revision,cell:{...x.map.cells[0],terrain:'hills'}});
+ if(mode==='stale-clock')x.live({kind:'advance-clock',sceneId:x.scene.id,expectedRevision:x.state().scene.clock.revision,amount:1,unit:'seconds',calendarVersion:'relative-v1',reason:'Manuelle Zeitänderung'});
+ const original=x.state(),snapshot=path.join(x.root,'hex-copy-source.sqlite');await x.store.campaignSnapshot(x.workspace.token,snapshot);const sourceBytes=x.store.db.serialize(),snapshotBytes=readFileSync(snapshot),copyFile=path.join(x.root,'hex-copy.sqlite');let copy=new CampaignStore(copyFile);
+ try{
+  const campaign=copy.acceptCampaignSnapshot(snapshot,'Unabhängige Reisekopie',{});copy.close();copy=new CampaignStore(copyFile);const w=copy.activate(campaign.id),scene=copy.live(w.token).scene,before=copy.sceneWorld(w.token,scene.id),command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
+  assert.notEqual(scene.id,x.scene.id);assert.notEqual(before.journey.id,original.journey.id);assert.notEqual(before.position.mapId,original.position.mapId);assert.deepEqual(before.journey.segmentSeconds,original.journey.segmentSeconds);assert.equal(before.journey.nextIndex,original.journey.nextIndex);assert.equal(before.scene.clock.instantMs,original.scene.clock.instantMs);assert.equal(before.journey.status,'paused');assert.equal(before.scene.members.length,2);assert.deepEqual(before.journey.actorIds,before.scene.members);if(weather)assert.equal(copy.world(w.token).phenomena[0].notes,'  Wettertext.\r\n');
+  const resume=command({kind:'journey-state',id:before.journey.id,expectedRevision:before.journey.revision,state:'active'});
+  if(mode.startsWith('stale-')){const unchanged=copy.db.serialize();assert.throws(()=>copy.executeWorld(resume),/Reisebasis|Gruppentempo|Zeit oder Position/);assert.ok(copy.db.serialize().equals(unchanged));}
+  else{
+   let active=copy.executeWorld(resume).scene.journey;const remaining=active.segmentSeconds.slice(active.nextIndex-1).reduce((a,b)=>a+b,0),start=BigInt(before.scene.clock.instantMs),first=active.segmentSeconds[active.nextIndex-1],step=command({kind:'journey-step',id:active.id,expectedRevision:active.revision,maxSteps:1});copy.executeWorld(step);let state=copy.sceneWorld(w.token,scene.id);assert.equal(BigInt(state.scene.clock.instantMs),start+BigInt(first)*1000n);assert.equal(state.journey.nextIndex,before.journey.nextIndex+1);const replayBytes=copy.db.serialize();copy.executeWorld(step);assert.ok(copy.db.serialize().equals(replayBytes));active=state.journey;
+   copy.executeWorld(command({kind:'journey-step',id:active.id,expectedRevision:active.revision,maxSteps:12}));state=copy.sceneWorld(w.token,scene.id);assert.equal(state.journey.status,'arrived');assert.equal(BigInt(state.scene.clock.instantMs),start+BigInt(remaining)*1000n);assert.deepEqual({q:state.position.q,r:state.position.r},x.request.destination);assert.equal(state.journey.usePartyPace,weather?undefined:true);
+  }
+  assert.ok(x.store.db.serialize().equals(sourceBytes));assert.ok(readFileSync(snapshot).equals(snapshotBytes));
+ }finally{copy.close();}
+});
