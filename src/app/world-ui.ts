@@ -349,7 +349,7 @@ async function toggleLiveTravel(){
  }catch(error){liveTravelOpen=false;setWorldSurface(liveSurface?'live':'world');throw error;}
  finally{toggle.disabled=false;}
 }
-export function activateWorld(w:Workspace){playback.stop();playbackJourneyId=null;playback.setSpeed(1);mapGestures?.reset();weatherContext=null;weatherGeneration++;workspace=w;liveTravelOpen=false;liveFocusId=null;liveBoundSceneId=null;setWorldSurface(liveSurface?'live':'world');routeMode='edit';resetRouteDraft();clearTravelPreview();sceneRequest++;pending=null;uncertain=null;checkingWorldWrite=null;worldWrites=new Set();showUncertainWorldWrite();edits={map:0,calendar:0,phenomenon:0,marker:0};markerDraft=null;markerSaving=null;liveWorld=null;liveRequest++;world=null;sources=null;live=null;frame=null;mapDraft=null;phenomenonDraft=null;dirtyMap=dirtyCell=dirtyCalendar=dirtyPhenomenon=false;preview=null;level=0;viewZoom=1;selected={q:0,r:0};center={q:0,r:0};}
+export function activateWorld(w:Workspace){playback.stop();playbackJourneyId=null;playback.setSpeed(1);mapGestures?.reset();weatherContext=null;weatherGeneration++;workspace=w;liveTravelOpen=false;liveFocusId=null;liveBoundSceneId=null;setWorldSurface(liveSurface?'live':'world');routeMode='edit';resetRouteDraft();clearTravelPreview();sceneRequest++;pending=null;uncertain=null;checkingWorldWrite=null;worldWrites=new Set();showUncertainWorldWrite();edits={map:0,calendar:0,phenomenon:0,marker:0};markerDraft=null;markerSaving=null;markerSelection++;liveWorld=null;liveRequest++;world=null;sources=null;live=null;frame=null;mapDraft=null;phenomenonDraft=null;dirtyMap=dirtyCell=dirtyCalendar=dirtyPhenomenon=false;preview=null;level=0;viewZoom=1;selected={q:0,r:0};center={q:0,r:0};}
 export async function openWorld(){if(!workspace)return;const token=workspace.token,[w,p,l]=await Promise.all([window.campaign.world(token),window.campaign.preparation(token,''),window.campaign.live(token)]);if(workspace.token!==token)return;world=unwrap(w);sources=unwrap(p);live=unwrap(l);const maps=el<HTMLSelectElement>('world-map-select'),old=mapDraft?.id??maps.value;maps.replaceChildren();for(const m of world.maps)option(maps,m.id,m.name);maps.value=world.maps.some(m=>m.id===old)?old:world.maps[0]?.id??'';if(maps.value!==old)resetRouteDraft();mapDraft=world.maps.find(m=>m.id===maps.value)?structuredClone(world.maps.find(m=>m.id===maps.value)!):null;const scenes=el<HTMLSelectElement>('world-scene'),prior=scenes.value;scenes.replaceChildren();for(const s of live.scenes)option(scenes,s.id,s.title||'Gruppe '+s.id.slice(0,6));scenes.value=liveTravelOpen&&liveSurface?live.focusId??'':live.scenes.some(s=>s.id===prior)?prior:live.focusId??'';if(scenes.value!==prior)resetRouteDraft();renderLocationOptions();loadMarkerEditor();await reloadScene();renderMapFields();renderCalendar();renderPhenomenonOptions();renderMap();renderCell();renderJourney();}
 async function reloadScene(){
  const token=workspace?.token,id=value('world-scene'),request=++sceneRequest;
@@ -359,7 +359,7 @@ async function reloadScene(){
 }
 function renderMapFields(){const picker=el<HTMLSelectElement>('world-map-select');if(mapDraft){const opt=[...picker.options].find(o=>o.value===mapDraft!.id);if(opt)opt.textContent=mapDraft.name;}el('world-map-workspace').hidden=!mapDraft;if(!mapDraft)return;el<HTMLInputElement>('world-map-name').value=mapDraft.name;el<HTMLInputElement>('world-hex-size').value=String(mapDraft.hexMeters/1000);el<HTMLSelectElement>('world-climate').value=mapDraft.climate;el<HTMLInputElement>('world-seed').value=mapDraft.seed;}
 type MarkerDraft={id:string;revision:number;presentation:MarkerPresentation;dirty:boolean};
-let markerDraft:MarkerDraft|null=null,markerSaving:Promise<boolean>|null=null;
+let markerDraft:MarkerDraft|null=null,markerSaving:Promise<boolean>|null=null,markerSelection=0;
 function renderLocationOptions(){
  const picker=el<HTMLSelectElement>('world-anchor-location'),old=picker.value,query=value('world-anchor-search').trim().toLocaleLowerCase();
  picker.replaceChildren();option(picker,'','Ort auswählen');
@@ -376,7 +376,7 @@ function loadMarkerEditor(){
  el<HTMLButtonElement>('world-anchor-focus').disabled=!place;
  el('world-anchor-save').textContent=place?'Marker auf ausgewähltes Hex versetzen':'Ort auf diesem Hex platzieren';
 }
-function collectMarker(){if(!markerDraft)return;const next:MarkerPresentation={title:value('world-marker-title'),symbol:value('world-marker-symbol'),size:number('world-marker-size'),labelPosition:value('world-marker-label-position') as MarkerPresentation['labelPosition'],curve:number('world-marker-curve')};if(JSON.stringify(next)===JSON.stringify(markerDraft.presentation))return;markerDraft.presentation=next;markerDraft.dirty=true;edits.marker++;renderMap();}
+function collectMarker(){if(!markerDraft||el<HTMLFieldSetElement>('world-marker-fields').disabled||value('world-anchor-location')!==markerDraft.id)return;const next:MarkerPresentation={title:value('world-marker-title'),symbol:value('world-marker-symbol'),size:number('world-marker-size'),labelPosition:value('world-marker-label-position') as MarkerPresentation['labelPosition'],curve:number('world-marker-curve')};if(JSON.stringify(next)===JSON.stringify(markerDraft.presentation))return;markerDraft.presentation=next;markerDraft.dirty=true;edits.marker++;renderMap();}
 async function flushMarker():Promise<boolean>{
  if(markerSaving)return markerSaving;
  if(!markerDraft?.dirty)return true;
@@ -384,7 +384,7 @@ async function flushMarker():Promise<boolean>{
  const operation=Promise.resolve().then(async()=>{try{
   await Promise.all([...worldWrites]);
   while(draft===markerDraft&&workspace?.token===token&&draft.dirty){
-   const version=edits.marker,ack=await raw({kind:'place-presentation',locationId:draft.id,expectedRevision:draft.revision||null,presentation:structuredClone(draft.presentation)});
+   const version=edits.marker,ack=await raw({kind:'place-presentation',locationId:draft.id,expectedRevision:draft.revision||null,presentation:structuredClone(draft.presentation)},()=>workspace?.token===token&&markerDraft===draft);
    if(workspace?.token!==token||markerDraft!==draft)return false;
    draft.revision=ack.world.places.find(p=>p.locationId===draft.id)?.presentationRevision??0;draft.dirty=version!==edits.marker;
   }
@@ -459,7 +459,19 @@ export function initWorld(status:typeof tell,flushLive:typeof before,reloadLive:
  el('world-group-center').onclick=()=>run(async()=>{if(!(await flushWorld()))return;await reloadScene();if(!frame?.position.mapId)return;if(mapDraft?.id!==frame.position.mapId)resetRouteDraft();mapDraft=structuredClone(world!.maps.find(m=>m.id===frame!.position.mapId)!);el<HTMLSelectElement>('world-map-select').value=mapDraft.id;const p=hexPoint(frame.position);center=pointHex(p.x,p.y,2**level);selected=center;routeCursor={...center};canvasBasis='';renderMapFields();renderMap();renderCell();});
  const localHex=()=>{const p=hexPoint(selected,2**level);return pointHex(p.x,p.y);};el('world-anchor-save').onclick=()=>run(async()=>{if(!mapDraft||!value('world-anchor-location'))throw new Error('Karte und Ort auswählen.');const old=world?.places.find(p=>p.locationId===value('world-anchor-location'));await action({kind:'place',mapId:mapDraft.id,locationId:value('world-anchor-location'),expectedRevision:old?.revision??null,hex:localHex()});renderLocationOptions();loadMarkerEditor();});
  el('world-anchor-search').oninput=renderLocationOptions;
- el('world-anchor-location').onchange=()=>run(async()=>{const id=value('world-anchor-location');if(!await flushMarker()){el<HTMLSelectElement>('world-anchor-location').value=markerDraft?.id??'';return;}el<HTMLSelectElement>('world-anchor-location').value=id;loadMarkerEditor();renderMap();});
+ el('world-anchor-location').onchange=()=>{
+  const id=value('world-anchor-location'),token=workspace?.token,request=++markerSelection;
+  // Keep identity and fields together while the old marker's save is unresolved.
+  el<HTMLSelectElement>('world-anchor-location').value=markerDraft?.id??'';
+  el<HTMLFieldSetElement>('world-marker-fields').disabled=true;
+  el('world-marker-status').textContent='Markerauswahl wird übernommen …';
+  run(async()=>{
+   const saved=await flushMarker();
+   if(workspace?.token!==token||request!==markerSelection)return;
+   if(!saved){el<HTMLSelectElement>('world-anchor-location').value=markerDraft?.id??'';el<HTMLFieldSetElement>('world-marker-fields').disabled=!markerDraft;el('world-marker-status').textContent='Markerwechsel nicht übernommen. Speicherstatus prüfen; bisheriger Ort bleibt ausgewählt.';return;}
+   el<HTMLSelectElement>('world-anchor-location').value=id;loadMarkerEditor();renderMap();
+  });
+ };
  el('world-anchor-focus').onclick=()=>run(async()=>{if(!await flushWorld())return;const place=world?.places.find(p=>p.locationId===value('world-anchor-location'));if(!place)return;if(mapDraft?.id!==place.mapId)resetRouteDraft();mapDraft=structuredClone(world!.maps.find(m=>m.id===place.mapId)!);el<HTMLSelectElement>('world-map-select').value=mapDraft.id;const p=hexPoint(place);selected=pointHex(p.x,p.y,2**level);center={...selected};routeCursor={...selected};canvasBasis='';renderMapFields();renderMap();renderCell();renderPhenomenonOptions();});
  for(const id of ['title','symbol','size','label-position','curve']){const input=el<HTMLInputElement>('world-marker-'+id);input.oninput=collectMarker;input.onchange=()=>{collectMarker();run(flushMarker);};input.onblur=()=>run(flushMarker);if(input.type==='range')input.onpointerup=()=>run(flushMarker);}
  el('world-marker-form').onsubmit=event=>{event.preventDefault();run(flushMarker);};
