@@ -503,6 +503,23 @@ export async function openPreparedVisit(planId:string,visitId:string){
   const token=context?.token;if(!token||!await flushPreparation()||context?.token!==token)return;const next=unwrap(await window.campaign.preparation(token,''));if(context?.token!==token)return;usePreparation(next);const plan=data.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(context?.token===token){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null}){
+  const token=context?.token;if(!token||!await flushPreparation()||context?.token!==token)throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
+  const next=unwrap(await window.campaign.preparation(token,''));if(context?.token!==token)return;usePreparation(next);
+  const target=data.plans.find(plan=>plan.id===planId)??data.plans.find(plan=>plan.id===data.selection.planId)??data.plans[0];
+  const id=campaignLocalId(crypto.randomUUID()),scene={id,title:seed.title,notes:seed.notes,locationId:seed.locationId?campaignLocalId(seed.locationId):null};
+  if(target){
+    if(!await change({kind:'plan',expectedRevision:target.revision,plan:{...target,scenes:[...target.scenes,scene]}},false))throw new Error('Nächster Besuch konnte nicht gespeichert werden.');
+    selectedPlan=target.id;
+  }else{
+    const created:ManualPlan={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[scene]};
+    if(!await change({kind:'plan',expectedRevision:null,plan:created},false))throw new Error('Spielabendplan konnte nicht angelegt werden.');
+    selectedPlan=created.id;
+  }
+  selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
+  if(context?.token===token){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+}
+
 function showLocations(show: boolean) {
   get('knowledge-panel').hidden = show; get('locations-panel').hidden = !show;
   get('knowledge-tab').setAttribute('aria-pressed', String(!show)); get('locations-tab').setAttribute('aria-pressed', String(show));

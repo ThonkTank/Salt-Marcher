@@ -31,4 +31,6 @@ test('live moment confirmation names one completed action without duplicating sa
   assert.equal(liveMomentSavedMessage('',true),'Moment in der Kampagnenchronik gespeichert.');
   assert.equal(liveMomentSavedMessage('quest',true),'Moment gespeichert und als offene Quest vorbereitet.');
   assert.equal(liveMomentSavedMessage('rumor',false,true),'Moment gespeichert und als Gerücht vorbereitet. Neuere Eingabe bleibt offen. Wissensbinder bei Bedarf aktualisieren.');
+  assert.equal(liveMomentSavedMessage('deadline',true),'Moment gespeichert. Ortsfrist ist als Entwurf geöffnet.');
+  assert.equal(liveMomentSavedMessage('visit',true,true),'Moment gespeichert und als nächster Besuch vorbereitet. Folgevorbereitung konnte nicht geöffnet werden.');
 });
