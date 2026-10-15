@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync,readFileSync,mkdirSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync,mkdirSync,copyFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
@@ -9,6 +9,7 @@ import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
 const require=createRequire(import.meta.url),dir='.build/planner-day-calculator';mkdirSync(dir,{recursive:true});
 for(const [entry,out]of [['src/app/storage/store.ts','store'],['src/app/adventuring-day-ui.ts','ui'],['src/app/adventuring-day-model.ts','model']])buildSync({entryPoints:[entry],outfile:dir+'/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+mkdirSync(dir+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',dir+'/catalog/srd-5.1.generated.json');
 const {CampaignStore}=require('../'+dir+'/store.cjs'),{calculateDay}=require('../'+dir+'/model.cjs');
 function fixture(t){const root=mkdtempSync(path.join(tmpdir(),'day-calculator-')),filename=path.join(root,'campaign.sqlite'),x={root,filename,store:new CampaignStore(filename)};t.after(()=>{x.store.close();rmSync(root,{recursive:true,force:true});});const cam=x.store.create('Party-Rechner');x.cam=cam;x.w=x.store.activate(cam.id);x.command=action=>({commandId:randomUUID(),token:x.w.token,campaignId:cam.id,action});x.scene=x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:0})).scene;
  x.add=(name,xp,active=true)=>{const c=x.store.executeLive(x.command({kind:'create-character',profile:{name}})).character;if(active){const live=x.store.live(x.w.token);x.store.executeLive(x.command({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:live.scene.id,expectedFocusRevision:live.focusRevision}));}if(xp!==null)x.store.executeProgress(x.command({kind:'xp',characterId:c.id,expectedRevision:0,mode:'set',amount:xp,reason:'Bestätigter Start'}));return c.id;};x.read=(source='active',totalXp=0,rewardXp)=>x.store.adventuringDay(x.w.token,{source,rows:[{level:1,count:2}],totalXp,...(rewardXp===undefined?{}:{rewardXp})});return x;}
@@ -36,4 +37,17 @@ test('live pacing keeps early-rest frames, rounds additional load and preserves 
  assert.equal(x.read('active',1,9000).pacing.members.find(c=>c.id===ada).after.budget,1200,'reward level-up never changes the load-only pacing frame');
  assert.equal(x.read('custom',759).pacing.loadShare,null);assert.ok(x.store.db.serialize().equals(before));
  rest(ada,'short');rest(ada,'short');const extra=x.read('active',3000,0).pacing.members.find(c=>c.id===ada);assert.equal(extra.before.sections,1);assert.equal(extra.after.due,'long');assert.equal(extra.after.consumed,1840);
+});
+
+
+test('encounter itinerary uses calculator party, per-fight rounding, saved revisions and no writes',t=>{
+ const x=fixture(t);for(const name of ['Ada','Borin','Cara'])x.add(name,1000);
+ const plan=(name,count)=>x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name,notes:'',party:[{id:'old-party',name:'Historische Planung',level:20,count:1}],entries:[{id:randomUUID(),creatureId:'goblin',count,grouped:false}],sources:[],catalogHash:''}});
+ const patrol=plan('Patrouille',1),ambush=plan('Hinterhalt',2),encounters=[{id:patrol.id,revision:patrol.revision,count:2},{id:ambush.id,revision:ambush.revision,count:1}];
+ const request={source:'active',rows:[],totalXp:999999,rewardXp:999999,encounters},before=x.store.db.serialize(),v=x.store.adventuringDay(x.w.token,request);
+ assert.equal(v.itinerary.rawLoadXp,250);assert.equal(v.itinerary.rawRewardXp,200);assert.equal(v.itinerary.totalLoadXp,252);assert.equal(v.itinerary.totalRewardXp,204);assert.equal(v.calculation.shareXp,68);assert.equal(v.calculation.totalXp,252);assert.equal(v.pacing.loadShare,84);
+ assert.deepEqual(v.itinerary.stages.map(s=>s.cumulativeLoadXp),[102,252]);assert.ok(x.store.db.serialize().equals(before));
+ const custom=x.store.adventuringDay(x.w.token,{...request,source:'custom',rows:[{level:3,count:6}]});assert.equal(custom.itinerary.totalLoadXp,162);assert.equal(custom.pacing.loadShare,null);assert.ok(x.store.db.serialize().equals(before));
+ x.store.saveEncounterPlan({...x.command(null),expectedRevision:patrol.revision,plan:{...patrol,name:'Neue Patrouille'}});
+ const stale=x.store.adventuringDay(x.w.token,request);assert.equal(stale.calculation,null);assert.match(stale.problem,/Vorlagen aktualisieren/);
 });

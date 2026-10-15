@@ -69,6 +69,48 @@ und Neustart. Zwei normale Exits, keine Rendererfehler, Fortschritts-/Roster-/
 Uhrzeilen bytegleich. Das ist eine gezielte Ablaufprüfung, keine umfassende
 Host-/Großparty-/Layoutabnahme.
 
+## Begegnungen als vollständigen Tagesplan bewerten
+
+Version 0.127 verbindet den bestehenden Rechner mit gespeicherten Encounter-Vorlagen.
+Im selben Dropdown können bis zu 20 Planzeilen mit je 1–99 Wiederholungen gesucht,
+hinzugefügt, umgeordnet und entfernt werden. Die aktuelle aktive oder eigene
+Rechnerparty bestimmt Multiplikator und Schwierigkeit; eine historische
+Planungsparty in der Vorlage wird nicht heimlich übernommen.
+
+`readDayItinerary` liest die gewählten Vorlagen im bestehenden Dayread innerhalb
+der gemeinsamen SQLite-Transaktion. ID und gespeicherte Revision sind gebunden.
+Geänderte Vorlagen liefern ein sichtbares Problem; „Vorlagen aktualisieren“ liest
+bewusst deren aktuelle Revisionen. Fehlende oder beschädigte Quellen und fehlende
+Kreatur-XP erzeugen keine scheinbar vollständige Nullsumme. Es werden weder Vorlagen
+noch NPCs, Party, Kämpfe, Rasten, XP oder Uhren geändert. Keine neue IPC-Operation,
+Datenbank oder Migration.
+
+`assessEncounter` bewertet jede Vorlage mit derselben Rechnerparty. Angepasste XP
+bilden die Belastung, Basis-XP den Verdienst. `xpShare` rundet beide je Begegnung
+auf, bevor Wiederholungen und Planzeilen summiert werden. Beispiel mit drei Figuren:
+zwei einzelne Goblins (50 XP pro Begegnung) und zwei Goblins gemeinsam
+(100 Basis-/150 angepasste XP) ergeben 250 rohe Belastungs-/200 Basis-XP,
+aber 252 tatsächlich verteilte Belastungs-/204 Verdienst-XP. Der Rechner prognostiziert
+84 Belastungs-/68 Verdienst-XP je Figur. Bei sechs Figuren ändern sich Multiplikatoren
+und Rundung: 162 Belastungs-/210 Verdienst-XP. Keine zweite Abrechnungsregel.
+
+Je Etappe werden kumulierte Last/Verdienst und der Rastbedarf bekannter aktiver
+Figuren angezeigt. Dazwischen werden keine Rasten oder Levelwechsel angenommen.
+Bei eigenen Zeilen bleiben aktuelle Party-Raststände unabhängig. Etappen und
+XP→Tage verwenden die verteilten Summen; die ursprünglichen Summen stehen daneben.
+Manuelle XP-Eingaben werden vor Planmodus bewahrt und beim Ausschalten wieder
+hergestellt. Suchantworten sind an Workspace/Antwortgeneration gebunden. Der Plan
+bleibt ein lokaler Rechnerentwurf bis Kampagnenreaktivierung oder Neustart.
+
+Gezielte Prüfung: Storeablauf mit echter Vorlagenspeicherung, abweichender alter
+Vorlagenparty, Wiederholungen, Rundung, eigener Sechserparty, unveränderten
+Datenbankbytes und sichtbarer Ablehnung einer später geänderten Vorlage.
+Nativ geprüft: Hinzufügen, Wiederholungen, Reihenfolge, ungültige leere Anzahl,
+Wechsel zwischen aktiver und eigener Party, gespeicherte Quelländerung mit
+ausdrücklichem Refresh, Rückkehr zu manuellen Eingaben, Übergang zum Encounter-Editor
+und Neustart. Party-, Fortschritts- und Uhrzeilen bleiben unverändert; zwei
+normale Exits, keine Rendererfehler.
+
 ## Geprüfte Daten- und Eingabegrenzen
 
 Der erste Reader verwendete `readProgress` für den gesamten Roster einschließlich
