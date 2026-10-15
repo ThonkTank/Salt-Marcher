@@ -13,7 +13,7 @@ function setup(t,narrow=false){
  const media={matches:narrow,addEventListener(type,fn){this.changes??=[];this.changes.push(fn);},change(){for(const fn of this.changes)fn();}};window.matchMedia=()=>media;
  Object.assign(globalThis,{window,document,ResizeObserver:class{constructor(fn){measure=fn;}observe(el){observations.push(el);}}});t.after(()=>Object.assign(globalThis,saved));
  const el=id=>document.getElementById(id);for(const id of ['quick-reference-open','narrative-journal-open','location-notebook-open','location-material-return']){const b=document.createElement('button');b.id=id;document.querySelector('header').append(b);}
- const heights={header:64,navigation:44,focus:54};document.querySelector('header').getBoundingClientRect=()=>({height:heights.header});el('workspace-navigation').getBoundingClientRect=()=>({height:heights.navigation});el('live-focus-bar').getBoundingClientRect=()=>({height:heights.focus});ui.initWorkspaceNavigation();return {window,document,el,media,heights,observations,measure};
+ const heights={header:64,navigation:44,focus:54,footer:58};document.querySelector('header').getBoundingClientRect=()=>({height:heights.header});el('workspace-navigation').getBoundingClientRect=()=>({height:heights.navigation});el('live-focus-bar').getBoundingClientRect=()=>({height:heights.focus});el('music-mini').getBoundingClientRect=()=>({height:heights.footer});ui.initWorkspaceNavigation();return {window,document,el,media,heights,observations,measure};
 }
 test('navigation retains every original destination and each tool instance and handler',t=>{
  const x=setup(t),buttons=x.document.querySelectorAll('#workspace-navigation button');assert.equal(buttons.length,13);assert.equal(new Set([...buttons].map(b=>b.id)).size,13);
@@ -32,7 +32,8 @@ test('one existing group selector stays outside profile details and measured sti
  const x=setup(t),bar=x.el('live-focus-bar'),selector=x.el('scene-focus'),move=x.el('group-move'),style=x.document.documentElement.style;
  assert.equal(x.document.querySelectorAll('#scene-focus').length,1);assert.equal(selector.parentElement,bar);assert.equal(move.parentElement,bar);assert.equal(bar.closest('details'),null);assert.equal(bar.parentElement.id,'running-editor');
  let changes=0;selector.onchange=()=>changes++;selector.dispatchEvent(new x.window.Event('change'));assert.equal(changes,1);
- assert.deepEqual(x.observations.map(e=>e.id||e.tagName),['HEADER','workspace-navigation','live-focus-bar']);assert.equal(style.getPropertyValue('--workspace-nav-height'),'0px');assert.equal(style.getPropertyValue('--live-focus-height'),'54px');
+ assert.deepEqual(x.observations.map(e=>e.id||e.tagName),['HEADER','workspace-navigation','live-focus-bar','music-mini']);assert.equal(style.getPropertyValue('--workspace-nav-height'),'0px');assert.equal(style.getPropertyValue('--live-focus-height'),'54px');
  x.heights.header=110;x.heights.focus=100;x.media.matches=true;x.media.change();assert.equal(style.getPropertyValue('--workspace-header-height'),'110px');assert.equal(style.getPropertyValue('--workspace-nav-height'),'44px');assert.equal(style.getPropertyValue('--live-focus-height'),'100px');
+ assert.equal(style.getPropertyValue('--workspace-footer-height'),'58px');x.heights.footer=110;x.measure();assert.equal(style.getPropertyValue('--workspace-footer-height'),'110px');
  x.heights.focus=0;x.measure();assert.equal(style.getPropertyValue('--live-focus-height'),'0px');
 });

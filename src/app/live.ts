@@ -174,6 +174,7 @@ function busy(on: boolean, structural = false, textSave = false) {
   sessionNavigatorBusy(on&&!textSave);
   for (const id of ['character-new', 'live-party-new', 'character-create-active', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'adoption-confirm-packet', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-') || id==='live-session-end'&&!!recapReadError();
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
+  for(const button of get('group-list').querySelectorAll<HTMLButtonElement>('button')) button.disabled=on&&!textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
   if (structural) for (const id of [...profileFields.map(([id]) => id), 'running-title', 'running-notes', 'running-read-aloud', 'running-location']) get<HTMLInputElement>(id).disabled = on;
@@ -645,10 +646,11 @@ function renderGroups() {
     const option = document.createElement('option'); option.value = group.id;
     const people = data!.roster.filter(c => c.active && c.sceneId === group.id).map(c => c.profile.name).join(', ') || 'Leere Party';
     option.textContent = groupLabel(group); select.append(option);
+    if(group.id===data?.focusId)continue;
     const button = document.createElement('button'), name = document.createElement('strong'), facts = document.createElement('small');
     name.textContent = (group.title || 'Unbenannte Gruppe') + (group.primary ? ' · Hauptgruppe' : ''); facts.textContent = people + ' · ' + formatSceneInstant(group.clock.instantMs);
     button.append(name, facts); button.setAttribute('aria-pressed', String(data?.focusId === group.id)); button.disabled = intentBlocked();
-    button.onclick = () => { void changeFocus(group.id); }; cards.append(button);
+    button.onclick = () => { void (async()=>{if(await changeFocus(group.id))select.focus({preventScroll:true});})(); }; cards.append(button);
   }
   select.value = data?.focusId ?? '';
   get<HTMLButtonElement>('group-move').disabled = !data?.scene?.members.length || intentBlocked();
