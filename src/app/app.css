@@ -446,3 +446,6 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #travel-stops:empty{display:none}
 @media(min-width:1101px){.travel-planning .world-map-canvas{position:sticky;top:var(--workspace-content-offset)}}
 @media(max-width:1100px){.travel-planning .world-map-columns{grid-template-columns:1fr}.travel-planning .world-map-canvas{position:static}}
+
+#world-journey-console{scroll-margin-top:var(--workspace-content-offset)}
+#world-journey-console>p:first-child{font-weight:600}
