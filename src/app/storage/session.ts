@@ -1,6 +1,10 @@
+import {checkedPreparedGroupRow} from './prepared-group';
+export {checkedPreparedGroupRow} from './prepared-group';
 import {captureVisitBinding,readVisitBinding} from './scene-visits';
 import {requiredGenerationNpcs} from './generation-npcs';
-import {applyLootGuidance,fitSessionReward} from './session-rewards';
+import {canonicalJson} from '../generation/canonical-json';
+import {readItemDefinition} from './item-definitions';
+import {applyLootGuidance,fitSessionReward,checkedSessionLootGuidance,assertSessionRewardBasisCurrent} from './session-rewards';
 import {npcRecord,npcDisposition} from './npc-record';
 import {copySessionVisits} from './session-copy';
 import {replaceSessionPlan} from './plan-replacement';
@@ -9,12 +13,12 @@ import {randomUUID,createHash} from 'node:crypto';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
 import {manualPlan,type ManualPlan} from '../../features/planner/manual-planner';
 import {worldNoteDocument} from '../../features/world/world-notes';
-import {assessEncounter,type EncounterPlan} from '../encounter-contracts';
-import {dailyXp} from '../progression';
+import {assessEncounter,validateEncounterPlanInput,type EncounterPlan} from '../encounter-contracts';
+import {dailyXp,checkedHealth} from '../progression';
 import {exactWeight,integerWeights} from '../generation-contracts';
 import {generateEncounters,readGenerationRun,assertGenerationSourcesCurrent,previewLoot} from './generation';
 import {readEncounterPlan,readEncounterPlans} from './encounters';
-import {makeTreasure,awardXpPool,validateItemInput} from './progression';
+import {makeTreasure,awardXpPool,validateItemInput,checkedItemInput} from './progression';
 import type {SessionProfile,VisitDetail,PreparedGroup,WorldActor,SessionView,ScenePreparation,SessionCommand,SessionGenerationRequest,SessionRun,PlanPublisher} from '../session-contracts';
 const json=(v:unknown)=>JSON.stringify(v),hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 function decoded<T>(row:any):T{if(!row||hash(row.payload)!==row.checksum)throw new Error('Spielabend-Inhalt fehlt oder ist beschädigt.');return JSON.parse(row.payload);}
@@ -34,14 +38,37 @@ function detail(db:any,cam:string,planId:string,visitId:string,knownPlan?:Manual
 export function saveDetail(db:any,cam:string,planId:string,d:VisitDetail){d.revision++;const payload=json(d);db.prepare('INSERT INTO session_visit VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,planId,d.visitId,d.revision,payload,hash(payload));}
 function availableLocation(db:any,cam:string,id:string,revision?:number){const row=db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(cam,id);if(!row||row.trashed||revision!==undefined&&revision!==row.revision)throw new Error('Ort geändert oder nicht verfügbar.');return decoded<any>(row);}
 function note(db:any,cam:string,id:string){const row=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);if(!row||row.trashed)throw new Error('Gebundener Weltinhalt nicht verfügbar.');return worldNoteDocument(decoded(row));}
-export function readWorldActor(db:any,cam:string,id:string):WorldActor{const row=db.prepare('SELECT * FROM world_actor WHERE campaign_id=? AND id=?').get(cam,id),actor=decoded<WorldActor>(row),n=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);if(actor.id!==id||actor.revision!==row.revision)throw new Error('World-NPC ist falsch zugeordnet.');if(!n)throw new Error('NPC-Profil fehlt.');const document=worldNoteDocument(decoded(n));if(document.id!==id||document.revision!==n.revision||document.kind!=='npc')throw new Error('NPC-Profil ist falsch zugeordnet.');return{...actor,name:document.title,unavailable:!!n.trashed,defeated:npcRecord(db,cam,id).lifecycle==='defeated',...npcDisposition(db,cam,npcRecord(db,cam,id))};}
+export function readWorldActor(db:any,cam:string,id:string):WorldActor{
+ const row=db.prepare('SELECT * FROM world_actor WHERE campaign_id=? AND id=?').get(cam,id),actor=decoded<WorldActor>(row);
+ const validId=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=1000;
+ if(actor.id!==row.id||actor.revision!==row.revision||!Number.isSafeInteger(actor.revision)||actor.revision<1||
+    !validId(actor.id)||!validId(actor.creatureId)||!validId(actor.entryId)||typeof actor.unavailable!=='boolean')throw new Error('NPC-Zuordnung oder Revision widersprüchlich.');
+ checkedHealth(actor);
+ const n=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);
+ if(!n)throw new Error('NPC-Profil fehlt.');
+ const document=worldNoteDocument(decoded(n));
+ if(document.id!==n.id||document.revision!==n.revision||document.kind!=='npc')throw new Error('NPC-Profilzuordnung widersprüchlich.');
+ const record=npcRecord(db,cam,id);return {...actor,name:document.title,unavailable:!!n.trashed,defeated:record.lifecycle==='defeated',...npcDisposition(db,cam,record)};
+}
 export function writeWorldActorHealth(db:any,cam:string,id:string,expectedRevision:number,health:Pick<WorldActor,'hp'|'maxHp'|'tempHp'|'conditions'|'concentrating'>){const actor=readWorldActor(db,cam,id);if(actor.revision!==expectedRevision||actor.unavailable)throw new Error('NPC-Zustand wurde geändert. Kampfabschluss zuerst mit dem aktuellen NPC-Stand abgleichen.');const next={...actor,...health,revision:actor.revision+1},payload=json(next);db.prepare('UPDATE world_actor SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(next.revision,payload,hash(payload),cam,id);return next;}
-export function readPreparedGroup(db:any,cam:string,id:string):PreparedGroup{const g=decoded<PreparedGroup>(db.prepare('SELECT * FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,id));return{...g,actors:g.actors.map(a=>({...readWorldActor(db,cam,a.id),entryId:a.entryId}))};}
+
+export function readPreparedGroup(db:any,cam:string,id:string):PreparedGroup{
+ const g=checkedPreparedGroupRow(db.prepare('SELECT * FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,id));
+ return {...g,actors:g.actors.map(a=>({...readWorldActor(db,cam,a.id),entryId:a.entryId}))};
+}
 export function saveGroup(db:any,cam:string,g:PreparedGroup,draftPlan:string|null,draftVisit:string|null){const payload=json(g);db.prepare('INSERT INTO prepared_group VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET draft_plan_id=excluded.draft_plan_id,draft_visit_id=excluded.draft_visit_id,location_id=excluded.location_id,revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,g.id,draftPlan,draftVisit,g.locationId,g.revision,payload,hash(payload));}
 export function newGroup(db:any,cam:string,source:EncounterPlan,planId:string|null,visitId:string|null):PreparedGroup{const g:PreparedGroup={id:randomUUID(),revision:1,title:source.name,notes:source.notes,sourceEncounterId:source.id,sourceRevision:source.revision,locationId:null,plan:structuredClone(source),actors:[]};saveGroup(db,cam,g,planId,visitId);return g;}
 export function materialize(db:any,cam:string,g:PreparedGroup){if(g.actors.length)return;for(const entry of g.plan.entries){const c=g.plan.sources.find(c=>c.id===entry.creatureId);if(!c)throw new Error('Kreaturquelle der vorbereiteten Gruppe fehlt.');if(entry.worldActorIds){for(const id of entry.worldActorIds){const actor=readWorldActor(db,cam,id);if(actor.creatureId!==entry.creatureId||actor.unavailable||actor.defeated||actor.hp<=0)throw new Error('Benannter NPC nicht verfügbar. Weltprofil prüfen.');g.actors.push({...actor,entryId:entry.id});}}for(let i=entry.worldActorIds?.length??0;i<entry.count;i++){const id=randomUUID(),name=c.name+' '+(i+1)+' · '+g.title,npc=worldNoteDocument({version:1,id:campaignLocalId(id),revision:1,kind:'npc',title:name,readAloud:'',gmNotes:g.notes,relations:[],creatureId:c.id,deleted:false}),payload=json(npc);db.prepare('INSERT INTO world_note VALUES(?,?,1,0,?,?)').run(cam,id,payload,hash(payload));db.prepare('INSERT INTO note_search(campaign_id,note_id,title,body) VALUES(?,?,?,?)').run(cam,id,name,npc.gmNotes);const actor:WorldActor={id,name,creatureId:c.id,revision:1,hp:c.hp,maxHp:c.hp,tempHp:0,conditions:'',concentrating:false,unavailable:false,entryId:entry.id},body=json(actor);db.prepare('INSERT INTO world_actor VALUES(?,?,1,?,?)').run(cam,id,body,hash(body));g.actors.push(actor);}}}
 export function readSession(db:any,cam:string,planId:string,includeEncounters=true):SessionView{return db.transaction(()=>{const plan=readPlan(db,cam,planId),visits=plan.scenes.map(s=>detail(db,cam,planId,s.id,plan)),ids=[...new Set(visits.flatMap(v=>v.groupIds))];const result={profile:profile(db,cam,planId,plan),visits,groups:ids.map(id=>readPreparedGroup(db,cam,id)),encounters:includeEncounters?readEncounterPlans(db,cam,''):[]};return {...result,replacementBasis:hash(json({plan,profile:result.profile,visits,groups:result.groups}))};})();}
-export function cleanSessionVisits(db:any,cam:string,planId:string,visitIds:readonly string[]){for(const row of db.prepare('SELECT id FROM session_visit WHERE campaign_id=? AND plan_id=?').all(cam,planId))if(!visitIds.includes(row.id)){db.prepare('DELETE FROM prepared_group WHERE campaign_id=? AND draft_plan_id=? AND draft_visit_id=? AND location_id IS NULL').run(cam,planId,row.id);db.prepare('DELETE FROM session_visit WHERE campaign_id=? AND id=?').run(cam,row.id);}}
+function releaseVisitGroups(db:any,cam:string,planId:string,visitId:string,groupId:string|null=null){
+ const rows=db.prepare('SELECT id FROM prepared_group WHERE campaign_id=? AND draft_plan_id=? AND draft_visit_id=? AND location_id IS NULL AND (? IS NULL OR id=?)').all(cam,planId,visitId,groupId,groupId);
+ for(const {id} of rows){
+  // Saved, unfinished input belongs to its author, even after removing its visit.
+  if(db.prepare('SELECT 1 FROM group_draft WHERE campaign_id=? AND group_id=?').get(cam,id))db.prepare('UPDATE prepared_group SET draft_plan_id=NULL,draft_visit_id=NULL WHERE campaign_id=? AND id=?').run(cam,id);
+  else db.prepare('DELETE FROM prepared_group WHERE campaign_id=? AND id=?').run(cam,id);
+ }
+}
+export function cleanSessionVisits(db:any,cam:string,planId:string,visitIds:readonly string[]){for(const row of db.prepare('SELECT id FROM session_visit WHERE campaign_id=? AND plan_id=?').all(cam,planId))if(!visitIds.includes(row.id)){releaseVisitGroups(db,cam,planId,row.id);db.prepare('DELETE FROM session_visit WHERE campaign_id=? AND id=?').run(cam,row.id);}}
 export function captureVisitDetails(db:any,cam:string,planId:string,visitId:string,sceneId:string,adoptionId:string,locationId:string|null){
  const d=detail(db,cam,planId,visitId),plan=readPlan(db,cam,planId);captureVisitBinding(db,cam,adoptionId,sceneId,plan.name,d,plan.scenes.find(s=>s.id===visitId)?.title??'Besuch');
  writeSceneReadAloud(db,cam,sceneId,d.readAloud);
@@ -65,8 +92,51 @@ export function captureVisitDetails(db:any,cam:string,planId:string,visitId:stri
 export function sceneReadAloud(db:any,cam:string,sceneId:string):string{const row=db.prepare('SELECT * FROM live_scene_extra WHERE campaign_id=? AND scene_id=?').get(cam,sceneId);return row?decoded<{readAloud:string}>(row).readAloud:'';}
 export function writeSceneReadAloud(db:any,cam:string,sceneId:string,text:string){if(typeof text!=='string'||text.length>2000000)throw new Error('Ungültiger Vorlesetext.');const payload=json({readAloud:text});db.prepare('INSERT INTO live_scene_extra VALUES(?,?,?,?) ON CONFLICT(campaign_id,scene_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(cam,sceneId,payload,hash(payload));}
 export function scenePreparation(db:any,cam:string,sceneId:string):ScenePreparation{return db.transaction(()=>{const scene=db.prepare('SELECT * FROM live_scene WHERE campaign_id=? AND id=?').get(cam,sceneId);if(!scene)throw new Error('Laufende Scene fehlt.');const adoption=db.prepare('SELECT * FROM scene_adoption WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1').get(cam,sceneId);const ids=new Set<string>(db.prepare('SELECT group_id FROM scene_prepared_group WHERE campaign_id=? AND adoption_id=?').all(cam,adoption?.id??'').map((r:any)=>r.group_id));if(scene.location_id)for(const row of db.prepare('SELECT id FROM prepared_group WHERE campaign_id=? AND location_id=?').all(cam,scene.location_id))ids.add(row.id);let nextVisit=null,noteIds:string[]=[];if(adoption){noteIds=readVisitBinding(db,cam,adoption).noteIds;const exists=db.prepare('SELECT 1 FROM plan WHERE campaign_id=? AND id=?').get(cam,adoption.plan_id),plan=exists?readPlan(db,cam,adoption.plan_id):null,index=plan?.scenes.findIndex(s=>s.id===adoption.visit_id)??-1,next=index>=0?plan?.scenes[index+1]:null;if(plan&&next)nextVisit={planId:plan.id,planRevision:plan.revision,visitId:next.id,title:next.title};}const treasures=db.prepare('SELECT * FROM treasure WHERE campaign_id=?').all(cam).map((r:any)=>decoded<any>(r)).filter((t:any)=>t.locationId&&t.locationId===scene.location_id).map((t:any)=>({id:t.id,title:t.title}));return{groups:[...ids].map(id=>readPreparedGroup(db,cam,id)),treasures,noteIds,nextVisit};})();}
-export function readSessionRun(db:any,cam:string,id:string):SessionRun{const run=decoded<SessionRun>(db.prepare('SELECT * FROM session_run WHERE campaign_id=? AND id=?').get(cam,id));for(const row of db.prepare('SELECT * FROM session_proposal_acceptance WHERE campaign_id=? AND run_id=?').all(cam,id))if(run.proposals[row.proposal_index])run.proposals[row.proposal_index]!.acceptedVisitId=row.visit_id;return run;}
-export function readSessionRuns(db:any,cam:string,planId:string){return db.prepare('SELECT * FROM session_run WHERE campaign_id=? AND plan_id=? ORDER BY rowid DESC LIMIT 50').all(cam,planId).map((row:any)=>{const r=decoded<SessionRun>(row);return{id:r.id,seed:r.seed,count:r.proposals.length};});}
+const object=(v:any)=>v&&typeof v==='object'&&!Array.isArray(v);
+const identity=(v:any)=>typeof v==='string'&&!!v.trim()&&v.length<=1000;
+const unsigned=(v:any)=>Number.isSafeInteger(v)&&v>=0;
+function checkedSessionReward(reward:NonNullable<SessionRun['proposals'][number]['reward']>){
+ if(!object(reward)||!unsigned(reward.poolXp)||!Array.isArray(reward.items)||reward.items.length>100)throw new Error('Belohnung prüfen.');
+ for(const item of reward.items)checkedItemInput(item);
+ return reward;
+}
+function sessionRunRow(db:any,row:any):SessionRun{
+ const run=decoded<SessionRun>(row),cam=row.campaign_id;
+ if(!object(run)||run.id!==row.id||run.planId!==row.plan_id||!identity(run.id)||!identity(run.planId)||!unsigned(run.profileRevision)||run.profileRevision<1||!identity(run.seed)||![run.dayBudget,run.budget,run.usedXp].every(unsigned)||run.budget<1||run.usedXp>run.budget||!identity(run.generationRunId)||!Array.isArray(run.proposals)||run.proposals.length<1||run.proposals.length>20||new Set(run.proposals.map(p=>p?.id)).size!==run.proposals.length||!Array.isArray(run.warnings)||run.warnings.some(s=>typeof s!=='string')||run.worldSourcesByLocation!==undefined&&typeof run.worldSourcesByLocation!=='boolean')throw new Error('Spielabend-Vorschau hat ungültige Kennungen, Budgets oder Vorschläge.');
+ if(!db.prepare('SELECT 1 FROM plan WHERE campaign_id=? AND id=?').get(cam,run.planId)||run.profileRevision>(db.prepare('SELECT revision FROM session_profile WHERE campaign_id=? AND plan_id=?').get(cam,run.planId)?.revision??0))throw new Error('Vorschau gehört nicht zur Kampagne.');
+ const sources=new Map<string,ReturnType<typeof readGenerationRun>>();
+ const source=(id:string)=>{if(!sources.has(id)){const value=readGenerationRun(db,cam,id);if(value.id!==id||!Array.isArray(value.plans))throw new Error('Generierungsquelle beschädigt.');sources.set(id,value);}return sources.get(id)!;};
+ source(run.generationRunId);
+ for(const [index,p]of run.proposals.entries()){
+  if(!object(p)||!identity(p.id)||p.index!==index||p.revision!==undefined&&(!unsigned(p.revision)||p.revision<1)||typeof p.title!=='string'||!p.title.trim()||p.title.length>1000||[p.notes,p.readAloud].some(s=>typeof s!=='string'||s.length>2000000)||p.locationId!==null&&!identity(p.locationId)||!Array.isArray(p.noteIds)||p.noteIds.length>1000||p.noteIds.some(id=>!identity(id))||new Set(p.noteIds).size!==p.noteIds.length||p.acceptedVisitId!==null&&!identity(p.acceptedVisitId)||[p.rejected,p.needsEncounterRefresh,p.rewardEdited].some(v=>v!==undefined&&typeof v!=='boolean'))throw new Error('Szenenvorschlag beschädigt.');
+  if(p.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,p.locationId))throw new Error('Vorschlagsort gehört nicht zur Kampagne.');
+  for(const id of p.noteIds)if(!db.prepare('SELECT 1 FROM world_note WHERE campaign_id=? AND id=?').get(cam,id))throw new Error('Vorschlagswissen gehört nicht zur Kampagne.');
+  if(!object(p.encounter)||!Array.isArray(p.encounter.sources)||new Set(p.encounter.sources.map(c=>c?.id)).size!==p.encounter.sources.length)throw new Error('Vorgeschlagene Begegnung beschädigt.');
+  validateEncounterPlanInput(p.encounter);
+  const opponents=p.encounter.entries.map(e=>{const c=p.encounter.sources.find(c=>c.id===e.creatureId);if(!c)throw new Error('Kreaturquelle des Vorschlags fehlt.');return{xp:c.xp,count:e.count};});
+  if(canonicalJson(assessEncounter(p.encounter.party,opponents))!==canonicalJson(p.encounter.assessment))throw new Error('Begegnungsbudget widersprüchlich.');
+  const origin=p.encounter.generationOrigin;if(origin&&(!object(origin)||!identity(origin.runId)||!unsigned(origin.index)))throw new Error('Generierungsherkunft des Vorschlags beschädigt.');const original=source(origin?.runId??run.generationRunId).plans[origin?.index??index];
+  if(!original||original.id!==p.encounter.id)throw new Error('Begegnung gehört zu einer anderen Generierung.');
+  if(p.reward!=null){checkedSessionReward(p.reward);for(const item of p.reward.items)if(item.reference)readItemDefinition(db,item.reference.definitionId,item.reference.revision);}
+  if(p.rewardOrigin){const o=p.rewardOrigin;if(!object(o)||!identity(o.tableId)||!unsigned(o.revision)||o.revision<1||!identity(o.seed)||!db.prepare('SELECT 1 FROM loot_table WHERE campaign_id=? AND id=?').get(cam,o.tableId))throw new Error('Beutequelle des Vorschlags fehlt.');}
+ }
+ if(run.proposals.reduce((n,p)=>n+p.encounter.assessment.adjustedXp,0)!==run.usedXp)throw new Error('Spielabendbudget widersprüchlich.');
+ const accepted=new Map<number,string>();
+ for(const a of db.prepare('SELECT * FROM session_proposal_acceptance WHERE campaign_id=? AND run_id=?').all(cam,run.id)){if(!unsigned(a.proposal_index)||!run.proposals[a.proposal_index]||!identity(a.visit_id))throw new Error('Vorschlagsübernahme beschädigt.');accepted.set(a.proposal_index,a.visit_id);}
+ for(const p of run.proposals){if(p.acceptedVisitId!==null&&p.acceptedVisitId!==accepted.get(p.index))throw new Error('Vorschlagsübernahme widersprüchlich.');p.acceptedVisitId=accepted.get(p.index)??null;}
+ if(run.lootGuidance!==undefined){const g=checkedSessionLootGuidance(run.lootGuidance,run.proposals.length);
+  for(const item of g.magic?.pool??[])readItemDefinition(db,item.definitionId,item.revision);
+  for(const c of g.characters)if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,c.characterId))throw new Error('Figur des Beuteausgleichs gehört nicht zur Kampagne.');
+ }
+
+ return run;
+}
+export function readSessionRun(db:any,cam:string,id:string):SessionRun{return sessionRunRow(db,db.prepare('SELECT * FROM session_run WHERE campaign_id=? AND id=?').get(cam,id));}
+export function readSessionRuns(db:any,cam:string,planId:string){return db.prepare('SELECT * FROM session_run WHERE campaign_id=? AND plan_id=? ORDER BY rowid DESC LIMIT 50').all(cam,planId).map((row:any)=>{const r=sessionRunRow(db,row);return{id:r.id,seed:r.seed,count:r.proposals.length};});}
+export function validateSessionRuns(db:any){
+ for(const name of ['session_run','session_proposal_acceptance'])if(!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(name))throw new Error('Spielabend-Vorschauspeicher fehlt.');
+ for(const row of db.prepare('SELECT * FROM session_run').iterate())sessionRunRow(db,row);
+}
 export function generateSession(db:any,cam:string,request:SessionGenerationRequest):SessionRun{return db.transaction(()=>{if(request.magicPool!==undefined&&request.compensateMagic!==true)throw new Error('Ein Gegenstandspool benötigt den magischen Beuteausgleich.');const p=profile(db,cam,request.planId);if(p.revision!==request.expectedProfileRevision)throw new Error('Planungsparty geändert.');if(!Number.isSafeInteger(request.count)||request.count<1||request.count>20||new Set(request.locationIds).size!==request.locationIds.length||new Set(request.noteIds).size!==request.noteIds.length||request.locationIds.length>request.count)throw new Error('Die gewählten Orte benötigen mindestens ebenso viele Szenen.');const party=assessEncounter(p.party,[]);if(!party.partySize||party.unknownLevels)throw new Error('Die Generierung benötigt eine bekannte Planungsparty.');const fraction=exactWeight(p.adventureDayFraction),[numerator,denominator]=integerWeights([fraction,'1']),dayBudget=p.party.reduce((n,c)=>n+dailyXp[c.level!-1]!*c.count,0),budget=Number(BigInt(dayBudget)*numerator!/denominator!);if(budget<=0)throw new Error('Adventure Day benötigt ein positives XP-Budget.');const locations=request.locationIds.map(id=>({id,document:availableLocation(db,cam,id)})),notes=[...new Set([...request.noteIds,...(request.encounter.factionIds??[])])].map(id=>note(db,cam,id));
  const required=requiredGenerationNpcs(db,cam,{...request.encounter,party:p.party,seed:p.seed,count:request.count,title:''}),assignments=Array.from({length:request.count},()=>[] as string[]);for(const [i,n]of required.entries()){const scene=locations.length?locations.findIndex(l=>l.id===n.locationId):i%request.count;if(scene<0)throw new Error(n.name+': wähle den tatsächlichen NPC-Ort für diesen Spielabend.');assignments[scene]!.push(n.id);}
  const perLocation=(request.worldSourcesByLocation===true||request.encounter.npcOnly===true||request.encounter.includeNpcs===true)&&locations.length>0,individual=perLocation||required.length>0,generated=individual?null:generateEncounters(db,cam,{...request.encounter,party:p.party,seed:p.seed,count:request.count,title:'Spielabend-Begegnung',targetXp:Math.floor(budget/request.count)});
@@ -90,7 +160,7 @@ export function executeSession(db:any,command:SessionCommand,guard:()=>void,publ
   if(a.kind==='reject-proposal'){if(typeof a.rejected!=='boolean')throw new Error('Vorschlagsstatus prüfen.');p.rejected=a.rejected;p.revision=(p.revision??1)+1;}else{
   if(typeof a.title!=='string'||!a.title.trim()||a.title.length>1000||typeof a.notes!=='string'||a.notes.length>2000000||typeof a.readAloud!=='string'||a.readAloud.length>2000000||!Array.isArray(a.noteIds)||a.noteIds.length>1000)throw new Error('Vorschlag benötigt Titel und gültige Texte/Verweise.');
   if(a.locationId)availableLocation(db,cam,a.locationId);for(const id of a.noteIds)note(db,cam,id);
-  let reward=null;if(a.reward){if(!Number.isSafeInteger(a.reward.poolXp)||a.reward.poolXp<0||!Array.isArray(a.reward.items)||a.reward.items.length>1000)throw new Error('Belohnung prüfen.');for(const item of a.reward.items)validateItemInput(db,item);reward=structuredClone(a.reward);}
+  let reward=null;if(a.reward!=null){checkedSessionReward(a.reward);for(const item of a.reward.items)validateItemInput(db,item);reward=structuredClone(a.reward);}
   Object.assign(p,{title:a.title,notes:a.notes,readAloud:a.readAloud,locationId:a.locationId,noteIds:[...new Set(a.noteIds)],reward,rewardEdited:p.rewardEdited||json(p.reward??null)!==json(reward),needsEncounterRefresh:p.needsEncounterRefresh||!!run.worldSourcesByLocation&&p.locationId!==a.locationId,revision:(p.revision??1)+1});
   }
   const payload=json(run);db.prepare('UPDATE session_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),cam,run.id);
@@ -107,7 +177,7 @@ export function executeSession(db:any,command:SessionCommand,guard:()=>void,publ
   for(const proposal of proposals){
    if(proposal.rejected)throw new Error('Verworfenen Vorschlag vor Übernahme wiederherstellen.');
    if(proposal.needsEncounterRefresh)throw new Error('Ort geändert: diese Begegnung vor der Übernahme neu erzeugen.');
-   const source=readGenerationRun(db,cam,proposal.encounter.generationOrigin?.runId??run.generationRunId);assertGenerationSourcesCurrent(db,cam,source);
+   const source=readGenerationRun(db,cam,proposal.encounter.generationOrigin?.runId??run.generationRunId);assertGenerationSourcesCurrent(db,cam,source);assertSessionRewardBasisCurrent(db,cam,profile(db,cam,planId),run,proposal);
   }
   const additions=proposals.map(proposal=>({proposal,visitId:campaignLocalId(randomUUID())}));
   if(additions.length)publish({...plan,scenes:[...plan.scenes,...additions.map(({proposal,visitId})=>({id:visitId,title:proposal.title,notes:proposal.notes,locationId:proposal.locationId?campaignLocalId(proposal.locationId):null}))]},plan.revision);
@@ -120,7 +190,7 @@ export function executeSession(db:any,command:SessionCommand,guard:()=>void,publ
  }else{const visitId=a.kind==='visit'?a.detail.visitId:a.visitId,d=detail(db,cam,planId,visitId);if(a.kind==='visit'?d.revision!==a.expectedRevision:d.revision!==a.expectedVisitRevision)throw new Error('Besuchsinhalte geändert.');
   if(a.kind==='visit'){if(typeof a.detail.readAloud!=='string'||a.detail.readAloud.length>2000000||!Array.isArray(a.detail.noteIds))throw new Error('Ungültige Besuchsinhalte.');for(const id of a.detail.noteIds)note(db,cam,id);d.readAloud=a.detail.readAloud;d.noteIds=[...new Set(a.detail.noteIds)];if(d.reward?.placedTreasureId||d.reward?.awarded){if(json(d.reward)!==json(a.detail.reward))throw new Error('Platzierte oder vergebene Belohnung über ihren bestehenden Beuteeintrag bearbeiten.');}else if(a.detail.reward){if(!Number.isSafeInteger(a.detail.reward.poolXp)||a.detail.reward.poolXp<0||!Array.isArray(a.detail.reward.items))throw new Error('Ungültige Belohnung.');d.reward={...structuredClone(a.detail.reward),id:d.reward?.id??randomUUID(),placedTreasureId:null,awarded:false};}else d.reward=null;
   }else if(a.kind==='attach'){const source=readEncounterPlan(db,cam,a.encounterId);if(source.revision!==a.expectedEncounterRevision)throw new Error('Encounter-Vorlage geändert.');d.groupIds.push(newGroup(db,cam,source,planId,visitId).id);
-  }else if(a.kind==='detach'){d.groupIds=d.groupIds.filter(id=>id!==a.groupId);db.prepare('DELETE FROM prepared_group WHERE campaign_id=? AND id=? AND draft_plan_id=? AND draft_visit_id=? AND location_id IS NULL').run(cam,a.groupId,planId,visitId);
+  }else if(a.kind==='detach'){d.groupIds=d.groupIds.filter(id=>id!==a.groupId);releaseVisitGroups(db,cam,planId,visitId,a.groupId);
   }else if(a.kind==='place-reward'){availableLocation(db,cam,a.locationId,a.expectedLocationRevision);if(!d.reward?.items.length)throw new Error('Keine vorbereitete Beute.');if(!d.reward.placedTreasureId)d.reward.placedTreasureId=makeTreasure(db,cam,readPlan(db,cam,planId).scenes.find(s=>s.id===visitId)!.title+' · Beute',null,null,d.reward.items,a.locationId);
   }else if(a.kind==='award-reward'){if(!d.reward)throw new Error('Keine vorbereitete Belohnung.');if(d.reward.awarded)throw new Error('Diese Besuchsbelohnung wurde bereits vergeben.');if(a.noXp&&a.recipients.length||!a.noXp&&!a.recipients.length)throw new Error('XP-Empfänger oder ausdrücklich keine XP wählen.');awardXpPool(db,cam,a.noXp?0:d.reward.poolXp,a.recipients,'visit',d.reward.id);if(d.reward.items.length&&!d.reward.placedTreasureId)d.reward.placedTreasureId=makeTreasure(db,cam,readPlan(db,cam,planId).scenes.find(s=>s.id===visitId)!.title+' · Belohnung',null,null,d.reward.items);d.reward.awarded=true;
   }else throw new Error('Unbekannte Besuchsaktion.');saveDetail(db,cam,planId,d);}}

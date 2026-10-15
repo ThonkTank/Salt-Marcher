@@ -41,7 +41,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
    const g=session.groups.find(g=>g.id===id);if(!g){warnings.push('Begegnung '+id+' fehlt.');continue;}
    const assessment=assessEncounter(session.profile.party,g.plan.entries.map(e=>({xp:g.plan.sources.find(c=>c.id===e.creatureId)?.xp,count:e.count})));
    const text=[g.notes, 'Status: '+(g.locationId?'am Ort platziert':'vorbereitet, noch nicht platziert'), 'XP '+assessment.baseXp+' · gewichtet '+assessment.adjustedXp+' · '+(assessment.difficulty??'keine bewertbare Planungsparty'),...g.plan.entries.map(e=>encounterEntryLabel(e,g.plan.sources)),...g.actors.map(a=>a.name+': HP '+a.hp+'/'+a.maxHp+(a.tempHp?' + '+a.tempHp+' temporär':'')+(a.conditions?' · '+a.conditions:'')+(a.defeated?' · besiegt':'')+(a.unavailable?' · nicht verfügbar':''))].filter(Boolean).join('\n');
-   blocks.push({heading:'Begegnung: '+g.title,text,kind:'encounter',action:{kind:'encounter',groupId:g.id}});
+   blocks.push({heading:'Begegnung: '+g.title,text,kind:'encounter',action:{kind:'encounter',groupId:g.id,groupRevision:g.revision}});
    for(const a of g.actors)noteIds.add(a.id);
    for(const c of g.plan.sources){
     if(!g.plan.entries.some(e=>e.creatureId===c.id))continue;

@@ -127,8 +127,6 @@ else {
     handle('campaign:execute-scene-check',(command:SceneCheckCommand)=>store.executeSceneCheck(command));
     handle('campaign:location-materials',(token:string,q:import('../src/app/location-notebook-contracts').LocationMaterialsQuery)=>store.locationMaterials(token,q));
     handle('campaign:world-links',(token:string,q:import('../src/app/world-links-contracts').WorldLinksQuery)=>store.worldLinks(token,q));
-    handle('campaign:change-preparation-content',(command:PreparationCommand)=>store.changePreparationContent(command));
-    handle('campaign:reconcile-preparation-content',(command:PreparationCommand,token:string)=>store.reconcilePreparationContent(command,token));
     handle('campaign:npc-cast',(token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>store.npcCast(token,q));
     handle('campaign:npc-places',(token:string,id:string,offset:number)=>store.npcPlaces(token,id,offset));
     handle('campaign:npc-dossier',(token:string,sceneId:string,id:string)=>store.npcDossier(token,sceneId,id));
@@ -138,6 +136,7 @@ else {
     handle('campaign:discard-npc-draft',(token:string,id:string,writeId:string)=>store.discardNpcDraft(token,id,writeId));
     handle('campaign:npcs',(token:string,q:NpcQuery)=>store.npcs(token,q));
     handle('campaign:npc',(token:string,id:string)=>store.npc(token,id));
+    handle('campaign:reconcile-npc',(c:NpcCommand,token:string)=>store.reconcileNpc(c,token));
     handle('campaign:execute-npc',(c:NpcCommand)=>store.executeNpc(c));
     handle('campaign:generation-sources', (token:string)=>store.generationSources(token));
     handle('campaign:encounter-tables', (token: string, trashed: boolean) => store.encounterTables(token,trashed));

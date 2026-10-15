@@ -1,6 +1,6 @@
 import {npcRecord} from './npc-record';
 import {npcPosition} from './npc-world';
-import {publishCombatHealth,syncOpenMaskHealth,removePartyFromMasks} from './mask-health';
+import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
 import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';
 import { randomUUID, randomInt, createHash } from 'node:crypto';
@@ -34,7 +34,6 @@ export function installCombatSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS combat(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scene_id TEXT NOT NULL, ordinal INTEGER NOT NULL, revision INTEGER NOT NULL, phase TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
     DROP INDEX IF EXISTS combat_active_scene;
     CREATE INDEX IF NOT EXISTS combat_scene_masks ON combat(campaign_id,scene_id,phase,ordinal);
-
     CREATE TABLE IF NOT EXISTS combat_undo(campaign_id TEXT NOT NULL, combat_id TEXT NOT NULL, ordinal INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,combat_id,ordinal), FOREIGN KEY(campaign_id,combat_id) REFERENCES combat(campaign_id,id)) STRICT;
     CREATE TABLE IF NOT EXISTS combat_receipt(command_id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL REFERENCES campaign(id), fingerprint TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL) STRICT;`);
 }
@@ -45,8 +44,6 @@ function decode(row: any): CombatState {
   return state;
 }
 export function activeCombat(db:any,campaignId:string,sceneId:string):CombatState|null{const row=db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY ordinal DESC LIMIT 1").get(campaignId,sceneId);return row?decode(row):null;}
-export function reconcileCombatParticipants(db:any,cam:string,ids:string[],commandId:string,retiredScenes:Set<string>=new Set()){removePartyFromMasks(db,cam,ids,commandId,retiredScenes);}
-
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));
@@ -98,7 +95,7 @@ function priorPartyParticipant(db:any,cam:string,state:CombatState,characterId:s
 export function readCombat(db: any, campaignId: string, sceneId: string, id?: string): CombatView {
   return db.transaction(() => {
     readLiveScene(db, campaignId, sceneId);
-    const row = id ? db.prepare('SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND id=?').get(campaignId, sceneId, id) : db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase!='finished' DESC,ordinal DESC LIMIT 1").get(campaignId, sceneId);
+    const row = id ? db.prepare('SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND id=?').get(campaignId, sceneId, id) : db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase IN('preparing','running') DESC,ordinal DESC LIMIT 1").get(campaignId, sceneId);
     if (id && !row) throw new Error('Kampf nicht gefunden.');
     const combat=row?decode(row):null;
     const partyCandidates=combat&&['preparing','running'].includes(combat.phase)?readLive(db,campaignId).roster.filter(c=>c.active&&c.sceneId===sceneId&&!combat.participants.some(p=>p.characterId===c.id)).map(c=>{const p=readProgressCharacter(db,campaignId,c.id);return {characterId:c.id,name:c.profile.name,membershipRevision:c.membershipRevision,progressRevision:p.revision,health:p.health};}):[];
@@ -132,7 +129,6 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
     if (a.kind === 'create') {
       const scene = readLiveScene(db, cam, a.sceneId);
       if (scene.retired || scene.membershipRevision !== a.expectedMembershipRevision) throw new Error('Gruppe geändert. Bitte aktualisieren.');
-
       const party = a.includeParty ? readLive(db, cam).roster.filter(c => c.active && c.sceneId === scene.id) : [];
       // Conditions and temporary HP remain usable when players keep their own HP.
       // Read only validated history and stop once every unknown-health PC is found.

@@ -1,6 +1,6 @@
 # Actor Autonomy: bestätigte Zeit und persistente Grundlage
 
-Stand: 14.10.2026. Dieser Fachplan konkretisiert [SMR-09](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-09--actor-autonomy), die [Produktziele](../../PRODUCT.md), den [vollständigen Produktumfang](../../SCOPE.md), die [Lieferfolge](../../ROADMAP.md), den [Live-/Scenevertrag](smr03-live-scene-contract.md) und die [festgeschriebene Originalanforderung](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/autonomy/requirements/requirements-actor-autonomy.md).
+Stand: 14.10.2026. Dieser Fachplan konkretisiert [SMR-09](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-09--actor-autonomy), den [Produktumfang](../../SCOPE.md) und den [Live-/Scenevertrag](smr03-live-scene-contract.md).
 
 ## Nutzerablauf und Grenze
 
@@ -14,19 +14,6 @@ für eine GM-Entscheidung.
 Autonomy trifft keine Party- oder Erzählentscheidung, läuft nicht anhand der
 Wall-clock und erzeugt oder löscht keine Autoreninhalte. Konfliktschaden und
 Fallenreset bleiben ausdrücklich freigegebene, begrenzte Owneroperationen.
-
-## Abdeckung und verbleibende Produktlücken
-
-| Originalanforderung | Aktueller Nachweis | Verbleibende Abnahme |
-| --- | --- | --- |
-| Opt-in für bestehende NPCs/Monster und Gruppen; Identität bleibt erhalten | Einzelaktivierung und revisionsgeschützte Aktivierung aller aktuellen Mitglieder einer bestehenden vorbereiteten Gruppe verwenden dieselben Actor-IDs. Aktivierung und Deaktivierung loggen Gruppen-ID und -Revision; Deaktivierung beendet laufende Arbeit und zukünftige Buchungen. | Gemeinsames Job-/Reiseverhalten sowie konfiguriertes Split und Merge fehlen. Der Sessionowner bietet dafür noch keine atomare Mitgliedschaftsoperation an. |
-| Bedürfnisse, Rollen, erreichbare Jobs, Routen sowie exklusive Reservierungen und Zeitbuchungen | Needs und Prioritäten, Rollenfilter, World-/Dungeonpfade, Reservierungen und überlappungsfreie Buchungen liegen im produktiven Store. | Eine längere Campaignmessung muss noch zeigen, wie Intervall-, Buchungs- und Bewegungsdaten wiederholt wachsen. |
-| Erklärbare deterministische Auswahl und stabiler Gleichstand | Jeder Jobwechsel loggt Grundpriorität, NPC-Bonus, konkrete Needbeiträge, bis zu sechs zulässige Kandidaten, bis zu sechs Ablehnungen, Restzähler und den Job-ID-Tie-break. Die Oberfläche zeigt diese Fakten aufklappbar. | Die native Tastatur-/Screenreaderprüfung der aufklappbaren Fakten bleibt offen. Die vollständige Kandidatenauswertung wird vertragsgemäß nicht dauerhaft gespeichert. |
-| Einfache, vom referenzierten Feature angebotene Interaktion über dessen Owner | Der konkrete Trap-Owner bietet den atomaren, geloggten Resetjob an. | Ein allgemeiner Vertrag für weitere einfache Featureinteraktionen fehlt; er darf erst mit einem echten Featureowner ergänzt werden. |
-| Begrenzter Nicht-Party-Konflikt mit geloggten Inputs, Würfen, Folgen und Schutzgrenzen | Angriff, Abwehr, Wurf, HP-Grenze und Schaden werden über den Actor-/HP-Owner atomar angewandt und kompakt geloggt; Partygefahr und Konzentration pausieren vorher. | Position/Flucht, Gefangenschaft, Verletzung/Tod, Ressourcenverbrauch und Besitztransfer sind noch nicht als freigegebene Owneroperationen modelliert. |
-| Ausschließlich bestätigte Campaignzeit, atomare Steps, Pause/Cancel/Override und genau einmaliges Catch-up | Scenezeit erzeugt eingefrorene Intervalle; Cursor, Ownerwirkungen, Buchungen, Logs und Receipts committen gemeinsam. Pendingentscheidungen verlangen eine Begründung und überleben Fresh. | Abbruch vor Commit und lange Begründungen müssen noch nativ bedient werden; ein Hardcrashbeleg steht ebenfalls aus. |
-| Partygefahr vor Wirkung und passender GM-Kontext | World- und Dungeonwahrnehmung pausieren vor Bewegung, Reset oder Konflikt; die Actor-Karte verlinkt in den Scene-/Dungeonkontext. | Kamerafreiheit und unabhängige Reads während eines längeren Catch-ups sind noch nativ zu qualifizieren. |
-| 200 Actors, p95 höchstens zwei Sekunden und sichtbarer Fortschritt binnen 100 ms | Minimal- und räumliche 200-Actor-Baseline liegen lokal unter zwei Sekunden p95; der DOM-Beleg setzt den Fortschritt vor dem ersten Await. | Native Progress-, Cancel- und Kameraabnahme sowie eine längere räumliche Wachstumsmessung bleiben offen. |
 
 ## Persistierter Vertrag
 
@@ -57,11 +44,17 @@ Campaign-Kopien remappen kampagnenlokale Identitäten. Der fachliche Logwert
 `intervalId: "manual"` bleibt dabei in SQL und Payload unverändert; Actor- und
 Campaignowner werden remappt.
 
-Eine vorbereitete Gruppe bleibt Owner ihrer ID, Revision und aktuellen
-Mitglieder. Gruppen-Opt-in akzeptiert deshalb nur die vom GM gesehene Revision
-und protokolliert diese Identität je betroffenem Actor. Das erzeugt noch keine
-zweite Autonomy-Gruppe: Bis der Sessionowner atomare Mitgliedschaftsänderungen
-anbietet, bleiben gemeinsame Reise sowie Split und Merge ausdrücklich offen.
+Einzel-/Gruppen-Deaktivierung, manuelle Pause und ausdrücklicher Jobabbruch
+geben zukünftige exklusive Buchungen an der bestätigten Actorzeit frei. Bereits
+ausgeführte Buchungsteile bleiben erhalten; nur Jobabbruch verwirft den
+Jobfortschritt. Wiederaufnahme bucht den verbleibenden Zeitraum für Job und Ziel
+neu. Ein belegtes Ziel wird dabei nicht gewaltsam übernommen.
+
+Gruppen-Opt-in bindet zusätzlich die aktuelle Revision der vorbereiteten Gruppe
+und loggt ihre ID/Revision je Actor. Deaktivierung pausiert die automatische Arbeit
+und erhält den bestätigten Jobfortschritt; ausdrücklicher Jobabbruch bleibt eine
+eigene Aktion. Gemeinsame Gruppenreise, Split/Merge und weitere Konfliktfolgen
+brauchen noch atomare Operationen ihrer jeweiligen Owner.
 
 ## Begründete Pending-Entscheidung
 
@@ -71,96 +64,53 @@ diesen Zustand nicht nebenbei aufheben. Die Oberfläche zeigt den Abstand zwisch
 Actor- und Scenezeit aus den persistierten Entscheidungsfakten sowie den aktuellen
 World- und gegebenenfalls Dungeonstand. Fortsetzen mit diesem Worldstand und das
 Auslassen des Zeitraums verlangen beide eine Begründung; Auflösung und Begründung
-werden geloggt und bleiben nach Fresh nachvollziehbar.
+werden geloggt und bleiben nach Fresh nachvollziehbar. Wiederaufnahme endet an
+der bestätigten Scenezeit; spätere Intervalle bleiben ausstehend. Ist der Actor
+bereits weiter, darf Resume ihn nicht zurückrollen: der GM lässt den veralteten
+Zeitraum begründet aus.
 
-## Sichtbare Jobentscheidung
+## Lokale Belege und verbleibende Grenzen
 
-Die deterministische Wahl sortiert zulässige Jobs nach berechneter Priorität und
-bei Gleichstand nach stabiler Job-ID. Das Joblog zerlegt die Priorität in
-Grundwert, NPC-Bonus, aktivierte Needbeiträge und gegebenenfalls die ausdrückliche
-GM-Zuweisung. Rollen-, Reachability-, Reservierungs-, Zeit- und
-Zielbedingungen erscheinen als Ablehnungsgründe; Partygefahr bleibt eine eigene
-Pendingentscheidung. Pro Entscheidung werden
-höchstens sechs zulässige und sechs abgelehnte Jobs gespeichert; Restzähler
-machen die Begrenzung sichtbar. Damit bleibt die aktuelle Entscheidung prüfbar,
-ohne die vollständige Kandidatenauswertung als dauerhaft wachsende Historie
-anzuhängen.
+| Verhalten | Bestehende Prüfungen |
+| --- | --- |
+| Historische Jobs, Regeln, Positionen, Routen, Features und Dungeonstruktur; unveränderte Fakten und Backupschutz | `tests/core/autonomy-persistence-integrity.test.ts` |
+| Unabhängige Sceneuhren, begrenzte Fortsetzung, persistente Pause und begründete Auflösung nach Fresh | `tests/core/autonomy-scene-time-boundary.test.ts`, `tests/core/autonomy-time-conflict-ui.test.ts` |
+| Bewegung, Trap-Reset und Konfliktwirkung mit spätem Logfehler; vollständiger Rollback, Retry und Replay | `tests/core/autonomy-owner-atomicity.test.ts` |
+| Inaktive Zeit übersprungen, Standard-/Custom-Needs bei Kopie erhalten, Einzel-/Gruppenreservierungen freigegeben und neu gebucht; atomare Rasten | `tests/desktop-autonomy-disable-time.test.mjs` |
 
-## Lokaler Nachweis und Aussagegrenze
+Diese SQLite-/kontrollierten DOMbelege schließen weder alle Ownerwirkungen noch
+native Bedienung, echten Prozessabbruch, Cancel oder die Gesamtqualifikation.
+Historische Fakten bleiben erhalten; fehlende aktuelle Aktivität ist keine
+fehlende historische Identität. Defekte Daten werden erklärt, nicht still repariert.
 
-`tests/core/autonomy-persistence-integrity.test.ts` belegt korrekt neu gehashte
-Beschädigungen an historischen Jobs, Actorregeln, Positionen, Routen, Features,
-Dungeonreferenzen und Dungeon-Snapshots. Die Fälle prüfen Catch-up-Rollback,
-unveränderten früheren Backupbestand, Ablehnung eines neuen Backups, Fresh sowie
-eine gültige exklusive Ressourcenbuchung. Weitere Fälle prüfen Frontiers,
-Reservierungen, beide Buchungstypen, Logs, Receipts und Campaign-Remap.
+## 200-Actor-Baselines
 
-`tests/core/autonomy-scene-time-boundary.test.ts` belegt, dass automatischer
-Catch-up an der bestätigten Uhr der auslösenden Scene endet und ein bereits
-späterer Actorstand nicht zurückgerollt wird. Der Test belegt außerdem die
-persistente Pause, die Sperre alternativer Aufhebungswege und die begründete
-Auflösung nach einem Neustart. Ein zusätzlicher Fall belegt Needbeiträge,
-Rollen-Ablehnung und den stabilen Tie-break im begrenzten Joblog. Der
-Gruppenfall weist eine veraltete Revision ohne Teilwirkung ab und belegt nach
-Aktivierung die geloggte Gruppenidentität sowie nach Deaktivierung den
-abgebrochenen Job und die abgeschnittene Ressourcenbuchung.
-`tests/core/autonomy-time-conflict-ui.test.ts` prüft am vollständigen DOM die
-Zeit-/Worldinformationen, beide begründeten Entscheidungen und die sichtbare
-Kandidaten-/Ablehnungszusammenfassung.
+`npm run bench:autonomy` misst je 20 unabhängige Läufe mit 200 aktivierten Actors,
+15 Minuten bestätigter Zeit und höchstens zwölf Catch-up-Schritten je Actor.
+Die Minimalbaseline hat einen unplatzierten Guard-Job; die räumliche Baseline
+fünf erreichbare Guard-Angebote, einen Dungeon-Snapshot und höchstens etwa elf
+Meter Abstand zum Ziel. Der dokumentierte lokale Lauf vom 14.10.2026 ergab p95
+Capture/Catch-up samt View/separate View: 25,61/348,31/13,37 ms beziehungsweise
+38,65/1.094,55/16,90 ms. Höchster beobachteter Worker-RSS: 112.799.744 bzw.
+204.947.456 Bytes. Das qualifiziert diese Quellzustände, keine beliebige Last.
 
-`tests/core/autonomy-owner-atomicity.test.ts` lässt Dungeonbewegung,
-Fallenreset und begrenzten NPC-Konflikt jeweils erst nach einer Ownerwirkung an
-der folgenden Logschreibung scheitern. Der komplette SQLite-Stand bleibt dabei
-unverändert und ohne Receipt. Derselbe Command kann anschließend erfolgreich
-ausgeführt werden; sein Replay verändert Position, Featureladung, HP, Logs,
-Buchungen und Actorcursor nicht erneut. Diese SQLite- und DOM-Nachweise sind
-keine native Bedien-, Hardcrash-, Größen- oder vollständige Produktabnahme.
-
-## 200-Actor-Baseline
-
-`npm run bench:autonomy` erzeugt für je 20 unabhängige Läufe zwei validierte
-Quellzustände mit 200 aktivierten Actors, 15 Minuten bestätigter Zeit und
-höchstens zwölf Catch-up-Schritten je Actor. Die Minimalbaseline verwendet einen
-unplatzierten Guard-Job. Die räumliche Baseline verwendet fünf gleichzeitig
-erreichbare Guard-Angebote, einen Dungeon-Snapshot und Actors, die höchstens rund
-elf Meter vom Jobziel entfernt stehen. Die unabhängigen Prozesse verhindern,
-dass die Messung selbst wegen des vorgeschriebenen 512-MiB-Prozessbaumlimits alte
-V8-Heaps mehrerer Läufe ansammelt.
-
-Auf dem lokalen Linux-x64-Prüfrechner vom 14.10.2026 lagen die p95-Werte der
-Minimalbaseline bei 25,61 ms für Capture/Intervallbildung, 348,31 ms für den
-vollständigen Catch-up einschließlich Response-View und 13,37 ms für einen
-separaten View. Die räumliche Baseline benötigte 38,65 ms, 1.094,55 ms und
-16,90 ms. Die höchsten Worker-RSS-Werte betrugen 112.799.744 beziehungsweise
-204.947.456 Bytes.
-
-Die räumliche Gegenprobe deckte zunächst eine interne Vervielfachung auf: Jeder
-1,5-m-Routenpunkt publizierte eine eigene Spur und ein eigenes Geräusch. Ein
-atomarer Bewegungsabschnitt publiziert nun genau einen Trace und ein Signal; der
-Trace enthält weiterhin den vollständigen zurückgelegten Pfad. Dadurch sank der
-mediane SQLite-Seitenzuwachs der räumlichen Erstbewegung von 2.359.296 auf
-1.171.456 Bytes. Die Minimalbaseline belegt 344.064 Bytes; die historischen
-Intervallpayloads belegen 159.708 beziehungsweise 180.207 Bytes. Diese ersten
-Seitenzuwächse sind keine Langzeit-Wachstumsraten.
-
-Beide Baselines erfüllen die Zwei-Sekunden-p95-Grenze. Die Oberfläche setzt
-vor dem ersten asynchronen Command sofort einen Status im Live-Bereich und
-deaktiviert den Startknopf; der DOM-Gegenbeleg hält die Commandantwort offen und
-prüft diesen Zwischenzustand. Kamerafreiheit und unabhängige Reads sind damit
-noch nicht nativ qualifiziert.
+Ein atomarer Bewegungsabschnitt publiziert einen Trace mit vollständigem Pfad
+und ein Signal statt einer Publikation je 1,5-m-Routenpunkt. Der dokumentierte
+mediane SQLite-Seitenzuwachs der räumlichen Erstbewegung sank dadurch von
+2.359.296 auf 1.171.456 Bytes; der Minimalfall belegte 344.064 Bytes. Erstschritte
+sind keine Langzeit-Wachstumsrate. Der DOM-Test prüft sofortigen Status und einen
+gesperrten Startknopf bei offener Antwort, keine native Reaktionszeit.
 
 ## Nächste ausführbare Schritte
 
-1. Den Ablauf nativ auf Tastaturfokus, Kamerafreiheit, unabhängige Reads, lange
-   Begründungen und Abbruch eines
-   laufenden Catch-ups prüfen.
-2. Gemeinsame Gruppenreise erst nach einer atomaren Mitgliedschaftsoperation des
-   Sessionowners ergänzen. Diese Operation muss Split und Merge mit stabilen
-   Gruppen-/Actor-IDs, erwarteten Revisionen und eindeutigem Zielverband
-   veröffentlichen; Autonomy darf danach nur deren bestätigten Snapshot binden.
-   Bis dahin stattdessen genau eine weitere einfache Featureinteraktion über
-   einen bestehenden Owner liefern; keine parallele Simulationswahrheit anlegen.
-3. Die weiteren Konfliktfolgen erst implementieren, wenn Position, Zustand,
-   Ressourcen oder Besitz einen expliziten atomaren Ownerport anbieten.
-4. Wiederholtes räumliches Wachstum erst anhand einer realen längeren
-   Campaignzeit messen; den Erstschrittwert nicht als lineare Prognose verwenden.
+1. Mehractor-/Mehrowner-Rollback nach einer bereits abgeschlossenen Wirkung eines
+   anderen Actors prüfen; Logs, HP, Featureladung, Buchungen und Cursor gemeinsam
+   vergleichen. Historische Configänderung und Aktivierungsgrenzen mit ausstehenden
+   Intervallen sowie Fresh prüfen, ohne alte Geschichte neu zu berechnen.
+2. Lange manuelle Pause, vorübergehend belegtes Resumeziel und Positionsoverride
+   gegen beide Buchungstabellen prüfen. Alte Buchungsteile bleiben erhalten.
+3. Nativ Fokus, Rohwerte, A/B/A, Kamerafreiheit, unabhängige Reads, Begründungen,
+   Replyverlust und Cancel prüfen. Längeres räumliches Wachstum und Reaktionszeit
+   messen; nur belegte Engstellen ändern, keine zweite persistierte Simulation.
+
+Dossier, Gespräche und die Wiederaufnahme ungeklärter Profilübernahmen stehen im [NPC-Vertrag](../campaign/npc-dossiers.md).

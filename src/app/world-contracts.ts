@@ -15,7 +15,7 @@ export interface WeatherPhenomenon {id:string;revision:number;mapId:string;name:
 export interface ScenePosition extends Hex {revision:number;mapId:string|null;locationId:string|null;dungeon?:DungeonPose|null}
 export interface Journey {id:string;revision:number;sceneId:string;mapId:string;mapRevision:number;clockRevision:number;positionRevision:number;environmentBasis:string;actorIds:string[];membershipRevision:number;status:'active'|'paused'|'interrupted'|'arrived'|'ended';route:Hex[];nextIndex:number;paceKmh:number;factor:number;finalSeconds:number|null;plannedSeconds:number;segmentSeconds:number[];destinationLocationId:string|null;reason:string;createdAt:string;continuedFrom?:{id:string;revision:number;completedSteps:number}}
 export interface WorldView {calendar:FantasyCalendar;maps:AtlasMap[];places:AtlasPlace[];events:CalendarEvent[];phenomena:WeatherPhenomenon[]}
-export interface SceneWorld {scene:LiveScene;position:ScenePosition;date:string;weather:Weather|null;events:CalendarEvent[];notices:{id:string;text:string}[];journey:Journey|null;knowledge:{mapId:string;q:number;r:number}[];history:{id:string;text:string}[]}
+export interface SceneWorld {scene:LiveScene;position:ScenePosition;date:string;weather:Weather|null;weatherOverrideRevision:number|null;events:CalendarEvent[];notices:{id:string;text:string}[];journey:Journey|null;knowledge:{mapId:string;q:number;r:number}[];history:{id:string;text:string}[]}
 export interface TravelRequest {sceneId:string;destination:Hex;mapId:string;destinationLocationId:string|null;waypoints:Hex[];paceKmh:number;factor:number;finalSeconds:number|null;continuation?:{journeyId:string;expectedRevision:number}}
 export interface TravelStage {index:number;hex:Hex;seconds:number;arrival:string;placeName:string;terrain:Terrain;weather:Weather;interrupt:string}
 export interface TravelPreview {environmentBasis:string;request:TravelRequest;route:Hex[];distanceMeters:number;durationSeconds:number;segmentSeconds:number[];calendarRevision:number;mapRevision:number;clockRevision:number;positionRevision:number;membershipRevision:number;actorIds:string[];weather:Weather|null;departure:string;arrival:string;warnings:string[];stages:TravelStage[];events:{name:string;date:string;state:'active'|'upcoming'}[];continuation?:{journeyId:string;revision:number;completedSteps:number;previousRemainingSeconds:number}}
@@ -26,7 +26,7 @@ export type WorldAction=
  |{kind:'place';mapId:string;locationId:string;expectedRevision:number|null;hex:Hex}
  |{kind:'calendar-event';event:CalendarEvent;expectedRevision:number|null;basis?:import('./agenda-contracts').AgendaBasis}
  |{kind:'phenomenon';phenomenon:WeatherPhenomenon;expectedRevision:number|null}
- |{kind:'weather-override';sceneId:string;expectedClockRevision:number;weather:Weather|null}
+ |{kind:'weather-override';sceneId:string;expectedClockRevision:number;expectedOverrideRevision:number|null;weather:Weather|null}
  |{kind:'notice-dismiss';sceneId:string;id:string}
  |{kind:'reveal';sceneId:string;mapId:string;hex:Hex;expectedMembershipRevision:number}
  |{kind:'place-scene';sceneId:string;position:Omit<ScenePosition,'revision'>;expectedSceneRevision:number;expectedPositionRevision:number}

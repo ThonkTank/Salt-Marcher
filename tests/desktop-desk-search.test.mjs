@@ -49,3 +49,16 @@ test('a failed continuation retains its page cursor for an explicit retry',async
  const x=await fixture();try{x.query('Wald');x.submit();await until(()=>x.titles().length===40);const original=window.campaign.searchDesk;window.campaign.searchDesk=async()=>({ok:false,error:'Lesen unterbrochen'});x.el('desk-more').onclick();await until(()=>x.el('desk-search-status').textContent.includes('fehlgeschlagen'));assert.equal(x.titles().length,40);assert.equal(x.el('desk-more').hidden,false);assert.equal(x.el('desk-more').disabled,false);window.campaign.searchDesk=original;x.el('desk-more').onclick();await until(()=>x.titles().length===65);assert.equal(x.calls.at(-1).offset,40);assert.equal(new Set(x.titles()).size,65);
  }finally{x.cleanup();}
 });
+
+test('desk edits preserve exact GM prose and confirm under their original real-store revision',async()=>{
+ const x=await fixture();try{
+  const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
+  window.campaign.keepDeskDraft=async(token,d,expected)=>response(()=>x.store.keepDeskDraft(token,d,expected));
+  window.campaign.changePreparation=async command=>response(()=>x.store.changePreparation(command));
+  x.query('Hafen');x.submit();await until(()=>x.titles().length===40);x.el('desk-results').querySelector('button').onclick();await until(()=>!x.el('desk-editor').hidden);
+  const field=x.el('desk-fields').querySelector('[aria-label="GM-Notizen"]');field.value='  Authored notes\r\nDo not normalize.\r\n';field.oninput();
+  assert.equal(await x.ui.flushSceneDesk(),true);
+  const row=x.store.db.prepare("SELECT * FROM world_note WHERE campaign_id=? AND json_extract(payload,'$.title')='Hafen 00'").get(x.w.campaign.id),note=JSON.parse(row.payload);
+  assert.equal(row.revision,2);assert.equal(note.gmNotes,'  Authored notes\r\nDo not normalize.\r\n');assert.deepEqual(note.relations,[]);assert.equal(note.readAloud,'');assert.equal(x.store.preparationDraft(x.w.token,'note',row.id),null);
+ }finally{x.cleanup();}
+});

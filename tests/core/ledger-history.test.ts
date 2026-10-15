@@ -16,6 +16,7 @@ test('ledger stack compatibility binds definition revision and full provenance',
   assert.equal(ledgerStacksMatch(a,{...split,reference:{...split.reference,revision:2}}),false);
   assert.equal(ledgerStacksMatch(a,{...split,counterpartyReference:{shopId:'shop-b',owner:{kind:'npc',id:'npc-a'}}}),false);
   assert.equal(ledgerStacksMatch(a,{...split,reference:{...split.reference,historicalDefinitionId:'other'}}),false);
+  for(const key of ['rewardCreditId','sourceTreasureId','sourceTreasureItemId'])assert.equal(ledgerStacksMatch(a,{...split,[key]:'different-origin'}),false);
 });
 
 test('ledger inventory validates remapped history while projecting the chosen current definition',()=>{
@@ -31,4 +32,10 @@ test('ledger inventory validates remapped history while projecting the chosen cu
     for(const item of [ledger(),ledger({id:'ledger-bad',name:'Manipuliert'})]){const payload=JSON.stringify(item);db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?)').run('campaign',item.id,item.characterId,item.revision,payload,hash(payload));}
     const page=readLedgerInventory(db,'campaign',{characterId:'hero',after:null});assert.equal(page.items.length,1);assert.equal(page.items[0]!.name,'Importiertes Seil');assert.equal(page.items[0]!.currentName,'Lokales Seil');assert.deepEqual(page.problems.map(p=>p.id),['ledger-bad']);
   }finally{db.close();}
+});
+
+test('stack matching preserves reward credits and original treasure portions',()=>{
+ const original=ledger({origin:'award',rewardCreditId:'credit-a',sourceTreasureId:'treasure-a',sourceTreasureItemId:'portion-a'});
+ for(const change of [{rewardCreditId:'credit-b'},{sourceTreasureId:'treasure-b'},{sourceTreasureItemId:'portion-b'}])assert.equal(ledgerStacksMatch(original,{...original,...change}),false);
+ assert.equal(ledgerStacksMatch(original,{...original,id:'another-ledger',quantity:3}),true);
 });

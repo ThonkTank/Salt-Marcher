@@ -5,6 +5,7 @@ import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import {activateCity,initCity,openCity} from '../../src/app/city-ui';
 import type {CityOverview,CityView} from '../../src/app/city-contracts';
+import type {NpcQuery} from '../../src/app/npc-contracts';
 
 const wait=(ms=0)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
 async function until(check:()=>boolean){for(let i=0;i<30;i++){if(check())return;await wait(10);}assert.ok(check(),'expected city UI state');}
@@ -15,7 +16,7 @@ test('city people search clears stale actions, opens canonical relationships and
  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,DOMParser:window.DOMParser,Event:window.Event});
  for(const dialog of document.querySelectorAll('dialog')){Object.defineProperty(dialog,'open',{value:false,writable:true});(dialog as HTMLDialogElement).showModal=()=>{(dialog as HTMLDialogElement).open=true;};(dialog as HTMLDialogElement).close=()=>{(dialog as HTMLDialogElement).open=false;};}
  const people=[{id:'ada',name:'Ada',lifecycle:'active' as const,factionId:null,locationId:null},{id:'bert',name:'Bert',lifecycle:'active' as const,factionId:null,locationId:null}],view:CityView={header:{id:'city',revision:2,name:'Hafenstadt',locationId:'place',width:600,height:400,paper:'#e9dfc8',roof:'#9c604c'},units:[{id:'home',kind:'building',name:'Wohnhaus',protected:true,position:{x:100,y:100},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],households:[],jobs:[],rooms:[],interior:false}],canUndo:true,canRedo:false},overview:CityOverview={cities:[view.header],locations:[{id:'place',name:'Hafenstadt'}],assignedPeople:[]};
- window.campaign={cities:async()=>({ok:true as const,value:overview}),city:async()=>({ok:true as const,value:view}),npcs:async(_token,query)=>{const rows=people.filter(person=>!query.text||person.name.includes(query.text));return{ok:true as const,value:{rows,total:rows.length,next:null}};}} as unknown as typeof window.campaign;
+ window.campaign={cities:async()=>({ok:true as const,value:overview}),city:async()=>({ok:true as const,value:view}),npcs:async(_token:string,query:NpcQuery)=>{const rows=people.filter(person=>!query.text||person.name.includes(query.text));return{ok:true as const,value:{rows,total:rows.length,next:null}};}} as unknown as typeof window.campaign;
  try{
   const messages:string[]=[],relationships:string[]=[];initCity(message=>messages.push(message),id=>{relationships.push(id);});(document.getElementById('city-tool') as HTMLSelectElement).value='select';activateCity({token:'token',campaign:{id:'campaign'}} as any);await openCity();
   const hits=document.querySelectorAll('[data-city-unit="home"]'),hit=hits[hits.length-1] as SVGElement;assert.ok(hit);hit.dispatchEvent(new window.Event('click',{bubbles:true}));await wait(30);assert.equal(document.querySelectorAll('#city-people-results strong').length,2,messages.join(' | ')||document.getElementById('city-people-results')?.outerHTML);

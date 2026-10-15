@@ -35,13 +35,13 @@ function paint(){
  baseline=snapshot();
  for(const control of controls()){const v=edits.get(key(control));if(v===undefined)continue;if(control.type==='checkbox')(control as HTMLInputElement).checked=v as boolean;else control.value=v as string;}
  if(focusKey){const next=controls().find(c=>key(c)===focusKey);next?.focus();if(typeof selection==='number'&&next instanceof HTMLInputElement&&next.type!=='number')next.setSelectionRange(selection,selectionEnd??selection);}
- renderPlayer(el('player-preview'),view.frame,'campaign://app/player');el('player-state').textContent=view.frame.mode==='blank'?(view.frame.reason??'Anzeige leer.'):view.frame.mode==='map'?'Reisekarte der fokussierten Gruppe.':view.frame.mode==='combat'?'Öffentliche Initiative des laufenden Kampfes. Verborgene Gegner und geheime Werte bleiben bei der Spielleitung.':view.frame.mode==='chase'?'Öffentlicher Stand der laufenden Verfolgung. Verborgene Teilnehmer und GM-Notizen bleiben privat.':view.frame.mode==='scene'?'Gespeicherter Vorlesetext der fokussierten Scene. GM-Notizen werden nicht übertragen.':'Freigegebene Ansicht. Bildoverride und Ausblenden verändern keine Charakterkenntnis.';
+ renderPlayer(el('player-preview'),view.frame,'campaign://app/player');el('player-state').textContent=view.frame.mode==='blank'?(view.frame.reason??'Anzeige leer.'):view.frame.mode==='map'?'Reisekarte der fokussierten Gruppe.':'Freigegebene Ansicht. Bildoverride und Ausblenden verändern keine Charakterkenntnis.';
 }
 function publish(o:Owner,result:PlayerView,request:number){if(!owns(o)||request!==presentation||hasView(o)&&result.settings.revision<view!.settings.revision)return false;view=result;viewOwner=o;paint();return true;}
 async function reload(o:Owner){const request=++presentation,result=await window.campaign.playerView(o.token);if(!owns(o)||request!==presentation)return false;return publish(o,unwrap(result),request);}
 function closeControls(){generation++;presentation++;actions++;el<HTMLDialogElement>('player-dialog').close();}
 export function deactivatePlayer(){closeControls();view=null;viewOwner=null;baseline.clear();for(const id of ['player-art-title','player-public-label'])input(id).value='';for(const id of ['player-q','player-r'])input(id).value='0';}
-function settings(mode:PlayerSettings['mode'],blank:boolean):PlayerAction{return{kind:'settings',settings:{blank,mode,imageId:value('player-image')||null,title:value('player-title'),labels:input('player-labels').checked,light:value('player-light') as PlayerSettings['light'],displayId:value('player-screen')?Number(value('player-screen')):null,fullscreen:input('player-fullscreen').checked}};}
+function settings(mode:'follow'|'image',blank:boolean):PlayerAction{return{kind:'settings',settings:{blank,mode,imageId:value('player-image')||null,title:value('player-title'),labels:input('player-labels').checked,light:value('player-light') as PlayerSettings['light'],displayId:value('player-screen')?Number(value('player-screen')):null,fullscreen:input('player-fullscreen').checked}};}
 function submit(action:PlayerAction,openWindow=false){
  const o=owner();if(!o||!hasView(o))return;
  const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:view!.settings.revision,expectedFocusId:view!.focusId,expectedFocusRevision:view!.focusRevision,expectedFocusMembershipRevision:view!.focusMembershipRevision,expectedFocusLocationId:view!.focusLocationId,action},intent=++actions,request=++presentation;
@@ -52,7 +52,7 @@ function submit(action:PlayerAction,openWindow=false){
   if(owns(o)&&intent===actions)tell('Spieleranzeige aktualisiert.');
  });
 }
-export async function cuePlayer(mode:'follow'|'scene'|'blank',focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'|'focusLocationId'>|null):Promise<boolean>{
+export async function cuePlayer(mode:'follow'|'blank',focus:Pick<PlayerView,'focusId'|'focusRevision'|'focusMembershipRevision'|'focusLocationId'>|null):Promise<boolean>{
  const o=owner();if(!o)return false;const intent=++actions,request=++presentation;
  try{
   // Blanking only reduces disclosure and must not wait for unrelated preview reads.
@@ -77,7 +77,9 @@ export async function cuePlayerImage(kind:'location'|'npc'|'custom',subjectId:st
   if(!asset){
    const known=new Set(latest.assets.map(a=>a.id)),picked=unwrap(await window.campaign.pickPlayerArt(o.token,kind,subjectId,''));if(!picked)return false;
    if(!owns(o)||intent!==actions)return false;if(!sameFocus(picked))throw new Error('Fokussierte Gruppe geändert. Das gewählte Bild wurde gespeichert, aber noch nicht freigegeben.');
-   asset=picked.assets.find(a=>!known.has(a.id));latest=picked;
+   const added=picked.assets.filter(a=>!known.has(a.id)&&a.kind===kind&&a.subjectId===subjectId);
+   if(added.length!==1)throw new Error('Bildauswahl nicht eindeutig. Öffne die Spielersteuerung und wähle das gewünschte Bild.');
+   asset=added[0];latest=picked;
   }
   if(!asset)throw new Error('Bild konnte nicht für die Spieleranzeige vorbereitet werden.');
   const action:PlayerAction={kind:'settings',settings:{blank:false,mode:'image',imageId:asset.id,title:'',labels:latest.settings.labels,light:latest.settings.light,displayId:latest.settings.displayId,fullscreen:latest.settings.fullscreen}};
@@ -98,7 +100,7 @@ export function initPlayerUI(status:typeof tell,getContext:typeof context,flush:
   if(await reload(o)&&owns(o))el<HTMLDialogElement>('player-dialog').showModal();
  });};
  el('player-close-controls').onclick=closeControls;el<HTMLDialogElement>('player-dialog').oncancel=event=>{event.preventDefault();closeControls();};el('player-refresh').onclick=()=>run(owner(),reload);
- el('player-show-follow').onclick=()=>submit(settings('follow',false),true);el('player-show-scene').onclick=()=>submit(settings('scene',false),true);el('player-show-image').onclick=()=>submit(settings('image',false),true);el('player-blank').onclick=()=>submit({kind:'blank'});
+ el('player-show-follow').onclick=()=>submit(settings('follow',false),true);el('player-show-image').onclick=()=>submit(settings('image',false),true);el('player-blank').onclick=()=>submit({kind:'blank'});
  el('player-close-window').onclick=()=>{const o=owner();if(!o||!hasView(o))return;const intent=++actions;run(o,async o=>{unwrap(await window.campaign.playerWindow(o.token,false));if(owns(o)&&intent===actions)await reload(o);});};
  el('player-art-kind').onchange=subjectOptions;
  el('player-pick-art').onclick=()=>{

@@ -1,3 +1,4 @@
+import {visualPlayerFrame} from '../src/app/player-frame';
 import type {BrowserWindow,Rectangle} from 'electron';
 import type {PlayerFrame,PlayerSettings} from '../src/app/player-contracts';
 export interface PlayerDisplayState {owner:{id:string;token:string};settings:PlayerSettings;frame:PlayerFrame}
@@ -23,6 +24,7 @@ export class PlayerDisplay {
  private sameOwner(state:PlayerDisplayState,entry:Entry){return state.owner.id===entry.owner.id&&state.owner.token===entry.owner.token;}
  private emit(entry:Entry,frame:PlayerFrame){
   if(entry.window.isDestroyed())return;
+  frame=visualPlayerFrame(frame);
   const fingerprint=JSON.stringify(frame);if(fingerprint===entry.fingerprint)return;
   try{entry.window.webContents.send('player:frame-update',{generation:++this.generation,frame});entry.fingerprint=fingerprint;}
   catch(error){this.options.error(error);}
@@ -66,7 +68,7 @@ export class PlayerDisplay {
   }catch(error){if(this.active)this.retire(this.active);this.options.error(error);}
  }
  frame(){
-  try{const state=this.options.current();return{generation:++this.generation,frame:!this.stopped&&this.active&&!this.active.window.isDestroyed()&&state&&state.settings.windowOpen&&this.sameOwner(state,this.active)?state.frame:blank};}
+  try{const state=this.options.current();return{generation:++this.generation,frame:!this.stopped&&this.active&&!this.active.window.isDestroyed()&&state&&state.settings.windowOpen&&this.sameOwner(state,this.active)?visualPlayerFrame(state.frame):blank};}
   catch(error){this.options.error(error);return{generation:++this.generation,frame:blank};}
  }
  shutdown(){this.stopped=true;for(const entry of this.instances)this.retire(entry);}

@@ -1,6 +1,6 @@
 import type {Result} from './contracts';
 import type {DeskRef} from './scene-desk-contracts';
-export type SessionPacketAction={kind:'reference';ref:DeskRef}|{kind:'encounter';groupId:string}|{kind:'reward'};
+export type SessionPacketAction={kind:'reference';ref:DeskRef}|{kind:'encounter';groupId:string;groupRevision?:number}|{kind:'reward'};
 export interface SessionPacketBlock {heading:string;text:string;kind:'read-aloud'|'gm'|'reference'|'encounter'|'reward';action?:SessionPacketAction}
 export interface SessionPacketVisit {id:string;title:string;locationId:string|null;location:string|null;blocks:SessionPacketBlock[]}
 export interface SessionPacket {planId:string;planName:string;planRevision:number;campaignName:string;basis:string;party:string[];visits:SessionPacketVisit[];warnings:string[]}

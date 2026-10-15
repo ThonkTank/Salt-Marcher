@@ -19,6 +19,13 @@ test('saved and reset live moments cannot reappear in another context',()=>{
   book.reset();assert.equal(book.currentSceneId,null);assert.deepEqual(book.switchTo('scene-a',emptyLiveMomentDraft()).draft,emptyLiveMomentDraft());
 });
 
+test('an older acknowledgement clears only its identical cached moment',()=>{
+ const book=new LiveMomentDraftBook(),submitted={category:'narrative' as const,title:'Erster Moment',summary:'Alt',followUp:'' as const},newer={...submitted,title:'Weitere Eingabe'};
+ book.switchTo('a',emptyLiveMomentDraft());book.switchTo('b',submitted);book.saved('a',submitted);
+ assert.deepEqual(book.switchTo('a',emptyLiveMomentDraft()).draft,emptyLiveMomentDraft());
+ book.switchTo('b',newer);book.saved('a',submitted);assert.deepEqual(book.switchTo('a',emptyLiveMomentDraft()).draft,newer);
+});
+
 test('a confirmed moment clears only the unchanged draft for the same scene',()=>{
   const saved={category:'narrative' as const,title:'Siegel erkannt',summary:'Ada kennt das Zeichen.',followUp:'quest' as const};
   assert.equal(canClearSavedLiveMoment('scene-a','scene-a',saved,structuredClone(saved)),true);

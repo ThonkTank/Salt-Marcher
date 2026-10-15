@@ -11,15 +11,15 @@ import {readSessionPacket} from './session-packet';
 import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
-import {installNpcRecords} from './npc-record';
-import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft} from './npcs';
+import {installNpcRecords,validateNpcRecords} from './npc-record';
+import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc,validateNpcRecovery} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
-import {migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
-import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
-import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
-import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk} from './scene-desk';
-import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft} from './finish-drafts';
+import {removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
+import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft,validateGroups} from './groups';
+import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
+import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
+import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft,validateFinishDrafts} from './finish-drafts';
 import {installNarrative,readNarrative,saveNarrative,validateNarrativeState,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
 import {readPreparedGroup} from './session';
 import {installCombatDraftSchema,validateCombatDrafts,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
@@ -60,7 +60,7 @@ import {openSync as openSnapshot, readSync, closeSync as closeSnapshot} from 'no
 import type {ConflictChoice} from '../campaign-contracts';
 import {canonicalJson} from '../generation/canonical-json';
 import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicFavorites,readMusicSubject,executeMusic,saveMusicPosition,refreshMusicContext,ingestAudio,audioLibrarySnapshot,mergeAudioLibrary,audioFile,validateMusicBackup,audioMediaFiles} from './music';
-import type {AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
+import type {MusicView,AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
 import {installWorldSchema,readWorld,readSceneWorld,previewTravel,executeWorld,reconcileWorld,syncSceneWorld,inheritScenePosition,validateWorldBackup} from './world';
 import type {TravelRequest,WorldCommand} from '../world-contracts';
 import {installItemsSchema,readShop,readShops,sceneShops,executeItemShop,restockDue,validateItemsBackup} from './items';
@@ -81,7 +81,7 @@ import { checkedLocationDocument } from '../../features/location/location-schema
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, readArchivedRoster, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
-import { reconcileCombatParticipants, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
 
 
 import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
@@ -99,7 +99,7 @@ import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEnco
 import type { EncounterPlanCommand } from '../encounter-contracts';
 import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
-import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, scenePreparation, cleanSessionVisits } from './session';
+import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, validateSessionRuns, scenePreparation, cleanSessionVisits } from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
 const noteTitleOrder = new Intl.Collator('de', {numeric: true, sensitivity: 'base'});
@@ -330,7 +330,9 @@ export class CampaignStore {
   }
   private decodeLocation(row: Row, checksumError = 'Ortsprüfung fehlgeschlagen.') {
     if (hash(row.payload) !== row.checksum) throw new Error(checksumError);
-    return checkedLocationDocument(JSON.parse(row.payload));
+    const document=checkedLocationDocument(JSON.parse(row.payload));
+    if(document.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1)throw new Error("Ortszuordnung widersprüchlich.");
+    return document;
   }
   workspace(): Workspace {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspace());
@@ -422,8 +424,8 @@ export class CampaignStore {
     }).immediate();
     return this.workspace();
   }
-  private validateDatabase(db: any,validateExtensions=true) {
-    if(validateExtensions)validateExtensionSettings(db);
+  private validateDatabase(db: any) {
+    validateExtensionSettings(db);
     validateCapabilityBytes(db);
     if (db.pragma('integrity_check', { simple: true }) !== 'ok' || db.pragma('foreign_key_check').length) throw new Error('Wiederherstellungskopie ist strukturell beschädigt.');
     for (const row of db.prepare('SELECT * FROM room').iterate()) this.decode(row);
@@ -449,7 +451,7 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);validateNpcRecovery(db);
     validateItemsBackup(db);
     validateWorldBackup(db);
     validateCities(db);
@@ -458,7 +460,7 @@ export class CampaignStore {
     validateAutonomy(db);
     validateDrawing(db);
     validateMusicBackup(db);
-    validateGenerationBackup(db);
+    validateGenerationBackup(db);validateSessionRuns(db);
     for (const row of db.prepare('SELECT payload,checksum FROM live_receipt').iterate()) if (hash(row.payload) !== row.checksum) throw new Error('Beschädigtes Live-Commitreceipt im Backupkandidaten.');
     for (const row of db.prepare('SELECT * FROM source').iterate()) if (hash(row.bytes) !== row.checksum) throw new Error('Beschädigte Quellbytes im Backupkandidaten.');
     // Every stored payload envelope receives the same byte/JSON check.
@@ -475,13 +477,13 @@ export class CampaignStore {
       }
     }
   }
-  private async backupDatabase(filename:string,validateExtensions:boolean){
+  async backup(filename:string){
     const epoch=this.backupEpoch,candidate = filename + '.candidate-' + randomUUID();
     try {
       await this.db.backup(candidate);
       const db = new Database(candidate, { readonly: true, fileMustExist: true });
       try {
-        this.validateDatabase(db,validateExtensions);
+        this.validateDatabase(db);
       } finally { db.close(); }
       const fd = openSync(candidate, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
       if(epoch!==this.backupEpoch)throw new Error('Wiederherstellungskopie durch Löschung überholt.');
@@ -494,7 +496,6 @@ export class CampaignStore {
       for (const suffix of ['-wal', '-shm']) rmSync(candidate + suffix, { force: true });
     }
   }
-  async backup(filename:string){await this.backupDatabase(filename,true);}
   reconcile(edit: Edit, token = edit.token): { outcome: 'applied' | 'not-applied' | 'conflict'; targetChanged: boolean; workspace: Workspace } {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.reconcile(edit,token));
     return this.db.transaction(() => {
@@ -542,16 +543,17 @@ export class CampaignStore {
     })();
   }
   locationMaterials(token:string,q:import('../location-notebook-contracts').LocationMaterialsQuery){const cam=this.guard(token);return this.db.transaction(()=>readLocationMaterials(this.db,cam,q))();}
-  worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery){const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
-  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery){const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
-  npcPlaces(token:string,id:string,offset:number){const cam=this.guard(token);return this.db.transaction(()=>readNpcPlaces(this.db,cam,id,offset))();}
-  npcDossier(token:string,sceneId:string,id:string){const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
+  worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery):import('../world-links-contracts').WorldLinksPage{const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
+  npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
+  npcPlaces(token:string,id:string,offset:number):import('../npc-places-contracts').NpcPlaces{const cam=this.guard(token);return this.db.transaction(()=>readNpcPlaces(this.db,cam,id,offset))();}
+  npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}
   npcDraft(token:string,id:string){return npcDraft(this.db,this.guard(token),id);}
   keepNpcDraft(token:string,d:NpcDraft,expected:string|null){return keepNpcDraft(this.db,this.guard(token),d,expected);}
   discardNpcDraft(token:string,id:string,writeId:string){return discardNpcDraft(this.db,this.guard(token),id,writeId);}
   npcs(token:string,q:NpcQuery){return readNpcs(this.db,this.guard(token),q);}
   npc(token:string,id:string){return readNpc(this.db,this.guard(token),id);}
+  reconcileNpc(c:NpcCommand,token:string){return reconcileNpc(this.db,c,()=>{this.guard(token,c.campaignId);});}
   executeNpc(c:NpcCommand){return executeNpc(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   generationSources(token:string){return readWorldSources(this.db,this.guard(token));}
   sceneVisits(token:string,sceneId:string,after:string|null){return readSceneVisits(this.db,this.guard(token),sceneId,after);}
@@ -616,8 +618,8 @@ export class CampaignStore {
   keepNarrativeDraft(token:string,draft:import('../narrative-contracts').NarrativeDraft,expected:string|null){return keepNarrativeDraft(this.db,this.guard(token),draft,expected);}
   discardNarrativeDraft(token:string,id:string,writeId:string){return discardNarrativeDraft(this.db,this.guard(token),id,writeId);}
   narrativeJournal(token:string,query:import('../narrative-journal-contracts').NarrativeJournalQuery){return readNarrativeJournal(this.db,this.guard(token),query);}
-  narrative(token:string,id:string){return readNarrative(this.db,this.guard(token),id);}
-  adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest){return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
+  narrative(token:string,id:string){return this.db.transaction(()=>readNarrative(this.db,this.guard(token),id))();}
+  adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest):import('../adventuring-day-contracts').DayView{return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
   executeProgress(command: ProgressCommand) { return this.db.transaction(() => {
     this.guard(command.token,command.campaignId);
     const a=command.action,guard=()=>{this.guard(command.token,command.campaignId);};
@@ -675,14 +677,17 @@ export class CampaignStore {
   async campaignSnapshot(token:string,filename:string){
     const id=this.guard(token),fence=this.db.prepare('SELECT revision FROM campaign_lifecycle WHERE campaign_id=?').get(id).revision,candidate=filename+'.snapshot-'+randomUUID();
     try{
-      await this.backupDatabase(candidate,false);this.campaignFence(id,fence);
+      await this.db.backup(candidate);this.campaignFence(id,fence);
       const db=new Database(candidate,{fileMustExist:true});let snapshot;
       try{
         db.pragma('journal_mode=DELETE');pruneCampaignSnapshot(db,id);this.validateDatabase(db);
         const c:Pick<Campaign,'id'|'name'>=db.prepare('SELECT id,name FROM campaign').get();
         snapshot={...c,fence,schema:db.pragma('user_version',{simple:true}),counts:snapshotCounts(db),media:[...audioMediaFiles(db),...playerMediaFiles(db,id)]};
       }finally{db.close();}
-      this.campaignFence(id,fence);renameSync(candidate,filename);return snapshot;
+      const fd=openSync(candidate,'r');try{fsyncSync(fd);}finally{closeSync(fd);}
+      this.campaignFence(id,fence);renameSync(candidate,filename);
+      const directory=openSync(dirname(filename),'r');try{fsyncSync(directory);}finally{closeSync(directory);}
+      return snapshot;
     }finally{for(const suffix of ['','-wal','-shm'])rmSync(candidate+suffix,{force:true});}
   }
   private inspectCampaignDatabase(db:any){
@@ -718,7 +723,7 @@ export class CampaignStore {
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
       if([33,34,35,36,37,38,39,40,41,42,43].includes(c.schema)){installChaseSchema(source);installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=44');}
 
-      archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
+      installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }
@@ -738,7 +743,7 @@ export class CampaignStore {
   }
   audioAsset(id:string){return readAudioAsset(this.db,this.audioRoot,id);}
   musicFavorites(token:string,after:string|null){return this.db.transaction(()=>readMusicFavorites(this.db,this.audioRoot,this.guard(token),after))();}
-  music(token:string){return this.db.transaction(()=>readMusic(this.db,this.audioRoot,this.guard(token)))();}
+  music(token:string):MusicView{return this.db.transaction(()=>readMusic(this.db,this.audioRoot,this.guard(token)))();}
   musicSubject(token:string,kind:MusicSubject['kind'],id:string){return readMusicSubject(this.db,this.guard(token),kind,id);}
   executeMusic(command:MusicCommand){return executeMusic(this.db,this.audioRoot,command,()=>{this.guard(command.token,command.campaignId);});}
   musicPosition(token:string,playbackId:string,seconds:number){return saveMusicPosition(this.db,this.guard(token),playbackId,seconds);}
@@ -788,12 +793,12 @@ export class CampaignStore {
     const replay=!!this.db.prepare('SELECT 1 FROM live_receipt WHERE command_id=?').get(command.commandId);
     const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
     const ack = executeLive(this.db, command, () => {this.guard(command.token, command.campaignId);});
-    if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!,noteId=campaignLocalId(followUp.id),scene=ack.scene;if(!scene||scene.id!==a.sceneId)throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});const locationId=scene.locationId&&this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(command.campaignId,scene.locationId)?scene.locationId:null,state={noteId,revision:0,status:'open' as const,locationId,contributors:scene.members,poolXp:0,items:[],awardId:null};validateNarrativeState(this.db,command.campaignId,state);saveNarrative(this.db,command.campaignId,state);}
+    if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!,noteId=campaignLocalId(followUp.id),scene=ack.scene;if(!scene||scene.id!==a.sceneId)throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});const locationId=scene.locationId&&this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(command.campaignId,scene.locationId)?scene.locationId:null,state={noteId,revision:1,status:'open' as const,locationId,contributors:scene.members,poolXp:0,items:[],awardId:null};validateNarrativeState(this.db,command.campaignId,state);saveNarrative(this.db,command.campaignId,state);}
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){
       const a=command.action;
-      if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);reconcileCombatParticipants(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
+      if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'&&ack.session?.createdScene)inheritScenePosition(this.db,command.campaignId,a.sceneId,ack.session.createdScene.id);
       const sceneId=a.kind==='advance-clock'||a.kind==='scene-content'||a.kind==='apply-visit'?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
       if(sceneId)syncSceneWorld(this.db,command.campaignId,sceneId);
@@ -812,10 +817,7 @@ export class CampaignStore {
     });
     return manualPlan({ version: 1, id: row.id, revision: row.revision, name: row.name, scenes });
   }
-  changePreparation(command: PreparationCommand): Preparation {this.commitPreparation(command);return this.preparation(command.token);}
-  changePreparationContent(command:PreparationCommand){if(command.change.kind!=='note'&&command.change.kind!=='location')throw new Error('Gezielte Änderung benötigt Notiz oder Ort.');this.commitPreparation(command);const cam=this.guard(command.token);return deskContent(this.db,cam,command.change.kind==='note'?{kind:'note',id:command.change.note.id}:{kind:'location',id:command.change.document.id});}
-  reconcilePreparationContent(command:PreparationCommand,token:string){const cam=this.guard(token,command.campaignId),target=preparationTarget(command.change),r=this.db.prepare('SELECT * FROM receipt WHERE command_id=?').get(command.commandId),table=target.kind==='note'?'world_note':target.kind==='location'?'location':'plan',current=this.db.prepare(`SELECT revision FROM ${table} WHERE campaign_id=? AND id=?`).get(cam,target.id);if(r){if(r.campaign_id!==cam||!matchesReceipt(r,command))throw new Error('Änderungskennung anders verwendet.');return{outcome:'applied' as const,targetChanged:current?.revision!==r.revision};}const changed=(current?.revision??null)!==command.change.expectedRevision;return{outcome:changed?'conflict' as const:'not-applied' as const,targetChanged:changed};}
-  private commitPreparation(command: PreparationCommand): void {
+  changePreparation(command: PreparationCommand): Preparation {
     if (typeof command.commandId !== 'string' || !command.commandId) throw new Error('Änderungskennung fehlt.');
     const change = validatePreparation(command.change), fingerprint = commandFingerprint(command);
     this.db.transaction(() => {
@@ -896,6 +898,7 @@ export class CampaignStore {
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
       if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);
     }).immediate();
+    return this.preparation(command.token);
   }
   selectPreparation(token: string, selection: PreparationSelection): void {
     this.db.transaction(() => {
@@ -950,6 +953,7 @@ export class CampaignStore {
     return this.db.transaction(() => {
       const key = `tutorial:app:${this.applicationVersion}`, saved = this.db.prepare('SELECT value FROM settings WHERE key=?').get(key);
       const prior: TutorialRun | null = saved ? checkedTutorialRun(JSON.parse(saved.value), this.applicationVersion) : null;
+      if(prior&&prior.lessonRevision!==tutorialLessonRevision)this.db.prepare('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO NOTHING').run(key+':history:'+prior.runId,saved!.value);
       const run: TutorialRun = prior?.lessonRevision === tutorialLessonRevision ? prior : { version: this.applicationVersion, lessonRevision: tutorialLessonRevision, runId: randomUUID(), state: 'new' };
       if (state && run.state !== 'finished' && run.state !== 'skipped') run.state = state;
       this.db.prepare('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, json(run));

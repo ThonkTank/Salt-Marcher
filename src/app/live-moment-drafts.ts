@@ -24,5 +24,5 @@ export class LiveMomentDraftBook {
     this.currentSceneId=sceneId;
     return{changed:true,draft:sceneId?structuredClone(this.drafts.get(sceneId)??emptyLiveMomentDraft()):emptyLiveMomentDraft()};
   }
-  saved(sceneId:string){this.drafts.delete(sceneId);}
+  saved(sceneId:string,submitted?:LiveMomentDraft){const cached=this.drafts.get(sceneId);if(!submitted||cached&&JSON.stringify(cached)===JSON.stringify(submitted))this.drafts.delete(sceneId);}
 }

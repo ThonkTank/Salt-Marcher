@@ -1,5 +1,5 @@
 import {changeCharacterXp} from './party-xp-model';
-import {beginFinishDraft,resetFinishDraft,markFinishDraft,flushFinishDraft} from './finish-draft-ui';
+import {beginFinishDraft,resetFinishDraft,deactivateFinishDraft,markFinishDraft,flushFinishDraft} from './finish-draft-ui';
 import type {FinishOwner,RewardItemDraft} from './finish-draft-contracts';
 import {drawLedgerStacks} from './ledger-stack-ui';
 import {rewardItemsEditor} from './reward-items-ui';
@@ -7,7 +7,7 @@ import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,
 import type { Workspace, Result } from './contracts';
 import {formatInstant,advanceInstant,type LiveScene,type LiveView} from './live-contracts';
 import type { EncounterAssessment } from './encounter-contracts';
-import { deathSaveControls, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
+import { deathSaveControls, xpInput, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
@@ -15,11 +15,12 @@ let workspace: Workspace | null = null, live: LiveView | null = null, selected: 
 let contextBasis = '';
 let generation = 0, loadNumber = 0, pending: Promise<boolean> | null = null, selectedLedger: string | null = null;
 let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = null, ledger: LedgerPage = {items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'};
-let lootBalance:LootBalance|null=null;
+let lootBalance:LootBalance|null=null,balanceRead=0;
 let selectedTreasure: string | null = null;
 let ledgerRequest=0, treasureRequest=0;
 let ledgerDetailLoading=false, ledgerDetailError='', ledgerFormOwner:string|null=null;
 let ledgerDetailRequest=0, ledgerDetail: LedgerItem | null = null, ledgerLoaded=false;
+let finishRequest=0;
 let finishBasis: ProgressView | null = null;let finishItems:RewardItemDraft[]=[];
 let history: ProgressHistory = { items: [], next: null };
 let tell: (text: string, error?: boolean) => void,restSaved:((scene:LiveScene)=>void)|undefined;
@@ -39,7 +40,7 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
   const selectionChanged = characterId !== selected;
   const activationChanged = next?.token !== workspace?.token;
   if (selectionChanged || activationChanged) { ledgerDetailRequest++;ledgerRequest++;ledgerFormOwner=null;ledgerDetailLoading=false;ledgerDetailError=''; ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; ledgerDetail=null; selectedLedger=null; ledgerLoaded=false; }
-  if (next?.token !== workspace?.token) { generation++;pending=null; view = null;lootBalance=null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
+  if (next?.token !== workspace?.token) { deactivateFinishDraft();finishRequest++;generation++;pending=null; view = null;lootBalance=null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
   workspace = next; live = data; selected = characterId;updateCommitControls();
   get('reward-panel').hidden = !data; get('character-progression').hidden = !data || !selected;
   if(activationChanged)render();
@@ -125,8 +126,21 @@ function render() {
   renderLedger(); lock();
   renderLootBalance();
 }
-async function loadLootBalance(){if(workspace)lootBalance=unwrap(await window.campaign.lootBalance(workspace.token));}
-function renderLootBalance(){const root=get('loot-balance-list');root.replaceChildren();if(!lootBalance)return;for(const c of lootBalance.characters){const p=document.createElement('p');p.textContent=c.name+': '+gold(c.copper)+(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');if(lootBalance.suggestedCharacterIds.includes(c.characterId)){const strong=document.createElement('strong');strong.textContent='Für nächste wertbare Belohnung berücksichtigen: ';p.prepend(strong);}root.append(p);}}
+async function loadLootBalance(){
+ if(!workspace)return;const token=workspace.token,gen=generation,request=++balanceRead;
+ const result=await window.campaign.lootBalance(token);
+ if(gen!==generation||token!==workspace?.token||request!==balanceRead)return;
+ lootBalance=unwrap(result);
+}
+function renderLootBalance(){
+ const root=get('loot-balance-list');root.replaceChildren();if(!lootBalance)return;
+ const complete=lootBalance.characters.every(c=>!c.unknownEntries);
+ for(const c of lootBalance.characters){
+  const p=document.createElement('p');
+  p.textContent=c.name+': '+(c.unknownEntries?'Teilwert ':'')+gold(c.copper)+(complete?(c.gapCopper!=='0'?' · '+gold(c.gapCopper)+' hinter Spitze':' · Spitze'):' · Vergleich offen')+(c.unknownEntries?' · '+c.unknownEntries+' Wert'+(c.unknownEntries===1?'':'e')+' offen':'')+(!c.active?' · inaktiv':'');
+  if(complete&&lootBalance.suggestedCharacterIds.includes(c.characterId)){const strong=document.createElement('strong');strong.textContent='Nächste wertbare Belohnung: ';p.prepend(strong);}root.append(p);
+ }
+}
 function renderHealth(p: ProgressView['characters'][number] | undefined) {
   const key=healthKey(),draft=key?healthDrafts.get(key):undefined,h=p?.health,status=h??p?.lastCombatStatus;
   if(draft&&p&&!p.healthCombat&&draft.basis===JSON.stringify([p.health,p.lastCombatStatus]))draft.revision=p.revision;
@@ -145,7 +159,7 @@ function keepHealthDraft() {
 }
 function xpPreview() {
   const p = view?.characters.find(p=>p.characterId===selected); if (!p) return;
-  try { const amount = Number(value('xp-amount')); if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('Nichtnegative ganze XP eingeben.'); const changed=changeCharacterXp(p,value('xp-mode') as 'add'|'subtract'|'set',amount),next=changed.after.xp!; const level = xpLevel(next); get('xp-preview').textContent = 'Danach: ' + next + ' XP · Level ' + level.level + (value('xp-mode')==='subtract'?' · Abzug '+changed.removed+' XP; Rastzähler sinken bis mindestens 0.':' · Rastverbrauch bleibt erhalten.'); }
+  try { const amount = xpInput(value('xp-amount')); const changed=changeCharacterXp(p,value('xp-mode') as 'add'|'subtract'|'set',amount),next=changed.after.xp!; const level = xpLevel(next); get('xp-preview').textContent = 'Danach: ' + next + ' XP · Level ' + level.level + (value('xp-mode')==='subtract'?' · Abzug '+changed.removed+' XP':'')+' · Rastverbrauch bleibt erhalten.'; }
   catch (error) { get('xp-preview').textContent=(error as Error).message; }
 }
 function renderTreasure() {
@@ -234,10 +248,16 @@ async function loadHistory(more = false) {
 }
 function item(prefix: string): ItemInput { return { name:value(prefix+'-name'),quantity:Number(value(prefix+'-quantity')),valueGold:value(prefix+'-value'),category:value(prefix+'-category') as ItemCategory }; }
 export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:Workspace;poolXp?:number;items?:ItemInput[];owner:FinishOwner}) {
-  await resetFinishDraft();get<HTMLTextAreaElement>('combat-outcome').value='';const owner=options?.workspace??workspace;if(!owner)return; const gen=generation; const result=unwrap(await window.campaign.progress(owner.token));if(gen!==generation)return;
+  const request=++finishRequest,gen=generation,owner=options?.workspace??workspace;
+  if(!owner)return false;
+  const current=()=>request===finishRequest&&gen===generation;
+  if(!await resetFinishDraft()||!current())return false;
+  get<HTMLTextAreaElement>('combat-outcome').value='';
+  const result=unwrap(await window.campaign.progress(owner.token));if(!current())return false;
   finishBasis=result;const list=get('finish-recipients');list.replaceChildren();
   for(const c of result.characters){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=participantIds.includes(c.characterId);label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?'':' · inaktiv')+(c.xp===null?' · XP bislang unbekannt': ' · Level '+xpLevel(c.xp).level)));list.append(label);box.onchange=finishPreview;}
-  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=!!options?.items?.length;finishItems=(options?.items??[]).map(i=>({...i,quantity:String(i.quantity)}));drawFinishItems();if(options?.poolXp!==undefined){get<HTMLInputElement>('finish-no-xp').checked=options.poolXp===0;get<HTMLInputElement>('finish-xp').value=String(options.poolXp);get<HTMLInputElement>('finish-load').value='0';}finishPreview();if(options)await beginFinishDraft(owner,options.owner,()=>finishItems,items=>{finishItems=items;drawFinishItems();},finishPreview);
+  const known=assessment&&assessment.count>0&&!assessment.missingXp; get<HTMLInputElement>('finish-no-xp').checked=!known;get<HTMLInputElement>('finish-xp').value=String(known?assessment.baseXp:0);get<HTMLInputElement>('finish-load').value=String(known?assessment.adjustedXp:0);get<HTMLInputElement>('finish-has-loot').checked=!!options?.items?.length;finishItems=(options?.items??[]).map(i=>({...i,quantity:String(i.quantity)}));drawFinishItems();if(options?.poolXp!==undefined){get<HTMLInputElement>('finish-no-xp').checked=options.poolXp===0;get<HTMLInputElement>('finish-xp').value=String(options.poolXp);get<HTMLInputElement>('finish-load').value='0';}finishPreview();if(options&&!await beginFinishDraft(owner,options.owner,()=>finishItems,items=>{finishItems=items;drawFinishItems();},finishPreview))return false;
+  return current();
 }
 function drawFinishItems(){rewardItemsEditor(get('finish-item-list'),finishItems,()=>{finishPreview();markFinishDraft();},true);}
 function finishPreview() {
@@ -273,7 +293,7 @@ export function initProgress(status: typeof tell,onRestSaved?:(scene:LiveScene)=
   get('health-reload').onclick=()=>{const key=healthKey();if(key)healthDrafts.delete(key);void refreshProgress();};
   for(const operation of ['damage','heal'] as const)get('health-'+operation).onclick=()=>{const p=view?.characters.find(p=>p.characterId===selected),key=healthKey();if(!p||!key)return;if(healthDrafts.has(key)){tell('HP-Eingabe zuerst speichern.',true);return;}void execute({kind:'health',characterId:p.characterId,expectedRevision:p.revision,operation,amount:Number(value('health-amount')),reason:''});};
   get('xp-amount').oninput=xpPreview;get('xp-mode').onchange=xpPreview;
-  get('xp-form').onsubmit=event=>{event.preventDefault();const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'xp',characterId:p.characterId,expectedRevision:p.revision,mode:value('xp-mode') as 'add'|'subtract'|'set',amount:Number(value('xp-amount')),reason:value('xp-reason'),correctionOf:value('xp-correction-source')||undefined});};
+  get('xp-form').onsubmit=event=>{event.preventDefault();try{const p=view?.characters.find(p=>p.characterId===selected);if(p)void execute({kind:'xp',characterId:p.characterId,expectedRevision:p.revision,mode:value('xp-mode') as 'add'|'subtract'|'set',amount:xpInput(value('xp-amount')),reason:value('xp-reason'),correctionOf:value('xp-correction-source')||undefined});}catch(error){tell((error as Error).message,true);}};
   for(const rest of ['short','long'] as const)get('rest-'+rest).onclick=()=>{
     try{if(!workspace||!live?.scene||!view)throw new Error('Aktuellen Spieltisch laden.');const recipients=[...get('rest-members').querySelectorAll<HTMLInputElement>('input:checked')].map(b=>({characterId:b.value,revision:view!.characters.find(c=>c.characterId===b.value)!.revision})),restoreHp=rest==='long'&&get<HTMLInputElement>('rest-restore-hp').checked;
     if(restoreHp&&recipients.some(r=>healthDrafts.has(workspace!.campaign.id+':'+r.characterId)))throw new Error('Offene HP-Eingaben vor der Erholung speichern oder verwerfen.');

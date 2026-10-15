@@ -66,7 +66,7 @@ async function command(action:ChaseCommand['action'],ownerId=view?.chase?.id){
  busy=true;draw();
  try{if(!await cache.flush(campaignId))throw new Error('Verfolgungsentwurf zuerst sichern. Rohwerte bleiben offen.');if(!current())return;const saved=!creating&&c?cache.current(campaignId,c.id):null;if(saved)request.draftWriteId=saved.writeId;const result=checkedChaseView(await writeConfirmed('chase',request,()=>window.campaign.executeChase(request),current,{owner:'chase',token,sceneId,chaseId:request.chaseId,actionKind:action.kind}));if(!current())return;if(!result.chase||result.chase.sceneId!==sceneId||!creating&&result.chase.id!==c!.id){loadError='Buchungsantwort gehört zu einer anderen Verfolgung. Neu laden.';throw new Error(loadError);}
   if(creating){el<HTMLInputElement>('chase-title').value='Verfolgungsjagd';el<HTMLInputElement>('chase-goal').value='';clearWorkInput();}
-  acceptDraft(result);view=result;requestedId=result.chase.id;restoreWorkInput();if(action.kind==='finish'&&afterFinished)await afterFinished();tell('Verfolgung gespeichert.');
+  acceptDraft(result);view=result;requestedId=result.chase.id;restoreWorkInput();tell('Verfolgung gespeichert.');if(action.kind==='finish')void afterFinished?.();
  }catch(e){if(current())tell((e as Error).message,true);}finally{busy=false;draw();}
 }
 async function recovered(event:CommitResolution){
@@ -75,8 +75,8 @@ async function recovered(event:CommitResolution){
  if(!c||c.sceneId!==scene.id)return;
  const own=meta?.token===w.token&&meta.sceneId===scene.id&&(meta.chaseId===c.id||meta.actionKind==='create');
 
+ if(own&&meta.actionKind==='finish')void afterFinished?.();
  if(requestedId===c.id||own&&meta.actionKind==='create'&&!requestedId)await load(c.id);
-if(own&&meta.actionKind==='finish'&&afterFinished)await afterFinished();
 }
 function syncActions(){const c=view?.chase,blocked=pending()||!ready(),closed=blocked||!c||c.status!=='running',controls=chaseActionControls({title:val('chase-title'),participantName:val('chase-name'),participantCount:c?.participants.length??0,outcome:val('chase-outcome')});el<HTMLButtonElement>('chase-start').disabled=blocked||!!c&&c.status==='running'||!controls.start;el<HTMLButtonElement>('chase-party').disabled=closed||!sceneCharacters().length;el<HTMLButtonElement>('chase-add').disabled=closed||!controls.addParticipant||!speedValid();el<HTMLButtonElement>('chase-round').disabled=closed||!controls.advanceRound||!roundInputsValid();el<HTMLButtonElement>('chase-finish').disabled=closed||!controls.finish;}
 function draw(){

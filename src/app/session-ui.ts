@@ -1,5 +1,5 @@
+import {SessionReview,sameSessionReviewBasis,type SessionReviewBasis} from './session-review-ui';
 import {SessionCopy} from './session-copy-ui';
-import {SessionReview} from './session-review-ui';
 import {initSessionPacket,closePreparationPacket} from './session-packet-ui';
 import {magicPoolPicker} from './session-magic-pool-ui';
 import {requiredNpcPicker} from './required-npc-picker';
@@ -196,14 +196,18 @@ async function acceptProposal(source:SessionRun,index:number){
   run=accepted;renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
-async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[]){
- const owner=previewOwner(),request=previewRequest;if(!owner||run!==source)return false;
+function sessionReviewBasis():SessionReviewBasis|null{return workspace&&plan?{token:workspace.token,planId:plan.id,planRevision:plan.revision,request:previewRequest}:null;}
+async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[],reviewed:SessionReviewBasis){
+ const owner=previewOwner(),request=previewRequest;if(!owner||run!==source||!sameSessionReviewBasis(reviewed,sessionReviewBasis()))return false;
  try{
-  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source||!plan)return false;
-  const action:SessionAction={kind:'accept-proposals',planId:owner.planId,expectedPlanRevision:plan.revision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
+  if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source)return false;
+  if(!sameSessionReviewBasis(reviewed,sessionReviewBasis())){tell('Planstand nach dem Speichern geändert. Auswahl erneut prüfen.',true);return false;}
+  const action:SessionAction={kind:'accept-proposals',planId:reviewed.planId,expectedPlanRevision:reviewed.planRevision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
   if(!await execute(action))return false;
   if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
-  run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();
+  const accepted=unwrap(await window.campaign.sessionRun(owner.token,source.id));
+  if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
+  run=accepted;renderRun();
   tell(picks.length+' Szenen in die Timeline übernommen. Die Spielabendmappe ist bereit.');return true;
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);return false;}
 }
@@ -217,7 +221,7 @@ async function regenerateProposal(source:SessionRun,index:number){
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
 async function regenerateReward(source:SessionRun,index:number){const owner=previewOwner();if(!owner||run!==source)return;const request=++previewRequest;try{const next=unwrap(await window.campaign.regenerateSessionReward(owner.token,source.id,index,value('session-seed')+'|reward|'+crypto.randomUUID()));if(!ownsPreview(owner)||request!==previewRequest||run!==source)return;run=next;renderRun();}catch(e){if(ownsPreview(owner))tell((e as Error).message,true);}}
-async function rejectProposal(source:SessionRun,index:number){const owner=previewOwner(),p=source.proposals[index];if(!owner||run!==source||!p)return;if(await execute({kind:'reject-proposal',planId:owner.planId,runId:source.id,index,expectedRevision:p.revision??1,rejected:!p.rejected})&&ownsPreview(owner)){run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();}}
+async function rejectProposal(source:SessionRun,index:number){const owner=previewOwner(),p=source.proposals[index];if(!owner||run!==source||!p)return;const request=previewRequest;if(await execute({kind:'reject-proposal',planId:owner.planId,runId:source.id,index,expectedRevision:p.revision??1,rejected:!p.rejected})&&ownsPreview(owner)&&request===previewRequest&&run===source){const updated=unwrap(await window.campaign.sessionRun(owner.token,source.id));if(!ownsPreview(owner)||request!==previewRequest||run!==source)return;run=updated;renderRun();}}
 async function selectRun(){
  const owner=previewOwner(),id=value('session-history'),request=++previewRequest;
  run=null;renderRun();if(!owner||!id)return;
@@ -254,7 +258,7 @@ function renderRun(){
   regenerate.textContent='Nur diese Begegnung neu erzeugen';regenerate.disabled=!!p.acceptedVisitId;
   regenerate.onclick=()=>{void regenerateProposal(source,p.index);};
   const reward=document.createElement('p');reward.textContent=p.reward?'Belohnung: '+p.reward.poolXp+' Story-XP · '+p.reward.items.map(i=>i.quantity+' × '+i.name).join(', '):'Keine eigene Belohnung vorbereitet.';
-  const edit=document.createElement('button');edit.textContent='Inhalte und Belohnung bearbeiten…';edit.disabled=!!p.acceptedVisitId;edit.onclick=()=>{const owner=previewOwner();if(!owner||run!==source||!sources)return;openProposalEditor(p,sources,async value=>{if(!ownsPreview(owner)||run!==source)throw new Error('Vorschlagskontext geändert.');if(!await execute({kind:'edit-proposal',planId:owner.planId,runId:source.id,index:p.index,expectedRevision:p.revision??1,...value}))return false;run=unwrap(await window.campaign.sessionRun(owner.token,source.id));renderRun();return true;},()=>ownsPreview(owner)&&run===source);};
+  const edit=document.createElement('button');edit.textContent='Inhalte und Belohnung bearbeiten…';edit.disabled=!!p.acceptedVisitId;edit.onclick=()=>{const owner=previewOwner();if(!owner||run!==source||!sources)return;openProposalEditor(p,sources,async value=>{if(!ownsPreview(owner)||run!==source)throw new Error('Vorschlagskontext geändert.');if(!await execute({kind:'edit-proposal',planId:owner.planId,runId:source.id,index:p.index,expectedRevision:p.revision??1,...value})||!ownsPreview(owner)||run!==source)return false;const updated=unwrap(await window.campaign.sessionRun(owner.token,source.id));if(!ownsPreview(owner)||run!==source)return false;run=updated;renderRun();return true;},()=>ownsPreview(owner)&&run===source);};
   const loot=document.createElement('button');loot.textContent='Nur Beute neu erzeugen';loot.disabled=!!p.acceptedVisitId||(!p.rewardOrigin&&!source.lootGuidance);loot.onclick=()=>{void regenerateReward(source,p.index);};
   const reject=document.createElement('button');reject.textContent=p.rejected?'Vorschlag wiederherstellen':'Vorschlag verwerfen';reject.disabled=!!p.acceptedVisitId;reject.onclick=()=>{void rejectProposal(source,p.index);};
   card.append(title,text,encounter,reward,edit,accept,regenerate,loot,reject);if(!p.rewardEdited)for(const warning of p.rewardWarnings??[]){const message=document.createElement('p');message.textContent=warning;card.append(message);}if(p.needsEncounterRefresh){const warning=document.createElement('p');warning.textContent='Ort geändert: Begegnung neu erzeugen, damit die Ortsquellen gelten.';card.append(warning);}proposalReview.decorate(card,p,sources);root.append(card);
@@ -336,7 +340,7 @@ export async function clearSessionTimeline(){
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote){
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
-proposalReview=new SessionReview(acceptSelectedProposals);
+proposalReview=new SessionReview(acceptSelectedProposals,sessionReviewBasis);
 initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession());
 sessionCopy=new SessionCopy(status,()=>workspace&&plan&&sources?{workspace,plan,sources}:null,async()=>await flushSession()&&await flushBase(),async (planId,visitId)=>{await refreshBase(visitId,planId);});
 initProposalEditor();tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;

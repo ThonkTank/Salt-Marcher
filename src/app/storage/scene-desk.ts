@@ -34,7 +34,11 @@ function checkedRef(ref: DeskRef) {
     throw new Error("Inhaltsverweis ungültig.");
   return ref;
 }
-const proseLinks=(db:any,cam:string,doc:any)=>documentReferences(doc).slice(0,200).map(r=>({label:r.field+' · '+r.label,entry:referenceEntry(db,cam,r.ref)}));
+const proseLinks=(db:any,cam:string,doc:any)=>{
+ const refs=documentReferences(doc),entries=new Map<string,ReturnType<typeof referenceEntry>>();
+ const entry=(ref:DeskRef)=>{const key=ref.kind+':'+ref.id;let value=entries.get(key);if(!value){value=referenceEntry(db,cam,ref);entries.set(key,value);}return{...value,ref:{...value.ref}};};
+ return{links:refs.slice(0,200).map(r=>({label:r.field+' · '+r.label,entry:entry(r.ref)})),...(refs.length>200?{referenceNotice:'Hier wird nur ein Teil der Textverweise als Schaltfläche dargestellt. Weitere Ziele über Verknüpfte Begriffe suchen oder den Originaltext bearbeiten.'}:{})};
+};
 export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
   checkedRef(ref);
   if (ref.kind === "note") {
@@ -44,6 +48,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
       note = worldNoteDocument(decoded(row));
     if (note.id !== row.id || note.revision !== row.revision)
       throw new Error("Notizzuordnung widersprüchlich.");
+    const prose=proseLinks(db,cam,note);
     return {
       ref,
       title: note.title,
@@ -56,7 +61,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
       }[note.kind],
       revision: note.revision,
       note,
-      links: [...proseLinks(db,cam,note),...note.relations.map(relation=>{const target=db.prepare("SELECT id,trashed,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.title') END AS title FROM world_note WHERE campaign_id=? AND id=?").get(cam,relation.targetId);return{label:relation.label,entry:{ref:{kind:'note' as const,id:relation.targetId},title:target?.title??'Nicht verfügbarer Weltinhalt',label:'Weltverweis',unavailable:!target||!!target.trashed}};})],
+      ...prose,links: [...prose.links,...note.relations.map(relation=>{const target=db.prepare("SELECT id,trashed,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.title') END AS title FROM world_note WHERE campaign_id=? AND id=?").get(cam,relation.targetId);return{label:relation.label,entry:{ref:{kind:'note' as const,id:relation.targetId},title:target?.title??'Nicht verfügbarer Weltinhalt',label:'Weltverweis',unavailable:!target||!!target.trashed}};})],
       unavailable: !!row.trashed,
     };
   }
@@ -65,13 +70,15 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
         .prepare("SELECT * FROM location WHERE campaign_id=? AND id=?")
         .get(cam, ref.id),
       location = checkedLocationDocument(decoded(row));
+    if(location.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1)
+      throw new Error("Ortszuordnung widersprüchlich.");
     return {
       ref,
       title: location.name,
       label: "Ort",
       revision: row.revision,
       location,
-      links:proseLinks(db,cam,location),
+      ...proseLinks(db,cam,location),
       unavailable: !!row.trashed,
     };
   }
@@ -109,15 +116,27 @@ function state(db: any, cam: string, sceneId: string) {
   const row = db
     .prepare("SELECT * FROM scene_desk WHERE campaign_id=? AND scene_id=?")
     .get(cam, sceneId);
+  return checkedState(row);
+}
+function checkedState(row: any) {
+  if(row&&(!Number.isSafeInteger(row.revision)||row.revision<1))
+    throw new Error("Szenentischrevision beschädigt.");
   const refs: DeskRef[] = row ? decoded(row) : [];
   if (
     !Array.isArray(refs) ||
     refs.length > 100 ||
-    new Set(refs.map((r) => r.kind + ":" + r.id)).size !== refs.length
+    new Set(refs.map((r) => r?.kind + ":" + r?.id)).size !== refs.length
   )
     throw new Error("Szenentisch beschädigt.");
   refs.forEach(checkedRef);
   return { revision: row?.revision ?? 0, refs };
+}
+export function validateSceneDesk(db: any) {
+  if(!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='scene_desk'").get()) {
+    if(db.pragma('user_version',{simple:true})<38)return;
+    throw new Error("Szenentischspeicher fehlt.");
+  }
+  for(const row of db.prepare('SELECT * FROM scene_desk').iterate())checkedState(row);
 }
 export function readSceneDesk(
   db: any,

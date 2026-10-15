@@ -13,6 +13,11 @@ export function xpLevel(xp: number) {
   let index = 0; while (index < 19 && xp >= levelXp[index + 1]!) index++;
   return { level: index + 1, floor: levelXp[index]!, next: levelXp[index + 1] ?? null, budget: dailyXp[index]! };
 }
+export function xpInput(text: string): number {
+  const raw = text.trim(), amount = Number(raw);
+  if (!raw || !Number.isSafeInteger(amount) || amount < 0) throw new Error('Nichtnegative ganze XP eintragen.');
+  return amount;
+}
 export function xpShare(pool: number, recipients: number) {
   if (!Number.isSafeInteger(pool) || pool < 0 || !Number.isSafeInteger(recipients) || recipients < 0) throw new Error('Ungültige XP-Verteilung.');
   const share = recipients ? Number((BigInt(pool) + BigInt(recipients) - 1n) / BigInt(recipients)) : 0;
@@ -77,12 +82,18 @@ export interface LedgerItem {
   sourceTreasureId?:string;sourceTreasureItemId?:string;rewardCreditId?:string; creditedCopper?:string|null; recipientCharacterId?:string; sourceCharacterId?:string; sourceNoteId?:string; awardId?:string; provenance?:string; mergeTargetId?:string; counterpartyLink?:{kind:'shop'|'npc'|'location'|'faction';id:string};paidCopper?: string; instanceId?: string | null; counterpartyReference?: {shopId:string;owner:{kind:'npc'|'location';id:string}};
   currentName?:string; currentUnitCopper?:string|null;
 }
+/** Allocate the recorded total price before quantity changes; whole copper stays in the remainder. */
+export function partitionLedgerPaidPrice(source:LedgerItem,portion:LedgerItem):void {
+  if(source.paidCopper===undefined)return;
+  const total=BigInt(source.paidCopper),share=total*BigInt(portion.quantity)/BigInt(source.quantity);
+  portion.paidCopper=share.toString();source.paidCopper=(total-share).toString();
+}
 export const ledgerDefinitionId=(item:Pick<LedgerItem,'reference'>)=>item.reference.historicalDefinitionId??item.reference.definitionId;
 export function ledgerStacksMatch(a:LedgerItem,b:LedgerItem):boolean{
   const key=(item:LedgerItem)=>JSON.stringify([
     item.reference.definitionId,item.reference.revision,item.reference.historicalDefinitionId??null,item.name,item.category,item.unitCopper,item.origin,
     item.treasureId,item.combatId,item.sceneId,item.locationId,item.instantMs,item.sourceNoteId??null,item.awardId??null,
-    item.rewardCreditId??null,item.sourceTreasureId??null,item.sourceTreasureItemId??null,item.provenance??null,item.sourceCharacterId??null,item.mergeTargetId??null,item.counterparty,
+    item.provenance??null,item.rewardCreditId??null,item.sourceTreasureId??null,item.sourceTreasureItemId??null,item.sourceCharacterId??null,item.mergeTargetId??null,item.counterparty,
     item.counterpartyLink?[item.counterpartyLink.kind,item.counterpartyLink.id]:null,
     item.counterpartyReference?[item.counterpartyReference.shopId,item.counterpartyReference.owner.kind,item.counterpartyReference.owner.id]:null,
   ]);

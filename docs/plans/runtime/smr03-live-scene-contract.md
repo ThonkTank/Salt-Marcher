@@ -1,5 +1,9 @@
 # SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
 
+Aktueller Verfolgungsanschluss und konkrete Restlieferung: [Chase als Scenemaske](chase.md).
+
+Aktueller Datenanschluss und konkrete Folgelieferung: [Kampfentwürfe und narrative Belohnungen](combat-and-narrative-recovery.md).
+
 Abschnitte: [Normativer Lebenszyklus](#normativer-lebenszyklus) · [Mehrbesitzer-Commit und Recovery](#mehrbesitzer-commit-und-recovery) · [Party-Command-History und kausales Undo/Redo](#party-command-history-und-kausales-undoredo) · [Offene Produktanschlüsse](#offene-produktanschlüsse) · [Kernverträge und Umsetzung](#kernverträge-und-umsetzung)
 
 Lifecycle-/Zeit-, Datenbesitz- und Host-/Security-/Plattformverträge sowie die Trennung der passiven Anzeige besitzen begrenzte PASS-Nachweise. Diese Vertragsnachweise belegen allein weder Produktanschluss noch Hostpersistenz; der genaue Umfang steht in `acceptance.json`.
