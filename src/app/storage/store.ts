@@ -57,7 +57,7 @@ import {installPlayerSchema,playerSettings,playerView,projectPlayer,executePlaye
 import type {PlayerCommand,PlayerAsset,PlayerFrame} from '../player-contracts';
 import {installCitySchema,cityOverview,readCity,executeCity,validateCities,readCityBuildingChoices} from './city';
 import type {CityCommand} from '../city-contracts';
-import {installCampaignSchema,validateCapabilityBytes,validateCampaignSnapshotSettings,campaignOverview,pruneCampaignSnapshot,snapshotCounts,definitionConflicts,sharedPlan,archiveSourceChoices,remapSnapshot,publishSnapshot,trashCampaign,eraseCampaignRows} from './campaign-data';
+import {installCampaignSchema,validateCampaignOrigins,validateCapabilityBytes,validateCampaignSnapshotSettings,campaignOverview,pruneCampaignSnapshot,snapshotCounts,definitionConflicts,sharedPlan,archiveSourceChoices,remapSnapshot,publishSnapshot,trashCampaign,eraseCampaignRows} from './campaign-data';
 import {openSync as openSnapshot, readSync, closeSync as closeSnapshot} from 'node:fs';
 import type {ConflictChoice} from '../campaign-contracts';
 import {canonicalJson} from '../generation/canonical-json';
@@ -429,6 +429,7 @@ export class CampaignStore {
   private validateDatabase(db: any) {
     validateExtensionSettings(db);
     validateCapabilityBytes(db);
+    validateCampaignOrigins(db);
     if (db.pragma('integrity_check', { simple: true }) !== 'ok' || db.pragma('foreign_key_check').length) throw new Error('Wiederherstellungskopie ist strukturell beschädigt.');
     for (const row of db.prepare('SELECT * FROM room').iterate()) this.decode(row);
     const headers = new Map<string, Pick<Room, 'id' | 'scopeId' | 'floorId' | 'number'>>();

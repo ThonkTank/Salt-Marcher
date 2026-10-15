@@ -131,3 +131,5 @@ import "./core/tutorial.test";
 import "./core/world-links-ui.test";
 import "./core/world-links.test";
 import "./core/npc-building-ui.test";
+
+import "./core/campaign-origin.test";
