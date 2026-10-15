@@ -31,7 +31,7 @@ export function initSessionPacket(tell:(s:string,e?:boolean)=>void,owner:()=>{to
  function visit(id:string){
   selected=id;const v=packet?.visits.find(v=>v.id===id),root=el('session-packet-content');root.replaceChildren();if(!v)return;
   for(const b of el('session-packet-visits').querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.visitId===id));
-  const header=document.createElement('div');header.className='toolbar';const h=document.createElement('h3');h.textContent=v.title;header.append(h);const captured=source,viewed=packet,version=request;const current=()=>!!captured&&same(captured)&&packet===viewed&&request===version;
+  const header=document.createElement('div');header.className='toolbar';const h=document.createElement('h3');h.textContent=v.title;header.append(h);const captured=source,viewed=packet,version=request;const current=()=>header.isConnected&&selected===id&&!!captured&&same(captured)&&packet===viewed&&request===version;
   if(captured?.openVisit){const b=document.createElement('button');b.type='button';b.textContent=captured.visitId===id?'Besuch erneut übernehmen…':'Besuch übernehmen…';b.onclick=()=>act(async()=>{if(current())await captured!.openVisit!(id);});header.append(b);}
   root.append(header);const location=document.createElement('p');location.className='caption';location.textContent=v.location??'Ohne Ortsbindung';root.append(location);
   if(!v.blocks.length){const p=document.createElement('p');p.textContent='Dieser Besuch hat noch keine vorbereiteten Texte, Begegnungen oder Belohnungen.';root.append(p);}

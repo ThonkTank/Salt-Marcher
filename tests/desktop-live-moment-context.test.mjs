@@ -168,3 +168,13 @@ test('an unplayed plan supplies the next opening without adopting its visit or m
  [...x.el('live-session-resume-visits').querySelectorAll('button')].find(b=>b.textContent==='Spielabend beginnen + Text in Szene').click();await settle();await x.ui.flushLive();
  const after=x.store.live(x.w.token).scene;assert.equal(after.readAloud,text);assert.deepEqual(after.adoption,before.adoption);assert.deepEqual(after.clock,before.clock);assert.deepEqual(x.messages.filter(m=>m.error),[]);
 });
+
+test('an unresolved initial chronicle leaves the live editor usable and late results cannot replace a newer recap',async t=>{
+ const x=await setup(t),reads=[];
+ x.window.campaign.chronicle=token=>new Promise(resolve=>{const value={ok:true,value:x.store.chronicle(token)};reads.push({resolve,value});x.releases.push(()=>resolve(value));});
+ let opened=false;const opening=x.ui.openLive().then(()=>{opened=true;});await settle();
+ assert.equal(opened,true,'optional chronicle must not hold openLive');assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('live-session-start').disabled,true);assert.match(x.el('live-session-status').textContent,/geladen|geprüft/);
+ x.el('running-notes').value='Spielbar während die Chronik fehlt';x.el('running-notes').oninput();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,'Spielbar während die Chronik fehlt');
+ const newer=x.ui.openLive();await settle();assert.equal(reads.length,2);reads[1].resolve({ok:false,error:'Neuere Chronik fehlt'});await settle();assert.match(x.el('live-session-status').textContent,/Neuere Chronik fehlt/);
+ reads[0].resolve(reads[0].value);await opening;await newer;await settle();assert.match(x.el('live-session-status').textContent,/Neuere Chronik fehlt/);
+});

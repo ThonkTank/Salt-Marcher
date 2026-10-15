@@ -17,3 +17,16 @@ test('location notebook rejects a checksum-valid location with a mismatched iden
   assert.throws(()=>store.locationMaterials(workspace.token,{locationId:null,kind:'directory',text:'',offset:0}),/widersprüchlich|beschädigt/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test('checked local events retain text search, stable pages and the original clock',()=>{
+ const root=mkdtempSync(join(tmpdir(),'location-event-pages-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Ortsmappe'),workspace=store.activate(campaign.id),location=newLocation('place','Nordtor','poi',['description','notes']);
+  store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});
+  const scene=store.executeLive({commandId:'initialize',campaignId:campaign.id,token:workspace.token,action:{kind:'initialize',expectedRosterRevision:0}}).scene!;
+  for(let i=44;i>=0;i--){const id='deadline-'+i;store.executeWorld({commandId:id,campaignId:campaign.id,token:workspace.token,action:{kind:'calendar-event',expectedRevision:null,event:{id,revision:0,name:'Frist '+String(i).padStart(2,'0'),startMs:String(i*60000),durationMs:'1000',repeatMs:null,locationId:location.id,notes:'',trashed:false}}});}
+  const db=(store as unknown as {db:any}).db,before=db.serialize(),q={kind:'event' as const,locationId:location.id,text:'FRIST',offset:0},first=store.locationMaterials(workspace.token,q),last=store.locationMaterials(workspace.token,{...q,offset:first.next!});
+  assert.equal(first.items.length,40);assert.equal(first.next,40);assert.equal(last.items.length,5);assert.equal(last.next,null);assert.deepEqual([...first.items,...last.items].map(row=>row.title),Array.from({length:45},(_,i)=>'Frist '+String(i).padStart(2,'0')));
+  assert.equal(store.locationMaterials(workspace.token,{...q,text:'Frist 43'}).items[0]?.id,'deadline-43');assert.ok(db.serialize().equals(before));assert.deepEqual(store.live(workspace.token).scene!.clock,scene.clock);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});

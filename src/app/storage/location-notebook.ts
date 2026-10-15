@@ -1,6 +1,7 @@
-import type {LocationMaterialsQuery,LocationMaterialsPage} from '../location-notebook-contracts';
+import type {LocationMaterial,LocationMaterialsQuery,LocationMaterialsPage} from '../location-notebook-contracts';
 import {calendarDate} from '../world-model';
-import {readAgenda} from './agenda';
+import {calendarEvents} from './agenda';
+import {readWorldCalendar} from './world';
 import {readWorldSources} from './world-sources';
 import {deskContent} from './scene-desk';
 import {readNarrative} from './narrative';
@@ -16,10 +17,19 @@ function npcAtLocation(db:any,cam:string,id:string,locationId:string){
 export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery):LocationMaterialsPage{
  if(!q||!['directory','npc','narrative','group','shop','faction','event'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
  const location=q.kind==='directory'?null:locationContent(db,cam,q.locationId!);
+ if(q.kind==='event'){
+  const calendar=readWorldCalendar(db,cam),items:LocationMaterial[]=[],text=q.text.toLocaleLowerCase();
+  for(const event of calendarEvents(db,cam)){
+   if(event.trashed||event.locationId!==q.locationId)continue;
+   const detail=(event.repeatMs===null?'Einmaliges Ereignis':'Wiederkehrendes Ereignis')+' · Ab '+calendarDate(calendar,event.startMs);
+   if((event.name+'\n'+detail).toLocaleLowerCase().includes(text))items.push({id:event.id,title:event.name,detail});
+  }
+  items.sort((a,b)=>a.title.toLocaleLowerCase().localeCompare(b.title.toLocaleLowerCase())||a.id.localeCompare(b.id));
+  return{locationRevision:location!.revision,next:items.length>q.offset+40?q.offset+40:null,items:items.slice(q.offset,q.offset+40)};
+ }
  const where="instr(lower(title||char(10)||detail),lower(@text))>0";
  const queries={
  faction:`SELECT n.id,json_extract(n.payload,'$.title') title,'Fraktion am Ort' detail FROM world_note n WHERE n.campaign_id=@cam AND n.trashed=0 AND json_extract(n.payload,'$.kind')='faction' AND EXISTS(SELECT 1 FROM world_source s,json_each(s.payload,'$.factionIds') f WHERE s.campaign_id=n.campaign_id AND s.kind='location' AND s.id=@location AND f.value=n.id)`,
- event:`SELECT id,json_extract(payload,'$.name') title,CASE WHEN json_extract(payload,'$.repeatMs') IS NULL THEN 'Einmaliges Ereignis' ELSE 'Wiederkehrendes Ereignis' END detail,json_extract(payload,'$.startMs') startMs FROM world_record WHERE campaign_id=@cam AND kind='calendar-event' AND json_extract(payload,'$.trashed')=0 AND json_extract(payload,'$.locationId')=@location`,
  directory:`SELECT id,json_extract(payload,'$.name') title,CASE json_extract(payload,'$.type') WHEN 'city' THEN 'Stadt' ELSE 'Interessanter Ort' END detail FROM location WHERE campaign_id=@cam AND trashed=0`,
  npc:`SELECT n.id,json_extract(n.payload,'$.title') title,'NSC am Ort' detail FROM world_note n LEFT JOIN npc_position p ON p.campaign_id=n.campaign_id AND p.actor_id=n.id WHERE n.campaign_id=@cam AND n.trashed=0 AND json_extract(n.payload,'$.kind')='npc' AND ${npcAt}`,
  narrative:`SELECT n.id,json_extract(n.payload,'$.title') title,CASE json_extract(s.payload,'$.status') WHEN 'closed' THEN 'Abgeschlossen' ELSE 'Offen' END detail FROM narrative_state s JOIN world_note n ON n.campaign_id=s.campaign_id AND n.id=s.note_id WHERE n.campaign_id=@cam AND n.trashed=0 AND json_extract(s.payload,'$.locationId')=@location`,
@@ -34,7 +44,6 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
   if(q.kind==='narrative'){const content=deskContent(db,cam,{kind:'note',id:r.id}),view=readNarrative(db,cam,r.id);if(content.unavailable||!['quest','rumor'].includes(content.note?.kind??'')||content.note?.id!==r.id||view.state.noteId!==r.id||view.state.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:view.state.status==='closed'?'Abgeschlossen':'Offen',ref:{kind:'note' as const,id:r.id}};}
   if(q.kind==='group'){const group=readPreparedGroup(db,cam,r.id);if(group.id!==r.id||group.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:group.title,detail:group.actors.length+' Figuren'};}
   if(q.kind==='faction'){const content=deskContent(db,cam,{kind:'note',id:r.id});if(content.unavailable||content.note?.kind!=='faction'||content.note.id!==r.id||!factionSource?.factionIds.includes(r.id))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:r.detail,ref:{kind:'note' as const,id:r.id}};}
-  if(q.kind==='event'){const page=readAgenda(db,cam,{sceneId:null,location:'all',locationId:q.locationId!,eventId:r.id,search:'',horizonDays:null,includePast:true,after:null}),event=page.items[0]?.event;if(!event||event.id!==r.id)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:event.name,detail:r.detail+' · Ab '+calendarDate(page.calendar,event.startMs)};}
   const view=readShop(db,cam,r.id),shop=view.shop;if(shop.id!==r.id||view.unavailable||(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!npcAtLocation(db,cam,shop.owner.id,q.locationId!)))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:shop.name,detail:'Shop · '+view.ownerName};
  };
  return{locationRevision:location?.revision??null,next:rows.length>40?q.offset+40:null,items:rows.slice(0,40).map(item)};

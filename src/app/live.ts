@@ -90,11 +90,12 @@ export function activateLive(workspace: Workspace) {
 }
 export async function openLive(planId?: string, visitId?: string) {
   if (!context) { tell('Bitte zuerst eine Kampagne öffnen.', true); return; }
-  const token = context.token,recapRequest=++sessionChronicleRequest;
+  const token = context.token;
+  sessionChronicle=null;sessionChronicleError='Chronik wird geladen.';void refreshLiveSession();
   try {
-    const [liveResult,prepResult,chronicleResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, ''),readSessionChronicle(token)]),live=unwrap(liveResult),prep=unwrap(prepResult);
+    const [liveResult,prepResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, '')]),live=unwrap(liveResult),prep=unwrap(prepResult);
     if (context?.token !== token) return;
-    data = live; sources = prep;if(recapRequest===sessionChronicleRequest){sessionChronicle=chronicleResult.ok?chronicleResult.value:null;sessionChronicleError=chronicleResult.ok?'':chronicleResult.error;}narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
+    data = live; sources = prep;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
     characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
     sceneDraft = resumed && live.scene ? structuredClone(live.scene) : null;
     render();
