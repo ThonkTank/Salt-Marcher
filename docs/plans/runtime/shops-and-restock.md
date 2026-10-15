@@ -112,7 +112,7 @@ gemeinsame bestätigte Zeitverarbeitung addiert nur ausgewählte Zeilen und
 hält erste/letzte Fälligkeit, Anzahl, Regelrevision und konkrete Ergebnisse
 im Shopverlauf. Kampagnenkopien remappen Tabellen-/Bestandsidentitäten und
 behalten Zufallsbasis und bestätigten Bestand. Kalenderereignisse können ab0.121 Lieferungen auslösen; katalogweite dynamische
-Filter sind noch nicht implementiert.
+Filter sind ab0.122 als zusätzliche Warenquelle implementiert.
 
 Im Shop wird entweder ein Zeitintervall oder ein Agendaereignis gewählt. Die
 Ereignisrevision wird gebunden. Der erste Beginn liegt strikt nach der gewählten
@@ -129,3 +129,26 @@ Ein Schritt mit mehr als100.000 Zufallsziehungen wird vor der Auswahl mit
 einem Hinweis auf kleinere Zeitabschnitte abgewiesen; es wird nichts gekürzt.
 Bestandsüberlauf verwirft den gesamten bestätigten Zeitabschluss. Dieser
 Operationsschutz ist keine Qualifikation für große gemischte Shopbestände.
+
+## Dynamische Kataloglieferungen
+
+Auch leere Shops können eine Kataloglieferung anlegen. Suche, Kategorie, Magie,
+Seltenheit, Einstimmung und Quelle filtern dieselben Definitionen wie der
+Gegenstandskatalog. Die Treffervorschau zeigt Anzahl, Beispiele und gesperrte
+Definitionen. Jeder passende Gegenstand erhält dieselbe Chance; frei gewichtete
+Einzelzeilen stehen weiterhin über die vorhandene Mengenstapelquelle bereit.
+
+Bei Bestätigung wird der aktuelle Katalog innerhalb derselben Transaktion
+ausgewertet. Auch mehrere nachgeholte Termine verwenden diesen aktuellen Pool;
+vergangene Katalogzustände werden nicht erfunden. Papierkorb und unlesbare
+Definitionen sind ausgeschlossen, ihre Anzahl wird dokumentiert. Die History
+bewahrt Filter-/Regelrevision, Poolgröße/-Hash und konkrete Definitionen,
+Revisionen, Namen, Mengen und tatsächlich verwendete Preise. Ein leerer Pool
+liefert keine Waren und bestätigt den Termin trotzdem.
+
+Nur gezogene Waren erzeugen neue Zeilen. Ein vorhandener Mengenstapel derselben
+Definition und Revision erhält die Menge; Preise und Notizen bleiben erhalten.
+Andernfalls gilt der in der Lieferregel festgelegte Kauf-/Verkaufspreis.
+Einzelstücke bleiben erhalten. Manuelle, Intervall- und Ereignisauslöser nutzen
+denselben Ablauf. Neue passende Definitionen werden ohne Regeländerung beim
+nächsten Termin berücksichtigt. Historische Ergebnisse bleiben unverändert.
