@@ -51,3 +51,28 @@ test('encounter itinerary uses calculator party, per-fight rounding, saved revis
  x.store.saveEncounterPlan({...x.command(null),expectedRevision:patrol.revision,plan:{...patrol,name:'Neue Patrouille'}});
  const stale=x.store.adventuringDay(x.w.token,request);assert.equal(stale.calculation,null);assert.match(stale.problem,/Vorlagen aktualisieren/);
 });
+
+
+test('ordered rest stops change only projected frames, preserve per-fight awards and work for custom parties',t=>{
+ const x=fixture(t);x.add('Ada',0);x.add('Borin',0);
+ const plan=x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Patrouille',notes:'',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:1,grouped:false}],sources:[],catalogHash:''}});
+ const row=(count,restBefore)=>({id:plan.id,revision:plan.revision,count,...(restBefore?{restBefore}:{})}),request={source:'active',rows:[],totalXp:0,encounters:[row(4),row(1,'short'),row(1,'long')]};
+ const before=x.store.db.serialize(),v=x.store.adventuringDay(x.w.token,request);
+ assert.equal(v.problem,null);assert.deepEqual(v.itinerary.plannedRests,{short:1,long:1});
+ assert.deepEqual(v.itinerary.stages.map(s=>[s.shortDue,s.longDue,s.knownRestStates]),[[2,0,2],[0,0,2],[0,0,2]]);
+ assert.equal(v.itinerary.totalLoadXp,456);assert.equal(v.itinerary.totalRewardXp,300);
+ assert.equal(v.pacing.members[0].before.consumed,0);assert.equal(v.pacing.members[0].after.consumed,38);assert.equal(v.pacing.members[0].after.shortXp,38);assert.equal(v.pacing.projectedSections,3);
+ const without=x.store.adventuringDay(x.w.token,{...request,encounters:[row(6)]});assert.equal(without.pacing.members[0].after.consumed,228);assert.equal(without.pacing.members[0].after.due,'short');assert.deepEqual(v.calculation,without.calculation);
+ const short=x.store.adventuringDay(x.w.token,{...request,encounters:[row(4),row(1,'short')]});assert.equal(short.pacing.members[0].after.baseline,152);assert.equal(short.pacing.members[0].after.sections,2);assert.equal(short.pacing.members[0].after.nextRest,226);assert.equal(short.pacing.members[0].after.shortXp,38);
+ const overdue=x.store.adventuringDay(x.w.token,{...request,encounters:[row(8),row(1,'short')]});assert.equal(overdue.itinerary.stages[1].longDue,2,'short rest cannot erase an exhausted daily budget');
+ const custom=x.store.adventuringDay(x.w.token,{...request,source:'custom',rows:[{level:1,count:2}]});assert.deepEqual(custom.itinerary.stages,v.itinerary.stages);assert.equal(custom.pacing.loadShare,null);
+ assert.match(x.store.adventuringDay(x.w.token,{...request,encounters:[row(1,'invalid')]}).problem,/Tagesplan/);assert.ok(x.store.db.serialize().equals(before));
+});
+
+test('a planned long rest can establish a hypothetical unknown rest frame without certifying the live party',t=>{
+ const x=fixture(t),id=x.add('Rast offen',0),record=x.store.db.prepare('SELECT payload FROM character_progress WHERE campaign_id=? AND id=?').get(x.cam.id,id),p=JSON.parse(record.payload);p.rest.known=false;
+ const payload=JSON.stringify(p);x.store.db.prepare('UPDATE character_progress SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,id);
+ const plan=x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Wache',notes:'',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:1,grouped:false}],sources:[],catalogHash:''}}),before=x.store.db.serialize();
+ const read=restBefore=>x.store.adventuringDay(x.w.token,{source:'active',rows:[],totalXp:0,encounters:[{id:plan.id,revision:plan.revision,count:1,restBefore}]});
+ assert.equal(read('short').pacing.members[0].after,null);const v=read('long');assert.equal(v.pacing.known,0);assert.equal(v.pacing.projectedKnown,1);assert.equal(v.pacing.members[0].before,null);assert.equal(v.pacing.members[0].after.consumed,75);assert.equal(v.snapshot.available,false);assert.ok(x.store.db.serialize().equals(before));
+});
