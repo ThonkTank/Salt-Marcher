@@ -86,3 +86,10 @@ test('late reload discard cannot clear the new campaign editor',async t=>{
  x.activate('beta');await until(()=>x.title()?.value==='beta');x.edit('Beta later');pending.resolve(ok());await tick();await tick();
  assert.equal(x.title().value,'Beta later');assert.equal(await x.ui.flushSceneDesk(),true);assert.equal(x.changes.at(-1).change.note.title,'Beta later');
 });
+
+test('a pinned NPC is readable before editing and the original fields still save a changed reference',async t=>{
+ const x=fixture(t);x.activate('alpha');await until(()=>x.title()?.value==='alpha');const preview=x.el('desk-note-preview'),editing=x.el('desk-editing');
+ assert.equal(editing.open,false);assert.equal(preview.hidden,false);assert.match(preview.textContent,/Original public.*alpha GM/);assert.equal(x.writes.length,0);assert.equal(x.changes.length,0);
+ editing.open=true;editing.ontoggle();assert.equal(preview.hidden,true);x.edit('Nera');const notes=x.el('desk-fields').querySelectorAll('textarea')[1];notes.value='Hat den Zöllner übergesetzt';notes.oninput();editing.open=false;editing.ontoggle();
+ assert.match(preview.textContent,/Hat den Zöllner übergesetzt/);assert.match(preview.textContent,/noch nicht übernommen/);assert.equal(await x.ui.flushSceneDesk(),true);assert.equal(x.changes.length,1);assert.equal(x.changes[0].change.note.title,'Nera');assert.equal(x.changes[0].change.note.gmNotes,'Hat den Zöllner übergesetzt');
+});

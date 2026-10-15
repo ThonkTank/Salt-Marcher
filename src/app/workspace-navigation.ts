@@ -28,15 +28,16 @@ export function initWorkspaceNavigation() {
       panel.open = false; panel.querySelector('summary')!.focus(); event.preventDefault(); break;
     }
   });
-  const navigation = document.getElementById('workspace-navigation')!, focus = document.getElementById('live-focus-bar')!;
+  const navigation = document.getElementById('workspace-navigation')!, focus = document.getElementById('live-focus-bar')!, footer = document.getElementById('music-mini')!;
   const measure = () => {
     const style = document.documentElement.style;
     style.setProperty('--workspace-header-height', header.getBoundingClientRect().height + 'px');
     style.setProperty('--workspace-nav-height', (narrow.matches ? navigation.getBoundingClientRect().height : 0) + 'px');
     style.setProperty('--live-focus-height', focus.getBoundingClientRect().height + 'px');
+    style.setProperty('--workspace-footer-height', footer.getBoundingClientRect().height + 'px');
   };
   const observer = new ResizeObserver(measure);
-  for (const element of [header, navigation, focus]) observer.observe(element);
+  for (const element of [header, navigation, focus, footer]) observer.observe(element);
   narrow.addEventListener('change', measure); measure();
   syncWorkspaceNavigation();
 }

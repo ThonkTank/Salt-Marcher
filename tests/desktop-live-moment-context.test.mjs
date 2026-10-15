@@ -404,3 +404,20 @@ test('the empty campaign exposes figure creation and its first submit stays rost
  x.el('character-new').click();assert.equal(x.el('character-create-active').hidden,true);const submit=[...x.el('character-form').querySelectorAll('button')].find(button=>button.type==='submit');assert.equal(submit.id,'character-create');x.el('new-character-name').value='Gila';x.el('character-form').onsubmit({preventDefault(){},submitter:submit});await settle();await x.ui.flushLive();
  const live=x.store.live(w.token);assert.equal(live.scene,null);assert.equal(live.roster.length,1);assert.equal(live.roster[0].profile.name,'Gila');assert.equal(live.roster[0].active,false);assert.deepEqual(x.commands.slice(before).map(c=>c.action.kind),['create-character']);assert.equal(x.el('character-dialog').open,false);
 });
+
+test('other split groups stay outside roster details and switch only after saving the current notes',async t=>{
+ const x=await setup(t),other=await x.focusOther(),select=x.el('scene-focus');let focused=0;select.focus=()=>focused++;
+ const cards=x.el('group-list');assert.equal(cards.parentElement.id,'live-focus-bar');assert.equal(cards.closest('details'),null);assert.equal(cards.hidden,false);assert.equal(cards.querySelectorAll('button').length,1);assert.match(cards.textContent,/Ada/);assert.doesNotMatch(cards.textContent,/Borin/);
+ x.el('running-notes').value='Borin fragt nach dem blauen Tuch';x.el('running-notes').oninput();cards.querySelector('button').click();await settle();
+ assert.equal(x.store.live(x.w.token).focusId,x.scene.id);assert.equal(focused,1);assert.equal(x.store.liveScene(x.w.token,other).notes,'Borin fragt nach dem blauen Tuch');assert.equal(x.el('running-notes').value,'');assert.match(cards.textContent,/Borin/);
+ x.el('running-notes').value='Ada findet Seilfasern';x.el('running-notes').oninput();cards.querySelector('button').click();await settle();
+ assert.equal(x.store.live(x.w.token).focusId,other);assert.equal(x.el('running-notes').value,'Borin fragt nach dem blauen Tuch');assert.equal(x.store.liveScene(x.w.token,x.scene.id).notes,'Ada findet Seilfasern');
+ assert.deepEqual(x.store.live(x.w.token).roster.filter(c=>c.active).map(c=>[c.profile.name,c.sceneId]),[['Ada',x.scene.id],['Borin',other]]);
+});
+
+test('split time inputs follow their scene and retain unfinished raw values without advancing either clock',async t=>{
+ const x=await setup(t);x.el('time-amount').value='';x.el('time-unit').value='hours';x.el('time-reason').value='Ada untersucht Seilfasern';const other=await x.focusOther(),before=x.store.live(x.w.token).scenes.map(s=>[s.id,s.clock]);
+ assert.equal(x.el('time-reason').value,'');assert.equal(x.el('time-amount').value,'10');assert.equal(x.el('time-unit').value,'minutes');
+ x.el('time-amount').value='5';x.el('time-reason').value='Borin fragt Nera';x.el('group-list').querySelector('button').click();await settle();assert.equal(x.el('time-reason').value,'Ada untersucht Seilfasern');assert.equal(x.el('time-amount').value,'');assert.equal(x.el('time-unit').value,'hours');
+ x.el('group-list').querySelector('button').click();await settle();assert.equal(x.store.live(x.w.token).focusId,other);assert.equal(x.el('time-reason').value,'Borin fragt Nera');assert.equal(x.el('time-amount').value,'5');assert.deepEqual(x.store.live(x.w.token).scenes.map(s=>[s.id,s.clock]),before);
+});

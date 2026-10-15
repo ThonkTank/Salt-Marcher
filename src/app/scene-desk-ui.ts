@@ -278,6 +278,21 @@ function drawEditor() {
     ? "Gesicherte Eingabe wieder geöffnet."
     : "";
   const change = edit();
+  const editing=el<HTMLDetailsElement>("desk-editing"), preview=el("desk-note-preview");
+  editing.open=!c.note||!!draft;
+  el("desk-edit-summary").hidden=!c.note;
+  const showPreview=()=>{
+    preview.hidden=!c.note||editing.open;preview.replaceChildren();
+    if(preview.hidden)return;
+    const note=change?.kind==='note'?change.note:c.note!;
+    el("desk-title").textContent=c.label+' · '+note.title;
+    for(const [title,text] of [["Zum Vorlesen",note.readAloud],["GM-Notizen",note.gmNotes]])if(text?.trim()){
+      const heading=document.createElement('h4'),p=document.createElement('p');heading.textContent=title!;p.textContent=text!;preview.append(heading,p);
+    }
+    if(!preview.children.length)preview.textContent='Noch keine Notizen.';
+    if(dirty){const hint=document.createElement('small');hint.textContent='Vorschau der Eingabe · noch nicht übernommen.';preview.append(hint);}
+  };
+  editing.ontoggle=showPreview;showPreview();
   if (change) {
     draft = {
       version: 1,
