@@ -37,6 +37,8 @@ let failedCommand: PreparationCommand | null = null;
 let tell: (text: string, error?: boolean) => void;
 function syncSaveControl() { get('preparation-apply').hidden = !hasOpenInput || blocked; }
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+let locationNotebookOpen:(id:string)=>Promise<void>=async()=>{};
+export function setLocationNotebookNavigation(open:(id:string)=>Promise<void>){locationNotebookOpen=open;}
 const originalNote = () => noteRow(selectedNote)?.note;
 const originalPlan = () => data.plans.find(plan => plan.id === selectedPlan);
 const originalLocation = () => data.locations.find(row => row.document.id === selectedLocation);
@@ -518,12 +520,8 @@ async function renderLocations() {
   if (!row) return;
   const shown = locationDraft?.document ?? row.document, readonly = row.trashed || draftProblems.has(draftKey('location', row.document.id));
   get<HTMLInputElement>('location-name').value = shown.name; get<HTMLInputElement>('location-name').disabled = readonly;
-  shown.sections.forEach((section, index) => {
-    const label = document.createElement('label'); label.textContent = section.title;
-    const field = document.createElement('textarea'); field.id = `location-section-${index}`; label.htmlFor = field.id; field.rows = 5; field.value = section.markdown; field.disabled = readonly;
-    field.oninput = () => { if (!locationDraft || context?.token !== token || locationDraft.document.id !== id) return; locationDraft = { ...locationDraft, document: { ...locationDraft.document, sections: locationDraft.document.sections.map((s, i) => i === index ? { ...s, markdown: field.value === section.markdown.replace(/\r\n?/g, '\n') ? section.markdown : field.value } : s) } }; schedule(); };
-    field.onblur = () => { if (!composing) void flushPreparation(); }; get('location-sections').append(label, field);
-  });
+  renderLocationSections();
+
   for (const map of data.maps) {
     const label = document.createElement('label'), box = document.createElement('input'); box.type = 'checkbox'; box.dataset.mapId = map.id; box.checked = shown.detailMaps.some(d => d.documentId === map.id); box.disabled = readonly;
     label.append(box, document.createTextNode(' ' + map.name)); get('location-maps').append(label);
@@ -531,6 +529,22 @@ async function renderLocations() {
   }
   renderLocationMapActions();
   get('location-remove').hidden = row.trashed; get('location-restore').hidden = !row.trashed; void checkpoint();
+}
+function sectionTitleDialog(title:string,initial:string):Promise<string|null>{const dialog=document.createElement('dialog'),form=document.createElement('form'),heading=document.createElement('h3'),input=document.createElement('input'),save=document.createElement('button'),cancel=document.createElement('button');heading.textContent=title;input.value=initial;input.required=true;input.setAttribute('aria-label','Abschnittstitel');save.textContent='Übernehmen';save.type='submit';cancel.textContent='Abbrechen';cancel.type='button';form.append(heading,input,save,cancel);dialog.append(form);dialog.id='location-section-title-dialog';document.body.append(dialog);return new Promise(resolve=>{const finish=(value:string|null)=>{dialog.close();dialog.remove();resolve(value);};form.onsubmit=e=>{e.preventDefault();if(input.value.trim())finish(input.value);};cancel.onclick=()=>finish(null);dialog.oncancel=e=>{e.preventDefault();finish(null);};dialog.showModal();input.select();});}
+function renderLocationSections(){
+ const row=locationDraft??originalLocation(),root=get('location-sections'),token=context?.token,id=row?.document.id;root.replaceChildren();if(!row)return;const readonly=row.trashed||blocked||draftProblems.has(draftKey('location',row.document.id));
+ const button=(text:string,action:()=>Promise<void>)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.disabled=readonly;b.onclick=()=>{b.disabled=true;void action().catch(e=>tell(e.message,true)).finally(()=>{if(b.isConnected)b.disabled=readonly;});};return b;};
+ const owned=()=>context?.token===token&&locationDraft?.document.id===id&&!blocked;
+ const update=(sections:typeof row.document.sections)=>{if(!owned())return;locationDraft={...locationDraft!,document:{...locationDraft!.document,sections}};schedule();renderLocationSections();};
+ row.document.sections.forEach((section,index)=>{
+  const block=document.createElement('section'),label=document.createElement('label'),field=document.createElement('textarea'),tools=document.createElement('div');block.dataset.locationSectionId=section.id;label.textContent=section.title;field.id=`location-section-${index}`;field.dataset.sectionId=section.id;label.htmlFor=field.id;field.rows=5;field.value=section.markdown;field.disabled=readonly;tools.className='toolbar';
+  field.oninput=()=>{if(!owned())return;const current=locationDraft!.document.sections.find(s=>s.id===section.id);if(!current)return;locationDraft={...locationDraft!,document:{...locationDraft!.document,sections:locationDraft!.document.sections.map(s=>s.id===section.id?{...s,markdown:field.value===current.markdown.replace(/\r\n?/g,'\n')?current.markdown:field.value}:s)}};schedule();};field.onblur=()=>{if(!composing)void flushPreparation();};
+  tools.append(button('Textverweis einfügen…',async()=>{const start=field.selectionStart,end=field.selectionEnd,alias=field.value.slice(start,end);if(!await flushPreparation()||!owned())return;const before=locationDraft!.document.sections.find(s=>s.id===section.id)?.markdown;if(before===undefined)return;const link=await chooseTextReference(token!,alias);if(!link)return;if(!owned()||locationDraft!.document.sections.find(s=>s.id===section.id)?.markdown!==before)throw new Error('Ortsabschnitt geändert. Verweis erneut einfügen.');locationDraft={...locationDraft!,document:{...locationDraft!.document,sections:locationDraft!.document.sections.map(s=>s.id===section.id?{...s,markdown:before.slice(0,rawTextOffset(before,start))+link+before.slice(rawTextOffset(before,end))}:s)}};field.value=locationDraft.document.sections.find(s=>s.id===section.id)!.markdown;schedule();field.focus();field.setSelectionRange(start+link.length,start+link.length);}));
+  tools.append(button('Titel ändern…',async()=>{if(!await flushPreparation()||!owned())return;const title=await sectionTitleDialog('Abschnitt umbenennen',section.title);if(title&&owned())update(locationDraft!.document.sections.map(s=>s.id===section.id?{...s,title}:s));}));
+  const move=(delta:number)=>async()=>{if(!await flushPreparation()||!owned())return;const sections=[...locationDraft!.document.sections],from=sections.findIndex(s=>s.id===section.id),to=from+delta;if(from<0||to<0||to>=sections.length)return;const [selected]=sections.splice(from,1);sections.splice(to,0,selected!);update(sections);};const up=button('Nach oben',move(-1)),down=button('Nach unten',move(1));up.disabled=readonly||index===0;down.disabled=readonly||index===row.document.sections.length-1;tools.append(up,down);block.append(label,field,tools);root.append(block);
+ });
+ root.append(button('Abschnitt hinzufügen…',async()=>{if(!await flushPreparation()||!owned())return;const title=await sectionTitleDialog('Neuen Ortsabschnitt anlegen','');if(title&&owned())update([...locationDraft!.document.sections,{id:crypto.randomUUID(),title,markdown:''}]);}));
+ const read=document.createElement('button');read.type='button';read.id='location-notebook-read';read.textContent='Ortsmappe lesen / am Spieltisch verwenden…';read.onclick=()=>{void(async()=>{if(!await flushPreparation()||context?.token!==token)return;await locationNotebookOpen(id!);})().catch(e=>tell(e.message,true));};root.prepend(read);
 }
 function renderLocationMapActions() {
   const row = locationDraft ?? originalLocation(); get('location-map-actions').replaceChildren();

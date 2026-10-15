@@ -1,3 +1,5 @@
+import {setLocationNotebookNavigation} from './preparation';
+import {LocationNotebook} from './location-notebook-ui';
 import {WorldLinksWorkbench} from './world-links-ui';
 import {CampaignAgenda} from './agenda-ui';
 import {initSoundboard,activateSoundboard} from './live-soundboard-ui';
@@ -24,7 +26,7 @@ import {initDungeon,activateDungeon,openDungeon,flushDungeon,selectDungeonRoom} 
 import {initDrawing,activateDrawing,reloadDrawing,drawingOverlay,roomDrawingStyle,flushDrawing} from './drawing-ui';
 import {initAutonomy,activateAutonomy,openAutonomy,flushAutonomy} from './autonomy-ui';
 import {initPlayerUI,deactivatePlayer} from './player-ui';
-import {initCity,activateCity,openCity,flushCity} from './city-ui';
+import {initCity,activateCity,openCity,openCityReference,flushCity} from './city-ui';
 import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
 import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './world-ui';
@@ -70,6 +72,7 @@ setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('trea
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());
 initPartyTopbar(()=>el<HTMLButtonElement>('live-tab').click());
 initNarrativeJournal(status,leaveWorkspace,async()=>await flushPreparation(true,true),async id=>{if(!await leaveWorkspace())return;showTab('preparation');await openPreparedNote(id);});
+const locationNotebook=new LocationNotebook(()=>workspace,leaveWorkspace,status,async action=>{const token=workspace?.token;if(!token||!await leaveWorkspace()||workspace?.token!==token)return;if(action.kind==='edit'){showTab('preparation');await openPreparedLocation(action.id);}else if(action.kind==='graph')await worldLinks.open({kind:'location',id:action.id});else if(action.kind==='npc'){showTab('groups');await openGroups();await openNpcProfile(action.id);}else if(action.kind==='narrative'){showTab('preparation');await openPreparedNote(action.id);}else if(action.kind==='group'){showTab('groups');await openGroups(action.id);}else if(action.kind==='shop'){showTab('items');await openItems(action.id);}else if(action.kind==='map'){if(action.mapKind==='city'){showTab('city');await openCityReference(action.id);}else{const room=workspace?.rooms.find(r=>r.scopeId===action.id);if(!room)throw new Error('Diese Zeichnung enthält noch keinen verfügbaren Raum.');await selectRoom(room.id);showTab('atlas');}}else if(action.kind==='read-aloud'){const live=unwrap(await window.campaign.live(token));if(live.focusId!==action.sceneId||live.focusRevision!==action.focusRevision)throw new Error('Fokusgruppe geändert. Ortsmappe erneut öffnen.');showTab('live');await openLive();await useLiveReferenceReadAloud(action.text,action.title,action.sceneId);}});setLocationNotebookNavigation(id=>locationNotebook.open(id));const locationNotebookButton=document.createElement('button');locationNotebookButton.type='button';locationNotebookButton.id='location-notebook-open';locationNotebookButton.textContent='Ortsmappe';el('narrative-journal-open').after(locationNotebookButton);locationNotebookButton.onclick=()=>void locationNotebook.open().catch(e=>status(e.message,true));
 const worldLinks=new WorldLinksWorkbench(()=>workspace,leaveWorkspace,status,async ref=>{if(!await leaveWorkspace())return;if(ref.kind==='creature'||ref.kind==='encounter'){showTab('catalog');await openCatalogReference({kind:ref.kind,id:ref.id});}else if(ref.kind==='item'){showTab('items');await openItemReference(ref.id);}else{showTab('preparation');if(ref.kind==='note')await openPreparedNote(ref.id);else await openPreparedLocation(ref.id);}});const worldLinksButton=document.createElement('button');worldLinksButton.id='world-links-open';worldLinksButton.type='button';worldLinksButton.textContent='Zusammenhänge';el('narrative-journal-open').after(worldLinksButton);worldLinksButton.onclick=()=>void worldLinks.open().catch(e=>status(e.message,true));
 initQuickReference(status,leaveWorkspace,async action=>{
  const token=workspace?.token;if(!token)return;
@@ -430,7 +433,7 @@ async function drainActivation(): Promise<void> {
         const next = unwrap(await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);worldLinks.contextChanged();el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
+        activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);worldLinks.contextChanged();locationNotebook.contextChanged();el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';
