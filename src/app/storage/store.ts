@@ -894,6 +894,9 @@ export class CampaignStore {
         });
       }
       if(change.kind==='plan')cleanSessionVisits(this.db,campaignId,change.plan.id,change.plan.scenes.map(s=>s.id));
+      if(change.kind==='plan'&&change.opening){const o=change.opening;
+        this.executeSession({commandId:command.commandId+'|opening',campaignId,token:command.token,action:{kind:'visit',planId:change.plan.id,expectedRevision:0,detail:{visitId:o.visitId,revision:0,readAloud:o.readAloud,noteIds:o.noteIds,groupIds:[],reward:null}}});
+      }
       this.db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(command.commandId, fingerprint, campaignId, targetId, revision);
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
       if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);

@@ -32,7 +32,7 @@ let pending: Promise<boolean> | null = null;
 const changesPending = new Set<Promise<void>>();
 let composing = false, blocked = false;
 let preparationLoad = 0, sceneSearchPlan:string|null=null;
-let hasOpenInput = false;
+let hasOpenInput = false, preparationInputVersion = 0;
 let failedCommand: PreparationCommand | null = null;
 let tell: (text: string, error?: boolean) => void;
 function syncSaveControl() { get('preparation-apply').hidden = !hasOpenInput || blocked; }
@@ -139,10 +139,10 @@ function renderProblems() {
   get('preparation-problems').textContent = problems.join('\n');
   get('preparation-problems').hidden = !problems.length;
 }
-async function change(change: PreparationChange, redraw = true): Promise<boolean> {
-  if (!context || blocked) return false;
+async function change(change: PreparationChange, redraw = true, stillCurrent:()=>boolean=()=>true): Promise<boolean> {
+  if (!context || blocked || !stillCurrent()) return false;
   if (changesPending.size) { tell('Vorherige Vorbereitung wird noch gespeichert.'); return false; }
-  const token = context.token, request = preparationLoad, current=()=>context?.token===token&&preparationLoad===request;
+  const token = context.token, request = preparationLoad, current=()=>stillCurrent()&&context?.token===token&&preparationLoad===request;
   const target = preparationTarget(change), key = draftKey(target.kind, target.id);
   const command: PreparationCommand = { commandId: crypto.randomUUID(), token, campaignId: context.campaign.id, draftWriteId: retained.get(key)?.writeId, change };
   tell('Wird gespeichert…');
@@ -150,10 +150,10 @@ async function change(change: PreparationChange, redraw = true): Promise<boolean
   const completion = new Promise<void>(resolve => { complete = resolve; }); changesPending.add(completion);
   try {
     const result = unwrap(await window.campaign.changePreparation(command));
-    if (!current()) return false;
+    if (context?.token !== token || !current()) return false;
     usePreparation(result);
     if (value('world-search').trim()) await reloadNoteSearch(false);
-    if (!current()) return false;
+    if (context?.token !== token || !current()) return false;
     retained.delete(key);
     if (command.change.kind === 'plan' && planDraft?.id === command.change.plan.id) {
       const sent = command.change.plan;
@@ -163,7 +163,7 @@ async function change(change: PreparationChange, redraw = true): Promise<boolean
     if (redraw) await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
     if(!current())return false;renderProblems(); syncSaveControl(); tell('Gespeichert.'); return true;
   } catch (error) {
-    if (!current()) return false;
+    if (context?.token !== token || !current()) return false;
     if (change.kind === 'plan' && planDraft?.id === change.plan.id && originalPlan()) planDraft = preservePlanInput(change.plan, originalPlan()!, planDraft);
     blocked = true; failedCommand = command; get('preparation-refresh').hidden = false; get('preparation-reconcile').hidden = false; syncSaveControl();
     try { await retainOpenDrafts(); if(!current())return false; tell((error as Error).message + ' Entwurf gesichert. Kein automatischer Neuversuch.', true); }
@@ -214,6 +214,7 @@ export async function flushPreparation(skipSession=false,skipNarrative=false): P
   return okay ? flushPreparation(skipSession,skipNarrative) : false;
 }
 function schedule() {
+  preparationInputVersion++;
   hasOpenInput = true;
   syncSaveControl();
   if (timer) clearTimeout(timer);
@@ -537,23 +538,34 @@ export async function openPreparedVisit(planId:string,visitId:string,current:()=
   usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
-export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null},stillCurrent:()=>boolean=()=>true){
-  const owner=context,token=owner?.token,load=preparationLoad,current=()=>stillCurrent()&&context===owner&&context?.token===token&&preparationLoad===load;if(!token||!current()||!await flushPreparation()||!current())throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
-  const next=unwrap(await window.campaign.preparation(token,''));if(!current())return;usePreparation(next);
-  const target=data.plans.find(plan=>plan.id===planId)??data.plans.find(plan=>plan.id===data.selection.planId)??data.plans[0];
-  if(planId&&!target||planId&&target?.id!==planId)throw new Error('Ausgewählter Spielabendplan nicht verfügbar.');
-  const id=campaignLocalId(crypto.randomUUID()),scene={id,title:seed.title,notes:seed.notes,locationId:seed.locationId?campaignLocalId(seed.locationId):null};
-  if(target){
-    const at=seed.beforeVisitId?target.scenes.findIndex(row=>row.id===seed.beforeVisitId):-1,scenes=[...target.scenes];scenes.splice(at<0?scenes.length:at,0,scene);
-    if(!await change({kind:'plan',expectedRevision:target.revision,plan:{...target,scenes}},false))throw new Error('Nächster Besuch konnte nicht gespeichert werden.');
-    if(!current())return;selectedPlan=target.id;
-  }else{
-    const created:ManualPlan={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[scene]};
-    if(!await change({kind:'plan',expectedRevision:null,plan:created},false))throw new Error('Spielabendplan konnte nicht angelegt werden.');
-    if(!current())return;selectedPlan=created.id;
-  }
-  selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
-  if(current()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean},stillCurrent:()=>boolean=()=>true){
+  const owner=context,token=owner?.token,epoch=preparationLoad,input=structuredClone(seed);
+  const current=()=>context===owner&&context?.token===token&&preparationLoad===epoch&&stillCurrent();
+  if(!token||!current()||!await flushPreparation()||!current())throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
+  const selection=[selectedPlan,selectedScene,selectedNote,selectedLocation],edit=preparationInputVersion;
+  const sameInput=()=>preparationInputVersion===edit&&selectedPlan===selection[0]&&selectedScene===selection[1]&&selectedNote===selection[2]&&selectedLocation===selection[3]&&!blocked&&!composing;
+  const requested=input.newPlan?null:planId??selectedPlan,shown=data.plans.find(plan=>plan.id===requested);
+  const next=unwrap(await window.campaign.preparation(token,''));
+  if(!current())return;
+  if(!sameInput())throw new Error('Vorbereitung inzwischen geändert. Offene Eingaben bleiben erhalten; Besuch erneut ausdrücklich vorbereiten.');
+  const target=input.newPlan?undefined:requested?next.plans.find(plan=>plan.id===requested):next.plans.find(plan=>plan.id===next.selection.planId)??next.plans[0];
+  if(requested&&!target)throw new Error('Ausgewählter Spielabendplan nicht verfügbar. Vorbereitung erneut öffnen.');
+  if(shown&&shown.revision!==target?.revision)throw new Error('Spielabendplan inzwischen geändert. Vorbereitung erneut öffnen.');
+  if(input.beforeVisitId&&!target?.scenes.some(scene=>scene.id===input.beforeVisitId))throw new Error('Der gewählte Besuch als Einfügeposition ist nicht mehr verfügbar. Vorbereitung erneut öffnen.');
+  usePreparation(next);
+  const id=campaignLocalId(crypto.randomUUID()),scene={id,title:input.title,notes:input.notes,locationId:input.locationId?campaignLocalId(input.locationId):null};
+  const plan:ManualPlan=target?{...target,scenes:[...target.scenes]}:{version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[]};
+  const at=input.beforeVisitId?plan.scenes.findIndex(row=>row.id===input.beforeVisitId):plan.scenes.length;
+  const scenes=[...plan.scenes];scenes.splice(at,0,scene);
+  const opening=input.readAloud||input.noteIds?.length?{visitId:id,readAloud:input.readAloud??'',noteIds:[...new Set(input.noteIds??[])]}:undefined;
+  const saved=await change({kind:'plan',expectedRevision:target?.revision??null,plan:{...plan,scenes},...(opening?{opening}:{})},false,current);
+  if(!current())return;
+  if(!saved)throw new Error('Nächster Besuch konnte nicht bestätigt werden. Speicherstatus der Vorbereitung prüfen.');
+  // The writer retains input made while its reply was pending. Do not discard
+  // that draft or move its editor merely because this visit was published.
+  if(!sameInput())return;
+  selectedPlan=plan.id;selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
+  if(current()&&preparationInputVersion===edit){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
 function showLocations(show: boolean) {

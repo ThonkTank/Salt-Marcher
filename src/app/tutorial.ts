@@ -1,4 +1,4 @@
-export const tutorialLessonRevision = 'desktop-tutorial-npc-places-v77';
+export const tutorialLessonRevision = 'desktop-tutorial-v77';
 export interface TutorialRun { version: string; lessonRevision: string; runId: string; state: 'new' | 'shown' | 'finished' | 'skipped' }
 export function checkedTutorialRun(value: unknown, applicationVersion: string): TutorialRun {
   if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Tutoriallauf ist beschädigt.');
@@ -135,7 +135,7 @@ export const tutorialCapabilityLessons={
   'live-loot-distribute':'treasure-distribution','treasury-distribute':'treasure-distribution',
 
   'world-links':'world-links','world-links-map':'world-links',
-  'npcs':'npc-world','npc-search-form':'npc-world','npc-filter-life':'npc-world','npc-filter-faction':'npc-world','npc-filter-location':'npc-world','npc-drafts':'npc-world','npc-editor':'npc-world','npc-reload':'npc-world','npc-creature-find':'npc-world','npc-enter':'npc-world','npc-places-open':'npc-places',
+  'npcs':'npc-world','npc-search-form':'npc-world','npc-filter-life':'npc-world','npc-filter-faction':'npc-world','npc-filter-location':'npc-world','npc-drafts':'npc-world','npc-editor':'npc-world','npc-reload':'npc-world','npc-creature-find':'npc-world','npc-enter':'npc-world',
   'groups-search-form':'prepared-groups','groups-template':'prepared-groups','groups-new':'prepared-groups','groups-editor':'prepared-groups','groups-apply':'prepared-groups','groups-reload':'prepared-groups','groups-creature-form':'prepared-groups','groups-actors':'prepared-groups','scene-prepared-groups':'prepared-groups',
   'autonomy-actors':'npc-autonomy','autonomy-groups':'npc-autonomy','autonomy-actor-form':'npc-autonomy',
   'party-popover':'party-topbar','party-search':'party-topbar','party-create':'party-topbar','party-editor':'party-topbar','party-profile-form':'party-topbar','party-active':'party-topbar','party-rest':'party-topbar',
