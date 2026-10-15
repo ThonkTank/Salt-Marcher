@@ -1,3 +1,4 @@
+import {canonicalJson} from './generation/canonical-json';
 import type {AtlasMap,AtlasCell,Hex,Terrain} from './world-contracts';
 import {cellAt,hexKey,hexPoint,pointHex,hexDistance} from './world-model';
 export interface HexPaintChange {key:string;before:AtlasCell|null;after:AtlasCell}
@@ -15,6 +16,6 @@ export function beginHexPaint(map:AtlasMap,level:number,terrain:Terrain,radius:n
 export function applyHexPaintEdit(map:AtlasMap,edit:HexPaintEdit,direction:'undo'|'redo'){
  if(map.id!==edit.mapId)throw new Error('Geländestrich gehört zu einer anderen Karte.');
  const cells=new Map(map.cells.map(c=>[key(c),c]));
- for(const change of edit.changes){const expected=direction==='undo'?change.after:change.before;if(JSON.stringify(cells.get(change.key)??null)!==JSON.stringify(expected))throw new Error('Ein betroffenes Hex wurde inzwischen geändert. Geländestrich kann nicht überschrieben werden.');}
+ for(const change of edit.changes){const expected=direction==='undo'?change.after:change.before;if(canonicalJson(cells.get(change.key)??null)!==canonicalJson(expected))throw new Error('Ein betroffenes Hex wurde inzwischen geändert. Geländestrich kann nicht überschrieben werden.');}
  for(const change of edit.changes){const next=direction==='undo'?change.before:change.after;if(next)cells.set(change.key,structuredClone(next));else cells.delete(change.key);}map.cells=[...cells.values()];
 }
