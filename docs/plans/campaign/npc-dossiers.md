@@ -133,8 +133,12 @@ Das NPC-Weltprofil speichert bis zu 48 benannte Aktivitäten mit Beginn/Ende, Zi
 
 Das Dossier projiziert den wiederkehrenden Plan auf die Uhr der gewählten Livegruppe und den gemeinsamen Kampagnenkalender. Es zeigt aktuelle geplante Aktivität, nächsten Beginn und die heutigen kanonischen Wohn-/Arbeitsbindungen; der aktuelle reale Aufenthaltsort bleibt gesondert sichtbar. Fehlende Hausbindungen und nach Kalenderänderung unpassende Pläne werden angezeigt. Eine neue Tagesplanung setzt keine Position, schreitet keine Uhr fort und aktiviert keine Autonomie. Wochentagsregeln, Ausnahmen/Ruhetage und automatische Ausführung bleiben offen.
 
-### Desktop-Arbeitsstand 0.111: Wochenplan und Datumsausnahmen
+### Desktop-Arbeitsstand 0.112: Wochenplan und Datumsausnahmen
 
 Jede wiederkehrende Aktivität gilt täglich oder an ausdrücklich gewählten Wochentagen des Kampagnenkalenders. Der Filter bezieht sich auf den Beginn; nächtliche Aktivitäten können in den Folgetag reichen. Bis zu 64 Datumsausnahmen ersetzen den gesamten gewählten Kampagnentag, einschließlich Resten aus der vorherigen Nacht. Kampagnentag 1 bezeichnet den ersten Tag des Kalenders; die Oberfläche zeigt die zugehörige Kalenderbezeichnung. Eine leere Ausnahme ist ein Ruhetag. Entfernen einer Ausnahme stellt den normalen Wochenplan wieder her.
 
 Entwurfsrohtexte, der vorhandene NPC-Commit und seine Receiptprüfung tragen Wochentage und Ausnahmen. Überschneidungen werden auch an Wochengrenzen und um Ausnahmegrenzen geprüft. Das Dossier liest Tag, Wochentag, aktuelle Ausnahme, geplante Aktivität und nächsten Beginn mit vollständigem Datum aus derselben Gruppenzeit. Eine Kalenderänderung kann einen Plan ungültig machen; sie deutet dessen Wochentagsindizes nicht stillschweigend um. Der Ablauf erzeugt keine zweite Uhr, keine automatische Bewegung und keine Autonomiefreigabe.
+
+### Desktop-Arbeitsstand 0.111: kanonische Stadtfraktionen
+
+Häuser und Viertel können nun eine vorhandene aktive World-Fraktion referenzieren. Die Stadt projiziert aus denselben IDs die Zahl bestätigter Bewohner, Beschäftigter und gebundener Elemente und bietet die Fraktion als Filter der World-NPC-Suche an. Archivierte Fraktionen bleiben an bestehenden Referenzen lesbar markiert, stehen aber nicht für neue Zuordnungen bereit. Eine Fraktionsbindung schützt Haus oder Viertel vor Regeneration; City-History, Neustart und Kampagnentransfer erhalten die Referenz. Regierung, Wachen und weitergehende Fraktionswirkungen bleiben offen, weil die sichtbaren Originalformulare ihre konkrete Semantik nicht ausreichend belegen.

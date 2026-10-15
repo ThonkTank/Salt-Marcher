@@ -22,6 +22,8 @@ function fixture(label:string){
  return{root,store,campaign,workspace,ada,bert,home,shop,revision:created.header.revision};
 }
 function demographics(f:ReturnType<typeof fixture>,id:string,ancestry:string,gender:string,ageYears:number|null){const old=f.store.npc(f.workspace.token,id);return f.store.executeNpc({commandId:'demographics-'+id+'-'+old.record.revision,campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,demographics:{ancestry,gender,ageYears}},locationId:old.locationId,health:old.health}});}
+function addFaction(f:ReturnType<typeof fixture>,id:ReturnType<typeof npcId>,title:string){f.store.changePreparation({commandId:'faction-'+id,campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'faction',title,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});}
+function setNpcFaction(f:ReturnType<typeof fixture>,id:string,factionId:ReturnType<typeof npcId>|null){const old=f.store.npc(f.workspace.token,id);return f.store.executeNpc({commandId:'npc-faction-'+id+'-'+old.record.revision,campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,factionId},locationId:old.locationId,health:old.health}});}
 
 test('city buildings bind existing World NPC homes and workplaces through exact undo and atomic moves',()=>{
  const f=fixture('city-people-');
@@ -45,6 +47,25 @@ test('city buildings bind existing World NPC homes and workplaces through exact 
   assert.throws(()=>f.store.executeCity({commandId:'missing',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:redone.header.revision,action:{kind:'change',upsert:[{...f.home,workerIds:['missing-npc']}],remove:[],label:'Fehlend'}}),/fehlenden oder gelöschten World-NPC/);
   assert.equal(f.store.city(f.workspace.token,'city').header.revision,redone.header.revision);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+
+test('city projects canonical World factions across people, houses and districts',()=>{
+ const f=fixture('city-factions-'),guild=npcId('801'),district:CityUnit={id:'harbor-district',kind:'district',name:'Hafenviertel',protected:true,factionId:guild,outline:[{x:0,y:0},{x:40,y:0},{x:40,y:40},{x:0,y:40}]};let sourceClosed=false,reopened:CampaignStore|null=null;
+ try{
+  addFaction(f,guild,'Hafengilde');setNpcFaction(f,f.ada,guild);setNpcFaction(f,f.bert,guild);
+  assert.deepEqual(f.store.cities(f.workspace.token).factions,[{id:guild,name:'Hafengilde'}]);
+  const assigned=f.store.executeCity({commandId:'assign-faction',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,factionId:guild,residentIds:[f.ada],workerIds:[f.bert]},district],remove:[],label:'Fraktion binden'}});
+  assert.deepEqual(assigned.factions,[{id:guild,name:'Hafengilde',available:true,residentCount:1,workerCount:1,unitCount:2}]);
+  assert.throws(()=>f.store.executeCity({commandId:'unprotect-faction',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,protected:false}],remove:[],label:'Schutz lösen'}}),/geschützten Häusern und Vierteln/);
+  assert.throws(()=>f.store.executeCity({commandId:'wrong-faction-kind',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...f.shop,factionId:f.ada}],remove:[],label:'Falsche Fraktion'}}),/keine World-Fraktion/);
+  assert.throws(()=>f.store.executeCity({commandId:'missing-faction',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...f.shop,factionId:'missing-faction'}],remove:[],label:'Fehlende Fraktion'}}),/Stadtfraktion fehlt/);
+  const undone=f.store.executeCity({commandId:'undo-faction',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'undo'}});assert.deepEqual(undone.factions,[]);
+  const redone=f.store.executeCity({commandId:'redo-faction',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:undone.header.revision,action:{kind:'redo'}});assert.deepEqual(redone.factions,[{id:guild,name:'Hafengilde',available:true,residentCount:1,workerCount:1,unitCount:2}]);
+  const note=f.store.preparation(f.workspace.token,'').notes.find(row=>row.note.id===guild)!.note;f.store.changePreparation({commandId:'archive-faction',campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'note-trash',id:guild,expectedRevision:note.revision,trashed:true}});
+  assert.deepEqual(f.store.cities(f.workspace.token).factions,[]);assert.deepEqual(f.store.city(f.workspace.token,'city').factions,[{id:guild,name:'Hafengilde',available:false,residentCount:1,workerCount:1,unitCount:2}]);
+  f.store.close();sourceClosed=true;reopened=new CampaignStore(join(f.root,'campaign.sqlite'),'test');const workspace=reopened.activate(f.campaign.id);assert.deepEqual(reopened.city(workspace.token,'city').factions,[{id:guild,name:'Hafengilde',available:false,residentCount:1,workerCount:1,unitCount:2}]);
+ }finally{reopened?.close();if(!sourceClosed)f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
 test('cross-city NPC moves share one guarded undo and redo step',()=>{
@@ -157,14 +178,14 @@ test('NPC places expose canonical city roles and disable hidden dungeon rooms',(
 test('campaign transfer remaps city resident and workplace references with their World NPC identities',async()=>{
  const f=fixture('city-people-transfer-source-'),targetRoot=mkdtempSync(join(tmpdir(),'city-people-transfer-target-')),target=new CampaignStore(join(targetRoot,'campaign.sqlite'),'test');
  try{
-  demographics(f,f.ada,'Mensch','Frau',28);demographics(f,f.bert,'Zwerg','Mann',56);
-  f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],workerIds:[f.bert],households:[{id:'household-transfer',name:'Familie Fernweg',memberIds:[f.ada,f.bert]}],jobs:[{id:'job-transfer',name:'Bäcker',workerIds:[f.bert]}]}],remove:[],label:'Personen binden'}});
+  demographics(f,f.ada,'Mensch','Frau',28);demographics(f,f.bert,'Zwerg','Mann',56);const guild=npcId('802');addFaction(f,guild,'Fernhändler');setNpcFaction(f,f.ada,guild);setNpcFaction(f,f.bert,guild);
+  f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,factionId:guild,residentIds:[f.ada,f.bert],workerIds:[f.bert],households:[{id:'household-transfer',name:'Familie Fernweg',memberIds:[f.ada,f.bert]}],jobs:[{id:'job-transfer',name:'Bäcker',workerIds:[f.bert]}]}],remove:[],label:'Personen binden'}});
   f.store.executeWorldRelationPair({commandId:'pair-transfer',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'add',sourceId:f.ada,targetId:f.bert,sourceRevision:f.store.npc(f.workspace.token,f.ada).noteRevision,targetRevision:f.store.npc(f.workspace.token,f.bert).noteRevision,forwardLabel:'beschützt',reverseLabel:'wird beschützt von'}});
   const snapshot=join(f.root,'campaign.snapshot.sqlite');await f.store.campaignSnapshot(f.workspace.token,snapshot);
   const imported=target.acceptCampaignSnapshot(snapshot,'Übernommene Stadt',{},'city-people-transfer'),opened=target.activate(imported.id),city=target.cities(opened.token).cities[0]!,view=target.city(opened.token,city.id),people=target.cities(opened.token).assignedPeople;
   const home=view.units.find(u=>u.name==='Wohnhaus')!;
   assert.equal(home.residentIds?.length,2);assert.equal(home.workerIds?.length,1);
-  assert.notEqual(home.residentIds?.[0],f.ada);assert.notEqual(home.workerIds?.[0],f.bert);
+  assert.notEqual(home.residentIds?.[0],f.ada);assert.notEqual(home.workerIds?.[0],f.bert);assert.notEqual(home.factionId,guild);assert.deepEqual(view.factions,[{id:home.factionId!,name:'Fernhändler',available:true,residentCount:2,workerCount:1,unitCount:1}]);
   assert.deepEqual(new Set(people.map(p=>p.id)),new Set([home.residentIds![0]!,home.workerIds![0]!]));
   assert.deepEqual(people.map(p=>p.name).sort(),['Ada','Bert']);
   assert.deepEqual(view.demographics,{residentCount:2,profiledCount:2,ancestries:[{value:'Mensch',count:1},{value:'Zwerg',count:1}],genders:[{value:'Frau',count:1},{value:'Mann',count:1}],ages:[{years:28,count:1},{years:56,count:1}]});
