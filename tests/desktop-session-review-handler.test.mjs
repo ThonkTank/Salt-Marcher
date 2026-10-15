@@ -14,6 +14,7 @@ const run=id=>({id,planId:'plan',profileRevision:0,seed:id,budget:500,usedXp:100
 function setup(t){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document};
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this._value??'';},set(v){this._value=v;},configurable:true});
+ const storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
  Object.assign(globalThis,{window,document});delete require.cache[require.resolve('../'+base+'/ui.cjs')];
  const x={window,document,commands:[],messages:[],plan:{id:'plan',revision:1,scenes:[]},workspace:{token:'token',campaign:{id:'campaign'}},flush:async()=>true,read:async id=>run(id)};
  let profile={planId:'plan',revision:0,party:[],adventureDayFraction:'0.5',seed:'seed'};
