@@ -138,8 +138,17 @@ unklare Editorbestätigung liegen derzeit nur im Speicher.
    gültige archivierte Quellen und ursprüngliche Paketbytes.
 3. `consumeSceneTime`, Scene-/Journeywriter und Wetterhinweise: zwei unabhängige
    Scenes an unterschiedlichen Zeiten/Orten, Override nur an einer Scene,
-   Wiedervereinigung und Campaignwechsel/Fresh kombinieren. Ownerfehler nach
-   erster Zeitwirkung muss den gesamten betreffenden Command zurückrollen.
+   Wiedervereinigung und Campaignwechsel/Fresh kombinieren. Fehler erforderlicher
+   autoritativer Zeit-/Weltfolgen rollen den betreffenden Command atomar zurück.
+   Abgeleitete unterstützende Anzeigen sind davon zu trennen: vor Erweiterung
+   der Isolation `syncSceneWorld` in erforderliche Positionsfolge und lesend
+   nachholbare Wetterprojektion aufteilen. Vorhandene Scene-/Worldreader und
+   Ackverbraucher müssen einen bestätigten Kernstand neben einer ausgefallenen
+   Projektion kenntlich machen; Nachholen berechnet nur aus dem bestätigten
+   Stand, statt einen neuen Zeitcommand zu erfinden. Gegenprobe: beschädigter
+   Override oder Phänomen neben Notiz-, Orts-, Uhr- und Maskenänderung; jede
+   notwendige Folge muss entweder bestätigt oder ausdrücklich offen sein.
+   Keine allgemeine Fehlerunterdrückung und kein zweites Recoveryframework.
    Retry erzeugt keine doppelten Hinweise/History-/Zeitfolgen. Playerperception
    und Music/Ambience folgen dem bestätigten Focus ohne GM-Texte im Playerframe.
 4. `world-ui.ts`, vorhandene Workingdraft-/Weltreceiptports: persistente
