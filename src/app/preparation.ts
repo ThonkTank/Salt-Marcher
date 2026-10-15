@@ -75,13 +75,19 @@ async function retainOpenDrafts() {
   if (noteDraft && originalNote()) values.push({ kind: 'note', expectedRevision: noteDraft.revision, note: structuredClone(noteDraft) });
   if (planDraft && originalPlan()) values.push({ kind: 'plan', expectedRevision: planDraft.revision, plan: structuredClone(planDraft) });
   if (locationDraft && originalLocation()) values.push({ kind: 'location', expectedRevision: locationDraft.revision, document: structuredClone(locationDraft.document) });
+  // A handed-off command can own a different plan than the visible editor.
+  // Preserve that owner and any already retained later input as well.
+  if(failedCommand&&['note','plan','location'].includes(failedCommand.change.kind)){
+    const target=preparationTarget(failedCommand.change),key=draftKey(target.kind,target.id);
+    if(!values.some(value=>{const owner=preparationTarget(value);return owner.kind===target.kind&&owner.id===target.id;}))values.push(structuredClone(retained.get(key)?.change??failedCommand.change) as PreparationEdit);
+  }
   const drafts: PreparationDraft[] = [], clean: { kind: PreparationEdit['kind']; id: string; saved: PreparationDraft }[] = [];
   for (const change of values) {
     const target = preparationTarget(change), key = draftKey(target.kind, target.id);
     if (draftProblems.has(key)) continue;
     const failedTarget = failedCommand ? preparationTarget(failedCommand.change) : null;
     const failed = failedTarget?.kind === target.kind && failedTarget.id === target.id ? failedCommand : null;
-    const original = change.kind === 'note' ? originalNote() : change.kind === 'plan' ? originalPlan() : originalLocation()?.document;
+    const original = change.kind === 'note' ? noteRow(target.id)?.note : change.kind === 'plan' ? data.plans.find(plan=>plan.id===target.id) : data.locations.find(row=>row.document.id===target.id)?.document;
     const value = change.kind === 'note' ? change.note : change.kind === 'plan' ? change.plan : change.document;
     const changed = !equal(value, original) || change.kind === 'location' && change.expectedRevision !== originalLocation()?.revision;
     if (changed || failed) drafts.push({ version: 1, writeId: crypto.randomUUID(), change, failedCommand: failed });
@@ -527,19 +533,23 @@ export async function openPreparedVisit(planId:string,visitId:string,current:()=
   usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
-export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null},stillCurrent:()=>boolean=()=>true){
-  const owner=context,token=owner?.token,epoch=preparationLoad,input={...seed};
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean},stillCurrent:()=>boolean=()=>true){
+  const owner=context,token=owner?.token,epoch=preparationLoad,input={...seed,noteIds:seed.noteIds?[...seed.noteIds]:undefined};
   const current=()=>context===owner&&context?.token===token&&preparationLoad===epoch&&stillCurrent();
   if(!token||!current()||!await flushPreparation()||!current())throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
   const selection=[selectedPlan,selectedScene,selectedNote,selectedLocation],edit=preparationInputVersion;
   const sameInput=()=>preparationInputVersion===edit&&selectedPlan===selection[0]&&selectedScene===selection[1]&&selectedNote===selection[2]&&selectedLocation===selection[3]&&!blocked&&!composing;
-  const requested=planId??selectedPlan,shown=data.plans.find(plan=>plan.id===requested);
+  const requested=input.newPlan?null:planId??selectedPlan,shown=data.plans.find(plan=>plan.id===requested);
   const next=unwrap(await window.campaign.preparation(token,''));
   if(!current()||!sameInput())throw new Error('Vorbereitung inzwischen geändert. Offene Eingaben bleiben erhalten; Besuch erneut ausdrücklich vorbereiten.');
-  const target=requested?next.plans.find(plan=>plan.id===requested):next.plans.find(plan=>plan.id===next.selection.planId)??next.plans[0];
+  const target=input.newPlan?undefined:requested?next.plans.find(plan=>plan.id===requested):next.plans.find(plan=>plan.id===next.selection.planId)??next.plans[0];
   if(requested&&!target)throw new Error('Der gewählte Spielabendplan ist nicht mehr verfügbar. Vorbereitung erneut öffnen.');
   if(shown&&shown.revision!==target?.revision)throw new Error('Spielabendplan inzwischen geändert. Vorbereitung erneut öffnen.');
   if(input.beforeVisitId&&!target?.scenes.some(scene=>scene.id===input.beforeVisitId))throw new Error('Der gewählte Besuch als Einfügeposition ist nicht mehr verfügbar. Vorbereitung erneut öffnen.');
+  if(target){
+    const saved=await loadedDraft('plan',target.id);
+    if(!current()||!sameInput()||saved||draftProblems.has(draftKey('plan',target.id)))throw new Error('Offener Planentwurf oder ursprünglicher Auftrag vorhanden. Im Zielplan zuerst prüfen; kein neuer Besuch wurde angelegt.');
+  }
   usePreparation(next);
   const id=campaignLocalId(crypto.randomUUID()),scene={id,title:input.title,notes:input.notes,locationId:input.locationId?campaignLocalId(input.locationId):null};
   const plan:ManualPlan=target?{...target,scenes:[...target.scenes]}:{version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[]};
@@ -550,6 +560,13 @@ export async function prepareNextVisit(planId:string|null,seed:{title:string;not
   if(!saved)throw new Error('Nächster Besuch konnte nicht bestätigt werden. Speicherstatus der Vorbereitung prüfen.');
   // The writer retains input made while its reply was pending. Do not discard
   // that draft or move its editor merely because this visit was published.
+  if(input.readAloud||input.noteIds?.length){
+    const session=unwrap(await window.campaign.session(token,plan.id));if(!current())return;
+    const detail=session.visits.find(row=>row.visitId===id);if(!detail)throw new Error('Besuch gespeichert; Mappenangaben sind noch nicht verfügbar.');
+    const enriched={...detail,readAloud:input.readAloud??'',noteIds:[...new Set(input.noteIds??[])]};
+    const result=await window.campaign.executeSession({commandId:crypto.randomUUID(),campaignId:owner!.campaign.id,token,action:{kind:'visit',planId:plan.id,detail:enriched,expectedRevision:detail.revision}});
+    if(!current())return;if(!result.ok)throw new Error('Besuch gespeichert; Mappenangaben noch nicht bestätigt: '+result.error);
+  }
   if(!sameInput())return;
   selectedPlan=plan.id;selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
   if(current()&&preparationInputVersion===edit){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}

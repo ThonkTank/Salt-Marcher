@@ -76,6 +76,25 @@ Antwort aus einer früheren Aktivierung desselben Workspace steuert den neuen
 Editor nicht um. Ein Fehler wird über den vorhandenen Vorbereitungsstatus und
 Receiptweg behandelt; kein automatischer Neuversuch erzeugt einen zweiten Besuch.
 
+Ein unklarer Besuchsauftrag an einen bereits vorhandenen, gerade nicht geöffneten
+Plan wird zusätzlich unter genau diesem Plan als `PreparationDraft` gesichert.
+Der sichtbare Editor wird nicht zum Ersatzowner. Originalcommand, Kommando-ID,
+Plan-ID, Basisrevision und Prosa bleiben erhalten. Ein schon gesicherter späterer
+Entwurf dieses Zieles hat Vorrang vor der älteren gesendeten Fassung. Eine weitere
+Übergabe prüft den Zielentwurf vor Veröffentlichung und lässt einen offenen
+Auftrag zuerst im Zielplan aufklären. Die zwei lokalen Fehlerfälle sind Ablehnung
+vor Commit und verlorene Antwort nach Commit; eine neue Storeinstanz findet
+jeweils denselben Auftrag und unterscheidet `not-applied` von `applied`, ohne ihn
+automatisch erneut auszuführen. Das vorhandene Draftformat bleibt unverändert.
+
+Der neue Übergabedialog lässt Zielplan, Titel, getrennten Vorlesetext und private
+Notizen vor dem Speichern prüfen. Die ausdrückliche Auswahl eines neuen Plans
+wird als solche an den Writer übergeben; ein leerer Selectwert darf nicht im
+bisher ausgewählten Plan landen. Bestehende Workspace-/Resume-Bindungen gelten
+auch während dieses Dialogs. Das Anlegen von Timeline und anschließenden
+Mappenangaben sind derzeit zwei Storecommands und noch kein atomarer Gesamtweg.
+Ein Fehler des zweiten Schritts ist kein Nachweis, dass der Besuch fehlt.
+
 Die Übergabe erhält als Notiz eine erklärende Überschrift und danach den
 vollständigen Originaltext, einschließlich CRLF und Randwhitespace. Die Ableitung
 des kurzen Besuchstitels bleibt davon getrennt. Der Plantext wird nicht mehr
@@ -90,6 +109,31 @@ die abgeleitete Übergabenotiz an ihre Originalbytes. Diese Belege ersetzen kein
 frischen nativen App-Prozess, keine Tastatur-/IME-Abnahme und keine vollständige
 Recoveryqualifikation. Insbesondere Neuplananlage mit verlorenem Reply und
 Übernahme aus langen nativen Textfeldern bleiben gezielte Folgeabnahmen.
+
+## Offene Anlage- und Mappen-Recovery
+
+1. `preparation-contracts.ts`, `preparation.ts`, `storage/store.ts`: Ein vollständig
+   neuer Plan (`expectedRevision=null`) besitzt vor Commit noch keinen Draftowner.
+   Die aktuelle Sicherung lehnt diesen Fall ausdrücklich ab und blockiert normales
+   Verlassen bei ungeklärtem Auftrag. Crash-/Neustartsicherheit ist damit offen.
+   Vor Veröffentlichung müssen Anlageabsicht, Originalcommand und vollständige
+   Texte dauerhaft gesichert und beim Öffnen der Kampagne auffindbar sein. Eine
+   Statusprüfung darf anhand des Originalreceipts bestätigen oder Nichtanwendung
+   feststellen, aber nicht automatisch einen neuen Plan erzeugen. Abnahme:
+   Prozessende vor Send, nach Commit/vor Reply und bei beschädigter Sicherung;
+   echte neue Instanz, gleiche Identitäten und unveränderte Prosa.
+2. `prepareNextVisit`, `storage/session.ts` und vorhandener Planpublisher:
+   Timelineeintrag, Vorlesetext und Quellenbindung gemeinsam bestätigen oder den
+   bestätigten Teil samt unverändertem ursprünglichen Folgeauftrag wiederaufnehmen.
+   Ein erneuter Klick nach Fehler darf keinen zweiten Besuch als Ersatz erzeugen.
+   Nicht aus zwei Einzelreceipts eine atomare Nutzeraktion ableiten. Abnahme:
+   ungültige/gelöschte Quelle, verlorene Antwort des zweiten Commands, später
+   geänderter Plan und Wiederaufnahme ohne Doppelanlage oder Textverlust.
+3. `storage/campaign-data.ts` und Backupvalidierung: neue dauerhafte
+   Anlage-/Folgeaufträge müssen vor Einführung einen dokumentierten Umgang bei
+   Backup, Restore und unabhängiger Kopie besitzen. Historische Texte bleiben
+   Originalbytes; offene Aufträge werden nicht automatisch in der Kopie ausgeführt.
+   Bestehende Draft- und Kampagnenformate dürfen nicht still umgedeutet werden.
 
 ## Nächste ausführbare Abschlüsse
 

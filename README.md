@@ -898,3 +898,9 @@ Die Aktion speichert einen normalen Planbesuch und öffnet ihn sofort zur Bearbe
 ### 0.97 – Vom NSC zum konkreten Schauplatz
 
 Ortsmappe, Gruppenübersicht und NSC-Weltprofil öffnen vorhandene Wohnhäuser, Arbeitsgebäude und den aktuellen Dungeonraum desselben NSCs. Haushalts- und Berufsnamen bleiben sichtbar; Wohn-/Arbeitsbindung und aktuelle Feinposition sind getrennt benannt. Die Suche lädt höchstens 40 Schauplätze je Seite. Ein Klick wählt gezielt das Gebäude im vorhandenen Stadtinspektor oder den Raum im Atlas aus. Öffnen bewegt weder NSC noch Gruppe und verändert weder HP noch Zeit; Haus-/Haushalts-/Berufsangaben bleiben beim bisherigen Stadteditor. Neue lesende Projektion ohne Schemaänderung.
+
+### Desktopstand 0.98: Übergabe als vollständige Eröffnungsmappe
+
+„Einstieg aus Übergabe vorbereiten“ öffnet im Startbriefing nun einen eigenen Einstiegeditor. Der GM wählt den Zielplan, prüft den aus der Übergabe abgeleiteten Titel, schreibt einen getrennten öffentlichen Eröffnungstext und bearbeitet die privaten Übergabenotizen. Der aktuelle Gruppenort sowie bis zu 20 offene Aufträge und Gerüchte dieses Ortes werden an den Besuch gebunden. Anschließend öffnet sich der neue Besuch im vorhandenen Planeditor mit Vorlesetext, Weltquellen und weiteren Vorbereitungsfeldern.
+
+Der Besuch wird vor den bisher nächsten ungespielten Einstieg gesetzt; bei einem anderen Zielplan kommt er ans Ende, ohne fremde Reihenfolge zu verfälschen. Die Übergabe bleibt unverändert in der Chronik. Vorlesetext, Quellen, Besuch und Plan verwenden ihre vorhandenen Besitzer und Revisionen; Gruppenzeit, Fokus, Besuchsstatus und Spieleranzeige bleiben unverändert, bis der GM ihre jeweiligen Tischaktionen bestätigt.
