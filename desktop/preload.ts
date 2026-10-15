@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   changePreparationContent:(command:import('../src/app/preparation-contracts').PreparationCommand)=>ipcRenderer.invoke('campaign:change-preparation-content',command),
   reconcilePreparationContent:(command:import('../src/app/preparation-contracts').PreparationCommand,token:string)=>ipcRenderer.invoke('campaign:reconcile-preparation-content',command,token),
   npcCast: (token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>ipcRenderer.invoke('campaign:npc-cast',token,q),
+  npcBuildingChoices:(token:string,id:string,q:import('../src/app/npc-places-contracts').NpcBuildingQuery)=>ipcRenderer.invoke('campaign:npc-building-choices',token,id,q),
   npcPlaces: (token:string,id:string,offset:number)=>ipcRenderer.invoke('campaign:npc-places',token,id,offset),
   npcDossier: (token:string,sceneId:string,id:string)=>ipcRenderer.invoke('campaign:npc-dossier',token,sceneId,id),
   npcDrafts:(token:string)=>ipcRenderer.invoke('campaign:npc-drafts',token),
