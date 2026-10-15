@@ -12,9 +12,9 @@ buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/table-weight
 buildSync({entryPoints:['src/app/generation-ui.ts'],outfile:'.build/table-weights-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/table-weights-store.cjs');
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
-async function fixture(t,kind,configure=()=>{}){
+async function fixture(t,kind,configure=()=>{},description='Rohtext'){
  const root=mkdtempSync(path.join(tmpdir(),'table-weights-')),store=new CampaignStore(path.join(root,'campaign.sqlite')),campaign=store.create('Tabellengewichte'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
- const table=kind==='encounter'?{id:randomUUID(),revision:0,scope:'campaign',name:'Wachen',description:'Rohtext',entries:[{creatureId:'guard',weight:'1'},{creatureId:'goblin',weight:'1'}],habitats:[],time:'any',lootTableId:null,trashed:false}:{id:randomUUID(),revision:0,name:'Beute',description:'Rohtext',rolls:1,entries:['A','B'].map(name=>({id:randomUUID(),weight:'1',minimum:1,maximum:1,item:{name,valueGold:'0',category:'other'}})),trashed:false};
+ const table=kind==='encounter'?{id:randomUUID(),revision:0,scope:'campaign',name:'Wachen',description,entries:[{creatureId:'guard',weight:'1'},{creatureId:'goblin',weight:'1'}],habitats:[],time:'any',lootTableId:null,trashed:false}:{id:randomUUID(),revision:0,name:'Beute',description:'Rohtext',rolls:1,entries:['A','B'].map(name=>({id:randomUUID(),weight:'1',minimum:1,maximum:1,item:{name,valueGold:'0',category:'other'}})),trashed:false};
  store.executeGeneration(command({kind:kind==='encounter'?'table-save':'loot-save',table,expectedRevision:null}));
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={window:globalThis.window,document:globalThis.document};
  const selectPrototype=window.HTMLSelectElement.prototype,selectValue=Object.getOwnPropertyDescriptor(selectPrototype,'value');Object.defineProperty(selectPrototype,'value',{get(){return this._value??this.options[0]?.value??'';},set(v){this._value=v;},configurable:true});
@@ -27,7 +27,7 @@ async function fixture(t,kind,configure=()=>{}){
  const el=id=>document.getElementById(id),prefix=kind==='encounter'?'table':'loot',read=()=>store[kind==='encounter'?'encounterTables':'lootTables'](w.token,true).find(t=>t.id===table.id);
  el(kind==='encounter'?'encounter-table-list':'loot-table-list').value=table.id;el(kind==='encounter'?'encounter-table-open':'loot-table-open').click();await settle();
  const entries=el(prefix+'-entries'),inputs=kind==='encounter'?[...entries.querySelectorAll('input')]:[...entries.querySelectorAll('label')].filter(l=>l.firstChild.textContent==='Gewicht').map(l=>l.querySelector('input'));
- return {el,inputs,messages,read,select:id=>{selectedCreature={id,name:id,xp:25,challengeRating:'1/8'};ui.generationCreature(selectedCreature);},shares:()=>kind==='encounter'?[...entries.querySelectorAll('.table-share')].map(n=>n.textContent):[...entries.querySelectorAll('legend')].map(n=>n.textContent.split(' · ')[1]),edit:(i,text)=>{inputs[i].value=text;inputs[i].oninput();},save:async()=>{el(prefix+'-form').onsubmit({preventDefault(){}});await settle();}};
+ return {store,w,table,ui,el,inputs,messages,read,select:id=>{selectedCreature={id,name:id,xp:25,challengeRating:'1/8'};ui.generationCreature(selectedCreature);},shares:()=>kind==='encounter'?[...entries.querySelectorAll('.table-share')].map(n=>n.textContent):[...entries.querySelectorAll('legend')].map(n=>n.textContent.split(' · ')[1]),edit:(i,text)=>{inputs[i].value=text;inputs[i].oninput();},save:async()=>{el(prefix+'-form').onsubmit({preventDefault(){}});await settle();}};
 }
 for(const kind of ['encounter','loot'])test(kind+' shares follow every raw edit, invalidate together and recover without replacing inputs',async t=>{
  const x=await fixture(t,kind);assert.deepEqual(x.shares(),['50,00 %','50,00 %']);
@@ -64,4 +64,12 @@ test('closing an encounter table while names load leaves a newer table draft unt
  let release;const x=await fixture(t,'encounter',api=>{api.creature=()=>new Promise(resolve=>release=resolve);});
  assert.equal(x.el('table-manager').open,true);x.el('table-close').click();assert.equal(x.el('table-manager').open,false);x.el('encounter-table-new').click();await settle();x.el('table-name').value='Neuer Entwurf';x.el('table-name').oninput();
  release({ok:true,value:{id:'guard',name:'Alte Wache'}});await settle();assert.equal(x.el('table-manager').open,true);assert.equal(x.el('table-name').value,'Neuer Entwurf');assert.equal(x.el('table-entries').querySelectorAll('input').length,0);assert.doesNotMatch(x.el('table-entries').textContent,/Alte Wache/);assert.equal(x.read().revision,1);
+});
+
+test('an existing encounter table keeps its scope while every new draft can explicitly choose its scope',async t=>{
+ const x=await fixture(t,'encounter');assert.equal(x.el('table-scope').value,'campaign');assert.equal(x.el('table-scope').disabled,true);assert.match(x.el('table-scope-help').textContent,/Neuanlage|neue Tabelle/);x.el('table-close').click();x.el('encounter-table-new').click();await settle();assert.equal(x.el('table-scope').value,'campaign');assert.equal(x.el('table-scope').disabled,false);x.el('table-scope').value='installation';x.el('table-scope').oninput();x.el('table-name').value='Öffentlich gewählte Wachen';x.el('table-name').oninput();x.select('goblin');x.el('table-add-creature').click();await x.save();const created=x.store.encounterTables(x.w.token,true).find(t=>t.name==='Öffentlich gewählte Wachen');assert.equal(created.scope,'installation');x.el('encounter-table-list').value=created.id;x.el('encounter-table-open').click();await settle();assert.equal(x.el('table-scope').disabled,true);assert.equal(x.el('table-scope').value,'installation');
+});
+
+test('editing only table metadata preserves description bytes normalized by the browser control',async t=>{
+ const description=' Originalprosa\r\nZweite Zeile\r\n',x=await fixture(t,'encounter',()=>{},description);x.el('table-description').value=description.replaceAll('\r\n','\n');x.el('table-name').value='Neuer Name';x.el('table-name').oninput();x.el('table-habitats').value='Forest';x.el('table-habitats').oninput();x.el('table-time').value='night';x.el('table-time').oninput();await x.save();assert.equal(x.read().name,'Neuer Name');assert.equal(x.read().description,description);assert.deepEqual(x.read().habitats,['Forest']);assert.equal(x.read().time,'night');
 });

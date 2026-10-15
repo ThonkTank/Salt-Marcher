@@ -1,6 +1,6 @@
 # Bindende Weltvorgaben für Encounter und Spielabend
 
-Stand: 14.10.2026. Fachumfang: [Encounterplan](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
+Stand: 16.10.2026. Fachumfang: [Encounterplan](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
 und [Spielabendplanung](manual-session-planner.md). Die gepinnten Program
 Capabilities, Revision `9de85c1a26f526acbc1af332ac5962e185c0aab2`, L143–156,
 verlangen jede ausgewählte Orts-/Fraktions-/NPC-/Itemvorgabe im vorgeschlagenen
@@ -32,6 +32,70 @@ bleiben erhalten. Reads verändern weder Quellendaten noch Bestände.
 Die [Storeprüfung](../../../tests/desktop-world-source-constraints.test.mjs)
 deckt fehlende Quellen, ausgeschlossene Tabellen/Orte, Nullbestand, endliche
 Bestände, geänderte Quellenbasis und beschädigte Auswahlquellen ab.
+
+## Encounter-Tabellen: Identität und Geltungsbereich
+
+Eine Encounter-Tabelle erhält bei der Neuanlage ausdrücklich `campaign` oder
+`installation`; neue Dialogentwürfe wählen zunächst die Kampagne. Dieser Owner
+bleibt nach der Anlage stabil. `executeGeneration/table-save` prüft erst
+Sichtbarkeit und erwartete Revision und lehnt anschließend jede Änderung des
+Geltungsbereichs vor dem Write ab. Das vorhandene Formular zeigt die gewählte
+Quelle weiter an, sperrt sie bei gespeicherten Tabellen und verweist für einen
+anderen Geltungsbereich auf eine neue Tabelle. Die normale Bearbeitung verändert
+Name, Beschreibung, Einträge und Bedingungen unter derselben ID/Revision.
+Jeder Input übernimmt ausschließlich sein bearbeitetes Feld. Ein Name-/Filter-
+oder Gewichtsedit liest unberührte Beschreibung nicht neu aus dem Browsertextarea;
+so bleiben deren originale Zeilenumbrüche und Autorenbytes erhalten. Tatsächliche
+Textbearbeitung bleibt eine ausdrückliche Änderung dieses Feldes.
+
+Eine Installationstabelle einer einzelnen Kampagne zuzuschlagen ließ zuvor
+Verknüpfungen anderer Kampagnen mit einer dort unsichtbaren Tabelle zurück.
+Die Gegenrichtung stellte eine kampagneneigene Identität unbemerkt allen
+Kampagnen zur Verfügung. Weder ein gewöhnlicher Save noch ein Revisionsvergleich
+ist ein ausdrücklicher Move-/Copyvertrag. Es gibt deshalb keinen automatischen
+Ownerwechsel, kein stilles Entlinken und keine Migration vorhandener Tabellen.
+Schon früher verschobene Tabellen brauchen eine gezielte Prüfung ihrer alten
+Referenzen; ihren ursprünglichen Owner nicht aus heutigen Daten erraten.
+Eine spätere Kopieraktion benötigt eine neue ID und eine bewusste Behandlung
+kampagnenlokaler Lootbindungen; sie ersetzt keine bestehende globale Identität.
+
+`desktop-table-scope.test.mjs` prüft beide unzulässigen Richtungen mit echten
+SQLitezuständen, darunter Quellen zweier Kampagnen, Fraktionsbestände,
+vollständiger Rollback, Shared-Revision, Receiptreplay und Fresh.
+`desktop-table-weights.test.mjs` prüft den gesperrten vorhandenen und frei
+wählbaren neuen Scope sowie das erneute Öffnen nach einem Installation-Save.
+Native Dialogbedienung, vollständiger Quellenlebenszyklus und Generatorabnahme
+bleiben getrennte Belege.
+
+### Weitere ausführbare Tabellenabschlüsse
+
+- **Ein gemeinsamer Manager einschließlich Fraktionsnesting.** Bestehenden
+  `generation-ui.openTable` und Katalogslot nutzen. Fraktionseditor muss seinen
+  unveränderten Draft und Fokus behalten; eine neu gespeicherte Tabellen-ID
+  ausdrücklich dorthin zurückgeben. Titelclose, Escape und Abbrechen benutzen
+  denselben Discardpfad. Native Abnahme: nur oberste Bestätigung interaktiv,
+  Cancel zurück zum unveränderten Manager, anschließend zurück zur Fraktion;
+  ausstehender Save darf weder doppelt starten noch geschlossen werden.
+- **Trash von endgültiger Löschung unterscheiden.** Das vorhandene
+  `table-trash` erhält Identitäten/Verknüpfungen für Restore. Es erfüllt die
+  Originalforderung einer endgültigen Löschung samt atomarem Entfernen von
+  Ortslinks, Fraktionshauptquelle und abgeleitetem Bestand noch nicht.
+  Vor einem endgültigen Command konkrete betroffene Quellen aller Campaigns
+  einschließlich recoverable/trashed zeigen, Revisionen und Wiederholung
+  schützen und in derselben Transaktion bereinigen. Autorenprosa, unabhängige
+  Tabellen und historische Generierungsruns erhalten. Spätes Fault/Fresh,
+  globale Referenzen und stale Source-Editor sind Abnahmen.
+- **Kandidaten und Gewichte bis zur Annahme prüfen.** Effektiv keine Tabellen
+  bedeutet sichtbare Katalogquelle mit aktuellen Filtern; ausdrücklich wirksame
+  Tabelle ohne passende Einträge bedeutet No-solution. Ausgewählte Tabellen
+  mit sämtlichen Kreaturfiltern und XPceiling schneiden, authored Gewichte
+  bis ins Ranking erhalten, unterschiedliche Lootbindungen als nichtblockierenden
+  Konflikt erklären. Original `1..10` und bestehende exakte Dezimalwerte mit
+  TN-37 (exakte relative Verhältnisse) ausdrücklich abgleichen; keine stillen
+  Rundungen oder Ablehnung bereits gespeicherter Werte. Die Generatorregeln
+  nicht im UI duplizieren. Abnahme: überlappende Tabellen, leere Filtermenge,
+  exakte 100%-Anteile, Restart/Locale und keinerlei Encounterbuchung allein
+  durch Tabellenauswahl.
 
 ## Neuer Anschluss für benannte NPCs
 
