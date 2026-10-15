@@ -2,11 +2,16 @@ import {createHash} from 'node:crypto';
 import type {CalendarEvent} from '../world-contracts';
 import type {TimeRequest,TimePreview,ClockEventTarget} from '../time-plan-contracts';
 import {agendaDuration,agendaOccurrence,unitMs} from '../agenda-model';
+import {checkedCalendarEvent} from '../world-model';
 import {validInstant} from '../time-plan-model';
 import {readWorldCalendar} from './world';
 import {readLiveScene} from './live';
-export function readClockEvent(db:any,cam:string,id:string):CalendarEvent{const row=db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,id);if(!row||createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Kalenderereignis fehlt oder ist beschädigt.');return decodeClockEvent(row);}
-function decodeClockEvent(row:any,includeTrashed=false):CalendarEvent{if(!row||createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Kalenderereignis beschädigt.');const event:CalendarEvent=JSON.parse(row.payload);if(event.id!==row.id||event.revision!==row.revision||!includeTrashed&&event.trashed)throw new Error('Kalenderereignis geändert oder im Papierkorb.');return event;}
+export function readClockEvent(db:any,cam:string,id:string):CalendarEvent{return decodeClockEvent(db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,id));}
+function decodeClockEvent(row:any,includeTrashed=false):CalendarEvent{
+ if(!row||createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Kalenderereignis beschädigt.');const event=checkedCalendarEvent(JSON.parse(row.payload),true);
+ if(event.id!==row.id||event.revision!==row.revision||!includeTrashed&&event.trashed)throw new Error('Kalenderereignis geändert, beschädigt oder im Papierkorb.');return event;
+}
+
 export function previewSceneTime(db:any,cam:string,r:TimeRequest):TimePreview{
  if(!r||typeof r.reason!=='string'||r.reason.length>2000)throw new Error('Zeitgrund benötigt höchstens 2.000 Zeichen.');const scene=readLiveScene(db,cam,r.sceneId),focus=db.prepare('SELECT focus_id,focus_revision FROM live_state WHERE campaign_id=?').get(cam),calendar=readWorldCalendar(db,cam);if(scene.retired||focus?.focus_id!==scene.id)throw new Error('Zeitvorschau gehört nicht mehr zur fokussierten Gruppe.');if(r.expectedCalendarRevision!==undefined&&r.expectedCalendarRevision!==calendar.revision)throw new Error('Kalender geändert. Zeitdialog neu öffnen.');const now=BigInt(scene.clock.instantMs);let to:bigint,target:ClockEventTarget|undefined;
  if(r.kind==='duration')to=now+agendaDuration(calendar,r.amount,r.unit);
