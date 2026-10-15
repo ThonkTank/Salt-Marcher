@@ -545,8 +545,8 @@ export class CampaignStore {
   locationMaterials(token:string,q:import('../location-notebook-contracts').LocationMaterialsQuery){const cam=this.guard(token);return this.db.transaction(()=>readLocationMaterials(this.db,cam,q))();}
   worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery):import('../world-links-contracts').WorldLinksPage{const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
   npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
+  npcPlaces(token:string,id:string,offset:number):import('../npc-places-contracts').NpcPlaces{const cam=this.guard(token);return this.db.transaction(()=>readNpcPlaces(this.db,cam,id,offset))();}
   npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
-  npcPlaces(token:string,id:string,offset:number){const cam=this.guard(token);return this.db.transaction(()=>readNpcPlaces(this.db,cam,id,offset))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}
   npcDraft(token:string,id:string){return npcDraft(this.db,this.guard(token),id);}
   keepNpcDraft(token:string,d:NpcDraft,expected:string|null){return keepNpcDraft(this.db,this.guard(token),d,expected);}
@@ -894,6 +894,9 @@ export class CampaignStore {
         });
       }
       if(change.kind==='plan')cleanSessionVisits(this.db,campaignId,change.plan.id,change.plan.scenes.map(s=>s.id));
+      if(change.kind==='plan'&&change.opening){const o=change.opening;
+        this.executeSession({commandId:command.commandId+'|opening',campaignId,token:command.token,action:{kind:'visit',planId:change.plan.id,expectedRevision:0,detail:{visitId:o.visitId,revision:0,readAloud:o.readAloud,noteIds:o.noteIds,groupIds:[],reward:null}}});
+      }
       this.db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(command.commandId, fingerprint, campaignId, targetId, revision);
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
       if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);

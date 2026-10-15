@@ -13,6 +13,11 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
   und Belohnungen lesen. Quest-/Gerüchtblöcke zeigen bestätigten Status,
   vorbereitete Belohnung oder vergebenes Ergebnis. Offene Entwürfe sind Hinweise
   und ersetzen den bestätigten Quellenstand nicht.
+- Aus der Spielabend-Übergabe einen Einstieg mit Zielplan, privatem Vorlesetext
+  und gebundenen Ortsquellen vorbereiten. Planfolge und Mappeninhalt werden
+  gemeinsam mit einem Vorbereitungsauftrag gespeichert oder vollständig verworfen.
+  Eine entfernte Einfügeposition verlangt eine neue Auswahl; spätere Eingaben
+  bleiben erhalten. Der neue Plan ist eine ausdrückliche Wahl.
 - Im Live-Spiel einen Besuch übernehmen, Vorlesetext in den GM-Szenenentwurf
   kopieren, die Originalquelle öffnen, eine Begegnung vorbereiten oder die
   Belohnung dieses Besuchs im vorhandenen Fachbereich verwalten.

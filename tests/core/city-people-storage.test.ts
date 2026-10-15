@@ -89,17 +89,17 @@ test('NPC places expose canonical city roles and disable hidden dungeon rooms',(
  try{
   f.store.executeCity({commandId:'places',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada],workerIds:[f.ada],households:[{id:'household',name:'Familie Abendrot',memberIds:[f.ada]}],jobs:[{id:'job',name:'Bäcker',workerIds:[f.ada]}]}],remove:[],label:'Schauplätze binden'}});
   const room=f.store.addRoom(f.workspace.token).rooms[0]!,pose={scopeId:room.scopeId,floorId:room.floorId,roomId:room.id,x:1,y:1,z:0},payload=JSON.stringify(pose),checksum=createHash('sha256').update(payload).digest('hex');
-  f.store.db.prepare('INSERT INTO npc_position VALUES(?,?,?,?)').run(f.campaign.id,f.ada,null,1);
-  f.store.db.prepare('INSERT INTO npc_dungeon_position VALUES(?,?,?,?)').run(f.campaign.id,f.ada,payload,checksum);
+  (f.store as unknown as {db:any}).db.prepare('INSERT INTO npc_position VALUES(?,?,?,?)').run(f.campaign.id,f.ada,null,1);
+  (f.store as unknown as {db:any}).db.prepare('INSERT INTO npc_dungeon_position VALUES(?,?,?,?)').run(f.campaign.id,f.ada,payload,checksum);
   const page=f.store.npcPlaces(f.workspace.token,f.ada,0);
   assert.deepEqual(page.sites.map(site=>site.kind),['dungeon','home','work']);
   assert.match(page.sites.find(site=>site.kind==='home')!.detail,/Familie Abendrot/);
   assert.match(page.sites.find(site=>site.kind==='work')!.detail,/Bäcker/);
   assert.equal(page.sites.find(site=>site.kind==='dungeon')!.available,true);
-  f.store.db.prepare("INSERT INTO drawing_hidden VALUES(?,?,?,'room',0,1)").run(f.campaign.id,room.id,room.scopeId);
+  (f.store as unknown as {db:any}).db.prepare("INSERT INTO drawing_hidden VALUES(?,?,?,'room',0,1)").run(f.campaign.id,room.id,room.scopeId);
   assert.equal(f.store.npcPlaces(f.workspace.token,f.ada,0).sites.find(site=>site.kind==='dungeon')!.available,false);
-  const note=f.store.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(f.campaign.id,f.ada),body=JSON.parse(note.payload),forged=JSON.stringify({...body,id:randomUUID()});
-  f.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(forged,createHash('sha256').update(forged).digest('hex'),f.campaign.id,f.ada);
+  const note=(f.store as unknown as {db:any}).db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(f.campaign.id,f.ada),body=JSON.parse(note.payload),forged=JSON.stringify({...body,id:randomUUID()});
+  (f.store as unknown as {db:any}).db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(forged,createHash('sha256').update(forged).digest('hex'),f.campaign.id,f.ada);
   assert.throws(()=>f.store.npcPlaces(f.workspace.token,f.ada,0),/NPC-Profil ist falsch zugeordnet/);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
@@ -120,4 +120,14 @@ test('campaign transfer remaps city resident and workplace references with their
   assert.notEqual(home.jobs?.[0]?.id,'job-transfer');
   assert.deepEqual(home.jobs?.[0]?.workerIds,home.workerIds);
  }finally{target.close();f.store.close();rmSync(targetRoot,{recursive:true,force:true});rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('NPC place reads use the canonical city household and job without moving the World actor',()=>{
+ const f=fixture('city-npc-places-');
+ try{
+  f.store.executeCity({commandId:'bind-places',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada],households:[{id:'family',name:'Familie am Tor',memberIds:[f.ada]}]},{...f.shop,workerIds:[f.ada],jobs:[{id:'job',name:'Schmiedin',workerIds:[f.ada]}]}],remove:[],label:'Wohnort und Beruf'}});
+  const before=f.store.npc(f.workspace.token,f.ada),db=(f.store as unknown as {db:any}).db,bytes=db.serialize(),places=f.store.npcPlaces(f.workspace.token,f.ada,0);
+  assert.deepEqual(places.sites.map(site=>site.kind),['work','home']);assert.ok(places.sites.every(site=>site.available));assert.match(places.sites.find(site=>site.kind==='home')!.detail,/Familie am Tor/);assert.match(places.sites.find(site=>site.kind==='work')!.detail,/Schmiedin/);assert.equal(places.next,null);
+  assert.deepEqual(db.serialize(),bytes);assert.deepEqual(f.store.npc(f.workspace.token,f.ada),before);assert.deepEqual(f.store.npcPlaces(f.workspace.token,f.bert,0).sites,[]);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
