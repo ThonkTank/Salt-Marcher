@@ -906,6 +906,6 @@ Ortsmappe, Gruppenübersicht und NSC-Weltprofil öffnen vorhandene Wohnhäuser, 
 Der Besuch wird vor den bisher nächsten ungespielten Einstieg gesetzt; bei einem anderen Zielplan kommt er ans Ende, ohne fremde Reihenfolge zu verfälschen. Die Übergabe bleibt unverändert in der Chronik. Vorlesetext, Quellen, Besuch und Plan verwenden ihre vorhandenen Besitzer und Revisionen; Gruppenzeit, Fokus, Besuchsstatus und Spieleranzeige bleiben unverändert, bis der GM ihre jeweiligen Tischaktionen bestätigt.
 
 
-### 0.99 – Wohnhaus und Arbeit vom NSC aus zuordnen
+### 0.100 – Wohnhaus und Arbeit vom NSC aus zuordnen
 
 Die NSC-Schauplätze führen nun auch zur Auswahl bestehender Wohnhäuser und Arbeitsplätze. Haus- und Stadtsuche lädt 40 Treffer pro Seite; ein optionaler Name bereitet einen Haushalt oder Beruf vor. Im vorhandenen Stadtinspektor wird die Personenbindung vorbelegt und über dessen bisherigen Speicherweg übernommen. Umzüge innerhalb derselben Stadt lösen die alte Hausbindung im selben Stadtschritt; neue Bindungen sind stadtübergreifend auswählbar. Andere Bewohner, Berufe, originale Hausnotizen, NSC-Positionen und HP bleiben erhalten. Bestehende Bindungen müssen vor einem Stadtwechsel noch im bisherigen Stadtbereich gelöst werden. Keine Schemaänderung oder neue Schreibgrenze.
