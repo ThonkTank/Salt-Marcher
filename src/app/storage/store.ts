@@ -56,7 +56,7 @@ import type {DungeonCommand,DungeonRequest} from '../dungeon-contracts';
 import {installDrawingSchema,drawingView,executeDrawing,drawingHistory,rebaseDrawingRoomHistory,activateDungeonFeature,advanceDungeonFeatures,validateDrawing} from './drawing';
 import type {DrawingCommand} from '../drawing-contracts';
 import {installNpcWorldSchema} from './npc-world';
-import {installAutonomySchema,autonomyView,executeAutonomy,captureAutonomyBasis,recordAutonomyTime,catchUpAutonomy,validateAutonomy} from './autonomy';
+import {installAutonomySchema,autonomyView,autonomyDecision,executeAutonomy,captureAutonomyBasis,recordAutonomyTime,catchUpAutonomy,validateAutonomy} from './autonomy';
 import type {AutonomyCommand} from '../autonomy-contracts';
 import {installPlayerSchema,playerSettings,playerView,projectPlayer,executePlayer,savePlayerAsset,playerAssets,playerMediaFiles,setPlayerWindow,validatePlayer} from './player';
 import type {PlayerCommand,PlayerAsset,PlayerFrame} from '../player-contracts';
@@ -668,6 +668,7 @@ export class CampaignStore {
     if(a.kind==='raster')shadow.phase='raster';else if(a.kind==='connect')connect(structuredClone(a.intent));else if(a.kind==='resolve'){const intent=graphLayout(shadow.db,cam,c.scopeId).intents.find(i=>i.id===a.intentId);if(!intent)throw new Error('Verbindungsplanung fehlt.');connect({...intent,fromRoomId:a.fromRoomId,toRoomId:a.toRoomId});}else if(a.kind==='reroute'){for(const path of drawingView(shadow.db,cam).paths??[]){if(path.mode==='area'||path.status==='ready')continue;connect({id:path.id,fromRoomId:path.from.roomId,toRoomId:path.to.roomId,fromGroupId:null,toGroupId:null,form:path.segments[0]!.form,name:path.name,problem:''});}}else{draw(a);if(a.kind==='graph-move'||a.kind==='graph-duplicate'){for(const path of drawingView(shadow.db,cam).paths??[]){if(path.mode==='area'||path.status==='ready')continue;connect({id:path.id,fromRoomId:path.from.roomId,toRoomId:path.to.roomId,fromGroupId:null,toGroupId:null,form:path.segments[0]!.form,name:path.name,problem:''});}}}
     return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};
   }
+  autonomyDecision(token:string,actorId:string){return autonomyDecision(this.db,this.guard(token),actorId);}
   autonomy(token:string){return autonomyView(this.db,this.guard(token));}
   executeAutonomy(c:AutonomyCommand){return executeAutonomy(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   playerView(token:string){return playerView(this.db,this.guard(token));}

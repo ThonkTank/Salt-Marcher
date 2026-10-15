@@ -135,3 +135,22 @@ gesperrten Startknopf bei offener Antwort, keine native Reaktionszeit.
    messen; nur belegte Engstellen ändern, keine zweite persistierte Simulation.
 
 Dossier, Gespräche und die Wiederaufnahme ungeklärter Profilübernahmen stehen im [NPC-Vertrag](../campaign/npc-dossiers.md).
+
+## Aktuelle Entscheidungsinspektion ab0.123
+
+„Entscheidung ansehen“ öffnet je NPC die gespeicherte Jobauswahl mit Bedürfnissen,
+Prioritätsbeiträgen, deterministischem Gleichstand, Weg-/Restdauer und allen
+zulässigen/abgelehnten Angeboten. Suche, Statusfilter und 20erSeiten begrenzen die
+Anzeige, nicht den ausgewerteten Angebotsumfang. Laufende Jobs und eine mögliche
+Unterbrechung werden benannt. Pausen, fehlendes Opt-in, Worldpositionsabweichungen
+und erkennbarer Party-Kontakt stehen als Ausführungsgrenzen separat daneben.
+
+Der nächste offene bestätigte Zeitraum verwendet seinen eingefrorenen Regelstand.
+Ohne Restzeit ist es ausdrücklich eine Vorschau mit aktueller Konfiguration;
+offene Formulareingaben zählen nicht. Es wird keine Zeit genehmigt, kein Zufall
+gewürfelt, kein Ziel reserviert und kein Log/Geometriesnapshot gespeichert.
+Dungeon-Geometrie für die heutige Vorschau wird ausschließlich im Speicher
+gelesen; historische Inspektion benutzt vorhandene bestätigte Snapshots. Die
+Simulation verwendet weiterhin denselben Selektor und prüft aktuelle Owner-/
+Partygrenzen vor tatsächlichen Bewegungen und Wirkungen erneut. Eine Vorschau
+ist keine vorweggenommene Ausführungszusage.

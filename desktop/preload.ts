@@ -144,6 +144,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   executeDrawing:(c:import('../src/app/drawing-contracts').DrawingCommand)=>ipcRenderer.invoke('drawing:execute',c),
   activateFeature:(token:string,id:string,sceneId:string,expected:number,action:string,charges:number|null,commandId:string)=>ipcRenderer.invoke('drawing:feature',token,id,sceneId,expected,action,charges,commandId),
   exportDrawing:(token:string,scopeId:string,floorId:string,format:string,publicOnly:boolean)=>ipcRenderer.invoke('drawing:export',token,scopeId,floorId,format,publicOnly),
+  autonomyDecision:(token:string,actorId:string)=>ipcRenderer.invoke('autonomy:decision',token,actorId),
   autonomy:(token:string)=>ipcRenderer.invoke('autonomy:view',token),
   executeAutonomy:(c:import('../src/app/autonomy-contracts').AutonomyCommand)=>ipcRenderer.invoke('autonomy:execute',c),
   playerView:(token:string)=>ipcRenderer.invoke('player:view',token),
