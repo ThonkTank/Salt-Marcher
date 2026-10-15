@@ -143,7 +143,7 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
    field('key-search').value='';select('key-filter-level').value='';select('key-filter-group').value='';select('key-filter').value='';listPage=0;openRoom(room.id);
    el('key-dialog').scrollTop=0;saveState('saved','Neuer Raum angelegt. Name, Vorlesetext und GM-Notizen direkt eingeben.');
   },true);await pending;
- }).then(ok=>{if(ok&&!blocked&&el<HTMLDialogElement>('key-dialog').open)field('key-name').focus();}).catch(reportFailure);};
+ }).then(ok=>{if(ok&&!blocked&&el<HTMLDialogElement>('key-dialog').open){field('key-name').focus();field('key-name').select();}}).catch(reportFailure);};
  el('key-close').onclick=()=>{void moveEditor(()=>el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);};
  el('key-save').onclick=()=>{blocked=false;void flushKeys();};
  el('key-reload').onclick=()=>{void reload();};
