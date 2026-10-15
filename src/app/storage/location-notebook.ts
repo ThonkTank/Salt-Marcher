@@ -7,6 +7,7 @@ import {deskContent} from './scene-desk';
 import {readNarrative} from './narrative';
 import {checkedPreparedGroupRow,readPreparedGroup} from './session';
 import {readShop,shopRecord} from './items';
+import {npcPositionReader} from './npc-world';
 function locationContent(db:any,cam:string,id:string){
  const content=deskContent(db,cam,{kind:'location',id});
  if(content.unavailable)throw new Error('Ort im Papierkorb. Material bleibt erhalten.');
@@ -25,8 +26,9 @@ function localNpcs(db:any,cam:string,locationId:string){
  return ids;
 }
 export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery):LocationMaterialsPage{
- if(!q||!['directory','npc','narrative','group','shop','faction','event'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
+ if(!q||q.scope!==undefined&&!['location','campaign'].includes(q.scope)||q.scope==='campaign'&&!['npc','narrative','shop'].includes(q.kind)||!['directory','npc','narrative','group','shop','faction','event'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
  const location=q.kind==='directory'?null:locationContent(db,cam,q.locationId!),items:LocationMaterial[]=[],text=q.text.toLocaleLowerCase();
+ const all=q.scope==='campaign',placeName=(id:string|null|undefined)=>id?locationContent(db,cam,id).title:'Ohne Ortsbindung';
  const add=(item:LocationMaterial)=>{if((item.title+'\n'+item.detail).toLocaleLowerCase().includes(text))items.push(item);};
  if(q.kind==='directory'){
   for(const row of db.prepare('SELECT id FROM location WHERE campaign_id=? AND trashed=0').iterate(cam)){
@@ -37,17 +39,20 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
   const calendar=readWorldCalendar(db,cam);
   for(const event of calendarEvents(db,cam))if(!event.trashed&&event.locationId===q.locationId)add({id:event.id,title:event.name,detail:(event.repeatMs===null?'Einmaliges Ereignis':'Wiederkehrendes Ereignis')+' · Ab '+calendarDate(calendar,event.startMs)});
  }else if(q.kind==='npc'){
-  for(const id of localNpcs(db,cam,q.locationId!)){
+  const ids=all?db.prepare('SELECT id FROM world_note WHERE campaign_id=? AND trashed=0').iterate(cam):[...localNpcs(db,cam,q.locationId!)].map(id=>({id})),position=npcPositionReader(db,cam);
+  for(const {id} of ids){
    const content=deskContent(db,cam,{kind:'note',id});
-   if(content.note?.kind!=='npc')throw new Error('Ortsmaterialquelle beschädigt.');
-   if(!content.unavailable)add({id,title:content.title,detail:'NSC am Ort',ref:{kind:'note',id}});
+   if(content.note?.kind!=='npc'){if(all)continue;throw new Error('Ortsmaterialquelle beschädigt.');}
+   if(content.unavailable)continue;
+   const locationId=all?position(id).locationId:q.locationId;
+   add({id,title:content.title,detail:all?'NSC · '+placeName(locationId):'NSC am Ort',...(all?{locationId}:{}),ref:{kind:'note',id}});
   }
  }else if(q.kind==='narrative'){
-  for(const row of db.prepare('SELECT s.note_id id FROM narrative_state s JOIN world_note n ON n.campaign_id=s.campaign_id AND n.id=s.note_id WHERE s.campaign_id=? AND n.trashed=0').iterate(cam)){
+  for(const row of db.prepare('SELECT id FROM world_note WHERE campaign_id=? AND trashed=0').iterate(cam)){
+   const content=deskContent(db,cam,{kind:'note',id:row.id});if(!['quest','rumor'].includes(content.note?.kind??''))continue;
    const view=readNarrative(db,cam,row.id);
-   if(view.state.locationId!==q.locationId)continue;
-   const content=deskContent(db,cam,{kind:'note',id:row.id});
-   add({id:row.id,title:content.title,detail:view.state.status==='closed'?'Abgeschlossen':'Offen',ref:{kind:'note',id:row.id}});
+   if(!all&&view.state.locationId!==q.locationId)continue;
+   add({id:row.id,title:content.title,detail:(view.state.status==='closed'?'Abgeschlossen':'Offen')+(all?' · '+placeName(view.state.locationId):''),locationId:view.state.locationId??null,ref:{kind:'note',id:row.id}});
   }
  }else if(q.kind==='group'){
   for(const row of db.prepare('SELECT id FROM prepared_group WHERE campaign_id=? AND location_id=?').iterate(cam,q.locationId)){
@@ -62,12 +67,12 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
    if(!content.unavailable)add({id,title:content.title,detail:'Fraktion am Ort',ref:{kind:'note',id}});
   }
  }else{
-  const npcs=localNpcs(db,cam,q.locationId!);
+  let npcs:Set<string>|undefined;
   for(const row of db.prepare('SELECT id FROM shop WHERE campaign_id=?').iterate(cam)){
    const shop=shopRecord(db,cam,row.id);
-   if(shop.trashed||(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!npcs.has(shop.owner.id)))continue;
+   if(shop.trashed||!all&&(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!(npcs??=localNpcs(db,cam,q.locationId!)).has(shop.owner.id)))continue;
    const view=readShop(db,cam,shop.id);
-   if(!view.unavailable)add({id:shop.id,title:shop.name,detail:'Shop · '+view.ownerName});
+   if(!view.unavailable||all)add({id:shop.id,title:shop.name,detail:'Shop · '+(all?(shop.owner.kind==='npc'?'NSC: ':'Ort: '):'')+view.ownerName,...(all?{locationId:shop.owner.kind==='location'?shop.owner.id:null}:{})});
   }
  }
  items.sort((a,b)=>a.title.toLocaleLowerCase().localeCompare(b.title.toLocaleLowerCase())||a.id.localeCompare(b.id));

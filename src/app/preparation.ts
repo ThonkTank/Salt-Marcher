@@ -1,6 +1,6 @@
 import {chooseTextReference} from './text-reference-picker';
 import {rawTextOffset} from './text-references';
-import {showNarrative,flushNarrative} from './narrative-ui';
+import {showNarrative,flushNarrative,prepareNarrativeLocation} from './narrative-ui';
 import type { Workspace, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
 import { newLocation } from '../features/location/location-schema';
@@ -522,6 +522,7 @@ export async function openPreparedNote(id:string,stillCurrent=()=>true) {
   showLocations(false); await renderNotes();
   if (current()) revealNote(id);
 }
+export async function prepareNoteLocation(id:string,locationId:string){const token=context?.token;await openPreparedNote(id);if(!token||context?.token!==token||selectedNote!==id)throw new Error('Auftrag für Ortsbindung nicht verfügbar.');await prepareNarrativeLocation(token,id,locationId);tell('Zielort in den narrativen Angaben vorbelegt. Speichern bestätigt die Ortsbindung.');}
 export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
   const token=context?.token,request=preparationLoad;
   if (!token||!(await flushPreparation())||context?.token!==token||preparationLoad!==request||!stillCurrent()) return;
@@ -534,6 +535,24 @@ export async function openPreparedVisit(planId:string,visitId:string,current:()=
   if(!token||!valid()||!await flushPreparation()||!valid())return;const next=unwrap(await window.campaign.preparation(token,''));if(!valid())return;
   const plan=next.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}
   usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+}
+
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null},stillCurrent:()=>boolean=()=>true){
+  const owner=context,token=owner?.token,load=preparationLoad,current=()=>stillCurrent()&&context===owner&&context?.token===token&&preparationLoad===load;if(!token||!current()||!await flushPreparation()||!current())throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
+  const next=unwrap(await window.campaign.preparation(token,''));if(!current())return;usePreparation(next);
+  const target=data.plans.find(plan=>plan.id===planId)??data.plans.find(plan=>plan.id===data.selection.planId)??data.plans[0];
+  if(planId&&!target||planId&&target?.id!==planId)throw new Error('Ausgewählter Spielabendplan nicht verfügbar.');
+  const id=campaignLocalId(crypto.randomUUID()),scene={id,title:seed.title,notes:seed.notes,locationId:seed.locationId?campaignLocalId(seed.locationId):null};
+  if(target){
+    if(!await change({kind:'plan',expectedRevision:target.revision,plan:{...target,scenes:[...target.scenes,scene]}},false))throw new Error('Nächster Besuch konnte nicht gespeichert werden.');
+    if(!current())return;selectedPlan=target.id;
+  }else{
+    const created:ManualPlan={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[scene]};
+    if(!await change({kind:'plan',expectedRevision:null,plan:created},false))throw new Error('Spielabendplan konnte nicht angelegt werden.');
+    if(!current())return;selectedPlan=created.id;
+  }
+  selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
+  if(current()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
 function showLocations(show: boolean) {

@@ -76,6 +76,7 @@ export class CampaignAgenda {
   finally{if(current()){this.busy=false;this.drawPreview();}}
  }
 
-async openForLocation(id:string,title:string,eventId?:string,create=false){if(!await this.open({id,title},eventId))return;if(this.current()&&this.data&&create)this.edit(null);if(this.current()&&eventId&&!this.selected)this.report('Dieses Ereignis ist am Ort nicht mehr verfügbar. Zeit und Agenda aktualisieren.');}
+async openMomentDraft(seed:{name:string;notes:string},place?:{id:string;title:string},current:()=>boolean=()=>true){if(!current()||!await this.open(place)||!current()||!this.current()||!this.data)return;this.edit(null);this.set('name',seed.name);this.set('notes',seed.notes);this.drawPreview();this.fields.get('name')?.focus();this.status.textContent='Chronikmoment übernommen. Zeitpunkt, Dauer und Notizen prüfen und die Frist ausdrücklich speichern.';}
+ async openForLocation(id:string,title:string,eventId?:string,create=false){if(!await this.open({id,title},eventId))return;if(this.current()&&this.data&&create)this.edit(null);if(this.current()&&eventId&&!this.selected)this.report('Dieses Ereignis ist am Ort nicht mehr verfügbar. Zeit und Agenda aktualisieren.');}
 private async backToPlace(){if(!this.canLeave()||!this.place)return;const place=this.place,token=this.token;this.reset();if(this.workspace()?.token===token)try{await this.openPlace(place.id);}catch(e){this.tell((e as Error).message,true);}}
 }
