@@ -15,8 +15,10 @@ benötigt eine ausdrückliche Wahl; er darf nicht unbemerkt den aktuellen Plan e
 
 „Nächsten Abend vorbereiten“ sichert offene Liveeingaben und hält die ursprüngliche
 Campaign-/Fokusbasis. Startgruppen werden nach dem Laufstandlesen angezeigt,
-während weitere Vorbereitungsquellen noch laden. Ein fehlender Masken-, Beute-
-oder Journalread ist fehlender Nachweis und keine leere Liste. Die Gruppe kann
+während weitere Vorbereitungsquellen noch laden. Die Gruppenbereitschaft verbindet gelesene HP, Zustände, Level und Rastbudget
+mit dem jeweiligen Partyowner. Unbekannte HP oder Rastbudget bleiben als Warnung
+sichtbar; Partywerte und Rastplanung benutzen dieselben guarded Übergaben.
+Ein fehlender Masken-, Beute-, Party- oder Journalread ist fehlender Nachweis und keine leere Liste. Die Gruppe kann
 explizit einen Spielabendmarker beginnen; keine Maske wird dabei beendet, kein
 Schatz verteilt, keine Zeit vorgerückt und kein Besuch übernommen. Der
 Spielabendabschluss behält seine eigene Laufstandprüfung.
