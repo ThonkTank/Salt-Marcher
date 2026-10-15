@@ -83,17 +83,24 @@ async function openTable(table?:EncounterTable){
  const w=workspace,g=generation,request=++tableRequest;if(!w||pending)return;
  try{
  const draft:EncounterTable=table?structuredClone(table):{id:crypto.randomUUID(),revision:0,scope:'campaign',name:'',description:'',entries:[],habitats:[],time:'any',lootTableId:null,trashed:false};
- for(const e of draft.entries){if(!names.has(e.creatureId)){const response=await window.campaign.creature(e.creatureId);if(!owned(w.token,g)||request!==tableRequest)return;const c=unwrap(response);names.set(c.id,c.name);}}
- if(!owned(w.token,g)||request!==tableRequest)return;
  tableDraft=draft;tableBaseline=JSON.stringify(draft);get<HTMLInputElement>('table-name').value=draft.name;get<HTMLTextAreaElement>('table-description').value=draft.description;get<HTMLSelectElement>('table-scope').value=draft.scope;get<HTMLInputElement>('table-habitats').value=draft.habitats.join(', ');get<HTMLSelectElement>('table-time').value=draft.time;const loot=get<HTMLSelectElement>('table-loot-link');loot.replaceChildren();option(loot,'','Keine Beutetabelle');for(const t of lootTables.filter(t=>!t.trashed))option(loot,t.id,t.name);loot.value=draft.lootTableId??'';loot.disabled=draft.scope==='installation';get<HTMLDetailsElement>('table-options').open=false;get('table-selected-creature').textContent='Wähle links eine Kreatur.';renderTableRows();
  const browser=get('catalog-browser');if(!catalogParent){restoreTableLookup=bridge.beginTableLookup?.()??null;catalogParent=browser.parentNode;catalogNext=browser.nextSibling;}get('table-catalog-slot').append(browser);get<HTMLDialogElement>('table-manager').showModal();get('table-name').focus();if(bridge.creature())generationCreature(bridge.creature()!);
+ for(const e of draft.entries){
+  if(!owned(w.token,g)||request!==tableRequest||tableDraft!==draft)return;
+  if(names.has(e.creatureId))continue;
+  let name:string,problem:string|null=null;try{const c=unwrap(await window.campaign.creature(e.creatureId));name=c.name;}catch(error){name=e.creatureId+' · Name nicht verfügbar';problem=(error as Error).message;}
+  if(!owned(w.token,g)||request!==tableRequest||tableDraft!==draft)return;
+  if(problem===null)names.set(e.creatureId,name);
+  const label=[...get('table-entries').querySelectorAll<HTMLLabelElement>('label')].find(label=>label.dataset.creatureId===e.creatureId);
+  if(label){label.textContent=name;label.title=problem??'';label.parentElement?.querySelector('input')?.setAttribute('aria-label','Gewicht '+name);}
+ }
  }catch(error){if(owned(w.token,g)&&request===tableRequest)throw error;}
 }
 function refreshWeightShares(root:HTMLElement,weights:string[]){
  let shares:string[];try{shares=weightShares(weights);}catch{shares=weights.map(()=>'Ungültig');}
  root.querySelectorAll<HTMLElement>('.table-share').forEach((node,index)=>{node.textContent=shares[index]??'—';});
 }
-function renderTableRows(){const root=get('table-entries');root.replaceChildren();if(!tableDraft)return;for(const e of tableDraft.entries){const row=document.createElement('div');row.className='table-entry-row';const label=document.createElement('label'),input=document.createElement('input'),share=document.createElement('span'),remove=document.createElement('button');label.textContent=names.get(e.creatureId)??e.creatureId;input.value=e.weight;input.inputMode='decimal';input.setAttribute('aria-label','Gewicht '+label.textContent);input.oninput=()=>{e.weight=input.value;refreshWeightShares(root,tableDraft!.entries.map(e=>e.weight));renderTableState();};share.className='table-share';remove.textContent='Entfernen';remove.type='button';remove.onclick=()=>{tableDraft!.entries=tableDraft!.entries.filter(item=>item.creatureId!==e.creatureId);renderTableRows();};row.append(label,input,share,remove);root.append(row);}refreshWeightShares(root,tableDraft.entries.map(e=>e.weight));if(!tableDraft.entries.length){const hint=document.createElement('p');hint.className='caption';hint.textContent='Noch keine Kreaturen. Wähle links eine Kreatur und füge sie hinzu.';root.append(hint);}renderTableState();}
+function renderTableRows(){const root=get('table-entries');root.replaceChildren();if(!tableDraft)return;for(const e of tableDraft.entries){const row=document.createElement('div');row.className='table-entry-row';const label=document.createElement('label'),input=document.createElement('input'),share=document.createElement('span'),remove=document.createElement('button');label.dataset.creatureId=e.creatureId;label.textContent=names.get(e.creatureId)??e.creatureId;input.value=e.weight;input.inputMode='decimal';input.setAttribute('aria-label','Gewicht '+label.textContent);input.oninput=()=>{e.weight=input.value;refreshWeightShares(root,tableDraft!.entries.map(e=>e.weight));renderTableState();};share.className='table-share';remove.textContent='Entfernen';remove.type='button';remove.onclick=()=>{tableDraft!.entries=tableDraft!.entries.filter(item=>item.creatureId!==e.creatureId);renderTableRows();};row.append(label,input,share,remove);root.append(row);}refreshWeightShares(root,tableDraft.entries.map(e=>e.weight));if(!tableDraft.entries.length){const hint=document.createElement('p');hint.className='caption';hint.textContent='Noch keine Kreaturen. Wähle links eine Kreatur und füge sie hinzu.';root.append(hint);}renderTableState();}
 function tableProblem(){
  if(!tableDraft?.name.trim())return 'Gib der Tabelle einen Namen.';
  if(!tableDraft.entries.length)return 'Füge mindestens eine Kreatur hinzu.';
