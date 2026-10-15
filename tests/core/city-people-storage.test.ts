@@ -64,6 +64,31 @@ test('cross-city NPC moves share one guarded undo and redo step',()=>{
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
+test('cross-city household moves preserve the whole record in one guarded history step',()=>{
+ const f=fixture('city-cross-household-');
+ try{
+  const remoteLocation=newLocation('remote-household-place','Bergstadt','city',['description','notes']);
+  f.store.changePreparation({commandId:'remote-household-location',campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'location',expectedRevision:null,document:remoteLocation}});
+  const remoteHeader:CityHeader={id:'remote-household-city',revision:1,name:'Bergstadt',locationId:remoteLocation.id,width:600,height:400,paper:'#e9dfc8',roof:'#9c604c'},remoteHome=building('remote-household-home','Haus am Hang');
+  f.store.executeCity({commandId:'remote-household-create',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:0,action:{kind:'create',header:remoteHeader}});
+  const remote=f.store.executeCity({commandId:'remote-household-building',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:1,action:{kind:'change',upsert:[remoteHome],remove:[],label:'Haus'}});
+  const household={id:'family',name:'Familie Abendrot',memberIds:[f.ada,f.bert]},job={id:'bakery',name:'Bäckerei',workerIds:[f.ada]};
+  const source=f.store.executeCity({commandId:'source-household',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],workerIds:[f.ada],households:[household],jobs:[job]}],remove:[],label:'Familie und Beruf'}});
+  assert.deepEqual(f.store.cityBuildings(f.workspace.token,{text:'Berg',offset:0,excludeUnitId:f.home.id}),{items:[{cityId:remoteHeader.id,unitId:remoteHome.id,title:remoteHome.name,cityTitle:remoteHeader.name}],next:null});
+  assert.throws(()=>f.store.executeCity({commandId:'incomplete-household-move',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:remote.header.revision,action:{kind:'change',upsert:[{...remoteHome,residentIds:[f.ada],households:[household]}],remove:[],label:'Unvollständiger Umzug',lifeMoves:[{role:'home',recordId:household.id,fromCityId:'city',fromUnitId:f.home.id,expectedRevision:source.header.revision,toUnitId:remoteHome.id}]}}),/Mitglieder fehlen/);
+  const moved=f.store.executeCity({commandId:'household-cross-move',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:remote.header.revision,action:{kind:'change',upsert:[{...remoteHome,residentIds:[f.ada,f.bert],households:[household]}],remove:[],label:'Haushalt umziehen',lifeMoves:[{role:'home',recordId:household.id,fromCityId:'city',fromUnitId:f.home.id,expectedRevision:source.header.revision,toUnitId:remoteHome.id}]}});
+  const sourceAfter=f.store.city(f.workspace.token,'city').units.find(u=>u.id===f.home.id)!;
+  assert.deepEqual({residents:sourceAfter.residentIds,households:sourceAfter.households,workers:sourceAfter.workerIds,jobs:sourceAfter.jobs},{residents:[],households:[],workers:[f.ada],jobs:[job]});
+  assert.deepEqual(moved.units.find(u=>u.id===remoteHome.id)?.households,[household]);
+  const undone=f.store.executeCity({commandId:'undo-household-cross',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.store.city(f.workspace.token,'city').header.revision,action:{kind:'undo'}});
+  assert.deepEqual(undone.units.find(u=>u.id===f.home.id)?.households,[household]);
+  assert.deepEqual(f.store.city(f.workspace.token,remoteHeader.id).units.find(u=>u.id===remoteHome.id)?.households,[]);
+  const redone=f.store.executeCity({commandId:'redo-household-cross',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:f.store.city(f.workspace.token,remoteHeader.id).header.revision,action:{kind:'redo'}});
+  assert.deepEqual(redone.units.find(u=>u.id===remoteHome.id)?.households,[household]);
+  assert.deepEqual(f.store.city(f.workspace.token,'city').units.find(u=>u.id===f.home.id)?.households,[]);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
 test('city households own stable identity and move or dissolve without duplicating World NPCs',()=>{
  const f=fixture('city-households-');
  try{

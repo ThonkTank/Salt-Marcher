@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import type {CityHeader,CityUnit,CityView,CityCommand,CityOverview} from '../city-contracts';
+import type {CityHeader,CityUnit,CityView,CityCommand,CityOverview,CityBuildingQuery,CityBuildingChoices} from '../city-contracts';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installCitySchema(db:any){db.exec(`CREATE TABLE IF NOT EXISTS city_document(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,location_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,location_id) REFERENCES location(campaign_id,id)) STRICT;
 CREATE TABLE IF NOT EXISTS city_unit(campaign_id TEXT NOT NULL,city_id TEXT NOT NULL,id TEXT NOT NULL,kind TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,city_id) REFERENCES city_document(campaign_id,id)) STRICT;
@@ -11,6 +11,11 @@ function checkedUnit(u:CityUnit){if(!u||!u.id||!['node','road','district','plaza
 function putHeader(db:any,cam:string,h:CityHeader){checkedHeader(h);const p=JSON.stringify(h);db.prepare('INSERT INTO city_document VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET location_id=excluded.location_id,revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,h.id,h.locationId,h.revision,p,hash(p));}
 function putUnit(db:any,cam:string,cityId:string,u:CityUnit){checkedUnit(u);const p=JSON.stringify(u);db.prepare('INSERT INTO city_unit VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET kind=excluded.kind,payload=excluded.payload,checksum=excluded.checksum').run(cam,cityId,u.id,u.kind,p,hash(p));}
 export function readCitySite(db:any,cam:string,cityId:string,unitId:string){const hr=db.prepare('SELECT * FROM city_document WHERE campaign_id=? AND id=?').get(cam,cityId),ur=db.prepare('SELECT * FROM city_unit WHERE campaign_id=? AND city_id=? AND id=?').get(cam,cityId,unitId),header=parsed(hr) as CityHeader,unit=parsed(ur) as CityUnit;checkedHeader(header);checkedUnit(unit);if(header.id!==hr.id||header.revision!==hr.revision||header.locationId!==hr.location_id||unit.id!==ur.id||unit.kind!==ur.kind)throw new Error('Stadtschauplatz widerspricht seiner Identität.');return{header,unit};}
+export function readCityBuildingChoices(db:any,cam:string,q:CityBuildingQuery):CityBuildingChoices{
+ if(!q||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||(q.excludeUnitId!==undefined&&typeof q.excludeUnitId!=='string'))throw new Error('Gebäudesuche prüfen.');
+ const rows=db.prepare(`SELECT u.id,u.city_id FROM city_unit u JOIN city_document c ON c.campaign_id=u.campaign_id AND c.id=u.city_id JOIN location l ON l.campaign_id=c.campaign_id AND l.id=c.location_id WHERE u.campaign_id=@cam AND u.kind='building' AND l.trashed=0 AND u.id<>@exclude AND instr(lower(json_extract(u.payload,'$.name')||char(10)||json_extract(c.payload,'$.name')),lower(@text))>0 ORDER BY json_extract(c.payload,'$.name') COLLATE NOCASE,json_extract(u.payload,'$.name') COLLATE NOCASE,u.id LIMIT 41 OFFSET @offset`).all({cam,exclude:q.excludeUnitId??'',text:q.text,offset:q.offset});
+ return{next:rows.length>40?q.offset+40:null,items:rows.slice(0,40).map((r:any)=>{const {header,unit}=readCitySite(db,cam,r.city_id,r.id);return{cityId:header.id,unitId:unit.id,title:unit.name||'Unbenanntes Haus',cityTitle:header.name};})};
+}
 export function cityOverview(db:any,cam:string):CityOverview{return{cities:db.prepare('SELECT * FROM city_document WHERE campaign_id=? ORDER BY rowid').all(cam).map(parsed),locations:db.prepare('SELECT id,payload,checksum FROM location WHERE campaign_id=? AND trashed=0 ORDER BY rowid').all(cam).map((r:any)=>({id:r.id,name:parsed(r).name})),assignedPeople:db.prepare(`SELECT id,payload,checksum FROM world_note WHERE campaign_id=? AND id IN(
  SELECT value FROM city_unit,json_each(city_unit.payload,'$.residentIds') WHERE city_unit.campaign_id=?
  UNION SELECT value FROM city_unit,json_each(city_unit.payload,'$.workerIds') WHERE city_unit.campaign_id=?) ORDER BY id`).all(cam,cam,cam).map((r:any)=>{const n=parsed(r);return{id:n.id,name:n.title};})};}
@@ -56,9 +61,27 @@ export function executeCity(db:any,c:CityCommand,guard:()=>void):CityView{return
  }else{
   const view=readCity(db,c.campaignId,c.cityId);if(view.header.revision!==c.expectedRevision)throw new Error('Stadtstand geändert. Aktualisiere die Ansicht und Vorschau.');
   if(c.action.kind==='change'){
-   const change=c.action,ids=[...new Set([...change.remove,...change.upsert.map(u=>u.id)])],before=ids.map(id=>view.units.find(u=>u.id===id)??{id,deleted:true}),after=ids.map(id=>change.upsert.find(u=>u.id===id)??{id,deleted:true});
+   const change={...c.action,upsert:structuredClone(c.action.upsert)};
    if(change.header&&change.header.id!==view.header.id)throw new Error('Stadtkennung geändert.');
    const sources=new Map<string,{header:CityHeader;before:Map<string,CityUnit>;after:Map<string,CityUnit>}>(),seen=new Set<string>();
+   if(change.lifeMoves!==undefined&&(!Array.isArray(change.lifeMoves)||change.lifeMoves.length>100))throw new Error('Haushalts- oder Berufsumzug prüfen.');
+   for(const move of change.lifeMoves??[]){
+    if(!move||!['home','work'].includes(move.role)||typeof move.recordId!=='string'||!move.recordId||typeof move.fromCityId!=='string'||typeof move.fromUnitId!=='string'||typeof move.toUnitId!=='string'||move.fromUnitId===move.toUnitId||!Number.isSafeInteger(move.expectedRevision))throw new Error('Haushalts- oder Berufsumzug prüfen.');
+    const {header,unit}=readCitySite(db,c.campaignId,move.fromCityId,move.fromUnitId);if(header.revision!==move.expectedRevision)throw new Error('Bisherige Stadt wurde geändert. Umzug erneut öffnen.');
+    const target=change.upsert.find(u=>u.id===move.toUnitId&&u.kind==='building');if(!target||unit.kind!=='building')throw new Error('Quell- oder Zielhaus fehlt.');
+    const household=move.role==='home'?unit.households?.find(h=>h.id===move.recordId):null,job=move.role==='work'?unit.jobs?.find(j=>j.id===move.recordId):null,record=household??job;
+    if(!record)throw new Error('Haushalt oder Beruf wurde inzwischen geändert.');
+    const copied=move.role==='home'?target.households?.find(h=>h.id===move.recordId):target.jobs?.find(j=>j.id===move.recordId);
+    if(JSON.stringify(copied)!==JSON.stringify(record))throw new Error('Umzug muss Namen, Kennung und Mitglieder gemeinsam übernehmen.');
+    const members=household?.memberIds??job!.workerIds,field=move.role==='home'?'residentIds':'workerIds';if(members.some(id=>!(target[field]??[]).includes(id)))throw new Error('Mitglieder fehlen im Zielhaus.');
+    for(const id of members){const key=move.role+':'+id;if(seen.has(key))throw new Error('Personenbindung mehrfach verschoben.');seen.add(key);}
+    let source=sources.get(header.id);if(!source){source={header,before:new Map(),after:new Map()};sources.set(header.id,source);}source.before.set(unit.id,unit);
+    const next=structuredClone(source.after.get(unit.id)??change.upsert.find(u=>u.id===unit.id)??unit);next[field]=(next[field]??[]).filter(id=>!members.includes(id));
+    if(move.role==='home')next.households=(next.households??[]).filter(h=>h.id!==move.recordId);else next.jobs=(next.jobs??[]).filter(j=>j.id!==move.recordId);source.after.set(unit.id,next);
+   }
+   // Same-city source houses belong in the usual single-city history image.
+   const local=sources.get(c.cityId);if(local){for(const u of local.after.values()){const i=change.upsert.findIndex(v=>v.id===u.id);if(i<0)change.upsert.push(u);else change.upsert[i]=u;}sources.delete(c.cityId);}
+   const ids=[...new Set([...change.remove,...change.upsert.map(u=>u.id)])],before=ids.map(id=>view.units.find(u=>u.id===id)??{id,deleted:true}),after=ids.map(id=>change.upsert.find(u=>u.id===id)??{id,deleted:true});
    if(change.bindingMoves!==undefined&&(!Array.isArray(change.bindingMoves)||change.bindingMoves.length>400))throw new Error('Stadtwechsel prüfen.');
    for(const move of change.bindingMoves??[]){
     if(!move||!['home','work'].includes(move.role)||typeof move.npcId!=='string'||!move.npcId||typeof move.fromCityId!=='string'||move.fromCityId===c.cityId||typeof move.fromUnitId!=='string'||!Number.isSafeInteger(move.expectedRevision))throw new Error('Stadtwechsel prüfen.');
