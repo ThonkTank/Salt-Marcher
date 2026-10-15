@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Print one random current product/planning document, without storing state."""
+"""Print one random original requirement and its pinned source, without state."""
 
 import argparse
+import json
 from pathlib import Path
 import secrets
 import subprocess
@@ -13,12 +14,9 @@ args = parser.parse_args()
 root = Path(subprocess.check_output(
     ["git", "-C", args.repository, "rev-parse", "--show-toplevel"], text=True
 ).strip())
-files = subprocess.check_output([
-    "git", "-C", str(root), "ls-files", "-z", "--",
-    ":(glob)ROADMAP*.md", ":(glob)*PARITY*.md", "ARCHITECTURE.md", "README.md",
-    ":(glob)docs/*.md", ":(glob)docs/plans/**/*.md",
-]).decode().split("\0")
-candidates = [name for name in files if name and (root / name).is_file()]
+candidates = json.loads((root / "docs/scope-sources.json").read_text())["source_requirements"]
 if not candidates:
-    parser.exit(1, "Keine Produkt- oder Planungsdokumente im Repository gefunden.\n")
-print(secrets.choice(candidates))
+    parser.exit(1, "Keine Originalanforderungen im Quellenregister gefunden.\n")
+requirement = secrets.choice(candidates)
+print("Thema:", requirement["title"])
+print("Originalanforderung:", requirement["url"])
