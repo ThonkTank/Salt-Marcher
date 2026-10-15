@@ -70,6 +70,12 @@ test('a prepared packet visit opens its live adoption review without adopting it
  assert.equal(opened,true);assert.equal(x.el('adoption-dialog').open,true);assert.match(x.el('adoption-content').textContent,/Das Nordtor/);assert.match(x.el('adoption-content').textContent,/Wachen warten/);assert.deepEqual(x.store.live(x.w.token).scene.adoption,before.adoption);assert.equal(x.commands.filter(c=>c.action.kind==='apply-visit').length,0);assert.equal(x.commands.length,commands);
 });
 
+test('a reviewed visit can be adopted and continue in its exact live packet',async t=>{
+ const x=await setup(t),planId=randomUUID(),visitId=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Torabend',scenes:[{id:visitId,title:'Das Nordtor',notes:'Wachen befragen',locationId:null}]}}});const before=x.store.live(x.w.token).scene;
+ assert.equal(await x.ui.openPlannedVisitReview(planId,visitId),true);assert.match(x.el('adoption-dialog').textContent,/Party, Uhr/);x.el('adoption-confirm-packet').click();await settle();
+ const after=x.store.live(x.w.token).scene;assert.equal(after.adoption.visitId,visitId);assert.equal(after.title,'Das Nordtor');assert.deepEqual(after.clock,before.clock);assert.deepEqual(after.members,before.members);assert.equal(x.commands.filter(c=>c.action.kind==='apply-visit').length,1);assert.equal(x.el('adoption-dialog').open,false);assert.equal(x.el('session-packet-dialog').open,true);assert.equal(x.el('live-packet-host').hidden,false);assert.match(x.el('session-packet-content').textContent,/Das Nordtor/);assert.equal(x.el('session-packet-visits').querySelector('[data-visit-id="'+visitId+'"]').getAttribute('aria-pressed'),'true');
+});
+
 test('a delayed session ending cannot restore its scene over the newer focused group',async t=>{
  const x=await setup(t);x.el('live-session-start').click();await settle();const release=x.defer('session-marker');x.el('live-session-summary').value='Alte Gruppe';await x.end();const id=await x.focusOther();x.el('live-session-summary').value='Neue Gruppe';release();await settle();assert.equal(x.el('scene-focus').value,id);assert.equal(x.el('running-title').value,'Andere Gruppe');assert.equal(x.el('live-session-summary').value,'Neue Gruppe');
 });

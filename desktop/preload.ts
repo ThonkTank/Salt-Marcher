@@ -63,6 +63,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   npcCast: (token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>ipcRenderer.invoke('campaign:npc-cast',token,q),
   npcBuildingChoices:(token:string,id:string,q:import('../src/app/npc-places-contracts').NpcBuildingQuery)=>ipcRenderer.invoke('campaign:npc-building-choices',token,id,q),
   npcPlaces: (token:string,id:string,offset:number)=>ipcRenderer.invoke('campaign:npc-places',token,id,offset),
+  npcPlanCalendar:(token:string)=>ipcRenderer.invoke('campaign:npc-plan-calendar',token),
   npcDossier: (token:string,sceneId:string,id:string)=>ipcRenderer.invoke('campaign:npc-dossier',token,sceneId,id),
   npcDrafts:(token:string)=>ipcRenderer.invoke('campaign:npc-drafts',token),
   npcDraft:(token:string,id:string)=>ipcRenderer.invoke('campaign:npc-draft',token,id),
