@@ -1,3 +1,4 @@
+import {roomCameraBox} from './room-camera';
 import {initWorkspaceNavigation,syncWorkspaceNavigation} from './workspace-navigation';
 import {WorkspacePositions,workspaceTabs,readWorkspaceView,rememberWorkspaceView,type WorkspaceTab} from './workspace-view';
 import {bindAtlasHistoryShortcut} from './workspace-shortcuts';
@@ -385,12 +386,9 @@ function draw() {
     }); map.append(handle);
   });
 }
-function fit() {
-  const points = (draft ? [draft] : workspace?.rooms ?? []).flatMap(room => room.polygons.flatMap(p => p.outer));
-  if (!points.length) return;
-  const xs = points.map(p => p.x), ys = points.map(p => p.y), x = Math.min(...xs), y = Math.min(...ys), w = Math.max(...xs) - x, h = Math.max(...ys) - y;
-  const pad = Math.max(w, h) * .18 + .5;
-  el('map').setAttribute('viewBox', `${x - pad} ${y - pad} ${w + pad * 2} ${h + pad * 2}`);
+function fit(all=false) {
+  const visible=(workspace?.rooms??[]).map(saved=>draft?.id===saved.id?draft:saved).filter(room=>JSON.stringify([room.scopeId,room.floorId])===el<HTMLSelectElement>('floors').value);
+  const box=roomCameraBox(all?visible:draft?[draft]:visible);if(box)el('map').setAttribute('viewBox',box);
 }
 el('map').addEventListener('pointermove', event => {
   if (!pointer || !draft || event.pointerId !== pointer.id) return;
@@ -407,6 +405,7 @@ el('floors').addEventListener('change', () => { void (async () => {
   if (room) await selectRoom(room.id); else { draft = null; el('editor').hidden = true; el('empty').hidden = false; draw(); }
 })(); });
 el('fit').onclick = () => { fit(); draw(); };
+el('fit-all').onclick = () => { fit(true); draw(); };
 el('search').addEventListener('input', renderList);
 el('room-name').addEventListener('input', () => { if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed) return; if (draft) draft.name = el<HTMLInputElement>('room-name').value; schedule(); });
 el('room-name').addEventListener('blur', () => { void flush(); });
