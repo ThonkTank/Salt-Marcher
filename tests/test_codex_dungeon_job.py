@@ -1,4 +1,4 @@
-"""Resource admission regressions; no real services or large allocations."""
+"""Launcher behavior without real services or large memory allocations."""
 import contextlib
 import importlib.util
 import io
@@ -7,282 +7,174 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-import time
 import unittest
 from unittest.mock import patch
 
-SOURCE = Path(__file__).resolve().parents[1] / "tools/codex-dungeon-job.py"
-spec = importlib.util.spec_from_file_location("dungeon_job", SOURCE)
+SOURCE = Path(__file__).resolve().parents[1] / 'tools/codex-dungeon-job.py'
+spec = importlib.util.spec_from_file_location('dungeon_job', SOURCE)
 job = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(job)
-G = job.GIB
 
 
-def pending_launcher(root, role, start, release, results):
-    """Keep an admitted unit pending, before it has any cgroup memory counters."""
-    real_path = Path
+def idle_systemctl(argv, **kwargs):
+    return subprocess.CompletedProcess(argv, 0, stdout='')
 
-    def mapped_path(value):
-        if str(value) == "/sys/fs/cgroup":
-            return real_path(root) / "cgroup"
-        if str(value) == "/proc/meminfo":
-            return real_path(root) / "meminfo"
-        return real_path(value)
 
-    mapped_path.cwd = real_path.cwd
-
-    def run(argv, **kwargs):
-        return subprocess.CompletedProcess(argv, 0, stdout="/fixture/codex-dungeon-jobs.slice\n")
-
-    class Pending:
+def held_job(root, role, ready, release, outcomes):
+    class Running:
         def __init__(self, argv):
-            results.put((role, "started"))
+            outcomes.put((role, 'running'))
+            ready.set()
 
         def wait(self, timeout=None):
-            if not release.wait(8):
-                raise RuntimeError("test release timeout")
+            if not release.wait(10):
+                raise RuntimeError('fixture release timed out')
             return 0
 
         def poll(self):
             return 0 if release.is_set() else None
 
-    with patch.object(job, "Path", mapped_path), \
-         patch.dict(os.environ, {"XDG_RUNTIME_DIR": root}), \
-         patch.object(job.sys, "argv", [str(SOURCE), role, "--", "fixture-command"]), \
-         patch.object(job.subprocess, "run", run), \
-         patch.object(job.subprocess, "Popen", Pending), \
+    with patch.dict(os.environ, {'XDG_RUNTIME_DIR': root}), \
+         patch.object(job.sys, 'argv', [str(SOURCE), role, '--', 'fixture']), \
+         patch.object(job.subprocess, 'run', idle_systemctl), \
+         patch.object(job.subprocess, 'Popen', Running), \
          contextlib.redirect_stderr(io.StringIO()):
-        start.wait(5)
-        code = job.main()
-        results.put((role, code))
+        outcomes.put((role, job.main()))
+        ready.set()
 
 
-class AdmissionTests(unittest.TestCase):
-    def test_empty_slice_with_old_file_charge_can_start(self):
-        allowed, growth = job.admission(14 * G, 14 * G, 22 * G, {"qa": 0})
-        self.assertTrue(allowed)
-        self.assertEqual(growth, 4 * G)
+class LauncherTests(unittest.TestCase):
+    def invoke(self, root, role='qa', command=None):
+        with patch.dict(os.environ, {'XDG_RUNTIME_DIR': root}), \
+             patch.object(job.sys, 'argv', [str(SOURCE), role, '--', *(command or ['fixture'])]), \
+             patch.object(job.signal, 'signal'), \
+             contextlib.redirect_stderr(io.StringIO()):
+            return job.main()
 
-    def test_host_reserve_boundary(self):
-        self.assertFalse(job.admission(12 * G - 1, 0, 22 * G, {"qa": 0})[0])
-        self.assertTrue(job.admission(12 * G, 0, 22 * G, {"qa": 0})[0])
-
-    def test_old_charge_still_consumes_slice_capacity(self):
-        self.assertFalse(job.admission(100 * G, 19 * G, 22 * G, {"qa": 0})[0])
-
-    def test_pending_jobs_reserve_their_full_future_growth(self):
-        for n in (1, 2, 3):
-            used = dict(zip(sorted(job.ROLES)[:n], [0] * n))
-            self.assertEqual(job.admission(20 * G, 0, 22 * G, used), (True, n * 4 * G))
-        self.assertFalse(job.admission(16 * G, 0, 22 * G,
-                                       {"qa": 0, "planner": 0, "realist": 0})[0])
-
-    def test_running_resident_memory_is_not_reserved_twice(self):
-        self.assertEqual(job.admission(13 * G, 3 * G, 22 * G,
-                                       {"qa": 0, "implementer": 3 * G}), (True, 5 * G))
-
-    def test_invalid_measurements_fail_closed(self):
-        for args in [(-1, 0, 22 * G, {"qa": 0}),
-                     (20 * G, 0, 0, {"qa": 0}),
-                     (20 * G, 0, 22 * G, {"qa": -1}),
-                     (20 * G, 0, 22 * G, {"qa": G}),
-                     (20 * G, 0, 22 * G, dict.fromkeys(job.ROLES, 0))]:
-            with self.assertRaises(ValueError):
-                job.admission(*args)
-
-    def test_live_memory_credits_anon_and_shmem_but_not_file_cache(self):
-        with tempfile.TemporaryDirectory() as d:
-            group = Path(d)
-            unit = group / "codex-dungeon-qa-one.service"
-            unit.mkdir()
-            (unit / "cgroup.events").write_text("populated 1\n")
-            (unit / "memory.stat").write_text(f"anon {G}\nshmem {G}\nfile {8 * G}\n")
-            self.assertEqual(job.job_memory(group, {"qa", "planner"}, "planner"), {"qa": 2 * G, "planner": 0})
-            (unit / "cgroup.events").write_text("populated 0\n")
-            self.assertEqual(job.job_memory(group, {"qa"}, "qa"), {"qa": 0})
-
-    def test_unlocked_live_job_or_missing_counter_is_not_ignored(self):
-        with tempfile.TemporaryDirectory() as d:
-            unit = Path(d) / "codex-dungeon-qa-one.service"
-            unit.mkdir()
-            (unit / "cgroup.events").write_text("populated 1\n")
-            (unit / "memory.stat").write_text("anon 1\nshmem 1\n")
-            with self.assertRaises(ValueError):
-                job.job_memory(Path(d), {"planner"}, "planner")
-            with self.assertRaises(ValueError):
-                job.job_memory(Path(d), {"qa"}, "qa")
-            (unit / "memory.stat").write_text("anon 1\n")
-            with self.assertRaises(KeyError):
-                job.job_memory(Path(d), {"qa", "planner"}, "planner")
-
-    def test_role_lock_is_exclusive(self):
-        with tempfile.TemporaryDirectory() as d:
-            held = job.lock_file(Path(d) / "role-qa.lock")
+    def test_all_four_roles_run_together_and_same_role_cannot_start_twice(self):
+        ctx = multiprocessing.get_context('fork')
+        with tempfile.TemporaryDirectory() as root:
+            release, outcomes = ctx.Event(), ctx.Queue()
+            children = []
             try:
-                self.assertIsNone(job.lock_file(Path(d) / "role-qa.lock"))
-                self.assertEqual(job.occupied_roles(Path(d), "planner"), {"qa", "planner"})
-            finally:
-                held.close()
-
-    def test_three_slot_limit(self):
-        with tempfile.TemporaryDirectory() as d:
-            locks = Path(d) / "codex-dungeon-job-locks"
-            locks.mkdir()
-            held = [job.lock_file(locks / f"slot-{n}.lock") for n in range(3)]
-            try:
-                with patch.dict(os.environ, {"XDG_RUNTIME_DIR": d}), \
-                     patch.object(job.sys, "argv", [str(SOURCE), "qa", "--", "fixture-command"]), \
-                     patch.object(job.signal, "signal"), \
-                     patch.object(job.subprocess, "Popen") as launch, \
-                     contextlib.redirect_stderr(io.StringIO()):
-                    self.assertEqual(job.main(), 75)
+                for role in sorted(job.ROLES):
+                    ready = ctx.Event()
+                    child = ctx.Process(target=held_job, args=(root, role, ready, release, outcomes))
+                    children.append(child)
+                    child.start()
+                    self.assertTrue(ready.wait(5), role)
+                    self.assertEqual(outcomes.get(timeout=2), (role, 'running'))
+                with patch.object(job.subprocess, 'Popen') as launch:
+                    self.assertEqual(self.invoke(root), 75)
                     launch.assert_not_called()
             finally:
-                for handle in held:
-                    handle.close()
-
-    def launch_case(self, available, concurrent, expected_starts):
-        ctx = multiprocessing.get_context("fork")
-        with tempfile.TemporaryDirectory() as d:
-            group = Path(d) / "cgroup/fixture/codex-dungeon-jobs.slice"
-            group.mkdir(parents=True)
-            (group / "memory.current").write_text("0")
-            (group / "memory.max").write_text(str(22 * G))
-            (Path(d) / "meminfo").write_text(f"MemAvailable: {available * 1024 * 1024} kB\n")
-            start, release, results = ctx.Event(), ctx.Event(), ctx.Queue()
-            processes, outcomes = [], []
-            try:
-                for role in ("qa", "planner", "realist"):
-                    p = ctx.Process(target=pending_launcher, args=(d, role, start, release, results))
-                    processes.append(p)
-                    p.start()
-                    if not concurrent:
-                        start.set()
-                        outcomes.append(results.get(timeout=5))
-                start.set()
-                while len(outcomes) < 3:
-                    outcomes.append(results.get(timeout=5))
-                self.assertEqual(sum(value == "started" for _, value in outcomes), expected_starts)
-                self.assertTrue(all(value in ("started", 75) for _, value in outcomes))
-            finally:
                 release.set()
-                for p in processes:
-                    p.join(5)
-                    if p.is_alive():
-                        p.terminate()
-                        p.join(2)
-                    self.assertEqual(p.exitcode, 0)
+                for child in children:
+                    child.join(5)
+                    if child.is_alive():
+                        child.terminate()
+                        child.join(2)
+                    self.assertEqual(child.exitcode, 0)
+            self.assertEqual({outcomes.get(timeout=2) for _ in children}, {(r, 0) for r in job.ROLES})
+            with patch.object(job.subprocess, 'run', idle_systemctl), \
+                 patch.object(job.subprocess, 'Popen') as launch:
+                launch.return_value.wait.return_value = 0
+                launch.return_value.poll.return_value = 0
+                self.assertEqual(self.invoke(root), 0)
 
-    def test_pending_startups_cannot_spend_same_headroom(self):
-        self.launch_case(16, concurrent=False, expected_starts=2)
+    def test_arguments_environment_limits_and_exit_code_survive(self):
+        command = ['printf', '%s', 'a b', '$(touch never)', '`literal`', '--flag=two words']
+        with tempfile.TemporaryDirectory() as root, \
+             patch.dict(os.environ, {'PATH': '/fixture/bin', 'DISPLAY': ':99'}), \
+             patch.object(job.subprocess, 'run', idle_systemctl), \
+             patch.object(job.subprocess, 'Popen') as launch:
+            launch.return_value.wait.return_value = 23
+            launch.return_value.poll.return_value = 23
+            self.assertEqual(self.invoke(root, command=command), 23)
+            argv = launch.call_args.args[0]
+            self.assertEqual(argv[-len(command):], command)
+            for value in ['MemoryHigh=3G', 'MemoryMax=4294967296', 'MemorySwapMax=0',
+                          'TasksMax=256', 'KillMode=control-group', 'RuntimeMaxSec=20min', 'Nice=5']:
+                self.assertIn('--property=' + value, argv)
+            self.assertIn('--working-directory=' + str(Path.cwd()), argv)
+            self.assertIn('--setenv=DISPLAY=:99', argv)
+            self.assertIn('--setenv=PATH=/fixture/bin', argv)
+            self.assertIn('--setenv=NODE_OPTIONS=--max-old-space-size=2048', argv)
+            self.assertFalse(any('CPUQuota=' in arg for arg in argv))
+            forced = ('npm_config_jobs=', 'UV_THREADPOOL_SIZE=', 'GOMAXPROCS=', 'CMAKE_BUILD_PARALLEL_LEVEL=', 'MAKEFLAGS=')
+            self.assertFalse(any(any(key in arg for key in forced) for arg in argv))
+            self.assertNotIn('shell', launch.call_args.kwargs)
 
-    def test_three_pending_jobs_start_when_capacity_fits(self):
-        self.launch_case(20, concurrent=False, expected_starts=3)
+    def test_orphan_service_blocks_only_its_own_role(self):
+        def existing(argv, **kwargs):
+            text = 'codex-dungeon-qa-orphan.service loaded active running fixture' if 'codex-dungeon-qa-*.service' in argv else ''
+            return subprocess.CompletedProcess(argv, 0, stdout=text)
+        with tempfile.TemporaryDirectory() as root, \
+             patch.object(job.subprocess, 'run', side_effect=existing), \
+             patch.object(job.subprocess, 'Popen') as launch:
+            self.assertEqual(self.invoke(root), 75)
+            launch.assert_not_called()
+            launch.return_value.wait.return_value = 0
+            launch.return_value.poll.return_value = 0
+            self.assertEqual(self.invoke(root, role='planner'), 0)
 
-    def test_simultaneous_starts_cannot_spend_same_headroom(self):
-        self.launch_case(12, concurrent=True, expected_starts=1)
-
-    def test_simultaneous_starts_all_proceed_when_capacity_fits(self):
-        self.launch_case(20, concurrent=True, expected_starts=3)
-
-    def test_admission_lock_wait_has_a_deadline(self):
-        with tempfile.TemporaryDirectory() as d:
-            path = Path(d) / "admission.lock"
-            held = job.lock_file(path)
-            try:
-                started = time.monotonic()
-                self.assertIsNone(job.lock_file(path, wait=0.03))
-                self.assertGreaterEqual(time.monotonic() - started, 0.025)
-                self.assertLess(time.monotonic() - started, 1)
-            finally:
-                held.close()
-
-    def test_ending_job_is_measured_again_without_starting_a_command(self):
-        with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            (root / "memory.current").write_text("0")
-            (root / "memory.max").write_text(str(22 * G))
-            mem = root / "meminfo"
-            mem.write_text(f"MemAvailable: {14 * 1024 * 1024} kB\n")
-            with patch.object(job, "job_memory", side_effect=[{"qa": 0, "planner": G}, {"qa": 0}]) as measure, \
-                 patch.object(job, "Path", return_value=mem), \
-                 patch.object(job.subprocess, "Popen") as launch:
-                self.assertEqual(job.memory_admission(root, root, "qa"), (True, 4 * G))
-                self.assertEqual(measure.call_count, 2)
-                launch.assert_not_called()
-
-    def test_systemd_timeout_does_not_start_a_command(self):
-        with tempfile.TemporaryDirectory() as d:
-            with patch.dict(os.environ, {"XDG_RUNTIME_DIR": d}), \
-                 patch.object(job.sys, "argv", [str(SOURCE), "qa", "--", "fixture-command"]), \
-                 patch.object(job.signal, "signal"), \
-                 patch.object(job.subprocess, "run", side_effect=subprocess.TimeoutExpired("systemctl", 2)) as run, \
-                 patch.object(job.subprocess, "Popen") as launch, \
-                 contextlib.redirect_stderr(io.StringIO()):
-                self.assertEqual(job.main(), 78)
-                self.assertEqual(run.call_args.kwargs["timeout"], 2)
-                launch.assert_not_called()
-
-    def test_interrupted_cleanup_timeout_names_own_unit_and_releases_locks(self):
-        class Interrupted:
-            ended = False
-
-            def __init__(self, argv):
-                self.unit = next(arg.split("=", 1)[1] for arg in argv if arg.startswith("--unit="))
-
-            def wait(self, timeout=None):
-                if not self.ended:
-                    raise KeyboardInterrupt()
-                return 0
-
-            def poll(self):
-                return 0 if self.ended else None
-
-            def terminate(self):
-                self.ended = True
-
-        stopped = []
-
-        def run(argv, **kwargs):
-            if "stop" in argv:
-                stopped.append(argv[-1])
-                self.assertEqual(kwargs["timeout"], 12)
-                raise subprocess.TimeoutExpired("systemctl stop", 12)
-            return subprocess.CompletedProcess(argv, 0, stdout="/fixture/codex-dungeon-jobs.slice\n")
-
-        with tempfile.TemporaryDirectory() as d:
-            output = io.StringIO()
-            with patch.dict(os.environ, {"XDG_RUNTIME_DIR": d}), \
-                 patch.object(job.sys, "argv", [str(SOURCE), "qa", "--", "fixture-command"]), \
-                 patch.object(job.signal, "signal"), \
-                 patch.object(job, "memory_admission", return_value=(True, 4 * G)), \
-                 patch.object(job.subprocess, "run", run), \
-                 patch.object(job.subprocess, "Popen", Interrupted), \
-                 contextlib.redirect_stderr(output):
-                self.assertEqual(job.main(), 78)
-            self.assertEqual(len(stopped), 1)
-            self.assertIn(stopped[0], output.getvalue())
-            self.assertTrue(stopped[0].startswith("codex-dungeon-qa-"))
-            handle = job.lock_file(Path(d) / "codex-dungeon-job-locks/role-qa.lock")
-            self.assertIsNotNone(handle)
-            handle.close()
-
-    def test_measurement_error_starts_nothing_and_releases_reservation(self):
-        with tempfile.TemporaryDirectory() as d:
-            with patch.dict(os.environ, {"XDG_RUNTIME_DIR": d}), \
-                 patch.object(job.sys, "argv", [str(SOURCE), "qa", "--", "fixture-command"]), \
-                 patch.object(job.signal, "signal"), \
-                 patch.object(job.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, stdout="/fixture/codex-dungeon-jobs.slice\n")), \
-                 patch.object(job, "job_memory", side_effect=KeyError("anon")), \
-                 patch.object(job.subprocess, "Popen") as launch, \
-                 contextlib.redirect_stderr(io.StringIO()):
-                self.assertEqual(job.main(), 78)
-                launch.assert_not_called()
-            for name in ["admission.lock", "role-qa.lock", "slot-0.lock"]:
-                handle = job.lock_file(Path(d) / "codex-dungeon-job-locks" / name)
+    def test_systemd_failure_starts_nothing_and_releases_role(self):
+        with tempfile.TemporaryDirectory() as root:
+            for failure in [subprocess.TimeoutExpired('systemctl', 2), OSError('bus unavailable')]:
+                with patch.object(job.subprocess, 'run', side_effect=failure), \
+                     patch.object(job.subprocess, 'Popen') as launch:
+                    self.assertEqual(self.invoke(root), 78)
+                    launch.assert_not_called()
+                handle = job.lock_file(Path(root) / 'codex-dungeon-job-locks/role-qa.lock')
                 self.assertIsNotNone(handle)
                 handle.close()
 
+    def test_interruption_stops_only_own_service_before_releasing_role(self):
+        with tempfile.TemporaryDirectory() as root:
+            stopped = []
 
-if __name__ == "__main__":
+            def run(argv, **kwargs):
+                if 'stop' in argv:
+                    handle = job.lock_file(Path(root) / 'codex-dungeon-job-locks/role-qa.lock')
+                    self.assertIsNone(handle)
+                    stopped.append(argv[-1])
+                return idle_systemctl(argv)
+
+            with patch.object(job.subprocess, 'run', side_effect=run), \
+                 patch.object(job.subprocess, 'Popen') as launch:
+                process = launch.return_value
+                process.wait.side_effect = [KeyboardInterrupt(), 0]
+                process.poll.return_value = None
+                self.assertEqual(self.invoke(root), 130)
+                unit = next(arg.split('=', 1)[1] for arg in launch.call_args.args[0] if arg.startswith('--unit='))
+                self.assertEqual(stopped, [unit])
+                self.assertTrue(unit.startswith('codex-dungeon-qa-'))
+                self.assertEqual(process.terminate.call_count, 1)
+            handle = job.lock_file(Path(root) / 'codex-dungeon-job-locks/role-qa.lock')
+            self.assertIsNotNone(handle)
+            handle.close()
+
+    def test_failed_cleanup_reports_failure_and_live_service_blocks_next_start(self):
+        with tempfile.TemporaryDirectory() as root:
+            def failed_stop(argv, **kwargs):
+                if 'stop' in argv:
+                    raise subprocess.TimeoutExpired('stop', 12)
+                return idle_systemctl(argv)
+            with patch.object(job.subprocess, 'run', side_effect=failed_stop), \
+                 patch.object(job.subprocess, 'Popen') as launch:
+                launch.return_value.wait.side_effect = [KeyboardInterrupt(), 0]
+                launch.return_value.poll.return_value = None
+                self.assertEqual(self.invoke(root), 78)
+            with patch.object(job.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, stdout='qa still running')), \
+                 patch.object(job.subprocess, 'Popen') as launch:
+                self.assertEqual(self.invoke(root), 75)
+                launch.assert_not_called()
+
+    def test_invalid_role_does_not_start_anything(self):
+        with tempfile.TemporaryDirectory() as root, patch.object(job.subprocess, 'Popen') as launch:
+            self.assertEqual(self.invoke(root, role='unknown'), 64)
+            launch.assert_not_called()
+
+
+if __name__ == '__main__':
     unittest.main()
