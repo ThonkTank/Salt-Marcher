@@ -382,3 +382,6 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 @media(max-width:1099px){#catalog>.catalog-columns>.catalog-browser,#catalog>.catalog-columns>.catalog-inspector{grid-column:auto;grid-row:auto}}
 
 #combat-table td small{display:inline;margin-left:.35rem}#combat-table th,#combat-table td{padding:.35rem .3rem}#combat-controls{border-bottom:1px solid var(--line)}#combat-selection-hint{margin-top:0;padding:.5rem;background:#edf1f6}
+#key-copy-fields{display:flex;flex-wrap:wrap;gap:.6rem}#key-copy-preview pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:18rem;overflow:auto}#key-copy-preview details{border-top:1px solid var(--line);padding:.6rem 0}
+/* Result counts must not move the table editor's search field under the pointer. */
+#table-manager{height:92vh}

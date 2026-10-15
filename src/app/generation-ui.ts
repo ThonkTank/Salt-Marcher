@@ -9,7 +9,7 @@ import {checkedGeneratorConfig} from './generation/config';
 import {currentGenerationLoot,weightShares,integerWeights,type EncounterTable,type LootTable,type GeneratorRegistry,type GeneratorPreset,type GenerationCommand,type GenerationRun,type GenerationRequest} from './generation-contracts';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T, value=(id:string)=>get<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-interface Bridge{plan():Promise<EncounterPlan|null>;creature():Creature|null;filters():CreatureCatalogQuery;info():CatalogInfo|null;accept(plan:EncounterPlan):Promise<void>}
+interface Bridge{plan():Promise<EncounterPlan|null>;creature():Creature|null;filters():CreatureCatalogQuery;info():CatalogInfo|null;accept(plan:EncounterPlan):Promise<void>;beginTableLookup?():()=>void}
 let requiredPick:ReturnType<typeof requiredNpcPicker>;
 let workspace:Workspace|null=null,tables:EncounterTable[]=[],lootTables:LootTable[]=[],registry:GeneratorRegistry|null=null,run:GenerationRun|null=null;
 let previewRequest=0,refreshRequest=0,tableRequest=0;
@@ -19,7 +19,7 @@ let tableDraft:EncounterTable|null=null,lootDraft:LootTable|null=null,presetDraf
 let planningBasis:string|null=null;
 let pending:Promise<boolean>|null=null,tell:(text:string,error?:boolean)=>void,bridge:Bridge,discard:()=>void;
 let brush:GeneratorRoleCell='standard',painting=false,paintFrame:number|null=null,paintCells=new Map<string,HTMLButtonElement>();
-let catalogParent:Node|null=null,catalogNext:Node|null=null;const names=new Map<string,string>();
+let catalogParent:Node|null=null,catalogNext:Node|null=null,restoreTableLookup:(()=>void)|null=null;const names=new Map<string,string>();
 export function activateGeneration(next:Workspace){
  lock(false);pending=null;clearPaint();workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
@@ -73,7 +73,7 @@ export function generationPlanningChanged(party:EncounterPlan['party']|null){con
 export function generationCatalogFiltersChanged(){renderCatalogContext();if(!pending)get('generation-feedback').textContent='';if(run){previewDirty=true;renderPreview();}}
 function generationNotice(text:string,error=false){const node=get('generation-feedback');node.textContent=text;node.classList.toggle('generation-warning',error);tell(text,error);}
 
-function restoreCatalog(){const browser=get('catalog-browser');if(catalogParent){catalogParent.insertBefore(browser,catalogNext);catalogParent=null;catalogNext=null;}}
+function restoreCatalog(){const browser=get('catalog-browser');if(catalogParent){catalogParent.insertBefore(browser,catalogNext);catalogParent=null;catalogNext=null;}const restore=restoreTableLookup;restoreTableLookup=null;restore?.();}
 function closeTable(){tableRequest++;get<HTMLDialogElement>('table-manager').close();restoreCatalog();tableDraft=null;get(get<HTMLButtonElement>('encounter-table-open').disabled?'encounter-table-new':'encounter-table-open').focus();}
 function requestTableClose(){if(pending)return;if(tableDraft&&JSON.stringify(tableDraft)!==tableBaseline){discard=closeTable;get<HTMLDialogElement>('generation-discard').showModal();}else closeTable();}
 function closePreset(){clearPaint();get<HTMLDialogElement>('preset-manager').close();presetDraft=null;get('generator-settings').focus();}
@@ -86,7 +86,7 @@ async function openTable(table?:EncounterTable){
  for(const e of draft.entries){if(!names.has(e.creatureId)){const response=await window.campaign.creature(e.creatureId);if(!owned(w.token,g)||request!==tableRequest)return;const c=unwrap(response);names.set(c.id,c.name);}}
  if(!owned(w.token,g)||request!==tableRequest)return;
  tableDraft=draft;tableBaseline=JSON.stringify(draft);get<HTMLInputElement>('table-name').value=draft.name;get<HTMLTextAreaElement>('table-description').value=draft.description;get<HTMLSelectElement>('table-scope').value=draft.scope;get<HTMLInputElement>('table-habitats').value=draft.habitats.join(', ');get<HTMLSelectElement>('table-time').value=draft.time;const loot=get<HTMLSelectElement>('table-loot-link');loot.replaceChildren();option(loot,'','Keine Beutetabelle');for(const t of lootTables.filter(t=>!t.trashed))option(loot,t.id,t.name);loot.value=draft.lootTableId??'';loot.disabled=draft.scope==='installation';get<HTMLDetailsElement>('table-options').open=false;get('table-selected-creature').textContent='Wähle links eine Kreatur.';renderTableRows();
- const browser=get('catalog-browser');if(!catalogParent){catalogParent=browser.parentNode;catalogNext=browser.nextSibling;}get('table-catalog-slot').append(browser);get<HTMLDialogElement>('table-manager').showModal();get('table-name').focus();if(bridge.creature())generationCreature(bridge.creature()!);
+ const browser=get('catalog-browser');if(!catalogParent){restoreTableLookup=bridge.beginTableLookup?.()??null;catalogParent=browser.parentNode;catalogNext=browser.nextSibling;}get('table-catalog-slot').append(browser);get<HTMLDialogElement>('table-manager').showModal();get('table-name').focus();if(bridge.creature())generationCreature(bridge.creature()!);
  }catch(error){if(owned(w.token,g)&&request===tableRequest)throw error;}
 }
 function refreshWeightShares(root:HTMLElement,weights:string[]){

@@ -13,6 +13,7 @@ let generation=0,searchRequest=0,listRequest=0,planRequest=0,creatureRequest=0,p
 const owned=(token:string|undefined,g:number)=>generation===g&&workspace?.token===token;
 let saving:Promise<boolean>|null=null,timer:ReturnType<typeof setTimeout>|null=null,searchTimer:ReturnType<typeof setTimeout>|null=null;
 let tell:(text:string,error?:boolean)=>void,prepare:(plan:EncounterPlan)=>Promise<void>;
+let tableLookupQuery:CreatureCatalogQuery|null=null;
 function clearSaveTimer(){if(timer)clearTimeout(timer);timer=null;}
 function clearSearchTimer(){if(searchTimer)clearTimeout(searchTimer);searchTimer=null;}
 function clearResults(text:string,loading=false,error=false){
@@ -38,6 +39,21 @@ function query():CreatureCatalogQuery{
  const fields=q as Record<string,unknown>;for(const [id,key]of [['catalog-cr-min','crMin'],['catalog-cr-max','crMax'],['catalog-ac-min','acMin'],['catalog-ac-max','acMax'],['catalog-hp-min','hpMin'],['catalog-hp-max','hpMax']])if(value(id!))fields[key!]=Number(value(id!));
  for(const [id,key]of [['catalog-type','types'],['catalog-subtype','subtypes'],['catalog-size','sizes'],['catalog-habitat','habitats'],['catalog-alignment','alignments']])if(value(id!))fields[key!]=[value(id!)];
  for(const [id,key]of [['catalog-movement','movement'],['catalog-senses','senses'],['catalog-vulnerabilities','vulnerabilities'],['catalog-resistances','resistances'],['catalog-immunities','immunities'],['catalog-condition-immunities','conditionImmunities']])if(value(id!))fields[key!]=value(id!);return q;
+}
+// Reuse the catalog controls in the manager, but keep its lookups local to that task.
+function beginTableLookup(){
+ const token=workspace?.token,g=generation,previousCreature=creature,previousOffset=offset,previousSort=sort;
+ const fields=[...get('catalog-form').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')].map(node=>({node,value:node.value}));
+ tableLookupQuery=structuredClone(query());creatureRequest++;
+ return()=>{
+  tableLookupQuery=null;if(!owned(token,g))return;
+  clearSearchTimer();searchRequest++;creatureRequest++;offset=previousOffset;sort=previousSort;
+  for(const field of fields)field.node.value=field.value;
+  creature=previousCreature;const detail=get('catalog-detail');
+  if(creature)renderCreatureDetail(detail,creature);else detail.textContent='Wähle eine Kreatur, um ihren vollständigen Statblock anzusehen.';
+  get<HTMLButtonElement>('catalog-add').disabled=!creature||!plan||blocked;get<HTMLButtonElement>('catalog-live-add').disabled=!creature||!workspace;
+  void search();
+ };
 }
 async function search(){
  clearSearchTimer();const request=++searchRequest,token=workspace?.token,g=generation;clearResults('Kreaturen werden gesucht…',true);
@@ -109,10 +125,10 @@ function renderAssessment(){generationPlanningChanged(plan?.party??null);get('en
 function renderPlan(){get('encounter-editor').hidden=!plan;if(!plan)return;get<HTMLInputElement>('encounter-name').value=plan.name;get<HTMLTextAreaElement>('encounter-notes').value=plan.notes;const party=get('encounter-party');party.replaceChildren();for(const p of plan.party){const row=document.createElement('div');row.className='encounter-party-row';const name=document.createElement('input'),level=document.createElement('input'),count=document.createElement('input'),remove=document.createElement('button');name.value=p.name;name.maxLength=1000;name.setAttribute('aria-label','Geplanter Name');level.type='number';level.min='1';level.max='20';level.value=p.level===null?'':String(p.level);level.placeholder='Level unbekannt';level.setAttribute('aria-label','Geplantes Level');count.type='number';count.min='1';count.max='10000';count.value=String(p.count);count.setAttribute('aria-label','Anzahl geplanter Figuren');remove.textContent='Entfernen';remove.onclick=()=>{plan!.party=plan!.party.filter(c=>c.id!==p.id);renderPlan();schedule();};name.oninput=()=>{p.name=name.value;schedule();};level.oninput=()=>{p.level=level.value?Number(level.value):null;schedule();};count.oninput=()=>{p.count=Number(count.value);schedule();};row.append(name,level,count,remove);party.append(row);}
  const rows=get('encounter-entries');rows.replaceChildren();for(const e of plan.entries){const c=plan.sources.find(c=>c.id===e.creatureId),row=document.createElement('div');row.className='encounter-entry-row';const name=document.createElement('button'),count=document.createElement('input'),label=document.createElement('label'),group=document.createElement('input'),remove=document.createElement('button');name.textContent=(e.worldActorIds?encounterEntryLabel(e,plan.sources):c?.name??e.creatureId)+' · HG '+(c?.challengeRating??'?');name.onclick=()=>{void selectCreature(e.creatureId);};count.type='number';count.min='1';count.max='1000';count.value=String(e.count);count.min=String(Math.max(1,e.worldActorIds?.length??0));count.disabled=!!e.worldActorIds?.length&&e.worldActorIds.length===e.count&&!e.allowAnonymous;count.setAttribute('aria-label','Anzahl '+(c?.name??e.creatureId));count.oninput=()=>{e.count=Number(count.value);schedule();};group.type='checkbox';group.checked=e.grouped;group.onchange=()=>{e.grouped=group.checked;schedule();};label.className='check-label';label.append(group,document.createTextNode('Gemeinsame Initiative'));remove.textContent='Entfernen';remove.onclick=()=>{plan!.entries=plan!.entries.filter(p=>p.id!==e.id);renderPlan();schedule();};row.append(name,count,label,remove);rows.append(row);}renderAssessment();get<HTMLButtonElement>('catalog-add').disabled=!creature||blocked;}
 export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAdd:(creatureId:string,count:number,grouped:boolean)=>Promise<void>){tell=status;prepare=onPrepare;
- initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:query,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
+ initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
  get('catalog-form').onsubmit=event=>{event.preventDefault();offset=0;void search();};
- for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
- get('catalog-reset').onclick=()=>{get<HTMLFormElement>('catalog-form').reset();offset=0;sort='name';generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{sort=button.dataset.sort as CreatureCatalogQuery['sort'];offset=0;void search();};
+ for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
+ get('catalog-reset').onclick=()=>{get<HTMLFormElement>('catalog-form').reset();offset=0;sort='name';if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{sort=button.dataset.sort as CreatureCatalogQuery['sort'];offset=0;void search();};
  get('encounter-search').oninput=()=>void refreshPlans();
  get('encounter-list').onchange=()=>{void loadPlan(value('encounter-list'));};
  get('encounter-new').onclick=()=>report(()=>newPlan());

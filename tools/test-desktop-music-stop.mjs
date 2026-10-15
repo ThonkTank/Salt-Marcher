@@ -1,4 +1,4 @@
-import {assertDungeonJobBudget} from './dungeon-job-budget.mjs';
+import {currentProcessGroup} from './process-group.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -6,7 +6,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const source=process.cwd(),before=process.argv.includes('--before'),phase=before?'before':'after',output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/music-stop-evidence');
-const group=await assertDungeonJobBudget();await mkdir(output,{recursive:true});
+const group=await currentProcessGroup();await mkdir(output,{recursive:true});
 const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/music-native-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/music-native-store.cjs');
 const profile=await mkdtemp('/tmp/gm-music-stop-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Eine Szene in Ruhe wechseln'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
 await mkdir(profile+'/audio',{recursive:true});

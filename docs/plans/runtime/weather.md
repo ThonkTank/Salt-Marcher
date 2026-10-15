@@ -1,6 +1,6 @@
 # Wetter an Scenezeit und manuellem Override
 
-Stand: 14.10.2026. Gesamtumfang: [SCOPE](../../SCOPE.md),
+Stand: 15.10.2026. Gesamtumfang: [SCOPE](../../SCOPE.md),
 [SMR-08](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-08--shops-wetter-und-musik)
 und [Scenezeit](smr03-live-scene-contract.md). Der gemeinsame Fehler-/Fokusanschluss
 zu Musik und Ambience steht im [Audio-Wiederaufnahmeplan](music-recovery.md).
@@ -10,6 +10,36 @@ Wetter ohne Sessionvorbereitung, unabhängig aus jeder Scenezeit, Ort, Gelände
 und Klima. Ein manueller Override gilt bis zur ausdrücklichen Freigabe; danach
 setzt die Automatik fort. Quellenbindung: [Register](../../scope-sources.json),
 SHA256 `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
+
+## Unabhängige Sceneprosa bei beschädigtem Wetter
+
+Die übergeordneten Program Capabilities verlangen, dass ein Fehler einer
+unterstützenden Fähigkeit unabhängige Live-/manuelle Änderungen nicht blockiert.
+`CampaignStore.executeLive` synchronisierte bisher auch bei reinen Titel-/
+Notizänderungen den World-/Wetterstand. Ein beschädigter Override konnte dadurch
+bestätigbare Sceneprosa samt Receipt zurückrollen, obwohl weder Ort noch Uhr
+oder Wetter geändert wurden.
+
+Vor einem `scene-content`-Command wird der bisherige Sceneort gelesen. Bleibt er
+gleich, hat die Änderung keine Worldfolge und benötigt keinen Wetterread oder
+Worldwrite. Sceneprosa/Revision/Receipt bleiben ihre bisherigen Besitzer;
+Wetterbytes werden weder repariert noch überschrieben. Reconciliation und
+Receiptreplay bestätigen dieselbe Sceneänderung ohne erneute Worldwirkung.
+Ein unabhängiger SQLite-Reader sieht den gespeicherten Originaltext. Die
+Worldanzeige liest weiter ihren eigenen Stand und meldet ihren Fehler statt
+fälschlich eine behobene Wetterquelle zu behaupten.
+
+Ortswechsel, Zeitfortschritt, Reise, Restock und Autonomy behalten ihre
+bestehenden erforderlichen Folgen und Prüfungen. Das ist keine allgemeine
+Freigabe, fehlerhafte abhängige Wirkungen zu überspringen. Die vollständige
+Capabilityisolation bei kaputten Orts-/Zeit-/Maskenfolgen bleibt offen; dafür
+müssen erforderliche Fakten und wiederaufnehmbare abhängige Projektionen am
+konkreten Owner unterschieden werden. Keine neue Catch-all-Recovery, Schema-
+oder Formatmigration. `desktop-weather-integrity.test.mjs` prüft falsche
+Wetterform und Checksumme neben unveränderter Worldtruth, exakte Texte,
+separaten Reader, Receipt und Replay sowie weiterhin atomar abgewiesenen
+Zeitfortschritt. Native Fehler-/Save-/Close-/Wiederaufnahmequalifikation bleibt
+eine getrennte Abnahme.
 
 ## Vorhandener Anschluss und korrigierter Fehler
 
@@ -108,8 +138,17 @@ unklare Editorbestätigung liegen derzeit nur im Speicher.
    gültige archivierte Quellen und ursprüngliche Paketbytes.
 3. `consumeSceneTime`, Scene-/Journeywriter und Wetterhinweise: zwei unabhängige
    Scenes an unterschiedlichen Zeiten/Orten, Override nur an einer Scene,
-   Wiedervereinigung und Campaignwechsel/Fresh kombinieren. Ownerfehler nach
-   erster Zeitwirkung muss den gesamten betreffenden Command zurückrollen.
+   Wiedervereinigung und Campaignwechsel/Fresh kombinieren. Fehler erforderlicher
+   autoritativer Zeit-/Weltfolgen rollen den betreffenden Command atomar zurück.
+   Abgeleitete unterstützende Anzeigen sind davon zu trennen: vor Erweiterung
+   der Isolation `syncSceneWorld` in erforderliche Positionsfolge und lesend
+   nachholbare Wetterprojektion aufteilen. Vorhandene Scene-/Worldreader und
+   Ackverbraucher müssen einen bestätigten Kernstand neben einer ausgefallenen
+   Projektion kenntlich machen; Nachholen berechnet nur aus dem bestätigten
+   Stand, statt einen neuen Zeitcommand zu erfinden. Gegenprobe: beschädigter
+   Override oder Phänomen neben Notiz-, Orts-, Uhr- und Maskenänderung; jede
+   notwendige Folge muss entweder bestätigt oder ausdrücklich offen sein.
+   Keine allgemeine Fehlerunterdrückung und kein zweites Recoveryframework.
    Retry erzeugt keine doppelten Hinweise/History-/Zeitfolgen. Playerperception
    und Music/Ambience folgen dem bestätigten Focus ohne GM-Texte im Playerframe.
 4. `world-ui.ts`, vorhandene Workingdraft-/Weltreceiptports: persistente

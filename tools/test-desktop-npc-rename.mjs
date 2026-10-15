@@ -1,4 +1,4 @@
-import {assertDungeonJobBudget} from './dungeon-job-budget.mjs';
+import {currentProcessGroup} from './process-group.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -6,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const source=process.cwd(),before=process.argv.includes('--before'),phase=before?'before':'after',output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/npc-rename-evidence');
-const group=await assertDungeonJobBudget();await mkdir(output,{recursive:true});
+const group=await currentProcessGroup();await mkdir(output,{recursive:true});
 const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/desktop/npc-rename-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/desktop/npc-rename-store.cjs');
 const profile=await mkdtemp('/tmp/gm-npc-rename-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Derselbe NSC nach einer Umbenennung'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
 const id=randomUUID(),npc=store.executeNpc({commandId:randomUUID(),token:w.token,campaignId:campaign.id,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name:'Späher Borin',creatureId:'goblin',readAloud:'  Ein ruhiger Blick.\r\n- Reisemantel',gmNotes:'  Kennt den Fluchtweg.\r\n- Ring behalten',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:null,health:{hp:6,maxHp:7,tempHp:2,conditions:'vergiftet',concentrating:true}}});
