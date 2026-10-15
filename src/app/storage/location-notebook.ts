@@ -1,9 +1,8 @@
 import type {LocationMaterialsQuery,LocationMaterialsPage} from '../location-notebook-contracts';
-import type {CalendarEvent} from '../world-contracts';
-import {createHash} from 'node:crypto';
 import {calendarDate} from '../world-model';
 import {readWorldCalendar} from './world';
 import {readWorldSources} from './world-sources';
+import {readClockEvent} from './time-plan';
 import {deskContent} from './scene-desk';
 import {readNarrative} from './narrative';
 import {readPreparedGroup} from './session';
@@ -37,7 +36,7 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
   if(q.kind==='group'){const group=readPreparedGroup(db,cam,r.id);if(group.id!==r.id||group.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:group.title,detail:group.actors.length+' Figuren'};}
   if(q.kind==='shop'){const view=readShop(db,cam,r.id),shop=view.shop;if(shop.id!==r.id||view.unavailable||(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!npcAtLocation(db,cam,shop.owner.id,q.locationId!)))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:shop.name,detail:'Shop · '+view.ownerName};}
   if(q.kind==='faction'){const content=deskContent(db,cam,{kind:'note',id:r.id});if(content.unavailable||content.note?.kind!=='faction'||content.note.id!==r.id||!factionSource?.factionIds.includes(r.id))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:'Fraktion am Ort',ref:{kind:'note' as const,id:r.id}};}
-  const row=db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,r.id);if(!row||createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Ortsmaterialquelle beschädigt.');const event=JSON.parse(row.payload) as CalendarEvent;if(event.id!==r.id||event.revision!==row.revision||event.locationId!==q.locationId||event.trashed||typeof event.name!=='string'||!event.name.trim())throw new Error('Ortsmaterialquelle beschädigt.');return{id:event.id,title:event.name,detail:(event.repeatMs===null?'Einmaliges Ereignis':'Wiederkehrendes Ereignis')+' · Ab '+calendarDate(calendar!,event.startMs)};
+  const event=readClockEvent(db,cam,r.id);if(event.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:event.id,title:event.name,detail:(event.repeatMs===null?'Einmaliges Ereignis':'Wiederkehrendes Ereignis')+' · Ab '+calendarDate(calendar!,event.startMs)};
  };
  return{locationRevision:location?.revision??null,next:rows.length>40?q.offset+40:null,items:rows.slice(0,40).map(item)};
 }
