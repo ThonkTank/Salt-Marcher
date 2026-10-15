@@ -860,3 +860,8 @@ Fraktionen und Kalenderfristen stehen jetzt neben NSCs, Aufträgen, Gruppen und 
 Die angedockte GM-Spielabendmappe führt aus ihren vorhandenen Blöcken direkt in die zuständigen Arbeitsabläufe. Ortsabschnitte öffnen die Ortsmappe, Weltverweise ihre Originalquelle, eine vorbereitete Figurengruppe erzeugt nach übernommener Besuchsszene den bestehenden Kampfentwurf, und eine Belohnung öffnet exakt diesen Besuch im vorhandenen Platzierungs- und Vergabeablauf.
 
 Jeder Aktionsblock trägt die bestätigte Quellenkennung aus dem Paket statt Titel oder Freitext erneut aufzulösen. Die Begegnungsübergabe prüft weiterhin Fokus, Mitgliedschaft, Besuchsübernahme, Szenenort und aktuellen Gruppenstand. Lesen oder Quellen öffnen verändert nichts; Kampfvorbereitung, Besuchsübernahme, Textfreigabe, Beuteplatzierung und XP-Vergabe bleiben ihre getrennten ausdrücklichen Aktionen.
+
+
+### 0.88 – Material direkt am Ort anlegen
+
+Die Ortsmappe legt benannte NSCs, Aufträge, Gerüchte und Shops für den ausgewählten Ort an und öffnet danach ihren bestehenden Fachbereich. NSCs erhalten dieselbe Weltidentität im Profil und an ihrem Ort. Aufträge und Gerüchte starten offen mit Ortsbindung und ohne Belohnung; Shops gehören dem gewählten Ort und starten ohne Waren. Ein Rückweg führt zur ursprünglichen Ortsmappe. Alle Änderungen verwenden die vorhandenen Autoren-, Entwurfs- und Bestätigungswege; keine neue Datenhaltung und keine Änderung von Gruppenzeit, XP, Beute oder Verkäufen.
