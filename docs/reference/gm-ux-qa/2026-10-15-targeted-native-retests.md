@@ -170,7 +170,26 @@ nur öffentliche Ziele, eigene Daten und normale UI. Spätere Spielsituationen
 werden erst nach gesicherten normalen Abschnittsabschlüssen gelesen; keine
 Wartefreigabe oder formale Zeitmessung. Ergebnis und unabhängige Bestätigung
 stehen noch aus. Der Entwicklungsstand bleibt frei veränderbar; die Testkopie
-wird weder aktualisiert noch neu gebaut.
+wird weder aktualisiert noch neu gebaut. PREPARE ist inzwischen normal gesichert
+und geschlossen: vier aktive Figuren mit HP/XP, eine inaktive Figur und drei
+vorbereitete Szenen. Der frische Tester änderte Miras Vorlesetext und las an
+derselben zweiten Besuchsstelle weiter. Die Leitung prüfte den passenden
+Originalframe mit getrenntem GM-Block und normalen Prozessabschlüssen. Die
+gesicherte Ereigniskopie ist der exakte PREPARE-Präfix des bei PLAY fortgesetzten
+Originalruns; eine anfängliche Gleichheitsprüfung des ganzen, inzwischen länger
+gewordenen Runs wurde entsprechend korrigiert. PLAY läuft: native Teilgruppen,
+Uhren und Figurenwerte werden benutzt, während Orte und Wissensstände teilweise
+als freie Notizen geführt werden. Das sind Zwischenbeobachtungen; Wiederaufnahme
+und Korrektur der Belohnung sind noch nicht abgeschlossen. Lange Partyformulare
+erzeugen laut Tester Scroll-/Sucharbeit; die Ursache beobachteter Fehlziele ist
+zwischen bewegtem Formular und verspäteter Beobachtung noch nicht getrennt.
+
+Für denselben ganzen Fall liegt ein öffentlicher einfacher Textauftrag bereit,
+ohne vorgegebene Dateistruktur oder native Funktionen. Fakten und spätere
+Spielsituationen sind identisch, die Organisation bleibt frei. Noch kein
+Texttrial reserviert oder gestartet; keine zusätzliche laufende QA-Last. Damit
+bleibt der Vergleich der nativen Zustandsarbeit mit einfachster brauchbarer
+Alternative offen, statt aus dem früheren Erzählfall übertragen zu werden.
 Dungeon Editor 0.94.0 und Original-Obsidian erhielten den gespielten narrativen
 Stand nach Fresh. Obsidian stellte Tabs/Suche wieder her, während der erste
 Editorlauf manuell aus „Karte und Keys“ zurücknavigierte. Das ist eine konkrete
