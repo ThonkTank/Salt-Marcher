@@ -17,7 +17,3 @@ export function baseEncounterMultiplier(count: number): number {
 export function quantityMultiplier(quantity: number): number {
   return baseEncounterMultiplier(quantity)
 }
-
-export function effectiveEncounterMultiplier(effectiveCount: number): number {
-  return baseEncounterMultiplier(effectiveCount)
-}

@@ -145,4 +145,3 @@ export function initDungeonContent(status:typeof tell,w:typeof workspace,r:typeo
 }
 export function activateDungeonContent(){generation++;readVersion++;openVersion++;frame++;pending=null;writing=false;failed=false;baseline=null;data=null;element=null;scopeId='';el('content-reference-detail').textContent='';el<HTMLDialogElement>('content-dialog').close();}
 export async function flushDungeonContent(){const o=owner(),job=pending;const ok=job?await job:true;return owns(o)&&ok&&!failed&&!dirty();}
-export async function refreshOpenDungeonContent(){if(el<HTMLDialogElement>('content-dialog').open)await refresh();}

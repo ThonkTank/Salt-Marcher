@@ -1,9 +1,5 @@
-import type { Building, Door, Entity, Point } from "../../model";
+import type { Building, Door, Entity } from "../../model";
 import { followPortalAfterContourEdit, type BuildingContourEdit } from "../../geometry";
-import {
-  proposeBuildingPointDrag,
-  type BuildingEdgeGrip,
-} from "./building-point-gestures";
 
 export interface BuildingEdgePortalPreview {
   readonly building: Building;
@@ -28,18 +24,4 @@ export function previewBuildingMutationWithPortals(
       : [],
   );
   return { building, portals };
-}
-
-/** Compute the same portal anchors as an edge-insertion commit, without history. */
-export function previewBuildingEdgeWithPortals(
-  entities: readonly Entity[],
-  before: Building,
-  grip: BuildingEdgeGrip,
-  destination: Point,
-): BuildingEdgePortalPreview | null {
-  const proposal = proposeBuildingPointDrag(before, grip, destination);
-  return proposal
-    ? previewBuildingMutationWithPortals(entities, before,
-      proposal.after, proposal.edit)
-    : null;
 }

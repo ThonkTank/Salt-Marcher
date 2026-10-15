@@ -74,6 +74,12 @@ Mehrzeilenregeln, Korrekturen, Replay, Fresh und vollständigen Rollback ab.
    offenlegen; Originalbytes und sicheren Backupvorgänger bewahren, keine stille
    Reparatur. Gegenproben mit gültiger Checksum und ungültigen Fachwerten an Read,
    Write und Backup; Laufbelege sind dafür noch offen.
+   Dabei sind zwei gültige Alt-/Randzustände zu erhalten: spätere Clock-/Positions-
+   basen dürfen fehlen, solange die Reise lesbar bleibt und ihre Fortsetzung ohne
+   diese Basis abgelehnt wird. Ein Interrupt auf dem letzten Hex darf bereits
+   `nextIndex === route.length` besitzen; erst ausdrückliches Fortsetzen bestätigt
+   die Ankunft, ohne noch einmal Bewegung, Zeit oder Restock zu buchen. Route und
+   Abschnittsdauern waren dagegen bereits im ursprünglichen Journeyformat Pflicht.
 6. Gemischte Shops und lange Historien messen; erst bei Bedarf fällige Queries
    und fortgesetzte Listen liefern. Native Ownerwarnung, Zeitfehler, verlorene
    Handelsantwort, Tastatur, 200 % und Auffindbarkeit aus Scene abnehmen.
