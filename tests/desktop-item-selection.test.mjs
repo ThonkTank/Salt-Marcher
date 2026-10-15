@@ -70,3 +70,37 @@ test('rapid next-page actions cannot duplicate requests or make back remain on t
  x.el('items-next').onclick();x.el('items-next').onclick();await tick();assert.equal(calls.length,1);assert.equal(calls[0].after,40);pause.resolve();await until(()=>x.el('items-page').textContent.includes('Seite 2'));window.campaign.itemDefinitions=original;x.el('items-prev').onclick();await until(()=>x.el('items-page').textContent.includes('Seite 1'));assert.equal(x.el('items-prev').disabled,true);
  }finally{await x.cleanup();}
 });
+
+
+test('reference lookup exposes full plain text and facts without writes; editing and usage are explicit',async()=>{
+ const x=await fixture();try{
+  const before=x.store.live(x.w.token),progress=x.store.progress(x.w.token);
+  for(const name of ['Cloak of Protection','Cloak of Elvenkind']){
+   const source=x.store.itemDefinitions({search:name,category:'',magic:'',rarity:'',attunement:'',sort:'name',direction:'asc',after:0,includeTrashed:false}).items.find(i=>i.name===name);assert(source);
+   await x.choose(source.id);await until(()=>x.el('item-reference-title').textContent===name);
+   assert.equal(x.el('item-reference-description').textContent,source.description);
+   assert.match(x.el('item-reference-facts').textContent,/Einstimmung: erforderlich/);
+   assert.equal(x.el('item-editing').hidden,true);assert.equal(!!x.el('item-usage').open,false);
+   assert.equal(x.el('items-results').querySelector('[aria-pressed="true"]').dataset.definitionId,source.id);
+   assert.equal(x.el('item-source-link').href,source.source.url);
+  }
+  assert.equal(x.writes.length,0);assert.deepEqual(x.store.live(x.w.token),before);assert.deepEqual(x.store.progress(x.w.token),progress);
+  await x.choose(x.defs[0].id);await until(()=>x.el('item-reference-title').textContent==='Seil');
+  assert.equal(x.el('item-editing').hidden,false);assert.equal(!!x.el('item-editing').open,false);
+  x.el('item-editing').open=true;x.el('item-description').value='<script>literal prose</script>\nLast line';x.el('item-form').oninput();assert(await x.ui.flushItems());
+  assert.equal(x.el('item-reference-description').textContent,'<script>literal prose</script>\nLast line');assert.equal(x.el('item-reference-description').querySelector('script'),null);
+  x.el('item-copy').onclick();await tick();await until(()=>x.el('item-name').value.includes('Kopie'));
+  assert.equal(x.el('item-editing').open,true);assert.equal(x.el('item-editing').hidden,false);
+ }finally{await x.cleanup();}
+});
+
+test('collapsed active filters remain visible and reset preserves the lookup text',async()=>{
+ const x=await fixture();try{
+  x.el('item-search').value='Cloak';x.el('item-filter-magic').value='yes';x.el('item-filter-magic').onchange();
+  x.el('item-filter-rarity').value='uncommon';x.el('item-filter-rarity').onchange();
+  x.el('items-search-form').onsubmit({preventDefault(){}});await until(()=>x.el('items-results').textContent.includes('Cloak of Protection'));
+  assert.match(x.el('item-filter-summary').textContent,/Magisch:/);assert.match(x.el('item-filter-summary').textContent,/uncommon/);assert.equal(x.el('item-filter-reset').hidden,false);
+  x.el('item-filter-reset').onclick();await until(()=>x.el('item-filter-summary').textContent==='Filter und Sortierung');
+  assert.equal(x.el('item-search').value,'Cloak');assert.equal(x.el('item-filter-magic').value,'');assert.equal(x.el('item-filter-rarity').value,'');assert.equal(x.el('item-filter-reset').hidden,true);assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
