@@ -23,8 +23,8 @@ const capabilityExists=(sources:string,id:string)=>{
 };
 
 
-test('a changed lesson revision creates a new optional tutorial run in the same application version',()=>{
- const root=mkdtempSync(join(tmpdir(),'tutorial-revision-')),path=join(root,'campaign.sqlite');let store=new CampaignStore(path,'1.0.0');try{const initial=store.tutorial();assert.equal(initial.lessonRevision,tutorialLessonRevision);const finished=store.tutorial('finished');assert.equal(finished.state,'finished');const db=(store as unknown as {db:any}).db,legacy={...finished,lessonRevision:'desktop-tutorial-accessibility-v12'};db.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(legacy),'tutorial:app:1.0.0');const updated=store.tutorial();assert.deepEqual(JSON.parse(db.prepare('SELECT value FROM settings WHERE key=?').get('tutorial:app:1.0.0:history:'+legacy.runId).value),legacy);assert.equal(updated.state,'new');assert.equal(updated.lessonRevision,tutorialLessonRevision);assert.notEqual(updated.runId,finished.runId);store.close();store=new CampaignStore(path,'1.0.0');assert.deepEqual(store.tutorial(),updated);
+test("changed help preserves this installed version's completed tutorial across restart",()=>{
+ const root=mkdtempSync(join(tmpdir(),'tutorial-revision-')),path=join(root,'campaign.sqlite');let store=new CampaignStore(path,'1.0.0');try{const initial=store.tutorial();assert.equal(initial.lessonRevision,tutorialLessonRevision);const finished=store.tutorial('finished');assert.equal(finished.state,'finished');const db=(store as unknown as {db:any}).db,legacy={...finished,lessonRevision:'desktop-tutorial-accessibility-v12'};db.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(legacy),'tutorial:app:1.0.0');const updated=store.tutorial();assert.deepEqual(updated,legacy);assert.equal(updated.state,'finished');assert.equal(updated.runId,finished.runId);store.close();store=new CampaignStore(path,'1.0.0');assert.deepEqual(store.tutorial(),updated);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 

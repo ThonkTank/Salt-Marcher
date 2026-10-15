@@ -1003,8 +1003,9 @@ export class CampaignStore {
     return this.db.transaction(() => {
       const key = `tutorial:app:${this.applicationVersion}`, saved = this.db.prepare('SELECT value FROM settings WHERE key=?').get(key);
       const prior: TutorialRun | null = saved ? checkedTutorialRun(JSON.parse(saved.value), this.applicationVersion) : null;
-      if(prior&&prior.lessonRevision!==tutorialLessonRevision)this.db.prepare('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO NOTHING').run(key+':history:'+prior.runId,saved!.value);
-      const run: TutorialRun = prior?.lessonRevision === tutorialLessonRevision ? prior : { version: this.applicationVersion, lessonRevision: tutorialLessonRevision, runId: randomUUID(), state: 'new' };
+      // Onboarding belongs to an installed app version. Edited help stays available
+      // without resetting this version's completed or dismissed run.
+      const run: TutorialRun = prior ?? { version: this.applicationVersion, lessonRevision: tutorialLessonRevision, runId: randomUUID(), state: 'new' };
       if (state && run.state !== 'finished' && run.state !== 'skipped') run.state = state;
       this.db.prepare('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, json(run));
       return run;
