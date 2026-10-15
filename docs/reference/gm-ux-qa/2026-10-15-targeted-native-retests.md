@@ -49,8 +49,17 @@ Handout allein in einem separaten lokalen Fenster gezeigt. Textsuche und
 Rückkehr zur Schreibstelle waren manuell; Spielstand und Sitzungsnotizen
 mussten getrennt aktualisiert werden. Kein blockierender Fehler oder
 Textverlust wurde beobachtet. Normaler Close und Checkpoint sind belegt.
-Der gleiche Tester bearbeitet jetzt die abschließende Wiederaufnahme;
-der vollständige Arbeitsablauf ist noch nicht abgenommen.
+Der gleiche Tester schloss auch die Wiederaufnahme ab: Auszahlung,
+mitgenommene Lampe, Reparatur, Pegel, Notizen, Geheimnis, Handout und Textkarte
+waren nach normalem Schließen und einem neuen KWrite-Prozess erhalten. Der
+Endstand am Dateianfang war direkt lesbar, Dateiöffnung und Raumsuche mussten
+wiederholt werden. Finale Dateien, Originalframe des frischen Standes und
+normales Run-/Produkt-/Umgebungsende wurden geprüft. Es gab keinen beobachteten
+Inhaltsverlust oder blockierenden Produktfehler. Der fertige Auftrag wurde nach
+Sicherung archiviert. Die einfache Textlösung ist für diesen begrenzten Fall
+praktisch brauchbar; dies belegt keinen Vorteil des Dungeon Editors. Eine
+numerische Auswertung gegen den älteren Produktlauf wäre kein kontrollierter
+Vergleich.
 Dieser einfache Text-/Markdownablauf liefert zunächst qualitative
 Nutzungsbelege, keine kontrollierte Zeitstudie; technische Anlaufkosten und
 Einschränkungen bleiben Teil des Berichts.
@@ -64,13 +73,22 @@ nicht als gewöhnliche GM-Arbeit. Es wurden keine Spielsituation oder Lösung
 verändert. Insbesondere werden daraus keine pauschalen Zeit-/Klickvergleiche
 abgeleitet.
 
-Für die nächste native Erkundung wird ausschließlich eine eigene Kopie des
+Für die nächste native Erkundung wurde ausschließlich eine eigene Kopie des
 veröffentlichten Integrationscommits
-`696417e5a59c4ec33482b8d93dbe854b744e3bc5` (0.94.0) vorbereitet. Der neue
-Buildauftrag ist auf Kopie, Originalbuild und Identitätsmanifest begrenzt;
-schwere Ausführung beginnt erst nach Freigabe des tatsächlich freien QA-Slots.
-Es gibt keine Sperre für die Entwicklung und keinen Produkt- oder
-Regressionserfolg allein aufgrund dieses Buildauftrags.
+`696417e5a59c4ec33482b8d93dbe854b744e3bc5` (0.94.0) gebaut. Der einzelne
+geschützte Job endete nach Freigabe des tatsächlich freien QA-Slots normal
+mit Exit 0. Alle 112 gelieferten Produkt-/Runtime-Dateihashes stimmen mit dem
+Manifest überein; die Quellen blieben unverändert. Native Startfähigkeit und
+UX sind dadurch noch nicht belegt. Die Entwicklung wird nicht gesperrt.
+
+RABENFURT-SOURCE-01 beginnt mit einem neuen unabhängigen Tester auf diesem
+festen Build. Der öffentliche Fall betrifft einen kleinen Fährstadt-Spielabend,
+aktuelle Auskünfte, eine unterbrochene Notiz und spätere Wiederaufnahme. Nur
+Vorbereitung und Inhalt wurden zunächst offengelegt; spätere Spielsituationen
+bleiben bis zu den natürlichen Grenzen zurückgehalten. Kein früherer Befund,
+keine Produktquelle oder UI-Schrittfolge wurde dem Tester übergeben. Ergebnisse
+dieses neuen Falls sowie dessen eigene praktische Alternativvergleiche stehen
+noch aus.
 
 Der bestehende Cloud-Browserpilot ist mangels auflösbarer Gesprächs-ID nicht
 als ausgeführt bestätigt. Es wurde kein Ersatzlauf gestartet. Tatsächliche
