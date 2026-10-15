@@ -99,3 +99,7 @@ test('connection feedback distinguishes translated, changed and rejected endpoin
  assert.equal(x.store.graph(x.workspace.token,'vault').geometry.drawing.paths.length,1);
  ui.activateGraph();
 });
+test('map room numbers remain in reading order once connections reach two digits',t=>{
+ const seeds=['10','2','1'].map((number,i)=>({...room('room-'+number,i*12.192,0),number})),x=setup(t,seeds);
+ assert.deepEqual(x.workspace.rooms.map(r=>r.number),['1','2','10']);
+});

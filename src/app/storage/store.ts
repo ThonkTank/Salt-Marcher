@@ -1,3 +1,4 @@
+const roomNumberOrder=new Intl.Collator('de',{numeric:true});
 import {readCombatResolution} from './combat-resolution';
 import {ChronicleReadSession} from './chronicle-pages';
 import {checkedSessionRecapDraft} from '../live-contracts';
@@ -353,6 +354,7 @@ export class CampaignStore {
       for (const row of this.db.prepare(`SELECT r.* FROM room r WHERE r.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY number,id`).all(active.campaignId)) {
         try { rooms.push(this.decode(row)); } catch (error) { problems.push({ id: row.id, number: row.number, message: (error as Error).message }); }
       }
+      rooms.sort((a,b)=>roomNumberOrder.compare(a.number,b.number)||a.id.localeCompare(b.id));
       const floors = this.db.prepare(`SELECT f.id,f.scope_id AS scopeId,f.name,f.source_elevation AS sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`).all(active.campaignId);
       return { graphPreview:this.graphShadow?.state(),campaign: { id: campaign.id, name: campaign.name, revision: campaign.revision }, token: active.token, rooms, problems, floors, selectedId: rooms.some(r => r.id === campaign.selected_id) ? campaign.selected_id : rooms[0]?.id ?? null,
         canUndo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaign.id, campaign.cursor),

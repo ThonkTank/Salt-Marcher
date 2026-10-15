@@ -276,7 +276,7 @@ function renderRoomInputs(room: Room, token: string | undefined) {
   el<HTMLInputElement>('room-name').value = room.name;
   el('keys').replaceChildren();
   room.sections.forEach((section, index) => {
-    const label = document.createElement('label'); label.textContent = section.kind === 'markdown' ? `Key-Abschnitt ${index + 1}` : `Passage ${index + 1}`;
+    const label = document.createElement('label'); label.textContent = section.kind === 'markdown' ? `GM-Text ${index + 1}` : `Passage ${index + 1}`;
     if (section.kind !== 'markdown') { const text = document.createElement('p'); text.textContent = `Türbindung: ${section.doorId} (hier noch nicht bearbeitbar)`; el('keys').append(label, text); return; }
     const input = document.createElement('textarea'); input.id = `key-${index}`; label.htmlFor = input.id; input.rows = 8; input.value = section.markdown!;
     input.addEventListener('input', () => {
