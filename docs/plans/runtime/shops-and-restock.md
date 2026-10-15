@@ -27,6 +27,14 @@ ein aktiver Step nach Restore kann Perioden nachholen. Diese aktuelle Wirkung
 ist noch keine bestätigte Trashzeitpolitik. Gewichtete Auffüllung und
 Kalenderereignisse fehlen.
 
+Die vorhandenen festen Intervalle sind verstrichene Millisekunden. Shopeditor,
+Zeitbasis und Zeitkonflikthinweis benennen ihre Tage deshalb als jeweils
+24 Stunden. Ein frei konfigurierter Kampagnentag kann eine andere Länge haben;
+Kalenderänderungen deuten bestehende Intervalle oder bestätigte Fälligkeiten
+nicht um. Kalendergebundene Regeln brauchen einen eigenen ausdrücklichen
+Triggertyp und gespeicherte Kalender-/Regelbasis, keine still geänderte Einheit
+bestehender Werte. Für diese Klarstellung gibt es keine Datenmigration.
+
 Automatische Auffüllungen halten pro Zeile ursprüngliche Regelparameter, Anzahl
 der Perioden, erste/letzte Fälligkeit und Mengen vor/nach dem Vorgang fest.
 Spätere Regeländerungen verändern diese Fakten nicht; alte Einträge bleiben ohne
@@ -51,7 +59,22 @@ Mehrzeilenregeln, Korrekturen, Replay, Fresh und vollständigen Rollback ab.
    fällige Trigger und gespeicherte Zufallsbasis binden. Tatsächliche Auswahl,
    Menge und Herkunft in `shop_event` festhalten; Retry/Fresh erhalten das
    Resultat. Eine Zeitquelle, keine Bestätigungsfolge je konfiguriertem Ereignis.
-4. Gemischte Shops und lange Historien messen; erst bei Bedarf fällige Queries
+4. Den Übergang Reiseabschnitt → gemeinsamer Restock → unabhängige Kopie
+   gegen `world.ts.executeWorld`, `items.ts.restockDue`, Store-Zeitconsumer und
+   `campaign-data.ts` prüfen. Zwei Gruppenuhren, eine manuelle Korrektur, geänderte
+   Regel und offene Journey kopieren; nur neue Perioden dürfen wirken. Source
+   und Snapshot bleiben unverändert, bestätigte Historie behält ihre damalige
+   Regel. Restart/Receiptwiederholung bucht nichts erneut. Ein Fehler im zweiten
+   Abschnitt rollt auch den ersten samt Position, Clock, Stock und Receipts zurück.
+   Diese ergänzende Crossport-/Copyabnahme ist noch offen.
+5. `world.ts.journeyRow` als gemeinsame Read-/Write-/Backupgrenze vervollständigen:
+   benachbarte begrenzte Route, eine positive exakt darstellbare Dauer je Kante,
+   passende Gesamtdauer und Checkpoint/Ankunftsstatus prüfen. Gültige Zwischen-,
+   unterbrochene, beendete und kopierte Reisen erhalten. Beschädigte Altstände
+   offenlegen; Originalbytes und sicheren Backupvorgänger bewahren, keine stille
+   Reparatur. Gegenproben mit gültiger Checksum und ungültigen Fachwerten an Read,
+   Write und Backup; Laufbelege sind dafür noch offen.
+6. Gemischte Shops und lange Historien messen; erst bei Bedarf fällige Queries
    und fortgesetzte Listen liefern. Native Ownerwarnung, Zeitfehler, verlorene
    Handelsantwort, Tastatur, 200 % und Auffindbarkeit aus Scene abnehmen.
 
