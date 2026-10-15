@@ -360,6 +360,7 @@ function renderSceneMeta() {
     place.textContent = 'Ort bei Übernahme: ' + (sources?.locations.find(l => l.document.id === a.locationId)?.document.name ?? (a.locationId ? 'nicht verfügbar' : 'kein Ort'));
     origin.append(title, notes, place);
   } else origin.textContent = 'Noch kein vorbereiteter Besuch übernommen.';
+  get('running-context-summary').textContent=(sources?.locations.find(l=>l.document.id===sceneDraft?.locationId)?.document.name??(sceneDraft?.locationId?'Ort nicht verfügbar':'Kein Ort'))+' · Titel und Ort ändern';
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
   get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }

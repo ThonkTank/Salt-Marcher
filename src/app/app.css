@@ -478,3 +478,7 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 
 html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #running-editor :is(input,textarea,select,button,[tabindex]){scroll-margin-bottom:.5rem}
+
+#running-context-details{margin:0 0 1rem}#running-context-summary{font-size:.9rem;color:var(--blue)}
+#desk-note-preview p{white-space:pre-wrap;overflow-wrap:anywhere;margin:.4rem 0 1rem}#desk-note-preview h4{margin:.8rem 0 .3rem}
+#desk-editing{margin:.8rem 0}
