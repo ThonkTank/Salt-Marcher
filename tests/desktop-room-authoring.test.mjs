@@ -50,3 +50,32 @@ for(const action of ['remove block','reorder blocks','change block kind','remove
 test('floor overview includes separate room extents and large sparse contours without changing source geometry',()=>{const{roomCameraBox}=require('../.build/room-authoring-camera.cjs');const rooms=[room('a',0,0),room('b',15,0)],before=structuredClone(rooms);const[x,y,w,h]=roomCameraBox(rooms).split(' ').map(Number);assert.ok(x<0&&x+w>21&&y<0&&y+h>4.572);assert.deepEqual(rooms,before);assert.equal(roomCameraBox([]),null);const large={polygons:[{outer:Array.from({length:150000},(_,i)=>({x:i,y:i%3})),holes:[]}]};assert.ok(roomCameraBox([large]).split(' ').every(n=>Number.isFinite(Number(n))));});
 
 test('a new empty room contributes no invented GM heading to the live key',t=>{const x=setup(t),w=x.store.addRoom(x.workspace.token),r=w.rooms.find(r=>r.id===w.selectedId),{renderDungeonKey}=require('../.build/room-authoring-key-model.cjs');assert.equal(r.sections[0].markdown,'');const text=renderDungeonKey(r,[],x.store.dungeon(w.token),{audience:'gm',discovered:new Set()}).text;assert.doesNotMatch(text,/## Beschreibung/);});
+
+test('ordinary new rooms have a standard shell and undo removes the whole creation',t=>{
+ const x=setup(t),w=x.store.addRoom(x.workspace.token),id=w.selectedId;
+ const volume=x.store.drawing(w.token).volumes.find(v=>v.roomId===id);
+ assert.ok(volume);assert.equal(volume.columns.length,12);
+ assert.ok(volume.columns.every(c=>c.spans.every(s=>s.height===2&&s.floor&&s.ceiling)));
+ const undone=x.store.history(w.token,'undo');assert.equal(undone.rooms.length,0);assert.equal(x.store.drawing(w.token).volumes.length,0);
+ x.store.history(w.token,'redo');assert.equal(x.store.workspace().rooms[0].id,id);assert.deepEqual({...x.store.drawing(w.token).volumes[0],revision:0},volume);
+ const reopened=new CampaignStore(x.filename);try{const fresh=reopened.activate(x.campaign.id);assert.equal(fresh.rooms[0].id,id);assert.deepEqual({...reopened.drawing(fresh.token).volumes[0],revision:0},volume);}finally{reopened.close();}
+});
+test('connecting existing contours previews complete rooms and a route without changing confirmed truth',t=>{
+ const a=room('a',0,0),b=room('b',12.192,0),x=setup(t,[a,b]),token=x.workspace.token;
+ const run=action=>x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',action});
+ const connect=()=>run({kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'b',fromGroupId:null,toGroupId:null,form:'corridor',name:'Fährkeller-Verbindung',problem:''}});
+ let result=connect();assert.equal(result.view.layout.intents.length,0);assert.equal(result.view.geometry.drawing.paths.length,1);
+ assert.ok(['a','b'].every(id=>result.view.geometry.drawing.volumes.some(v=>v.roomId===id)));
+ assert.equal(x.store.db.prepare('SELECT count(*) n FROM dungeon_volume').get().n,0);
+ assert.deepEqual(result.workspace.rooms.filter(r=>['a','b'].includes(r.id)).map(r=>r.sections),[a.sections,b.sections]);
+ run({kind:'restore'});assert.equal(x.store.drawing(token).volumes.length,0);assert.deepEqual(x.store.workspace().rooms,[a,b]);
+ result=connect();run({kind:'raster'});run({kind:'accept'});
+ assert.equal(x.store.drawing(token).paths.length,1);assert.equal(x.store.drawing(token).volumes.length,3);
+ x.store.history(token,'undo');assert.equal(x.store.drawing(token).volumes.length,0);assert.deepEqual(x.store.workspace().rooms.map(r=>({...r,revision:0})),[a,b]);
+ x.store.history(token,'redo');assert.equal(x.store.drawing(token).paths.length,1);
+});
+test('a rejected self connection leaves no partially initialized room in its preview',t=>{
+ const a=room('a',0,0),x=setup(t,[a]),token=x.workspace.token;
+ const result=x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',action:{kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'a',fromGroupId:null,toGroupId:null,form:'corridor',name:'Rejected',problem:''}}});
+ assert.ok(result.view.layout.intents[0].problem);assert.equal(result.view.geometry.drawing.volumes.length,0);assert.deepEqual(result.workspace.rooms,[a]);
+});

@@ -566,9 +566,9 @@ el('add-room').onclick = () => { void (async () => {
   try {
     const response = await api.addRoom(token);
     if (!roomContextCurrent(token)) return;
-    workspace = unwrap(response); await setDraft();
+    workspace = unwrap(response); await reloadDrawing(); await setDraft();
     if (!roomContextCurrent(token)) return;
-    renderList(); updateHistory(); status('Raum angelegt und gespeichert.');
+    renderList(); updateHistory(); status('Raum mit Boden, Wänden und 10-Fuß-Decke angelegt und gespeichert.');
   } catch (error) { if (roomContextCurrent(token)) status((error as Error).message, true); }
 })(); };
 async function history(direction: 'undo' | 'redo') {
