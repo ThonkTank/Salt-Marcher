@@ -25,6 +25,11 @@ bleiben an die ursprüngliche Campaign, Gruppe und Besuchsauswahl gebunden.
 Datenbank-Reopen und unabhängige Kopie sind geprüft; die native Bedienprobe
 bleibt offen.
 
+Eine bestätigte Spielabendübergabe kann einen neuen Einstieg atomar in Plan und
+Mappe speichern. Wahlweise bleibt der neue Besuch im Editor geöffnet oder seine
+GM-Mappe öffnet sich sofort auf genau diesem Besuch. Eine während der Antwort
+veränderte Auswahl öffnet keine Mappe aus einem älteren Auftrag.
+
 ## Daten- und Bedienvertrag
 
 - Pläne behalten ihre Identität und monotone Revision. Neue oder kopierte
