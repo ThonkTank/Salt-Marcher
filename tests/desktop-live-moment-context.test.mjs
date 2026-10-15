@@ -397,3 +397,10 @@ for(const [previous,text] of [['','Q'.repeat(10001)],['  Eigene Notiz\r\n'+'V'.r
  const x=await packetMoment(t,text);x.fields('Eigener Moment',previous);x.el('live-moment-follow-up').value='rumor';const before=x.store.db.serialize();
  x.capture();await settle();assert.equal(x.el('live-moment-summary').value,previous);assert.equal(x.el('live-moment-title').value,'Eigener Moment');assert.equal(x.el('live-moment-category').value,'narrative');assert.equal(x.el('live-moment-follow-up').value,'rumor');assert.match(x.messages.at(-1).text,/10\.000/);assert.equal(x.messages.at(-1).error,true);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.source(),text);
 });
+
+
+test('the empty campaign exposes figure creation and its first submit stays roster-only without a hidden activation default',async t=>{
+ const x=await setup(t),c=x.store.create('Erster Abend'),w=x.store.activate(c.id);x.ui.activateLive(w);await x.ui.openLive();assert.equal(x.el('live-party-details').open,true);x.el('character-editor').scrollIntoView=()=>{};x.el('character-toggle').scrollIntoView=()=>{};const before=x.commands.length;
+ x.el('character-new').click();assert.equal(x.el('character-create-active').hidden,true);const submit=[...x.el('character-form').querySelectorAll('button')].find(button=>button.type==='submit');assert.equal(submit.id,'character-create');x.el('new-character-name').value='Gila';x.el('character-form').onsubmit({preventDefault(){},submitter:submit});await settle();await x.ui.flushLive();
+ const live=x.store.live(w.token);assert.equal(live.scene,null);assert.equal(live.roster.length,1);assert.equal(live.roster[0].profile.name,'Gila');assert.equal(live.roster[0].active,false);assert.deepEqual(x.commands.slice(before).map(c=>c.action.kind),['create-character']);assert.equal(x.el('character-dialog').open,false);
+});

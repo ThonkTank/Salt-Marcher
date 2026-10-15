@@ -274,7 +274,7 @@ function openNewCharacter(){
   if(!context||!data||creatingCharacter)return;
   newCharacterBasis={token:context.token,sceneId:data.scene?.id??null,focusRevision:data.focusRevision};
   get('character-create-target').textContent=data.scene?'Heute dabei in: '+(data.scene.title||'Aktuelle Gruppe'):'Noch keine Gruppe geöffnet. Die Figur wird zunächst im Roster vorgemerkt.';
-  get('character-create-active').hidden=!data.scene;get('character-create-status').textContent='';
+  const join=get<HTMLButtonElement>('character-create-active');join.hidden=!data.scene;join.type=data.scene?'submit':'button';get('character-create-status').textContent='';
   get<HTMLDialogElement>('character-dialog').showModal();get('new-character-name').focus();
 }
 async function createNewCharacter(active:boolean){
@@ -432,6 +432,7 @@ function renderLiveKnowledge(){
 }
 function placePartyEditor(atTable:boolean){const panel=get('live-party-panel'),slot=get(atTable?'live-party-at-table':'live-party-start');if(panel.parentElement!==slot)slot.append(panel);}
 function renderScene() {
+  if(data&&!data.scene&&!data.roster.length)get<HTMLDetailsElement>('live-party-details').open=true;
   placePartyEditor(resumed&&!!sceneDraft);
   if(preparedNotesSceneId!==data?.scene?.id){preparedNotesSceneId=data?.scene?.id??null;preparedNoteIds.clear();}
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
