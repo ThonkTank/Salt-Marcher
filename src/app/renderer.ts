@@ -1,5 +1,5 @@
 import {initWorkspaceNavigation,syncWorkspaceNavigation} from './workspace-navigation';
-import {workspaceTabs,readWorkspaceView,rememberWorkspaceView,type WorkspaceTab} from './workspace-view';
+import {WorkspacePositions,workspaceTabs,readWorkspaceView,rememberWorkspaceView,type WorkspaceTab} from './workspace-view';
 import {bindAtlasHistoryShortcut} from './workspace-shortcuts';
 import {chooseNpcPlace} from './npc-places-ui';
 import {openGenerationSource} from './generation-ui';
@@ -47,8 +47,10 @@ const api = window.campaign;
 const setWorkspaceAvailable = (available: boolean) => document.body.classList.toggle('has-workspace', available);
 let workspace: Workspace | null = null;
 let activeTab: WorkspaceTab = 'atlas';
+const workspacePositions = new WorkspacePositions();
+let viewRequest = 0;
 const viewStorage = {getItem: (key: string) => window.localStorage.getItem(key), setItem: (key: string, value: string) => window.localStorage.setItem(key, value)};
-function rememberView() { if (workspace) rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY}); }
+function rememberView() { if (workspace) { workspacePositions.capture(workspace.campaign.id, window.scrollY); rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY}); } }
 let draft: Room | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let pending: Promise<boolean> | null = null;
@@ -103,10 +105,8 @@ initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('li
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
 setNpcNavigation(async(id,contact,current)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,contact,current);},async(id,current)=>{if(!await leaveWorkspace()||!current())return;showTab('autonomy');await openAutonomy(id);},navigateNpcPlaces);
 initGroups(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);await openNpcs(false);},async(id,sourceCurrent=()=>true)=>{const owner=workspace,current=()=>workspace===owner&&sourceCurrent();if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openNpcProfile(id,undefined,current);});
-el('groups-tab').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups();await openNpcs();})().catch(e=>status(e.message,true));};
 setGroupNavigation(async(id,current=()=>true)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups(id);if(current())await openNpcs(false);});
 initTreasury(status,async()=>{await refreshProgress();await refreshScenePreparation();},async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
-el('treasury-tab').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury();})().catch(e=>status(e.message,true));};
 initItems(status,async id=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems(id);});
 initDrawing(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();},draw);
 initVolume(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
@@ -117,11 +117,8 @@ initKeys(status,()=>workspace,()=>draft,async()=>{if(activating||activationFaile
 initPaths(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
 initDungeon(status,id=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await openExistingCombat(id);})().catch(error=>status(error.message,true));});
 const dungeonBinder=new DungeonBinder(()=>workspace,leaveWorkspace,status,async(id,action)=>{const token=workspace?.token;if(!token||!await leaveWorkspace()||workspace?.token!==token)return;if(action==='target'){showTab('dungeon');await selectDungeonRoom(id);}else{showTab('atlas');await selectRoom(id);if(action==='edit'&&workspace?.token===token&&workspace.selectedId===id)el('key-open').click();}});
-el('dungeon-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('dungeon');await openDungeon();})().catch(error=>status(error.message,true));};
 initAutonomy(status);
-el('autonomy-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('autonomy');await openAutonomy();})().catch(error=>status(error.message,true));};
 initCity(status,id=>worldLinks.open({kind:'note',id}),async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,undefined,current);},async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;await locationNotebook.open(id);});
-el('city-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('city');await openCity();})().catch(error=>status(error.message,true));};
 initWorld(status,flushLive,async()=>{await openLive();},async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();},async(sceneId,kind)=>{if(kind==='wait')await openTimeNavigator(undefined,sceneId);else await openTravelRest(sceneId);});
 const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;showTab(kind);if(kind==='world')await openWorld();else await openLive();},async target=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openTimeNavigator(target);},id=>locationNotebook.open(id));
 initLive(status, async id => {
@@ -130,20 +127,19 @@ initLive(status, async id => {
 },async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id,current);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current);},async(seed,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;await campaignAgenda.openMomentDraft({name:seed.title,notes:seed.summary},seed.location??undefined,current);},async(planId,seed,current=()=>true,openPacket=false)=>{if(!current()||!(await leaveWorkspace())||!current())return false;showTab('preparation');const prepared=await prepareNextVisit(planId,seed,current);if(!prepared)return false;if(openPacket&&current())return openPreparationSessionPacket(prepared.visitId);return current();});
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
-el('music-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();})().catch(error=>status(error.message,true));};
-el('world-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();})().catch(error=>status(error.message,true));};
-el('items-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems();})().catch(error=>status(error.message,true));};
-el('catalog-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('catalog');await openCatalog();})();};
-el('chronicle-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('chronicle');await openChronicle();})().catch(error=>status(error.message,true));};
-function showTab(selected: WorkspaceTab) {
-  activeTab = selected;
+function showTab(selected: WorkspaceTab, restored?: number) {
+  if (workspace) workspacePositions.capture(workspace.campaign.id, window.scrollY);
+  const scrollY = workspace ? workspacePositions.select(workspace.campaign.id, selected, restored) : 0;
+  viewRequest++; activeTab = selected;
   if (workspace) rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: selected, scrollY: 0});
   setWorldSurface(selected);setSessionPacketSurface(selected);
   for (const id of workspaceTabs) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
   syncWorkspaceNavigation();
+  window.scrollTo(0, 0);
+  return scrollY;
 }
-async function reopenView(tab: WorkspaceTab) {
-  showTab(tab);
+async function reopenView(tab: WorkspaceTab, restored?: number) {
+  const owner = workspace, intent = activationIntent, scrollY = showTab(tab, restored), request = viewRequest;
   switch (tab) {
     case 'live': await openLive(); break;
     case 'atlas': await reloadDrawing(); break;
@@ -160,6 +156,10 @@ async function reopenView(tab: WorkspaceTab) {
     // activatePreparation already loaded this workspace.
     case 'preparation': break;
   }
+  window.requestAnimationFrame(() => {
+    if (workspace !== owner || activationIntent !== intent || viewRequest !== request || activationFailed) return;
+    window.scrollTo(0, scrollY); rememberView();
+  });
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
 initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=await refreshCampaigns();if(!list)return;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();showTab('atlas');document.querySelector('main')!.inert=true;}const target=id??(!workspace?list.activeId??list.campaigns[0]?.id:null);if(target)await activate(target);else if(!workspace){setWorkspaceAvailable(false);el('map-title').textContent='Keine Kampagne geöffnet';el('rooms').replaceChildren();el<HTMLSelectElement>('campaigns').value='';}});
@@ -476,14 +476,9 @@ async function drainActivation(): Promise<void> {
         await setDraft();
         if (queuedActivation !== null) continue;
         renderList(); updateHistory();
-        const view = readWorkspaceView(viewStorage, next.campaign.id), intent = activationIntent;
-        await reopenView(view.tab);
+        const view = readWorkspaceView(viewStorage, next.campaign.id);
+        await reopenView(view.tab, view.scrollY);
         if (queuedActivation !== null) continue;
-        window.requestAnimationFrame(() => {
-          if (workspace?.token !== next.token || activationIntent !== intent || activationFailed) return;
-          window.scrollTo(0, view.scrollY);
-          rememberView();
-        });
         if (preparationHasDrafts()) status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
         else if (!roomDraftReadFailed && (!draft || !selected() || same(draft, selected()!) && el('points').dataset.changed !== 'true')) status('Gespeichert.');
       } catch (error) {
@@ -602,12 +597,9 @@ el('confirm-import').onclick = () => {
 };
 initCommitControls(()=>workspace,status);
 api.onClose(() => { void (async () => { await activationJob; rememberView(); if (await leaveWorkspace()) api.closeReady(); })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
-for (const id of ['atlas', 'preparation', 'live'] as const) el(id + '-tab').onclick = () => { void (async () => {
-  if (!(await leaveWorkspace())) return;
-  showTab(id);
-  if (id === 'live') await openLive();
-  if (id === 'atlas') await reloadDrawing();
-})(); };
+for (const id of workspaceTabs) el(id + '-tab').onclick = () => { void (async () => {
+  if (await leaveWorkspace()) await reopenView(id);
+})().catch(error => status(error.message, true)); };
 initWorkspaceNavigation();
 void (async () => { const intent = activationIntent; try { const list = await refreshCampaigns(); if (list && intent === activationIntent && list.activeId) await activate(list.activeId); else if (list && intent === activationIntent) setWorkspaceAvailable(false); } catch (error) { if (intent === activationIntent) status((error as Error).message, true); } })();
 setInterval(() => { void (async () => {
