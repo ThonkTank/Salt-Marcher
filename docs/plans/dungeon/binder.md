@@ -1,6 +1,6 @@
 # Dungeon-Binder am Spieltisch
 
-Stand: 14.10.2026. Der Binder verbindet bestehende Raum-Keys, Geschosse,
+Stand: 15.10.2026. Der Binder verbindet bestehende Raum-Keys, Geschosse,
 Ausgänge, Fallen und gebundene Encounter-/Gruppen-/Schatzinhalte mit dem
 laufenden Spiel. Er nutzt `CampaignStore.dungeon`, `DungeonBinderIndex` und
 `DungeonBinder`; Lesen und Blättern bestätigen weder Entdeckung noch Bewegung,
@@ -72,3 +72,44 @@ Die Kartenwerkzeuge bündeln spezialisierte Befehle unter „3D, Verbindungen un
 Rauminhalte“. „Übersicht“ passt alle gerade gezeichneten Räume des sichtbaren
 Geschosses ein; „Einpassen“ behält den einzelnen ausgewählten Raum im Fokus.
 Beides ändert ausschließlich die Ansicht, einschließlich offener Konturentwürfe.
+
+
+## Unabhängige Rauminhalte kopieren (0.129)
+
+Der Dungeon-Key verbindet Quellraum und vorhandene Zielauswahl mit einer
+expliziten Kopiervorschau. Bis zu 100 verschiedene Räume desselben Dungeons
+können ausgewählte Namen, Vorlesetexte, GM-Texte, vollständige Beschreibungsblöcke,
+Attribute, Tags, Referenzen, Key-Geheimstatus und Vorbereitungsstatus erhalten.
+Die Quelle selbst bleibt ausgelassen. Ergänzen bewahrt vorhandene Inhalte;
+Ersetzen betrifft ausschließlich ausgewählte Felder. Namen/Statusflags werden
+bei Auswahl ausdrücklich ersetzt. Bei partieller Textersetzung an verknüpften
+Zielen muss der GM ergänzen, die Zielvorlage lösen oder bewusst alle Blöcke ersetzen.
+
+`key-copy-model.ts` berechnet sowohl Vorschau als auch Writerpatches. Ganze
+Blöcke expandieren Textvorlagen zu unabhängigen Inhalten und rechnen alte
+Markdown-Keyabschnitte als Text aus; Geometrie-/Attribut-/Ausgangsblöcke bleiben
+Darstellungsanweisungen für die Zielgeometrie, keine kopierten Quellfakten.
+Neue Blöcke bekommen je Ziel neue Kennungen. Andere beibehaltene Zielblöcke
+behalten ihre Identität. Quelle, Raum-IDs, Anzeigezahlen, Level-/Gruppenzuordnung,
+Polygone, originale Markdownabschnitte, Oberflächen, Features und Runtimewissen
+werden nicht kopiert oder verändert. Referenzen behalten ihre Kampagnenziele.
+Geerbte Quellattribute werden nur auf ausdrückliche Wahl als lokale Zielwerte
+materialisiert; Unterdrückungen bleiben als solche erhalten.
+
+Die Vorschau liest aktuelle Daten nach dem Flush gültiger eigener Eingaben und
+zeigt für die ersten zehn Ziele getrennt vorlesbare und private Beschreibungen.
+Weitere Ziele sind ausdrücklich als kompakte Liste markiert. Der Applycommand
+bindet Quellraum-/Keyrevision, tatsächlich benötigte Textvorlagen-/Erbwerte und
+sämtliche Zielraum-/Keyrevisionen. Veraltete Daten werden abgewiesen; ein später
+Zielkonflikt rollt frühere Änderungen desselben Commands zurück. Die bestehende
+Drawingtransaktion, History und Receipts machen den gesamten Stapel gemeinsam
+rückgängig/wiederholbar. Keine neue Datenbank, Schemaänderung oder IPC-Operation.
+
+Geprüft: echter Store mit zwei Zielen, Vorlagentext/Geheimnis, altem Markdown,
+geerbtem Basaltattribut, externer Referenz und vorhandener Entdeckung. Kopien
+besitzen unabhängige Kennungen; Spielertext erhält kein unbekanntes Geheimnis
+oder private Suchnotizen. Replay verändert nichts, Undo/Redo und Fresh erhalten
+Inhalte und Kennungen; Quellvorlagen- und später Zielkonflikt bleiben atomar.
+Nativ geprüft: Quell-/Zielauswahl, Vorschau ohne Writes, spätere Vorlagenänderung,
+Abweisung/Neuladen, getrennte Textvorschau, Apply, Undo/Redo und Neustart. Zwei
+normale Exits, keine Rendererfehler. Große Stapel und 200%-Layouts bleiben unqualifiziert.
