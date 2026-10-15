@@ -11,9 +11,9 @@ const entry=title=>({id:title,recordedAt:new Date(1).toISOString(),category:'par
 function fixture(){
  const saved={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});
  const el=id=>document.getElementById(id);Object.defineProperty(el('chronicle-category'),'value',{value:'all',writable:true});el('chronicle-search').value='';const pending=[],calls=[],exports=[],opened=[];
- window.campaign={chronicle:async(token,category,search)=>{calls.push({token,category,search});return new Promise(resolve=>pending.push(resolve));},exportChronicle:async(...args)=>{exports.push(args);return{ok:true,value:{cancelled:false}};}};
+ window.campaign={closeChroniclePage:async()=>({ok:true}),cancelChronicleExport:async()=>({ok:true}),onChronicleExport:()=>{},chroniclePage:async(token,category,search)=>{calls.push({token,category,search});return new Promise(resolve=>pending.push(resolve));},exportChronicle:async(...args)=>{exports.push(args.slice(0,3));return{ok:true,value:{cancelled:false,written:1}};}};
  delete require.cache[require.resolve('../.build/chronicle-dom.cjs')];const ui=require('../.build/chronicle-dom.cjs');ui.initChronicle(()=>{},async(id,token)=>{opened.push({id,token});});ui.activateChronicle({token:'one'});
- const answer=(title,which=0,extra={})=>{const done=pending.splice(which,1)[0];done({ok:true,value:{campaignName:'Test',entries:[{...entry(title),...extra}],truncated:false}});};
+ const answer=(title,which=0,extra={})=>{const done=pending.splice(which,1)[0];done({ok:true,value:{campaignName:'Test',snapshotId:'snapshot',next:null,entries:[{...entry(title),...extra}],truncated:false}});};
  return{ui,el,pending,calls,exports,opened,answer,query(text){el('chronicle-search').value=text;el('chronicle-search').oninput();},cleanup(){ui.activateChronicle(null);Object.assign(globalThis,saved);}};
 }
 test('search and category reach Core; typing supersedes the old result before its reply arrives',async()=>{
