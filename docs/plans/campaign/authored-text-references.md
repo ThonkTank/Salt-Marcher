@@ -150,3 +150,37 @@ Früher veränderte Kopien lassen sich ohne Original nicht automatisch repariere
 Suche und eingehende Kanten berücksichtigen alle aktiven Textverweise. Begrenzte
 Leser zeigen einen Hinweis auf weitere Ziele; einzelne beschädigte Quellen
 werden als unvollständig gemeldet, gesunde Treffer bleiben erreichbar.
+
+## Autorenabsicht vor und während der Übernahme
+
+Der Zielread für Anlegen/Lösen eines Paars gehört zu genau einem geladenen
+Quellkontext: Workspace, Dialogrequest, Detailrequest und Inhaltsobjekt.
+Gleiche Quell-ID und gleicher Aktivierungstoken allein genügen nach erneutem
+Öffnen nicht. Zielauswahl, Bezeichnungen, Paarmodus und Familientyp erhalten
+eine lokale Änderungsgeneration. Ändert sie sich während des Zielreads,
+entsteht kein Draft und kein Command; die neue Eingabe verlangt eine erneute
+ausdrückliche Übernahme. Beide Beschriftungen und der Typ stammen aus der
+ursprünglich bestätigten Eingabe, die Zielrevision aus deren geprüftem Read.
+
+Entwurfsbestätigung und Einzel-/Paar-/Historywriter behalten denselben
+Quellkontext über Drain, Persistenz und Antwort. Eine alte Antwort darf weder
+Write-ID noch Prüfauftrag, Formular, Status oder Busyzustand eines neuen
+Dialogaufrufs übernehmen. Der bereits gespeicherte Draft beziehungsweise
+Receipt bleibt für dessen normale Wiederaufnahme erhalten. Reset wartet
+nicht auf einen alten Draftcallback und gibt ihm keine neue Autorität.
+Wiederholtes Bestätigen während der Entwurfs-/Zielprüfung ist gesperrt;
+die Sperre endet erst nach dem eigenen Refresh oder passenden Fehler.
+
+Neuere Eingaben während der eigentlichen Schreibantwort bleiben erhalten;
+der unveränderte ursprüngliche Command wird nicht umgedeutet oder erneut
+ausgeführt. Vor einer weiteren Übernahme muss die gespeicherte Basis gelesen
+werden. Ein neu eingegebener nächster Inhaltsname wird vom Erfolg des vorherigen
+Anlegeauftrags nicht geleert. Keine Schema-/Prosamigration und kein neuer Writer.
+Die Store-/DOMgegenproben in `world-links-recovery.test.ts` halten Zielreads,
+Draftantworten und Erfolge/Fehler der drei Writer kontrolliert zurück. Sie
+prüfen tatsächliche SQLitewirkungen, neue Eingaben, gleiches Token beim
+Wiederöffnen, wiederholtes Bestätigen und weiter bedienbare Erfolgsformulare.
+Rebase, ausdrückliches Verwerfen und Moduswechsel haben weitere asynchrone
+Fortsetzungen; diese sind damit nicht vollständig qualifiziert. Als nächster
+Schritt sind dort dieselben Kontextwechsel samt bedingter Draftlöschung zu
+prüfen. Native Fokus-/IME-/Crash- und vollständige Produktabnahmen bleiben offen.

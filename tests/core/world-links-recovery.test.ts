@@ -22,7 +22,7 @@ async function fixture(copy=false,mode:'pair'|'single'|'history'='pair'){
  window.HTMLSelectElement.prototype.add=function(option:HTMLOptionElement){this.append(option);};const values=new WeakMap<object,string>();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return values.get(this)??this.querySelector('option')?.value??'';},set(v:string){values.set(this,v);}});
  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,Option:TestOption,Event:window.Event});
  const calls:{method:string;args:any[]}[]=[],api:any={};
- for(const method of ['worldLinks','deskContent','searchDesk','preparationDraft','worldRelationPairDraft','worldRelationPairHistory','discardWorldRelationPairDraft','reconcileWorldRelationPair','executeWorldRelationPair','reconcileWorldRelationPairHistory','executeWorldRelationPairHistory','keepDeskDraft','changePreparationContent','discardPreparationDraft','reconcilePreparationContent'])api[method]=async(...args:any[])=>{calls.push({method,args});try{return{ok:true,value:(store as any)[method](...args)};}catch(error){return{ok:false,error:(error as Error).message};}};
+ for(const method of ['worldLinks','deskContent','searchDesk','preparationDraft','worldRelationPairDraft','keepWorldRelationPairDraft','worldRelationPairHistory','discardWorldRelationPairDraft','reconcileWorldRelationPair','executeWorldRelationPair','reconcileWorldRelationPairHistory','executeWorldRelationPairHistory','keepDeskDraft','changePreparationContent','discardPreparationDraft','reconcilePreparationContent'])api[method]=async(...args:any[])=>{calls.push({method,args});try{return{ok:true,value:(store as any)[method](...args)};}catch(error){return{ok:false,error:(error as Error).message};}};
  window.campaign=api;const workbench=new WorldLinksWorkbench(()=>workspace,async()=>true,()=>{},async()=>{}),dialog=document.getElementById('world-links') as HTMLDialogElement;
  Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
  const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
@@ -181,5 +181,102 @@ test('history recovery cannot use its applied receipt to consume a different pen
   // Model two retained UI uncertainties; both commands have real Store identities.
   (f.workbench as any).uncertain=command;
   await f.check();assert.equal(f.calls.filter(c=>c.method==='reconcilePreparationContent').length,0);assert.equal(f.calls.filter(c=>c.method==='discardPreparationDraft').length,0);assert.equal(f.store.preparationDraft(f.workspace.token,'note',f.source)?.writeId,command.draftWriteId);assert.equal(f.store.preparation(f.workspace.token,'').notes.find(row=>row.note.id===f.source)!.note.gmNotes,note.gmNotes);
+ }finally{f.cleanup();}
+});
+
+async function choosePair(f:Awaited<ReturnType<typeof fixture>>,name='Bert'){
+ const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=true;paired.dispatchEvent(new Event('change',{bubbles:true}));
+ f.input('world-link-target-search',name);for(let i=0;i<30&&![...f.el('world-link-targets').querySelectorAll('button')].some(button=>button.textContent?.startsWith(name+' ·'));i++)await new Promise(resolve=>setImmediate(resolve));
+ const control=[...f.el('world-link-targets').querySelectorAll('button')].find(button=>button.textContent?.startsWith(name+' ·'));assert.ok(control);control.click();f.input('world-link-label','kennt');f.input('world-link-reverse-label','kennt Ada');
+}
+for(const change of ['label','target','reopen'] as const)test(`pair preflight rejects a changed ${change} before creating any command`,async()=>{
+ const f=await fixture(false,'single');try{
+  await choosePair(f);const started=deferred<void>(),hold=deferred<void>(),read=f.api.deskContent;
+  f.api.deskContent=async(...args:any[])=>{const result=await read(...args);if(args[1].id===f.target){started.resolve();await hold.promise;}return result;};
+  const task=f.click('Beziehung übernehmen','add');await started.promise;
+  if(change==='label')f.input('world-link-label','neue Absicht');
+  if(change==='target')await choosePair(f,'Ada');
+  if(change==='reopen')await f.reopen(false);
+  const status=f.el('world-links-status').textContent;hold.resolve();await task;
+  assert.equal(f.calls.filter(call=>call.method==='keepWorldRelationPairDraft').length,0);assert.equal(f.calls.filter(call=>call.method==='executeWorldRelationPair').length,0);
+  assert.equal(f.store.preparation(f.workspace.token,'').notes.find(row=>row.note.id===f.source)!.note.revision,1);
+  if(change==='label')assert.equal(f.el<HTMLInputElement>('world-link-label').value,'neue Absicht');
+  if(change==='reopen')assert.equal(f.el('world-links-status').textContent,status);
+ }finally{f.cleanup();}
+});
+test('pair preflight cannot remove a pair after the source was reopened with the same token',async()=>{
+ const f=await fixture(false,'history');try{
+  const started=deferred<void>(),hold=deferred<void>(),read=f.api.deskContent;f.api.deskContent=async(...args:any[])=>{const result=await read(...args);if(args[1].id===f.target){started.resolve();await hold.promise;}return result;};
+  const task=f.click('Paar lösen:','removePair');await started.promise;await f.reopen(false);const status=f.el('world-links-status').textContent;hold.resolve();await task;
+  assert.equal(f.calls.filter(call=>call.method==='executeWorldRelationPair').length,0);assert.equal(f.calls.filter(call=>call.method==='keepWorldRelationPairDraft').length,0);assert.equal(f.store.worldRelationPairHistory(f.workspace.token).cursor,1);assert.equal(f.el('world-links-status').textContent,status);
+ }finally{f.cleanup();}
+});
+test('single draft acknowledgement cannot authorize a write from a reopened same-token source',async()=>{
+ const f=await fixture(false,'single');try{
+  await choosePair(f);const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=false;paired.dispatchEvent(new Event('change',{bubbles:true}));
+  const started=deferred<void>(),hold=deferred<void>(),keep=f.api.keepDeskDraft;f.api.keepDeskDraft=async(...args:any[])=>{const result=await keep(...args);started.resolve();await hold.promise;return result;};
+  const task=f.click('Beziehung übernehmen','add');await started.promise;await f.reopen(false);const status=f.el('world-links-status').textContent,writeId=(f.workbench as any).writeId;hold.resolve();await task;
+  assert.equal(f.calls.filter(call=>call.method==='changePreparationContent').length,0);assert.equal((f.workbench as any).writeId,writeId);assert.equal(f.el('world-links-status').textContent,status);assert.equal(f.store.preparation(f.workspace.token,'').notes.find(row=>row.note.id===f.source)!.note.revision,1);
+ }finally{f.cleanup();}
+});
+
+for(const mode of ['pair','single','history'] as const)for(const phase of ['draft','success','failure'] as const){
+ if(mode==='history'&&phase==='draft')continue;
+ test(`${mode} writer ignores a late ${phase} response after same-token reopening`,async()=>{
+  const f=await fixture(false,mode==='history'?'history':'single');try{
+   if(mode!=='history'){await choosePair(f);if(mode==='single'){const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=false;paired.dispatchEvent(new Event('change',{bubbles:true}));}}
+   const method=mode==='history'?'executeWorldRelationPairHistory':mode==='pair'?(phase==='draft'?'keepWorldRelationPairDraft':'executeWorldRelationPair'):(phase==='draft'?'keepDeskDraft':'changePreparationContent');
+   const started=deferred<void>(),hold=deferred<void>(),original=f.api[method];f.api[method]=async(...args:any[])=>{const result=await original(...args);started.resolve();await hold.promise;return phase==='failure'?{ok:false,error:'Späte alte Antwort'}:result;};
+   const task=f.click(mode==='history'?'Rückgängig ·':'Beziehung übernehmen',mode==='history'?'changeHistory':'add');await started.promise;await f.reopen(false);
+   const status=f.el('world-links-status').textContent,label=f.el<HTMLInputElement>('world-link-label').value,writeId=(f.workbench as any).writeId,pairWriteId=(f.workbench as any).pairWriteId;
+   hold.resolve();await task;
+   assert.equal(f.el('world-links-status').textContent,status);assert.equal(f.el<HTMLInputElement>('world-link-label').value,label);assert.equal((f.workbench as any).writeId,writeId);assert.equal((f.workbench as any).pairWriteId,pairWriteId);assert.equal(f.el('world-link-form').inert,false);
+   if(phase==='draft')assert.equal(f.calls.filter(call=>call.method===(mode==='pair'?'executeWorldRelationPair':'changePreparationContent')).length,0);
+  }finally{f.cleanup();}
+ });
+}
+test('pair preflight keeps a successful form usable and prevents repeated preflight reads',async()=>{
+ const f=await fixture(false,'single');try{
+  await choosePair(f);const started=deferred<void>(),hold=deferred<void>(),read=f.api.deskContent;
+  f.api.deskContent=async(...args:any[])=>{const result=await read(...args);if(args[1].id===f.target){started.resolve();await hold.promise;}return result;};
+  const first=f.click('Beziehung übernehmen','add');await started.promise;await f.click('Beziehung übernehmen','add');assert.equal(f.el('world-link-form').inert,true);hold.resolve();await first;
+  assert.equal(f.calls.filter(call=>call.method==='executeWorldRelationPair').length,1);assert.equal(f.calls.filter(call=>call.method==='deskContent'&&call.args[1].id===f.target).length,1);assert.equal(f.el('world-link-form').inert,false);assert.equal(f.store.worldRelationPairHistory(f.workspace.token).cursor,1);
+ }finally{f.cleanup();}
+});
+
+test('single writer serializes repeated explicit confirmation while its draft is pending',async()=>{
+ const f=await fixture(false,'single');try{
+  await choosePair(f);const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=false;paired.dispatchEvent(new Event('change',{bubbles:true}));
+  const started=deferred<void>(),hold=deferred<void>(),keep=f.api.keepDeskDraft;f.api.keepDeskDraft=async(...args:any[])=>{const result=await keep(...args);started.resolve();await hold.promise;return result;};
+  const first=f.click('Beziehung übernehmen','add');await started.promise;const second=f.click('Beziehung übernehmen','add');hold.resolve();await Promise.all([first,second]);
+  assert.equal(f.calls.filter(call=>call.method==='changePreparationContent').length,1);assert.equal(f.el('world-link-form').inert,false);assert.match(f.el('world-links-status').textContent!,/Beziehung gespeichert/);assert.equal(f.calls.filter(call=>call.method==='keepDeskDraft').length,2);assert.equal(f.store.preparationDraft(f.workspace.token,'note',f.source),null);
+ }finally{f.cleanup();}
+});
+for(const mode of ['pair','single','history'] as const)test(`${mode} writer keeps newer input while acknowledging the originally submitted action`,async()=>{
+ const f=await fixture(false,mode==='history'?'history':'single');try{
+  if(mode!=='history'){await choosePair(f);if(mode==='single'){const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=false;paired.dispatchEvent(new Event('change',{bubbles:true}));}}
+  const method=mode==='pair'?'executeWorldRelationPair':mode==='history'?'executeWorldRelationPairHistory':'changePreparationContent',started=deferred<void>(),hold=deferred<void>(),write=f.api[method];f.api[method]=async(...args:any[])=>{const result=await write(...args);started.resolve();await hold.promise;return result;};
+  const task=f.click(mode==='history'?'Rückgängig ·':'Beziehung übernehmen',mode==='history'?'changeHistory':'add');await started.promise;f.input('world-link-label','nächster Auftrag');hold.resolve();await task;
+  assert.equal(f.el<HTMLInputElement>('world-link-label').value,'nächster Auftrag');assert.match(f.el('world-links-status').textContent!,/neuere Eingaben/);assert.equal(f.el('world-link-form').inert,false);assert.equal(f.calls.filter(call=>call.method===method).length,1);
+ }finally{f.cleanup();}
+});
+test('new content success preserves the next name entered while awaiting its acknowledgement',async()=>{
+ const f=await fixture(false,'single');try{
+  f.input('world-links-new-title','Gesendeter Name');const started=deferred<void>(),hold=deferred<void>(),write=f.api.changePreparationContent;f.api.changePreparationContent=async(...args:any[])=>{const result=await write(...args);started.resolve();await hold.promise;return result;};
+  const task=f.click('Inhalt anlegen','create');await started.promise;f.input('world-links-new-title','Nächster Name');hold.resolve();await task;
+  assert.equal(f.el<HTMLInputElement>('world-links-new-title').value,'Nächster Name');assert.ok(f.store.preparation(f.workspace.token,'').notes.some(row=>row.note.title==='Gesendeter Name'));assert.equal(f.el('world-link-form').inert,false);
+ }finally{f.cleanup();}
+});
+
+for(const mode of ['pair','single','history'] as const)test(`${mode} writer finally cannot unlock a newer pending relationship writer`,async()=>{
+ const f=await fixture(false,mode==='history'?'history':'single');try{
+  if(mode!=='history'){await choosePair(f);if(mode==='single'){const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=false;paired.dispatchEvent(new Event('change',{bubbles:true}));}}
+  const method=mode==='pair'?'executeWorldRelationPair':mode==='history'?'executeWorldRelationPairHistory':'changePreparationContent',started=deferred<void>(),hold=deferred<void>(),write=f.api[method];f.api[method]=async(...args:any[])=>{const result=await write(...args);started.resolve();await hold.promise;return result;};
+  const first=f.click(mode==='history'?'Rückgängig ·':'Beziehung übernehmen',mode==='history'?'changeHistory':'add');await started.promise;await f.reopen(false);f.api[method]=write;
+  await choosePair(f);f.input('world-link-label','beschützt');f.input('world-link-reverse-label','wird beschützt');
+  const secondStarted=deferred<void>(),secondHold=deferred<void>(),pairWrite=f.api.executeWorldRelationPair;f.api.executeWorldRelationPair=async(...args:any[])=>{const result=await pairWrite(...args);secondStarted.resolve();await secondHold.promise;return result;};
+  const second=f.click('Beziehung übernehmen','add');await secondStarted.promise;const status=f.el('world-links-status').textContent;hold.resolve();await first;
+  assert.equal(f.el('world-link-form').inert,true);assert.equal((f.workbench as any).busy,true);assert.equal(f.el('world-links-status').textContent,status);assert.equal(f.el<HTMLInputElement>('world-link-label').value,'beschützt');
+  secondHold.resolve();await second;assert.equal(f.el('world-link-form').inert,false);assert.equal((f.workbench as any).busy,false);assert.match(f.el('world-links-status').textContent!,/beiden Richtungen gespeichert/);
  }finally{f.cleanup();}
 });

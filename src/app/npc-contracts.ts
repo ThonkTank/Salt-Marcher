@@ -2,7 +2,8 @@ import type {NpcPlacesAPI as importNpcPlacesAPI} from './npc-places-contracts';
 import type {Result} from './contracts';
 import type {CharacterHealth} from './progression';
 export interface NpcDemographics {ancestry:string;gender:string;ageYears:number|null}
-export interface NpcDailySlot {id:string;startMinute:number;endMinute:number;activity:string;place:'home'|'work'|'other';notes:string;weekdays?:number[]}
+export interface NpcDailySlot {id:string;startMinute:number;endMinute:number;activity:string;place:'home'|'work'|'other'|'location';locationId?:string;notes:string;weekdays?:number[]}
+export interface NpcPlanLocation {locationId:string;title:string;available:boolean}
 export interface NpcDailyOverride {day:string;label:string;slots:NpcDailySlot[]}
 export interface NpcRecord {id:string;revision:number;factionId:string|null;modifier:number;lifecycle:'active'|'defeated';appearance:string;behavior:string;history:string;demographics?:NpcDemographics;dailyPlan?:NpcDailySlot[];dailyOverrides?:NpcDailyOverride[]}
 export type NpcRole='friendly'|'neutral'|'hostile';

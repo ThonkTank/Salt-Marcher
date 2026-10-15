@@ -648,6 +648,19 @@ bleibt als historischer Beleg verfügbar. Der Produktanschluss und seine
 Store-/UI-Verhaltenstests sind maßgeblich; eine zweite Implementation der alten
 Class-, Envelope- oder Mehrbesitzerformen ist nicht erforderlich.
 
+Der aktuelle Pfad führt über `LiveAction`/`LiveScene` in
+[`live-contracts.ts`](../../../src/app/live-contracts.ts), `executeLive` und
+`readLiveScene` in [`storage/live.ts`](../../../src/app/storage/live.ts) sowie
+`captureVisitDetails` in [`storage/session.ts`](../../../src/app/storage/session.ts).
+`apply-visit` prüft Plan-, Besuchs- und Zielscenebasis in derselben Transaktion,
+speichert `scene_adoption` getrennt vom bearbeitbaren `live_scene` und schreibt
+den tokenunabhängigen Commandfingerprint samt Receipt. `scene-content` ändert
+Laufwerte ohne Herkunftslöschung. Der gelöschte `state.ts`-Codec ist kein aktueller
+Speicherport. Die Szenarien in `desktop-session.test.mjs` und
+`desktop-session-retention.test.mjs` prüfen tatsächliche Adoption, Rollback,
+Wiederholung, Draftretention und unabhängige Kopie. Sie ersetzen keine native
+Continue-/Split-/Zeit-/Masken- oder Erasureabnahme; diese Fachziele bleiben offen.
+
 Die Fachorakel oben bleiben vollständig verbindlich. Readmodels sind
 unveränderliche revisionierte Werte; Preparation aliasiert keine Runtime.
 Rejoin schreibt ausdrücklich gewählte Zeit und Scenezuordnung atomar.
