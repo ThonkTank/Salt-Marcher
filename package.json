@@ -69,6 +69,7 @@
     "test:desktop-player-focus-ui": "node tools/test-desktop-player-focus.mjs",
     "test:desktop-player-blank-ui": "node tools/test-desktop-player-blank.mjs && node tools/test-desktop-player-blank.mjs --pending",
     "test:desktop-session-packet": "node --test --test-concurrency=1 tests/desktop-session-packet-context.test.mjs tests/desktop-session-progress.test.mjs tests/desktop-scene-visit-context.test.mjs",
+    "test:desktop-session-resume": "node --test --test-concurrency=1 tests/desktop-session-resume-context.test.mjs",
     "test:desktop-trade-price": "node --test --test-concurrency=1 tests/desktop-trade-paid-price.test.mjs",
     "test:desktop-shop-owner": "node --test --test-concurrency=1 tests/desktop-shop-owner-time.test.mjs"
   },

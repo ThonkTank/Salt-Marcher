@@ -1,4 +1,3 @@
-import type {Result} from './contracts';
 import type {ChronicleEntry} from './chronicle-contracts';
 import type {LiveAction} from './live-contracts';
 
@@ -36,9 +35,3 @@ export function sessionCloseHandoffSuggestion(input:SessionCloseHandoffInput){
 }
 
 export function latestCompletedSessionHandoff(entries:ChronicleEntry[],latest?:ChronicleEntry){return(latest?.sessionMarker==='end'?latest:entries.find(entry=>entry.sessionMarker==='end'))?.handoff??'';}
-
-export async function settleOptionalSessionSource<T>(source:Promise<Result<T>>){
-  try{const result=await source;return result.ok?{value:result.value,error:null}:{value:null,error:result.error};}
-  catch(error){return{value:null,error:(error as Error).message};}
-}
-

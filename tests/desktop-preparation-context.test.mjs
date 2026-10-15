@@ -20,10 +20,10 @@ async function fixture(t){
  for(const key of ['window','document','HTMLInputElement','HTMLSelectElement','HTMLTextAreaElement','Option','Event','setTimeout','clearTimeout'])prior[key]=globalThis[key];
  const values=new WeakMap();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return values.get(this)??this.querySelector('option')?.value??'';},set(v){values.set(this,v);}});
  function Option(text='',value=''){const o=document.createElement('option');o.textContent=text;o.value=value;return o;}
- window.HTMLSelectElement.prototype.add=function(o){this.append(o);};window.HTMLElement.prototype.scrollIntoView=()=>{};
+ window.HTMLSelectElement.prototype.add=function(o){this.append(o);};window.HTMLElement.prototype.scrollIntoView=()=>{};window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};window.HTMLElement.prototype.setSelectionRange=function(start,end){this.selectionStart=start;this.selectionEnd=end;};
  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
  const messages=[],writes=[],wrap=f=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:e.message};}};
- window.campaign={};for(const method of ['preparation','preparationDraft','keepPreparationDrafts','discardPreparationDraft','selectPreparation','reconcilePreparation','worldLinks','deskContent','live'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
+ window.campaign={};for(const method of ['preparation','preparationDraft','keepPreparationDrafts','discardPreparationDraft','selectPreparation','reconcilePreparation','worldLinks','deskContent','searchDesk','live'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
  window.campaign.changePreparation=async c=>{writes.push(c);return wrap(()=>store.changePreparation(c));};
  const file=require.resolve('../'+base+'/ui.cjs');delete require.cache[file];const ui=require(file);ui.initPreparation((text,error)=>messages.push({text,error}),async()=>{});
  let owner=workspace;const graph=new ui.WorldLinksWorkbench(()=>owner,()=>ui.leavePreparation(),text=>messages.push({text}),async(ref,current)=>ui.openPreparedNote(ref.id,current));
@@ -88,4 +88,28 @@ for(const reason of ['reload','cancel'])test('a source read cannot select its ol
  let current=true;const opening=x.ui.openPreparedNote(x.ids.borin,()=>current);await settle();assert.ok(release);
  if(reason==='reload'){x.store.selectPreparation(x.workspace.token,{noteId:x.ids.ada,planId:null,sceneId:null});await x.activate();}else current=false;assert.equal(x.el('note-title').value,'Ada');
  release();await opening;assert.equal(x.el('note-title').value,'Ada');
+});
+
+async function picker(t){const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);const area=x.el('note-gm');area.value='  Roh\r\n**Text**  ';area.dispatchEvent(new x.window.Event('input'));area.setSelectionRange(2,2);x.el('note-text-reference').click();await settle();const dialog=x.el('text-reference-picker');assert.ok(dialog?.open);return{...x,area,dialog,select:async id=>{dialog.querySelector(`[data-reference="note:${id}"]`).click();await settle();},cancel:async()=>{[...dialog.querySelectorAll('button')].find(b=>b.textContent==='Abbrechen').click();await settle();}};}
+test('text reference insertion preserves raw note bytes and uses the existing single writer',async t=>{
+ const x=await picker(t);await x.select(x.ids.ada);x.el('text-reference-alias').value='  Wächter  ';x.el('text-reference-alias').dispatchEvent(new x.window.Event('input'));x.el('text-reference-insert').click();await settle();
+ const expected='  [  Wächter  ](dungeon-ref:note/'+x.ids.ada+')Roh\r\n**Text**  ';assert.equal(x.area.value,expected);await x.ui.flushPreparation();assert.equal(x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note.gmNotes,expected);
+});
+for(const change of ['target','alias','search'])test('a pending reference confirmation cannot insert after '+change+' changes',async t=>{
+ const x=await picker(t);await x.select(x.ids.ada);const read=x.window.campaign.deskContent;let release;x.window.campaign.deskContent=async(...args)=>{const result=await read(...args);if(!release)return new Promise(r=>release=()=>r(result));return result;};
+ x.el('text-reference-insert').click();await settle();assert.ok(release);
+ if(change==='target')await x.select(x.ids.borin);else{const el=x.el(change==='alias'?'text-reference-alias':'text-reference-search');el.value='Neue Wahl';el.dispatchEvent(new x.window.Event('input'));}
+ release();await settle();assert.equal(x.dialog.open,true);assert.equal(x.area.value,'  Roh\r\n**Text**  ');await x.cancel();
+});
+test('changing reference search revokes its old result controls immediately',async t=>{
+ const x=await picker(t),old=x.dialog.querySelector(`[data-reference="note:${x.ids.ada}"]`),field=x.el('text-reference-search');field.value='niemand';field.dispatchEvent(new x.window.Event('input'));old.onclick();await settle();
+ assert.equal(x.el('text-reference-results').textContent,'');assert.equal(x.el('text-reference-detail').textContent,'');assert.equal(x.el('text-reference-insert').disabled,true);await x.cancel();
+});
+test('a delayed reference selection preserves an alias already typed by the GM',async t=>{
+ const x=await picker(t),read=x.window.campaign.deskContent;let release;x.window.campaign.deskContent=async(...args)=>{const result=await read(...args);return new Promise(r=>release=()=>r(result));};x.dialog.querySelector(`[data-reference="note:${x.ids.ada}"]`).click();await settle();
+ x.el('text-reference-alias').value='Eigener Name';x.el('text-reference-alias').dispatchEvent(new x.window.Event('input'));release();await settle();assert.equal(x.el('text-reference-alias').value,'Eigener Name');await x.cancel();
+});
+
+test('a reference selected for an old editor generation cannot change the reloaded note',async t=>{
+ const x=await picker(t);await x.select(x.ids.ada);await x.activate();x.el('text-reference-insert').click();await settle();assert.equal(x.area.value,'  Roh\r\n**Text**  ');assert.equal(x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note.gmNotes,'  Roh\r\n**Text**  ');
 });

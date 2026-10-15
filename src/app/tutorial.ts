@@ -1,4 +1,4 @@
-export const tutorialLessonRevision = 'desktop-tutorial-capability-coverage-v68';
+export const tutorialLessonRevision = 'desktop-tutorial-v69';
 export interface TutorialRun { version: string; lessonRevision: string; runId: string; state: 'new' | 'shown' | 'finished' | 'skipped' }
 export function checkedTutorialRun(value: unknown, applicationVersion: string): TutorialRun {
   if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Tutoriallauf ist beschädigt.');
@@ -107,7 +107,6 @@ export const lessons = [
 ];
 
 export const tutorialSurfaceLessons={
-  'location-notebook-open':'location-notebook',
   'world-links-open':'world-links',
   'agenda-open':'campaign-agenda',
   'live-generation-open':'live-generation',
@@ -117,6 +116,7 @@ export const tutorialSurfaceLessons={
 } as const;
 
 export const tutorialCapabilityLessons={
+  'location-notebook-open':'location-notebook',
   'location-notebook-read':'location-notebook',
   'note-text-reference':'text-references','text-reference-insert':'text-references',
   'journey-replan':'travel-camp','journey-wait':'travel-camp','journey-rest':'travel-camp',
