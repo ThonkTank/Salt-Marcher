@@ -24,6 +24,8 @@ const conditionParts=(text:string)=>text.split(/\s*[,;\n]\s*/).map(part=>part.tr
 export function hasCombatCondition(text:string,label:string,source:string){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]);return conditionParts(text).some(part=>aliases.has(part.toLocaleLowerCase()));}
 export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
+let reinforcementRequest=0,reinforcementBusy=false;
+let reinforcementResults:{id:string;name:string;challengeRating:string}[]=[];
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 type PendingLegendary={participantId:string;actionId:string;cost:number};
 type PendingDamage={check:SceneCheck;combatId:string;attackerId:string;targetId?:string;appliedTargets?:string[]};
@@ -37,7 +39,7 @@ let pendingSave:PendingSave|null=null,savePending=false;
 export function pendingRollStillValid(pending:{combatId:string;attackerId:string}|null,combat:CombatView['combat']){return !!pending&&!!combat&&editableCombat(combat)&&pending.combatId===combat.id&&combat.participants.some(participant=>participant.id===pending.attackerId);}
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
-function acceptCombat(result:CombatView){view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
+function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){reinforcementRequest++;reinforcementBusy=false;reinforcementResults=[];get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
@@ -60,7 +62,7 @@ function keepNotesDraft(){
 async function chooseFighter(id:string){
  if(!workspace||!view?.combat)return;selected=id;const token=workspace.token,cam=workspace.campaign.id,combatId=view.combat.id,g=generation,r=++editorRequest;editorLoading=true;renderEditor();renderSelection();lock();
  try{await draftCache.load(token,cam,combatId,'fighter',id);}catch(error){if(g===generation&&r===editorRequest)tell((error as Error).message,true);}
- finally{if(g===generation&&r===editorRequest&&selected===id&&view?.combat?.id===combatId){editorLoading=false;renderEditor();lock();}}
+ finally{if(g===generation&&r===editorRequest&&selected===id&&view?.combat?.id===combatId){editorLoading=false;renderEditor();lock();if(typeof window.matchMedia==='function'&&window.matchMedia('(max-width:1099px)').matches)get('combat-participant').scrollIntoView({block:'start'});}}
 }
 async function loadNotes(){
  if(!workspace||!view?.combat)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,g=generation;notesLoading=true;lock();
@@ -245,6 +247,31 @@ function renderConcentrationEffect(){
   const box=get('combat-concentration-effect'),combat=view?.combat,actor=combat?.participants.find(p=>p.concentrationChecks?.length),check=actor?.concentrationChecks?.[0];if(!combat||!actor||!check||!editableCombat(combat)){box.hidden=true;return;}box.hidden=false;get('combat-concentration-result').textContent=actor.name+' · Konzentration SG '+check.dc+' nach '+check.damage+' Schaden'+(actor.concentrationChecks!.length>1?' · 1 von '+actor.concentrationChecks!.length+' offenen Prüfungen':'');
   const modifier=get<HTMLInputElement>('combat-concentration-modifier'),key=actor.id+':'+check.damage+':'+check.dc;if(modifier.dataset.checkKey!==key){modifier.dataset.checkKey=key;modifier.value='0';}for(const id of ['combat-concentration-roll','combat-concentration-pass','combat-concentration-fail'])get<HTMLButtonElement>(id).disabled=blocked();modifier.disabled=blocked();
 }
+function renderReinforcements(){
+ const select=get<HTMLSelectElement>('combat-creature-select'),previous=select.value,combat=view?.combat;
+ select.replaceChildren();
+ const add=(id:string,text:string)=>{const option=document.createElement('option');option.value=id;option.textContent=text;select.append(option);};
+ const groups=new Set<string>();
+ for(const actor of combat?.participants??[])if(actor.sourceId&&!actor.worldActorId&&!groups.has(actor.groupId)){
+  groups.add(actor.groupId);const count=combat!.participants.filter(p=>p.groupId===actor.groupId).length;
+  if(count>1||actor.partitionKind==='mob')add('group:'+actor.groupId,(combat?.sources?.find(c=>c.id===actor.sourceId)?.name??actor.name)+' · vorhandene Initiative '+actor.initiative+' ('+count+')');
+ }
+ const creatures=new Map([...(combat?.sources??[]),...reinforcementResults].map(c=>[c.id,c]));
+ for(const c of creatures.values())add('creature:'+c.id,c.name+' · HG '+c.challengeRating);
+ if(!select.options.length)add('','Monster suchen oder zuerst einen Statblock in diesen Kampf übernehmen.');
+ select.value=[...select.options].some(o=>o.value===previous)?previous:select.options[0]?.value??'';
+}
+async function searchReinforcements(){
+ const w=workspace,combat=view?.combat;if(!w||!combat||blocked()||reinforcementBusy)return;
+ const g=generation,id=combat.id,load=loadNumber,request=++reinforcementRequest;
+ reinforcementBusy=true;reinforcementResults=[];get('combat-creature-status').textContent='Monster werden gesucht…';renderReinforcements();lock();
+ try{
+  const result=unwrap(await window.campaign.creatures({text:value('combat-creature-search'),offset:0,limit:25,sort:'name',direction:'asc'}));
+  if(g!==generation||request!==reinforcementRequest||workspace?.token!==w.token||view?.combat?.id!==id||load!==loadNumber)return;
+  reinforcementResults=result.rows;get('combat-creature-status').textContent=result.total?Math.min(25,result.total)+' von '+result.total+' Treffern. Bekannte Statblöcke und Gruppen bleiben verfügbar.':'Keine Treffer. Bekannte Statblöcke und Gruppen bleiben verfügbar.';
+ }catch(error){if(g===generation&&request===reinforcementRequest&&view?.combat?.id===id&&load===loadNumber)get('combat-creature-status').textContent='Suche fehlgeschlagen: '+(error as Error).message;}
+ finally{if(g===generation&&request===reinforcementRequest){reinforcementBusy=false;if(load!==loadNumber)get('combat-creature-status').textContent='Kampfstand geändert. Bei Bedarf erneut suchen.';renderReinforcements();lock();}}
+}
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked()||control.dataset.statblockDisabled==='true';
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
@@ -269,9 +296,17 @@ function lock() {
   renderSaveEffect();
   renderDamageEffect();
   renderConcentrationEffect();
+  if(reinforcementBusy)for(const control of get('combat-reinforcement').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement>('input,button,select'))control.disabled=true;
+  get<HTMLButtonElement>('combat-creature-add').disabled=blocked()||reinforcementBusy||!value('combat-creature-select');
+  const linked=value('combat-creature-select').startsWith('group:');
+  get<HTMLInputElement>('combat-creature-initiative').disabled=blocked()||reinforcementBusy||linked;
+  get<HTMLInputElement>('combat-creature-grouped').disabled=blocked()||reinforcementBusy||linked;
 }
 function render() {
   const combat = view?.combat;
+  const creation=get<HTMLDetailsElement>('combat-creation'),creationId=combat?.id??'';
+  if(creation.dataset.combatId!==creationId){creation.dataset.combatId=creationId;creation.open=!combat;}
+  renderReinforcements();
   get('combat-creation').hidden = false;
   get('combat-shared-notice').textContent=combat?.sharedNotice??'';
   get('combat-workspace').hidden = !combat;
@@ -298,7 +333,7 @@ function render() {
     if (p.id === combat!.turnId && combat!.phase === 'running') tr.classList.add('current-turn');
     const name = document.createElement('td'), choose = document.createElement('button');
     choose.textContent = p.name+(p.role?' · '+{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]:''); choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
-    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); name.append(tag); tr.append(name);
+    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; tag.title=tag.textContent??'';tag.textContent=p.characterId?'Party':combat!.participants.filter(other=>other.groupId===p.groupId).length>1?'gemeinsam':'einzeln';tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); name.append(tag); tr.append(name);
     const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
     for (const text of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:'',p.timedEffects?.map(effect=>effect.name+' '+effect.remaining+'R').join(', ')].filter(Boolean).join(' · ') || '—']) { const td = document.createElement('td'); td.textContent = text; tr.append(td); }
     body.append(tr);
@@ -323,6 +358,8 @@ function renderEditor() {
   get('fighter-draft-status').textContent=draft?(p&&fighterDraftBasisMatches(draft.basis,p)?'Eingabe offen – mit „Werte übernehmen“ bestätigen.':'Gespeicherte Werte wurden geändert. Eingabe bleibt offen; zuerst den aktuellen Stand laden.') : '';
   get('combat-participant').hidden = !p || !editableCombat(view?.combat??null);
   get('combat-selected-name').textContent = p?.name ?? '';
+  get('combat-selection-hint').hidden=!!p||!editableCombat(view?.combat??null);
+  get('fighter-quick-health').textContent=p?(p.healthKnown===false?'HP noch offen':p.hp+' / '+p.maxHp+' HP'+(p.tempHp?' + '+p.tempHp+' temporäre HP':''))+' · Initiative '+p.initiative+' · RK '+p.armorClass:'';
   get('fighter-health-hint').hidden = p?.healthKnown !== false;
   for (const id of ['fighter-damage','fighter-heal']) get<HTMLButtonElement>(id).disabled = blocked() || p?.healthKnown === false;
   for (const [id, field] of [['fighter-name', 'name'], ['fighter-initiative', 'initiative'], ['fighter-bonus', 'initiativeBonus'], ['fighter-ac', 'armorClass'], ['fighter-hp', 'hp'], ['fighter-max-hp', 'maxHp'], ['fighter-temp-hp', 'tempHp'], ['fighter-conditions', 'conditions']] as const) get<HTMLInputElement>(id).value = draft?draft.values[id]??'':p?.healthKnown === false && (field === 'hp' || field === 'maxHp') ? '' : String(p?.[field] ?? '');
@@ -358,6 +395,16 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
+  get('combat-creature-search-form').onsubmit=event=>{event.preventDefault();void searchReinforcements();};
+  get('combat-creature-select').onchange=()=>{get<HTMLInputElement>('combat-creature-initiative').value='';lock();};
+  get('combat-creature-form').onsubmit=event=>{
+   event.preventDefault();if(blocked()||reinforcementBusy)return;
+   const choice=value('combat-creature-select'),groupId=choice.startsWith('group:')?choice.slice(6):undefined;
+   const creatureId=groupId?view?.combat?.participants.find(p=>p.groupId===groupId&&!p.worldActorId)?.sourceId:choice.startsWith('creature:')?choice.slice(9):null;
+   if(!creatureId)return;
+   const initiative=value('combat-creature-initiative').trim();
+   void execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})}).then(ok=>{if(ok)get<HTMLDetailsElement>('combat-add-details').open=false;});
+  };
   get('combat-add-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }); };
   get('combat-roll').onclick = () => void execute({ kind: 'roll', mode: value('combat-roll-mode') as 'normal' | 'advantage' | 'disadvantage' });
   get('combat-start').onclick = () => void execute({ kind: 'start' });

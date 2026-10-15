@@ -32,7 +32,7 @@ export type CombatAction =
   | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
   | {kind:'add-world-actor';actorId:string;expectedActorRevision:number;expectedRecordRevision:number}
   | {kind:'add-party';characterId:string;expectedMembershipRevision:number;expectedProgressRevision:number;initiative?:number}
-  | { kind: 'add-creature'; creatureId: string; count: number; grouped: boolean; groupId?: string }
+  | { kind: 'add-creature'; creatureId: string; count: number; grouped: boolean; groupId?: string; initiative?: number }
   | { kind: 'add'; name: string; count: number; grouped: boolean; maxHp: number; armorClass: number; initiativeBonus: number }
   | { kind: 'edit'; participantId: string; changes: Partial<Pick<Combatant, 'name' | 'initiative' | 'initiativeBonus' | 'armorClass' | 'hp' | 'maxHp' | 'tempHp' | 'conditions' | 'concentrating' | 'xp' | 'countForMultiplier'>> }
   | { kind: 'damage'; participantId: string; amount: number; sourceCheckId?:string; sourceScale?:'full'|'half'|'double' }

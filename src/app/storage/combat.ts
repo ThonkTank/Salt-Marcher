@@ -74,13 +74,15 @@ function label(index: number) { let result=''; do { result=String.fromCharCode(6
 function legendarySource(state:CombatState,p:Combatant){return state.sources?.find(source=>source.id===p.sourceId&&source.legendaryActions.length);}
 function resetLegendary(state:CombatState,p:Combatant){if(legendarySource(state,p))p.legendaryActions={remaining:3,maximum:3,lastResetRound:state.round};}
 function tickEffects(p:Combatant,tick:'start'|'end'){if(!p.timedEffects)return;for(const effect of p.timedEffects)if(effect.tick===tick)effect.remaining--;p.timedEffects=p.timedEffects.filter(effect=>effect.remaining>0);if(!p.timedEffects.length)delete p.timedEffects;}
-function addCreature(state: CombatState, creature: Creature, count: number, grouped: boolean, groupId?: string, entryId?: string) {
+function addCreature(state: CombatState, creature: Creature, count: number, grouped: boolean, groupId?: string, entryId?: string, initiative?: number) {
   if(!Number.isSafeInteger(count)||count<1||count>1000||state.participants.length+count>1000)throw new Error('Bitte eine gültige Teilnehmermenge angeben.');
   const peer=groupId?state.participants.find(p=>p.groupId===groupId&&p.sourceId===creature.id):undefined;
   if(groupId&&!peer)throw new Error('Verstärkung benötigt eine vorhandene Gruppe dieser Kreatur.');
+  if(initiative!==undefined&&(!Number.isSafeInteger(initiative)||Math.abs(initiative)>1000000))throw new Error('Initiative benötigt eine gültige ganze Zahl.');
+  if(peer&&initiative!==undefined&&initiative!==peer.initiative)throw new Error('Vorhandene Initiativegruppe behält ihren Wert.');
   const shared=peer?.groupId??randomUUID(),sourceEntryId=peer?.sourceEntryId??entryId??randomUUID(),partitionKind=peer?.partitionKind??(grouped?'mob':'individual');state.sources??=[];if(!state.sources.some(c=>c.id===creature.id))state.sources.push(creature);
   state.sourceSerials??={};let serial=state.sourceSerials[creature.id]??Math.max(-1,...state.participants.filter(p=>p.sourceId===creature.id).map(p=>p.sourceOrdinal??-1))+1;
-  for(let i=0;i<count;i++){const id=randomUUID(),actor:Combatant={id,groupId:grouped||peer?shared:id,characterId:null,name:creature.name+' '+label(serial),initiative:peer?.initiative??0,initiativeBonus:peer?.initiativeBonus??creature.initiative,armorClass:creature.ac,hp:creature.hp,maxHp:creature.hp,tempHp:0,conditions:'',concentrating:false,xp:creature.xp,countForMultiplier:true,sourceId:creature.id,sourceOrdinal:serial++,sourceEntryId,partitionKind,...(peer?.hiddenFromPlayers?{hiddenFromPlayers:true}:{})};if(state.phase==='running'&&creature.legendaryActions.length)actor.legendaryActions={remaining:3,maximum:3,lastResetRound:state.round};state.participants.push(actor);}
+  for(let i=0;i<count;i++){const id=randomUUID(),actor:Combatant={id,groupId:grouped||peer?shared:id,characterId:null,name:creature.name+' '+label(serial),initiative:peer?.initiative??initiative??0,initiativeBonus:peer?.initiativeBonus??creature.initiative,armorClass:creature.ac,hp:creature.hp,maxHp:creature.hp,tempHp:0,conditions:'',concentrating:false,xp:creature.xp,countForMultiplier:true,sourceId:creature.id,sourceOrdinal:serial++,sourceEntryId,partitionKind,...(peer?.hiddenFromPlayers?{hiddenFromPlayers:true}:{})};if(state.phase==='running'&&creature.legendaryActions.length)actor.legendaryActions={remaining:3,maximum:3,lastResetRound:state.round};state.participants.push(actor);}
   state.sourceSerials[creature.id]=serial;
 }
 function partyCombatant(character: ReturnType<typeof readLive>['roster'][number],progress: ReturnType<typeof readProgressCharacter>,status?: Pick<Combatant,'tempHp'|'conditions'|'concentrating'>): Combatant {
@@ -186,7 +188,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if(state.participants.some(p=>p.worldActorId===actor.id))throw new Error('NPC steht bereits in dieser Begegnung.');
           addNamedActor(db,cam,state,actor.id,scene.locationId);
         } else if (a.kind === 'add-creature') {
-          addCreature(state,readCreature(a.creatureId),a.count,a.grouped,a.groupId);
+          addCreature(state,readCreature(a.creatureId),a.count,a.grouped,a.groupId,undefined,a.initiative);
         } else if (a.kind === 'add') {
           if (!Number.isSafeInteger(a.count) || a.count < 1 || a.count > 100 || state.participants.length + a.count > 1000) throw new Error('Bitte 1–100 Teilnehmer hinzufügen.');
           const shared = randomUUID();

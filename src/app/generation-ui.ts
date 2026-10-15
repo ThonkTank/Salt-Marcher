@@ -160,10 +160,10 @@ export function initGeneration(status:typeof tell,callbacks:Bridge){
  for(const [a,b]of [['generation-npc-only','generation-npc-mixed'],['generation-npc-mixed','generation-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
 tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required-npcs',tell);
  ensureLootUI();
- get('encounter-generate').onclick=()=>{get('generation-tables').closest('fieldset')!.scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
+ get('encounter-generate').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-tables').closest('fieldset')!.scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
  get('generation-plan-open').onclick=()=>{get('generation-feedback').textContent='';get('encounter-builder').scrollIntoView({block:'start'});const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');target.focus({preventScroll:true});};
- get('catalog-tables').onclick=()=>{get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};
+ get('catalog-tables').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};
  initWorldSourceUI(command,()=>{previewDirty=true;sourceLabel();renderPreview();});
  get('encounter-table-list').oninput=renderSourceActions;get('loot-table-list').oninput=renderSourceActions;renderSourceActions();
  get('encounter-table-new').onclick=()=>{report(()=>openTable());};get('encounter-table-open').onclick=()=>{const t=tables.find(t=>t.id===value('encounter-table-list'));if(t)report(()=>openTable(t));};get('table-close').onclick=requestTableClose;get<HTMLDialogElement>('table-manager').addEventListener('cancel',event=>{event.preventDefault();requestTableClose();});get<HTMLDialogElement>('table-manager').addEventListener('close',restoreCatalog);
