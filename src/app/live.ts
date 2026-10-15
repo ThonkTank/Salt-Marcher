@@ -107,6 +107,14 @@ export async function openLive(planId?: string, visitId?: string) {
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
   } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-empty').hidden = false; tell((error as Error).message, true); }
 }
+export async function openPlannedVisitReview(planId:string,visitId:string,current:()=>boolean=()=>true){
+ const token=context?.token;if(!token||!current())return false;
+ await openLive(planId,visitId);if(!current()||context?.token!==token)return false;
+ if(value('adoption-plan')!==planId||value('adoption-visit')!==visitId){tell('Der vorbereitete Besuch ist am Spieltisch nicht mehr verfügbar.',true);return false;}
+ if(!await ensureLiveRuntime()||!current()||context?.token!==token)return false;
+ get<HTMLDetailsElement>('adoption-picker').open=true;await previewPlannedVisit(planId,visitId);if(!current()||context?.token!==token)return false;
+ const opened=get<HTMLDialogElement>('adoption-dialog').open;if(!opened)tell('Die Übernahmeprüfung konnte nicht geöffnet werden.',true);return opened;
+}
 async function ensureLiveRuntime() {
   if(!context)return false;
   const token=context.token,sceneId=data?.scene?.id??null;
