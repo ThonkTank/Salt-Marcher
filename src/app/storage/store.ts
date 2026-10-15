@@ -1,3 +1,4 @@
+import {checkedSessionRecapDraft} from '../live-contracts';
 import {readCityActivities} from './city-activity';
 import {readWorldCalendar as readNpcPlanCalendar} from './world';
 import {readNpcPlaces,readNpcBuildingChoices} from './npc-places';
@@ -429,6 +430,7 @@ export class CampaignStore {
     return this.workspace();
   }
   private validateDatabase(db: any) {
+    for(const row of db.prepare("SELECT value FROM settings WHERE key LIKE 'session-recap:%'").iterate())checkedSessionRecapDraft(JSON.parse(row.value));
     validateExtensionSettings(db);
     validateCapabilityBytes(db);
     validateCampaignOrigins(db);
@@ -795,7 +797,20 @@ export class CampaignStore {
   executeCombat(command: CombatCommand) { return this.db.transaction(()=>{const ack=executeCombat(this.db, command, () => { this.guard(command.token, command.campaignId); });this.updateMusic(command.campaignId);return ack;}).immediate(); }
   archivedRoster(token:string,after:string|null,search:string){return readArchivedRoster(this.db,this.guard(token),after,search);}
   previewTime(token:string,request:import('../time-plan-contracts').TimeRequest){return this.db.transaction(()=>previewSceneTime(this.db,this.guard(token),request))();}
-  live(token: string) { return readLive(this.db, this.guard(token)); }
+  live(token: string) { const cam=this.guard(token);return {...readLive(this.db,cam),recapDraft:this.readSessionRecapDraft(cam)}; }
+  private readSessionRecapDraft(cam:string):import('../live-contracts').SessionRecapDraft|null {
+    const value=this.db.prepare('SELECT value FROM settings WHERE key=?').get('session-recap:'+cam)?.value;
+    if(value===undefined)return null;
+    const draft=JSON.parse(value);checkedSessionRecapDraft(draft);return draft;
+  }
+  keepSessionRecapDraft(token:string,draft:import('../live-contracts').SessionRecapDraft,expected:import('../live-contracts').SessionRecapDraft|null){
+    checkedSessionRecapDraft(draft);if(expected!==null)checkedSessionRecapDraft(expected);
+    return this.db.transaction(()=>{const cam=this.guard(token),current=this.readSessionRecapDraft(cam),same=(a:any,b:any)=>a===null?b===null:!!b&&a.summary===b.summary&&a.handoff===b.handoff;
+      if(same(current,draft))return;
+      if(!same(current,expected))throw new Error('Rückblick wurde inzwischen an anderer Stelle geändert. Eigene Eingaben bleiben offen.');
+      this.db.prepare('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run('session-recap:'+cam,json(draft));
+    }).immediate();
+  }
   liveScene(token: string, id: string) { return this.db.transaction(() => readLiveScene(this.db, this.guard(token), id))(); }
   liveArchives(token: string, after: string | null) { return readArchives(this.db, this.guard(token), after); }
   executeLive(command: LiveCommand) { return this.db.transaction(() => {
