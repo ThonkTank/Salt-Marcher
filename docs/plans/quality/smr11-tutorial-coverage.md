@@ -8,7 +8,7 @@ Die Desktop-App öffnet bei der ersten Installation und für jede neue Anwendung
 
 Der Dialog ist scrollbar, setzt den Tastaturfokus auf seine Überschrift und gibt ihn beim Schließen an den vorherigen Auslöser zurück. Ein nicht speicherbarer Status blockiert das Produkt nicht und wird sichtbar gemeldet.
 
-Die konsolidierte Lehrrevision `desktop-tutorial-v78` enthält die integrierten Ortsmaterial-, Haushalts-, Berufs- und Gruppenlektionen. Der Revisionswechsel erhält abgeschlossene frühere Läufe und startet den ergänzten optionalen Lauf.
+Die konsolidierte Lehrrevision `desktop-tutorial-v79` enthält die integrierten Ortsmaterial-, Haushalts-, Berufs- und Gruppenlektionen. Der Revisionswechsel erhält abgeschlossene frühere Läufe und startet den ergänzten optionalen Lauf.
 
 ## Mindestabdeckung der sichtbaren Produktoberfläche
 

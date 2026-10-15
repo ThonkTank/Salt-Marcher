@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {validateRoom} from '../contracts';
-import type {NpcPlaces,NpcPlaceSite} from '../npc-places-contracts';
+import type {NpcPlaces,NpcPlaceSite,NpcBuildingQuery,NpcBuildingChoices} from '../npc-places-contracts';
 import {readNpc} from './npcs';
 import {npcPosition} from './npc-world';
 import {deskContent} from './scene-desk';
@@ -16,4 +16,11 @@ export function readNpcPlaces(db:any,cam:string,id:string,offset:number):NpcPlac
  ) ORDER BY title COLLATE NOCASE,city_id,id,role LIMIT @count OFFSET @offset`).all({cam,id,count:limit+1,offset});
  for(const row of rows.slice(0,limit)){const {header,unit}=readCitySite(db,cam,row.city_id,row.id),home=row.role==='home',members=home?unit.residentIds:unit.workerIds;if(!members?.includes(id))throw new Error('NSC-Gebäudebindung geändert.');const location=deskContent(db,cam,{kind:'location',id:header.locationId}),named=home?(unit.households??[]).filter(h=>h.memberIds.includes(id)).map(h=>h.name):(unit.jobs??[]).filter(j=>j.workerIds.includes(id)).map(j=>j.name);sites.push({kind:home?'home':'work',id:row.role+':'+header.id+':'+unit.id,cityId:header.id,unitId:unit.id,title:unit.name||'Unbenanntes Haus',detail:(home?'Wohnt hier':'Arbeitet hier')+' · '+header.name+' · '+location.title+(named.length?' · '+named.join(', '):''),available:!location.unavailable});}
  return{npcId:id,name:npc.name,locationTitle:place?.title??'Ohne Ortsbindung',sites,next:rows.length>limit?offset+limit:null};
+}
+
+export function readNpcBuildingChoices(db:any,cam:string,id:string,q:NpcBuildingQuery):NpcBuildingChoices{
+ if(!q||!['home','work'].includes(q.role)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000)throw new Error('Gebäudesuche prüfen.');const npc=readNpc(db,cam,id),path=q.role==='home'?'$.residentIds':'$.workerIds';
+ const old=db.prepare("SELECT id,city_id FROM city_unit WHERE campaign_id=? AND kind='building' AND EXISTS(SELECT 1 FROM json_each(payload,?) WHERE value=?) LIMIT 2").all(cam,path,id);if(old.length>1)throw new Error('Mehrere gleichartige Gebäudebindungen vorhanden. Im Stadtbereich klären.');const current=old[0]?readCitySite(db,cam,old[0].city_id,old[0].id):null;
+ const rows=db.prepare(`SELECT u.id,u.city_id FROM city_unit u JOIN city_document c ON c.campaign_id=u.campaign_id AND c.id=u.city_id JOIN location l ON l.campaign_id=c.campaign_id AND l.id=c.location_id WHERE u.campaign_id=@cam AND u.kind='building' AND l.trashed=0 AND (@city IS NULL OR u.city_id=@city) AND instr(lower(json_extract(u.payload,'$.name')||char(10)||json_extract(c.payload,'$.name')),lower(@text))>0 ORDER BY json_extract(c.payload,'$.name') COLLATE NOCASE,json_extract(u.payload,'$.name') COLLATE NOCASE,u.id LIMIT 41 OFFSET @offset`).all({cam,city:current?.header.id??null,text:q.text,offset:q.offset});
+ return{npcId:id,name:npc.name,currentCityTitle:current?.header.name??null,next:rows.length>40?q.offset+40:null,items:rows.slice(0,40).map((r:any)=>{const {header,unit}=readCitySite(db,cam,r.city_id,r.id);deskContent(db,cam,{kind:'location',id:header.locationId});return{cityId:header.id,unitId:unit.id,title:unit.name||'Unbenanntes Haus',cityTitle:header.name};})};
 }

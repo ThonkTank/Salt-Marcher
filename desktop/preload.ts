@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   keepWorldRelationPairDraft:(token:string,draft:import('../src/app/world-relation-pair-contracts').WorldRelationPairDraft,expected:string|null)=>ipcRenderer.invoke('campaign:keep-world-relation-pair-draft',token,draft,expected),
   discardWorldRelationPairDraft:(token:string,sourceId:string,writeId:string)=>ipcRenderer.invoke('campaign:discard-world-relation-pair-draft',token,sourceId,writeId),
   npcCast: (token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>ipcRenderer.invoke('campaign:npc-cast',token,q),
+  npcBuildingChoices:(token:string,id:string,q:import('../src/app/npc-places-contracts').NpcBuildingQuery)=>ipcRenderer.invoke('campaign:npc-building-choices',token,id,q),
   npcPlaces: (token:string,id:string,offset:number)=>ipcRenderer.invoke('campaign:npc-places',token,id,offset),
   npcDossier: (token:string,sceneId:string,id:string)=>ipcRenderer.invoke('campaign:npc-dossier',token,sceneId,id),
   npcDrafts:(token:string)=>ipcRenderer.invoke('campaign:npc-drafts',token),
