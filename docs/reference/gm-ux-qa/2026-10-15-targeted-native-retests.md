@@ -87,13 +87,23 @@ hashes sind vorhanden. Die Trialreservierung wurde wegen der belegten
 Kapazität abgewiesen; die Leitung legte versehentlich trotzdem den technischen
 Vorbereitungschat an. Nach tatsächlichem Abschluss des nativen Falls gelang
 die reguläre Reservierung für genau diesen vorhandenen frischen Chat.
-Nach tatsächlicher Slotfreigabe erhielt er ausschließlich denselben öffentlichen
-PREPARE-Inhalt; Original-Obsidian zeigt die lokale Vault-Anlage. Zwei technische
-Fehlstarts bleiben erhalten: zunächst kein Start wegen Sandbox-Lock, danach
-geschlossene Wrapper-Eingabe ohne gestartetes Produkt. Der unveränderte Operator
-läuft nun mit offenem Terminal. Keine manuelle Kapazitätsänderung und kein
-Ersatzchat. PLAY und RESUME folgen an natürlichen Grenzen im selben Chat,
-ohne vorherige Produktberichte oder Lösungswege. Der Cloud-Browserpilot bleibt
+Nach tatsächlicher Slotfreigabe entstand aus demselben öffentlichen PREPARE-
+Inhalt ein nutzbarer eigener Vault: Übersicht, verlinkte Ortsnotizen, Wegskizze,
+GM-Geheimnis, Originalquelle und ausdrücklich ungespielter Stand. Suche liefert
+Kontextausschnitte; Vorlage, Vorbereitung und tatsächlicher Stand bleiben
+redaktionell zu unterscheiden. Eine wegen verzögerter Beobachtung zu früh
+wiederholte Eingabe wurde sichtbar bereinigt. Ursache zwischen Produkt und
+Transport ungetrennt, keine gemessene Latenz. Die Leitung prüfte ausgewählte
+Datei-/Framehashes, die sichtbare Übersicht sowie normale App-/Umgebungsabschlüsse
+und Checkpoint. Wiederaufnahme ist damit noch nicht bewiesen. PLAY läuft jetzt
+im selben Chat/Profil, RESUME folgt nach normalem Close. Keine früheren
+Produktberichte oder Lösungswege an den Tester.
+
+Zwei technische Fehlstarts bleiben erhalten: Sandbox-Lock ohne Jobstart und
+geschlossene Wrapper-Eingabe ohne Produktstart. Cleanup des wartenden Services
+erfolgte einmal über dessen bestehende Queue statt stdin; danach lief der
+unveränderte Operator regulär mit offenem Terminal. Keine manuelle
+Kapazitätsänderung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
 mangels auflösbarer Gesprächs-ID unbestätigt.
 
 Rabenfurt braucht noch eigene praktische Konkurrenz- und einfachste
