@@ -307,3 +307,6 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 .catalog-heading{flex-wrap:wrap;gap:.75rem}#generation-workspace{scroll-margin-top:5rem}
 
 #encounter-builder{scroll-margin-top:5rem}
+
+/* Actual rest frames share the Party calculation, including early short rests. */
+#day-pacing{border:1px solid var(--line);border-radius:8px;padding:.8rem;margin:1rem 0}#day-pacing h3{margin:0 0 .5rem}#day-pacing p{overflow-wrap:anywhere}#day-pacing .day-rest-track{height:1rem;position:relative;margin:.5rem 0;background:linear-gradient(to right,var(--blue) var(--day-rest-fill,0%),var(--selected) var(--day-rest-fill,0%));border:1px solid var(--line);border-radius:4px;font-size:.8rem}#day-pacing .day-rest-mark{position:absolute;top:-2px;bottom:-2px;border-left:2px solid var(--ink)}#day-pacing .day-rest-member{border-top:1px solid var(--line);padding:.7rem 0}#day-pacing .day-rest-member p{margin:.4rem 0}#day-pacing .day-rest-member strong{overflow-wrap:anywhere}

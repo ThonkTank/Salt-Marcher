@@ -1,6 +1,6 @@
 # Adventuring Day: Partyvorschau und bestätigte Rastfakten
 
-Stand: 14.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
+Stand: 15.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
 und den [Gesamtumfang](../../SCOPE.md). Der Rechner ist ein Party-/Live-Werkzeug;
 der Atlas ist weder sein Owner noch eine Voraussetzung.
 
@@ -31,6 +31,43 @@ beginnen die Levelvorschau mit ihren tatsächlichen bestätigten XP, eigene
 Levelzeilen mit dem jeweiligen Levelminimum. Die Etappenanzeige begrenzt volle
 Einzeltage auf 30 und fasst weitere Tage zusammen, ohne ihre Summe abzuschneiden.
 Das sind vorhandene Rechenregeln, keine neu bestätigten Rasten oder XP-Awards.
+
+## Leitung ab dem tatsächlichen Raststand
+
+Version 0.126 ergänzt im selben Dropdown eine aktuelle Rastplanung. Der Partyreader
+liefert `pacing` aus `projectDayPacing`, das ausschließlich das bestehende
+`restFrame` und `xpShare` verwendet. Der Rechner besitzt keine eigenen Rastregeln.
+„Heute“ zeigt den verbleibenden individuellen Tagesrahmen nach tatsächlich
+abgeschlossenen kurzen Rasten; eine frühe Rast verschiebt die weiteren Marken.
+Der Mittelwert ist ungewichtet, unbekannte XP/Rasten sind ausdrücklich ausgeschlossen.
+Gemeinsame Marken erscheinen nur bei gleicher verbleibender Abschnittszahl.
+Alle aktiven Figuren einschließlich Split Scenes bleiben die Empfängerbasis.
+
+Im aktiven Modus „XP → Tage“ erscheint zusätzlich „Ab jetzt“: die eingegebene
+Gruppenbelastung wird gleichmäßig aufgerundet verteilt und zu bestätigtem Long-/
+Shortverbrauch addiert. Keine Rasten werden automatisch angenommen und kein
+Verdienst-/Levelwechsel verändert diese Belastungsvorschau. Fällige kurze/lange
+Rasten, numerische Überziehung und die kleinste Gruppen-XP-Menge bis zur ersten
+individuellen Marke bleiben sichtbar. Unbekannte Mitglieder zählen zur Verteilung,
+behaupten aber keinen Verlauf; bekannte Mitglieder bleiben als Teilbasis nutzbar.
+Eigene Rechnerzeilen verändern diese aktuelle Partyprojektion nicht.
+
+Die bisherigen Tagesmodelle/Etappen sind separat als „ab langer Rast“ beschriftet.
+Sie verwenden weiterhin feste Startlevelbudgets. „Party / Rasten öffnen“ öffnet
+den echten Party-Popup; die dort gewählten Mitglieder der Gruppe im Fokus und
+die vorhandenen Commands bestätigen eine Rast. Rechnerreads schreiben weder
+Fortschritt noch Roster, Scene, Weltzeit, Receipts oder Verlauf. Keine Migration.
+Öffnen/Neuberechnen markiert den Trigger und Popup als ausstehend und räumt alte
+Rastdetails ab. Individuelle Verläufe sind in 20er-Schritten nachladbar.
+
+Gezielt geprüft: früher SR-Abschluss bei 240/1200 XP verschiebt die nächste Marke
+auf 720 XP; gemischte Abschnittszahlen, Rundung, dritte SR, Longüberziehung und
+unveränderter Store. Nativer Desktop: drei aktive Figuren, darunter unbekannte XP;
+1141 Gruppenbelastung ergibt 381 je Figur/1143 insgesamt, bekannte Verläufe
+340→721 und 100→481, eigene Zeilen, offengehaltener Detailbereich, Partyübergang
+und Neustart. Zwei normale Exits, keine Rendererfehler, Fortschritts-/Roster-/
+Uhrzeilen bytegleich. Das ist eine gezielte Ablaufprüfung, keine umfassende
+Host-/Großparty-/Layoutabnahme.
 
 ## Geprüfte Daten- und Eingabegrenzen
 

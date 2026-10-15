@@ -2,6 +2,7 @@ import {bindAnchoredPopup} from './anchored-popup';
 import type { Workspace } from "./contracts";
 import type { DayView } from "./adventuring-day-contracts";
 import { onProgressChanged } from "./progression-ui";
+import {renderDayPacing} from './adventuring-day-pacing-ui';
 
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -93,6 +94,8 @@ function table(root: HTMLElement, headings: string[], values: string[][]) {
   root.append(t);
 }
 function draw(value: DayView) {
+  el('day-popover').setAttribute('aria-busy','false');
+  el('day-trigger').setAttribute('aria-busy','false');
   const snapshot = value.snapshot;
   el("day-trigger").textContent = !snapshot.partySize
     ? "Kein Rastbudget"
@@ -111,6 +114,7 @@ function draw(value: DayView) {
         : "Ø Level " + number(snapshot.averageLevel))
     : "Party öffnen";
   if (!opened()) return;
+  renderDayPacing(el('day-pacing'),value.pacing,source==='active'&&mode==='progress');
   el("day-status").textContent = value.problem ?? snapshot.reason;
   if (source === "active") {
     rows = snapshot.rows.map((r) => ({
@@ -129,7 +133,7 @@ function draw(value: DayView) {
   if (snapshot.members.length) {
     table(
       party,
-      ["Aktuelle Figur", "Level", "SR / LR verbraucht", "Bis nächste SR / LR"],
+      ["Aktuelle Figur", "Level", "SR / LR verbraucht", "Bis nächste Marke / LR"],
       snapshot.members
         .slice(0, 40)
         .map((c) => [
@@ -152,6 +156,7 @@ function draw(value: DayView) {
   }
   const c = value.calculation;
   if (!c) return;
+  const heading=document.createElement('h3');heading.textContent='Tagesmodell ab langer Rast';summary.append(heading);
   const facts = document.createElement("p");
   facts.className = "day-budget";
   facts.textContent =
@@ -243,9 +248,14 @@ async function refresh() {
         : {}),
     };
   if (open) {
+    el('day-popover').setAttribute('aria-busy','true');
+    el('day-trigger').setAttribute('aria-busy','true');
+    el('day-trigger').textContent='Rastbudget wird geladen…';
     el("day-status").textContent = "Rastbudget wird geladen…";
     el("day-summary").replaceChildren();
     el("day-timeline").replaceChildren();
+    el('day-current').replaceChildren();
+    el('day-pacing').replaceChildren();
   }
   try {
     const result = await window.campaign.adventuringDay(owner.token, input);
@@ -255,6 +265,8 @@ async function refresh() {
   } catch (error) {
     if (owner.token !== workspace?.token || request !== generation) return;
     el("day-trigger").textContent = "Rastbudget nicht verfügbar";
+    el('day-trigger').setAttribute('aria-busy','false');
+    el('day-popover').setAttribute('aria-busy','false');
     if (opened()) el("day-status").textContent = (error as Error).message;
   }
 }
@@ -262,8 +274,13 @@ function schedule() {
   generation++;
   if (timer) clearTimeout(timer);
   if (opened()) {
+    el('day-trigger').setAttribute('aria-busy','true');
+    el('day-trigger').textContent='Rastbudget wird geladen…';
+    el('day-popover').setAttribute('aria-busy','true');
     el("day-summary").replaceChildren();
     el("day-timeline").replaceChildren();
+    el('day-current').replaceChildren();
+    el('day-pacing').replaceChildren();
     el("day-status").textContent = "Berechnung wird aktualisiert…";
   }
   timer = setTimeout(() => {
@@ -284,6 +301,9 @@ export function activateDayCalculator(next: Workspace | null) {
   el<HTMLInputElement>("day-separate-reward").checked = false;
   el<HTMLButtonElement>("day-trigger").disabled = !next;
   el("day-trigger").textContent = "Rastbudget";
+  el('day-trigger').setAttribute('aria-busy','false');
+  el('day-popover').setAttribute('aria-busy','false');
+  el('day-pacing').replaceChildren();
   el("party-shortcut").textContent = "Party öffnen";
   renderRows();
   state();
