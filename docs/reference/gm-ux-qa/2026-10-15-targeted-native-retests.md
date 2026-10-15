@@ -95,9 +95,16 @@ redaktionell zu unterscheiden. Eine wegen verzögerter Beobachtung zu früh
 wiederholte Eingabe wurde sichtbar bereinigt. Ursache zwischen Produkt und
 Transport ungetrennt, keine gemessene Latenz. Die Leitung prüfte ausgewählte
 Datei-/Framehashes, die sichtbare Übersicht sowie normale App-/Umgebungsabschlüsse
-und Checkpoint. Wiederaufnahme ist damit noch nicht bewiesen. PLAY läuft jetzt
-im selben Chat/Profil, RESUME folgt nach normalem Close. Keine früheren
-Produktberichte oder Lösungswege an den Tester.
+und Checkpoint. PLAY ist ebenfalls abgeschlossen: geänderte Abfahrt in aktiven
+Notizen, historische Quelle gekennzeichnet, begonnene Mara-Notiz nach Schal-
+Suche fortgesetzt, Laterne zurückgegeben und tatsächlicher Wissensstand notiert.
+Die Leitung prüfte ausgewählte Originalidentitäten, sichtbaren Spielstand und
+fortgesetzte Notiz sowie normalen Close. Suchausschnitte enthalten auch GM-
+Geheimwissen; die Spielerantwort blieb begrenzt. Keine Spieleranzeige geprüft.
+Die Erstöffnung von PLAY bestätigte PREPARE; Fresh des gespielten Endstands
+bleibt RESUME vorbehalten. Dafür wartet derselbe Chat/Vault nach normalem Close
+auf den Slot. Die begrenzte 0.100.0-Abschlussprüfung läuft jetzt dazwischen.
+Keine früheren Produktberichte oder Lösungswege an den Tester.
 
 Zwei technische Fehlstarts bleiben erhalten: Sandbox-Lock ohne Jobstart und
 geschlossene Wrapper-Eingabe ohne Produktstart. Cleanup des wartenden Services
