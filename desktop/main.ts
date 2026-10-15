@@ -125,6 +125,7 @@ else {
     handle('campaign:execute-scene-rule',(command:SceneRuleCommand)=>store.executeSceneRule(command));
     handle('campaign:scene-checks',(token:string,id:string)=>store.sceneChecks(token,id));
     handle('campaign:execute-scene-check',(command:SceneCheckCommand)=>store.executeSceneCheck(command));
+    handle('campaign:location-materials',(token:string,q:import('../src/app/location-notebook-contracts').LocationMaterialsQuery)=>store.locationMaterials(token,q));
     handle('campaign:world-links',(token:string,q:import('../src/app/world-links-contracts').WorldLinksQuery)=>store.worldLinks(token,q));
     handle('campaign:npc-cast',(token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>store.npcCast(token,q));
     handle('campaign:npc-dossier',(token:string,sceneId:string,id:string)=>store.npcDossier(token,sceneId,id));

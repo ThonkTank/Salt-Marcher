@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   executeSceneRule:(command:import('../src/app/rule-reference-contracts').SceneRuleCommand)=>ipcRenderer.invoke('campaign:execute-scene-rule',command),
   sceneChecks:(token:string,id:string)=>ipcRenderer.invoke('campaign:scene-checks',token,id),
   executeSceneCheck:(command:import('../src/app/scene-check-contracts').SceneCheckCommand)=>ipcRenderer.invoke('campaign:execute-scene-check',command),
+  locationMaterials:(token:string,q:import('../src/app/location-notebook-contracts').LocationMaterialsQuery)=>ipcRenderer.invoke('campaign:location-materials',token,q),
   worldLinks:(token:string,q:import('../src/app/world-links-contracts').WorldLinksQuery)=>ipcRenderer.invoke('campaign:world-links',token,q),
   npcCast: (token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>ipcRenderer.invoke('campaign:npc-cast',token,q),
   npcDossier: (token:string,sceneId:string,id:string)=>ipcRenderer.invoke('campaign:npc-dossier',token,sceneId,id),

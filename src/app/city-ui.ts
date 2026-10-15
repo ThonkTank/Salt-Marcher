@@ -27,6 +27,7 @@ export async function openCity(){
   if(overview.cities.length)await readSelectedCity(value('city-select'),w.token,g,request);else{view=null;render();}
  }catch(error){if(owned(w.token,g)&&request===readRequest)tell((error as Error).message,true);}
 }
+export async function openCityReference(id:string){const w=workspace,g=epoch;if(!w)return;await openCity();if(!owned(w.token,g))return;if(dirty)throw new Error('Neue Stadteingabe bleibt offen. Karte erneut wählen.');if(view?.header.id===id)return;view=null;selected=null;preview=null;render();el<HTMLSelectElement>('city-select').value=id;await readSelectedCity(id,w.token,g,++readRequest);}
 async function change(action:CityCommand['action']){
  const w=workspace,g=epoch,source=view;if(!w)throw new Error('Kampagne öffnen.');const id=action.kind==='create'?action.header.id:source?.header.id;if(!id)throw new Error('Stadt öffnen.');
  const command={commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,cityId:id,expectedRevision:action.kind==='create'?0:source!.header.revision,action};readRequest++;
