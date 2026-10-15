@@ -151,3 +151,13 @@ Owner voraus; eine ungeklärte Anlage blockiert normales Verlassen.
 Prozessende vor Send/nach Commit vor Reply, beschädigte Sicherung, späterer
 Zielplan und unabhängige Kopie ohne automatische Ausführung oder Doppelanlage.
 Bestehende Formate und historische Originaltexte erhalten.
+
+## Zusammenhängender Vorbereitungsbereich
+
+„Weltwissen und Orte“ und „Spielabend planen“ benutzen dieselben bestehenden
+Editoren in voller Breite. Referenznavigation öffnet den passenden Bereich;
+Umschalten sichert gültige Eingaben, ohne Autorenkopien zu erzeugen.
+Die Generierung stellt Gruppe, Umfang, Szenenzahl und Auftrag vor optionale
+Beute-/Weltvorgaben. Ledger-Ausgleich ist explizit; freie Planungszeilen brauchen
+ihn nicht. Profilspeicherung erhält Eingabeknoten und neuere Werte, ungeklärte
+Schreibantworten behalten dagegen ihre bisherige Sperre.
