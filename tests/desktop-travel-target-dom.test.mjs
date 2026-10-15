@@ -228,3 +228,19 @@ test('an obsolete scene read error cannot clear a newer confirmed live travel co
   assert.equal(x.get('live-travel-empty').hidden,true);assert.equal(x.get('journey-end').disabled,false);assert.doesNotMatch(x.get('live-travel-context').textContent,/Alter Lesefehler/);assert.match(x.get('world-journey-status').textContent,/Unterwegs/);
  }finally{x.cleanup();}
 });
+
+test('a rejected save during map selection retains the real map and route; retry saves the old owner before switching',async()=>{
+ const x=await travelFixture();try{
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),other={...x.map,id:randomUUID(),name:'B-Karte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));await x.ui.openWorld();x.enter('travel-waypoints','0,1');x.enter('travel-q','2');x.enter('hex-label','Offene A-Prosa');const before=x.store.db.serialize(),real=x.window.campaign.executeWorld;x.window.campaign.executeWorld=async()=>({ok:false,error:'Speicherfehler A'});
+  await x.select('world-map-select',other.id);await until(()=>x.statuses.some(s=>s.includes('Speicherfehler A')));
+  assert.equal(x.document.getElementById('world-map-select').value,x.map.id);assert.equal(x.document.getElementById('world-map-name').value,'Region');assert.equal(x.document.getElementById('hex-label').value,'Offene A-Prosa');assert.equal(x.document.getElementById('travel-stops').children.length,2);assert.equal(x.document.getElementById('travel-preview-accept').disabled,true);assert.ok(x.store.db.serialize().equals(before));
+  x.window.campaign.executeWorld=real;await x.select('world-map-select',other.id);await until(()=>x.document.getElementById('world-map-name').value==='B-Karte');assert.equal(x.store.world(x.w.token).maps.find(m=>m.id===x.map.id).cells.find(c=>c.q===0&&c.r===0).label,'Offene A-Prosa');assert.equal(x.store.world(x.w.token).maps.find(m=>m.id===other.id).cells.length,0);assert.equal(x.document.getElementById('world-map-select').value,other.id);assert.equal(x.document.getElementById('travel-stops').children.length,0);assert.equal(x.document.getElementById('hex-label').value,'');assert.equal(x.document.getElementById('travel-q').value,'0');assert.equal(x.document.getElementById('travel-evaluation').querySelectorAll('dd').length,0);
+ }finally{x.cleanup();}
+});
+
+test('a delayed map save cannot adopt an older map selection or cross campaign activation',async()=>{
+ const x=await travelFixture();try{
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),b={...x.map,id:randomUUID(),name:'B-Karte'},c={...x.map,id:randomUUID(),name:'C-Karte'};for(const map of [b,c])x.store.executeWorld(command({kind:'map',map,expectedRevision:null}));await x.ui.openWorld();x.enter('hex-label','A behalten');x.hold();await x.select('world-map-select',b.id);await until(x.hasReply);await x.select('world-map-select',c.id);assert.equal(x.document.getElementById('world-map-select').value,x.map.id,'pending choices must not impersonate a loaded map');x.release();await x.ui.flushWorld();await until(()=>x.document.getElementById('world-map-name').value==='C-Karte');assert.equal(x.document.getElementById('world-map-select').value,c.id);assert.equal(x.document.getElementById('world-map-select').getAttribute('aria-busy'),'false');
+  x.enter('hex-label','C behalten');x.hold();await x.select('world-map-select',b.id);await until(x.hasReply);const campaign=x.store.create('Neue Kampagne'),w=x.store.activate(campaign.id);x.ui.activateWorld(w);await x.ui.openWorld();x.release();await tick();await tick();assert.equal(x.document.getElementById('world-map-select').value,'');assert.equal(x.document.getElementById('world-map-workspace').hidden,true);assert.equal(x.document.getElementById('world-map-select').getAttribute('aria-busy'),'false');assert.equal(x.store.world(w.token).maps.length,0);
+ }finally{if(x.hasReply())x.release();x.cleanup();}
+});
