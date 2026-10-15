@@ -3,6 +3,12 @@
 Originalverträge: [Anchored Popup](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-anchored-popup.md)
 und [Topbar Dropdown](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-dropdown-popup.md).
 
+Die historischen UI-Quellen liefern hier Prüffragen. Gemäß den
+[Produktzielen](../../PRODUCT.md) sind Popups und Dialoge austauschbare Mittel;
+eine gemeinsame Klasse oder ein bestimmtes Oberflächenmuster ist keine eigene
+Produktfähigkeit. Diese Änderung dient konkret erreichbaren Zusatzinformationen,
+nachvollziehbarem Fokus und einer Anzeige am tatsächlichen Auslöser.
+
 ## Aktueller Vertrag
 
 `anchored-popup.ts` bindet den Auslöser an ein vorhandenes natives Auto-Popover.
@@ -35,9 +41,10 @@ nativer Layout- oder Fokusnachweis.
   echten Daten, langen Profilen, offenen Entwürfen und verschachtelten Dialogen
   prüfen. Die isolierte Electron-Bedienprobe nutzt echte Popovermechanik und
   Originaloberflächen mit lesenden APIstubs; sie qualifiziert keine Persistenz.
-- Dialogartige Forminhalte (gemeinsame Kopfzeile/feste Aktionen) gegen den
-  ursprünglichen Dialog-Surface-Vertrag konsolidieren, sobald die bestehenden
-  konkreten Aufrufer zusammen untersucht sind. Der Popuphost besitzt weiterhin
-  weder Formulare noch Fachaktionen; kein allgemeines Dialogframework vorbauen.
+- Lange Forminhalte und ihre Aktionen im vollständigen Desktop prüfen.
+  Ob ein geteilter Kopf-/Aktionsbereich oder eine andere Oberfläche dafür den
+  geringsten Aufwand bietet, am konkreten Bedienproblem entscheiden. Die alte
+  Dialog-Surface-Form ist keine zusätzliche Lieferpflicht. Der Popuphost besitzt
+  weiterhin weder Formulare noch Fachaktionen.
 - Weitere Inline-Popups erst bei realem Aufrufer anbinden; keine zweite
   Tooltip-/Menüarchitektur allein zur Vervollständigung dieser Dokumentation.
