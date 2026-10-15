@@ -51,7 +51,8 @@ function expectedFiles(manifest:unknown,read:ArchiveManifestFiles,allowedName:(n
  return result;
 }
 
-/** Extract only manifest-declared entries into a fresh owned directory. No destination data is published here. */
+/** Return exactly the validated manifest files, with matching sizes and SHA-256, in fresh staging.
+ * On failure staging is removed; destination data is never published here. */
 export async function readArchive(filename:string,base:string,allowedName:(name:string)=>boolean,readManifest:ArchiveManifestFiles,h:ArchiveHooks){
  h.check();await mkdir(base,{recursive:true});const dir=await mkdtemp(path.join(base,'import-'));
  const seen=new Set<string>(),files=new Map<string,ArchiveFile>(),outputs:{output:Output;done:Promise<void>}[]=[],decoders:{terminate:()=>void}[]=[],drains:Promise<void>[]=[];
