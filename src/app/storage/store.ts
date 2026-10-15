@@ -1,6 +1,8 @@
-import {readNpcPlaces} from './npc-places';
+import {readNpcPlaces,readNpcBuildingChoices} from './npc-places';
 import {readLocationMaterials} from './location-notebook';
 import {readWorldLinks} from './world-links';
+import {installWorldRelationPairs,executeWorldRelationPair,reconcileWorldRelationPair,readWorldRelationPairDraft,keepWorldRelationPairDraft,discardWorldRelationPairDraft,readWorldRelationPairHistory,executeWorldRelationPairHistory,reconcileWorldRelationPairHistory,validateWorldRelationPairs} from './world-relation-pair';
+import type {WorldRelationPairCommand,WorldRelationPairDraft,WorldRelationPairHistoryCommand} from '../world-relation-pair-contracts';
 import {readNpcCast,readNpcDossier} from './npc-cast';
 import {previewSceneTime} from './time-plan';
 import {readAgenda} from './agenda';
@@ -11,15 +13,15 @@ import {readSessionPacket} from './session-packet';
 import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
 import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
 import {readDay} from './adventuring-day';
-import {installNpcRecords} from './npc-record';
+import {installNpcRecords,validateNpcRecords} from './npc-record';
 import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc,validateNpcRecovery} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
-import {migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
-import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
-import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
-import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk} from './scene-desk';
-import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft} from './finish-drafts';
+import {removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
+import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft,validateGroups} from './groups';
+import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
+import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
+import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft,validateFinishDrafts} from './finish-drafts';
 import {installNarrative,readNarrative,saveNarrative,validateNarrativeState,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
 import {readPreparedGroup} from './session';
 import {installCombatDraftSchema,validateCombatDrafts,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
@@ -60,7 +62,7 @@ import {openSync as openSnapshot, readSync, closeSync as closeSnapshot} from 'no
 import type {ConflictChoice} from '../campaign-contracts';
 import {canonicalJson} from '../generation/canonical-json';
 import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicFavorites,readMusicSubject,executeMusic,saveMusicPosition,refreshMusicContext,ingestAudio,audioLibrarySnapshot,mergeAudioLibrary,audioFile,validateMusicBackup,audioMediaFiles} from './music';
-import type {AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
+import type {MusicView,AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
 import {installWorldSchema,readWorld,readSceneWorld,previewTravel,executeWorld,reconcileWorld,syncSceneWorld,inheritScenePosition,validateWorldBackup} from './world';
 import type {TravelRequest,WorldCommand} from '../world-contracts';
 import {installItemsSchema,readShop,readShops,sceneShops,executeItemShop,restockDue,validateItemsBackup} from './items';
@@ -81,7 +83,7 @@ import { checkedLocationDocument } from '../../features/location/location-schema
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, readArchivedRoster, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
-import { reconcileCombatParticipants, installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
 
 
 import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
@@ -99,7 +101,7 @@ import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEnco
 import type { EncounterPlanCommand } from '../encounter-contracts';
 import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
-import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, scenePreparation, cleanSessionVisits } from './session';
+import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, validateSessionRuns, scenePreparation, cleanSessionVisits } from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
 const noteTitleOrder = new Intl.Collator('de', {numeric: true, sensitivity: 'base'});
@@ -197,7 +199,7 @@ export class CampaignStore {
       installDungeonKey(this.db);
       installGraph(this.db);
       installTriggers(this.db);
-      installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);
+      installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
       this.db.pragma('user_version=44');
 
@@ -330,7 +332,9 @@ export class CampaignStore {
   }
   private decodeLocation(row: Row, checksumError = 'Ortsprüfung fehlgeschlagen.') {
     if (hash(row.payload) !== row.checksum) throw new Error(checksumError);
-    return checkedLocationDocument(JSON.parse(row.payload));
+    const document=checkedLocationDocument(JSON.parse(row.payload));
+    if(document.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1)throw new Error("Ortszuordnung widersprüchlich.");
+    return document;
   }
   workspace(): Workspace {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspace());
@@ -422,8 +426,8 @@ export class CampaignStore {
     }).immediate();
     return this.workspace();
   }
-  private validateDatabase(db: any,validateExtensions=true) {
-    if(validateExtensions)validateExtensionSettings(db);
+  private validateDatabase(db: any) {
+    validateExtensionSettings(db);
     validateCapabilityBytes(db);
     if (db.pragma('integrity_check', { simple: true }) !== 'ok' || db.pragma('foreign_key_check').length) throw new Error('Wiederherstellungskopie ist strukturell beschädigt.');
     for (const row of db.prepare('SELECT * FROM room').iterate()) this.decode(row);
@@ -449,16 +453,16 @@ export class CampaignStore {
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);validateNpcRecovery(db);
+    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);validateNpcRecovery(db);
     validateItemsBackup(db);
-    validateWorldBackup(db);
+    validateWorldBackup(db);validateWorldRelationPairs(db);
     validateCities(db);
     validatePlayer(db);
     validateDungeonPlay(db);
     validateAutonomy(db);
     validateDrawing(db);
     validateMusicBackup(db);
-    validateGenerationBackup(db);
+    validateGenerationBackup(db);validateSessionRuns(db);
     for (const row of db.prepare('SELECT payload,checksum FROM live_receipt').iterate()) if (hash(row.payload) !== row.checksum) throw new Error('Beschädigtes Live-Commitreceipt im Backupkandidaten.');
     for (const row of db.prepare('SELECT * FROM source').iterate()) if (hash(row.bytes) !== row.checksum) throw new Error('Beschädigte Quellbytes im Backupkandidaten.');
     // Every stored payload envelope receives the same byte/JSON check.
@@ -475,13 +479,13 @@ export class CampaignStore {
       }
     }
   }
-  private async backupDatabase(filename:string,validateExtensions:boolean){
+  async backup(filename:string){
     const epoch=this.backupEpoch,candidate = filename + '.candidate-' + randomUUID();
     try {
       await this.db.backup(candidate);
       const db = new Database(candidate, { readonly: true, fileMustExist: true });
       try {
-        this.validateDatabase(db,validateExtensions);
+        this.validateDatabase(db);
       } finally { db.close(); }
       const fd = openSync(candidate, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
       if(epoch!==this.backupEpoch)throw new Error('Wiederherstellungskopie durch Löschung überholt.');
@@ -494,7 +498,6 @@ export class CampaignStore {
       for (const suffix of ['-wal', '-shm']) rmSync(candidate + suffix, { force: true });
     }
   }
-  async backup(filename:string){await this.backupDatabase(filename,true);}
   reconcile(edit: Edit, token = edit.token): { outcome: 'applied' | 'not-applied' | 'conflict'; targetChanged: boolean; workspace: Workspace } {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.reconcile(edit,token));
     return this.db.transaction(() => {
@@ -542,8 +545,9 @@ export class CampaignStore {
     })();
   }
   locationMaterials(token:string,q:import('../location-notebook-contracts').LocationMaterialsQuery){const cam=this.guard(token);return this.db.transaction(()=>readLocationMaterials(this.db,cam,q))();}
-  worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery){const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
+  worldLinks(token:string,q:import('../world-links-contracts').WorldLinksQuery):import('../world-links-contracts').WorldLinksPage{const cam=this.guard(token);return this.db.transaction(()=>readWorldLinks(this.db,cam,q))();}
   npcCast(token:string,q:import('../npc-cast-contracts').NpcCastQuery):import('../npc-cast-contracts').NpcCastPage{const cam=this.guard(token);return this.db.transaction(()=>readNpcCast(this.db,cam,q))();}
+  npcBuildingChoices(token:string,id:string,q:import('../npc-places-contracts').NpcBuildingQuery):import('../npc-places-contracts').NpcBuildingChoices{const cam=this.guard(token);return this.db.transaction(()=>readNpcBuildingChoices(this.db,cam,id,q))();}
   npcPlaces(token:string,id:string,offset:number):import('../npc-places-contracts').NpcPlaces{const cam=this.guard(token);return this.db.transaction(()=>readNpcPlaces(this.db,cam,id,offset))();}
   npcDossier(token:string,sceneId:string,id:string):import('../npc-cast-contracts').NpcDossier{const cam=this.guard(token);return this.db.transaction(()=>readNpcDossier(this.db,cam,sceneId,id))();}
   npcDrafts(token:string){return npcDrafts(this.db,this.guard(token));}
@@ -618,7 +622,7 @@ export class CampaignStore {
   discardNarrativeDraft(token:string,id:string,writeId:string){return discardNarrativeDraft(this.db,this.guard(token),id,writeId);}
   narrativeJournal(token:string,query:import('../narrative-journal-contracts').NarrativeJournalQuery){return readNarrativeJournal(this.db,this.guard(token),query);}
   narrative(token:string,id:string){return this.db.transaction(()=>readNarrative(this.db,this.guard(token),id))();}
-  adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest){return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
+  adventuringDay(token:string,request:import('../adventuring-day-contracts').DayRequest):import('../adventuring-day-contracts').DayView{return this.db.transaction(()=>readDay(this.db,this.guard(token),request))();}
   executeProgress(command: ProgressCommand) { return this.db.transaction(() => {
     this.guard(command.token,command.campaignId);
     const a=command.action,guard=()=>{this.guard(command.token,command.campaignId);};
@@ -742,7 +746,7 @@ export class CampaignStore {
   }
   audioAsset(id:string){return readAudioAsset(this.db,this.audioRoot,id);}
   musicFavorites(token:string,after:string|null){return this.db.transaction(()=>readMusicFavorites(this.db,this.audioRoot,this.guard(token),after))();}
-  music(token:string){return this.db.transaction(()=>readMusic(this.db,this.audioRoot,this.guard(token)))();}
+  music(token:string):MusicView{return this.db.transaction(()=>readMusic(this.db,this.audioRoot,this.guard(token)))();}
   musicSubject(token:string,kind:MusicSubject['kind'],id:string){return readMusicSubject(this.db,this.guard(token),kind,id);}
   executeMusic(command:MusicCommand){return executeMusic(this.db,this.audioRoot,command,()=>{this.guard(command.token,command.campaignId);});}
   musicPosition(token:string,playbackId:string,seconds:number){return saveMusicPosition(this.db,this.guard(token),playbackId,seconds);}
@@ -797,7 +801,7 @@ export class CampaignStore {
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){
       const a=command.action;
-      if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);reconcileCombatParticipants(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
+      if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'&&ack.session?.createdScene)inheritScenePosition(this.db,command.campaignId,a.sceneId,ack.session.createdScene.id);
       const sceneId=a.kind==='advance-clock'||a.kind==='scene-content'||a.kind==='apply-visit'?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
       if(sceneId)syncSceneWorld(this.db,command.campaignId,sceneId);
@@ -819,6 +823,14 @@ export class CampaignStore {
   changePreparation(command: PreparationCommand): Preparation {this.commitPreparation(command);return this.preparation(command.token);}
   changePreparationContent(command:PreparationCommand){if(command.change.kind!=='note'&&command.change.kind!=='location')throw new Error('Gezielte Änderung benötigt Notiz oder Ort.');this.commitPreparation(command);const cam=this.guard(command.token);return deskContent(this.db,cam,command.change.kind==='note'?{kind:'note',id:command.change.note.id}:{kind:'location',id:command.change.document.id});}
   reconcilePreparationContent(command:PreparationCommand,token:string){const cam=this.guard(token,command.campaignId),target=preparationTarget(command.change),r=this.db.prepare('SELECT * FROM receipt WHERE command_id=?').get(command.commandId),table=target.kind==='note'?'world_note':target.kind==='location'?'location':'plan',current=this.db.prepare(`SELECT revision FROM ${table} WHERE campaign_id=? AND id=?`).get(cam,target.id);if(r){if(r.campaign_id!==cam||!matchesReceipt(r,command))throw new Error('Änderungskennung anders verwendet.');return{outcome:'applied' as const,targetChanged:current?.revision!==r.revision};}const changed=(current?.revision??null)!==command.change.expectedRevision;return{outcome:changed?'conflict' as const:'not-applied' as const,targetChanged:changed};}
+  executeWorldRelationPair(command:WorldRelationPairCommand){return executeWorldRelationPair(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
+  reconcileWorldRelationPair(command:WorldRelationPairCommand,token:string){return reconcileWorldRelationPair(this.db,command,this.guard(token,command.campaignId));}
+  worldRelationPairDraft(token:string,sourceId:string){return readWorldRelationPairDraft(this.db,this.guard(token),sourceId);}
+  keepWorldRelationPairDraft(token:string,draft:WorldRelationPairDraft,expected:string|null){keepWorldRelationPairDraft(this.db,this.guard(token,draft.command.campaignId),draft,expected);}
+  discardWorldRelationPairDraft(token:string,sourceId:string,writeId:string){discardWorldRelationPairDraft(this.db,this.guard(token),sourceId,writeId);}
+  worldRelationPairHistory(token:string){return readWorldRelationPairHistory(this.db,this.guard(token));}
+  executeWorldRelationPairHistory(command:WorldRelationPairHistoryCommand){return executeWorldRelationPairHistory(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
+  reconcileWorldRelationPairHistory(command:WorldRelationPairHistoryCommand,token:string){return reconcileWorldRelationPairHistory(this.db,command,this.guard(token,command.campaignId));}
   private commitPreparation(command: PreparationCommand): void {
     if (typeof command.commandId !== 'string' || !command.commandId) throw new Error('Änderungskennung fehlt.');
     const change = validatePreparation(command.change), fingerprint = commandFingerprint(command);
@@ -896,6 +908,9 @@ export class CampaignStore {
         });
       }
       if(change.kind==='plan')cleanSessionVisits(this.db,campaignId,change.plan.id,change.plan.scenes.map(s=>s.id));
+      if(change.kind==='plan'&&change.opening){const o=change.opening;
+        this.executeSession({commandId:command.commandId+'|opening',campaignId,token:command.token,action:{kind:'visit',planId:change.plan.id,expectedRevision:0,detail:{visitId:o.visitId,revision:0,readAloud:o.readAloud,noteIds:o.noteIds,groupIds:[],reward:null}}});
+      }
       this.db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(command.commandId, fingerprint, campaignId, targetId, revision);
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
       if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);

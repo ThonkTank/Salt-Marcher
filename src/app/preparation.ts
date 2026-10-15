@@ -71,17 +71,23 @@ async function loadedDraft(kind: PreparationEdit['kind'], id: string) {
 async function retainOpenDrafts() {
   if (!context || draftLoads) throw new Error('Die Entwürfe werden noch geladen.');
   if (failedCommand && (!['note', 'plan', 'location'].includes(failedCommand.change.kind) || failedCommand.change.expectedRevision === null)) throw new Error('Dieser offene Anlage-/Papierkorbauftrag muss vor dem Verlassen aufgeklärt werden.');
-  const token = context.token, values: PreparationEdit[] = [];
+  const token = context.token, request = preparationLoad, values: PreparationEdit[] = [];
   if (noteDraft && originalNote()) values.push({ kind: 'note', expectedRevision: noteDraft.revision, note: structuredClone(noteDraft) });
   if (planDraft && originalPlan()) values.push({ kind: 'plan', expectedRevision: planDraft.revision, plan: structuredClone(planDraft) });
   if (locationDraft && originalLocation()) values.push({ kind: 'location', expectedRevision: locationDraft.revision, document: structuredClone(locationDraft.document) });
+  // A handed-off command can own a different plan than the visible editor.
+  // Preserve that owner and any already retained later input as well.
+  if(failedCommand&&['note','plan','location'].includes(failedCommand.change.kind)){
+    const target=preparationTarget(failedCommand.change),key=draftKey(target.kind,target.id);
+    if(!values.some(value=>{const owner=preparationTarget(value);return owner.kind===target.kind&&owner.id===target.id;}))values.push(structuredClone(retained.get(key)?.change??failedCommand.change) as PreparationEdit);
+  }
   const drafts: PreparationDraft[] = [], clean: { kind: PreparationEdit['kind']; id: string; saved: PreparationDraft }[] = [];
   for (const change of values) {
     const target = preparationTarget(change), key = draftKey(target.kind, target.id);
     if (draftProblems.has(key)) continue;
     const failedTarget = failedCommand ? preparationTarget(failedCommand.change) : null;
     const failed = failedTarget?.kind === target.kind && failedTarget.id === target.id ? failedCommand : null;
-    const original = change.kind === 'note' ? originalNote() : change.kind === 'plan' ? originalPlan() : originalLocation()?.document;
+    const original = change.kind === 'note' ? noteRow(target.id)?.note : change.kind === 'plan' ? data.plans.find(plan=>plan.id===target.id) : data.locations.find(row=>row.document.id===target.id)?.document;
     const value = change.kind === 'note' ? change.note : change.kind === 'plan' ? change.plan : change.document;
     const changed = !equal(value, original) || change.kind === 'location' && change.expectedRevision !== originalLocation()?.revision;
     if (changed || failed) drafts.push({ version: 1, writeId: crypto.randomUUID(), change, failedCommand: failed });
@@ -89,7 +95,7 @@ async function retainOpenDrafts() {
   }
   if (drafts.length) unwrap(await window.campaign.keepPreparationDrafts(token, drafts));
   for (const item of clean) unwrap(await window.campaign.discardPreparationDraft(token, item.kind, item.id, item.saved.writeId));
-  if (context?.token !== token) return;
+  if (context?.token !== token || request !== preparationLoad) return;
   for (const saved of drafts) { const t = preparationTarget(saved.change); retained.set(draftKey(t.kind, t.id), saved); }
   for (const item of clean) retained.set(draftKey(item.kind, item.id), null);
   hasOpenInput = drafts.length > 0;
@@ -139,10 +145,10 @@ function renderProblems() {
   get('preparation-problems').textContent = problems.join('\n');
   get('preparation-problems').hidden = !problems.length;
 }
-async function change(change: PreparationChange, redraw = true, current:()=>boolean=()=>true): Promise<boolean> {
-  if (!context || blocked || !current()) return false;
+async function change(change: PreparationChange, redraw = true, stillCurrent:()=>boolean=()=>true): Promise<boolean> {
+  if (!context || blocked || !stillCurrent()) return false;
   if (changesPending.size) { tell('Vorherige Vorbereitung wird noch gespeichert.'); return false; }
-  const token = context.token;
+  const token = context.token, request = preparationLoad, current=()=>stillCurrent()&&context?.token===token&&preparationLoad===request;
   const target = preparationTarget(change), key = draftKey(target.kind, target.id);
   const command: PreparationCommand = { commandId: crypto.randomUUID(), token, campaignId: context.campaign.id, draftWriteId: retained.get(key)?.writeId, change };
   tell('Wird gespeichert…');
@@ -161,13 +167,13 @@ async function change(change: PreparationChange, redraw = true, current:()=>bool
       if (confirmed) planDraft = preservePlanInput(confirmed, sent, planDraft);
     }
     if (redraw) await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
-    renderProblems(); syncSaveControl(); tell('Gespeichert.'); return true;
+    if(!current())return false;renderProblems(); syncSaveControl(); tell('Gespeichert.'); return true;
   } catch (error) {
     if (context?.token !== token || !current()) return false;
     if (change.kind === 'plan' && planDraft?.id === change.plan.id && originalPlan()) planDraft = preservePlanInput(change.plan, originalPlan()!, planDraft);
     blocked = true; failedCommand = command; get('preparation-refresh').hidden = false; get('preparation-reconcile').hidden = false; syncSaveControl();
-    try { await retainOpenDrafts(); tell((error as Error).message + ' Entwurf gesichert. Kein automatischer Neuversuch.', true); }
-    catch (draftError) { tell((error as Error).message + ' Entwurf bleibt im Speicher: ' + (draftError as Error).message, true); }
+    try { await retainOpenDrafts(); if(!current())return false; tell((error as Error).message + ' Entwurf gesichert. Kein automatischer Neuversuch.', true); }
+    catch (draftError) { if(!current())return false; tell((error as Error).message + ' Entwurf bleibt im Speicher: ' + (draftError as Error).message, true); }
     return false;
   }
   finally { changesPending.delete(completion); complete(); }
@@ -348,21 +354,27 @@ function preservePlanInput(confirmed: ManualPlan, sent: ManualPlan, current: Man
         locationId: draft.locationId !== before.locationId ? draft.locationId : scene.locationId };
     }) };
 }
-let noteReferenceBusy:{owner:Workspace;run:number}|null=null, noteEditorGeneration=0,locationSectionsGeneration=0;
+async function changeNoteRelations(relations:Note['relations']){
+  const token=context?.token,id=selectedNote,request=preparationLoad;
+  if(!token||!noteDraft||noteDraft.id!==id||blocked||composing)return false;
+  noteDraft={...noteDraft,relations};renderRelations();schedule();
+  return await flushPreparation()&&context?.token===token&&request===preparationLoad&&selectedNote===id;
+}
+let noteEditorGeneration=0,locationSectionsGeneration=0;
 async function insertNoteTextReference(){
  const owner=context,token=owner?.token,campaignId=owner?.campaign.id,id=selectedNote,run=preparationLoad,editor=noteEditorGeneration,button=get<HTMLButtonElement>('note-text-reference'),area=get<HTMLTextAreaElement>('note-gm');
- if(!token||!id||!noteDraft||!button.isConnected||button.disabled||area.disabled||blocked||noteReferenceBusy?.owner===owner&&noteReferenceBusy.run===run)return;
+ if(!token||!id||!noteDraft||!button.isConnected||button.disabled||area.disabled||blocked)return;
  // Flush may confirm a revision, but cannot authorize a different text/selection.
  const before=noteDraft.gmNotes,input=area.value,start=area.selectionStart,end=area.selectionEnd,alias=input.slice(start,end);
  const current=()=>context===owner&&context?.token===token&&context?.campaign.id===campaignId&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id&&!!noteDraft&&noteDraft.gmNotes===before&&area.isConnected&&!area.disabled&&!blocked;
- const busy={owner:owner!,run};noteReferenceBusy=busy;button.disabled=true;
+ button.disabled=true;
  try{
   if(!await flushPreparation()||!current())return;
   const link=await chooseTextReference(token,alias,current);if(!link||!current())return;
   const from=rawTextOffset(before,start),to=rawTextOffset(before,end);
   noteDraft={...noteDraft!,gmNotes:before.slice(0,from)+link+before.slice(to)};area.value=noteDraft.gmNotes;schedule();area.focus();const caret=start+link.replace(/\r\n/g,'\n').length;area.setSelectionRange(caret,caret);
  }catch(error){if(current())tell((error as Error).message,true);}
- finally{if(noteReferenceBusy===busy)noteReferenceBusy=null;if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
+ finally{if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
 }
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string) => Promise<void>) {
   tell = status;
@@ -436,14 +448,18 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
   })(); };
   get('preparation-apply').onclick = () => { void flushPreparation(); };
   get('preparation-reconcile').onclick = () => { void (async () => {
-    if (!failedCommand) return;
+    const command=failedCommand,token=context?.token,request=preparationLoad;
+    if(!command||!token)return;
+    const owns=()=>context?.token===token&&preparationLoad===request;
+    const current=()=>owns()&&failedCommand===command;
     try {
-      const result = unwrap(await window.campaign.reconcilePreparation(failedCommand, context?.token));
+      const result = unwrap(await window.campaign.reconcilePreparation(command, token));
+      if(!current())return;
       if (result.targetChanged || result.outcome === 'conflict') {
         tell(result.outcome === 'applied' ? 'Speicherung bestätigt, aber der aktuelle Vorbereitungsstand ist verändert oder nicht verlässlich lesbar. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.' : 'Vorbereitungskonflikt bestätigt. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.', true); return;
       }
       usePreparation(result.data);
-      const change = failedCommand.change;
+      const change = command.change;
       const targetId = change.kind === 'note' ? change.note.id : change.kind === 'plan' ? change.plan.id : change.kind === 'location' ? change.document.id : change.id;
       const target = preparationTarget(change), key = draftKey(target.kind, target.id), saved = retained.get(key);
       if (saved) {
@@ -451,15 +467,16 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
         if (revision === undefined) throw new Error('Der Entwurfsstand ist nicht lesbar.');
         const rebased: PreparationEdit = saved.change.kind === 'note' ? { ...saved.change, expectedRevision: revision, note: { ...saved.change.note, revision } } : saved.change.kind === 'plan' ? { ...saved.change, expectedRevision: revision, plan: { ...saved.change.plan, revision } } : { ...saved.change, expectedRevision: revision };
         const next: PreparationDraft = { version: 1, writeId: crypto.randomUUID(), change: rebased, failedCommand: null };
-        unwrap(await window.campaign.keepPreparationDrafts(context!.token, [next])); retained.set(key, next);
+        unwrap(await window.campaign.keepPreparationDrafts(token, [next])); if(!current())return;retained.set(key, next);
       }
       if ((change.kind === 'note' || change.kind === 'note-trash') && noteDraft?.id === targetId && originalNote()) noteDraft = { ...noteDraft, revision: originalNote()!.revision };
       if (change.kind === 'plan' && planDraft?.id === targetId && originalPlan()) planDraft = { ...planDraft, revision: originalPlan()!.revision };
       if ((change.kind === 'location' || change.kind === 'location-trash') && locationDraft?.document.id === targetId && originalLocation()) locationDraft = { ...locationDraft, revision: originalLocation()!.revision };
       blocked = false; failedCommand = null; get('preparation-reconcile').hidden = true; get('preparation-refresh').hidden = true;
       await retainOpenDrafts();
+      if(!owns())return;
       tell(result.outcome === 'applied' ? 'Speicherung der Vorbereitung bestätigt. Weitere Eingaben bleiben offen.' : 'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.');
-    } catch (error) { tell((error as Error).message + ' Status bleibt ungeklärt.', true); }
+    } catch (error) { if(owns())tell((error as Error).message + ' Status bleibt ungeklärt.', true); }
   })(); };
   get('preparation-refresh').onclick = () => { void (async () => {
     try {
@@ -478,12 +495,11 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     if (plan && visit && await flushPreparation() && context?.token === token && offerVisit) await offerVisit(plan, visit);
   })(); };
   get('relation-add').onclick = () => { void (async () => {
-    const token = context?.token;
-    if (pending && !(await pending)) return;
-    if (!noteDraft || context?.token !== token || blocked) return;
-    const label = value('relation-label'); if (!label.trim() || !value('relation-target')) { tell('Wähle ein Ziel und benenne die Beziehung.', true); return; }
-    const next = { ...noteDraft, relations: [...noteDraft.relations, { targetId: campaignLocalId(value('relation-target')), label }] };
-    if (await change({ kind: 'note', expectedRevision: next.revision, note: next }, false)) { get<HTMLInputElement>('relation-label').value = ''; renderNotes(); }
+    if(!noteDraft||blocked)return;
+    const label=value('relation-label'),target=value('relation-target');
+    if(!label.trim()||!target){tell('Wähle ein Ziel und benenne die Beziehung.',true);return;}
+    if(noteDraft.relations.some(relation=>relation.targetId===target&&relation.label===label)){tell('Diese Beziehung besteht bereits.');return;}
+    if(await changeNoteRelations([...noteDraft.relations,{targetId:campaignLocalId(target),label}])&&value('relation-label')===label)get<HTMLInputElement>('relation-label').value='';
   })(); };
   get('scene-location').onchange = () => { if (!planDraft) return; const locationId = value('scene-location') ? campaignLocalId(value('scene-location')) : null; planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, locationId } : s) }; get<HTMLButtonElement>('scene-open-location').disabled = !locationId; schedule(); };
   get('scene-open-location').onclick = () => { void (async () => { if (!(await flushPreparation())) return; const scene = originalPlan()?.scenes.find(s => s.id === selectedScene); if (!scene?.locationId) return; const row = data.locations.find(row => row.document.id === scene.locationId); if (!row) { tell('Szenenort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; } selectedLocation = scene.locationId; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations(); })(); };
@@ -500,22 +516,23 @@ export async function createNarrativeAtLocation(locationId:string,name:string,ki
  const saved=unwrap(await window.campaign.narrative(w.token,note.id));if(context?.token!==w.token||saved.state.locationId!==locationId)throw new Error('Notiz angelegt; Ortsbindung im narrativen Bereich prüfen.');
  get('note-title').scrollIntoView({block:'center'});get('note-read-aloud').focus();return note.id;
 }
-export async function openPreparedNote(id:string) {
-  const token = context?.token;
-  if (!token || !await flushPreparation() || context?.token !== token) return;
+export async function openPreparedNote(id:string,stillCurrent=()=>true) {
+  const token = context?.token,request=preparationLoad,current=()=>context?.token===token&&preparationLoad===request&&stillCurrent();
+  if (!token || !await flushPreparation() || !current()) return;
   const next = unwrap(await window.campaign.preparation(token, ''));
-  if (context?.token !== token) return;
+  if (!current()) return;
   usePreparation(next);
   const row = noteRow(id);
   if (!row) { tell('Weltinhalt nicht verfügbar.', true); return; }
   get<HTMLInputElement>('world-search').value = '';
   selectedNote = id; get<HTMLInputElement>('world-trash').checked = row.trashed;
   showLocations(false); await renderNotes();
-  if (context?.token === token) revealNote(id);
+  if (current()) revealNote(id);
 }
 export async function prepareNoteLocation(id:string,locationId:string){const token=context?.token;await openPreparedNote(id);if(!token||context?.token!==token||selectedNote!==id)throw new Error('Auftrag für Ortsbindung nicht verfügbar.');await prepareNarrativeLocation(token,id,locationId);tell('Zielort in den narrativen Angaben vorbelegt. Speichern bestätigt die Ortsbindung.');}
-export async function openPreparedLocation(id: string) {
-  if (!(await flushPreparation())) return;
+export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
+  const token=context?.token,request=preparationLoad;
+  if (!token||!(await flushPreparation())||context?.token!==token||preparationLoad!==request||!stillCurrent()) return;
   const row = data.locations.find(row => row.document.id === id);
   if (!row) { tell('Ort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; }
   selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations();
@@ -527,25 +544,31 @@ export async function openPreparedVisit(planId:string,visitId:string,current:()=
   usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
-export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null},stillCurrent:()=>boolean=()=>true){
-  const owner=context,token=owner?.token,epoch=preparationLoad,input={...seed};
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean},stillCurrent:()=>boolean=()=>true){
+  const owner=context,token=owner?.token,epoch=preparationLoad,input=structuredClone(seed);
   const current=()=>context===owner&&context?.token===token&&preparationLoad===epoch&&stillCurrent();
   if(!token||!current()||!await flushPreparation()||!current())throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
   const selection=[selectedPlan,selectedScene,selectedNote,selectedLocation],edit=preparationInputVersion;
   const sameInput=()=>preparationInputVersion===edit&&selectedPlan===selection[0]&&selectedScene===selection[1]&&selectedNote===selection[2]&&selectedLocation===selection[3]&&!blocked&&!composing;
-  const requested=planId??selectedPlan,shown=data.plans.find(plan=>plan.id===requested);
+  const requested=input.newPlan?null:planId??selectedPlan,shown=data.plans.find(plan=>plan.id===requested);
   const next=unwrap(await window.campaign.preparation(token,''));
-  if(!current()||!sameInput())throw new Error('Vorbereitung inzwischen geändert. Offene Eingaben bleiben erhalten; Besuch erneut ausdrücklich vorbereiten.');
-  const target=requested?next.plans.find(plan=>plan.id===requested):next.plans.find(plan=>plan.id===next.selection.planId)??next.plans[0];
-  if(requested&&!target)throw new Error('Der gewählte Spielabendplan ist nicht mehr verfügbar. Vorbereitung erneut öffnen.');
+  if(!current())return;
+  if(!sameInput())throw new Error('Vorbereitung inzwischen geändert. Offene Eingaben bleiben erhalten; Besuch erneut ausdrücklich vorbereiten.');
+  const target=input.newPlan?undefined:requested?next.plans.find(plan=>plan.id===requested):next.plans.find(plan=>plan.id===next.selection.planId)??next.plans[0];
+  if(requested&&!target)throw new Error('Ausgewählter Spielabendplan nicht verfügbar. Vorbereitung erneut öffnen.');
   if(shown&&shown.revision!==target?.revision)throw new Error('Spielabendplan inzwischen geändert. Vorbereitung erneut öffnen.');
   if(input.beforeVisitId&&!target?.scenes.some(scene=>scene.id===input.beforeVisitId))throw new Error('Der gewählte Besuch als Einfügeposition ist nicht mehr verfügbar. Vorbereitung erneut öffnen.');
+  if(target){
+    const saved=await loadedDraft('plan',target.id);
+    if(!current()||!sameInput()||saved||draftProblems.has(draftKey('plan',target.id)))throw new Error('Offener Planentwurf oder ursprünglicher Auftrag vorhanden. Im Zielplan zuerst prüfen; kein neuer Besuch wurde angelegt.');
+  }
   usePreparation(next);
   const id=campaignLocalId(crypto.randomUUID()),scene={id,title:input.title,notes:input.notes,locationId:input.locationId?campaignLocalId(input.locationId):null};
   const plan:ManualPlan=target?{...target,scenes:[...target.scenes]}:{version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[]};
   const at=input.beforeVisitId?plan.scenes.findIndex(row=>row.id===input.beforeVisitId):plan.scenes.length;
   const scenes=[...plan.scenes];scenes.splice(at,0,scene);
-  const saved=await change({kind:'plan',expectedRevision:target?.revision??null,plan:{...plan,scenes}},false,current);
+  const opening=input.readAloud||input.noteIds?.length?{visitId:id,readAloud:input.readAloud??'',noteIds:[...new Set(input.noteIds??[])]}:undefined;
+  const saved=await change({kind:'plan',expectedRevision:target?.revision??null,plan:{...plan,scenes},...(opening?{opening}:{})},false,current);
   if(!current())return;
   if(!saved)throw new Error('Nächster Besuch konnte nicht bestätigt werden. Speicherstatus der Vorbereitung prüfen.');
   // The writer retains input made while its reply was pending. Do not discard
@@ -632,18 +655,19 @@ function renderLocationMapActions() {
 }
 function renderRelations() {
   const row = noteRow(selectedNote); get('note-relations').replaceChildren(); get('note-incoming').replaceChildren();
-  const select = get<HTMLSelectElement>('relation-target'); select.replaceChildren();
+  const select = get<HTMLSelectElement>('relation-target'),previousTarget=select.value;select.replaceChildren();
   for (const target of campaignNotes.values()) { if (target.trashed || target.note.id === selectedNote) continue; const option = document.createElement('option'); option.value = target.note.id; option.textContent = target.note.title; select.append(option); }
+  if([...select.options].some(option=>option.value===previousTarget))select.value=previousTarget;
   get('relation-create').hidden = !row || row.trashed || !select.options.length;
-  if (!row) return; const token = context?.token;
-  const navigate = (id: string) => { void (async () => { if (context?.token !== token || !(await flushPreparation()) || context?.token !== token) return; selectedNote = id; showLocations(false); await renderNotes(); if (context?.token === token) revealNote(id); })(); };
-  for (const relation of row.note.relations) {
+  if (!row) return; const token=context?.token,request=preparationLoad,current=()=>context?.token===token&&request===preparationLoad&&selectedNote===row.note.id;
+  const navigate = (id: string) => { void (async () => { if(!current()||!await flushPreparation()||!current())return; selectedNote = id; showLocations(false); await renderNotes(); if (context?.token === token) revealNote(id); })(); };
+  for (const relation of (noteDraft?.id===row.note.id?noteDraft:row.note).relations) {
     const target = noteRow(relation.targetId), item = document.createElement('div'), button = document.createElement('button');
-    button.textContent = `${relation.label}: ${target?.note.title ?? 'Ziel nicht verfügbar'}${target?.trashed ? ' (Papierkorb)' : ''}`; button.disabled = !target; button.onclick = () => navigate(relation.targetId); item.append(button);
-    if (!row.trashed) { const remove = document.createElement('button'); remove.textContent = 'Beziehung lösen'; remove.onclick = () => { void (async () => { if (!noteDraft || context?.token !== token) return; const next = { ...noteDraft, relations: noteDraft.relations.filter(r => r.targetId !== relation.targetId || r.label !== relation.label) }; if (await change({ kind: 'note', expectedRevision: next.revision, note: next }, false)) renderNotes(); })(); }; item.append(remove); }
+    button.textContent = `${relation.label}: ${target?.note.title ?? 'Ziel nicht verfügbar'}${target?.trashed ? ' (Papierkorb)' : ''}`; button.disabled = !target; button.onclick = () => {if(button.isConnected)navigate(relation.targetId);}; item.append(button);
+    if (!row.trashed) { const remove = document.createElement('button'); remove.textContent = 'Beziehung lösen'; remove.onclick=()=>{if(current()&&remove.isConnected&&noteDraft)void changeNoteRelations(noteDraft.relations.filter(r=>r.targetId!==relation.targetId||r.label!==relation.label));}; item.append(remove); }
     get('note-relations').append(item);
   }
-  for (const source of campaignNotes.values()) { if (!source.note.relations.some(relation => relation.targetId === selectedNote)) continue; const button = document.createElement('button'); button.textContent = `Verweis von ${source.note.title}${source.trashed ? ' (Papierkorb)' : ''}`; button.onclick = () => navigate(source.note.id); get('note-incoming').append(button); }
+  for (const source of campaignNotes.values()) { if (!source.note.relations.some(relation => relation.targetId === selectedNote)) continue; const button = document.createElement('button'); button.textContent = `Verweis von ${source.note.title}${source.trashed ? ' (Papierkorb)' : ''}`; button.onclick = () => {if(button.isConnected)navigate(source.note.id);}; get('note-incoming').append(button); }
 }
 function initLocationActions() {
   for (const [id, show] of [['knowledge-tab', false], ['locations-tab', true]] as const) get(id).onclick = () => { void (async () => { if (await leavePreparation()) showLocations(show); })(); };

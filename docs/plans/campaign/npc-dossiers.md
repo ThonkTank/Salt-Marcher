@@ -108,3 +108,9 @@ native Appwiederaufnahme sind getrennte Belege; vollständige Produktabnahme,
 native Wiederaufnahme und Erreichbarkeit bleiben offen. Die lokalen Faultproben
 belegen den engeren Originalauftrag-/Rohentwurfsvertrag; sie sind keine vollständige
 Produkt- oder Datenlebenszyklusabnahme.
+
+### Desktop-Arbeitsstand 0.103: Wohn- und Arbeitsort wechseln
+
+NSC-Schauplätze öffnen eine kampagnenweite Hausauswahl. Der bestehende Stadtinspektor bereitet Wohn-/Arbeitsbindung und optional einen neuen Haushalts-/Berufsnamen vor. Speichern löst die bisherige Bindung auch in einer anderen Stadt und setzt die neue in derselben Transaktion. Nur die Mitgliedschaft dieses NSC wird aus bisherigen Haushalts-/Berufseinträgen entfernt; andere Mitglieder und die benannten Einträge bleiben bestehen. Die aktuelle Position wird dabei nicht bewegt.
+
+Der gemeinsame Historienschritt ist aus beiden beteiligten Städten rückgängig machbar und wiederholbar. Spätere Änderungen einer beteiligten Stadt müssen zuvor rückgängig gemacht werden. Veränderte Quellrevisionen brechen den vorbereiteten Wechsel ohne Teiländerung ab; die Hausauswahl dann neu öffnen. Dies beschreibt den implementierten Ablauf, keine Gesamtproduktabnahme.

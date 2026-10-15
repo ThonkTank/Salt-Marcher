@@ -18,7 +18,7 @@ export function validateEncounterPlanInput(input:EncounterPlan):void {
     if(!e||!e.id||ids.has(e.id)||!Number.isSafeInteger(e.count)||e.count<1||e.count>1000||typeof e.grouped!=='boolean')
       throw new Error('Ungültiger Encounter-Eintrag.');
     ids.add(e.id);if(e.allowAnonymous!==undefined&&typeof e.allowAnonymous!=='boolean')throw new Error('Ergänzbare NPC-Gruppe prüfen.');
-    if(e.worldActorIds){if(!Array.isArray(e.worldActorIds)||e.worldActorIds.length>e.count||new Set(e.worldActorIds).size!==e.worldActorIds.length||e.worldActorIds.some(id=>typeof id!=='string'||!id||actors.has(id)))throw new Error('Benannte NPCs benötigen eindeutige Weltfiguren, jede nur einmal.');for(const id of e.worldActorIds)actors.add(id);}
+    if(e.worldActorIds){if(!Array.isArray(e.worldActorIds)||e.worldActorIds.length>e.count||e.worldActorIds.length<e.count&&e.allowAnonymous!==true||new Set(e.worldActorIds).size!==e.worldActorIds.length||e.worldActorIds.some(id=>typeof id!=='string'||!id||actors.has(id)))throw new Error('Benannte NPCs benötigen eindeutige Weltfiguren, jede nur einmal.');for(const id of e.worldActorIds)actors.add(id);}
     if(e.actorNames!==undefined&&(!Array.isArray(e.actorNames)||e.actorNames.length!==(e.worldActorIds?.length??0)||e.actorNames.some(n=>typeof n!=='string'||n.length>1000)))throw new Error('NPC-Namen im Vorschlag prüfen.');
   }
 }

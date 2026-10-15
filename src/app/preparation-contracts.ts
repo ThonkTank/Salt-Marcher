@@ -12,7 +12,7 @@ export type PreparationChange =
   | { kind: 'note-trash'; id: string; expectedRevision: number; trashed: boolean }
   | { kind: 'location'; expectedRevision: number | null; document: LocationDocument }
   | { kind: 'location-trash'; id: string; expectedRevision: number; trashed: boolean }
-  | { kind: 'plan'; expectedRevision: number | null; plan: ManualPlan };
+  | { kind: 'plan'; expectedRevision: number | null; plan: ManualPlan; opening?:{visitId:string;readAloud:string;noteIds:string[]} };
 export interface PreparationCommand { commandId: string; token: string; campaignId?: string; draftWriteId?: string; change: PreparationChange }
 export type PreparationEdit = Extract<PreparationChange, { kind: 'note' | 'plan' | 'location' }>;
 export interface PreparationDraft { version: 1; writeId: string; change: PreparationEdit; failedCommand: PreparationCommand | null }
@@ -73,7 +73,11 @@ export function validatePreparation(change: PreparationChange) {
     if ([note.title, note.readAloud, note.gmNotes].some(text => text.length > 2_000_000)) throw new Error('Ein Notizfeld ist für diesen Anschluss zu groß.');
     return { ...change, note };
   }
-  if (change.kind === 'plan') return { ...change, plan: manualPlan(change.plan) };
+  if (change.kind === 'plan') {
+    const plan=manualPlan(change.plan),o=change.opening;
+    if(o!==undefined&&(!o||!plan.scenes.some(scene=>scene.id===o.visitId)||typeof o.readAloud!=='string'||o.readAloud.length>2000000||!Array.isArray(o.noteIds)||o.noteIds.length>1000||o.noteIds.some(id=>typeof id!=='string'||!id||id.length>1000)))throw new Error('Ungültige Einstiegstexte oder Ortsquellen.');
+    return {...change,plan};
+  }
   if (change.kind === 'location') return { ...change, document: checkedLocationDocument(change.document) };
   if (!['note-trash', 'location-trash'].includes(change.kind) || !('id' in change) || typeof change.id !== 'string' || typeof change.trashed !== 'boolean' || !Number.isSafeInteger(change.expectedRevision)) throw new Error('Ungültige Vorbereitungsänderung.');
   return change;

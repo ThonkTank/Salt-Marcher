@@ -111,7 +111,7 @@ for(const applied of [false,true])test(`independent campaign copy preserves ${ap
 test('an original NPC receipt never replaces a newer confirmed profile while resolving the contact',async()=>{
  const x=await fixture();try{
   x.input('npc-contact','Eigene Beobachtung');assert(await x.ui.flushNpcs());const original=window.campaign.executeNpc;window.campaign.executeNpc=async c=>{await original(c);throw new Error('Antwort verloren');};x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.messages.includes('Antwort verloren'));
-  const v=x.store.npc(x.w.token,x.a.id);x.store.changePreparationContent({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,change:{kind:'note',note:{version:1,id:v.id,revision:v.noteRevision,kind:'npc',title:'Neuer Name',readAloud:v.readAloud,gmNotes:'Spätere Notiz',relations:[],creatureId:null,deleted:false},expectedRevision:v.noteRevision}});
+  const v=x.store.npc(x.w.token,x.a.id);x.store.changePreparation({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,change:{kind:'note',note:{version:1,id:v.id,revision:v.noteRevision,kind:'npc',title:'Neuer Name',readAloud:v.readAloud,gmNotes:'Spätere Notiz',relations:[],creatureId:null,deleted:false},expectedRevision:v.noteRevision}});
   x.el('npc-write-check').onclick();await until(()=>!x.el('npc-name').disabled&&!x.el('npc-name').readOnly);assert.equal(x.el('npc-name').value,'Neuer Name');assert.equal(x.el('npc-gmNotes').value,'Spätere Notiz');assert.equal(x.el('npc-history').value,'Eigene Beobachtung');assert.equal(x.writes.length,1);
  }finally{await x.cleanup();}
 });

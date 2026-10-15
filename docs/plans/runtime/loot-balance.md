@@ -1,6 +1,6 @@
 # Gemeinsame Beutewertung für Ledger und Bilanz
 
-Stand: 14.10.2026. Ergänzt den [Katalog-/Rewardvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#nächster-anschluss-für-abschluss-rewards-und-handel).
+Stand: 14.10.2026. Ergänzt den [Katalog-/Itemvertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider).
 
 ## Fachregel und ausführbarer Stand
 
@@ -12,208 +12,115 @@ Korrekturen erhalten erklärende Geschichte. Der Quellenhash entspricht
 `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e` im Register.
 
 `storage/progression.ts` verwendet für `readLedger` und `readLootBalance`
-dieselbe `ledgerRewardValue`-Berechnung innerhalb einer Lesetransaktion:
+dieselbe `checkedLedgerRow`-Prüfung und `ledgerRewardValue`-Berechnung innerhalb einer Lesetransaktion:
 aktuelle geprüfte Itemdefinition, tatsächlicher Erlös bei Verkauf und bestehende
 Herkunftskette bei Weitergaben. Die beim Erstgrant vergebene Gutschrift wird
 auch über mehrere Besitzer und Teilmengen genau einmal bewertet. Käufe und
 Transferempfang begründen keine neue Belohnung. Profile kommen aus dem bereits
 geprüften Charakterreader; ungeprüfte Profiltexte gelangen nicht in die Bilanz.
 
-Gegenproben fanden alte Itempreise, ignorierte unbekannte/beschädigte aktuelle
-Definitionen und ungeprüfte Profile in der zuvor gesonderten Bilanzberechnung.
-Ein kontrollierter DOM-Test zeigte außerdem, dass eine verspätete A-Bilanz in
-Kampagne B erschien. Bilanzreads binden nun Aktivierung, Token und Lesereihenfolge.
-Bei offenen Werten zeigt die UI Teilwerte und einen offenen Vergleich; eine
-Empfängerempfehlung bleibt aus. Eine fehlende Bewertung wird nicht als null
-ausgegeben. `copper` ist bei `unknownEntries > 0` ausdrücklich nur der bekannte
-Teilbetrag; `gapCopper` darf dann nicht als vollständiger Abstand dargestellt werden.
+Bilanzreads binden Aktivierung, Token und Lesereihenfolge. Bei offenen Werten
+zeigt die UI Teilwerte und einen offenen Vergleich; eine Empfängerempfehlung
+bleibt aus. Vollständige Werte berücksichtigen alle gleichauf zurückliegenden
+Figuren; Gleichstand an der Spitze bleibt neutral. `copper` ist bei
+`unknownEntries > 0` nur der bekannte Teilbetrag; `gapCopper` darf dann nicht
+als vollständiger Abstand dargestellt werden.
 
-Fünf SQLite-Prüfungen (`desktop-loot-balance.test.mjs`) decken aktuelle Preise,
-mehrfache/partielle Weitergabe mit Verkauf, Fresh, Purchaseausschluss, Nullstapel,
-beschädigte und wertlose Definitionen sowie Profilintegrität ab. Zwei kontrollierte
-DOM-Prüfungen (`desktop-loot-balance-dom.test.mjs`) belegen Kontextschutz und die
-offene Anzeige. Zusammen mit 42 bestehenden Shop-/Ledgerprüfungen bestanden
-49 Tests und der Desktop-Typecheck. Das ist lokale Store-/DOM-Evidenz; eine
-native Bedienabnahme oder vollständige Rewardqualifikation folgt daraus nicht.
+[Storeprüfungen](../../../tests/desktop-loot-balance.test.mjs) decken aktuelle
+Preise, Weitergaben mit Verkauf, Fresh, Käufe, Nullstapel, unbekannte Werte und
+Profilintegrität ab. [DOM-Prüfungen](../../../tests/desktop-loot-balance-dom.test.mjs)
+prüfen Kontextwechsel und die offene Anzeige. Native Bedienabnahme und
+vollständige Rewardqualifikation bleiben offen.
 
-## Neuer Sessionanschluss vom 14.10.2026
+## Sessionvorschläge
 
-`storage/session-rewards.ts` verbindet jetzt bestätigte Roster-XP, effektive
-Ledgerwerte und die Fortschrittskurve des wirksamen Presets mit dem erwarteten
-Session-XP. `applyLootGuidance` verteilt daraus Vorschlagsbudgets;
-`fitRewardItems` erhält passende Tabellenitems und füllt den Rest mit Münzen.
-Der Sessionwriter/Editor trägt die Quellenbasis weiter. Dieser integrierte
-Anschluss ersetzt die frühere Aussage, es gebe noch keinen XP-basierten Code.
-Er ist noch kein Beleg für vollständige D&D-2014-Guidance, Transfer-/Korrektur-
-semantik oder sämtliche editierbaren und wiederaufgenommenen Vorschläge.
+`storage/session-rewards.ts` verbindet bestätigte Roster-XP, geprüfte Ledgerwerte
+und die Fortschrittskurve des wirksamen Presets mit den erwarteten Session-XP.
+Goldbudgets werden auf die Vorschläge verteilt; passende Tabellenitems bleiben
+erhalten, der Rest wird mit Münzen ergänzt. Optional berechnet `session-magic.ts`
+kumulative Seltenheitsquoten und ergänzt revisionierte Katalogdefinitionen.
+Fehlende Seltenheiten bleiben mit Warnung offen.
 
-Der ebenfalls integrierte `storage/session-magic.ts` berechnet optionale
-kumulative Seltenheitsquoten vor/nach erwartetem XP, zieht erhaltene magische
-Beute ab und verteilt den offenen Zielbetrag auf Vorschläge. `fitMagicItems`
-erhält passende Tabellenitems und ergänzt revisionierte Katalogdefinitionen;
-fehlende Seltenheiten bleiben mit Warnung offen. Sessioneditor und Writer tragen
-`SessionMagicGuidance` weiter. Diese Aussage ist Codebefund, keine vollständige
-Magie-/Quellen-/Bedienqualifikation.
+Erzeugung, Lesen und Sicherung prüfen dieselbe gespeicherte Rechnung:
+Presetidentität, Figuren, Erwartung vor/nach dem Abend, erhaltene Beute, Differenz,
+Ziel und Szenenanteile. Spätere XP-, Preis- oder Rewardänderungen schreiben diese
+ursprüngliche Rechnung nicht um. Die Quellledger verwenden `checkedLedgerRow`;
+kein zusätzlicher Ledgerreader. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
+und [Rewardprüfungen](../../../tests/desktop-session-reward-integrity.test.mjs)
+belegen beschädigte Daten, atomaren Generatorrollback, Weitergaben mit Verkauf,
+Käufe, Definition-/Mengenkorrekturen, Überschuss, Fresh und unabhängige Kopie.
+Quellpaket und vorhandene Sicherungen bleiben unverändert.
 
-## Gemeinsame Integritätsprüfung am Session-Rewardanschluss
-
-Der neue Sessionreader verwendete eine eigene Prüfsummen-/JSONleseoperation.
-Dadurch passierten korrekt gehashte Ledgerpayloads mit ungültigem Status,
-Herkunft oder Mengentyp sowie widersprüchlicher ID, Figurenidentität oder
-Revision. Sie konnten Gold-/Magieziele beeinflussen und einen Sessionrun erzeugen.
-`sessionLootGuidance` verwendet nun `progression.ts.checkedLedgerRow`, denselben
-Reader wie Ledger, Bilanz und Backup. Die vorhandenen Wert-/Herkunftsregeln
-bleiben maßgeblich; keine neue Validatorvariante, Migration oder Datenreparatur.
-
-Neun Storeprüfungen in `desktop-session-reward-integrity.test.mjs` belegen die
-sechs beschädigten Formen in beiden Guidancewegen. Der echte Sessiongenerator
-rollt seine vorher erzeugten Teilruns bei beschädigter Beute zurück; nach
-Wiederherstellung gültiger Fixturebytes gelingt die Generierung und ihr Run
-bleibt nach Fresh identisch. Mehrfache/partielle Weitergabe mit Verkauf zählt die
-magische Menge genau einmal zur Erstvergabe, Käufe nicht. Aktuelle Definitions-
-und Mengenberichtigungen ändern die Guidance ohne Umdeutung der aufgezeichneten
-Ledgerrevision. Fresh und unabhängige Campaignkopie erhalten Credit/Mengen und
-unveränderte Quellpaketbytes. Die isolierten Guidanceproben besitzen keinen
-zusätzlichen Produktwriter; der Generatorrollback ist ausdrücklich separat geprüft.
-
-Das schließt diesen Integritätsanschluss lokal. Vollständige Seltenheits-/Profil-
-ableitung, sämtliche Quellenbindungen sowie native UI/Prozessabbruch bleiben offen.
-Die inzwischen ergänzte Prüfung geänderter Annahmegrundlagen folgt unten. Insbesondere werden magische Werte im
-Gold-only-Modus aktuell monetär berücksichtigt, im kombinierten Modus dagegen
-nach Seltenheit. Diese Moduskopplung braucht eine ausdrückliche Fachentscheidung
+Vollständige Regel-/Profilherleitung, vollständige Quellenbindungen
+und native Bedien-/Prozessabbruchprüfung bleiben offen. Magische
+Werte werden im Gold-only-Modus monetär, im kombinierten Modus nach Seltenheit
+berücksichtigt. Diese Moduskopplung braucht eine ausdrückliche Fachentscheidung
 gegen das versionierte Profil, bevor bestehende Vorschläge umgedeutet werden.
 
 ## Aktuelle Grundlage vor Vorschlagsannahme
 
-`SessionLootGuidance.basis` enthält jetzt die beobachteten IDs/Revisionen der
-vergebenden Ledgerwurzeln und ihrer aktuellen Definitionen. Kauffakten und
-Transferempfang erzeugen keinen neuen Rewardcredit und invalidieren die Grundlage
-nicht allein durch ihre Aufnahme. Bestehende Leser prüfen deren Integrität weiter.
-Die Grundlage ist ein strukturierter Teil des vorhandenen Sessionruns, kein
-zusätzlicher Ledgerstand und kein opaker ID-Hash. Campaignkopien remappen ihre
-Referenzen über die vorhandenen Slots; beim Vergleich werden ungeordnete
-Referenzlisten normalisiert.
+`SessionLootGuidance.basis` speichert die beobachteten IDs/Revisionen der
+vergebenden Ledgerwurzeln und ihrer Definitionen. Käufe und Transferempfang
+begründen keinen neuen Rewardcredit. Campaignkopien remappen strukturierte
+Referenzen; der Vergleich normalisiert ungeordnete Listen.
 
-`assertSessionRewardBasisCurrent` bindet eine neue Annahme an die aktuelle
-Planungspartyrevision und, bei automatischem Ausgleich, an den erneut gelesenen
-Fortschritts-/XPstand, die effektiven Credits/Magiezahlen, Preset und
-aufgezeichnete Ledger-/Definitionsrevisionen. Die tatsächlich ausgewählten
-Rewardreferenzen müssen noch derselben verfügbaren Katalogrevision entsprechen.
-Ein ausdrücklich gewählter Magiebeutepool wird ebenfalls vollständig mit
-`checkedMagicPool` erneut geprüft. Das betrifft auch aktuell nicht verteilte
-Poolgegenstände: geänderte Revision oder Papierkorb invalidiert diese
-Quellenauswahl, statt sie bei der Annahme stillschweigend zu verkleinern.
-Die Prüfung läuft vor Timeline-/Gruppen-/Reward-/Acceptancewirkungen im
-bestehenden Writer. Sie ersetzt keine Items, ändert keine Budgets und schreibt
-keine älteren Vorschläge um. Bestätigungsreplay und bereits angenommene Inhalte
-behalten den ursprünglichen Ergebnisweg. Ältere geführte Runs ohne prüfbare
-Grundlage bleiben lesbar; ihre neue Annahme verlangt eine neue Vorschau.
-Es gibt keine Migration und keine automatische Neubindung an heutige Revisionen.
+`assertSessionRewardBasisCurrent` prüft vor der Übernahme Planungspartyrevision,
+**bestätigte XP**, effektive Credits/Magiezahlen, Preset, Ledger-/Definitionsbasis
+und gewählte Rewardreferenzen. Ein eigener Magiebeutepool wird vollständig mit
+`checkedMagicPool` geprüft, auch seine aktuell nicht verteilten Gegenstände.
+Reine HP-, Heilungs- und Raständerungen der Party-Figuren invalidieren die
+Beutegrundlage nicht. Die
+aufgezeichneten Fortschrittsrevisionen bleiben als historische Metadaten erhalten.
 
-Ergänzende Storeproben in `desktop-session-reward-integrity.test.mjs` belegen
-XP-/Beute-/gleichwertige Mengen-/Seltenheits-/Planungspartykonflikte ohne
-Teilwirkung, eine geänderte zusätzlich gewählte Katalogdefinition sowie gültige
-Annahme nach Fresh und unabhängiger Kopie. Receipt-Replay nach späterer
-XPänderung, unbeeinflusste andere Figuren/Käufe und der ungeführte manuelle
-Vorschlag bleiben wirksam. Ein eigener Gegenbefund am neuen Prüfweg zeigte
-zunächst unnötige Invalidierung durch einen Kauf; die Eingabebasis zählt jetzt
-nur Rewardwurzeln. Native Interaktion und gesamte Guidanceabnahme bleiben offen.
+Die Prüfung läuft vor Timeline-, Gruppen- und Rewardwirkungen. Sie verändert
+keine Budgets oder Autoreninhalte. Bestätigungsreplay und bereits angenommene
+Inhalte behalten den ursprünglichen Ergebnisweg. Ältere geführte Runs ohne
+prüfbare Grundlage bleiben lesbar; eine neue Übernahme verlangt eine neue Vorschau.
 
-Drei zusätzliche Poolproben belegen Zurückweisung geänderter oder entfernter,
-aktuell nicht verteilter Poolquellen ohne Teilwirkungen sowie gültige Annahme
-mit unverändertem Pool nach Fresh und unabhängiger Kopie. Zwei Gegenproben
-scheiterten vor diesem Integrationsanschluss an der fehlenden Zurückweisung.
+[Storeprüfungen](../../../tests/desktop-session-reward-integrity.test.mjs) belegen
+geänderte XP, Beute, Katalog-/Poolquellen und Planungsparty ohne Teilwirkung,
+Annahme nach unabhängiger Kopie/Fresh, Replay sowie gültige Übernahme nach
+Schaden, Heilung und kurzer/langer Rast. [Vorschlagsprüfungen](../../../tests/desktop-session-proposal-store.test.mjs)
+prüfen Integrität und erhaltene Sicherungen. Native Gesamtabnahme bleibt offen.
 
-Die Integration des Pools zeigte zusätzlich einen offenen SQLite-Iterator,
-der bereits bei erfülltem Ziel ohne Kandidatenbedarf erzeugt wurde. Er blockierte
-den Commit des Sessiongenerators. `fitMagicItems` öffnet den Iterator jetzt erst
-innerhalb des tatsächlichen Kandidatenwegs. Die bestehende gültige
-Generator-/Annahmeprobe deckt diesen Fall mit bereits ausreichender Beute ab.
-Die festen Pool- und Vorschlagsformulare liegen in `index.html`; die Picker/
-Editoren binden Verhalten und Katalogergebnisse daran, statt ganze Formulare
-und Dialoge nachträglich zu erzeugen.
-Bestehende Storeproben werden unverändert mitgeprüft. Die Session-DOMfixture
-benötigt inzwischen die echten Aktionsbeschriftungen statt alter Buttonpositionen
-und die hinzugekommenen NPC-/Quellenreader in ihrer Storefacade. Eine externe
-Testkopie ergänzt ausschließlich diese Anschlüsse; die bestehenden Assertions
-und die fremde ursprüngliche Testdatei bleiben erhalten. Dies qualifiziert den
-aktuellen lokalen Ablauf, nicht einen unverändert grünen Gesamttestlauf oder
-eine native Bedienabnahme.
+`fitMagicItems` öffnet den Katalogiterator erst bei tatsächlichem Kandidatenbedarf.
+Die festen Pool- und Vorschlagsformulare stehen einmalig in `index.html`; ihre
+Picker und Editoren binden Verhalten und Ergebnisse an diese Vorlage.
 
 ## Gezahlter Kaufpreis bei Teilmengen
 
-Der bestätigte Shopworkflow (Program Capabilities L576–586) zeichnet den
-gezahlten Preis auf, bucht aber keine Münzen automatisch ab. `paidCopper`
-ist der insgesamt auf diese Ledgerteilmenge entfallende Kaufpreis, kein
-Stückpreis und kein Verkaufserlös. Der ursprüngliche Kauf bleibt im
-unveränderten `shop-purchase`-Ereignis erklärt.
+`paidCopper` ist der gesamte bestätigte Kaufpreis dieser Ledgerteilmenge;
+fehlend bedeutet unbekannt, null Kupfer wird als `"0"` aufgezeichnet. Käufe
+buchen keine Münzen automatisch ab und erzeugen keinen Rewardcredit.
 
-Shopverkauf und manuelles Markieren als verkauft/weitergegeben kopierten
-bisher den gesamten gezahlten Kaufpreis in jede neue Teilmenge. Ein Kauf von
-3 Stück für 101 Kupfer zeigte nach dem ersten Teilverkauf insgesamt 202 Kupfer.
-Split und anschließender Merge hinterließen außerdem 33 Kupfer auf dem leeren
-Quellstapel: angezeigt wurden 134 statt 101 Kupfer. Der bestehende Splitweg
-hatte bereits eine korrekte proportionale Teilberechnung.
+`partitionLedgerPaidPrice` verteilt beim Split, Shop-/manuellen Teilverkauf,
+Geschenk und Charakterweitergabe `floor(gesamt × teilmenge / vorherige menge)`;
+der ganzzahlige Rest bleibt auf dem verbleibenden Stapel. Writers prüfen Mengen
+und Quellen vorher und schreiben Preis/Menge/Receipt gemeinsam. Merge addiert
+bekannte Preise und leert den Quellpreis; ein unbekannter Beitrag macht den
+Gesamtpreis unbekannt. Bei Charakterweitergabe steht der Anteil auf der
+Abgabezeile, der Empfang erzeugt keine weitere Zahlung. Verkaufserlös bleibt
+separat maßgeblich für Beute. Alte Kaufereignisse/Receipts bleiben unverändert;
+früher falsch vervielfachte Anteile werden nicht rückwirkend repariert.
 
-`progression.ts.partitionLedgerPaidPrice` verwendet diese Berechnung jetzt für
-Shopverkauf, manuelle Verkauf-/Geschenkmarkierung, Split und Charakterweitergabe.
-Die neue Teilmenge erhält `floor(gesamt × teilmenge / vorherige menge)`;
-der ganzzahlige Rest bleibt auf dem verbleibenden Stapel. Die Writers rufen
-die Funktion nach ihren Mengen-/Quellenprüfungen und vor der Mengenänderung
-in derselben Transaktion auf. Beim Merge werden die bekannten Preise addiert
-und vom geleerten Quellstapel entfernt. Sobald ein Beitrag unbekannt ist,
-bleibt auch der gesamte Preis unbekannt. Fehlend und ausdrücklich null sind
-unterschiedliche Fakten; es gibt keine automatische Münzbuchung.
-
-Eine Charakterweitergabe trägt den Kaufpreisanteil auf der erklärenden
-Abgabezeile; der Empfang erzeugt keine weitere Zahlung. Tatsächlicher
-Verkaufserlös bleibt separat autoritativ für vergebene Beute. Käufe erhalten
-weiterhin keine Rewardgutschrift. Alte Ledgerbytes, Kaufereignisse und Receipts
-werden nicht migriert oder rückwirkend neu berechnet. Bereits vor dieser
-Korrektur falsch vervielfachte Anteile sind dadurch noch nicht repariert.
-
-`tests/desktop-trade-paid-price.test.mjs` prüft echte SQLitewrites einschließlich
-101-Kupfer-Rundung, vollständigem Verkauf, Split/Merge, Geschenk und Weitergabe,
-unbekanntem Preis, null und einem großen exakten Betrag. Dazu kommen Fresh,
-exakte Receiptreplays, Lootausschluss und ein kontrollierter Fehler nach den
-Ledgerwrites: die Transaktion rollt vollständig zurück; Statusklärung nach
-Neustart bestätigt genau einen wirksamen Verkauf. Dies ist Storeevidenz,
-keine native Prüfung einer verlorenen IPC-Antwort oder vollständige Handelsabnahme.
+[Tradeprüfungen](../../../tests/desktop-trade-paid-price.test.mjs) verwenden echte
+SQLitewrites: 101-Kupfer-Rundung, vollständiger Verkauf, Split/Merge, Geschenk,
+Weitergabe, unbekannter Preis, null und großer exakter Betrag. Fresh, Replay,
+Lootausschluss und ein Fehler nach den Ledgerwrites prüfen Rollback und
+Statusklärung. Native IPC-/Handelsabnahme bleibt offen.
 
 ## Nächste ausführbare Schritte
 
-1. **Vollständige Guidance qualifizieren.** `storage/session-rewards.ts`,
-   `storage/session.ts` und die Session-UI gegen das versionierte D&D-2014-Profil
-   prüfen: tatsächlich sämtliche bestätigten XP, effektive erhaltene Beute,
-   Forecast, unbekannte Werte und konsistente Rundung. Regel-/Profilversion,
-   XP-Basis, erwartete/tatsächliche Beute und Defizit gemeinsam erklären.
-   Die aktuelle Annahme prüft externe Eingänge; `regenerateSessionProposal`,
-   `regenerateSessionReward` und manuell geändertem Vorschlags-XP fehlt weiterhin
-   ein vollständig abgestimmter Forecast-/Budgetabschluss. Projizierte Gesamt-XP
-   und Rundung nach Einzeländerung neu erklären, akzeptierte Inhalte und andere
-   manuell bearbeitete Vorschläge unverändert erhalten. Keine stille
-   Neubudgetierung fremder Vorschläge. Die derzeit gemeinsame Progressrevision
-   benötigt außerdem eine Bedienprobe mit reiner HP-/Reständerung, damit keine
-   sachfremden Pflichtregenerationen entstehen.
-   Abnahme: unterschiedliche XP-Stände, korrigierte/weitergereichte/verkaufte
-   Grants, fehlender Wert, individuelle Vorschlagsänderung und Neustart;
-   keine automatische Änderung bestehender Awards. `session-magic.ts` zusätzlich
-   mit verkauften/weitergegebenen/verbrauchbaren magischen Grants und korrigierten
-   Definitionen prüfen: einmalige Herkunftswertung, kumulative Seltenheitsrundung,
-   endlicher zulässiger Katalogpool und explizit fehlende Definition. Seed,
-   Preset-/XP-/Katalogbasis sowie manuelle Itemänderung bis Annahme/Fresh binden;
-   keine stillen Ersatzitems außerhalb bindender Quellenvorgaben.
-2. **Historie und Transfer schließen.** Für frühere Teilverkäufe mit doppelt
-   aufgezeichnetem `paidCopper` zuerst die unveränderten Kauf-/Split-/Verkauf-
-   ereignisse und Herkunftskette in `progress_event`/`shop_event` vergleichen.
-   Nur eindeutig belegbare Anteile als ausdrückliche, revisionsgebundene
-   Korrektur anbieten; ungeklärte Preise offen halten. Eine Erklärung und der
-   vorherige Zustand müssen erhalten bleiben. Kein heuristischer Transfer-
-   oder Startuprewrite. Die aktuellen Writes verhindern neue Doppelung;
-   eine vollständige historische Reparatur ist noch nicht geliefert.
-   Native verlorene Antwort → Buchungsstatus → erneutes Öffnen des gleichen
-   Shops und Ledgerempfängers prüfen; keine automatische erneute Buchung.
-   Treasury-, Ledger- und Quest-/Encounter-
+1. **Guidance vollständig qualifizieren.** Regel-/Profilversion, XP-/Preset-/
+   Katalogbasis, erwartete/tatsächliche Beute und Defizit gemeinsam erklären.
+   Native Abnahme: unterschiedliche XP-Stände, korrigierte, weitergegebene,
+   verkaufte und verbrauchbare Grants, fehlende Werte/Seltenheiten, kumulative
+   Rundung, endlicher Katalogpool, individuelle Vorschlagsänderungen, Annahme
+   und normaler Neustart. Keine stillen Ersatzitems oder Änderungen bestehender
+   Awards.
+   Einzelregeneration und manuell geänderte XP benötigen weiterhin einen
+   konsistenten Forecast-/Budgetabschluss ohne Neubudgetierung anderer Entwürfe.
+2. **Historie und Transfer schließen.** Treasury-, Ledger- und Quest-/Encounter-
    Herkunft in `storage/treasury.ts`, `storage/campaign-data.ts` und `chronicle.ts`
    gemeinsam prüfen. Nach unabhängiger Kopie müssen Preise, Belohnungscredit und
    erklärende Korrekturen stimmen; freie Prosa und Quellpaketbytes bleiben erhalten.

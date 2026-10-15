@@ -13,13 +13,15 @@ let resumeOwner:(()=>Promise<void>)|null=null;
 let tell:(s:string,error?:boolean)=>void,drain:()=>Promise<boolean>,ownerDrain:()=>Promise<boolean>,editNote:(id:string)=>Promise<void>;
 function query(after:string|null):NarrativeJournalQuery{return{search:el<HTMLInputElement>('journal-search').value,kind:el<HTMLSelectElement>('journal-kind').value as NarrativeJournalQuery['kind'],status:el<HTMLSelectElement>('journal-status').value as NarrativeJournalQuery['status'],after};}
 async function loadPage(after:string|null=null){
- const w=workspace,ownerEpoch=epoch;if(!w||!journalDialog().open)return;const n=++request;
+ const w=workspace,ownerEpoch=epoch;if(!w||!journalDialog().open)return;const n=++request,q=query(after),criteria=JSON.stringify({...q,after:null});
+ const current=()=>owns(w,ownerEpoch)&&n===request&&journalDialog().open&&criteria===JSON.stringify(query(null));
+ if(after===null)clearIndex();
  el<HTMLButtonElement>('journal-more').disabled=true;el('journal-list-status').textContent='Aufträge werden gelesen…';
- try{const r=await window.campaign.narrativeJournal(w.token,query(after));if(!owns(w,ownerEpoch)||n!==request||!journalDialog().open)return;if(!r.ok)throw new Error(r.error);
+ try{const r=await window.campaign.narrativeJournal(w.token,q);if(!current())return;if(!r.ok)throw new Error(r.error);
   entries=after?[...entries,...r.value.entries.filter(e=>!entries.some(p=>p.note.id===e.note.id))]:r.value.entries;next=r.value.next;
   el('journal-counts').textContent=r.value.counts.open+' offen · '+r.value.counts.closed+' geschlossen';renderList();
- }catch(e){if(owns(w,ownerEpoch)&&n===request&&journalDialog().open)el('journal-list-status').textContent=(e as Error).message;}
- finally{if(owns(w,ownerEpoch)&&n===request&&journalDialog().open)el<HTMLButtonElement>('journal-more').disabled=false;}
+ }catch(e){if(current())el('journal-list-status').textContent=(e as Error).message;}
+ finally{if(current())el<HTMLButtonElement>('journal-more').disabled=false;}
 }
 function renderList(){const version=++listVersion,w=workspace,ownerEpoch=epoch,root=el('journal-list');root.replaceChildren();
  for(const entry of entries){const b=node('button');b.type='button';b.dataset.noteId=entry.note.id;b.setAttribute('aria-pressed',String(entry.note.id===selected));b.append(node('strong',entry.note.title),node('span',(entry.note.kind==='quest'?'Quest':'Gerücht')+' · '+(entry.view.state.status==='closed'?'Geschlossen':'Offen')+(entry.view.award?' · Belohnung vergeben':'')+(entry.view.draft?' · Eingabe gesichert':'')));b.onclick=()=>{void selectEntry(entry,version).catch(e=>{if(w&&owns(w,ownerEpoch)&&journalDialog().open)tell((e as Error).message,true);});};root.append(b);}
@@ -68,7 +70,7 @@ export function initNarrativeJournal(status:typeof tell,flush:typeof drain,flush
  el('journal-close').onclick=()=>void closeJournal();dialog.addEventListener('cancel',e=>{e.preventDefault();void closeJournal();});
  el('journal-refresh').onclick=()=>{const w=workspace,n=epoch;void(async()=>{if(w&&await flushNarrative()&&owns(w,n)&&dialog.open)await loadPage();})().catch(e=>{if(w&&owns(w,n)&&dialog.open)tell(e.message,true);});};
  el('journal-more').onclick=()=>void loadPage(next);
- el('journal-search').oninput=()=>{if(queryTimer)clearTimeout(queryTimer);queryTimer=setTimeout(()=>void loadPage(),200);};
+ el('journal-search').oninput=()=>{cancelQuery();request++;clearIndex();el('journal-list-status').textContent='Aufträge werden gelesen…';queryTimer=setTimeout(()=>{queryTimer=null;void loadPage();},200);};
  for(const id of ['journal-kind','journal-status'])el(id).onchange=()=>void loadPage();
 }
 

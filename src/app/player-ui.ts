@@ -77,7 +77,9 @@ export async function cuePlayerImage(kind:'location'|'npc'|'custom',subjectId:st
   if(!asset){
    const known=new Set(latest.assets.map(a=>a.id)),picked=unwrap(await window.campaign.pickPlayerArt(o.token,kind,subjectId,''));if(!picked)return false;
    if(!owns(o)||intent!==actions)return false;if(!sameFocus(picked))throw new Error('Fokussierte Gruppe geändert. Das gewählte Bild wurde gespeichert, aber noch nicht freigegeben.');
-   asset=picked.assets.find(a=>!known.has(a.id));latest=picked;
+   const added=picked.assets.filter(a=>!known.has(a.id)&&a.kind===kind&&a.subjectId===subjectId);
+   if(added.length!==1)throw new Error('Bildauswahl nicht eindeutig. Öffne die Spielersteuerung und wähle das gewünschte Bild.');
+   asset=added[0];latest=picked;
   }
   if(!asset)throw new Error('Bild konnte nicht für die Spieleranzeige vorbereitet werden.');
   const action:PlayerAction={kind:'settings',settings:{blank:false,mode:'image',imageId:asset.id,title:'',labels:latest.settings.labels,light:latest.settings.light,displayId:latest.settings.displayId,fullscreen:latest.settings.fullscreen}};

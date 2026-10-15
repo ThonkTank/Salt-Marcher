@@ -1,3 +1,4 @@
+import {readSessionBoundary} from './chronicle';
 import {readWorldCalendar} from './world';
 import {readClockEvent} from './time-plan';
 import {agendaOccurrence} from '../agenda-model';
@@ -39,11 +40,19 @@ export function migrateLiveClock(db: any) {
     INSERT INTO scene_clock_v7(campaign_id,scene_id,revision,epoch_id,instant_ms) SELECT campaign_id,scene_id,revision,epoch_id,instant_ms FROM scene_clock;
     DROP TABLE scene_clock; ALTER TABLE scene_clock_v7 RENAME TO scene_clock;`);
 }
-function profile(db: any, campaignId: string, id: string): Character {
-  const row = db.prepare('SELECT m.*,p.revision AS profile_revision,p.payload,p.checksum FROM roster_member m JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id WHERE m.campaign_id=? AND m.id=?').get(campaignId, id);
-  if (!row || hash(row.payload) !== row.checksum) throw new Error('Charakterprofil nicht verfügbar oder beschädigt.');
+const profileQuery = 'SELECT m.*,p.revision AS profile_revision,p.payload,p.checksum FROM roster_member m LEFT JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id';
+function checkedCharacterRow(row: any): Character {
+  if (!row || typeof row.payload !== 'string' || hash(row.payload) !== row.checksum) throw new Error('Charakterprofil nicht verfügbar oder beschädigt.');
   if (![row.ordinal, row.membership_revision].every(v => Number.isSafeInteger(v) && v >= 0) || !Number.isSafeInteger(row.profile_revision) || row.profile_revision < 1) throw new Error('Charakterrevision oder Partyreihenfolge beschädigt.');
-  return { id: row.id, ordinal: row.ordinal, profile: checkedCharacterProfile(JSON.parse(row.payload)), profileRevision: row.profile_revision, archived:!!JSON.parse(row.payload).archive, active: !!row.active, membershipRevision: row.membership_revision, sceneId: row.scene_id };
+  const value = checkedCharacterProfile(JSON.parse(row.payload));
+  if(value.archive&&(row.active||row.scene_id!==null))throw new Error('Archivierte Figur ist noch einer Party oder Scene zugeordnet.');
+  return { id: row.id, ordinal: row.ordinal, profile: value, profileRevision: row.profile_revision, archived:!!value.archive, active:!!row.active, membershipRevision:row.membership_revision, sceneId:row.scene_id };
+}
+function profile(db: any, campaignId: string, id: string): Character {
+  return checkedCharacterRow(db.prepare(profileQuery+' WHERE m.campaign_id=? AND m.id=?').get(campaignId,id));
+}
+export function readRoster(db: any, campaignId: string): Character[] {
+  return db.prepare(profileQuery+' WHERE m.campaign_id=? ORDER BY m.ordinal,m.id').all(campaignId).map(checkedCharacterRow);
 }
 export {profile as readCharacter};
 export function readCampaignTime(db:any,campaignId:string){
@@ -74,8 +83,7 @@ export function readLive(db: any, campaignId: string): LiveView {
     if (!party || !Number.isSafeInteger(party.revision) || party.revision < 0) throw new Error('Partyquelle ist nicht verfügbar.');
     const time = db.prepare('SELECT * FROM campaign_time WHERE campaign_id=?').get(campaignId);
     if (!time || !time.epoch_id || !/^(0|[1-9][0-9]*)$/.test(time.instant_ms)) throw new Error('Bestätigter Kampagnenzeitanker nicht verfügbar.');
-    const allRoster = db.prepare('SELECT id FROM roster_member WHERE campaign_id=? ORDER BY ordinal,id').all(campaignId).map((row: any) => profile(db, campaignId, row.id));
-    if(allRoster.some((c:Character)=>c.archived&&(c.active||c.sceneId!==null)))throw new Error('Archivierte Figur ist noch einer Party oder Scene zugeordnet.');
+    const allRoster = readRoster(db,campaignId);
     const roster=allRoster.filter((c:Character)=>!c.archived),archivedRosterCount=allRoster.length-roster.length;
     const state = db.prepare('SELECT * FROM live_state WHERE campaign_id=?').get(campaignId);
     if (!state) {
@@ -154,11 +162,6 @@ function recordLocationVisit(db:any,campaignId:string,sceneId:string,beforeLocat
 function recordPartyHistory(db:any,campaignId:string,sceneId:string|null,text:string,facts:Record<string,unknown>){
   const value=json({text,recordedAt:new Date().toISOString(),facts});
   db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(campaignId,randomUUID(),sceneId,value,hash(value));
-}
-function latestSessionMarker(db:any,campaignId:string):'start'|'end'|null{
-  const row=db.prepare(`SELECT payload,checksum FROM world_history WHERE campaign_id=? AND json_valid(payload)=1 AND json_extract(payload,'$.facts.kind')='session-marker' ORDER BY rowid DESC LIMIT 1`).get(campaignId);
-  if(!row)return null;if(hash(row.payload)!==row.checksum)throw new Error('Spielabend-Markierung ist beschädigt.');
-  const marker=JSON.parse(row.payload)?.facts?.marker;if(!['start','end'].includes(marker))throw new Error('Spielabend-Markierung ist ungültig.');return marker;
 }
 function targetRevision(db: any, campaignId: string, action: LiveCommand['action'], targetId: string): number | null {
   const table = action.kind === 'membership' ? 'roster_member' : action.kind === 'profile' || action.kind === 'archive-character' || action.kind === 'create-character' ? 'character_profile' : 'live_scene';
@@ -346,8 +349,9 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1 ORDER BY ordinal,id').all(campaignId,targetId).map((row:any)=>row.id);
       recordPartyHistory(db,campaignId,targetId,action.title.trim(),{kind:'live-moment',category:action.category,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs,followUpKind:action.followUp?.kind??null,followUpId:action.followUp?.id??null});
     } else if(action.kind==='session-marker'){
+      const boundary=readSessionBoundary(db,campaignId),open=boundary?.body.facts.marker==='start';
+      if((action.marker==='start')===open)throw new Error(open?'Ein Spielabend läuft bereits. Rückblick aktualisieren.':'Kein laufender Spielabend. Rückblick aktualisieren.');
       const before=currentScene(db,campaignId,action.sceneId);if(before.revision!==action.expectedRevision)throw new Error('Sceneinhalt wurde inzwischen geändert.');
-      const latest=latestSessionMarker(db,campaignId);if(action.marker==='start'?latest==='start':latest!=='start')throw new Error(action.marker==='start'?'Ein Spielabend läuft bereits.':'Kein laufender Spielabend zum Beenden.');
       targetId=before.id;revision=before.revision;scene=before;
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND active=1 ORDER BY ordinal,id').all(campaignId).map((row:any)=>row.id);
       recordPartyHistory(db,campaignId,targetId,action.marker==='start'?'Spielabend begonnen':'Spielabend beendet',{kind:'session-marker',marker:action.marker,summary:action.summary,handoff:action.handoff??'',characterIds,locationId:before.locationId,instantMs:before.clock.instantMs});

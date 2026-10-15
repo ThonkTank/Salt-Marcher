@@ -49,75 +49,29 @@ Bei der unabhängigen Kopie wurde zusätzlich eine konkrete Historylücke gefund
 Notiz, Award und Empfänger remappt waren. Der Transfer remappt jetzt genau diese
 fachliche Notizreferenz. Andere `sourceId`-Verträge und freie Prosa bleiben erhalten.
 
-## Ursprüngliche Notiz- und Statusbasis
+Der gemeinsame Abschlussdialog bindet Lesen, Autosave, Verwerfen und Bestätigung
+an die ursprüngliche Sitzung. Ziel- und Kampagnenwechsel entwerten alte Antworten
+und Timer; spätere Eingaben werden nach einer bestätigten Verwerfung unter neuer
+Schreibbasis gesichert. Die [Dialogprüfungen](../../../tests/desktop-finish-draft-dom.test.mjs)
+prüfen diese Übergänge und den Erhalt wortgetreuer Rohtexte über echte Stores.
+Der [Entwurfsspeicher](../../../tests/desktop-finish-draft-store.test.mjs) prüft
+Rohfeldtypen, Ziel, Revision, Empfänger und Gegenstandsreferenzen beim Lesen,
+Schreiben und Backup. Beschädigte Daten ersetzen keine gültige Sicherung.
+Kopie und Fresh remappen strukturierte IDs, erhalten Prosa und unfertige Zahlen;
+archivierte Ziele bleiben zulässige historische Eigentümer.
+Das Journal teilt den bestehenden Editor. Auswahl, Navigation und Close binden
+Campaign, Öffnung und Listen-/Detailstand; parallele Closeaktionen teilen einen
+Auftrag. Ein gesendeter Save wiederholt nach Ownerwechsel keine neuen Rohfelder.
+Die Kontextgegenproben in `desktop-narrative-journal-context.test.mjs` ergänzen
+die Store-/DOMprüfungen; die vollständige native Abschluss- und Recoveryabnahme
+bleibt offen.
 
-`NarrativeDraft.noteRevision` ergänzt die ursprüngliche Notizrevision neben
-seiner bestehenden Statusrevision. Neue Rohentwürfe binden die tatsächlich
-angezeigte Worldnotiz, nicht einen später gelesenen Notizstand. Der frische
-Read vor Submit prüft diese Revision; er ersetzt sie nicht. Ändert sich die
-Notiz während des Öffnens, ist die Übernahme des Entwurfs gesperrt, bis auch der
-angezeigte Welttext aktualisiert wurde. Der Refresh desselben Editors sichert
-zuerst dessen Rohwerte und zeigt dann die neue Notiz mit der alten Entwurfsbasis.
-
-Bei unterschiedlichen Basisrevisionen bleibt der Entwurf editierbar und
-kopierbar. Erst „Geprüften Entwurf auf aktuellen Stand übernehmen“ bestätigt
-beide angezeigten Revisionen und sichert die überarbeiteten Rohwerte mit CAS.
-Statusänderung und Award dürfen nur genau diesen Entwurf konsumieren; ein
-Command mit neueren erwarteten Revisionen hebt dessen ältere Basis nicht auf.
-Andernfalls scheitert die gesamte Transaktion ohne Receipt-/XP-/Lootteilwirkung.
-Ändert sich eine Eingabe während Rohsicherung, Basisflush oder Quellenprüfung,
-bleibt der neuere Rohstand gesichert. Der ältere Speicherklick darf ihn nicht
-konsumieren oder überschreiben; die Spielleitung bestätigt die neue Fassung
-erneut. Eingabe nach einem bereits gesendeten Command bleibt ein eigener
-Folgestand.
-
-Historische Entwürfe ohne `noteRevision` bleiben in ihrem ursprünglichen JSON
-lesbar, exportierbar und verwerfbar. Sie gelten als unbekannte Notizbasis und
-verlangen dieselbe ausdrückliche Prüfung vor Publish. Es gibt keine automatische
-Nachtragung aus der aktuellen Notiz und keine Umschreibung beim Read. Das
-optionale JSONfeld erfordert keine neue SQLtabelle oder spekulative Migration;
-explizit vorhandene ungültige Revisionen werden als beschädigte Eingabe abgelehnt.
-Eine unabhängige Kopie remappt Owner-/Write-IDs und erhält den ursprünglichen
-Revisionswert sowie Rohwerte wie `-`.
-
-Zehn Fälle in `desktop-narrative-basis.test.mjs` prüfen wirklichen Renderer und
-SQLitewriter: Notizänderung vor Submit, Fresh/Prüfung, unbekannte Altbasis,
-Status-/Awardverbrauch mit fremder Notizbasis, unabhängige Kopie, stale Note
-beim Laden, fremde Statusbasis, ungültige Revisionswerte, neue Eingabe während der Rohsicherung
-und ein unabhängiges Statusupdate nach dem eigenen bestätigten Write. Die bestehende
-Narrativeintegrität bleibt bindend. Ein lokaler Fresh-Store ist keine native
-Appwiederaufnahme; unbekannte Commandausgänge bleiben ein separater Schritt.
-
-## Journal und gemeinsamer Editorowner
-
-`narrative-journal-ui.ts` verwendet denselben Narrativeeditor wie die Welt-
-vorbereitung. Der Journaleinstieg wird im Renderer nach Campaignaktivierung
-freigegeben. Auswahl und Text-/Weltverweisnavigation binden Campaign, geöffneten
-Dialog, tatsächlichen Listenstand beziehungsweise angezeigtes Detail. Schließen
-entwertet ausstehende Auswahlvorgänge vor dem Flush; erst nach erfolgreichem
-Speichern wird der ursprüngliche Editorowner wieder geöffnet. Parallel ausgelöste
-Schließvorgänge teilen ihren Auftrag. Ein späterer Campaignwechsel oder eine neue
-Öffnung darf von dessen Antwort weder geschlossen noch geleert werden.
-Ein fehlgeschlagener Flush erhält Dialog und Rohfelder für eine ausdrückliche
-Wiederholung. Veraltete Suchantworten ersetzen keine neuere Liste.
-
-Auch die Narrativefelder und Speichern-/Verwerfencontrols binden ihren eigenen
-Renderstand. Ein entferntes Control darf nicht den globalen Savehook eines neuen
-Owners verwenden. `persist()` wiederholt einen neueren Rohstand nur, solange
-sein ursprünglicher Owner noch aktuell ist. Ein tatsächlich gesendeter Write
-beendet seinen ursprünglichen Auftrag; seine spätere Antwort startet keine
-Wiederholung anhand der inzwischen anderen `draftVersion`. Ohne diese Grenze
-konnte der veraltete Persistpfad endlos erneut laufen, den Renderer beschäftigen
-und dessen Speicher belegen. Die korrigierte Probe beendet den alten Auftrag
-und erhält die neuere unvollständige Eingabe ohne zusätzlichen Command.
-
-Elf Fälle in `tests/desktop-narrative-journal-context.test.mjs` benutzen die
-wirklichen Journal-/Narrativehandler und kontrollierte IPCantworten: normale
-Auswahl samt unverändertem CRLF, Rückkehr zum ursprünglichen Editor, entfernte
-Controls, Refresh, verzögertes Close/Navigieren nach Campaignwechsel, Antworten
-in falscher Reihenfolge, doppelte Öffnung während Flush, Fehler/Retry und
-Ownerwechsel mit noch unbestätigter neuer Eingabe. Dies sind lokale DOMbelege;
-Native Dialog-/Tastatur-/Fokusabnahme und Unknown-Command-Recovery bleiben offen.
+Narrative Rohentwürfe binden ihre ursprüngliche Notiz- und Statusrevision.
+Frische Reads prüfen diese Basis; erst ausdrückliches Übernehmen bestätigt einen
+geänderten Stand. Altentwürfe ohne Notizrevision bleiben lesbar und verlangen
+eine ausdrückliche Prüfung. Status/Award konsumieren genau den geprüften Entwurf;
+neuere Rohfelder werden durch ältere Speicherklicks nicht überschrieben.
+`desktop-narrative-basis.test.mjs` prüft diesen Weg mit echtem Store und Controller.
 
 ## Legendäre Aktion nach unabhängiger Kopie
 

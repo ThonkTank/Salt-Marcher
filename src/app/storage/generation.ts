@@ -1,11 +1,11 @@
 import {generationNpcs,requiredGenerationNpcs} from './generation-npcs';
-import {installWorldSources,saveWorldSource,pruneWorldStock,resolveWorldSources,canonicalSourceSnapshot} from './world-sources';
+import {installWorldSources,saveWorldSource,pruneWorldStock,resolveWorldSources,validateWorldSources,canonicalSourceSnapshot} from './world-sources';
 import {createHash,randomUUID} from 'node:crypto';
 import artifact from '../generation/system-preset.json';
 import {checkedGeneratorConfig} from '../generation/config';
 import {canonicalJson} from '../generation/canonical-json';
 import {buildSelectionIndex,selectEncounter,type CompositionCatalog} from '../generation/selector';
-import {assessEncounter,type EncounterPlan} from '../encounter-contracts';
+import {assessEncounter,validateEncounterPlanInput,type EncounterPlan} from '../encounter-contracts';
 import {creatureInfo,readCreature,searchCreatures,saveEncounterPlan,readEncounterPlan} from './encounters';
 import {makeTreasure} from './progression';
 import {copper} from '../progression';
@@ -46,6 +46,8 @@ export function validateGenerationBackup(db:any){
  for(const row of db.prepare('SELECT * FROM encounter_table').iterate())decodeTable(row);
  for(const row of db.prepare('SELECT * FROM loot_table').iterate())decodeLootTable(row);
  for(const row of db.prepare('SELECT * FROM generator_preset').iterate())decodePreset(row);
+ validateWorldSources(db);
+ for(const row of db.prepare('SELECT * FROM generation_run').iterate())generationRunRow(db,row);
  for(const row of db.prepare('SELECT campaign_id,id FROM encounter_plan').iterate())readEncounterPlan(db,row.campaign_id,row.id);
 }
 export function readGeneratorRegistry(db:any,cam:string):GeneratorRegistry{const presets=db.prepare('SELECT * FROM generator_preset ORDER BY system DESC,id').all().map((r:any)=>decodePreset(r)),assignedId=db.prepare('SELECT preset_id FROM generator_assignment WHERE campaign_id=?').get(cam)?.preset_id??null;return{revision:db.prepare('SELECT revision FROM generator_meta WHERE id=1').get().revision,presets,assignedId,effectiveId:assignedId??systemId};}
@@ -75,8 +77,62 @@ export function executeGeneration(db:any,command:GenerationCommand,guard:()=>voi
 function weightedIndex(weights:readonly string[],stream:string):number{const ints=integerWeights(weights),sum=ints.reduce((a,b)=>a+b,0n);if(!sum)throw new Error('Keine positiven Gewichte.');const bits=sum.toString(2).length,mask=(1n<<BigInt(bits))-1n;let draw=0n,counter=0;do{let bytes='';for(let i=0;i<Math.ceil(bits/256);i++)bytes+=hash(stream+'|'+counter+'|'+i);draw=BigInt('0x'+bytes)&mask;counter++;}while(draw>=sum);let running=0n;for(let i=0;i<ints.length;i++){running+=ints[i]!;if(draw<running)return i;}throw new Error('Gewichtete Auswahl fehlgeschlagen.');}
 export function previewLoot(db:any,cam:string,tableId:string,expectedRevision:number,seed:string){const table=readLootTable(db,cam,tableId);if(table.trashed||table.revision!==expectedRevision)throw new Error('Beutetabelle geändert. Begegnungsvorschlag neu erzeugen.');if(typeof seed!=='string'||!seed.trim()||seed.length>1000)throw new Error('Beute benötigt gültigen Seed.');const grouped=new Map<string,import('../progression').ItemInput>();for(let roll=0;roll<table.rolls;roll++){const entry=table.entries[weightedIndex(table.entries.map(e=>e.weight),seed+'|entry|'+roll)]!,span=entry.maximum-entry.minimum+1,quantity=entry.minimum+Number(BigInt('0x'+hash(seed+'|quantity|'+roll).slice(0,16))%BigInt(span)),key=json(entry.item),present=grouped.get(key);if(present)present.quantity+=quantity;else grouped.set(key,{...entry.item,quantity});}return [...grouped.values()];}
 export function rollLoot(db:any,command:LootRollCommand,guard:()=>void):LootRoll{return db.transaction(()=>{guard();if(!command.commandId||command.commandId.length>1000)throw new Error('Änderungskennung fehlt.');const cam=command.campaignId,fp=fingerprint(command),prior=db.prepare('SELECT * FROM generation_receipt WHERE command_id=?').get(command.commandId);if(prior){if(prior.campaign_id!==cam||prior.fingerprint!==fp)throw new Error('Änderungskennung bereits anders verwendet.');return decoded<LootRoll>(prior);}if(typeof command.seed!=='string'||!command.seed.trim()||command.seed.length>1000||typeof command.title!=='string'||command.title.length>1000)throw new Error('Loot-Wurf benötigt Seed und gültigen Titel.');const table=readLootTable(db,cam,command.tableId);if(table.trashed||table.revision!==command.expectedRevision)throw new Error('Loot-Tabelle geändert oder im Papierkorb.');const grouped=new Map<string,import('../progression').ItemInput>();for(let roll=0;roll<table.rolls;roll++){const entry=table.entries[weightedIndex(table.entries.map(e=>e.weight),command.seed+'|entry|'+roll)]!;const span=entry.maximum-entry.minimum+1,quantity=entry.minimum+Number(BigInt('0x'+hash(command.seed+'|quantity|'+roll).slice(0,16))%BigInt(span)),key=json(entry.item),present=grouped.get(key);if(present)present.quantity+=quantity;else grouped.set(key,{...entry.item,quantity});}const items=[...grouped.values()],treasureId=makeTreasure(db,cam,command.title,null,null,items);if(!treasureId)throw new Error('Loot-Tabelle erzeugte keine Beute.');const result:LootRoll={tableId:table.id,tableRevision:table.revision,seed:command.seed,treasureId,items},payload=json(result);db.prepare('INSERT INTO generation_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload));return result;}).immediate();}
-export function readGenerationRun(db:any,cam:string,id:string):GenerationRun{const run=decoded<GenerationRun>(db.prepare('SELECT * FROM generation_run WHERE campaign_id=? AND id=?').get(cam,id));for(const row of db.prepare('SELECT proposal_index,plan_id FROM generation_acceptance WHERE campaign_id=? AND run_id=?').all(cam,id))run.acceptedPlanIds[row.proposal_index]=row.plan_id;return run;}
-export function readGenerationRuns(db:any,cam:string){return db.prepare('SELECT * FROM generation_run WHERE campaign_id=? ORDER BY rowid DESC LIMIT 50').all(cam).map((r:any)=>{const run=decoded<GenerationRun>(r);return{id:run.id,seed:run.seed,title:run.request.title,count:run.plans.length};});}
+/** Read frozen proposals without requiring their sources to still be current. */
+function generationRunRow(db:any,row:any):GenerationRun {
+ const run=decoded<GenerationRun>(row),cam=row.campaign_id;
+ const object=(v:any)=>v&&typeof v==='object'&&!Array.isArray(v);
+ const id=(v:any)=>typeof v==='string'&&!!v.trim()&&v.length<=1000;
+ const unsigned=(v:any)=>Number.isSafeInteger(v)&&v>=0;
+ const revision=(v:any)=>unsigned(v)&&v>=1;
+ const digest=(v:any)=>typeof v==='string'&&/^[0-9a-f]{64}$/.test(v);
+ const fail=()=>{throw new Error('Generierungsvorschau beschädigt. Originaldaten bleiben erhalten.');};
+ if(!object(run)||run.id!==row.id||!id(run.id)||run.revision!==1||!id(run.seed)||!object(run.request)||run.seed!==run.request.seed||!object(run.preset)||!id(run.preset.id)||typeof run.preset.name!=='string'||!revision(run.preset.revision)||!digest(run.preset.hash)||!unsigned(run.preset.mobThreshold)||!digest(run.catalogHash)||run.sourceBasis!==undefined&&run.sourceBasis!==null&&!digest(run.sourceBasis))fail();
+ const r=run.request;
+ if(!unsigned(r.count)||r.count<1||r.count>20||typeof r.title!=='string'||r.title.length>1000||typeof r.habitat!=='string'||!['any','day','night'].includes(r.time)||!Array.isArray(r.party)||!r.party.length||!Array.isArray(r.tableIds)||r.tableIds.length>1000||r.tableIds.some(v=>!id(v))||new Set(r.tableIds).size!==r.tableIds.length||!object(r.filters)||r.npcOnly!==undefined&&typeof r.npcOnly!=='boolean'||!Array.isArray(run.plans)||run.plans.length!==r.count||new Set(run.plans.map(p=>p?.id)).size!==run.plans.length||!Array.isArray(run.warnings)||run.warnings.some(s=>typeof s!=='string')||!Array.isArray(run.acceptedPlanIds)||run.acceptedPlanIds.length>run.plans.length||!Array.isArray(run.candidates)||new Set(run.candidates.map(c=>c?.creatureId)).size!==run.candidates.length)fail();
+ for(const refs of [run.tables,run.lootTables??[]]){
+  if(!Array.isArray(refs)||refs.length>1000||new Set(refs.map(v=>v?.id)).size!==refs.length||refs.some(v=>!object(v)||!id(v.id)||!revision(v.revision)))fail();
+ }
+ for(const c of run.candidates)if(!object(c)||!id(c.creatureId)||integerWeights([exactWeight(c.weight)])[0]!<=0n)fail();
+ const required=r.requiredNpcIds??[],excluded=r.excludedNpcIds??[],basis=run.npcBasis;
+ for(const ids of [required,excluded])if(!Array.isArray(ids)||ids.length>100||ids.some(v=>!id(v))||new Set(ids).size!==ids.length)fail();
+ if(required.some(v=>excluded.includes(v))||r.includeNpcs!==undefined&&typeof r.includeNpcs!=='boolean')fail();
+ const usesNpcs=r.npcOnly===true||r.includeNpcs===true||required.length>0;
+ if(usesNpcs? !Array.isArray(basis):basis!==undefined)fail();
+ if(!run.candidates.length&&!required.length)fail();
+ if(basis!==undefined){
+  if(new Set(basis.map(n=>n?.id)).size!==basis.length)fail();
+  for(const n of basis){
+   if(!object(n)||!id(n.id)||typeof n.name!=='string'||n.name.length>1000||!id(n.creatureId)||!revision(n.noteRevision)||!revision(n.recordRevision)||!revision(n.actorRevision)||n.positionRevision!==null&&!revision(n.positionRevision)||n.locationId!==null&&!id(n.locationId)||n.role!=='hostile'||!db.prepare('SELECT 1 FROM world_actor WHERE campaign_id=? AND id=?').get(cam,n.id))fail();
+  }
+ }
+ if(required.some(v=>!basis?.some(n=>n.id===v))||basis?.some(n=>excluded.includes(n.id)))fail();
+ if(run.sourceSnapshot!==undefined)canonicalSourceSnapshot(run.sourceSnapshot);
+ const party=(rows:EncounterPlan['party'])=>rows.map(({id,...p})=>p);
+ for(const p of run.plans){
+  if(!object(p)||!id(p.id)||p.revision!==0||p.catalogHash!==run.catalogHash||!Array.isArray(p.sources)||new Set(p.sources.map(c=>c?.id)).size!==p.sources.length)fail();
+  validateEncounterPlanInput(p);
+  if(canonicalJson(party(p.party))!==canonicalJson(party(r.party)))fail();
+  const opponents=p.entries.map(e=>{
+   const source=p.sources.find(c=>c.id===e.creatureId);if(!source||!unsigned(source.xp))fail();
+   const named=e.worldActorIds??[],anonymous=e.count-named.length;
+   if(r.npcOnly&&anonymous||!run.candidates.some(c=>c.creatureId===e.creatureId)&&(anonymous||named.some(actorId=>!required.includes(actorId))))fail();
+   if(named.length){if(!basis||!e.actorNames)fail();for(const [i,actorId]of named.entries()){const n=basis!.find(n=>n.id===actorId);if(!n||n.creatureId!==e.creatureId||n.name!==e.actorNames![i]||!r.npcOnly&&!r.includeNpcs&&!required.includes(actorId))fail();}}
+   else if(e.actorNames?.length)fail();
+   return{xp:source!.xp,count:e.count};
+  });
+  if(required.some(v=>!p.entries.some(e=>e.worldActorIds?.includes(v))))fail();
+  if(canonicalJson(assessEncounter(p.party,opponents))!==canonicalJson(p.assessment))fail();
+ }
+ const accepted=new Map<number,string>();
+ for(const a of db.prepare('SELECT proposal_index,plan_id FROM generation_acceptance WHERE campaign_id=? AND run_id=?').all(cam,run.id)){
+  if(!unsigned(a.proposal_index)||!run.plans[a.proposal_index]||!id(a.plan_id)||!db.prepare('SELECT 1 FROM encounter_plan WHERE campaign_id=? AND id=?').get(cam,a.plan_id))fail();accepted.set(a.proposal_index,a.plan_id);
+ }
+ for(const [index,value]of run.acceptedPlanIds.entries())if(value!==null&&value!==undefined&&value!==accepted.get(index))fail();
+ for(const [index,value]of accepted)run.acceptedPlanIds[index]=value;
+ return run;
+}
+export function readGenerationRun(db:any,cam:string,id:string):GenerationRun{return generationRunRow(db,db.prepare('SELECT * FROM generation_run WHERE campaign_id=? AND id=?').get(cam,id));}
+export function readGenerationRuns(db:any,cam:string){return db.prepare('SELECT * FROM generation_run WHERE campaign_id=? ORDER BY rowid DESC LIMIT 50').all(cam).map((r:any)=>{const run=generationRunRow(db,r);return{id:run.id,seed:run.seed,title:run.request.title,count:run.plans.length};});}
 export function generateEncounters(db:any,cam:string,request:GenerationRequest):GenerationRun{return db.transaction(()=>{
  const r=structuredClone(request);if(!r||typeof r.seed!=='string'||!r.seed.trim()||r.seed.length>1000||!Array.isArray(r.tableIds)||new Set(r.tableIds).size!==r.tableIds.length||r.tableIds.length>1000||!Array.isArray(r.party)||!r.party.length||!Number.isSafeInteger(r.count)||r.count<1||r.count>20||typeof r.title!=='string'||r.title.length>1000||typeof r.habitat!=='string'||!['any','day','night'].includes(r.time))throw new Error('Generierung benötigt Seed, bekannte Planungsparty und 1–20 Vorschläge.');if(r.xpCeiling!==undefined&&r.xpCeiling!==null&&(!Number.isSafeInteger(r.xpCeiling)||r.xpCeiling<0))throw new Error('XP-Obergrenze benötigt eine nichtnegative ganze Zahl.');const basis=assessEncounter(r.party,[]);if(basis.unknownLevels)throw new Error('Für die Generierung fehlen Party-Level.');
  const registry=readGeneratorRegistry(db,cam),preset=registry.presets.find(p=>p.id===registry.effectiveId)!,config=checkedGeneratorConfig({...preset.config,generationDefaults:{difficulty:r.difficulty,amount:r.amount,balance:r.balance,diversity:r.diversity}});

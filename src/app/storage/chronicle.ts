@@ -8,6 +8,13 @@ function payload(row:any):Record<string,any>{
   if(!row||typeof row.payload!=='string'||hash(row.payload)!==row.checksum)throw new Error('Chronikquelle ist beschädigt.');
   const value=JSON.parse(row.payload);if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Chronikquelle hat ein ungültiges Format.');return value;
 }
+export function readSessionBoundary(db:any,cam:string){
+ for(const row of db.prepare('SELECT rowid AS cursor,* FROM world_history WHERE campaign_id=? ORDER BY rowid DESC').iterate(cam)){
+  const body=payload(row);if(body.facts?.kind!=='session-marker')continue;
+  if(!['start','end'].includes(body.facts.marker))throw new Error('Chronikquelle hat eine ungültige Spielabend-Markierung.');return{row,body};
+ }
+ return null;
+}
 const text=(value:unknown,fallback='')=>typeof value==='string'?value:fallback;
 const quantity=(item:any)=>item&&Number.isSafeInteger(item.quantity)?item.quantity+' × '+text(item.currentName??item.name,'Gegenstand'):'Gegenstand';
 const nameList=(ids:unknown,names:Map<string,string>)=>Array.isArray(ids)?ids.map(id=>names.get(String(id))??'Unbekannte Figur'):[];
@@ -84,7 +91,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
     // only one group's prose plus the newest bounded set of matching entries.
     const combatEntries:ChronicleEntry[]=[];
     let awardKey:string|null=null,awardEntry:ChronicleEntry|null=null;
-    const compare=(a:ChronicleEntry,b:ChronicleEntry)=>b.recordedAt.localeCompare(a.recordedAt)||b.id.localeCompare(a.id);
+    const compare=(a:ChronicleEntry,b:ChronicleEntry)=>b.recordedAt.localeCompare(a.recordedAt)||(worldOrder.get(b.id)??0)-(worldOrder.get(a.id)??0)||b.id.localeCompare(a.id);
     const finishAward=()=>{
       if(awardEntry&&chronicleMatches(awardEntry,category,search)){
         combatEntries.push(awardEntry);
@@ -104,12 +111,15 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
       const f=payload(row),facts=f.facts??{},sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=facts.locationId??facts.after?.position?.locationId??facts.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;
       const title=text(f.text,'Weltereignis'),party=facts.kind==='party-membership'||facts.kind==='party-move',travel=!party&&/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title),manualCategory=facts.kind==='live-moment'&&['combat','narrative','reward','travel','party','world'].includes(facts.category)?facts.category as ChronicleCategory:null;
       if(facts.kind==='live-moment'&&!manualCategory)throw new Error('Chronikquelle hat einen ungültigen Bereich.');
-      const sessionMarker=facts.kind==='session-marker'&&['start','end'].includes(facts.marker)?facts.marker as 'start'|'end':undefined;if(facts.kind==='session-marker'&&!sessionMarker)throw new Error('Chronikquelle hat eine ungültige Spielabend-Markierung.');let summary=facts.kind==='live-moment'||sessionMarker?text(facts.summary):'';
+      const sessionMarker=facts.kind==='session-marker'&&['start','end'].includes(facts.marker)?facts.marker as 'start'|'end':undefined;
+      if(facts.kind==='session-marker'&&!sessionMarker)throw new Error('Chronikquelle hat eine ungültige Spielabend-Markierung.');
+      let summary=facts.kind==='live-moment'||sessionMarker?text(facts.summary):'';
       if(facts.kind==='visit-outcome')summary=text(facts.outcome)+' · Weltzeit '+formatInstant(text(facts.sceneInstantMs,'0'));
       else if(facts.kind==='party-membership')summary=facts.active?'Aktiviert'+(sceneName(facts.toSceneId,scenes)?' in '+sceneName(facts.toSceneId,scenes):''):'Deaktiviert'+(sceneName(facts.fromSceneId,scenes)?' aus '+sceneName(facts.fromSceneId,scenes):'');
       else if(facts.kind==='party-move')summary=(sceneName(facts.fromSceneId,scenes)??'Unbekannte Gruppe')+' → '+(sceneName(facts.toSceneId,scenes)??'Unbekannte Gruppe')+(facts.createdScene?' · neue Gruppe':'');
       const followUp=facts.kind==='live-moment'&&['quest','rumor'].includes(facts.followUpKind)&&typeof facts.followUpId==='string'&&facts.followUpId?{kind:facts.followUpKind as 'quest'|'rumor',id:facts.followUpId}:undefined;
-      const handoff=sessionMarker==='end'?text(facts.handoff):'';const entry:ChronicleEntry={id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:manualCategory??(facts.kind==='visit-outcome'?'narrative':party?'party':travel?'travel':'world'),title,summary,people:party||facts.kind==='visit-outcome'||facts.kind==='live-moment'||sessionMarker?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null,...(followUp?{followUp}:{}),...(sessionMarker?{sessionMarker}:{}),...(handoff?{handoff}:{})};if(!chronicleMatches(entry,category,search))continue;worldOrder.set(entry.id,Number(row.cursor));worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}
+      const id='world:'+row.id;worldOrder.set(id,Number(row.cursor));
+      const handoff=sessionMarker==='end'?text(facts.handoff):'';const entry:ChronicleEntry={...(handoff?{handoff}:{}),...(sessionMarker?{sessionMarker}:{}),id:'world:'+row.id,recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:manualCategory??(facts.kind==='visit-outcome'?'narrative':party?'party':travel?'travel':'world'),title,summary,people:party||facts.kind==='visit-outcome'||facts.kind==='live-moment'||sessionMarker?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null,...(followUp?{followUp}:{})};if(!chronicleMatches(entry,category,search))continue;worldEntries.push(entry);if(worldEntries.length>2000){worldTruncated=true;break;}
     }
     const timeEntries:ChronicleEntry[]=[];let timeTruncated=false;
     for(const row of sourceRows(db,cam,'scene_time_step')){
@@ -119,10 +129,11 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
       const travel=reason==='Dungeonbewegung'||reason==='Bestätigter Passagenlink',sceneRow=sceneRows.find((r:any)=>r.id===row.scene_id),locationId=sceneRow?.location_id??null;
       const entry:ChronicleEntry={id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+(f.calendarVersion==='campaign-calendar-v1'?formatDuration(String(BigInt(f.to)-BigInt(f.from)),f.calendar.daySeconds):String(f.amount)+' '+timeUnit(f.unit))+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;timeEntries.push(entry);if(timeEntries.length>2000){timeTruncated=true;break;}
     }
+    const boundary=readSessionBoundary(db,cam),latestSessionMarker=boundary?{id:'world:'+boundary.row.id,recordedAt:text(boundary.body.recordedAt),category:'world' as const,title:text(boundary.body.text),summary:text(boundary.body.facts.summary),people:nameList(boundary.body.facts.characterIds,names),scene:sceneName(boundary.row.scene_id,scenes),location:locations.get(boundary.body.facts.locationId)??null,sessionMarker:boundary.body.facts.marker as 'start'|'end',...(boundary.body.facts.marker==='end'&&text(boundary.body.facts.handoff)?{handoff:text(boundary.body.facts.handoff)}:{})}:null;
     const entries=[...progressEntries,...combatEntries,...worldEntries,...timeEntries];
 
     entries.sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt)||(worldOrder.get(b.id)??0)-(worldOrder.get(a.id)??0)||b.id.localeCompare(a.id));
-    return{campaignName:campaign.name,entries:entries.slice(0,2000),truncated:progressTruncated||worldTruncated||timeTruncated||entries.length>2000};
+    return{...(latestSessionMarker?{latestSessionMarker}:{}),campaignName:campaign.name,entries:entries.slice(0,sourceLimit),truncated:progressTruncated||worldTruncated||timeTruncated||entries.length>sourceLimit};
   })();
 }
 

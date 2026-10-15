@@ -1,6 +1,6 @@
 # Passive Spielerprojektion: Karten, Art und sichere Ausgabe
 
-Stand: 14.10.2026. Ergänzt den [Player-/Extensionanschluss](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#konkreter-player--und-extensionanschluss)
+Stand: 14.10.2026. Ergänzt den [Player-/Extensionanschluss](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-10--zweites-display-extensions-und-vollständige-portabilität)
 und den [Gesamtumfang](../../SCOPE.md).
 
 ## Gebundener Vertrag und Entscheidung
@@ -32,6 +32,10 @@ Ortsart oder Karte nicht mehr durch Mechaniktabellen. Die GM kann NPC-/Orts-/
 eigene Art weiterhin ausdrücklich hervorheben. Private Scene-/Maskentitel
 werden nicht automatisch als öffentliche Überschrift übernommen; ausdrücklicher
 öffentlicher Titel und freigegebene Kartenbeschriftungen bleiben eigene Metadaten.
+Ein entferntes NPC-Porträt bleibt als historisches Asset erhalten, darf aber
+bei keiner neuen Veröffentlichung erneut freigegeben werden. Das gilt auch
+bei unveränderter Bild-ID und Gruppe; bestehende Ansichten werden dadurch
+nicht aus der gespeicherten History gelöscht.
 
 `PlayerFrame` und `PlayerDungeon` in `player-contracts.ts` enthalten nur diese
 visuellen Varianten. Dungeonposition, bekannte/sichtbare Geometrie, freigegebene
@@ -59,12 +63,22 @@ keinen Text und interpretiert die Einstellung nicht still als neue Freigabe.
 
 Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
-direkte Ortsart-/NPC-Porträt-/Handoutwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt. Ein ausdrücklich
-gewählter neuer visueller Modus ersetzt die alte Anzeigeeinstellung. Blank
-benötigt keinen vorgelagerten Previewread; es bleibt bei ausgefallener oder
-hängender Steuerungsquery sofort als eigener Command benutzbar. Die aktuelle
-Fokus-/Mitgliedschaftsprüfung schützt neue Freigaben weiterhin. Scene-
-Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
+ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt.
+Live-Cues öffnen Ortsart, NPC-Porträts oder ein
+spontanes Handout direkt für die geprüfte Gruppe. Eine neu ausgewählte Orts-ID
+wird als sichtbarer Auftrag gebunden; erst ihr erfolgreicher Save erlaubt die
+direkte Bild-/Livefreigabe. Ein Savefehler veröffentlicht nichts.
+Ein Pickerabbruch ändert die
+Anzeige nicht. Änderungen an Fokus oder Mitgliedern während der Auswahl
+verhindern die Freigabe; gespeicherte Art bleibt erhalten. Genau ein neues Bild
+mit passendem Typ und Ziel muss die Auswahl bestimmen. Bei parallelen,
+mehrdeutigen Ergänzungen erfolgt keine willkürliche Freigabe; das Bild lässt
+sich im bestehenden Dialog auswählen. Die Gegenproben stehen in
+[desktop-player-focus.test.mjs](../../../tests/desktop-player-focus.test.mjs).
+Blank benötigt keinen vorgelagerten Previewread und funktioniert auch bei
+ausgefallener oder hängender Steuerungsquery.
+Ein ausdrücklich gewählter neuer visueller Modus ersetzt die alte Einstellung.
+Scene-Vorlesetext, Notizen, Combat-/Chasestände, Drafts und Characterkenntnis bleiben
 in ihren bisherigen Ownertabellen erhalten. Keine Datenmigration erforderlich.
 
 ## Große Karten und lokaler Nachweis
@@ -100,15 +114,20 @@ Karten, gespeicherte Kenntnis, GM-Steuerung und alte asynchrone Antworten.
 
 `desktop-live-visual-context.test.mjs` benutzt die Browser-Event-Realm und
 aktuelle Party-/Ledgerreads für sechs Autosave-/Create-Prüfungen einschließlich
-Vorlesetext. Die ältere untracked Livefixture besitzt diese Anschlüsse nicht;
-ihre vier Fälle sind weiterhin kein grüner Nachweis des aktuellen Stands.
-Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
+Vorlesetext; drei weitere Fälle prüfen sofortige Freigabe einer neuen
+Ortsauswahl und fehlgeschlagenes Speichern. Die früheren Coretests für Combat-/Chase-/Sceneprojektion wurden an den
 gebundenen Vertrag angepasst: GM-Wirkungen und Sichtbarkeitswerte bleiben
 prüfbar; ihr Fortschritt darf keine Mechanik auf den passiven Bildschirm bringen.
 Ein falsches früheres Ausgabeergebnis ist keine Regressionserwartung.
 `tools/test-desktop-player-scene-privacy.mjs` wurde an die Ortsartaufgabe statt
-der früheren Text-/Mechanikausgabe angepasst. Sein nativer Lauf ist nach dieser
-Änderung noch offen; alte Screenshots qualifizieren diesen Stand nicht.
+der früheren Text-/Mechanikausgabe angepasst. Der Fokusprüfer verwendet Karten und die aktuelle Mitgliedschaftsbasis.
+Der native Dialog-/Handoutlauf auf dem Stand `ea0d616c` vom 14.10.2026
+bestand: alte Freigabe abgewiesen, Neustart Blank, Entwurf nach Fehler erhalten,
+Nachhutkarte nach erneuter Bestätigung und ein dekodiertes 80 × 50-Handout.
+Sceneinhalte blieben unverändert; beide Appstarts endeten normal. Der erneute
+native Live-Cue-Lauf blieb im Appstart hängen und ist für diesen Stand offen.
+Die davor erfolgreichen Cue-Läufe ersetzen diese Wiederholung nicht. Der
+aktualisierte native Ortsart-/Privacy-Lauf ist ebenfalls offen.
 Die Nachweise sind lokale Store-/Host-/kontrollierte DOMbelege, keine native
 Gesamt-/Privacy-/Plattformabnahme oder vollständige SMR-AC-14-Freigabe.
 

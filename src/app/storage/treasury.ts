@@ -5,25 +5,57 @@ import type {
   TreasureOrigin,
 } from "../treasury-contracts";
 import type { Treasure } from "../progression";
-import { readTreasure, saveTreasure, checkedItem, event } from "./progression";
+import { readTreasure, checkedTreasureRow, saveTreasure, checkedItem, event } from "./progression";
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 export function installTreasury(db: any) {
   db.exec(
     `CREATE TABLE IF NOT EXISTS treasury_draft(campaign_id TEXT NOT NULL,treasure_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,treasure_id),FOREIGN KEY(campaign_id,treasure_id) REFERENCES treasure(campaign_id,id)) STRICT;`,
   );
 }
-function draft(db: any, cam: string, id: string): TreasuryDraft | null {
-  const row = db
-    .prepare(
-      "SELECT * FROM treasury_draft WHERE campaign_id=? AND treasure_id=?",
-    )
-    .get(cam, id);
-  if (!row) return null;
-  if (hash(row.payload) !== row.checksum)
-    throw new Error("Schatzentwurf beschädigt.");
-  const d = JSON.parse(row.payload);
-  if (d.treasureId !== id) throw new Error("Schatzentwurf falsch zugeordnet.");
+function checkedDraft(d: TreasuryDraft): TreasuryDraft {
+  const text = (v: unknown, n = 1000) => typeof v === "string" && v.length <= n;
+  const id = (v: unknown) => text(v) && !!(v as string).trim();
+  if (!d || !id(d.writeId) || !id(d.treasureId) ||
+      !Number.isSafeInteger(d.revision) || d.revision < 1 ||
+      !text(d.title) || (d.locationId !== null && !id(d.locationId)) ||
+      !text(d.reason, 10000) || !Array.isArray(d.items) || d.items.length > 100 ||
+      d.items.some(i => !i || !text(i.name) || !text(i.quantity) || !text(i.valueGold) ||
+        !["coins", "equipment", "trade-goods", "magic", "other"].includes(i.category) ||
+        i.lotId !== undefined && i.lotId !== null && !id(i.lotId) ||
+        i.reference !== undefined && (!i.reference || i.reference.kind !== "authored" ||
+          !id(i.reference.definitionId) || !Number.isSafeInteger(i.reference.revision) ||
+          i.reference.revision < 1 || i.reference.historicalDefinitionId !== undefined && !id(i.reference.historicalDefinitionId))) ||
+      Buffer.byteLength(JSON.stringify(d)) > 256000)
+    throw new Error("Schatzentwurf ungültig oder zu groß.");
   return d;
+}
+function validateDraft(db: any, cam: string, d: TreasuryDraft) {
+  const t = checkedTreasureRow(db.prepare("SELECT * FROM treasure WHERE campaign_id=? AND id=?").get(cam,d.treasureId));
+  if (d.revision > t.revision) throw new Error("Schatzentwurf aus neuerem Stand.");
+  // Archived owners remain valid for unfinished input; applying uses current availability.
+  if (d.locationId !== null && !db.prepare("SELECT 1 FROM location WHERE campaign_id=? AND id=?").get(cam, d.locationId))
+    throw new Error("Schatzentwurfsort gehört nicht zur Kampagne.");
+  for (const item of d.items) if (item.reference &&
+      !db.prepare("SELECT 1 FROM item_definition WHERE id=? UNION ALL SELECT 1 FROM authored_item WHERE id=?").get(item.reference.definitionId, item.reference.definitionId))
+    throw new Error("Schatzentwurfsgegenstand fehlt.");
+}
+function checkedRow(db: any, row: any): TreasuryDraft {
+  if (hash(row.payload) !== row.checksum) throw new Error("Schatzentwurf beschädigt.");
+  const d = checkedDraft(JSON.parse(row.payload));
+  if (d.treasureId !== row.treasure_id) throw new Error("Schatzentwurf falsch zugeordnet.");
+  validateDraft(db, row.campaign_id, d);
+  return d;
+}
+function draft(db: any, cam: string, id: string): TreasuryDraft | null {
+  const row = db.prepare("SELECT * FROM treasury_draft WHERE campaign_id=? AND treasure_id=?").get(cam, id);
+  return row ? checkedRow(db, row) : null;
+}
+export function validateTreasuryDrafts(db: any) {
+  if (!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='treasury_draft'").get()) {
+    if (db.pragma('user_version', {simple: true}) < 39) return;
+    throw new Error("Schatzentwurfsspeicher fehlt.");
+  }
+  for (const row of db.prepare('SELECT * FROM treasury_draft').iterate()) checkedRow(db, row);
 }
 export function readTreasuryDraft(db: any, cam: string, id: string) {
   readTreasure(db, cam, id);
@@ -37,35 +69,8 @@ export function keepTreasuryDraft(
 ) {
   return db
     .transaction(() => {
-      const text = (v: unknown, n = 1000) =>
-        typeof v === "string" && v.length <= n;
-      if (
-        !d ||
-        !text(d.writeId) ||
-        !d.writeId ||
-        !Number.isSafeInteger(d.revision) ||
-        d.revision < 1 ||
-        !text(d.title) ||
-        (d.locationId !== null && !text(d.locationId)) ||
-        !text(d.reason, 10000) ||
-        !Array.isArray(d.items) ||
-        d.items.length > 100 ||
-        d.items.some(
-          (i) =>
-            !i ||
-            !text(i.name) ||
-            !text(i.quantity) ||
-            !text(i.valueGold) ||
-            !["coins", "equipment", "trade-goods", "magic", "other"].includes(
-              i.category,
-            ),
-        ) ||
-        Buffer.byteLength(JSON.stringify(d)) > 256000
-      )
-        throw new Error("Schatzentwurf ungültig oder zu groß.");
-      const t = readTreasure(db, cam, d.treasureId);
-      if (d.revision > t.revision)
-        throw new Error("Schatzentwurf aus neuerem Stand.");
+      checkedDraft(d);
+      validateDraft(db, cam, d);
       const old = draft(db, cam, d.treasureId),
         payload = JSON.stringify(d);
       if (old?.writeId === d.writeId && JSON.stringify(old) === payload) return;

@@ -24,6 +24,7 @@ function insertDefinition(store:CampaignStore,value:ItemDefinition){
 }
 function observed(db:any){
   return{
+    authoredItems:db.prepare("SELECT * FROM authored_item ORDER BY id").all(),
     campaigns:db.prepare("SELECT count(*) n FROM campaign").get().n,
     authored:db.prepare("SELECT * FROM authored_item ORDER BY id").all(),
     definitions:db.prepare("SELECT count(*) n FROM item_definition").get().n,

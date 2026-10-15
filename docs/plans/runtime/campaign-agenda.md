@@ -48,43 +48,35 @@ Ein Countdown zieht zuerst vollständige Fantasy-Tage ab und zerlegt nur den
 verbleibenden Rest in Stunden und Minuten. Bei einem gespeicherten 90-Minuten-Tag
 sind 90 Minuten genau ein Tag, nicht zusätzlich 30 Minuten. `agenda-time.test.ts`
 prüft den echten Kalenderwriter, nichtstündige Tage, positive/negative Restzeiten,
-Subminutenanzeige und den üblichen 24-Stunden-Tag. Der bestehende Agenda-UItest
-prüft separat Papierkorbaktionen für neue bzw. gespeicherte Ereignisse.
+Subminutenanzeige und den üblichen 24-Stunden-Tag. Der Agenda-UItest prüft den einzigen Ereigniseditor mit echten Storeabfragen:
+exakte Zeitpunkte/Notizen, Ortswahl, Papierkorb und Wiederherstellung. Der
+frühere zweite Editor im Weltbereich entfällt; dort öffnet derselbe Agendaeinstieg.
+Offene Entwürfe blockieren erneutes Öffnen. Refresh entfernt die alten Controls;
+verzögerte Bestätigungen gehören ausschließlich zu ihrem ursprünglichen Entwurf.
+Bei verlorener Antwort prüft die Agenda denselben Worldreceipt schreibfrei;
+spätere Rohfelder bleiben erhalten und die Frist wird nicht erneut angelegt.
+Die Änderungsprüfung vergleicht Ereignisdaten mit dem bestätigten Stand:
+gleichwertige Zeiteinheiten oder Datumsschreibweisen benötigen keinen weiteren
+Save; unveränderte Daten behalten auch Sekunden und Millisekunden. Nach einem
+bestätigten Receipt kann der Editor direkt schließen, sofern keine späteren
+Änderungen vorliegen.
 
 ## Kontext und Speicherbestätigung
 
-`agenda-ui.ts` bindet Öffnen und asynchrone Antworten an Campaigntoken und
-Dialoggeneration, Editoraktionen zusätzlich an die konkrete Editorfassung und
-Liste/Navigation an die Lesefassung. Ein verspäteter Refresh übernimmt keine
-neuen Kalender-/Zeit-/Eventbasen in offene Rohfelder. Eingaben bleiben während
-Speichern möglich; eine eigene bestätigte Speicherung übernimmt ausschließlich
-ihre Eventrevision. Danach eingegebene Felder behalten die vorher gezeigte
-Zeitbasis. Explizites Aktualisieren dieser Basis liest dieselbe Ursprungsscene;
-eine andere Scene, rückläufige Clockrevision oder geänderte Kalenderregeln
-werden nicht still übernommen.
+Editor und Antworten gehören zu Campaigntoken, Dialoganfrage und Entwurf.
+Während eines Saves bleiben Rohfelder editierbar; dessen Bestätigung übernimmt
+nur die eigene Eventrevision. Neuere Eingaben behalten ihre gezeigte Zeitbasis.
+Der Writer prüft diese Bindung erneut nach Flush. Rebase liest dieselbe Gruppe;
+eine andere Scene, ältere Clockrevision oder andere Kalenderregeln bleiben
+sichtbare Konflikte. Ein offener Auftrag blockiert weitere Saves und Schließen;
+fehlgeschlagene Receiptlesungen lassen denselben Auftrag erneut prüfen.
+Rohentwürfe und unbekannte Ausgänge sind noch nicht über Fresh/Neustart gesichert.
 
-Bei verlorener Worldantwort bietet die Agenda „Ereignisauftrag prüfen“.
-`world-ui.ts` klärt den unveränderten ursprünglichen Worldcommand über das
-bestehende Receipt. Diese Leseoperation erzeugt keinen zweiten Kalenderauftrag.
-Erneute Lesefehler halten den Ausgang offen. Eine bestätigte Eventrevision muss
-zur gesendeten ID und Revision gehören; spätere Eingaben bleiben erhalten.
-Das gilt innerhalb der laufenden Anwendung: Rohentwürfe und unbekannte Ausgänge
-sind noch nicht über Neustart/Fresh hinweg gesichert.
-
-Der derzeitige Mainwriter führt die SQLite-Transaktion synchron aus; die
-Receiptprüfung folgt auf eine beendete IPC-Anfrage. Ein fehlendes Receipt wird
-unter dieser Voraussetzung als nicht übernommen behandelt. Bei einem späteren
-asynchronen/externen Writer darf bloße Receiptabwesenheit keine abgeschlossene
-Nichtausführung beweisen: Ein noch laufender Auftrag braucht einen eindeutigen
-terminalen Zustand oder eine Nichtausführungsbindung, bevor ein neuer Auftrag
-zulässig ist. Receiptidentität, Ereignisrevision und Kalender-/Clockautorität
-bleiben verschiedene Prüfungen.
-
-Lokale Gegenproben in `agenda-context.test.ts` prüfen verzögertes Öffnen,
-Refresh und Speichern, abgelöste Aktionen, spätere Rohangaben und verlorene
-Antworten. Der echte Worldbridge-/SQLite-Fall prüft dabei eine einzige Ausführung
-und unveränderte Datenbankbytes bei anschließender Receiptleseoperation.
-Diese Teilbelege ersetzen keinen nativen Spielabendablauf.
+Der Mainwriter führt die SQLite-Transaktion synchron aus. Bei späteren externen
+Writern darf Receiptabwesenheit keine abgeschlossene Nichtausführung beweisen.
+Receiptidentität, Eventrevision und Kalender-/Clockautorität bleiben getrennt.
+Die tatsächlichen DOM-/Worldbridge-/SQLite-Prüfungen stehen gemeinsam in
+`agenda-ui.test.ts`; sie ersetzen keine native Abnahme.
 
 ## Übergang zum ausdrücklich bestätigten Zeitsprung
 
@@ -138,18 +130,12 @@ für diesen Zeitdialog, native Recovery und gruppenübergreifende Fachabnahmen.
 
 ## Nächste konkrete Prüfungen und Lieferung
 
-1. Rohentwürfe von Agenda und Zeitdialog vor Close/Fresh sichern: bestehende Entwurfspersistenz in
-   `storage/combat-drafts.ts`, `finish-drafts.ts` und `store.ts` samt Backup-/Campaign-Lebenszyklus zuerst auf einen passenden
-   Anschluss prüfen. Das versionierte Agendaformat braucht rohe Feldwerte,
-   Campaign-/Scene-/Eventidentität, ursprüngliche Event-/Kalender-/Clockrevision
-   und Instant sowie ursprüngliche Datumsdarstellung/Notizzeilen. Ungültige
-   numerische Eingaben bleiben Text; Restore darf sie nicht normalisieren.
-   Bestätigte Fakten werden nicht durch Entwurfsmigration umgeschrieben.
-   Fehlende Basen in Altentwürfen verlangen sichtbare Prüfung statt Aufwertung
-   auf die neueste Revision. Unbekannte Ausgänge brauchen den vollständigen
-   ursprünglichen Command samt ID und eine klare Trennung von Receiptlesen und
-   erneutem Senden. Abnahme: offene und ungültige Felder sowie verlorene Antwort
-   → Fresh/Neustart → unveränderte Felder, unveränderte Basen, genau ein Effekt.
+1. Rohentwürfe von Agenda und Zeitdialog vor Close/Fresh sichern; bestehende Entwurfspersistenz samt
+   Backup-/Campaign-Lebenszyklus zuerst auf einen passenden Anschluss prüfen.
+   Rohe Felder, ursprüngliche Event-/Kalender-/Clockbasis und ungeklärter
+   Originalcommand samt ID bleiben erhalten. Altentwürfe ohne Basis verlangen
+   sichtbare Prüfung. Abnahme: ungültige Eingaben/verlorene Antwort → Neustart
+   → unveränderte Felder und Basen, genau ein Effekt.
 2. Relative Frist, Reisen/Weiterreise, Rast/Warten, Shoprestock und zeitgebundene
    Autonomie gemeinsam gegen Kalender-/Scenezeit prüfen. Fokuswechsel ist keine
    Zustimmung zur Zeit einer anderen Gruppe. Vorwärts-/Rückwärts-Clockänderung,

@@ -1,7 +1,6 @@
-export {removePartyFromMasks as reconcileCombatParticipants} from './mask-health';
-import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
 import {npcRecord} from './npc-record';
 import {npcPosition} from './npc-world';
+import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
 import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';
 import { randomUUID, randomInt, createHash } from 'node:crypto';
@@ -45,7 +44,6 @@ function decode(row: any): CombatState {
   return state;
 }
 export function activeCombat(db:any,campaignId:string,sceneId:string):CombatState|null{const row=db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY ordinal DESC LIMIT 1").get(campaignId,sceneId);return row?decode(row):null;}
-
 function decodeUndo(row: any, owner: Pick<CombatState, 'id' | 'sceneId'>): CombatState {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Kein rückgängiger Schritt verfügbar.');
   const state = checkedCombat(JSON.parse(row.payload));
@@ -104,6 +102,7 @@ export function readCombat(db: any, campaignId: string, sceneId: string, id?: st
     return { combat, partyCandidates, assessment: combat ? assessment(db,campaignId,combat) : undefined,
       canUndo: !!row && ['preparing','running'].includes(row.phase) && !!db.prepare('SELECT 1 FROM combat_undo WHERE campaign_id=? AND combat_id=? LIMIT 1').get(campaignId, row.id),
       recent: db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase IN('preparing','running') DESC,ordinal DESC LIMIT 100").all(campaignId, sceneId).map((r: any) => { const c = decode(r); return { id: c.id, title: c.title, phase: c.phase }; }) };
+
   })();
 }
 export function executeCombat(db: any, command: CombatCommand, guard: () => void): CombatView {

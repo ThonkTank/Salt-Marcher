@@ -13,6 +13,11 @@ export function xpLevel(xp: number) {
   let index = 0; while (index < 19 && xp >= levelXp[index + 1]!) index++;
   return { level: index + 1, floor: levelXp[index]!, next: levelXp[index + 1] ?? null, budget: dailyXp[index]! };
 }
+export function xpInput(text: string): number {
+  const raw = text.trim(), amount = Number(raw);
+  if (!raw || !Number.isSafeInteger(amount) || amount < 0) throw new Error('Nichtnegative ganze XP eintragen.');
+  return amount;
+}
 export function xpShare(pool: number, recipients: number) {
   if (!Number.isSafeInteger(pool) || pool < 0 || !Number.isSafeInteger(recipients) || recipients < 0) throw new Error('Ungültige XP-Verteilung.');
   const share = recipients ? Number((BigInt(pool) + BigInt(recipients) - 1n) / BigInt(recipients)) : 0;

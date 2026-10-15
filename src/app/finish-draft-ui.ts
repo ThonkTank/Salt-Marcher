@@ -28,11 +28,12 @@ type Session = {
   saved: number;
   pending: Promise<boolean> | null;
   error: string | null;
+  loading: boolean;
 };
 let active: Session | null = null,
   timer: ReturnType<typeof setTimeout> | null = null,
   initialized = false;
-function snapshot(s: Session): Values {
+function snapshot(s: Pick<Session,"readItems">): Values {
   return {
     outcome: get<HTMLTextAreaElement>("combat-outcome").value,
     poolXp: get<HTMLInputElement>("finish-xp").value,
@@ -90,8 +91,9 @@ export function markFinishDraft() {
   timer = setTimeout(() => void save(s), 250);
 }
 async function save(s: Session): Promise<boolean> {
+  if(active!==s||s.loading)return false;
   if (s.pending) {
-    if (!(await s.pending)) return false;
+    if (!(await s.pending)||active!==s) return false;
     return s.version === s.saved ? true : save(s);
   }
   if (s.version === s.saved) return true;
@@ -110,6 +112,7 @@ async function save(s: Session): Promise<boolean> {
         d,
         s.draft?.writeId ?? null,
       );
+      if(active!==s)return false;
       if (!r.ok) throw new Error(r.error);
       s.draft = d;
       s.saved = version;
@@ -120,6 +123,7 @@ async function save(s: Session): Promise<boolean> {
       );
       return true;
     } catch (e) {
+      if(active!==s)return false;
       s.error = (e as Error).message;
       status(s);
       return false;
@@ -128,16 +132,25 @@ async function save(s: Session): Promise<boolean> {
   s.pending = run;
   const ok = await run;
   s.pending = null;
-  return ok && s.version !== s.saved ? save(s) : ok;
+  return active===s&&(ok && s.version !== s.saved ? await save(s) : ok);
 }
 export async function flushFinishDraft() {
-  return !active || (await save(active));
+  const s=active;
+  return !s||await save(s)&&active===s;
+}
+export function deactivateFinishDraft(){
+  active=null;
+  if(timer)clearTimeout(timer);
+  timer=null;
 }
 export async function resetFinishDraft() {
-  if (!(await flushFinishDraft()))
-    throw new Error(active?.error ?? "Abschlusseingabe noch nicht gesichert.");
-  active = null;
-  if (timer) clearTimeout(timer);
+  const s=active;
+  if(s?.loading&&s.version===0){deactivateFinishDraft();return true;}
+  if(s&&!(await save(s))&&active===s)
+    throw new Error(s.error??"Abschlusseingabe noch nicht gesichert.");
+  if(active!==s)return active===null;
+  deactivateFinishDraft();
+  return true;
 }
 export async function beginFinishDraft(
   w: Workspace,
@@ -151,7 +164,7 @@ export async function beginFinishDraft(
     w,
     owner,
     draft: null,
-    defaults: {} as Values,
+    defaults: snapshot({readItems}),
     readItems,
     restoreItems,
     preview,
@@ -159,29 +172,44 @@ export async function beginFinishDraft(
     saved: 0,
     pending: null,
     error: null,
+    loading: true,
   };
-  s.defaults = snapshot(s);
-  const r = await window.campaign.finishDraft(w.token, owner);
-  if (!r.ok) throw new Error(r.error);
+  active=s;
+  let r;
+  try{
+    r=await window.campaign.finishDraft(w.token,owner);
+  }catch(e){
+    if(active!==s)return false;
+    throw e;
+  }
+  if(active!==s)return false;
+  if(!r.ok)throw new Error(r.error);
+  s.loading=false;
   s.draft = r.value;
-  active = s;
-  if (s.draft) restore(s, s.draft);
+  if (s.draft&&s.version===0) restore(s, s.draft);
   status(s);
+  return true;
 }
 export async function finishDraftCommit() {
   const s = active;
   if (!s) throw new Error("Abschlussziel zuerst öffnen.");
   if (!(await save(s)))
     throw new Error(s.error ?? "Abschlusseingabe noch nicht gesichert.");
+  if(active!==s)throw new Error("Abschlussziel inzwischen gewechselt.");
   if (changedBasis(s) || s.owner.kind === "narrative" && s.owner.noteRevision === undefined)
     throw new Error(
       "Abschlussstand geändert. Gesicherte Eingabe zuerst prüfen und übernehmen.",
     );
-  return { writeId: s.draft?.writeId, revision: s.owner.revision, noteRevision: s.owner.noteRevision };
-}
-export function finishDraftConsumed() {
-  active = null;
-  if (timer) clearTimeout(timer);
+  return {
+    writeId:s.draft?.writeId,
+    revision:s.owner.revision,
+    noteRevision:s.owner.noteRevision,
+    consume:()=>{
+      if(active!==s)return false;
+      deactivateFinishDraft();
+      return true;
+    },
+  };
 }
 function init() {
   if (initialized) return;
@@ -193,41 +221,41 @@ function init() {
     if (active) void save(active);
   });
   get("finish-draft-discard").onclick = () => {
-    void (async () => {
-      const s = active;
-      if (!s || !(await save(s))) return;
-      if (s.draft) {
-        const r = await window.campaign.discardFinishDraft(
-          s.w.token,
-          s.owner,
-          s.draft.writeId,
-        );
-        if (!r.ok) {
-          s.error = r.error;
-          status(s);
-          return;
+    const s=active;
+    void (async()=>{
+      if(!s||!(await save(s))||active!==s)return;
+      const version=s.version;
+      const run=(async()=>{
+        try{
+          if(s.draft){
+            const r=await window.campaign.discardFinishDraft(s.w.token,s.owner,s.draft.writeId);
+            if(active!==s)return false;
+            if(!r.ok)throw new Error(r.error);
+          }
+          s.draft=null;s.error=null;
+          if(s.version===version){
+            restore(s,s.defaults);s.saved=s.version;
+            status(s,"Entwurf verworfen · vorbereitete Vorgaben wieder geladen.");
+          }else status(s,"Voriger Entwurf verworfen; neuere Eingaben bleiben erhalten.");
+          return true;
+        }catch(e){
+          if(active===s){s.error=(e as Error).message;status(s);}
+          return false;
         }
-      }
-      s.draft = null;
-      restore(s, s.defaults);
-      s.saved = s.version;
-      status(s, "Entwurf verworfen · vorbereitete Vorgaben wieder geladen.");
-    })().catch((e) => {
-      if (active) {
-        active.error = e.message;
-        status(active);
-      }
+      })();
+      s.pending=run;
+      const ok=await run;
+      if(s.pending===run)s.pending=null;
+      if(ok&&active===s&&s.version!==s.saved)await save(s);
+    })().catch(e=>{
+      if(s&&active===s){s.error=e.message;status(s);}
     });
   };
   get("finish-draft-adopt").onclick = () => {
     void (async () => {
       const s = active;
-      if (!s || !(await save(s)) || !s.draft) return;
-      if (s.owner.kind === "narrative" && s.owner.noteRevision === undefined) {
-        s.error = "Notizbasis zuerst erneut lesen.";
-        status(s);
-        return;
-      }
+      if (!s || !(await save(s)) || active!==s || !s.draft) return;
+      if(s.owner.kind === "narrative" && s.owner.noteRevision === undefined){s.error="Notizbasis zuerst erneut lesen.";status(s);return;}
       s.draft.revision = s.owner.revision;
       if (s.owner.kind === "narrative") s.draft.noteRevision = s.owner.noteRevision;
       s.version++;
