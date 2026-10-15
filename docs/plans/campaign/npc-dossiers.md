@@ -142,3 +142,9 @@ Entwurfsrohtexte, der vorhandene NPC-Commit und seine Receiptprüfung tragen Woc
 ### Desktop-Arbeitsstand 0.111: kanonische Stadtfraktionen
 
 Häuser und Viertel können nun eine vorhandene aktive World-Fraktion referenzieren. Die Stadt projiziert aus denselben IDs die Zahl bestätigter Bewohner, Beschäftigter und gebundener Elemente und bietet die Fraktion als Filter der World-NPC-Suche an. Archivierte Fraktionen bleiben an bestehenden Referenzen lesbar markiert, stehen aber nicht für neue Zuordnungen bereit. Eine Fraktionsbindung schützt Haus oder Viertel vor Regeneration; City-History, Neustart und Kampagnentransfer erhalten die Referenz. Regierung, Wachen und weitergehende Fraktionswirkungen bleiben offen, weil die sichtbaren Originalformulare ihre konkrete Semantik nicht ausreichend belegen.
+
+### Desktop-Arbeitsstand 0.114: Stadtaktivitäten zur Gruppenzeit
+
+Die Stadt liest alle dort bestätigten Bewohner und Beschäftigten gegen die Uhr der fokussierten Livegruppe. „Aktivitäten zur Gruppenzeit“ zeigt die aktuelle geplante Aktivität, heutige Datumsausnahmen oder Ruhetage und das kanonische Wohn- oder Arbeitsziel. Ziele können direkt im vorhandenen Stadtinspektor geöffnet werden; eine Person mit Wohn- und Arbeitsrolle erscheint nur einmal.
+
+Die Projektion verwendet den vorhandenen Kampagnenkalender und denselben Wochen-/Ausnahmeplan wie das NPC-Dossier. Sie erzeugt keine Stadtzeit, ändert keine Stadtrevision und bewegt weder NPC noch Gruppenzeit. Automatische Planausführung und weitere zeitabhängige Stadtfolgen bleiben offen.
