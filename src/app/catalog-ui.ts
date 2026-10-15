@@ -4,7 +4,7 @@ import type { Creature, CreatureAction, CreatureCatalogQuery } from '../features
 import {creatureActionRolls,type CreatureRollPreset} from './dice-formula';
 import { assessEncounter, validateEncounterPlanInput, type EncounterPlan, type CatalogInfo, type CreaturePage } from './encounter-contracts';
 import { xpLevel } from './progression';
-import { initGeneration, activateGeneration, flushGeneration, generationCreature, refreshGeneration } from './generation-ui';
+import { initGeneration, activateGeneration, flushGeneration, generationCatalogFiltersChanged, generationCreature, refreshGeneration } from './generation-ui';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const value=(id:string)=>get<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
@@ -106,8 +106,8 @@ function renderPlan(){get('encounter-editor').hidden=!plan;if(!plan)return;get<H
 export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAdd:(creatureId:string,count:number,grouped:boolean)=>Promise<void>){tell=status;prepare=onPrepare;
  initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:query,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
  get('catalog-form').onsubmit=event=>{event.preventDefault();if(searchTimer)clearTimeout(searchTimer);offset=0;void search();};
- for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{if(searchTimer)clearTimeout(searchTimer);searchTimer=setTimeout(()=>{offset=0;void search();},200);};
- get('catalog-reset').onclick=()=>{get<HTMLFormElement>('catalog-form').reset();offset=0;sort='name';void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{sort=button.dataset.sort as CreatureCatalogQuery['sort'];offset=0;void search();};
+ for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{generationCatalogFiltersChanged();if(searchTimer)clearTimeout(searchTimer);searchTimer=setTimeout(()=>{offset=0;void search();},200);};
+ get('catalog-reset').onclick=()=>{get<HTMLFormElement>('catalog-form').reset();offset=0;sort='name';generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{sort=button.dataset.sort as CreatureCatalogQuery['sort'];offset=0;void search();};
  get('encounter-search').oninput=()=>void refreshPlans();
  get('encounter-list').onchange=()=>{void loadPlan(value('encounter-list'));};
  get('encounter-new').onclick=()=>report(()=>newPlan());
