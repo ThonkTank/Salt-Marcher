@@ -134,7 +134,7 @@ export async function addLiveNpc(id:string,stillCurrent:()=>boolean=()=>true){if
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
   sessionNavigatorBusy(on&&!textSave);
-  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-');
+  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'adoption-confirm-packet', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-');
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
@@ -639,10 +639,12 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
   get('adoption-plan').onchange = renderVisits;
   get('adoption-preview').onclick=()=>void previewPlannedVisit(value('adoption-plan'),value('adoption-visit')).catch(e=>tell(e.message,true));
   get('adoption-cancel').onclick = () => { adoption = null; get<HTMLDialogElement>('adoption-dialog').close(); };
-  get('adoption-confirm').onclick = () => { void (async () => {
-    const action = adoption; if (!action) return;
-    if (await execute(action)) { adoption = null; get<HTMLDialogElement>('adoption-dialog').close(); get<HTMLDetailsElement>('adoption-picker').open = false; renderScene(); }
-  })(); };
+  const confirmAdoption=(openPacket:boolean)=>void(async()=>{
+    const action=adoption;if(!action)return;
+    if(await execute(action)){adoption=null;get<HTMLDialogElement>('adoption-dialog').close();get<HTMLDetailsElement>('adoption-picker').open=false;renderScene();if(openPacket)await openLivePacket();}
+  })().catch(error=>tell((error as Error).message,true));
+  get('adoption-confirm').onclick=()=>confirmAdoption(false);
+  get('adoption-confirm-packet').onclick=()=>confirmAdoption(true);
   get('live-apply').onclick = () => { void flushLive(); };
   get('live-reconcile').onclick = () => { void (async () => {
     const command = failed, token = context?.token; if (!command || !token) return;
@@ -738,8 +740,10 @@ async function previewPlannedVisit(planId:string,visitId:string,stillCurrent:()=
     const plan = sources?.plans.find(p => p.id === planId), visit = plan?.scenes.find(v => v.id === visitId); if (!plan || !visit) return false;
     const prepared=unwrap(await window.campaign.session(token!,planId)),detail=prepared.visits.find(v=>v.visitId===visitId);if(!current())return false;
     adoption = { kind: 'apply-visit', planId, expectedPlanRevision: plan.revision, visitId, sceneId: data.scene.id, expectedRevision: data.scene.revision,expectedVisitRevision:detail?.revision??0 };
-    get('adoption-content').textContent = (visit.title || 'Unbenannter Besuch') + '\n\n' + visit.notes + '\n\nOrt: ' + (sources?.locations.find(l => l.document.id === visit.locationId)?.document.name ?? (visit.locationId ? 'nicht verfügbar' : 'kein Ort'));
-    get('adoption-content').textContent+='\n\nZum Vorlesen:\n'+(detail?.readAloud??'')+'\n\nVorbereitete Gruppen: '+(detail?.groupIds.length??0);
+    const root=get('adoption-content');root.replaceChildren();const title=document.createElement('h3'),facts=document.createElement('div'),impact=document.createElement('ul'),location=sources?.locations.find(l=>l.document.id===visit.locationId)?.document.name??(visit.locationId?'nicht verfügbar':'kein Ort'),groups=(prepared.groups??[]).filter(group=>detail?.groupIds.includes(group.id)),reward=detail?.reward;
+    title.textContent=visit.title||'Unbenannter Besuch';facts.className='adoption-review-facts';facts.textContent='Plan: '+(plan.name||'Unbenannter Spielabend')+' · Ort: '+location;
+    impact.className='adoption-review-list';for(const text of ['Scene-Titel, GM-Notizen und Ort ersetzen','Vorlesetext: '+(detail?.readAloud?'vorbereitet':'leer'),(detail?.noteIds.length??0)+' Wissensquelle'+((detail?.noteIds.length??0)===1?'':'n')+' gebunden',groups.length+' Begegnungsgruppe'+(groups.length===1?'':'n')+' vorbereitet',reward?(reward.poolXp+' XP · '+reward.items.length+' Beuteeinträge · '+(reward.awarded?'bereits vergeben':reward.placedTreasureId?'als Schatz platziert':'noch nicht vergeben')):'Keine Besuchsbelohnung vorbereitet']){const item=document.createElement('li');item.textContent=text;impact.append(item);}root.append(title,facts,impact);
+    const section=(heading:string,text:string,kind:'pre'|'blockquote'='pre',open=false)=>{const details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement(kind);details.open=open;summary.textContent=heading;body.textContent=text||'Kein Text vorbereitet.';details.append(summary,body);root.append(details);};section('Private GM-Notizen',visit.notes,'pre',true);section('Zum Vorlesen',detail?.readAloud??'','blockquote');if(groups.length)section('Vorbereitete Begegnungen',groups.map(group=>group.title+' · '+group.actors.length+' Figuren').join('\n'));
     get<HTMLDialogElement>('adoption-dialog').showModal();
     return true;
 }
