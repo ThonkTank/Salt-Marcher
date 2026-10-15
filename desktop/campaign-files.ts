@@ -1,6 +1,5 @@
 import {createHash} from 'node:crypto';
 import {createReadStream} from 'node:fs';
-import {rm} from 'node:fs/promises';
 import path from 'node:path';
 import type {CampaignTransferProgress} from '../src/app/campaign-contracts';
 import {readArchive,writeArchive,type ArchiveFile} from './zip-files';
@@ -40,10 +39,5 @@ export async function extractCampaignArchive(filename:string,base:string,h:Campa
  const extracted=await readArchive(filename,base,allowedName,value=>{
   const manifest=checkedManifest(value);return new Map(manifest.files.map(file=>[file.name,file]));
  },{check:()=>check(h),progress:(bytes,records)=>h.progress({phase:'Kampagnenpaket vorbereiten',bytes,records,busy:true})});
- try{
-  const manifest=checkedManifest(extracted.manifest);
-  if(manifest.files.length!==extracted.files.size)throw new Error('Manifest und Paket-Dateiverzeichnis widersprechen sich.');
-  for(const f of manifest.files){check(h);const actual=extracted.files.get(f.name);if(!actual||actual.bytes!==f.bytes||actual.sha256!==f.sha256)throw new Error('Paketdatei fehlt oder ist verändert: '+f.name);}
-  check(h);return{dir:extracted.dir,manifest};
- }catch(e){await rm(extracted.dir,{recursive:true,force:true});throw e;}
+ return{dir:extracted.dir,manifest:extracted.manifest as CampaignManifest};
 }
