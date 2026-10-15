@@ -84,9 +84,11 @@ belegt. Native Vorher-/Nachher-/Fresh-Läufe bestätigen Auswahl, direkten
 Bearbeitungsweg, sichtbare Kernfelder, Tastaturwechsel und gespeicherte Texte.
 Die Leitung prüfte Build-/Quellidentitäten, originale normale Abschlüsse und
 den sichtbaren Fresh-Stand. Der abgeschlossene Implementiererchat ist archiviert;
-Build und Belege bleiben erhalten. Ein frischer unabhängiger Zieltest steht aus.
+Build und Belege bleiben erhalten. MANUAL-SCENE-RETEST-01 ist nach regulärer
+Reservierung in einem neuen unabhängigen Chat gestartet: eigene Szenen,
+Lesen/Bearbeiten/Tastatur und Close/Fresh, ohne frühere Befunde oder Antworten.
 
-Ein frischer Original-Obsidian-Vergleich läuft. Der frühere
+Der Original-Obsidian-Vergleich ist abgeschlossen. Der frühere
 erfolgreiche native UI-/Save-/Fresh-Pilot und unveränderte Programm-/Ressourcen-
 hashes sind vorhanden. Die Trialreservierung wurde wegen der belegten
 Kapazität abgewiesen; die Leitung legte versehentlich trotzdem den technischen
@@ -106,9 +108,15 @@ Suche fortgesetzt, Laterne zurückgegeben und tatsächlicher Wissensstand notier
 Die Leitung prüfte ausgewählte Originalidentitäten, sichtbaren Spielstand und
 fortgesetzte Notiz sowie normalen Close. Suchausschnitte enthalten auch GM-
 Geheimwissen; die Spielerantwort blieb begrenzt. Keine Spieleranzeige geprüft.
-Die Erstöffnung von PLAY bestätigte PREPARE. Den gespielten Endstand prüft jetzt
-RESUME im selben Chat/Vault, nach normalem Close und der dazwischen ausgeführten
-begrenzten 0.100.0-Abschlussprüfung.
+RESUME bestätigte den gespielten Stand anhand der frisch geöffneten Notizen.
+Notiztabs und Suche wurden wiederhergestellt; Orte, Zeitanker und geheime
+Besitzerzuordnung wurden nachgelesen. Keine Sachkorrektur nötig. Die Rückkehrfrage
+blieb mangels aktueller Uhrzeit/Reisedauern ehrlich zeitlich unentscheidbar;
+keine Reise wurde hinzuerfunden. Die letzte Antwort wurde gespeichert und normal
+geschlossen, ohne zusätzlichen Fresh genau dieser letzten Ergänzung. Originale
+Datei-/Frameidentitäten und der terminale Normalabschluss wurden geprüft;
+der tatsächlich fertige Chat ist archiviert. Das ist ein praktisch nutzbarer
+vollständiger Notizablauf, kein menschlicher Belastungs- oder Geschwindigkeitsbeweis.
 Keine früheren Produktberichte oder Lösungswege an den Tester.
 
 Zwei technische Fehlstarts bleiben erhalten: Sandbox-Lock ohne Jobstart und
@@ -118,8 +126,13 @@ unveränderte Operator regulär mit offenem Terminal. Keine manuelle
 Kapazitätsänderung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
 mangels auflösbarer Gesprächs-ID unbestätigt.
 
-Rabenfurt braucht noch eigene praktische Konkurrenz- und einfachste
-Alternativabläufe. Es gibt keine qualifizierte Zeit-/Klickauswertung,
+Für Rabenfurt fehlt noch der einfachste reine Textablauf; KWrite ist mit
+unveränderter geprüfter Binäridentität vorbereitet, ohne weiteren Chatstart.
+Dungeon Editor 0.94.0 und Original-Obsidian erhielten den gespielten narrativen
+Stand nach Fresh. Obsidian stellte Tabs/Suche wieder her, während der erste
+Editorlauf manuell aus „Karte und Keys“ zurücknavigierte. Das ist eine konkrete
+Frage für aktuelle Wiederaufnahme-UX, kein kontrollierter Kostenvergleich der
+verschiedenen selbst gewählten Organisationen. Es gibt keine qualifizierte Zeit-/Klickauswertung,
 kontrollierte Überlegenheits- oder menschliche Belastungsaussage. Insbesondere
 werden alte Produkt- und neue Textspuren nicht numerisch gegeneinander gewertet.
 Originalberichte, Frames, Receipts, Fehler und nächste Schritte bleiben mit
