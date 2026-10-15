@@ -26,6 +26,38 @@ nur aktive/pausierte/unterbrochene Routen; Ankunft und Abbruch bleiben Historie.
 Warten/Rast mit Zeitänderung erfordern danach eine ausdrückliche
 Neubewertung des Restwegs. Der abgefahrene Weg wird nicht erneut gebucht.
 
+## Routenauswertung: Dauer, Hexanzahl und Grundkosten
+
+Die Konsole und die Reisevorschau projizieren dieselben drei Utilityfakten:
+Dauer, expandierte Hexabschnitte und `terrainCost`. `previewTravel` summiert
+`terrainFactor(cellAt(map, destinationHex))` für **jeden** tatsächlich betretenen
+Routenabschnitt. Das anfängliche Hex kostet nichts; eine spätere Rückkehr dorthin
+zählt als neuer Eintritt. Doppelte Wegpunkte am bereits erreichten Hex erzeugen
+keinen zusätzlichen Abschnitt. Die vorhandene Wegregel setzt Grundkosten auf1,
+sonst gilt der vorhandene Terrainfaktor. Diese gleiche Regel steuert Wegsuche und
+Grunddauer; keine unabhängige Kostenformel im Renderer.
+
+Die Summe berücksichtigt den vollständigen expandierten Weg, einschließlich
+Abschnitten nach dem 40-Zeilen-Fenster des Briefings. Wetter, Reisetempo,
+GM-Dauerfaktor, manuelle Enddauer und Wiedergabegeschwindigkeit verändern diese
+Grundkostensumme nicht. Kilometer bleiben zusätzliche Entfernung. Die Anzeige
+nennt Kosten und Regeln ausdrücklich, ohne sie als Geldbetrag auszugeben.
+Restwegneubewertung zählt nur die noch offenen Eintritte ab dem bestätigten Hex.
+
+Der bestehende Startguard vergleicht auch die dargestellte Kostensumme mit der
+neu ermittelten vollständigen Vorschau. Manipulierte oder veraltete Fakten
+starten keine Reise. Kein neues Journeyfeld, kein Schema und keine zweite
+Position. Unangenommene Vorschauen einer älteren Appversion brauchen eine neue
+Auswertung; bestehende Journeyfakten und Originalreceipts werden nicht verändert.
+Für die späteren kanonischen Biome wird dieselbe Utilityregel auf stabile Biom-IDs
+umgestellt, statt UI und Writer mit getrennten Kostentabellen zu erweitern.
+
+`desktop-travel-cost.test.mjs` prüft echte Storevorschauen und die Konsole:
+Start-/Zielzählung, Wege, mehrfaches Betreten, Wetter-/Tempo-/Enddauertrennung,
+mehr als40Abschnitte, Checkpointfortsetzung, gefälschte Kosten ohne Schreibwirkung
+und vollständiges Leeren des transienten Auswertungsstands. Das ersetzt keine
+vollständige Scene-/Mapwechsel-, Latenz- oder native Reiseabnahme.
+
 ## Unabhängige Kampagnenkopie
 
 `campaign-data.remapSnapshot` ändert lokale IDs. Die Reise-Umweltbasis enthält
@@ -121,8 +153,8 @@ Host-/200%-/Großroutenabnahme und keine behauptete neue Kartengrenzregel.
 3. **Gemeinsame Bedienung abschließen.** Karte/Token, Drag-Platzierung mit
    Tastaturalternative, Wegpunkte und Auswahl im selben Scene-/Mapkontext
    bedienen. Vorhandene Gesten prüfen, statt einen zweiten Renderer zu bauen.
-   Auswertung um erklärbare Summe der tatsächlich betretenen Biomekosten
-   ergänzen; Kosten von Zeit samt Wetter/GMfaktor unterscheiden. Mapwechsel
+   Die vorhandene dreiteilige Utilityauswertung mit kanonischen Biomen und
+   späterer Transport-/Passierbarkeitsregel konsistent weiterführen. Mapwechsel
    leert nur transienten Entwurf/Auswertung; Scenewechsel übernimmt keine alte
    Antwort. Reiseansicht allein erzwingt keinen anderen Arbeitskontext.
    Native Abnahme mit Kartenwechsel, langen Routen,200%, Fehlerantwort,
