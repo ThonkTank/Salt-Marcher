@@ -23,3 +23,12 @@ test('activation cannot capture the old projection as a new campaign position',(
 test('fresh local view overrides stale window position while a separate window starts independent',()=>{
  const p=new WorkspacePositions();p.select('A','live',400);p.capture('A',800);assert.equal(p.select('A','live',220),220);assert.equal(new WorkspacePositions().select('A','live'),0);
 });
+
+test('fresh live writing remembers its visible position separately from the old document layout',()=>{
+ const storage=memory();rememberWorkspaceView(storage,'A',{tab:'live',scrollY:1310,liveNotesTop:562});rememberWorkspaceView(storage,'B',{tab:'live',scrollY:720,liveNotesTop:360});
+ assert.deepEqual(readWorkspaceView(storage,'A'),{tab:'live',scrollY:1310,liveNotesTop:562});assert.equal(readWorkspaceView(storage,'B').liveNotesTop,360);
+});
+test('old, non-live and malformed writing positions preserve safe numeric navigation',()=>{
+ for(const liveNotesTop of [null,'562',-10001,10001])assert.deepEqual(readWorkspaceView({getItem:()=>JSON.stringify({tab:'live',scrollY:500,liveNotesTop})},'A'),{tab:'live',scrollY:500});
+ assert.deepEqual(readWorkspaceView({getItem:()=>JSON.stringify({tab:'preparation',scrollY:500,liveNotesTop:200})},'A'),{tab:'preparation',scrollY:500});
+});
