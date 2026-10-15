@@ -87,3 +87,13 @@ test('a failed search leaves known statblocks usable and a new search can recove
  x.queries[1].resolve({ok:true,value:{rows:[{id:'dragon',name:'Dragon',challengeRating:'9'}],total:1}});await until(()=>x.el('combat-creature-select').textContent.includes('Dragon'));
  assert.equal(x.el('combat-creature-add').disabled,false);assert.match(x.el('combat-creature-select').textContent,/Goblin/);
 });
+
+test('condition shortcuts wait for the selected working draft and stay blocked on a read failure',async t=>{
+ const x=await uiFixture(t);let resolve;window.campaign.combatDraft=()=>new Promise(r=>{resolve=r;});
+ x.el('combat-table').querySelector('tbody button').onclick();await until(()=>!!resolve);
+ const buttons=()=>[...x.el('fighter-condition-shortcuts').querySelectorAll('button')];
+ assert.ok(buttons().length);assert.ok(buttons().every(b=>b.disabled));
+ x.el('combat-participant-form').onsubmit({preventDefault(){}});assert.equal(x.writes.length,0);
+ resolve({ok:false,error:'Working draft unavailable'});await tick();await tick();
+ assert.ok(buttons().every(b=>b.disabled));x.el('combat-participant-form').onsubmit({preventDefault(){}});assert.equal(x.writes.length,0);
+});
