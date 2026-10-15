@@ -157,3 +157,7 @@ Ortsabschnitte/Weltverweise/Statblocks, Fehler benötigter gegenüber ungebunden
 Quellen sowie Suche und verspätete Antworten. Der Speicherdialog wird dabei
 nicht ausgeführt. Native Ausgabe, große Pläne, Accessibility und der komplette
 Vorbereitung-/Live-/Nachbereitungsweg bleiben offen.
+
+Die [Autorenverweisplanung](authored-text-references.md) führt den gemeinsamen
+Textvertrag, Literal-/Kopierschutz, die Einfügeautorität und die noch offene
+Alias-/Markdown-/Verbraucherclosure. Die Mappe erhält weiterhin Autorenbytes.

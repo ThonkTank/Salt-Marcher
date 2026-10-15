@@ -42,8 +42,9 @@ test('a cancelled Enter query cannot override a newer explicit reference selecti
 });
 
 test('unchanged reference handoff keeps the exact authored text and scene identity',async t=>{
- const x=await fixture(t),before=x.store.db.serialize(),scene=x.store.live(x.w.token).scene;x.el('quick-results').querySelector('button').click();await tick();x.el('quick-use-read-aloud').click();await tick();
- assert.equal(x.handoffs.length,1);assert.equal(x.handoffs[0].content.note.readAloud,x.note.readAloud);assert.equal(x.handoffs[0].sceneId,scene.id);assert.equal(x.dialog.open,false);assert.ok(x.store.db.serialize().equals(before));
+ const x=await fixture(t),scene=x.store.live(x.w.token).scene;x.el('quick-results').querySelector('button').click();await tick();
+ const raw='  [Wache](dungeon-ref:note/'+x.note.id+')\r\n[[Vault note]]';x.note.readAloud=raw;x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:x.note}));x.el('quick-refresh').click();await tick();const unchanged=x.store.db.serialize();x.el('quick-use-read-aloud').click();await tick();
+ assert.equal(x.handoffs.length,1);assert.equal(x.handoffs[0].content.note.readAloud,x.note.readAloud);assert.equal(x.handoffs[0].sceneId,scene.id);assert.equal(x.dialog.open,false);assert.ok(x.store.db.serialize().equals(unchanged));
 });
 test('pinning a reference uses the existing scene owner without changing notes, time or progress',async t=>{
  const x=await fixture(t),scene=x.store.live(x.w.token).scene,progress=x.store.progress(x.w.token),notes=x.store.preparation(x.w.token).notes;x.el('quick-results').querySelector('button').click();await tick();x.el('quick-pin').click();await tick();

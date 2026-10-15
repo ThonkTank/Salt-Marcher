@@ -271,6 +271,7 @@ function revealNote(id: string) {
   editor.scrollIntoView({ block: 'start' });
 }
 async function renderNotes() {
+  noteEditorGeneration++;
   const row = noteRow(selectedNote); noteDraft = row && !row.trashed ? structuredClone(row.note) : null;
   const token = context?.token, target = selectedNote, request = preparationLoad;
   const saved = row ? await loadedDraft('note', row.note.id) : null;
@@ -278,6 +279,7 @@ async function renderNotes() {
   if (saved?.change.kind === 'note' && !row?.trashed) noteDraft = structuredClone(saved.change.note);
   get('note-editor').hidden = !row; get('note-empty').hidden = !!row;
   renderNoteList();
+  get<HTMLButtonElement>('note-text-reference').disabled=!row||row.trashed||blocked||draftProblems.has(draftKey('note', row.note.id));
   if (!row) return;
   void checkpoint();
   const shown = noteDraft ?? row.note;
@@ -350,12 +352,28 @@ async function changeNoteRelations(relations:Note['relations']){
   noteDraft={...noteDraft,relations};renderRelations();schedule();
   return await flushPreparation()&&context?.token===token&&request===preparationLoad&&selectedNote===id;
 }
+let noteEditorGeneration=0,locationSectionsGeneration=0;
+async function insertNoteTextReference(){
+ const owner=context,token=owner?.token,campaignId=owner?.campaign.id,id=selectedNote,run=preparationLoad,editor=noteEditorGeneration,button=get<HTMLButtonElement>('note-text-reference'),area=get<HTMLTextAreaElement>('note-gm');
+ if(!token||!id||!noteDraft||!button.isConnected||button.disabled||area.disabled||blocked)return;
+ // Flush may confirm a revision, but cannot authorize a different text/selection.
+ const before=noteDraft.gmNotes,input=area.value,start=area.selectionStart,end=area.selectionEnd,alias=input.slice(start,end);
+ const current=()=>context===owner&&context?.token===token&&context?.campaign.id===campaignId&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id&&!!noteDraft&&noteDraft.gmNotes===before&&area.isConnected&&!area.disabled&&!blocked;
+ button.disabled=true;
+ try{
+  if(!await flushPreparation()||!current())return;
+  const link=await chooseTextReference(token,alias,current);if(!link||!current())return;
+  const from=rawTextOffset(before,start),to=rawTextOffset(before,end);
+  noteDraft={...noteDraft!,gmNotes:before.slice(0,from)+link+before.slice(to)};area.value=noteDraft.gmNotes;schedule();area.focus();const caret=start+link.replace(/\r\n/g,'\n').length;area.setSelectionRange(caret,caret);
+ }catch(error){if(current())tell((error as Error).message,true);}
+ finally{if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
+}
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string) => Promise<void>) {
   tell = status;
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
   initSession(status,()=>flushPreparation(true),async (id,planId)=>{if(!context)return;usePreparation(unwrap(await window.campaign.preparation(context.token,value('world-search'))), !!value('world-search').trim());if(planId){selectedPlan=planId;planDraft=null;selectedScene=null;}if(id)selectedScene=id;await renderPlans();await renderNotes();await renderLocations();},openPreparedNote);
   openMap = navigateMap;
-  get('note-text-reference').onclick=()=>{void(async()=>{const token=context?.token,id=selectedNote,request=preparationLoad,area=get<HTMLTextAreaElement>('note-gm'),start=area.selectionStart,end=area.selectionEnd;if(!token||!id||area.disabled||blocked||!await flushPreparation()||context?.token!==token||preparationLoad!==request||selectedNote!==id||!noteDraft)return;const before=noteDraft.gmNotes,alias=area.value.slice(start,end),link=await chooseTextReference(token,alias);if(!link)return;if(context?.token!==token||preparationLoad!==request||selectedNote!==id||!noteDraft||noteDraft.gmNotes!==before||blocked){tell('Notizkontext geändert. Verweis erneut einfügen.',true);return;}const from=rawTextOffset(before,start),to=rawTextOffset(before,end);noteDraft={...noteDraft,gmNotes:before.slice(0,from)+link+before.slice(to)};area.value=noteDraft.gmNotes;schedule();area.focus();area.setSelectionRange(start+link.length,start+link.length);})().catch(e=>tell(e.message,true));};
+  get('note-text-reference').onclick=()=>{void insertNoteTextReference();};
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
   get('world-new').onclick = () => { get<HTMLDialogElement>('world-dialog').showModal(); get('world-name').focus(); };
   get('world-cancel').onclick = () => get<HTMLDialogElement>('world-dialog').close();
@@ -543,14 +561,22 @@ async function renderLocations() {
 }
 function sectionTitleDialog(title:string,initial:string):Promise<string|null>{const dialog=document.createElement('dialog'),form=document.createElement('form'),heading=document.createElement('h3'),input=document.createElement('input'),save=document.createElement('button'),cancel=document.createElement('button');heading.textContent=title;input.value=initial;input.required=true;input.setAttribute('aria-label','Abschnittstitel');save.textContent='Übernehmen';save.type='submit';cancel.textContent='Abbrechen';cancel.type='button';form.append(heading,input,save,cancel);dialog.append(form);dialog.id='location-section-title-dialog';document.body.append(dialog);return new Promise(resolve=>{const finish=(value:string|null)=>{dialog.close();dialog.remove();resolve(value);};form.onsubmit=e=>{e.preventDefault();if(input.value.trim())finish(input.value);};cancel.onclick=()=>finish(null);dialog.oncancel=e=>{e.preventDefault();finish(null);};dialog.showModal();input.select();});}
 function renderLocationSections(){
+ const owner=context,campaignId=owner?.campaign.id,run=preparationLoad,epoch=++locationSectionsGeneration;
  const row=locationDraft??originalLocation(),root=get('location-sections'),token=context?.token,id=row?.document.id;root.replaceChildren();if(!row)return;const readonly=row.trashed||blocked||draftProblems.has(draftKey('location',row.document.id));
- const button=(text:string,action:()=>Promise<void>)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.disabled=readonly;b.onclick=()=>{b.disabled=true;void action().catch(e=>tell(e.message,true)).finally(()=>{if(b.isConnected)b.disabled=readonly;});};return b;};
- const owned=()=>context?.token===token&&locationDraft?.document.id===id&&!blocked;
+ const button=(text:string,action:()=>Promise<void>)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.disabled=readonly;b.onclick=()=>{if(!b.isConnected||b.disabled||!owned())return;b.disabled=true;void action().catch(e=>{if(owned())tell(e.message,true);}).finally(()=>{if(b.isConnected&&owned())b.disabled=readonly;});};return b;};
+ const owned=()=>context===owner&&context?.token===token&&context?.campaign.id===campaignId&&preparationLoad===run&&locationSectionsGeneration===epoch&&locationDraft?.document.id===id&&!blocked;
  const update=(sections:typeof row.document.sections)=>{if(!owned())return;locationDraft={...locationDraft!,document:{...locationDraft!.document,sections}};schedule();renderLocationSections();};
  row.document.sections.forEach((section,index)=>{
   const block=document.createElement('section'),label=document.createElement('label'),field=document.createElement('textarea'),tools=document.createElement('div');block.dataset.locationSectionId=section.id;label.textContent=section.title;field.id=`location-section-${index}`;field.dataset.sectionId=section.id;label.htmlFor=field.id;field.rows=5;field.value=section.markdown;field.disabled=readonly;tools.className='toolbar';
   field.oninput=()=>{if(!owned())return;const current=locationDraft!.document.sections.find(s=>s.id===section.id);if(!current)return;locationDraft={...locationDraft!,document:{...locationDraft!.document,sections:locationDraft!.document.sections.map(s=>s.id===section.id?{...s,markdown:field.value===current.markdown.replace(/\r\n?/g,'\n')?current.markdown:field.value}:s)}};schedule();};field.onblur=()=>{if(!composing)void flushPreparation();};
-  tools.append(button('Textverweis einfügen…',async()=>{const start=field.selectionStart,end=field.selectionEnd,alias=field.value.slice(start,end);if(!await flushPreparation()||!owned())return;const before=locationDraft!.document.sections.find(s=>s.id===section.id)?.markdown;if(before===undefined)return;const link=await chooseTextReference(token!,alias);if(!link)return;if(!owned()||locationDraft!.document.sections.find(s=>s.id===section.id)?.markdown!==before)throw new Error('Ortsabschnitt geändert. Verweis erneut einfügen.');locationDraft={...locationDraft!,document:{...locationDraft!.document,sections:locationDraft!.document.sections.map(s=>s.id===section.id?{...s,markdown:before.slice(0,rawTextOffset(before,start))+link+before.slice(rawTextOffset(before,end))}:s)}};field.value=locationDraft.document.sections.find(s=>s.id===section.id)!.markdown;schedule();field.focus();field.setSelectionRange(start+link.length,start+link.length);}));
+  tools.append(button('Textverweis einfügen…',async()=>{
+   const start=field.selectionStart,end=field.selectionEnd,alias=field.value.slice(start,end),before=locationDraft?.document.sections.find(s=>s.id===section.id)?.markdown;
+   const current=()=>owned()&&field.isConnected&&!field.disabled&&locationDraft?.document.sections.find(s=>s.id===section.id)?.markdown===before;
+   if(before===undefined||!await flushPreparation()||!current())return;
+   const link=await chooseTextReference(token!,alias,current);if(!link||!current())return;
+   locationDraft={...locationDraft!,document:{...locationDraft!.document,sections:locationDraft!.document.sections.map(s=>s.id===section.id?{...s,markdown:before.slice(0,rawTextOffset(before,start))+link+before.slice(rawTextOffset(before,end))}:s)}};
+   field.value=locationDraft.document.sections.find(s=>s.id===section.id)!.markdown;schedule();field.focus();const caret=start+link.replace(/\r\n/g,'\n').length;field.setSelectionRange(caret,caret);
+  }));
   tools.append(button('Titel ändern…',async()=>{if(!await flushPreparation()||!owned())return;const title=await sectionTitleDialog('Abschnitt umbenennen',section.title);if(title&&owned())update(locationDraft!.document.sections.map(s=>s.id===section.id?{...s,title}:s));}));
   const move=(delta:number)=>async()=>{if(!await flushPreparation()||!owned())return;const sections=[...locationDraft!.document.sections],from=sections.findIndex(s=>s.id===section.id),to=from+delta;if(from<0||to<0||to>=sections.length)return;const [selected]=sections.splice(from,1);sections.splice(to,0,selected!);update(sections);};const up=button('Nach oben',move(-1)),down=button('Nach unten',move(1));up.disabled=readonly||index===0;down.disabled=readonly||index===row.document.sections.length-1;tools.append(up,down);block.append(label,field,tools);root.append(block);
  });

@@ -1,4 +1,4 @@
-import {textReferences,plainReferenceText} from './text-references';
+import {textReferences} from './text-references';
 import {refreshSceneDeskPins} from './scene-desk-ui';
 import type {Workspace,Result} from './contracts';
 import type {DeskRef,DeskEntry,DeskContent} from './scene-desk-contracts';
@@ -43,7 +43,7 @@ async function openContent(ref:DeskRef,remember=true){
   if(c.item){const i=c.item;const value=i.unitCopper===null?'Wert offen':(BigInt(i.unitCopper)/100n)+','+(BigInt(i.unitCopper)%100n).toString().padStart(2,'0')+' GM';text('Gegenstand',i.category+' · '+value+(i.weightText?' · '+i.weightText:'')+(i.magic?' · magisch · '+i.rarity+' · Einstimmung '+i.attunement:''));text('Eigenschaften',i.properties.join(', '));text('Beschreibung',i.description);text('Quelle',i.source.label+(i.source.license?'\n'+i.source.license:''));}
   if(c.encounter){text('Begegnung',c.encounter.notes);text('Teilnehmer',c.encounter.entries.map(e=>encounterEntryLabel(e,c.encounter!.sources)).join('\n'));}
   const fresh=async()=>{if(!owned(w.token,n))throw new Error('Lesekontext geändert.');const now=unwrap(await window.campaign.deskContent(w.token,ref));if(!owned(w.token,n)||now.revision!==c.revision||now.unavailable)throw new Error('Inhalt geändert oder nicht verfügbar. Erneut ansehen.');return now;};
-  const use=async(kind:QuickReferenceAction['kind'],sceneId:string|null,count?:number,grouped?:boolean)=>{await fresh();if(!await drain()||!owned(w.token,n))return;const current=await fresh();el<HTMLDialogElement>('quick-reference').close();contentRequest++;searchRequest++;await handoff({kind,content:kind==='read-aloud'&&current.note?{...current,note:{...current.note,readAloud:plainReferenceText(current.note.readAloud)}}:current,sceneId,count,grouped});};
+  const use=async(kind:QuickReferenceAction['kind'],sceneId:string|null,count?:number,grouped?:boolean)=>{await fresh();if(!await drain()||!owned(w.token,n))return;const current=await fresh();el<HTMLDialogElement>('quick-reference').close();contentRequest++;searchRequest++;await handoff({kind,content:current,sceneId,count,grouped});};
   if(!c.unavailable){actions.append(button('Zusammenhänge dieser Quelle…',()=>use('connections',null)));if(c.creature||c.item||c.encounter)actions.append(button(c.item?'Gegenstand im Katalog öffnen…':c.encounter?'Begegnungsvorlage bearbeiten…':'Kreatur im Katalog öffnen…',()=>use('source',null)));}
   if(!c.unavailable&&(c.note||c.location))actions.append(button('Texte und Verweise bearbeiten…',()=>use('edit',null)));
   const live=unwrap(await window.campaign.live(w.token));if(!owned(w.token,n))return;const scene=live.scene;if(!scene||c.unavailable)return;

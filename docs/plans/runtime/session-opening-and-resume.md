@@ -52,3 +52,10 @@ Kontrollierte Store-/DOMtests und die Resume-Consumerprobe prüfen Teilverhalten
 Ersetzte Writer-/Flushports beweisen keine native oder vollständige Produktabnahme.
 Scene, Schema und Commandformat erhalten ihre bestehenden Besitzer; der
 [NPC-Rohentwurfsvertrag](../campaign/npc-dossiers.md) gilt getrennt.
+
+Die integrierten Startbriefings zeigen dieselben geprüften Sources je Gruppe.
+Fehlende Bereitschaft, Weltlage oder Masken-/Journalquelle bleibt ausdrücklich
+unvollständig; bekannte Roster-Mitgliedschaft bleibt davon getrennt lesbar.
+Briefingaktionen einschließlich Ortsmappe verwenden die vorhandene Resumelease.
+Die Ortsmappe prüft diese Autorität nach ihrem eigenen Flush nochmals; sie
+übernimmt keinen neueren Campaign- oder Fokusstand als alte Freigabe.

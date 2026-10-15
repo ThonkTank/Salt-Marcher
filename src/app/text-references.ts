@@ -1,8 +1,39 @@
 import type {DeskRef} from './scene-desk-contracts';
 export interface TextReference {ref:DeskRef;label:string;start:number;end:number;targetStart:number;targetEnd:number}
+const escaped=(text:string,at:number)=>{let slashes=0;while(at>0&&text[--at]==='\\')slashes++;return slashes%2===1;};
+type Range=readonly [number,number];
+/** Recognize only our declared inline-link dialect; never interpret author code as a target. */
+function literalRanges(text:string):Range[]{
+ const blocks:Range[]=[];let start=0,fence:{char:string;size:number;start:number}|null=null;
+ for(const line of text.split(/(?<=\n)/)){
+  const body=line.replace(/[\r\n]+$/,''),marker=/^ {0,3}(`{3,}|~{3,})(.*)$/.exec(body);
+  if(fence){if(marker&&marker[1]![0]===fence.char&&marker[1]!.length>=fence.size&&!marker[2]!.trim()){blocks.push([fence.start,start+line.length]);fence=null;}}
+  else if(marker&&(marker[1]![0]==='~'||!marker[2]!.includes('`')))fence={char:marker[1]![0]!,size:marker[1]!.length,start};
+  else if(/^( {4}|\t)/.test(body))blocks.push([start,start+line.length]);
+  start+=line.length;
+ }
+ if(fence)blocks.push([fence.start,text.length]);
+ const ranges:Range[]=[...blocks];
+ const inline=(from:number,to:number)=>{
+  // Inline code cannot continue through a blank paragraph or a literal block.
+  const segment=text.slice(from,to),paragraph=/\n[ \t\r]*\n/g;let part=0,match:RegExpExecArray|null;
+  const scan=(end:number)=>{
+   const runs=[...segment.slice(part,end).matchAll(/`+/g)].map(m=>({at:from+part+m.index,size:m[0].length,next:-1})),next=new Map<number,number>();
+   for(let i=runs.length-1;i>=0;i--){const r=runs[i]!;r.next=next.get(r.size)??-1;next.set(r.size,i);}
+   for(let i=0;i<runs.length;i++){const r=runs[i]!;if(escaped(text,r.at)||r.next<0)continue;const close=runs[r.next]!;ranges.push([r.at,close.at+close.size]);i=r.next;}
+  };
+  while((match=paragraph.exec(segment))){scan(match.index);part=paragraph.lastIndex;}scan(segment.length);
+ };
+ let cursor=0;for(const [from,to]of blocks){inline(cursor,from);cursor=to;}inline(cursor,text.length);
+ return ranges.sort((a,b)=>a[0]-b[0]);
+}
 export function textReferences(text:string,limit=200):TextReference[]{
- const pattern=/\[((?:\\.|[^\]\\])*)\]\(dungeon-ref:(note|location|creature|item|encounter)\/([^()\s]+)\)/g,links:TextReference[]=[];let match:RegExpExecArray|null;
- while(links.length<limit&&(match=pattern.exec(text))){try{const id=decodeURIComponent(match[3]!),label=match[1]!.replace(/\\([\\\[\]])/g,'$1');if(!id||id.length>1000||!label.trim()||label.length>1000)continue;const targetEnd=match.index+match[0].length-1;links.push({ref:{kind:match[2] as DeskRef['kind'],id},label,start:match.index,end:pattern.lastIndex,targetStart:targetEnd-match[3]!.length,targetEnd});}catch{/* An invalid URI remains ordinary, untouched source text. */}}
+ const pattern=/\[((?:\\.|[^\[\]\\])*)\]\(dungeon-ref:(note|location|creature|item|encounter)\/([^()\s]+)\)/g,links:TextReference[]=[],literals=literalRanges(text);let match:RegExpExecArray|null,literal=0;
+ while(links.length<limit&&(match=pattern.exec(text))){
+  while(literal<literals.length&&literals[literal]![1]<=match.index)literal++;
+  if(literals[literal]&&literals[literal]![0]<=match.index||escaped(text,match.index)||text[match.index-1]==='!'&&!escaped(text,match.index-1))continue;
+  try{const id=decodeURIComponent(match[3]!),label=match[1]!.replace(/\\([\\\[\]])/g,'$1');if(!id||id.length>1000||!label.trim()||label.length>1000)continue;const targetEnd=match.index+match[0].length-1;links.push({ref:{kind:match[2] as DeskRef['kind'],id},label,start:match.index,end:pattern.lastIndex,targetStart:targetEnd-match[3]!.length,targetEnd});}catch{/* An invalid URI remains ordinary, untouched source text. */}
+ }
  return links;
 }
 export function referenceMarkdown(ref:DeskRef,label:string){if(!label.trim()||label.length>1000)throw new Error('Anzeigenamen eingeben.');return '['+label.replace(/[\\\[\]]/g,'\\$&')+'](dungeon-ref:'+ref.kind+'/'+encodeURIComponent(ref.id)+')';}
