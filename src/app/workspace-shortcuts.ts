@@ -1,6 +1,6 @@
 /** Dialogs and composing/claimed gestures keep their own keyboard context. */
 export function workspaceShortcutAvailable(event:KeyboardEvent):boolean {
- return !event.defaultPrevented&&!event.isComposing&&!document.querySelector('dialog[open]');
+ return !document.body?.classList.contains('campaign-screen-open')&&!event.defaultPrevented&&!event.isComposing&&!document.querySelector('dialog[open]');
 }
 
 export function bindAtlasHistoryShortcut(active:()=>boolean,composing:()=>boolean,change:(direction:'undo'|'redo')=>void):()=>void {

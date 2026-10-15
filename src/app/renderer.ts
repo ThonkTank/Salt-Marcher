@@ -1,3 +1,4 @@
+import {initCampaignScreen,openCampaignScreen,hideCampaignScreen} from './campaign-screen-ui';
 import {PassiveMapCanvas} from './passive-map-canvas';
 import {roomCameraBox} from './room-camera';
 import {initWorkspaceNavigation,syncWorkspaceNavigation} from './workspace-navigation';
@@ -75,7 +76,7 @@ let failedEdit: Edit | null = null;
 let hasRetainedDraft = false;
 let roomDraftLoading = false, roomDraftReadFailed = false;
 let activating = false, activationFailed = false;
-let activationJob: Promise<void> | null = null, queuedActivation: string | null = null;
+let activationJob: Promise<void> | null = null, queuedActivation: {id:string;entryCommandId?:string} | null = null;
 let activationIntent = 0, campaignListRequest = 0;
 let pointer: { index: number; id: number; before: Room['polygons'] } | null = null;
 let importPreview: ImportPreview | null = null;
@@ -182,7 +183,9 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
   });
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
-initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{const list=await refreshCampaigns();if(!list)return;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();showTab('atlas');document.querySelector('main')!.inert=true;}const target=id??(!workspace?list.activeId??list.campaigns[0]?.id:null);if(target)await activate(target);else if(!workspace){setWorkspaceAvailable(false);el('map-title').textContent='Keine Kampagne geöffnet';el('rooms').replaceChildren();el<HTMLSelectElement>('campaigns').value='';}});
+async function refreshCampaignShell(){const list=await refreshCampaigns();if(!list)return null;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();activateDayCalculator(null);activatePartyTopbar(null);showTab('atlas');document.querySelector('main')!.inert=true;}else if(workspace){const current=list.campaigns.find(c=>c.id===workspace!.campaign.id);if(current)workspace.campaign=current;}
+ el('campaign-header-name').textContent=workspace?.campaign.name??'Kampagnen';return list;}
+initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{await refreshCampaignShell();if(id){await activate(id);if(!activationFailed){await reopenView('live');hideCampaignScreen();}}});
 void initTutorial();
 async function flushAll() { return await flushNpcs() && await flushGroups() && await flushTreasury() && await flushTriggers() && await flushDungeonContent() && await flushGraph() && await flushKeys() && await flushPaths() && await flushVolume() && await flushDungeon() && await flushDrawing() && await flushAutonomy() && await flushCity() && await flushMusic() && await flushWorld() && await flushItems() && await flushCatalog() && await flushLive() && await flushPreparation() && await flush(); }
 async function leaveWorkspace() {
@@ -469,8 +472,8 @@ async function refreshCampaigns() {
   for (const campaign of list.campaigns) { const option = document.createElement('option'); option.value = campaign.id; option.textContent = campaign.name; select.append(option); }
   select.value = workspace?.campaign.id ?? ''; return list;
 }
-function activate(id: string): Promise<void> {
-  activationIntent++; queuedActivation = id;
+function activate(id: string,entryCommandId?:string): Promise<void> {
+  activationIntent++; queuedActivation = {id,entryCommandId};
   if (activationJob) return activationJob;
   activationJob = drainActivation();
   return activationJob;
@@ -481,16 +484,16 @@ async function drainActivation(): Promise<void> {
   main.inert = true; header.inert = true; nav.inert = true;
   try {
     // Reserve the transition before this asynchronous drain, so a second request joins it.
-    if (!(await leaveWorkspace())) { el<HTMLSelectElement>('campaigns').value = workspace?.campaign.id ?? ''; return; }
+    if (!queuedActivation?.entryCommandId&&!(await leaveWorkspace())) { el<HTMLSelectElement>('campaigns').value = workspace?.campaign.id ?? ''; return; }
     rememberView();
     activating = true; activationFailed = false; deactivateMusic();deactivatePlayer();
     status('Kampagne wird geladen.');
     while (queuedActivation !== null) {
-      const id = queuedActivation; queuedActivation = null;
+      const {id,entryCommandId} = queuedActivation; queuedActivation = null;
       try {
-        const next = unwrap(await api.activate(id));
+        const next = unwrap(entryCommandId?await api.campaignCatalogWorkspace(entryCommandId):await api.activate(id));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
-        workspace = next; setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
+        workspace = next; el('campaign-header-name').textContent=next.campaign.name;setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
         activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);worldLinks.contextChanged();locationNotebook.contextChanged();locationReturn.hidden=true;el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
         await activatePreparation(next);
         if (queuedActivation !== null) continue;
@@ -499,7 +502,7 @@ async function drainActivation(): Promise<void> {
         if (queuedActivation !== null) continue;
         renderList(); updateHistory();
         const view = readWorkspaceView(viewStorage, next.campaign.id);
-        await reopenView(view.tab, view.scrollY, view.liveNotesTop, view.liveCombat);
+        if(entryCommandId)await reopenView('live');else await reopenView(view.tab, view.scrollY, view.liveNotesTop, view.liveCombat);
         if (queuedActivation !== null) continue;
         if (preparationHasDrafts()) status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
         else if (!roomDraftReadFailed && (!draft || !selected() || same(draft, selected()!) && el('points').dataset.changed !== 'true')) status('Gespeichert.');
@@ -623,7 +626,8 @@ for (const id of workspaceTabs) el(id + '-tab').onclick = () => { void (async ()
   if (await leaveWorkspace()) await reopenView(id);
 })().catch(error => status(error.message, true)); };
 initWorkspaceNavigation();
-void (async () => { const intent = activationIntent; try { const list = await refreshCampaigns(); if (list && intent === activationIntent && list.activeId) await activate(list.activeId); else if (list && intent === activationIntent) setWorkspaceAvailable(false); } catch (error) { if (intent === activationIntent) status((error as Error).message, true); } })();
+initCampaignScreen({settingsEditorAvailable:()=>!!workspace&&!activationFailed,before:async()=>!workspace||activationFailed||await flushAll(),changed:async()=>{await refreshCampaignShell();},enter:async receipt=>{await activate(receipt.campaignId,receipt.commandId);return!activationFailed&&workspace?.campaign.id===receipt.campaignId;}});
+void openCampaignScreen(true);
 setInterval(() => { void (async () => {
   try { const message = unwrap(await api.backupStatus()); el('backup-status').hidden = !message; el('backup-status').textContent = message; }
   catch { el('backup-status').hidden = false; el('backup-status').textContent = 'Status der Wiederherstellungskopie nicht verfügbar.'; }

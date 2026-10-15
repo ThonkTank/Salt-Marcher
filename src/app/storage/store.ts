@@ -1,3 +1,5 @@
+import {catalogOutcome,catalogCommand,catalogReceipt,noteCampaignCreated,noteCampaignOpened} from './campaign-catalog';
+import type {CampaignCatalogCommand,CampaignCatalogReceipt} from '../campaign-contracts';
 import {readCombatResolution} from './combat-resolution';
 import {ChronicleReadSession} from './chronicle-pages';
 import {checkedSessionRecapDraft} from '../live-contracts';
@@ -224,7 +226,7 @@ export class CampaignStore {
     if (typeof name !== 'string' || !name.trim() || name.length > 1000) throw new Error('Bitte einen Kampagnennamen eingeben.');
     const campaign = { id: randomUUID(), name, revision: 0 };
     this.db.transaction(() => {
-      this.db.prepare('INSERT INTO campaign(id,name) VALUES(?,?)').run(campaign.id, name);
+      this.db.prepare('INSERT INTO campaign(id,name) VALUES(?,?)').run(campaign.id, name);noteCampaignCreated(this.db,campaign.id);
       this.db.prepare('INSERT INTO campaign_lifecycle VALUES(?,0,0)').run(campaign.id);
       ensureLiveOwners(this.db, campaign.id);
       const scopes = new Set(rooms.map(r => r.scopeId)); scopes.add('local');
@@ -250,7 +252,7 @@ export class CampaignStore {
     if(this.graphShadow&&this.graphShadow.campaignId!==campaignId)throw new Error('Offene Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen.');
     if (!this.db.prepare('SELECT c.id FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE c.id=? AND l.trashed=0').get(campaignId)) throw new Error('Kampagne nicht gefunden.');
     this.active = { campaignId, token: randomUUID() };
-    this.db.prepare("INSERT INTO settings VALUES('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(campaignId);
+    this.db.transaction(()=>{this.db.prepare("INSERT INTO settings VALUES('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(campaignId);noteCampaignOpened(this.db,campaignId);}).immediate();
     return this.workspace();
   }
   private guard(token: string, campaignId = this.active?.campaignId) {
@@ -703,6 +705,33 @@ export class CampaignStore {
   cityActivities(token:string,q:import('../city-activity-contracts').CityActivityQuery):import('../city-activity-contracts').CityActivityPage{const cam=this.guard(token);return this.db.transaction(()=>readCityActivities(this.db,cam,q))();}
   cityBuildings(token:string,query:import('../city-contracts').CityBuildingQuery){const c=this.guard(token);return this.db.transaction(()=>readCityBuildingChoices(this.db,c,query))();}
   executeCity(command:CityCommand){return executeCity(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
+  campaignInstallationSettings(){const id=this.list().activeId;return{registry:readGeneratorRegistry(this.db,id??''),activeId:id};}
+  campaignCatalogOutcome(command:CampaignCatalogCommand){return catalogOutcome(this.db,command);}
+  campaignCatalog(command:CampaignCatalogCommand):CampaignCatalogReceipt{
+    catalogCommand(command);const completed=catalogOutcome(this.db,command);if(completed)return completed;if(this.graphShadow&&(command.kind==='create'||command.kind==='open'&&this.graphShadow.campaignId!==command.id))throw new Error('Offene Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen.');let changed=false;
+    const result=this.db.transaction(()=>{
+      const prior=catalogOutcome(this.db,command);if(prior)return prior;
+      let campaign:Campaign;
+      if(command.kind==='create')campaign=this.create(command.name.trim());
+      else{const row=this.db.prepare('SELECT c.*,l.trashed,l.revision trashRevision FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE c.id=?').get(command.id);if(!row)throw new Error('Kampagne fehlt.');campaign={id:row.id,name:row.name,revision:row.revision};
+        if(command.kind==='open'&&row.trashed||command.kind==='rename'&&row.trashed)throw new Error('Kampagne zuerst wiederherstellen.');
+        if(command.kind==='rename'){if(row.revision!==command.expectedRevision)throw new Error('Kampagnenname inzwischen geändert.');this.db.prepare('UPDATE campaign SET name=?,revision=revision+1 WHERE id=?').run(command.name.trim(),command.id);campaign.name=command.name.trim();}
+        if(command.kind==='trash')trashCampaign(this.db,{commandId:command.commandId,id:command.id,expectedRevision:command.expectedRevision,trashed:command.trashed});
+        if(command.kind==='erase')eraseCampaignRows(this.db,{commandId:command.commandId,id:command.id,expectedRevision:command.expectedRevision,confirmName:command.confirmName});
+      }
+      if(command.kind==='open'||command.kind==='create'){noteCampaignOpened(this.db,campaign.id);this.db.prepare("INSERT INTO settings VALUES('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(campaign.id);}
+      if(command.kind==='trash'&&command.trashed)this.db.prepare("DELETE FROM settings WHERE key='active' AND value=?").run(campaign.id);
+      const usage=this.db.prepare('SELECT created_at,last_opened_at FROM campaign_usage WHERE campaign_id=?').get(campaign.id);
+      const receipt:CampaignCatalogReceipt={commandId:command.commandId,kind:command.kind,campaignId:campaign.id,name:command.kind==='erase'?'':campaign.name,createdAt:usage?.created_at??null,lastOpenedAt:usage?.last_opened_at??null};catalogReceipt(this.db,command,receipt);changed=true;return receipt;
+    }).immediate();
+    if(changed){if(command.kind==='open'||command.kind==='create'||(command.kind==='trash'&&command.trashed||command.kind==='erase')&&this.active?.campaignId===result.campaignId){this.active=null;this.chronicleRead?.close();this.chronicleRead=null;}this.backupEpoch++;}
+    return result;
+  }
+  campaignCatalogWorkspace(commandId:string):Workspace{
+    const row=this.db.prepare('SELECT payload,checksum FROM campaign_catalog_receipt WHERE command_id=?').get(commandId);if(!row||hash(row.payload)!==row.checksum)throw new Error('Öffnungsbeleg fehlt.');const receipt=JSON.parse(row.payload) as CampaignCatalogReceipt;
+    if(!['open','create'].includes(receipt.kind)||this.list().activeId!==receipt.campaignId||!this.list().campaigns.some(c=>c.id===receipt.campaignId))throw new Error('Die aktive Kampagne wurde inzwischen gewechselt. Kampagne ausdrücklich neu öffnen.');
+    this.chronicleRead?.close();this.chronicleRead=null;this.active={campaignId:receipt.campaignId,token:randomUUID()};return this.workspace();
+  }
   campaignOverview(){return this.db.transaction(()=>campaignOverview(this.db))();}
   campaignFence(id:string,revision:number){const r=this.db.prepare('SELECT revision,trashed FROM campaign_lifecycle WHERE campaign_id=?').get(id);if(!r||r.trashed||r.revision!==revision)throw new Error('Quellkampagne wurde gelöscht oder ihr Lebenszyklus geändert.');}
   async campaignSnapshot(token:string,filename:string){
@@ -761,6 +790,7 @@ export class CampaignStore {
 
   trashCampaign(command:{commandId:string;id:string;expectedRevision:number;trashed:boolean}){trashCampaign(this.db,command);this.backupEpoch++;if(command.trashed&&this.active?.campaignId===command.id){this.active=null;this.db.prepare("DELETE FROM settings WHERE key='active'").run();}}
   eraseCampaign(command:{commandId:string;id:string;expectedRevision:number;confirmName:string}){this.backupEpoch++;eraseCampaignRows(this.db,command);if(this.active?.campaignId===command.id)this.active=null;this.db.exec("INSERT INTO note_search(note_search) VALUES('optimize')");this.db.pragma('wal_checkpoint(TRUNCATE)');}
+  pendingCampaignErasures():string[]{return this.db.prepare("SELECT id FROM campaign_erasure WHERE phase='cleanup'").all().map((r:any)=>r.id);}
   finishCampaignErasure(id:string){this.db.prepare("UPDATE campaign_erasure SET phase='complete' WHERE id=?").run(id);}
   private get audioRoot(){return dirname(this.filename)+'/audio';}
   private updateMusic(campaignId:string){try{this.db.transaction(()=>refreshMusicContext(this.db,this.audioRoot,campaignId))();}catch{/* Music failure does not invalidate the core action. */}}

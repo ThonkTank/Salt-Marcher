@@ -48,12 +48,14 @@ else {
   let closeAllowed = false;
   let backupRunning = false;
   let backupError: string | null = null;
+  async function finishCampaignFiles(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});store.finishCampaignErasure(id);}
   const imports = new Map<string, { bytes: Buffer; name: string; rooms: Room[] }>();
   const root = path.join(__dirname, 'ui');
   const origin = 'campaign://app/index.html';
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
   app.whenReady().then(async () => {
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
+    for(const id of store.pendingCampaignErasures())await finishCampaignFiles(id);
     protocol.handle('campaign', request => {
       const url = new URL(request.url);
       if(url.host==='app'&&url.pathname.startsWith('/audio/')){try{const id=decodeURIComponent(url.pathname.slice(7)),filename=store.audioFile(id);return audioResponse(filename,request,(url,options)=>net.fetch(url,options)).catch(()=>new Response('Audio unavailable',{status:404}));}catch{return new Response('Audio unavailable',{status:404});}}
@@ -89,10 +91,14 @@ else {
     function handle<T>(name: string, operation: (...args: any[]) => T | Promise<T>) {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
-        try { const value=await operation(...args);if(name.includes(':execute')||['campaign:activate','campaign:trash','campaign:erase','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
+        try { const value=await operation(...args);if(name.includes(':execute')||['campaign:activate','campaign:catalog','campaign:catalog-workspace','campaign:trash','campaign:erase','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
         catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.' }; }
       });
     }
+    handle('campaign:installation-settings',()=>store.campaignInstallationSettings());
+    handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')imports.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishCampaignFiles(c.id);}return result;});
+    handle('campaign:catalog-outcome',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalogOutcome(c);if(result?.kind==='erase')await finishCampaignFiles(result.campaignId);return result;});
+    handle('campaign:catalog-workspace',(id:string)=>store.campaignCatalogWorkspace(id));
     handle('campaign:list', () => store.list());
     handle('extensions:preview',async()=>{const selected=await dialog.showOpenDialog(win,{title:'Extensionpaket prüfen',properties:['openFile'],filters:[{name:'Extensionpaket (JSON)',extensions:['json']}]});if(selected.canceled||!selected.filePaths[0])return null;const file=await open(selected.filePaths[0],'r');try{if(!(await file.stat()).isFile())throw new Error('Eine Paketdatei wählen.');const bytes=Buffer.alloc(extensionPackageLimit+1);let length=0;while(length<bytes.length){const r=await file.read(bytes,length,bytes.length-length,length);if(!r.bytesRead)break;length+=r.bytesRead;}return store.extensionPreview(bytes.subarray(0,length));}finally{await file.close();}});
     handle('extensions:list',(after:string|null)=>store.extensions(after));
