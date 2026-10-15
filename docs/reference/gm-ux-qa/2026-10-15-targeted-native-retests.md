@@ -42,8 +42,15 @@ sowie ein separates öffentliches Handout. Normales Speichern und Wiederöffnen
 funktionierten. Die Raumsuche fand die Überschrift am unteren Fensterrand;
 zusätzliches Blättern war nötig. Karte, Beschreibung und Spielstand müssen
 manuell abgeglichen werden; ein daraus entstandener Fehler wurde noch nicht
-beobachtet. Der gleiche Tester erhielt anschließend die öffentliche
-Spielsituation. Spielleitung und abschließende Wiederaufnahme bleiben offen.
+beobachtet. Der gleiche Tester führte anschließend die öffentliche
+Spielsituation durch: Die begonnene Untersuchungsnotiz blieb nach der
+Lampenfrage erhalten, die Reparatur wurde festgehalten und das unveränderte
+Handout allein in einem separaten lokalen Fenster gezeigt. Textsuche und
+Rückkehr zur Schreibstelle waren manuell; Spielstand und Sitzungsnotizen
+mussten getrennt aktualisiert werden. Kein blockierender Fehler oder
+Textverlust wurde beobachtet. Normaler Close und Checkpoint sind belegt.
+Der gleiche Tester bearbeitet jetzt die abschließende Wiederaufnahme;
+der vollständige Arbeitsablauf ist noch nicht abgenommen.
 Dieser einfache Text-/Markdownablauf liefert zunächst qualitative
 Nutzungsbelege, keine kontrollierte Zeitstudie; technische Anlaufkosten und
 Einschränkungen bleiben Teil des Berichts.
@@ -56,6 +63,14 @@ ursprünglichen Dokumentationsschritte bleiben in den Rohspuren, zählen aber
 nicht als gewöhnliche GM-Arbeit. Es wurden keine Spielsituation oder Lösung
 verändert. Insbesondere werden daraus keine pauschalen Zeit-/Klickvergleiche
 abgeleitet.
+
+Für die nächste native Erkundung wird ausschließlich eine eigene Kopie des
+veröffentlichten Integrationscommits
+`696417e5a59c4ec33482b8d93dbe854b744e3bc5` (0.94.0) vorbereitet. Der neue
+Buildauftrag ist auf Kopie, Originalbuild und Identitätsmanifest begrenzt;
+schwere Ausführung beginnt erst nach Freigabe des tatsächlich freien QA-Slots.
+Es gibt keine Sperre für die Entwicklung und keinen Produkt- oder
+Regressionserfolg allein aufgrund dieses Buildauftrags.
 
 Der bestehende Cloud-Browserpilot ist mangels auflösbarer Gesprächs-ID nicht
 als ausgeführt bestätigt. Es wurde kein Ersatzlauf gestartet. Tatsächliche
