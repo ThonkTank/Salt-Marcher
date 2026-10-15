@@ -69,6 +69,7 @@ function executeVolumeActionRaw(db:any,cam:string,a:VolumeAction,owner:Owner){
   const piece={...v,columns,faces},polygons=volumeProjection(piece);
   const assigned=i===0?room:owner.create(room.scopeId,room.floorId,'Abgeteiltes Volumen',polygons);
   const volume={...piece,id:i===0?v.id:randomUUID(),roomId:assigned.id},projectedRoom={...assigned,polygons};
+  if(i===0&&db.prepare("SELECT 1 FROM drawing_hidden WHERE campaign_id=? AND scope_id=? AND id=? AND kind='room' AND hidden=1").get(cam,room.scopeId,room.id))owner.hide('room',room.scopeId,room.id,false);
   owner.apply({table:'room',id:assigned.id},owner.roomRow(cam,projectedRoom));
   owner.apply({table:'dungeon_volume',id:volume.id},volumeRow(cam,volume));
   results.push(projectedRoom);
