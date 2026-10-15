@@ -835,7 +835,7 @@ export class CampaignStore {
   liveArchives(token: string, after: string | null) { return readArchives(this.db, this.guard(token), after); }
   executeLive(command: LiveCommand) { return this.db.transaction(() => {
     const replay=!!this.db.prepare('SELECT 1 FROM live_receipt WHERE command_id=?').get(command.commandId);
-    const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
+    const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'||command.action.kind==='scene-content'&&!replay?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
     const ack = executeLive(this.db, command, () => {this.guard(command.token, command.campaignId);});
     if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!,noteId=campaignLocalId(followUp.id),scene=ack.scene;if(!scene||scene.id!==a.sceneId)throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});const locationId=scene.locationId&&this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(command.campaignId,scene.locationId)?scene.locationId:null,state={noteId,revision:1,status:'open' as const,locationId,contributors:scene.members,poolXp:0,items:[],awardId:null};validateNarrativeState(this.db,command.campaignId,state);saveNarrative(this.db,command.campaignId,state);}
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
@@ -844,7 +844,8 @@ export class CampaignStore {
       const a=command.action;
       if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'&&ack.session?.createdScene)inheritScenePosition(this.db,command.campaignId,a.sceneId,ack.session.createdScene.id);
-      const sceneId=a.kind==='advance-clock'||a.kind==='scene-content'||a.kind==='apply-visit'?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
+      // Title/notes alone have no World consequence; broken optional weather cannot veto their save.
+      const sceneId=a.kind==='advance-clock'||a.kind==='apply-visit'||a.kind==='scene-content'&&oldScene?.locationId!==ack.scene?.locationId?a.sceneId:a.kind==='initialize'?ack.scene?.id:a.kind==='move'?ack.session?.createdScene?.id:null;
       if(sceneId)syncSceneWorld(this.db,command.campaignId,sceneId);
     }
     if (command.action.kind === 'create-character' && ack.character) createProgress(this.db, command.campaignId, ack.character.id);

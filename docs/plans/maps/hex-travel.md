@@ -94,16 +94,21 @@ Host-/200%-/Großroutenabnahme und keine behauptete neue Kartengrenzregel.
 
 ## Nächste ausführbare Lieferungen
 
-1. **Kartengrenze und Passierbarkeit klären.** `AtlasMap` enthält derzeit
-   sparse Zellen und `cellAt` liefert für nicht beschriebene Flächen Ebene;
-   `Terrain` besitzt keinen gesperrten Zustand. „Nicht gezeichnet“ darf beim
-   durchgehenden Atlas nicht vorschnell „unpassierbar“ bedeuten. Vor einer
-   Codecänderung eine ausdrückliche Kartenfläche und fachliche Sperre samt
-   möglicher Transportart entscheiden; aktuelle Karten und Prosa erhalten.
-   Danach `findRoute`, Vorschau, Start und Checkpoint mit demselben Prädikat
-   prüfen. Abnahme: außerhalb, gesperrtes Zwischenhex, Wasser ohne bestätigten
-   Transport, Wegpunktreihenfolge und geänderte Karte nach Vorschau. Fehler
-   verändern weder Position noch Zeit und lassen keinen alten Erfolg stehen.
+1. **Kontinuierliche Karte und ausdrückliche Passierbarkeit.** Die übergeordnete
+   [Program-Capability-Quelle](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md)
+   verlangt mehrere kontinuierliche Hexkarten ohne feste gezeichnete Ausdehnung.
+   Die frühere Forderung dieses Plans nach einer erst zu entscheidenden
+   Kartenfläche entfällt; keine Footprintmigration oder künstliche Kartengrenze.
+   `AtlasMap` besitzt sparse Zellen, `cellAt` liefert für nicht beschriebene
+   Flächen Ebene. Ungezeichnet ist kein Sperrterrain. Fachlich gesperrte Wege
+   oder erforderlichen Transport ausdrücklich modellieren, statt aus der
+   Zeichnungslücke abzuleiten; `Terrain` allein besitzt derzeit keinen
+   gesperrten Zustand. Danach `findRoute`, Vorschau, Start und Checkpoint mit
+   derselben Regel prüfen. Abnahme: Weg außerhalb gezeichneter Zellen bleibt
+   möglich, ausdrückliche Sperre und bestätigte Transportvorgabe, geänderte
+   Route und fehlende Voraussetzungen verändern weder Position noch Zeit.
+   Aktuelle Such-/Abschnittsgrenzen sind Rechenbudgets, keine Kartenränder;
+   lange Reisen müssen sich nachvollziehbar in Abschnitte teilen lassen.
 2. **Präsentation weiter qualifizieren.** Die vorhandene Wiedergabe auf großen
    Routen und bei 200% prüfen. Pointerinterpolation ist nicht Bestandteil der
    autoritativen Checkpoints; jede zusätzliche Animation bleibt reine Darstellung.
