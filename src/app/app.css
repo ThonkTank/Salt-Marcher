@@ -252,7 +252,6 @@ button.text-reference-inline {display:inline;padding:0;border:0;border-bottom:1p
 #live-workspace>#live-play-panel{background:#fff;padding:1rem 1.25rem}
 #live-play-panel> .toolbar h2{margin:.25rem auto .5rem 0}
 .live-context{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
-.live-context>label{margin:0}.live-context>select{width:auto;flex:1;min-width:12rem}.live-context>#group-move{margin:0}
 .live-context>#live-party{flex-basis:100%;font-size:.85rem;margin:0}.live-context>#live-clock{margin:0}.live-context>#time-controls{margin:.25rem 0}.live-context>#time-controls[open]{flex-basis:100%}
 .live-desk-columns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(18rem,1fr);gap:1.5rem;align-items:start}
 .live-desk-writing,.live-desk-reference{min-width:0}
@@ -285,3 +284,12 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 :root{--workspace-content-offset:calc(var(--workspace-header-height,64px) + 1rem)}body.has-workspace :is(main,body>section) :is(input,textarea,select,button,[tabindex],h2,h3){scroll-margin-top:var(--workspace-content-offset)}#workspace-tools-content{width:min(310px,90vw)}body.has-workspace main{grid-template-columns:minmax(180px,210px) minmax(260px,1fr) minmax(240px,300px)}body.has-workspace .preparation-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
 @media(min-width:901px) and (min-height:740px){body.has-workspace:not(.session-packet-docked) .live-desk-writing{top:calc(var(--workspace-header-height,64px) + 1rem)}}
 @media(max-width:1050px){body.has-workspace main{grid-template-columns:200px minmax(260px,1fr)}}@media(max-width:1000px){body.has-workspace .preparation-columns{grid-template-columns:1fr}}@media(max-width:850px){:root{--workspace-content-offset:calc(var(--workspace-header-height,64px) + 3.5rem)}}@media(max-width:620px){body.has-workspace main{display:block}}
+
+/* The active group remains visible while writing or consulting its material. */
+.live-focus-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 0}
+.live-focus-bar>label{margin:0}.live-focus-bar>select{width:auto;flex:1;min-width:12rem}.live-focus-bar>#group-move{margin:0}
+:root{--workspace-content-offset:calc(var(--workspace-header-height,64px) + var(--workspace-nav-height,0px) + 1rem)}
+:root{--live-sticky-height:0px}
+#running-editor :is(input,textarea,select,button,[tabindex],h2,h3){scroll-margin-top:calc(var(--workspace-content-offset) + var(--live-sticky-height))}
+@media(min-height:740px){:root{--live-sticky-height:var(--live-focus-height,0px)}.live-focus-bar{position:sticky;top:calc(var(--workspace-header-height,64px) + var(--workspace-nav-height,0px));z-index:5;box-shadow:0 3px 5px #24344912}}
+@media(min-width:901px) and (min-height:740px){body.has-workspace:not(.session-packet-docked) .live-desk-writing{top:calc(var(--workspace-content-offset) + var(--live-focus-height,0px))}}
