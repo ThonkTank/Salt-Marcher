@@ -23,8 +23,9 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
   vollständigen GM-Mappe.
 - Von jeder Besuchsseite der Vorbereitungsmappe mit „Am Spieltisch prüfen…“ in
   den vorhandenen Live-Bereich wechseln. Plan und Besuch sind dort bereits für
-  die ausdrückliche Übernahmeprüfung ausgewählt; der Wechsel übernimmt noch
-  keinen Inhalt und startet keinen Spielabend.
+  die ausdrückliche Übernahmeprüfung ausgewählt, und der Prüfdialog öffnet sich
+  unmittelbar. Der Wechsel übernimmt noch keinen Inhalt und startet keinen
+  Spielabend.
 - Im Live-Spiel einen Besuch übernehmen, Vorlesetext in den GM-Szenenentwurf
   kopieren, die Originalquelle öffnen, eine Begegnung vorbereiten oder die
   Belohnung dieses Besuchs im vorhandenen Fachbereich verwalten.
