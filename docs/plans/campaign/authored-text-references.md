@@ -9,10 +9,11 @@ führen keine Questauflösung, Kampfaktion oder Spielerfreigabe aus.
 
 ## Aktueller ausführbarer Weg
 
-`preparation.ts` erfasst Wortlaut und markierte Autorenstelle vor dem Flush.
+`preparation.ts` erfasst in GM-Notiz und Ortsabschnitt Wortlaut und markierte
+Autorenstelle vor dem Flush.
 Der Flush darf die Notizrevision bestätigen, aber die Position nicht auf einen
 zwischenzeitlich anderen Text übertragen. Nach dem Flush und dem Picker gelten
-Campaignobjekt, Token/ID, Aktivierung, Notizeditorgeneration, Notiz-ID und der
+Campaignobjekt, Token/ID, Aktivierung, Notiz-/Abschnitteditorgeneration, Notiz-/Orts-/Abschnitt-ID und der
 ursprüngliche Wortlaut. Ein Wechsel A → B → A erhält dadurch keine alte
 Einfügeberechtigung. Die vorhandenen Preparationdraft-/Autosaveregeln speichern
 den eingefügten Text; der Picker führt keine eigene Speicherung ein.
@@ -48,6 +49,14 @@ Quelltext, Sicherungsdatei und opaque Extensionbodies bleiben geschützt.
 NPC-Rohentwürfe und ungeklärte Commands verwenden denselben Remap; ihre
 Receipt-/Draftintegrität bleibt am bestehenden Recoveryowner.
 
+Die inzwischen integrierte Ortsmappe (`location-notebook-ui.ts`) gibt nur den
+gewählten Abschnitt mit vollständigen Autorenbytes an den GM-Sceneentwurf
+weiter. Ihre Inhaltsbuttons binden ihre ursprüngliche Mappe und Inhaltsauswahl;
+Directorybuttons behalten dagegen die Autorität der Suchseite, sodass ein
+Ortswechsel die gesunde Verzeichnisnavigation nicht sperrt. Der Renderer prüft
+den ursprünglichen Campaignowner nochmals nach Live-Reads und vor dem
+Vorlesehandoff. Native/Fresh-Closure dieses neuen Consumers bleibt offen.
+
 ## Datenstand und Grenzen
 
 Keine Schema- oder Autorenmigration: Alias und Kanten werden aus Text abgeleitet,
@@ -70,7 +79,7 @@ Prosa im SQL-UDF; eine LIMIT-Seite begrenzt die Antwort, nicht den Quellenread.
 | --- | --- |
 | Native Editorweg | `preparation.ts`, Picker, vorhandener Draftwriter: Tastatur/Modalcancel/200 %, IME, ausgewählter CRLFtext → expliziter Verweis → Autosave → Close/Fresh; verzögerter Flush mit neuer Prosa und A→B→A. Quelle während Bestätigung ändern/archivieren; unverfügbare Quelle bleibt erkennbar. |
 | Ehrliche lange Quellen | `storage/text-references.ts`, `scene-desk.ts`, `quick-reference-ui.ts`, Graph: den 201-Sentinel als sichtbare Begrenzung durch den bestehenden Readport führen; echte Treffer hinter 200 müssen auffindbar werden, ohne alle Bodies zum Renderer zu schicken. Vor Indexdesign reale Campaign mit langen/kurzen Notizen messen; gemeinsame Einzelquelle/kein zweiter Autorengraph. |
-| Quellintegrität | Alias-SQL und `referenceEntry`: Checksum, Payload-/Rowidentität, Revision und Papierkorb so prüfen wie direkte Detailreads; defekte Quelle ausdrücklich unbekannt, keine gesunde leere Treffermenge. Fehlende Ziele erhalten Alias und stabile ID. Gleicher Name führt nie zu stiller Neuzuordnung. |
+| Quellintegrität | Alias-SQL und `referenceEntry`: Die integrierte Zielprüfung validiert jetzt Checksum/Payload-/Rowidentität. Quell-Rowidentität, Revision und Papierkorb so prüfen wie direkte Detailreads; defekte Quelle ausdrücklich unbekannt, keine gesunde leere Treffermenge. Fehlende Ziele erhalten Alias und stabile ID. Gleicher Name führt nie zu stiller Neuzuordnung. |
 | Verbraucherclosure | Vorlesetext, Ortsabschnitte, NPC-Dossier, Spielabendmappe/Markdownausgabe und unabhängiger Export: ein Wortlautorakel durch alle konsumierenden Wege; Readerprojektion bleibt nur Anzeige. Vor Erweiterung der Einfügeflächen gemeinsame Autorenstelle/Ownergrenze verwenden. Passive Playerfreigabe bleibt eigenständig. |
 | Markdown und Skalierung | Echte Obsidian-/Originaltexte mit verschachtelten Literalen und Fremdlinks als geschützte Kopie untersuchen. Umfang der kontrollierten Syntax entscheiden, dann gemeinsame Parsergegenbelege erweitern. Wiederholte offene Klammern/Backtickruns und große Quellen messen; keine neue Parserbibliothek oder Indexmigration ohne nachgewiesenen Nutzen. |
 
@@ -86,5 +95,7 @@ Import) war ein Fixturefehler und ist kein Produktgegenbeleg.
 Alias-/Graphableitung, identische Namen mit verschiedenen IDs, unabhängige
 Campaignkopie und erneutes Öffnen des Zielstores; nur aktive Zielbytes ändern
 sich, Literalbeispiele/CRLF/Vaultlinks und Quelle/Snapshotbytes bleiben erhalten.
+Fünf weitere Integrationsfälle prüfen Ortsabschnitt-Flush und entfernte Controls,
+Notebook-Wortlaut/alte Auswahlen und weiterhin benutzbare Ortsdirectory.
 Diese lokalen Belege ersetzen weder die native Editorprobe noch vollständige
 Markdown-, Portabilitäts-, Performance- oder Gesamtproduktabnahme.
