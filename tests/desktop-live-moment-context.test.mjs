@@ -281,3 +281,15 @@ test('recap save recovers a lost reply, preserves newer input and blocks close o
  x.window.confirm=()=>false;x.el('live-session-draft-retry').click();await settle();assert.equal(x.store.live(x.w.token).recapDraft.summary,'Anderes Fenster');assert.equal(x.el('live-session-summary').value,'Eigener neuer Text');
  x.window.confirm=()=>true;x.el('live-session-draft-retry').click();await settle();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).recapDraft.summary,'Eigener neuer Text');
 });
+
+test('party setup remains available before starting and moves the same editor beside live notes',async t=>{
+ const x=await setup(t,false),panel=x.el('live-party-panel'),profile=x.el('character-name');
+ assert.equal(panel.parentElement.id,'live-party-start');assert.equal(panel.closest('#running-editor'),null);
+ x.el('live-party-details').open=true;
+ profile.value='Ada am Tisch';profile.oninput();
+ x.el('live-continue').click();await settle();
+ assert.equal(x.el('live-party-panel'),panel);assert.equal(x.el('character-name'),profile);
+ assert.equal(panel.parentElement.id,'live-party-at-table');assert.equal(x.el('live-party-details').open,true);
+ assert.equal(profile.value,'Ada am Tisch');assert.equal(await x.ui.flushLive(),true);
+ assert.equal(x.store.live(x.w.token).roster[0].profile.name,'Ada am Tisch');
+});

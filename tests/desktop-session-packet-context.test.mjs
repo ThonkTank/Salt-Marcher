@@ -41,7 +41,7 @@ test('docked packet reuses the same reader and routes visit and authored text ac
  x.el('content').querySelector('.toolbar button').click();x.el('content').querySelector('.packet-use-read-aloud').click();await wait();
  assert.deepEqual(actions,[['visit','first'],['text','  Geheimwort\r\n**Wache**  ','Vorlesen']]);
  x.el('next').click();assert.match(x.el('content').textContent,/Schatz/);x.el('prev').click();assert.match(x.el('content').textContent,/Ankunft/);
- x.el('party-toggle').click();assert.equal(panel.hidden,false);x.el('close').click();assert.equal(panel.hidden,hidden);assert.equal(x.el('dialog').parentElement,x.document.body);
+ x.el('party-toggle').click();assert.equal(panel.hidden,false);assert.equal(x.document.getElementById('live-party-details').open,true);x.el('close').click();assert.equal(panel.hidden,hidden);assert.equal(x.el('dialog').parentElement,x.document.body);
 });
 test('docked context change revokes old actions and a late read cannot repopulate them',async t=>{
  const x=uiSetup(t);x.ui.setSessionPacketSurface('live');const source={sceneId:'scene',token:'token',planId:'plan',visitId:'first',key:'one',current:()=>true,flush:async()=>true,openVisit:async()=>{},readAloud:async()=>{}};
