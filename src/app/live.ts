@@ -130,7 +130,9 @@ export async function openLive(planId?: string, visitId?: string) {
     for(const id of ['live-session-summary','live-session-handoff'])get<HTMLTextAreaElement>(id).readOnly=false;showRecapSave();
     data = live; sources = prep;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
     characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
-    sceneDraft = resumed && live.scene ? structuredClone(live.scene) : null;
+    // Reopen an existing table without initializing a group or starting a new evening.
+    resumed = !!live.scene;
+    sceneDraft = live.scene ? structuredClone(live.scene) : null;
     render();
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
   } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-empty').hidden = false; tell((error as Error).message, true); }
