@@ -97,3 +97,39 @@ Die nächsten konkreten Prüfungen und Korrekturen:
 Für Entwürfe und Belohnungen gilt der bestehende
 [Daten- und Recoveryanschluss](../runtime/combat-and-narrative-recovery.md).
 Eine zweite Timelinearchitektur oder generische Historyabstraktion ist nicht nötig.
+
+## Zielgebundene Besuchsübergabe und offene Recovery
+
+`prepareNextVisit` prüft den ausdrücklich gemeinten Plan, die ursprüngliche
+Einfügeposition, angezeigte Revision, Workspace/Aktivierung und neuere Eingaben.
+Ein veralteter oder nicht lesbarer Zielentwurf autorisiert keinen neuen Command.
+Bei einer ungeklärten Übergabe an einen nicht geöffneten vorhandenen Plan hält
+`retainOpenDrafts` den Originalauftrag unter dessen Ziel-ID fest. Der sichtbare
+Editor wird nicht zum Ersatzowner. Bereits gesicherte spätere Zieltexte bleiben
+erhalten. Originalcommand, Basis und Text sind nach neuer Storeinstanz lesbar;
+Status klärt angewandt/nicht angewandt, ohne automatisch erneut auszuführen.
+Der vorhandene Draftvertrag bleibt unverändert.
+
+Der integrierte optionale `opening`-Teil eines Plancommands speichert
+Timelinebesuch, Vorlesetext und Wissensquellen in derselben Vorbereitungstransaktion.
+Ungültige Quelle oder Receiptfehler dürfen keinen halbfertigen Besuch hinterlassen.
+Die frühere zweite `executeSession`-Speicherung wird nicht zusätzlich ausgeführt.
+Eine ausdrückliche Neuanlage aus dem Übergabedialog erzeugt einen eigenen Plan,
+statt einen leeren Selectwert als bisherigen Plan umzudeuten. Originalnotizen
+bleiben vollständig; die Erzeugung eines kurzen Titels verändert ihre Bytes nicht.
+
+Lokale Consumer-/Storeproben: `desktop-visit-handoff.test.mjs`,
+`desktop-session-resume-context.test.mjs` und die Vorbereitungsprüfungen. Sie
+trennen verlorene Antwort von Ablehnung, schützen spätere Eingaben und prüfen
+Originalauftrag nach neuem Storehandle. Das ist keine native Gesamtfreigabe.
+
+Nächster vollständiger Recoveryabschluss: Anlageabsicht für einen noch nicht
+vorhandenen Plan (`expectedRevision=null`) vor Send dauerhaft sichern, nach Crash
+auffindbar halten und anhand desselben Receipts klären. Der bisherige Draftcodec
+setzt einen vorhandenen Owner voraus; normales Verlassen wird bei ungeklärter
+Anlage blockiert. Das beweist keine Crashsicherheit. Betroffen sind
+`preparation-contracts.ts`, `preparation.ts`, Draftwriter/Backupprüfung in
+`storage/store.ts` und Kopie in `storage/campaign-data.ts`. Abnahme: Prozessende
+vor Send und nach Commit/vor Reply, kaputte Sicherung, später veränderter Zielplan
+und unabhängige Kopie ohne automatische Ausführung oder Doppelanlage. Bestehende
+Formate und historische Originaltexte nicht still umdeuten.

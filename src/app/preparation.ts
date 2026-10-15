@@ -75,13 +75,19 @@ async function retainOpenDrafts() {
   if (noteDraft && originalNote()) values.push({ kind: 'note', expectedRevision: noteDraft.revision, note: structuredClone(noteDraft) });
   if (planDraft && originalPlan()) values.push({ kind: 'plan', expectedRevision: planDraft.revision, plan: structuredClone(planDraft) });
   if (locationDraft && originalLocation()) values.push({ kind: 'location', expectedRevision: locationDraft.revision, document: structuredClone(locationDraft.document) });
+  // A handed-off command can own a different plan than the visible editor.
+  // Preserve that owner and any already retained later input as well.
+  if(failedCommand&&['note','plan','location'].includes(failedCommand.change.kind)){
+    const target=preparationTarget(failedCommand.change),key=draftKey(target.kind,target.id);
+    if(!values.some(value=>{const owner=preparationTarget(value);return owner.kind===target.kind&&owner.id===target.id;}))values.push(structuredClone(retained.get(key)?.change??failedCommand.change) as PreparationEdit);
+  }
   const drafts: PreparationDraft[] = [], clean: { kind: PreparationEdit['kind']; id: string; saved: PreparationDraft }[] = [];
   for (const change of values) {
     const target = preparationTarget(change), key = draftKey(target.kind, target.id);
     if (draftProblems.has(key)) continue;
     const failedTarget = failedCommand ? preparationTarget(failedCommand.change) : null;
     const failed = failedTarget?.kind === target.kind && failedTarget.id === target.id ? failedCommand : null;
-    const original = change.kind === 'note' ? originalNote() : change.kind === 'plan' ? originalPlan() : originalLocation()?.document;
+    const original = change.kind === 'note' ? noteRow(target.id)?.note : change.kind === 'plan' ? data.plans.find(plan=>plan.id===target.id) : data.locations.find(row=>row.document.id===target.id)?.document;
     const value = change.kind === 'note' ? change.note : change.kind === 'plan' ? change.plan : change.document;
     const changed = !equal(value, original) || change.kind === 'location' && change.expectedRevision !== originalLocation()?.revision;
     if (changed || failed) drafts.push({ version: 1, writeId: crypto.randomUUID(), change, failedCommand: failed });
@@ -552,6 +558,10 @@ export async function prepareNextVisit(planId:string|null,seed:{title:string;not
   if(requested&&!target)throw new Error('Ausgewählter Spielabendplan nicht verfügbar. Vorbereitung erneut öffnen.');
   if(shown&&shown.revision!==target?.revision)throw new Error('Spielabendplan inzwischen geändert. Vorbereitung erneut öffnen.');
   if(input.beforeVisitId&&!target?.scenes.some(scene=>scene.id===input.beforeVisitId))throw new Error('Der gewählte Besuch als Einfügeposition ist nicht mehr verfügbar. Vorbereitung erneut öffnen.');
+  if(target){
+    const saved=await loadedDraft('plan',target.id);
+    if(!current()||!sameInput()||saved||draftProblems.has(draftKey('plan',target.id)))throw new Error('Offener Planentwurf oder ursprünglicher Auftrag vorhanden. Im Zielplan zuerst prüfen; kein neuer Besuch wurde angelegt.');
+  }
   usePreparation(next);
   const id=campaignLocalId(crypto.randomUUID()),scene={id,title:input.title,notes:input.notes,locationId:input.locationId?campaignLocalId(input.locationId):null};
   const plan:ManualPlan=target?{...target,scenes:[...target.scenes]}:{version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[]};

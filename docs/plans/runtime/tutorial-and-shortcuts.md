@@ -85,3 +85,7 @@ eigens erklärt. Die Testfixture konstruiert auch die dynamische Welt- und NSC-O
 
 Katalogsuche, Kreatur-/Begegnungsfilter und manuelle Encounterplanung haben
 konkrete Lektionen; die Zuordnung bleibt im bestehenden Tutorialcode.
+
+Die konsolidierte Lehrrevision `desktop-tutorial-v80` enthält die integrierten
+Beziehungs-, Stadt- und Übergabelektionen. Neue Lessonrevisionen archivieren
+die früheren Läufe; die Lehrabdeckung bleibt eine Teilprüfung des Produkts.
