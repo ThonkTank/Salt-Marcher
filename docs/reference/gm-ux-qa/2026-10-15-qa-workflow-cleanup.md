@@ -1,4 +1,4 @@
-# QA workflow maintenance — package 2.1.5
+# QA workflow maintenance — package 2.1.6
 
 Routine product exploration uses an identified original build, isolated data, actual UI, a short report and evidence appropriate to the question. Reproducible observations can lead directly to focused product corrections; a completed formal comparison wave is not a prerequisite. Substantial changes receive an independent targeted retest.
 
@@ -10,6 +10,10 @@ The local live ledger separates current operator readiness and open work from re
 
 Tester and reviewer instructions explicitly separate routine exploration/targeted retests from formal measurement and rating duties. Documentary reviews do not substitute for required independent UI retests. Open questions and unexpected findings remain permitted beyond formal scoring dimensions.
 
-The existing status CLI defaults to current work without archived tasks or control records; `status --full` retains the previous complete ledger output. Both modes are read-only. Approval-waiting or resource-deferred tasks remain visible and are not treated as running heavy jobs. Findings link to their assigned task instead of repeating task progress.
+The existing status CLI defaults to current work without completed archived tasks or control records; `status --full` retains the previous complete ledger output. Both modes are read-only. Pending project assignments and contradictions between archive flags and unfinished/unknown task status remain visible. Approval-waiting or resource-deferred tasks remain visible and are not treated as running heavy jobs. Findings link to their assigned task instead of repeating task progress.
 
-Validation: package check passed and 137 offline tests passed, including two read-only CLI behavior tests. The adapter, launcher, measurement/evaluation scripts, schemas, scenarios and frozen candidate artifacts were checked unchanged. The status CLI changed; protocol parameters changed only in patch version. No new GUI qualification, product study, automation or development freeze was introduced. Private scenarios, answers, raw personal UI data and control judgments are retained locally.
+Public task bundles explicitly declare their workflow mode. Ordinary exploratory exports default to product exploration and omit formal timer/rating sections from the tester instructions and response template. Exploratory comparisons use `--mode comparison_study`; existing explicit confirmation calls remain formal, and a confirmation task cannot be disguised as routine exploration. Earlier exported bundles and frozen wave copies remain unchanged.
+
+New formal wave registrations require a nonblank comparison question and related product decision. Those fields are stored in the existing immutable registration; already registered waves remain usable without retroactive rewriting. Prepared drafts remain unregistered until their purpose and existing evidence requirements are satisfied.
+
+Validation: package check passed and 142 offline tests passed. Regressions cover routine/formal bundle modes, confirmation compatibility and contradiction rejection, missing registration purpose, pending routing visibility and archive-state conflicts. The adapter, launcher, measurement/evaluation scripts, schemas, scenarios and frozen candidate artifacts were checked unchanged. Protocol parameters changed only in patch version. No new GUI qualification, product study, automation or development freeze was introduced. Private scenarios, answers, raw personal UI data and control judgments are retained locally.
