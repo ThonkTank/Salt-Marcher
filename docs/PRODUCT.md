@@ -4,6 +4,8 @@
 
 Eine Spielleitung soll eine Kampagne als zusammenhängenden lokalen Arbeitsraum benutzen: Welt und Orte erkunden, Städte und Dungeons bearbeiten, Texte und Encounter vorbereiten und daraus einen Spielabend führen. Gespeicherte Daten müssen nach Neustart und Fehlern zuverlässig wieder auffindbar sein. Ein weiterer isolierter Editor oder ein nur theoretisch beschriebener Fachvertrag erfüllt dieses Ziel noch nicht.
 
+Anforderungen beschreiben konkrete Fähigkeiten und Nutzungsergebnisse. Dropdowns, Popups, Dialoge und andere Oberflächenformen sind austauschbare Umsetzungsmittel; sie begründen keine eigenständigen Produktanforderungen.
+
 Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme. Der [vollständige Quellenabgleich](SCOPE.md) macht alle erfassten Zielbereiche, zusätzliche Fachabnahmen und begründete Quellenkonfliktentscheidungen sichtbar. Die Integrationsgates allein beschreiben nicht den gesamten Funktionsumfang.
 
 ## Vollständiges Funktionsportfolio
