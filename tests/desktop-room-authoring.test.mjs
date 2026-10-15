@@ -7,7 +7,7 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
-for(const [name,entry] of [['store','storage/store'],['ui','key-ui'],['camera','room-camera'],['key-model','key-model'],['key-contracts','key-contracts']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/room-authoring-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+for(const [name,entry] of [['store','storage/store'],['ui','key-ui'],['graph-ui','graph-ui'],['camera','room-camera'],['key-model','key-model'],['key-contracts','key-contracts']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/room-authoring-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/room-authoring-store.cjs');
 const tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let i=0;i<120;i++){if(check())return;await tick();}assert.ok(check(),'UI state did not arrive');}
@@ -78,4 +78,24 @@ test('a rejected self connection leaves no partially initialized room in its pre
  const a=room('a',0,0),x=setup(t,[a]),token=x.workspace.token;
  const result=x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',action:{kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'a',fromGroupId:null,toGroupId:null,form:'corridor',name:'Rejected',problem:''}}});
  assert.ok(result.view.layout.intents[0].problem);assert.equal(result.view.geometry.drawing.volumes.length,0);assert.deepEqual(result.workspace.rooms,[a]);
+});
+test('connection feedback distinguishes translated, changed and rejected endpoints beside the action',async t=>{
+ const a=room('a',0,0),b=room('b',12.192,0),x=setup(t,[a,b]),prior={document:globalThis.document,window:globalThis.window};
+ const{document,window}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{document,window});
+ for(const d of document.querySelectorAll('dialog')){d.open=false;d.showModal=()=>{d.open=true;};d.close=()=>{d.open=false;};}
+ Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.querySelector('option[selected]')?.value??this.querySelector('option')?.value??'';},set(v){for(const o of this.querySelectorAll('option'))o.toggleAttribute('selected',o.value===String(v));}});
+ const el=id=>document.getElementById(id),ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
+ window.campaign={graph:async(token,scope)=>ok(()=>x.store.graph(token,scope)),executeGraph:async c=>ok(()=>x.store.executeGraph(c))};
+ const file=require.resolve('../.build/room-authoring-graph-ui.cjs');delete require.cache[file];const ui=require(file);
+ ui.initGraph(()=>{},()=>x.workspace,()=>x.workspace.rooms.find(r=>r.id===x.workspace.selectedId),async()=>true,async w=>{x.workspace=w;},()=>{},async()=>{});
+ t.after(()=>{ui.activateGraph();Object.assign(globalThis,prior);});
+ ui.activateGraph();el('graph-open').onclick();await until(()=>el('graph-dialog').open);
+ el('graph-from').value='a';el('graph-to').value='b';el('graph-connect').onclick();assert.equal(await ui.flushGraph(),true);
+ assert.equal(el('graph-connection-result').hidden,false);assert.match(el('graph-connection-result').textContent,/a.*b.*Vorschau verbunden/);
+ assert.equal(x.store.db.prepare('SELECT count(*) n FROM dungeon_path').get().n,0);
+ el('graph-to').dispatchEvent(new window.Event('input'));assert.equal(el('graph-connection-result').hidden,true);
+ el('graph-to').value='a';el('graph-connect').onclick();assert.equal(await ui.flushGraph(),true);
+ assert.match(el('graph-connection-result').textContent,/Zwei unterschiedliche/);
+ assert.equal(x.store.graph(x.workspace.token,'vault').geometry.drawing.paths.length,1);
+ ui.activateGraph();
 });
