@@ -376,10 +376,10 @@ async function insertNoteTextReference(){
  }catch(error){if(current())tell((error as Error).message,true);}
  finally{if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
 }
-export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string) => Promise<void>) {
+export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>) {
   tell = status;
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
-  initSession(status,()=>flushPreparation(true),async (id,planId)=>{if(!context)return;usePreparation(unwrap(await window.campaign.preparation(context.token,value('world-search'))), !!value('world-search').trim());if(planId){selectedPlan=planId;planDraft=null;selectedScene=null;}if(id)selectedScene=id;await renderPlans();await renderNotes();await renderLocations();},openPreparedNote,()=>{preparationInputVersion++;});
+  initSession(status,()=>flushPreparation(true),async (id,planId)=>{if(!context)return;usePreparation(unwrap(await window.campaign.preparation(context.token,value('world-search'))), !!value('world-search').trim());if(planId){selectedPlan=planId;planDraft=null;selectedScene=null;}if(id)selectedScene=id;await renderPlans();await renderNotes();await renderLocations();},openPreparedNote,()=>{preparationInputVersion++;},offerVisit?async(planId,visitId,current)=>offerVisit(planId,visitId,current):undefined);
   openMap = navigateMap;
   get('note-text-reference').onclick=()=>{void insertNoteTextReference();};
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };

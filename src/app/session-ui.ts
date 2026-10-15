@@ -338,11 +338,11 @@ export async function clearSessionTimeline(){
  const target=unwrap(await window.campaign.session(owner.token,owner.planId));if(!ownsPreview(owner)||!target.replacementBasis)return false;
  return execute({kind:'replace-plan',planId:owner.planId,expectedBasis:target.replacementBasis,name:plan.name,sourcePlanId:null,expectedSourceBasis:null,copyParty:false});
 }
-export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote,edited:()=>void=()=>{}){
+export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote,edited:()=>void=()=>{},offerVisit?:(planId:string,visitId:string,current:()=>boolean)=>Promise<void>){
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
 proposalReview=new SessionReview(acceptSelectedProposals,sessionReviewBasis);
-initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession());
+initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession(),offerVisit);
 sessionCopy=new SessionCopy(status,()=>workspace&&plan&&sources?{workspace,plan,sources}:null,async()=>await flushSession()&&await flushBase(),async (planId,visitId)=>{await refreshBase(visitId,planId);});
 initProposalEditor();inputChanged=edited;tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
