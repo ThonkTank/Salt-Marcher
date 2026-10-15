@@ -175,7 +175,7 @@ test('travel mode keeps one map and one route form together without discarding w
   x.enter('hex-label','Offene Kartenbeschriftung');x.enter('travel-waypoints','0,1');const writes=x.writes;
   doc.getElementById('travel-mode-route').onclick();assert.equal(owner.classList.contains('travel-planning'),true);assert.equal(form.closest('.world-map-columns'),columns);assert.equal(doc.querySelectorAll('#world-travel-form').length,1);assert.equal(doc.querySelectorAll('#world-map').length,1);
   assert.equal(doc.getElementById('travel-advanced').contains(doc.getElementById('travel-waypoints')),true);assert.equal(doc.getElementById('travel-mode-route').closest('#world-map-modes').parentElement.id,'world-map-workspace');
-  assert.equal(doc.getElementById('journey-controls').hidden,true);assert.equal(doc.getElementById('journey-faster').closest('#journey-controls'),null);assert.equal(doc.getElementById('journey-faster').disabled,false);
+  assert.match(doc.getElementById('world-current').textContent,/Hex 0,0/);assert.equal(doc.getElementById('journey-controls').hidden,true);assert.equal(doc.getElementById('journey-faster').closest('#journey-controls'),null);assert.equal(doc.getElementById('journey-faster').disabled,false);
   doc.getElementById('travel-mode-edit').onclick();assert.equal(owner.classList.contains('travel-planning'),false);assert.equal(doc.getElementById('travel-waypoints').value,'0,1');assert.equal(doc.getElementById('hex-label').value,'Offene Kartenbeschriftung');assert.equal(x.writes,writes);
  }finally{x.cleanup();}
 });
