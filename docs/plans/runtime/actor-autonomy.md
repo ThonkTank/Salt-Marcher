@@ -50,8 +50,9 @@ und ausdrücklicher Jobabbruch geben zukünftige exklusive Buchungen an der
 bestätigten Actorzeit frei. Beide Buchungstabellen (`autonomy_booking` und
 `autonomy_target_booking`) behalten nur die ausgeführten Abschnitte. Die
 frühere Zeit einer anderen Scene ist keine Rückrollgrenze für den Actor. Bereits
-ausgeführte Buchungsteile bleiben erhalten; nur Jobabbruch verwirft den
-Jobfortschritt. Wiederaufnahme bucht den verbleibenden Zeitraum für Job und Ziel
+ausgeführte Buchungsteile bleiben erhalten. Die Freigabe selbst verwirft keinen
+Jobfortschritt; Jobabbruch und begründete Pending-Neuwahl behandeln den Laufstand
+ausdrücklich. Wiederaufnahme bucht den verbleibenden Zeitraum für Job und Ziel
 neu. Ein belegtes Ziel wird dabei nicht gewaltsam übernommen.
 
 Gruppen-Opt-in bindet zusätzlich die aktuelle Revision der vorbereiteten Gruppe
@@ -72,6 +73,22 @@ werden geloggt und bleiben nach Fresh nachvollziehbar. Wiederaufnahme endet an
 der bestätigten Scenezeit; spätere Intervalle bleiben ausstehend. Ist der Actor
 bereits weiter, darf Resume ihn nicht zurückrollen: der GM lässt den veralteten
 Zeitraum begründet aus.
+
+Bei „Mit aktuellem Worldstand fortsetzen“ bleiben Job-ID, bereits geleisteter
+Fortschritt und gespeicherter Dungeonweg erhalten, solange die vollständige
+Positionsbasis einschließlich Revision unverändert ist. Erst der nächste normale
+Step prüft Angebot, Weg und exklusive Belegung und bucht nur die verbleibende
+Dauer. Die Entscheidung selbst bewegt weder Actor noch Zeit. Eine bewusste
+Positionskorrektur oder „Zeitraum als GM auslassen“ verwendet weiterhin eine neue
+Jobauswahl. Das Entscheidungslog hält bisherigen Job/Fortschritt und die Neuwahl
+fest; diese Jobreferenz wird bei unabhängiger Campaignkopie remappt. Eine neue
+Schema- oder Datenmigration ist dafür nicht nötig.
+
+Die [Storegegenprobe](../../../tests/desktop-autonomy-disable-time.test.mjs)
+prüft echte Zeitkonfliktpause, Fresh, begründetes Resume, verbleibende Dauer und
+Receiptwiederholung. Sie trennt unveränderte Position, bewussten Ortswechsel und
+Skip; ein spätes Log-Fault darf keine Teilentscheidung speichern. Native
+Bedienung und eine unterbrochene räumliche Dungeonroute bleiben eigene Abnahmen.
 
 ## Lokale Belege und verbleibende Grenzen
 
