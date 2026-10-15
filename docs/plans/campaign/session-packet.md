@@ -60,6 +60,18 @@ Controls ab. Der tatsächliche Wechsel Live → Quelle/Kampf/Belohnung mit Fokus
 Offenentwürfen, Fehlern und anschließender Wiederaufnahme ist weiterhin nativ
 abzunehmen; die zusätzliche Aktion schließt keine vollständige Produktabnahme.
 
+Der Besuchsablauf bietet Sprungmarken zu seinen angezeigten Blöcken. Alte
+Sprungmarken dürfen nach Besuchswechsel oder Schließen keinen neueren Block
+fokussieren. „Als Chronikmoment vormerken“ übernimmt einen Auszug in den
+bestehenden lokalen Momententwurf und öffnet dessen Bearbeitung; eine
+Chronikbuchung entsteht erst durch die separate ausdrückliche Speicherung.
+Die Vormerkung bindet denselben dargestellten Mappenstand wie andere
+Blockaktionen und bewahrt einen vorhandenen Momenttitel und dessen Kategorie.
+Der bestehende Entwurfsweg und seine Zeichenbegrenzung bleiben maßgeblich;
+Quelltexte werden dadurch nicht geändert. Die kontrollierte DOMprobe prüft
+Snapshotbindung, alte Sprungmarken und abgelöste Vormerkungen. Native
+Fokusführung, lange Auszüge und Wiederaufnahme dieses Entwurfs bleiben offen.
+
 Der integrierte Besuchsnavigator (`session-progress-ui.ts`,
 `storage/visit-outcomes.ts`) und `LiveAction.visit-outcome` zeichnen jetzt
 manuell bestätigte Besuchsergebnisse in der Kampagnenhistorie auf. Die Mappe
