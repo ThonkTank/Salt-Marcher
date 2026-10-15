@@ -39,7 +39,7 @@ import { activatePreparation, initPreparation, flushPreparation, leavePreparatio
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openPlannedVisitReview,prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, openCatalogReference, flushCatalog } from './catalog-ui';
-import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
+import {suspendChronicle,initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
 const setWorkspaceAvailable = (available: boolean) => document.body.classList.toggle('has-workspace', available);
@@ -131,7 +131,7 @@ el('items-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;
 el('catalog-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('catalog');await openCatalog();})();};
 el('chronicle-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('chronicle');await openChronicle();})().catch(error=>status(error.message,true));};
 function showTab(selected: 'groups' | 'treasury' | 'atlas' | 'preparation' | 'live' | 'chronicle' | 'catalog' | 'items' | 'world' | 'music' | 'city' | 'autonomy' | 'dungeon') {
-  setWorldSurface(selected);setSessionPacketSurface(selected);
+  if(selected!=='chronicle')suspendChronicle();setWorldSurface(selected);setSessionPacketSurface(selected);
   for (const id of ['groups','treasury','atlas', 'preparation', 'live', 'chronicle', 'catalog', 'items', 'world', 'music', 'city', 'autonomy', 'dungeon']) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);

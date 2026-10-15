@@ -25,7 +25,7 @@ import type { PreparationCommand, PreparationSelection, PreparationDraft, Prepar
 import type { LiveCommand } from '../src/app/live-contracts';
 import type { CombatCommand } from '../src/app/combat-contracts';
 import type { ProgressCommand } from '../src/app/progression';
-import {chronicleMarkdown} from '../src/app/storage/chronicle';
+import {exportChronicleFile} from './chronicle-export';
 import type {ChronicleCategory} from '../src/app/chronicle-contracts';
 import { creatureInfo, searchCreatures, readCreature } from '../src/app/storage/encounters';
 import type { CreatureCatalogQuery } from '../src/features/catalog/creature-catalog';
@@ -311,7 +311,17 @@ else {
     handle('campaign:execute-progress', (command: ProgressCommand) => commits.execute('progress',command,()=>store.executeProgress(command)));
     handle('campaign:loot-balance',(token:string)=>store.lootBalance(token));
     handle('campaign:chronicle',(token:string,category:ChronicleCategory|'all'='all',search='')=>store.chronicle(token,category,search));
-    handle('campaign:chronicle-export',async(token:string,category:ChronicleCategory|'all',search:string)=>{if(!['all','combat','narrative','reward','travel','party','world'].includes(category)||typeof search!=='string'||search.length>1000)throw new Error('Chronikfilter ungültig.');const view=store.chronicle(token,category,search),safe=view.campaignName.replace(/[\\/:*?"<>|]+/g,'-').trim()||'Kampagne',destination=await dialog.showSaveDialog(win,{defaultPath:safe+' – Chronik.md',filters:[{name:'Markdown',extensions:['md']}]});if(destination.canceled||!destination.filePath)return{cancelled:true};await writeFile(destination.filePath,chronicleMarkdown(view,category,search),'utf8');return{cancelled:false};});
+    handle('campaign:chronicle-page',(token:string,category:ChronicleCategory|'all',search:string,cursor:import('../src/app/chronicle-contracts').ChronicleCursor|null)=>store.chroniclePage(token,category,search,cursor));
+    handle('campaign:chronicle-close',(token:string,id:string)=>store.closeChroniclePage(token,id));
+    let chronicleExport:{id:string;cancelled:boolean}|null=null;
+    handle('campaign:chronicle-export-cancel',(id:string)=>{if(chronicleExport?.id===id)chronicleExport.cancelled=true;});
+    handle('campaign:chronicle-export',async(token:string,category:ChronicleCategory|'all',search:string,requestId= randomUUID())=>{
+      if(chronicleExport)throw new Error('Eine Chronik-Ausgabe läuft bereits.');if(typeof requestId!=='string'||!requestId||requestId.length>100)throw new Error('Chronik-Ausgabeauftrag ungültig.');
+      const snapshot=store.chronicleExportSnapshot(token),state={id:requestId,cancelled:false};chronicleExport=state;let written=0;
+      const progress=(busy:boolean)=>{if(!win.isDestroyed())win.webContents.send('campaign:chronicle-export-progress',{requestId,written,busy});},check=()=>{if(state.cancelled||win.isDestroyed())throw new Error('Chronik-Ausgabe abgebrochen.');};
+      try{const initial=snapshot.read(category,search,null,1),safe=initial.campaignName.replace(/[\\/:*?"<>|]+/g,'-').trim()||'Kampagne';progress(true);const destination=await dialog.showSaveDialog(win,{defaultPath:safe+' – Chronik.md',filters:[{name:'Markdown',extensions:['md']}]});if(destination.canceled||!destination.filePath||state.cancelled)return{cancelled:true};written=await exportChronicleFile(snapshot,category,search,destination.filePath,{check,progress:n=>{written=n;progress(true);}});return{cancelled:false,written};}
+      catch(e){if(state.cancelled)return{cancelled:true};throw e;}finally{snapshot.close();if(chronicleExport===state)chronicleExport=null;progress(false);}
+    });
     handle('campaign:combat-draft',(token:string,id:string,kind:import('../src/app/combat-draft-contracts').CombatDraftKind,target:string)=>store.combatDraft(token,id,kind,target));
     handle('campaign:combat-drafts',(token:string,id:string,after:string|null)=>store.combatDrafts(token,id,after));
     handle('campaign:keep-combat-draft',(token:string,draft:import('../src/app/combat-draft-contracts').CombatWorkingDraft,expected:string|null)=>store.keepCombatDraft(token,draft,expected));

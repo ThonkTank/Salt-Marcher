@@ -1,3 +1,4 @@
+import {ChronicleReadSession} from './chronicle-pages';
 import {readLocationActivities} from './location-activity';
 import {readCityActivities} from './city-activity';
 import {readWorldCalendar as readNpcPlanCalendar} from './world';
@@ -119,6 +120,7 @@ type Row = Record<string, any>;
 function snapshotDigest(filename:string){const fd=openSnapshot(filename,'r'),hash=createHash('sha256'),chunk=Buffer.allocUnsafe(65536);try{let n:number;while((n=readSync(fd,chunk,0,chunk.length,null))>0)hash.update(chunk.subarray(0,n));return hash.digest('hex');}finally{closeSnapshot(fd);}}
 
 export class CampaignStore {
+  private chronicleRead:ChronicleReadSession|null=null;
   private db: any;
   private graphShadow:GraphShadow|null=null;
   private graphRouting=false;
@@ -212,7 +214,7 @@ export class CampaignStore {
   extensions(after:string|null){return this.extensionRegistry.list(after);}
   executeExtension(command:ExtensionCommand){return this.extensionRegistry.execute(command);}
   extensionOutcome(command:ExtensionCommand){return this.extensionRegistry.outcome(command);}
-  close() { this.extensionRegistry.dispose();this.graphShadow?.dispose();this.graphShadow=null;this.db.close(); }
+  close() {this.chronicleRead?.close();this.chronicleRead=null; this.extensionRegistry.dispose();this.graphShadow?.dispose();this.graphShadow=null;this.db.close(); }
   list(): { campaigns: Campaign[]; activeId: string | null } {
     return { campaigns: this.db.prepare('SELECT c.id,c.name,c.revision FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE l.trashed=0 ORDER BY c.name,c.id').all(), activeId: this.db.prepare("SELECT value FROM settings WHERE key='active'").get()?.value ?? null };
   }
@@ -242,7 +244,7 @@ export class CampaignStore {
     const payload = json({ polygons: room.polygons, sections: room.sections });
     this.db.prepare('INSERT INTO room VALUES(?,?,?,?,?,?,?,?,?)').run(campaignId, room.id, room.scopeId, room.number, room.name, 0, payload, hash(payload), room.floorId);
   }
-  activate(campaignId: string): Workspace {
+  activate(campaignId: string): Workspace {this.chronicleRead?.close();this.chronicleRead=null;
     if(this.graphShadow&&this.graphShadow.campaignId!==campaignId)throw new Error('Offene Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen.');
     if (!this.db.prepare('SELECT c.id FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE c.id=? AND l.trashed=0').get(campaignId)) throw new Error('Kampagne nicht gefunden.');
     this.active = { campaignId, token: randomUUID() };
@@ -597,6 +599,9 @@ export class CampaignStore {
   maskHistory(token:string,sceneId:string,query:import('../mask-history-contracts').MaskHistoryQuery){return readMaskHistory(this.db,this.guard(token),sceneId,query);}
   chase(token:string,sceneId:string,id?:string){return readChase(this.db,this.guard(token),sceneId,id);}
   executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
+  chroniclePage(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all',search:string,cursor:import('../chronicle-contracts').ChronicleCursor|null){const cam=this.guard(token);if(!cursor){this.chronicleRead?.close();this.chronicleRead=new ChronicleReadSession(this.filename,cam);}if(!this.chronicleRead||this.chronicleRead.campaignId!==cam||cursor&&cursor.snapshotId!==this.chronicleRead.id)throw new Error('Chronik-Lesestand nicht mehr verfügbar. Aktualisieren.');return this.chronicleRead.read(category,search,cursor);}
+  closeChroniclePage(token:string,id:string){this.guard(token);if(this.chronicleRead?.id===id){this.chronicleRead.close();this.chronicleRead=null;}}
+  chronicleExportSnapshot(token:string){return new ChronicleReadSession(this.filename,this.guard(token));}
   chronicle(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all'='all',search=''){return readChronicle(this.db,this.guard(token),category,search);}
   progress(token: string) { return readProgress(this.db, this.guard(token)); }
   lootBalance(token:string){return readLootBalance(this.db,this.guard(token));}

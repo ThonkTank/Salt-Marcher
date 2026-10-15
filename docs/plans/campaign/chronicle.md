@@ -85,3 +85,9 @@ Vorschlag, keine automatische XP- oder Beutebuchung.
    Korrekturverweise und Snapshotbytes. Erasure entfernt eigene Fakten; fehlende
    Ziele bleiben erkennbar, archivierte Eigentümer historische Referenzen.
    Native Tastatur, Skalierung und Markdownausgabe separat abnehmen.
+
+## Desktop-Arbeitsstand 0.120: vollständige Chronikseiten und Ausgabe
+
+Die neue Seitenabfrage zeigt 100 passende Ereignisse und einen stabilen Cursor aus Zeitpunkt, Quellenreihenfolge und ID. Ein eigener schreibgeschützter SQLite-Lesestand hält Fakten und Namen während des Blätterns fest; neue Ereignisse erscheinen erst nach Aktualisieren. Suche/Bereich beginnen einen neuen Lesestand, Verlassen schließt ihn. Der Reader behält je Quelle nur die nächste begrenzte Kandidatenmenge und liest benötigte Kontextnamen in einem kleinen Cache. Awardgruppen werden vor der Seitenauswahl vollständig zusammengeführt. Die bestehende Kurzabfrage bleibt für andere Produktleser verfügbar.
+
+Markdown ausgeben verwendet einen eigenen festen Lesestand und schreibt sämtliche Treffer portionsweise in eine temporäre Nachbardatei. Fortschritt und Abbruch sind sichtbar; erst der vollständige synchronisierte Inhalt ersetzt die gewählte Zieldatei. Ein Abbruch oder Fehler erhält vorhandene Ausgaben. Weder Blättern noch Export schreiben Kampagnenfakten. Der Export scannt verbleibende Quellen bei jeder Portion erneut; große Langzeitlasten bleiben zu messen, der Ergebnisspeicher wächst nicht mit der Ereigniszahl.
