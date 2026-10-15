@@ -11,10 +11,14 @@ export function validateRestockTables(shop:Shop,pending=false){
  if(!Array.isArray(shop.restockTables)||shop.restockTables.length>100)throw new Error('Ungültige Warenauffülltabellen.');
  const ids=new Set<string>();
  for(const table of shop.restockTables){
-  if(!table||typeof table.id!=='string'||!table.id||table.id.length>1000||ids.has(table.id)||!Number.isSafeInteger(table.revision)||table.revision<(pending?0:1)||typeof table.name!=='string'||!table.name.trim()||table.name.length>1000||typeof table.seed!=='string'||!table.seed.trim()||table.seed.length>1000||!positive(table.rolls,100)||!Array.isArray(table.entries)||!table.entries.length||table.entries.length>1000)throw new Error('Warenauffülltabelle benötigt Namen, Zufallsbasis und 1–100 Ziehungen.');
+  if(!table||typeof table.id!=='string'||!table.id||table.id.length>1000||ids.has(table.id)||!Number.isSafeInteger(table.revision)||table.revision<(pending?0:1)||typeof table.name!=='string'||!table.name.trim()||table.name.length>1000||typeof table.seed!=='string'||!table.seed.trim()||table.seed.length>1000||!positive(table.rolls,100)||!Array.isArray(table.entries)||(!table.catalog&&!table.entries.length)||table.entries.length>1000)throw new Error('Warenauffülltabelle benötigt Namen, Zufallsbasis und 1–100 Ziehungen.');
   ids.add(table.id);const entries=new Set<string>();
   for(const e of table.entries){const stock=shop.stock.find(s=>s.id===e?.entryId);if(!e||!stock||stock.unique||entries.has(e.entryId)||!positive(e.minimum)||!positive(e.maximum)||e.maximum<e.minimum)throw new Error('Auffülltabelle benötigt eindeutige Mengenstapel mit gültigen Mindest-/Höchstmengen.');entries.add(e.entryId);}
-  if(!integerWeights(table.entries.map(e=>e.weight)).some(w=>w>0n))throw new Error('Mindestens ein Warengewicht muss positiv sein.');
+  if(table.catalog){
+   const c=table.catalog,f=c.filter,price=(v:unknown)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,17})$/.test(v);
+   if(!f||typeof f.search!=='string'||f.search.length>1000||!['','coins','equipment','trade-goods','magic','other'].includes(f.category)||!['','yes','no'].includes(f.magic)||typeof f.rarity!=='string'||f.rarity.length>1000||!['','no','yes','unspecified'].includes(f.attunement)||!['','authored','srd51'].includes(f.source??'')||!positive(c.minimum)||!positive(c.maximum)||c.minimum>c.maximum||!price(c.buyCopper)||!price(c.sellCopper))throw new Error('Kataloglieferung benötigt gültige Filter, Mengenbereiche und Preise.');
+  }
+  if(!table.catalog&&!integerWeights(table.entries.map(e=>e.weight)).some(w=>w>0n))throw new Error('Mindestens ein Warengewicht muss positiv sein.');
   const s=table.schedule;
   if(s!==null){
    if(!s||typeof s!=='object')throw new Error('Ungültiger Lieferauslöser.');
@@ -24,7 +28,7 @@ export function validateRestockTables(shop:Shop,pending=false){
   }
  }
 }
-const authored=(t:ShopRestockTable)=>JSON.stringify({name:t.name,seed:t.seed,rolls:t.rolls,entries:t.entries,trigger:t.schedule&&('eventId' in t.schedule?{eventId:t.schedule.eventId,eventRevision:t.schedule.eventRevision}:t.schedule.intervalMs)});
+const authored=(t:ShopRestockTable)=>JSON.stringify({name:t.name,seed:t.seed,rolls:t.rolls,entries:t.entries,catalog:t.catalog??null,trigger:t.schedule&&('eventId' in t.schedule?{eventId:t.schedule.eventId,eventRevision:t.schedule.eventRevision}:t.schedule.intervalMs)});
 export function prepareRestockTables(shop:Shop,prior:Shop|null,time:()=>bigint,through:bigint|null,event:(id:string)=>CalendarEvent){
  for(const table of shop.restockTables??[]){
   const old=prior?.restockTables?.find(t=>t.id===table.id);
@@ -45,23 +49,29 @@ export function prepareRestockTables(shop:Shop,prior:Shop|null,time:()=>bigint,t
   }
  }
 }
-/** One bounded draw stream; only selected stock is changed. The caller owns the transaction. */
-export function drawRestockTable(shop:Shop,table:ShopRestockTable,seed:string,periods=1n,firstDue?:bigint){
- const draws=periods*BigInt(table.rolls);
+/** Aggregate one deterministic stream before applying its selected stock changes. */
+export function drawRestockChoices(entries:ShopRestockTable['entries'],rolls:number,seed:string,periods=1n,firstDue?:bigint,spacing='0'){
+ const draws=periods*BigInt(rolls);
  if(draws>100000n)throw new Error('Mehr als 100.000 Warenziehungen in einem Zeitschritt. Zeit in kleineren Schritten bestätigen oder die Auffüllregel anpassen.');
- const weights=integerWeights(table.entries.map(e=>e.weight));let total=0n;
- const stockById=new Map(shop.stock.map(s=>[s.id,s]));
- const edges=weights.map(w=>total+=w),selected=new Map<string,{stock:ShopStock;before:number;added:number}>();
+ if(!entries.length)return [];
+ const weights=integerWeights(entries.map(e=>e.weight));let total=0n;
+ const edges=weights.map(w=>total+=w),selected=new Map<string,number>();
  const random=(key:string)=>BigInt('0x'+createHash('sha256').update(seed+'|'+key).digest('hex'));
- for(let p=0n;p<periods;p++)for(let draw=0;draw<table.rolls;draw++){
-  const schedule=table.schedule,spacing=schedule?('eventId' in schedule?schedule.repeatMs??'0':schedule.intervalMs):'0';
+ for(let p=0n;p<periods;p++)for(let draw=0;draw<rolls;draw++){
   const key=(firstDue===undefined?'manual':(firstDue+p*BigInt(spacing)).toString())+'|'+draw;
   const roll=random(key+'|entry')%total;let lo=0,hi=edges.length-1;while(lo<hi){const mid=(lo+hi)>>>1;if(roll<edges[mid]!)hi=mid;else lo=mid+1;}
-  const entry=table.entries[lo]!,stock=stockById.get(entry.entryId)!;
-  const quantity=entry.minimum+Number(random(key+'|quantity')%BigInt(entry.maximum-entry.minimum+1));
-  let outcome=selected.get(stock.id);if(!outcome){outcome={stock,before:stock.quantity,added:0};selected.set(stock.id,outcome);}
-  outcome.added+=quantity;stock.quantity+=quantity;
-  if(!Number.isSafeInteger(stock.quantity)||stock.quantity>1000000)throw new Error('Gewichtete Auffüllung überschreitet die Bestandsgrenze. Menge oder Zeitraum verringern.');
+  const entry=entries[lo]!,quantity=entry.minimum+Number(random(key+'|quantity')%BigInt(entry.maximum-entry.minimum+1));
+  selected.set(entry.entryId,(selected.get(entry.entryId)??0)+quantity);
  }
- return [...selected.values()].map(o=>({entryId:o.stock.id,reference:{...o.stock.reference},before:o.before,added:o.added,quantity:o.stock.quantity}));
+ return [...selected].map(([entryId,added])=>({entryId,added}));
+}
+export function restockSpacing(table:ShopRestockTable){const s=table.schedule;return s?('eventId' in s?s.repeatMs??'0':s.intervalMs):'0';}
+/** The caller owns the transaction. */
+export function drawRestockTable(shop:Shop,table:ShopRestockTable,seed:string,periods=1n,firstDue?:bigint){
+ const stockById=new Map<string,ShopStock>(shop.stock.map(s=>[s.id,s]));
+ return drawRestockChoices(table.entries,table.rolls,seed,periods,firstDue,restockSpacing(table)).map(o=>{
+  const stock=stockById.get(o.entryId)!,before=stock.quantity;stock.quantity+=o.added;
+  if(!Number.isSafeInteger(stock.quantity)||stock.quantity>1000000)throw new Error('Gewichtete Auffüllung überschreitet die Bestandsgrenze. Menge oder Zeitraum verringern.');
+  return{entryId:stock.id,reference:{...stock.reference},before,added:o.added,quantity:stock.quantity};
+ });
 }
