@@ -43,23 +43,16 @@ export async function importAudioBundle(filename:string,root:string,h:TransferHo
  },{check:()=>check(h),progress:(bytes,files)=>h.progress({phase:'Musikbibliothek importieren',bytes,files,busy:true})});
  const published:string[]=[];
  try{
-  const library=extracted.manifest as Library;validateAudioLibrary(library);const expected=new Map<string,AudioAsset>();
-  for(const a of library.assets){
-   const name=path.basename(audioFile(root,a)),actual=extracted.files.get('audio/'+name);
-   if(actual?.sha256!==a.media.sha256)throw new Error('Medien fehlen oder sind verändert: '+a.name);
-   if(actual.bytes!==a.media.bytes)throw new Error('Mediengröße stimmt nicht: '+a.name);expected.set(name,a);
-  }
-  if(expected.size!==extracted.files.size)throw new Error('Musikpaket enthält nicht referenzierte Medien.');
-  for(const [name,a]of expected){
-   check(h);const destination=audioFile(root,a);
-   try{await copyFile(path.join(extracted.dir,'audio',name),destination,constants.COPYFILE_EXCL);published.push(destination);}
+  for(const [name,file]of extracted.files){
+   check(h);const destination=path.join(root,path.basename(name));
+   try{await copyFile(path.join(extracted.dir,name),destination,constants.COPYFILE_EXCL);published.push(destination);}
    catch(e){
     if((e as NodeJS.ErrnoException).code!=='EEXIST')throw e;
     const digest=createHash('sha256');let count=0;for await(const chunk of createReadStream(destination)){check(h);digest.update(chunk);count+=chunk.length;}
-    if(count!==a.media.bytes||digest.digest('hex')!==a.media.sha256)throw new Error('Vorhandene Medienbytes sind beschädigt: '+a.name);
+    if(count!==file.bytes||digest.digest('hex')!==file.sha256)throw new Error('Vorhandene Medienbytes sind beschädigt: '+name);
    }
   }
-  check(h);return library;
+  check(h);return extracted.manifest as Library;
  }catch(e){for(const destination of published)await rm(destination,{force:true});throw e;}
  finally{await rm(extracted.dir,{recursive:true,force:true});}
 }
