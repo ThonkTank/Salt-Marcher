@@ -24,8 +24,8 @@ Originaldaten werden nicht repariert oder neu gespeichert.
 
 Shop-/Ownertrash unterbricht Auffüllen. Alte Fälligkeiten bleiben bestehen;
 ein aktiver Step nach Restore kann Perioden nachholen. Diese aktuelle Wirkung
-ist noch keine bestätigte Trashzeitpolitik. Gewichtete Auffüllung und
-Kalenderereignisse fehlen.
+ist noch keine bestätigte Trashzeitpolitik. Gewichtete Auffüllung über gespeicherte Shoptabellen ist implementiert;
+Kalenderereignisse als eigener Triggertyp bleiben offen.
 
 Die vorhandenen festen Intervalle sind verstrichene Millisekunden. Shopeditor,
 Zeitbasis und Zeitkonflikthinweis benennen ihre Tage deshalb als jeweils
@@ -83,7 +83,7 @@ native Reisebedienung oder vollständige Produktabnahme.
 2. Ownertrash → mehrere Scenezeiten → Restore → nächster Step an einer festen
    Regel prüfen. Fortsetzungsregel/nächste Fälligkeit sichtbar erklären;
    bestehende Auffüllungen und manuelle Korrekturen nicht erneut anwenden.
-3. Gewichtete und kalendergebundene Regeln an revisionierte Tabellen/Filter,
+3. Kalendergebundene Regeln und katalogweite Filter an revisionierte Tabellen/Filter,
    fällige Trigger und gespeicherte Zufallsbasis binden. Tatsächliche Auswahl,
    Menge und Herkunft in `shop_event` festhalten; Retry/Fresh erhalten das
    Resultat. Eine Zeitquelle, keine Bestätigungsfolge je konfiguriertem Ereignis.
@@ -95,3 +95,26 @@ native Reisebedienung oder vollständige Produktabnahme.
 fällige/zukünftige Regeln mit fehlendem Owner, Rollback sowie Ownertrash,
 Restore und Neuzuordnung ohne Verlust der Shopidentität. Native Warnung,
 Trashzeitpolitik und gewichtete Regeln bleiben offen.
+
+## Gewichtete Warenlieferungen
+
+Der Shopeditor bietet benannte Tabellen aus vorhandenen Mengenstapeln, exakte
+Dezimalgewichte, Mengenbereiche und 1–100 Ziehungen je Lieferung. Die aktuelle
+Shoprevision bindet Änderungen; jede Tabelle behält zusätzlich eine Revision
+und eine gespeicherte Zufallsbasis. Einzelstücke sind ausgeschlossen. Manuelles
+Würfeln speichert Auswahl, historische Definition, Mengen und Seed im selben
+Receipt-/Bestandsabschluss; derselbe Auftrag liefert keine zweite Lieferung.
+
+Optionale Intervalle verwenden verstrichene Millisekunden bzw. ausdrücklich
+24-Stunden-Tage. Neu angelegte/geänderte Regeln beginnen an der gewählten
+Scenezeit; bestätigte Fälligkeiten werden nie rückwirkend neu gewürfelt. Die
+gemeinsame bestätigte Zeitverarbeitung addiert nur ausgewählte Zeilen und
+hält erste/letzte Fälligkeit, Anzahl, Regelrevision und konkrete Ergebnisse
+im Shopverlauf. Kampagnenkopien remappen Tabellen-/Bestandsidentitäten und
+behalten Zufallsbasis und bestätigten Bestand. Kalenderereignis-Trigger und
+katalogweite dynamische Filter sind noch nicht implementiert.
+
+Ein Schritt mit mehr als100.000 Zufallsziehungen wird vor der Auswahl mit
+einem Hinweis auf kleinere Zeitabschnitte abgewiesen; es wird nichts gekürzt.
+Bestandsüberlauf verwirft den gesamten bestätigten Zeitabschluss. Dieser
+Operationsschutz ist keine Qualifikation für große gemischte Shopbestände.

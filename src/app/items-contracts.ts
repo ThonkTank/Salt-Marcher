@@ -4,13 +4,15 @@ export interface ItemDefinition {id:string;revision:number;name:string;category:
 export interface ItemQuery {search:string;category:string;magic:''|'yes'|'no';rarity:string;attunement:string;sort:'name'|'value';direction:'asc'|'desc';after:number;includeTrashed:boolean}
 export interface ItemPage {items:ItemDefinition[];total:number;next:number|null;problems:string[];sourceStatus:{complete:boolean;message:string}}
 export interface ShopStock {id:string;reference:ItemReference;quantity:number;unique:boolean;instanceId:string|null;buyCopper:string;sellCopper:string;notes:string;restock:{mode:'fill'|'add';quantity:number;intervalMs:string;nextDueMs:string}|null}
-export interface Shop {id:string;revision:number;name:string;owner:{kind:'npc'|'location';id:string};notes:string;trashed:boolean;stock:ShopStock[]}
+export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];schedule:{intervalMs:string;nextDueMs:string}|null}
+export interface Shop {id:string;revision:number;name:string;owner:{kind:'npc'|'location';id:string};notes:string;trashed:boolean;stock:ShopStock[];restockTables?:ShopRestockTable[]}
 export interface ShopSummary {id:string;name:string;ownerName:string;unavailable:boolean;revision:number|null;problem:string|null}
 export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;items:ItemDefinition[];history:{id:string;time:string;description:string}[]}
 export type ItemShopAction=
  |{kind:'definition';definition:ItemDefinition;expectedRevision:number|null}
  |{kind:'definition-trash';id:string;expectedRevision:number;trashed:boolean}
  |{kind:'shop';shop:Shop;expectedRevision:number|null;scheduleClock?:{sceneId:string;expectedRevision:number}}
+ |{kind:'random-restock';shopId:string;expectedRevision:number;tableId:string;expectedTableRevision:number}
  |{kind:'purchase';shopId:string;expectedRevision:number;entryId:string;expectedDefinitionRevision:number;quantity:number;characterId:string;expectedMembershipRevision:number;actualGold:string}
  |{kind:'sell';shopId:string;expectedRevision:number;ledgerId:string;expectedLedgerRevision:number;expectedDefinitionRevision:number;quantity:number;actualGold:string;notes:string;newStockPrices?:{buyGold:string;sellGold:string}}
  |{kind:'restock';shopId:string;expectedRevision:number;entryId:string;mode:'fill'|'add';quantity:number;reason:string};

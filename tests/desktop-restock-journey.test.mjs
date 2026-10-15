@@ -90,3 +90,20 @@ test('an exactly represented large journey total retains its stored format throu
  x.store.db.prepare('UPDATE world_journey SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,large.id);
  assert.deepEqual(x.store.sceneWorld(x.w.token,x.b).journey,large);await x.store.backup(path.join(x.root,'large-safe.sqlite'));assert.equal(x.store.db.prepare('SELECT payload FROM world_journey WHERE id=?').get(large.id).payload,payload);
 });
+
+test('weighted shop deliveries retain their rule, apply once with time and survive independent copy',async t=>{
+ const x=fixture(t),clock=x.store.liveScene(x.w.token,x.a).clock;
+ const table={id:randomUUID(),revision:0,name:'Seillieferung',seed:'fixed-market-seed',rolls:3,entries:[{entryId:'add',weight:'1',minimum:2,maximum:2},{entryId:'fill',weight:'0',minimum:9,maximum:9}],schedule:{intervalMs:'1000',nextDueMs:'0'}};
+ let shop=x.store.executeItemShop(x.command({kind:'shop',expectedRevision:x.shop.revision,scheduleClock:{sceneId:x.a,expectedRevision:clock.revision},shop:{...x.shop,stock:x.shop.stock.map(e=>({...e,restock:null})),restockTables:[table]}})).shop.shop;
+ assert.equal(shop.restockTables[0].revision,1);assert.equal(shop.restockTables[0].schedule.nextDueMs,'1000');
+ const manual=x.command({kind:'random-restock',shopId:shop.id,expectedRevision:shop.revision,tableId:table.id,expectedTableRevision:1});
+ x.store.executeItemShop(manual);x.store.executeItemShop(manual);assert.deepEqual(x.store.shop(x.w.token,shop.id).shop.stock.map(e=>e.quantity),[6,0,13]);
+ const advance=x.command({kind:'advance-clock',sceneId:x.a,expectedRevision:clock.revision,amount:5,unit:'seconds',calendarVersion:'relative-v1',reason:'Warenmarkt'});x.store.executeLive(advance);x.store.executeLive(advance);
+ const view=x.store.shop(x.w.token,shop.id);assert.deepEqual(view.shop.stock.map(e=>e.quantity),[36,0,13]);assert.equal(view.shop.restockTables[0].schedule.nextDueMs,'6000');
+ const fact=view.history.find(h=>h.facts?.tableId===table.id&&h.facts.intervals)?.facts;assert.equal(fact.tableRevision,1);assert.equal(fact.intervals,'5');assert.equal(fact.outcomes[0].added,30);assert.equal(fact.seed,table.seed);
+ x.reopen();assert.deepEqual(x.store.shop(x.w.token,shop.id),view);
+ const snapshot=path.join(x.root,'weighted-snapshot.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=new CampaignStore(path.join(x.root,'weighted-copy.sqlite'));
+ try{const campaign=copy.acceptCampaignSnapshot(snapshot,'Anderer Markt',{}),w=copy.activate(campaign.id),id=copy.shops(w.token,false)[0].id,cloned=copy.shop(w.token,id).shop;
+  assert.notEqual(id,shop.id);assert.notEqual(cloned.restockTables[0].id,table.id);assert.equal(cloned.restockTables[0].seed,table.seed);assert(cloned.restockTables[0].entries.every(e=>cloned.stock.some(s=>s.id===e.entryId)));assert.deepEqual(cloned.stock.map(e=>e.quantity),[36,0,13]);
+ }finally{copy.close();}
+});
