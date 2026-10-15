@@ -30,6 +30,7 @@ npm run build:desktop
 ```
 
 `npm run build` erzeugt das Obsidian-Plugin in `main.js`; `npm run build:desktop` erzeugt den Desktopbuild unter `.build/desktop`.
+`npm test` nimmt alle `tests/desktop-*.test.mjs` automatisch auf und führt die Tests nacheinander aus. Native GUI-Prüfungen bleiben getrennte Aufrufe.
 
 ### Obsidian-Testlauf
 
