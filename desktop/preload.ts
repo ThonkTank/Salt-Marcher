@@ -146,6 +146,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   pickPlayerArt:(token:string,kind:string,subjectId:string|null,title:string)=>ipcRenderer.invoke('player:art',token,kind,subjectId,title),
   playerWindow:(token:string,open:boolean)=>ipcRenderer.invoke('player:window',token,open),
   playerScreens:()=>ipcRenderer.invoke('player:screens'),
+  cityActivities:(token:string,q:import('../src/app/city-activity-contracts').CityActivityQuery)=>ipcRenderer.invoke('city:activities',token,q),
   cityBuildings:(token:string,q:import('../src/app/city-contracts').CityBuildingQuery)=>ipcRenderer.invoke('city:buildings',token,q),
   cities:(token:string)=>ipcRenderer.invoke('city:list',token),
   city:(token:string,id:string)=>ipcRenderer.invoke('city:view',token,id),

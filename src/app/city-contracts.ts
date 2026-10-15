@@ -1,3 +1,4 @@
+import type {CityActivityAPI as importCityActivityAPI} from './city-activity-contracts';
 import type {Result} from './contracts';
 export interface CityPoint {x:number;y:number}
 export interface CityHousehold {id:string;name:string;memberIds:string[]}
@@ -7,10 +8,7 @@ export interface CityUnit {id:string;kind:'node'|'road'|'district'|'plaza'|'wate
 export interface CityDemographicCount {value:string;count:number}
 export interface CityDemographics {residentCount:number;profiledCount:number;ancestries:CityDemographicCount[];genders:CityDemographicCount[];ages:{years:number;count:number}[]}
 export interface CityFactionPresence {id:string;name:string;available:boolean;residentCount:number;workerCount:number;unitCount:number}
-export interface CityActivitySite {cityId:string;cityName:string;unitId:string;unitName:string}
-export interface CityActivityRow {id:string;name:string;roles:('resident'|'worker')[];activity:string|null;place:'home'|'work'|'other'|null;notes:string;target:CityActivitySite|null;overrideLabel:string|null;problem:string|null}
-export interface CityActivities {sceneId:string;sceneTitle:string;instantMs:string;date:string;peopleCount:number;scheduledCount:number;exceptionCount:number;problemCount:number;rows:CityActivityRow[]}
-export interface CityView {header:CityHeader;units:CityUnit[];demographics:CityDemographics;factions:CityFactionPresence[];activities:CityActivities|null;canUndo:boolean;canRedo:boolean}
+export interface CityView {header:CityHeader;units:CityUnit[];demographics:CityDemographics;factions:CityFactionPresence[];canUndo:boolean;canRedo:boolean}
 export interface CityOverview {cities:CityHeader[];locations:{id:string;name:string}[];factions:{id:string;name:string}[];assignedPeople:{id:string;name:string}[]}
 export interface CityPersonMove {npcId:string;role:'home'|'work';fromCityId:string;fromUnitId:string;expectedRevision:number}
 export interface CityLifeMove {role:'home'|'work';fromCityId:string;fromUnitId:string;recordId:string;expectedRevision:number;toUnitId:string}
@@ -20,4 +18,4 @@ export interface CityBuildingChoices {items:CityBuildingChoice[];next:number|nul
 export interface CityCommand {commandId:string;token:string;campaignId:string;cityId:string;expectedRevision:number;action:{kind:'create';header:CityHeader}|{kind:'change';upsert:CityUnit[];remove:string[];header?:CityHeader;label:string;bindingMoves?:CityPersonMove[];lifeMoves?:CityLifeMove[]}|{kind:'undo'|'redo'}}
 export interface CityRecipe {seed:string;density:number;size:number;reach:number;districtId:string;use:string}
 export interface CityPreview {cityId:string;baseRevision:number;recipe:CityRecipe;buildings:CityUnit[];replaceIds:string[];attempts:number}
-export interface CityAPI {cityBuildings(token:string,query:CityBuildingQuery):Promise<Result<CityBuildingChoices>>;cities(token:string):Promise<Result<CityOverview>>;city(token:string,id:string):Promise<Result<CityView>>;executeCity(command:CityCommand):Promise<Result<CityView>>;exportCity(token:string,id:string,format:'svg'|'json'):Promise<Result<{cancelled:boolean}>>}
+export interface CityAPI extends importCityActivityAPI {cityBuildings(token:string,query:CityBuildingQuery):Promise<Result<CityBuildingChoices>>;cities(token:string):Promise<Result<CityOverview>>;city(token:string,id:string):Promise<Result<CityView>>;executeCity(command:CityCommand):Promise<Result<CityView>>;exportCity(token:string,id:string,format:'svg'|'json'):Promise<Result<{cancelled:boolean}>>}

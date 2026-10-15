@@ -70,17 +70,15 @@ test('city projects canonical World factions across people, houses and districts
  }finally{reopened?.close();if(!sourceClosed)f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
-
-test('city projects current NPC activities from the focused group clock without moving people',()=>{
+test('city activity pages use the selected group clock, authored search and exact house bindings',()=>{
  const f=fixture('city-activities-');
  try{
   setNpcPlan(f,f.ada,[{id:'work',startMinute:480,endMinute:600,activity:'Torwache',place:'work',notes:'Besucherbuch führen'}]);
   setNpcPlan(f,f.bert,[{id:'home',startMinute:480,endMinute:600,activity:'Hausdienst',place:'home',notes:''}],[{day:'1',label:'Ruhetag',slots:[]}]);
   const bound=f.store.executeCity({commandId:'activity-bindings',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert]},{...f.shop,workerIds:[f.ada]}],remove:[],label:'Tagesziele binden'}}),scene=f.store.executeLive({commandId:'activity-scene',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'initialize',expectedRosterRevision:0}}).scene!;
   f.store.executeLive({commandId:'activity-time',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:9,unit:'hours',calendarVersion:'relative-v1',reason:'Stadtaktivitäten prüfen'}});
-  const projected=f.store.city(f.workspace.token,'city').activities!;assert.equal(f.store.city(f.workspace.token,'city').header.revision,bound.header.revision);assert.equal(projected.instantMs,'32400000');assert.deepEqual({people:projected.peopleCount,scheduled:projected.scheduledCount,exceptions:projected.exceptionCount,problems:projected.problemCount},{people:2,scheduled:1,exceptions:1,problems:0});
-  assert.deepEqual(projected.rows.map(row=>({name:row.name,roles:row.roles,activity:row.activity,target:row.target?.unitName??null,override:row.overrideLabel})),[{name:'Ada',roles:['resident','worker'],activity:'Torwache',target:'Werkstatt',override:null},{name:'Bert',roles:['resident'],activity:null,target:null,override:'Ruhetag'}]);
-  assert.equal(f.store.npc(f.workspace.token,f.ada).locationId,null);assert.equal(f.store.npc(f.workspace.token,f.bert).locationId,null);
+  const query=(text='',unitId:string|null=null)=>f.store.cityActivities(f.workspace.token,{cityId:'city',sceneId:scene.id,unitId,text,offset:0}),page=query();assert.equal(page.cityRevision,bound.header.revision);assert.equal(page.instantMs,'32400000');assert.deepEqual(page.rows.map(row=>({name:row.name,activity:row.current?.activity??null,target:row.current?.target?.title??null,override:row.overrideLabel,actual:row.actualLocation})),[{name:'Ada',activity:'Torwache',target:'Werkstatt',override:null,actual:'Ohne Ortsbindung'},{name:'Bert',activity:null,target:null,override:'Ruhetag',actual:'Ohne Ortsbindung'}]);
+  assert.deepEqual(query('Besucherbuch').rows.map(row=>row.name),['Ada']);assert.deepEqual(query('home').rows,[]);assert.deepEqual(query('',f.shop.id).rows.map(row=>row.name),['Ada']);assert.deepEqual(query('',f.home.id).rows.map(row=>row.name),['Ada','Bert']);assert.equal(f.store.city(f.workspace.token,'city').header.revision,bound.header.revision);assert.equal(f.store.npc(f.workspace.token,f.ada).locationId,null);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
