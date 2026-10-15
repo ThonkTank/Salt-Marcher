@@ -650,8 +650,11 @@ export class CampaignStore {
     if(a.kind!=='rest'||!a.scene||this.db.prepare('SELECT 1 FROM progress_receipt WHERE command_id=?').get(command.commandId))return executeProgress(this.db,command,guard);
     const current=readLive(this.db,command.campaignId),scene=readLiveScene(this.db,command.campaignId,a.scene.id);
     if(current.focusId!==scene.id||current.focusRevision!==a.scene.expectedFocusRevision||scene.membershipRevision!==a.scene.expectedMembershipRevision||scene.clock.revision!==a.scene.expectedClockRevision||scene.retired)throw new Error('Rastgruppe oder Szenenzeit geändert. Aktuellen Spieltisch laden.');
+    if(!a.recipients.every(r=>scene.members.includes(r.characterId)))throw new Error('Rast nur mit Figuren dieser Szene.');
+    if((a.scene.amount===undefined)!==(a.scene.unit===undefined))throw new Error('Rastdauer und Zeiteinheit gemeinsam angeben.');
+    // Scene ownership is required even when the user deliberately keeps time.
+    if(a.scene.amount===undefined)return executeProgress(this.db,command,guard);
     if(this.db.prepare("SELECT 1 FROM chase WHERE campaign_id=? AND scene_id=? AND status='running'").get(command.campaignId,scene.id))throw new Error('Verfolgung vor der zeitgebundenen Rast abschließen.');
-    if(!a.recipients.every(r=>scene.members.includes(r.characterId)))throw new Error('Zeitgebundene Rast nur mit Figuren dieser Szene.');
     const result=executeProgress(this.db,command,guard),clock=this.executeLive({commandId:command.commandId+'|rest-clock',campaignId:command.campaignId,token:command.token,action:{kind:'advance-clock',sceneId:scene.id,expectedRevision:a.scene.expectedClockRevision,amount:a.scene.amount,unit:a.scene.unit,calendarVersion:'relative-v1',reason:(a.rest==='long'?'Lange':'Kurze')+' Rast · '+a.recipients.length+' Figuren'}});
     result.restScene=clock.scene;const payload=json(result);this.db.prepare('UPDATE progress_receipt SET payload=?,checksum=? WHERE command_id=?').run(payload,hash(payload),command.commandId);
     return result;

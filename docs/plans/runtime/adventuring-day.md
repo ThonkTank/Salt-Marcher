@@ -69,6 +69,40 @@ und Neustart. Zwei normale Exits, keine Rendererfehler, Fortschritts-/Roster-/
 Uhrzeilen bytegleich. Das ist eine gezielte Ablaufprüfung, keine umfassende
 Host-/Großparty-/Layoutabnahme.
 
+## Rastentscheidung vor dem Schreiben
+
+Die aktuelle gebundene `requirements-party-window.md` verlangt einen zweiten
+Klick auf dieselbe Rastart. Die Party zeigte bislang bereits „bestätigen“, buchte
+aber unmittelbar. `party-topbar-ui.ts` merkt nun beim ersten Klick nur die genaue
+Scene-/Fokus-/Clock-/Progressbasis vor und zeigt Figuren, Dauer oder ausdrücklich
+keine Zeitfortschreibung sowie die HP-Option. Erst der gleiche zweite Klick ruft
+den bestehenden Live-/Progresscommand auf. Auswahl und Eingaben invalidieren
+auch nach Zurückändern auf den alten Wert. Wechsel der Rastart, Verwerfen,
+Popover-Dismissal, Einklappen des Rastbereichs, neuer Read, eine andere Mutation
+und Kampagnenreaktivierung räumen die Vormerkung ab. Während Reads/Writes kann
+keine neue Bestätigung entstehen. Fehlender Fortschritt einer gewählten Figur
+wird nicht durch stilles Weglassen dieses Empfängers kaschiert.
+
+Der vorhandene `ProgressAction.rest.scene` trennt jetzt die revisionierte
+Scene-Bindung von der optionalen Dauer: `amount` und `unit` werden gemeinsam
+angegeben oder gemeinsam weggelassen. Die Party bindet die fokussierte Scene
+immer. `CampaignStore.executeProgress` prüft Focus, Mitgliedschaft, Clock und
+Empfänger in derselben Transaktion wie die Rast, auch bei ausgeschalteter
+Zeitfortschreibung. Ohne Dauer entstehen weder Clockänderung noch Clockreceipt;
+der Verlauf nennt die gebundene Scene ohne erfundene Dauer. Bestehende Commands
+mit Dauer und alte Receipts bleiben gültig; Replay prüft den Originalcommand.
+Die historischen Commands ganz ohne Scene bleiben für ihre bestehenden Aufrufer
+unterstützt und erhalten damit keine nachträglich erfundene Szenenbindung.
+Keine Datenmigration oder zusätzliche persistente Vormerkung.
+
+`desktop-party-rest-confirmation.test.mjs` prüft mit echten DOMhandlern und
+SQLiteStore den read-only Erstklick, genau einen zweiten Commit, Verwerfen bei
+Auswahl-/Dauer-ABA und Kontextwechseln, Readfehler, explizite Zeitwahl, fehlende
+Empfängerbasis sowie atomare Ablehnung und Replay. Die Live-Screen-Bridge ist in
+diesen kontrollierten Fällen ersetzt; deren Flush-/Recoverypfad ist dadurch
+nicht qualifiziert. Native Escape-/Light-Dismiss-/Fokus-/Layoutprüfung und
+unbekannte IPC-Ausgänge bleiben gesonderte Abnahmen.
+
 ## Begegnungen als vollständigen Tagesplan bewerten
 
 Version 0.127 verbindet den bestehenden Rechner mit gespeicherten Encounter-Vorlagen.

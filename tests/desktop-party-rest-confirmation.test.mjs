@@ -1,0 +1,121 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {randomUUID,createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
+import {build,buildSync} from 'esbuild';
+import {parseHTML} from 'linkedom';
+
+const base='.build/party-rest-confirmation';
+buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';",resolveDir:process.cwd(),loader:'ts'},outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+// Exercise the real UI and store. Only the Live screen bridge is replaced;
+// its unrelated editor/flushing lifecycle is outside these controlled cases.
+await build({entryPoints:['src/app/party-topbar-ui.ts'],outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'party-live-boundary',setup(b){
+  b.onResolve({filter:/^\.\/live$/},args=>args.importer.endsWith('/party-topbar-ui.ts')?{path:'live',namespace:'party-test'}:undefined);
+  b.onLoad({filter:/.*/,namespace:'party-test'},()=>({contents:'export const runPartyProgress=(token,action)=>window.commitPartyProgress(token,action);export const runPartyLive=()=>{throw Error("Unexpected live write")};',loader:'js'}));
+}}]});
+const require=createRequire(import.meta.url),{CampaignStore}=require('../'+base+'/store.cjs');
+const tick=()=>new Promise(r=>setImmediate(r));
+function fixture(t){
+  const root=mkdtempSync(path.join(tmpdir(),'party-confirm-')),store=new CampaignStore(path.join(root,'store.sqlite'));
+  const campaign=store.create('Rastentscheidung'),workspace=store.activate(campaign.id);
+  const command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,action});
+  const hero=store.executeLive(command({kind:'create-character',profile:{name:'Ada'}})).character;
+  let live=store.live(workspace.token);
+  const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:live.rosterRevision})).scene;
+  live=store.live(workspace.token);
+  store.executeLive(command({kind:'membership',characterId:hero.id,expectedRevision:hero.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision}));
+  const p=()=>store.progress(workspace.token).characters.find(c=>c.characterId===hero.id);
+  store.executeProgress(command({kind:'xp',characterId:hero.id,expectedRevision:p().revision,mode:'set',amount:1000,reason:'Start'}));
+  const member=store.live(workspace.token).roster.find(c=>c.id===hero.id);
+  store.executeProgress(command({kind:'party-award',expectedRosterRevision:store.live(workspace.token).rosterRevision,poolXp:0,loadXp:240,reason:'Belastung',participants:[{characterId:hero.id,revision:p().revision,membershipRevision:member.membershipRevision,receiveXp:false,receiveLoad:true}]}));
+  const prior={window:globalThis.window,document:globalThis.document},dom=parseHTML(readFileSync('src/app/index.html','utf8'));
+  Object.assign(globalThis,{window:dom.window,document:dom.document});
+  for(const input of dom.document.querySelectorAll('input[type=checkbox]'))Object.defineProperty(input,'checked',{get(){return this.hasAttribute('checked');},set(v){this.toggleAttribute('checked',v);},configurable:true});
+  // Dynamically rendered member checkboxes use the same native checked semantics.
+  const create=dom.document.createElement.bind(dom.document);
+  dom.document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='input')Object.defineProperty(node,'checked',{get(){return this.hasAttribute('checked');},set(v){this.toggleAttribute('checked',v);}});return node;};
+  const get=id=>dom.document.getElementById('party-'+id),commits=[];
+  dom.window.innerWidth=1000;dom.window.innerHeight=800;
+  get('shortcut').getBoundingClientRect=()=>({left:700,right:800,top:20,bottom:60,width:100,height:40});
+  let open=false;
+  const toggle=state=>{const event=new dom.window.Event('beforetoggle');event.newState=state;get('popover').dispatchEvent(event);open=state==='open';};
+  get('popover').matches=()=>open;get('popover').showPopover=()=>toggle('open');get('popover').hidePopover=()=>toggle('closed');
+  Object.defineProperty(get('level'),'value',{value:'',writable:true});
+  dom.window.campaign={live:async token=>({ok:true,value:store.live(token)}),progress:async token=>({ok:true,value:store.progress(token)})};
+  dom.window.commitPartyProgress=async(token,action)=>{commits.push(structuredClone(action));store.executeProgress(command(action));};
+  delete require.cache[require.resolve('../'+base+'/ui.cjs')];
+  const ui=require('../'+base+'/ui.cjs');ui.initPartyTopbar(()=>{});ui.activatePartyTopbar(workspace);
+  t.after(()=>{ui.activatePartyTopbar(null);Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});
+  const openParty=async()=>{get('shortcut').onclick();await tick();get('rest').open=true;};
+  const click=kind=>get(kind+'-rest').onclick();
+  const digest=()=>createHash('sha256').update(store.db.serialize()).digest('hex');
+  return{store,workspace,command,hero,scene,get,commits,ui,p,dom,openParty,click,digest};
+}
+test('first rest click is read-only; second identical click commits the displayed group and time exactly once',async t=>{
+  const x=fixture(t);await x.openParty();const before=x.digest(),clock=x.store.live(x.workspace.token).scene.clock.instantMs;
+  x.click('short');await tick();assert.equal(x.commits.length,0);assert.equal(x.digest(),before);
+  assert.match(x.get('rest-status').textContent,/Ada/);assert.match(x.get('rest-status').textContent,/60 Minuten/);
+  assert.match(x.get('short-rest').textContent,/bestätigen/);
+  x.click('short');x.click('short');await tick();assert.equal(x.commits.length,1);
+  assert.equal(x.p().rest.baseline,240);assert.equal(x.p().rest.sections,1);
+  assert.equal(x.store.live(x.workspace.token).scene.clock.instantMs-clock,3600000);
+  assert.equal(x.get('rest-cancel').hidden,true);
+});
+for(const invalidate of ['selection ABA','duration ABA','time option','HP option','other rest type','cancel','dismiss','refresh','revision','clock revision','reactivate'])test('rest confirmation is invalidated by '+invalidate,async t=>{
+  const x=fixture(t);await x.openParty();x.click('short');
+  const input=(id,type='input')=>x.get(id).dispatchEvent(new x.dom.window.Event(type,{bubbles:true}));
+  if(invalidate==='selection ABA'){const pick=x.get('rest-members').querySelector('input');pick.checked=false;pick.dispatchEvent(new x.dom.window.Event('change',{bubbles:true}));pick.checked=true;pick.dispatchEvent(new x.dom.window.Event('change',{bubbles:true}));}
+  if(invalidate==='duration ABA'){x.get('rest-short').value='30';input('rest-short');x.get('rest-short').value='60';input('rest-short');}
+  if(invalidate==='time option'){x.get('rest-time').checked=false;input('rest-time','change');}
+  if(invalidate==='HP option'){x.get('rest-hp').checked=true;input('rest-hp','change');}
+  if(invalidate==='other rest type')x.click('long');
+  if(invalidate==='cancel')x.get('rest-cancel').onclick();
+  if(invalidate==='dismiss'){x.get('popover').hidePopover();await x.openParty();}
+  if(invalidate==='refresh'){x.get('refresh').onclick();await tick();}
+  if(invalidate==='revision'||invalidate==='clock revision'){
+    const l=x.store.live(x.workspace.token);
+    if(invalidate==='revision')x.store.executeProgress(x.command({kind:'xp',characterId:x.hero.id,expectedRevision:x.p().revision,mode:'add',amount:1,reason:'Andere Korrektur'}));
+    else x.store.executeLive(x.command({kind:'advance-clock',sceneId:x.scene.id,expectedRevision:l.scene.clock.revision,amount:1,unit:'minutes',calendarVersion:'relative-v1',reason:'Andere Zeit'}));
+    x.dom.document.dispatchEvent(new x.dom.window.Event('campaign-party-changed'));await tick();
+  }
+  if(invalidate==='reactivate'){x.ui.activatePartyTopbar(x.workspace);await x.openParty();}
+  x.click('short');await tick();assert.equal(x.commits.length,0);assert.match(x.get('rest-status').textContent,/Ada/);
+  x.click('short');await tick();assert.equal(x.commits.length,1);
+});
+test('guard-only rest does not advance time or emit a clock receipt; replay remains exact',async t=>{
+  const x=fixture(t);await x.openParty();x.get('rest-time').checked=false;
+  const before=x.store.live(x.workspace.token).scene.clock;
+  x.click('long');await tick();assert.equal(x.commits.length,0);assert.match(x.get('rest-status').textContent,/ohne Zeitfortschreibung/);
+  x.click('long');await tick();assert.equal(x.commits.length,1);assert.ok(x.commits[0].scene);
+  assert.deepEqual(x.store.live(x.workspace.token).scene.clock,before);
+  assert.deepEqual(x.p().rest,{known:true,longXp:0,shortXp:0,baseline:0,sections:0});
+  assert.equal(x.store.db.prepare("SELECT count(*) AS n FROM live_receipt WHERE command_id LIKE '%|rest-clock'").get().n,0);
+  const l=x.store.live(x.workspace.token),action={kind:'rest',rest:'short',recipients:[{characterId:x.hero.id,revision:x.p().revision}],scene:{id:l.scene.id,expectedMembershipRevision:l.scene.membershipRevision,expectedClockRevision:l.scene.clock.revision,expectedFocusRevision:l.focusRevision}},command=x.command(action);
+  x.store.executeProgress(command);const bytes=x.digest();x.store.executeProgress(command);assert.equal(x.digest(),bytes);
+  const event=x.store.progressHistory(x.workspace.token,x.hero.id,null).items[0];assert.equal(event.facts.sceneId,l.scene.id);assert.equal(event.facts.duration,undefined);
+});
+test('guard-only rest rejects a stale scene membership atomically without consuming the rest',async t=>{
+  const x=fixture(t),l=x.store.live(x.workspace.token),action={kind:'rest',rest:'short',recipients:[{characterId:x.hero.id,revision:x.p().revision}],scene:{id:l.scene.id,expectedMembershipRevision:l.scene.membershipRevision,expectedClockRevision:l.scene.clock.revision,expectedFocusRevision:l.focusRevision}};
+  x.store.executeLive(x.command({kind:'membership',characterId:x.hero.id,expectedRevision:l.roster[0].membershipRevision,expectedRosterRevision:l.rosterRevision,active:false,targetSceneId:null,expectedFocusRevision:l.focusRevision}));
+  const bytes=x.digest();assert.throws(()=>x.store.executeProgress(x.command(action)),/Rastgruppe/);assert.equal(x.digest(),bytes);
+});
+test('empty duration or missing selected progress cannot arm a misleading rest preview',async t=>{
+  const x=fixture(t);await x.openParty();x.get('rest-short').value='';x.click('short');await tick();assert.equal(x.commits.length,0);assert.match(x.get('rest-status').textContent,/Dauer/);
+  x.get('rest-short').value='60';x.dom.window.campaign.progress=async()=>({ok:true,value:{characters:[]}});x.get('refresh').onclick();await tick();x.click('short');await tick();assert.equal(x.commits.length,0);assert.match(x.get('rest-status').textContent,/Fortschritt/);
+});
+test('guard-only rest rolls back an earlier recipient when a later progress guard fails',t=>{
+  const x=fixture(t),other=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Bela'}})).character;
+  let l=x.store.live(x.workspace.token);x.store.executeLive(x.command({kind:'membership',characterId:other.id,expectedRevision:other.membershipRevision,expectedRosterRevision:l.rosterRevision,active:true,targetSceneId:l.scene.id,expectedFocusRevision:l.focusRevision}));l=x.store.live(x.workspace.token);
+  const second=x.store.progress(x.workspace.token).characters.find(c=>c.characterId===other.id),action={kind:'rest',rest:'long',recipients:[{characterId:x.hero.id,revision:x.p().revision},{characterId:other.id,revision:second.revision+1}],scene:{id:l.scene.id,expectedMembershipRevision:l.scene.membershipRevision,expectedClockRevision:l.scene.clock.revision,expectedFocusRevision:l.focusRevision}};
+  const bytes=x.digest();assert.throws(()=>x.store.executeProgress(x.command(action)),/Raststand/);assert.equal(x.digest(),bytes);
+  action.recipients[1].revision=second.revision;action.scene.unit='hours';assert.throws(()=>x.store.executeProgress(x.command(action)),/gemeinsam/);assert.equal(x.digest(),bytes);
+});
+test('a failed refresh discards the confirmation and cannot reuse stale recipients',async t=>{
+  const x=fixture(t);await x.openParty();x.click('short');const bytes=x.digest(),live=x.dom.window.campaign.live;
+  x.dom.window.campaign.live=async()=>({ok:false,error:'Read nicht verfügbar'});x.get('refresh').onclick();await tick();x.click('short');await tick();
+  assert.equal(x.commits.length,0);assert.equal(x.digest(),bytes);assert.equal(x.get('rest-cancel').hidden,true);assert.match(x.get('status').textContent,/Read nicht verfügbar/);
+  x.dom.window.campaign.live=live;x.get('refresh').onclick();await tick();x.click('short');await tick();assert.equal(x.commits.length,0);x.click('short');await tick();assert.equal(x.commits.length,1);
+});
