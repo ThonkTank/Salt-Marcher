@@ -22,6 +22,16 @@ export function validateCapabilityBytes(db:any){
   try{JSON.parse(row.references_json);}catch{throw new Error('Capability-Referenzdaten sind nicht lesbar. Originaldaten bleiben erhalten.');}
  }
 }
+// The checksum covers only the opaque provenance bytes, not the ID map.
+// A valid map shape therefore cannot authorize historical relationship repairs.
+export function validateCampaignOrigins(db:any){
+ for(const row of db.prepare('SELECT original_database,checksum,local_map FROM campaign_origin').iterate()){
+  if(digest(row.original_database)!==row.checksum)throw new Error('Kampagnenherkunft ist beschädigt. Originaldaten bleiben erhalten.');
+  let mapping:unknown;
+  try{mapping=JSON.parse(row.local_map);}catch{throw new Error('Zuordnung der Kampagnenherkunft ist nicht lesbar. Originaldaten bleiben erhalten.');}
+  if(!mapping||typeof mapping!=='object'||Array.isArray(mapping)||Object.values(mapping).some(value=>typeof value!=='string'))throw new Error('Zuordnung der Kampagnenherkunft hat ein ungültiges Format. Originaldaten bleiben erhalten.');
+ }
+}
 function campaignSettingKeys(campaignId:string){return['preparation:'+campaignId,'default-scope:'+campaignId];}
 export function validateCampaignSnapshotSettings(db:any,campaignId:string){
  const allowed=new Set(campaignSettingKeys(campaignId));
@@ -80,7 +90,7 @@ function* mutableRows(db:any,table:string):Generator<any>{
  let row=first.get();
  while(row){const cursor=row.__rowid;yield row;row=next.get(cursor);}
 }
-export function remapSnapshot(db:any,sourceId:string,name:string,shared:Map<string,string>,historical:Map<string,string>):RemapResult{validateCapabilityBytes(db);validateNpcRecovery(db);validateWorldRelationPairs(db);for(const row of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(row);const currentWorldRuns=new Set<string>();
+export function remapSnapshot(db:any,sourceId:string,name:string,shared:Map<string,string>,historical:Map<string,string>):RemapResult{validateCampaignOrigins(db);validateCapabilityBytes(db);validateNpcRecovery(db);validateWorldRelationPairs(db);for(const row of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(row);const currentWorldRuns=new Set<string>();
  // Only unchanged previews may acquire a basis for their new local identities.
  for(const row of db.prepare('SELECT id,payload,checksum FROM generation_run WHERE campaign_id=?').iterate(sourceId)){
   if(digest(row.payload)!==row.checksum)throw new Error('Generierungsvorschau ist beschädigt.');const run=JSON.parse(row.payload);
