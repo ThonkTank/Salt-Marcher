@@ -19,6 +19,14 @@ Fäden und dem nächsten Planbesuch. Abbrechen im zweiten Dialog lässt den
 Abschluss bestehen und legt keinen Besuch an. Fehlen optionale Startquellen,
 bleibt der Abschluss möglich und die Mappe startet mit der bekannten Basis.
 
+Die Abschlussprüfung bindet ihre Dialoggeneration, Campaignaktivierung, Fokus,
+Teilnehmer- und Clockstände. Alte Prüfantworten geben keine Abschlussaktion für
+einen neueren Gruppenstand frei; „Erneut prüfen“ bindet ihn ausdrücklich neu.
+Abbrechen während des vorangestellten Textflushs widerruft den noch nicht
+abgesendeten Markerauftrag. Bereits bestätigte Marker bleiben nach Abbruch oder
+verlorener Antwort erhalten; keine automatische Wiederholung oder Rückbuchung.
+Die folgende Einstiegsvorbereitung behält dieselbe ursprüngliche Gruppenbasis.
+
 Ohne nächsten übernommenen Besuch hat der sichtbar gewählte Plan Vorrang.
 Danach werden Vorlagen bis zum ersten offenen Besuch geprüft; ein Vorschlag
 nennt seine Herkunft. Gruppen werden nacheinander gelesen, je Gruppe höchstens
@@ -54,6 +62,8 @@ ungeklärte Textwrites. Spielerfreigabe und Besuchsübernahme bleiben separat.
 - Native Tastatur-, Fokus- und 200-%-Bedienung bei fehlender Quelle und nach
   unabhängiger Kampagnenkopie abnehmen.
 
+`desktop-live-moment-context.test.mjs` prüft Abbruch während Flush und
+Gruppenwechsel vor/nach dem Prüfread mit tatsächlichen Markerwrites.
 Kontrollierte Store-/DOMtests und die Resume-Consumerprobe prüfen Teilverhalten.
 Ersetzte Writer-/Flushports beweisen keine native oder vollständige Produktabnahme.
 Scene, Schema und Commandformat erhalten ihre bestehenden Besitzer; der

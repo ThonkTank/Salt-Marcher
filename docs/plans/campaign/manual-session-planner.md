@@ -106,7 +106,8 @@ Eine zweite Timelinearchitektur oder generische Historyabstraktion ist nicht nö
 ## Besuchsübergabe und Recovery
 
 `prepareNextVisit` prüft Zielplan, Einfügeposition, angezeigte Revision,
-Workspace/Aktivierung und neuere Eingaben. Im vorgeschlagenen Plan steht der
+Workspace/Aktivierung und neuere Eingaben einschließlich Mappen-Vorlesetext
+und Planungsangaben. Im vorgeschlagenen Plan steht der
 Einstieg vor dem nächsten Besuch, in einem anderen gewählten Plan am Ende.
 Ein nicht gelisteter bisheriger Zielplan bleibt ausdrücklich ausgewählt und
 wird beim Speichern geprüft; nur die eigene Neuanlageoption erzeugt einen Plan.
