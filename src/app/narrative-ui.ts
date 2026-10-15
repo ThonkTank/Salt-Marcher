@@ -54,6 +54,7 @@ export async function showNarrative(
   tell: (s: string, error?: boolean) => void,
   targetPanel?:HTMLElement,
   onSaved?:()=>void,
+  initialLocationId?:string,
 ) {
   const panel = targetPanel??el("narrative-editor"),
     key = w && note ? panel.id+":"+w.token + ":" + note.id : "";
@@ -137,6 +138,10 @@ export async function showNarrative(
     progress = p.value;
     dirty = !!data.draft;
     draw();
+    if(initialLocationId&&data.state.revision===0&&!data.draft){
+      if(!places.some(p=>p.id===initialLocationId))throw new Error('Ort für neuen Auftrag nicht verfügbar.');
+      const place=panel.querySelector<HTMLSelectElement>('select[aria-label="Quest-Ort"]')!;place.value=initialLocationId;place.dispatchEvent(new Event('change',{bubbles:true}));
+    }
   } catch (e) {
     if (current()) {
       data = null;
