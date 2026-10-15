@@ -17,7 +17,14 @@ export interface LiveScene {
 }
 export type SessionRecapDraft = {summary:string;handoff:string};
 export function checkedSessionRecapDraft(draft:SessionRecapDraft):SessionRecapDraft{
-  if(!draft||typeof draft.summary!=='string'||typeof draft.handoff!=='string'||draft.summary.length>10000||draft.handoff.length>10000||Object.keys(draft).some(key=>!['summary','handoff'].includes(key)))throw new Error('Rückblickentwurf ist ungültig. Gespeicherte Texte bleiben erhalten.');
+  const invalid=()=>new Error('Rückblickentwurf ist ungültig. Gespeicherte Texte bleiben erhalten.');
+  if(!draft||typeof draft!=='object'||Object.getPrototypeOf(draft)!==Object.prototype)throw invalid();
+  for(const key of Reflect.ownKeys(draft)){
+    if(typeof key!=='string'||!['summary','handoff'].includes(key))throw invalid();
+    const field=Object.getOwnPropertyDescriptor(draft,key)!;
+    if(!('value' in field)||!field.enumerable)throw invalid();
+  }
+  if(typeof draft.summary!=='string'||typeof draft.handoff!=='string'||draft.summary.length>10000||draft.handoff.length>10000)throw invalid();
   return draft;
 }
 export interface LiveView {

@@ -48,6 +48,24 @@ Prosa während der Markerantwort bleibt erhalten, ein bestätigter Marker wird
 bei Textfehlern nicht zurückgenommen. Die bestehende Live-Recovery sichert
 ungeklärte Textwrites. Spielerfreigabe und Besuchsübernahme bleiben separat.
 
+## Unfertigen Rückblick erhalten
+
+`SessionRecapDraft` hält Rückblick und Übergabe getrennt vom bestätigten
+Spielabendmarker. `live.ts` sichert neuere Eingaben über den vorhandenen
+`keepSessionRecapDraft`-Port; die Textbasis verhindert stilles Überschreiben
+einer anderen gespeicherten Fassung. Normales Wiederöffnen lädt die Texte,
+ohne den Abend zu beenden oder einen weiteren Marker zu schreiben.
+
+An der SQLitegrenze sind beide Felder begrenzte Strings in einem einfachen
+Objekt mit eigenen aufzählbaren Datenproperties. Arrays, Zugriffswerte,
+verborgene Textfelder und eigene/geerbte Serializer dürfen keine andere
+JSONform als den geprüften Entwurf speichern. Ungültige Eingabe oder erwartete
+Basis wird vor jeder Schreibwirkung abgewiesen; vorhandene Autorenbytes
+bleiben erhalten. Read, Backup und Kampagnentransfer teilen denselben Guard.
+Unlesbare Altwerte werden offengelegt und nicht automatisch als leerer
+Entwurf neu gespeichert. Deren Fehlerisolation gegenüber unabhängiger
+Livebedienung bleibt gesondert zu prüfen.
+
 ## Offene Prüfungen
 
 - Echter Marker-/Textwriter mit verzögerter Antwort, neuer eigener Prosa,

@@ -44,6 +44,34 @@ einschließlich Zeit, anderer Auffüllungen, Verlauf und Receipt. Die
 [Storeprüfung](../../../tests/desktop-shop-restock-boundary.test.mjs) deckt
 Mehrzeilenregeln, Korrekturen, Replay, Fresh und vollständigen Rollback ab.
 
+## Reise, gemeinsame Zeit und unabhängige Kopie
+
+`world.ts.journeyRow` prüft Route, Abschnittsdauern, Gesamtdauer und
+Checkpoint gemeinsam an Read-, Write- und Backupgrenzen. Die Route enthält
+2–1001 benachbarte Hexe mit begrenzten ganzzahligen Koordinaten; jede Kante
+besitzt eine positive sichere Ganzzahldauer. Die gespeicherte Gesamtdauer
+muss ihrer mathematisch exakten Summe entsprechen. Eine exakt darstellbare
+Summe oberhalb der sicheren Ganzzahlgrenze bleibt zulässig; gerundete Summen
+werden abgewiesen. Beschädigte Fachwerte mit gültiger Checksum dürfen weder
+weitergeschrieben werden noch den sicheren Backupvorgänger ersetzen. Es gibt
+keine automatische Reparatur oder Migration.
+
+Spätere Clock-/Positionsbasen dürfen bei historischen Reisen fehlen: Lesen
+bleibt möglich, Fortsetzung ohne diese Basis wird abgelehnt. Ein Interrupt
+auf dem letzten Hex mit `nextIndex === route.length` ist gültig; ausdrückliches
+Fortsetzen bestätigt nur die Ankunft, ohne Bewegung, Zeit oder Restock erneut
+zu buchen. Route und Abschnittsdauern waren bereits im Erstformat Pflicht.
+
+Die [Reise-/Restockprüfung](../../../tests/desktop-restock-journey.test.mjs)
+verbindet zwei Gruppenuhren, manuelle Korrektur, Regelwechsel, offene Reise,
+Restart, Receiptwiederholung und unabhängige Kopie. Nur neue Perioden wirken;
+Source und Snapshot bleiben unverändert und bestätigte Historie behält ihre
+ursprüngliche Regel. Ein Fehler im zweiten Abschnitt rollt den ersten samt
+Position, Zeit, Bestand und Receipts zurück. Gegenproben prüfen beschädigte
+Routen, Dauern, Summen und Checkpoints an allen drei Grenzen sowie gültige
+Paused-/Ended-/Arrived-/Zielinterruptzustände. Diese Storebelege ersetzen keine
+native Reisebedienung oder vollständige Produktabnahme.
+
 ## Nächste Lieferungen
 
 1. Vor Ownertrash betroffene Shop-IDs/Revisionen zeigen: abbrechen, verfügbarem
@@ -59,28 +87,7 @@ Mehrzeilenregeln, Korrekturen, Replay, Fresh und vollständigen Rollback ab.
    fällige Trigger und gespeicherte Zufallsbasis binden. Tatsächliche Auswahl,
    Menge und Herkunft in `shop_event` festhalten; Retry/Fresh erhalten das
    Resultat. Eine Zeitquelle, keine Bestätigungsfolge je konfiguriertem Ereignis.
-4. Den Übergang Reiseabschnitt → gemeinsamer Restock → unabhängige Kopie
-   gegen `world.ts.executeWorld`, `items.ts.restockDue`, Store-Zeitconsumer und
-   `campaign-data.ts` prüfen. Zwei Gruppenuhren, eine manuelle Korrektur, geänderte
-   Regel und offene Journey kopieren; nur neue Perioden dürfen wirken. Source
-   und Snapshot bleiben unverändert, bestätigte Historie behält ihre damalige
-   Regel. Restart/Receiptwiederholung bucht nichts erneut. Ein Fehler im zweiten
-   Abschnitt rollt auch den ersten samt Position, Clock, Stock und Receipts zurück.
-   Diese ergänzende Crossport-/Copyabnahme ist noch offen.
-5. `world.ts.journeyRow` als gemeinsame Read-/Write-/Backupgrenze vervollständigen:
-   benachbarte begrenzte Route, eine positive exakt darstellbare Dauer je Kante,
-   passende Gesamtdauer und Checkpoint/Ankunftsstatus prüfen. Gültige Zwischen-,
-   unterbrochene, beendete und kopierte Reisen erhalten. Beschädigte Altstände
-   offenlegen; Originalbytes und sicheren Backupvorgänger bewahren, keine stille
-   Reparatur. Gegenproben mit gültiger Checksum und ungültigen Fachwerten an Read,
-   Write und Backup; Laufbelege sind dafür noch offen.
-   Dabei sind zwei gültige Alt-/Randzustände zu erhalten: spätere Clock-/Positions-
-   basen dürfen fehlen, solange die Reise lesbar bleibt und ihre Fortsetzung ohne
-   diese Basis abgelehnt wird. Ein Interrupt auf dem letzten Hex darf bereits
-   `nextIndex === route.length` besitzen; erst ausdrückliches Fortsetzen bestätigt
-   die Ankunft, ohne noch einmal Bewegung, Zeit oder Restock zu buchen. Route und
-   Abschnittsdauern waren dagegen bereits im ursprünglichen Journeyformat Pflicht.
-6. Gemischte Shops und lange Historien messen; erst bei Bedarf fällige Queries
+4. Gemischte Shops und lange Historien messen; erst bei Bedarf fällige Queries
    und fortgesetzte Listen liefern. Native Ownerwarnung, Zeitfehler, verlorene
    Handelsantwort, Tastatur, 200 % und Auffindbarkeit aus Scene abnehmen.
 
