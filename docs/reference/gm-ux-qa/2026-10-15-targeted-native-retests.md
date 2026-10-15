@@ -148,10 +148,29 @@ dokumentiert, ohne einen Zeitvergleich aus den unterschiedlichen Pausen abzuleit
 
 Die kleine narrative Aufgabe ist damit auch mit der einfachsten Textlösung
 praktisch brauchbar; ein Produktvorteil unseres Editors ist nicht belegt.
-QA-READER-RETURN-01 reproduziert den konkreten Leserückweg nativ auf festem
-0.107.0 (`7af612c8`), bevor eine enge Änderung erfolgt. Der nächste vorbereitete
-zusammenhängende Fall Rabensteg richtet sich ausdrücklich auf native Party-,
-Planungs- und Live-Zustände. Er ist noch kein gestarteter Test oder Abnahmenachweis.
+QA-READER-RETURN-01 hat den Leserückweg auf festem 0.107.0 (`7af612c8`)
+reproduziert und lokal korrigiert (`d3f3ed81`). Der Editor bietet nun den direkten
+Rückweg zur gerade bearbeiteten Lesestelle. Eine weiterhin passende Suche bleibt
+erhalten; eine nicht mehr passende Suche verdeckt das Ziel nicht. Der Teststand
+enthält die frühere kompakte Feld-/Fokuskorrektur unter Erhalt der neueren
+Vorbereitungsfunktionen. 87 gezielte Tests, Desktop-Typprüfung und Desktop-Build
+bestanden. Native Vorher-/Nachher-/Fresh-Prüfungen endeten normal; frühere
+Fixture-/Scrollfehler bleiben in den Rohbelegen erhalten. Die Leitung prüfte
+15 tatsächliche Builddateien, neun Ergebnisdateien, zehn ausgewählte Original-
+Bildpaare sowie die normalen Abschlüsse. Das ist lokale Implementierungsprüfung,
+keine unabhängige Gesamt- oder Releaseabnahme; keine dauerhafte Such-/Lesemarke
+nach Neustart und kein vollständiger Live-Spielverlauf daraus abgeleitet.
+Der abgeschlossene Umsetzungschat ist nach Ergebnissicherung archiviert.
+
+RABENSTEG-NATIVE-01 ist auf genau diesem unveränderten lokalen Build reserviert,
+einem frischen Chat zugeordnet und gestartet. Projekt-/Sidebarzugehörigkeit
+wurde geprüft. Der zusammenhängende Fall untersucht ausdrücklich native Party-,
+Planungs- und Live-Zustände sowie Lesen/Bearbeiten/Weiterlesen. Der Tester erhält
+nur öffentliche Ziele, eigene Daten und normale UI. Spätere Spielsituationen
+werden erst nach gesicherten normalen Abschnittsabschlüssen gelesen; keine
+Wartefreigabe oder formale Zeitmessung. Ergebnis und unabhängige Bestätigung
+stehen noch aus. Der Entwicklungsstand bleibt frei veränderbar; die Testkopie
+wird weder aktualisiert noch neu gebaut.
 Dungeon Editor 0.94.0 und Original-Obsidian erhielten den gespielten narrativen
 Stand nach Fresh. Obsidian stellte Tabs/Suche wieder her, während der erste
 Editorlauf manuell aus „Karte und Keys“ zurücknavigierte. Das ist eine konkrete
