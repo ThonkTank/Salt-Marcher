@@ -174,6 +174,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   executeItemShop:(command:import('../src/app/items-contracts').ItemShopCommand)=>ipcRenderer.invoke('items:execute',command),
   commitStatus:(ref:import('../src/app/commit-receipt').CommitReference,token:string)=>ipcRenderer.invoke('campaign:commit-status',ref,token),
   executeProgress: (command: unknown) => ipcRenderer.invoke('campaign:execute-progress', command),
+  combatResolution:(token:string,sceneId:string,id:string,after:string|null)=>ipcRenderer.invoke('campaign:combat-resolution',token,sceneId,id,after),
   combat: (token: string, sceneId: string, id?: string) => ipcRenderer.invoke('campaign:combat', token, sceneId, id),
   keepChaseDraft:(token:string,draft:import('../src/app/chase-draft-contracts').ChaseWorkingDraft,expected:string|null)=>ipcRenderer.invoke('campaign:keep-chase-draft',token,draft,expected),
   maskHistory:(token:string,sceneId:string,query:import('../src/app/mask-history-contracts').MaskHistoryQuery)=>ipcRenderer.invoke('campaign:mask-history',token,sceneId,query),

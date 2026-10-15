@@ -334,6 +334,7 @@ else {
     handle('campaign:combat-drafts',(token:string,id:string,after:string|null)=>store.combatDrafts(token,id,after));
     handle('campaign:keep-combat-draft',(token:string,draft:import('../src/app/combat-draft-contracts').CombatWorkingDraft,expected:string|null)=>store.keepCombatDraft(token,draft,expected));
     handle('campaign:discard-combat-draft',(token:string,id:string,kind:import('../src/app/combat-draft-contracts').CombatDraftKind,target:string,writeId:string)=>store.discardCombatDraft(token,id,kind,target,writeId));
+    handle('campaign:combat-resolution',(token:string,sceneId:string,id:string,after:string|null)=>store.combatResolution(token,sceneId,id,after));
     handle('campaign:combat', (token: string, sceneId: string, id?: string) => store.combat(token, sceneId, id));
     handle('campaign:keep-chase-draft',(token:string,draft:import('../src/app/chase-draft-contracts').ChaseWorkingDraft,expected:string|null)=>store.keepChaseDraft(token,draft,expected));
     handle('campaign:mask-history',(token:string,sceneId:string,query:import('../src/app/mask-history-contracts').MaskHistoryQuery)=>store.maskHistory(token,sceneId,query));

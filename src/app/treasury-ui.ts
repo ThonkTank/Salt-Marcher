@@ -584,4 +584,5 @@ export function initTreasury(
   el("treasury-open").onclick = () => run(() => enter(book?.id));
 }
 
-export async function openTreasureDistribution(id?:string,sceneId?:string){await distribution?.open(id,sceneId);}
+export async function openTreasureDistribution(id?:string,sceneId?:string,current:()=>boolean=()=>true){await distribution?.open(id,sceneId,current);}
+export function closeStaleTreasureDistribution(){distribution?.closeStale();}

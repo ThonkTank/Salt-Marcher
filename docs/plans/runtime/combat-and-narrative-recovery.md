@@ -165,3 +165,34 @@ nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
    darf diese Personen nicht aus versteckten Historien rekonstruieren. Danach native
    Spielabendprobe mit Vorbereitung, Live-Scene, Belohnung und Fresh. Lokale
    Tabellen-/Checksumprüfungen ersetzen diese Produktabnahme nicht.
+
+## Nachbereitung und bestehende Schätze
+
+Der abgeschlossene Encounter zeigt seine bestätigte Outcome-/XP-Buchung und
+eine paginierte, typisierte Treasuryprojektion (25 Zeilen): Provenienz aus
+diesem Kampf, Zuordnung zu dieser Scene oder dem aktuellen Scene-Ort sowie
+Gesamt-/Restmenge. `storage/combat-resolution.ts` liest Abschluss und Schätze in
+einem Snapshot. Scene-/Kampf-ID und Kampagne werden geprüft; das Read erzeugt
+keine zweite Beute, keinen Award und keine Gruppen. Auch ohne neue Beute im
+Abschlussdialog können bereits zugehörige Schätze vorliegen. Vollständig
+verteilte Schätze bleiben als solche sichtbar.
+
+`combat-resolution-ui.ts` öffnet die gemeinsame `TreasureDistribution`, mit den
+aktuellen Scene-Mitgliedern vorausgewählt. Der Dialog behält seinen vorhandenen
+Prüf-/Bestätigungscommand und Ledgerwriter. Ein optionaler Aufruferguard bindet
+Lesen, Öffnen nach Flush und Bestätigung an den ursprünglichen Abschluss. Scene-,
+Campaign- oder Kampfwechsel entwerten alte Rückläufe und schließen ausschließlich
+den dadurch veralteten Aufruf. Neue globale Treasuryaufrufe bleiben unabhängig.
+Nach Verteilung wird die Restmenge erneut gelesen; XP bleibt unverändert.
+Fehlende Lesbarkeit wird nicht als Beutefreiheit angezeigt, sondern bietet Retry.
+
+Store-/DOMgegenproben: Abschluss mit einmaligem 101-XP-Pool auf zwei Figuren,
+Verteilung/Restmenge, Fresh und unabhängige Kopie mit remappten Schatz-/Kampf-IDs,
+28 Ortsschätze mit zwei Seiten, echter Leerzustand, fremde Scene/ungültiger Cursor,
+späte Reads, Kontextwechsel und ausstehender Flush. Native Bedienung wird am
+aktuellen Paket separat geprüft.
+
+Die volle originale Encounter-Selection mit Mehrgruppenstart, durchgehender
+Sourcegruppen-Provenienz/Reconciliation, Mobkarten und vorgeschaltetem
+Resolution-Schritt vor dem XP-Command bleibt gesonderter Umfang. Dieser Anschluss
+schließt die Treasuryübergabe nach dem bestehenden atomaren Abschluss ab.

@@ -1,3 +1,4 @@
+import {readCombatResolution} from './combat-resolution';
 import {ChronicleReadSession} from './chronicle-pages';
 import {checkedSessionRecapDraft} from '../live-contracts';
 import {readLocationActivities} from './location-activity';
@@ -808,6 +809,7 @@ export class CampaignStore {
   shop(token:string,id:string){return readShop(this.db,this.guard(token),id);}
   sceneShops(token:string,id:string){return sceneShops(this.db,this.guard(token),id);}
   executeItemShop(command:ItemShopCommand){return executeItemShop(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
+  combatResolution(token:string,sceneId:string,id:string,after:string|null){return readCombatResolution(this.db,this.guard(token),sceneId,id,after);}
   combat(token: string, sceneId: string, id?: string) { return readCombat(this.db, this.guard(token), sceneId, id); }
   combatDraft(token:string,combatId:string,kind:CombatDraftKind,targetId:string){return this.db.transaction(()=>readCombatDraft(this.db,this.guard(token),combatId,kind,targetId))();}
   combatDrafts(token:string,combatId:string,after:string|null){return this.db.transaction(()=>combatDrafts(this.db,this.guard(token),combatId,after))();}
