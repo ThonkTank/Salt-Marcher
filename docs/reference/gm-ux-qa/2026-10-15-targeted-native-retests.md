@@ -76,10 +76,15 @@ reproduziert; veraltete Scrollbilder erklären einen Teil der Fehlklicks.
 Nicht jede ursprüngliche Fehlaktion ist damit erklärt.
 
 Der Patch ist auf 0.100.0 (`12d34599`) als lokaler Commit `85255c4a` übertragen.
-Arbeitsbaum sauber; keine Quellveröffentlichung. Seine Abschlussprüfung wurde
-mit Exit 75 wegen des belegten QA-Slots abgewiesen. Die vorhandenen 0.99.0-
-Builddateien belegen diesen neueren Stand nicht. Er wartet auf den nächsten
-freien Slot, anschließend bleibt ein frischer unabhängiger Zieltest nötig.
+Arbeitsbaum sauber; keine Quellveröffentlichung. Der erste Abschlussprüfstart
+wurde mit Exit 75 wegen des belegten Slots abgewiesen; nach normalem
+Obsidian-PLAY-Abschluss wurde die Prüfung ausgeführt. Drei Vorherfehler,
+46 bestandene Nachhertests, beide Typprüfungen und eigene Desktopbuilds sind
+belegt. Native Vorher-/Nachher-/Fresh-Läufe bestätigen Auswahl, direkten
+Bearbeitungsweg, sichtbare Kernfelder, Tastaturwechsel und gespeicherte Texte.
+Die Leitung prüfte Build-/Quellidentitäten, originale normale Abschlüsse und
+den sichtbaren Fresh-Stand. Der abgeschlossene Implementiererchat ist archiviert;
+Build und Belege bleiben erhalten. Ein frischer unabhängiger Zieltest steht aus.
 
 Ein frischer Original-Obsidian-Vergleich läuft. Der frühere
 erfolgreiche native UI-/Save-/Fresh-Pilot und unveränderte Programm-/Ressourcen-
@@ -101,9 +106,9 @@ Suche fortgesetzt, Laterne zurückgegeben und tatsächlicher Wissensstand notier
 Die Leitung prüfte ausgewählte Originalidentitäten, sichtbaren Spielstand und
 fortgesetzte Notiz sowie normalen Close. Suchausschnitte enthalten auch GM-
 Geheimwissen; die Spielerantwort blieb begrenzt. Keine Spieleranzeige geprüft.
-Die Erstöffnung von PLAY bestätigte PREPARE; Fresh des gespielten Endstands
-bleibt RESUME vorbehalten. Dafür wartet derselbe Chat/Vault nach normalem Close
-auf den Slot. Die begrenzte 0.100.0-Abschlussprüfung läuft jetzt dazwischen.
+Die Erstöffnung von PLAY bestätigte PREPARE. Den gespielten Endstand prüft jetzt
+RESUME im selben Chat/Vault, nach normalem Close und der dazwischen ausgeführten
+begrenzten 0.100.0-Abschlussprüfung.
 Keine früheren Produktberichte oder Lösungswege an den Tester.
 
 Zwei technische Fehlstarts bleiben erhalten: Sandbox-Lock ohne Jobstart und
