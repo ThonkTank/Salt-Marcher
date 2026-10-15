@@ -847,6 +847,7 @@ export class CampaignStore {
         const old = this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed) throw new Error('Papierkorbkonflikt: Notizstand hat sich geändert.');
         const note = this.decodeNote(old, 'Beschädigte Notiz bleibt gesperrt.'); revision = old.revision + 1;
+        if(change.trashed&&note.kind==='npc'&&this.db.prepare(`SELECT 1 FROM city_unit WHERE campaign_id=? AND (EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.residentIds') WHERE value=?) OR EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.workerIds') WHERE value=?)) LIMIT 1`).get(campaignId,targetId,targetId))throw new Error('NPC ist noch als Stadtbewohner oder Arbeitsplatzbindung verwendet. Bindung zuerst am Haus lösen.');
         const payload = json({ ...note, revision });
         this.db.prepare('UPDATE world_note SET trashed=?,revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(Number(change.trashed), revision, payload, hash(payload), campaignId, targetId);
       } else if (change.kind === 'location') {
