@@ -17,7 +17,7 @@ export interface SessionLootBasis {ledger:{id:string;characterId:string;revision
 export interface SessionMagicPoolItem {definitionId:string;revision:number;name:string;rarity:BudgetRarity}
 export interface SessionMagicGuidance {pool?:SessionMagicPoolItem[];expectedBefore:Record<BudgetRarity,number>;expectedAfter:Record<BudgetRarity,number>;received:Record<BudgetRarity,number>;target:Record<BudgetRarity,number>;allocations:Record<BudgetRarity,number>[];missing:Record<BudgetRarity,number>;warnings:string[];characters:{characterId:string;received:Record<BudgetRarity,number>}[]}
 export interface SessionLootGuidance {basis?:SessionLootBasis;magic?:SessionMagicGuidance;version:'cumulative-gold-v1'|'cumulative-gold-magic-v2';preset:{id:string;revision:number;hash:string};rewardXp:number;expectedBeforeCopper:string;expectedAfterCopper:string;receivedCopper:string;baselineCopper:string;differenceCopper:string;targetCopper:string;allocationsCopper:string[];characters:{characterId:string;name:string;xp:number;revision:number;receivedCopper:string;expectedBeforeCopper:string;expectedAfterCopper:string}[]}
-export interface SessionRun {lootGuidance?:SessionLootGuidance;worldSourcesByLocation?:boolean;id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
+export interface SessionRun {targets?:import('./generation/session-targets').SessionTargets;lootGuidance?:SessionLootGuidance;worldSourcesByLocation?:boolean;id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
 export type SessionAction=
  |{kind:'copy-visits';planId:string;expectedBasis:string|null;name:string;sourcePlanId:string;expectedSourceBasis:string;visitIds:string[];copyParty:boolean}
  |{kind:'accept-proposals';planId:string;expectedPlanRevision:number;runId:string;proposals:{index:number;expectedRevision:number}[]}
@@ -34,7 +34,7 @@ export type SessionAction=
  |{kind:'award-reward';planId:string;visitId:string;expectedVisitRevision:number;recipients:ProgressGuard[];noXp:boolean}
  |{kind:'accept-proposal';planId:string;expectedPlanRevision:number;runId:string;index:number};
 export interface SessionCommand {commandId:string;campaignId:string;token:string;action:SessionAction}
-export interface SessionGenerationRequest {magicPool?:{definitionId:string;revision:number}[];compensateMagic?:boolean;compensateLoot?:boolean;worldSourcesByLocation?:boolean;planId:string;expectedProfileRevision:number;count:number;locationIds:string[];noteIds:string[];encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>}
+export interface SessionGenerationRequest {magicPool?:{definitionId:string;revision:number}[];compensateMagic?:boolean;compensateLoot?:boolean;worldSourcesByLocation?:boolean;planId:string;expectedProfileRevision:number;count?:number|null;locationIds:string[];noteIds:string[];encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>}
 export interface SessionAPI {sceneVisits(token:string,sceneId:string,after:string|null):Promise<Result<import('./scene-visit-contracts').SceneVisitPage>>;sessionProgress(token:string,planId:string,sceneId?:string):Promise<Result<SessionProgress>>;
 preparedGroup(token:string,id:string):Promise<Result<PreparedGroup>>;
  session(token:string,planId:string):Promise<Result<SessionSnapshot>>;
