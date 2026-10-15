@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {parseHTML} from 'linkedom';
 import {CampaignAgenda} from '../../src/app/agenda-ui';
+import type {CalendarEvent} from '../../src/app/world-contracts';
 import {activateWorld,initWorld} from '../../src/app/world-ui';
 import {CampaignStore} from '../../src/app/storage/store';
 import {newLocation} from '../../src/features/location/location-schema';
@@ -126,4 +127,15 @@ test('reset during world flush cancels an event write before it reaches SQLite',
  window.campaign.executeWorld=async c=>{writes++;return execute(c);};x.click('Ereignis bearbeiten');x.el('agenda-name').value='Alter Auftrag';x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>!!release);
  x.agenda.reset();await x.open();x.click('Neue Frist / Ereignis');x.el('agenda-name').value='Neuer Entwurf';release(true);for(let i=0;i<12;i++)await tick();
  assert.equal(writes,0);assert.equal(x.el('agenda-name').value,'Neuer Entwurf');assert.equal(x.store.world(x.workspace.token).events[0]?.revision,1);
+});
+
+test('location deadlines use the existing editor and cannot discard its open input',async t=>{
+ const x=await fixture(t),event=x.store.world(x.workspace.token).events[0]!;
+ x.store.executeWorld(x.command({kind:'calendar-event',event:{...event,locationId:x.location.id},expectedRevision:event.revision}));
+ await x.agenda.openForLocation(x.location.id,'Nordtor',event.id);assert.match(x.el('agenda-document').textContent!,/Markt schließt/);
+ x.click('Ereignis bearbeiten');x.el('agenda-name').value='Offene Änderung';x.el('agenda-event-form').dispatchEvent(new Event('input'));
+ await x.agenda.openForLocation(x.location.id,'Nordtor',undefined,true);assert.equal(x.el('agenda-name').value,'Offene Änderung');assert.match(x.el('agenda-status').textContent!,/zuerst speichern/);
+ x.click('Eingaben verwerfen');await x.agenda.openForLocation(x.location.id,'Nordtor',undefined,true);assert.equal(x.el('agenda-location').value,x.location.id);
+ const clock=x.store.live(x.workspace.token).scene!.clock.instantMs;x.el('agenda-name').value='Wachwechsel';x.el('agenda-event-form').dispatchEvent(new Event('input'));x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.store.world(x.workspace.token).events.some((e:CalendarEvent)=>e.name==='Wachwechsel'));
+ assert.equal(x.store.live(x.workspace.token).scene!.clock.instantMs,clock);const materials=x.store.locationMaterials(x.workspace.token,{locationId:x.location.id,kind:'event',text:'',offset:0});assert.equal(materials.items.length,2);
 });
