@@ -40,7 +40,7 @@ export function referenceMarkdown(ref:DeskRef,label:string){if(!label.trim()||la
 export function plainReferenceText(text:string){let cursor=0,out='';for(const link of textReferences(text,Number.MAX_SAFE_INTEGER)){out+=text.slice(cursor,link.start)+link.label;cursor=link.end;}return out+text.slice(cursor);}
 export function remapTextReferences(text:string,map:(ref:DeskRef)=>string){let cursor=0,out='';for(const link of textReferences(text,Number.MAX_SAFE_INTEGER)){const id=map(link.ref);out+=text.slice(cursor,link.targetStart)+(id===link.ref.id?text.slice(link.targetStart,link.targetEnd):encodeURIComponent(id));cursor=link.targetEnd;}return out+text.slice(cursor);}
 export function rawTextOffset(text:string,offset:number){let normalized=0,index=0;while(index<text.length&&normalized<offset){if(text[index]==='\r'&&text[index+1]==='\n')index++;index++;normalized++;}return index;}
-export function documentReferences(document:any):{ref:DeskRef;label:string;field:string}[]{
+export function documentReferences(document:any,limit=201):{ref:DeskRef;label:string;field:string}[]{
  const sources:readonly [string,string][] = document?.version===1&&typeof document.gmNotes==='string'?[['Zum Vorlesen',document.readAloud],['GM-Notiz',document.gmNotes]]:Array.isArray(document?.sections)?document.sections.map((s:any)=>[typeof s.title==='string'?s.title:'Abschnitt',s.markdown]):[];
- const links:{ref:DeskRef;label:string;field:string}[]=[];for(const [field,text]of sources){if(typeof text!=='string')continue;for(const r of textReferences(text,201-links.length))links.push({ref:r.ref,label:r.label,field});if(links.length>=201)break;}return links;
+ const links:{ref:DeskRef;label:string;field:string}[]=[];for(const [field,text]of sources){if(typeof text!=='string')continue;for(const r of textReferences(text,limit-links.length))links.push({ref:r.ref,label:r.label,field});if(links.length>=limit)break;}return links;
 }

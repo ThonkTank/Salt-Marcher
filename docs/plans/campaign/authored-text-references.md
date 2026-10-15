@@ -65,21 +65,49 @@ umgeschrieben. In bereits früher erzeugten Kopien veränderte Beispiele lassen
 sich ohne Original nicht zuverlässig rekonstruieren; keine automatische
 Rückersetzung anhand vermeintlicher IDmuster.
 
-Ableitungsgrenzen sind weiterhin verschieden: Textreader und Alias-SQL liefern
-höchstens 200 Verweise je Dokument, `documentReferences` liest 201 als Überlauf-
-Sentinel, der Graph zeigt bis zu 40 Kanten. Remap verarbeitet alle aktiven
-Verweise, auch außerhalb dieser Seiten. Der derzeitige Aliasport meldet die
-Dokumentkappung noch nicht; ein fehlender Treffer beweist bei langen Quellen
-keine fehlende Verknüpfung. Suche auf großen Campaigns untersucht aktuell die
-Prosa im SQL-UDF; eine LIMIT-Seite begrenzt die Antwort, nicht den Quellenread.
+Suche und eingehende Kanten untersuchen inzwischen alle aktiven Verweise einer
+validierten Quelle. Die API liefert weiterhin höchstens40 Treffer sowie eine
+zusammengefasste Quellenwarnung; `next` ist eine Seite, kein Autorenlimit.
+Ungültige Prüfsumme, Schema, Notiz-ID/-Revision oder Orts-ID erzeugen einen
+sichtbar unvollständigen Stand. Gesunde Quellen bleiben erreichbar. Fehlende
+oder defekte Ziele bleiben als nicht verfügbar erkennbar; sie liefern keine
+fremden Payloadnamen. Sourcefehler erzeugen weder Reparaturwrite noch einen
+bestätigten Negativbefund.
+
+Detailreader zeigen zusammen höchstens200 Inlineaktionen und melden weitere
+Verweise ausdrücklich; deren Originaltext bleibt vollständig lesbar und die
+Ziele über Verknüpfte Begriffe auffindbar. `documentReferences` liest standardmäßig
+201 als Sentinel für diesen Reader, Suchableitung und Remap verarbeiten alle
+aktiven Verweise. Der Graph bleibt bei40 eingehenden/ausgehenden Verbindungen mit
+Hinweis auf weitere. Eine Detailabfrage prüft jedes wiederholte gleiche Ziel nur
+einmal; folgende Detailabfragen lesen dessen aktuellen Stand erneut.
+
+Die SQL-Ableitung ist nur innerhalb der Anweisung materialisiert. Der UDF prüft
+vor jedem Cachetreffer den tatsächlichen Payloadhash; Key enthält Quellenart,
+Row-ID, Rowrevision und Checksum. Nur bereits validierte nichtleere Ableitungen
+werden pro Datenbankverbindung flüchtig gehalten: höchstens4MiB serialisierte
+Werte und1024 Einträge, zusätzlich deren Map-/Schlüsseloverhead. Keine
+Originaltexte, aktuellen Zielmetadaten, negativen Fehlerresultate oder zweite
+dauerhafte Graphdatenbank werden gecacht. Papierkorb/Erasure/Campaignfilter
+stehen vor der Funktion; ein Cacheeintrag kann keinen fehlenden Record ersetzen.
+Andere Kampagnen mit gleichen IDs lesen ihre eigenen aktuellen Ziele.
+
+Die erste Messfixture enthält170 Dokumente,30.000 Verweise und2,48MB Sourcebytes.
+In einem gepaarten Guarded-Job brauchte die uncachierte gleiche Ableitung126–155ms;
+wiederholte Cacheabfragen72–98ms, Coldstart136ms. Es werden weiterhin pro
+Suchseite alle170 Quellenhashes geprüft und alle Sourcebytes gelesen. Die
+Antwortgrenze ist keine Querykostengrenze. Ein2MiB-Prototyp verdrängte in diesem
+Korpus fortlaufend und brachte kaum Nutzen;4MiB ist eine gemessene lokale Wahl,
+keine allgemeine p95-/Native-/RAMqualifikation. Größere echte Campaigns,
+Cacheverdrängung und SQLtemp-Kosten bleiben abzunehmen.
 
 ## Nächste Lieferungen und Abnahmen
 
 | Schritt | Code, Datenregel und Endnachweis |
 | --- | --- |
 | Native Editorweg | `preparation.ts`, Picker, vorhandener Draftwriter: Tastatur/Modalcancel/200 %, IME, ausgewählter CRLFtext → expliziter Verweis → Autosave → Close/Fresh; verzögerter Flush mit neuer Prosa und A→B→A. Quelle während Bestätigung ändern/archivieren; unverfügbare Quelle bleibt erkennbar. |
-| Ehrliche lange Quellen | `storage/text-references.ts`, `scene-desk.ts`, `quick-reference-ui.ts`, Graph: den 201-Sentinel als sichtbare Begrenzung durch den bestehenden Readport führen; echte Treffer hinter 200 müssen auffindbar werden, ohne alle Bodies zum Renderer zu schicken. Vor Indexdesign reale Campaign mit langen/kurzen Notizen messen; gemeinsame Einzelquelle/kein zweiter Autorengraph. |
-| Quellintegrität | Alias-SQL und `referenceEntry`: Die integrierte Zielprüfung validiert jetzt Checksum/Payload-/Rowidentität. Quell-Rowidentität, Revision und Papierkorb so prüfen wie direkte Detailreads; defekte Quelle ausdrücklich unbekannt, keine gesunde leere Treffermenge. Fehlende Ziele erhalten Alias und stabile ID. Gleicher Name führt nie zu stiller Neuzuordnung. |
+| Nächste Skalierung | `storage/text-references.ts`, `scene-desk.ts`, `quick-reference-ui.ts`, Graph: Die Suchkappung ist entfernt, Readerbegrenzung und Sourcefehler sind sichtbar. Nun echte große Campaigns, Cold-/Warm-/Verdrängungsfälle, Graphdoppelreads und Cancel im tatsächlichen Worker messen. Erst danach persistenten abgeleiteten Index oder Cursorvertrag entscheiden; Hash-/Rebuild-/Erasuregrenze im selben kleinen Anschluss erhalten. |
+| Quellintegrität und Wiederaufnahme | Alias-SQL, Reader und Zielmetadaten prüfen jetzt Checksum/Schema/Rowidentität; defekte Sources werden nicht leer gemeldet. Warmcache nach manipulierter Bytefolge, Rowrevision, Reparatur und Trash geprüft. Als Nächstes tatsächliche Worker-Neustarts während großem Read und vollständige unabhängige Export-/Erasureclosure; fehlende Ziele behalten ihren Alias statt Namensersatz. |
 | Verbraucherclosure | Vorlesetext, Ortsabschnitte, NPC-Dossier, Spielabendmappe/Markdownausgabe und unabhängiger Export: ein Wortlautorakel durch alle konsumierenden Wege; Readerprojektion bleibt nur Anzeige. Vor Erweiterung der Einfügeflächen gemeinsame Autorenstelle/Ownergrenze verwenden. Passive Playerfreigabe bleibt eigenständig. |
 | Markdown und Skalierung | Echte Obsidian-/Originaltexte mit verschachtelten Literalen und Fremdlinks als geschützte Kopie untersuchen. Umfang der kontrollierten Syntax entscheiden, dann gemeinsame Parsergegenbelege erweitern. Wiederholte offene Klammern/Backtickruns und große Quellen messen; keine neue Parserbibliothek oder Indexmigration ohne nachgewiesenen Nutzen. |
 
@@ -95,7 +123,16 @@ Import) war ein Fixturefehler und ist kein Produktgegenbeleg.
 Alias-/Graphableitung, identische Namen mit verschiedenen IDs, unabhängige
 Campaignkopie und erneutes Öffnen des Zielstores; nur aktive Zielbytes ändern
 sich, Literalbeispiele/CRLF/Vaultlinks und Quelle/Snapshotbytes bleiben erhalten.
-Fünf weitere Integrationsfälle prüfen Ortsabschnitt-Flush und entfernte Controls,
+Weitere Integrationsfälle prüfen Ortsabschnitt-Flush und entfernte Controls,
 Notebook-Wortlaut/alte Auswahlen und weiterhin benutzbare Ortsdirectory.
 Diese lokalen Belege ersetzen weder die native Editorprobe noch vollständige
 Markdown-, Portabilitäts-, Performance- oder Gesamtproduktabnahme.
+
+Die Folgeprüfung verbindet Sourcechecksum/-Identität/-Revision, Alias239,
+83 eindeutige Ziele in Seiten, tatsächliches Fresh, reparierte/trashte Quellen
+nach Warmcache und identische IDs in verschiedenen Kampagnen. Der echte
+Schnellsucheconsumer erhält Rohprosa beim Vorlesehandoff, kennzeichnet teilweise
+lesbare Ergebnisse und ignoriert entfernte alte Aktionen. Eine zuerst fehlende
+Fixture-Kopfzeile war ein Setupfehler; die bereinigte ursprüngliche Readerquelle
+zeigte anschließend die tatsächlichen zwei Gegenbefunde. Abgeleitete
+Cache-/Querymessung und inhaltliche Richtigkeitsproben bleiben getrennte Belege.

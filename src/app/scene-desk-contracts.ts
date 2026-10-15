@@ -21,6 +21,7 @@ export interface DeskEntry {
 export interface DeskContent extends DeskEntry {
   links?: {label:string;entry:DeskEntry}[];
   revision: number;
+  referenceNotice?: string;
   note?: Note;
   location?: LocationDocument;
   creature?: Creature;
