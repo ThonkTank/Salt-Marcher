@@ -106,6 +106,21 @@ export function readCombat(db: any, campaignId: string, sceneId: string, id?: st
 
   })();
 }
+function applyCombatDamage(p:Combatant,amount:number){
+  const wasConcentrating=p.concentrating;
+  const absorbed=Math.min(p.tempHp,amount),remaining=amount-absorbed,beforeHp=p.hp;p.tempHp-=absorbed;p.hp=Math.max(0,beforeHp-remaining);
+  if(p.characterId&&remaining>0){const overflow=Math.max(0,remaining-beforeHp);if(beforeHp>0&&p.hp===0){delete p.death;delete p.deathLast;}if((beforeHp===0?remaining:overflow)>=p.maxHp)applyDamageDeath(p,'dead');else if(beforeHp===0)applyDamageDeath(p,'failure');}
+  if(wasConcentrating){if(p.hp===0){p.concentrating=false;delete p.concentrationChecks;}else{p.concentrationChecks??=[];if(p.concentrationChecks.length>=100)throw new Error('Zu viele offene Konzentrationsprüfungen.');p.concentrationChecks.push({damage:amount,dc:concentrationDc(amount)});}}
+}
+function spendLegendaryAction(state:CombatState,participantId:string,actionId:string,cost:number){
+  const p=state.participants.find(p=>p.id===participantId),source=p&&legendarySource(state,p),action=source?.legendaryActions.find(action=>action.id===actionId),expected=action?legendaryActionCost(action):0;
+  if(!p||state.phase!=='running'||!action)throw new Error('Legendäre Aktion gehört nicht zu dieser laufenden Kreatur.');
+  if(state.turnId===p.id)throw new Error('Legendäre Aktionen sind nicht im eigenen Zug verfügbar.');
+  if(cost!==expected)throw new Error('Kosten der legendären Aktion stimmen nicht mit dem Statblock überein.');
+  const points=p.legendaryActions;if(!points||points.remaining<expected)throw new Error('Nicht genügend legendäre Aktionspunkte verfügbar.');
+  if(points.lastUsedRound===state.round&&points.lastUsedTurnId===state.turnId)throw new Error('Diese Kreatur hat in diesem Zug bereits eine legendäre Aktion eingesetzt.');
+  points.remaining-=expected;points.lastUsedRound=state.round;points.lastUsedTurnId=state.turnId!;
+}
 export function executeCombat(db: any, command: CombatCommand, guard: () => void): CombatView {
   return db.transaction(() => {
     guard();
@@ -204,12 +219,20 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if(p.hp>0||(beforeHp>0&&p.hp===0)){delete p.death;delete p.deathLast;}
           if(!p.concentrating)delete p.concentrationChecks;
           if ('initiative' in a.changes) for (const peer of state.participants.filter(peer => peer.groupId === p.groupId)) peer.initiative = p.initiative;
+        } else if(a.kind==='area-damage'){
+          if(!Number.isSafeInteger(a.amount)||a.amount<1||a.amount>1000000||!Array.isArray(a.targets)||!a.targets.length||a.targets.length>1000)throw new Error('Flächenschaden benötigt einen positiven Betrag und Ziele.');
+          if(a.source){const actor=state.participants.find(p=>p.id===a.source!.participantId),source=state.sources?.find(c=>c.id===actor?.sourceId);if(!source||![...source.actions,...source.legendaryActions].some(action=>action.id===a.source!.actionId))throw new Error('Aktion gehört nicht zu diesem Teilnehmer.');if(source.legendaryActions.some(action=>action.id===a.source!.actionId)&&!a.legendary)throw new Error('Legendäre Aktion benötigt ihre Aktionskosten.');}
+          if(a.legendary){if(!a.source||a.source.participantId!==a.legendary.participantId||a.source.actionId!==a.legendary.actionId)throw new Error('Legendäre Schadensquelle stimmt nicht überein.');spendLegendaryAction(state,a.legendary.participantId,a.legendary.actionId,a.legendary.cost);}
+          const ids=new Set<string>();for(const target of a.targets){
+            if(!target||ids.has(target.participantId)||!['full','half','none'].includes(target.scale))throw new Error('Schadensziele müssen eindeutig und gültig sein.');ids.add(target.participantId);
+            const p=state.participants.find(p=>p.id===target.participantId);if(!p||p.healthKnown===false)throw new Error('Schadensziel fehlt oder seine HP sind noch offen.');
+            const amount=target.scale==='none'?0:target.scale==='half'?Math.floor(a.amount/2):a.amount;if(amount)applyCombatDamage(p,amount);
+          }
         } else if (a.kind === 'damage' || a.kind === 'heal') {
           const p = participant();
           if (p.healthKnown === false) throw new Error('HP noch offen. Aktuelle und maximale HP eintragen, bevor Schaden oder Heilung angewendet wird.');
           if (!Number.isSafeInteger(a.amount) || a.amount <= 0 || a.amount > 1000000) throw new Error('Betrag benötigt eine positive ganze Zahl.');
           if (a.kind === 'damage') {
-            const wasConcentrating=p.concentrating;
             if((a.sourceCheckId===undefined)!==(a.sourceScale===undefined))throw new Error('Schadensbeleg und Anpassung müssen gemeinsam angegeben werden.');
             if(a.sourceCheckId!==undefined){
               const row=db.prepare('SELECT scene_id,payload,checksum FROM scene_check WHERE campaign_id=? AND id=?').get(cam,a.sourceCheckId);
@@ -219,9 +242,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
               const expected=a.sourceScale==='half'?Math.floor(source.total/2):a.sourceScale==='double'?source.total*2:a.sourceScale==='full'?source.total:NaN;
               if(a.amount!==expected)throw new Error('Der Schadensbetrag stimmt nicht mit dem gespeicherten Wurf überein.');
             }
-            const absorbed=Math.min(p.tempHp,a.amount),remaining=a.amount-absorbed,beforeHp=p.hp;p.tempHp-=absorbed;p.hp=Math.max(0,beforeHp-remaining);
-            if(p.characterId&&remaining>0){const overflow=Math.max(0,remaining-beforeHp);if(beforeHp>0&&p.hp===0){delete p.death;delete p.deathLast;}if((beforeHp===0?remaining:overflow)>=p.maxHp)applyDamageDeath(p,'dead');else if(beforeHp===0)applyDamageDeath(p,'failure');}
-            if(wasConcentrating){if(p.hp===0){p.concentrating=false;delete p.concentrationChecks;}else{p.concentrationChecks??=[];if(p.concentrationChecks.length>=100)throw new Error('Zu viele offene Konzentrationsprüfungen.');p.concentrationChecks.push({damage:a.amount,dc:concentrationDc(a.amount)});}}
+            applyCombatDamage(p,a.amount);
           }
           else {p.hp = Math.min(p.maxHp, p.hp + a.amount);if(p.hp>0){delete p.death;delete p.deathLast;}}
         } else if(a.kind==='death'||a.kind==='death-roll'){
@@ -234,7 +255,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const roll=a.kind==='concentration-roll'?randomInt(1,21):null,modifier=a.kind==='concentration-roll'?a.modifier:0;if(!Number.isSafeInteger(modifier)||Math.abs(modifier)>1000)throw new Error('Konzentrationsmodifikator benötigt eine ganze Zahl bis 1000.');const total=roll===null?null:roll+modifier,success=a.kind==='concentration'?a.success:total!>=check.dc;
           p.concentrationLast={...check,roll,modifier,total,success};p.concentrationChecks=p.concentrationChecks!.slice(1);if(!success){p.concentrating=false;delete p.concentrationChecks;}else if(!p.concentrationChecks.length)delete p.concentrationChecks;
         } else if(a.kind==='legendary-action'){
-          const p=participant(),source=legendarySource(state,p),action=source?.legendaryActions.find(action=>action.id===a.actionId),expected=action?legendaryActionCost(action):0;if(state.phase!=='running'||!action)throw new Error('Legendäre Aktion gehört nicht zu dieser laufenden Kreatur.');if(state.turnId===p.id)throw new Error('Legendäre Aktionen sind nicht im eigenen Zug verfügbar.');if(a.cost!==expected)throw new Error('Kosten der legendären Aktion stimmen nicht mit dem Statblock überein.');const points=p.legendaryActions;if(!points||points.remaining<expected)throw new Error('Nicht genügend legendäre Aktionspunkte verfügbar.');if(points.lastUsedRound===state.round&&points.lastUsedTurnId===state.turnId)throw new Error('Diese Kreatur hat in diesem Zug bereits eine legendäre Aktion eingesetzt.');points.remaining-=expected;points.lastUsedRound=state.round;points.lastUsedTurnId=state.turnId!;
+          spendLegendaryAction(state,a.participantId,a.actionId,a.cost);
         } else if(a.kind==='effect-add'){
           const p=participant();if(typeof a.name!=='string'||!a.name.trim()||a.name.length>500||!Number.isSafeInteger(a.rounds)||a.rounds<1||a.rounds>1000||!['start','end'].includes(a.tick))throw new Error('Rundeneffekt benötigt Name, 1–1000 Runden und einen Zeitpunkt.');p.timedEffects??=[];if(p.timedEffects.length>=100)throw new Error('Zu viele Rundeneffekte für diesen Teilnehmer.');p.timedEffects.push({id:randomUUID(),name:a.name.trim(),remaining:a.rounds,tick:a.tick});
         } else if(a.kind==='effect-remove'){

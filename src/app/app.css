@@ -452,3 +452,11 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 
 #world-journey-console{scroll-margin-top:var(--workspace-content-offset)}
 #world-journey-console>p:first-child{font-weight:600}
+
+/* Keep action decisions near the roster; reference prose is optional. */
+#fighter-actions{padding:.65rem 0;border-bottom:1px solid var(--line);margin-bottom:.8rem}#fighter-actions select{width:100%}#fighter-actions .toolbar{margin:.6rem 0;gap:.4rem;flex-wrap:wrap}#fighter-actions details p{white-space:pre-wrap;font-size:.9rem}
+.combat-area{padding:.85rem;background:#eef4f8;border:1px solid var(--blue);margin-bottom:.8rem}.combat-area h3{margin:0 0 .7rem}.combat-area>p{font-size:.85rem}.combat-area-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(90px,1fr) auto;align-items:center;gap:.4rem;margin:.5rem 0}.combat-area-row .check-label{margin:0}.combat-area-row select{min-width:0;width:100%;font-size:.85rem}.combat-area-row>span{font-size:.8rem;white-space:nowrap}.combat-area .toolbar{flex-wrap:wrap}.combat-area input[type=number]{max-width:100px}
+#combat-table td:last-child{overflow-wrap:normal;hyphens:auto}
+@media(max-width:650px){.combat-area-row{grid-template-columns:1fr 1fr}.combat-area-row>span{grid-column:2}}
+
+#combat-table{table-layout:fixed;width:100%}#combat-table th:first-child{width:32%}#combat-table th:nth-child(4){width:21%}#combat-table th:last-child{width:27%}#combat-table td:last-child{font-size:.8rem}#combat-table td:first-child button{max-width:100%;overflow-wrap:normal}

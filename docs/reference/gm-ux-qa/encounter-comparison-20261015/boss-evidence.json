@@ -1,0 +1,1285 @@
+{
+  "before": {
+    "version": "0.133.0",
+    "commit": "81f6ccfd",
+    "session": "encounter-02-boss",
+    "run": "boss-before"
+  },
+  "after": {
+    "version": "0.135.0",
+    "basis": "fc5e50c8 plus encounter changes",
+    "session": "encounter-02-after",
+    "runs": [
+      "boss-after",
+      "boss-after-final"
+    ],
+    "prelaunch": [
+      {
+        "mono_ns": 227123670824586,
+        "event": "prelaunch_identity",
+        "attempt_id": "boss-after-0134-01",
+        "product_files": {
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs": {
+            "sha256": "4cae7652680c398f25df60daa235e91fa5fc8b74cccef6ac9b67e316d5a6aa81",
+            "bytes": 2216755
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/renderer.js": {
+            "sha256": "000f5768be356c77a79e2817691f86e3e82dd16803c65dd8cbb245d6238aa020",
+            "bytes": 2390038
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/index.html": {
+            "sha256": "f75cbfc9468128e37a9882721e00a37f5b90c74213ee892efd4194e6c6a48d16",
+            "bytes": 164158
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/app.css": {
+            "sha256": "f9ed97e57912d4434d3365de4407bfa5703dfde0d96205f1d3dee91640cd1bf9",
+            "bytes": 87763
+          }
+        },
+        "adapter_hashes": {
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/client.py": {
+            "sha256": "9d356836b0ff741f2b7fcb8cdd134d2a9752d580a4cb28bac634a572495e682a",
+            "bytes": 725
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/identity.py": {
+            "sha256": "401d24a641e9b75ce140b0e2bfb4927de5d516bc374d4dd272d13f84a69d4e3f",
+            "bytes": 2595
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/measure.py": {
+            "sha256": "a88f2663ffe4ff4adff5351eb054afe9a8ec070c2145c4928f117c6b46fb7b4d",
+            "bytes": 597
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/recorder.py": {
+            "sha256": "0e120b78ffd9c0fa347e73e4f7db8c2c63863becf44ef88904719da06a84171f",
+            "bytes": 6812
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/service.py": {
+            "sha256": "d07513353bc7c1363217233346b426de8c7bf857105deca04694a3c2be2eff07",
+            "bytes": 15157
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/verify_pack.py": {
+            "sha256": "c238c2463ecc38e9764e59c3244859f30872a8fd2ad5cbd3388b16e73e23d02d",
+            "bytes": 2461
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/wire_crosscheck.py": {
+            "sha256": "bd256cf191bb79e29d2d61457f32554d1119c81648c258c0e3e5482d4c0a621a",
+            "bytes": 5694
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/x11.py": {
+            "sha256": "8bd13a63347ede0d78575c2d788cce3387a2c5f0aace0506e019c12491a4d003",
+            "bytes": 10572
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/measure.py": {
+            "sha256": "2233b118823bd276afc3cf15769e7ae3f3841c5de17a713a1743cb3b9926137e",
+            "bytes": 14689
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/schemas/manifest.schema.json": {
+            "sha256": "d59f528724fc278856095aefb9cb09b0b11a5f720f16acca839763f3ef1d8bd2",
+            "bytes": 12362
+          }
+        },
+        "environment": {
+          "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+          "DISPLAY": ":92",
+          "LANG": "C.UTF-8",
+          "LC_CTYPE": "C.UTF-8",
+          "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+          "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+          "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+          "XDG_RUNTIME_DIR": "/run/user/1000",
+          "QT_QPA_PLATFORM": "xcb",
+          "QT_NO_XDG_DESKTOP_PORTAL": "1",
+          "GTK_USE_PORTAL": "0"
+        },
+        "scope": {
+          "captured_mono_ns": 227123670787949,
+          "path": "session:2827803",
+          "groups": [],
+          "members": [
+            {
+              "pid": 2827803,
+              "ppid": 2827647,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709342",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/bash",
+              "argv": [
+                "bash",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/run-ui.sh",
+                "--owned",
+                "encounter-02-after",
+                "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/native-after"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827808,
+              "ppid": 2827803,
+              "state": "R",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709352",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/python3.14",
+              "argv": [
+                "python3",
+                "-u",
+                "-B",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/service.py",
+                "--session",
+                "encounter-02-after"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827813,
+              "ppid": 2827808,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709406",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/Xwayland",
+              "argv": [
+                "/usr/bin/Xwayland",
+                ":92",
+                "-auth",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/Xauthority",
+                "-geometry",
+                "1440x900",
+                "-nolisten",
+                "tcp",
+                "-noreset",
+                "-br"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827822,
+              "ppid": 2827808,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709444",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+              "argv": [
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+                "--sm-disable",
+                "--config-file",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/etc/xdg/openbox/rc.xml"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            }
+          ],
+          "shared": null
+        },
+        "argv": [
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/node_modules/electron/dist/electron",
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs",
+          "--ozone-platform=x11",
+          "--data-dir",
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/after/fixture"
+        ]
+      },
+      {
+        "mono_ns": 227442237862945,
+        "event": "prelaunch_identity",
+        "attempt_id": "boss-after-0135-02",
+        "product_files": {
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs": {
+            "sha256": "9c18d73b658aae728aa2528f8f55928b3301b4c2133a088db83a77ce0d04c8f6",
+            "bytes": 2216935
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/renderer.js": {
+            "sha256": "e531899a30b24e8ec36ad1933467a2d5f0450036e12fb10bbe2eff1a954d8e62",
+            "bytes": 2390184
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/index.html": {
+            "sha256": "f75cbfc9468128e37a9882721e00a37f5b90c74213ee892efd4194e6c6a48d16",
+            "bytes": 164158
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/app.css": {
+            "sha256": "7bf8748f2a119f3244e1c852692f8bdf73c8a38ba38df2303f5529a46c0d86e1",
+            "bytes": 88042
+          }
+        },
+        "adapter_hashes": {
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/client.py": {
+            "sha256": "9d356836b0ff741f2b7fcb8cdd134d2a9752d580a4cb28bac634a572495e682a",
+            "bytes": 725
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/identity.py": {
+            "sha256": "401d24a641e9b75ce140b0e2bfb4927de5d516bc374d4dd272d13f84a69d4e3f",
+            "bytes": 2595
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/measure.py": {
+            "sha256": "a88f2663ffe4ff4adff5351eb054afe9a8ec070c2145c4928f117c6b46fb7b4d",
+            "bytes": 597
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/recorder.py": {
+            "sha256": "0e120b78ffd9c0fa347e73e4f7db8c2c63863becf44ef88904719da06a84171f",
+            "bytes": 6812
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/service.py": {
+            "sha256": "d07513353bc7c1363217233346b426de8c7bf857105deca04694a3c2be2eff07",
+            "bytes": 15157
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/verify_pack.py": {
+            "sha256": "c238c2463ecc38e9764e59c3244859f30872a8fd2ad5cbd3388b16e73e23d02d",
+            "bytes": 2461
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/wire_crosscheck.py": {
+            "sha256": "bd256cf191bb79e29d2d61457f32554d1119c81648c258c0e3e5482d4c0a621a",
+            "bytes": 5694
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/x11.py": {
+            "sha256": "8bd13a63347ede0d78575c2d788cce3387a2c5f0aace0506e019c12491a4d003",
+            "bytes": 10572
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/measure.py": {
+            "sha256": "2233b118823bd276afc3cf15769e7ae3f3841c5de17a713a1743cb3b9926137e",
+            "bytes": 14689
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/schemas/manifest.schema.json": {
+            "sha256": "d59f528724fc278856095aefb9cb09b0b11a5f720f16acca839763f3ef1d8bd2",
+            "bytes": 12362
+          }
+        },
+        "environment": {
+          "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+          "DISPLAY": ":92",
+          "LANG": "C.UTF-8",
+          "LC_CTYPE": "C.UTF-8",
+          "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+          "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+          "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+          "XDG_RUNTIME_DIR": "/run/user/1000",
+          "QT_QPA_PLATFORM": "xcb",
+          "QT_NO_XDG_DESKTOP_PORTAL": "1",
+          "GTK_USE_PORTAL": "0"
+        },
+        "scope": {
+          "captured_mono_ns": 227442237780353,
+          "path": "session:2827803",
+          "groups": [],
+          "members": [
+            {
+              "pid": 2827803,
+              "ppid": 2827647,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709342",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/bash",
+              "argv": [
+                "bash",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/run-ui.sh",
+                "--owned",
+                "encounter-02-after",
+                "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/native-after"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827808,
+              "ppid": 2827803,
+              "state": "R",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709352",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/python3.14",
+              "argv": [
+                "python3",
+                "-u",
+                "-B",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/service.py",
+                "--session",
+                "encounter-02-after"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827813,
+              "ppid": 2827808,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709406",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/Xwayland",
+              "argv": [
+                "/usr/bin/Xwayland",
+                ":92",
+                "-auth",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/Xauthority",
+                "-geometry",
+                "1440x900",
+                "-nolisten",
+                "tcp",
+                "-noreset",
+                "-br"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827822,
+              "ppid": 2827808,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709444",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+              "argv": [
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+                "--sm-disable",
+                "--config-file",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/etc/xdg/openbox/rc.xml"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2829039,
+              "ppid": 1306,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22712478",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/libexec/xdg-desktop-portal-kde",
+              "argv": [
+                "/usr/libexec/xdg-desktop-portal-kde"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000",
+                "QT_QPA_PLATFORM": "xcb",
+                "QT_NO_XDG_DESKTOP_PORTAL": "1",
+                "GTK_USE_PORTAL": "0"
+              }
+            },
+            {
+              "pid": 2829062,
+              "ppid": 1306,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22712527",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/ksecretd",
+              "argv": [
+                "/usr/bin/ksecretd"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000",
+                "QT_QPA_PLATFORM": "xcb",
+                "QT_NO_XDG_DESKTOP_PORTAL": "1",
+                "GTK_USE_PORTAL": "0"
+              }
+            }
+          ],
+          "shared": null
+        },
+        "argv": [
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/node_modules/electron/dist/electron",
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs",
+          "--ozone-platform=x11",
+          "--data-dir",
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/after/fixture"
+        ]
+      },
+      {
+        "mono_ns": 227627213522023,
+        "event": "prelaunch_identity",
+        "attempt_id": "boss-after-0135-02",
+        "product_files": {
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs": {
+            "sha256": "9c18d73b658aae728aa2528f8f55928b3301b4c2133a088db83a77ce0d04c8f6",
+            "bytes": 2216935
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/renderer.js": {
+            "sha256": "e531899a30b24e8ec36ad1933467a2d5f0450036e12fb10bbe2eff1a954d8e62",
+            "bytes": 2390184
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/index.html": {
+            "sha256": "f75cbfc9468128e37a9882721e00a37f5b90c74213ee892efd4194e6c6a48d16",
+            "bytes": 164158
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/app.css": {
+            "sha256": "7bf8748f2a119f3244e1c852692f8bdf73c8a38ba38df2303f5529a46c0d86e1",
+            "bytes": 88042
+          }
+        },
+        "adapter_hashes": {
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/client.py": {
+            "sha256": "9d356836b0ff741f2b7fcb8cdd134d2a9752d580a4cb28bac634a572495e682a",
+            "bytes": 725
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/identity.py": {
+            "sha256": "401d24a641e9b75ce140b0e2bfb4927de5d516bc374d4dd272d13f84a69d4e3f",
+            "bytes": 2595
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/measure.py": {
+            "sha256": "a88f2663ffe4ff4adff5351eb054afe9a8ec070c2145c4928f117c6b46fb7b4d",
+            "bytes": 597
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/recorder.py": {
+            "sha256": "0e120b78ffd9c0fa347e73e4f7db8c2c63863becf44ef88904719da06a84171f",
+            "bytes": 6812
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/service.py": {
+            "sha256": "d07513353bc7c1363217233346b426de8c7bf857105deca04694a3c2be2eff07",
+            "bytes": 15157
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/verify_pack.py": {
+            "sha256": "c238c2463ecc38e9764e59c3244859f30872a8fd2ad5cbd3388b16e73e23d02d",
+            "bytes": 2461
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/wire_crosscheck.py": {
+            "sha256": "bd256cf191bb79e29d2d61457f32554d1119c81648c258c0e3e5482d4c0a621a",
+            "bytes": 5694
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/x11.py": {
+            "sha256": "8bd13a63347ede0d78575c2d788cce3387a2c5f0aace0506e019c12491a4d003",
+            "bytes": 10572
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/measure.py": {
+            "sha256": "2233b118823bd276afc3cf15769e7ae3f3841c5de17a713a1743cb3b9926137e",
+            "bytes": 14689
+          },
+          "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/schemas/manifest.schema.json": {
+            "sha256": "d59f528724fc278856095aefb9cb09b0b11a5f720f16acca839763f3ef1d8bd2",
+            "bytes": 12362
+          }
+        },
+        "environment": {
+          "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+          "DISPLAY": ":92",
+          "LANG": "C.UTF-8",
+          "LC_CTYPE": "C.UTF-8",
+          "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+          "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+          "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+          "XDG_RUNTIME_DIR": "/run/user/1000",
+          "QT_QPA_PLATFORM": "xcb",
+          "QT_NO_XDG_DESKTOP_PORTAL": "1",
+          "GTK_USE_PORTAL": "0"
+        },
+        "scope": {
+          "captured_mono_ns": 227627213414668,
+          "path": "session:2827803",
+          "groups": [],
+          "members": [
+            {
+              "pid": 2827803,
+              "ppid": 2827647,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709342",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/bash",
+              "argv": [
+                "bash",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/run-ui.sh",
+                "--owned",
+                "encounter-02-after",
+                "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/native-after"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827808,
+              "ppid": 2827803,
+              "state": "R",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709352",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/python3.14",
+              "argv": [
+                "python3",
+                "-u",
+                "-B",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/src/service.py",
+                "--session",
+                "encounter-02-after"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827813,
+              "ppid": 2827808,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709406",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/Xwayland",
+              "argv": [
+                "/usr/bin/Xwayland",
+                ":92",
+                "-auth",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/Xauthority",
+                "-geometry",
+                "1440x900",
+                "-nolisten",
+                "tcp",
+                "-noreset",
+                "-br"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron",
+                "DISPLAY": ":0",
+                "WAYLAND_DISPLAY": "wayland-0",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2827822,
+              "ppid": 2827808,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22709444",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+              "argv": [
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+                "--sm-disable",
+                "--config-file",
+                "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/etc/xdg/openbox/rc.xml"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000"
+              }
+            },
+            {
+              "pid": 2829039,
+              "ppid": 1306,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22712478",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/libexec/xdg-desktop-portal-kde",
+              "argv": [
+                "/usr/libexec/xdg-desktop-portal-kde"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000",
+                "QT_QPA_PLATFORM": "xcb",
+                "QT_NO_XDG_DESKTOP_PORTAL": "1",
+                "GTK_USE_PORTAL": "0"
+              }
+            },
+            {
+              "pid": 2829062,
+              "ppid": 1306,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22712527",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/ksecretd",
+              "argv": [
+                "/usr/bin/ksecretd"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000",
+                "QT_QPA_PLATFORM": "xcb",
+                "QT_NO_XDG_DESKTOP_PORTAL": "1",
+                "GTK_USE_PORTAL": "0"
+              }
+            },
+            {
+              "pid": 2836524,
+              "ppid": 1306,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22744414",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/libexec/xdg-desktop-portal-kde",
+              "argv": [
+                "/usr/libexec/xdg-desktop-portal-kde"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000",
+                "QT_QPA_PLATFORM": "xcb",
+                "QT_NO_XDG_DESKTOP_PORTAL": "1",
+                "GTK_USE_PORTAL": "0"
+              }
+            },
+            {
+              "pid": 2836539,
+              "ppid": 1306,
+              "state": "S",
+              "process_group": 2827803,
+              "session_id": 2827803,
+              "starttime": "22744470",
+              "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+              "exe": "/usr/bin/ksecretd",
+              "argv": [
+                "/usr/bin/ksecretd"
+              ],
+              "effective_environment": {
+                "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+                "DISPLAY": ":92",
+                "LANG": "C.UTF-8",
+                "LC_CTYPE": "C.UTF-8",
+                "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+                "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+                "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+                "XDG_RUNTIME_DIR": "/run/user/1000",
+                "QT_QPA_PLATFORM": "xcb",
+                "QT_NO_XDG_DESKTOP_PORTAL": "1",
+                "GTK_USE_PORTAL": "0"
+              }
+            }
+          ],
+          "shared": null
+        },
+        "argv": [
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/node_modules/electron/dist/electron",
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs",
+          "--ozone-platform=x11",
+          "--data-dir",
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/after/fixture"
+        ]
+      }
+    ],
+    "exits": [
+      {
+        "event": "app_exit_observed",
+        "pid": 2828924,
+        "exit_code": 0,
+        "normal_requested": true,
+        "remaining_descendants": [
+          {
+            "pid": 2827803,
+            "ppid": 2827647,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22709342",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/bash",
+            "argv": [
+              "bash",
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/run-ui.sh",
+              "--owned",
+              "encounter-02-after",
+              "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/native-after"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron",
+              "DISPLAY": ":0",
+              "WAYLAND_DISPLAY": "wayland-0",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_RUNTIME_DIR": "/run/user/1000"
+            }
+          },
+          {
+            "pid": 2827822,
+            "ppid": 2827808,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22709444",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+            "argv": [
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+              "--sm-disable",
+              "--config-file",
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/etc/xdg/openbox/rc.xml"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000"
+            }
+          },
+          {
+            "pid": 2829039,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22712478",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/libexec/xdg-desktop-portal-kde",
+            "argv": [
+              "/usr/libexec/xdg-desktop-portal-kde"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2829062,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22712527",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/ksecretd",
+            "argv": [
+              "/usr/bin/ksecretd"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          }
+        ]
+      },
+      {
+        "event": "app_exit_observed",
+        "pid": 2836414,
+        "exit_code": 0,
+        "normal_requested": true,
+        "remaining_descendants": [
+          {
+            "pid": 2827803,
+            "ppid": 2827647,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22709342",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/bash",
+            "argv": [
+              "bash",
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/run-ui.sh",
+              "--owned",
+              "encounter-02-after",
+              "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/native-after"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron",
+              "DISPLAY": ":0",
+              "WAYLAND_DISPLAY": "wayland-0",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_RUNTIME_DIR": "/run/user/1000"
+            }
+          },
+          {
+            "pid": 2827822,
+            "ppid": 2827808,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22709444",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+            "argv": [
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+              "--sm-disable",
+              "--config-file",
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/etc/xdg/openbox/rc.xml"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000"
+            }
+          },
+          {
+            "pid": 2829039,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22712478",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/libexec/xdg-desktop-portal-kde",
+            "argv": [
+              "/usr/libexec/xdg-desktop-portal-kde"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2829062,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22712527",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/ksecretd",
+            "argv": [
+              "/usr/bin/ksecretd"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2836524,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22744414",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/libexec/xdg-desktop-portal-kde",
+            "argv": [
+              "/usr/libexec/xdg-desktop-portal-kde"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2836539,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22744470",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/ksecretd",
+            "argv": [
+              "/usr/bin/ksecretd"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          }
+        ]
+      },
+      {
+        "event": "app_exit_observed",
+        "pid": 2840187,
+        "exit_code": 0,
+        "normal_requested": true,
+        "remaining_descendants": [
+          {
+            "pid": 2827803,
+            "ppid": 2827647,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22709342",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/bash",
+            "argv": [
+              "bash",
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/scripts/run-ui.sh",
+              "--owned",
+              "encounter-02-after",
+              "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-02/native-after"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron",
+              "DISPLAY": ":0",
+              "WAYLAND_DISPLAY": "wayland-0",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_RUNTIME_DIR": "/run/user/1000"
+            }
+          },
+          {
+            "pid": 2827822,
+            "ppid": 2827808,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22709444",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+            "argv": [
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/usr/bin/openbox",
+              "--sm-disable",
+              "--config-file",
+              "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/w01-environment02/qa-tools/root/etc/xdg/openbox/rc.xml"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-02-after/wm-profile/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000"
+            }
+          },
+          {
+            "pid": 2829039,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22712478",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/libexec/xdg-desktop-portal-kde",
+            "argv": [
+              "/usr/libexec/xdg-desktop-portal-kde"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2829062,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22712527",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/ksecretd",
+            "argv": [
+              "/usr/bin/ksecretd"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2836524,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22744414",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/libexec/xdg-desktop-portal-kde",
+            "argv": [
+              "/usr/libexec/xdg-desktop-portal-kde"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2836539,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22744470",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/ksecretd",
+            "argv": [
+              "/usr/bin/ksecretd"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2840324,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22762983",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/libexec/xdg-desktop-portal-kde",
+            "argv": [
+              "/usr/libexec/xdg-desktop-portal-kde"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          },
+          {
+            "pid": 2840485,
+            "ppid": 1306,
+            "state": "S",
+            "process_group": 2827803,
+            "session_id": 2827803,
+            "starttime": "22763124",
+            "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3547.scope\n",
+            "exe": "/usr/bin/ksecretd",
+            "argv": [
+              "/usr/bin/ksecretd"
+            ],
+            "effective_environment": {
+              "HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after",
+              "DISPLAY": ":92",
+              "LANG": "C.UTF-8",
+              "LC_CTYPE": "C.UTF-8",
+              "XDG_CONFIG_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/config",
+              "XDG_DATA_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/data",
+              "XDG_CACHE_HOME": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/profiles/encounter-02-after/cache",
+              "XDG_RUNTIME_DIR": "/run/user/1000",
+              "QT_QPA_PLATFORM": "xcb",
+              "QT_NO_XDG_DESKTOP_PORTAL": "1",
+              "GTK_USE_PORTAL": "0"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "competitor": {
+    "name": "DM Screen",
+    "url": "https://dmscreen.app/",
+    "public_ui_version": null,
+    "rules": "2014",
+    "campaign": "UX02 Schwarzer Drache",
+    "observed_date": "2026-10-15/16",
+    "party_level": 11,
+    "hp": [
+      34,
+      57,
+      23,
+      39
+    ],
+    "cora_concentration": false,
+    "undo_disabled_after_reload": true,
+    "legendary_points_at_dragon_turn": 2
+  },
+  "task": [
+    "Tail hit15 on Bram",
+    "Acid54:Alba/Cora full, Bram/Dain half",
+    "Cora concentration DC27 failed",
+    "Reopen same HP",
+    "Undo restored pending concentration, next undo restored all four breath targets together"
+  ]
+}
