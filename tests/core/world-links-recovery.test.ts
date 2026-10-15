@@ -267,3 +267,16 @@ test('new content success preserves the next name entered while awaiting its ack
   assert.equal(f.el<HTMLInputElement>('world-links-new-title').value,'Nächster Name');assert.ok(f.store.preparation(f.workspace.token,'').notes.some(row=>row.note.title==='Gesendeter Name'));assert.equal(f.el('world-link-form').inert,false);
  }finally{f.cleanup();}
 });
+
+for(const mode of ['pair','single','history'] as const)test(`${mode} writer finally cannot unlock a newer pending relationship writer`,async()=>{
+ const f=await fixture(false,mode==='history'?'history':'single');try{
+  if(mode!=='history'){await choosePair(f);if(mode==='single'){const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=false;paired.dispatchEvent(new Event('change',{bubbles:true}));}}
+  const method=mode==='pair'?'executeWorldRelationPair':mode==='history'?'executeWorldRelationPairHistory':'changePreparationContent',started=deferred<void>(),hold=deferred<void>(),write=f.api[method];f.api[method]=async(...args:any[])=>{const result=await write(...args);started.resolve();await hold.promise;return result;};
+  const first=f.click(mode==='history'?'Rückgängig ·':'Beziehung übernehmen',mode==='history'?'changeHistory':'add');await started.promise;await f.reopen(false);f.api[method]=write;
+  await choosePair(f);f.input('world-link-label','beschützt');f.input('world-link-reverse-label','wird beschützt');
+  const secondStarted=deferred<void>(),secondHold=deferred<void>(),pairWrite=f.api.executeWorldRelationPair;f.api.executeWorldRelationPair=async(...args:any[])=>{const result=await pairWrite(...args);secondStarted.resolve();await secondHold.promise;return result;};
+  const second=f.click('Beziehung übernehmen','add');await secondStarted.promise;const status=f.el('world-links-status').textContent;hold.resolve();await first;
+  assert.equal(f.el('world-link-form').inert,true);assert.equal((f.workbench as any).busy,true);assert.equal(f.el('world-links-status').textContent,status);assert.equal(f.el<HTMLInputElement>('world-link-label').value,'beschützt');
+  secondHold.resolve();await second;assert.equal(f.el('world-link-form').inert,false);assert.equal((f.workbench as any).busy,false);assert.match(f.el('world-links-status').textContent!,/beiden Richtungen gespeichert/);
+ }finally{f.cleanup();}
+});
