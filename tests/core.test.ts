@@ -128,4 +128,5 @@ import "./core/extension-lifecycle.test";
 import "./core/extension-recovery-ui.test";
 import "./core/tutorial.test";
 
+import "./core/world-links-ui.test";
 import "./core/world-links.test";

@@ -1,6 +1,8 @@
 import {readNpcPlaces} from './npc-places';
 import {readLocationMaterials} from './location-notebook';
 import {readWorldLinks} from './world-links';
+import {installWorldRelationPairs,executeWorldRelationPair,reconcileWorldRelationPair,readWorldRelationPairDraft,keepWorldRelationPairDraft,discardWorldRelationPairDraft,validateWorldRelationPairs} from './world-relation-pair';
+import type {WorldRelationPairCommand,WorldRelationPairDraft} from '../world-relation-pair-contracts';
 import {readNpcCast,readNpcDossier} from './npc-cast';
 import {previewSceneTime} from './time-plan';
 import {readAgenda} from './agenda';
@@ -197,7 +199,7 @@ export class CampaignStore {
       installDungeonKey(this.db);
       installGraph(this.db);
       installTriggers(this.db);
-      installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);
+      installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
       this.db.pragma('user_version=44');
 
@@ -453,7 +455,7 @@ export class CampaignStore {
     validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
     validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);validateNpcRecovery(db);
     validateItemsBackup(db);
-    validateWorldBackup(db);
+    validateWorldBackup(db);validateWorldRelationPairs(db);
     validateCities(db);
     validatePlayer(db);
     validateDungeonPlay(db);
@@ -817,7 +819,15 @@ export class CampaignStore {
     });
     return manualPlan({ version: 1, id: row.id, revision: row.revision, name: row.name, scenes });
   }
-  changePreparation(command: PreparationCommand): Preparation {
+  changePreparation(command: PreparationCommand): Preparation {this.commitPreparation(command);return this.preparation(command.token);}
+  changePreparationContent(command:PreparationCommand){if(command.change.kind!=='note'&&command.change.kind!=='location')throw new Error('Gezielte Änderung benötigt Notiz oder Ort.');this.commitPreparation(command);const cam=this.guard(command.token);return deskContent(this.db,cam,command.change.kind==='note'?{kind:'note',id:command.change.note.id}:{kind:'location',id:command.change.document.id});}
+  reconcilePreparationContent(command:PreparationCommand,token:string){const cam=this.guard(token,command.campaignId),target=preparationTarget(command.change),r=this.db.prepare('SELECT * FROM receipt WHERE command_id=?').get(command.commandId),table=target.kind==='note'?'world_note':target.kind==='location'?'location':'plan',current=this.db.prepare(`SELECT revision FROM ${table} WHERE campaign_id=? AND id=?`).get(cam,target.id);if(r){if(r.campaign_id!==cam||!matchesReceipt(r,command))throw new Error('Änderungskennung anders verwendet.');return{outcome:'applied' as const,targetChanged:current?.revision!==r.revision};}const changed=(current?.revision??null)!==command.change.expectedRevision;return{outcome:changed?'conflict' as const:'not-applied' as const,targetChanged:changed};}
+  executeWorldRelationPair(command:WorldRelationPairCommand){return executeWorldRelationPair(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
+  reconcileWorldRelationPair(command:WorldRelationPairCommand,token:string){return reconcileWorldRelationPair(this.db,command,this.guard(token,command.campaignId));}
+  worldRelationPairDraft(token:string,sourceId:string){return readWorldRelationPairDraft(this.db,this.guard(token),sourceId);}
+  keepWorldRelationPairDraft(token:string,draft:WorldRelationPairDraft,expected:string|null){keepWorldRelationPairDraft(this.db,this.guard(token,draft.command.campaignId),draft,expected);}
+  discardWorldRelationPairDraft(token:string,sourceId:string,writeId:string){discardWorldRelationPairDraft(this.db,this.guard(token),sourceId,writeId);}
+  private commitPreparation(command: PreparationCommand): void {
     if (typeof command.commandId !== 'string' || !command.commandId) throw new Error('Änderungskennung fehlt.');
     const change = validatePreparation(command.change), fingerprint = commandFingerprint(command);
     this.db.transaction(() => {
@@ -901,7 +911,6 @@ export class CampaignStore {
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
       if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);
     }).immediate();
-    return this.preparation(command.token);
   }
   selectPreparation(token: string, selection: PreparationSelection): void {
     this.db.transaction(() => {

@@ -108,6 +108,7 @@ test('campaign transfer remaps city resident and workplace references with their
  const f=fixture('city-people-transfer-source-'),targetRoot=mkdtempSync(join(tmpdir(),'city-people-transfer-target-')),target=new CampaignStore(join(targetRoot,'campaign.sqlite'),'test');
  try{
   f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],workerIds:[f.bert],households:[{id:'household-transfer',name:'Familie Fernweg',memberIds:[f.ada,f.bert]}],jobs:[{id:'job-transfer',name:'Bäcker',workerIds:[f.bert]}]}],remove:[],label:'Personen binden'}});
+  f.store.executeWorldRelationPair({commandId:'pair-transfer',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'add',sourceId:f.ada,targetId:f.bert,sourceRevision:1,targetRevision:1,forwardLabel:'beschützt',reverseLabel:'wird beschützt von'}});
   const snapshot=join(f.root,'campaign.snapshot.sqlite');await f.store.campaignSnapshot(f.workspace.token,snapshot);
   const imported=target.acceptCampaignSnapshot(snapshot,'Übernommene Stadt',{},'city-people-transfer'),opened=target.activate(imported.id),city=target.cities(opened.token).cities[0]!,view=target.city(opened.token,city.id),people=target.cities(opened.token).assignedPeople;
   const home=view.units.find(u=>u.name==='Wohnhaus')!;
@@ -119,6 +120,7 @@ test('campaign transfer remaps city resident and workplace references with their
   assert.deepEqual(new Set(home.households?.[0]?.memberIds),new Set(home.residentIds));
   assert.notEqual(home.jobs?.[0]?.id,'job-transfer');
   assert.deepEqual(home.jobs?.[0]?.workerIds,home.workerIds);
+  const notes=target.preparation(opened.token,'').notes.map(row=>row.note),ada=notes.find(note=>note.title==='Ada')!,bert=notes.find(note=>note.title==='Bert')!;assert.deepEqual(ada.relations,[{targetId:bert.id,label:'beschützt'}]);assert.deepEqual(bert.relations,[{targetId:ada.id,label:'wird beschützt von'}]);
  }finally{target.close();f.store.close();rmSync(targetRoot,{recursive:true,force:true});rmSync(f.root,{recursive:true,force:true});}
 });
 
