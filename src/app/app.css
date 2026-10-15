@@ -483,3 +483,5 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #desk-note-preview p{white-space:pre-wrap;overflow-wrap:anywhere;margin:.4rem 0 1rem}#desk-note-preview h4{margin:.8rem 0 .3rem}
 #desk-editing{margin:.8rem 0}
 .combat-hit{padding:.85rem;background:#eef4f8;border:1px solid var(--blue);margin-bottom:.8rem}.combat-hit h3{margin:0 0 .6rem}.combat-hit>p{font-size:.85rem}.combat-hit>.toolbar{margin:.5rem 0;flex-wrap:wrap}.combat-hit>.toolbar select{flex:1;min-width:120px}.combat-hit-part{padding:.5rem 0;border-top:1px solid var(--line)}.combat-hit-part .check-label{margin:0 0 .3rem;font-size:.85rem}.combat-hit-part .toolbar{gap:.35rem;flex-wrap:wrap}.combat-hit-part input[type=number]{width:80px}.combat-hit-part select{width:105px}.combat-hit-part small{min-width:70px}.combat-hit-part button{padding:.45rem}.combat-hit>.check-label{margin:.5rem 0}#combat-hit-effect{scroll-margin-top:var(--workspace-content-offset)}
+
+#live :is(input,textarea,select,button,[tabindex],h2,h3,#combat-hit-effect){scroll-margin-top:calc(var(--workspace-content-offset) + var(--live-sticky-height))}

@@ -120,6 +120,7 @@ export function activateLive(workspace: Workspace) {
   activateRuleReferences(workspace);
   get<HTMLInputElement>('live-knowledge-search').value='';
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
+  get('live-focus-bar').hidden=true;
   placePartyEditor(false);get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
   newCharacterBasis=null;get('character-result').textContent='';
   adoption = null; moveBasis = null;preparedNotesSceneId=null;preparedNoteIds.clear();
@@ -145,7 +146,7 @@ export async function openLive(planId?: string, visitId?: string) {
     sceneDraft = live.scene ? structuredClone(live.scene) : null;
     render();
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
-  } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-empty').hidden = false; tell((error as Error).message, true); }
+  } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true); }
 }
 export async function openPlannedVisitReview(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
  const owner=context,token=owner?.token,current=()=>stillCurrent()&&context===owner&&context?.token===token;if(!token||!current())return false;
@@ -451,6 +452,7 @@ function renderScene() {
   if(data&&!data.scene&&!data.roster.length)get<HTMLDetailsElement>('live-party-details').open=true;
   placePartyEditor(resumed&&!!sceneDraft);
   if(preparedNotesSceneId!==data?.scene?.id){preparedNotesSceneId=data?.scene?.id??null;preparedNoteIds.clear();}
+  get('live-focus-bar').hidden = !resumed || !sceneDraft;
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
   get<HTMLButtonElement>('running-player-location').disabled=!sceneDraft?.locationId;

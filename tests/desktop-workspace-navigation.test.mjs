@@ -30,7 +30,7 @@ test('Escape closes a tool menu but leaves a modal dialog in control',t=>{
 
 test('one existing group selector stays outside profile details and measured sticky surfaces follow wrapping and visibility',t=>{
  const x=setup(t),bar=x.el('live-focus-bar'),selector=x.el('scene-focus'),move=x.el('group-move'),style=x.document.documentElement.style;
- assert.equal(x.document.querySelectorAll('#scene-focus').length,1);assert.equal(selector.parentElement,bar);assert.equal(move.parentElement,bar);assert.equal(bar.closest('details'),null);assert.equal(bar.parentElement.id,'running-editor');
+ assert.equal(x.document.querySelectorAll('#scene-focus').length,1);assert.equal(selector.parentElement,bar);assert.equal(move.parentElement,bar);assert.equal(bar.closest('details'),null);assert.equal(bar.parentElement.id,'live');assert.equal(x.el('combat-panel').parentElement,bar.parentElement);
  let changes=0;selector.onchange=()=>changes++;selector.dispatchEvent(new x.window.Event('change'));assert.equal(changes,1);
  assert.deepEqual(x.observations.map(e=>e.id||e.tagName),['HEADER','workspace-navigation','live-focus-bar','music-mini']);assert.equal(style.getPropertyValue('--workspace-nav-height'),'0px');assert.equal(style.getPropertyValue('--live-focus-height'),'54px');
  x.heights.header=110;x.heights.focus=100;x.media.matches=true;x.media.change();assert.equal(style.getPropertyValue('--workspace-header-height'),'110px');assert.equal(style.getPropertyValue('--workspace-nav-height'),'44px');assert.equal(style.getPropertyValue('--live-focus-height'),'100px');
