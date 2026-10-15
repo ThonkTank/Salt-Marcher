@@ -22,11 +22,11 @@ async function fixture(t,kind){
  const result=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};
  window.campaign={creature:async id=>({ok:true,value:{id,name:id,xp:25,challengeRating:'1/8'}}),executeGeneration:async c=>result(()=>store.executeGeneration(c))};
  for(const method of ['encounterTables','lootTables','generatorRegistry','generationRuns','generationSources','npcs'])window.campaign[method]=async(...args)=>result(()=>store[method](...args));
- delete require.cache[require.resolve('../.build/table-weights-ui.cjs')];const ui=require('../.build/table-weights-ui.cjs'),messages=[];ui.initGeneration((...args)=>messages.push(args),{plan:async()=>null,creature:()=>null,filters:()=>({}),info:()=>null,accept:async()=>{}});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}ui.activateGeneration(w);await ui.refreshGeneration();
+ delete require.cache[require.resolve('../.build/table-weights-ui.cjs')];const ui=require('../.build/table-weights-ui.cjs'),messages=[];let selectedCreature=null;ui.initGeneration((...args)=>messages.push(args),{plan:async()=>null,creature:()=>selectedCreature,filters:()=>({}),info:()=>null,accept:async()=>{}});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}ui.activateGeneration(w);await ui.refreshGeneration();
  const el=id=>document.getElementById(id),prefix=kind==='encounter'?'table':'loot',read=()=>store[kind==='encounter'?'encounterTables':'lootTables'](w.token,true).find(t=>t.id===table.id);
  el(kind==='encounter'?'encounter-table-list':'loot-table-list').value=table.id;el(kind==='encounter'?'encounter-table-open':'loot-table-open').click();await settle();
  const entries=el(prefix+'-entries'),inputs=kind==='encounter'?[...entries.querySelectorAll('input')]:[...entries.querySelectorAll('label')].filter(l=>l.firstChild.textContent==='Gewicht').map(l=>l.querySelector('input'));
- return {el,inputs,messages,read,shares:()=>kind==='encounter'?[...entries.querySelectorAll('.table-share')].map(n=>n.textContent):[...entries.querySelectorAll('legend')].map(n=>n.textContent.split(' · ')[1]),edit:(i,text)=>{inputs[i].value=text;inputs[i].oninput();},save:async()=>{el(prefix+'-form').onsubmit({preventDefault(){}});await settle();}};
+ return {el,inputs,messages,read,select:id=>{selectedCreature={id,name:id,xp:25,challengeRating:'1/8'};ui.generationCreature(selectedCreature);},shares:()=>kind==='encounter'?[...entries.querySelectorAll('.table-share')].map(n=>n.textContent):[...entries.querySelectorAll('legend')].map(n=>n.textContent.split(' · ')[1]),edit:(i,text)=>{inputs[i].value=text;inputs[i].oninput();},save:async()=>{el(prefix+'-form').onsubmit({preventDefault(){}});await settle();}};
 }
 for(const kind of ['encounter','loot'])test(kind+' shares follow every raw edit, invalidate together and recover without replacing inputs',async t=>{
  const x=await fixture(t,kind);assert.deepEqual(x.shares(),['50,00 %','50,00 %']);
@@ -34,4 +34,19 @@ for(const kind of ['encounter','loot'])test(kind+' shares follow every raw edit,
  x.edit(0,'-');assert.deepEqual(x.shares(),['Ungültig','Ungültig']);assert.equal(x.inputs[0].value,'-');assert.deepEqual(x.read().entries.map(e=>e.weight),['1','1']);
  x.edit(0,'0,5');assert.deepEqual(x.shares(),['33,33 %','66,67 %']);assert.equal(x.inputs[0].isConnected,true);assert.equal(x.inputs[0].value,'0,5');
  await x.save();assert.deepEqual(x.read().entries.map(e=>e.weight),['0.5','1']);assert.deepEqual(x.messages.filter(m=>m[1]),[]);
+});
+
+test('table draft keeps core edits first, blocks unusable saves and returns to the saved selection',async t=>{
+ const x=await fixture(t,'encounter');
+ assert.equal(x.el('table-options').open,false);assert.equal(x.el('table-save').disabled,false);
+ const order=[...x.el('table-form').children].map(n=>n.id);assert.ok(order.indexOf('table-entries')<order.indexOf('table-options'));
+ x.edit(0,'-');assert.equal(x.el('table-save').disabled,true);await x.save();assert.deepEqual(x.read().entries.map(e=>e.weight),['1','1']);
+ x.edit(0,'0');x.edit(1,'0');assert.equal(x.el('table-save').disabled,true);assert.match(x.el('table-save-status').textContent,/größer als 0/);
+ x.edit(0,'3');assert.equal(x.el('table-save').disabled,false);await x.save();assert.equal(x.el('encounter-table-list').value,x.read().id);assert.equal(x.el('encounter-table-open').disabled,false);
+ x.el('encounter-table-new').click();await settle();assert.equal(x.el('table-save').disabled,true);assert.equal(x.el('table-scope').value,'campaign');assert.equal(x.el('table-add-creature').disabled,true);
+ x.el('table-name').value='Waldsaum';x.el('table-name').oninput();assert.equal(x.el('table-save').disabled,true);assert.match(x.el('table-save-status').textContent,/Kreatur/);
+ x.select('goblin');assert.equal(x.el('table-add-creature').disabled,false);x.el('table-add-creature').click();assert.equal(x.el('table-save').disabled,false);assert.equal(x.el('table-add-creature').disabled,true);assert.match(x.el('table-add-creature').textContent,/Bereits/);
+ x.el('table-entries').querySelector('button').click();assert.equal(x.el('table-save').disabled,true);assert.equal(x.el('table-add-creature').disabled,false);
+ await x.save();assert.equal(x.el('table-manager').open,true);
+ x.el('table-add-creature').click();x.el('table-name').value='  ';x.el('table-name').oninput();assert.equal(x.el('table-save').disabled,true);await x.save();assert.equal(x.el('table-manager').open,true);
 });
