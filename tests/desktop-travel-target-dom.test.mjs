@@ -91,3 +91,23 @@ test('a fresh travel console derives party pace and the preview explains its spe
 test('a paused journey does not tell the GM to pause it first',async()=>{
  const x=await travelFixture();try{const p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});let j=x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey',preview:p}}).scene.journey;x.store.executeWorld({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action:{kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}});await x.ui.openWorld();assert.match(x.document.getElementById('world-journey-status').textContent,/Pausiert/);assert.doesNotMatch(x.document.getElementById('world-journey-refresh').textContent,/zuerst pausieren/);assert.match(x.document.getElementById('world-journey-refresh').textContent,/Restweg.*neu bewerten/);}finally{x.cleanup();}
 });
+
+test('camera zoom and reset preserve an off-centre unsaved hex, its level and travel target without writes',async()=>{
+ const x=await fixture();try{
+  x.document.querySelector('#world-map polygon[data-q="3"][data-r="0"]').dispatchEvent(new x.window.Event('click'));await until(()=>x.document.getElementById('travel-q').value==='3');
+  x.enter('hex-label','Alte Fähre');const root=x.document.getElementById('world-map'),initial=root.getAttribute('viewBox'),writes=x.writes;
+  x.document.getElementById('world-zoom-out').onclick();assert.notEqual(root.getAttribute('viewBox'),initial);assert.equal(x.writes,writes);assert.equal(x.document.getElementById('hex-label').value,'Alte Fähre');assert.match(x.document.getElementById('hex-selected').textContent,/Hex 3,0.*4.83/);assert.equal(x.document.getElementById('travel-q').value,'3');
+  x.document.getElementById('world-zoom-in').onclick();assert.equal(root.getAttribute('viewBox'),initial);
+  const wheel=new x.window.Event('wheel',{cancelable:true});Object.assign(wheel,{deltaY:100});root.dispatchEvent(wheel);assert.equal(wheel.defaultPrevented,true);assert.notEqual(root.getAttribute('viewBox'),initial);
+  x.document.getElementById('world-view-reset').onclick();assert.equal(root.getAttribute('viewBox'),initial);assert.equal(x.document.getElementById('hex-label').value,'Alte Fähre');assert.equal(x.writes,writes);
+  for(let i=0;i<30;i++)x.document.getElementById('world-zoom-out').onclick();assert.equal(x.document.getElementById('world-zoom-out').disabled,true);assert.ok(root.querySelectorAll('polygon').length<=631);
+  for(let i=0;i<30;i++)x.document.getElementById('world-zoom-in').onclick();assert.equal(x.document.getElementById('world-zoom-in').disabled,true);
+  x.document.getElementById('hex-form').onsubmit({preventDefault(){}});await until(()=>x.store.world(x.w.token).maps[0].cells.some(c=>c.q===3&&c.r===0&&c.level===0&&c.label==='Alte Fähre'));
+ }finally{x.cleanup();}
+});
+test('explicit edit raster saves the local cell before changing its separate authored layer',async()=>{
+ const x=await fixture();try{x.enter('hex-label','Lokaler Ort');await x.select('world-edit-level','1');await until(()=>/9.66/.test(x.document.getElementById('hex-selected').textContent));assert.equal(x.store.world(x.w.token).maps[0].cells.find(c=>c.level===0).label,'Lokaler Ort');assert.equal(x.document.getElementById('hex-label').value,'');await x.select('world-edit-level','0');await until(()=>x.document.getElementById('hex-label').value==='Lokaler Ort');}finally{x.cleanup();}
+});
+test('arrows select one hex without also panning; Alt arrows pan without changing the selected hex',async()=>{
+ const x=await fixture();try{const root=x.document.getElementById('world-map'),initial=root.getAttribute('viewBox');const key=altKey=>{const e=new x.window.Event('keydown',{cancelable:true});Object.assign(e,{key:'ArrowRight',altKey});root.dispatchEvent(e);};key(false);await until(()=>x.document.getElementById('travel-q').value==='1');assert.equal(root.getAttribute('viewBox'),initial);key(true);assert.notEqual(root.getAttribute('viewBox'),initial);assert.equal(x.document.getElementById('travel-q').value,'1');assert.match(x.document.getElementById('hex-selected').textContent,/Hex 1,0/);}finally{x.cleanup();}
+});

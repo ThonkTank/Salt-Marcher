@@ -3,10 +3,14 @@
 Original: [Hex Feature Requirements](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex.md).
 
 Ab0.125 verschiebt direktes Ziehen die vorhandene Hexkamera. Das bestehende
-Mausradzoom bleibt erhalten. Gelände malen zeichnet mit dem gewählten Gelände,
+Mausradzoom ändert ausschließlich die Ansichtsgröße (50–300 Prozent), ebenso
+Näher/Weiter. Ansicht zurücksetzen zeigt den Ursprung bei 100 Prozent, ohne
+Auswahl, offene Hexeingaben, Route oder Karteninhalt zu ändern. Das separate
+Bearbeitungsraster liegt unter Karteneinstellungen und Austausch; dessen Wechsel
+sichert offene Eingaben und wählt ausdrücklich eine andere Autorenebene. Gelände malen zeichnet mit dem gewählten Gelände,
 Radius und Maßstab; ausgelassene Hexes zwischen Pointerpositionen werden verbunden.
 Alt oder die mittlere Taste verschiebt auch bei aktivem Pinsel. Die Kartenfläche
-unterstützt Pfeiltasten und lokale Strg+Z/Strg+Umschalt+Z-Tastaturaktionen.
+unterstützt Pfeiltasten zur Hexauswahl, Alt+Pfeiltasten zum Verschieben und lokale Strg+Z/Strg+Umschalt+Z-Tastaturaktionen.
 
 Ein Strich ändert ausschließlich terrain in denselben AtlasMap-Zellen. Ende des
 Strichs bzw. ein notwendiger Flush verwendet die bestehende revisionierte
