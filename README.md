@@ -871,3 +871,19 @@ Die Ortsmappe legt benannte NSCs, Aufträge, Gerüchte und Shops für den ausgew
 Jeder Besuch der angedockten GM-Mappe besitzt nun eine offene Ablaufleiste für seine Eröffnung, Hinweise, Quellen, Begegnungen, Statblocks und Belohnungen. Auch lange Besuche springen damit ohne Scrollsuche zum gewünschten Abschnitt; die Ablaufleiste bleibt beim Lesen oben erreichbar.
 
 Jeder Mappenblock kann außerdem als Chronikmoment vorgemerkt werden. Die Mappe öffnet dafür die vorhandene Momentaufnahme neben sich, übernimmt Kategorie, Überschrift und einen begrenzten Textauszug und bewahrt eine bereits begonnene Eingabe. Erst der GM ergänzt den tatsächlichen Ausgang und speichert ausdrücklich. Dadurch entstehen weder automatisch Chronikeinträge noch Quests oder Gerüchte, und vollständige Statblocks werden nicht unbemerkt in die Chronik kopiert.
+
+
+### 0.91 – Vorhandenes Ortsmaterial wiederverwenden
+
+Die Ortsmappe durchsucht vorhandene NSCs, Aufträge/Gerüchte und Shops der Kampagne in 40er-Seiten und zeigt aktuelle Orts- bzw. Besitzerbindungen. Treffer öffnen ihre bisherigen Fachbereiche. „Ortsbindung bearbeiten“ belegt dort den gewählten Ort vor; die Bestätigung erfolgt im bestehenden Profil-, Narrativ- oder Shopeditor. Ein NSC bleibt dieselbe Figur, ein Auftrag behält Status und Belohnung, ein Shop Bestand und Historie. Der Rückweg zur ursprünglichen Ortsmappe steht jetzt auch für bestehendes Material und Fraktionsquellen bereit. Keine Schemaänderung oder zusätzliche Schreibgrenze.
+
+### 0.92 – Aus dem Chronikmoment in die nächste Vorbereitung
+
+„Moment festhalten“ führt eine Konsequenz jetzt auch direkt in Kalender oder Spielabendplan. „Als Ortsfrist vorbereiten“ öffnet einen Agendaentwurf mit Titel, Notiz und aktuellem Ort; Zeitpunkt und Dauer bleiben bis zur ausdrücklichen Bestätigung offen. „Als nächsten Besuch vorbereiten“ hängt Titel, Notiz und Ort an den laufenden oder ausgewählten Spielabendplan und öffnet den neuen Besuch. Fehlt noch ein Plan, wird „Nächster Spielabend“ angelegt.
+
+Der Chronikmoment wird zuerst über den bestehenden Liveauftrag bestätigt. Quests und Gerüchte behalten ihren bisherigen Besitzer und ihre direkte Folgespur. Fristen verwenden den vorhandenen Agendaeditor, Besuche den vorhandenen Planeditor; es gibt keine neue Datenhaltung und keine automatische Änderung von Gruppenzeit, Weltstand oder Spieleranzeige.
+
+
+### 0.94 – Figurengruppen aus der Ortsmappe führen
+
+Figurengruppen lassen sich kampagnenweit suchen, am gewählten Ort neu anlegen und für einen Ortswechsel im bisherigen Gruppenbereich öffnen. Die lesende Gruppenübersicht zeigt aktuelle Mitglieder, HP und Einzelstandorte in 25er-Schritten sowie direkte Weltprofil-Einstiege. Auch Gruppen ohne gemeinsamen Ort sind auffindbar. „Gruppenangaben übernehmen“ bestätigt den vorbereiteten Zielort für alle enthaltenen NSCs; neue leere Gruppen starten am gewählten Ort und lassen sich im Gruppenbereich mit Kreaturen füllen. Bestehende Identitäten, HP, Texte und Vorlagen bleiben beim vorhandenen Eigentümer. Keine neue Schreibgrenze oder Schemaänderung.

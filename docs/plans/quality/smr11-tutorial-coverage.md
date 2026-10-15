@@ -8,6 +8,8 @@ Die Desktop-App öffnet bei der ersten Installation und für jede neue Anwendung
 
 Der Dialog ist scrollbar, setzt den Tastaturfokus auf seine Überschrift und gibt ihn beim Schließen an den vorherigen Auslöser zurück. Ein nicht speicherbarer Status blockiert das Produkt nicht und wird sichtbar gemeldet.
 
+Die konsolidierte Lehrrevision `desktop-tutorial-v75` enthält die integrierten Ortsmaterial-, Haushalts-, Berufs- und Gruppenlektionen. Der Revisionswechsel erhält abgeschlossene frühere Läufe und startet den ergänzten optionalen Lauf.
+
 ## Mindestabdeckung der sichtbaren Produktoberfläche
 
 Eine ausführbare Invariante bindet die primären Arbeitsbereiche und die ausgewählten statischen Kopfzeilenfähigkeiten aus `index.html` an mindestens eine vorhandene Lektion:
@@ -106,13 +108,13 @@ Das erste Unterfähigkeitsinventar bindet zusätzlich konkrete Einstiege statt n
 | Dungeon-Binder | Suche, Dungeon-/Geschossfilter, GM-Key, öffentliche Vorschau und Navigation in bestehende Abläufe | Raum-Keys beim Leiten lesen |
 | Stadtstruktur | ortsgebundene Anlage, metrische Straßen/Mauern/Flächen/Häuser, offener Zeichenzug und Stadt-History | Eine Stadt aus metrischen Strukturen aufbauen |
 | Geschützte Stadtregeneration | Viertel und Erzeugungsvorgaben, revisionsgebundene Vorschau, Abbruch und gemeinsame Übernahme | Ein Viertel mit geschützter Vorschau bebauen |
-| Stadtelemente, World-NPC-Bindungen und Ausgabe | Autosave/Reload, Hauspose und Schutz, gefilterte World-NPC-Suche, je ein Wohnort/Arbeitsplatz mit atomarem Umzug, leere Innenraumhülle, abhängiges Löschen sowie SVG-/Datenausgabe | Häuser, Bewohner und Arbeitsplätze binden |
+| Stadtelemente, World-NPC-/Lebensbindungen und Ausgabe | Autosave/Reload, Hauspose und Schutz, gefilterte World-NPC-Suche, je ein Wohnort/Arbeitsplatz, benannte Haushalte und Berufe mit atomarem Umzug/Auflösen, leere Innenraumhülle, abhängiges Löschen sowie SVG-/Datenausgabe | Häuser, Haushalte und Berufe binden |
 
 ## Verbleibende Abnahme
 
 Die Hauptflächen- und erste Unterfähigkeitsinvariante beweisen noch nicht, dass jede einzelne Capability fachlich verständlich erklärt wird. Das Inventar wird arbeitsbereichsweise fortgeführt; jede weitere Gruppe wird einer konkreten Lektion oder einer begründeten gemeinsamen Lektion zugeordnet. Neue Hauptoberflächen sowie die oben inventarisierten Einstiege dürfen die Invariante nicht ohne vorhandene Lektion passieren.
 Dynamisch erzeugte Kopfzeilencontrols wie Questjournal und Schnellsuche sind durch die HTML-Invariante noch nicht erfasst; ihre vorhandenen Lektionen und ihre tatsächliche Erzeugung müssen zusätzlich gemeinsam geprüft werden.
 
-Die Stadtzuordnung belegt den sichtbaren räumlichen Teilstand und den ersten CITY-06-Schnitt: vorhandene World-NPC-Identitäten lassen sich als Bewohner und Beschäftigte an Häuser binden; Position und Fraktion bleiben World-Fakten. Haushalte, Berufsobjekte, Beziehungen/Familie, städtische Fraktionsbearbeitung, Demografie, Tagespläne, Sammeländerungen und gemeinsame Campaignzeit besitzen noch keine ausführbare Stadt-Capability. Die drei Stadtlektionen dürfen nicht als CITY-06–09- oder vollständige Produktabnahme gelesen werden.
+Die Stadtzuordnung belegt den sichtbaren räumlichen Teilstand und drei CITY-06-Schnitte: vorhandene World-NPC-Identitäten lassen sich als Bewohner und Beschäftigte an Häuser binden sowie in benannten Haushalten und Berufen gruppieren; Position, Fraktion, Autonomy und Zeit bleiben bei ihren vorhandenen Ownern. Beziehungen/Familie, städtische Fraktionsbearbeitung, Demografie, Tagespläne, Sammeländerungen und gemeinsame Campaignzeit besitzen noch keine ausführbare Stadt-Capability. Die drei Stadtlektionen dürfen nicht als CITY-06–09- oder vollständige Produktabnahme gelesen werden.
 
 Die DOM-/Storebelege ersetzen keine native Bedienabnahme. Offen bleiben ein echter Erstinstallations- und Update-Lauf im gepackten Desktopprodukt, vollständige Tastaturbedienung einschließlich Escape und Fokusrückgabe, 200-%-Darstellung bei üblicher Laptopauflösung, Screenreader-Reihenfolge, Kontrast sowie die Prüfung, dass der lange Dialog schnelle Arbeitsabläufe nicht behindert.

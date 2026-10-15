@@ -33,6 +33,36 @@ Rollback bindend. Vor einer zukünftigen Fälligkeit blockiert allein der fehlen
 Owner keine unabhängige Zeit. Shopreads und Handel geben den Fehler weiterhin
 aus; beschädigte Originaldaten werden nicht neu gespeichert oder verschwiegen.
 
+Jede Bestandszeile besitzt ihre eigene nächste Fälligkeit. Beim Nachholen
+mehrerer Perioden berechnet der feste Regelweg die Zahl ganzzahlig und schreibt
+pro betroffener Zeile einen erklärenden Verlaufseintrag mit Intervallzahl und
+erster und letzter bestätigter Fälligkeit sowie den tatsächlich verwendeten
+Regelparametern (Modus, Menge, Intervall). Die sichtbare Beschreibung nennt
+Mengen vor/nach der Regel und die Zahl verarbeiteter Fälligkeiten. Spätere
+Regeländerungen verändern diese Fakten nicht. Ältere Einträge ohne die
+Zusatzfakten bleiben lesbar; ihre ursprüngliche Regel wird nicht aus dem
+heutigen Shopzustand rekonstruiert. Eine nachziehende Scene und ein erneut gelesenes
+Receipt wenden diese Perioden nicht nochmals an. Explizite manuelle Korrekturen
+bleiben erhalten; nicht von Regeln verwaltete Zeilen bleiben unverändert. Die
+neue Mehrzeilenprobe koppelt `add`, `fill`, manuelle Zeilen, zwei Scenezeiten,
+Korrektur, Receiptreplay und Fresh am tatsächlichen Store.
+
+Vor `saveShop` gilt derselbe Strukturvertrag wie beim anschließenden Read und
+Backup. Ein Zeitauftrag darf keine bestätigte, anschließend unlesbare Regel
+hinterlassen. Beispiel: Die höchste unterstützte 30-stellige Clockzeit und ein
+Zwei-Millisekunden-Intervall würden eine 31-stellige nächste Fälligkeit erzeugen.
+Der gesamte Abschluss wird in diesem Fall abgelehnt: Scenezeit, bereits
+berechnete Auffüllungen anderer Zeilen, Verlauf und Receipt bleiben unverändert.
+Die gespeicherte Regel wird weder gekappt noch automatisch deaktiviert. Das
+ändert kein Format und rekonstruiert keine bereits beschädigten Altbestände;
+ein solcher Altfall benötigt die ursprüngliche gültige Quelle bzw. Sicherung.
+
+Ein öffentlicher kausaler Clock-/Reiseundo ist im untersuchten Desktopvertrag
+noch nicht angeschlossen. Zeichnungs- und Stadthistory beweisen keinen solchen
+Zeitundo. Rückdatierung und Rücknahme dürfen insbesondere keine bestätigten
+Handels-/Auffüllfakten anderer Scenes löschen. Dieser Teil des Gesamtauftrags
+bleibt mit den gemeinsamen Clock-/Worldregeln zu liefern.
+
 Bei Shop-/Ownertrash wird der Bestand während der Sperre nicht aufgefüllt.
 Der bisherige Code lässt die alte Fälligkeit bestehen: Ein späterer aktiver
 Clockstep kann diese Perioden nachholen. Diese Feststellung ist keine bestätigte
@@ -92,3 +122,10 @@ Eine fällige automatische Regel bleibt bei Ownerfehler atomar gesperrt; eine
 zukünftige Regel bindet den Owner erst bei Fälligkeit. Ownertrash, Restore und
 Neuzuordnung erhalten Shopidentität, Wortlaut, Bestand und Verlauf. Die Fixture
 weist keine native Warnung, Trashzeitpolitik oder gewichtete Regeln nach.
+
+`tests/desktop-shop-restock-boundary.test.mjs` ergänzt die bestehenden Ownerfälle:
+getrennte Cursor und manuelle Korrektur über divergierende Scenes und Fresh,
+Rollback einer späteren überlaufenden Zeile sowie einen gültigen Clockzielwert,
+dessen berechnete nächste Shopfälligkeit nicht mehr lesbar darstellbar wäre.
+Diese Storebelege qualifizieren weder die noch offene Trashzeitpolitik noch kausalen
+Zeitundo, Kalender-/Zufallsregeln oder die native Zeitsprung-/Recoverybedienung.
