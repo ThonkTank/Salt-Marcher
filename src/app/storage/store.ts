@@ -678,7 +678,7 @@ export class CampaignStore {
   playerImageFile(id:string){if(!this.active)throw new Error('Keine Kampagne.');const a=playerAssets(this.db,this.active.campaignId).find(a=>a.id===id);if(!a)throw new Error('Bild fehlt.');return dirname(this.filename)+'/player-images/'+a.sha256+a.extension;}
   cities(token:string){return cityOverview(this.db,this.guard(token));}
   city(token:string,id:string){return readCity(this.db,this.guard(token),id);}
-  cityActivities(token:string,q:import('../city-activity-contracts').CityActivityQuery){const cam=this.guard(token);return this.db.transaction(()=>readCityActivities(this.db,cam,q))();}
+  cityActivities(token:string,q:import('../city-activity-contracts').CityActivityQuery):import('../city-activity-contracts').CityActivityPage{const cam=this.guard(token);return this.db.transaction(()=>readCityActivities(this.db,cam,q))();}
   cityBuildings(token:string,query:import('../city-contracts').CityBuildingQuery){const c=this.guard(token);return this.db.transaction(()=>readCityBuildingChoices(this.db,c,query))();}
   executeCity(command:CityCommand){return executeCity(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
   campaignOverview(){return this.db.transaction(()=>campaignOverview(this.db))();}
