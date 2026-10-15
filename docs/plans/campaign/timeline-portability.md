@@ -1,6 +1,6 @@
 # Timelineersatz und unabhängige Kampagnenkopie
 
-Stand: 14.10.2026. Der Fachumfang folgt [Spielabendplanung](manual-session-planner.md)
+Stand: 15.10.2026. Der Fachumfang folgt [Spielabendplanung](manual-session-planner.md)
 und [Campaign/Data](../../../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md).
 Die gepinnten Program Capabilities (Revision
 `9de85c1a26f526acbc1af332ac5962e185c0aab2`, L57–70 und L648–666)
@@ -50,6 +50,46 @@ keine Pflicht zur erneuten Anlage akzeptierter Worldinhalte.
 Diese Prüfungen enthalten noch keine zuvor beschädigten NPC-HP, Beuteallokation
 oder spätere Ledgerkorrektur, keine vollständige Kopie dieser kombinierten
 Worldzustände und keine native Bedien-/Crash-/Undoabnahme.
+
+## Chronikmoment und Übergabe als Besuch vorbereiten
+
+Der Desktopanschluss `preparation.ts::prepareNextVisit` ergänzt einen konkreten
+Plan um einen neuen Besuch. Chronikmoment und Spielabendübergabe liefern Titel,
+Notizen und optional den Ort; eine Übergabe kann vor einem bestimmten bestehenden
+Besuch eingefügt werden. Die Chronik bleibt ein historischer Fakt. Das Anlegen des
+Besuchs übernimmt weder eine Running Scene noch beginnt es einen Spielabend.
+
+Der übergebene Plan und die angegebene Einfügeposition müssen weiterhin
+existieren. Ein fehlendes Ziel erzeugt eine sichtbare Meldung ohne Schreibcommand;
+es wird kein anderer Plan gewählt und keine veraltete Position zum Anhängen
+umgedeutet. Ein bereits angezeigter Zielplan wird bei neuer Revision erneut
+geöffnet, statt den bisherigen Entwurf still auf die neue Basis zu setzen. Ohne
+expliziten Plan gilt der beim Aufruf ausgewählte Plan; nur ohne vorhandenen
+Zielplan legt der bestehende Anschluss einen neuen Spielabendplan an.
+
+Workspaceidentität, Aktivierungszyklus, Auswahl und Eingabestand werden über die
+asynchronen Grenzen geprüft. Neue Eingabe während des Zielreads verhindert die
+Veröffentlichung. Eingabe während einer bereits gesendeten Speicherung bleibt im
+ursprünglichen Editor erhalten: Der gemeinsame Writer verbindet sie mit dem
+bestätigten Plan, und die Besuchsübergabe verwirft diesen Draft nicht mehr. Eine
+Antwort aus einer früheren Aktivierung desselben Workspace steuert den neuen
+Editor nicht um. Ein Fehler wird über den vorhandenen Vorbereitungsstatus und
+Receiptweg behandelt; kein automatischer Neuversuch erzeugt einen zweiten Besuch.
+
+Die Übergabe erhält als Notiz eine erklärende Überschrift und danach den
+vollständigen Originaltext, einschließlich CRLF und Randwhitespace. Die Ableitung
+des kurzen Besuchstitels bleibt davon getrennt. Der Plantext wird nicht mehr
+stillschweigend auf 10000 Zeichen gekürzt. Bestehende Pläne benötigen keine
+Migration oder nachträgliche Textänderung.
+
+`tests/desktop-visit-handoff.test.mjs` prüft den tatsächlichen Preparationcontroller
+mit CampaignStore: fehlendes Ziel, veraltete Position/Revision, verzögerte Reads
+und Bestätigungen, neue Eingabe, erneute Aktivierung und positiven Insert mit
+unveränderten bestehenden Besuchen sowie neuem Storehandle. Die Textprobe bindet
+die abgeleitete Übergabenotiz an ihre Originalbytes. Diese Belege ersetzen keinen
+frischen nativen App-Prozess, keine Tastatur-/IME-Abnahme und keine vollständige
+Recoveryqualifikation. Insbesondere Neuplananlage mit verlorenem Reply und
+Übernahme aus langen nativen Textfeldern bleiben gezielte Folgeabnahmen.
 
 ## Nächste ausführbare Abschlüsse
 
