@@ -12,6 +12,20 @@ Text, Horizont und Ort und liefert höchstens 40 Einträge plus Fortsetzung mit
 Zeit-/Kalenderbasis. Die Ergebnisgröße ist begrenzt; die Suche scannt derzeit
 alle bestehenden Kalenderereignisse. Ein kleines Ergebnis ist kein Lastnachweis.
 
+Die Ortsbeschränkung wird erst nach Prüfsumme und Datensatzidentität/-revision
+angewendet. Ein manipuliertes `locationId` darf eine beschädigte Frist nicht
+vor der Prüfung aus der Ortsagenda entfernen. Ohne gezielte Event-ID prüft der
+Reader deshalb alle Kalenderereignisse der Kampagne; bei einer beschädigten
+Definition liefert er einen Fehler statt einer vermeintlich vollständigen leeren
+Ortsliste. Das ist eine bewusst strenge Lesegrenze, keine Datenreparatur.
+Ortslabels prüfen ebenfalls die ID des Ortsdokuments gegen die
+Datensatzidentität. Die Ortsrevision liegt ausschließlich in den Tabellenmetadaten;
+das externe `.location`-Format erhält kein neues Revisionsfeld. Fehlende oder
+archivierte Orte bleiben bei allgemeinen
+Ereignislisten als nicht verfügbar erkennbar; direktes Öffnen ihrer Ortsagenda
+wird abgewiesen. Autoreninhalte und Ereignisdefinitionen werden beim Lesen
+nicht verändert. Die gezielten Storegegenproben stehen in `agenda-storage.test.ts`.
+
 `CampaignAgenda` zeigt Ereignisse und Fristen, bereitet neue Einträge relativ
 zur angezeigten Gruppenzeit oder als absolutes Fantasy-Datum vor und schreibt
 über den bestehenden Worldwriter. `AgendaBasis` bindet die Kalenderrevision
@@ -86,7 +100,28 @@ Die explizite Receiptklärung beendet die Sperre vor einer weiteren Vorschau;
 bei einem Lesefehler bleiben Eingaben und Ausgang offen. Der Dialog nutzt den
 bestehenden Livewriter und `recoverTimeWrite`, keinen zweiten Zeitwriter.
 
-Vierzehn Gegenproben in `time-plan-context.test.ts` prüfen unter anderem Öffnen vor
+Die Zeitsprungvorschau zeigt weiterhin höchstens 40 zukünftige Ereignisbeginne,
+zeitlich geordnet für den aktuellen Szenenort und globale Ereignisse. Sie zählt
+alle im Intervall `(aktuelle Zeit, Zielzeit]` enthaltenen Beginne mit ganzzahliger
+Arithmetik; auch sehr lange regelmäßige Folgen werden nicht vollständig
+expandiert. `TimePreview.eventCount` liefert die genaue Dezimalzahl als String,
+getrennt von den begrenzten Detailzeilen. Der Renderer nennt bei weiteren
+Beginnen „erste 40 von …“. Ältere Antworten ohne Count behalten einen expliziten
+Begrenzungshinweis. Die Vorschau
+beschreibt Beginne, keine automatisch ausgeführten Wirkungen und keine Liste
+aller zu diesem Zeitpunkt aktiven Ereignisse.
+
+Auch der Papierkorbfilter der Vorschau folgt auf die Quellenprüfung. Eine
+manipulierte `trashed`-Angabe mit ungültiger Prüfsumme darf ein Ereignis nicht
+stumm verschwinden lassen. Gültig archivierte Definitionen bleiben ausgeschlossen;
+der direkte Ereignisziel-Read lehnt sie weiterhin ab. Das Datenformat der
+Kampagne ändert sich nicht; Count und Detailprojektion werden bei jedem Read
+abgeleitet. `time-plan-storage.test.ts` prüft gemischte einmalige und periodische
+Beginne, Ortsrelevanz, einen Count oberhalb der sicheren JavaScript-Zahlgrenze
+und manipulierte Archivierung. Die Rendererprobe prüft Gesamtzahl und ältere
+Antworten. Das qualifiziert weder Worldfolgen noch die native Zeitbestätigung.
+
+Gezielte Gegenproben in `time-plan-context.test.ts` prüfen unter anderem Öffnen vor
 Flush, spätes positives/negatives Write, ältere finally-Blöcke, Recoveryfehler,
 abgelöste Eventaktionen, ungültige Rohdaten während Load und die erneute Bindung
 vor Dispatch. Der Label-/Filtertest und die bestehenden Agenda-/World-/Reise-

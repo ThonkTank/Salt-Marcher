@@ -494,6 +494,7 @@ export async function createNarrativeAtLocation(locationId:string,name:string,ki
  if(!await change({kind:'note',expectedRevision:null,note},false))throw new Error('Neue Notiz noch nicht bestätigt. Speicherstatus der Vorbereitung prüfen.');
  if(context?.token!==w.token)throw new Error('Notiz in früherer Kampagne gespeichert.');
  selectedNote=note.id;get<HTMLInputElement>('world-trash').checked=false;await renderNotes(locationId);
+ if(context!==w||context?.token!==w.token)throw new Error('Notiz in früherer Kampagne gespeichert.');
  if(!await flushNarrative())throw new Error('Notiz angelegt; offene Ortsbindung im narrativen Bereich abschließen.');
  const saved=unwrap(await window.campaign.narrative(w.token,note.id));if(context?.token!==w.token||saved.state.locationId!==locationId)throw new Error('Notiz angelegt; Ortsbindung im narrativen Bereich prüfen.');
  get('note-title').scrollIntoView({block:'center'});get('note-read-aloud').focus();return note.id;
