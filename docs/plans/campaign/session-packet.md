@@ -42,6 +42,24 @@ mehr übernehmen. Ihre Handler prüfen zusätzlich zum Livecontext die aktuelle
 Mappenanfrage und den tatsächlich angezeigten Snapshot. Die lokale Dockfixture
 prüft diese Grenze; native Fokus-/Layout-/Langtextabnahme bleibt offen.
 
+Die Live-Blöcke öffnen inzwischen ihre gebundene Quelle, bereiten die angezeigte
+Begegnungsgruppe vor oder führen zur Belohnung dieses Besuchs im bestehenden
+Planner. Jeder Handler bindet den tatsächlich angezeigten Besuch und Mappenstand;
+entfernte, deaktivierte und in einer anderen Oberfläche verborgene Controls sind
+wirkungslos. Die Gruppenaktion bindet zusätzlich die ursprüngliche Gruppenrevision
+und verlangt den übernommenen Besuch am aktuellen Szenenort. Eine geänderte Gruppe
+verlangt Aktualisieren. Ältere Deskriptoren ohne Revision bleiben lesbar, geben aber
+keine Begegnungsaktion frei. Deskriptoren sind nur abgeleitete Mappendaten; eine
+Kampagnenmigration ist nicht nötig. Die bestehenden Combat- und Rewardcommands
+bleiben für ihre Datenprüfung und Transaktion verantwortlich.
+
+Die Autorität bleibt über Liveflush, Quellenread und Combat-Draftflush prüfbar.
+Neuer Vorlesetext während eines ausstehenden Liveflush wird nicht überschrieben.
+Die lokale DOM-/SQLiteprüfung deckt diese Übergänge, Gruppenrevisionen und alte
+Controls ab. Der tatsächliche Wechsel Live → Quelle/Kampf/Belohnung mit Fokus,
+Offenentwürfen, Fehlern und anschließender Wiederaufnahme ist weiterhin nativ
+abzunehmen; die zusätzliche Aktion schließt keine vollständige Produktabnahme.
+
 Der integrierte Besuchsnavigator (`session-progress-ui.ts`,
 `storage/visit-outcomes.ts`) und `LiveAction.visit-outcome` zeichnen jetzt
 manuell bestätigte Besuchsergebnisse in der Kampagnenhistorie auf. Die Mappe

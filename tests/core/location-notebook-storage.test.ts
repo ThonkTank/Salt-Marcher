@@ -13,7 +13,7 @@ test('location notebook rejects a checksum-valid location with a mismatched iden
   const campaign=store.create('Ortsnotizbuch'),workspace=store.activate(campaign.id),location=newLocation('place','Nordtor','poi',['description','notes']);
   store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});
   const forged=JSON.stringify({...location,id:'other-place',name:'Verdeckter Titel'}),checksum=createHash('sha256').update(forged).digest('hex');
-  store.db.prepare('UPDATE location SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(forged,checksum,campaign.id,location.id);
-  assert.throws(()=>store.locationMaterials(workspace.token,{locationId:null,kind:'directory',text:'',offset:0}),/Ortsmaterialquelle beschädigt/);
+  (store as unknown as {db:any}).db.prepare('UPDATE location SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(forged,checksum,campaign.id,location.id);
+  assert.throws(()=>store.locationMaterials(workspace.token,{locationId:null,kind:'directory',text:'',offset:0}),/Ortszuordnung widersprüchlich/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
