@@ -1,7 +1,7 @@
 import type {Result} from './contracts';
 import type {PreparedGroup,WorldActor} from './session-contracts';
-export interface GroupActor extends WorldActor {profileRevision:number;gmNotes:string;readAloud:string}
-export interface GroupView extends Omit<PreparedGroup,'actors'> {actors:GroupActor[];draftPlanId:string|null}
+export interface GroupActor extends WorldActor {profileRevision:number;gmNotes:string;readAloud:string;locationId?:string|null;locationTitle?:string}
+export interface GroupView extends Omit<PreparedGroup,'actors'> {actors:GroupActor[];draftPlanId:string|null;locationTitle?:string}
 export interface GroupRow {id:string|null;creatureId:string;revision:number;profileRevision:number;name:string;hp:string;maxHp:string;tempHp:string;conditions:string;concentrating:boolean;gmNotes:string;readAloud:string}
 export interface GroupDraft {writeId:string;groupId:string;revision:number;title:string;notes:string;locationId:string|null;actors:GroupRow[]}
 export type GroupAction=

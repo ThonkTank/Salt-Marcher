@@ -882,3 +882,8 @@ Die Ortsmappe durchsucht vorhandene NSCs, Aufträge/Gerüchte und Shops der Kamp
 „Moment festhalten“ führt eine Konsequenz jetzt auch direkt in Kalender oder Spielabendplan. „Als Ortsfrist vorbereiten“ öffnet einen Agendaentwurf mit Titel, Notiz und aktuellem Ort; Zeitpunkt und Dauer bleiben bis zur ausdrücklichen Bestätigung offen. „Als nächsten Besuch vorbereiten“ hängt Titel, Notiz und Ort an den laufenden oder ausgewählten Spielabendplan und öffnet den neuen Besuch. Fehlt noch ein Plan, wird „Nächster Spielabend“ angelegt.
 
 Der Chronikmoment wird zuerst über den bestehenden Liveauftrag bestätigt. Quests und Gerüchte behalten ihren bisherigen Besitzer und ihre direkte Folgespur. Fristen verwenden den vorhandenen Agendaeditor, Besuche den vorhandenen Planeditor; es gibt keine neue Datenhaltung und keine automatische Änderung von Gruppenzeit, Weltstand oder Spieleranzeige.
+
+
+### 0.94 – Figurengruppen aus der Ortsmappe führen
+
+Figurengruppen lassen sich kampagnenweit suchen, am gewählten Ort neu anlegen und für einen Ortswechsel im bisherigen Gruppenbereich öffnen. Die lesende Gruppenübersicht zeigt aktuelle Mitglieder, HP und Einzelstandorte in 25er-Schritten sowie direkte Weltprofil-Einstiege. Auch Gruppen ohne gemeinsamen Ort sind auffindbar. „Gruppenangaben übernehmen“ bestätigt den vorbereiteten Zielort für alle enthaltenen NSCs; neue leere Gruppen starten am gewählten Ort und lassen sich im Gruppenbereich mit Kreaturen füllen. Bestehende Identitäten, HP, Texte und Vorlagen bleiben beim vorhandenen Eigentümer. Keine neue Schreibgrenze oder Schemaänderung.
