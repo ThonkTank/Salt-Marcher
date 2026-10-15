@@ -10,9 +10,17 @@ import {
 } from "../campaign/campaign-contracts";
 
 export type WorldNoteKind = "npc" | "faction" | "quest" | "rumor" | "rule";
+export type WorldFamilyRelationKind = "parent" | "child" | "sibling" | "partner";
+export const worldFamilyRelationKinds: readonly WorldFamilyRelationKind[] =
+  Object.freeze(["parent", "child", "sibling", "partner"]);
+export function inverseWorldFamilyRelationKind(kind: WorldFamilyRelationKind): WorldFamilyRelationKind {
+  return kind === "parent" ? "child" : kind === "child" ? "parent" : kind;
+}
 export interface WorldNoteRelation {
   readonly targetId: CampaignLocalId;
   readonly label: string;
+  /** Explicit domain metadata. Missing means that no family meaning was assigned. */
+  readonly familyKind?: WorldFamilyRelationKind;
 }
 export interface WorldNoteV1 {
   readonly version: 1;
@@ -63,10 +71,13 @@ function draft(value: WorldNoteDraft): WorldNoteDraft {
   const relations = value.relations.map((relation) => {
     const targetId = campaignLocalId(relation.targetId);
     const label = nonblank(relation.label, "Beziehungsname");
+    const familyKind = relation.familyKind;
+    if (familyKind !== undefined && !worldFamilyRelationKinds.includes(familyKind))
+      throw new Error("Unbekannter Familienbeziehungstyp.");
     const key = `${targetId}\u0000${label}`;
     if (seen.has(key)) throw new Error("Beziehung ist doppelt.");
     seen.add(key);
-    return { targetId, label };
+    return familyKind === undefined ? { targetId, label } : { targetId, label, familyKind };
   });
   return immutable({ kind: value.kind, title: value.title, readAloud: value.readAloud,
     gmNotes: value.gmNotes, creatureId: value.creatureId, relations });
@@ -85,9 +96,15 @@ function validate(snapshot: WorldNotesSnapshotV1): void {
   }
   for (const record of snapshot.records) {
     if (record.deleted && record.relations.length) throw new Error("Gelöschter Eintrag besitzt Beziehungen.");
-    for (const relation of record.relations)
-      if (!snapshot.records.some((target) => target.id === relation.targetId && !target.deleted))
+    for (const relation of record.relations) {
+      const target = snapshot.records.find((candidate) => candidate.id === relation.targetId && !candidate.deleted);
+      if (!target)
         throw new Error("Beziehung zeigt nicht auf einen aktiven Eintrag.");
+      if (relation.familyKind && (record.kind !== "npc" || target.kind !== "npc" ||
+          !target.relations.some((candidate: WorldNoteRelation) => candidate.targetId === record.id &&
+            candidate.familyKind === inverseWorldFamilyRelationKind(relation.familyKind))))
+        throw new Error("Familienbeziehung besitzt keine passende NPC-Gegenrichtung.");
+    }
   }
 }
 export function emptyWorldNotes(context: CampaignContextProjection): WorldNotesSnapshotV1 {
