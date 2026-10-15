@@ -7,6 +7,8 @@ import {readCreature} from './encounters';
 import {syncOpenMaskHealth} from './mask-health';
 import {worldNoteDocument} from '../../features/world/world-notes';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
+import {checkedDailyPlan} from '../npc-daily-plan';
+import {readWorldCalendar} from './world';
 import {checkedHealth} from '../progression';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export const npcFingerprint=(c:NpcCommand)=>hash(JSON.stringify({...c,token:undefined}));
@@ -24,6 +26,7 @@ function npcReceipt(db:any,c:NpcCommand):NpcView|null{
  for(const key of ['name','creatureId','readAloud','gmNotes','locationId'] as const)if(v[key]!==c.npc[key])throw new Error('NPC-Beleg weicht vom ursprünglichen Profil ab.');
  for(const key of ['factionId','modifier','lifecycle','appearance','behavior','history'] as const)if(v.record[key]!==c.npc.record[key])throw new Error('NPC-Beleg weicht vom ursprünglichen Profil ab.');
  if(JSON.stringify(v.record.demographics)!==JSON.stringify(checkedNpcRecord(c.npc.record).demographics))throw new Error('NPC-Beleg weicht vom ursprünglichen Demografieprofil ab.');
+ if(JSON.stringify(v.record.dailyPlan??[])!==JSON.stringify(c.npc.record.dailyPlan??[]))throw new Error('NPC-Beleg weicht vom ursprünglichen Tagesplan ab.');
  if(c.npc.health){const health=checkedHealth(c.npc.health);for(const key of ['hp','maxHp','tempHp','conditions','concentrating'] as const)if(v.health?.[key]!==health[key])throw new Error('NPC-Beleg besitzt andere bestätigte Gesundheit.');}
  return v;
 }
@@ -32,7 +35,13 @@ function note(db:any,cam:string,id:string){const r=db.prepare('SELECT * FROM wor
 export function readNpc(db:any,cam:string,id:string):NpcView{const n=note(db,cam,id),record=npcRecord(db,cam,id),p=npcPosition(db,cam,id),exists=db.prepare('SELECT 1 FROM world_actor WHERE campaign_id=? AND id=?').get(cam,id),actor=exists?readWorldActor(db,cam,id):null;return{id,name:n.title,noteRevision:n.revision,creatureId:actor?.creatureId??n.creatureId,readAloud:n.readAloud,gmNotes:n.gmNotes,record,locationId:p.locationId,positionRevision:p.revision,actorRevision:actor?.revision??null,health:actor?{hp:actor.hp,maxHp:actor.maxHp,tempHp:actor.tempHp,conditions:actor.conditions,concentrating:actor.concentrating}:null,...npcDisposition(db,cam,record)};}
 export function readNpcs(db:any,cam:string,q:NpcQuery):NpcPage{
  if(typeof q.text!=='string'||q.text.length>1000||!['all','active','defeated'].includes(q.lifecycle)||!Number.isSafeInteger(q.offset)||q.offset<0)throw new Error('NPC-Suche prüfen.');
- const rows=db.prepare("SELECT n.id,json_extract(n.payload,'$.title') name,json_extract(n.payload,'$.creatureId') creatureId,r.faction_id factionId,coalesce(json_extract(r.payload,'$.lifecycle'),'active') lifecycle FROM world_note n LEFT JOIN npc_record r ON r.campaign_id=n.campaign_id AND r.id=n.id WHERE n.campaign_id=? AND n.trashed=0 AND json_extract(n.payload,'$.kind')='npc' AND instr(lower(coalesce(json_extract(n.payload,'$.title'),'')||char(10)||coalesce(json_extract(n.payload,'$.readAloud'),'')||char(10)||coalesce(json_extract(n.payload,'$.gmNotes'),'')||char(10)||coalesce(json_extract(r.payload,'$.appearance'),'')||char(10)||coalesce(json_extract(r.payload,'$.behavior'),'')||char(10)||coalesce(json_extract(r.payload,'$.history'),'')),lower(?))>0 AND (?='all' OR coalesce(json_extract(r.payload,'$.lifecycle'),'active')=?) AND (? IS NULL OR r.faction_id=?) ORDER BY name,n.id").iterate(cam,q.text,q.lifecycle,q.lifecycle,q.factionId,q.factionId);
+ const rows=db.prepare(`SELECT n.id,json_extract(n.payload,'$.title') name,json_extract(n.payload,'$.creatureId') creatureId,r.faction_id factionId,coalesce(json_extract(r.payload,'$.lifecycle'),'active') lifecycle
+  FROM world_note n LEFT JOIN npc_record r ON r.campaign_id=n.campaign_id AND r.id=n.id
+  WHERE n.campaign_id=@cam AND n.trashed=0 AND json_extract(n.payload,'$.kind')='npc' AND (
+   instr(lower(coalesce(json_extract(n.payload,'$.title'),'')||char(10)||coalesce(json_extract(n.payload,'$.readAloud'),'')||char(10)||coalesce(json_extract(n.payload,'$.gmNotes'),'')||char(10)||coalesce(json_extract(r.payload,'$.appearance'),'')||char(10)||coalesce(json_extract(r.payload,'$.behavior'),'')||char(10)||coalesce(json_extract(r.payload,'$.history'),'')),lower(@text))>0
+   OR EXISTS(SELECT 1 FROM json_each(r.payload,'$.dailyPlan') p WHERE instr(lower(coalesce(json_extract(p.value,'$.activity'),'')||char(10)||coalesce(json_extract(p.value,'$.notes'),'')),lower(@text))>0)
+  ) AND (@lifecycle='all' OR coalesce(json_extract(r.payload,'$.lifecycle'),'active')=@lifecycle) AND (@faction IS NULL OR r.faction_id=@faction)
+  ORDER BY name,n.id`).iterate({cam,text:q.text,lifecycle:q.lifecycle,faction:q.factionId});
  const positionFor=npcPositionReader(db,cam),page:any[]=[];let total=0;for(const row of rows){const locationId=positionFor(row.id).locationId;if(q.locationId&&locationId!==q.locationId||q.onlyUnplaced&&locationId!==null)continue;if(total>=q.offset&&page.length<50)page.push({...row,locationId});total++;}return{total,offset:q.offset,rows:page.map((r:any)=>({...r,...npcDisposition(db,cam,npcRecord(db,cam,r.id))}))};
 }
 export function npcDraft(db:any,cam:string,id:string):NpcDraft|null{const r=db.prepare('SELECT * FROM npc_draft WHERE campaign_id=? AND id=?').get(cam,id);if(!r)return null;const d=readNpcDraftRow(db,r);checkedPending(cam,d);return d;}
@@ -44,7 +53,7 @@ export function executeNpc(db:any,c:NpcCommand,guard:()=>void):NpcView{return db
  const held=npcDraft(db,cam,c.npc.id);if(held?.pendingCommand&&npcFingerprint(held.pendingCommand)!==fp)throw new Error('NPC-Auftrag weicht vom gesicherten Original ab.');
  if(c.draftWriteId!==undefined&&npcDraft(db,cam,c.npc.id)?.writeId!==c.draftWriteId)throw new Error('NPC-Entwurf inzwischen geändert.');
  const v=c.npc,old=c.expectedNoteRevision===null?null:readNpc(db,cam,v.id);if(c.expectedNoteRevision===null&&db.prepare('SELECT 1 FROM world_note WHERE campaign_id=? AND id=?').get(cam,v.id)||old&&(old.noteRevision!==c.expectedNoteRevision||old.record.revision!==c.expectedRecordRevision||old.actorRevision!==c.expectedActorRevision||old.positionRevision!==c.expectedPositionRevision))throw new Error('NPC, Notizen, Gesundheit oder Position inzwischen geändert. Neu öffnen.');
- const r=checkedNpcRecord(v.record);if(r.id!==v.id||r.revision!==c.expectedRecordRevision)throw new Error('NPC-Profil gehört zu einem anderen Ausgangsstand.');
+ const r=checkedNpcRecord(v.record);checkedDailyPlan(r.dailyPlan??[],readWorldCalendar(db,cam).daySeconds);if(r.id!==v.id||r.revision!==c.expectedRecordRevision)throw new Error('NPC-Profil gehört zu einem anderen Ausgangsstand.');
  if(r.factionId&&!db.prepare("SELECT 1 FROM world_note WHERE campaign_id=? AND id=? AND trashed=0 AND json_extract(payload,'$.kind')='faction'").get(cam,r.factionId))throw new Error('Fraktion nicht verfügbar.');
  if(v.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(cam,v.locationId))throw new Error('Ort nicht verfügbar.');
  if(old?.actorRevision!==null&&old?.actorRevision!==undefined&&old.creatureId!==v.creatureId)throw new Error('Die Kreaturreferenz einer materialisierten Figur bleibt erhalten. Lege eine andere Figur an.');

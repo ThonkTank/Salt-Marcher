@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {NpcRecord,NpcRole,NpcView,NpcDraft} from '../npc-contracts';
+import {checkedDailyPlan} from '../npc-daily-plan';
 import {checkedHealth} from '../progression';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installNpcRecords(db:any){db.exec(`CREATE TABLE IF NOT EXISTS npc_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,faction_id TEXT,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,id) REFERENCES world_note(campaign_id,id),FOREIGN KEY(campaign_id,faction_id) REFERENCES world_note(campaign_id,id)) STRICT;
@@ -12,6 +13,7 @@ const reference=(v:any)=>v===null||identity(v);
 export function checkedNpcRecord(r:NpcRecord):NpcRecord{
  const d=r?.demographics??{ancestry:'',gender:'',ageYears:null};
  if(!object(r)||!identity(r.id)||!revision(r.revision)||!reference(r.factionId)||!Number.isSafeInteger(r.modifier)||Math.abs(r.modifier)>100||!['active','defeated'].includes(r.lifecycle)||[r.appearance,r.behavior,r.history].some(s=>typeof s!=='string'||s.length>2000000)||!object(d)||[d.ancestry,d.gender].some(s=>typeof s!=='string'||s.length>1000)||!(d.ageYears===null||Number.isSafeInteger(d.ageYears)&&d.ageYears>=0&&d.ageYears<=2000))throw new Error('NPC-Weltprofil prüfen.');
+ if(r.dailyPlan!==undefined)checkedDailyPlan(r.dailyPlan);
  return{...r,demographics:{ancestry:d.ancestry,gender:d.gender,ageYears:d.ageYears}};
 }
 export function checkedNpcView(v:NpcView):NpcView{
