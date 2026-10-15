@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import type {CityHeader,CityUnit} from '../../src/app/city-contracts';
+import type {NpcDailyOverride,NpcDailySlot} from '../../src/app/npc-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
@@ -24,6 +25,7 @@ function fixture(label:string){
 function demographics(f:ReturnType<typeof fixture>,id:string,ancestry:string,gender:string,ageYears:number|null){const old=f.store.npc(f.workspace.token,id);return f.store.executeNpc({commandId:'demographics-'+id+'-'+old.record.revision,campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,demographics:{ancestry,gender,ageYears}},locationId:old.locationId,health:old.health}});}
 function addFaction(f:ReturnType<typeof fixture>,id:ReturnType<typeof npcId>,title:string){f.store.changePreparation({commandId:'faction-'+id,campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'faction',title,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});}
 function setNpcFaction(f:ReturnType<typeof fixture>,id:string,factionId:ReturnType<typeof npcId>|null){const old=f.store.npc(f.workspace.token,id);return f.store.executeNpc({commandId:'npc-faction-'+id+'-'+old.record.revision,campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,factionId},locationId:old.locationId,health:old.health}});}
+function setNpcPlan(f:ReturnType<typeof fixture>,id:string,dailyPlan:NpcDailySlot[],dailyOverrides:NpcDailyOverride[]=[]){const old=f.store.npc(f.workspace.token,id);return f.store.executeNpc({commandId:'npc-plan-'+id+'-'+old.record.revision,campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,dailyPlan,dailyOverrides},locationId:old.locationId,health:old.health}});}
 
 test('city buildings bind existing World NPC homes and workplaces through exact undo and atomic moves',()=>{
  const f=fixture('city-people-');
@@ -66,6 +68,20 @@ test('city projects canonical World factions across people, houses and districts
   assert.deepEqual(f.store.cities(f.workspace.token).factions,[]);assert.deepEqual(f.store.city(f.workspace.token,'city').factions,[{id:guild,name:'Hafengilde',available:false,residentCount:1,workerCount:1,unitCount:2}]);
   f.store.close();sourceClosed=true;reopened=new CampaignStore(join(f.root,'campaign.sqlite'),'test');const workspace=reopened.activate(f.campaign.id);assert.deepEqual(reopened.city(workspace.token,'city').factions,[{id:guild,name:'Hafengilde',available:false,residentCount:1,workerCount:1,unitCount:2}]);
  }finally{reopened?.close();if(!sourceClosed)f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+
+test('city projects current NPC activities from the focused group clock without moving people',()=>{
+ const f=fixture('city-activities-');
+ try{
+  setNpcPlan(f,f.ada,[{id:'work',startMinute:480,endMinute:600,activity:'Torwache',place:'work',notes:'Besucherbuch führen'}]);
+  setNpcPlan(f,f.bert,[{id:'home',startMinute:480,endMinute:600,activity:'Hausdienst',place:'home',notes:''}],[{day:'1',label:'Ruhetag',slots:[]}]);
+  const bound=f.store.executeCity({commandId:'activity-bindings',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert]},{...f.shop,workerIds:[f.ada]}],remove:[],label:'Tagesziele binden'}}),scene=f.store.executeLive({commandId:'activity-scene',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'initialize',expectedRosterRevision:0}}).scene!;
+  f.store.executeLive({commandId:'activity-time',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:9,unit:'hours',calendarVersion:'relative-v1',reason:'Stadtaktivitäten prüfen'}});
+  const projected=f.store.city(f.workspace.token,'city').activities!;assert.equal(f.store.city(f.workspace.token,'city').header.revision,bound.header.revision);assert.equal(projected.instantMs,'32400000');assert.deepEqual({people:projected.peopleCount,scheduled:projected.scheduledCount,exceptions:projected.exceptionCount,problems:projected.problemCount},{people:2,scheduled:1,exceptions:1,problems:0});
+  assert.deepEqual(projected.rows.map(row=>({name:row.name,roles:row.roles,activity:row.activity,target:row.target?.unitName??null,override:row.overrideLabel})),[{name:'Ada',roles:['resident','worker'],activity:'Torwache',target:'Werkstatt',override:null},{name:'Bert',roles:['resident'],activity:null,target:null,override:'Ruhetag'}]);
+  assert.equal(f.store.npc(f.workspace.token,f.ada).locationId,null);assert.equal(f.store.npc(f.workspace.token,f.bert).locationId,null);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
 test('cross-city NPC moves share one guarded undo and redo step',()=>{
