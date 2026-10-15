@@ -1,7 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from 'linkedom';
 const require=createRequire(import.meta.url);for(const[entry,name]of [['src/app/storage/store.ts','item-selection-store'],['src/app/items-ui.ts','item-selection-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const tick=()=>new Promise(r=>setImmediate(r)),held=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};async function until(fn){for(let i=0;i<250;i++){if(fn())return;await tick();}assert(fn(),'Expected shop state');}
+const tick=()=>new Promise(r=>setImmediate(r)),held=()=>{let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j;});return{promise,resolve,reject};};async function until(fn){for(let i=0;i<250;i++){if(fn())return;await tick();}assert(fn(),'Expected shop state');}
 async function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'shop-switch-')),{CampaignStore}=require('../.build/item-selection-store.cjs'),store=new CampaignStore(root+'/store.sqlite'),cam=store.create('Markttag'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character),scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
@@ -46,4 +46,27 @@ test('SRD definitions stay read-only and a separate editable copy can be saved',
 });
 test('adding the current definition to a selected shop still works',async()=>{
  const x=await fixture();try{[...x.el('shops-list').querySelectorAll('button')].find(b=>b.textContent.startsWith(x.shops[0].name+' ·')).onclick();await until(()=>!x.el('shop-fields').disabled);x.el('shop-add-item').onclick();await x.settle();const stock=x.store.shop(x.w.token,x.shops[0].id).shop.stock;assert.equal(stock.filter(s=>s.reference.definitionId===x.defs[0].id).length,2);assert.equal(x.el('shop-add-item').disabled,false);}finally{await x.cleanup();}
+});
+
+test('a pending item search clears obsolete rows and announces loading then an empty result',async()=>{
+ const x=await fixture();try{const pause=held();window.campaign.itemDefinitions=()=>pause.promise;x.el('item-search').value='No match';x.el('items-search-form').onsubmit({preventDefault(){}});await tick();
+ assert.equal(x.el('items-results').children.length,0);assert.match(x.el('items-page').textContent,/geladen/);assert.equal(x.el('items-next').disabled,true);assert.equal(x.el('items-prev').disabled,true);
+ pause.resolve({ok:true,value:{items:[],total:0,next:null,problems:[],sourceStatus:{complete:false,message:'Local source'}}});await tick();assert.match(x.el('items-page').textContent,/Keine Gegenstände/);assert.equal(x.el('item-name').value,'Seil');assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
+for(const reject of [false,true])test(`item search ${reject?'transport':'storage'} failure is local and a new search recovers`,async()=>{
+ const x=await fixture();try{const original=window.campaign.itemDefinitions;window.campaign.itemDefinitions=async()=>{if(reject)throw new Error('Controlled catalog failure');return{ok:false,error:'Controlled catalog failure'};};x.el('item-search').value='Failed query';x.el('items-search-form').onsubmit({preventDefault(){}});await tick();await tick();
+ assert.equal(x.el('items-results').children.length,0);assert.match(x.el('items-page').textContent,/Controlled catalog failure/);assert.equal(x.el('items-page').getAttribute('role'),'alert');assert.equal(x.el('item-search').value,'Failed query');assert.deepEqual(x.messages,[]);
+ window.campaign.itemDefinitions=original;x.el('item-search').value='Heiltrank';x.el('items-search-form').onsubmit({preventDefault(){}});await until(()=>x.el('items-results').textContent.includes('Heiltrank'));assert.equal(x.el('items-page').getAttribute('role'),'status');assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
+for(const reject of [false,true])test(`a superseded item search ${reject?'transport':'storage'} failure cannot replace newer results or create global error noise`,async()=>{
+ const x=await fixture();try{const original=window.campaign.itemDefinitions,pause=held();window.campaign.itemDefinitions=()=>pause.promise;x.el('item-search').value='Old query';x.el('items-search-form').onsubmit({preventDefault(){}});await tick();
+ window.campaign.itemDefinitions=original;x.el('item-search').value='Heiltrank';x.el('items-search-form').onsubmit({preventDefault(){}});await until(()=>x.el('items-results').textContent.includes('Heiltrank'));const text=x.el('items-page').textContent;if(reject)pause.reject(new Error('Superseded search error'));else pause.resolve({ok:false,error:'Superseded search error'});await tick();assert.equal(x.el('items-page').textContent,text);assert.deepEqual(x.messages,[]);
+ }finally{await x.cleanup();}
+});
+test('rapid next-page actions cannot duplicate requests or make back remain on the same page',async()=>{
+ const x=await fixture();try{x.el('item-search').value='';x.el('items-search-form').onsubmit({preventDefault(){}});await until(()=>!x.el('items-next').disabled);const original=window.campaign.itemDefinitions,pause=held(),calls=[];window.campaign.itemDefinitions=async query=>{calls.push(query);await pause.promise;return original(query);};
+ x.el('items-next').onclick();x.el('items-next').onclick();await tick();assert.equal(calls.length,1);assert.equal(calls[0].after,40);pause.resolve();await until(()=>x.el('items-page').textContent.includes('Seite 2'));window.campaign.itemDefinitions=original;x.el('items-prev').onclick();await until(()=>x.el('items-page').textContent.includes('Seite 1'));assert.equal(x.el('items-prev').disabled,true);
+ }finally{await x.cleanup();}
 });
