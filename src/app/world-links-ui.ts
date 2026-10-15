@@ -53,7 +53,37 @@ export class WorldLinksWorkbench {
  private async commit(change:PreparationCommand['change']){const w=this.owner;if(!w)return;if(this.timer)clearTimeout(this.timer);this.timer=null;this.busy=true;this.save.disabled=true;const writeId=change.kind==='note'&&change.expectedRevision!==null?'world-links-'+crypto.randomUUID():null,command:PreparationCommand={commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,...(writeId?{draftWriteId:writeId}:{}),change};try{if(writeId&&change.kind==='note'){const draft:PreparationDraft={version:1,writeId,change:{...change,expectedRevision:change.expectedRevision!},failedCommand:command};unwrap(await window.campaign.keepDeskDraft(w.token,draft,this.writeId));if(!this.current())return;this.writeId=writeId;}if(!await this.drain()||!this.current())return;const result=unwrap(await window.campaign.changePreparationContent(command));if(!this.current())return;this.focus={kind:result.ref.kind as WorldLinkRef['kind'],id:result.ref.id};this.label.value='';this.target=null;this.writeId=null;this.uncertain=null;this.busy=false;await this.read();this.status.textContent=change.kind==='note'&&change.expectedRevision===null?'Weltinhalt angelegt. Texte im vorhandenen Editor bearbeiten.':'Beziehung gespeichert. Originaltexte und sonstige Bindungen bleiben erhalten.';}catch(e){if(this.current()){this.uncertain=command;this.check.hidden=false;this.report(e);}}finally{this.busy=false;this.save.disabled=!!this.uncertain||this.foreignDraft||!this.target;}}
  private async create(){const w=this.owner,title=this.newTitle.value;if(!w||!title.trim()||this.busy||!this.leaveSource())return;const note:Note={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,kind:this.newKind.value as Note['kind'],title,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false};await this.commit({kind:'note',expectedRevision:null,note});if(!this.uncertain)this.newTitle.value='';}
 
- private async reconcile(){const w=this.owner;if(!w||this.busy)return;if(this.historyUncertain){const c=this.historyUncertain;this.busy=true;try{const r=unwrap(await window.campaign.reconcileWorldRelationPairHistory(c,w.token));if(!this.current())return;this.historyUncertain=null;this.check.hidden=!!this.uncertain||!!this.pairUncertain;if(r.outcome==='applied'){this.busy=false;await this.read();this.status.textContent='Paar-Historyauftrag als gespeichert bestätigt.';}else this.status.textContent='Paar-Historyauftrag nicht gespeichert. Stand aktualisieren und erneut ausführen.';}catch(e){if(this.current())this.report(e);}finally{this.busy=false;}return;}if(this.pairUncertain){await this.reconcilePair(this.pairUncertain,w);return;}const c=this.uncertain;if(!c)return;this.busy=true;try{const r=unwrap(await window.campaign.reconcilePreparationContent(c,w.token));if(!this.current())return;this.uncertain=null;this.check.hidden=true;if(r.outcome==='applied'){if(c.change.kind==='note')this.focus={kind:'note',id:c.change.note.id};this.label.value='';this.target=null;this.writeId=null;this.busy=false;await this.read();this.status.textContent='Auftrag als gespeichert bestätigt.';}else this.status.textContent='Auftrag nicht gespeichert. Eingaben bleiben; aktuelle Basis laden und erneut ausdrücklich bestätigen.';}catch(e){if(this.current())this.report(e);}finally{this.busy=false;}}
+ private async reconcile(){
+  const w=this.owner;if(!w||this.busy)return;
+  if(this.pairUncertain){await this.reconcilePair(this.pairUncertain,w);return;}
+  const historyCommand=this.historyUncertain,command=historyCommand?null:this.uncertain;if(!command&&!historyCommand)return;
+  const request=this.request,current=()=>this.current()&&this.owner===w&&this.request===request&&(historyCommand?this.historyUncertain===historyCommand:this.uncertain===command);
+  const addition=command?.change.kind==='note'?command.change.note.relations.find(relation=>!this.content?.note?.relations.some(old=>old.targetId===relation.targetId&&old.label===relation.label)):undefined;
+  const unchanged=()=>!this.target&&!this.label.value&&!this.reverseLabel.value&&!this.familyKind.value&&!this.paired.checked||!!addition&&!historyCommand&&!this.paired.checked&&!this.reverseLabel.value&&!this.familyKind.value&&this.target?.kind==='note'&&this.target.id===addition.targetId&&this.label.value===addition.label;
+  const clear=()=>{if(historyCommand)this.historyUncertain=null;else this.uncertain=null;this.check.hidden=!this.uncertain&&!this.pairUncertain&&!this.historyUncertain;};
+  const confirmed=historyCommand?'Paar-Historyauftrag als gespeichert bestätigt.':'Auftrag als gespeichert bestätigt.';
+  this.busy=true;this.form.inert=true;
+  try{
+   const result=historyCommand?unwrap(await window.campaign.reconcileWorldRelationPairHistory(historyCommand,w.token)):unwrap(await window.campaign.reconcilePreparationContent(command!,w.token));if(!current())return;
+   if(result.outcome!=='applied'){clear();this.status.textContent=historyCommand?'Paar-Historyauftrag nicht gespeichert. Stand aktualisieren und erneut ausführen.':'Auftrag nicht gespeichert. Eingaben bleiben; aktuelle Basis laden und erneut ausdrücklich bestätigen.';return;}
+   if(command?.change.kind==='note'){
+    const id=command.change.note.id,draft=unwrap(await window.campaign.preparationDraft(w.token,'note',id));if(!current())return;
+    if(draft&&draft.writeId!==command.draftWriteId){
+     clear();this.writeId=null;
+     if(!unchanged()){this.foreignDraft=true;this.status.textContent='Auftrag bestätigt. Neuere lokale Eingaben und ein anderer gespeicherter Entwurf bleiben erhalten. Eingabe verwerfen lädt nur den gespeicherten Entwurf.';return;}
+     this.focus={kind:'note',id};await this.read(true);if(this.current()&&this.owner===w&&this.request===request+1)this.status.textContent='Auftrag bestätigt; ein vorhandener Entwurf bleibt offen.';return;
+    }
+    if(draft){unwrap(await window.campaign.discardPreparationDraft(w.token,'note',id,draft.writeId));if(!current())return;}
+    this.writeId=null;
+   }
+   const refresh=unchanged();clear();
+   if(!refresh){this.status.textContent=confirmed+' Neuere Eingaben bleiben erhalten. Vor Übernahme nur die gespeicherte Basis laden.';return;}
+   if(command?.change.kind==='note'){this.focus={kind:'note',id:command.change.note.id};if(command.change.expectedRevision===null&&this.newTitle.value===command.change.note.title)this.newTitle.value='';}
+   this.label.value='';this.reverseLabel.value='';this.familyKind.value='';this.target=null;this.paired.checked=false;this.reverseField.hidden=true;
+   await this.read(true);if(this.current()&&this.owner===w&&this.request===request+1)this.status.textContent=this.foreignDraft||this.uncertain||this.pairUncertain?'Auftrag bestätigt; ein vorhandener Entwurf bleibt offen.':confirmed;
+  }catch(e){if(current())this.report(e);}
+  finally{if(this.owner===w&&this.current()&&(this.request===request||this.request===request+1)){this.busy=false;this.form.inert=false;this.updateSave();}}
+ }
  private async reconcilePair(command:WorldRelationPairCommand,w:Workspace){
   const request=this.request,current=()=>this.current()&&this.owner===w&&this.request===request&&this.pairUncertain===command;
   const unchanged=()=>{const a=command.action;return a.kind==='remove'?!this.label.value&&!this.reverseLabel.value&&!this.target&&!this.familyKind.value:!!this.paired.checked&&this.target?.kind==='note'&&this.target.id===a.targetId&&this.label.value===a.forwardLabel&&this.reverseLabel.value===a.reverseLabel&&this.familyKind.value===(a.forwardFamilyKind??'');};

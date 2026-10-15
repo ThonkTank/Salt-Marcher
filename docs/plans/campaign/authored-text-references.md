@@ -73,6 +73,34 @@ eine andere Write-ID, spätere GM-Prosa, verlorene Bereinigungsantwort und versp
 Antwort nach Kontextwechsel. Das ist ein kontrollierter Store-/DOMbeleg; native
 Dialog-, Fokus-/IME-, Crash- und vollständige Kampagnenwechselabnahme bleiben offen.
 
+## Statusklärung gerichteter Beziehungen und Paarhistory
+
+Auch einzelne Beziehungs- und Paarhistoryaufträge binden die Statusantwort an
+Workspace, Token, ursprünglichen Command und Dialogaufruf. Erneutes Öffnen mit
+demselben Token gibt einer früheren Antwort keine Schreib- oder Anzeigeautorität.
+Die Prüfung führt weder den Beziehungscommand noch Undo/Redo erneut aus.
+
+Ein bereits angewandter Einwegauftrag entfernt nur seinen zugehörigen
+Vorbereitungsentwurf mit der vorhandenen Write-ID-Prüfung. Fehlender Draft ist
+abgeschlossen; verlorene Bereinigungsantworten bleiben lesend klärbar. Ein anderer
+Editorentwurf wird erhalten und als offene Arbeit ausgewiesen. Treffen zugleich
+neuere lokale Eingaben ein, bleibt die Übernahme gesperrt; ausdrückliches
+„Eingabe verwerfen“ lädt den gespeicherten Entwurf ohne dessen Löschung.
+Nach `not-applied` endet die Statusprüfung, und eine weitere Übernahme ist eine
+neue ausdrückliche Aktion auf der passend geprüften Basis. Historykonflikte
+verlangen Standlesen statt eines automatischen zweiten Undo/Redo.
+
+Neuere Beschriftungen bleiben bei bestätigter History oder Einzeländerung offen.
+Der gespeicherte Quellstand wird nur bei unverändertem Formular neu geladen;
+spätere GM-Prosa bleibt maßgeblich. Nach bestätigter Neuanlage wird nur deren noch
+unveränderter Name geleert; ein bereits eingegebener nächster Name bleibt stehen.
+Der bestehende DOM-/Storetest löst Statusklärung über den verbundenen Button aus
+und prüft zusätzlich erhaltene/fremde Drafts, Klärungswiederholung, gleiche
+Aktivierung nach Wiederöffnung und ausdrücklich fortsetzbare Konfliktbedienung.
+Native Fokus-, IME-, Crash- und komplette Workspaceabnahmen bleiben offen.
+
+## Herkunftsprüfung und Grenzen alter Kopien
+
 Bereits mit falschen Historybesitzern erzeugte ältere Kopien sind damit nicht
 rückwirkend repariert. `campaign_origin.original_database` enthält heute einen
 kompakten Herkunftsvermerk mit Hash der angenommenen Datei, keine ursprüngliche
