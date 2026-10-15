@@ -100,3 +100,13 @@ test('campaign transfer remaps city resident and workplace references with their
   assert.deepEqual(home.jobs?.[0]?.workerIds,home.workerIds);
  }finally{target.close();f.store.close();rmSync(targetRoot,{recursive:true,force:true});rmSync(f.root,{recursive:true,force:true});}
 });
+
+test('NPC place reads use the canonical city household and job without moving the World actor',()=>{
+ const f=fixture('city-npc-places-');
+ try{
+  f.store.executeCity({commandId:'bind-places',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada],households:[{id:'family',name:'Familie am Tor',memberIds:[f.ada]}]},{...f.shop,workerIds:[f.ada],jobs:[{id:'job',name:'Schmiedin',workerIds:[f.ada]}]}],remove:[],label:'Wohnort und Beruf'}});
+  const before=f.store.npc(f.workspace.token,f.ada),db=(f.store as unknown as {db:any}).db,bytes=db.serialize(),places=f.store.npcPlaces(f.workspace.token,f.ada,0);
+  assert.deepEqual(places.sites.map(site=>site.kind),['work','home']);assert.ok(places.sites.every(site=>site.available));assert.match(places.sites.find(site=>site.kind==='home')!.detail,/Familie am Tor/);assert.match(places.sites.find(site=>site.kind==='work')!.detail,/Schmiedin/);assert.equal(places.next,null);
+  assert.deepEqual(db.serialize(),bytes);assert.deepEqual(f.store.npc(f.workspace.token,f.ada),before);assert.deepEqual(f.store.npcPlaces(f.workspace.token,f.bert,0).sites,[]);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});

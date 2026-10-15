@@ -130,6 +130,7 @@ else {
     handle('campaign:change-preparation-content',(command:PreparationCommand)=>store.changePreparationContent(command));
     handle('campaign:reconcile-preparation-content',(command:PreparationCommand,token:string)=>store.reconcilePreparationContent(command,token));
     handle('campaign:npc-cast',(token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>store.npcCast(token,q));
+    handle('campaign:npc-places',(token:string,id:string,offset:number)=>store.npcPlaces(token,id,offset));
     handle('campaign:npc-dossier',(token:string,sceneId:string,id:string)=>store.npcDossier(token,sceneId,id));
     handle('campaign:npc-drafts',(token:string)=>store.npcDrafts(token));
     handle('campaign:npc-draft',(token:string,id:string)=>store.npcDraft(token,id));
