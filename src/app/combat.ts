@@ -1,3 +1,5 @@
+import {CombatResolutionPanel} from './combat-resolution-ui';
+import {openTreasureDistribution,closeStaleTreasureDistribution} from './treasury-ui';
 import {openMaskHistory,closeMaskHistory} from './mask-history-ui';
 import {finishDraftCommit,flushFinishDraft} from './finish-draft-ui';
 import {CombatDraftCache,combatDraftKey} from './combat-draft-cache';
@@ -24,6 +26,7 @@ const conditionParts=(text:string)=>text.split(/\s*[,;\n]\s*/).map(part=>part.tr
 export function hasCombatCondition(text:string,label:string,source:string){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]);return conditionParts(text).some(part=>aliases.has(part.toLocaleLowerCase()));}
 export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
+let resolution:CombatResolutionPanel|null=null;
 let reinforcementRequest=0,reinforcementBusy=false;
 let reinforcementResults:{id:string;name:string;challengeRating:string}[]=[];
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
@@ -99,6 +102,7 @@ export function combatContext(next: Workspace | null, current: LiveScene | null,
   get('combat-panel').hidden = !current;
   if (changed) { closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
   else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
+  resolution?.context(workspace,scene,view?.combat??null);
 }
 async function load(id?: string):Promise<boolean> {
   if (!workspace || !scene) return false;
@@ -327,6 +331,7 @@ function render() {
   get('combat-add-details').hidden = !combat || terminal;
   get('combat-notes-details').hidden = !combat || terminal;
   renderNotes();
+  resolution?.context(workspace,scene,combat??null);
   get('combat-final-notes').hidden = !terminal; get('combat-final-notes').textContent = combat?.notes ?? '';
   const body = get('combat-rows'); body.replaceChildren();
   for (const p of combat ? combatOrder(combat) : []) {
@@ -397,7 +402,7 @@ async function recoveredCombat(event:CommitResolution){
   await refreshProgress();if(afterSaved)await afterSaved();
 }
 export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
-  tell = status;afterSaved=refresh;onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
+  tell = status;afterSaved=refresh;resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution);onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
   for(const id of [...fighterFields,'fighter-concentration','fighter-counted'])get(id).addEventListener('input',keepFighterDraft);
   get('fighter-reload').onclick=()=>{void(async()=>{if(!workspace||!view?.combat||!selected)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,target=selected,g=generation;await draftCache.discard(token,cam,id,'fighter',target);if(g===generation){await chooseFighter(target);await listDrafts();}})().catch(error=>tell(error.message,true));};
   for(const id of ['combat-edit-title','combat-notes'])get(id).addEventListener('input',keepNotesDraft);

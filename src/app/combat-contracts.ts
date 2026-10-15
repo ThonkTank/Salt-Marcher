@@ -23,6 +23,7 @@ export interface CombatState {
   sharedNotice?:string;
   participants: Combatant[]; notes: string; outcome: string; rewards?: CombatReward; sources?: Creature[]; sourceSerials?: Record<string,number>; assessment?: EncounterAssessment; partyBasis?: EncounterParty[]; generatorPreset?: {id:string;revision:number;hash:string;mobThreshold:number}; planOrigin?: { id: string; revision: number; name: string };
 }
+export interface CombatResolution {combatId:string;sceneId:string;combatRevision:number;sceneRevision:number;outcome:string;rewards:CombatReward|null;treasures:{id:string;revision:number;title:string;source:'combat'|'scene'|'location';quantity:number;available:number}[];next:string|null}
 export interface CombatView {
   combat: CombatState | null; canUndo: boolean; assessment?: EncounterAssessment;
   partyCandidates?: {characterId:string;name:string;membershipRevision:number;progressRevision:number;health:CharacterHealth|null}[];
@@ -52,6 +53,7 @@ export type CombatAction =
   | { kind: 'finish'; outcome: string; rewards?: FinishRewards; finishDraftWriteId?:string };
 export interface CombatCommand { commandId: string; campaignId: string; token: string; combatId: string | null; expectedRevision: number | null; action: CombatAction;draftWriteId?:string }
 export interface CombatAPI extends CombatDraftAPI {
+  combatResolution(token:string,sceneId:string,combatId:string,after:string|null):Promise<Result<CombatResolution>>;
   combat(token: string, sceneId: string, combatId?: string): Promise<Result<CombatView>>;
   executeCombat(command: CombatCommand): Promise<Result<CombatView>>;
 }

@@ -431,6 +431,9 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 .session-target-table :is(th,td) { padding:.35rem .65rem; text-align:right; border-bottom:1px solid #ccd6df; }
 .session-target-table :is(th,td):first-child { text-align:left; }
 
+.combat-resolution { margin:1rem 0; padding:1rem; border:1px solid #b9cbd5; border-radius:6px; background:#f6f9fc; }
+.combat-resolution-treasure { padding:.65rem 0; border-top:1px solid #d1dce4; }
+.combat-resolution-treasure p { margin:.3rem 0; }
 /* Keep the map in sight while planning and operating a journey. */
 #world-map-modes{margin:.5rem 0}
 #world-map-modes button[aria-pressed=true]{background:var(--selected);border-color:var(--blue);font-weight:600}
