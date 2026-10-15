@@ -226,6 +226,7 @@ test('planning area preserves the world editor and profile autosaves preserve li
  const note=x.el('note-title');x.el('preparation-knowledge').click();await settle();assert.equal(x.el('preparation-planning-workspace').hidden,true);assert.equal(x.el('note-title'),note);
  x.el('preparation-planning').click();await settle();assert.equal(x.el('session-party-levels').querySelector('input'),level);
  x.el('session-party-levels').querySelector('button').click();assert.equal(await x.ui.flushPreparation(),true);assert.deepEqual(x.store.session(x.workspace.token,x.el('plans').value).profile.party,[]);
+ await x.ui.openPreparedNote(x.ids.ada);assert.equal(x.el('preparation-knowledge-workspace').hidden,false);assert.equal(x.el('preparation-planning-workspace').hidden,true);
 });
 
 test('session generation gives local feedback, avoids duplicate sends and retains explicit optional reward modes',async t=>{
