@@ -104,6 +104,7 @@ for(const field of ['character-name','running-notes','running-read-aloud'])test(
     const input=document.getElementById(field);input.value='Neue Eingabe';input.oninput();
     const saving=ui.flushLive();await tick();assert.equal(typeof releaseSave,'function');
     assert.equal(document.getElementById('character-new').disabled,false,'The pointer target must remain clickable when blur begins a text save');
+    document.getElementById('character-editor').scrollIntoView=()=>{};document.getElementById('character-toggle').scrollIntoView=()=>{};
     document.getElementById('character-new').click();assert.equal(dialog.open,true);
     const name=document.getElementById('new-character-name');assert.equal(name.disabled,false);name.value='Nera';
     document.getElementById('character-form').onsubmit({preventDefault(){}});
