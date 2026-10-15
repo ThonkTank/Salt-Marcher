@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {AgendaQuery,AgendaPage,AgendaItem} from '../agenda-contracts';
-import type {CalendarEvent} from '../world-contracts';
 import {agendaOccurrence,unitMs} from '../agenda-model';
+import {checkedCalendarEvent} from '../world-model';
 import {readWorldCalendar} from './world';
 import {readLiveScene} from './live';
 import {checkedLocationDocument} from '../../features/location/location-schema';
@@ -15,7 +15,7 @@ export function readAgenda(db:any,cam:string,q:AgendaQuery):AgendaPage{
  const limit=q.horizonDays===null?null:BigInt(instant)+BigInt(q.horizonDays)*unitMs(calendar,'day'),items:AgendaItem[]=[],query=q.search.toLocaleLowerCase();let total=0;
  // Keep only one page plus its continuation while reading the existing event records.
  for(const row of db.prepare("SELECT id,revision,payload,checksum FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND (? IS NULL OR json_extract(payload,'$.locationId')=?) AND (? IS NULL OR id=?) ORDER BY id").iterate(cam,q.locationId??null,q.locationId??null,q.eventId??null,q.eventId??null)){
-  if(createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Kalenderereignis beschädigt.');const event:CalendarEvent=JSON.parse(row.payload);if(event.id!==row.id||event.revision!==row.revision)throw new Error('Kalenderereignis widerspricht seiner Identität.');
+  if(createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Kalenderereignis beschädigt.');const event=checkedCalendarEvent(JSON.parse(row.payload),true);if(event.id!==row.id||event.revision!==row.revision)throw new Error('Kalenderereignis widerspricht seiner Identität.');
   if(event.trashed||q.location==='current'&&event.locationId!==null&&event.locationId!==scene?.locationId)continue;
   const occurrence=agendaOccurrence(event,instant);if(!q.includePast&&occurrence.state==='past'||limit!==null&&occurrence.state==='upcoming'&&BigInt(occurrence.startMs)>limit)continue;
   if(query&&![event.name,event.notes].some(s=>s.toLocaleLowerCase().includes(query)))continue;total++;
