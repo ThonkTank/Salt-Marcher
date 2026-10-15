@@ -35,7 +35,7 @@ Quellen, Lieferphasen und verbleibende Zuordnungslücken stehen in [SCOPE.md](SC
 
 ## Gegenwärtiger Stand und offene Entscheidungen
 
-Dungeonzeichnung, strukturierte Raum-Keys und zahlreiche Speicher-/Hostfälle sind bereits belegt, jeweils innerhalb ihres dokumentierten Scopes. Atlas-/City-/Campaign-Integration liegt teilweise auf Kandidatenbranches. Vollständige E2E-Freigaben, sämtliche Item-/Encounter-/Live-/Reise-/Displayfunktionen sind daraus nicht ableitbar.
+Dungeonzeichnung, strukturierte Raum-Keys und zahlreiche Speicher-/Hostfälle sind bereits belegt, jeweils innerhalb ihres dokumentierten Scopes. Die Stadtoberfläche kann bestehende World-NPCs mit einem Wohnhaus und einem Arbeitsplatz verbinden; dieselben Referenzen bleiben durch Stadt-History, geschützte Regeneration und unabhängigen Kampagnentransfer erhalten. Haushalte, Berufe, Demografie, Beziehungen und Tagespläne fehlen weiterhin. Vollständige E2E-Freigaben und der übrige Gesamtumfang sind daraus nicht ableitbar.
 
 Obsidian ist der bisherige Arbeits-/Testhost. Die [Gesamtgrundlage](../ARCHITECTURE.md) und das [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) vom 11.10.2026 entscheiden einen kleinen TypeScript-Kern, SQLite und eine eigenständige Electron-Shell. Aktueller Code besitzt keinen Bestandsschutz. Produktimplementation, OS-/Recovery-/Capability-/Cutovernachweise und konkrete Featurecodecs bleiben zu liefern.
 
