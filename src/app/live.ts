@@ -45,26 +45,33 @@ const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b
 let context: Workspace | null = null, data: LiveView | null = null, sources: Preparation | null = null;
 let sessionChronicle:ChronicleView|null=null,sessionChronicleError='',sessionChronicleRequest=0;
 type RecapText=import('./live-contracts').SessionRecapDraft;
-type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;saving?:Promise<boolean>};
+type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;saving?:Promise<boolean>};
 const recapDrafts=new Map<string,RecapWork>();
 function recapFields():RecapText{const dialog=document.getElementById('live-session-close-dialog') as HTMLDialogElement|null;return{summary:value(dialog?.open?'live-session-close-summary':'live-session-summary'),handoff:value(dialog?.open?'live-session-close-handoff':'live-session-handoff')};}
+function recapReadError(){return context&&recapDrafts.get(context.campaign.id)?.readError;}
 function showRecapSave(){
- const state=context&&recapDrafts.get(context.campaign.id),text=state?.error||(state?.dirty?'Rückblickentwurf wird gesichert…':state&&(state.text.summary||state.text.handoff)?'Rückblickentwurf gespeichert. Der Spielabend läuft weiter.':'');
+ const state=context&&recapDrafts.get(context.campaign.id),text=state?.readError||state?.error||(state?.dirty?'Rückblickentwurf wird gesichert…':state&&(state.text.summary||state.text.handoff)?'Rückblickentwurf gespeichert. Der Spielabend läuft weiter.':'');
  for(const id of ['live-session-draft-status','live-session-close-draft-status']){const label=document.getElementById(id);if(label)label.textContent=text;}
- for(const id of ['live-session-draft-retry','live-session-close-draft-retry']){const button=document.getElementById(id);if(button)button.hidden=!state?.error;}
+ for(const id of ['live-session-draft-retry','live-session-close-draft-retry']){const button=document.getElementById(id);if(button){button.hidden=!(state?.error||state?.readError);button.textContent=state?.readError?'Rückblick erneut laden':'Eigene Fassung erneut sichern…';}}
+ for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff']){const field=document.getElementById(id) as HTMLTextAreaElement|null;if(field)field.readOnly=!state||!!state.readError;}
+ if(state?.readError)for(const id of ['live-session-close-confirm','live-session-close-prepare','live-session-close-use-suggestion']){const button=document.getElementById(id) as HTMLButtonElement|null;if(button)button.disabled=true;}
 }
 async function retryRecapSave(){
  const w=context,state=w&&recapDrafts.get(w.campaign.id);if(!w||!state)return;
- try{if(state.saving)await state.saving;if(context!==w)return;const text={...state.text},basis=state.basis;const saved=unwrap(await window.campaign.live(w.token)).recapDraft??null;if(context!==w||state.saving||!equal(text,state.text)||!equal(basis,state.basis))return;
+ try{if(state.saving)await state.saving;if(context!==w)return;const text={...state.text},basis=state.basis,readError=state.readError;const view=unwrap(await window.campaign.live(w.token));if(context!==w||state.saving||!equal(text,state.text)||!equal(basis,state.basis)||readError!==state.readError)return;
+  if(view.recapDraftError)throw new Error(view.recapDraftError);const saved=view.recapDraft??null;
+  if(state.readError&&!state.dirty){state.text=saved??{summary:'',handoff:''};state.basis=saved;state.readError='';state.error='';for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff']){const field=document.getElementById(id) as HTMLTextAreaElement|null;if(field)field.value=id.endsWith('handoff')?state.text.handoff:state.text.summary;}showRecapSave();renderLiveSession();return;}
+  state.readError='';showRecapSave();renderLiveSession();
   if(!equal(saved,state.basis)&&!equal(saved,state.text)&&!window.confirm('Es liegt ein anderer gespeicherter Rückblick vor.\n\nRückblick:\n'+(saved?.summary??'')+'\n\nNächster Spielabend:\n'+(saved?.handoff??'')+'\n\nDurch deine weiterhin sichtbare Fassung ersetzen?'))return;
   state.basis=saved;state.dirty=true;state.error='';showRecapSave();await saveRecap(w,state);
  }catch(error){if(context===w){state.error='Rückblickentwurf nicht gesichert: '+(error as Error).message;showRecapSave();}}
 }
-function queueRecapSave(text?:RecapText){if(!context)return;const w=context,state=recapDrafts.get(w.campaign.id);if(!state)return;state.text=text??recapFields();state.dirty=true;showRecapSave();void saveRecap(w,state);}
+function queueRecapSave(text?:RecapText){if(!context)return;const w=context,state=recapDrafts.get(w.campaign.id);if(!state||state.readError)return;state.text=text??recapFields();state.dirty=true;showRecapSave();void saveRecap(w,state);}
 async function saveRecap(w:Workspace,state:RecapWork):Promise<boolean>{
  if(state.saving)return state.saving;
  if(!state.dirty)return true;
- const task=(async()=>{while(state.dirty){const text={...state.text};try{unwrap(await window.campaign.keepSessionRecapDraft(w.token,text,state.basis));}catch(error){try{const saved=unwrap(await window.campaign.live(w.token)).recapDraft;if(!saved||!equal(saved,text))throw error;}catch{state.error='Rückblickentwurf nicht gesichert: '+(error as Error).message;if(context?.campaign.id===w.campaign.id)showRecapSave();return false;}}
+ if(state.readError)return false;
+ const task=(async()=>{while(state.dirty){const text={...state.text};try{unwrap(await window.campaign.keepSessionRecapDraft(w.token,text,state.basis));}catch(error){try{const view=unwrap(await window.campaign.live(w.token)),saved=view.recapDraft;if(view.recapDraftError||!saved||!equal(saved,text))throw error;}catch{state.error='Rückblickentwurf nicht gesichert: '+(error as Error).message;if(context?.campaign.id===w.campaign.id)showRecapSave();return false;}}
  state.basis=text;state.error='';if(equal(state.text,text))state.dirty=false;if(context?.campaign.id===w.campaign.id)showRecapSave();}return true;})();
  state.saving=task;try{return await task;}finally{if(state.saving===task)state.saving=undefined;}
 }
@@ -103,7 +110,7 @@ export function activateLive(workspace: Workspace) {
   if(context){const retained=recapDrafts.get(context.campaign.id),text=recapFields();if(retained&&!equal(retained.text,text)){retained.text=text;retained.dirty=true;}}
   const draft=workspace?recapDrafts.get(workspace.campaign.id):undefined;
   get<HTMLTextAreaElement>('live-session-summary').value=draft?.text.summary??'';get<HTMLTextAreaElement>('live-session-handoff').value=draft?.text.handoff??'';
-  for(const id of ['live-session-summary','live-session-handoff'])get<HTMLTextAreaElement>(id).readOnly=!draft;
+  for(const id of ['live-session-summary','live-session-handoff'])get<HTMLTextAreaElement>(id).readOnly=!draft||!!draft.readError;
   sessionResumeRequest++;const resumeDialog=document.getElementById('live-session-resume-dialog') as HTMLDialogElement|null;if(resumeDialog?.open)resumeDialog.close();sessionCloseRequest++;const closeDialog=document.getElementById('live-session-close-dialog') as HTMLDialogElement|null;if(closeDialog?.open)closeDialog.close();
   sessionCloseOpeningBasis=null;handoffVisitDraft=null;const handoffDialog=document.getElementById('handoff-visit-dialog') as HTMLDialogElement|null;if(handoffDialog?.open)handoffDialog.close();
   visitBinder?.reset();timeNavigator?.reset();manualTimePreview=null;clockCalendar=null;timePreviewRequest++;liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
@@ -127,7 +134,8 @@ export async function openLive(planId?: string, visitId?: string) {
     const [liveResult,prepResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, '')]),live=unwrap(liveResult),prep=unwrap(prepResult);
     if (context?.token !== token) return;
     let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
-    for(const id of ['live-session-summary','live-session-handoff'])get<HTMLTextAreaElement>(id).readOnly=false;showRecapSave();
+    if(recap.readError&&!live.recapDraftError&&!recap.dirty){recap.text=live.recapDraft??{summary:'',handoff:''};recap.basis=live.recapDraft??null;get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
+    recap.readError=live.recapDraftError;showRecapSave();
     data = live; sources = prep;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
     characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
     // Reopen an existing table without initializing a group or starting a new evening.
@@ -163,7 +171,7 @@ export async function addLiveNpc(id:string,stillCurrent:()=>boolean=()=>true){if
 export async function addLiveCreature(id:string,count:number,grouped:boolean) { const token=context?.token;if(await ensureLiveRuntime()&&context?.token===token)await addCatalogCreature(id,count,grouped); }
 function busy(on: boolean, structural = false, textSave = false) {
   sessionNavigatorBusy(on&&!textSave);
-  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'adoption-confirm-packet', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-');
+  for (const id of ['character-new', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'adoption-confirm-packet', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-') || id==='live-session-end'&&!!recapReadError();
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
@@ -371,7 +379,7 @@ function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('liv
 function renderLiveMomentDraft(){const next=liveMomentDrafts.switchTo(data?.scene?.id??null,currentLiveMomentDraft());if(next.changed){writeLiveMomentDraft(next.draft);get('live-moment-result').textContent='';}}
 function renderLiveSession(){
   const recap=liveSessionRecap(sessionChronicle?.entries??[],sessionChronicle?.latestSessionMarker);sessionResumeButton.hidden=recap.open||!recap.marker;sessionResumeButton.disabled=!!sessionChronicleError||intentBlocked();const status=get('live-session-status'),list=get('live-session-events');list.replaceChildren();
-  get<HTMLButtonElement>('live-session-start').hidden=recap.open||!!recap.marker;get<HTMLButtonElement>('live-session-end').hidden=!recap.open;get<HTMLButtonElement>('live-session-start').disabled=!!sessionChronicleError||intentBlocked();get<HTMLButtonElement>('live-session-end').disabled=!!sessionChronicleError||intentBlocked();get('live-session-summary-label').hidden=!recap.open;get('live-session-handoff-label').hidden=!recap.open;
+  get<HTMLButtonElement>('live-session-start').hidden=recap.open||!!recap.marker;get<HTMLButtonElement>('live-session-end').hidden=!recap.open;get<HTMLButtonElement>('live-session-start').disabled=!!sessionChronicleError||intentBlocked();get<HTMLButtonElement>('live-session-end').disabled=!!sessionChronicleError||intentBlocked()||!!recapReadError();get('live-session-summary-label').hidden=!recap.open;get('live-session-handoff-label').hidden=!recap.open;
   if(sessionChronicleError)status.textContent='Rückblick nicht verfügbar: '+sessionChronicleError;
   else if(!recap.marker)status.textContent='Noch kein Spielabend markiert.';
   else{const when=new Date(recap.marker.recordedAt),label=Number.isNaN(when.valueOf())?'':when.toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'});status.textContent=recap.open?'Läuft seit '+label+' · '+recap.entries.length+' bestätigte Ereignisse':'Letzter Spielabend beendet '+label+' · '+recap.entries.length+' bestätigte Ereignisse'+(recap.marker.summary?' · '+recap.marker.summary:'');}
@@ -396,10 +404,10 @@ function renderSessionCloseAudit(audit:SessionCloseAudit,current:()=>boolean){
 }
 async function loadSessionCloseReview(preserveSummary=false){
   const token=context?.token,recap=liveSessionRecap(sessionChronicle?.entries??[],sessionChronicle?.latestSessionMarker),dialog=get<HTMLDialogElement>('live-session-close-dialog'),scene=data?.scene,scenes=data?.scenes;
-  if(!token||!scene||!scenes||sessionChronicleError||!recap.open){renderLiveSession();return;}
+  if(!token||!scene||!scenes||sessionChronicleError||recapReadError()||!recap.open){renderLiveSession();return;}
   const run=++sessionCloseRequest,selectedPlan=scene.adoption?.planId||value('live-session-plan')||sources?.selection.planId||sources?.plans[0]?.id||null,locationId=scene.locationId??null;
   const owner=context,signature=()=>JSON.stringify([data?.focusId,data?.focusRevision,data?.rosterRevision,data?.scene?.id,data?.scene?.locationId,data?.scene?.membershipRevision,data?.scene?.clock,data?.scenes.map(row=>[row.id,row.membershipRevision,row.clock])]),shown=signature();
-  const current=()=>context===owner&&context?.token===token&&signature()===shown,reviewCurrent=()=>current()&&run===sessionCloseRequest&&dialog.open;
+  const current=()=>context===owner&&context?.token===token&&signature()===shown,reviewCurrent=()=>current()&&!recapReadError()&&run===sessionCloseRequest&&dialog.open;
   sessionCloseOpeningBasis={generation:run,current,sceneTitle:scene.title||'Unbenannte Gruppe',recommendedPlanId:selectedPlan,beforeVisitId:null,locationId,locationTitle:sources?.locations.find(row=>row.document.id===locationId)?.document.name||'Aktueller Gruppenort',noteIds:[]};
   if(!preserveSummary){get<HTMLTextAreaElement>('live-session-close-summary').value=value('live-session-summary');get<HTMLTextAreaElement>('live-session-close-handoff').value=value('live-session-handoff');}
   if(!dialog.open)dialog.showModal();dialog.setAttribute('aria-busy','true');get('live-session-close-status').textContent='Offene Spielstände werden geprüft…';get<HTMLButtonElement>('live-session-close-confirm').disabled=true;get<HTMLButtonElement>('live-session-close-prepare').disabled=true;get<HTMLButtonElement>('live-session-close-refresh').disabled=true;get('live-session-close-masks').replaceChildren();get('live-session-close-suggestion').textContent='';get<HTMLButtonElement>('live-session-close-use-suggestion').disabled=true;
@@ -801,7 +809,7 @@ async function readSessionChronicle(token:string):Promise<Result<ChronicleView>>
 async function markLiveSession(marker:'start'|'end',submittedSummary?:string,submittedHandoff?:string,stillCurrent:()=>boolean=()=>true):Promise<boolean>{
  const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,summary=marker==='end'?(submittedSummary??value('live-session-summary')):'',handoff=marker==='end'?(submittedHandoff??value('live-session-handoff')):'';
  const current=()=>stillCurrent()&&context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focusRevision;
- if(!token||!sceneId||sessionChronicleError||!sessionChronicle)return false;
+ if(!token||!sceneId||sessionChronicleError||!sessionChronicle||marker==='end'&&recapReadError())return false;
  try{if(!await flushLive()||!current())return false;const ack=await execute({kind:'session-marker',sceneId,expectedRevision:data!.scene!.revision,marker,summary,handoff});if(!ack||!current())return false;
   const unchanged=value('live-session-summary')===summary;if(marker==='end'&&unchanged)get<HTMLTextAreaElement>('live-session-summary').value='';if(marker==='end'&&value('live-session-handoff')===handoff)get<HTMLTextAreaElement>('live-session-handoff').value='';
   if(marker==='end')queueRecapSave({summary:value('live-session-summary'),handoff:value('live-session-handoff')});

@@ -62,9 +62,22 @@ verborgene Textfelder und eigene/geerbte Serializer dürfen keine andere
 JSONform als den geprüften Entwurf speichern. Ungültige Eingabe oder erwartete
 Basis wird vor jeder Schreibwirkung abgewiesen; vorhandene Autorenbytes
 bleiben erhalten. Read, Backup und Kampagnentransfer teilen denselben Guard.
-Unlesbare Altwerte werden offengelegt und nicht automatisch als leerer
-Entwurf neu gespeichert. Deren Fehlerisolation gegenüber unabhängiger
-Livebedienung bleibt gesondert zu prüfen.
+Unlesbare Altwerte liefern in `LiveView` einen eigenen `recapDraftError`,
+keinen leeren oder bestätigten Entwurf. Die gesunde Scene und Party bleiben
+lesbar; ohne bereits ungesicherten eigenen Rückblick lassen sich ihre normalen
+Eingaben weiter sichern. Eine bestehende ungesicherte eigene Rückblickfassung
+behält ihre übergreifende Flush-/Close-Sicherung bis zur Klärung. Rückblickfelder
+bleiben schreibgeschützt, der davon abhängige Abschluss bleibt gesperrt.
+„Rückblick erneut laden“ liest nur diese Fassung neu und ersetzt keine offenen
+Sceneeingaben. Nach einer wieder lesbaren Quelle werden die Texte geladen;
+eine noch offene eigene Fassung bleibt erhalten und benötigt vor dem Ersetzen
+einer anderen gespeicherten Fassung die vorhandene ausdrückliche Entscheidung.
+
+Der Schreibguard prüft den gespeicherten Originalwert weiterhin strikt. Auch
+Backup und Kampagnentransfer weisen ihn ab; ein sicherer Backupvorgänger wird
+nicht ersetzt. Es gibt keine automatische Reparatur, Datenmigration oder neue
+Marker-/Schreibroute. Ein Fehler der eigentlichen Scene-/Partyquelle bleibt
+ein Gesamtfehler und wird nicht als Rückblickproblem abgeschwächt.
 
 ## Offene Prüfungen
 
@@ -77,6 +90,9 @@ Livebedienung bleibt gesondert zu prüfen.
 - Größere Kampagne mit vielen abgeschlossenen Plänen: Requestzahl, Historyscan
   und Zeit bis zur bedienbaren Startgruppe messen. Erst daraus Query-/Index-
   oder Pagingbedarf ableiten.
+- Native Wiederaufnahme mit unlesbarem Rückblick, unabhängiger Sceneeingabe,
+  wiederhergestellter Quelle und später Readantwort prüfen; Texte wortgetreu
+  erhalten und keinen Abschluss aus einem Ersatztext erzeugen.
 - Native Tastatur-, Fokus- und 200-%-Bedienung bei fehlender Quelle und nach
   unabhängiger Kampagnenkopie abnehmen.
 
