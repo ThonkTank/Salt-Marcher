@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import type {ChronicleEntry} from '../../src/app/chronicle-contracts';
-import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls,settleOptionalSessionSource,settleSessionCloseSources} from '../../src/app/live-session-close';
+import {handoffVisitSeed,latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls,settleOptionalSessionSource,settleSessionCloseSources} from '../../src/app/live-session-close';
 
 function fixture(){
   const {document}=parseHTML('<dialog open></dialog><textarea id="draft"></textarea><textarea id="review"></textarea>');
@@ -38,6 +38,11 @@ test('an empty latest session handoff does not revive older completed work',()=>
 
 test('the latest completed session handoff remains visible during the next session',()=>{
   assert.equal(latestCompletedSessionHandoff([marker('current','start'),marker('latest','end','Am Nordtor fortsetzen'),marker('old','end','Alte Aufgabe')]),'Am Nordtor fortsetzen');
+});
+
+test('a completed handoff becomes a concise authored visit without losing its open work',()=>{
+  assert.deepEqual(handoffVisitSeed('Nächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen','Späher'),{title:'Nordtor · Klippenhafen',notes:'Übergabe vom letzten Spielabend\n\nNächster Einstieg: Nordtor · Klippenhafen\n- Frist: Die Flut kommt\n- Kampf fortsetzen: Torwachen'});
+  assert.equal(handoffVisitSeed('','Späher').title,'Nächster Spielabend: Späher');
 });
 
 test('returning sessions enter through the preparation dashboard without a duplicate start action',()=>{

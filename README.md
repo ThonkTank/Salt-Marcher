@@ -887,3 +887,14 @@ Der Chronikmoment wird zuerst über den bestehenden Liveauftrag bestätigt. Ques
 ### 0.94 – Figurengruppen aus der Ortsmappe führen
 
 Figurengruppen lassen sich kampagnenweit suchen, am gewählten Ort neu anlegen und für einen Ortswechsel im bisherigen Gruppenbereich öffnen. Die lesende Gruppenübersicht zeigt aktuelle Mitglieder, HP und Einzelstandorte in 25er-Schritten sowie direkte Weltprofil-Einstiege. Auch Gruppen ohne gemeinsamen Ort sind auffindbar. „Gruppenangaben übernehmen“ bestätigt den vorbereiteten Zielort für alle enthaltenen NSCs; neue leere Gruppen starten am gewählten Ort und lassen sich im Gruppenbereich mit Kreaturen füllen. Bestehende Identitäten, HP, Texte und Vorlagen bleiben beim vorhandenen Eigentümer. Keine neue Schreibgrenze oder Schemaänderung.
+
+### Desktopstand 0.95: Die Übergabe wird zum nächsten Einstieg
+
+Das Startbriefing jeder Gruppe kann die letzte Spielabendübergabe jetzt ausdrücklich als nächsten Besuch vorbereiten. Überschrift, vollständige offene Punkte und aktueller Gruppenort werden in den vorhandenen Planeditor übernommen. Gibt es bereits einen empfohlenen ungespielten Besuch, wird der Übergabebesuch unmittelbar davor eingefügt; dadurch ist er beim nächsten Öffnen tatsächlich der Einstieg. Ohne passenden Plan entsteht wie bei anderen spontanen Folgebesuchen „Nächster Spielabend“.
+
+Die Aktion speichert einen normalen Planbesuch und öffnet ihn sofort zur Bearbeitung. Sie verändert weder Fokusgruppe noch Zeit, Besuchsstatus oder Spieleranzeige. Der gespeicherte Übergabetext in der Chronik bleibt unverändert und nachvollziehbar.
+
+
+### 0.97 – Vom NSC zum konkreten Schauplatz
+
+Ortsmappe, Gruppenübersicht und NSC-Weltprofil öffnen vorhandene Wohnhäuser, Arbeitsgebäude und den aktuellen Dungeonraum desselben NSCs. Haushalts- und Berufsnamen bleiben sichtbar; Wohn-/Arbeitsbindung und aktuelle Feinposition sind getrennt benannt. Die Suche lädt höchstens 40 Schauplätze je Seite. Ein Klick wählt gezielt das Gebäude im vorhandenen Stadtinspektor oder den Raum im Atlas aus. Öffnen bewegt weder NSC noch Gruppe und verändert weder HP noch Zeit; Haus-/Haushalts-/Berufsangaben bleiben beim bisherigen Stadteditor. Neue lesende Projektion ohne Schemaänderung.
