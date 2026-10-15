@@ -149,6 +149,12 @@ Die Stadtübersicht projiziert die Wochenpläne ihrer bestätigten Bewohner und 
 
 Geplante Aktivität, Hausziel und nächster Beginn stehen neben dem aktuellen World-Ort und gegebenenfalls Dungeonraum. Ruhetage und Kalenderprobleme bleiben sichtbar. Ziel-/Wohn-/Arbeitshaus öffnen den vorhandenen Stadtinspektor; Profil öffnen führt zur selben NPC-Identität und deren bestehendem Autoreneditor. Alle Angaben sind Leseprojektionen. Eine Wohn- oder Arbeitsbindung und ein Tagesplan beweisen keine tatsächliche Anwesenheit in einem Haus.
 
+### Desktop-Arbeitsstand 0.118: Feste Ortsziele im Tagesplan
+
+Aktivitäten des Wochenplans und der Datumsausnahmen können einen bestehenden Kampagnenort als festes Ziel referenzieren. Wohnhaus, Arbeitsplatz und freie Hinweise bleiben erhalten. Der normale Profilentwurf sichert die Auswahl; NPC übernehmen bestätigt sie mit dem gesamten Weltprofil. Bestehende Verweise auf archivierte Orte bleiben lesbar und sind als nicht verfügbar markiert; neue Ziele benötigen einen aktiven Ort.
+
+Das NSC-Dossier und die Stadtaktivitäten zeigen das aktuelle geplante Ortsziel und öffnen dessen Ortsmappe. Der tatsächliche Standort bleibt getrennt. Wochenzeiten und Ausnahmewechsel folgen weiterhin der gewählten Gruppenuhr. Kampagnenkopien ordnen Ortsziele auch in gesicherten Entwurfsrohfeldern auf die neuen Ortsidentitäten um. Es entstehen keine automatische Bewegung und keine zweite Uhr.
+
 ### Desktop-Arbeitsstand 0.117: veraltete Gruppenuhr sicher neu wählen
 
 Ist die in der Stadtansicht ausgewählte Gruppenuhr bei einer späteren Aktualisierung nicht mehr aktiv, liefert der Lesepfad einen ausdrücklichen leeren Auswahlzustand und die verbleibenden Gruppenuhren. Die Oberfläche entfernt die veraltete Auswahl und verlangt eine neue Wahl. Sie fällt nicht still auf die Fokusgruppe oder die erste sichtbare Gruppe zurück und zeigt bis zur Wahl keine Aktivitäten mit einer falschen Zeitbasis.

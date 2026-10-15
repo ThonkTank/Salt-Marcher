@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {NpcCastQuery,NpcCastPage,NpcDossier} from '../npc-cast-contracts';
+import {readNpcPlanLocation} from './npc-daily-places';
 import {dailyPlanAt} from '../npc-daily-plan';
 import {readNpcPlaces} from './npc-places';
 import {readNpc,readNpcs} from './npcs';
@@ -25,5 +26,6 @@ export function readNpcDossier(db:any,cam:string,sceneId:string,id:string):NpcDo
  const logs=db.prepare('SELECT * FROM autonomy_log WHERE campaign_id=? AND actor_id=? ORDER BY rowid DESC LIMIT 12').all(cam,id).map((r:any)=>{const l=decode(r);return{id:l.id,text:l.text};});
  const calendar=readWorldCalendar(db,cam),places=readNpcPlaces(db,cam,id,0),dailyPlan={...dailyPlanAt(npc.record.dailyPlan,s.clock.instantMs,calendar.daySeconds,calendar.weekdays.length,npc.record.dailyOverrides),daySeconds:calendar.daySeconds,weekdayTitle:calendar.weekdays[Number(BigInt(s.clock.instantMs)/(BigInt(calendar.daySeconds)*1000n)%BigInt(calendar.weekdays.length))]!,weekdayTitles:[...calendar.weekdays],nextDate:null as string|null};
  if(dailyPlan.nextInstantMs)dailyPlan.nextDate=calendarDate(calendar,dailyPlan.nextInstantMs);
- return{dailyPlan,places,scene:s,date:calendarDate(calendar,s.clock.instantMs),npc,locationTitle:locationTitle(db,cam,npc.locationId),faction,relations:refs,relationCount,groups,autonomy,logs};
+ const targets=[...new Set([...(npc.record.dailyPlan??[]),dailyPlan.current,dailyPlan.next].filter(s=>s?.place==='location').map(s=>s!.locationId!))].map(id=>readNpcPlanLocation(db,cam,id));
+ return{dailyPlan:{...dailyPlan,targets},places,scene:s,date:calendarDate(calendar,s.clock.instantMs),npc,locationTitle:locationTitle(db,cam,npc.locationId),faction,relations:refs,relationCount,groups,autonomy,logs};
 }

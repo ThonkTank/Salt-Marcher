@@ -7,7 +7,7 @@ import {readCreature} from './encounters';
 import {syncOpenMaskHealth} from './mask-health';
 import {worldNoteDocument} from '../../features/world/world-notes';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
-import {checkedNpcSchedule} from '../npc-daily-plan';
+import {checkedNpcSchedule,npcPlanLocationIds} from '../npc-daily-plan';
 import {readWorldCalendar} from './world';
 import {checkedHealth} from '../progression';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
@@ -56,6 +56,7 @@ export function executeNpc(db:any,c:NpcCommand,guard:()=>void):NpcView{return db
  if(c.draftWriteId!==undefined&&npcDraft(db,cam,c.npc.id)?.writeId!==c.draftWriteId)throw new Error('NPC-Entwurf inzwischen geändert.');
  const v=c.npc,old=c.expectedNoteRevision===null?null:readNpc(db,cam,v.id);if(c.expectedNoteRevision===null&&db.prepare('SELECT 1 FROM world_note WHERE campaign_id=? AND id=?').get(cam,v.id)||old&&(old.noteRevision!==c.expectedNoteRevision||old.record.revision!==c.expectedRecordRevision||old.actorRevision!==c.expectedActorRevision||old.positionRevision!==c.expectedPositionRevision))throw new Error('NPC, Notizen, Gesundheit oder Position inzwischen geändert. Neu öffnen.');
  const r=checkedNpcRecord(v.record),calendar=readWorldCalendar(db,cam);checkedNpcSchedule(r.dailyPlan??[],r.dailyOverrides??[],calendar.daySeconds,calendar.weekdays.length);if(r.id!==v.id||r.revision!==c.expectedRecordRevision)throw new Error('NPC-Profil gehört zu einem anderen Ausgangsstand.');
+ for(const id of npcPlanLocationIds(r)){const target=db.prepare('SELECT trashed FROM location WHERE campaign_id=? AND id=?').get(cam,id);if(!target||target.trashed&&!npcPlanLocationIds(old?.record??{}).includes(id))throw new Error('Tagesplanziel nicht verfügbar.');}
  if(r.factionId&&!db.prepare("SELECT 1 FROM world_note WHERE campaign_id=? AND id=? AND trashed=0 AND json_extract(payload,'$.kind')='faction'").get(cam,r.factionId))throw new Error('Fraktion nicht verfügbar.');
  if(v.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(cam,v.locationId))throw new Error('Ort nicht verfügbar.');
  if(old?.actorRevision!==null&&old?.actorRevision!==undefined&&old.creatureId!==v.creatureId)throw new Error('Die Kreaturreferenz einer materialisierten Figur bleibt erhalten. Lege eine andere Figur an.');
