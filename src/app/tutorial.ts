@@ -107,7 +107,6 @@ export const lessons = [
 ];
 
 export const tutorialSurfaceLessons={
-  'note-text-reference':'text-references','text-reference-insert':'text-references',
   'agenda-open':'campaign-agenda',
   'live-generation-open':'live-generation',
   'session-copy-open':'session-reuse',
@@ -116,6 +115,7 @@ export const tutorialSurfaceLessons={
 } as const;
 
 export const tutorialCapabilityLessons={
+  'note-text-reference':'text-references','text-reference-insert':'text-references',
   'world-links-open':'world-links',
   'live-npc-cast':'npc-dossier',
   'journey-replan':'travel-camp','journey-wait':'travel-camp','journey-rest':'travel-camp','time-plan-open':'calendar-time',
