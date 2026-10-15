@@ -215,3 +215,12 @@ for(const mode of ['party','weather','stale-party','stale-weather','stale-map','
   assert.ok(x.store.db.serialize().equals(sourceBytes));assert.ok(readFileSync(snapshot).equals(snapshotBytes));
  }finally{copy.close();}
 });
+
+
+test('presentation speed is pinned at acceptance and never scales checkpoint time',()=>{
+ const x=setup();try{
+  const preview=x.preview(),before=x.store.db.serialize();assert.throws(()=>x.world({kind:'journey',preview,presentationSpeed:3}),/Wiedergabe/);assert.ok(x.store.db.serialize().equals(before));
+  let j=x.world({kind:'journey',preview,presentationSpeed:10}).scene.journey;assert.equal(j.presentationSpeed,10);assert.equal(j.plannedSeconds,9);
+  x.world(x.step(j,1).action);j=x.state().journey;assert.equal(x.state().scene.clock.instantMs,'3000');x.world(x.step(j,12).action);assert.equal(x.state().scene.clock.instantMs,'9000');assert.equal(x.state().journey.status,'arrived');
+ }finally{x.cleanup();}
+});
