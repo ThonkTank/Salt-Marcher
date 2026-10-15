@@ -36,7 +36,7 @@ import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './wo
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,prepareNextVisit } from './preparation';
-import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openPlannedVisitReview, prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
+import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openPlannedVisitReview,prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, openCatalogReference, flushCatalog } from './catalog-ui';
 import {initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
@@ -69,7 +69,7 @@ initPreparation(status, async scopeId => {
   showTab('atlas');
 }, async (planId, visitId, sourceCurrent=()=>true) => {
   const owner=workspace;if(!owner||!sourceCurrent()||!(await leaveWorkspace())||workspace!==owner||!sourceCurrent())return;
-  closeSessionPacket();showTab('live');if(!await openPlannedVisitReview(planId,visitId,()=>workspace===owner))status('Besuch konnte nicht zur Übernahme geöffnet werden. Plan und Gruppenstand erneut prüfen.',true);
+  closeSessionPacket();showTab('live');await openPlannedVisitReview(planId,visitId,()=>workspace===owner);
 });
 setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());

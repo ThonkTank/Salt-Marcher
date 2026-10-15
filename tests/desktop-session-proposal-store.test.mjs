@@ -129,6 +129,7 @@ test('failure while recording the second batch member rolls back the entire adop
 
 test('a delayed accepted batch read cannot populate the next plan in the real session UI',async t=>{
  const x=fixture(t),{window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={window:globalThis.window,document:globalThis.document};Object.assign(globalThis,{window,document});
+ const storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
  const create=document.createElement.bind(document);document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='select')Object.defineProperty(node,'value',{value:'',writable:true});if(tag==='dialog'){node.showModal=()=>{node.open=true;};node.close=()=>{node.open=false;};}return node;};
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  const requireUI=createRequire(import.meta.url),file=requireUI.resolve('../.build/session-review-owner.cjs');delete requireUI.cache[file];const ui=requireUI(file),messages=[];

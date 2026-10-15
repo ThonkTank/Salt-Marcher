@@ -108,6 +108,14 @@ export async function openLive(planId?: string, visitId?: string) {
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
   } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-empty').hidden = false; tell((error as Error).message, true); }
 }
+export async function openPlannedVisitReview(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
+ const owner=context,token=owner?.token,current=()=>stillCurrent()&&context===owner&&context?.token===token;if(!token||!current())return false;
+ await openLive(planId,visitId);if(!current())return false;
+ if(value('adoption-plan')!==planId||value('adoption-visit')!==visitId){tell('Der vorbereitete Besuch ist am Spieltisch nicht mehr verfügbar.',true);return false;}
+ if(!await ensureLiveRuntime()||!current())return false;
+ get<HTMLDetailsElement>('adoption-picker').open=true;const reviewed=await previewPlannedVisit(planId,visitId,current);if(!current())return false;
+ const opened=reviewed&&get<HTMLDialogElement>('adoption-dialog').open;if(!opened)tell('Die Übernahmeprüfung konnte nicht geöffnet werden.',true);return opened;
+}
 async function ensureLiveRuntime() {
   if(!context)return false;
   const token=context.token,sceneId=data?.scene?.id??null;
@@ -116,11 +124,6 @@ async function ensureLiveRuntime() {
   if (!data) {await openLive();if(!current())return false;} if (!data) return false;
   if (!data.scene) {if(!await execute({kind:'initialize',expectedRosterRevision:data.rosterRevision})||!current())return false;}
   resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();return !!data.scene;
-}
-export async function openPlannedVisitReview(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
-  const owner=context,token=owner?.token,current=()=>stillCurrent()&&context===owner&&context?.token===token;
-  if(!token||!current())return false;await openLive(planId,visitId);if(!current()||!await ensureLiveRuntime()||!current())return false;
-  get<HTMLDetailsElement>('adoption-picker').open=true;return await previewPlannedVisit(planId,visitId,current);
 }
 export async function openLiveSoundboard(){
  if(!data?.scene){get('live-continue').scrollIntoView({block:'center'});get<HTMLButtonElement>('live-continue').focus();tell('Öffne zuerst eine Gruppe am Spieltisch.');return;}

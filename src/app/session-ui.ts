@@ -1,3 +1,4 @@
+import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved} from './commit-confirmation';
 import {SessionReview,sameSessionReviewBasis,type SessionReviewBasis} from './session-review-ui';
 import {SessionCopy} from './session-copy-ui';
 import {initSessionPacket,closePreparationPacket} from './session-packet-ui';
@@ -68,6 +69,36 @@ async function load(){
 }
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
 function visitInput(detail:VisitDetail){return JSON.stringify([detail.readAloud,detail.noteIds,detail.reward]);}
+async function acceptSessionResult(action:SessionAction,result:SessionView,gen:number,token:string,ownerPlan:string){
+ if(gen!==generation||workspace?.token!==token||plan?.id!==ownerPlan)return;
+ view=result;
+ if(action.kind==='replace-plan'){
+  profileDirty=visitDirty=false;groupDrafts.clear();profileDraft=structuredClone(result.profile);visitDraft=null;run=null;previewRequest++;renderRun();get('session-history').replaceChildren();
+  replacement=null;get<HTMLDialogElement>('plan-replacement-dialog').close();
+  await refreshBase();if(workspace?.token===token&&plan?.id===ownerPlan)await load();tell('Plan ersetzt. Angenommene Weltinhalte bleiben erhalten.');return;
+ }
+ if(action.kind==='profile'){
+  const latest=profileDraft;
+  profileDirty=!!latest&&JSON.stringify({...latest,revision:action.profile.revision})!==JSON.stringify(action.profile);
+  profileDraft=profileDirty?{...latest!,revision:result.profile.revision}:structuredClone(result.profile);
+ }else if(!profileDirty)profileDraft=structuredClone(result.profile);
+ const confirmed=result.visits.find(v=>v.visitId===visitId)??null;
+ if(action.kind==='visit'){
+  const latest=visitDraft;
+  visitDirty=!!latest&&visitInput(latest)!==visitInput(action.detail);
+  visitDraft=visitDirty&&confirmed?{...structuredClone(confirmed),readAloud:latest!.readAloud,noteIds:latest!.noteIds,reward:latest!.reward}:structuredClone(confirmed);
+ }else if(!visitDirty)visitDraft=structuredClone(confirmed);
+ if(action.kind==='group-content'){
+  const latest=groupDrafts.get(action.groupId),confirmed=result.groups.find(g=>g.id===action.groupId);
+  if(latest&&confirmed){
+   if(latest.title===action.title&&latest.notes===action.notes)groupDrafts.delete(action.groupId);
+   else groupDrafts.set(action.groupId,{...latest,revision:confirmed.revision});
+  }
+ }
+ await refreshBase();
+ if(gen===generation)render();
+ if(workspace?.token===token&&plan?.id===ownerPlan)tell('Spielabend-Inhalte gespeichert.');
+}
 async function execute(action:SessionAction){
  if(!workspace||pending)return false;
  const owner=workspace,token=owner.token,gen=generation,ownerPlan=action.kind==='profile'?action.profile.planId:action.planId;
@@ -75,36 +106,11 @@ async function execute(action:SessionAction){
  pending=(async()=>{
   try{
    if(!await flushBase()||gen!==generation||workspace?.token!==token||plan?.id!==ownerPlan)return false;
-   const result=unwrap(await window.campaign.executeSession({commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token,action}));
+   const command={commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token,action};
+   const result=await writeConfirmed('session',command,()=>window.campaign.executeSession(command),()=>gen===generation&&workspace?.token===token&&plan?.id===ownerPlan,{owner:'session',token,generation:gen,planId:ownerPlan,action});
    committed=true;
    if(gen!==generation)return false;
-   view=result;
-   if(action.kind==='replace-plan'){
-    profileDirty=visitDirty=false;groupDrafts.clear();profileDraft=structuredClone(result.profile);visitDraft=null;run=null;previewRequest++;renderRun();get('session-history').replaceChildren();
-    replacement=null;get<HTMLDialogElement>('plan-replacement-dialog').close();
-    await refreshBase();if(workspace?.token===token&&plan?.id===ownerPlan)await load();tell('Plan ersetzt. Angenommene Weltinhalte bleiben erhalten.');return true;
-   }
-   if(action.kind==='profile'){
-    const latest=profileDraft;
-    profileDirty=!!latest&&JSON.stringify({...latest,revision:action.profile.revision})!==JSON.stringify(action.profile);
-    profileDraft=profileDirty?{...latest!,revision:result.profile.revision}:structuredClone(result.profile);
-   }else if(!profileDirty)profileDraft=structuredClone(result.profile);
-   const confirmed=result.visits.find(v=>v.visitId===visitId)??null;
-   if(action.kind==='visit'){
-    const latest=visitDraft;
-    visitDirty=!!latest&&visitInput(latest)!==visitInput(action.detail);
-    visitDraft=visitDirty&&confirmed?{...structuredClone(confirmed),readAloud:latest!.readAloud,noteIds:latest!.noteIds,reward:latest!.reward}:structuredClone(confirmed);
-   }else if(!visitDirty)visitDraft=structuredClone(confirmed);
-   if(action.kind==='group-content'){
-    const latest=groupDrafts.get(action.groupId),confirmed=result.groups.find(g=>g.id===action.groupId);
-    if(latest&&confirmed){
-     if(latest.title===action.title&&latest.notes===action.notes)groupDrafts.delete(action.groupId);
-     else groupDrafts.set(action.groupId,{...latest,revision:confirmed.revision});
-    }
-   }
-   await refreshBase();
-   if(gen===generation)render();
-   if(workspace?.token===token&&plan?.id===ownerPlan)tell('Spielabend-Inhalte gespeichert.');
+   await acceptSessionResult(action,result,gen,token,ownerPlan);
    return true;
   }catch(error){
    if(gen===generation){if(committed)render();tell((committed?'Gespeichert; Ansicht konnte nicht aktualisiert werden: ':'')+(error as Error).message,true);}
@@ -115,6 +121,7 @@ async function execute(action:SessionAction){
 }
 const lockedControls=new WeakMap<HTMLInputElement|HTMLSelectElement|HTMLButtonElement,boolean>();
 function lock(on:boolean){
+ on=on||!!workspace&&hasPendingCommit(workspace.campaign.id);
  get<HTMLButtonElement>('plan-replace').disabled=on||!workspace||!plan;
  for(const id of ['session-panel','visit-preparation','plan-replacement-dialog'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
   if(on){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
@@ -132,6 +139,7 @@ export async function flushSession():Promise<boolean>{
  if(proposalEditorOpen()){tell('Speichere oder schließe den geöffneten Vorschlag zuerst.',true);return false;}
  if(timer)clearTimeout(timer);timer=null;
  if(pending){if(!await pending)return false;return flushSession();}
+ if(workspace&&hasPendingCommit(workspace.campaign.id)){tell('Buchungsantwort fehlt. Zuerst den Status prüfen.',true);return false;}
  if(profileDirty&&profileDraft){if(!await execute({kind:'profile',profile:structuredClone(profileDraft),expectedRevision:profileDraft.revision}))return false;return flushSession();}
  if(visitDirty&&visitDraft&&plan){if(!await execute({kind:'visit',planId:plan.id,detail:structuredClone(visitDraft),expectedRevision:visitDraft.revision}))return false;return flushSession();}
  const group=groupDrafts.values().next().value;
@@ -344,6 +352,12 @@ export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRe
 proposalReview=new SessionReview(acceptSelectedProposals,sessionReviewBasis);
 initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession(),offerVisit);
 sessionCopy=new SessionCopy(status,()=>workspace&&plan&&sources?{workspace,plan,sources}:null,async()=>await flushSession()&&await flushBase(),async (planId,visitId)=>{await refreshBase(visitId,planId);});
+onCommitState(()=>lock(!view||!!pending));onCommitResolved(async event=>{
+ if(event.ref.family!=='session'||event.ref.campaignId!==workspace?.campaign.id)return;
+ const meta=event.meta as {owner?:string;token:string;generation:number;planId:string;action:SessionAction}|undefined;
+ if(meta?.owner==='session')await acceptSessionResult(meta.action,event.value as SessionView,meta.generation,meta.token,meta.planId);
+ else{const token=workspace.token,gen=generation;await refreshBase();if(workspace?.token===token&&generation===gen)await load();}
+});
 initProposalEditor();inputChanged=edited;tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
  get('plan-replace').onclick=()=>report(openReplacement);get('plan-replacement-source').onchange=()=>report(replacementSource);
