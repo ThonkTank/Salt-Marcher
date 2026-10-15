@@ -503,19 +503,27 @@ export async function openPreparedVisit(planId:string,visitId:string){
   const token=context?.token;if(!token||!await flushPreparation()||context?.token!==token)return;const next=unwrap(await window.campaign.preparation(token,''));if(context?.token!==token)return;usePreparation(next);const plan=data.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(context?.token===token){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
-export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null}){
-  const token=context?.token;if(!token||!await flushPreparation()||context?.token!==token)throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[]}){
+  const owner=context,token=owner?.token;if(!owner||!token||!await flushPreparation()||context?.token!==token)throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
   const next=unwrap(await window.campaign.preparation(token,''));if(context?.token!==token)return;usePreparation(next);
   const target=data.plans.find(plan=>plan.id===planId)??data.plans.find(plan=>plan.id===data.selection.planId)??data.plans[0];
   const id=campaignLocalId(crypto.randomUUID()),scene={id,title:seed.title,notes:seed.notes,locationId:seed.locationId?campaignLocalId(seed.locationId):null};
+  let targetPlanId:string;
   if(target){
     const at=seed.beforeVisitId?target.scenes.findIndex(row=>row.id===seed.beforeVisitId):-1,scenes=[...target.scenes];scenes.splice(at<0?scenes.length:at,0,scene);
     if(!await change({kind:'plan',expectedRevision:target.revision,plan:{...target,scenes}},false))throw new Error('Nächster Besuch konnte nicht gespeichert werden.');
-    selectedPlan=target.id;
+    targetPlanId=target.id;
   }else{
     const created:ManualPlan={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[scene]};
     if(!await change({kind:'plan',expectedRevision:null,plan:created},false))throw new Error('Spielabendplan konnte nicht angelegt werden.');
-    selectedPlan=created.id;
+    targetPlanId=created.id;
+  }
+  selectedPlan=targetPlanId;
+  if(seed.readAloud||seed.noteIds?.length){
+    const session=unwrap(await window.campaign.session(token,targetPlanId)),detail=session.visits.find(row=>row.visitId===id);if(!detail)throw new Error('Besuch wurde gespeichert, seine Mappenangaben sind aber nicht verfügbar.');
+    const enriched={...detail,readAloud:seed.readAloud??'',noteIds:[...new Set(seed.noteIds??[])]};
+    const result=await window.campaign.executeSession({commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token,action:{kind:'visit',planId:targetPlanId,detail:enriched,expectedRevision:detail.revision}});
+    if(!result.ok)throw new Error('Besuch wurde gespeichert, die Mappenangaben jedoch nicht: '+result.error);
   }
   selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
   if(context?.token===token){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}

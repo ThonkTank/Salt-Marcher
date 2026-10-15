@@ -55,6 +55,7 @@ test('session workflows override the narrow default dialog cap',()=>{
   const css=readFileSync('src/app/app.css','utf8');
   assert.match(css,/#live-session-close-dialog\{[^}]*max-width:56rem/);
   assert.match(css,/#live-session-resume-dialog\{[^}]*max-width:68rem/);
+  assert.match(css,/#handoff-visit-dialog\{[^}]*max-width:42rem/);
 });
 
 test('optional handoff sources cannot block a verified session close',async()=>{
