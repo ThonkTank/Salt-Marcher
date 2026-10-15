@@ -107,3 +107,22 @@ test('weighted shop deliveries retain their rule, apply once with time and survi
   assert.notEqual(id,shop.id);assert.notEqual(cloned.restockTables[0].id,table.id);assert.equal(cloned.restockTables[0].seed,table.seed);assert(cloned.restockTables[0].entries.every(e=>cloned.stock.some(s=>s.id===e.entryId)));assert.deepEqual(cloned.stock.map(e=>e.quantity),[36,0,13]);
  }finally{copy.close();}
 });
+
+test('calendar deliveries follow bound event revisions once across clocks, renewal and campaign copy',async t=>{
+ const x=fixture(t),recurringId=randomUUID(),onceId=randomUUID();
+ const saveEvent=(id,changes={})=>{const old=x.store.world(x.w.token).events.find(e=>e.id===id);x.store.executeWorld(x.command({kind:'calendar-event',expectedRevision:old?.revision??null,event:{id,revision:0,name:id===onceId?'Eröffnung':'Hafenschiff',startMs:id===onceId?'3000':'2000',durationMs:'1000',repeatMs:id===onceId?null:'3000',locationId:null,notes:'',trashed:false,...old,...changes}}));return x.store.world(x.w.token).events.find(e=>e.id===id);};
+ let event=saveEvent(recurringId),once=saveEvent(onceId),clock=x.store.liveScene(x.w.token,x.a).clock;
+ const table=(e,entryId,rolls)=>({id:randomUUID(),revision:0,name:e.name,seed:'calendar-delivery',rolls,entries:[{entryId,weight:'1',minimum:2,maximum:2}],schedule:{eventId:e.id,eventRevision:e.revision,repeatMs:e.repeatMs,nextDueMs:'0'}});
+ let shop=x.store.executeItemShop(x.command({kind:'shop',expectedRevision:x.shop.revision,scheduleClock:{sceneId:x.a,expectedRevision:clock.revision},shop:{...x.shop,stock:x.shop.stock.map(e=>({...e,restock:null})),restockTables:[table(event,'add',2),table(once,'fill',1)]}})).shop.shop;
+ const advance=(sceneId,amount)=>{const scene=x.store.liveScene(x.w.token,sceneId),c=x.command({kind:'advance-clock',sceneId,expectedRevision:scene.clock.revision,amount,unit:'seconds',calendarVersion:'relative-v1',reason:'Warenkalender'});x.store.executeLive(c);x.store.executeLive(c);};
+ advance(x.a,8);let view=x.store.shop(x.w.token,shop.id);assert.deepEqual(view.shop.stock.map(e=>e.quantity),[12,2,13]);assert.equal(view.shop.restockTables[0].schedule.nextDueMs,'11000');assert.equal(view.shop.restockTables[1].schedule.nextDueMs,null);
+ const fact=view.history.find(h=>h.facts?.eventId===event.id)?.facts;assert.equal(fact.eventRevision,1);assert.equal(fact.eventName,'Hafenschiff');assert.equal(fact.firstDueMs,'2000');assert.equal(fact.lastDueMs,'8000');assert.equal(fact.intervals,'3');assert.equal(fact.outcomes[0].added,12);assert.equal(fact.rule.schedule.nextDueMs,'2000');
+ x.store.executeWorld(x.step(2));assert.deepEqual(x.store.shop(x.w.token,shop.id).shop.stock,view.shop.stock);
+ event=saveEvent(recurringId,{startMs:'9000',repeatMs:'2000',name:'Neues Hafenschiff'});advance(x.a,4);view=x.store.shop(x.w.token,shop.id);assert.equal(view.shop.stock[0].quantity,12);assert.equal(view.restockEvents.find(e=>e.id===event.id).revision,2);
+ shop=view.shop;shop.restockTables[0].schedule={eventId:event.id,eventRevision:event.revision,repeatMs:event.repeatMs,nextDueMs:'0'};clock=x.store.liveScene(x.w.token,x.a).clock;
+ shop=x.store.executeItemShop(x.command({kind:'shop',expectedRevision:shop.revision,shop,scheduleClock:{sceneId:x.a,expectedRevision:clock.revision}})).shop.shop;assert.equal(shop.restockTables[0].revision,2);assert.equal(shop.restockTables[0].schedule.nextDueMs,'13000');
+ advance(x.a,2);view=x.store.shop(x.w.token,shop.id);assert.equal(view.shop.stock[0].quantity,16);assert.equal(view.shop.restockTables[0].schedule.nextDueMs,'15000');
+ const snapshot=path.join(x.root,'calendar-delivery.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=new CampaignStore(path.join(x.root,'calendar-copy.sqlite'));
+ try{const c=copy.acceptCampaignSnapshot(snapshot,'Unabhängige Termine',{}),w=copy.activate(c.id),id=copy.shops(w.token,false)[0].id,cloned=copy.shop(w.token,id).shop,eventId=cloned.restockTables[0].schedule.eventId;assert.notEqual(eventId,event.id);assert(copy.world(w.token).events.some(e=>e.id===eventId&&e.revision===2));assert.equal(cloned.stock[0].quantity,16);assert.equal(cloned.restockTables[1].schedule.nextDueMs,null);}finally{copy.close();}
+ saveEvent(recurringId,{trashed:true});advance(x.a,2);assert.equal(x.store.shop(x.w.token,shop.id).shop.stock[0].quantity,16);x.reopen();assert.equal(x.store.shop(x.w.token,shop.id).shop.stock[0].quantity,16);assert.equal(x.store.shop(x.w.token,shop.id).shop.restockTables[1].schedule.nextDueMs,null);
+});

@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {integerWeights} from '../generation-contracts';
 import type {Shop,ShopRestockTable,ShopStock} from '../items-contracts';
+import type {CalendarEvent} from '../world-contracts';
 
 const instant=(v:unknown)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,29})$/.test(v);
 const interval=(v:unknown)=>typeof v==='string'&&/^[1-9][0-9]{0,17}$/.test(v);
@@ -14,19 +15,33 @@ export function validateRestockTables(shop:Shop,pending=false){
   ids.add(table.id);const entries=new Set<string>();
   for(const e of table.entries){const stock=shop.stock.find(s=>s.id===e?.entryId);if(!e||!stock||stock.unique||entries.has(e.entryId)||!positive(e.minimum)||!positive(e.maximum)||e.maximum<e.minimum)throw new Error('Auffülltabelle benötigt eindeutige Mengenstapel mit gültigen Mindest-/Höchstmengen.');entries.add(e.entryId);}
   if(!integerWeights(table.entries.map(e=>e.weight)).some(w=>w>0n))throw new Error('Mindestens ein Warengewicht muss positiv sein.');
-  if(table.schedule!==null&&(!table.schedule||!interval(table.schedule.intervalMs)||!instant(table.schedule.nextDueMs)))throw new Error('Warenauffülltabelle benötigt ein positives Intervall und eine gültige Fälligkeit.');
+  const s=table.schedule;
+  if(s!==null){
+   if(!s||typeof s!=='object')throw new Error('Ungültiger Lieferauslöser.');
+   if('eventId' in s){
+    if(typeof s.eventId!=='string'||!s.eventId.trim()||s.eventId.length>1000||!positive(s.eventRevision,Number.MAX_SAFE_INTEGER)||s.repeatMs!==null&&(!instant(s.repeatMs)||s.repeatMs==='0')||s.nextDueMs!==null&&!instant(s.nextDueMs))throw new Error('Warenlieferung benötigt eine gültige Ereignisbindung.');
+   }else if(!interval(s.intervalMs)||!instant(s.nextDueMs))throw new Error('Warenauffülltabelle benötigt ein positives Intervall und eine gültige Fälligkeit.');
+  }
  }
 }
-const authored=(t:ShopRestockTable)=>JSON.stringify({name:t.name,seed:t.seed,rolls:t.rolls,entries:t.entries,intervalMs:t.schedule?.intervalMs??null});
-export function prepareRestockTables(shop:Shop,prior:Shop|null,time:()=>bigint,through:bigint|null){
+const authored=(t:ShopRestockTable)=>JSON.stringify({name:t.name,seed:t.seed,rolls:t.rolls,entries:t.entries,trigger:t.schedule&&('eventId' in t.schedule?{eventId:t.schedule.eventId,eventRevision:t.schedule.eventRevision}:t.schedule.intervalMs)});
+export function prepareRestockTables(shop:Shop,prior:Shop|null,time:()=>bigint,through:bigint|null,event:(id:string)=>CalendarEvent){
  for(const table of shop.restockTables??[]){
   const old=prior?.restockTables?.find(t=>t.id===table.id);
   const changed=!old||authored(old)!==authored(table);
   table.revision=old?old.revision+(changed?1:0):1;
   if(table.schedule){
-   if(changed||!old?.schedule||table.schedule.nextDueMs==='0')table.schedule.nextDueMs=(time()+BigInt(table.schedule.intervalMs)).toString();
-   else table.schedule.nextDueMs=old.schedule.nextDueMs;
-   if(!instant(table.schedule.nextDueMs)||through!==null&&BigInt(table.schedule.nextDueMs)<=through)throw new Error('Neue Warenfälligkeit würde bestätigte Auffüllungen wiederholen oder ist nicht darstellbar.');
+   if('eventId' in table.schedule){
+    const s=table.schedule,e=event(s.eventId);
+    if(e.trashed||e.revision!==s.eventRevision)throw new Error('Lieferereignis geändert oder im Papierkorb. Ereignisbindung im Shop erneuern.');
+    s.repeatMs=e.repeatMs;
+    if(changed||!old?.schedule||s.nextDueMs==='0'){
+     const now=time(),start=BigInt(e.startMs),repeat=e.repeatMs?BigInt(e.repeatMs):null;
+     s.nextDueMs=start>now?String(start):repeat?String(start+((now-start)/repeat+1n)*repeat):null;
+    }else s.nextDueMs=old.schedule.nextDueMs;
+   }else if(changed||!old?.schedule||table.schedule.nextDueMs==='0')table.schedule.nextDueMs=(time()+BigInt(table.schedule.intervalMs)).toString();
+   else table.schedule.nextDueMs=old.schedule.nextDueMs!;
+   if(table.schedule.nextDueMs!==null&&(!instant(table.schedule.nextDueMs)||through!==null&&BigInt(table.schedule.nextDueMs)<=through))throw new Error('Neue Warenfälligkeit würde bestätigte Auffüllungen wiederholen oder ist nicht darstellbar.');
   }
  }
 }
@@ -39,7 +54,8 @@ export function drawRestockTable(shop:Shop,table:ShopRestockTable,seed:string,pe
  const edges=weights.map(w=>total+=w),selected=new Map<string,{stock:ShopStock;before:number;added:number}>();
  const random=(key:string)=>BigInt('0x'+createHash('sha256').update(seed+'|'+key).digest('hex'));
  for(let p=0n;p<periods;p++)for(let draw=0;draw<table.rolls;draw++){
-  const key=(firstDue===undefined?'manual':(firstDue+p*BigInt(table.schedule!.intervalMs)).toString())+'|'+draw;
+  const schedule=table.schedule,spacing=schedule?('eventId' in schedule?schedule.repeatMs??'0':schedule.intervalMs):'0';
+  const key=(firstDue===undefined?'manual':(firstDue+p*BigInt(spacing)).toString())+'|'+draw;
   const roll=random(key+'|entry')%total;let lo=0,hi=edges.length-1;while(lo<hi){const mid=(lo+hi)>>>1;if(roll<edges[mid]!)hi=mid;else lo=mid+1;}
   const entry=table.entries[lo]!,stock=stockById.get(entry.entryId)!;
   const quantity=entry.minimum+Number(random(key+'|quantity')%BigInt(entry.maximum-entry.minimum+1));

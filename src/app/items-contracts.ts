@@ -4,10 +4,11 @@ export interface ItemDefinition {id:string;revision:number;name:string;category:
 export interface ItemQuery {search:string;category:string;magic:''|'yes'|'no';rarity:string;attunement:string;sort:'name'|'value';direction:'asc'|'desc';after:number;includeTrashed:boolean}
 export interface ItemPage {items:ItemDefinition[];total:number;next:number|null;problems:string[];sourceStatus:{complete:boolean;message:string}}
 export interface ShopStock {id:string;reference:ItemReference;quantity:number;unique:boolean;instanceId:string|null;buyCopper:string;sellCopper:string;notes:string;restock:{mode:'fill'|'add';quantity:number;intervalMs:string;nextDueMs:string}|null}
-export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];schedule:{intervalMs:string;nextDueMs:string}|null}
+export type ShopRestockSchedule={intervalMs:string;nextDueMs:string}|{eventId:string;eventRevision:number;repeatMs:string|null;nextDueMs:string|null};
+export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];schedule:ShopRestockSchedule|null}
 export interface Shop {id:string;revision:number;name:string;owner:{kind:'npc'|'location';id:string};notes:string;trashed:boolean;stock:ShopStock[];restockTables?:ShopRestockTable[]}
 export interface ShopSummary {id:string;name:string;ownerName:string;unavailable:boolean;revision:number|null;problem:string|null}
-export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;items:ItemDefinition[];history:{id:string;time:string;description:string}[]}
+export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;restockEvents?:Pick<import('./world-contracts').CalendarEvent,'id'|'revision'|'name'|'startMs'|'repeatMs'|'trashed'>[];items:ItemDefinition[];history:{id:string;time:string;description:string}[]}
 export type ItemShopAction=
  |{kind:'definition';definition:ItemDefinition;expectedRevision:number|null}
  |{kind:'definition-trash';id:string;expectedRevision:number;trashed:boolean}

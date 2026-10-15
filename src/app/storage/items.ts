@@ -1,3 +1,4 @@
+import {checkedCalendarEvent} from '../world-model';
 import {validateRestockTables,prepareRestockTables,drawRestockTable} from './shop-restock';
 import {createHash,randomUUID} from 'node:crypto';
 import type {Shop,ShopView,ShopSummary,ItemShopCommand,ItemShopAck} from '../items-contracts';
@@ -47,9 +48,20 @@ function restockTimeNotice(db:any,cam:string,id:string):string|null{
  if(through===null||through<=BigInt(scene.clock.instantMs))return null;
  return 'Auffüllungen bis '+formatInstant(through.toString())+' bleiben erhalten. Die Gruppe im Fokus steht bei '+formatInstant(scene.clock.instantMs)+'. Zeitangaben in Tagen zu je 24 Stunden.';
 }
+function restockEvents(db:any,cam:string){
+ const events:NonNullable<ShopView['restockEvents']>=[];
+ for(const row of db.prepare("SELECT id,revision,payload,checksum FROM world_record WHERE campaign_id=? AND kind='calendar-event' ORDER BY id").iterate(cam)){
+  const e=checkedCalendarEvent(decoded(row),true);if(e.id!==row.id||e.revision!==row.revision)throw new Error('Lieferereignis widerspricht seiner Identität.');
+  events.push({id:e.id,revision:e.revision,name:e.name,startMs:e.startMs,repeatMs:e.repeatMs,trashed:e.trashed});
+ }return events;
+}
+function readRestockEvent(db:any,cam:string,id:string){
+ const row=db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,id),e=checkedCalendarEvent(decoded(row),true);
+ if(e.id!==row.id||e.revision!==row.revision)throw new Error('Lieferereignis widerspricht seiner Identität.');return e;
+}
 export function readShop(db:any,cam:string,id:string):ShopView{
  const s=shopRecord(db,cam,id),o=owner(db,cam,s);
- return{shop:s,ownerName:o.name,unavailable:o.unavailable||s.trashed,timeNotice:restockTimeNotice(db,cam,id),items:[...new Set(s.stock.map(e=>e.reference.definitionId))].map(id=>readItemDefinition(db,id)),history:db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 50').all(cam,id).map((r:any)=>({id:r.id,...decoded<any>(r)}))};
+ return{shop:s,ownerName:o.name,unavailable:o.unavailable||s.trashed,timeNotice:restockTimeNotice(db,cam,id),restockEvents:restockEvents(db,cam),items:[...new Set(s.stock.map(e=>e.reference.definitionId))].map(id=>readItemDefinition(db,id)),history:db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 50').all(cam,id).map((r:any)=>({id:r.id,...decoded<any>(r)}))};
 }
 function listShops(db:any,cam:string,includeTrashed:boolean,accept?:(s:Shop)=>boolean):ShopSummary[]{
  const list:ShopSummary[]=[];
@@ -94,10 +106,40 @@ function checkedShop(db:any,cam:string,s:Shop,expected:number|null,basis:Extract
   const d=readItemDefinition(db,e.reference.definitionId);e.reference={...e.reference,revision:d.revision};
   if(e.restock){if(e.restock.nextDueMs==='0')e.restock.nextDueMs=(scheduleTime(db,cam,s.id,basis)+BigInt(e.restock.intervalMs)).toString();if(through!==null&&BigInt(e.restock.nextDueMs)<=through)throw new Error('Neue Fälligkeit würde bestätigte Auffüllungen dieses Shops wiederholen.');}
  }
- prepareRestockTables(s,prior,()=>scheduleTime(db,cam,s.id,basis),through);
+ prepareRestockTables(s,prior,()=>scheduleTime(db,cam,s.id,basis),through,id=>readRestockEvent(db,cam,id));
  return{...s,revision:(expected??0)+1};
 }
-export function restockDue(db:any,cam:string,instantMs:string){if(!/^(0|[1-9][0-9]{0,29})$/.test(instantMs))throw new Error('Ungültige Auffüllzeit.');const current=BigInt(instantMs);for(const row of db.prepare('SELECT id FROM shop WHERE campaign_id=?').all(cam)){const s=shopRecord(db,cam,row.id);if(s.trashed||!s.stock.some(e=>e.restock&&BigInt(e.restock.nextDueMs)<=current)&&!(s.restockTables??[]).some(t=>t.schedule&&BigInt(t.schedule.nextDueMs)<=current))continue;if(owner(db,cam,s).unavailable)continue;let changed=false;for(const e of s.stock){const rule=e.restock;if(!rule||e.unique||BigInt(rule.nextDueMs)>current)continue;const firstDueMs=rule.nextDueMs,count=(current-BigInt(firstDueMs))/BigInt(rule.intervalMs)+1n,before=e.quantity,next=rule.mode==='fill'?BigInt(Math.max(e.quantity,rule.quantity)):BigInt(e.quantity)+count*BigInt(rule.quantity);if(next>1000000n)throw new Error('Automatisches Auffüllen überschreitet die Bestandsgrenze. Passe die Regel an.');e.quantity=Number(next);rule.nextDueMs=(BigInt(rule.nextDueMs)+count*BigInt(rule.intervalMs)).toString();history(db,cam,s,'Automatisch aufgefüllt: '+before+' → '+e.quantity+' · '+count+' Fälligkeiten',{entryId:e.id,before,quantity:e.quantity,intervals:count.toString(),instantMs:current.toString(),firstDueMs,rule:{mode:rule.mode,quantity:rule.quantity,intervalMs:rule.intervalMs},lastDueMs:(BigInt(rule.nextDueMs)-BigInt(rule.intervalMs)).toString()});changed=true;}for(const table of s.restockTables??[]){const schedule=table.schedule;if(!schedule||BigInt(schedule.nextDueMs)>current)continue;const firstDue=BigInt(schedule.nextDueMs),count=(current-firstDue)/BigInt(schedule.intervalMs)+1n;const result=applyRandomRestock(db,s,table,table.seed,count,firstDue);schedule.nextDueMs=(firstDue+count*BigInt(schedule.intervalMs)).toString();history(db,cam,s,'Gewichtet aufgefüllt: '+table.name+' · '+count+' Fälligkeiten',{tableId:table.id,tableRevision:table.revision,rule:structuredClone(table),seed:table.seed,outcomes:result,intervals:count.toString(),instantMs,firstDueMs:firstDue.toString(),lastDueMs:(BigInt(schedule.nextDueMs)-BigInt(schedule.intervalMs)).toString()});changed=true;}if(changed){s.revision++;saveShop(db,cam,s);}}}
+export function restockDue(db:any,cam:string,instantMs:string){
+ if(!/^(0|[1-9][0-9]{0,29})$/.test(instantMs))throw new Error('Ungültige Auffüllzeit.');
+ const current=BigInt(instantMs);
+ for(const row of db.prepare('SELECT id FROM shop WHERE campaign_id=?').all(cam)){
+  const s=shopRecord(db,cam,row.id);
+  if(s.trashed||!s.stock.some(e=>e.restock&&BigInt(e.restock.nextDueMs)<=current)&&!(s.restockTables??[]).some(t=>t.schedule?.nextDueMs!=null&&BigInt(t.schedule.nextDueMs)<=current))continue;
+  if(owner(db,cam,s).unavailable)continue;let changed=false;
+  for(const e of s.stock){
+   const rule=e.restock;if(!rule||e.unique||BigInt(rule.nextDueMs)>current)continue;
+   const firstDueMs=rule.nextDueMs,count=(current-BigInt(firstDueMs))/BigInt(rule.intervalMs)+1n,before=e.quantity,next=rule.mode==='fill'?BigInt(Math.max(e.quantity,rule.quantity)):BigInt(e.quantity)+count*BigInt(rule.quantity);
+   if(next>1000000n)throw new Error('Automatisches Auffüllen überschreitet die Bestandsgrenze. Passe die Regel an.');
+   e.quantity=Number(next);rule.nextDueMs=(BigInt(rule.nextDueMs)+count*BigInt(rule.intervalMs)).toString();
+   history(db,cam,s,'Automatisch aufgefüllt: '+before+' → '+e.quantity+' · '+count+' Fälligkeiten',{entryId:e.id,before,quantity:e.quantity,intervals:count.toString(),instantMs:current.toString(),firstDueMs,rule:{mode:rule.mode,quantity:rule.quantity,intervalMs:rule.intervalMs},lastDueMs:(BigInt(rule.nextDueMs)-BigInt(rule.intervalMs)).toString()});changed=true;
+  }
+  for(const table of s.restockTables??[]){
+   const schedule=table.schedule;if(!schedule||schedule.nextDueMs===null||BigInt(schedule.nextDueMs)>current)continue;
+   let event:ReturnType<typeof readRestockEvent>|null=null;
+   if('eventId' in schedule){
+    // An authored event revision is the trigger. Changes pause it until the GM rebinds.
+    if(!db.prepare("SELECT 1 FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,schedule.eventId))continue;
+    event=readRestockEvent(db,cam,schedule.eventId);
+    if(event.trashed||event.revision!==schedule.eventRevision)continue;
+   }
+   const firstDue=BigInt(schedule.nextDueMs),spacing='eventId' in schedule?schedule.repeatMs:schedule.intervalMs,count=spacing?(current-firstDue)/BigInt(spacing)+1n:1n;
+   const rule=structuredClone(table),result=applyRandomRestock(db,s,table,table.seed,count,firstDue),lastDue=firstDue+(count-1n)*BigInt(spacing??'0');
+   schedule.nextDueMs=spacing?String(lastDue+BigInt(spacing)):null;
+   history(db,cam,s,'Gewichtet aufgefüllt: '+table.name+' · '+(event?event.name+' · ':'')+count+' Fälligkeiten',{tableId:table.id,tableRevision:table.revision,rule,seed:table.seed,outcomes:result,intervals:count.toString(),instantMs,firstDueMs:String(firstDue),lastDueMs:String(lastDue),...(event?{eventId:event.id,eventRevision:event.revision,eventName:event.name}: {})});changed=true;
+  }
+  if(changed){s.revision++;saveShop(db,cam,s);}
+ }
+}
 function applyRandomRestock(db:any,shop:Shop,table:import('../items-contracts').ShopRestockTable,seed:string,count=1n,firstDue?:bigint){
  for(const entry of table.entries){if(!/[1-9]/.test(entry.weight))continue;const stock=shop.stock.find(e=>e.id===entry.entryId)!;if(readItemDefinition(db,stock.reference.definitionId).trashed)throw new Error('Ein Gegenstand der Auffülltabelle liegt im Papierkorb. Tabelle bearbeiten.');}
  return drawRestockTable(shop,table,seed,count,firstDue).map(outcome=>({...outcome,name:readItemDefinition(db,outcome.reference.definitionId,outcome.reference.revision).name}));

@@ -111,8 +111,19 @@ Scenezeit; bestätigte Fälligkeiten werden nie rückwirkend neu gewürfelt. Die
 gemeinsame bestätigte Zeitverarbeitung addiert nur ausgewählte Zeilen und
 hält erste/letzte Fälligkeit, Anzahl, Regelrevision und konkrete Ergebnisse
 im Shopverlauf. Kampagnenkopien remappen Tabellen-/Bestandsidentitäten und
-behalten Zufallsbasis und bestätigten Bestand. Kalenderereignis-Trigger und
-katalogweite dynamische Filter sind noch nicht implementiert.
+behalten Zufallsbasis und bestätigten Bestand. Kalenderereignisse können ab0.121 Lieferungen auslösen; katalogweite dynamische
+Filter sind noch nicht implementiert.
+
+Im Shop wird entweder ein Zeitintervall oder ein Agendaereignis gewählt. Die
+Ereignisrevision wird gebunden. Der erste Beginn liegt strikt nach der gewählten
+Scenezeit; frühere Termine werden bei neuer/erneuerter Bindung nicht nachgeliefert.
+Einmalige Ereignisse setzen nach der Lieferung ihre nächste Fälligkeit auf null.
+Wiederkehrende Ereignisse holen alle neuen Beginne gesammelt nach, auch bei
+Reiseabschluss und unabhängig vom Gruppenort. Ein zweiter Gruppenzeitstrang
+liefert bereits abgearbeitete Termine nicht erneut. Ereignisänderung, Papierkorb
+oder fehlendes Ereignis pausieren die Bindung sichtbar im Shop; „Ereignisbindung
+erneuern“ startet mit der aktuellen Revision ab der ausdrücklich gewählten Zeit.
+Der Verlauf bewahrt Ereigniskennung/-revision/-namen, Regel und konkrete Mengen.
 
 Ein Schritt mit mehr als100.000 Zufallsziehungen wird vor der Auswahl mit
 einem Hinweis auf kleinere Zeitabschnitte abgewiesen; es wird nichts gekürzt.
