@@ -1,177 +1,96 @@
 # Spielabendmappe: Quellenstand, Suche und Ausgabe
 
-Die Spielleitung öffnet im ausgewählten Plan eine GM-Mappe und findet den
-vorbereiteten Wortlaut nach Besuchsfolge. Dies ergänzt den manuellen Planner;
-Sessiongenerierung, Live-Übernahme, Kampf, Rewards und deren vollständige
-Abnahmen bleiben eigene Lieferziele. Die Mappe enthält private GM-Inhalte und
-hat keinen Anschluss an die passive Spieleranzeige.
+Die GM-Mappe ordnet vorbereiteten Wortlaut nach Besuchsfolge. Im Planner öffnet
+sie als Dialog, im Live-Spiel dockt derselbe Leser neben der laufenden Szene an.
+Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
 
-## Aktueller Anschluss
+## Vorhandene Abläufe
 
-- `src/app/storage/session-packet.ts` liest Plan, Besuchsdetails, gebundene
-  Ortsabschnitte, Weltverweise, Begegnungen mit konkreten Statblocks und Rewards
-  in einer SQLite-Lesetransaktion. Fremde ungebundene Worldnotizen werden nicht
-  geladen. Fehlende/archivierte Orts- und Weltverweise erzeugen Warnungen;
-  beschädigte benötigte Quellen brechen den Read ab. Die Begegnungsreader
-  behandeln fehlende Gruppen/Actorprofile noch als Fehler der ganzen Mappe.
-- `src/app/session-packet-ui.ts` speichert zuerst Basis- und Sessioneingaben.
-  Jede neue Öffnung/Aktualisierung verwirft die bisherige Exportfreigabe und
-  leert Inhalte, Trefferzahl und Warnungen. Nur die aktuelle Antwort desselben
-  Campaigntokens und Plans darf die Mappe füllen. Fehlgeschlagenes Speichern
-  gibt keine frühere Mappe zur Ausgabe frei. Schließen und Contextwechsel
-  entwerten ausstehende Read-/Exportmeldungen. Eine alte Exportantwort darf
-  keinen Export während einer neueren Aktualisierung freigeben.
-- Suche filtert Besuche anhand Titel, Ort, Blocküberschriften und aller
-  Blocktexte. Sie verändert den gespeicherten Mappenstand nicht. Der Export
-  enthält weiterhin alle Besuche, auch bei einem aktiven Suchfilter.
-- `src/app/session-packet-contracts.ts` ergänzt Markdownüberschriften um die
-  übernommenen Textblöcke. Deren Wortlaut und CRLF bleiben erhalten; erzeugte
-  Überschriften werden einzeilig. Die Inhaltsbasis umfasst die vollständige
-  Ausgabeprojektion einschließlich Planungsparty, Warnungen und Planrevision.
-- `desktop/main.ts` liest die Mappe vor dem Dateidialog und prüft ihre Basis
-  nochmals nach der Dateiauswahl. Geänderte Quellen verlangen Aktualisieren;
-  geschrieben wird der zuvor geprüfte Stand. Dialogabbruch schreibt nichts.
-  Das ist noch kein nativer Dateifehler-/Dialognachweis.
+- Besuche nach Titel, Ort, Überschrift und Blocktext durchsuchen; über
+  Sprungmarken zu einzelnen Abschnitten wechseln. Der Export enthält immer
+  alle Besuche, unabhängig vom Suchfilter.
+- Gebundene Ortsabschnitte, Weltverweise, Begegnungen mit konkreten Statblocks
+  und Belohnungen lesen. Quest-/Gerüchtblöcke zeigen bestätigten Status,
+  vorbereitete Belohnung oder vergebenes Ergebnis. Offene Entwürfe sind Hinweise
+  und ersetzen den bestätigten Quellenstand nicht.
+- Aus der Spielabend-Übergabe einen Einstieg mit Zielplan, privatem Vorlesetext
+  und gebundenen Ortsquellen vorbereiten. Planfolge und Mappeninhalt werden
+  gemeinsam mit einem Vorbereitungsauftrag gespeichert oder vollständig verworfen.
+  Eine entfernte Einfügeposition verlangt eine neue Auswahl; spätere Eingaben
+  bleiben erhalten. Der neue Plan ist eine ausdrückliche Wahl.
+- Im Live-Spiel einen Besuch übernehmen, Vorlesetext in den GM-Szenenentwurf
+  kopieren, die Originalquelle öffnen, eine Begegnung vorbereiten oder die
+  Belohnung dieses Besuchs im vorhandenen Fachbereich verwalten.
+- Einen Block als Chronikmoment vormerken. Sein Auszug ergänzt den vorhandenen
+  lokalen Momententwurf; Titel und Kategorie bleiben bei bestehender Eingabe
+  erhalten. Erst die separate Speicherung bucht den tatsächlichen Ausgang.
+- Besuchsergebnisse über den vorhandenen Navigator bestätigen. Mappe und Chronik
+  zeigen Übernahmen und höchstens die fünf neuesten Ergebnisse je Besuch,
+  einschließlich Hinweis auf weitere. Das vergibt keine XP, Beute oder Zeit.
+- Die vollständige Mappe als Markdown ausgeben. Autorenwortlaut, CRLF und
+  führende Leerzeichen bleiben erhalten; erzeugte Überschriften sind einzeilig.
 
-Die Mappe kann inzwischen als gemeinsamer DOM-/Quellenstand neben dem Live-Spiel
-andocken. Vorbereitung öffnet sie weiterhin als Dialog; Live-Spiel bietet
-Besuchswechsel und Übernahme eines Vorleseblocks in den GM-Sceneentwurf. Die
-vorhandenen Kontext-/Flushregeln bleiben bindend. Nach Schließen oder einer
-neuen Aktualisierung dürfen entfernte alte Controls keinen Besuch oder Text
-mehr übernehmen. Ihre Handler prüfen zusätzlich zum Livecontext die aktuelle
-Mappenanfrage und den tatsächlich angezeigten Snapshot. Die lokale Dockfixture
-prüft diese Grenze; native Fokus-/Layout-/Langtextabnahme bleibt offen.
+## Verbindliche Daten- und Bedienregeln
 
-Die Live-Blöcke öffnen inzwischen ihre gebundene Quelle, bereiten die angezeigte
-Begegnungsgruppe vor oder führen zur Belohnung dieses Besuchs im bestehenden
-Planner. Jeder Handler bindet den tatsächlich angezeigten Besuch und Mappenstand;
-entfernte, deaktivierte und in einer anderen Oberfläche verborgene Controls sind
-wirkungslos. Die Gruppenaktion bindet zusätzlich die ursprüngliche Gruppenrevision
-und verlangt den übernommenen Besuch am aktuellen Szenenort. Eine geänderte Gruppe
-verlangt Aktualisieren. Ältere Deskriptoren ohne Revision bleiben lesbar, geben aber
-keine Begegnungsaktion frei. Deskriptoren sind nur abgeleitete Mappendaten; eine
-Kampagnenmigration ist nicht nötig. Die bestehenden Combat- und Rewardcommands
-bleiben für ihre Datenprüfung und Transaktion verantwortlich.
+1. Der Store liest benötigte Quellen in einer SQLite-Lesetransaktion.
+   Ungebundene Worldnotizen werden nicht geladen. Fehlende/archivierte Orts-
+   und Weltverweise erzeugen Warnungen; beschädigte benötigte Quellen brechen
+   den Read ab. Fehlende Begegnungsgruppen/Actorprofile sind derzeit ebenfalls
+   Fehler der ganzen Mappe; zulässige Archivierung gesondert prüfen.
+2. Öffnen und Aktualisieren speichern zuerst offene Basis-/Sessioneingaben und
+   entfernen die alte Anzeige und Exportfreigabe. Nur die aktuelle Antwort
+   derselben Kampagne und desselben Plans darf Inhalte und Aktionen freigeben.
+3. Aktionen binden den dargestellten Besuch, Quellenstand und Live-Kontext auch
+   über Flush und Quellenreads hinweg. Entfernte, deaktivierte oder in einer
+   anderen Oberfläche verborgene Controls bleiben wirkungslos. Neuer eigener
+   Vorlesetext während eines Flush wird nicht überschrieben.
+4. Begegnungsaktionen verlangen den übernommenen Besuch am aktuellen Szenenort
+   und die dargestellte Gruppenrevision. Geänderte Gruppen erfordern eine neue
+   Mappe. Alte Deskriptoren ohne Revision bleiben ohne Begegnungsfreigabe lesbar.
+5. Quellenlesen, Besuchsübernahme, Kampfentwurf, Beuteplatzierung/-vergabe und
+   Chronikspeicherung bleiben ausdrückliche getrennte Aktionen ihrer bestehenden
+   Fachbereiche. Es gibt keinen weiteren Writer, Inhaltsbestand oder Graph.
+6. Vor und nach dem Dateidialog wird die Ausgabebasis geprüft. Geänderte Quellen
+   verlangen Aktualisieren; geschrieben wird der geprüfte Stand. Abbruch schreibt
+   nichts. Alte Read-/Exportantworten dürfen nach Schließen oder Kontextwechsel
+   weder Aktionen reaktivieren noch neuere Ergebnisse überschreiben.
+7. Wird ein übernommener Besuch aus der Planung entfernt, bleiben historische
+   Szeneninhalte und Herkunft erhalten. Aktuelle Notizbindungen und Folgebesuche
+   werden daraus nicht mehr abgeleitet.
+8. Vorschlagsprüfung und Mehrfachübernahme behalten gefilterte Auswahlen und ihre
+   Reihenfolge. Review bindet Kampagne, Planrevision, Vorschlagsstand und Anfrage;
+   nach Flush werden Revisionen nicht umgebogen. Timeline, Gruppen, Details und
+   Receipts werden gemeinsam bestätigt. Ein ungültiger Besuch verwirft den ganzen
+   Auftrag. Späte Antworten verändern keine neuere Auswahl/Vorschau.
 
-Die Autorität bleibt über Liveflush, Quellenread und Combat-Draftflush prüfbar.
-Neuer Vorlesetext während eines ausstehenden Liveflush wird nicht überschrieben.
-Die lokale DOM-/SQLiteprüfung deckt diese Übergänge, Gruppenrevisionen und alte
-Controls ab. Der tatsächliche Wechsel Live → Quelle/Kampf/Belohnung mit Fokus,
-Offenentwürfen, Fehlern und anschließender Wiederaufnahme ist weiterhin nativ
-abzunehmen; die zusätzliche Aktion schließt keine vollständige Produktabnahme.
+## Noch zu schließen, in dieser Reihenfolge
 
-Der Besuchsablauf bietet Sprungmarken zu seinen angezeigten Blöcken. Alte
-Sprungmarken dürfen nach Besuchswechsel oder Schließen keinen neueren Block
-fokussieren. „Als Chronikmoment vormerken“ übernimmt einen Auszug in den
-bestehenden lokalen Momententwurf und öffnet dessen Bearbeitung; eine
-Chronikbuchung entsteht erst durch die separate ausdrückliche Speicherung.
-Die Vormerkung bindet denselben dargestellten Mappenstand wie andere
-Blockaktionen und bewahrt einen vorhandenen Momenttitel und dessen Kategorie.
-Der bestehende Entwurfsweg und seine Zeichenbegrenzung bleiben maßgeblich;
-Quelltexte werden dadurch nicht geändert. Die kontrollierte DOMprobe prüft
-Snapshotbindung, alte Sprungmarken und abgelöste Vormerkungen. Native
-Fokusführung, lange Auszüge und Wiederaufnahme dieses Entwurfs bleiben offen.
+1. **Vollständigkeit:** Einen realen Abend mit mehreren Besuchen, wiederverwendeten
+   Orten/NSCs, geänderten HP, platzierten/unplatzierten Gruppen und Belohnungen
+   zwischen Planner, Mappe und Markdown vergleichen. Fehlende Plannerfelder,
+   manuelle Lootnotizen und geplante Rasten nicht durch die Ausgabe als erledigt
+   behandeln. Vollständige Ergebnishistorie und Verlaufsexport prüfen.
+2. **Native Bedienung und Ausgabe:** Live → Quelle/Kampf/Belohnung → zurück mit
+   offenen Entwürfen und Fehlern bedienen. Fokus/Rückkehr, Tastatur, leere Suche,
+   200 %, lange Texte und Statblocks prüfen. Im Speicherdialog Quellen ändern,
+   abbrechen, Schreibfehler und vorhandene Zieldateien testen. Exportbytes und
+   Darstellung offener Markdownfences prüfen, ohne Autorenprosa umzuschreiben.
+3. **Wiederaufnahme:** Offenes Review, Plan-/Kampagnenwechsel, laufendes Submit und
+   nachfolgenden Read nativ prüfen. Unbestätigte Auswahl, Filter und Eingaben an
+   Kampagne/Plan/Run binden und nach Neustart anbieten; veraltete Revisionen
+   erkennbar machen. Ergebnisfelder im Prozess sind noch kein dauerhafter Entwurf.
+4. **Last:** Reale große Pläne samt Ergebnisreads messen: Zeit, Antwortbytes,
+   Peak-RAM und wiederverwendete Quellen. Erst bei Bedarf Übersicht/Suche und
+   Besuchsdetail gemeinsam in Store, IPC und UI trennen. Ausgabe bleibt vollständig
+   und konsistent; kein allgemeiner Suchindex oder zusätzliches Framework auf Vorrat.
 
-Der integrierte Besuchsnavigator (`session-progress-ui.ts`,
-`storage/visit-outcomes.ts`) und `LiveAction.visit-outcome` zeichnen jetzt
-manuell bestätigte Besuchsergebnisse in der Kampagnenhistorie auf. Die Mappe
-zeigt die Anzahl der Übernahmen und höchstens die fünf neuesten Ergebnisse je
-Besuch, mit ausdrücklichem Hinweis bei weiteren Übernahmen. Dies ist Codebefund;
-vollständige Ergebnishistorie, Verlaufsexport und native Wiederaufnahme bleiben
-separat abzunehmen. Die nächste Lastprobe muss auch die zusätzlichen Reads pro
-Besuch und Ergebnis berücksichtigen.
+## Quellen und Nachweisgrenzen
 
-Der benachbarte Live-Wissensbereich übernimmt Vorlesetext in den GM-Sceneentwurf
-und speichert ihn über den bestehenden Autosaveweg. Der entfernte
-Textprojektionsknopf ist keine Voraussetzung. Wird ein übernommener Besuch
-aus der Planung entfernt, bleiben Sceneherkunft und die Live-Vorbereitungsquery
-lesbar. Der nicht mehr aktuelle Besuch liefert keine aktuellen Notizverknüpfungen
-oder Folgebesuch; historische Sceneinhalte bleiben erhalten. Der lokale Test
-`tests/desktop-live-visual-context.test.mjs` prüft diesen tatsächlichen
-Übernahme-/Speicherweg und erhält Autorenwortlaut ohne Playercommand.
-
-Das integrierte Quest-/Gerüchtjournal verwendet den bestehenden Narrativeowner
-für Status und Belohnungsvergabe. Gebundene Quest-/Gerüchtblöcke der Mappe
-zeigen nun bestätigten Status, vorbereitete Belohnung oder das vergebene Ergebnis.
-Ein vorhandener Rohentwurf wird als solcher angekündigt; er ersetzt den
-bestätigten Mappenstand nicht. Die lokale Storeprobe vergleicht Journal und
-Mappe vor/nach einem ausdrücklich bestätigten Abschluss samt erhaltenem CRLF.
-Eine weitere Probe liest 42 Aufträge in zwei geordneten Seiten ohne Writes und
-prüft Fresh. Native Journalnavigation und Entwurfswechsel bleiben offen.
-
-Die neue Sessionauswahl (`session-review-ui.ts`) erlaubt Suche und Filter über
-Vorschläge sowie eine gemeinsam bestätigte Übernahme. `accept-proposals` bindet
-Plan und jede gewählte Vorschlagsrevision, prüft alle ursprünglichen Quellen-
-und Rewardgrundlagen vor dem ersten Publish und schreibt die geordnete Auswahl
-in einer Transaktion. Der Einzelweg bleibt kompatibel. Drei gezielte SQLite-
-Prüfungen in `desktop-session-reward-integrity.test.mjs` belegen verweigerte
-Annahme nach XPänderung ohne Teilwirkung, ursprüngliche Reihenfolge samt Fresh/
-Receiptreplay sowie Rollback eines Fehlers beim zweiten Gruppenwrite. Ein
-aktiver Reviewdialog, Entwürfe nach Neustart und die vollständige beauftragte
-Ein-Klick-Vorbereitung sind dadurch noch nicht nativ oder vollständig abgenommen.
-
-Die Reviewbestätigung bindet Campaigntoken, Planrevision, Vorschlagsstand und
-Vorschauanfrage bereits beim Öffnen. Sie kopiert die angezeigte Auswahl;
-Revisionen werden nach einem Flush nicht auf den dann aktuellen Plan umgebogen.
-Schließen, erneutes Review und ein neuer Render entwerten alte Controls und
-Antworten. Eine verspätete erfolgreiche Übernahme darf keine neuere Auswahl
-leeren oder deren Dialog schließen; der nachfolgende Runread prüft den Kontext
-auch nach seiner Antwort. Fehler bleiben im aktuellen Dialog sichtbar und
-lassen dieselbe geprüfte Auswahl erneut versuchen. Geänderte Grundlagen
-verlangen ein neues Review. Kontrollierte DOMproben prüfen diese Übergänge
-sowie den wirklichen Sessionhandler mit verzögerten IPCantworten; sie ersetzen
-keine native Abnahme und beweisen keine zusätzliche SQLitewirkung.
-
-## Nächste ausführbare Schritte
-
-1. **Vollständigkeit am Spielabend prüfen:** Eine konkrete Vorbereitung mit
-   mehreren Besuchen, wiederverwendeten Orten/NPCs, platzierter und unplatzierter
-   Gruppe, geänderten HP und vergebenen/platzierten Rewards erstellen. Zwischen
-   Planner, `readSessionPacket`, Mappe und Markdown jedes tatsächlich erwartete
-   Feld vergleichen. Manuelle Lootnotizen, geplante Rasten und weitere noch
-   fehlende Plannerfelder dürfen nicht durch diese Ausgabe als erledigt gelten.
-   Gebundene fehlende Gruppen/Actorprofile separat gegen fachlich zulässige
-   Archivierung prüfen; beschädigte Daten nicht still auslassen.
-2. **Quellen- und Dateiausgabe nativ abnehmen:** In Electron exportieren und
-   während des geöffneten Speicherdialogs eine benötigte Quelle ändern. Erwartet:
-   Aktualisieren statt einer unbemerkt anderen Ausgabe. Abbruch, Schreibfehler,
-   erneutes Öffnen nach Fehler, Campaignwechsel und vorhandene Zieldatei prüfen.
-   Exportbytes einschließlich CRLF, führender Leerzeichen und Markdownfences
-   vergleichen. Darstellung offener Autorenfences in üblichen Markdownlesern
-   prüfen, ohne Autorenprosa zur vermeintlichen Reparatur umzuschreiben.
-3. **Datenwege gemeinsam begrenzen:** Der aktuelle Read liefert noch sämtliche
-   Mappenblöcke; die Suche scannt diese Liste im Renderer. Last zuerst an realen
-   umfangreichen Plänen messen: Antwortbytes, Zeit, Peak-RAM und wiederverwendete
-   Quellen. Danach bei Bedarf Besuchsübersicht/Suche und ausgewähltes Detail in
-   `SessionPacketAPI`, Store, IPC und UI gemeinsam trennen. Export muss weiterhin
-   vollständig und konsistent sein; keine willkürliche Ergebnisabschneidung und
-   kein zweiter dauerhaft gespeicherter Inhaltsbestand. Kleine Pläne benötigen
-   keinen allgemeinen Suchindex oder Package-/Rendererframework.
-4. **Auswahl und Wiederaufnahme schließen:** In `session-review-ui.ts` und
-   `session-ui.ts` den nativen Wechsel zwischen offenem Review, Planrevision,
-   Vorschlagseditor und laufendem Speichern prüfen. Esc/Abbruch vor Submit
-   schreibt nichts; nach bereits gesendetem Submit bleibt der bestätigte
-   Commandstatus maßgeblich. Auswahlwechsel während des nachfolgenden Reads
-   darf nicht zurückspringen. Danach die fehlenden Entwurfsregeln für
-   Neustart aus dem manuellen Sessionplan liefern: gewählte Vorschläge,
-   Filter/Suche und ungespeicherte Eingaben eindeutig an Campaign/Plan/Run
-   binden, veraltete Revisionen erkennbar machen und Wiederaufnahme anbieten.
-   Ein temporärer DOMauswahlstand gilt nicht als persistierter Entwurf.
-5. **Bedienabschluss:** Dialogfokus und Rückkehr zum auslösenden Control,
-   Tastatur, Suche ohne Treffer, 200-%-Skalierung und lange Statblocks nativ prüfen.
-   GM-Mappe beim tatsächlichen Live-Spiel verwenden; keine Erfolgsmeldung aus
-   der Zahl der Tests oder einer neuen Tutoriallektion ableiten.
-
-## Lokaler Nachweis
-
-`tests/desktop-session-packet-context.test.mjs` benutzt die wirklichen
-Rendererhandler im kontrollierten DOM und den echten SQLite-Store. Es prüft
-Quellenwortlaut, stabile/geänderte Basis, Read ohne Datenänderung, Fresh,
-Ortsabschnitte/Weltverweise/Statblocks, Fehler benötigter gegenüber ungebundenen
-Quellen sowie Suche und verspätete Antworten. Der Speicherdialog wird dabei
-nicht ausgeführt. Native Ausgabe, große Pläne, Accessibility und der komplette
-Vorbereitung-/Live-/Nachbereitungsweg bleiben offen.
-
-Die [Autorenverweisplanung](authored-text-references.md) führt den gemeinsamen
-Textvertrag, Literal-/Kopierschutz, die Einfügeautorität und die noch offene
-Alias-/Markdown-/Verbraucherclosure. Die Mappe erhält weiterhin Autorenbytes.
+`storage/session-packet.ts`, `session-packet-ui.ts` und `session-packet-contracts.ts`
+führen Lesen, Bedienung und Markdownausgabe; `desktop/main.ts` den Dateidialog.
+`session-progress-ui.ts`/`storage/visit-outcomes.ts` führen Besuchsergebnisse.
+Kontrollierte DOM-/SQLiteprüfungen, insbesondere
+`tests/desktop-session-packet-context.test.mjs`, belegen die dort getesteten
+Daten- und Kontextgrenzen. Native Ausgabe und der vollständige Abendablauf sind
+weiter offen. Der gemeinsame Textvertrag steht in
+[Autorenverweise](authored-text-references.md).

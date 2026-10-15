@@ -16,12 +16,12 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Hex-Atlas und gemeinsame Karte | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md), [Wonderdraft-Vergleich](../WONDERDRAFT-PARITY.md), [gemeinsamer Speicher-/Hostanschluss](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) |
 | Stadt | [Stadtziele](../ROADMAP-CITIES.md), [technische Anforderungen](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md), [Referenzgalerie](../ROADMAP-CITIES.md#referenzgalerie) |
 | Dungeon | [Grundrisse und Objekte](../ROADMAP-PARITY.md), [weitere Werkzeuge](../ROADMAP-PARITY-TOOLS.md), [3D/Rooms/Paths/Passages](plans/dungeon/smr04-spatial-coverage.md), [Geometrie und Vorschau](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#dungeon-geometrie-und-vorschau) |
-| Campaign und Planung | [Gesamtumfang](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Campaign/Data](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), [manuelle Sessionplanung](plans/campaign/manual-session-planner.md), [Szenenwiederverwendung](plans/campaign/session-reuse.md) |
+| Campaign und Planung | [Gesamtumfang](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Campaign/Data](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), [manuelle Sessionplanung](plans/campaign/manual-session-planner.md) |
 | Spielabendmappe und Markdownausgabe | [Quellenstand, Suche und nächste Abnahmen](plans/campaign/session-packet.md) |
-| Party und LiveSession | [Fachvertrag und Kernumsetzung](plans/runtime/smr03-live-scene-contract.md) |
+| Party und LiveSession | [Fachvertrag und Kernumsetzung](plans/runtime/smr03-live-scene-contract.md), [Spielabendstart und Wiederaufnahme](plans/runtime/session-opening-and-resume.md) |
 | Adventuring Day und XP-Vorschau | [Aktive Party, Rechengrenzen und nächste Abnahmen](plans/runtime/adventuring-day.md) |
 | Passive Spielerprojektion | [Datenfreigabe, große Karten und nächste Schritte](plans/runtime/player-projection.md) |
-| Regelreferenzen an Scenes | [Aktueller Regelweg und nächste Schritte](plans/runtime/rule-references.md) |
+| GM-Referenzsuche und Regeln | [Lesen, Übergabe und nächste Schritte](plans/runtime/rule-references.md), [Autorenverweise und Kopien](plans/campaign/authored-text-references.md) |
 | Beutewertung und Vergleich | [Gemeinsame Ledger-/Lootbilanz](plans/runtime/loot-balance.md), [gemeinsame Schatzverteilung](plans/runtime/treasure-distribution.md) |
 | Shopbesitzer, Wiederherstellung und Restock | [Aktueller Zeitweg und nächste vollständige Lieferungen](plans/runtime/shops-and-restock.md) |
 | Actor Autonomy und Jobintegrität | [Aktueller Anschluss und nächste Schritte](plans/runtime/actor-autonomy.md) |

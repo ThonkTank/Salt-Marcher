@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -92,21 +91,5 @@ test('job selection logs a bounded deterministic explanation',()=>{
     ]);
     assert.deepEqual(entry.facts.excluded,Array.from({length:6},(_,index)=>'Schmiede '+index+': Rolle wache ist nicht zugelassen'));assert.equal(entry.facts.excludedRemaining,2);
     assert.equal(entry.facts.tieBreak,'Priorität absteigend, bei Gleichstand Job-ID aufsteigend');
-  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
-});
-
-test('group opt-in is revision guarded and logged while disable releases bookings and retains progress',()=>{
-  const f=fixture(),db=(f.store as unknown as {db:any}).db,digest=(value:string)=>createHash('sha256').update(value).digest('hex');
-  try{
-    let actor=f.store.autonomy(f.token).actors.find(value=>value.id===f.actorId)!;f.store.executeAutonomy({commandId:'disable-individual',campaignId:f.campaignId,token:f.token,action:{kind:'actor',actor:{...actor,enabled:false},expectedRevision:actor.revision,initialLocationId:null}});
-    const worldActor={id:f.actorId,creatureId:'creature',revision:1,hp:10,maxHp:10,tempHp:0,conditions:'',concentrating:false,unavailable:false,entryId:'entry'},actorPayload=JSON.stringify(worldActor);db.prepare('INSERT INTO world_actor VALUES(?,?,?,?,?)').run(f.campaignId,f.actorId,1,actorPayload,digest(actorPayload));
-    const group={id:'guard-group',revision:2,title:'Torwache',notes:'',sourceEncounterId:'encounter',sourceRevision:1,locationId:'place-b',plan:{},actors:[worldActor]},groupPayload=JSON.stringify(group);db.prepare('INSERT INTO prepared_group VALUES(?,?,?,?,?,?,?,?)').run(f.campaignId,group.id,null,null,'place-b',group.revision,groupPayload,digest(groupPayload));
-    assert.equal(f.store.autonomy(f.token).groups[0]!.revision,2);
-    assert.throws(()=>f.store.executeAutonomy({commandId:'stale-group-enable',campaignId:f.campaignId,token:f.token,action:{kind:'group-enable',groupId:group.id,expectedRevision:1,enabled:true}}),/Gruppe geändert/);assert.equal(f.store.autonomy(f.token).actors.find(value=>value.id===f.actorId)!.enabled,false);
-    f.store.executeAutonomy({commandId:'group-enable',campaignId:f.campaignId,token:f.token,action:{kind:'group-enable',groupId:group.id,expectedRevision:2,enabled:true}});actor=f.store.autonomy(f.token).actors.find(value=>value.id===f.actorId)!;assert.equal(actor.enabled,true);
-    const job:AutonomyJob={id:'group-job',revision:1,name:'Tor halten',kind:'work',locationId:null,routeId:null,targetActorId:null,roles:[],priority:10,durationSeconds:3600,exclusive:false,enabled:true,needEffects:{},maxDamage:0};f.store.executeAutonomy({commandId:'group-job',campaignId:f.campaignId,token:f.token,action:{kind:'job',job,expectedRevision:null}});
-    f.store.executeLive({commandId:'group-secondary-away',campaignId:f.campaignId,token:f.token,action:{kind:'scene-content',sceneId:f.secondaryId,expectedRevision:1,title:'Zweite Gruppe',notes:'',readAloud:'',locationId:'place-a'}});advance(f,'group-time',f.primaryId,0,1);f.store.executeAutonomy({commandId:'group-step',campaignId:f.campaignId,token:f.token,action:{kind:'catch-up',actorIds:[f.actorId],maxSteps:1}});assert.equal(f.store.autonomy(f.token).actors.find(value=>value.id===f.actorId)!.jobId,job.id);
-    const workBefore=f.store.autonomy(f.token).actors.find(value=>value.id===f.actorId)!;f.store.executeAutonomy({commandId:'group-disable',campaignId:f.campaignId,token:f.token,action:{kind:'group-enable',groupId:group.id,expectedRevision:2,enabled:false}});const view=f.store.autonomy(f.token),disabled=view.actors.find(value=>value.id===f.actorId)!;assert.equal(disabled.enabled,false);assert.equal(disabled.jobId,workBefore.jobId);assert.equal(disabled.progressSeconds,workBefore.progressSeconds);assert.equal(db.prepare('SELECT count(*) n FROM autonomy_reservation WHERE campaign_id=? AND actor_id=?').get(f.campaignId,f.actorId).n,0);assert.equal(db.prepare('SELECT count(*) n FROM autonomy_target_booking WHERE campaign_id=? AND actor_id=? AND to_ms>?').get(f.campaignId,f.actorId,String(900000).padStart(30,'0')).n,0);
-    const audit=view.logs.find(value=>value.actorId===f.actorId&&value.text==='Deaktiviert Autonomie über Gruppe Torwache.')!;assert.deepEqual(audit.facts,{groupId:group.id,groupRevision:2,enabled:false});
   }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });

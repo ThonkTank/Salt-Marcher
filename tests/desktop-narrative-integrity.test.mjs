@@ -67,3 +67,24 @@ test('foreign campaign contributors cannot be written or restored as narrative d
  const payload=JSON.stringify(d);x.store.db.prepare('INSERT INTO narrative_draft VALUES(?,?,?,?)').run(x.cam.id,x.id,payload,hash(payload));
  assert.throws(()=>x.store.narrative(x.w.token,x.id));await assert.rejects(x.store.backup(path.join(x.root,'foreign-draft.sqlite')));
 });
+
+for(const fault of ['identity','revision'])test(`narrative note ${fault} must match its checksummed row before read or backup`,async t=>{
+ const x=fixture(t),row=x.store.db.prepare('SELECT * FROM world_note WHERE id=?').get(x.id),value=JSON.parse(row.payload);
+ if(fault==='identity')value.id=randomUUID();else value.revision++;
+ const payload=JSON.stringify(value);x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE id=?').run(payload,hash(payload),x.id);
+ const before=x.store.db.serialize();
+ assert.throws(()=>x.store.narrative(x.w.token,x.id));
+ await assert.rejects(x.store.backup(path.join(x.root,'bad-note.sqlite')));
+ assert.ok(x.store.db.serialize().equals(before));
+});
+for(const fault of ['recipient','scene'])test(`narrative award read refuses a checksummed ${fault} outside its campaign`,async t=>{
+ const x=fixture(t),n=x.store.narrative(x.w.token,x.id);
+ x.store.executeProgress(x.command({kind:'narrative-award',noteId:x.id,expectedRevision:n.state.revision,expectedNoteRevision:n.noteRevision,sceneId:null,poolXp:0,noXp:true,recipients:[],items:[],outcome:'Confirmed result'}));
+ const row=x.store.db.prepare('SELECT * FROM narrative_award').get(),award=JSON.parse(row.payload);
+ if(fault==='recipient')award.recipientIds=[randomUUID()];else award.sceneId=randomUUID();
+ const payload=JSON.stringify(award);x.store.db.prepare('UPDATE narrative_award SET payload=?,checksum=? WHERE id=?').run(payload,hash(payload),row.id);
+ const before=x.store.db.serialize();
+ assert.throws(()=>x.store.narrative(x.w.token,x.id));
+ await assert.rejects(x.store.backup(path.join(x.root,'bad-owner.sqlite')));
+ assert.ok(x.store.db.serialize().equals(before));
+});

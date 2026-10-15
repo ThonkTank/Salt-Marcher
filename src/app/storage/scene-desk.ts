@@ -70,7 +70,8 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
         .prepare("SELECT * FROM location WHERE campaign_id=? AND id=?")
         .get(cam, ref.id),
       location = checkedLocationDocument(decoded(row));
-    if(location.id!==row.id)throw new Error("Ortszuordnung widersprüchlich.");
+    if(location.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1)
+      throw new Error("Ortszuordnung widersprüchlich.");
     return {
       ref,
       title: location.name,
@@ -115,15 +116,27 @@ function state(db: any, cam: string, sceneId: string) {
   const row = db
     .prepare("SELECT * FROM scene_desk WHERE campaign_id=? AND scene_id=?")
     .get(cam, sceneId);
+  return checkedState(row);
+}
+function checkedState(row: any) {
+  if(row&&(!Number.isSafeInteger(row.revision)||row.revision<1))
+    throw new Error("Szenentischrevision beschädigt.");
   const refs: DeskRef[] = row ? decoded(row) : [];
   if (
     !Array.isArray(refs) ||
     refs.length > 100 ||
-    new Set(refs.map((r) => r.kind + ":" + r.id)).size !== refs.length
+    new Set(refs.map((r) => r?.kind + ":" + r?.id)).size !== refs.length
   )
     throw new Error("Szenentisch beschädigt.");
   refs.forEach(checkedRef);
   return { revision: row?.revision ?? 0, refs };
+}
+export function validateSceneDesk(db: any) {
+  if(!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='scene_desk'").get()) {
+    if(db.pragma('user_version',{simple:true})<38)return;
+    throw new Error("Szenentischspeicher fehlt.");
+  }
+  for(const row of db.prepare('SELECT * FROM scene_desk').iterate())checkedState(row);
 }
 export function readSceneDesk(
   db: any,

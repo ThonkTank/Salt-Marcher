@@ -3,7 +3,7 @@ import type {LiveView} from './live-contracts';
 import type {Preparation} from './preparation-contracts';
 import {visitOutcomeLabel,type SessionProgress,type VisitOutcomeStatus} from './visit-outcome-contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
-let locked=false;
+let locked=false,saving=false;
 let workspace:Workspace|null=null,live:LiveView|null=null,sources:Preparation|null=null,view:SessionProgress|null=null,request=0,key='',planId='';
 const drafts=new Map<string,{status:VisitOutcomeStatus;text:string}>();
 let navigate:(planId:string,visitId:string)=>Promise<void>,save:(sceneId:string,adoptionId:string,status:VisitOutcomeStatus,text:string)=>Promise<boolean>,tell:(s:string,e?:boolean)=>void;
@@ -14,12 +14,13 @@ export function initSessionNavigator(status:typeof tell,openVisit:typeof navigat
  el('running-origin').parentElement!.after(root);
  el('live-session-plan').onchange=()=>{planId=el<HTMLSelectElement>('live-session-plan').value;void refresh();};el('live-session-progress-refresh').onclick=()=>void refresh();
  for(const id of ['live-visit-outcome-status','live-visit-outcome-text'])el(id).oninput=()=>{const k=draftKey();if(k)drafts.set(k,{status:el<HTMLSelectElement>('live-visit-outcome-status').value as VisitOutcomeStatus,text:el<HTMLTextAreaElement>('live-visit-outcome-text').value});};
- el('live-visit-outcome-form').onsubmit=e=>{e.preventDefault();const scene=live?.scene,a=scene?.adoption,k=draftKey();if(!scene||!a||!k)return;const d={status:el<HTMLSelectElement>('live-visit-outcome-status').value as VisitOutcomeStatus,text:el<HTMLTextAreaElement>('live-visit-outcome-text').value};drafts.set(k,d);const b=el<HTMLButtonElement>('live-visit-outcome-form').querySelector('button')!;b.disabled=true;void save(scene.id,a.id,d.status,d.text).then(ok=>{if(ok&&drafts.get(k)?.text===d.text&&drafts.get(k)?.status===d.status){drafts.delete(k);renderOutcome();}if(ok)void refresh();}).catch(e=>tell(e.message,true)).finally(()=>{b.disabled=false;});};
+ el('live-visit-outcome-form').onsubmit=e=>{e.preventDefault();const scene=live?.scene,a=scene?.adoption,k=draftKey();if(!scene||!a||!k)return;const d={status:el<HTMLSelectElement>('live-visit-outcome-status').value as VisitOutcomeStatus,text:el<HTMLTextAreaElement>('live-visit-outcome-text').value};drafts.set(k,d);const b=el<HTMLButtonElement>('live-visit-outcome-form').querySelector('button')!;saving=true;b.disabled=true;void save(scene.id,a.id,d.status,d.text).then(ok=>{if(ok&&drafts.get(k)?.text===d.text&&drafts.get(k)?.status===d.status){drafts.delete(k);renderOutcome();}if(ok)void refresh();}).catch(e=>tell(e.message,true)).finally(()=>{saving=false;b.disabled=locked;});};
 }
 function renderOutcome(){
  const a=live?.scene?.adoption;el('live-visit-outcome').hidden=!a;if(!a)return;
  const k=draftKey()!,d=drafts.get(k),saved=a.outcome;
  el('live-visit-outcome-saved').textContent=(a.title||'Unbenannter Besuch')+' · '+(saved?visitOutcomeLabel(saved.status)+' · '+new Date(saved.recordedAt).toLocaleString('de-DE'):'Übernommen, Ergebnis noch offen');
+ el<HTMLButtonElement>('live-visit-outcome-confirm').disabled=locked||saving;
  el<HTMLSelectElement>('live-visit-outcome-status').value=d?.status??saved?.status??'completed';el<HTMLTextAreaElement>('live-visit-outcome-text').value=d?.text??saved?.text??'';
 }
 export function sessionNavigatorContext(w:Workspace|null,l:LiveView|null,p:Preparation|null,active:boolean){
@@ -32,8 +33,9 @@ export function sessionNavigatorContext(w:Workspace|null,l:LiveView|null,p:Prepa
  if(active&&w&&l?.scene)void refresh();else{request++;view=null;el('live-session-visits').replaceChildren();}
 }
 async function refresh(){
- const token=workspace?.token,sceneId=live?.scene?.id,chosen=planId,n=++request;if(!token||!sceneId||!chosen){view=null;el('live-session-visits').replaceChildren();el('live-session-progress-summary').textContent='Noch kein Spielabendplan.';return;}
- try{const result=await window.campaign.sessionProgress(token,chosen,sceneId);if(request!==n||workspace?.token!==token||live?.scene?.id!==sceneId||planId!==chosen)return;if(!result.ok)throw new Error(result.error);view=result.value;draw();}
+ const token=workspace?.token,sceneId=live?.scene?.id,chosen=planId,n=++request;view=null;el('live-session-visits').replaceChildren();if(!token||!sceneId||!chosen){el('live-session-progress-summary').textContent='Noch kein Spielabendplan.';return;}
+ el('live-session-progress-summary').textContent='Besuchsstand wird geladen…';
+ try{const result=await window.campaign.sessionProgress(token,chosen,sceneId);if(request!==n||workspace?.token!==token||live?.scene?.id!==sceneId||planId!==chosen)return;if(!result.ok)throw new Error(result.error);if(result.value.planId!==chosen||result.value.visits.some(v=>v.focused&&v.focused.sceneId!==sceneId))throw new Error('Besuchsstand gehört zu einer anderen Planung oder Gruppe.');view=result.value;draw();}
  catch(e){if(request===n)el('live-session-progress-summary').textContent=(e as Error).message;}
 }
 function draw(){
@@ -46,4 +48,4 @@ function draw(){
  }
 }
 
-export function sessionNavigatorBusy(on:boolean){locked=on;for(const control of el('live-session-navigator').querySelectorAll<HTMLButtonElement|HTMLSelectElement>('button,select'))control.disabled=on;}
+export function sessionNavigatorBusy(on:boolean){locked=on;for(const control of el('live-session-navigator').querySelectorAll<HTMLButtonElement|HTMLSelectElement>('button,select'))control.disabled=on;el<HTMLButtonElement>('live-visit-outcome-confirm').disabled=on||saving;}

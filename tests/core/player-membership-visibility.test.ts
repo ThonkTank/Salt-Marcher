@@ -38,4 +38,3 @@ test('deactivation hides a character from the player display without deleting re
     assert.equal(restored.frame.map?.cells.find((hex:{q:number;r:number;terrain:string})=>hex.q===2&&hex.r===0)?.terrain,'forest');
   }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
-

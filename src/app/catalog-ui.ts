@@ -27,7 +27,7 @@ export async function openCatalog(){
   await search();if(!owned(token,g))return;if(workspace){await refreshPlans();if(owned(token,g))await refreshGeneration();}
  }catch(error){if(owned(token,g))tell((error as Error).message,true);}
 }
-export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string}){const token=workspace?.token,g=generation;await openCatalog();if(!owned(token,g))return;if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
+export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){const token=workspace?.token,g=generation;if(!stillCurrent())return;await openCatalog();if(!owned(token,g)||!stillCurrent())return;if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
 function query():CreatureCatalogQuery{
  const q:CreatureCatalogQuery={text:value('catalog-search'),offset,limit:25,sort,direction:value('catalog-direction') as 'asc'|'desc'};

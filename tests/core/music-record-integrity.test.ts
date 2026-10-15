@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
+import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import type {MusicCommand} from '../../src/app/music-contracts';
 
 const checksum=(payload:string)=>createHash('sha256').update(payload).digest('hex');
@@ -47,13 +48,23 @@ test('music command replay rejects a checksummed negative receipt',()=>{
 test('music row identities remain valid after campaign remapping',async()=>{
  const f=fixture(),snapshot=join(f.root,'music-campaign.sqlite'),destination=new CampaignStore(join(f.root,'destination.sqlite'),'test');
  try{
-  await f.store.campaignSnapshot(f.token,snapshot);
+  const locationId=randomUUID(),noteId=campaignLocalId(randomUUID());
+  f.store.changePreparation({commandId:'music-location',campaignId:f.campaignId,token:f.token,change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id:locationId,name:'Tor',type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});
+  f.store.changePreparation({commandId:'music-note',campaignId:f.campaignId,token:f.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:'rule',title:'Musikregel',readAloud:'  Original\r\n',gmNotes:'',relations:[],creatureId:null,deleted:false}}});
+  for(const [kind,id]of [['location',locationId],['note',noteId]] as const)f.store.executeMusic({commandId:'music-'+kind,campaignId:f.campaignId,token:f.token,action:{kind:'subject',expectedRevision:null,subject:{id,kind,revision:0,name:kind,vibes:['Regen'],genres:[],vibeMode:'add',genreMode:'add'}}});
+  await f.store.campaignSnapshot(f.token,snapshot);const bytes=readFileSync(snapshot);
   const imported=destination.acceptCampaignSnapshot(snapshot,'Importierte Musik',{},'music-import'),opened=destination.activate(imported.id),music=destination.music(opened.token),subject=destination.musicSubject(opened.token,'creature','fixture-creature');
   assert.equal(music.sceneSettings?.revision,1);
   assert.deepEqual(music.sceneSettings?.vibes,['Gewitter']);
   assert.deepEqual(music.registry.axes.map((axis:{id:string})=>axis.id),['tension']);
   assert.equal(subject.revision,1);
   assert.equal(subject.genreMode,'replace');
+  const db=(destination as unknown as {db:any}).db;
+  for(const row of db.prepare("SELECT kind,id FROM music_subject WHERE campaign_id=? AND kind!='creature'").all(imported.id)){
+   assert.notEqual(row.id,row.kind==='location'?locationId:noteId);assert.deepEqual(destination.musicSubject(opened.token,row.kind,row.id).vibes,['Regen']);
+  }
+  assert.equal(db.prepare("SELECT count(*) n FROM music_subject WHERE campaign_id=? AND kind!='creature'").get(imported.id).n,2);assert.ok(bytes.equals(readFileSync(snapshot)));assert.equal(destination.preparation(opened.token).notes[0]!.note.readAloud,'  Original\r\n');
+
  }finally{destination.close();f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 

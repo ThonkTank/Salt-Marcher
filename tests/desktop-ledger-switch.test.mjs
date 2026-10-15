@@ -59,3 +59,16 @@ test('valid split, merge and transfer remain usable and preserve the original re
  page=x.store.ledger(x.w.token,{characterId:x.heroes[1].id,after:null,search:'',status:''});assert.equal(page.items.filter(i=>i.status==='received').reduce((n,i)=>n+i.quantity,0),1);assert.equal(page.totalCopper,'0');assert.equal(x.store.ledger(x.w.token,{characterId:x.heroes[0].id,after:null,search:'',status:''}).totalCopper,'1800');assert.deepEqual(x.writes.map(w=>w.action.kind),['ledger-split','ledger-merge','ledger-transfer']);
  }finally{await x.cleanup();}
 });
+
+test('unfinished XP correction cannot reset character XP; explicit zero still works',async()=>{
+ const x=await fixture();try{
+  const id=x.heroes[0].id,p=x.store.progress(x.w.token).characters.find(c=>c.characterId===id);
+  x.store.executeProgress({commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,action:{kind:'xp',characterId:id,expectedRevision:p.revision,mode:'set',amount:900,reason:'Bekannter Start'}});
+  await x.ui.refreshProgress();const before=x.store.db.serialize();
+  x.el('xp-mode').value='set';x.el('xp-amount').value='';x.el('xp-reason').value='Ausdrückliche Korrektur';x.el('xp-amount').oninput();
+  x.el('xp-form').onsubmit({preventDefault(){}});await x.ui.flushProgress();
+  assert.equal(x.writes.length,0);assert.match(x.el('xp-preview').textContent,/ganze XP/);assert.match(x.messages.at(-1),/ganze XP/);assert.ok(x.store.db.serialize().equals(before));
+  x.el('xp-amount').value='0';x.el('xp-form').onsubmit({preventDefault(){}});await x.ui.flushProgress();
+  assert.equal(x.writes.length,1);assert.equal(x.store.progress(x.w.token).characters.find(c=>c.characterId===id).xp,0);
+ }finally{await x.cleanup();}
+});

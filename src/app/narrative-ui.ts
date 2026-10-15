@@ -1,4 +1,4 @@
-import {finishDraftCommit,finishDraftConsumed} from './finish-draft-ui';
+import {finishDraftCommit} from './finish-draft-ui';
 import type { Workspace } from "./contracts";
 import type { WorldNoteV1 } from "../features/world/world-notes";
 import type { NarrativeView, NarrativeDraft } from "./narrative-contracts";
@@ -404,12 +404,12 @@ export async function showNarrative(
         }
         if (!current() || !data || !(await drain()) || !current()) return;
         const basis = data;
-        await prepareFinish(basis.state.contributors, undefined, {
+        if(!await prepareFinish(basis.state.contributors, undefined, {
           workspace: w!,
           owner:{kind:'narrative',targetId:note!.id,revision:basis.state.revision,noteRevision:basis.noteRevision},
           poolXp: basis.state.poolXp,
           items: basis.state.items,
-        });
+        }))return;
         if (!current()) return;
         const dialog = el<HTMLDialogElement>("combat-finish-dialog"),
           form = el<HTMLFormElement>("combat-finish-form"),
@@ -453,7 +453,7 @@ export async function showNarrative(
                 outcome: el<HTMLTextAreaElement>("combat-outcome").value,
               })
             ) {
-              finishDraftConsumed();dialog.close();
+              if(draft.consume())dialog.close();
               await refreshProgress();
             }}catch(e){tell((e as Error).message,true);}
           })();

@@ -14,7 +14,7 @@ export interface ChronicleEntry {
   sessionMarker?:'start'|'end';
   handoff?:string;
 }
-export interface ChronicleView {campaignName:string;entries:ChronicleEntry[];truncated:boolean}
+export interface ChronicleView {campaignName:string;entries:ChronicleEntry[];truncated:boolean;latestSessionMarker?:ChronicleEntry}
 export interface ChronicleAPI {
   chronicle(token:string,category?:ChronicleCategory|'all',search?:string):Promise<Result<ChronicleView>>;
   exportChronicle(token:string,category:ChronicleCategory|'all',search:string):Promise<Result<{cancelled:boolean}>>;
