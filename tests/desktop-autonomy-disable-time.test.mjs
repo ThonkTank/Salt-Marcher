@@ -69,13 +69,18 @@ for(const mode of ['disable','pause'])test(`exclusive ${mode} and resume rebook 
  await x.store.backup(path.join(x.root,'resumed.sqlite'));
 });
 
-for(const distinct of [false,true])test(`a scene-time conflict releases only future exclusive bookings after Fresh, distinct target job=${distinct}`,async t=>{
- const x=fixture(t,true);
- for(const [id,role,enabled] of [[x.id,'owner',true],[x.other,'other',false]]){const a=x.store.autonomy(x.w.token).actors.find(a=>a.id===id);x.store.executeAutonomy(x.command({kind:'actor',actor:{...a,role,enabled},expectedRevision:a.revision,initialLocationId:null}));}
+function earlierScene(x){
  const primary=x.store.live(x.w.token).scene.id,heroes=[];
  for(const name of ['Ada','Borin']){const c=x.store.executeLive(x.command({kind:'create-character',profile:{name}})).character,v=x.store.live(x.w.token);heroes.push(c.id);x.store.executeLive(x.command({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:v.rosterRevision,active:true,targetSceneId:primary,expectedFocusRevision:v.focusRevision}));}
  const v=x.store.live(x.w.token),split=x.store.executeLive(x.command({kind:'move',sceneId:primary,expectedRosterRevision:v.rosterRevision,expectedFocusRevision:v.focusRevision,expectedClockRevision:v.scene.clock.revision,expectedSceneMembershipRevision:v.scene.membershipRevision,memberIds:[heroes[1]],target:{kind:'new',title:'Frühere Gruppe',expectedContentRevision:v.scene.revision}})),secondary=split.session.createdScene.id,s=x.store.liveScene(x.w.token,secondary);
  x.store.executeLive(x.command({kind:'scene-content',sceneId:secondary,expectedRevision:s.revision,title:s.title,notes:s.notes,readAloud:s.readAloud??'',locationId:x.place}));
+ return {primary,secondary};
+}
+
+for(const distinct of [false,true])test(`a scene-time conflict releases only future exclusive bookings after Fresh, distinct target job=${distinct}`,async t=>{
+ const x=fixture(t,true);
+ for(const [id,role,enabled] of [[x.id,'owner',true],[x.other,'other',false]]){const a=x.store.autonomy(x.w.token).actors.find(a=>a.id===id);x.store.executeAutonomy(x.command({kind:'actor',actor:{...a,role,enabled},expectedRevision:a.revision,initialLocationId:null}));}
+ const {primary,secondary}=earlierScene(x);
  const job={id:randomUUID(),revision:0,name:'Geteilte Wache',kind:'guard',locationId:x.place,routeId:null,targetActorId:null,roles:distinct?['owner']:[],priority:100,durationSeconds:600,exclusive:true,enabled:true,needEffects:{},maxDamage:0},otherJob=distinct?{...job,id:randomUUID(),name:'Andere Aufgabe am gleichen Ort',roles:['other']}:job;
  x.store.executeAutonomy(x.command({kind:'job',job,expectedRevision:null}));if(distinct)x.store.executeAutonomy(x.command({kind:'job',job:otherJob,expectedRevision:null}));
  x.advance(0,60);x.catchup();assert.equal(x.current().progressSeconds,60);const facts=x.store.db.prepare('SELECT payload FROM autonomy_interval WHERE campaign_id=? ORDER BY ordinal').all(x.cam.id),oldLogs=x.store.db.prepare('SELECT id,payload,checksum FROM autonomy_log WHERE campaign_id=? ORDER BY id').all(x.cam.id);
@@ -91,4 +96,18 @@ for(const distinct of [false,true])test(`a scene-time conflict releases only fut
  for(const table of ['autonomy_booking','autonomy_target_booking']){const b=x.store.db.prepare('SELECT from_ms,to_ms FROM '+table+' WHERE campaign_id=? AND actor_id=?').get(x.cam.id,x.id);assert.equal(BigInt(b.from_ms),0n);assert.equal(BigInt(b.to_ms),60000n,'retain committed actor time; release predictions instead of retaining them or rolling back to scene time');}
 
  await x.store.backup(path.join(x.root,'other-owner.sqlite'));x.reopen();const before=x.store.db.serialize();assert.deepEqual(x.store.executeLive({...step,token:x.w.token}),JSON.parse(JSON.stringify(ack)));assert.ok(x.store.db.serialize().equals(before));
+});
+
+for(const resolution of ['resume','changed-position','skip'])test(`reasoned pending ${resolution} preserves valid job progress or explicitly starts a new basis after Fresh`,async t=>{
+ const x=fixture(t),{primary,secondary}=earlierScene(x),job={id:randomUUID(),revision:0,name:'Fortsetzbarer bestätigter Job',kind:'guard',locationId:x.place,routeId:null,targetActorId:null,roles:[],priority:100,durationSeconds:600,exclusive:true,enabled:true,needEffects:{},maxDamage:0};
+ x.store.executeAutonomy(x.command({kind:'job',job,expectedRevision:null}));x.advance(0,60);x.catchup();assert.equal(x.current().progressSeconds,60);x.store.executeLive(x.command({kind:'advance-clock',sceneId:secondary,expectedRevision:0,amount:30,unit:'seconds',calendarVersion:'relative-v1',reason:'Frühere Gruppe'}));assert.match(x.current().pending,/Zeitkonflikt/);x.reopen();const before=x.current();
+ if(resolution==='changed-position'){const id=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:newLocation(id,'GM-Ortskorrektur','poi',[randomUUID(),randomUUID()])}});x.store.executeAutonomy(x.command({kind:'place',actorId:x.id,locationId:id,expectedPositionRevision:x.current().positionRevision,reason:'Bewusster Worldstand'}));}
+ const command=x.command({kind:'accept-pending',actorId:x.id,expectedRevision:before.revision,resolution:resolution==='skip'?'skip':'resume',reason:'  Stand geprüft\r\nFortsetzung bewusst gewählt'});
+ if(resolution==='resume'){x.store.db.exec("CREATE TEMP TRIGGER reject_resume BEFORE INSERT ON autonomy_log WHEN NEW.interval_id='manual' AND json_extract(NEW.payload,'$.kind')='override' BEGIN SELECT RAISE(ABORT,'controlled resume log failure'); END");const saved=x.store.db.serialize();assert.throws(()=>x.store.executeAutonomy(command),/controlled resume log failure/);assert.ok(x.store.db.serialize().equals(saved));x.store.db.exec('DROP TRIGGER reject_resume');}
+ x.store.executeAutonomy(command);const after=x.current();assert.equal(after.pending,null);assert.equal(after.paused,false);assert.equal(after.cursor,before.cursor);assert.equal(after.offsetSeconds,before.offsetSeconds);assert.deepEqual(after.needs,before.needs);
+ if(resolution==='resume'){assert.equal(after.jobId,job.id,'a valid paused job retains its identity');assert.equal(after.progressSeconds,60,'resolving a time conflict must not discard performed work');
+  const step=x.command({kind:'advance-clock',sceneId:primary,expectedRevision:1,amount:540,unit:'seconds',calendarVersion:'relative-v1',reason:'Verbleibende Jobzeit'}),ack=x.store.executeLive(step);assert.equal(x.current().jobId,null);const completed=x.store.autonomy(x.w.token).logs.filter(log=>log.actorId===x.id&&log.kind==='complete');assert.equal(completed.length,1);assert.equal(completed[0].facts.seconds,600);await x.store.backup(path.join(x.root,'resumed.sqlite'));x.reopen();const saved=x.store.db.serialize();assert.deepEqual(x.store.executeLive({...step,token:x.w.token}),JSON.parse(JSON.stringify(ack)));assert.ok(x.store.db.serialize().equals(saved));
+ }else{assert.equal(after.jobId,null);assert.equal(after.progressSeconds,0);}
+ const log=x.store.autonomy(x.w.token).logs.find(log=>log.kind==='override'&&log.text.includes(command.action.reason));assert.equal(log.facts.jobId,job.id);assert.equal(log.facts.progressSeconds,60);assert.equal(log.facts.jobRestarted,resolution!=='resume');
+ if(resolution==='changed-position'){assert.match(log.text,/60 s bisheriger Fortschritt/);const snapshot=path.join(x.root,'changed-position.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const bytes=readFileSync(snapshot),copy=x.store.acceptCampaignSnapshot(snapshot,'Unabhängige Jobfortsetzung',{}),view=x.store.autonomy(x.store.activate(copy.id).token),copiedJob=view.jobs.find(j=>j.name===job.name),copiedLog=view.logs.find(l=>l.text===log.text);assert.notEqual(copiedJob.id,job.id);assert.equal(copiedLog.facts.jobId,copiedJob.id);assert.equal(copiedLog.facts.progressSeconds,60);assert.equal(copiedLog.facts.jobRestarted,true);assert.ok(readFileSync(snapshot).equals(bytes));}
 });
