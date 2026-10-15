@@ -9,7 +9,7 @@ import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
 
 const npcId=(tail:string)=>campaignLocalId(`00000000-0000-4000-8000-${tail.padStart(12,'0')}`);
-const building=(id:string,name:string):CityUnit=>({id,kind:'building',name,protected:true,position:{x:20,y:20},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],rooms:[],interior:false});
+const building=(id:string,name:string):CityUnit=>({id,kind:'building',name,protected:true,position:{x:20,y:20},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],households:[],rooms:[],interior:false});
 function fixture(label:string){
  const root=mkdtempSync(join(tmpdir(),label)),store=new CampaignStore(join(root,'campaign.sqlite'),'test'),campaign=store.create('Stadtleben'),workspace=store.activate(campaign.id),location=newLocation('city-place','Hafenstadt','city',['description','notes']),ada=npcId('701'),bert=npcId('702');
  store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});
@@ -42,16 +42,38 @@ test('city buildings bind existing World NPC homes and workplaces through exact 
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
+test('city households own stable identity and move or dissolve without duplicating World NPCs',()=>{
+ const f=fixture('city-households-');
+ try{
+  const household={id:'household-a',name:'Familie Abendrot',memberIds:[f.ada,f.bert]},assigned=f.store.executeCity({commandId:'household',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],households:[household]}],remove:[],label:'Haushalt anlegen'}});
+  assert.deepEqual(assigned.units.find(u=>u.id==='home')?.households,[household]);
+  assert.throws(()=>f.store.executeCity({commandId:'unprotect-household',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,protected:false}],remove:[],label:'Schutz lösen'}}),/vor Regeneration geschützt/);
+  assert.throws(()=>f.store.executeCity({commandId:'household-member-duplicate',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,households:[household,{id:'household-b',name:'Doppelter Haushalt',memberIds:[f.ada]}]}],remove:[],label:'Doppelte Mitgliedschaft'}}),/nur einem Haushalt/);
+  assert.throws(()=>f.store.executeCity({commandId:'delete-household-home',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[],remove:['home'],label:'Haus löschen'}}),/Haushalte.*zuerst verschieben oder auflösen/);
+  const moved=f.store.executeCity({commandId:'move-household',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,residentIds:[],households:[]},{...f.shop,residentIds:[f.ada,f.bert],households:[household]}],remove:[],label:'Haushalt umziehen'}});
+  assert.deepEqual(moved.units.find(u=>u.id==='shop')?.households,[household]);
+  assert.deepEqual(moved.units.find(u=>u.id==='home')?.residentIds,[]);
+  const undone=f.store.executeCity({commandId:'undo-household',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:moved.header.revision,action:{kind:'undo'}});
+  assert.deepEqual(undone.units.find(u=>u.id==='home')?.households,[household]);
+  const redone=f.store.executeCity({commandId:'redo-household',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:undone.header.revision,action:{kind:'redo'}});
+  const dissolved=f.store.executeCity({commandId:'dissolve-household',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:redone.header.revision,action:{kind:'change',upsert:[{...redone.units.find(u=>u.id==='shop')!,households:[]}],remove:[],label:'Haushalt auflösen'}});
+  assert.deepEqual(dissolved.units.find(u=>u.id==='shop')?.households,[]);
+  assert.deepEqual(dissolved.units.find(u=>u.id==='shop')?.residentIds,[f.ada,f.bert]);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
 test('campaign transfer remaps city resident and workplace references with their World NPC identities',async()=>{
  const f=fixture('city-people-transfer-source-'),targetRoot=mkdtempSync(join(tmpdir(),'city-people-transfer-target-')),target=new CampaignStore(join(targetRoot,'campaign.sqlite'),'test');
  try{
-  f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada],workerIds:[f.bert]}],remove:[],label:'Personen binden'}});
+  f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],workerIds:[f.bert],households:[{id:'household-transfer',name:'Familie Fernweg',memberIds:[f.ada,f.bert]}]}],remove:[],label:'Personen binden'}});
   const snapshot=join(f.root,'campaign.snapshot.sqlite');await f.store.campaignSnapshot(f.workspace.token,snapshot);
   const imported=target.acceptCampaignSnapshot(snapshot,'Übernommene Stadt',{},'city-people-transfer'),opened=target.activate(imported.id),city=target.cities(opened.token).cities[0]!,view=target.city(opened.token,city.id),people=target.cities(opened.token).assignedPeople;
   const home=view.units.find(u=>u.name==='Wohnhaus')!;
-  assert.equal(home.residentIds?.length,1);assert.equal(home.workerIds?.length,1);
+  assert.equal(home.residentIds?.length,2);assert.equal(home.workerIds?.length,1);
   assert.notEqual(home.residentIds?.[0],f.ada);assert.notEqual(home.workerIds?.[0],f.bert);
   assert.deepEqual(new Set(people.map(p=>p.id)),new Set([home.residentIds![0]!,home.workerIds![0]!]));
   assert.deepEqual(people.map(p=>p.name).sort(),['Ada','Bert']);
+  assert.notEqual(home.households?.[0]?.id,'household-transfer');
+  assert.deepEqual(new Set(home.households?.[0]?.memberIds),new Set(home.residentIds));
  }finally{target.close();f.store.close();rmSync(targetRoot,{recursive:true,force:true});rmSync(f.root,{recursive:true,force:true});}
 });
