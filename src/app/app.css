@@ -389,3 +389,23 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #table-manager{height:92vh}
 
 .map-canvas-state{padding:.8rem;border:1px solid var(--line);background:#fff;display:flex;gap:1rem;align-items:center;justify-content:space-between}.map-canvas-state[role=alert]{border-color:var(--error);color:var(--error)}
+/* Authoring controls must be reachable while the working map stays visible. */
+.world-map-columns{grid-template-columns:minmax(0,1fr) 280px;gap:1rem;align-items:start}
+.world-map-columns>section{padding:.8rem}
+.world-map-title{display:flex;gap:.6rem;align-items:end;margin-bottom:.6rem}
+.world-map-title label{flex:1;margin:0;display:flex;align-items:center;gap:.5rem;white-space:nowrap}
+.world-map-title button{flex:none}
+#hex-author-tools{padding:.35rem 0;border-top:1px solid var(--line);margin-top:.5rem;gap:.5rem}
+#hex-author-tools label{margin:0}
+#hex-author-tools select{max-width:12rem}
+#hex-author-tools input[type=number]{width:4rem}
+#world .world-map-canvas #world-map{height:clamp(280px,36vh,520px);margin:.5rem 0}
+#world .world-map-navigation{margin:.5rem 0}
+.world-map-columns .world-authoring h3{margin:.3rem 0 .7rem}
+@media(max-width:950px){.world-map-columns{grid-template-columns:1fr}.world-map-title{flex-wrap:wrap}}
+
+#world>.catalog-heading h2{margin:.2rem 0 .7rem}
+#world-current{margin:.4rem 0}
+#world .world-map-columns{margin:.7rem 0}
+#hex-author-tools button{padding:.4rem .65rem}
+#hex-paint-status{display:block;flex-basis:100%;min-height:1.1em;font-size:.8rem;overflow-wrap:anywhere}

@@ -3,7 +3,7 @@
 set -euo pipefail
 qa_program_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 if [[ "${1:-}" != '--owned' ]]; then
-    exec "${HOME}/.local/bin/codex-owned-processes" -- bash "$0" --owned "$@"
+    exec python3 "${HOME}/.local/bin/codex-ui-session" bash "$0" --owned "$@"
 fi
 shift
 qa_adapter=$(python3 -B -c 'import json,sys; print(json.load(open(sys.argv[1]))["qa_adapter"])' "$qa_program_root/PROJECT.json")

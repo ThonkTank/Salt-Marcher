@@ -141,3 +141,30 @@ for(const response of ['committed','not yet sent'])test(`a ${response} travel ac
   const after=x.store.sceneWorld(x.w.token,x.scene.id);assert.deepEqual(after,before);assert.equal(x.writes,response==='committed'?1:0);if(response==='committed')assert.deepEqual(after.journey.route.at(-1),{q:1,r:0});
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
+
+
+test('renaming above the canvas is saved with the same map and preserves hex edits', async()=>{
+ const x=await fixture();try{
+  x.enter('world-map-name','Moorfähre');x.enter('hex-label','Fähre');
+  assert.equal(await x.ui.flushWorld(),true);
+  const saved=x.store.world(x.w.token).maps.find(m=>m.id===x.map.id);
+  assert.equal(saved.name,'Moorfähre');assert.equal(saved.cells.find(c=>c.q===0&&c.r===0).label,'Fähre');
+  await x.ui.openWorld();assert.equal(x.document.getElementById('world-map-name').value,'Moorfähre');
+  assert.equal(x.store.world(x.w.token).maps.length,1);
+ }finally{x.cleanup();}
+});
+
+
+test('unpainted map is distinguishable from an explicitly authored plain after reopen',async()=>{
+ const x=await fixture();try{
+  const tile=()=>x.document.querySelector('#world-map polygon[data-q="0"][data-r="0"]');
+  assert.equal(tile().dataset.authored,'false');assert.match(x.document.getElementById('hex-authored-status').textContent,/ungezeichnet/);
+  Object.defineProperty(x.document.getElementById('world-map'),'clientHeight',{value:320,configurable:true});
+  x.enter('hex-label','Moorfähre');assert.equal(await x.ui.flushWorld(),true);await x.ui.openWorld();
+  assert.equal(Number(x.document.querySelector('#world-map text').getAttribute('font-size'))*320/1360,14);
+  const camera=x.document.getElementById('world-map').getAttribute('viewBox');Object.defineProperty(x.document.getElementById('world-map'),'clientHeight',{value:480});x.window.dispatchEvent(new x.window.Event('resize'));
+  assert.equal(Number(x.document.querySelector('#world-map text').getAttribute('font-size'))*480/1360,14);assert.equal(x.document.getElementById('world-map').getAttribute('viewBox'),camera);
+  assert.equal(tile().dataset.authored,'true');assert.equal(tile().getAttribute('fill'),'#b8c896');
+  assert.equal(x.document.querySelector('#world-map polygon[data-q="1"][data-r="0"]').dataset.authored,'false');
+ }finally{x.cleanup();}
+});

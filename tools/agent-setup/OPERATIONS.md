@@ -8,7 +8,7 @@ Aus dem lokalen qa-program starten:
 bash scripts/run-ui.sh EIGENE-SESSION EIGENER-LOGORDNER
 ```
 
-Der Helper startet Service und Clients in einer eigenen systemd-Prozessgruppe ohne Ressourcenlimits und liest den Adapterpfad aus PROJECT.json. JSON-Aufträge oder @REQUEST.json-Dateiverweise über seine Standardeingabe schicken. Lange Aufträge über Dateien senden; auch die letzte nichtleere Eingabe ohne Zeilenumbruch bleibt erhalten. Service und Clients nicht doppelt starten.
+Der Helper startet Service und Clients in einer eigenen Linux-Prozesssitzung ohne Ressourcenlimits und liest den Adapterpfad aus PROJECT.json. JSON-Aufträge oder @REQUEST.json-Dateiverweise über seine Standardeingabe schicken. Lange Aufträge über Dateien senden; auch die letzte nichtleere Eingabe ohne Zeilenumbruch bleibt erhalten. Service und Clients nicht doppelt starten.
 
 launch benötigt eigenes profile, tatsächliche argv/identity_files und attempt_id; erwartete Buildhashes können angegeben werden. Für input/observe braucht der bestehende Adapter einen technischen Run über begin mit eigener run_id, manifest und passendem task_id aus manifest.expected_tasks. Das ist Bedienzustand des vorhandenen Recorders, keine Studienregistrierung oder Bewertungspflicht. Der vorhandene begin/resume/input/observe-Weg bleibt unverändert; tatsächliche Antworten prüfen und fehlende Antworten nie durch blindes Wiederholen von Eingaben beantworten.
 
