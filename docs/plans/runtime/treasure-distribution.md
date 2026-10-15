@@ -34,11 +34,32 @@ Membership-, Doppelzuordnungs- und kontrolliertem zweitem Ledgerfehler.
 Dialog-/Bestätigungsgrenzen. Das qualifiziert lokale Teilverträge, keine native
 oder vollständige Recovery-/Portabilitätsabnahme.
 
+## Belege nach späterer Korrektur und unabhängiger Kopie
+
+Die Storeprobe in `desktop-treasure-batch.test.mjs` verfolgt eine tatsächliche
+Schatzverteilung mit anschließender Weitergabe, Verkauf und Erlöskorrektur sowie
+eine XP-Buchung mit späterer verknüpfter Abwärtskorrektur. Statusabfrage und
+Wiederholung der ursprünglichen Commands liefern ihre ursprünglichen Receipts;
+sie verändern weder neuere XP noch Ledger oder bereits verteilte Mengen.
+Der Nachweis gilt auch nach normalem Store-Neustart.
+
+In der unabhängigen Kampagnenkopie verweisen XP-Korrekturen und der
+Empfangsverlauf einer Weitergabe auf die kopierten Originaleinträge.
+`campaign-data.ts` behandelt dafür ausschließlich
+`progress_event(kind=loot-transfer-received).sourceId` als lokale Ledgerreferenz;
+Providerquellen und freie Prosa bleiben opaque. Bestehende Quellkampagnen und
+Snapshotbytes bleiben unverändert. Keine neue Tabelle oder Migration;
+bereits importierte fehlerhafte Historienlinks werden dadurch nicht repariert.
+
+Das qualifiziert Storezustände und Referenzen, keinen echten IPC-Antwortverlust,
+UI-Pendingablauf oder portierten Replay eines ursprünglichen Commands.
+
 ## Nächste ausführbare Schritte
 
 1. Den vorhandenen `writeConfirmed('progress', …)`-Weg in `treasury-ui.ts`
-   mit der Batchaction vollständig prüfen: verlorene Antwort nach bestätigtem
-   Write, Pendingstatus und Reopen/Fresh. OriginalcommandID/Fingerprint und
+   mit der Batchaction bis zur UI qualifizieren: verlorene Antwort nach bestätigtem
+   Write, Pendingstatus und Reopen/Fresh. Die obige Storeprobe deckt Status und
+   Wiederholung nach neueren Korrekturen ab, der Dialogablauf bleibt offen. OriginalcommandID/Fingerprint und
    neuere Rawmengen getrennt erhalten. Ein bestätigtes Receipt verbraucht nur
    seinen Auftrag; fehlende Antwort erzeugt keine zweite Verteilung.
 2. Authored Rohmengen und Empfängerauswahl vor Navigation/Close dauerhaft sichern,
