@@ -1,4 +1,4 @@
-import {assertDungeonJobBudget} from './dungeon-job-budget.mjs';
+import {currentProcessGroup} from './process-group.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -6,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const source=process.cwd(),before=process.argv.includes('--before'),phase=before?'before':'after',output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/npc-switch-evidence');
-const group=await assertDungeonJobBudget();await mkdir(output,{recursive:true});
+const group=await currentProcessGroup();await mkdir(output,{recursive:true});
 const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/desktop/npc-switch-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/desktop/npc-switch-store.cjs');
 const profile=await mkdtemp('/tmp/gm-npc-switch-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('NSCs während des Spiels wechseln'),w=store.activate(campaign.id);
 const npcs=[];for(const name of ['Hafenmeisterin Mira','Späher Borin']){const id=randomUUID();npcs.push(store.executeNpc({commandId:randomUUID(),campaignId:campaign.id,token:w.token,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name,creatureId:name==='Späher Borin'?'goblin':null,readAloud:'  Ein ruhiger Blick.\r\n- Reisemantel',gmNotes:'Original: '+name,record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:null,health:null}}));}const[a,b]=npcs;const originals=JSON.stringify(npcs);store.close();

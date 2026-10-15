@@ -282,7 +282,7 @@ async function acceptTravelPreview(){
  try{
   if(!await flushWorld()||!current())return;
   await raw({kind:'journey',preview:source,presentationSpeed:playback.speed},current);
-  if(!ownsTravel(owner))return;resetRouteDraft();routeMode='target';await reloadScene();renderMap();renderJourney();renderRouteDraft();await after();if(ownsTravel(owner))playback.play();
+  if(!current())return;resetRouteDraft();routeMode='target';await reloadScene();renderMap();renderJourney();renderRouteDraft();await after();if(ownsTravel(owner))playback.play();
  }catch(error){if(ownsTravel(owner))tell((error as Error).message,true);}
 }
 async function changeJourney(action:Extract<WorldAction,{kind:'journey-step'|'journey-state'}>){

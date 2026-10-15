@@ -128,3 +128,16 @@ test('a rendered hex label selects its own hex in edit and route modes; location
   x.document.getElementById('travel-mode-target').onclick();await clickText('Ruine');assert.equal(x.document.getElementById('world-destination').value,x.locationId);await clickText('Alte Fähre');assert.equal(x.document.getElementById('world-destination').value,'');assert.equal(x.document.getElementById('travel-q').value,'3');
  }finally{x.cleanup();}
 });
+
+for(const response of ['committed','not yet sent'])test(`a ${response} travel acceptance cannot erase a newer route after its preview was cancelled`,async()=>{
+ const x=await travelFixture();try{
+  x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);
+  if(response==='committed')x.hold();else x.holdBefore();
+  x.document.getElementById('travel-preview-accept').onclick();await until(response==='committed'?x.hasReply:x.hasBefore);
+  x.document.getElementById('travel-preview-cancel').onclick();x.enter('travel-q','4');x.enter('travel-waypoints','1,1; 2,1');
+  const before=x.store.sceneWorld(x.w.token,x.scene.id);
+  if(response==='committed')x.release();else x.releaseBefore();await x.ui.flushWorld();await tick();await tick();
+  assert.equal(x.document.getElementById('travel-q').value,'4');assert.equal(x.document.getElementById('travel-waypoints').value,'1,1; 2,1');assert.equal(x.document.getElementById('travel-stops').children.length,3);assert.equal(x.document.getElementById('travel-preview-dialog').open,false);assert.equal(x.document.getElementById('travel-preview-accept').disabled,true);assert.doesNotMatch(x.document.getElementById('journey-playback-status').textContent,/^Wiedergabe [125]/);
+  const after=x.store.sceneWorld(x.w.token,x.scene.id);assert.deepEqual(after,before);assert.equal(x.writes,response==='committed'?1:0);if(response==='committed')assert.deepEqual(after.journey.route.at(-1),{q:1,r:0});
+ }finally{await x.ui.stopWorldPlayback();x.cleanup();}
+});
