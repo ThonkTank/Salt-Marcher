@@ -311,7 +311,7 @@ export function activateDayCalculator(next: Workspace | null) {
 }
 export function initDayCalculator(status: typeof tell, openParty: () => void) {
   tell = status;
-  const popup=bindAnchoredPopup(el<HTMLButtonElement>('day-trigger'),el('day-popover'),{width:760,placement:'trailing'});
+  const popup=bindAnchoredPopup(el<HTMLButtonElement>('day-trigger'),el('day-popover'),760);
   el('day-trigger').onclick=()=>{if(popup.toggle())void refresh();};
   el('day-close').onclick=popup.close;
   el("day-party-open").onclick = () => {
