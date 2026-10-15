@@ -26,7 +26,7 @@ test('catch-up exposes progress before the first command completes',async()=>{
  try{
   Object.assign(globalThis,{document:parsed.document,window:parsed.window});(parsed.window as any).campaign={autonomy:async()=>({ok:true,value:view}),executeAutonomy:()=>new Promise(resolve=>{release=resolve;})};initAutonomy(()=>{});activateAutonomy({token:'token',campaign:{id:'campaign'}} as any);await openAutonomy();
   (parsed.document.getElementById('autonomy-catchup') as HTMLButtonElement).click();await tick();assert.match(parsed.document.getElementById('autonomy-progress')!.textContent,/Nachholen gestartet/);assert.equal((parsed.document.getElementById('autonomy-catchup') as HTMLButtonElement).disabled,true);
-  view={...view,actors:[{...actor,revision:2,cursor:1,remaining:0}],pendingActors:0};release({ok:true,value:{view,progressed:1,pending:0}});await new Promise(resolve=>setTimeout(resolve,20));const button=parsed.document.getElementById('autonomy-catchup') as HTMLButtonElement;assert.equal(button.disabled,false);assert.match(parsed.document.getElementById('autonomy-progress')!.textContent,/1 atomare NPC-Schritte/);
+  view={...view,actors:[{...actor,revision:2,cursor:1,remaining:0}],pendingActors:0};release({ok:true,value:{view,progressed:1,pending:0}});const button=parsed.document.getElementById('autonomy-catchup') as HTMLButtonElement,deadline=Date.now()+1000;while(button.disabled&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,0));assert.equal(button.disabled,false);assert.match(parsed.document.getElementById('autonomy-progress')!.textContent,/1 atomare NPC-Schritte/);
  }finally{Object.assign(globalThis,{document:priorDocument,window:priorWindow});}
 });
 

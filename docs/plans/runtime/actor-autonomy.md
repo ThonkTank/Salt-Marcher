@@ -122,17 +122,84 @@ mediane SQLite-Seitenzuwachs der räumlichen Erstbewegung sank dadurch von
 sind keine Langzeit-Wachstumsrate. Der DOM-Test prüft sofortigen Status und einen
 gesperrten Startknopf bei offener Antwort, keine native Reaktionszeit.
 
+## Aktivierungswechsel und offene UI-Aufträge
+
+`autonomy-ui.ts` bindet Leseantworten, Commandantworten, Formularflush und
+mehrteilige Nachholläufe an eine konkrete Aktivierung, auch wenn derselbe
+Workspace mit demselben Token erneut geöffnet wird. Alte Antworten dürfen weder
+`data` noch Formulare, Status oder den Startknopf eines neuen Laufs übernehmen.
+Der ursprüngliche Storecommand bleibt unter seinem ursprünglichen Campaignowner;
+seine bereits bestätigten Wirkungen werden durch einen UI-Wechsel nicht gelöscht.
+Ältere Reads verlieren außerdem gegen einen späteren Read oder gestarteten Write.
+
+Jeder Nachhollauf besitzt sein eigenes Abbruchsignal und seinen Abschluss. Ein
+Abbruch während vorbereitender Formularspeicherung verhindert den ersten
+Catch-up-Command. Während eines bereits gesendeten Commands stoppt er weitere
+Chunks; der laufende atomare Command kann noch bestätigen. Das ist ausdrücklich
+**kein Vor-Commit-Cancel** innerhalb der synchronen SQLiteausführung. Ein alter
+Lauf kann einen neu gestarteten nicht entsperren oder unter dessen Campaign-ID
+weitermachen. Mehrfachstart öffnet nur einen Lauf.
+
+Formularstufen prüfen ihre Aktivierung zwischen Route, Job und Actor. Dirty-
+Versionen halten spätere Eingaben während einer offenen Speicherung fest; ein
+Flush verarbeitet diese anschließend mit der neuen bestätigten Revision. Ein
+alter Finalizer kann keinen neuen Pendingflush freigeben. Keine zusätzliche
+Persistenz oder Simulation. `desktop-autonomy-context.test.mjs` prüft echte
+SQLitezustände über kontrollierte DOM-/IPC-Antworten; diese Verzögerungen sind
+keine nativen Latenz- oder Cancelnachweise. Eine zusätzliche Electronprobe belegt
+Konfigurationssave, vollständiges Nachholen ausdrücklich bestätigter Zeit und
+Kampagnenwechsel ohne Zeitwirkung auf den anderen Kontext. Ursprüngliche
+NPC-Texte und bestätigter Stand bleiben nach Fresh erhalten. Verzögerte Antworten
+und Abbruch während eines offenen Commands sind dadurch nicht nativ qualifiziert.
+
 ## Nächste ausführbare Schritte
 
-1. Mehractor-/Mehrowner-Rollback nach einer bereits abgeschlossenen Wirkung eines
-   anderen Actors prüfen; Logs, HP, Featureladung, Buchungen und Cursor gemeinsam
-   vergleichen. Historische Configänderung und Aktivierungsgrenzen mit ausstehenden
-   Intervallen sowie Fresh prüfen, ohne alte Geschichte neu zu berechnen.
-2. Lange manuelle Pause, vorübergehend belegtes Resumeziel und Positionsoverride
-   gegen beide Buchungstabellen prüfen. Alte Buchungsteile bleiben erhalten.
-3. Nativ Fokus, Rohwerte, A/B/A, Kamerafreiheit, unabhängige Reads, Begründungen,
-   Replyverlust und Cancel prüfen. Längeres räumliches Wachstum und Reaktionszeit
-   messen; nur belegte Engstellen ändern, keine zweite persistierte Simulation.
+1. **Bestehende Zeit-/Ownergrenze vollständig qualifizieren.**
+   `storage/autonomy.ts`, `autonomy-dungeon.ts`, `autonomy-resources.ts` und
+   Scene-/Wirkungsowner gemeinsam prüfen: historische Configänderung bei offener
+   Zeit, Aktivierungsgrenzen, lange Pause, belegtes Resumeziel und Positionsoverride.
+   Mehractor-Rollback nach erster erfolgreicher Fremdwirkung ist durch
+   `desktop-autonomy-interval-integrity.test.mjs` lokal belegt; weitere kombinierte
+   HP-/Feature-/Ressourcenwirkungen und echter Prozessabbruch bleiben offen.
+   Alter oder kompletter neuer Schritt, dieselbe Command-ID ohne zweite Wirkung,
+   Fresh und unabhängiger Campaigntransfer sind jeweils eigene Abnahmen.
+2. **Abbruch und reaktionsfähige Ausführung schließen.** Die aktuelle synchrone
+   Transaktion unter `executeAutonomy` nicht als cancellable Worker ausgeben.
+   Vor einer Auslagerung tatsächliche langlaufende Actor-/Routenpopulation messen.
+   Falls nötig, vorhandenen Main-/Storageowner um abgegrenzte Vorbereitung,
+   Fortschritt und überprüften Commit ergänzen: Cancel vor Commit hinterlässt
+   weder Needs-/Job-/Fremdwirkungen noch Randomresultate/Receipts. Nach Commit
+   bleiben Originalfakten erhalten. Unabhängige Reads, Kamera und Auswahl während
+   Arbeit nativ prüfen; Fortschritt ≤100 ms und 200 Actors ≤2 s p95 bleiben
+   gebundene Qualifikationsziele, keine aus den obigen Teilmessungen abgeleitete
+   Gesamtzusage.
+3. **Gruppenverhalten auf individuellen Fakten aufbauen.** `group-enable` ist
+   Opt-in, noch keine gemeinsame Gruppenreise oder autonome Split-/Mergefähigkeit.
+   Bestehende Gruppen-/Positionsowner müssen konfigurierte gemeinsame Jobs,
+   Reservierungen, dringlichen individuellen Austritt und erlaubtes Zusammenführen
+   atomar anbieten. Individuelle Identitäten und historische Bindungen erhalten;
+   keine zweite NPCidentität oder Neuberechnung alter Intervalle. Abnahme:
+   exklusives Ziel, Teilgruppen-Partyberührung, unzulässiger Split und spätes
+   Owner-Nein lassen keine halbe Gruppe/Buchung zurück.
+4. **Jobfamilien und begrenzte Folgen vollständig anbinden.** Aktuelle Jobs und
+   HP-Verlust ohne Todesfolge sind ein Teilstand. Erlaubte Flucht/Position,
+   Gefangenschaft, Verletzung/Tod, Verbrauch und Besitztransfer brauchen jeweils
+   eine ausdrückliche idempotente Owneroperation und konfigurierte Schutzgrenzen.
+   Fehlender Owner macht nur das betroffene Angebot unzulässig. Kritische
+   nichtunterbrechbare Teilschritte dürfen Party-/GM-Grenzen nie überschreiten.
+   Wahrnehmung, höherer Bedarf, Prioritäten und Zielverlust unterbrechen am
+   fachlichen Schritt; die Wiederaufnahme prüft Reservierung/Erreichbarkeit neu.
+   Abnahme: dieselben Kandidaten deterministisch gewählt; ausschließlich
+   Konfliktwürfe zufällig, mit vollständigen Inputs, Referenzen, Modifikatoren,
+   Schutzentscheidung und Ergebnis dauerhaft auditierbar; spätes Owner-Nein
+   rollt den gesamten unbestätigten Schritt zurück.
+5. **Den vollständigen GM-Fluss abnehmen.** Aktivieren, konfigurieren,
+   Entscheidung inspizieren, bestätigte Zeit, Hintergrundkontext öffnen,
+   Partygrenze begründet klären, normale Ownerkorrektur und Restart am gleichen
+   Build. Fokus/Rohwerte, A/B/A, Antwortenverlust, Cancel, Tastatur/200 % und
+   200 Actors mit realen Wegen und Logwachstum nativ prüfen. Korrekturen ergänzen
+   Geschichte; kein stilles Autonomy-Undo oder Identitätslöschen. Die vorhandenen
+   Store-/DOMfälle und Baselines begrenzen diesen Pflichtumfang nicht.
 
 Dossier, Gespräche und die Wiederaufnahme ungeklärter Profilübernahmen stehen im [NPC-Vertrag](../campaign/npc-dossiers.md).
 
