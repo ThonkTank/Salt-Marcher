@@ -14,6 +14,11 @@ vorhandenen Transaktion; `dungeon_receipt` verhindert doppelte Buchung.
 Unterbrechungen durch Wahrnehmung, Inhalte, Trigger oder Verfolgung bleiben
 GM-Entscheidungen. `dungeon-ui.ts` zeigt Status, Steuerung und manuellen Zeitansatz.
 
+Freie GM-Platzierung merkt sichtbare Geometrie und öffentliche Inhalte, bucht
+keine Reisezeit und öffnet keine Encounter-/Suchhinweise. Bestätigte Bewegung
+prüft diese Hinweise weiterhin und hält zur GM-Klärung an. Bereits offene
+Hinweise bleiben bei einer freien Platzierung erhalten.
+
 Beim unabhängigen Kampagnentransfer binden `campaign-data.ts` und
 `dungeonGeometryBasis` ausschließlich zuvor aktuelle Geometriebasen an die neuen
 lokalen Kennungen. Dasselbe gilt für die ursprüngliche Spurbasis einer Verfolgung.
@@ -53,8 +58,7 @@ Das ist ein Storebeleg, keine native Gesamtqualifikation.
    Checks, Spuren/Verfolgung und NPC-Pendinggrenzen im vorhandenen Reisebereich
    erreichbar halten. Gruppenbildung/-teilung bleibt beim Live-/Rosterowner,
    NPC-Jobs bei Autonomy. Karten-/Ansichtswechsel darf keinen zweiten Reisestand
-   erzeugen. Freie GM-Platzierung von regelgebundener Bewegung unterscheidbar
-   halten; sie bucht keine Reisezeit und löst keine Falle automatisch aus.
+   erzeugen.
 4. **Zusammenhängend qualifizieren.** Native Ansichtwechsel, lange Texte, 200 %,
    langsame Reads und tatsächliche Prozessunterbrechung mit Reise, Trigger,
    Wahrnehmung, Verfolgung und NPCs prüfen. Weitere räumliche Owner gegen den Geometrieguard
