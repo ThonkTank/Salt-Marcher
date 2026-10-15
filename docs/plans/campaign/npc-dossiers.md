@@ -115,7 +115,7 @@ NSC-Schauplätze öffnen eine kampagnenweite Hausauswahl. Der bestehende Stadtin
 
 Der gemeinsame Historienschritt ist aus beiden beteiligten Städten rückgängig machbar und wiederholbar. Spätere Änderungen einer beteiligten Stadt müssen zuvor rückgängig gemacht werden. Veränderte Quellrevisionen brechen den vorbereiteten Wechsel ohne Teiländerung ab; die Hausauswahl dann neu öffnen. Dies beschreibt den implementierten Ablauf, keine Gesamtproduktabnahme.
 
-### Desktop-Arbeitsstand 0.105: Haushalte und Berufsgruppen gemeinsam umziehen
+### Desktop-Arbeitsstand 0.106: Haushalte und Berufsgruppen gemeinsam umziehen
 
 Jeder Haushalts- und Berufseintrag im Hausinspektor öffnet jetzt eine Suche nach Zielhäusern in allen Städten. Die Bestätigung nennt Quelle, Ziel und alle Mitglieder. Der Umzug erhält Kennung und Namen des vollständigen Eintrags, bindet sämtliche Mitglieder im neuen Haus und entfernt den Eintrag aus dem bisherigen Haus. Andere Haushalte, Arbeitsbindungen, Bewohner und Hausnotizen bleiben bestehen. Auch leere benannte Einträge können verschoben werden.
 
