@@ -293,3 +293,8 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #running-editor :is(input,textarea,select,button,[tabindex],h2,h3){scroll-margin-top:calc(var(--workspace-content-offset) + var(--live-sticky-height))}
 @media(min-height:740px){:root{--live-sticky-height:var(--live-focus-height,0px)}.live-focus-bar{position:sticky;top:calc(var(--workspace-header-height,64px) + var(--workspace-nav-height,0px));z-index:5;box-shadow:0 3px 5px #24344912}}
 @media(min-width:901px) and (min-height:740px){body.has-workspace:not(.session-packet-docked) .live-desk-writing{top:calc(var(--workspace-content-offset) + var(--live-focus-height,0px))}}
+
+/* A bounded health desk uses the original controls beside the live writing column. */
+#live-party-reference button small{display:block;margin-top:.35rem;color:var(--blue);font-weight:600}
+#live-health-dialog{width:min(360px,calc(100vw - 4rem));max-height:calc(100dvh - var(--workspace-header-height,64px) - var(--live-focus-height,0px) - 3rem);margin:calc(var(--workspace-header-height,64px) + var(--live-focus-height,0px) + 1rem) 1rem 1rem auto;padding:1rem}
+#live-health-dialog[open]{display:flex;flex-direction:column;gap:.5rem}#live-health-dialog>.toolbar,#live-health-group{flex:none;margin:0}#live-health-title{font-size:1.05rem;margin:0;overflow-wrap:anywhere}#live-health-slot{overflow:auto;min-height:0}#live-health-slot h3{margin:.5rem 0}#live-health-slot details{margin:.75rem 0}#live-health-dialog::backdrop{background:#20354a18}

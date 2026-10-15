@@ -32,6 +32,7 @@ const healthDrafts=new Map<string,HealthDraft>();
 const progressListeners=new Set<()=>void>();
 export function onProgressChanged(listener:()=>void){progressListeners.add(listener);}
 export function progressCharacters(){return view?.characters??[];}
+export function hasHealthDraft(characterId:string){return !!workspace&&healthDrafts.has(workspace.campaign.id+':'+characterId);}
 function publishProgress(){for(const listener of progressListeners)listener();}
 const healthKey=()=>workspace&&selected?workspace.campaign.id+':'+selected:null;
 export function progressionContext(next: Workspace | null, data: LiveView | null, characterId: string | null) {
@@ -43,8 +44,8 @@ export function progressionContext(next: Workspace | null, data: LiveView | null
   if (next?.token !== workspace?.token) { deactivateFinishDraft();finishRequest++;generation++;pending=null; view = null;lootBalance=null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
   workspace = next; live = data; selected = characterId;updateCommitControls();
   get('reward-panel').hidden = !data; get('character-progression').hidden = !data || !selected;
-  if(activationChanged)render();
-  if (changed && next && data) void refreshProgress(); else if (selectionChanged) { selectedLedger=null; render(); void loadHistory(); void loadLedger(); }
+  if(activationChanged||selectionChanged)render();
+  if (changed && next && data) void refreshProgress(); else if (selectionChanged) { selectedLedger=null; void loadHistory(); void loadLedger(); }
 }
 export async function refreshProgress(deliverNotices=true) {
   if (!workspace) return;

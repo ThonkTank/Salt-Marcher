@@ -329,3 +329,23 @@ test('unreadable recap reload cannot put the former campaigns recovered text int
  const live=x.window.campaign.live;let release,hold=true;const gate=new Promise(r=>release=r);x.releases.push(()=>release());x.window.campaign.live=async token=>{const result=await live(token);if(hold){hold=false;await gate;}return result;};x.el('live-session-draft-retry').click();await settle();
  const other=x.store.create('Zweiter Tisch'),w=x.store.activate(other.id);x.ui.activateLive(w);await x.ui.openLive();release();await settle();assert.equal(x.el('live-session-summary').value,'');assert.equal(x.el('live-session-handoff').value,'');assert.equal(x.el('live-session-summary').readOnly,false);assert.equal(x.store.live(w.token).recapDraft,null);
 });
+
+test('party health desk reuses the existing writer and preserves separate character drafts across close and selection',async t=>{
+ const x=await setup(t),section=x.el('character-health'),current=x.el('health-current');
+ x.window.campaign.executeProgress=async cmd=>{try{return{ok:true,value:x.store.executeProgress(cmd)};}catch(error){return{ok:false,error:error.message};}};
+ const open=async name=>{[...x.el('live-party-reference').querySelectorAll('button')].find(b=>b.textContent.startsWith(name)).click();await settle();};
+ const input=(id,value)=>{x.el(id).value=value;x.el(id).dispatchEvent(new x.window.Event('input'));};
+ await open('Ada');assert.equal(x.el('live-health-dialog').open,true);assert.match(x.el('live-health-title').textContent,/Ada/);assert.equal(section.parentElement.id,'live-health-slot');assert.equal(x.el('health-current'),current);assert.equal(x.el('health-controls').open,true);
+ input('health-current','6');input('health-maximum','12');input('health-temporary','0');x.el('health-form').onsubmit({preventDefault(){}});assert.equal(await x.ui.flushLive(),true);await settle();assert.equal(x.store.progress(x.w.token).characters.find(c=>c.name==='Ada').health.hp,6);
+ x.el('live-health-close').click();assert.equal(section.parentElement.id,'character-health-home');
+ await open('Borin');assert.match(x.el('live-health-title').textContent,/Borin/);assert.equal(current.value,'');input('health-current','10');input('health-maximum','10');input('health-temporary','0');input('health-conditions','Liegend');x.el('live-health-close').click();assert.match(x.el('live-party-reference').textContent,/HP-Eingabe offen/);
+ await open('Ada');assert.equal(current.value,'6');assert.equal(x.el('health-conditions').value,'');x.el('live-health-close').click();await open('Borin');assert.equal(current.value,'10');assert.equal(x.el('health-conditions').value,'Liegend');assert.match(x.el('health-draft-status').textContent,/offen/);
+ x.el('live-health-dialog').dispatchEvent(new x.window.Event('close'));assert.equal(section.parentElement.id,'live-health-slot','a queued old close event must not dismantle a reopened desk');
+ x.el('health-form').onsubmit({preventDefault(){}});assert.equal(await x.ui.flushLive(),true);await settle();const party=x.store.progress(x.w.token).characters;assert.ok(party.find(c=>c.name==='Borin').health,JSON.stringify(x.messages));assert.equal(party.find(c=>c.name==='Borin').health.hp,10);assert.equal(party.find(c=>c.name==='Borin').health.conditions,'Liegend');assert.equal(party.find(c=>c.name==='Ada').health.hp,6);
+ x.el('live-health-dialog').open=false;x.el('live-health-dialog').dispatchEvent(new x.window.Event('close'));assert.equal(section.parentElement.id,'character-health-home');
+});
+test('an open health desk closes on group change and detached old party cards cannot open another group character',async t=>{
+ const x=await setup(t),old=[...x.el('live-party-reference').querySelectorAll('button')].find(b=>b.textContent.startsWith('Ada'));
+ old.click();await settle();assert.equal(x.el('live-health-dialog').open,true);await x.focusOther();await settle();assert.equal(x.el('live-health-dialog').open,false);assert.equal(x.el('character-health').parentElement.id,'character-health-home');
+ old.click();await settle();assert.equal(x.el('live-health-dialog').open,false);assert.match(x.el('running-title').value,/Andere Gruppe/);
+});
