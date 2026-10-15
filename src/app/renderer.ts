@@ -50,7 +50,15 @@ let activeTab: WorkspaceTab = 'atlas';
 const workspacePositions = new WorkspacePositions();
 let viewRequest = 0;
 const viewStorage = {getItem: (key: string) => window.localStorage.getItem(key), setItem: (key: string, value: string) => window.localStorage.setItem(key, value)};
-function rememberView() { if (workspace) { workspacePositions.capture(workspace.campaign.id, window.scrollY); rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY}); } }
+function rememberView() {
+  if (!workspace) return;
+  workspacePositions.capture(workspace.campaign.id, window.scrollY);
+  // Open reference/profile sections can change the document height on restart.
+  // Resume visible writing by its own position rather than a pixel in that old layout.
+  const notes = activeTab === 'live' ? el('running-notes').getBoundingClientRect() : null;
+  const liveNotesTop = notes && notes.height > 0 && notes.bottom > 0 && notes.top < window.innerHeight ? notes.top : undefined;
+  rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY, liveNotesTop});
+}
 let draft: Room | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let pending: Promise<boolean> | null = null;
@@ -139,7 +147,7 @@ function showTab(selected: WorkspaceTab, restored?: number) {
   window.scrollTo(0, 0);
   return scrollY;
 }
-async function reopenView(tab: WorkspaceTab, restored?: number) {
+async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: number) {
   const owner = workspace, intent = activationIntent, scrollY = showTab(tab, restored), request = viewRequest;
   switch (tab) {
     case 'live': await openLive(); break;
@@ -159,7 +167,8 @@ async function reopenView(tab: WorkspaceTab, restored?: number) {
   }
   window.requestAnimationFrame(() => {
     if (workspace !== owner || activationIntent !== intent || viewRequest !== request || activationFailed) return;
-    window.scrollTo(0, scrollY); rememberView();
+    const notes = tab === 'live' && liveNotesTop !== undefined ? el('running-notes').getBoundingClientRect() : null;
+    window.scrollTo(0, notes && notes.height > 0 ? window.scrollY + notes.top - liveNotesTop! : scrollY); rememberView();
   });
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
@@ -478,7 +487,7 @@ async function drainActivation(): Promise<void> {
         if (queuedActivation !== null) continue;
         renderList(); updateHistory();
         const view = readWorkspaceView(viewStorage, next.campaign.id);
-        await reopenView(view.tab, view.scrollY);
+        await reopenView(view.tab, view.scrollY, view.liveNotesTop);
         if (queuedActivation !== null) continue;
         if (preparationHasDrafts()) status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
         else if (!roomDraftReadFailed && (!draft || !selected() || same(draft, selected()!) && el('points').dataset.changed !== 'true')) status('Gespeichert.');

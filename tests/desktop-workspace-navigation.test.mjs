@@ -9,10 +9,11 @@ buildSync({entryPoints:['src/app/workspace-navigation.ts'],outfile:'.build/works
 const ui=require('../.build/workspace-navigation.cjs');
 function setup(t,narrow=false){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={window:globalThis.window,document:globalThis.document,ResizeObserver:globalThis.ResizeObserver};
- const media={matches:narrow,addEventListener(type,fn){this.change=fn;}};window.matchMedia=()=>media;
- Object.assign(globalThis,{window,document,ResizeObserver:class{observe(){}}});t.after(()=>Object.assign(globalThis,saved));
+ const observations=[];let measure;
+ const media={matches:narrow,addEventListener(type,fn){this.changes??=[];this.changes.push(fn);},change(){for(const fn of this.changes)fn();}};window.matchMedia=()=>media;
+ Object.assign(globalThis,{window,document,ResizeObserver:class{constructor(fn){measure=fn;}observe(el){observations.push(el);}}});t.after(()=>Object.assign(globalThis,saved));
  const el=id=>document.getElementById(id);for(const id of ['quick-reference-open','narrative-journal-open','location-notebook-open','location-material-return']){const b=document.createElement('button');b.id=id;document.querySelector('header').append(b);}
- document.querySelector('header').getBoundingClientRect=()=>({height:64});ui.initWorkspaceNavigation();return {window,document,el,media};
+ const heights={header:64,navigation:44,focus:54};document.querySelector('header').getBoundingClientRect=()=>({height:heights.header});el('workspace-navigation').getBoundingClientRect=()=>({height:heights.navigation});el('live-focus-bar').getBoundingClientRect=()=>({height:heights.focus});ui.initWorkspaceNavigation();return {window,document,el,media,heights,observations,measure};
 }
 test('navigation retains every original destination and each tool instance and handler',t=>{
  const x=setup(t),buttons=x.document.querySelectorAll('#workspace-navigation button');assert.equal(buttons.length,13);assert.equal(new Set([...buttons].map(b=>b.id)).size,13);
@@ -25,4 +26,13 @@ test('narrow destination menu closes after selection and follows viewport change
 });
 test('Escape closes a tool menu but leaves a modal dialog in control',t=>{
  const x=setup(t),tools=x.el('workspace-tools');tools.open=true;x.el('tutorial-dialog').setAttribute('open','');const key=()=>{const e=new x.window.Event('keydown',{bubbles:true,cancelable:true});e.key='Escape';x.document.dispatchEvent(e);return e;};assert.equal(key().defaultPrevented,false);assert.equal(tools.open,true);x.el('tutorial-dialog').removeAttribute('open');assert.equal(key().defaultPrevented,true);assert.equal(tools.open,false);
+});
+
+test('one existing group selector stays outside profile details and measured sticky surfaces follow wrapping and visibility',t=>{
+ const x=setup(t),bar=x.el('live-focus-bar'),selector=x.el('scene-focus'),move=x.el('group-move'),style=x.document.documentElement.style;
+ assert.equal(x.document.querySelectorAll('#scene-focus').length,1);assert.equal(selector.parentElement,bar);assert.equal(move.parentElement,bar);assert.equal(bar.closest('details'),null);assert.equal(bar.parentElement.id,'running-editor');
+ let changes=0;selector.onchange=()=>changes++;selector.dispatchEvent(new x.window.Event('change'));assert.equal(changes,1);
+ assert.deepEqual(x.observations.map(e=>e.id||e.tagName),['HEADER','workspace-navigation','live-focus-bar']);assert.equal(style.getPropertyValue('--workspace-nav-height'),'0px');assert.equal(style.getPropertyValue('--live-focus-height'),'54px');
+ x.heights.header=110;x.heights.focus=100;x.media.matches=true;x.media.change();assert.equal(style.getPropertyValue('--workspace-header-height'),'110px');assert.equal(style.getPropertyValue('--workspace-nav-height'),'44px');assert.equal(style.getPropertyValue('--live-focus-height'),'100px');
+ x.heights.focus=0;x.measure();assert.equal(style.getPropertyValue('--live-focus-height'),'0px');
 });
