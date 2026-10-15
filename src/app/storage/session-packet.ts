@@ -17,10 +17,10 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
   const key='note:'+id;if(cache.has(key))return cache.get(key)!;
   const row=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);
   if(!row||row.trashed){warnings.push('Weltverweis '+id+' fehlt oder liegt im Papierkorb.');cache.set(key,[]);return [];}
-  const n=worldNoteDocument(payload(row)),blocks:SessionPacketBlock[]=[{heading:n.title+' · '+n.kind,text:n.gmNotes,kind:'reference'}];
-  if(n.kind==='quest'||n.kind==='rumor'){const v=readNarrative(db,cam,n.id);blocks.push({heading:n.title+' · Status und Belohnung',kind:'gm',text:[v.state.status==='closed'?'Geschlossen':'Offen',v.award?'Belohnung bereits vergeben':v.state.poolXp+' Gruppen-XP vorbereitet',...(!v.award?v.state.items.map(i=>i.quantity+' × '+i.name):[]),v.award?'Bestätigtes Ergebnis · '+v.award.recordedAt+'\n'+v.award.outcome:'',v.draft?'Gesicherte Eingabe vorhanden; diese Mappe zeigt den bestätigten Stand.':''].filter(Boolean).join('\n')});}
-  if(n.readAloud.trim())blocks.unshift({heading:n.title+' · Zum Vorlesen',text:n.readAloud,kind:'read-aloud'});
-  if(n.relations.length)blocks.push({heading:n.title+' · Beziehungen',text:n.relations.map(r=>{const target=db.prepare('SELECT payload,checksum,trashed FROM world_note WHERE campaign_id=? AND id=?').get(cam,r.targetId);return r.label+' → '+(target&&!target.trashed?worldNoteDocument(payload(target)).title:r.targetId);}).join('\n'),kind:'reference'});
+  const n=worldNoteDocument(payload(row)),action={kind:'reference' as const,ref:{kind:'note' as const,id:n.id}},blocks:SessionPacketBlock[]=[{heading:n.title+' · '+n.kind,text:n.gmNotes,kind:'reference',action}];
+  if(n.kind==='quest'||n.kind==='rumor'){const v=readNarrative(db,cam,n.id);blocks.push({heading:n.title+' · Status und Belohnung',kind:'gm',action,text:[v.state.status==='closed'?'Geschlossen':'Offen',v.award?'Belohnung bereits vergeben':v.state.poolXp+' Gruppen-XP vorbereitet',...(!v.award?v.state.items.map(i=>i.quantity+' × '+i.name):[]),v.award?'Bestätigtes Ergebnis · '+v.award.recordedAt+'\n'+v.award.outcome:'',v.draft?'Gesicherte Eingabe vorhanden; diese Mappe zeigt den bestätigten Stand.':''].filter(Boolean).join('\n')});}
+  if(n.readAloud.trim())blocks.unshift({heading:n.title+' · Zum Vorlesen',text:n.readAloud,kind:'read-aloud',action});
+  if(n.relations.length)blocks.push({heading:n.title+' · Beziehungen',text:n.relations.map(r=>{const target=db.prepare('SELECT payload,checksum,trashed FROM world_note WHERE campaign_id=? AND id=?').get(cam,r.targetId);return r.label+' → '+(target&&!target.trashed?worldNoteDocument(payload(target)).title:r.targetId);}).join('\n'),kind:'reference',action});
   cache.set(key,blocks);return blocks;
  };
  const location=(id:string):SessionPacketBlock[]=>{
@@ -28,7 +28,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
   const row=db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(cam,id);
   if(!row||row.trashed){warnings.push('Ort '+id+' fehlt oder liegt im Papierkorb.');cache.set(key,[]);return [];}
   const l=checkedLocationDocument(payload(row));locations.set(id,l.name);
-  const blocks=l.sections.map(s=>({heading:l.name+' · '+s.title,text:s.markdown,kind:'reference' as const}));cache.set(key,blocks);return blocks;
+  const blocks=l.sections.map(s=>({heading:l.name+' · '+s.title,text:s.markdown,kind:'reference' as const,action:{kind:'reference' as const,ref:{kind:'location' as const,id:l.id}}}));cache.set(key,blocks);return blocks;
  };
  const progress=readSessionProgress(db,cam,planId);
  const visits=plan.scenes.map((v,index)=>{
@@ -41,7 +41,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
    const g=session.groups.find(g=>g.id===id);if(!g){warnings.push('Begegnung '+id+' fehlt.');continue;}
    const assessment=assessEncounter(session.profile.party,g.plan.entries.map(e=>({xp:g.plan.sources.find(c=>c.id===e.creatureId)?.xp,count:e.count})));
    const text=[g.notes, 'Status: '+(g.locationId?'am Ort platziert':'vorbereitet, noch nicht platziert'), 'XP '+assessment.baseXp+' · gewichtet '+assessment.adjustedXp+' · '+(assessment.difficulty??'keine bewertbare Planungsparty'),...g.plan.entries.map(e=>encounterEntryLabel(e,g.plan.sources)),...g.actors.map(a=>a.name+': HP '+a.hp+'/'+a.maxHp+(a.tempHp?' + '+a.tempHp+' temporär':'')+(a.conditions?' · '+a.conditions:'')+(a.defeated?' · besiegt':'')+(a.unavailable?' · nicht verfügbar':''))].filter(Boolean).join('\n');
-   blocks.push({heading:'Begegnung: '+g.title,text,kind:'encounter'});
+   blocks.push({heading:'Begegnung: '+g.title,text,kind:'encounter',action:{kind:'encounter',groupId:g.id}});
    for(const a of g.actors)noteIds.add(a.id);
    for(const c of g.plan.sources){
     if(!g.plan.entries.some(e=>e.creatureId===c.id))continue;
@@ -50,9 +50,9 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
    }
   }
   for(const id of noteIds)blocks.push(...note(id));
-  const r=detail.reward;if(r)blocks.push({heading:'Belohnung',kind:'reward',text:[r.poolXp+' Gruppen-XP',r.awarded?'XP bereits vergeben':'XP noch nicht vergeben',r.placedTreasureId?'Beute bereits platziert':'Beute noch nicht platziert',...r.items.map(i=>`${i.quantity} × ${i.name} · ${i.valueGold} GM je Stück · ${i.category}`)].join('\n')});
+  const r=detail.reward;if(r)blocks.push({heading:'Belohnung',kind:'reward',action:{kind:'reward'},text:[r.poolXp+' Gruppen-XP',r.awarded?'XP bereits vergeben':'XP noch nicht vergeben',r.placedTreasureId?'Beute bereits platziert':'Beute noch nicht platziert',...r.items.map(i=>`${i.quantity} × ${i.name} · ${i.valueGold} GM je Stück · ${i.category}`)].join('\n')});
   const played=progress.visits[index]!;if(played.count)blocks.push({heading:'Spielverlauf · '+played.count+' Übernahmen',kind:'gm',text:played.occurrences.map(o=>(o.sceneTitle||'Gruppe')+' · '+(o.outcome?visitOutcomeLabel(o.outcome.status):'Begonnen, Ergebnis noch offen')+(o.outcome?' · '+o.outcome.recordedAt+'\n'+o.outcome.text:'')).join('\n\n')+(played.count>5?'\n\nNur die fünf neuesten Übernahmen angezeigt.':'')});
-  return {id:v.id,title:v.title||'Besuch '+(index+1),location:v.locationId?locations.get(v.locationId)??'Nicht verfügbarer Ort':null,blocks};
+  return {id:v.id,title:v.title||'Besuch '+(index+1),locationId:v.locationId,location:v.locationId?locations.get(v.locationId)??'Nicht verfügbarer Ort':null,blocks};
  });
  const p={planId:plan.id,planName:plan.name,planRevision:plan.revision,campaignName:db.prepare('SELECT name FROM campaign WHERE id=?').get(cam).name,party:session.profile.party.map(p=>p.count+' × '+(p.name||'Figur')+' · Stufe '+(p.level??'?')),visits,warnings};
  return {...p,basis:hash(JSON.stringify(p))};
