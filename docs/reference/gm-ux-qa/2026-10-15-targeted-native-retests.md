@@ -84,9 +84,15 @@ belegt. Native Vorher-/Nachher-/Fresh-Läufe bestätigen Auswahl, direkten
 Bearbeitungsweg, sichtbare Kernfelder, Tastaturwechsel und gespeicherte Texte.
 Die Leitung prüfte Build-/Quellidentitäten, originale normale Abschlüsse und
 den sichtbaren Fresh-Stand. Der abgeschlossene Implementiererchat ist archiviert;
-Build und Belege bleiben erhalten. MANUAL-SCENE-RETEST-01 ist nach regulärer
-Reservierung in einem neuen unabhängigen Chat gestartet: eigene Szenen,
-Lesen/Bearbeiten/Tastatur und Close/Fresh, ohne frühere Befunde oder Antworten.
+Build und Belege bleiben erhalten. MANUAL-SCENE-RETEST-01 bestätigte unabhängig
+den richtigen Editor mit sichtbaren Kernfeldern sowie geänderte zweite und neue
+dritte Szene nach Fresh. Zwei Starts passen zu den sieben Buildidentitäten;
+ausgewählte Originalbilder und normale Abschlüsse sind geprüft, der fertige
+Chat archiviert. Offen bleiben der Rückweg zur Lesemappe und erneute Bereichswahl
+nach Neustart. „Zum Leiten öffnen“ führte zur Partyansicht. Eine neue enge
+Quelluntersuchung prüft diesen Rückweg zunächst leicht am aktuellen Stand;
+keine allgemeine Navigationserneuerung. Unklare anfängliche Fokus-/Bildverzögerungen
+werden weiter nicht als bewiesener Produktfehler oder Datenverlust gewertet.
 
 Der Original-Obsidian-Vergleich ist abgeschlossen. Der frühere
 erfolgreiche native UI-/Save-/Fresh-Pilot und unveränderte Programm-/Ressourcen-
@@ -126,8 +132,9 @@ unveränderte Operator regulär mit offenem Terminal. Keine manuelle
 Kapazitätsänderung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
 mangels auflösbarer Gesprächs-ID unbestätigt.
 
-Für Rabenfurt fehlt noch der einfachste reine Textablauf; KWrite ist mit
-unveränderter geprüfter Binäridentität vorbereitet, ohne weiteren Chatstart.
+MD-RABENFURT-01 bearbeitet jetzt denselben öffentlichen Vorbereitungsauftrag
+im originalen KWrite mit unveränderter Binäridentität, eigenem frischem Tester
+und frei gewählter Organisation. PLAY/RESUME folgen im selben Chat; noch kein Ergebnis.
 Dungeon Editor 0.94.0 und Original-Obsidian erhielten den gespielten narrativen
 Stand nach Fresh. Obsidian stellte Tabs/Suche wieder her, während der erste
 Editorlauf manuell aus „Karte und Keys“ zurücknavigierte. Das ist eine konkrete
