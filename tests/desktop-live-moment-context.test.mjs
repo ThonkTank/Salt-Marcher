@@ -159,6 +159,20 @@ test('unavailable next-session advice does not prevent closing an audited evenin
  x.el('live-session-close-confirm').click();await settle();assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.sessionMarker==='end')?.handoff,'  Eigene Übergabe\r\n');
 });
 
+test('closing an evening can continue directly into the opening editor before any visit is written',async t=>{
+ const x=await setup(t),handoff='  Weiter am Nordtor\r\n- Die Wache wartet  ';x.el('live-session-start').click();await settle();x.el('live-session-end').click();await settle();
+ x.el('live-session-close-handoff').value=handoff;x.el('live-session-close-prepare').click();await settle();
+ assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.sessionMarker==='end')?.handoff,handoff);assert.equal(x.el('live-session-close-dialog').open,false);assert.equal(x.el('handoff-visit-dialog').open,true);assert.equal(x.el('handoff-visit-notes').value,handoff);assert.deepEqual(x.followUps,[]);
+ x.el('handoff-visit-read-aloud').value='  Willkommen zurück\r\n';x.el('handoff-visit-form').onsubmit({preventDefault(){}});await settle();
+ assert.equal(x.followUps.length,1);assert.equal(x.followUps[0][0],'visit');assert.equal(x.followUps[0][1],null);assert.equal(x.followUps[0][2].notes,handoff);assert.equal(x.followUps[0][2].readAloud,'  Willkommen zurück\r\n');assert.equal(x.followUps[0][2].newPlan,true);
+});
+
+test('missing optional opening advice still leaves a minimal editor after the ending is confirmed',async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();x.window.campaign.narrativeJournal=async()=>({ok:false,error:'Journal vorübergehend nicht lesbar'});x.el('live-session-end').click();await settle();
+ assert.equal(x.el('live-session-close-prepare').disabled,false);x.el('live-session-close-handoff').value='Eigene Basis';x.el('live-session-close-prepare').click();await settle();
+ assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.sessionMarker==='end')?.handoff,'Eigene Basis');assert.equal(x.el('handoff-visit-dialog').open,true);assert.equal(x.el('handoff-visit-notes').value,'Eigene Basis');assert.match(x.el('handoff-visit-sources').textContent,/Keine offene Ortsquelle/);x.el('handoff-visit-cancel').click();assert.deepEqual(x.followUps,[]);
+});
+
 test('an unplayed plan supplies the next opening without adopting its visit or moving time',async t=>{
  const x=await setup(t),planId=randomUUID(),visitId=randomUUID(),text='  Unverbrauchte Eröffnung\r\n';
  x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Neuer Abend',scenes:[{id:visitId,title:'Erster Besuch',notes:'Vorbereitung',locationId:null}]}}});
