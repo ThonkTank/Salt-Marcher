@@ -88,3 +88,26 @@ bei Zoom und Reset. Physische Treffer-/Dragabnahme erfolgt zusätzlich am
 Desktop. Ein vollständig nahtloser Atlas aller Karten, alle weiteren Canvas-
 Adopter sowie die große Sichtregion-/Performanceabnahme bleiben offen. Diese
 Lieferung behauptet keine vollständige Wonderdraft-/Dungeonqualifikation.
+
+## Ortsmarken im Desktop
+
+Bestehende World-Orte sind nach Name, Ortstyp und Kartenname suchbar; die Auswahl
+zeigt Karte und Koordinaten. „Marker zeigen“ navigiert ausdrücklich, Auswahl und
+Gestaltung erhalten die Kamera. Versetzen erhält Orts-ID und Darstellung; ein
+belegtes Hex wird nicht still überschrieben.
+
+Die Kartendarstellung besitzt eine eigene `place-presentation`-Revision im
+bestehenden World-Record-Speicher: optionaler Titel, acht gemeinsame SVG-Symbole,
+Größe, Position und Krümmung der Beschriftung. Standardwerte gelten für bisherige
+Marker. Vorschau ist unmittelbar; Regler werden beim Abschluss zusammengefasst
+gespeichert. Bei Konflikt wird die bestätigte Darstellung erneut gelesen.
+Ortsdokument und Gelände-Revision bleiben davon unabhängig. Kampagnenkopien
+übertragen die Darstellung mit neu zugeordneten Orts-IDs.
+
+Noch offen im vollständigen Originalumfang: Erstellung kompletter World-Orte
+direkt aus dem Hexwerkzeug, Suche nach kanonischen Tags, eigene importierte
+Symbole, persistente Marker-Undohistorie und referenzbewusstes Entfernen von
+Markern/Gelände. Der einfache Karten-JSON-Export enthält weiterhin nur Gelände;
+die vollständige Kampagnenkopie erhält auch Orte und Marker.
+Auch die Voraussetzung eines bereits gestalteten Zielhexes wird im aktuellen
+Desktop-Platzierungscommand noch nicht erzwungen.

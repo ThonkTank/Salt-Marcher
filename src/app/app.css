@@ -409,3 +409,9 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #world .world-map-columns{margin:.7rem 0}
 #hex-author-tools button{padding:.4rem .65rem}
 #hex-paint-status{display:block;flex-basis:100%;min-height:1.1em;font-size:.8rem;overflow-wrap:anywhere}
+
+.world-marker-editor { border-top:1px solid var(--border,#c3cbd1); margin-top:1rem; padding-top:.5rem; }
+.world-marker-editor fieldset { margin:0; padding:.5rem; border:1px solid var(--border,#c3cbd1); border-radius:6px; min-width:0; }
+.world-marker-editor input[type=range] { width:100%; }
+.world-marker-editor .toolbar { flex-wrap:wrap; }
+.world-marker-editor .caption { overflow-wrap:anywhere; }

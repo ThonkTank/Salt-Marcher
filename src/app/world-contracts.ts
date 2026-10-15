@@ -6,7 +6,8 @@ export type Climate='temperate'|'cold'|'arid'|'tropical';
 export interface Hex {q:number;r:number}
 export interface AtlasCell extends Hex {level:number;terrain:Terrain;elevationM:number;climate:Climate|null;road:boolean;river:boolean;label:string;faction:string;interrupt:string}
 export interface AtlasMap {id:string;revision:number;name:string;hexMeters:number;climate:Climate;seed:string;cells:AtlasCell[]}
-export interface AtlasPlace extends Hex {mapId:string;locationId:string;revision:number;name:string;trashed:boolean}
+export interface MarkerPresentation {title:string;symbol:string;size:number;labelPosition:'above'|'below'|'right'|'hidden';curve:number}
+export interface AtlasPlace extends Hex {mapId:string;locationId:string;revision:number;name:string;trashed:boolean;presentation?:MarkerPresentation;presentationRevision?:number}
 export interface FantasyCalendar {revision:number;name:string;startYear:number;daySeconds:number;months:{name:string;days:number}[];weekdays:string[]}
 export interface CalendarEvent {id:string;revision:number;name:string;startMs:string;durationMs:string;repeatMs:string|null;locationId:string|null;notes:string;trashed:boolean}
 export interface WeatherEffects {visibilityMeters:number;travelFactor:number;perception:string;temperatureC:number;ambience:string[];combatNote:string}
@@ -24,6 +25,7 @@ export type WorldAction=
  |{kind:'map';map:AtlasMap;expectedRevision:number|null}
  |{kind:'cell';mapId:string;expectedRevision:number;cell:AtlasCell}
  |{kind:'place';mapId:string;locationId:string;expectedRevision:number|null;hex:Hex}
+ |{kind:'place-presentation';locationId:string;expectedRevision:number|null;presentation:MarkerPresentation}
  |{kind:'calendar-event';event:CalendarEvent;expectedRevision:number|null;basis?:import('./agenda-contracts').AgendaBasis}
  |{kind:'phenomenon';phenomenon:WeatherPhenomenon;expectedRevision:number|null}
  |{kind:'weather-override';sceneId:string;expectedClockRevision:number;expectedOverrideRevision:number|null;weather:Weather|null}
