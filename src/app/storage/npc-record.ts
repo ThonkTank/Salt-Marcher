@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {NpcRecord,NpcRole,NpcView,NpcDraft} from '../npc-contracts';
-import {checkedDailyPlan,checkedDailyOverrides} from '../npc-daily-plan';
+import {checkedDailyPlan,checkedDailyOverrides,npcPlanLocationIds} from '../npc-daily-plan';
 import {checkedHealth} from '../progression';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installNpcRecords(db:any){db.exec(`CREATE TABLE IF NOT EXISTS npc_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,faction_id TEXT,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,id) REFERENCES world_note(campaign_id,id),FOREIGN KEY(campaign_id,faction_id) REFERENCES world_note(campaign_id,id)) STRICT;
@@ -33,6 +33,7 @@ function recordRow(db:any,row:any):NpcRecord{
  if(hash(row.payload)!==row.checksum)throw new Error('NPC-Weltprofil beschädigt.');
  const r=checkedNpcRecord(JSON.parse(row.payload));
  if(r.id!==row.id||r.revision!==row.revision||r.revision<1||r.factionId!==row.faction_id||!belongs(db,row.campaign_id,r.id,'npc')||r.factionId&&!belongs(db,row.campaign_id,r.factionId,'faction'))throw new Error('NPC-Weltprofil hat ungültige Referenzen.');
+ for(const id of npcPlanLocationIds(r))if(!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(row.campaign_id,id))throw new Error('Tagesplanziel gehört nicht zur Kampagne.');
  return r;
 }
 export function npcRecord(db:any,cam:string,id:string):NpcRecord{
@@ -49,6 +50,7 @@ export function readNpcDraftRow(db:any,row:any):NpcDraft{
  }
  for(const id of [d.fields.faction,d.basis?.record.factionId])if(id&&!belongs(db,cam,id,'faction'))throw new Error('NPC-Fraktion gehört nicht zur Kampagne.');
  for(const id of [d.fields.location,d.basis?.locationId])if(id&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,id))throw new Error('NPC-Ort gehört nicht zur Kampagne.');
+ for(const field of ['dailyPlan','dailyOverrides']){let raw:any;try{raw=JSON.parse(d.fields[field]||'[]');}catch{continue;}if(!Array.isArray(raw))continue;for(const s of field==='dailyPlan'?raw:raw.flatMap(o=>Array.isArray(o?.slots)?o.slots:[]))if(s?.place==='location'&&typeof s.locationId==='string'&&s.locationId&&!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,s.locationId))throw new Error('Tagesplanziel im Entwurf gehört nicht zur Kampagne.');}
  return d;
 }
 export function validateNpcRecords(db:any){
