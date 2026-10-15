@@ -8,7 +8,7 @@ type CheckAction=Extract<SceneCheckCommand['action'],{kind:'roll'}>;
 type FormulaAction=Extract<SceneCheckCommand['action'],{kind:'formula'}>;
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const unwrap=<T>(result:Result<T>):T=>{if(!result.ok)throw new Error(result.error);return result.value;};
-let workspace:Workspace|null=null,sceneId:string|null=null,view:SceneRules|null=null,checks:SceneChecks|null=null,generation=0,readRequest=0,searchRequest=0,busy=false,searchTimer:ReturnType<typeof setTimeout>|null=null,tell:(text:string,error?:boolean)=>void;
+let workspace:Workspace|null=null,sceneId:string|null=null,view:SceneRules|null=null,checks:SceneChecks|null=null,generation=0,ruleReadRequest=0,checkReadRequest=0,searchRequest=0,busy=false,searchTimer:ReturnType<typeof setTimeout>|null=null,tell:(text:string,error?:boolean)=>void;
 
 function ensure(){if(document.getElementById('live-rules-panel'))return;const section=document.createElement('section');section.id='live-rules-panel';section.innerHTML='<div class="toolbar"><h3>Regeln und Proben am Tisch</h3><button id="live-rules-refresh" type="button">Aktualisieren</button></div><label>Regelreferenzen durchsuchen<input id="live-rule-search" type="search" placeholder="Aktion, Zustand, Hausregel …"></label><div id="live-rule-results" class="selection-list"></div><div id="live-rule-pins"></div><form id="live-check-form"><h4>Schnelle d20-Probe</h4><label>Bezeichnung<input id="live-check-label" maxlength="1000" required placeholder="Wahrnehmung, Rettungswurf …"></label><div class="live-check-fields"><label>Regelbezug<select id="live-check-rule"><option value="">Freie Probe</option></select></label><label>Wurfart<select id="live-check-mode"><option value="normal">Normal</option><option value="advantage">Vorteil</option><option value="disadvantage">Nachteil</option></select></label><label>Modifikator<input id="live-check-modifier" type="number" min="-1000" max="1000" step="1" value="0" required></label><label>SG (optional)<input id="live-check-dc" type="number" min="-1000" max="1000" step="1"></label></div><button type="submit">Würfeln und protokollieren</button></form><p id="live-check-latest" role="status" aria-live="polite"></p><div id="live-check-history"></div>';el('scene-preparation-panel').before(section);el('live-rules-refresh').onclick=()=>void refreshRuleReferences(sceneId);el('live-rule-search').oninput=()=>{clearSearch('Suche geändert · passende Regeln werden gesucht…');searchTimer=setTimeout(()=>{searchTimer=null;void search();},180);};el<HTMLSelectElement>('live-check-rule').onchange=()=>{const pin=view?.pins.find(p=>p.noteId===el<HTMLSelectElement>('live-check-rule').value);if(pin&&!el<HTMLInputElement>('live-check-label').value.trim())el<HTMLInputElement>('live-check-label').value=pin.title;};el<HTMLFormElement>('live-check-form').onsubmit=event=>{event.preventDefault();void roll();};}
 function clearSearch(text=''){if(searchTimer)clearTimeout(searchTimer);searchTimer=null;searchRequest++;const root=el('live-rule-results');root.replaceChildren();if(text)message(root,text);}
@@ -25,10 +25,10 @@ function accept(next:SceneRules,o:Owner){
  view=next;renderPins();renderCheckOptions();lock();
 }
 async function command(action:SceneRuleCommand['action']){
- const o=owner(),basis=view;if(!o||!basis||busy)return;busy=true;readRequest++;lock();
+ const o=owner(),basis=view;if(!o||!basis||busy)return;busy=true;ruleReadRequest++;lock();
  try{
   const result=await window.campaign.executeSceneRule({commandId:crypto.randomUUID(),campaignId:o.campaignId,token:o.token,sceneId:o.sceneId,expectedRevision:basis.revision,action});
-  if(!current(o))return;readRequest++;accept(unwrap(result),o);await search();if(current(o))tell('Regelreferenzen der Gruppe gespeichert.');
+  if(!current(o))return;ruleReadRequest++;accept(unwrap(result),o);await search();if(current(o))tell('Regelreferenzen der Gruppe gespeichert.');
  }catch(error){if(current(o))tell((error as Error).message,true);}finally{if(current(o)){busy=false;lock();}}
 }
 function renderPins(){const root=el('live-rule-pins');root.replaceChildren();if(!view?.pins.length){const p=document.createElement('p');p.className='caption';p.textContent='Noch keine Regel für diese Gruppe angeheftet.';root.append(p);return;}for(const pin of view.pins){const card=document.createElement('article'),title=document.createElement('h4'),status=document.createElement('p'),publicText=document.createElement('pre'),details=document.createElement('details'),summary=document.createElement('summary'),gm=document.createElement('pre'),actions=document.createElement('div');title.textContent=pin.title;status.className='caption';status.textContent=pin.unavailable?'Quelle nicht mehr verfügbar – eingefrorener Stand bleibt lesbar.':pin.stale?'Quelle geändert – eingefrorener Stand bleibt aktiv.':'Quelle Revision '+pin.sourceRevision;publicText.textContent=pin.readAloud;summary.textContent='GM-Details';gm.textContent=pin.gmNotes;details.append(summary,gm);actions.className='toolbar';if(pin.stale&&!pin.unavailable)actions.append(button('Aus Quelle aktualisieren',()=>void command({kind:'refresh',noteId:pin.noteId})));actions.append(button('Von Gruppe lösen',()=>void command({kind:'unpin',noteId:pin.noteId})));card.append(title,status,publicText,details,actions);root.append(card);}}
@@ -47,17 +47,28 @@ async function search(){
 function excerptFor(note:Note){const text=(note.readAloud||note.gmNotes).replace(/\s+/g,' ').trim();return text.length>140?text.slice(0,137)+'…':text;}
 export function initRuleReferences(status:typeof tell){tell=status;ensure();}
 export function activateRuleReferences(next:Workspace){
- workspace=next;sceneId=null;view=null;checks=null;busy=false;generation++;readRequest++;searchRequest++;
+ workspace=next;sceneId=null;view=null;checks=null;busy=false;generation++;ruleReadRequest++;checkReadRequest++;searchRequest++;
  if(searchTimer)clearTimeout(searchTimer);searchTimer=null;
  el('live-rules-panel').hidden=true;el('live-rule-results').replaceChildren();el('live-rule-pins').replaceChildren();renderChecks();lock();
 }
 export async function refreshRuleReferences(nextSceneId:string|null){
- ensure();if(sceneId!==nextSceneId){generation++;searchRequest++;busy=false;view=null;checks=null;el('live-rule-results').replaceChildren();el('live-rule-pins').replaceChildren();renderChecks();lock();}
- if(sceneId!==nextSceneId)clearSearch();sceneId=nextSceneId;el('live-rules-panel').hidden=!nextSceneId;const o=owner(),request=++readRequest;if(!o)return;
- try{
-  const [result,checkResult]=await Promise.all([window.campaign.sceneRules(o.token,o.sceneId),window.campaign.sceneChecks(o.token,o.sceneId)]);
-  if(!current(o)||request!==readRequest)return;accept(unwrap(result),o);const nextChecks=unwrap(checkResult);if(nextChecks.sceneId!==o.sceneId)throw new Error('Probenantwort gehört zu einer anderen Scene.');acceptChecks(nextChecks,o);await search();
- }catch(error){if(current(o)&&request===readRequest){view=null;checks=null;clearSearch();renderCheckOptions();renderChecks();message(el('live-rule-pins'),(error as Error).message,true);lock();tell((error as Error).message,true);}}
+ ensure();if(sceneId!==nextSceneId){generation++;searchRequest++;busy=false;view=null;checks=null;el('live-rule-results').replaceChildren();el('live-rule-pins').replaceChildren();renderCheckOptions();renderChecks();lock();}
+ if(sceneId!==nextSceneId)clearSearch();sceneId=nextSceneId;el('live-rules-panel').hidden=!nextSceneId;
+ const o=owner(),rulesRequest=++ruleReadRequest,checksRequest=++checkReadRequest;if(!o)return;
+ // Each reader owns only its own view: one missing or slow source cannot hide the other.
+ const readRules=async()=>{
+  try{
+   const result=await window.campaign.sceneRules(o.token,o.sceneId);
+   if(!current(o)||rulesRequest!==ruleReadRequest)return;accept(unwrap(result),o);await search();
+  }catch(error){if(current(o)&&rulesRequest===ruleReadRequest){view=null;clearSearch();renderCheckOptions();message(el('live-rule-pins'),(error as Error).message,true);lock();tell((error as Error).message,true);}}
+ };
+ const readChecks=async()=>{
+  try{
+   const result=await window.campaign.sceneChecks(o.token,o.sceneId);
+   if(!current(o)||checksRequest!==checkReadRequest)return;acceptChecks(unwrap(result),o);
+  }catch(error){if(current(o)&&checksRequest===checkReadRequest){checks=null;renderChecks();message(el('live-check-history'),(error as Error).message,true);lock();tell((error as Error).message,true);}}
+ };
+ await Promise.all([readRules(),readChecks()]);
 }
 
 function acceptChecks(next:SceneChecks,o:Owner){
@@ -72,10 +83,10 @@ function checkOption(text:string,value:string){const option=document.createEleme
 async function sendCheck(action:SceneCheckCommand['action'],onResult?:(check:SceneCheck)=>void){
  const o=owner(),basis=checks;if(!o||!basis||busy)return false;
  const command:SceneCheckCommand={commandId:crypto.randomUUID(),campaignId:o.campaignId,token:o.token,sceneId:o.sceneId,expectedRevision:basis.revision,action};
- busy=true;readRequest++;lock();
+ busy=true;checkReadRequest++;lock();
  try{
   const result=await window.campaign.executeSceneCheck(command);if(!current(o))return false;
-  const next=unwrap(result);readRequest++;acceptChecks(next,o);if(onResult&&next.checks[0])onResult(next.checks[0]);
+  const next=unwrap(result);checkReadRequest++;acceptChecks(next,o);if(onResult&&next.checks[0])onResult(next.checks[0]);
   if(action.kind==='roll'&&!action.actor)el<HTMLInputElement>('live-check-label').select();
   tell(action.kind==='roll'?'GM-Probe gewürfelt und bei der Gruppe gespeichert.':'Statblock-Wurf ausgeführt und bei der Gruppe gespeichert.');return true;
  }catch(error){if(current(o))tell((error as Error).message,true);return false;}finally{if(current(o)){busy=false;lock();}}
