@@ -67,3 +67,8 @@ erhält eine freie rechteckige Ausgangskontur neben dem gewählten Kartenraum
 und öffnet unmittelbar Name, Vorlesetext und GM-Notizen. Suchfilter werden dabei
 geleert, damit der gerade angelegte Raum sichtbar bleibt. Vorhandene Räume,
 Texte und Positionen werden nicht versetzt; Verbindungen werden separat geplant.
+
+Die Kartenwerkzeuge bündeln spezialisierte Befehle unter „3D, Verbindungen und
+Rauminhalte“. „Übersicht“ passt alle gerade gezeichneten Räume des sichtbaren
+Geschosses ein; „Einpassen“ behält den einzelnen ausgewählten Raum im Fokus.
+Beides ändert ausschließlich die Ansicht, einschließlich offener Konturentwürfe.
