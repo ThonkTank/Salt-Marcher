@@ -1,10 +1,7 @@
+import {assertDungeonJobBudget} from './dungeon-job-budget.mjs';
 import {createRequire} from 'node:module';import {mkdtemp,readFile,writeFile} from 'node:fs/promises';import {execFileSync,spawn} from 'node:child_process';import {randomUUID} from 'node:crypto';import assert from 'node:assert/strict';import path from 'node:path';
 // Fail closed before bundling or launching anything outside the agreed resource budget.
-const ownGroup=(await readFile('/proc/self/cgroup','utf8')).trim().split('::')[1];
-assert(ownGroup?.match(/\/codex-dungeon-jobs\.slice\/codex-dungeon-(qa|realist|planner|implementer)-/)&&ownGroup.endsWith('.service'),'Run this tool through codex-dungeon-job');
-const control='/sys/fs/cgroup'+ownGroup;
-assert.equal((await readFile(control+'/memory.max','utf8')).trim(),'4294967296');
-assert.equal((await readFile(control+'/memory.swap.max','utf8')).trim(),'0');
+const ownGroup=await assertDungeonJobBudget();
 const root=process.env.QA_EVIDENCE_DIR??process.cwd()+'/.build/template-discovery-evidence',after=true,snapshot=process.cwd(),require=createRequire(snapshot+'/package.json');const {_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:[snapshot+'/src/app/storage/store.ts'],outfile:snapshot+'/.build/withdraw-native-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(snapshot+'/.build/withdraw-native-store.cjs');
 await import('node:fs/promises').then(fs=>fs.mkdir(root,{recursive:true}));
 const room=(number,name,x)=>({id:randomUUID(),scopeId:'local',floorId:'ground',number,name,revision:0,polygons:[{outer:[{x,y:0},{x:x+9.144,y:0},{x:x+9.144,y:6.096},{x,y:6.096}],holes:[]}],sections:[{id:randomUUID(),kind:'markdown',markdown:'Original '+name+'\r\n  Geschützter Absatz.\r\n'}]});const first=room('1','Wachstube',0),second=room('2','Echohalle',9.144);
