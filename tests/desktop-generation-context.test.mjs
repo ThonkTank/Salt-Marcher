@@ -36,3 +36,8 @@ test('actual catalog input and reset notify the generator about their shared fil
  x.el('catalog-form').reset=()=>{for(const c of x.el('catalog-form').querySelectorAll('input'))c.value='';x.el('catalog-direction').value='asc';};
  x.el('catalog-search').value='Dragon';x.el('catalog-search').oninput();assert.match(x.el('generation-catalog-summary').textContent,/Name: Dragon/);x.el('generation-clear-catalog').click();assert.match(x.el('generation-catalog-summary').textContent,/Keine zusätzlichen/);await new Promise(r=>setTimeout(r,250));
 });
+
+test('an out-of-band proposal states requested target and actual deviation before its deliberate acceptance',async t=>{
+ const x=await fixture(t);x.el('generation-difficulty').value='medium';x.setGenerate(async request=>{const run=x.run(request),p=run.plans[0];p.assessment={baseXp:300,adjustedXp:600,difficulty:'deadly'};p.composition={metrics:{adjustedXp:600,xpDelta:350}};return{ok:true,value:run};});
+ await x.make();const card=x.el('generation-preview').querySelector('article');assert.match(card.textContent,/Angefragt: Mittel.*Ziel 250 angepasste XP/);assert.match(card.textContent,/140 % über dem XP-Ziel/);assert.match(x.choice().textContent,/Abweichenden Vorschlag/);
+});
