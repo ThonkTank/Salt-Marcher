@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
+import {saveGroup} from '../../src/app/storage/session';
 import {CampaignStore} from '../../src/app/storage/store';
 import {newLocation} from '../../src/features/location/location-schema';
 
@@ -40,5 +41,44 @@ test('location notebook rejects a checksum-valid malformed calendar event',()=>{
   const event={id:'market-day',revision:1,name:'Markttag',startMs:'3600000',durationMs:'60000',repeatMs:7,locationId:location.id,notes:'',trashed:false},payload=JSON.stringify(event),checksum=createHash('sha256').update(payload).digest('hex');
   (store as unknown as {db:any}).db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='calendar-event' AND id=?").run(payload,checksum,campaign.id,event.id);
   assert.throws(()=>store.locationMaterials(workspace.token,{locationId:location.id,kind:'event',text:'',offset:0}),/Kalenderereignis.*beschädigt/);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+for(const kind of ['directory','npc','narrative','group','shop','faction'] as const)test(`local ${kind} filtering cannot hide damaged source bytes`,()=>{
+ const root=mkdtempSync(join(tmpdir(),'material-filter-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Material'),w=store.activate(campaign.id),location=newLocation(randomUUID(),'Wache','poi',['description','notes']),command=(action:any)=>({commandId:kind,campaignId:campaign.id,token:w.token,action}),db=(store as unknown as {db:any}).db;
+  store.changePreparation({commandId:'location',campaignId:campaign.id,token:w.token,change:{kind:'location',expectedRevision:null,document:location}});
+  let table='location',key='id',id=location.id,field='name',value:unknown='Anderer Titel';
+  if(kind==='npc'){
+   id=randomUUID();store.executeNpc({...command(null),expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name:'Wache',creatureId:null,readAloud:'',gmNotes:'',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:location.id,health:null}});
+   table='world_note';field='kind';value='rule';
+  }else if(kind==='narrative'||kind==='faction'){
+   id=randomUUID();store.changePreparation({commandId:'note',campaignId:campaign.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:id as any,revision:1,kind:kind==='narrative'?'quest':'faction',title:'Wache',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});
+   if(kind==='narrative'){const view=store.narrative(w.token,id);store.executeProgress(command({kind:'narrative-state',expectedRevision:view.state.revision,expectedNoteRevision:view.noteRevision,state:{...view.state,locationId:location.id}}));table='narrative_state';key='note_id';field='locationId';value='elsewhere';}
+   else{store.executeGeneration(command({kind:'source-save',expectedRevision:null,source:{kind:'location',id:location.id,revision:0,tableIds:[],factionIds:[id],stock:[]}}));table='world_note';field='title';}
+  }else if(kind==='group'){
+   id='group';saveGroup(db,campaign.id,{id,revision:1,title:'Wache',notes:'',sourceEncounterId:'source',sourceRevision:1,locationId:location.id,actors:[],plan:{entries:[],sources:[]}} as any,null,null);table='prepared_group';field='title';
+  }else if(kind==='shop'){
+   id='shop';store.executeItemShop(command({kind:'shop',expectedRevision:null,shop:{id,revision:0,name:'Wache',owner:{kind:'location',id:location.id},notes:'',trashed:false,stock:[]}}));table='shop';field='owner';value={kind:'location',id:'elsewhere'};
+  }
+  const q={kind,locationId:kind==='directory'?null:location.id,text:'Wache',offset:0};assert.equal(store.locationMaterials(w.token,q).items.length,1);
+  const row=db.prepare(`SELECT payload FROM ${table} WHERE campaign_id=? AND ${key}=?`).get(campaign.id,id),damaged={...JSON.parse(row.payload),[field]:value};db.prepare(`UPDATE ${table} SET payload=? WHERE campaign_id=? AND ${key}=?`).run(JSON.stringify(damaged),campaign.id,id);const before=db.serialize();
+  assert.throws(()=>store.locationMaterials(w.token,q));assert.ok(db.serialize().equals(before));
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
+
+test('individual NPC placement controls both the local cast and NPC-owned shops without writes',()=>{
+ const root=mkdtempSync(join(tmpdir(),'material-position-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{
+  const campaign=store.create('Orte'),w=store.activate(campaign.id),command=(action:any)=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action}),places=['Nordtor','Hafen'].map(name=>newLocation(randomUUID(),name,'poi',['description','notes']));
+  for(const document of places)store.changePreparation({commandId:randomUUID(),campaignId:campaign.id,token:w.token,change:{kind:'location',expectedRevision:null,document}});
+  const id=randomUUID(),npc={id,name:'Händlerin',creatureId:null,readAloud:'',gmNotes:'',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active' as const,appearance:'',behavior:'',history:''},locationId:places[0]!.id,health:null};
+  let saved=store.executeNpc({...command(null),expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc});
+  store.executeItemShop(command({kind:'shop',expectedRevision:null,shop:{id:'shop',revision:0,name:'Handel',owner:{kind:'npc',id},notes:'',trashed:false,stock:[]}}));
+  const read=(place:number,kind:'npc'|'shop')=>store.locationMaterials(w.token,{kind,locationId:places[place]!.id,text:'',offset:0});
+  assert.equal(read(0,'npc').items[0]?.id,id);assert.equal(read(0,'shop').items[0]?.id,'shop');assert.equal(read(1,'shop').items.length,0);
+  saved=store.executeNpc({...command(null),expectedNoteRevision:saved.noteRevision,expectedRecordRevision:saved.record.revision,expectedActorRevision:saved.actorRevision,expectedPositionRevision:saved.positionRevision,npc:{...npc,record:saved.record,locationId:places[1]!.id}});
+  const db=(store as unknown as {db:any}).db,before=db.serialize();assert.equal(read(0,'npc').items.length,0);assert.equal(read(0,'shop').items.length,0);assert.equal(read(1,'npc').items[0]?.id,id);assert.equal(read(1,'shop').items[0]?.id,'shop');assert.ok(db.serialize().equals(before));
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

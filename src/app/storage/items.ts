@@ -25,7 +25,7 @@ function validateShopShape(s:Shop,pending=false){
   if(e.restock!==null){const r=e.restock;if(!r||!['fill','add'].includes(r.mode)||typeof r.intervalMs!=='string'||!/^[1-9][0-9]{0,17}$/.test(r.intervalMs)||typeof r.nextDueMs!=='string'||!/^(0|[1-9][0-9]{0,29})$/.test(r.nextDueMs))throw new Error('Auffüllregel benötigt Menge und positives Intervall.');qty(r.quantity);}
  }
 }
-function shopRecord(db:any,cam:string,id:string):Shop{const row=db.prepare('SELECT * FROM shop WHERE campaign_id=? AND id=?').get(cam,id),s=decoded<Shop>(row);validateShopShape(s);if(s.id!==id||s.revision!==row.revision)throw new Error('Shoprevision widersprüchlich.');return s;}
+export function shopRecord(db:any,cam:string,id:string):Shop{const row=db.prepare('SELECT * FROM shop WHERE campaign_id=? AND id=?').get(cam,id),s=decoded<Shop>(row);validateShopShape(s);if(s.id!==id||s.revision!==row.revision)throw new Error('Shoprevision widersprüchlich.');return s;}
 function history(db:any,cam:string,s:Shop,description:string,facts:unknown){const id=randomUUID(),payload=json({time:new Date().toISOString(),description,facts});db.prepare('INSERT INTO shop_event VALUES(?,?,?,?,?)').run(cam,s.id,id,payload,hash(payload));return id;}
 function restockThrough(db:any,cam:string,id:string):bigint|null{
  let through:bigint|null=null;

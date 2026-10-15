@@ -139,3 +139,10 @@ test('location deadlines use the existing editor and cannot discard its open inp
  const clock=x.store.live(x.workspace.token).scene!.clock.instantMs;x.el('agenda-name').value='Wachwechsel';x.el('agenda-event-form').dispatchEvent(new Event('input'));x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.store.world(x.workspace.token).events.some((e:CalendarEvent)=>e.name==='Wachwechsel'));
  assert.equal(x.store.live(x.workspace.token).scene!.clock.instantMs,clock);const materials=x.store.locationMaterials(x.workspace.token,{locationId:x.location.id,kind:'event',text:'',offset:0});assert.equal(materials.items.length,2);
 });
+
+test('typing a new agenda search immediately revokes its previous event actions',async t=>{
+ const x=await fixture(t),old=[...x.dialog.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.textContent==='Ereignis bearbeiten')!;
+ assert.ok(old);x.el('agenda-search').value='Neue Suche';x.el('agenda-search').dispatchEvent(new Event('input'));
+ assert.equal(x.el('agenda-list').querySelectorAll('button').length,0);assert.equal(x.el('agenda-document').textContent,'');
+ old.onclick?.(new Event('click') as any);assert.equal(x.el('agenda-event-form'),null);
+});
