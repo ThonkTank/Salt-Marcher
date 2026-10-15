@@ -5,7 +5,7 @@ import {readPlan,readSession,saveDetail,newGroup,saveGroup} from './session';
 import {createHash} from 'node:crypto';
 /** Add authored preparation, preserving existing physical groups and booked rewards. */
 export function copySessionVisits(db:any,cam:string,a:Extract<SessionAction,{kind:'copy-visits'}>,publish:PlanPublisher){
- const source=readPlan(db,cam,a.sourcePlanId),contents=readSession(db,cam,source.id,false);
+ const contents=readSession(db,cam,a.sourcePlanId,false),source=contents.plan;
  if(contents.replacementBasis!==a.expectedSourceBasis)throw new Error('Quellplan oder Vorbereitung geändert. Auswahl erneut öffnen.');
  if(typeof a.name!=='string'||a.name.length>1000||typeof a.copyParty!=='boolean'||!Array.isArray(a.visitIds)||!a.visitIds.length||a.visitIds.length>1000||new Set(a.visitIds).size!==a.visitIds.length)throw new Error('Szenenauswahl und Planangaben prüfen.');
  const newPlan=a.expectedBasis===null;
