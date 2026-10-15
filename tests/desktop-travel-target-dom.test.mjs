@@ -118,3 +118,13 @@ for(const [field,text]of [['travel-waypoints','1,0,3'],['travel-waypoints','1,']
  x.enter('travel-q','2');x.enter('travel-r','0');x.enter('travel-waypoints','1,0');x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.deepEqual(requests[0].waypoints,[{q:1,r:0}]);assert.deepEqual(requests[0].destination,{q:2,r:0});assert.equal(x.document.getElementById('travel-preview-accept').disabled,false);assert.equal(x.writes,0);
  }finally{x.cleanup();}
 });
+
+
+test('a rendered hex label selects its own hex in edit and route modes; location labels keep their place binding',async()=>{
+ const x=await targetFixture();try{
+  x.document.querySelector('#world-map polygon[data-q="3"][data-r="0"]').dispatchEvent(new x.window.Event('click'));await until(()=>x.document.getElementById('travel-q').value==='3');x.enter('hex-label','Alte Fähre');x.document.getElementById('hex-form').onsubmit({preventDefault(){}});await until(()=>[...x.document.querySelectorAll('#world-map text')].some(t=>t.textContent==='Alte Fähre'));
+  const clickText=async(name)=>{const t=[...x.document.querySelectorAll('#world-map text')].find(t=>t.textContent===name);assert.ok(t);assert.notEqual(t.getAttribute('pointer-events'),'none');t.dispatchEvent(new x.window.Event('click',{bubbles:true}));await tick();await tick();};
+  x.document.querySelector('#world-map polygon[data-q="0"][data-r="0"]').dispatchEvent(new x.window.Event('click'));await until(()=>x.document.getElementById('travel-q').value==='0');await clickText('Alte Fähre');await until(()=>x.document.getElementById('travel-q').value==='3');assert.match(x.document.getElementById('hex-selected').textContent,/Hex 3,0/);
+  x.document.getElementById('travel-mode-target').onclick();await clickText('Ruine');assert.equal(x.document.getElementById('world-destination').value,x.locationId);await clickText('Alte Fähre');assert.equal(x.document.getElementById('world-destination').value,'');assert.equal(x.document.getElementById('travel-q').value,'3');
+ }finally{x.cleanup();}
+});
