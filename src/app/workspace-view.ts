@@ -15,3 +15,18 @@ export function readWorkspaceView(storage: ViewStorage, campaignId: string): Wor
 export function rememberWorkspaceView(storage: ViewStorage, campaignId: string, view: WorkspaceView): void {
   try { storage.setItem(key(campaignId), JSON.stringify(view)); } catch { /* Content saving remains independent. */ }
 }
+
+// Area positions live only in this window. The last campaign view still uses the existing local preference.
+export class WorkspacePositions {
+  private current: {campaign: string; tab: WorkspaceTab} | null = null;
+  private positions = new Map<string, number>();
+  capture(campaign: string, scrollY: number) {
+    if (this.current?.campaign === campaign) this.positions.set(campaign + ':' + this.current.tab, scrollY);
+  }
+  select(campaign: string, tab: WorkspaceTab, restored?: number): number {
+    this.current = {campaign, tab};
+    const key = campaign + ':' + tab;
+    if (restored !== undefined) this.positions.set(key, restored);
+    return this.positions.get(key) ?? 0;
+  }
+}

@@ -1,4 +1,4 @@
-export const tutorialLessonRevision = 'desktop-tutorial-workspace-resume-v98';
+export const tutorialLessonRevision = 'desktop-tutorial-workspace-navigation-v99';
 export interface TutorialRun { version: string; lessonRevision: string; runId: string; state: 'new' | 'shown' | 'finished' | 'skipped' }
 export function checkedTutorialRun(value: unknown, applicationVersion: string): TutorialRun {
   if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('Tutoriallauf ist beschädigt.');
@@ -40,7 +40,7 @@ export const lessons = [
   { id: 'session-generation', title: 'Spielabendvorschläge mit bindenden Vorgaben erzeugen', text: 'Öffne im manuellen Plan „Planungsparty und Spielabend-Vorschläge“. Die erwartete Party und der Adventure-Day-Anteil gelten nur für diese Planung. Ausgewählte Orte, Weltinhalte und Encounter-Tabellen sind bindend; ein nicht erfüllbarer Auftrag bleibt mit Erklärung gesperrt. Vorschauen sind gespeichert und reproduzierbar. Du kannst einzelne Ergebnisse annehmen oder neu erzeugen, ohne andere angenommene oder manuelle Inhalte zu ersetzen.' },
   { id: 'locations', title: 'Orte, Szenen und Karten verbinden', text: 'Unter „Orte“ legst du einen Ort oder eine Stadt mit eigenen Abschnitten an. Verknüpfe eine vorhandene Dungeonzeichnung und wähle denselben Ort in einer Szene. „Ort öffnen“ führt zu den Notizen, „Karte öffnen“ zur Zeichnung. Ein Ort darf auch unverortet und ohne Karte bestehen. Die Zuordnung erzeugt keine Reise oder LiveSession.' },
   { id: 'relationships', title: 'Beziehungen verfolgen', text: 'Verknüpfe einen Wissenseintrag mit einem NSC, einer Fraktion, Quest oder einem Gerücht und benenne die Beziehung. Die Schaltfläche öffnet das Ziel; eingehende Verweise führen zurück zur Quelle. Ein Ziel im Papierkorb bleibt als solches sichtbar, statt den Verweis zu löschen.' },
-  { id: 'live-party', title: 'Party und laufender Spielabend', text: 'Unter „Party und Leiten“ legst du Figuren an und aktivierst die heutige Party. Profilwerte bleiben optional. Vorhandene Gruppen öffnen sich direkt. „Gruppe am Spieltisch öffnen“ legt die erste Gruppe ausdrücklich an. Übernimm einen vorbereiteten Besuch nach Vorschau und bearbeite seine Inhalte während des Spiels weiter. Vorbereitung und Herkunft bleiben erhalten; der nächste Besuch benutzt dieselbe Scene und Uhr. Nach Neustart öffnet sich der zuletzt benutzte Arbeitsbereich samt Scrollposition. Eine vorhandene Szene ist direkt benutzbar; „Spielabend beginnen“ bleibt eine eigene ausdrückliche Aktion.' },
+  { id: 'live-party', title: 'Party und laufender Spielabend', text: 'In der festen Bereichsliste unter „Party und Leiten“ legst du Figuren an und aktivierst die heutige Party. Profilwerte bleiben optional. Vorhandene Gruppen öffnen sich direkt. „Gruppe am Spieltisch öffnen“ legt die erste Gruppe ausdrücklich an. Übernimm einen vorbereiteten Besuch nach Vorschau und bearbeite seine Inhalte während des Spiels weiter. Vorbereitung und Herkunft bleiben erhalten; der nächste Besuch benutzt dieselbe Scene und Uhr. Nach Neustart öffnet sich der zuletzt benutzte Arbeitsbereich samt Scrollposition. Eine vorhandene Szene ist direkt benutzbar; „Spielabend beginnen“ bleibt eine eigene ausdrückliche Aktion.' },
   { id: 'live-recovery', title: 'Offene Live-Eingaben sicher klären', text: 'Scene- und Figurenänderungen werden nach kurzer Pause gespeichert; „Eingabe abschließen“ versucht offene gültige Werte sofort zu übernehmen. Bleibt der Ausgang eines Schreibauftrags unklar, sperrt die Sitzung weitere Änderungen. „Speicherstatus der Sitzung prüfen“ klärt genau diesen Auftrag und lässt einen konkurrierenden Entwurf offen. „Entwurf verwerfen und aktualisieren“ lädt ausdrücklich den gespeicherten Sitzungsstand und verwirft offene Scene- und Figureneingaben.' },
   { id: 'scene-desk', title: 'Kampagnenwissen an der Scene bearbeiten', text: 'Der Szenentisch folgt der fokussierten Gruppe. Suche Weltwissen, Gegenstände, Kreaturen oder Encountervorlagen und hefte passende Treffer an diese Scene. Weltwissen und Orte kannst du direkt anlegen oder bearbeiten; diese Inhalte bleiben kampagnenweit gemeinsam, während die Auswahl am Szenentisch gruppenspezifisch ist. Vor einem Inhaltswechsel wird eine gültige Eingabe gespeichert; ein wiederaufgenommener Entwurf wird sichtbar gemeldet. Kreaturen und Encounter gehen erst über ihre eigene Schaltfläche in eine Kampfmaske.' },
   { id: 'plan-replacement', title: 'Einen neuen Abend aus vorhandener Vorbereitung bauen', text: 'Plan ersetzen / wiederverwenden öffnet eine Vorschau. Wähle eine leere Timeline oder einen vorhandenen Plan und übernimm auf Wunsch dessen Planungsparty und Adventure Day. Besuche und noch nicht angenommene Gruppen werden als neue Vorbereitung kopiert. Platzierte Gruppen und Schätze behalten ihre Identität; bereits vergebene Besuchsbelohnungen bleiben abgeschlossen. Der bisherige Plan verliert seine Timeline und Vorschläge, während laufende Scenes ihre übernommenen Inhalte behalten. Timeline leeren verwendet denselben Ablauf ohne Vorlage und behält den Plannamen und die Planungsparty.' },
@@ -202,33 +202,52 @@ export const tutorialCapabilityLessons={
 export async function initTutorial() {
   const dialog = document.getElementById('tutorial-dialog') as HTMLDialogElement;
   const content = document.getElementById('tutorial-lessons')!;
-  for (const lesson of lessons) {
+  const search = document.getElementById('tutorial-search') as HTMLInputElement;
+  const status = document.getElementById('tutorial-search-status')!;
+  const help = document.getElementById('help')!;
+  const rows = lessons.map(lesson => {
     const item = document.createElement('li'), title = document.createElement('h3'), text = document.createElement('p');
-    title.textContent = lesson.title; text.textContent = lesson.text; item.append(title, text); content.append(item);
-  }
-  const heading=document.getElementById('tutorial-heading')!;let opener:HTMLElement|null=null;
-  const open=()=>{if(dialog.open)return;opener=document.activeElement as HTMLElement|null;dialog.showModal();heading.focus({preventScroll:true});};
-  document.getElementById('help')!.onclick = open;
-  let dismissed = false;
+    title.textContent = lesson.title; text.textContent = lesson.text; item.append(title, text);
+    return {lesson, item};
+  });
+  let currentLesson = 'campaign';
+  const filter = () => {
+    const query = search.value.trim().toLocaleLowerCase('de'); let count = 0;
+    for (const row of rows) {
+      row.item.hidden = !!query && !(row.lesson.title + ' ' + row.lesson.text).toLocaleLowerCase('de').includes(query);
+      if (!row.item.hidden) count++;
+    }
+    status.textContent = query ? count + ' Hilfethemen gefunden.' : 'Passend zum Arbeitsbereich zuerst. Alle Themen bleiben durchsuchbar.';
+  };
+  search.oninput = filter;
+  const heading = document.getElementById('tutorial-heading')!; let opener: HTMLElement | null = null, opened = false;
   const warning = () => { document.getElementById('tutorial-warning')!.textContent = 'Tutorialstatus konnte nicht gespeichert werden. Das Werkzeug bleibt benutzbar.'; };
+  const open = () => {
+    if (dialog.open) return;
+    opener = document.activeElement as HTMLElement | null; opened = true; help.textContent = 'Hilfe';
+    const tab = document.querySelector('#workspace-navigation button[aria-pressed="true"]')?.id.replace(/-tab$/, '');
+    currentLesson = tab && document.body.classList.contains('has-workspace') ? tutorialSurfaceLessons[tab as keyof typeof tutorialSurfaceLessons] ?? 'campaign' : 'campaign';
+    content.replaceChildren(...[...rows].sort((a,b) => Number(b.lesson.id === currentLesson) - Number(a.lesson.id === currentLesson)).map(row => row.item));
+    search.value = ''; filter(); dialog.showModal(); heading.focus({preventScroll:true});
+    content.scrollTop = 0; dialog.scrollTop = 0;
+    void window.campaign.tutorial('shown').then(result => { if (!result.ok) warning(); }).catch(warning);
+  };
+  help.onclick = open;
   const finish = async (state: 'finished' | 'skipped') => {
-    dismissed = true;
     dialog.close();
-    if(opener?.isConnected)opener.focus({preventScroll:true});
+    if (opener?.isConnected) opener.focus({preventScroll:true});
     try { const result = await window.campaign.tutorial(state); if (!result.ok) warning(); }
     catch { warning(); }
   };
   document.getElementById('tutorial-done')!.onclick = () => { void finish('finished'); };
   document.getElementById('tutorial-skip')!.onclick = () => { void finish('skipped'); };
   dialog.addEventListener('cancel', () => { void finish('skipped'); });
+  // New or revised instructions are offered without interrupting campaign work.
+  content.replaceChildren(...rows.map(row => row.item)); filter();
   try {
     const result = await window.campaign.tutorial();
     if (!result.ok) throw new Error(result.error);
-    if (result.value.state === 'new' && !dismissed) {
-      open();
-      const marked = await window.campaign.tutorial('shown');
-      if (!marked.ok) warning();
-    }
-  } catch { document.getElementById('tutorial-warning')!.textContent = 'Tutorialstatus nicht verfügbar. Erste Schritte bleiben über „Hilfe“ erreichbar.'; }
+    if (result.value.state === 'new' && !opened) { help.textContent = 'Hilfe · neu'; help.title = 'Neue Hilfe verfügbar. Bei Bedarf öffnen.'; }
+  } catch { document.getElementById('tutorial-warning')!.textContent = 'Tutorialstatus nicht verfügbar. Hilfe bleibt erreichbar.'; }
   finally { document.body.dataset.tutorialReady = 'true'; }
 }
