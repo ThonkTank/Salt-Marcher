@@ -1,14 +1,18 @@
-name: PR baseline
+name: Repository baseline
 
 on:
   pull_request:
+  push:
+    branches:
+      - active/installed-phase1
 
 permissions:
   contents: read
 
 concurrency:
-  group: pr-baseline-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: baseline-${{ github.event.pull_request.number || github.ref }}
+  # Finish integration feedback even while other roles keep publishing.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   baseline:
@@ -17,14 +21,14 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Check out exact PR head
+      - name: Check out exact event commit
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Verify exact PR head
+      - name: Verify exact event commit
         env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Set up Node.js
@@ -42,8 +46,11 @@ jobs:
       - name: Type-check
         run: npm run check
 
+      - name: Build Obsidian plugin
+        run: npm run build
+
+      - name: Build desktop application
+        run: npm run build:desktop
+
       - name: Run complete test suite
         run: npm test
-
-      - name: Build application
-        run: npm run build

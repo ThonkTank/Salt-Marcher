@@ -12,9 +12,10 @@ Campaignprosa bleibt unabhängig von der UI-Sprache.
 
 `store.ts.tutorial` hält Runs je tatsächlicher Appversion. Der geprüfte Reader
 überschreibt keine korrupten Originals. Finished/Skipped bleiben terminal,
-auch nach verspätetem Shown. Eine neue Lessonrevision archiviert den ursprünglichen Run samt Originalbytes
-unter seiner Run-ID und beginnt auch bei gleicher Appversion einen neuen
-optionalen Lauf; frühere Abschlüsse bleiben erhalten.
+auch nach verspätetem Shown. Aktualisierter Hilfetext startet bei derselben
+installierten Appversion keinen neuen Lauf: Run-ID, Abschluss und Überspringen
+bleiben erhalten. Die aktuelle Hilfe ist weiterhin manuell erreichbar. Erst eine
+neue Appversion erhält ihren eigenen einmaligen Lauf.
 
 Hilfe/Dismiss werden vor der Statusquery gebunden. Der Modal fokussiert seine
 Überschrift und gibt Fokus an den Opener zurück; verzögerte oder ausgefallene
