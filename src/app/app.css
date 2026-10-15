@@ -472,3 +472,7 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #day-popover .day-row button{align-self:end}
 
 .combat-hit{padding:.85rem;background:#eef4f8;border:1px solid var(--blue);margin-bottom:.8rem}.combat-hit h3{margin:0 0 .6rem}.combat-hit>p{font-size:.85rem}.combat-hit>.toolbar{margin:.5rem 0;flex-wrap:wrap}.combat-hit>.toolbar select{flex:1;min-width:120px}.combat-hit-part{padding:.5rem 0;border-top:1px solid var(--line)}.combat-hit-part .check-label{margin:0 0 .3rem;font-size:.85rem}.combat-hit-part .toolbar{gap:.35rem;flex-wrap:wrap}.combat-hit-part input[type=number]{width:80px}.combat-hit-part select{width:105px}.combat-hit-part small{min-width:70px}.combat-hit-part button{padding:.45rem}.combat-hit>.check-label{margin:.5rem 0}#combat-hit-effect{scroll-margin-top:var(--workspace-content-offset)}
+
+.dungeon-pace-member{display:grid;grid-template-columns:minmax(10rem,1fr) minmax(8rem,12rem) minmax(12rem,2fr);gap:.75rem;align-items:center;border-top:1px solid var(--line);padding:.6rem 0}.dungeon-pace-member small{overflow-wrap:anywhere}#dungeon-pace-controls{margin:.75rem 0}#dungeon-pace-controls>label{max-width:24rem}@media(max-width:700px){.dungeon-pace-member{grid-template-columns:1fr}.dungeon-pace-member small{grid-column:1/-1}}
+
+.dungeon-pace-member>label:first-child{display:flex;align-items:center;gap:.5rem}.dungeon-pace-member input[type=checkbox]{width:auto;margin:0;flex:none}

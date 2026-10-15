@@ -39,15 +39,17 @@ Das ist ein Storebeleg, keine native Gesamtqualifikation.
 
 ## Ausführbare weitere Lieferung
 
-1. **Wirksames Gruppentempo.** In `dungeon-ui.ts`, `DungeonRequest` und dem
-   bestehenden Laufstand das tatsächliche Tempo erklären: langsamstes einbezogenes
-   Mitglied, explizite Gruppenvorgabe, ausgeschlossene/getragene Mitglieder und
-   einzelne Vorgaben. Aktuell ist das Feld ein manuell bestätigter Wert (18 m/min
-   als Eingabevorgabe), keine automatische Langsamstenberechnung. Regeln aus dem
-   versionierten Bewegungsprofil herleiten, keine ungeprüfte Umrechnung von
-   `speedFeet` erfinden. Änderungen gelten sichtbar für nächste Vorschauen;
-   bestätigte Zeit nie rückwirkend umdeuten. Abnahme: unterschiedlich schnelle
-   Figuren, Ausschluss, Override löschen, Gruppenwechsel und Fresh.
+1. **Gruppentempo geliefert, Sonderbewegung weiter ausbauen.** Der Reisebereich
+   zeigt die aktuelle Szenengruppe, langsamste einbezogene Figur, Profilbewegung,
+   Einzelvorgaben, ausgenommene Mitglieder und ausdrückliche Gruppenvorgabe.
+   Die Vorgaben leben in `dungeon_travel_settings`, nicht in Charakterprofilen
+   oder Dungeon-Geometrie. Revision und Mitgliedschaft schützen Übernahme und
+   Vorschau. Änderungen gelten für neue Vorschauen; angenommene Routen behalten
+   ihre geplanten Sekunden. Fehlende oder Nullraten werden nicht zu einem
+   erfundenen Tempo; explizite Transportentscheidung/Override bleibt beim GM.
+   Besondere Flug-, Kletter- und Schwimmprofile der Figuren sind weiterhin offen;
+   dafür gibt der GM ein effektives Tempo vor. Explizite Path-Zeitfaktoren und
+   Gesamtdauer bleiben zusätzliche sichtbare GM-Vorgaben.
 2. **Explorationsrunden.** 1/5/10/15/30 Minuten und eigene Dauer als sichtbaren
    Laufstand liefern; gegenwärtiges `maxSteps` begrenzt Wegpunkte, keine Runden.
    `executeDungeon(step)` muss Abschnitt/Restdauer und die bestehenden Scenezeit-/
@@ -64,3 +66,29 @@ Das ist ein Storebeleg, keine native Gesamtqualifikation.
    Wahrnehmung, Verfolgung und NPCs prüfen. Weitere räumliche Owner gegen den Geometrieguard
    prüfen; der gezielte Volume-/Stilbeleg qualifiziert nicht sämtliche
    räumlichen Änderungsarten oder ihre native Bedienung.
+
+
+## Bewegungsprofil und Laufzustand (0.137)
+
+`dnd5e-2014-dungeon-pace-v1` rechnet normale lokale Bewegung aus der
+Profilbewegung: ft pro Sechssekundenbewegung × 10 × 0,3048 m. Kriechen, Klettern
+und Schwimmen ohne besondere Rate verwenden halbes Tempo. Flug wird aus dem
+Gehprofil nicht abgeleitet. Die
+[Basic Rules 2014: Combat](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/combat)
+geben die Sechssekundenrunde und Bewegung an;
+[Adventuring](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/adventuring)
+beschreibt die zusätzlichen Bewegungskosten. Die lineare Hochrechnung ist der
+benannte lokale Rechenansatz; kein Dash, kein Fernreise-/Tagesmodell und keine
+automatische Tragfähigkeits- oder Erfolgsentscheidung. Einzel-/Gruppenvorgaben
+sind bereits effektive m/min, auf die dieser Modusabschlag nicht erneut wirkt.
+Autorenfaktoren von Paths und der sichtbare zusätzliche Zeitfaktor bleiben
+separate, ausdrücklich gesetzte Einflüsse.
+
+Ausgenommene Figuren bleiben im Gruppentoken und erreichen das Ziel zusammen.
+Die Oberfläche blockiert neue Vorschauen bei offenen Tempofeldern. Verwerfen
+lädt die bestätigten Werte; spätere Reads behalten offene Eingaben, spätere
+Bestätigungen behalten inzwischen weitergeänderte Felder. Gegenläufige
+Mitgliedschafts- oder Einstellungsänderungen brauchen eine neue Übernahme.
+Die unabhängige Kampagnenkopie remappt Szenen, Figuren und begrenzende Mitglieder
+auch in eingefrorenen Routenvorschauen. Diese Laufdaten sind keine authored Dungeonwahrheit; ein authored Dungeonpaket
+darf sie nicht enthalten.
