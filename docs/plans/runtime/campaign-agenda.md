@@ -34,6 +34,14 @@ Gruppenzeit verlangt eine neue sichtbare Vorschau. Lesen und Planung ändern
 weder Scenezeit noch Position; Effekte aus Eventablauf bleiben ausdrückliche
 World-/GM-Entscheidungen.
 
+Der gemeinsame `checkedCalendarEvent` prüft Zeitwerte, Feldtypen und Status
+beim Schreiben sowie an den Reader-/Backupgrenzen. Bestehende, korrekt
+zugeordnete Titel, Notizen und Identitäten werden nicht durch nachträglich
+erfundene Längenlimits als beschädigt verworfen. Der Kompatibilitätsfall in
+`agenda-storage.test.ts` liest längere, vom vorherigen Writer zulässige Inhalte
+unverändert und erstellt daraus einen Kampagnensnapshot. Das ist ein lokaler
+Formatnachweis, keine Lastqualifikation beliebig großer Texte.
+
 Die Tageslänge ist `FantasyCalendar.daySeconds`, kein festes Vielfaches einer
 irdischen Stunde. Der bestehende Writer erlaubt 3600 bis 604800 ganze Sekunden.
 Ein Countdown zieht zuerst vollständige Fantasy-Tage ab und zerlegt nur den

@@ -8,8 +8,8 @@ export function pointHex(x:number,y:number,diameter=1):Hex{const r=y/(diameter*M
 export const hexDistance=(a:Hex,b:Hex)=>(Math.abs(a.q-b.q)+Math.abs(a.r-b.r)+Math.abs(a.q+a.r-b.q-b.r))/2;
 export const neighbors=(h:Hex)=>[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]].map(([q,r])=>({q:h.q+q!,r:h.r+r!}));
 export function checkedCalendarEvent(value:unknown,persisted=false):CalendarEvent{
- const event=value as CalendarEvent,id=(v:unknown)=>typeof v==='string'&&!!v&&v.length<=1000,instant=(v:unknown,positive=false)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,29})$/.test(v)&&(!positive||v!=='0');
- if(!event||!id(event.id)||!Number.isSafeInteger(event.revision)||event.revision<(persisted?1:0)||typeof event.name!=='string'||!event.name.trim()||event.name.length>1000||!instant(event.startMs)||!instant(event.durationMs,true)||event.repeatMs!==null&&!instant(event.repeatMs,true)||event.locationId!==null&&!id(event.locationId)||typeof event.notes!=='string'||event.notes.length>2000000||typeof event.trashed!=='boolean')throw new Error('Kalenderereignis ist beschädigt.');
+ const event=value as CalendarEvent,id=(v:unknown)=>typeof v==='string'&&!!v,instant=(v:unknown,positive=false)=>typeof v==='string'&&/^(0|[1-9][0-9]{0,29})$/.test(v)&&(!positive||v!=='0');
+ if(!event||!id(event.id)||!Number.isSafeInteger(event.revision)||event.revision<(persisted?1:0)||typeof event.name!=='string'||!event.name.trim()||!instant(event.startMs)||!instant(event.durationMs,true)||event.repeatMs!==null&&!instant(event.repeatMs,true)||event.locationId!==null&&!id(event.locationId)||typeof event.notes!=='string'||typeof event.trashed!=='boolean')throw new Error('Kalenderereignis ist beschädigt.');
  return event;
 }
 const indices=new WeakMap<AtlasMap,{cells:AtlasCell[];index:Map<string,AtlasCell>}>();

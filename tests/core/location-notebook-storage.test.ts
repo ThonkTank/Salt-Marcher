@@ -25,7 +25,7 @@ test('location notebook rejects a checksum-valid malformed calendar event',()=>{
   store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});
   store.executeWorld({commandId:'event',campaignId:campaign.id,token:workspace.token,action:{kind:'calendar-event',expectedRevision:null,event:{id:'market-day',revision:0,name:'Markttag',startMs:'3600000',durationMs:'60000',repeatMs:null,locationId:location.id,notes:'',trashed:false}}});
   const event={id:'market-day',revision:1,name:'Markttag',startMs:'3600000',durationMs:'60000',repeatMs:7,locationId:location.id,notes:'',trashed:false},payload=JSON.stringify(event),checksum=createHash('sha256').update(payload).digest('hex');
-  store.db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='calendar-event' AND id=?").run(payload,checksum,campaign.id,event.id);
+  (store as unknown as {db:any}).db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='calendar-event' AND id=?").run(payload,checksum,campaign.id,event.id);
   assert.throws(()=>store.locationMaterials(workspace.token,{locationId:location.id,kind:'event',text:'',offset:0}),/Kalenderereignis.*beschädigt/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

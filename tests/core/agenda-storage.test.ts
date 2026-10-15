@@ -44,3 +44,16 @@ test('a damaged event cannot disappear from a local agenda through its unverifie
  assert.throws(()=>store.agenda(w.token,{sceneId:null,search:'',locationId:place.id,location:'all',horizonDays:null,includePast:true,after:null}),/Kalenderereignis beschädigt/);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+test('previously valid long calendar titles and notes remain readable and snapshot-compatible',async()=>{
+ const root=mkdtempSync(join(tmpdir(),'agenda-compatible-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
+ try{const campaign=store.create('Bestandsdaten'),w=store.activate(campaign.id),event={id:'event',revision:0,name:'Original',startMs:'1000',durationMs:'1000',repeatMs:null,locationId:null,notes:'',trashed:false};
+ store.executeWorld({commandId:'event',campaignId:campaign.id,token:w.token,action:{kind:'calendar-event',expectedRevision:null,event}});
+ const original={...event,revision:1,name:'Titel '.repeat(201),notes:'Notiz'.repeat(400001)},payload=JSON.stringify(original),checksum=createHash('sha256').update(payload).digest('hex');
+ (store as unknown as {db:any}).db.prepare("UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='calendar-event' AND id=?").run(payload,checksum,campaign.id,event.id);
+ assert.equal(store.world(w.token).events[0]?.notes,original.notes);
+ const page=store.agenda(w.token,{sceneId:null,search:'',location:'all',horizonDays:null,includePast:true,after:null});assert.equal(page.items[0]?.event.name,original.name);assert.equal(page.items[0]?.event.notes,original.notes);
+ await store.campaignSnapshot(w.token,join(root,'preserved.sqlite'));
+ assert.equal((store as unknown as {db:any}).db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(campaign.id,event.id).payload,payload);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
