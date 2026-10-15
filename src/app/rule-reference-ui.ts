@@ -84,10 +84,6 @@ async function roll(){
  const dcText=el<HTMLInputElement>('live-check-dc').value;
  await sendCheck({kind:'roll',label:el<HTMLInputElement>('live-check-label').value,ruleNoteId:el<HTMLSelectElement>('live-check-rule').value||null,mode:el<HTMLSelectElement>('live-check-mode').value as Extract<SceneCheckCommand['action'],{kind:'roll'}>['mode'],modifier:Number(el<HTMLInputElement>('live-check-modifier').value),dc:dcText===''?null:Number(dcText)});
 }
-export function prepareSceneCheck(input:{label:string;dc:number}){
- ensure();if(!workspace||!sceneId||!checks||busy){tell('Öffne zuerst eine verfügbare laufende Gruppe.',true);return;}
- el<HTMLInputElement>('live-check-label').value=input.label;el<HTMLSelectElement>('live-check-rule').value='';el<HTMLSelectElement>('live-check-mode').value='normal';el<HTMLInputElement>('live-check-modifier').value='0';el<HTMLInputElement>('live-check-dc').value=String(input.dc);el('live-check-form').scrollIntoView({behavior:'smooth',block:'center'});el<HTMLInputElement>('live-check-modifier').select();tell('Rettungswurf vorbereitet: Modifikator des Ziels eintragen und würfeln.');
-}
 export async function rollSceneFormula(action:Omit<FormulaAction,'kind'>,onResult?:(check:SceneCheck)=>void){return sendCheck({kind:'formula',...action},onResult);}
 
 export async function rollSceneCheck(action:Omit<CheckAction,'kind'|'ruleNoteId'>,onResult?:(check:SceneCheck)=>void){return sendCheck({kind:'roll',ruleNoteId:null,...action},onResult);}

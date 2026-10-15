@@ -24,14 +24,6 @@ export function decimal(value: string): Rational {
     : rational(sign * digits, 10n ** BigInt(-power))
 }
 
-export function canonicalDecimal(value: string): string {
-  const match = /^(\d+)(?:\.(\d+))?$/.exec(value)
-  if (!match) throw new Error('invalid_fraction')
-  const whole = match[1]!.replace(/^0+(?=\d)/, '')
-  const fractional = (match[2] ?? '').replace(/0+$/, '')
-  return fractional.length === 0 ? whole : `${whole}.${fractional}`
-}
-
 export function add(left: Rational, right: Rational): Rational {
   return rational(
     left.numerator * right.denominator + right.numerator * left.denominator,
@@ -50,14 +42,6 @@ export function multiply(left: Rational, right: Rational): Rational {
   return rational(
     left.numerator * right.numerator,
     left.denominator * right.denominator
-  )
-}
-
-export function divide(left: Rational, right: Rational): Rational {
-  if (right.numerator === 0n) throw new Error('invalid_rational_division')
-  return rational(
-    left.numerator * right.denominator,
-    left.denominator * right.numerator
   )
 }
 
