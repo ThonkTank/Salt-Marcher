@@ -197,7 +197,14 @@ else {
     type CampaignTicket={dir:string;manifest:CampaignManifest;copy:boolean;fence:{id:string;revision:number}|null;basis?:string;problems?:string[]};
     const campaignTickets=new Map<string,CampaignTicket>();let campaignBusy=false,campaignCancelled=false,audioBusy=false,audioCancelled=false,currentCampaignSource:string|null=null,acceptingTicket:string|null=null;
     const campaignProgress=(p:import('../src/app/campaign-contracts').CampaignTransferProgress)=>{if(!win.isDestroyed())win.webContents.send('campaign:transfer-progress',p);};
-    async function campaignJob<T>(fn:()=>Promise<T>){if(campaignBusy||audioBusy)throw new Error('Eine Kampagnen- oder Medienübertragung läuft bereits.');campaignBusy=true;campaignCancelled=false;try{return await fn();}finally{campaignBusy=false;currentCampaignSource=null;campaignProgress({phase:campaignCancelled?'Abgebrochen':'Fertig',records:0,bytes:0,busy:false});}}
+    async function campaignJob<T>(fn:()=>Promise<T>){
+      if(campaignBusy||audioBusy)throw new Error('Eine Kampagnen- oder Medienübertragung läuft bereits.');
+      campaignBusy=true;campaignCancelled=false;
+      try{
+        campaignProgress({phase:'Kampagnenübertragung vorbereiten',records:0,bytes:0,busy:true});
+        return await fn();
+      }finally{campaignBusy=false;currentCampaignSource=null;campaignProgress({phase:campaignCancelled?'Abgebrochen':'Fertig',records:0,bytes:0,busy:false});}
+    }
     function campaignHooks(fence:CampaignTicket['fence']):CampaignFileHooks{return{cancelled:()=>campaignCancelled,progress:campaignProgress,fence:()=>{if(fence)store.campaignFence(fence.id,fence.revision);}};}
     async function captureCampaign(token:string){
       const dir=await mkdtemp(path.join(campaignJobsRoot,'snapshot-')),dbFile=path.join(dir,'campaign.sqlite');
