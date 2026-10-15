@@ -114,3 +114,9 @@ Produkt- oder Datenlebenszyklusabnahme.
 NSC-Schauplätze öffnen eine kampagnenweite Hausauswahl. Der bestehende Stadtinspektor bereitet Wohn-/Arbeitsbindung und optional einen neuen Haushalts-/Berufsnamen vor. Speichern löst die bisherige Bindung auch in einer anderen Stadt und setzt die neue in derselben Transaktion. Nur die Mitgliedschaft dieses NSC wird aus bisherigen Haushalts-/Berufseinträgen entfernt; andere Mitglieder und die benannten Einträge bleiben bestehen. Die aktuelle Position wird dabei nicht bewegt.
 
 Der gemeinsame Historienschritt ist aus beiden beteiligten Städten rückgängig machbar und wiederholbar. Spätere Änderungen einer beteiligten Stadt müssen zuvor rückgängig gemacht werden. Veränderte Quellrevisionen brechen den vorbereiteten Wechsel ohne Teiländerung ab; die Hausauswahl dann neu öffnen. Dies beschreibt den implementierten Ablauf, keine Gesamtproduktabnahme.
+
+### Desktop-Arbeitsstand 0.106: Haushalte und Berufsgruppen gemeinsam umziehen
+
+Jeder Haushalts- und Berufseintrag im Hausinspektor öffnet jetzt eine Suche nach Zielhäusern in allen Städten. Die Bestätigung nennt Quelle, Ziel und alle Mitglieder. Der Umzug erhält Kennung und Namen des vollständigen Eintrags, bindet sämtliche Mitglieder im neuen Haus und entfernt den Eintrag aus dem bisherigen Haus. Andere Haushalte, Arbeitsbindungen, Bewohner und Hausnotizen bleiben bestehen. Auch leere benannte Einträge können verschoben werden.
+
+Die vorhandene Stadttransaktion und gemeinsame Historie übernehmen Quell- und Zieländerung; Rückgängig/Wiederholen sind in beiden Städten verfügbar. Abbrechen vor der Bestätigung schreibt nichts. Quell- und Zielrevisionen werden beim Commit geprüft. Aktuelle Aufenthaltsorte werden durch den Umzug von Wohn-/Arbeitsbindungen nicht bewegt. Keine Aussage über vollständige Produktabnahme.

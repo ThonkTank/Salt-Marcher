@@ -18,7 +18,13 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
   gehören zum vorhandenen Planeditor.
 - Beim Spielabendabschluss die bestätigte Übergabe unmittelbar im selben Editor
   weiterbearbeiten. Der Abschluss wird vor dem Öffnen gespeichert; erst die
-  zweite Bestätigung erzeugt Planbesuch und Mappeninhalt gemeinsam.
+  zweite Bestätigung erzeugt Planbesuch und Mappeninhalt gemeinsam. „Vorbereiten
+  + Mappe öffnen“ zeigt danach unmittelbar den neu erzeugten Besuch in der
+  vollständigen GM-Mappe.
+- Von jeder Besuchsseite der Vorbereitungsmappe mit „Am Spieltisch prüfen…“ in
+  den vorhandenen Live-Bereich wechseln. Plan und Besuch sind dort bereits für
+  die ausdrückliche Übernahmeprüfung ausgewählt; der Wechsel übernimmt noch
+  keinen Inhalt und startet keinen Spielabend.
 - Im Live-Spiel einen Besuch übernehmen, Vorlesetext in den GM-Szenenentwurf
   kopieren, die Originalquelle öffnen, eine Begegnung vorbereiten oder die
   Belohnung dieses Besuchs im vorhandenen Fachbereich verwalten.

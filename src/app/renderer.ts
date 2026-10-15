@@ -8,7 +8,7 @@ import {CampaignAgenda} from './agenda-ui';
 import {initSoundboard,activateSoundboard} from './live-soundboard-ui';
 import {initQuickReference,activateQuickReference} from './quick-reference-ui';
 import {initNarrativeJournal,activateNarrativeJournal} from './narrative-journal-ui';
-import {setSessionPacketSurface} from './session-packet-ui';
+import {closeSessionPacket,openPreparationSessionPacket,setSessionPacketSurface} from './session-packet-ui';
 import {initPartyTopbar,activatePartyTopbar} from './party-topbar-ui';
 import {initDayCalculator,activateDayCalculator} from './adventuring-day-ui';
 import {initNpcs,activateNpcs,openNpcs,openNpcProfile,createNpcAtLocation,prepareNpcLocation,setNpcPlaceNavigation,flushNpcs} from './npc-ui';
@@ -67,9 +67,9 @@ initPreparation(status, async scopeId => {
   if (!room) { status('Diese Zeichnung enthält noch keinen verfügbaren Raum.', true); return; }
   await selectRoom(room.id);
   showTab('atlas');
-}, async (planId, visitId) => {
-  if (!(await leaveWorkspace())) return;
-  showTab('live'); await openLive(planId, visitId);
+}, async (planId, visitId, sourceCurrent=()=>true) => {
+  const owner=workspace;if(!owner||!sourceCurrent()||!(await leaveWorkspace())||workspace!==owner||!sourceCurrent())return;
+  closeSessionPacket();showTab('live');await openLive(planId,visitId);
 });
 setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
 initDayCalculator(status,()=>el<HTMLButtonElement>('live-tab').click());
@@ -121,7 +121,7 @@ const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,asyn
 initLive(status, async id => {
   if (!(await leaveWorkspace())) return;
   await openPreparedLocation(id); showTab('preparation');
-},async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id,current);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current);},async(seed,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;await campaignAgenda.openMomentDraft({name:seed.title,notes:seed.summary},seed.location??undefined,current);},async(planId,seed,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;showTab('preparation');await prepareNextVisit(planId,seed,current);});
+},async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id,current);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current);},async(seed,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;await campaignAgenda.openMomentDraft({name:seed.title,notes:seed.summary},seed.location??undefined,current);},async(planId,seed,current=()=>true,openPacket=false)=>{if(!current()||!(await leaveWorkspace())||!current())return false;showTab('preparation');const prepared=await prepareNextVisit(planId,seed,current);if(!prepared)return false;if(openPacket&&current())return openPreparationSessionPacket(prepared.visitId);return current();});
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
 el('music-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();})().catch(error=>status(error.message,true));};

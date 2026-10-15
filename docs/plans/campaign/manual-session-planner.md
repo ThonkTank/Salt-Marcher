@@ -25,6 +25,11 @@ bleiben an die ursprüngliche Campaign, Gruppe und Besuchsauswahl gebunden.
 Datenbank-Reopen und unabhängige Kopie sind geprüft; die native Bedienprobe
 bleibt offen.
 
+Eine bestätigte Spielabendübergabe kann einen neuen Einstieg atomar in Plan und
+Mappe speichern. Wahlweise bleibt der neue Besuch im Editor geöffnet oder seine
+GM-Mappe öffnet sich sofort auf genau diesem Besuch. Eine während der Antwort
+veränderte Auswahl öffnet keine Mappe aus einem älteren Auftrag.
+
 ## Daten- und Bedienvertrag
 
 - Pläne behalten ihre Identität und monotone Revision. Neue oder kopierte
@@ -101,7 +106,8 @@ Eine zweite Timelinearchitektur oder generische Historyabstraktion ist nicht nö
 ## Besuchsübergabe und Recovery
 
 `prepareNextVisit` prüft Zielplan, Einfügeposition, angezeigte Revision,
-Workspace/Aktivierung und neuere Eingaben. Im vorgeschlagenen Plan steht der
+Workspace/Aktivierung und neuere Eingaben einschließlich Mappen-Vorlesetext
+und Planungsangaben. Im vorgeschlagenen Plan steht der
 Einstieg vor dem nächsten Besuch, in einem anderen gewählten Plan am Ende.
 Ein nicht gelisteter bisheriger Zielplan bleibt ausdrücklich ausgewählt und
 wird beim Speichern geprüft; nur die eigene Neuanlageoption erzeugt einen Plan.

@@ -55,7 +55,7 @@ import {installAutonomySchema,autonomyView,executeAutonomy,captureAutonomyBasis,
 import type {AutonomyCommand} from '../autonomy-contracts';
 import {installPlayerSchema,playerSettings,playerView,projectPlayer,executePlayer,savePlayerAsset,playerAssets,playerMediaFiles,setPlayerWindow,validatePlayer} from './player';
 import type {PlayerCommand,PlayerAsset,PlayerFrame} from '../player-contracts';
-import {installCitySchema,cityOverview,readCity,executeCity,validateCities} from './city';
+import {installCitySchema,cityOverview,readCity,executeCity,validateCities,readCityBuildingChoices} from './city';
 import type {CityCommand} from '../city-contracts';
 import {installCampaignSchema,validateCapabilityBytes,validateCampaignSnapshotSettings,campaignOverview,pruneCampaignSnapshot,snapshotCounts,definitionConflicts,sharedPlan,archiveSourceChoices,remapSnapshot,publishSnapshot,trashCampaign,eraseCampaignRows} from './campaign-data';
 import {openSync as openSnapshot, readSync, closeSync as closeSnapshot} from 'node:fs';
@@ -674,6 +674,7 @@ export class CampaignStore {
   playerImageFile(id:string){if(!this.active)throw new Error('Keine Kampagne.');const a=playerAssets(this.db,this.active.campaignId).find(a=>a.id===id);if(!a)throw new Error('Bild fehlt.');return dirname(this.filename)+'/player-images/'+a.sha256+a.extension;}
   cities(token:string){return cityOverview(this.db,this.guard(token));}
   city(token:string,id:string){return readCity(this.db,this.guard(token),id);}
+  cityBuildings(token:string,query:import('../city-contracts').CityBuildingQuery){const c=this.guard(token);return this.db.transaction(()=>readCityBuildingChoices(this.db,c,query))();}
   executeCity(command:CityCommand){return executeCity(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
   campaignOverview(){return this.db.transaction(()=>campaignOverview(this.db))();}
   campaignFence(id:string,revision:number){const r=this.db.prepare('SELECT revision,trashed FROM campaign_lifecycle WHERE campaign_id=?').get(id);if(!r||r.trashed||r.revision!==revision)throw new Error('Quellkampagne wurde gelöscht oder ihr Lebenszyklus geändert.');}
@@ -845,9 +846,11 @@ export class CampaignStore {
         if (change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision || old.trashed) throw new Error('Notizkonflikt: Der gespeicherte Stand hat sich geändert.');
         const oldNote = old ? this.decodeNote(old, 'Beschädigte Notiz darf nicht überschrieben werden.') : null;
         if (oldNote && oldNote.kind !== change.note.kind) throw new Error('Die Notizart bleibt an ihrer Identität gebunden.');
+        if(oldNote?.relations.some(relation=>relation.familyKind&&!change.note.relations.some(next=>next.targetId===relation.targetId&&next.label===relation.label&&next.familyKind===relation.familyKind)))throw new Error('Familienbeziehungen werden nur als vollständiges Paar geändert.');
         for (const relation of change.note.relations) {
           const target = this.db.prepare('SELECT trashed FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, relation.targetId);
-          const retained = oldNote?.relations.some(r => r.targetId === relation.targetId && r.label === relation.label);
+          const retained = oldNote?.relations.some(r => r.targetId === relation.targetId && r.label === relation.label && r.familyKind === relation.familyKind);
+          if(relation.familyKind&&!retained)throw new Error('Familienbeziehungen werden atomar im Zusammenhangsplan angelegt.');
           if (!target || target.trashed && !retained) throw new Error('Beziehung zeigt nicht auf eine verfügbare Notiz.');
         }
         revision = (old?.revision ?? 0) + 1;
