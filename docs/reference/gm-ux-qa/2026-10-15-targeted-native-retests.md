@@ -41,9 +41,8 @@ nutzbare manuelle Szenen und eine übersichtliche GM-Mappe mit getrenntem
 Vorlese-/GM-Text. Wiederholte Frist- und Wegeangaben sind die gewählte
 Organisation des Testers, kein Nachweis fehlender Verweisfunktionen. Lange
 Bearbeitungsseiten und Positionswechsel führten laut Bericht zu korrigierten
-Fehlbedienungen; Produkt-/Umgebungsursache bleibt offen. Ein enger eigener
-Quellauftrag untersucht zunächst die Reproduktion, ohne den Messbuild zu
-ändern oder einen weiteren schweren Job zu starten. PLAY ist gespeichert:
+Fehlbedienungen. Die getrennte Ursachenprüfung steht unten; der feste Messbuild
+bleibt unverändert. PLAY ist gespeichert:
 Die geänderte Abfahrt wurde mehrfach nachgezogen, die unterbrochene Notiz
 blieb erhalten. Zum Schreiben musste die lesende Mappe geschlossen werden;
 beim Wiederöffnen begann sie beim ersten Besuch und hatte eine andere Auswahl
@@ -64,15 +63,37 @@ gespeicherter Produktstand und UI-Belege erlauben die Wiederaufnahme.
 Ablehnung und Umwege bleiben technische Ablaufkosten, kein Produktfehler
 oder erfolgreicher Export.
 
-Ein frischer Original-Obsidian-Vergleich ist technisch vorbereitet. Der frühere
+Der enge Quellauftrag reproduzierte auf 0.99.0 (`fee0d71c`) die weit getrennten
+Kernfelder, Fokus vor dem fertigen Szenenrender und den verlorenen Mappenbesuch.
+Ein lokaler Patch (`f2ea4934`) verkleinert das vergrößerbare Notizfeld, wartet
+vor Fokus auf das Rendern und verbindet Mappe und richtigen Szeneneditor direkt.
+Drei Regressionen scheitern vorher; alle 14 gezielten Tests, Desktop-Typprüfung
+und Desktopbuild bestehen danach. Die allgemeine Typprüfung enthält vorher
+und nachher dieselben 35 bestehenden Testdiagnosen. Vorher-/Nachher-/Fresh-Frames
+und normale Abschlüsse sind gesichert; die Leitung prüfte Originalhashzuordnung
+und sichtbare Kernfelder nach Fresh. Kein Autosave-Sprung bei ruhender UI
+reproduziert; veraltete Scrollbilder erklären einen Teil der Fehlklicks.
+Nicht jede ursprüngliche Fehlaktion ist damit erklärt.
+
+Der Patch ist auf 0.100.0 (`12d34599`) als lokaler Commit `85255c4a` übertragen.
+Arbeitsbaum sauber; keine Quellveröffentlichung. Seine Abschlussprüfung wurde
+mit Exit 75 wegen des belegten QA-Slots abgewiesen. Die vorhandenen 0.99.0-
+Builddateien belegen diesen neueren Stand nicht. Er wartet auf den nächsten
+freien Slot, anschließend bleibt ein frischer unabhängiger Zieltest nötig.
+
+Ein frischer Original-Obsidian-Vergleich läuft. Der frühere
 erfolgreiche native UI-/Save-/Fresh-Pilot und unveränderte Programm-/Ressourcen-
 hashes sind vorhanden. Die Trialreservierung wurde wegen der belegten
 Kapazität abgewiesen; die Leitung legte versehentlich trotzdem den technischen
 Vorbereitungschat an. Nach tatsächlichem Abschluss des nativen Falls gelang
 die reguläre Reservierung für genau diesen vorhandenen frischen Chat.
-Er wartet noch ohne Szenario oder GUI-Start auf den freien QA-Slot und START;
-die begrenzte Ursachenuntersuchung hat momentan Vorrang. Keine manuelle
-Kapazitätsänderung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
+Nach tatsächlicher Slotfreigabe erhielt er ausschließlich denselben öffentlichen
+PREPARE-Inhalt; Original-Obsidian zeigt die lokale Vault-Anlage. Zwei technische
+Fehlstarts bleiben erhalten: zunächst kein Start wegen Sandbox-Lock, danach
+geschlossene Wrapper-Eingabe ohne gestartetes Produkt. Der unveränderte Operator
+läuft nun mit offenem Terminal. Keine manuelle Kapazitätsänderung und kein
+Ersatzchat. PLAY und RESUME folgen an natürlichen Grenzen im selben Chat,
+ohne vorherige Produktberichte oder Lösungswege. Der Cloud-Browserpilot bleibt
 mangels auflösbarer Gesprächs-ID unbestätigt.
 
 Rabenfurt braucht noch eigene praktische Konkurrenz- und einfachste
