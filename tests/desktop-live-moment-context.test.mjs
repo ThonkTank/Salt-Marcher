@@ -414,3 +414,10 @@ test('other split groups stay outside roster details and switch only after savin
  assert.equal(x.store.live(x.w.token).focusId,other);assert.equal(x.el('running-notes').value,'Borin fragt nach dem blauen Tuch');assert.equal(x.store.liveScene(x.w.token,x.scene.id).notes,'Ada findet Seilfasern');
  assert.deepEqual(x.store.live(x.w.token).roster.filter(c=>c.active).map(c=>[c.profile.name,c.sceneId]),[['Ada',x.scene.id],['Borin',other]]);
 });
+
+test('split time inputs follow their scene and retain unfinished raw values without advancing either clock',async t=>{
+ const x=await setup(t);x.el('time-amount').value='';x.el('time-unit').value='hours';x.el('time-reason').value='Ada untersucht Seilfasern';const other=await x.focusOther(),before=x.store.live(x.w.token).scenes.map(s=>[s.id,s.clock]);
+ assert.equal(x.el('time-reason').value,'');assert.equal(x.el('time-amount').value,'10');assert.equal(x.el('time-unit').value,'minutes');
+ x.el('time-amount').value='5';x.el('time-reason').value='Borin fragt Nera';x.el('group-list').querySelector('button').click();await settle();assert.equal(x.el('time-reason').value,'Ada untersucht Seilfasern');assert.equal(x.el('time-amount').value,'');assert.equal(x.el('time-unit').value,'hours');
+ x.el('group-list').querySelector('button').click();await settle();assert.equal(x.store.live(x.w.token).focusId,other);assert.equal(x.el('time-reason').value,'Borin fragt Nera');assert.equal(x.el('time-amount').value,'5');assert.deepEqual(x.store.live(x.w.token).scenes.map(s=>[s.id,s.clock]),before);
+});

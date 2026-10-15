@@ -115,6 +115,7 @@ export function activateLive(workspace: Workspace) {
   sessionCloseOpeningBasis=null;handoffVisitDraft=null;const handoffDialog=document.getElementById('handoff-visit-dialog') as HTMLDialogElement|null;if(handoffDialog?.open)handoffDialog.close();
   visitBinder?.reset();timeNavigator?.reset();manualTimePreview=null;clockCalendar=null;timePreviewRequest++;liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
+  timeDrafts.clear();timeDraftOwner=null;
   context = workspace; data = null; sources = null;sessionChronicle=null;sessionChronicleError='';sessionChronicleRequest++; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
   get<HTMLInputElement>('live-knowledge-search').value='';
@@ -338,6 +339,18 @@ function renderVisits() {
   for (const [index, visit] of (plan?.scenes ?? []).entries()) { const option = document.createElement('option'); option.value = visit.id; option.textContent = (index + 1) + '. ' + (visit.title || 'Unbenannter Besuch'); select.append(option); }
   get<HTMLButtonElement>('adoption-preview').disabled = !plan?.scenes.length || intentBlocked();
 }
+const timeDrafts=new Map<string,{amount:string;unit:string;reason:string}>();
+let timeDraftOwner:string|null=null;
+function timeContext(){
+ const owner=context&&data?.scene?context.token+'/'+data.scene.id:null;
+ if(owner===timeDraftOwner)return;
+ if(timeDraftOwner)timeDrafts.set(timeDraftOwner,{amount:value('time-amount'),unit:value('time-unit'),reason:value('time-reason')});
+ const draft=owner?timeDrafts.get(owner):null;
+ get<HTMLInputElement>('time-amount').value=draft?.amount??'10';
+ get<HTMLSelectElement>('time-unit').value=draft?.unit??'minutes';
+ get<HTMLInputElement>('time-reason').value=draft?.reason??'';
+ timeDraftOwner=owner;
+}
 function renderSceneMeta() {
   visitBinder?.contextChanged();timeNavigator?.contextChanged();npcCastBinder?.contextChanged();liveGenerator?.contextChanged();sessionNavigatorContext(context,data,sources,resumed);syncLivePacketContext();
   void refreshMusic();
@@ -349,6 +362,7 @@ function renderSceneMeta() {
   const active = data?.roster.filter(c => c.active && c.sceneId === scene?.id) ?? [];
   get('live-party').textContent = active.length ? 'Dabei: ' + active.map(c => c.profile.name).join(', ') : 'Leere Party – Scene bleibt verfügbar.';
   renderPartyReference();
+  timeContext();
   get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatSceneInstant(scene.clock.instantMs) : '';
   renderTimePreview();
   void refreshScenePreparation();
