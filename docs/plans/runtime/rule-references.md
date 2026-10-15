@@ -1,7 +1,8 @@
 # GM-Referenzsuche und Regeln am Spieltisch
 
 Stand: 15.10.2026. Ergänzt [Katalog und Regeln](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md),
-[Live-Scenes](smr03-live-scene-contract.md) und [Gesamtumfang](../../SCOPE.md).
+[Live-Scenes](smr03-live-scene-contract.md), [Katalogsuche und Filterlieferung](catalog-browsing.md)
+und [Gesamtumfang](../../SCOPE.md).
 
 ## Ziel und vorhandene Nutzerwege
 
