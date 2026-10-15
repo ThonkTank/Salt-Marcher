@@ -132,9 +132,26 @@ unveränderte Operator regulär mit offenem Terminal. Keine manuelle
 Kapazitätsänderung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
 mangels auflösbarer Gesprächs-ID unbestätigt.
 
-MD-RABENFURT-01 bearbeitet jetzt denselben öffentlichen Vorbereitungsauftrag
-im originalen KWrite mit unveränderter Binäridentität, eigenem frischem Tester
-und frei gewählter Organisation. PLAY/RESUME folgen im selben Chat; noch kein Ergebnis.
+MD-RABENFURT-01 hat denselben vollständigen öffentlichen Fall im originalen
+KWrite abgeschlossen: eine frei organisierte Markdown-Datei, Ersetzen der
+wiederholten Abfahrtsangaben, Schal-Suche und Rückkehr zur begonnenen Notiz.
+Nach Fresh waren Verlauf und Wissensgrenzen erhalten; keine Inhaltsreparatur
+nötig. Dokumentanfang, Suche nach dem aktuellen Stand und manuelle Trennung
+von Ausgangslage/Verlauf blieben Bedienarbeit. Die Rückkehrfrage blieb ohne
+erfundene Zeit/Reise ehrlich offen. Finale Dateihashes, passende Originalframes
+und alle drei normalen Appabschlüsse samt terminalem Run wurden geprüft;
+der tatsächlich fertige Chat ist archiviert. Die letzte Antwort wurde normal
+gespeichert/geschlossen, ohne zusätzlichen Fresh genau dieser letzten Ergänzung.
+Öffentliche Folgeziele wurden nach den normalen Abschnittsabschlüssen gelesen;
+die bedingte Freigabe vermied reines Warten auf die Leitung. Reihenfolge bleibt
+dokumentiert, ohne einen Zeitvergleich aus den unterschiedlichen Pausen abzuleiten.
+
+Die kleine narrative Aufgabe ist damit auch mit der einfachsten Textlösung
+praktisch brauchbar; ein Produktvorteil unseres Editors ist nicht belegt.
+QA-READER-RETURN-01 reproduziert den konkreten Leserückweg nativ auf festem
+0.107.0 (`7af612c8`), bevor eine enge Änderung erfolgt. Der nächste vorbereitete
+zusammenhängende Fall Rabensteg richtet sich ausdrücklich auf native Party-,
+Planungs- und Live-Zustände. Er ist noch kein gestarteter Test oder Abnahmenachweis.
 Dungeon Editor 0.94.0 und Original-Obsidian erhielten den gespielten narrativen
 Stand nach Fresh. Obsidian stellte Tabs/Suche wieder her, während der erste
 Editorlauf manuell aus „Karte und Keys“ zurücknavigierte. Das ist eine konkrete
