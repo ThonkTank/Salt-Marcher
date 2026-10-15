@@ -43,6 +43,27 @@ test('city buildings bind existing World NPC homes and workplaces through exact 
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
+test('cross-city NPC moves share one guarded undo and redo step',()=>{
+ const f=fixture('city-cross-move-');
+ try{
+  const remoteLocation=newLocation('remote-place','Bergstadt','city',['description','notes']);
+  f.store.changePreparation({commandId:'remote-location',campaignId:f.campaign.id,token:f.workspace.token,change:{kind:'location',expectedRevision:null,document:remoteLocation}});
+  const remoteHeader:CityHeader={id:'remote-city',revision:1,name:'Bergstadt',locationId:remoteLocation.id,width:600,height:400,paper:'#e9dfc8',roof:'#9c604c'},remoteHome=building('remote-home','Haus am Hang');
+  f.store.executeCity({commandId:'remote-create',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:0,action:{kind:'create',header:remoteHeader}});
+  const remote=f.store.executeCity({commandId:'remote-building',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:1,action:{kind:'change',upsert:[remoteHome],remove:[],label:'Haus'}});
+  const source=f.store.executeCity({commandId:'source-home',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada],households:[{id:'old-family',name:'Alte Familie',memberIds:[f.ada]}]}],remove:[],label:'Wohnort'}});
+  const moved=f.store.executeCity({commandId:'cross-move',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:remote.header.revision,action:{kind:'change',upsert:[{...remoteHome,residentIds:[f.ada],households:[{id:'new-family',name:'Neue Familie',memberIds:[f.ada]}]}],remove:[],label:'Stadtwechsel',bindingMoves:[{npcId:f.ada,role:'home',fromCityId:'city',fromUnitId:f.home.id,expectedRevision:source.header.revision}]}});
+  assert.deepEqual(f.store.city(f.workspace.token,'city').units.find(u=>u.id===f.home.id)?.residentIds,[]);
+  assert.deepEqual(moved.units.find(u=>u.id===remoteHome.id)?.residentIds,[f.ada]);
+  const undone=f.store.executeCity({commandId:'undo-cross',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.store.city(f.workspace.token,'city').header.revision,action:{kind:'undo'}});
+  assert.deepEqual(undone.units.find(u=>u.id===f.home.id)?.residentIds,[f.ada]);
+  assert.deepEqual(f.store.city(f.workspace.token,remoteHeader.id).units.find(u=>u.id===remoteHome.id)?.residentIds,[]);
+  const redone=f.store.executeCity({commandId:'redo-cross',campaignId:f.campaign.id,token:f.workspace.token,cityId:remoteHeader.id,expectedRevision:f.store.city(f.workspace.token,remoteHeader.id).header.revision,action:{kind:'redo'}});
+  assert.deepEqual(redone.units.find(u=>u.id===remoteHome.id)?.residentIds,[f.ada]);
+  assert.deepEqual(f.store.city(f.workspace.token,'city').units.find(u=>u.id===f.home.id)?.residentIds,[]);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
 test('city households own stable identity and move or dissolve without duplicating World NPCs',()=>{
  const f=fixture('city-households-');
  try{

@@ -544,7 +544,7 @@ export async function openPreparedVisit(planId:string,visitId:string,current:()=
   usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
-export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean},stillCurrent:()=>boolean=()=>true){
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean},stillCurrent:()=>boolean=()=>true):Promise<{planId:string;visitId:string}|undefined>{
   const owner=context,token=owner?.token,epoch=preparationLoad,input=structuredClone(seed);
   const current=()=>context===owner&&context?.token===token&&preparationLoad===epoch&&stillCurrent();
   if(!token||!current()||!await flushPreparation()||!current())throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
@@ -575,7 +575,7 @@ export async function prepareNextVisit(planId:string|null,seed:{title:string;not
   // that draft or move its editor merely because this visit was published.
   if(!sameInput())return;
   selectedPlan=plan.id;selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
-  if(current()&&preparationInputVersion===edit){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+  if(current()&&preparationInputVersion===edit){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});return{planId:plan.id,visitId:id};}
 }
 
 function showLocations(show: boolean) {

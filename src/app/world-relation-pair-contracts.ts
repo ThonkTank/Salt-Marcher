@@ -1,4 +1,5 @@
 import type {Result} from './contracts';
+import type {WorldFamilyRelationKind} from '../features/world/world-notes';
 
 export interface WorldRelationPairAction {
   kind:'add'|'remove';
@@ -8,6 +9,8 @@ export interface WorldRelationPairAction {
   targetRevision:number;
   forwardLabel:string;
   reverseLabel:string;
+  forwardFamilyKind?:WorldFamilyRelationKind;
+  reverseFamilyKind?:WorldFamilyRelationKind;
 }
 export interface WorldRelationPairCommand {commandId:string;campaignId:string;token:string;draftWriteId?:string;action:WorldRelationPairAction}
 export interface WorldRelationPairAck {sourceRevision:number;targetRevision:number}
