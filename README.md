@@ -854,3 +854,9 @@ Aus dem Briefing öffnet der GM nach sicherem Fokuswechsel die Ortsmappe oder Pa
 ### 0.85 – Weltplanung aus der Ortsmappe
 
 Fraktionen und Kalenderfristen stehen jetzt neben NSCs, Aufträgen, Gruppen und Shops in der Ortsmappe. Ortsquellen öffnen direkt die vorhandene Fraktions-/Tabellenzuordnung; Fraktionen führen zu Originalnotizen oder Haltung und Beständen. Neue Fristen übernehmen den gewählten Ort. Die bestehende Agenda zeigt gezielt ein Ereignis oder alle Fristen dieses Ortes, einschließlich vergangener Ereignisse, und führt nach dem Bearbeiten zurück zur Ortsmappe. Gruppenzeit, Reise und Bestände ändern sich nur über ihre eigenen ausdrücklichen Aktionen. Keine neue Datenhaltung oder Schemaänderung.
+
+### Desktopstand 0.86: Die Spielabendmappe wird zur Ablaufspur
+
+Die angedockte GM-Spielabendmappe führt aus ihren vorhandenen Blöcken direkt in die zuständigen Arbeitsabläufe. Ortsabschnitte öffnen die Ortsmappe, Weltverweise ihre Originalquelle, eine vorbereitete Figurengruppe erzeugt nach übernommener Besuchsszene den bestehenden Kampfentwurf, und eine Belohnung öffnet exakt diesen Besuch im vorhandenen Platzierungs- und Vergabeablauf.
+
+Jeder Aktionsblock trägt die bestätigte Quellenkennung aus dem Paket statt Titel oder Freitext erneut aufzulösen. Die Begegnungsübergabe prüft weiterhin Fokus, Mitgliedschaft, Besuchsübernahme, Szenenort und aktuellen Gruppenstand. Lesen oder Quellen öffnen verändert nichts; Kampfvorbereitung, Besuchsübernahme, Textfreigabe, Beuteplatzierung und XP-Vergabe bleiben ihre getrennten ausdrücklichen Aktionen.
