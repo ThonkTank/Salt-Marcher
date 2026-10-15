@@ -24,7 +24,7 @@ test('generation reveals every effective catalog filter without pagination or so
 test('catalog filter changes invalidate old proposal controls and preserve their actual basis',async t=>{
  const x=await fixture(t);x.setFilters({text:'Goblin'});await x.make();assert.equal(x.choice().disabled,false);assert.match(x.el('generation-preview').textContent,/Katalogfilter dieser Vorschau: Name: Goblin/);
  x.setFilters({text:'Dragon'});assert.equal(x.choice().disabled,true);assert.match(x.el('generation-preview').textContent,/Einstellungen geändert/);assert.match(x.el('generation-preview').textContent,/Katalogfilter dieser Vorschau: Name: Goblin/);
- await x.make();assert.equal(x.calls[1].filters.text,'Dragon');assert.equal(x.choice().disabled,false);
+ await x.make();assert.equal(x.calls[1].filters.text,'Dragon');assert.equal(x.choice().disabled,false);x.ui.generationPlanningChanged([{id:'hero',name:'Ada',level:2,count:4}]);assert.equal(x.choice().disabled,true);
 });
 test('missing party and generator failures are explained beside the action, stale errors cannot replace a new workspace',async t=>{
  const x=await fixture(t);x.setParty(false);await x.make();assert.match(x.el('generation-feedback').textContent,/Zur Planungsparty/);assert.equal(x.calls.length,0);

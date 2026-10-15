@@ -16,13 +16,14 @@ let previewRequest=0,refreshRequest=0,tableRequest=0;
 const owned=(token:string,g:number)=>workspace?.token===token&&generation===g;
 const lockedControls=new Map<HTMLInputElement|HTMLButtonElement|HTMLSelectElement,boolean>();
 let tableDraft:EncounterTable|null=null,lootDraft:LootTable|null=null,presetDraft:GeneratorPreset|null=null,tableBaseline='',lootBaseline='',presetBaseline='',generation=0,previewDirty=false;
+let planningBasis:string|null=null;
 let pending:Promise<boolean>|null=null,tell:(text:string,error?:boolean)=>void,bridge:Bridge,discard:()=>void;
 let brush:GeneratorRoleCell='standard',painting=false,paintFrame:number|null=null,paintCells=new Map<string,HTMLButtonElement>();
 let catalogParent:Node|null=null,catalogNext:Node|null=null;const names=new Map<string,string>();
 export function activateGeneration(next:Workspace){
  lock(false);pending=null;clearPaint();workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
- tables=[];lootTables=[];registry=null;run=null;tableDraft=null;lootDraft=null;presetDraft=null;previewDirty=false;
+ tables=[];lootTables=[];registry=null;run=null;tableDraft=null;lootDraft=null;presetDraft=null;previewDirty=false;planningBasis=null;
  for(const id of ['table-manager','loot-table-manager','preset-manager','generation-discard'])if(get<HTMLDialogElement>(id).open)get<HTMLDialogElement>(id).close();
  restoreCatalog();get('generation-workspace').hidden=false;get('generation-feedback').textContent='';renderPreview();void refreshGeneration();
 }
@@ -68,6 +69,7 @@ export function catalogFilterSummary(query:CreatureCatalogQuery):string[]{
  return Object.entries(labels).flatMap(([key,label])=>{const value=query[key as keyof typeof labels],text=Array.isArray(value)?value.join(', '):value===undefined?'':String(value).trim();return text?[label+': '+text]:[];});
 }
 function renderCatalogContext(){const filters=catalogFilterSummary(bridge.filters());get('generation-catalog-summary').textContent=filters.length?'Aktive Katalogfilter: '+filters.join(' · '):'Keine zusätzlichen Katalogfilter.';get('generation-clear-catalog').hidden=!filters.length;}
+export function generationPlanningChanged(party:EncounterPlan['party']|null){const next=JSON.stringify(party);if(planningBasis===next)return;planningBasis=next;get('generation-feedback').textContent='';if(run){previewDirty=true;renderPreview();}}
 export function generationCatalogFiltersChanged(){renderCatalogContext();if(run){previewDirty=true;renderPreview();}}
 function generationNotice(text:string,error=false){const node=get('generation-feedback');node.textContent=text;node.classList.toggle('generation-warning',error);tell(text,error);}
 
@@ -158,7 +160,7 @@ tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required
  ensureLootUI();
  get('encounter-generate').onclick=()=>{get('generation-tables').closest('fieldset')!.scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
- get('generation-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');target.focus({preventScroll:true});};
+ get('generation-plan-open').onclick=()=>{get('generation-feedback').textContent='';get('encounter-builder').scrollIntoView({block:'start'});const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');target.focus({preventScroll:true});};
  get('catalog-tables').onclick=()=>{get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};
  initWorldSourceUI(command,()=>{previewDirty=true;sourceLabel();renderPreview();});
  get('encounter-table-list').oninput=renderSourceActions;get('loot-table-list').oninput=renderSourceActions;renderSourceActions();
