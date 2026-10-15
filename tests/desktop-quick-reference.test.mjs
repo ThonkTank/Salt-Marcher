@@ -50,3 +50,13 @@ test('pinning a reference uses the existing scene owner without changing notes, 
  const x=await fixture(t),scene=x.store.live(x.w.token).scene,progress=x.store.progress(x.w.token),notes=x.store.preparation(x.w.token).notes;x.el('quick-results').querySelector('button').click();await tick();x.el('quick-pin').click();await tick();
  assert.equal(x.store.sceneDesk(x.w.token,scene.id).pins[0].ref.id,x.note.id);assert.match(x.el('quick-pin').textContent,/Vom Szenentisch lösen/);assert.deepEqual(x.store.live(x.w.token).scene.clock,scene.clock);assert.deepEqual(x.store.progress(x.w.token),progress);assert.deepEqual(x.store.preparation(x.w.token).notes,notes);
 });
+
+test('a pending creature index cannot hold back linked terms or their readable targets',async t=>{
+ const x=await fixture(t),held=deferred(),search=x.window.campaign.searchDesk,requests=[],beta=x.store.preparation(x.w.token).notes.find(r=>r.note.title==='Beta').note;
+ x.note.gmNotes='Private prose\r\n[Beta am Tisch](dungeon-ref:note/'+beta.id+')';x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:x.note}));const scene=x.store.live(x.w.token).scene,source=x.store.preparation(x.w.token).notes;
+ x.window.campaign.searchDesk=(token,kind,...args)=>{requests.push(kind);if(kind==='creature')return held.promise;if(kind==='world'||kind==='reference')return search(token,kind,...args);return Promise.resolve({ok:true,value:{entries:[],next:null}});};
+ x.el('quick-kind').value='all';x.el('quick-kind').onchange();x.submit();await tick();await tick();
+ assert.deepEqual(requests,['world','creature','item','encounter','reference'],'each bounded source must be requested without waiting for another source');
+ const references=[...x.el('quick-results').querySelectorAll('section')].find(s=>s.querySelector('h3')?.textContent==='Verknüpfte Begriffe'),alias=references.querySelector('[data-ref-id="'+beta.id+'"]');assert(alias,'the healthy linked target must be available before the creature reply');alias.click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');
+ held.resolve({ok:false,error:'Creature index unavailable'});await tick();assert.match(x.el('quick-results').textContent,/Creature index unavailable/);assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');assert.deepEqual(x.store.live(x.w.token).scene.clock,scene.clock);assert.deepEqual(x.store.preparation(x.w.token).notes,source);
+});

@@ -47,6 +47,14 @@ Fakten sind noch nicht vollständig umgesetzt.
 
 ## Fehlerisolation der vorhandenen Sessionleser
 
+Die Schnellsuche liest ihre fünf begrenzten Quellen unabhängig. Ein ausstehender
+Kreaturindex hält verknüpfte Begriffe und deren Detailansicht nicht zurück; Fehler
+bleiben bei ihrer Quelle sichtbar. Der Abschluss einer Enter-Suche öffnet nur
+dann automatisch den ersten Treffer, wenn inzwischen keine ausdrückliche
+Detailnavigation stattfand. DOM-/Storeprüfung und ein nativer Lauf mit verzögerter,
+dann fehlerhafter Kreaturantwort bestätigen dies einschließlich Tastaturöffnung
+und unveränderter Autorenprosa nach erneutem Öffnen.
+
 `rule-reference-ui.refreshRuleReferences` liest Regelpins und Proben unabhängig.
 Ein langsamer Reader verzögert die gesunde Ansicht nicht. Fehler erscheinen beim
 betroffenen Inhalt; dessen Schreibbasis wird verworfen, die andere bleibt nutzbar.
