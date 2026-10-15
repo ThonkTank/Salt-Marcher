@@ -9,7 +9,7 @@ import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
 
 const npcId=(tail:string)=>campaignLocalId(`00000000-0000-4000-8000-${tail.padStart(12,'0')}`);
-const building=(id:string,name:string):CityUnit=>({id,kind:'building',name,protected:true,position:{x:20,y:20},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],households:[],rooms:[],interior:false});
+const building=(id:string,name:string):CityUnit=>({id,kind:'building',name,protected:true,position:{x:20,y:20},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],households:[],jobs:[],rooms:[],interior:false});
 function fixture(label:string){
  const root=mkdtempSync(join(tmpdir(),label)),store=new CampaignStore(join(root,'campaign.sqlite'),'test'),campaign=store.create('Stadtleben'),workspace=store.activate(campaign.id),location=newLocation('city-place','Hafenstadt','city',['description','notes']),ada=npcId('701'),bert=npcId('702');
  store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});
@@ -62,10 +62,31 @@ test('city households own stable identity and move or dissolve without duplicati
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
+test('city jobs own stable identity and move with their workplace bindings',()=>{
+ const f=fixture('city-jobs-');
+ try{
+  const job={id:'job-a',name:'Bäckerei',workerIds:[f.ada,f.bert]},assigned=f.store.executeCity({commandId:'job',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,workerIds:[f.ada,f.bert],jobs:[job]}],remove:[],label:'Beruf anlegen'}});
+  assert.deepEqual(assigned.units.find(u=>u.id==='home')?.jobs,[job]);
+  assert.throws(()=>f.store.executeCity({commandId:'unprotect-job',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,protected:false}],remove:[],label:'Schutz lösen'}}),/vor Regeneration geschützt/);
+  assert.throws(()=>f.store.executeCity({commandId:'shared-life-id',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,residentIds:[f.ada],households:[{id:job.id,name:'Kollision',memberIds:[f.ada]}]}],remove:[],label:'Kennung doppelt'}}),/Lebensdatenkennung/);
+  assert.throws(()=>f.store.executeCity({commandId:'job-worker-duplicate',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,jobs:[job,{id:'job-b',name:'Doppelter Beruf',workerIds:[f.ada]}]}],remove:[],label:'Doppelter Beruf'}}),/nur einem Stadtberuf/);
+  assert.throws(()=>f.store.executeCity({commandId:'delete-job-home',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[],remove:['home'],label:'Haus löschen'}}),/Berufe.*zuerst verschieben oder auflösen/);
+  const moved=f.store.executeCity({commandId:'move-job',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:assigned.header.revision,action:{kind:'change',upsert:[{...assigned.units.find(u=>u.id==='home')!,workerIds:[],jobs:[]},{...f.shop,workerIds:[f.ada,f.bert],jobs:[job]}],remove:[],label:'Beruf umziehen'}});
+  assert.deepEqual(moved.units.find(u=>u.id==='shop')?.jobs,[job]);
+  assert.deepEqual(moved.units.find(u=>u.id==='home')?.workerIds,[]);
+  const undone=f.store.executeCity({commandId:'undo-job',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:moved.header.revision,action:{kind:'undo'}});
+  assert.deepEqual(undone.units.find(u=>u.id==='home')?.jobs,[job]);
+  const redone=f.store.executeCity({commandId:'redo-job',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:undone.header.revision,action:{kind:'redo'}});
+  const dissolved=f.store.executeCity({commandId:'dissolve-job',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:redone.header.revision,action:{kind:'change',upsert:[{...redone.units.find(u=>u.id==='shop')!,jobs:[]}],remove:[],label:'Beruf auflösen'}});
+  assert.deepEqual(dissolved.units.find(u=>u.id==='shop')?.jobs,[]);
+  assert.deepEqual(dissolved.units.find(u=>u.id==='shop')?.workerIds,[f.ada,f.bert]);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
 test('campaign transfer remaps city resident and workplace references with their World NPC identities',async()=>{
  const f=fixture('city-people-transfer-source-'),targetRoot=mkdtempSync(join(tmpdir(),'city-people-transfer-target-')),target=new CampaignStore(join(targetRoot,'campaign.sqlite'),'test');
  try{
-  f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],workerIds:[f.bert],households:[{id:'household-transfer',name:'Familie Fernweg',memberIds:[f.ada,f.bert]}]}],remove:[],label:'Personen binden'}});
+  f.store.executeCity({commandId:'assign-transfer',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada,f.bert],workerIds:[f.bert],households:[{id:'household-transfer',name:'Familie Fernweg',memberIds:[f.ada,f.bert]}],jobs:[{id:'job-transfer',name:'Bäcker',workerIds:[f.bert]}]}],remove:[],label:'Personen binden'}});
   const snapshot=join(f.root,'campaign.snapshot.sqlite');await f.store.campaignSnapshot(f.workspace.token,snapshot);
   const imported=target.acceptCampaignSnapshot(snapshot,'Übernommene Stadt',{},'city-people-transfer'),opened=target.activate(imported.id),city=target.cities(opened.token).cities[0]!,view=target.city(opened.token,city.id),people=target.cities(opened.token).assignedPeople;
   const home=view.units.find(u=>u.name==='Wohnhaus')!;
@@ -75,5 +96,7 @@ test('campaign transfer remaps city resident and workplace references with their
   assert.deepEqual(people.map(p=>p.name).sort(),['Ada','Bert']);
   assert.notEqual(home.households?.[0]?.id,'household-transfer');
   assert.deepEqual(new Set(home.households?.[0]?.memberIds),new Set(home.residentIds));
+  assert.notEqual(home.jobs?.[0]?.id,'job-transfer');
+  assert.deepEqual(home.jobs?.[0]?.workerIds,home.workerIds);
  }finally{target.close();f.store.close();rmSync(targetRoot,{recursive:true,force:true});rmSync(f.root,{recursive:true,force:true});}
 });
