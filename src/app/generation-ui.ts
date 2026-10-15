@@ -1,6 +1,6 @@
 import {requiredNpcPicker} from './required-npc-picker';
 import {encounterEntryLabel} from './encounter-contracts';
-import {initWorldSourceUI,setWorldSources,worldSourceFilters,worldSourceOpen} from './world-source-ui';
+import {initWorldSourceUI,setWorldSources,worldSourceFilters,worldSourceOpen,openWorldSourceReference} from './world-source-ui';
 import type {Workspace,Result} from './contracts';
 import type {Creature,CreatureCatalogQuery} from '../features/catalog/creature-catalog';
 import type {CatalogInfo,EncounterPlan} from './encounter-contracts';
@@ -32,6 +32,7 @@ export async function flushGeneration(){
  if(pending&&!await pending)return false;if(!owned(w.token,g))return false;finishPaint();
  if(tableDraft&&get<HTMLDialogElement>('table-manager').open&&JSON.stringify(tableDraft)!==tableBaseline||lootDraft&&get<HTMLDialogElement>('loot-table-manager').open&&JSON.stringify(lootDraft)!==lootBaseline||presetDraft&&get<HTMLDialogElement>('preset-manager').open&&JSON.stringify(presetDraft)!==presetBaseline){tell('Speichere oder schließe den offenen Generator-Entwurf zuerst.',true);return false;}return true;
 }
+export async function openGenerationSource(kind:'faction'|'location',id:string){const w=workspace,g=generation;if(!w||!await flushGeneration())return;const [sources,nextTables]=await Promise.all([window.campaign.generationSources(w.token),window.campaign.encounterTables(w.token,true)]);if(!owned(w.token,g))return;setWorldSources(unwrap(sources),unwrap(nextTables));openWorldSourceReference(kind,id);}
 export async function refreshGeneration(){
  const w=workspace,g=generation,request=++refreshRequest;if(!w)return;
  try{const results=await Promise.all([window.campaign.encounterTables(w.token,true),window.campaign.lootTables(w.token,true),window.campaign.generatorRegistry(w.token),window.campaign.generationRuns(w.token),window.campaign.generationSources(w.token)]);

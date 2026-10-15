@@ -1,4 +1,9 @@
 import type {LocationMaterialsQuery,LocationMaterialsPage} from '../location-notebook-contracts';
+import type {CalendarEvent} from '../world-contracts';
+import {createHash} from 'node:crypto';
+import {calendarDate} from '../world-model';
+import {readWorldCalendar} from './world';
+import {readWorldSources} from './world-sources';
 import {deskContent} from './scene-desk';
 import {readNarrative} from './narrative';
 import {readPreparedGroup} from './session';
@@ -11,10 +16,12 @@ function npcAtLocation(db:any,cam:string,id:string,locationId:string){
  return false;
 }
 export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery):LocationMaterialsPage{
- if(!q||!['directory','npc','narrative','group','shop'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
+ if(!q||!['directory','npc','narrative','group','shop','faction','event'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
  const location=q.kind==='directory'?null:locationContent(db,cam,q.locationId!);
  const where="instr(lower(title||char(10)||detail),lower(@text))>0";
  const queries={
+ faction:`SELECT n.id,json_extract(n.payload,'$.title') title,'Fraktion am Ort' detail FROM world_note n WHERE n.campaign_id=@cam AND n.trashed=0 AND json_extract(n.payload,'$.kind')='faction' AND EXISTS(SELECT 1 FROM world_source s,json_each(s.payload,'$.factionIds') f WHERE s.campaign_id=n.campaign_id AND s.kind='location' AND s.id=@location AND f.value=n.id)`,
+ event:`SELECT id,json_extract(payload,'$.name') title,CASE WHEN json_extract(payload,'$.repeatMs') IS NULL THEN 'Einmaliges Ereignis' ELSE 'Wiederkehrendes Ereignis' END detail,json_extract(payload,'$.startMs') startMs FROM world_record WHERE campaign_id=@cam AND kind='calendar-event' AND json_extract(payload,'$.trashed')=0 AND json_extract(payload,'$.locationId')=@location`,
  directory:`SELECT id,json_extract(payload,'$.name') title,CASE json_extract(payload,'$.type') WHEN 'city' THEN 'Stadt' ELSE 'Interessanter Ort' END detail FROM location WHERE campaign_id=@cam AND trashed=0`,
  npc:`SELECT n.id,json_extract(n.payload,'$.title') title,'NSC am Ort' detail FROM world_note n LEFT JOIN npc_position p ON p.campaign_id=n.campaign_id AND p.actor_id=n.id WHERE n.campaign_id=@cam AND n.trashed=0 AND json_extract(n.payload,'$.kind')='npc' AND ${npcAt}`,
  narrative:`SELECT n.id,json_extract(n.payload,'$.title') title,CASE json_extract(s.payload,'$.status') WHEN 'closed' THEN 'Abgeschlossen' ELSE 'Offen' END detail FROM narrative_state s JOIN world_note n ON n.campaign_id=s.campaign_id AND n.id=s.note_id WHERE n.campaign_id=@cam AND n.trashed=0 AND json_extract(s.payload,'$.locationId')=@location`,
@@ -22,12 +29,15 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
  shop:`SELECT s.id,json_extract(s.payload,'$.name') title,'Shop · '||COALESCE(json_extract(n.payload,'$.title'),'Ort') detail FROM shop s LEFT JOIN world_note n ON n.campaign_id=s.campaign_id AND n.id=json_extract(s.payload,'$.owner.id') LEFT JOIN npc_position p ON p.campaign_id=n.campaign_id AND p.actor_id=n.id WHERE s.campaign_id=@cam AND json_extract(s.payload,'$.trashed')=0 AND (json_extract(s.payload,'$.owner.kind')='location' AND json_extract(s.payload,'$.owner.id')=@location OR json_extract(s.payload,'$.owner.kind')='npc' AND n.trashed=0 AND ${npcAt})`
  };
  const rows=db.prepare('SELECT * FROM ('+queries[q.kind]+') WHERE '+where+' ORDER BY title COLLATE NOCASE,id LIMIT 41 OFFSET @offset').all({cam,location:q.locationId,text:q.text,offset:q.offset});
+ const factionSource=q.kind==='faction'?readWorldSources(db,cam).sources.find(entry=>entry.kind==='location'&&entry.id===q.locationId):null,calendar=q.kind==='event'?readWorldCalendar(db,cam):null;
  const item=(r:any)=>{
   if(q.kind==='directory'){const content=locationContent(db,cam,r.id);return{id:r.id,title:content.title,detail:content.location!.type==='city'?'Stadt':'Interessanter Ort',ref:{kind:'location' as const,id:r.id}};}
   if(q.kind==='npc'){const content=deskContent(db,cam,{kind:'note',id:r.id});if(content.unavailable||content.note?.kind!=='npc'||content.note.id!==r.id||!npcAtLocation(db,cam,r.id,q.locationId!))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:'NSC am Ort',ref:{kind:'note' as const,id:r.id}};}
   if(q.kind==='narrative'){const content=deskContent(db,cam,{kind:'note',id:r.id}),view=readNarrative(db,cam,r.id);if(content.unavailable||!['quest','rumor'].includes(content.note?.kind??'')||content.note?.id!==r.id||view.state.noteId!==r.id||view.state.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:view.state.status==='closed'?'Abgeschlossen':'Offen',ref:{kind:'note' as const,id:r.id}};}
   if(q.kind==='group'){const group=readPreparedGroup(db,cam,r.id);if(group.id!==r.id||group.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:group.title,detail:group.actors.length+' Figuren'};}
-  const view=readShop(db,cam,r.id),shop=view.shop;if(shop.id!==r.id||view.unavailable||(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!npcAtLocation(db,cam,shop.owner.id,q.locationId!)))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:shop.name,detail:'Shop · '+view.ownerName};
+  if(q.kind==='shop'){const view=readShop(db,cam,r.id),shop=view.shop;if(shop.id!==r.id||view.unavailable||(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!npcAtLocation(db,cam,shop.owner.id,q.locationId!)))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:shop.name,detail:'Shop · '+view.ownerName};}
+  if(q.kind==='faction'){const content=deskContent(db,cam,{kind:'note',id:r.id});if(content.unavailable||content.note?.kind!=='faction'||content.note.id!==r.id||!factionSource?.factionIds.includes(r.id))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:'Fraktion am Ort',ref:{kind:'note' as const,id:r.id}};}
+  const row=db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,r.id);if(!row||createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Ortsmaterialquelle beschädigt.');const event=JSON.parse(row.payload) as CalendarEvent;if(event.id!==r.id||event.revision!==row.revision||event.locationId!==q.locationId||event.trashed||typeof event.name!=='string'||!event.name.trim())throw new Error('Ortsmaterialquelle beschädigt.');return{id:event.id,title:event.name,detail:(event.repeatMs===null?'Einmaliges Ereignis':'Wiederkehrendes Ereignis')+' · Ab '+calendarDate(calendar!,event.startMs)};
  };
  return{locationRevision:location?.revision??null,next:rows.length>40?q.offset+40:null,items:rows.slice(0,40).map(item)};
 }

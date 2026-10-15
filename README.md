@@ -849,3 +849,8 @@ Der bestehende Ortseditor legt zusätzliche Abschnitte an, benennt sie um und or
 Der Leitungsstand beginnt nun mit einem eigenen Startbriefing für jede fortbestehende Gruppe. Besetzung und Spielzeit, aktuelle Orts- und Wetterlage, Reise und lokale Fristen, kritische Partywerte, offene Weltentscheidungen, laufende Kämpfe oder Verfolgungen, ortsgebundene Aufträge und die vorbereitete Eröffnung stehen in einer aufklappbaren Karte zusammen. Eine knappe Zählung zeigt bereits vor dem Aufklappen, wie viele Punkte geprüft werden sollten; die aktuelle Fokusgruppe ist zuerst geöffnet.
 
 Aus dem Briefing öffnet der GM nach sicherem Fokuswechsel die Ortsmappe oder Partywerte. Ein vorbereiteter Besuch kann den normalen Spielabend direkt mit Eröffnungstext und GM-Mappe beginnen; alternativ bleibt der reine Sitzungsstart verfügbar. Das Briefing liest nur vorhandene Besitzer. Es schreibt weder Party- noch Weltstand, übernimmt keinen Besuch und gibt keinen Text an Spieler frei, bevor der jeweilige bestehende Ablauf ausdrücklich bestätigt wird.
+
+
+### 0.85 – Weltplanung aus der Ortsmappe
+
+Fraktionen und Kalenderfristen stehen jetzt neben NSCs, Aufträgen, Gruppen und Shops in der Ortsmappe. Ortsquellen öffnen direkt die vorhandene Fraktions-/Tabellenzuordnung; Fraktionen führen zu Originalnotizen oder Haltung und Beständen. Neue Fristen übernehmen den gewählten Ort. Die bestehende Agenda zeigt gezielt ein Ereignis oder alle Fristen dieses Ortes, einschließlich vergangener Ereignisse, und führt nach dem Bearbeiten zurück zur Ortsmappe. Gruppenzeit, Reise und Bestände ändern sich nur über ihre eigenen ausdrücklichen Aktionen. Keine neue Datenhaltung oder Schemaänderung.
