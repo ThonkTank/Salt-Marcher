@@ -464,3 +464,9 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 .travel-evaluation-facts>div{min-width:0;padding:.5rem;border:1px solid var(--line,#ccd6df);border-radius:.35rem}
 .travel-evaluation-facts dt{font-size:.85rem;overflow-wrap:anywhere}.travel-evaluation-facts dd{margin:.25rem 0 0;font-weight:600;overflow-wrap:anywhere}
 @media(max-width:600px){.travel-evaluation-facts{grid-template-columns:1fr}}
+
+/* Preserve edit position while an asynchronous day calculation is pending. */
+#day-popover[aria-busy="true"] #day-results{visibility:hidden}
+#day-popover #day-status:empty{display:none}
+#day-popover .day-row label{min-width:0}
+#day-popover .day-row button{align-self:end}

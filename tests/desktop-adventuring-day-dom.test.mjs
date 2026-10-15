@@ -120,3 +120,24 @@ test("unfinished custom rows keep their exact text when another row is added or 
   assert.equal(x.calls.at(-1).rows[0].count, 2);
   assert.match(x.get("summary").textContent, /600 XP Tagesbudget/);
 });
+
+test('mixed-level planning stays independent of live Party warnings and survives popup reopening', async t => {
+ const x=fixture(t);await x.open();
+ const [level,count]=x.get('rows').querySelectorAll('input');x.input(level,'3');x.input(count,'2');x.get('add').onclick();
+ const second=x.get('rows').lastElementChild.querySelectorAll('input');x.input(second[0],'4');x.input(second[1],'2');await settled();
+ assert.match(x.get('source').textContent,/Eigene Planung/);assert.equal(x.get('status').textContent,'');assert.equal(x.get('pacing').hidden,true);assert.equal(x.get('current-details').hidden,true);
+ assert.match(x.get('summary').textContent,/4 Figuren.*5.800 XP Tagesbudget/);assert.match(x.get('summary').textContent,/1.934.*3.867.*5.800/);
+ assert.equal(x.get('rows').querySelector('input').closest('label').textContent,'Level');
+ const children=[...x.get('popover').children];assert.ok(children.indexOf(x.get('rows'))<children.indexOf(x.get('results')));
+ x.get('mode-progress').onclick();x.input(x.get('total-xp'),'5800');x.get('separate-reward').checked=true;x.input(x.get('separate-reward'),'on');x.input(x.get('reward-xp'),'4000');await settled();
+ assert.match(x.get('summary').textContent,/1 volle Tage.*2 kurze \/ 1 lange/);assert.match(x.get('summary').textContent,/1.000 XP je Figur/);
+ x.get('close').onclick();x.get('trigger').onclick();await tick();assert.equal(x.get('total-xp').value,'5800');assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['3','2','4','2']);
+ x.get('active').onclick();await tick();assert.equal(x.get('pacing').hidden,false);assert.equal(x.get('current-details').hidden,false);assert.match(x.get('status').textContent,/Aktuelle Party/);
+});
+
+test('pending calculation retains presentation geometry, and a failed read removes stale answers', async t => {
+ const x=fixture(t);await x.open();const prior=x.get('summary').textContent;
+ let reply;window.campaign.adventuringDay=()=>new Promise(resolve=>{reply=resolve;});
+ x.input(x.get('rows').querySelector('input'),'3');assert.equal(x.get('popover').getAttribute('aria-busy'),'true');assert.equal(x.get('summary').textContent,prior);
+ await settled();reply({ok:false,error:'Lesen unterbrochen'});await tick();assert.equal(x.get('popover').getAttribute('aria-busy'),'false');assert.equal(x.get('summary').children.length,0);assert.match(x.get('status').textContent,/Lesen unterbrochen/);
+});
