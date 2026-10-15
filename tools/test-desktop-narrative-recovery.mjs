@@ -7,7 +7,7 @@ import path from 'node:path';
 const source=process.cwd(),before=process.argv.includes('--before'),guardOnly=process.argv.includes('--guard-only'),phase=before?'before':guardOnly?'guard-only':'after';
 const output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/narrative-recovery-evidence');
 const group=(await readFile('/proc/self/cgroup','utf8')).trim().split('::')[1];
-assert(group?.includes('/codex-dungeon-jobs.slice/codex-dungeon-qa-')&&group.endsWith('.service'),'Run through codex-dungeon-job qa');
+assert(group?.match(/\/codex-dungeon-jobs\.slice\/codex-dungeon-(qa|realist|planner|implementer)-/)&&group.endsWith('.service'),'Run through codex-dungeon-job');
 assert.equal((await readFile('/sys/fs/cgroup'+group+'/memory.max','utf8')).trim(),'4294967296');
 assert.equal((await readFile('/sys/fs/cgroup'+group+'/memory.swap.max','utf8')).trim(),'0');await mkdir(output,{recursive:true});
 const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');
