@@ -19,7 +19,11 @@ export function readCityActivities(db:any,cam:string,q:CityActivityQuery):CityAc
  instr(lower(json_extract(n.payload,'$.title')),lower(@text))>0
  OR EXISTS(SELECT 1 FROM json_each(r.payload,'$.dailyPlan') p WHERE instr(lower(coalesce(json_extract(p.value,'$.activity'),'')||char(10)||coalesce(json_extract(p.value,'$.notes'),'')),lower(@text))>0)
  OR EXISTS(SELECT 1 FROM json_each(r.payload,'$.dailyOverrides') o WHERE instr(lower(coalesce(json_extract(o.value,'$.label'),'')),lower(@text))>0 OR EXISTS(SELECT 1 FROM json_each(o.value,'$.slots') p WHERE instr(lower(coalesce(json_extract(p.value,'$.activity'),'')||char(10)||coalesce(json_extract(p.value,'$.notes'),'')),lower(@text))>0)))
- ORDER BY json_extract(n.payload,'$.title') COLLATE NOCASE,n.id LIMIT 41 OFFSET @offset`).all({cam,city:city.id,unit:q.unitId,text:q.text,offset:q.offset});
+ ORDER BY CASE
+ WHEN @text<>'' AND lower(json_extract(n.payload,'$.title'))=lower(@text) THEN 0
+ WHEN @text<>'' AND instr(lower(json_extract(n.payload,'$.title')),lower(@text))=1 THEN 1
+ WHEN @text<>'' AND instr(lower(json_extract(n.payload,'$.title')),lower(@text))>0 THEN 2
+ ELSE 3 END,json_extract(n.payload,'$.title') COLLATE NOCASE,n.id LIMIT 41 OFFSET @offset`).all({cam,city:city.id,unit:q.unitId,text:q.text,offset:q.offset});
  const rows=ids.slice(0,40).map((row:any)=>{
   const npc=readNpc(db,cam,row.id),places=readNpcPlaces(db,cam,row.id,0),plan=dailyPlanAt(npc.record.dailyPlan,scene.clock.instantMs,calendar.daySeconds,calendar.weekdays.length,npc.record.dailyOverrides);
   const site=(role:'home'|'work'):CityActivitySite|null=>{const s=places.sites.find(s=>s.kind===role);return s&&s.kind!=='dungeon'?{cityId:s.cityId,unitId:s.unitId,title:s.title,detail:s.detail.slice(0,600),available:s.available}:null;},home=site('home'),work=site('work');
