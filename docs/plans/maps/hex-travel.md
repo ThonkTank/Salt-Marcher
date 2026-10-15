@@ -58,6 +58,34 @@ mehr als40Abschnitte, Checkpointfortsetzung, gefälschte Kosten ohne Schreibwirk
 und vollständiges Leeren des transienten Auswertungsstands. Das ersetzt keine
 vollständige Scene-/Mapwechsel-, Latenz- oder native Reiseabnahme.
 
+## Kartenwahl und fehlgeschlagene Speicherung
+
+Die Kartenwahl übernimmt ihr Ziel erst nach erfolgreichem Speichern des bisher
+geöffneten Kartenentwurfs. Währenddessen bleibt der Picker an die tatsächlich
+geöffnete Karte gebunden (`aria-busy` am bestehenden Picker); eine neue Auswahl
+ersetzt die frühere lokale Wechselabsicht. Ein Savefehler lässt Karte,
+Hexeingaben und geordnete Routenstationen beim alten Owner. Nur dessen frühere
+Startvorschau wird sofort ungültig, damit während des Wechsels keine alte
+Auswertung angenommen werden kann. Es wird keine Ersatzkarte angelegt.
+
+`world-ui.selectWorldMap` prüft Workspace-Token und lokale Auswahlgeneration
+nach dem bestehenden `flushWorld`. Nur die aktuelle Absicht übernimmt die
+bestätigte Zielkarte, setzt Auswahl/Cursor/Wegpunkte/Auswertung zurück und
+aktualisiert Kartenfelder, Standort und Transportzustand gemeinsam. Eine späte
+Saveantwort oder ein Kampagnenwechsel darf keine ältere Karte zurückholen.
+Der bestehende Writer und seine Reconciliation behalten allein die
+Speicherautorität; keine Schemaänderung und keine zweite Position.
+
+Store-/DOM-Gegenfälle in `desktop-travel-target-dom.test.mjs` prüfen den
+abgewiesenen Save ohne DBänderung, erhaltene Prosa/Route, erfolgreichen Retry
+mit Speicherung allein auf der alten Karte sowie verzögerte neuere Auswahl und
+Kampagnenwechsel. Für die noch offene vollständige Console-/Centerkomposition
+müssen dieselben Regeln auch für „Karte öffnen“, Ortsmarker, Rücksprung zur
+Gruppe und Providerwechsel gelten: vor Wechsel offenen Owner abschließen,
+Intent nach jedem Await prüfen und transienten Stand erst bei bestätigter
+Übernahme zurücksetzen. Eine spätere echte asynchrone Kartenquelle braucht
+entsprechende Readabnahmen; lokale SQLite-Ergebnisse allein ersetzen sie nicht.
+
 ## Unabhängige Kampagnenkopie
 
 `campaign-data.remapSnapshot` ändert lokale IDs. Die Reise-Umweltbasis enthält

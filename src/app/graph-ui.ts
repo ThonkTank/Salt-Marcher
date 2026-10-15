@@ -1,3 +1,4 @@
+const nodeOrder=new Intl.Collator('de',{numeric:true});
 import {initDungeonBudget,drawDungeonBudget,resetDungeonBudget,hasDungeonBudgetDrafts,confirmDungeonBudget} from './dungeon-budget-ui';
 import type {Workspace,Room,Point} from './contracts';import type {GraphView,GraphAction,GraphDisplay,GraphContentCounts} from './graph-contracts';import {graphDisplay} from './graph-model';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
@@ -44,6 +45,7 @@ async function refresh(){
  data=r.value;draw();return true;
 }
 async function openGraph(){
+ el('graph-connection-result').hidden=true;el('graph-connection-result').textContent='';
  const o=owner(),intent=++openVersion,targetScope=workspace()?.graphPreview?.scopeId??selected()?.scopeId??'';
  const ready=await before();
  if(!owns(o)||intent!==openVersion)throw cancelled;
@@ -57,7 +59,7 @@ const kinds=['danger','encounters','treasure','rewards','curiosities','puzzles',
 function layers(){return kinds.filter(k=>field('graph-layer-'+k).checked);}
 function amount(counts:GraphContentCounts,seconds:number){const selected=layers();const n=selected.reduce((sum,k)=>sum+counts[k],0);return select('graph-amount').value==='density'?n/Math.max(1,seconds/60):n;}
 function symbols(counts:GraphContentCounts){return layers().map(k=>({danger:'⚠',encounters:'E',treasure:'T',rewards:'B',curiosities:'C',puzzles:'P',secrets:'S'}[k])+':'+counts[k]).join(' ');}
-function options(id:string,value:string){const s=select(id);s.replaceChildren();for(const n of display.nodes.filter(n=>n.kind!=='external')){const o=document.createElement('option');o.value=n.id;o.textContent=n.name;s.append(o);}s.value=value||display.nodes[0]?.id||'';}
+function options(id:string,value:string){const s=select(id);s.replaceChildren();for(const n of display.nodes.filter(n=>n.kind!=='external').sort((a,b)=>nodeOrder.compare(a.name,b.name))){const o=document.createElement('option');o.value=n.id;o.textContent=n.name;s.append(o);}s.value=value||display.nodes[0]?.id||'';}
 function draw(){if(!data)return;display=graphDisplay(data,scopeId,select('graph-detail').value as 'rooms'|'routes'|'groups'|'melan',Number(field('graph-pace').value)||30);el('graph-status').textContent=display.nodes.length+' Knoten · '+display.edges.length+' Verbindungen · '+display.decisions+' Verzweigungen · '+display.loops+' Schleifen'+(data.preview?' · geschützte '+(data.preview.phase==='raster'?'Raster':'Graph')+'vorschau':' · bestätigter Dungeon');const currentFrom=select('graph-from').value,currentTo=select('graph-to').value;options('graph-from',currentFrom);options('graph-to',currentTo);const floors=select('graph-floor'),chosen=floors.value;floors.replaceChildren();for(const f of data.geometry.floors.filter(f=>f.scopeId===scopeId)){const o=document.createElement('option');o.value=f.id;o.textContent=f.name+' · '+f.elevation.toFixed(2)+' m';floors.append(o);}floors.value=chosen||data.geometry.floors.find(f=>f.scopeId===scopeId)?.id||'';drawMap();drawSelection();drawIntents();drawDungeonBudget(data);}
 function drawSelection(){const ids=roomIds(),edge=display.edges.find(e=>e.id===edgeId);el('graph-selection').textContent=ids.length?'Auswahl: '+ids.map(id=>data?.geometry.rooms.find(r=>r.id===id)?.name??'Erhaltener Raum').join(' · ')+(edge?' | '+edge.kind+' · '+edge.seconds+' s · '+edge.distanceMeters.toFixed(1)+' m':''):'Knoten anklicken; Shift erweitert die Auswahl. Ziehen verschiebt die Anordnung in 5-Fuß-Schritten.';for(const id of ['graph-duplicate','graph-hide','graph-move','graph-key'])el<HTMLButtonElement>(id).disabled=!ids.length;}
 function drawIntents(){const list=el('graph-intents');list.replaceChildren();for(const intent of data?.layout.intents??[]){const card=document.createElement('fieldset'),title=document.createElement('legend'),message=document.createElement('p'),from=document.createElement('select'),to=document.createElement('select'),resolve=document.createElement('button');title.textContent=intent.name;message.textContent=intent.problem||'Verbindung geplant; noch keine konkrete Öffnung übernommen.';for(const room of data!.geometry.rooms.filter(r=>r.scopeId===scopeId)){for(const s of [from,to]){const o=document.createElement('option');o.value=room.id;o.textContent=room.number+'. '+room.name;s.append(o);}}from.value=intent.fromRoomId??'';to.value=intent.toRoomId??'';resolve.textContent='Mit diesen Endräumen übersetzen';resolve.onclick=()=>run(()=>command({kind:'resolve',intentId:intent.id,fromRoomId:from.value,toRoomId:to.value}));card.append(title,message,'Von ',from,' nach ',to,resolve);list.append(card);}}
@@ -111,14 +113,23 @@ export function initGraph(status:typeof tell,w:typeof workspace,r:typeof selecte
  el('graph-move').onclick=()=>run(()=>command({kind:'graph-move',roomIds:roomIds(),dxSteps:Number(field('graph-dx').value),dySteps:Number(field('graph-dy').value)}));
  el('graph-duplicate').onclick=()=>run(()=>command({kind:'graph-duplicate',roomIds:roomIds(),dxSteps:Number(field('graph-dx').value),dySteps:Number(field('graph-dy').value)}));
  el('graph-hide').onclick=()=>run(()=>command({kind:'graph-hide',roomIds:roomIds()}));
+ const connectionResult=el('graph-connection-result');
+ const clearConnectionResult=()=>{connectionResult.textContent='';connectionResult.hidden=true;};
+ for(const id of ['graph-from','graph-to','graph-form','graph-connection-name'])el(id).addEventListener('input',clearConnectionResult);
  el('graph-connect').onclick=()=>run(async()=>{
+  clearConnectionResult();
   const a=display.nodes.find(n=>n.id===select('graph-from').value),b=display.nodes.find(n=>n.id===select('graph-to').value);
-  if(!a||!b||a.id===b.id)throw new Error('Zwei unterschiedliche Knoten wählen.');
-  await command({kind:'connect',intent:{
-   id:uuid(),fromRoomId:a.kind==='room'?a.roomIds[0]??null:null,toRoomId:b.kind==='room'?b.roomIds[0]??null:null,
+  if(!a||!b||a.id===b.id){connectionResult.textContent='Zwei unterschiedliche Räume oder Gruppen wählen.';connectionResult.hidden=false;return;}
+  const id=uuid(),view=await command({kind:'connect',intent:{
+   id,fromRoomId:a.kind==='room'?a.roomIds[0]??null:null,toRoomId:b.kind==='room'?b.roomIds[0]??null:null,
    fromGroupId:a.kind==='group'?a.id.slice(6):null,toGroupId:b.kind==='group'?b.id.slice(6):null,
    form:select('graph-form').value as import('./path-contracts').ConnectionForm,name:field('graph-connection-name').value||'Graphverbindung',problem:''
   }});
+  const unresolved=view.layout.intents.find(i=>i.id===id);
+  connectionResult.textContent=unresolved
+   ? 'Noch nicht verbunden: '+unresolved.problem
+   : a.name+' ↔ '+b.name+': in der geschützten Vorschau verbunden. Zur Rastervorschau wechseln, prüfen und übernehmen.';
+  connectionResult.hidden=false;
  });
  el('graph-reroute').onclick=()=>run(()=>command({kind:'reroute'}));
  el('graph-key').onclick=()=>{if(!canLeave())return;const id=roomIds()[0];if(!id)return;el<HTMLDialogElement>('graph-dialog').close();void navigate(id);};

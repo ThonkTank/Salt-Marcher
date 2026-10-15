@@ -7,7 +7,7 @@ import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
-for(const [name,entry] of [['store','storage/store'],['ui','key-ui'],['camera','room-camera'],['key-model','key-model'],['key-contracts','key-contracts']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/room-authoring-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+for(const [name,entry] of [['store','storage/store'],['ui','key-ui'],['graph-ui','graph-ui'],['camera','room-camera'],['key-model','key-model'],['key-contracts','key-contracts']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/room-authoring-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/room-authoring-store.cjs');
 const tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let i=0;i<120;i++){if(check())return;await tick();}assert.ok(check(),'UI state did not arrive');}
@@ -50,3 +50,56 @@ for(const action of ['remove block','reorder blocks','change block kind','remove
 test('floor overview includes separate room extents and large sparse contours without changing source geometry',()=>{const{roomCameraBox}=require('../.build/room-authoring-camera.cjs');const rooms=[room('a',0,0),room('b',15,0)],before=structuredClone(rooms);const[x,y,w,h]=roomCameraBox(rooms).split(' ').map(Number);assert.ok(x<0&&x+w>21&&y<0&&y+h>4.572);assert.deepEqual(rooms,before);assert.equal(roomCameraBox([]),null);const large={polygons:[{outer:Array.from({length:150000},(_,i)=>({x:i,y:i%3})),holes:[]}]};assert.ok(roomCameraBox([large]).split(' ').every(n=>Number.isFinite(Number(n))));});
 
 test('a new empty room contributes no invented GM heading to the live key',t=>{const x=setup(t),w=x.store.addRoom(x.workspace.token),r=w.rooms.find(r=>r.id===w.selectedId),{renderDungeonKey}=require('../.build/room-authoring-key-model.cjs');assert.equal(r.sections[0].markdown,'');const text=renderDungeonKey(r,[],x.store.dungeon(w.token),{audience:'gm',discovered:new Set()}).text;assert.doesNotMatch(text,/## Beschreibung/);});
+
+test('ordinary new rooms have a standard shell and undo removes the whole creation',t=>{
+ const x=setup(t),w=x.store.addRoom(x.workspace.token),id=w.selectedId;
+ const volume=x.store.drawing(w.token).volumes.find(v=>v.roomId===id);
+ assert.ok(volume);assert.equal(volume.columns.length,12);
+ assert.ok(volume.columns.every(c=>c.spans.every(s=>s.height===2&&s.floor&&s.ceiling)));
+ const undone=x.store.history(w.token,'undo');assert.equal(undone.rooms.length,0);assert.equal(x.store.drawing(w.token).volumes.length,0);
+ x.store.history(w.token,'redo');assert.equal(x.store.workspace().rooms[0].id,id);assert.deepEqual({...x.store.drawing(w.token).volumes[0],revision:0},volume);
+ const reopened=new CampaignStore(x.filename);try{const fresh=reopened.activate(x.campaign.id);assert.equal(fresh.rooms[0].id,id);assert.deepEqual({...reopened.drawing(fresh.token).volumes[0],revision:0},volume);}finally{reopened.close();}
+});
+test('connecting existing contours previews complete rooms and a route without changing confirmed truth',t=>{
+ const a=room('a',0,0),b=room('b',12.192,0),x=setup(t,[a,b]),token=x.workspace.token;
+ const run=action=>x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',action});
+ const connect=()=>run({kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'b',fromGroupId:null,toGroupId:null,form:'corridor',name:'Fährkeller-Verbindung',problem:''}});
+ let result=connect();assert.equal(result.view.layout.intents.length,0);assert.equal(result.view.geometry.drawing.paths.length,1);
+ assert.ok(['a','b'].every(id=>result.view.geometry.drawing.volumes.some(v=>v.roomId===id)));
+ assert.equal(x.store.db.prepare('SELECT count(*) n FROM dungeon_volume').get().n,0);
+ assert.deepEqual(result.workspace.rooms.filter(r=>['a','b'].includes(r.id)).map(r=>r.sections),[a.sections,b.sections]);
+ run({kind:'restore'});assert.equal(x.store.drawing(token).volumes.length,0);assert.deepEqual(x.store.workspace().rooms,[a,b]);
+ result=connect();run({kind:'raster'});run({kind:'accept'});
+ assert.equal(x.store.drawing(token).paths.length,1);assert.equal(x.store.drawing(token).volumes.length,3);
+ x.store.history(token,'undo');assert.equal(x.store.drawing(token).volumes.length,0);assert.deepEqual(x.store.workspace().rooms.map(r=>({...r,revision:0})),[a,b]);
+ x.store.history(token,'redo');assert.equal(x.store.drawing(token).paths.length,1);
+});
+test('a rejected self connection leaves no partially initialized room in its preview',t=>{
+ const a=room('a',0,0),x=setup(t,[a]),token=x.workspace.token;
+ const result=x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',action:{kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'a',fromGroupId:null,toGroupId:null,form:'corridor',name:'Rejected',problem:''}}});
+ assert.ok(result.view.layout.intents[0].problem);assert.equal(result.view.geometry.drawing.volumes.length,0);assert.deepEqual(result.workspace.rooms,[a]);
+});
+test('connection feedback distinguishes translated, changed and rejected endpoints beside the action',async t=>{
+ const a=room('a',0,0),b=room('b',12.192,0),x=setup(t,[a,b]),prior={document:globalThis.document,window:globalThis.window};
+ const{document,window}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{document,window});
+ for(const d of document.querySelectorAll('dialog')){d.open=false;d.showModal=()=>{d.open=true;};d.close=()=>{d.open=false;};}
+ Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.querySelector('option[selected]')?.value??this.querySelector('option')?.value??'';},set(v){for(const o of this.querySelectorAll('option'))o.toggleAttribute('selected',o.value===String(v));}});
+ const el=id=>document.getElementById(id),ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
+ window.campaign={graph:async(token,scope)=>ok(()=>x.store.graph(token,scope)),executeGraph:async c=>ok(()=>x.store.executeGraph(c))};
+ const file=require.resolve('../.build/room-authoring-graph-ui.cjs');delete require.cache[file];const ui=require(file);
+ ui.initGraph(()=>{},()=>x.workspace,()=>x.workspace.rooms.find(r=>r.id===x.workspace.selectedId),async()=>true,async w=>{x.workspace=w;},()=>{},async()=>{});
+ t.after(()=>{ui.activateGraph();Object.assign(globalThis,prior);});
+ ui.activateGraph();el('graph-open').onclick();await until(()=>el('graph-dialog').open);
+ el('graph-from').value='a';el('graph-to').value='b';el('graph-connect').onclick();assert.equal(await ui.flushGraph(),true);
+ assert.equal(el('graph-connection-result').hidden,false);assert.match(el('graph-connection-result').textContent,/a.*b.*Vorschau verbunden/);
+ assert.equal(x.store.db.prepare('SELECT count(*) n FROM dungeon_path').get().n,0);
+ el('graph-to').dispatchEvent(new window.Event('input'));assert.equal(el('graph-connection-result').hidden,true);
+ el('graph-to').value='a';el('graph-connect').onclick();assert.equal(await ui.flushGraph(),true);
+ assert.match(el('graph-connection-result').textContent,/Zwei unterschiedliche/);
+ assert.equal(x.store.graph(x.workspace.token,'vault').geometry.drawing.paths.length,1);
+ ui.activateGraph();
+});
+test('map room numbers remain in reading order once connections reach two digits',t=>{
+ const seeds=['10','2','1'].map((number,i)=>({...room('room-'+number,i*12.192,0),number})),x=setup(t,seeds);
+ assert.deepEqual(x.workspace.rooms.map(r=>r.number),['1','2','10']);
+});
