@@ -48,8 +48,14 @@ Die geänderte Abfahrt wurde mehrfach nachgezogen, die unterbrochene Notiz
 blieb erhalten. Zum Schreiben musste die lesende Mappe geschlossen werden;
 beim Wiederöffnen begann sie beim ersten Besuch und hatte eine andere Auswahl
 als der Editor. Das sind Bedienkosten, kein belegter Datenverlust. Der Tester
-leitete aus Mappe und manuellen Notizen, ohne native LiveSession. RESUME läuft
-im selben Chat; der vollständige Fall bleibt offen.
+leitete aus Mappe und manuellen Notizen, ohne native LiveSession. Auch RESUME
+ist abgeschlossen: geänderte Abfahrt, Gruppenort, Gegenstände, Notiz und
+Geheimnisgrenzen waren nach Fresh erhalten. Nach der letzten Ergänzung gab
+es sichtbare Speicherbestätigung und normalen Close, keinen zusätzlichen
+Fresh-Nachweis genau dieser Ergänzung. Der terminale Originalrun und ein
+passender Abschlussframe wurden geprüft; der fertige Chat ist archiviert.
+Nicht eingegebene aktuelle Uhrzeit und Reisezeiten bleiben ausdrücklich
+unbekannt. Dies ist keine native LiveSession-/Weltzeit- oder Gesamtproduktabnahme.
 
 Ein optionaler weiterer Markdown-Export wurde automatisch abgelehnt, weil
 „GM-Unterlagen ausschließlich innerhalb“ als Exportverbot ausgelegt wurde.
@@ -62,9 +68,11 @@ Ein frischer Original-Obsidian-Vergleich ist technisch vorbereitet. Der frühere
 erfolgreiche native UI-/Save-/Fresh-Pilot und unveränderte Programm-/Ressourcen-
 hashes sind vorhanden. Die Trialreservierung wurde wegen der belegten
 Kapazität abgewiesen; die Leitung legte versehentlich trotzdem den technischen
-Vorbereitungschat an. Dieser bleibt unreserviert, ohne Szenario oder GUI-Start,
-bis eine reguläre Reservierung nach Abschluss des aktuellen Trials gelingt.
-Keine Kapazitätsumgehung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
+Vorbereitungschat an. Nach tatsächlichem Abschluss des nativen Falls gelang
+die reguläre Reservierung für genau diesen vorhandenen frischen Chat.
+Er wartet noch ohne Szenario oder GUI-Start auf den freien QA-Slot und START;
+die begrenzte Ursachenuntersuchung hat momentan Vorrang. Keine manuelle
+Kapazitätsänderung und kein Ersatzchat. Der Cloud-Browserpilot bleibt
 mangels auflösbarer Gesprächs-ID unbestätigt.
 
 Rabenfurt braucht noch eigene praktische Konkurrenz- und einfachste
