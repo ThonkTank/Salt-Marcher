@@ -4,7 +4,6 @@ import {checkedHealth,type FinishRewards,type CombatReward,type CharacterHealth,
 import type { Creature } from '../features/catalog/creature-catalog';
 import type { EncounterAssessment, EncounterParty } from './encounter-contracts';
 export const combatConditions=[['Blind','Blinded'],['Bezaubert','Charmed'],['Taub','Deafened'],['Verängstigt','Frightened'],['Gepackt','Grappled'],['Handlungsunfähig','Incapacitated'],['Unsichtbar','Invisible'],['Gelähmt','Paralyzed'],['Versteinert','Petrified'],['Vergiftet','Poisoned'],['Liegend','Prone'],['Festgesetzt','Restrained'],['Betäubt','Stunned'],['Bewusstlos','Unconscious']] as const;
-const conditionParts=(text:string)=>text.split(/\s*[,;\n]\s*/).map(part=>part.trim()).filter(Boolean);
 export interface Combatant {role?:import('./npc-contracts').NpcRole;
   id: string; characterId: string | null; groupId: string; name: string;
   initiative: number; initiativeBonus: number; armorClass: number;
