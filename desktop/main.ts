@@ -127,7 +127,15 @@ else {
     handle('campaign:execute-scene-check',(command:SceneCheckCommand)=>store.executeSceneCheck(command));
     handle('campaign:location-materials',(token:string,q:import('../src/app/location-notebook-contracts').LocationMaterialsQuery)=>store.locationMaterials(token,q));
     handle('campaign:world-links',(token:string,q:import('../src/app/world-links-contracts').WorldLinksQuery)=>store.worldLinks(token,q));
+    handle('campaign:change-preparation-content',(command:PreparationCommand)=>store.changePreparationContent(command));
+    handle('campaign:reconcile-preparation-content',(command:PreparationCommand,token:string)=>store.reconcilePreparationContent(command,token));
+    handle('campaign:execute-world-relation-pair',(command:import('../src/app/world-relation-pair-contracts').WorldRelationPairCommand)=>store.executeWorldRelationPair(command));
+    handle('campaign:reconcile-world-relation-pair',(command:import('../src/app/world-relation-pair-contracts').WorldRelationPairCommand,token:string)=>store.reconcileWorldRelationPair(command,token));
+    handle('campaign:world-relation-pair-draft',(token:string,sourceId:string)=>store.worldRelationPairDraft(token,sourceId));
+    handle('campaign:keep-world-relation-pair-draft',(token:string,draft:import('../src/app/world-relation-pair-contracts').WorldRelationPairDraft,expected:string|null)=>store.keepWorldRelationPairDraft(token,draft,expected));
+    handle('campaign:discard-world-relation-pair-draft',(token:string,sourceId:string,writeId:string)=>store.discardWorldRelationPairDraft(token,sourceId,writeId));
     handle('campaign:npc-cast',(token:string,q:import('../src/app/npc-cast-contracts').NpcCastQuery)=>store.npcCast(token,q));
+    handle('campaign:npc-building-choices',(token:string,id:string,q:import('../src/app/npc-places-contracts').NpcBuildingQuery)=>store.npcBuildingChoices(token,id,q));
     handle('campaign:npc-places',(token:string,id:string,offset:number)=>store.npcPlaces(token,id,offset));
     handle('campaign:npc-dossier',(token:string,sceneId:string,id:string)=>store.npcDossier(token,sceneId,id));
     handle('campaign:npc-drafts',(token:string)=>store.npcDrafts(token));

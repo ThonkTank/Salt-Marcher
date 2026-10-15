@@ -23,8 +23,8 @@ async function fixture(t){
  window.HTMLSelectElement.prototype.add=function(o){this.append(o);};window.HTMLElement.prototype.scrollIntoView=()=>{};window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};window.HTMLElement.prototype.setSelectionRange=function(start,end){this.selectionStart=start;this.selectionEnd=end;};
  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
  const messages=[],writes=[],wrap=f=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:e.message};}};
- window.campaign={};for(const method of ['preparation','preparationDraft','keepPreparationDrafts','discardPreparationDraft','selectPreparation','reconcilePreparation','worldLinks','deskContent','searchDesk','live','session','progress','encounterTables','sessionRuns','generationSources','npcs'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
- window.campaign.changePreparation=async c=>{writes.push(c);return wrap(()=>store.changePreparation(c));};
+ window.campaign={};for(const method of ['preparation','preparationDraft','keepPreparationDrafts','keepDeskDraft','discardPreparationDraft','selectPreparation','reconcilePreparation','reconcilePreparationContent','worldLinks','deskContent','searchDesk','worldRelationPairDraft','keepWorldRelationPairDraft','discardWorldRelationPairDraft','reconcileWorldRelationPair','executeWorldRelationPair','live','session','progress','encounterTables','sessionRuns','generationSources','npcs'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
+ window.campaign.changePreparation=async c=>{writes.push(c);return wrap(()=>store.changePreparation(c));};window.campaign.changePreparationContent=async c=>{writes.push(c);return wrap(()=>store.changePreparationContent(c));};
  const file=require.resolve('../'+base+'/ui.cjs');delete require.cache[file];const ui=require(file);ui.initPreparation((text,error)=>messages.push({text,error}),async()=>{});
  let owner=workspace;const graph=new ui.WorldLinksWorkbench(()=>owner,()=>ui.leavePreparation(),text=>messages.push({text}),async(ref,current)=>ui.openPreparedNote(ref.id,current));
  for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
@@ -32,11 +32,11 @@ async function fixture(t){
  t.after(async()=>{graph.reset();await settle();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});
  return{store,workspace,campaign,ids,original,command,ui,graph,el,window,messages,writes,draft,setOwner:w=>owner=w,activate:()=>ui.activatePreparation(workspace)};
 }
-test('a legacy relationship draft opens through the graph in the canonical editor and publishes exactly once',async t=>{
+test('a legacy relationship draft resumes in the graph and publishes exactly once',async t=>{
  const x=await fixture(t),draft=x.draft();x.store.keepPreparationDrafts(x.workspace.token,[draft]);await x.activate();
- await x.graph.open({kind:'note',id:x.ids.borin});[...x.el('world-links-inspector').querySelectorAll('button')].find(b=>b.textContent==='Quelle und Beziehungen bearbeiten…').click();await settle();
- assert.equal(x.el('note-title').value,'Borin');assert.equal(x.el('note-read-aloud').value,draft.change.note.readAloud);assert.equal(x.el('note-gm').value,draft.change.note.gmNotes);assert.match(x.el('note-relations').textContent,/vertraut/);assert.equal(x.writes.length,0);
- assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.writes.length,1);const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.equal(saved.readAloud,draft.change.note.readAloud);assert.deepEqual(saved.relations,draft.change.note.relations);assert.equal(x.store.preparationDraft(x.workspace.token,'note',x.ids.borin),null);
+ await x.graph.open({kind:'note',id:x.ids.borin});assert.equal(x.el('world-link-label').value,'  vertraut  ');assert.match(x.el('world-links-inspector').textContent,/Gesicherter Beziehungsentwurf/);assert.equal(x.writes.length,0);
+ [...x.el('world-links-inspector').querySelectorAll('button')].find(b=>b.textContent==='Beziehung übernehmen').click();await settle();
+ assert.equal(x.writes.length,1);const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.equal(saved.readAloud,draft.change.note.readAloud);assert.equal(saved.gmNotes,draft.change.note.gmNotes);assert.deepEqual(saved.relations,draft.change.note.relations);assert.equal(x.store.preparationDraft(x.workspace.token,'note',x.ids.borin),null);
 });
 test('an unapplied legacy relationship command is reconciled before a fresh explicit save',async t=>{
  const x=await fixture(t),draft=x.draft(true);x.store.keepPreparationDrafts(x.workspace.token,[draft]);x.store.selectPreparation(x.workspace.token,{noteId:x.ids.borin,planId:null,sceneId:null});await x.activate();assert.equal(await x.ui.flushPreparation(),false);assert.equal(x.writes.length,0);

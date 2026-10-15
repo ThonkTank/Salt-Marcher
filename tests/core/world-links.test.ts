@@ -20,7 +20,7 @@ async function fixture(t:TestContext){
  function Option(text='',value=''){const o=document.createElement('option');o.textContent=text;o.value=value;return o;}
  window.HTMLSelectElement.prototype.add=function(o:HTMLOptionElement){this.append(o);};const values=new WeakMap<object,string>();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return values.get(this)??this.querySelector('option')?.value??'';},set(v:string){values.set(this,v);},configurable:true});Object.assign(globalThis,{document,window,Option});
  const wrap=(f:()=>any)=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:(e as Error).message};}};
- window.campaign={worldLinks:async(token,q)=>wrap(()=>store.worldLinks(token,q)),deskContent:async(token,ref)=>wrap(()=>store.deskContent(token,ref))} as typeof window.campaign;
+ window.campaign={worldLinks:async(token,q)=>wrap(()=>store.worldLinks(token,q)),deskContent:async(token,ref)=>wrap(()=>store.deskContent(token,ref)),searchDesk:async(token,scope,text,offset)=>wrap(()=>store.searchDesk(token,scope,text,offset)),preparationDraft:async(token,kind,id)=>wrap(()=>store.preparationDraft(token,kind,id)),worldRelationPairDraft:async(token,id)=>wrap(()=>store.worldRelationPairDraft(token,id))} as typeof window.campaign;
  const x={owner:workspace as typeof workspace|null,drain:async()=>true,sourceDrain:async()=>{},edits:[] as WorldLinkRef[],messages:[] as string[]};
  const ui=new WorldLinksWorkbench(()=>x.owner,()=>x.drain(),s=>x.messages.push(s),async(ref,current=()=>true)=>{await x.sourceDrain();if(current())x.edits.push(ref);}),dialog=document.getElementById('world-links') as HTMLDialogElement;
  Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};
@@ -30,7 +30,7 @@ async function fixture(t:TestContext){
 }
 test('connection exploration shows authored prose and delegates all edits without database writes',async t=>{
  const f=await fixture(t),db=(f.store as unknown as {db:any}).db,before=db.serialize();assert.equal(f.el('inspector').querySelector('pre')?.textContent,'  Ada spricht\r\n');
- const old=f.button('Quelle und Beziehungen bearbeiten…'),oldNode=f.el('map').querySelector('[data-world-link-node]')!;f.el('list').querySelector<HTMLButtonElement>(`[data-world-ref="note:${f.borin}"]`)!.click();await settle();assert.equal(f.el('inspector').querySelector('h3')?.textContent,'Borin');
+ const old=f.button('Quelle und Beziehungen bearbeiten…'),oldNode=f.el('map').querySelector('[data-world-link-node]')!;f.el('list').querySelector<HTMLButtonElement>(`[data-world-ref="note:${f.borin}"]`)!.click();await settle();assert.match(f.el('inspector').textContent!,/^Borin/);
  old.onclick?.(new f.window.Event('click') as any);oldNode.dispatchEvent(new f.window.Event('click'));await settle();assert.equal(f.el('inspector').querySelector('h3')?.textContent,'Borin');assert.deepEqual(f.x.edits,[]);
  f.button('Quelle und Beziehungen bearbeiten…').click();await settle();assert.deepEqual(f.x.edits,[{kind:'note',id:f.borin}]);assert.ok(db.serialize().equals(before));assert.equal(f.dialog.open,false);
 });
@@ -38,7 +38,7 @@ test('an older connection read cannot repopulate a newer empty search',async t=>
  const f=await fixture(t),read=f.window.campaign.deskContent;let release!:()=>void;
  f.window.campaign.deskContent=async(...args)=>{const result=await read(...args);return new Promise(r=>release=()=>r(result));};
  f.el('list').querySelector<HTMLButtonElement>(`[data-world-ref="note:${f.borin}"]`)!.click();await settle();assert.ok(release);
- (f.el('search') as HTMLInputElement).value='kein Treffer';f.el('search').dispatchEvent(new f.window.Event('change'));await settle();release();await settle();
+ (f.el('search') as HTMLInputElement).value='kein Treffer';f.el('search').dispatchEvent(new f.window.Event('change'));await settle();release();await settle();assert.match(f.el('inspector').textContent!,/gesucht/);await new Promise(r=>setTimeout(r,230));
  assert.match(f.el('inspector').textContent!,/Keine Inhalte/);assert.ok(!f.el('inspector').querySelector('button'));assert.ok(!f.el('map').querySelector('[data-world-link-node]'));
 });
 test('reset cancels an opening still waiting for pending source edits',async t=>{
@@ -72,8 +72,8 @@ test('typing a new connection search immediately clears old actions and invalida
  const f=await fixture(t),old=f.button('Quelle und Beziehungen bearbeiten…'),read=f.window.campaign.worldLinks;let release!:()=>void;
  f.window.campaign.worldLinks=async(...args)=>{const result=await read(...args);return new Promise(r=>release=()=>r(result));};
  (f.el('search') as HTMLInputElement).value='kein Treffer';f.el('search').dispatchEvent(new f.window.Event('input'));
- assert.equal(f.el('list').textContent,'');assert.equal(f.el('inspector').textContent,'');old.onclick?.(new f.window.Event('click') as any);assert.deepEqual(f.x.edits,[]);
- await settle();release();await settle();assert.match(f.el('inspector').textContent!,/Keine Inhalte/);
+ assert.equal(f.el('list').textContent,'');assert.match(f.el('inspector').textContent!,/gesucht/);old.onclick?.(new f.window.Event('click') as any);assert.deepEqual(f.x.edits,[]);
+ await new Promise(r=>setTimeout(r,230));release();await settle();assert.match(f.el('inspector').textContent!,/Keine Inhalte/);
  for(const id of ['search','kind'])assert.ok(f.el(id).parentElement?.tagName==='LABEL');
 });
 

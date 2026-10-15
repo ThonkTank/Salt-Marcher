@@ -12,6 +12,12 @@ Fäden und laufende Szenen. Partywerte, Agenda, Ortsmappe und Besuchsmappe öffn
 ihre bestehenden Werkzeuge. Fehlende Quellen bleiben ausdrücklich ungeprüft;
 eine gesunde Eröffnung bleibt bei einer anderen fehlenden Quelle nutzbar.
 Der Spielabendabschluss behält seine eigene Laufstandprüfung.
+„Beenden + Einstieg vorbereiten…“ speichert zuerst Rückblick und Übergabe als
+bestätigten Abschluss. Erst danach öffnet es dieselbe Einstiegsvorbereitung mit
+dem gerade bestätigten Wortlaut, dem aktuellen Gruppenort, den offenen örtlichen
+Fäden und dem nächsten Planbesuch. Abbrechen im zweiten Dialog lässt den
+Abschluss bestehen und legt keinen Besuch an. Fehlen optionale Startquellen,
+bleibt der Abschluss möglich und die Mappe startet mit der bekannten Basis.
 
 Ohne nächsten übernommenen Besuch hat der sichtbar gewählte Plan Vorrang.
 Danach werden Vorlagen bis zum ersten offenen Besuch geprüft; ein Vorschlag
