@@ -865,3 +865,9 @@ Jeder Aktionsblock trägt die bestätigte Quellenkennung aus dem Paket statt Tit
 ### 0.88 – Material direkt am Ort anlegen
 
 Die Ortsmappe legt benannte NSCs, Aufträge, Gerüchte und Shops für den ausgewählten Ort an und öffnet danach ihren bestehenden Fachbereich. NSCs erhalten dieselbe Weltidentität im Profil und an ihrem Ort. Aufträge und Gerüchte starten offen mit Ortsbindung und ohne Belohnung; Shops gehören dem gewählten Ort und starten ohne Waren. Ein Rückweg führt zur ursprünglichen Ortsmappe. Alle Änderungen verwenden die vorhandenen Autoren-, Entwurfs- und Bestätigungswege; keine neue Datenhaltung und keine Änderung von Gruppenzeit, XP, Beute oder Verkäufen.
+
+### Desktopstand 0.89: Regie und Chronik direkt aus der Mappe
+
+Jeder Besuch der angedockten GM-Mappe besitzt nun eine offene Ablaufleiste für seine Eröffnung, Hinweise, Quellen, Begegnungen, Statblocks und Belohnungen. Auch lange Besuche springen damit ohne Scrollsuche zum gewünschten Abschnitt; die Ablaufleiste bleibt beim Lesen oben erreichbar.
+
+Jeder Mappenblock kann außerdem als Chronikmoment vorgemerkt werden. Die Mappe öffnet dafür die vorhandene Momentaufnahme neben sich, übernimmt Kategorie, Überschrift und einen begrenzten Textauszug und bewahrt eine bereits begonnene Eingabe. Erst der GM ergänzt den tatsächlichen Ausgang und speichert ausdrücklich. Dadurch entstehen weder automatisch Chronikeinträge noch Quests oder Gerüchte, und vollständige Statblocks werden nicht unbemerkt in die Chronik kopiert.
