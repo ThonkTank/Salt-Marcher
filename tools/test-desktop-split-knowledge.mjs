@@ -1,4 +1,4 @@
-import {assertDungeonJobBudget} from './dungeon-job-budget.mjs';
+import {currentProcessGroup} from './process-group.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 const snapshot=process.cwd(),before=process.argv.includes('--before'),phase=before?'before':'after';
 const output=process.env.QA_EVIDENCE_DIR??path.join(snapshot,'.build/split-knowledge-evidence');
-const group=await assertDungeonJobBudget();
+const group=await currentProcessGroup();
 await mkdir(output,{recursive:true});
 const require=createRequire(snapshot+'/package.json'),{_electron}=require('playwright-core');
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/split-native-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});

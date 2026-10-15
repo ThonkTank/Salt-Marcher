@@ -1,4 +1,4 @@
-import {assertDungeonJobBudget} from './dungeon-job-budget.mjs';
+import {currentProcessGroup} from './process-group.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -6,7 +6,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const source=process.cwd(),before=process.argv.includes('--before'),layoutBefore=process.argv.includes('--layout-before'),phase=before?'before':layoutBefore?'layout-before':'after',mode=process.argv.includes('--combat')?'combat':process.argv.includes('--chase')?'chase':'scene',output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/player-scene-privacy-evidence');
-const group=await assertDungeonJobBudget();await mkdir(output,{recursive:true});
+const group=await currentProcessGroup();await mkdir(output,{recursive:true});
 const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {newLocation} from './src/features/location/location-schema';",resolveDir:source,sourcefile:'player-native-visual.ts',loader:'ts'},outfile:'.build/desktop/player-scene-privacy-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore,newLocation}=require(source+'/.build/desktop/player-scene-privacy-store.cjs');
 const profile=await mkdtemp('/tmp/gm-player-scene-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Getrennte Spieler- und GM-Texte'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
 const character=store.executeLive(command({kind:'create-character',profile:{name:'Ada'}})).character;

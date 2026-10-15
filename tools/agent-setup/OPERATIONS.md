@@ -1,14 +1,14 @@
 # Vorhandenen nativen UI-Zugang verwenden
 
-PROJECT.json führt Launcher, qa_adapter, privaten Window Manager und qa_stdio_example. Diese vorhandene Bedienhilfe weiterverwenden; keine neue allgemeine Infrastruktur. Vor GUI-Arbeit tatsächliche eigene Jobs/Ressourcen prüfen. Eigene Profile, Arbeitsdateien und identifizierte Originalbuilds verwenden; fremde Prozesse und Daten schützen.
+PROJECT.json führt qa_adapter, privaten Window Manager und qa_stdio_example. Diese vorhandene Bedienhilfe weiterverwenden; keine neue allgemeine Infrastruktur. Vor GUI-Arbeit vorhandene eigene Sitzungen prüfen. Eigene Profile, Arbeitsdateien und identifizierte Originalbuilds verwenden; fremde Prozesse und Daten schützen.
 
-Aus dem lokalen qa-program in einem geschützten QA-Job starten (Beispiel für den Standard-Installationspfad; maßgeblich ist launcher in PROJECT.json):
+Aus dem lokalen qa-program starten:
 
 ```sh
-"${HOME}/.local/bin/codex-dungeon-job" qa -- bash scripts/run-ui.sh EIGENE-SESSION EIGENER-LOGORDNER
+bash scripts/run-ui.sh EIGENE-SESSION EIGENER-LOGORDNER
 ```
 
-Der Helper startet Service und Clients im selben Prozessbaum und liest den Adapterpfad aus PROJECT.json. JSON-Aufträge oder @REQUEST.json-Dateiverweise über seine Standardeingabe schicken. Lange Aufträge über Dateien senden; auch die letzte nichtleere Eingabe ohne Zeilenumbruch bleibt erhalten. Kein zusätzlicher ungeschützter Service-/Clientstart.
+Der Helper startet Service und Clients in einer eigenen systemd-Prozessgruppe ohne Ressourcenlimits und liest den Adapterpfad aus PROJECT.json. JSON-Aufträge oder @REQUEST.json-Dateiverweise über seine Standardeingabe schicken. Lange Aufträge über Dateien senden; auch die letzte nichtleere Eingabe ohne Zeilenumbruch bleibt erhalten. Service und Clients nicht doppelt starten.
 
 launch benötigt eigenes profile, tatsächliche argv/identity_files und attempt_id; erwartete Buildhashes können angegeben werden. Für input/observe braucht der bestehende Adapter einen technischen Run über begin mit eigener run_id, manifest und passendem task_id aus manifest.expected_tasks. Das ist Bedienzustand des vorhandenen Recorders, keine Studienregistrierung oder Bewertungspflicht. Der vorhandene begin/resume/input/observe-Weg bleibt unverändert; tatsächliche Antworten prüfen und fehlende Antworten nie durch blindes Wiederholen von Eingaben beantworten.
 
