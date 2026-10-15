@@ -837,3 +837,9 @@ Verweise werden als Markdown `[Anzeigename](dungeon-ref:kind/URI-kodierte-ID)` i
 Der Leitungsstand zeigt für jede fortbestehende Gruppe die aktuellen Partywerte aller aktiven Figuren. Trefferpunkte, temporäre HP, Zustände, Konzentration und Todesrettungen stehen gemeinsam mit Level, Tagesbelastung und Rastbedarf direkt vor der Wahl der Startgruppe. Fehlende Werte, 0 HP, Tod oder Stabilisierung, Zustände und eine fällige Rast werden sichtbar hervorgehoben; eine leere Party bleibt ausdrücklich als leere Startgruppe erkennbar.
 
 „Partywerte öffnen“ fokussiert die zugehörige Gruppe und führt zu den bestehenden Figurenständen am Spieltisch. „Rast planen…“ öffnet nach demselben Fokuswechsel die vorhandene Party-Rast. Die Übersicht selbst schreibt keine HP, XP, Zustände, Rastwirkung, Zeit oder Gruppenmitgliedschaft; Änderungen entstehen weiterhin erst durch die ausdrückliche Bestätigung im jeweiligen Besitzer.
+
+### Desktopstand 0.83: Ortsmappe für Vorbereitung und Leitung
+
+Die Ortsmappe liest geordnete Ortsabschnitte mit anklickbaren Textverweisen und verbindet sie mit den bestehenden NSCs, Aufträgen/Gerüchten, Figurengruppen und Shops am Ort. Verzeichnis und Materialseiten laden jeweils höchstens 40 Metadaten; Einzeltexte werden erst am gewählten Ort gelesen. Direkte Übergaben öffnen die vorhandenen Fachbereiche sowie gebundene Stadt-/Dungeonkarten. Ein ausdrücklich gewählter Abschnitt kann als Vorlesetext in die benannte Fokusgruppe übernommen werden; weitere Ortsnotizen bleiben beim Ort.
+
+Der bestehende Ortseditor legt zusätzliche Abschnitte an, benennt sie um und ordnet sie neu. IDs, originale Markdownbytes, Karten- und Keybindungen bleiben bei diesen Aktionen erhalten. Textverweise werden am Cursor oder an einer Markierung eingefügt und verwenden den vorhandenen geschützten Ortsentwurf. Es gibt keinen zweiten Orts- oder Materialschreiber und keine Schemamigration.

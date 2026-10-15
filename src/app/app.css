@@ -219,3 +219,14 @@ body{padding-bottom:58px}#music{padding:1.5rem;max-width:1400px;margin:auto}#mus
 #text-reference-detail pre {white-space:pre-wrap;overflow-wrap:anywhere;}
 button.text-reference-inline {display:inline;padding:0;border:0;border-bottom:1px dotted currentColor;border-radius:0;background:transparent;color:#275776;font:inherit;cursor:pointer;white-space:normal;}
 @media(max-width:720px){.text-reference-columns {grid-template-columns:1fr;}}
+
+.location-notebook {width:min(1600px,96vw);max-width:96vw;max-height:94vh;overflow:auto;}
+.location-notebook-columns {display:grid;grid-template-columns:240px minmax(300px,1fr) 300px;gap:20px;}
+#location-notebook-index,#location-material-list {display:flex;flex-direction:column;gap:6px;max-height:75vh;overflow:auto;}
+#location-notebook-document {min-width:0;}
+#location-notebook-document section {border-bottom:1px solid #d5dde3;padding:12px 0;}
+.location-notebook-prose {white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0;}
+#location-sections>section {border-top:1px solid #d5dde3;padding-top:14px;margin-top:14px;}
+#location-sections textarea {width:100%;}
+@media(max-width:1050px){.location-notebook-columns {grid-template-columns:220px minmax(260px,1fr);}.location-notebook-columns>section:last-child {grid-column:1/-1;}}
+@media(max-width:650px){.location-notebook-columns {grid-template-columns:1fr;}}
