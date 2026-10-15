@@ -1,14 +1,14 @@
 import {randomUUID} from 'node:crypto';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
 import type {SessionAction,PlanPublisher} from '../session-contracts';
-import {readPlan,readSession,saveDetail,newGroup,saveGroup} from './session';
+import {readSession,saveDetail,newGroup,saveGroup} from './session';
 import {createHash} from 'node:crypto';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function replaceSessionPlan(db:any,cam:string,a:Extract<SessionAction,{kind:'replace-plan'}>,publish:PlanPublisher){
- const target=readPlan(db,cam,a.planId),before=readSession(db,cam,a.planId);
+ const before=readSession(db,cam,a.planId,false),target=before.plan;
  if(before.replacementBasis!==a.expectedBasis)throw new Error('Plan oder Vorbereitung inzwischen geändert. Ersatzvorschau erneut öffnen.');
  if(typeof a.name!=='string'||a.name.length>1000||typeof a.copyParty!=='boolean')throw new Error('Planangaben ungültig.');
- const source=a.sourcePlanId?readPlan(db,cam,a.sourcePlanId):null,contents=source?readSession(db,cam,source.id):null;
+ const contents=a.sourcePlanId?readSession(db,cam,a.sourcePlanId,false):null,source=contents?.plan??null;
  if(contents&&contents.replacementBasis!==a.expectedSourceBasis||!contents&&a.expectedSourceBasis!==null)throw new Error('Vorlage inzwischen geändert. Ersatzvorschau erneut öffnen.');
  const originals=new Map(contents?.groups.map(g=>{const row=db.prepare('SELECT draft_plan_id FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,g.id),world=db.prepare('SELECT world_group_id FROM prepared_group_origin WHERE campaign_id=? AND source_group_id=?').get(cam,g.id);return [g.id,{group:g,acceptedId:world?.world_group_id??(row.draft_plan_id===null?g.id:null)}] as const;})??[]);
  const scenes=source?.scenes.map(s=>({...s,id:campaignLocalId(randomUUID())}))??[];
