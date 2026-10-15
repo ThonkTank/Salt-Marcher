@@ -356,3 +356,24 @@ test('health feedback stays visible inside the desk and a rejected write preserv
  for(const [id,value] of [['health-current','5'],['health-maximum','10'],['health-temporary','0']]){x.el(id).value=value;x.el(id).dispatchEvent(new x.window.Event('input'));}
  x.el('health-form').onsubmit({preventDefault(){}});assert.equal(await x.ui.flushLive(),false);await settle();assert.match(x.el('live-health-status').textContent,/HP konnten nicht gespeichert/);assert.equal(x.el('live-health-status').className,'error');assert.equal(x.el('health-current').value,'5');assert.equal(x.store.progress(x.w.token).characters[0].health,null);
 });
+
+
+async function packetMoment(t,text){
+ const x=await setup(t),planId=randomUUID(),visitId=randomUUID();
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Originaltexte',scenes:[{id:visitId,title:'Wache',notes:text,locationId:null}]}}});
+ await x.ui.openLive();x.el('live-session-plan').value=planId;x.el('live-session-plan').dispatchEvent(new x.window.Event('change'));await settle();
+ x.el('live-session-packet').click();await settle();
+ const block=[...x.el('session-packet-content').querySelectorAll('.packet-block')].find(b=>b.querySelector('.packet-text').textContent===text);
+ assert.ok(block,'Prepared source appears verbatim in the packet');
+ x.el('live-moment-panel').scrollIntoView=()=>{};
+ return {...x,capture:()=>[...block.querySelectorAll('button')].find(b=>b.textContent==='Als Chronikmoment vormerken').click(),source:()=>x.store.preparation(x.w.token).plans.find(p=>p.id===planId).scenes[0].notes};
+}
+for(const [previous,text] of [['','  Anfang\r\n'+'x'.repeat(6100)+'\r\n  Ende  '],['V'.repeat(98),'Q'.repeat(9900)]])test('packet capture preserves full raw wording up to the moment limit, total='+[previous,text].filter(Boolean).join('\n\n').length,async t=>{
+ const x=await packetMoment(t,text),expected=[previous,text].filter(Boolean).join('\n\n');x.fields('Eigener Moment',previous);const before=x.store.db.serialize();
+ x.capture();await settle();assert.equal(x.el('live-moment-summary').value,expected);assert.equal(x.el('live-moment-title').value,'Eigener Moment');assert.equal(x.el('live-moment-category').value,'narrative');assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.messages.filter(m=>m.error),[]);
+ x.submit();await settle();assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.title==='Eigener Moment').summary,expected);assert.equal(x.source(),text);
+});
+for(const [previous,text] of [['','Q'.repeat(10001)],['  Eigene Notiz\r\n'+'V'.repeat(9850),'Q'.repeat(200)]])test('oversized packet capture leaves authored moment and source untouched, existing='+previous.length,async t=>{
+ const x=await packetMoment(t,text);x.fields('Eigener Moment',previous);x.el('live-moment-follow-up').value='rumor';const before=x.store.db.serialize();
+ x.capture();await settle();assert.equal(x.el('live-moment-summary').value,previous);assert.equal(x.el('live-moment-title').value,'Eigener Moment');assert.equal(x.el('live-moment-category').value,'narrative');assert.equal(x.el('live-moment-follow-up').value,'rumor');assert.match(x.messages.at(-1).text,/10\.000/);assert.equal(x.messages.at(-1).error,true);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.source(),text);
+});
