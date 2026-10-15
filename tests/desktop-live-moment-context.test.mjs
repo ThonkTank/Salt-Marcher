@@ -203,3 +203,34 @@ for(const followUp of ['deadline','visit'])test(`a saved moment opens its ${foll
 test('a delayed saved moment cannot open follow-up preparation in a different group',async t=>{
  const x=await setup(t),release=x.defer('live-moment');x.fields('Frist für alte Gruppe','Alte Frist');x.el('live-moment-follow-up').value='deadline';x.submit();await settle();await x.focusOther();x.fields('Neue Gruppe','Neue Eingabe');release();await settle();assert.deepEqual(x.followUps,[]);assert.equal(x.el('live-moment-title').value,'Neue Gruppe');
 });
+
+for(const action of ['live-session-close-confirm','live-session-close-prepare'])test(`cancelling a close review during flush revokes ${action} before the marker write`,async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-end').click();await settle();
+ x.el('live-session-close-handoff').value='  Originale Übergabe\r\n';const release=x.defer('scene-content');x.el('running-notes').value='Offener Szenentext';x.el('running-notes').oninput();x.el(action).click();await settle();
+ assert.equal(x.commands.filter(c=>c.action.kind==='scene-content').length,1);x.el('live-session-close-cancel').click();release();await settle();
+ assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,0);assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='end').length,0);assert.equal(x.el('live-session-handoff').value,'  Originale Übergabe\r\n');assert.equal(x.el('handoff-visit-dialog').open,undefined);assert.deepEqual(x.followUps,[]);
+});
+for(const pending of [false,true])test(`a close review cannot acquire a different group after its ${pending?'pending':'completed'} audit`,async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();let release;
+ if(pending){const original=x.window.campaign.scenePreparation;let held=false;x.window.campaign.scenePreparation=(...args)=>{if(held)return original(...args);held=true;return new Promise(resolve=>{release=()=>resolve(original(...args));x.releases.push(release);});};}
+ x.el('live-session-end').click();await settle();if(pending)assert.equal(x.el('live-session-close-confirm').disabled,true);
+ const other=await x.focusOther();if(release){release();await settle();}x.el('live-session-close-prepare').click();await settle();
+ assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,0);assert.equal(x.store.live(x.w.token).scene.id,other);assert.equal(x.el('handoff-visit-dialog').open,undefined);assert.deepEqual(x.followUps,[]);
+});
+
+test('cancelling after the end marker committed keeps that single ending and opens no follow-up',async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-end').click();await settle();const raw='  Bestätigte Übergabe\r\n',release=x.defer('session-marker');x.el('live-session-close-handoff').value=raw;x.el('live-session-close-prepare').click();await settle();
+ assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='end').length,1);x.el('live-session-close-cancel').click();release();await settle();
+ assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,1);assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.sessionMarker==='end').handoff,raw);assert.equal(x.el('handoff-visit-dialog').open,undefined);assert.deepEqual(x.followUps,[]);
+});
+test('the next opening uses confirmed wording while a later recap draft remains separate',async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-end').click();await settle();const raw='  Bestätigter Einstieg\r\n',later='  Spätere Vorbereitung\r\n',release=x.defer('session-marker');x.el('live-session-close-handoff').value=raw;x.el('live-session-close-prepare').click();await settle();x.el('live-session-close-handoff').value=later;release();await settle();
+ assert.equal(x.el('handoff-visit-dialog').open,true);assert.equal(x.el('handoff-visit-notes').value,raw);assert.equal(x.el('live-session-handoff').value,later);x.el('handoff-visit-form').onsubmit({preventDefault(){}});await settle();assert.equal(x.followUps.length,1);assert.equal(x.followUps[0][2].notes,raw);assert.equal(x.el('live-session-handoff').value,later);
+});
+for(const changed of ['clock','membership'])test(`a close review needs a new audit after the same group's ${changed} changes`,async t=>{
+ const x=await setup(t);x.el('live-session-start').click();await settle();x.el('live-session-end').click();await settle();let v=x.store.live(x.w.token);
+ if(changed==='clock')x.store.executeLive(x.command({kind:'advance-clock',sceneId:v.scene.id,expectedRevision:v.scene.clock.revision,amount:1,unit:'minutes',calendarVersion:'relative-v1',reason:'Zeit weiter'}));
+ else{const hero=v.roster.find(row=>row.id===x.heroes[1].id);x.store.executeLive(x.command({kind:'membership',characterId:hero.id,expectedRevision:hero.membershipRevision,expectedRosterRevision:v.rosterRevision,active:false,targetSceneId:null,expectedFocusRevision:v.focusRevision}));}
+ await x.ui.openLive();x.el('live-session-close-confirm').click();await settle();assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,0);assert.match(x.el('live-session-close-status').textContent,/Erneut prüfen/);
+ x.el('live-session-close-refresh').click();await settle();x.el('live-session-close-confirm').click();await settle();const ends=x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end');assert.equal(ends.length,1);assert.equal(ends[0].action.sceneId,x.scene.id);
+});
