@@ -63,6 +63,11 @@ export function applyDeathSave(health:CharacterHealth,result:DeathSaveResult):Ch
  else{const failures=Math.min(3,d.failures+(result==='natural-1'?2:result==='failure'?1:0)),successes=Math.min(3,d.successes+(result==='success'?1:0));h.death={successes,failures,stable:successes===3,dead:failures===3};}
  return checkedHealth(h);
 }
+/** Party-owned rest transition shared by confirmed writes and read-only day planning. */
+export function restAfter(rest:Progress['rest'],kind:'short'|'long'):Progress['rest'] {
+ if(kind==='long')return{known:true,longXp:0,shortXp:0,baseline:0,sections:0};
+ return{...rest,shortXp:0,...(rest.known&&rest.sections<2?{baseline:rest.longXp,sections:rest.sections+1}:{})};
+}
 export function restFrame(p: Progress) {
   if (p.xp === null || !p.rest.known) return null;
   const budget = xpLevel(p.xp).budget, remaining = budget - p.rest.baseline;

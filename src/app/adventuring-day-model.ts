@@ -4,7 +4,7 @@ import type {DayRow,DayCalculation,DayPacing,DayRestFrame} from './adventuring-d
 function checkedDayXp(n:number){if(!Number.isSafeInteger(n)||n<0||n>1000000000000)throw new Error('XP benötigen eine ganze Zahl von 0 bis 1 Billion.');return n;}
 
 /** Current party facts plus hypothetical load, never rewards, levels, rests or time writes. */
-export function projectDayPacing(party:(Progress&{name:string})[],loadXp?:number):DayPacing {
+export function projectDayPacing(party:(Progress&{name:string})[],loadXp?:number,projected?:(Progress&{name:string})[]):DayPacing {
  const share=loadXp===undefined?null:xpShare(checkedDayXp(loadXp),party.length);
  const frame=(p:Progress):DayRestFrame|null=>{
   const f=restFrame(p);if(!f)return null;
@@ -12,15 +12,18 @@ export function projectDayPacing(party:(Progress&{name:string})[],loadXp?:number
    sections:f.sections,fill:f.fill,nextRest:f.nextRest,remainingLong:Math.max(0,f.budget-f.consumed),
    due:f.overdue?'long':f.sections>1&&f.consumed>=f.nextRest?'short':null};
  };
+ const final=new Map(projected?.map(p=>[p.characterId,p]));
  const members=party.map(p=>({id:p.characterId,name:p.name,before:frame(p),
-  after:share?frame({...p,rest:{...p.rest,longXp:p.rest.longXp+share.share,shortXp:p.rest.shortXp+share.share}}):null,
+  after:share?frame(final.get(p.characterId)??{...p,rest:{...p.rest,longXp:p.rest.longXp+share.share,shortXp:p.rest.shortXp+share.share}}):null,
   reason:p.xp===null?'Bestätigte XP fehlen.':!p.rest.known?'Raststand offen. Lange Rast bestätigen.':null}));
  const known=members.filter(m=>m.before!==null),frames=known.map(m=>m.before!);
+ const projectedFrames=members.flatMap(m=>m.after?[m.after]:[]);
  const pool=(gap:number)=>gap<=0?0:(Math.ceil(gap)-1)*party.length+1;
  const until=(short:boolean)=>{const values=frames.filter(f=>!short||f.sections>1).map(f=>pool((short?Math.min(f.nextRest,f.budget):f.budget)-f.consumed));return values.length?Math.min(...values):null;};
  return{partySize:party.length,known:known.length,loadShare:share?.share??null,totalLoad:share?.total??null,
   currentFill:known.length?frames.reduce((n,f)=>n+f.fill,0)/known.length:null,
-  projectedFill:known.length&&share?known.reduce((n,m)=>n+m.after!.fill,0)/known.length:null,
+  projectedFill:projectedFrames.length?projectedFrames.reduce((n,f)=>n+f.fill,0)/projectedFrames.length:null,
+  projectedKnown:projectedFrames.length,projectedSections:projectedFrames.length&&projectedFrames.every(f=>f.sections===projectedFrames[0]!.sections)?projectedFrames[0]!.sections:null,
   commonSections:frames.length&&frames.every(f=>f.sections===frames[0]!.sections)?frames[0]!.sections:null,
   untilShort:until(true),untilLong:until(false),members};
 }

@@ -7,7 +7,7 @@ import {editTreasury} from './treasury';
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
-import { applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, partitionLedgerPaidPrice, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ProgressAction, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { restAfter, applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, partitionLedgerPaidPrice, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ProgressAction, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene, readRoster } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
@@ -466,8 +466,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
         const member = db.prepare('SELECT active,scene_id FROM roster_member WHERE campaign_id=? AND id=?').get(cam, p.characterId);
         if (!member?.active) throw new Error('Rast nur für aktive Figuren.');
         if (db.prepare("SELECT 1 FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running'").get(cam,member.scene_id)) throw new Error('Kampf vor der Rast abschließen.');
-        if (a.rest === 'long') p.rest = { known: true, longXp: 0, shortXp: 0, baseline: 0, sections: 0 };
-        else { p.rest.shortXp = 0; if (p.rest.known && p.rest.sections < 2) { p.rest.baseline = p.rest.longXp; p.rest.sections++; } }
+        p.rest = restAfter(p.rest,a.rest);
         if(a.restoreHp){if(!p.health||p.health.hp<=0||p.health.death?.dead)restWarnings.push(p.characterId);else p.health.hp=p.health.maxHp;}
         saveProgress(db, cam, p); event(db, cam, p.characterId, 'rest', {commandId:command.commandId,rest:a.rest,before,after:p,restoreHp:a.restoreHp===true,...(a.scene?{sceneId:a.scene.id,...(a.scene.amount!==undefined?{duration:{amount:a.scene.amount,unit:a.scene.unit}}:{})}:{})});
       }

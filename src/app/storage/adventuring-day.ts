@@ -19,7 +19,7 @@ export function readDay(db:any,cam:string,request:DayRequest):DayView{
  const basis=request.source==='active'?rows:request.rows;
  const itinerary=request.encounters===undefined?undefined:readDayItinerary(db,cam,request.encounters,basis.map((r,i)=>({id:String(i),name:'',...r})),request.source==='active'?active:null);
  const totalXp=itinerary?.totalLoadXp??request.totalXp,rewardXp=itinerary?.totalRewardXp??request.rewardXp??totalXp;
- if(request.source==='active')pacing=projectDayPacing(active,totalXp);
+ if(request.source==='active')pacing=itinerary?.pacing??projectDayPacing(active,totalXp);
  if(request.source==='active'&&!levelsKnown)return{snapshot,pacing,itinerary,calculation:null,problem:'Für die aktive Party fehlen Level. XP im Roster ergänzen oder eigene Rechnerzeilen verwenden.'};
  const calculation=calculateDay(basis as {level:number;count:number}[],totalXp,rewardXp);
  if(request.source==='active')calculation.projections=members.map(c=>{const afterXp=c.xp!+calculation.shareXp;return{name:c.name,count:1,beforeXp:c.xp!,afterXp,beforeLevel:c.level!,afterLevel:xpLevel(afterXp).level};});

@@ -267,3 +267,32 @@ native Popover-, IPC-, Tastatur-, Monitor-, Last- und Produktabnahmen bleiben of
    Fortschrittsänderungen messen; danach eine gemeinsame begrenzte Partyprojektion
    verwenden, falls die Messung es erfordert. Kein separater persistierter
    Rechnerzustand und kein paralleles XP-/Rastmodell.
+
+
+## Geplante Rasten zwischen Begegnungen (0.135)
+
+Der lokale Encounter-Tagesplan erlaubt vor jeder Zeile „Ohne Rast“, „Kurze
+Rast“ oder „Lange Rast“. Reihenfolge und Wiederholungen bleiben editierbar;
+beim Aktualisieren der Vorlagen bleiben die gesetzten Rasten erhalten.
+Eine Pause gilt für alle Rechnerfiguren und vor der gesamten Zeile. Für Pausen
+zwischen Wiederholungen wird dieselbe Vorlage mehrfach eingefügt.
+
+Der Party-Reader simuliert die Etappen auf isolierten Fortschrittskopien.
+`restAfter` ist dieselbe Partyregel für bestätigte Rasten und Vorschau:
+kurze Rast setzt Shortverbrauch zurück und teilt den verbleibenden Rahmen;
+lange Rast setzt Tagesverbrauch und Abschnitte zurück. Eine kurze Rast heilt
+kein überschrittenes Tagesbudget und keinen unbekannten Raststand. Eine
+geplante lange Rast schafft nur einen hypothetischen bekannten Rahmen, während
+Snapshot und Topbar weiterhin die bestätigte unbekannte Basis zeigen.
+Die Einzelansicht zeigt auch diesen Übergang von offen zu hypothetisch bekannt.
+
+Belastung und Verdienst werden weiterhin pro Begegnung gerundet und unabhängig
+von den Pausen aufsummiert. Startlevel bleiben fest; Verdienst-Levelwechsel
+ändern die Rastprognose nicht. Eigene Levelgruppen starten nach einer langen
+Rast. Das allgemeine XP→Tage-Modell mit zwei kurzen Rasten pro Tag bleibt als
+separates theoretisches Modell ausgewiesen. Keine Zeit, HP, XP, bestätigten
+Rasten oder Journalereignisse werden geschrieben; kein neues Speicherschema.
+
+Grenzen: Pausen gelten derzeit für die gesamte Rechnerparty; Dauer,
+Teilnehmerauswahl, Reisekosten und Übernahme in einen dauerhaft gespeicherten
+Sessionablauf sind nicht Bestandteil dieses lokalen Rechners.

@@ -3,7 +3,7 @@ import type {DayPlanEntry,DayItinerary} from './adventuring-day-contracts';
 
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const format=(n:number)=>n.toLocaleString('de-DE');
-type Choice={id:string;revision:number;name:string;count:string};
+type Choice={id:string;revision:number;name:string;count:string;restBefore?:'short'|'long'};
 let workspace:Workspace|null=null,selected:Choice[]=[],generation=0,timer:ReturnType<typeof setTimeout>|null=null,changed:()=>void;
 let manual={load:'0',reward:'0',separate:false};
 const enabled=()=>el<HTMLInputElement>('day-use-encounters').checked;
@@ -17,12 +17,15 @@ function inputs(){
 function renderSelected(){
  const root=el('day-plan-selected');root.replaceChildren();
  selected.forEach((entry,i)=>{
-  const row=node('div'),name=node('strong',entry.name),label=node('label','Wiederholungen'),count=document.createElement('input');row.className='day-plan-row';row.dataset.planId=entry.id;
+  const row=node('div'),name=node('strong',entry.name),label=node('label','Anzahl'),count=document.createElement('input');row.className='day-plan-row';row.dataset.planId=entry.id;
   count.type='number';count.min='1';count.max='99';count.step='1';count.value=entry.count;count.setAttribute('aria-label','Wiederholungen '+entry.name);
   count.oninput=()=>{entry.count=count.value;notify();};label.append(count);
   const up=button('↑',()=>{[selected[i-1],selected[i]]=[selected[i]!,selected[i-1]!];renderSelected();notify();}),down=button('↓',()=>{[selected[i+1],selected[i]]=[selected[i]!,selected[i+1]!];renderSelected();notify();});
   up.disabled=i===0;down.disabled=i===selected.length-1;up.setAttribute('aria-label',entry.name+' nach oben');down.setAttribute('aria-label',entry.name+' nach unten');
-  const actions=node('div');actions.className='toolbar';actions.append(up,down,button('Entfernen',()=>{selected.splice(i,1);renderSelected();notify();}));row.append(name,label,actions);root.append(row);
+  const restLabel=node('label','Davor'),rest=document.createElement('select');rest.setAttribute('aria-label','Rast vor '+entry.name);
+  for(const [value,text]of [['none','Ohne Rast'],['short','Kurze Rast'],['long','Lange Rast']]){const option=document.createElement('option');option.value=value!;option.textContent=text!;rest.append(option);}
+  rest.value=entry.restBefore??'none';rest.onchange=()=>{entry.restBefore=rest.value==='none'?undefined:rest.value as 'short'|'long';notify();};restLabel.append(rest);
+  const actions=node('div');actions.className='toolbar';actions.append(up,down,button('Entfernen',()=>{selected.splice(i,1);renderSelected();notify();}));row.append(name,label,restLabel,actions);root.append(row);
  });
  if(!selected.length)root.textContent='Noch keine Begegnungen gewählt. Suche gespeicherte Vorlagen und füge sie dem Tagesplan hinzu.';
 }
@@ -50,16 +53,17 @@ async function reload(){
  }catch(error){if(workspace?.token===owner.token&&request===generation)el('day-plan-search-status').textContent=(error as Error).message;}
 }
 export function dayItineraryRequest():DayPlanEntry[]|undefined{
- return enabled()?selected.map(p=>({id:p.id,revision:p.revision,count:p.count.trim()?Number(p.count):NaN})):undefined;
+ return enabled()?selected.map(p=>({id:p.id,revision:p.revision,count:p.count.trim()?Number(p.count):NaN,...(p.restBefore?{restBefore:p.restBefore}:{})})):undefined;
 }
 export function renderDayItinerary(value:DayItinerary|undefined){
  const root=el('day-plan-result');root.replaceChildren();if(!enabled())return;
  if(!value){el<HTMLInputElement>('day-total-xp').value='';el<HTMLInputElement>('day-reward-xp').value='';return;}
  el<HTMLInputElement>('day-total-xp').value=String(value.totalLoadXp);el<HTMLInputElement>('day-reward-xp').value=String(value.totalRewardXp);
  root.append(node('p',format(value.rawLoadXp)+' angepasste XP / '+format(value.rawRewardXp)+' Basis-XP · '+value.partySize+' Figuren. Jede Begegnung wird einzeln aufgerundet, dann werden die Belastungs- und Verdienstanteile summiert.'));
+ root.append(node('p',value.plannedRests.short+' kurze / '+value.plannedRests.long+' lange Rasten geplant · '+(value.pacing?'Start beim bestätigten Raststand der aktiven Party.':'Eigene Levelgruppen starten nach einer langen Rast.')+' Eine Rast gilt für alle Figuren, vor der gesamten Wiederholungszeile. Für Pausen zwischen Wiederholungen mehrere Zeilen verwenden.'));
  const list=node('ol');
- for(const stage of value.stages){const li=node('li');li.append(node('strong',stage.count+' × '+stage.name+' · '+(stage.difficulty??'Schwierigkeit offen')),node('p','Je Begegnung: '+format(stage.adjustedXp)+' Belastungs-XP (×'+stage.multiplier+') / '+format(stage.baseXp)+' Verdienst-XP · '+format(stage.loadShare)+' / '+format(stage.rewardShare)+' je Figur.'));
-  li.append(node('p','Bis hier: '+format(stage.cumulativeLoadXp)+' Belastung / '+format(stage.cumulativeRewardXp)+' Verdienst insgesamt.'+(stage.shortDue===null?'':' Ohne Rast dazwischen: '+stage.shortDue+' bekannte Figuren brauchen eine kurze, '+stage.longDue+' eine lange Rast.')));list.append(li);
+ for(const stage of value.stages){const li=node('li');if(stage.restBefore)li.append(node('p',stage.restBefore==='short'?'Davor: kurze Rast':'Davor: lange Rast'));li.append(node('strong',stage.count+' × '+stage.name+' · '+(stage.difficulty??'Schwierigkeit offen')),node('p','Je Begegnung: '+format(stage.adjustedXp)+' Belastungs-XP (×'+stage.multiplier+') / '+format(stage.baseXp)+' Verdienst-XP · '+format(stage.loadShare)+' / '+format(stage.rewardShare)+' je Figur.'));
+  li.append(node('p','Bis hier: '+format(stage.cumulativeLoadXp)+' Belastung / '+format(stage.cumulativeRewardXp)+' Verdienst insgesamt.'+(stage.shortDue===null?' Raststand offen.':' Danach: '+stage.shortDue+' Figuren brauchen eine kurze, '+stage.longDue+' eine lange Rast · '+stage.knownRestStates+' / '+value.partySize+' bekannte Raststände.')));list.append(li);
  }root.append(list);
 }
 export function activateDayItinerary(next:Workspace|null){

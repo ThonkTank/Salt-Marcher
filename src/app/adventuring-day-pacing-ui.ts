@@ -21,14 +21,15 @@ export function renderDayPacing(root:HTMLElement,pacing:DayPacing|undefined,prev
  root.replaceChildren();if(!pacing)return;
  root.append(node('h3',preview?'Ab jetzt · zusätzliche Tagesbelastung':'Heute · bestätigter Raststand'));
  if(!pacing.partySize){root.append(node('p','Keine aktive Party. Eigene Rechnerzeilen bleiben verfügbar.'));return;}
- const hasPreview=preview&&pacing.loadShare!==null;
- root.append(node('p',hasPreview?'Zusätzlich '+number(pacing.loadShare!)+' Belastungs-XP je Figur · '+number(pacing.totalLoad!)+' insgesamt nach Aufrundung. Keine Rasten oder Levelwechsel in dieser Vorschau.':'Alle aktiven Figuren, auch in anderen Gruppen. Die Marken folgen den tatsächlich abgeschlossenen kurzen Rasten.'));
+ const hasPreview=preview&&pacing.loadShare!==null,rests=pacing.plannedRests;
+ const restCaption=rests?' Geplant: '+rests.short+' kurze / '+rests.long+' lange Rasten; feste Startlevel.':' Keine Rasten oder Levelwechsel in dieser Vorschau.';
+ root.append(node('p',hasPreview?'Zusätzlich '+number(pacing.loadShare!)+' Belastungs-XP je Figur · '+number(pacing.totalLoad!)+' insgesamt nach Aufrundung.'+restCaption:'Alle aktiven Figuren, auch in anderen Gruppen. Die Marken folgen den tatsächlich abgeschlossenen kurzen Rasten.'));
  const basis=node('p',pacing.known+' / '+pacing.partySize+' bekannte Raststände · ungewichteter Mittelwert des verbleibenden Tagesrahmens'+(pacing.known<pacing.partySize?' · Teilbasis, unbekannte Figuren ausgeschlossen':''));basis.className='caption';root.append(basis);
  root.append(node('small','Jetzt'),meter(pacing.currentFill,pacing.commonSections,'Jetzt · Mittelwert bekannter Raststände'));
  if(hasPreview){
-  root.append(node('small','Danach'),meter(pacing.projectedFill,pacing.commonSections,'Danach · Mittelwert bekannter Raststände'));
+  root.append(node('small','Danach'),meter(pacing.projectedFill,pacing.projectedSections??null,'Danach · Mittelwert bekannter Raststände'));
   const short=pacing.members.filter(m=>m.after?.due==='short').length,long=pacing.members.filter(m=>m.after?.due==='long').length;
-  root.append(node('p','Danach: '+short+' Figuren mit fälliger kurzer Rast · '+long+' mit fälliger langer Rast.'));
+  root.append(node('p','Danach: '+short+' Figuren mit fälliger kurzer Rast · '+long+' mit fälliger langer Rast · '+(pacing.projectedKnown??pacing.known)+' / '+pacing.partySize+' bekannte Raststände.'));
  }
  const next=node('p');next.id='day-pacing-next';
  next.textContent=pacing.untilLong===0?'Mindestens eine Figur braucht bereits eine lange Rast.':pacing.untilShort===0?'Mindestens eine Figur hat ihre nächste kurze Rast erreicht.':[
@@ -43,8 +44,8 @@ export function renderDayPacing(root:HTMLElement,pacing:DayPacing|undefined,prev
   if(!member.before)card.append(node('p',member.reason??'Raststand offen.'));
   else{
    card.append(node('p','Jetzt: '+fact(member.before)),meter(member.before.fill,member.before.sections,member.name+' · jetzt · '+fact(member.before)),node('p',due(member.before)));
-   if(hasPreview&&member.after)card.append(node('p','Danach: '+fact(member.after)),meter(member.after.fill,member.after.sections,member.name+' · danach · '+fact(member.after)),node('p',due(member.after)));
   }
+   if(hasPreview&&member.after)card.append(node('p','Danach: '+fact(member.after)),meter(member.after.fill,member.after.sections,member.name+' · danach · '+fact(member.after)),node('p',due(member.after)));
   list.append(card);
  }more.hidden=limit>=pacing!.members.length;more.textContent='Weitere '+Math.min(20,pacing!.members.length-limit)+' Figuren';}
  more.onclick=()=>{limit+=20;draw();};draw();details.open=expanded;
