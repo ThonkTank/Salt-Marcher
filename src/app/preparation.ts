@@ -526,6 +526,23 @@ export async function openPreparedVisit(planId:string,visitId:string,current:()=
   usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
 }
 
+export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null},stillCurrent:()=>boolean=()=>true){
+  const token=context?.token;if(!token||!stillCurrent()||!await flushPreparation()||context?.token!==token||!stillCurrent())throw new Error('Spielabendvorbereitung ist gerade nicht verfügbar.');
+  const next=unwrap(await window.campaign.preparation(token,''));if(context?.token!==token||!stillCurrent())return;usePreparation(next);
+  const target=data.plans.find(plan=>plan.id===planId)??data.plans.find(plan=>plan.id===data.selection.planId)??data.plans[0];
+  const id=campaignLocalId(crypto.randomUUID()),scene={id,title:seed.title,notes:seed.notes,locationId:seed.locationId?campaignLocalId(seed.locationId):null};
+  if(target){
+    if(!await change({kind:'plan',expectedRevision:target.revision,plan:{...target,scenes:[...target.scenes,scene]}},false))throw new Error('Nächster Besuch konnte nicht gespeichert werden.');
+    if(context?.token!==token||!stillCurrent())return;selectedPlan=target.id;
+  }else{
+    const created:ManualPlan={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,name:'Nächster Spielabend',scenes:[scene]};
+    if(!await change({kind:'plan',expectedRevision:null,plan:created},false))throw new Error('Spielabendplan konnte nicht angelegt werden.');
+    if(context?.token!==token||!stillCurrent())return;selectedPlan=created.id;
+  }
+  selectedScene=id;planDraft=null;get<HTMLInputElement>('world-search').value='';showLocations(false);await renderPlans();
+  if(context?.token===token&&stillCurrent()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+}
+
 function showLocations(show: boolean) {
   get('knowledge-panel').hidden = show; get('locations-panel').hidden = !show;
   get('knowledge-tab').setAttribute('aria-pressed', String(!show)); get('locations-tab').setAttribute('aria-pressed', String(show));

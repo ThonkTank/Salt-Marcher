@@ -34,7 +34,7 @@ import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './mu
 import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface} from './world-ui';
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
-import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit } from './preparation';
+import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,prepareNextVisit } from './preparation';
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive, prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, openCatalogReference, flushCatalog } from './catalog-ui';
@@ -91,10 +91,7 @@ initQuickReference(status,leaveWorkspace,async action=>{
  if(action.kind==='encounter'&&action.content.encounter)await prepareLiveEncounter(action.content.encounter);
  if(action.kind==='creature'&&action.content.creature)await addLiveCreature(action.content.creature.id,action.count!,action.grouped!);
 });
-initLive(status, async id => {
-  if (!(await leaveWorkspace())) return;
-  await openPreparedLocation(id); showTab('preparation');
-},async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current);});
+
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
 setNpcNavigation(async(id,contact,current)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,contact,current);},async(id,current)=>{if(!await leaveWorkspace()||!current())return;showTab('autonomy');await openAutonomy(id);});
@@ -120,6 +117,10 @@ initCity(status);
 el('city-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('city');await openCity();})().catch(error=>status(error.message,true));};
 initWorld(status,flushLive,async()=>{await openLive();},async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();},async(sceneId,kind)=>{if(kind==='wait')await openTimeNavigator(undefined,sceneId);else await openTravelRest(sceneId);});
 const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;showTab(kind);if(kind==='world')await openWorld();else await openLive();},async target=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openTimeNavigator(target);},undefined,undefined,id=>locationNotebook.open(id));
+initLive(status, async id => {
+  if (!(await leaveWorkspace())) return;
+  await openPreparedLocation(id); showTab('preparation');
+},async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current);},async(seed,current=()=>true)=>{if(!(await leaveWorkspace())||!current())throw new Error('Offene Eingabe verhindert die Fristvorbereitung.');await campaignAgenda.openMomentDraft({name:seed.title,notes:seed.summary},seed.location??undefined,current);},async(planId,seed,current=()=>true)=>{if(!(await leaveWorkspace())||!current())throw new Error('Offene Eingabe verhindert die Besuchsvorbereitung.');showTab('preparation');await prepareNextVisit(planId,seed,current);});
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
 el('music-tab').onclick=()=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();})().catch(error=>status(error.message,true));};

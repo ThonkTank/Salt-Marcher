@@ -876,3 +876,9 @@ Jeder Mappenblock kann außerdem als Chronikmoment vorgemerkt werden. Die Mappe 
 ### 0.91 – Vorhandenes Ortsmaterial wiederverwenden
 
 Die Ortsmappe durchsucht vorhandene NSCs, Aufträge/Gerüchte und Shops der Kampagne in 40er-Seiten und zeigt aktuelle Orts- bzw. Besitzerbindungen. Treffer öffnen ihre bisherigen Fachbereiche. „Ortsbindung bearbeiten“ belegt dort den gewählten Ort vor; die Bestätigung erfolgt im bestehenden Profil-, Narrativ- oder Shopeditor. Ein NSC bleibt dieselbe Figur, ein Auftrag behält Status und Belohnung, ein Shop Bestand und Historie. Der Rückweg zur ursprünglichen Ortsmappe steht jetzt auch für bestehendes Material und Fraktionsquellen bereit. Keine Schemaänderung oder zusätzliche Schreibgrenze.
+
+### 0.92 – Aus dem Chronikmoment in die nächste Vorbereitung
+
+„Moment festhalten“ führt eine Konsequenz jetzt auch direkt in Kalender oder Spielabendplan. „Als Ortsfrist vorbereiten“ öffnet einen Agendaentwurf mit Titel, Notiz und aktuellem Ort; Zeitpunkt und Dauer bleiben bis zur ausdrücklichen Bestätigung offen. „Als nächsten Besuch vorbereiten“ hängt Titel, Notiz und Ort an den laufenden oder ausgewählten Spielabendplan und öffnet den neuen Besuch. Fehlt noch ein Plan, wird „Nächster Spielabend“ angelegt.
+
+Der Chronikmoment wird zuerst über den bestehenden Liveauftrag bestätigt. Quests und Gerüchte behalten ihren bisherigen Besitzer und ihre direkte Folgespur. Fristen verwenden den vorhandenen Agendaeditor, Besuche den vorhandenen Planeditor; es gibt keine neue Datenhaltung und keine automatische Änderung von Gruppenzeit, Weltstand oder Spieleranzeige.
