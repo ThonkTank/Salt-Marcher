@@ -16,7 +16,7 @@ export class PassiveMapCanvas {
    this.suppressClick=false;
    if(this.drag||this.options.locked?.()||!(this.options.pan?.(e)??e.button===1))return;
    const matrix=root.getScreenCTM();if(!matrix)return;
-   this.suppressClick=false;const inverse=matrix.inverse();this.drag={id:e.pointerId,inverse,start:new DOMPoint(e.clientX,e.clientY).matrixTransform(inverse),box:{...this.box},moved:false};
+   const inverse=matrix.inverse();this.drag={id:e.pointerId,inverse,start:new DOMPoint(e.clientX,e.clientY).matrixTransform(inverse),box:{...this.box},moved:false};
    if(e.button===1){root.setPointerCapture(e.pointerId);e.preventDefault();e.stopImmediatePropagation();}
   },true);
   root.addEventListener('pointermove',e=>{
@@ -51,12 +51,12 @@ export class PassiveMapCanvas {
  /** Render and hit-test share this one SVG scene. Failed partial scenes are never interactive. */
  render(draw:()=>void,emptyText=''){
   this.renderScene=draw;this.emptyText=emptyText;if(this.rendering||this.failed)return;
-  this.rendering=true;const previous=[...this.root.childNodes];
+  this.rendering=true;
   try{
    draw();this.root.style.visibility='';this.root.removeAttribute('aria-disabled');this.root.dataset.canvasState=emptyText?'empty':'loaded';
    this.panel.hidden=!emptyText;this.panel.setAttribute('role','status');this.note.textContent=emptyText;this.panel.querySelector('button')!.hidden=true;
   }catch(error){
-   this.root.replaceChildren(...previous);this.failed=true;this.cancel();this.root.style.visibility='hidden';this.root.setAttribute('aria-disabled','true');this.root.dataset.canvasState='unavailable';
+   this.root.replaceChildren();this.failed=true;this.cancel();this.root.style.visibility='hidden';this.root.setAttribute('aria-disabled','true');this.root.dataset.canvasState='unavailable';
    this.panel.hidden=false;this.panel.setAttribute('role','alert');this.note.textContent='Karte konnte nicht gezeichnet werden. Daten und Navigation bleiben erhalten. '+(error as Error).message;this.panel.querySelector('button')!.hidden=false;
   }finally{this.rendering=false;}
  }
