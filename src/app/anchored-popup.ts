@@ -1,5 +1,5 @@
-export function bindAnchoredPopup(trigger:HTMLButtonElement,popup:HTMLElement,options:{width:number;placement?:'below'|'trailing';offset?:number}){
- const view=popup.ownerDocument.defaultView!,gap=8,offset=options.offset??8;
+export function bindAnchoredPopup(trigger:HTMLButtonElement,popup:HTMLElement,width:number){
+ const view=popup.ownerDocument.defaultView!,gap=8;
  const opened=()=>popup.matches(':popover-open');
  const visible=(anchor:DOMRect)=>trigger.isConnected&&anchor.width>0&&anchor.height>0&&anchor.right>0&&anchor.left<view.innerWidth&&anchor.bottom>0&&anchor.top<view.innerHeight;
  const close=()=>{if(opened())popup.hidePopover();trigger.setAttribute('aria-expanded','false');};
@@ -7,16 +7,15 @@ export function bindAnchoredPopup(trigger:HTMLButtonElement,popup:HTMLElement,op
   if(!opened())return;
   const anchor=trigger.getBoundingClientRect();
   if(!visible(anchor)){close();return;}
-  const below=Math.max(0,view.innerHeight-anchor.bottom-offset-gap),above=Math.max(0,anchor.top-offset-gap);
+  const below=Math.max(0,view.innerHeight-anchor.bottom-gap*2),above=Math.max(0,anchor.top-gap*2);
   const height=popup.scrollHeight+2,under=height<=below||below>=above;
   popup.style.maxHeight=(under?below:above)+'px';
   const bounds=popup.getBoundingClientRect();
-  const desired=options.placement==='trailing'?anchor.right-bounds.width:anchor.left;
-  popup.style.left=Math.max(gap,Math.min(desired,view.innerWidth-bounds.width-gap))+'px';
-  popup.style.top=(under?anchor.bottom+offset:Math.max(gap,anchor.top-offset-bounds.height))+'px';
+  popup.style.left=Math.max(gap,Math.min(anchor.right-bounds.width,view.innerWidth-bounds.width-gap))+'px';
+  popup.style.top=(under?anchor.bottom+gap:Math.max(gap,anchor.top-gap-bounds.height))+'px';
  };
  popup.style.position='fixed';popup.style.inset='auto';popup.style.margin='0';
- popup.style.width='min('+options.width+'px, calc(100vw - '+gap*2+'px))';
+ popup.style.width='min('+width+'px, calc(100vw - '+gap*2+'px))';
  trigger.setAttribute('aria-controls',popup.id);trigger.setAttribute('aria-expanded','false');
  // Native auto popovers own Escape, light-dismiss and focus restoration. The
  // invoker is focused before even a programmatic opening captures return focus.
