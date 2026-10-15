@@ -349,3 +349,10 @@ test('an open health desk closes on group change and detached old party cards ca
  old.click();await settle();assert.equal(x.el('live-health-dialog').open,true);await x.focusOther();await settle();assert.equal(x.el('live-health-dialog').open,false);assert.equal(x.el('character-health').parentElement.id,'character-health-home');
  old.click();await settle();assert.equal(x.el('live-health-dialog').open,false);assert.match(x.el('running-title').value,/Andere Gruppe/);
 });
+
+test('health feedback stays visible inside the desk and a rejected write preserves its authored values',async t=>{
+ const x=await setup(t);x.window.campaign.executeProgress=async()=>({ok:false,error:'HP konnten nicht gespeichert werden'});x.window.campaign.commitStatus=async()=>({ok:true,value:{outcome:'not-applied'}});
+ x.el('live-party-reference').querySelector('button').click();await settle();
+ for(const [id,value] of [['health-current','5'],['health-maximum','10'],['health-temporary','0']]){x.el(id).value=value;x.el(id).dispatchEvent(new x.window.Event('input'));}
+ x.el('health-form').onsubmit({preventDefault(){}});assert.equal(await x.ui.flushLive(),false);await settle();assert.match(x.el('live-health-status').textContent,/HP konnten nicht gespeichert/);assert.equal(x.el('live-health-status').className,'error');assert.equal(x.el('health-current').value,'5');assert.equal(x.store.progress(x.w.token).characters[0].health,null);
+});
