@@ -88,7 +88,7 @@ initQuickReference(status,leaveWorkspace,async action=>{
 initLive(status, async id => {
   if (!(await leaveWorkspace())) return;
   await openPreparedLocation(id); showTab('preparation');
-},async id=>{if(!(await leaveWorkspace()))return;showTab('preparation');await openPreparedNote(id);});
+},async id=>{if(!(await leaveWorkspace()))return;showTab('preparation');await openPreparedNote(id);},async id=>{await locationNotebook.open(id);});
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
 setNpcNavigation(async(id,contact)=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups();await openNpcProfile(id,contact);},async id=>{if(!await leaveWorkspace())return;showTab('autonomy');await openAutonomy(id);});
