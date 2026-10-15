@@ -10,6 +10,7 @@ export interface VisitDetail {visitId:string;revision:number;readAloud:string;no
 export interface WorldActor {defeated?:boolean;disposition?:number;role?:import('./npc-contracts').NpcRole;id:string;name:string;creatureId:string;revision:number;hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean;unavailable:boolean;entryId:string}
 export interface PreparedGroup {id:string;revision:number;title:string;notes:string;sourceEncounterId:string;sourceRevision:number;locationId:string|null;plan:EncounterPlan;actors:WorldActor[]}
 export interface SessionView {replacementBasis?:string;profile:SessionProfile;visits:VisitDetail[];groups:PreparedGroup[];encounters:{id:string;revision:number;name:string}[]}
+export interface SessionSnapshot extends SessionView {plan:ManualPlan;replacementBasis:string}
 export interface ScenePreparation {noteIds:string[];groups:PreparedGroup[];treasures:{id:string;title:string}[];nextVisit:{planId:string;planRevision:number;visitId:string;title:string}|null}
 export interface SessionProposal {rewardWarnings?:string[];rewardMissingMagic?:Record<BudgetRarity,number>;rejected?:boolean;revision?:number;needsEncounterRefresh?:boolean;reward?:{poolXp:number;items:ItemInput[]}|null;rewardEdited?:boolean;rewardOrigin?:{tableId:string;revision:number;seed:string}|null;id:string;index:number;title:string;notes:string;readAloud:string;locationId:string|null;noteIds:string[];encounter:EncounterPlan&{assessment:EncounterAssessment};acceptedVisitId:string|null}
 export interface SessionLootBasis {ledger:{id:string;characterId:string;revision:number}[];definitions:{definitionId:string;revision:number}[]}
@@ -36,7 +37,7 @@ export interface SessionCommand {commandId:string;campaignId:string;token:string
 export interface SessionGenerationRequest {magicPool?:{definitionId:string;revision:number}[];compensateMagic?:boolean;compensateLoot?:boolean;worldSourcesByLocation?:boolean;planId:string;expectedProfileRevision:number;count:number;locationIds:string[];noteIds:string[];encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>}
 export interface SessionAPI {sceneVisits(token:string,sceneId:string,after:string|null):Promise<Result<import('./scene-visit-contracts').SceneVisitPage>>;sessionProgress(token:string,planId:string,sceneId?:string):Promise<Result<SessionProgress>>;
 preparedGroup(token:string,id:string):Promise<Result<PreparedGroup>>;
- session(token:string,planId:string):Promise<Result<SessionView>>;
+ session(token:string,planId:string):Promise<Result<SessionSnapshot>>;
  executeSession(command:SessionCommand):Promise<Result<SessionView>>;
  generateSession(token:string,request:SessionGenerationRequest):Promise<Result<SessionRun>>;
  regenerateSessionReward(token:string,runId:string,index:number,seed:string):Promise<Result<SessionRun>>;

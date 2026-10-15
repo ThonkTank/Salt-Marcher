@@ -8,6 +8,7 @@ import {saveGroup} from '../../src/app/storage/session';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
+import {dailyPlanAt} from '../../src/app/npc-daily-plan';
 
 const hash=(payload:string)=>createHash('sha256').update(payload).digest('hex');
 function fixture(){
@@ -47,16 +48,22 @@ test('daily plans follow group time, reject overlaps and search only authored pl
    {id:'night',startMinute:1380,endMinute:120,activity:'Nachtwache',place:'home' as const,notes:'Am Nordtor lauschen'},
    {id:'day',startMinute:480,endMinute:1020,activity:'Torwache',place:'work' as const,notes:'Besucherbuch führen'},
   ];
-  const saved=f.store.executeNpc({commandId:'daily-plan',campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,dailyPlan},locationId:old.locationId,health:old.health}});
+  const dailyOverrides=[{day:'2',label:'Ruhetag am Markt',slots:[]}],saved=f.store.executeNpc({commandId:'daily-plan',campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{id:old.id,name:old.name,creatureId:old.creatureId,readAloud:old.readAloud,gmNotes:old.gmNotes,record:{...old.record,dailyPlan,dailyOverrides},locationId:old.locationId,health:old.health}});
   const dossier=f.store.npcDossier(f.workspace.token,f.scene.id,f.npcId);
   assert.deepEqual(dossier.dailyPlan?.current,dailyPlan[0]);assert.deepEqual(dossier.dailyPlan?.next,dailyPlan[1]);assert.equal(dossier.dailyPlan?.secondsUntilNext,28800);assert.equal(dossier.dailyPlan?.problem,null);
   const query=(text:string)=>f.store.npcs(f.workspace.token,{text,lifecycle:'all',factionId:null,locationId:null,offset:0});
-  assert.equal(query('Besucherbuch').total,1);assert.equal(query('home').total,0);assert.equal(query('night').total,0);
+  assert.equal(query('Besucherbuch').total,1);assert.equal(query('Ruhetag am Markt').total,1);assert.equal(query('home').total,0);assert.equal(query('night').total,0);
   assert.throws(()=>f.store.executeNpc({commandId:'overlapping-plan',campaignId:f.campaign.id,token:f.workspace.token,expectedNoteRevision:saved.noteRevision,expectedRecordRevision:saved.record.revision,expectedActorRevision:saved.actorRevision,expectedPositionRevision:saved.positionRevision,npc:{id:saved.id,name:saved.name,creatureId:saved.creatureId,readAloud:saved.readAloud,gmNotes:saved.gmNotes,record:{...saved.record,dailyPlan:[...dailyPlan,{id:'overlap',startMinute:60,endMinute:180,activity:'Rundgang',place:'other',notes:''}]},locationId:saved.locationId,health:saved.health}}),/überschneiden/);
   assert.equal(f.store.npc(f.workspace.token,f.npcId).record.revision,saved.record.revision);
   const world=f.store.world(f.workspace.token);f.store.executeWorld({commandId:'short-day',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'calendar',calendar:{...world.calendar,daySeconds:72000},expectedRevision:world.calendar.revision}});
-  assert.match(f.store.npcDossier(f.workspace.token,f.scene.id,f.npcId).dailyPlan?.problem??'',/außerhalb/);
+  const invalid=f.store.npcDossier(f.workspace.token,f.scene.id,f.npcId).dailyPlan!;assert.match(invalid.problem??'',/Tageslänge/);assert.equal(invalid.current,null);assert.equal(invalid.next,null);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('weekday plans and full-day exceptions suppress overnight spill and find the next recurrence',()=>{
+ const night={id:'night',startMinute:1380,endMinute:120,activity:'Nachtwache',place:'home' as const,notes:'',weekdays:[0]};
+ const ordinary=dailyPlanAt([night],String(86400_000+30*60_000),86400,7,[]);assert.deepEqual(ordinary.current,night);assert.equal(ordinary.startsOnPreviousDay,true);
+ const rest=dailyPlanAt([night],String(86400_000+30*60_000),86400,7,[{day:'2',label:'Marktruhe',slots:[]}]);assert.equal(rest.current,null);assert.equal(rest.overrideLabel,'Marktruhe');assert.equal(rest.nextDay,'8');assert.deepEqual(rest.next,night);
 });
 
 function legacyGroup(f:ReturnType<typeof fixture>){

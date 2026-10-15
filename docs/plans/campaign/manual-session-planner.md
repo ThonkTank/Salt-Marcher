@@ -60,6 +60,10 @@ am Ende eines bestehenden Plans übernehmen. `copy-visits` prüft Quell- und
 Zielbasis in derselben Transaktion wie neue Besuchsdetails und Receipt.
 Dialog-, Source-/Target- und Controlstände bleiben getrennt gebunden; entfernte
 Controls und verspätete Reads/Writes ändern keine neuere Auswahl.
+Plantexte, Besuchsinhalte und Freigabebasis kommen aus derselben geprüften
+Session-Lesung. Der Dialog hält keine zweite Plankopie; Ersetzen und Mappe
+verwenden denselben gelesenen Plan statt ihn nochmals zu laden. Der Plananteil
+ist eine Lesesicht und wird nicht zusätzlich in historischen Receipts gespeichert.
 [Dialogprüfung](../../../tests/desktop-session-copy-context.test.mjs) und
 [Speicherprüfung](../../../tests/desktop-session-copy-integrity.test.mjs) prüfen
 Reopen, Auswahl, Antwortreihenfolge, Quellschutz, Append, unabhängige offene
@@ -72,7 +76,12 @@ Status bleiben weitere Buchungen gesperrt. Dialogwechsel entfernt den Beleg
 nicht. Bestätigte Antworten aktualisieren nur ihren ursprünglichen Editor;
 spätere Texte und neue Kopierauswahlen bleiben offen. Auch nach Dialogreset
 aktualisiert die Statusklärung die Timeline; alte Refreshantworten gehören weiter
-zu ihrer ursprünglichen Aktivierung. Der frühere lokale Kopier-Retry entfällt.
+zu ihrer ursprünglichen Aktivierung. Eine inzwischen geänderte Kopierauswahl
+liest Quelle und Ziel erneut, behält Reihenfolge, Namen, Partywahl und Filter
+und wartet auf eine neue ausdrückliche Bestätigung. Fehlende gewählte Besuche
+bleiben zum bewussten Entfernen sichtbar; sie werden nicht still übersprungen.
+Jeder neue Anlageauftrag bekommt eine neue Plan-ID. Der frühere lokale
+Kopier-Retry und seine vorab reservierte Plan-ID entfallen.
 [Speicher- und Bedienprüfungen](../../../tests/desktop-preparation-context.test.mjs)
 belegen verlorene Antworten, reine Statusabfrage, spätere Texte und genau einen
 Append nach Dialogreset. Ein frischer Store liest denselben Beleg; native
