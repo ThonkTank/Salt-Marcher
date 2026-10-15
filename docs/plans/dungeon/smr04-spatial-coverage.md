@@ -116,3 +116,38 @@ im Volumenmodell. Die [räumlichen Prüfungen](../../../tests/desktop-volume-spa
 prüfen Pfadanker und Feldeintritt bei dieser Größe. Die automatische Ankerwahl
 behält nur die nächstgelegene Grenzfläche und erhält die Reihenfolge bei Gleichstand.
 Das sind lokale Prüfungen; eine native Gesamtqualifikation bleibt offen.
+
+## Direkte Rasterzüge (0.130, 15.10.2026)
+
+Der Desktop-Volumeneditor bietet zusammenhängende Pinselzüge mit rundem oder
+quadratischem Radius (0–10 Rasterzellen), gefüllte Rechtecke und Ellipsen.
+Dieselben Formen bearbeiten Hinzufügen, Radieren, Boden-, Decken- und Wandflächen
+sowie das gewählte Medium. Sparse Mausereignisse werden zwischen den Rasterpunkten
+interpoliert; PageUp/PageDown kann während eines Zugs den Schnitt ändern.
+Loslassen schreibt den vollständigen Zug unmittelbar als eine gemeinsame
+Historyaktion. Escape, verlorener Pointer oder Abbruch verwerfen den offenen
+Mauszug. Ein zu großer Zug wird vollständig verworfen, nicht als Präfix gespeichert.
+
+Eine genaue inklusive X/Y/Z-Bereichseingabe bleibt ausdrücklich Vorschau bis zur
+Übernahme. Quelle, Raum-/Volumenrevision und Werkzeugwerte werden bei Beginn
+festgehalten. Nach einem Konflikt kann die Vorschau verworfen und der bestätigte
+Stand neu geladen werden; ein neuer Lesevorgang wertet den alten Zug nicht auf.
+Während einer Speicherung beginnt kein zweiter Zug. Der vorhandene Store schützt
+auch hier atomare History, Identitäten, Keyprosa und Split-Zuordnung. Auch nach vollständigem Radieren bleiben Room-ID und Key
+lesbar; Neuzeichnen bindet dieselbe Identität wieder an Geometrie. Leeren und
+Neubinden lassen sich einzeln zurücknehmen.
+
+Zoom per Mausrad/Schaltflächen, Verschieben per mittlerer Maustaste/Pfeiltasten
+und Einpassen ändern keine Autorenfakten. Die Kamera bleibt bei Schnittwechseln
+und gewöhnlichen Zügen erhalten, damit auch jenseits der ursprünglichen Kontur
+gezeichnet werden kann. Markierte Zellen und ihre Höhenausdehnung sind vor dem
+Loslassen sichtbar. Hinzufügen verwendet weiterhin die bestehende 10-Fuß-Schale
+an jeder gewählten Ausgangshöhe; Radieren entfernt 5-Fuß-Zellen.
+
+Der bestehende Store begrenzt einen Zug auf 2000 Zellen. Größere Arbeiten benötigen
+mehrere Züge; eine schwere asynchrone Gesamtvorschau wird damit nicht behauptet.
+Tests: `tests/desktop-volume-stroke.test.mjs` prüft lückenlose Züge, negative
+Koordinaten, Schnittwechsel, Formen und Grenzen sowie echte Store-History und
+Fresh-Reopen mit unveränderter Prosa. Dies erweitert die räumliche Bedienung,
+belegt aber weder die gesamte 100.000-Zellen-Latenzabnahme noch alle geforderten
+Auswahl-/Transformationsformen oder den vollständigen kontinuierlichen Atlas.
