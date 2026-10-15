@@ -16,7 +16,10 @@ import {CampaignStore} from '../../src/app/storage/store';
 import {initTutorial,lessons,tutorialCapabilityLessons,tutorialLessonRevision,tutorialSurfaceLessons,type TutorialRun} from '../../src/app/tutorial';
 
 const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
-const capabilityExists=(sources:string,id:string)=>{const escaped=id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return new RegExp(`(?:id\\s*=\\s*["']${escaped}["']|\\.id\\s*=\\s*["']${escaped}["'])`).test(sources);};
+const capabilityExists=(sources:string,id:string)=>{
+ const escaped=id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ return new RegExp(String.raw`\bid\s*=\s*["']${escaped}["']`).test(sources);
+};
 
 test('a changed lesson revision creates a new optional tutorial run in the same application version',()=>{
  const root=mkdtempSync(join(tmpdir(),'tutorial-revision-')),path=join(root,'campaign.sqlite');let store=new CampaignStore(path,'1.0.0');try{const initial=store.tutorial();assert.equal(initial.lessonRevision,tutorialLessonRevision);const finished=store.tutorial('finished');assert.equal(finished.state,'finished');const db=(store as unknown as {db:any}).db,legacy={...finished,lessonRevision:'desktop-tutorial-accessibility-v12'};db.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify(legacy),'tutorial:app:1.0.0');const updated=store.tutorial();assert.deepEqual(JSON.parse(db.prepare('SELECT value FROM settings WHERE key=?').get('tutorial:app:1.0.0:history:'+legacy.runId).value),legacy);assert.equal(updated.state,'new');assert.equal(updated.lessonRevision,tutorialLessonRevision);assert.notEqual(updated.runId,finished.runId);store.close();store=new CampaignStore(path,'1.0.0');assert.deepEqual(store.tutorial(),updated);
@@ -36,4 +39,10 @@ test('the first-run dialog opens automatically and skip closes it without blocki
  const parsed=parseHTML(readFileSync(join(process.cwd(),'src/app/index.html'),'utf8')),priorDocument=globalThis.document,priorWindow=globalThis.window,{document,window}=parsed,dialog=document.getElementById('tutorial-dialog') as HTMLDialogElement,calls:(TutorialRun['state']|undefined)[]=[];let state:TutorialRun['state']='new';Object.assign(globalThis,{document,window});Object.defineProperty(dialog,'open',{value:false,writable:true});dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};window.campaign={tutorial:async(next?:'shown'|'finished'|'skipped')=>{calls.push(next);if(next)state=next;return{ok:true as const,value:{version:'1.0.0',lessonRevision:tutorialLessonRevision,runId:'run',state}};}} as unknown as typeof window.campaign;
  try{await initTutorial();assert.equal(dialog.open,true);assert.deepEqual(calls,[undefined,'shown']);assert.equal(document.querySelectorAll('#tutorial-lessons li').length,lessons.length);document.getElementById('tutorial-skip')!.onclick?.(new window.Event('click') as any);await settle();assert.equal(dialog.open,false);assert.equal(state,'skipped');document.getElementById('help')!.onclick?.(new window.Event('click') as any);assert.equal(dialog.open,true);
  }finally{Object.assign(globalThis,{document:priorDocument,window:priorWindow});}
+});
+
+
+test('capability declarations recognize actual id assignments without treating lookup calls as construction',()=>{
+ assert.equal(capabilityExists("insert.id='text-reference-insert';",'text-reference-insert'),true);
+ assert.equal(capabilityExists("get('text-reference-insert');",'text-reference-insert'),false);
 });
