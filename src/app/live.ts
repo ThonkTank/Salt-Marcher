@@ -1,3 +1,4 @@
+import {plainReferenceText} from './text-references';
 import {NpcCastBinder} from './npc-cast-ui';
 import {openPartyRest} from './party-topbar-ui';
 import {TimeNavigator} from './time-plan-ui';
@@ -280,7 +281,7 @@ export async function useLiveReferenceReadAloud(text:string,title:string,expecte
  if(!token||!current()||!await ensureLiveRuntime()||!current()||!await flushLive()||!current())throw new Error('Die laufende Gruppe hat sich geändert. Schnellsuche neu öffnen.');
  useKnowledgeReadAloud(text,title);if(!await flushLive())throw new Error('Vorlesetext konnte noch nicht gespeichert werden. Eingabe bleibt offen.');
 }
-function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
+function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;text=plainReferenceText(text);sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLButtonElement>('running-player-scene').disabled=!text.trim();schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
 function loadLiveNarrative(noteId:string){if(!context||narrativeCache.has(noteId)||narrativeProblems.has(noteId)||narrativeLoading.has(noteId))return;const token=context.token,generation=narrativeGeneration;narrativeLoading.add(noteId);void window.campaign.narrative(token,noteId).then(result=>{if(context?.token!==token||generation!==narrativeGeneration)return;if(result.ok)narrativeCache.set(noteId,result.value);else narrativeProblems.set(noteId,result.error);}).catch(error=>{if(context?.token===token&&generation===narrativeGeneration)narrativeProblems.set(noteId,(error as Error).message);}).finally(()=>{if(generation===narrativeGeneration){narrativeLoading.delete(noteId);renderLiveKnowledge();}});}
 function narrativeFacts(view:NarrativeView){const state=view.state,location=state.locationId?sources?.locations.find(row=>row.document.id===state.locationId)?.document.name??'Ort nicht verfügbar':'Ohne Ortsbindung',contributors=state.contributors.map(id=>data?.roster.find(character=>character.id===id)?.profile.name??'Unbekannte Figur');return(state.status==='closed'?'Abgeschlossen':'Offen')+' · '+location+(contributors.length?' · Beteiligte: '+contributors.join(', '):'')+(state.poolXp?' · '+state.poolXp+' XP vorgemerkt':'')+(view.award?' · Belohnung vergeben':'');}
 function renderLiveKnowledge(){
