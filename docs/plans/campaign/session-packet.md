@@ -66,7 +66,11 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
    Fachbereiche. Es gibt keinen weiteren Writer, Inhaltsbestand oder Graph.
 6. Vor und nach dem Dateidialog wird die Ausgabebasis geprüft. Geänderte Quellen
    verlangen Aktualisieren; geschrieben wird der geprüfte Stand. Abbruch schreibt
-   nichts. Alte Read-/Exportantworten dürfen nach Schließen oder Kontextwechsel
+   nichts. Die Markdownausgabe schreibt zuerst einen exklusiven Kandidaten im
+   Zielverzeichnis, synchronisiert und schließt ihn und prüft den Quellen-/
+   Kampagnenkontext unmittelbar vor dem atomaren Ersetzen erneut. Schreib-, Sync-,
+   Kontext- und Umbenennungsfehler erhalten eine vorhandene Zieldatei und entfernen
+   den eigenen Kandidaten. Alte Read-/Exportantworten dürfen nach Schließen oder Kontextwechsel
    weder Aktionen reaktivieren noch neuere Ergebnisse überschreiben.
 7. Wird ein übernommener Besuch aus der Planung entfernt, bleiben historische
    Szeneninhalte und Herkunft erhalten. Aktuelle Notizbindungen und Folgebesuche
@@ -101,10 +105,17 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
 ## Quellen und Nachweisgrenzen
 
 `storage/session-packet.ts`, `session-packet-ui.ts` und `session-packet-contracts.ts`
-führen Lesen, Bedienung und Markdownausgabe; `desktop/main.ts` den Dateidialog.
+führen Lesen, Bedienung und Markdownausgabe; `desktop/main.ts` den Dateidialog
+und `desktop/session-packet-export.ts` die Veröffentlichung der Datei.
 `session-progress-ui.ts`/`storage/visit-outcomes.ts` führen Besuchsergebnisse.
 Kontrollierte DOM-/SQLiteprüfungen, insbesondere
 `tests/desktop-session-packet-context.test.mjs`, belegen die dort getesteten
-Daten- und Kontextgrenzen. Native Ausgabe und der vollständige Abendablauf sind
+Daten- und Kontextgrenzen. `tests/desktop-session-packet-export.test.mjs` prüft
+mit tatsächlichen temporären Dateien und kontrollierten Schreib-/Sync-/Rename-
+Fehlern: ursprüngliche Zielbytes oder fehlendes Ziel erhalten, Quellenwechsel
+während des Schreibens verworfen, Kandidat entfernt und erfolgreicher Export
+bytegleich zum bestehenden Markdownwriter. Das ist kein Nachweis für Stromausfall,
+Prozesskill, native Speicherdialoge oder fremde gleichzeitige Zielbearbeitung.
+Native Ausgabe und der vollständige Abendablauf sind
 weiter offen. Der gemeinsame Textvertrag steht in
 [Autorenverweise](authored-text-references.md).
