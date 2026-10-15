@@ -1,6 +1,6 @@
 # Actor Autonomy: bestätigte Zeit und persistente Grundlage
 
-Stand: 14.10.2026. Dieser Fachplan konkretisiert [SMR-09](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-09--actor-autonomy), den [Produktumfang](../../SCOPE.md) und den [Live-/Scenevertrag](smr03-live-scene-contract.md).
+Stand: 15.10.2026. Dieser Fachplan konkretisiert [SMR-09](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-09--actor-autonomy), den [Produktumfang](../../SCOPE.md) und den [Live-/Scenevertrag](smr03-live-scene-contract.md).
 
 ## Nutzerablauf und Grenze
 
@@ -45,8 +45,11 @@ Campaign-Kopien remappen kampagnenlokale Identitäten. Der fachliche Logwert
 `intervalId: "manual"` bleibt dabei in SQL und Payload unverändert; Actor- und
 Campaignowner werden remappt.
 
-Einzel-/Gruppen-Deaktivierung, manuelle Pause und ausdrücklicher Jobabbruch
-geben zukünftige exklusive Buchungen an der bestätigten Actorzeit frei. Bereits
+Einzel-/Gruppen-Deaktivierung, manuelle Pause, Pendingpause bei Zeitkonflikt
+und ausdrücklicher Jobabbruch geben zukünftige exklusive Buchungen an der
+bestätigten Actorzeit frei. Beide Buchungstabellen (`autonomy_booking` und
+`autonomy_target_booking`) behalten nur die ausgeführten Abschnitte. Die
+frühere Zeit einer anderen Scene ist keine Rückrollgrenze für den Actor. Bereits
 ausgeführte Buchungsteile bleiben erhalten; nur Jobabbruch verwirft den
 Jobfortschritt. Wiederaufnahme bucht den verbleibenden Zeitraum für Job und Ziel
 neu. Ein belegtes Ziel wird dabei nicht gewaltsam übernommen.
@@ -77,7 +80,7 @@ Zeitraum begründet aus.
 | Historische Jobs, Regeln, Positionen, Routen, Features und Dungeonstruktur; unveränderte Fakten und Backupschutz | `tests/core/autonomy-persistence-integrity.test.ts` |
 | Unabhängige Sceneuhren, begrenzte Fortsetzung, persistente Pause und begründete Auflösung nach Fresh | `tests/core/autonomy-scene-time-boundary.test.ts`, `tests/core/autonomy-time-conflict-ui.test.ts` |
 | Bewegung, Trap-Reset und Konfliktwirkung mit spätem Logfehler; vollständiger Rollback, Retry und Replay | `tests/core/autonomy-owner-atomicity.test.ts` |
-| Inaktive Zeit übersprungen, Standard-/Custom-Needs bei Kopie erhalten, Einzel-/Gruppenreservierungen freigegeben und neu gebucht; atomare Rasten | `tests/desktop-autonomy-disable-time.test.mjs` |
+| Inaktive Zeit übersprungen, Standard-/Custom-Needs bei Kopie erhalten, Einzel-/Gruppenreservierungen sowie Pending-Zeitkonflikte freigegeben; neue Buchung durch anderen NPC, spätes Log-Fault/Rollback und atomare Rasten | `tests/desktop-autonomy-disable-time.test.mjs` |
 
 Diese SQLite-/kontrollierten DOMbelege schließen weder alle Ownerwirkungen noch
 native Bedienung, echten Prozessabbruch, Cancel oder die Gesamtqualifikation.
