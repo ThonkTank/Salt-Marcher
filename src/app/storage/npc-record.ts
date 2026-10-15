@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {NpcRecord,NpcRole,NpcView,NpcDraft} from '../npc-contracts';
+import {checkedDailyPlan} from '../npc-daily-plan';
 import {checkedHealth} from '../progression';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installNpcRecords(db:any){db.exec(`CREATE TABLE IF NOT EXISTS npc_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,faction_id TEXT,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,id) REFERENCES world_note(campaign_id,id),FOREIGN KEY(campaign_id,faction_id) REFERENCES world_note(campaign_id,id)) STRICT;
@@ -10,14 +11,16 @@ const identity=(v:any)=>typeof v==='string'&&!!v.trim()&&v.length<=1000;
 const revision=(v:any)=>Number.isSafeInteger(v)&&v>=0;
 const reference=(v:any)=>v===null||identity(v);
 export function checkedNpcRecord(r:NpcRecord):NpcRecord{
- if(!object(r)||!identity(r.id)||!revision(r.revision)||!reference(r.factionId)||!Number.isSafeInteger(r.modifier)||Math.abs(r.modifier)>100||!['active','defeated'].includes(r.lifecycle)||[r.appearance,r.behavior,r.history].some(s=>typeof s!=='string'||s.length>2000000))throw new Error('NPC-Weltprofil prüfen.');
- return r;
+ const d=r?.demographics??{ancestry:'',gender:'',ageYears:null};
+ if(!object(r)||!identity(r.id)||!revision(r.revision)||!reference(r.factionId)||!Number.isSafeInteger(r.modifier)||Math.abs(r.modifier)>100||!['active','defeated'].includes(r.lifecycle)||[r.appearance,r.behavior,r.history].some(s=>typeof s!=='string'||s.length>2000000)||!object(d)||[d.ancestry,d.gender].some(s=>typeof s!=='string'||s.length>1000)||!(d.ageYears===null||Number.isSafeInteger(d.ageYears)&&d.ageYears>=0&&d.ageYears<=2000))throw new Error('NPC-Weltprofil prüfen.');
+ if(r.dailyPlan!==undefined)checkedDailyPlan(r.dailyPlan);
+ return{...r,demographics:{ancestry:d.ancestry,gender:d.gender,ageYears:d.ageYears}};
 }
 export function checkedNpcView(v:NpcView):NpcView{
  if(!object(v)||!identity(v.id)||typeof v.name!=='string'||!v.name.trim()||!revision(v.noteRevision)||v.noteRevision<1||!reference(v.creatureId)||!reference(v.locationId)||!(v.positionRevision===null||revision(v.positionRevision)&&v.positionRevision>0)||!(v.actorRevision===null||revision(v.actorRevision)&&v.actorRevision>0)||[v.readAloud,v.gmNotes].some(s=>typeof s!=='string'||s.length>2000000)||!Number.isSafeInteger(v.disposition)||Math.abs(v.disposition)>100||v.role!==(v.disposition>0?'friendly':v.disposition<0?'hostile':'neutral'))throw new Error('NPC-Stand beschädigt.');
- if(checkedNpcRecord(v.record).id!==v.id||(v.actorRevision===null)!==(v.health===null)||v.actorRevision!==null&&!v.creatureId)throw new Error('NPC-Stand gehört zu einer anderen Figur.');
+ const record=checkedNpcRecord(v.record);if(record.id!==v.id||(v.actorRevision===null)!==(v.health===null)||v.actorRevision!==null&&!v.creatureId)throw new Error('NPC-Stand gehört zu einer anderen Figur.');
  if(v.health!==null)checkedHealth(v.health);
- return v;
+ return{...v,record};
 }
 export function checkedNpcDraft(d:NpcDraft):NpcDraft{
  if(!object(d)||!identity(d.id)||!identity(d.writeId)||typeof d.concentrating!=='boolean'||!object(d.fields)||Object.values(d.fields).some(v=>typeof v!=='string')||Buffer.byteLength(JSON.stringify({...d,pendingCommand:undefined,rejectedCommand:undefined}))>4000000||Buffer.byteLength(JSON.stringify(d))>12000000)throw new Error('NPC-Entwurf prüfen.');
@@ -35,7 +38,7 @@ function recordRow(db:any,row:any):NpcRecord{
 export function npcRecord(db:any,cam:string,id:string):NpcRecord{
  const row=db.prepare("SELECT 1 FROM sqlite_schema WHERE name='npc_record'").get()?db.prepare('SELECT * FROM npc_record WHERE campaign_id=? AND id=?').get(cam,id):null;
  if(row)return recordRow(db,row);
- return{id,revision:0,factionId:null,modifier:db.prepare('SELECT 1 FROM world_actor WHERE campaign_id=? AND id=?').get(cam,id)?-1:0,lifecycle:'active',appearance:'',behavior:'',history:''};
+ return{id,revision:0,factionId:null,modifier:db.prepare('SELECT 1 FROM world_actor WHERE campaign_id=? AND id=?').get(cam,id)?-1:0,lifecycle:'active',appearance:'',behavior:'',history:'',demographics:{ancestry:'',gender:'',ageYears:null}};
 }
 export function readNpcDraftRow(db:any,row:any):NpcDraft{
  if(hash(row.payload)!==row.checksum)throw new Error('NPC-Entwurf beschädigt.');

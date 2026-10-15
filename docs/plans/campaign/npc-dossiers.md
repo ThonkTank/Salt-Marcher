@@ -120,3 +120,15 @@ Der gemeinsame Historienschritt ist aus beiden beteiligten Städten rückgängig
 Jeder Haushalts- und Berufseintrag im Hausinspektor öffnet jetzt eine Suche nach Zielhäusern in allen Städten. Die Bestätigung nennt Quelle, Ziel und alle Mitglieder. Der Umzug erhält Kennung und Namen des vollständigen Eintrags, bindet sämtliche Mitglieder im neuen Haus und entfernt den Eintrag aus dem bisherigen Haus. Andere Haushalte, Arbeitsbindungen, Bewohner und Hausnotizen bleiben bestehen. Auch leere benannte Einträge können verschoben werden.
 
 Die vorhandene Stadttransaktion und gemeinsame Historie übernehmen Quell- und Zieländerung; Rückgängig/Wiederholen sind in beiden Städten verfügbar. Abbrechen vor der Bestätigung schreibt nichts. Quell- und Zielrevisionen werden beim Commit geprüft. Aktuelle Aufenthaltsorte werden durch den Umzug von Wohn-/Arbeitsbindungen nicht bewegt. Keine Aussage über vollständige Produktabnahme.
+
+### Desktop-Arbeitsstand 0.108: Explizite Demografie und Stadtprojektion
+
+Das kanonische World-NPC-Profil besitzt optionale Felder für Herkunft/Spezies, Geschlecht und ein exaktes Alter in Jahren. Alte Profile und Entwürfe ohne diese Felder bleiben lesbar. Der bestehende konfliktgeschützte NPC-Auftrag, sein Receipt, die History, Backups und unabhängige Kampagnenkopien tragen die Angaben gemeinsam mit dem übrigen Weltprofil.
+
+Eine Stadt zählt diese Angaben ausschließlich für NPCs mit bestätigter Wohnbindung. Sie zeigt Gesamtzahl, Zahl gepflegter Profile sowie exakte Häufigkeiten je Textwert und Alter. Änderungen am World-NPC werden beim nächsten Stadtlesen sichtbar, ohne die Stadtrevision oder Stadt-History zu verändern. Namen, Freitext, Haushalt und Beruf werden nicht als demografische Merkmale interpretiert. Verteilungen für neu erzeugte Personen, Religion und Lebensstandard bleiben Teil der offenen CITY-06-Inventur.
+
+### Desktop-Arbeitsstand 0.109: Täglich wiederkehrende NSC-Pläne
+
+Das NPC-Weltprofil speichert bis zu 48 benannte Aktivitäten mit Beginn/Ende, Zielart Wohnhaus/Arbeitsplatz/frei und Autorenhinweisen. Normale Profilentwürfe bewahren auch unvollständige Uhrzeiten und Texte; erst NPC übernehmen bestätigt den Plan. Die bestehende NPC-Transaktion und Receiptprüfung tragen ihn mit dem restlichen Profil, ohne neue Tabelle oder zweite Schreibgrenze. Überlappungen sowie Zeiten außerhalb des aktuellen Kampagnentags werden beim Übernehmen abgewiesen. Ein Ende vor dem Beginn läuft über Mitternacht.
+
+Das Dossier projiziert den wiederkehrenden Plan auf die Uhr der gewählten Livegruppe und den gemeinsamen Kampagnenkalender. Es zeigt aktuelle geplante Aktivität, nächsten Beginn und die heutigen kanonischen Wohn-/Arbeitsbindungen; der aktuelle reale Aufenthaltsort bleibt gesondert sichtbar. Fehlende Hausbindungen und nach Kalenderänderung unpassende Pläne werden angezeigt. Eine neue Tagesplanung setzt keine Position, schreitet keine Uhr fort und aktiviert keine Autonomie. Wochentagsregeln, Ausnahmen/Ruhetage und automatische Ausführung bleiben offen.

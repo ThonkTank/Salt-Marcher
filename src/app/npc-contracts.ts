@@ -1,7 +1,9 @@
 import type {NpcPlacesAPI as importNpcPlacesAPI} from './npc-places-contracts';
 import type {Result} from './contracts';
 import type {CharacterHealth} from './progression';
-export interface NpcRecord {id:string;revision:number;factionId:string|null;modifier:number;lifecycle:'active'|'defeated';appearance:string;behavior:string;history:string}
+export interface NpcDemographics {ancestry:string;gender:string;ageYears:number|null}
+export interface NpcDailySlot {id:string;startMinute:number;endMinute:number;activity:string;place:'home'|'work'|'other';notes:string}
+export interface NpcRecord {id:string;revision:number;factionId:string|null;modifier:number;lifecycle:'active'|'defeated';appearance:string;behavior:string;history:string;demographics?:NpcDemographics;dailyPlan?:NpcDailySlot[]}
 export type NpcRole='friendly'|'neutral'|'hostile';
 export interface NpcView {id:string;name:string;noteRevision:number;creatureId:string|null;readAloud:string;gmNotes:string;record:NpcRecord;locationId:string|null;positionRevision:number|null;actorRevision:number|null;health:CharacterHealth|null;disposition:number;role:NpcRole}
 export interface NpcQuery {text:string;lifecycle:'all'|'active'|'defeated';factionId:string|null;locationId:string|null;offset:number;onlyUnplaced?:boolean}

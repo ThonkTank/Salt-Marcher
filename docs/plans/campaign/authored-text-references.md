@@ -54,10 +54,30 @@ Die Storegegenproben in `world-links-storage.test.ts` öffnen eine neue Storeins
 prüfen kopierte History und nicht angewandte/angewandte Originalaufträge sowie
 Ablehnung einer fremden Belegbindung. Das ist keine native Recoveryabnahme.
 Bereits mit falschen Historybesitzern erzeugte ältere Kopien sind damit nicht
-rückwirkend repariert: Eine gesonderte Wiederherstellung muss Originalsnapshot,
-geprüfte `campaign_origin.local_map`, Notizidentitäten und Historyzuordnung
-gegeneinander bestätigen und Originalbytes sichern. Keine Freitextheuristik oder
-stille Umschreibung von möglicherweise absichtlich ungebundenen Verweisen.
+rückwirkend repariert. `campaign_origin.original_database` enthält heute einen
+kompakten Herkunftsvermerk mit Hash der angenommenen Datei, keine ursprüngliche
+Datenbank. Seine `checksum` prüft nur diese Bytes; `local_map` ist dadurch nicht
+gegen Umzuordnung abgesichert. Beim Weiterkopieren wird der Herkunftsvermerk für
+den letzten Kopierschritt ersetzt. Er ist kein vollständiges Herkunftsarchiv.
+
+`campaign-data.ts` prüft vor dem Remap den Hash der opaque Herkunftsbytes und die
+Form von `local_map` als Objekt mit Stringwerten. `store.ts` verwendet denselben
+Check für Preview, Annahme, Snapshot und Backup. Fehler ersetzen keine vorhandene
+gute Ausgabedatei und verändern weder Quelle noch Zielkampagne. Gültige historische
+Blobformate und freie Herkunftskennungen bleiben erhalten; keine Schemaänderung.
+Die Prüfungen in `campaign-origin.test.ts` decken diese Grenzen und drei aufeinander-
+folgende Kopien samt Paarhistory ab. Form- und Hashprüfung beweisen keine sachliche
+Zuordnung der alten Notizen.
+
+Eine spätere Altkopien-Wiederherstellung benötigt deshalb einen separat erhaltenen
+Originalsnapshot, dessen Identität und die vollständige ID-Zuordnung unabhängig
+bestätigt werden können. Der heutige Herkunftsvermerk allein reicht dafür nicht.
+Vorher Originalbytes sichern; dann Original-/Kopienidentitäten, Historypayloads,
+Receiptbindung und zwischenzeitliche Revisionen auf einer Arbeitskopie vergleichen.
+Bei fehlendem Beleg bleibt die Reparatur offen. Keine Freitext-/Labelheuristik oder
+stille Umschreibung möglicherweise absichtlich ungebundener Verweise. Eine
+Reparaturabnahme muss mehrstufige Kopien, spätere Notizänderungen, Trash,
+manipulierte Zuordnungen, gleiche Anzeigenamen und atomare Ablehnung einschließen.
 
 ## Offene Arbeit
 

@@ -15,7 +15,7 @@ const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{p
 async function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'npc-switch-')),{CampaignStore}=require('../.build/npc-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite'),campaign=store.create('NPCs sicher wechseln'),w=store.activate(campaign.id),npcs=[];
  for(const name of ['Hafenmeisterin Mira','Späher Borin']){const id=randomUUID();npcs.push(store.executeNpc({commandId:randomUUID(),campaignId:campaign.id,token:w.token,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name,creatureId:null,readAloud:'  Blick.\r\n- Mantel',gmNotes:'Original: '+name,record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:null,health:null}}));}
- const [a,b]=npcs,previous={window:globalThis.window,document:globalThis.document,HTMLSelectElement:globalThis.HTMLSelectElement},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document,HTMLSelectElement:window.HTMLSelectElement});
+ const [a,b]=npcs,previous={window:globalThis.window,document:globalThis.document,HTMLSelectElement:globalThis.HTMLSelectElement,Event:globalThis.Event},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),selectValues=new WeakMap();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return selectValues.get(this)??this.querySelector('option')?.getAttribute('value')??'';},set(value){selectValues.set(this,value);}});window.HTMLElement.prototype.scrollIntoView=()=>{};Object.assign(globalThis,{window,document,HTMLSelectElement:window.HTMLSelectElement,Event:window.Event});
  const response=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}},writes=[],messages=[],reads=[];
  window.campaign={};for(const key of ['generationSources','npcs','npcDrafts','npc','npcDraft','keepNpcDraft','discardNpcDraft','reconcileNpc'])window.campaign[key]=async(...args)=>response(()=>{reads.push({kind:key,args});return store[key](...args);});
  window.campaign.executeNpc=async command=>{writes.push(command);return response(()=>store.executeNpc(command));};
@@ -47,6 +47,19 @@ test('switching campaigns invalidates pending profile replies',async()=>{
 
 test('editing one NPC field preserves untouched CRLF prose in the draft and published NPC',async()=>{
  const x=await fixture();try{for(const id of ['npc-readAloud','npc-gmNotes'])x.el(id).value=x.el(id).value.replace(/\r\n/g,'\n');x.input('npc-history','Neue Geschichte');assert(await x.ui.flushNpcs());const draft=x.store.npcDraft(x.w.token,x.a.id);assert.equal(draft.fields.readAloud,x.a.readAloud);x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('npc-name').disabled);const saved=x.store.npc(x.w.token,x.a.id);assert.equal(saved.readAloud,x.a.readAloud);assert.equal(saved.gmNotes,x.a.gmNotes);assert.equal(saved.record.history,'Neue Geschichte');}finally{await x.cleanup();}
+});
+
+test('explicit NPC demographics publish together and reject an out-of-range age before writing',async()=>{
+ const x=await fixture();try{x.input('npc-ancestry','  Elf  ');x.input('npc-gender','nichtbinär');x.input('npc-ageYears','44');x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('npc-name').disabled);assert.deepEqual(x.store.npc(x.w.token,x.a.id).record.demographics,{ancestry:'Elf',gender:'nichtbinär',ageYears:44});x.input('npc-ageYears','2001');x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.messages.some(message=>message.includes('zwischen 0 und 2000')));assert.equal(x.writes.length,1);assert.equal(x.store.npc(x.w.token,x.a.id).record.demographics.ageYears,44);}finally{await x.cleanup();}
+});
+
+test('daily plan editor preserves raw input in the draft and publishes one recurring activity',async()=>{
+ const x=await fixture();try{
+  x.el('npc-daily-add').click();const row=x.el('npc-daily-plan').querySelector('fieldset'),set=(field,value)=>{const control=row.querySelector(`[data-daily-field="${field}"]`);control.value=value;control.dispatchEvent(new window.Event('input',{bubbles:true}));};
+  set('start','23:00');set('end','02:00');set('activity','Nachtwache');set('place','home');set('notes','Am Nordtor lauschen');assert(await x.ui.flushNpcs());
+  const raw=JSON.parse(x.store.npcDraft(x.w.token,x.a.id).fields.dailyPlan);assert.deepEqual(raw.map(({start,end,activity,place,notes})=>({start,end,activity,place,notes})),[{start:'23:00',end:'02:00',activity:'Nachtwache',place:'home',notes:'Am Nordtor lauschen'}]);
+  x.el('npc-editor').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('npc-name').disabled);const [slot]=x.store.npc(x.w.token,x.a.id).record.dailyPlan;assert.deepEqual({start:slot.startMinute,end:slot.endMinute,activity:slot.activity,place:slot.place,notes:slot.notes},{start:1380,end:120,activity:'Nachtwache',place:'home',notes:'Am Nordtor lauschen'});
+ }finally{await x.cleanup();}
 });
 
 test('a canceled dossier contact cannot stage a header after the NPC read returns',async()=>{
