@@ -1,5 +1,6 @@
 import type {ChronicleEntry} from './chronicle-contracts';
 import type {LiveSessionRecap} from './live-session-recap';
+import type {Result} from './contracts';
 
 export type SessionCloseReviewExit='discard'|'continue';
 export interface SessionCloseHandoffInput{sceneTitle:string;locationTitle?:string|null;masks:{kind:'combat'|'chase';title:string;sceneTitle:string}[];treasureCount:number;xpBooked:boolean;nextVisit?:{title:string;location?:string|null}|null;journey?:string|null;agenda?:string[];narratives?:string[];notices?:string[]}
@@ -21,6 +22,11 @@ export async function settleSessionCloseSources<A,P>(audit:Promise<A>,preparatio
   const [checked,enrichment]=await Promise.allSettled([audit,preparation]);
   if(checked.status==='rejected')throw checked.reason;
   return{audit:checked.value,preparation:enrichment.status==='fulfilled'?enrichment.value:null,preparationError:enrichment.status==='rejected'?enrichment.reason:null};
+}
+
+export async function settleOptionalSessionSource<T>(source:Promise<Result<T>>){
+  try{const result=await source;return result.ok?{value:result.value,error:null}:{value:null,error:result.error};}
+  catch(error){return{value:null,error:(error as Error).message};}
 }
 
 export function latestCompletedSessionHandoff(entries:ChronicleEntry[]){

@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {parseHTML} from 'linkedom';
 import type {ChronicleEntry} from '../../src/app/chronicle-contracts';
-import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls,settleSessionCloseSources} from '../../src/app/live-session-close';
+import {latestCompletedSessionHandoff,leaveSessionCloseReview,sessionCloseHandoffSuggestion,sessionStartControls,settleOptionalSessionSource,settleSessionCloseSources} from '../../src/app/live-session-close';
 
 function fixture(){
   const {document}=parseHTML('<dialog open></dialog><textarea id="draft"></textarea><textarea id="review"></textarea>');
@@ -57,4 +57,10 @@ test('optional handoff sources cannot block a verified session close',async()=>{
   const result=await settleSessionCloseSources(reviewed,unavailable);
   assert.deepEqual(result.audit,{masks:2});assert.equal(result.preparation,null);assert.match(String(result.preparationError),/Journal nicht lesbar/);
   await assert.rejects(()=>settleSessionCloseSources(Promise.reject(new Error('Abschlussprüfung nicht lesbar')),Promise.resolve({})),/Abschlussprüfung nicht lesbar/);
+});
+
+test('unavailable readiness cannot block the next-session dashboard',async()=>{
+  assert.deepEqual(await settleOptionalSessionSource(Promise.resolve({ok:false,error:'Fortschritt nicht lesbar'})),{value:null,error:'Fortschritt nicht lesbar'});
+  assert.deepEqual(await settleOptionalSessionSource(Promise.reject(new Error('Verbindung abgebrochen'))),{value:null,error:'Verbindung abgebrochen'});
+  assert.deepEqual(await settleOptionalSessionSource(Promise.resolve({ok:true,value:{characters:2}})),{value:{characters:2},error:null});
 });
