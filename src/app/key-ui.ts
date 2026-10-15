@@ -132,7 +132,17 @@ async function save(){
  if(!blocked)tell('Dungeon-Key gespeichert. Gemeinsame Autoren-History verfügbar.');
 }
 function blank(kind:KeyContent['kind'],id:string=uuid()):KeyContent{return{id,revision:0,scopeId,kind,name:kind==='dungeon'?'Dungeonwerte':'Neuer Inhalt',levelId:null,groupId:null,zSteps:[],attributes:{},blocks:[],tags:[],secret:false,status:'',references:[]};}
-export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected,drain:typeof before,changed:typeof publish,go:typeof navigate){tell=status;workspace=w;selected=r;before=drain;publish=changed;navigate=go;const editing=new Set(['key-name','key-number','key-read-aloud','key-gm-notes','key-attributes','key-zsteps','key-tags','key-status','key-secret','key-level','key-group']);for(const type of ['input','change','click'] as const)el('key-dialog').addEventListener(type,event=>{const target=event.target as HTMLElement;if(type!=='click'&&editing.has(target.id)||target.closest('#key-blocks')||type==='click'&&['key-add-block','key-reference-add'].includes(target.id)||target.closest('#key-references')){editVersion++;blocked=false;schedule();}});
+export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected,drain:typeof before,changed:typeof publish,go:typeof navigate){
+ tell=status;workspace=w;selected=r;before=drain;publish=changed;navigate=go;
+ const editing=new Set(['key-name','key-number','key-read-aloud','key-gm-notes','key-attributes','key-zsteps','key-tags','key-status','key-secret','key-level','key-group']);
+ for(const type of ['input','change','click'] as const)el('key-dialog').addEventListener(type,event=>{
+  const target=event.target as HTMLElement;
+  // Controls can redraw and detach themselves before this listener runs.
+  const contentEdit=event.composedPath().some(node=>['key-blocks','key-references'].includes((node as HTMLElement).id));
+  if(type!=='click'&&editing.has(target.id)||contentEdit||type==='click'&&['key-add-block','key-reference-add'].includes(target.id)){
+   editVersion++;blocked=false;schedule();
+  }
+ });
  el('key-dialog').addEventListener('cancel',event=>{event.preventDefault();void moveEditor(()=>el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);});
  el('key-open').onclick=()=>{const o=owner(),room=selected(),intent=++transition;run(async()=>{if(!(await before())||!owns(o)||intent!==transition)return;if(!room)throw new Error('Raum auswählen.');scopeId=room.scopeId;if(!await refresh()||!owns(o)||intent!==transition)return;openRoom(room.id);optionList('key-filter-level',records().filter(r=>r.kind==='level'&&r.scopeId===scopeId),null,'Alle Level');optionList('key-filter-group',records().filter(r=>r.kind==='group'&&r.scopeId===scopeId),null,'Alle Gruppen');el<HTMLDialogElement>('key-dialog').showModal();});};
  el('key-add-room').onclick=()=>{void moveEditor(async()=>{
