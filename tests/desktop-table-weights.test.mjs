@@ -12,7 +12,7 @@ buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/table-weight
 buildSync({entryPoints:['src/app/generation-ui.ts'],outfile:'.build/table-weights-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/table-weights-store.cjs');
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
-async function fixture(t,kind){
+async function fixture(t,kind,configure=()=>{}){
  const root=mkdtempSync(path.join(tmpdir(),'table-weights-')),store=new CampaignStore(path.join(root,'campaign.sqlite')),campaign=store.create('Tabellengewichte'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const table=kind==='encounter'?{id:randomUUID(),revision:0,scope:'campaign',name:'Wachen',description:'Rohtext',entries:[{creatureId:'guard',weight:'1'},{creatureId:'goblin',weight:'1'}],habitats:[],time:'any',lootTableId:null,trashed:false}:{id:randomUUID(),revision:0,name:'Beute',description:'Rohtext',rolls:1,entries:['A','B'].map(name=>({id:randomUUID(),weight:'1',minimum:1,maximum:1,item:{name,valueGold:'0',category:'other'}})),trashed:false};
  store.executeGeneration(command({kind:kind==='encounter'?'table-save':'loot-save',table,expectedRevision:null}));
@@ -22,6 +22,7 @@ async function fixture(t,kind){
  const result=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};
  window.campaign={creature:async id=>({ok:true,value:{id,name:id,xp:25,challengeRating:'1/8'}}),executeGeneration:async c=>result(()=>store.executeGeneration(c))};
  for(const method of ['encounterTables','lootTables','generatorRegistry','generationRuns','generationSources','npcs'])window.campaign[method]=async(...args)=>result(()=>store[method](...args));
+ configure(window.campaign);
  delete require.cache[require.resolve('../.build/table-weights-ui.cjs')];const ui=require('../.build/table-weights-ui.cjs'),messages=[];let selectedCreature=null;ui.initGeneration((...args)=>messages.push(args),{plan:async()=>null,creature:()=>selectedCreature,filters:()=>({}),info:()=>null,accept:async()=>{}});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}ui.activateGeneration(w);await ui.refreshGeneration();
  const el=id=>document.getElementById(id),prefix=kind==='encounter'?'table':'loot',read=()=>store[kind==='encounter'?'encounterTables':'lootTables'](w.token,true).find(t=>t.id===table.id);
  el(kind==='encounter'?'encounter-table-list':'loot-table-list').value=table.id;el(kind==='encounter'?'encounter-table-open':'loot-table-open').click();await settle();
@@ -49,4 +50,18 @@ test('table draft keeps core edits first, blocks unusable saves and returns to t
  x.el('table-entries').querySelector('button').click();assert.equal(x.el('table-save').disabled,true);assert.equal(x.el('table-add-creature').disabled,false);
  await x.save();assert.equal(x.el('table-manager').open,true);
  x.el('table-add-creature').click();x.el('table-name').value='  ';x.el('table-name').oninput();assert.equal(x.el('table-save').disabled,true);await x.save();assert.equal(x.el('table-manager').open,true);
+});
+
+
+test('encounter table opens before optional creature names arrive and remains editable after a name lookup fails',async t=>{
+ let release;const x=await fixture(t,'encounter',api=>{const read=api.creature;api.creature=id=>id==='guard'?new Promise(resolve=>release=resolve):read(id);});
+ assert.equal(x.el('table-manager').open,true,'a display-name read must not block the table draft');assert.ok(release);assert.equal(x.inputs.length,2);x.edit(0,'3');const input=x.inputs[0];
+ release({ok:false,error:'Kreaturkatalog vorübergehend nicht lesbar'});await settle();assert.equal(input.isConnected,true);assert.equal(input.value,'3');assert.equal(x.el('table-name').value,'Wachen');assert.equal(x.el('table-description').value,'Rohtext');assert.match(x.el('table-entries').textContent,/guard.*Name nicht verfügbar/);assert.match(x.el('table-entries').textContent,/goblin/);
+ x.el('table-entries').querySelector('button').click();await x.save();assert.equal(x.el('table-manager').open,false);assert.deepEqual(x.read().entries,[{creatureId:'goblin',weight:'1'}]);assert.equal(x.read().description,'Rohtext');assert.equal(x.read().revision,2);assert.deepEqual(x.messages.filter(m=>m[1]),[]);
+});
+
+test('closing an encounter table while names load leaves a newer table draft untouched',async t=>{
+ let release;const x=await fixture(t,'encounter',api=>{api.creature=()=>new Promise(resolve=>release=resolve);});
+ assert.equal(x.el('table-manager').open,true);x.el('table-close').click();assert.equal(x.el('table-manager').open,false);x.el('encounter-table-new').click();await settle();x.el('table-name').value='Neuer Entwurf';x.el('table-name').oninput();
+ release({ok:true,value:{id:'guard',name:'Alte Wache'}});await settle();assert.equal(x.el('table-manager').open,true);assert.equal(x.el('table-name').value,'Neuer Entwurf');assert.equal(x.el('table-entries').querySelectorAll('input').length,0);assert.doesNotMatch(x.el('table-entries').textContent,/Alte Wache/);assert.equal(x.read().revision,1);
 });
