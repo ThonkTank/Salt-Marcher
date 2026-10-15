@@ -27,7 +27,7 @@ async function fixture() {
   const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
   Object.assign(globalThis, { window, document });
   let hold = false, release, beforeHold = false, releaseBefore, writes = 0;
-  const sent = [], statuses = [];
+  const sent = [], statuses = [], camps = [];
   const response = fn => { try { return { ok: true, value: fn() }; } catch (error) { return { ok: false, error: error.message }; } };
   window.campaign = {
     world: async token => response(() => store.world(token)), preparation: async token => response(() => store.preparation(token)), live: async token => response(() => store.live(token)),
@@ -42,12 +42,12 @@ async function fixture() {
   };
   delete require.cache[require.resolve('../.build/world-dom.cjs')];
   const ui = require('../.build/world-dom.cjs');
-  ui.initWorld(text => statuses.push(text), async () => { if (beforeHold) { beforeHold = false; await new Promise(resolve => { releaseBefore = resolve; }); } return true; }, async () => {}, async () => {});
+  ui.initWorld(text => statuses.push(text), async () => { if (beforeHold) { beforeHold = false; await new Promise(resolve => { releaseBefore = resolve; }); } return true; }, async () => {}, async () => {}, async (sceneId,kind) => { camps.push({sceneId,kind}); });
   for (const select of document.querySelectorAll('select')) Object.defineProperty(select, 'value', { value: '', writable: true });
   for(const dialog of document.querySelectorAll('dialog')){dialog.open=false;dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
   ui.activateWorld(w); await ui.openWorld();
   const enter = (id, text) => { const input = document.getElementById(id); input.value = text; input.dispatchEvent(new window.Event('input', { bubbles: true })); };
-  return { root, store, campaign, w, scene, map, event, phenomenon, ui, window, document, enter, statuses, sent,
+  return { root, store, campaign, w, scene, map, event, phenomenon, ui, window, document, enter, statuses, sent, camps,
     hold: () => { hold = true; }, holdBefore: () => { beforeHold = true; }, release: () => release(), releaseBefore: () => releaseBefore(),
     hasReply: () => !!release, hasBefore: () => !!releaseBefore, get writes() { return writes; },
     async select(id, selected) { const input = document.getElementById(id); input.value = selected; input.onchange(); await tick(); await tick(); },
@@ -167,4 +167,26 @@ test('unpainted map is distinguishable from an explicitly authored plain after r
   assert.equal(tile().dataset.authored,'true');assert.equal(tile().getAttribute('fill'),'#b8c896');
   assert.equal(x.document.querySelector('#world-map polygon[data-q="1"][data-r="0"]').dataset.authored,'false');
  }finally{x.cleanup();}
+});
+
+
+for(const kind of ['wait','rest'])for(const switched of [false,true])test(`pending travel ${kind} ${switched?'is cancelled on focus change':'pauses its latest confirmed checkpoint'}`,async()=>{
+ const x=await travelFixture(),command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action});
+ try{
+  const c=x.store.executeLive(command({kind:'create-character',profile:{name:'Borin'}})).character;let live=x.store.live(x.w.token);
+  x.store.executeLive(command({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));live=x.store.live(x.w.token);const a=x.store.liveScene(x.w.token,x.scene.id);
+  const b=x.store.executeLive(command({kind:'move',sceneId:a.id,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,expectedClockRevision:a.clock.revision,expectedSceneMembershipRevision:a.membershipRevision,memberIds:[c.id],target:{kind:'new',title:'Nachhut',expectedContentRevision:a.revision}})).session.createdScene;
+  x.store.executeWorld(command({kind:'place-scene',sceneId:b.id,expectedSceneRevision:x.store.liveScene(x.w.token,b.id).revision,expectedPositionRevision:x.store.sceneWorld(x.w.token,b.id).position.revision,position:{mapId:x.map.id,q:0,r:0,locationId:null}}));
+  for(const id of [a.id,b.id]){const p=x.store.previewTravel(x.w.token,{sceneId:id,mapId:x.map.id,destination:{q:2,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:2});x.store.executeWorld(command({kind:'journey',preview:p}));}
+  x.store.executeLive(command({kind:'focus',sceneId:a.id,expectedRevision:x.store.live(x.w.token).focusRevision}));await x.ui.openWorld();x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,a.id);x.document.getElementById('live-travel-toggle').onclick();await until(()=>x.document.getElementById('live-travel-host').hidden===false);await tick();
+  x.hold();x.document.getElementById('journey-play').onclick();for(let i=0;i<250&&!x.hasReply();i++)await new Promise(resolve=>setTimeout(resolve,10));assert.ok(x.hasReply(),'the real checkpoint reply must be held before changing focus');
+  x.document.getElementById('journey-'+kind).onclick();await tick();
+  if(switched){x.store.executeLive(command({kind:'focus',sceneId:b.id,expectedRevision:x.store.live(x.w.token).focusRevision}));await x.ui.renderLiveWorld(x.w.token,b.id);}
+  const other=x.store.sceneWorld(x.w.token,b.id),writes=x.writes;
+  x.release();await x.ui.stopWorldPlayback();await tick();await tick();
+  if(!switched){await until(()=>x.camps.length===1);assert.deepEqual(x.camps,[{sceneId:a.id,kind}]);assert.equal(x.store.sceneWorld(x.w.token,a.id).journey.status,'paused');assert.equal(x.store.sceneWorld(x.w.token,a.id).position.q,1);assert.equal(x.store.sceneWorld(x.w.token,a.id).scene.clock.instantMs,'1000');assert.deepEqual(x.store.sceneWorld(x.w.token,b.id),other);return;}
+  assert.deepEqual(x.camps,[],'a delayed camp action must not open for the new focus');assert.equal(x.writes,writes,'the new group must not be paused');assert.deepEqual(x.store.sceneWorld(x.w.token,b.id),other);
+  assert.equal(x.store.sceneWorld(x.w.token,a.id).position.q,1,'only the already confirmed checkpoint remains');
+  x.document.getElementById('journey-'+kind).onclick();await until(()=>x.camps.length===1);assert.deepEqual(x.camps,[{sceneId:b.id,kind}]);assert.equal(x.store.sceneWorld(x.w.token,b.id).journey.status,'paused');assert.deepEqual(x.store.sceneWorld(x.w.token,b.id).position,other.position);assert.deepEqual(x.store.sceneWorld(x.w.token,b.id).scene.clock,other.scene.clock);
+ }finally{if(x.hasReply())x.release();await x.ui.stopWorldPlayback();x.cleanup();}
 });

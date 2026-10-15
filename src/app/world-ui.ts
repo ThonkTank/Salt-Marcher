@@ -298,7 +298,14 @@ async function changeJourney(action:Extract<WorldAction,{kind:'journey-step'|'jo
  catch(error){if(ownsTravel(owner))tell((error as Error).message,true);return false;}
 }
 async function replanRemainingJourney(){const j=frame?.journey;if(!j)return;el<HTMLInputElement>('travel-party-pace').checked=!!j.usePartyPace;renderPartyPace();el<HTMLInputElement>('travel-pace').value=String(j.paceKmh);el<HTMLInputElement>('travel-factor').value=String(j.factor);el<HTMLInputElement>('travel-final-hours').value='';await makeTravelPreview(true);}
-async function openTravelCamp(kind:'wait'|'rest'){playback.stop();await playback.settled();const owner=travelOwner(),j=frame?.journey;if(!owner||!j||!liveSurface||liveFocusId!==owner.sceneId)return;if(j.status==='active'&&!await changeJourney({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}))return;if(ownsTravel(owner))await camp(owner.sceneId,kind);}
+async function openTravelCamp(kind:'wait'|'rest'){
+ const owner=travelOwner(),id=frame?.journey?.id;if(!owner||!id)return;
+ const current=()=>ownsTravel(owner)&&frame?.journey?.id===id&&liveSurface&&liveFocusId===owner.sceneId;
+ if(!current())return;playback.stop();await playback.settled();
+ const j=frame?.journey;if(!current()||!j)return;
+ if(j.status==='active'&&!await changeJourney({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}))return;
+ if(current())await camp(owner.sceneId,kind);
+}
 export function stopWorldPlayback(){playback.stop();return playback.settled();}
 // The Atlas and Live desk share the very same controls and travel owner.
 // Only their DOM placement changes; maps and journeys never get a second draft.
