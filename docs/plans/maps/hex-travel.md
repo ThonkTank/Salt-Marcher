@@ -74,6 +74,12 @@ explizite sofortige Bestätigungen. Warten/Rast stoppen die Wiedergabe ebenfalls
 Unklare Antworten bleiben beim vorhandenen Worldcommand/Reconciliationweg; der
 Timer erzeugt dafür keinen neuen Command und setzt nicht selbsttätig fort.
 
+Warten und Rast behalten bereits beim Klick ihre Gruppe und Reise. Ein noch
+offener Checkpoint darf abschließen; erst danach wird derselbe aktuelle
+Checkpoint pausiert. Ein inzwischen gewechselter Fokus oder Reiseinhaber
+verwirft die alte Bedienabsicht, statt die neue Gruppe zu pausieren oder deren
+Zeitdialog zu öffnen. Die vorhandenen Owner- und Journey-IDs genügen dafür.
+
 Kampagnen-, Gruppen-, Karten- und Bereichswechsel, verborgene Fenster sowie
 Schließen stoppen die lokale Wiedergabe. Ein bereits begonnener Command darf
 seinen einen atomaren Checkpoint abschließen. Nach Neustart wird keine verstrichene
