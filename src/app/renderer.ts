@@ -1,3 +1,4 @@
+import {initWorkspaceNavigation,syncWorkspaceNavigation} from './workspace-navigation';
 import {workspaceTabs,readWorkspaceView,rememberWorkspaceView,type WorkspaceTab} from './workspace-view';
 import {bindAtlasHistoryShortcut} from './workspace-shortcuts';
 import {chooseNpcPlace} from './npc-places-ui';
@@ -139,6 +140,7 @@ function showTab(selected: WorkspaceTab) {
   if (workspace) rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: selected, scrollY: 0});
   setWorldSurface(selected);setSessionPacketSurface(selected);
   for (const id of workspaceTabs) { el(id).hidden = id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
+  syncWorkspaceNavigation();
 }
 async function reopenView(tab: WorkspaceTab) {
   showTab(tab);
@@ -606,6 +608,7 @@ for (const id of ['atlas', 'preparation', 'live'] as const) el(id + '-tab').oncl
   if (id === 'live') await openLive();
   if (id === 'atlas') await reloadDrawing();
 })(); };
+initWorkspaceNavigation();
 void (async () => { const intent = activationIntent; try { const list = await refreshCampaigns(); if (list && intent === activationIntent && list.activeId) await activate(list.activeId); else if (list && intent === activationIntent) setWorkspaceAvailable(false); } catch (error) { if (intent === activationIntent) status((error as Error).message, true); } })();
 setInterval(() => { void (async () => {
   try { const message = unwrap(await api.backupStatus()); el('backup-status').hidden = !message; el('backup-status').textContent = message; }
