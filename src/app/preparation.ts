@@ -516,6 +516,15 @@ export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
   if (!row) { tell('Ort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; }
   selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations();
 }
+export async function openPreparedVisit(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
+  const token=context?.token,load=preparationLoad,current=()=>stillCurrent()&&context?.token===token&&preparationLoad===load;
+  if(!token||!current()||!await flushPreparation()||!current())return;
+  const next=unwrap(await window.campaign.preparation(token,''));if(!current())return;usePreparation(next);
+  const plan=data.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}
+  if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}
+  get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showLocations(false);await renderPlans();
+  if(current()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+}
 
 function showLocations(show: boolean) {
   get('knowledge-panel').hidden = show; get('locations-panel').hidden = !show;

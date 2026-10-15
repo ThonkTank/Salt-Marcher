@@ -1,6 +1,7 @@
 import type {LocationMaterialsQuery,LocationMaterialsPage} from '../location-notebook-contracts';
 import {calendarDate} from '../world-model';
 import {readAgenda} from './agenda';
+import {readWorldSources} from './world-sources';
 import {deskContent} from './scene-desk';
 import {readNarrative} from './narrative';
 import {readPreparedGroup} from './session';
@@ -26,12 +27,13 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
  shop:`SELECT s.id,json_extract(s.payload,'$.name') title,'Shop · '||COALESCE(json_extract(n.payload,'$.title'),'Ort') detail FROM shop s LEFT JOIN world_note n ON n.campaign_id=s.campaign_id AND n.id=json_extract(s.payload,'$.owner.id') LEFT JOIN npc_position p ON p.campaign_id=n.campaign_id AND p.actor_id=n.id WHERE s.campaign_id=@cam AND json_extract(s.payload,'$.trashed')=0 AND (json_extract(s.payload,'$.owner.kind')='location' AND json_extract(s.payload,'$.owner.id')=@location OR json_extract(s.payload,'$.owner.kind')='npc' AND n.trashed=0 AND ${npcAt})`
  };
  const rows=db.prepare('SELECT * FROM ('+queries[q.kind]+') WHERE '+where+' ORDER BY title COLLATE NOCASE,id LIMIT 41 OFFSET @offset').all({cam,location:q.locationId,text:q.text,offset:q.offset});
+ const factionSource=q.kind==='faction'?readWorldSources(db,cam).sources.find(entry=>entry.kind==='location'&&entry.id===q.locationId):null;
  const item=(r:any)=>{
   if(q.kind==='directory'){const content=locationContent(db,cam,r.id);return{id:r.id,title:content.title,detail:content.location!.type==='city'?'Stadt':'Interessanter Ort',ref:{kind:'location' as const,id:r.id}};}
   if(q.kind==='npc'){const content=deskContent(db,cam,{kind:'note',id:r.id});if(content.unavailable||content.note?.kind!=='npc'||content.note.id!==r.id||!npcAtLocation(db,cam,r.id,q.locationId!))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:'NSC am Ort',ref:{kind:'note' as const,id:r.id}};}
   if(q.kind==='narrative'){const content=deskContent(db,cam,{kind:'note',id:r.id}),view=readNarrative(db,cam,r.id);if(content.unavailable||!['quest','rumor'].includes(content.note?.kind??'')||content.note?.id!==r.id||view.state.noteId!==r.id||view.state.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:view.state.status==='closed'?'Abgeschlossen':'Offen',ref:{kind:'note' as const,id:r.id}};}
   if(q.kind==='group'){const group=readPreparedGroup(db,cam,r.id);if(group.id!==r.id||group.locationId!==q.locationId)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:group.title,detail:group.actors.length+' Figuren'};}
-  if(q.kind==='faction'){const content=deskContent(db,cam,{kind:'note',id:r.id});if(content.unavailable||content.note?.kind!=='faction'||content.note.id!==r.id)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:r.detail,ref:{kind:'note' as const,id:r.id}};}
+  if(q.kind==='faction'){const content=deskContent(db,cam,{kind:'note',id:r.id});if(content.unavailable||content.note?.kind!=='faction'||content.note.id!==r.id||!factionSource?.factionIds.includes(r.id))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:content.title,detail:r.detail,ref:{kind:'note' as const,id:r.id}};}
   if(q.kind==='event'){const page=readAgenda(db,cam,{sceneId:null,location:'all',locationId:q.locationId!,eventId:r.id,search:'',horizonDays:null,includePast:true,after:null}),event=page.items[0]?.event;if(!event||event.id!==r.id)throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:event.name,detail:r.detail+' · Ab '+calendarDate(page.calendar,event.startMs)};}
   const view=readShop(db,cam,r.id),shop=view.shop;if(shop.id!==r.id||view.unavailable||(shop.owner.kind==='location'?shop.owner.id!==q.locationId:!npcAtLocation(db,cam,shop.owner.id,q.locationId!)))throw new Error('Ortsmaterialquelle beschädigt.');return{id:r.id,title:shop.name,detail:'Shop · '+view.ownerName};
  };
