@@ -28,3 +28,7 @@ test('post-commit navigation cannot move Beta back to an Alpha group',async t=>{
 test('reselecting the current group cannot overwrite typing after the click',async t=>{
  const x=await fixture(t);x.el('groups-list').querySelector('button').click();x.edit('  Later current-group input\r\n');await x.ui.flushGroups();await tick();await tick();assert.equal(x.el('groups-notes').value,'  Later current-group input\r\n');assert.equal(x.writes.at(-1).d.notes,'  Later current-group input\r\n');
 });
+
+test('local group creation cannot execute after its draft flush loses the editor owner',async t=>{
+ const x=await fixture(t);x.edit('Alpha raw');const gate=x.holdKeep();let commands=0;window.campaign.executeProgress=async()=>{commands++;throw new Error('unexpected write');};const created=x.ui.createGroupAtLocation('place','New');const rejected=assert.rejects(created,/sichern/);await until(()=>x.writes.length===1);await x.switchTo();gate.resolve();await rejected;assert.equal(commands,0);assert.equal(x.el('groups-title').value,'Beta');
+});

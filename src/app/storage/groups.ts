@@ -3,17 +3,19 @@ import type {EncounterEntry} from '../encounter-contracts';
 import {createHash,randomUUID} from 'node:crypto';
 import type {GroupAction,GroupDraft,GroupView} from '../groups-contracts';
 import {checkedHealth} from '../progression';
+import {checkedLocationDocument} from '../../features/location/location-schema';
 import {worldNoteDocument} from '../../features/world/world-notes';
 import {readPreparedGroup,checkedPreparedGroupRow,readWorldActor,writeWorldActorHealth,saveGroup,newGroup,materialize} from './session';
 import {readCreature,readEncounterPlan,creatureInfo} from './encounters';
-import {placeNpcGroup,npcPosition} from './npc-world';
+import {placeNpcGroup,npcPosition,npcPositionReader} from './npc-world';
 import {event} from './progression';
 import {syncOpenMaskHealth} from './mask-health';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installGroups(db:any){db.exec(`CREATE TABLE IF NOT EXISTS group_draft(campaign_id TEXT NOT NULL,group_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,group_id),FOREIGN KEY(campaign_id,group_id) REFERENCES prepared_group(campaign_id,id) ON DELETE CASCADE) STRICT;`);}
 export function groupView(db:any,cam:string,id:string):GroupView {
  const group=readPreparedGroup(db,cam,id),row=db.prepare('SELECT draft_plan_id FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,id);
- return {...group,draftPlanId:row.draft_plan_id,actors:group.actors.map(a=>{const r=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,a.id);if(!r||hash(r.payload)!==r.checksum)throw new Error('NPC-Profil beschädigt.');const p=worldNoteDocument(JSON.parse(r.payload));return {...a,profileRevision:p.revision,gmNotes:p.gmNotes,readAloud:p.readAloud};})};
+ const position=npcPositionReader(db,cam),names=new Map<string,string>();const placeName=(id:string|null)=>{if(!id)return 'Ohne Ort';if(names.has(id))return names.get(id)!;const row=db.prepare('SELECT payload,checksum,trashed FROM location WHERE campaign_id=? AND id=?').get(cam,id);if(!row)return 'Ort nicht verfügbar';if(hash(row.payload)!==row.checksum)throw new Error('Gruppenort beschädigt.');const doc=checkedLocationDocument(JSON.parse(row.payload));if(doc.id!==id)throw new Error('Gruppenort falsch zugeordnet.');const title=doc.name+(row.trashed?' · Papierkorb':'');names.set(id,title);return title;};
+ return {...group,locationTitle:group.locationId?placeName(group.locationId):'Ohne gemeinsamen Ort',draftPlanId:row.draft_plan_id,actors:group.actors.map(a=>{const r=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,a.id);if(!r||hash(r.payload)!==r.checksum)throw new Error('NPC-Profil beschädigt.');const p=worldNoteDocument(JSON.parse(r.payload));const at=position(a.id).locationId;return {...a,locationId:at,locationTitle:placeName(at),profileRevision:p.revision,gmNotes:p.gmNotes,readAloud:p.readAloud};})};
 }
 export function preparedGroups(db:any,cam:string,search:string,after:string|null){
  if(typeof search!=='string'||search.length>1000||after!==null&&typeof after!=='string')throw new Error('Gruppensuche ungültig.');

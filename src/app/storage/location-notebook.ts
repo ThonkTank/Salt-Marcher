@@ -15,7 +15,7 @@ function locationContent(db:any,cam:string,id:string){
  return content;
 }
 export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery):LocationMaterialsPage{
- if(!q||q.scope!==undefined&&!['location','campaign'].includes(q.scope)||q.scope==='campaign'&&!['npc','narrative','shop'].includes(q.kind)||!['directory','npc','narrative','group','shop','faction','event'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
+ if(!q||q.scope!==undefined&&!['location','campaign'].includes(q.scope)||q.scope==='campaign'&&!['npc','narrative','shop','group'].includes(q.kind)||!['directory','npc','narrative','group','shop','faction','event'].includes(q.kind)||typeof q.text!=='string'||q.text.length>1000||!Number.isSafeInteger(q.offset)||q.offset<0||q.offset>1000000||q.kind!=='directory'&&(typeof q.locationId!=='string'||!q.locationId||q.locationId.length>1000))throw new Error('Ortsmaterialsuche prüfen.');
  const location=q.kind==='directory'?null:locationContent(db,cam,q.locationId!),items:LocationMaterial[]=[],text=q.text.toLocaleLowerCase();
  const all=q.scope==='campaign',placeName=(id:string|null|undefined)=>id?deskContent(db,cam,{kind:'location',id}).title:'Ohne Ortsbindung';
  const add=(item:LocationMaterial)=>{if((item.title+'\n'+item.detail).toLocaleLowerCase().includes(text))items.push(item);};
@@ -44,9 +44,10 @@ export function readLocationMaterials(db:any,cam:string,q:LocationMaterialsQuery
    add({id:row.id,title:content.title,detail:(view.state.status==='closed'?'Abgeschlossen':'Offen')+(all?' · '+placeName(view.state.locationId):''),locationId:view.state.locationId??null,ref:{kind:'note',id:row.id}});
   }
  }else if(q.kind==='group'){
-  for(const row of db.prepare('SELECT id FROM prepared_group WHERE campaign_id=? AND location_id=?').iterate(cam,q.locationId)){
+  const rows=all?db.prepare('SELECT id FROM prepared_group WHERE campaign_id=?').iterate(cam):db.prepare('SELECT id FROM prepared_group WHERE campaign_id=? AND location_id=?').iterate(cam,q.locationId);
+  for(const row of rows){
    const group=readPreparedGroup(db,cam,row.id);
-   add({id:group.id,title:group.title,detail:group.actors.length+' Figuren'});
+   add({id:group.id,title:group.title,detail:group.actors.length+' Figuren'+(all?' · '+placeName(group.locationId):''),locationId:group.locationId});
   }
  }else if(q.kind==='faction'){
   const source=readWorldSources(db,cam).sources.find(entry=>entry.kind==='location'&&entry.id===q.locationId);
