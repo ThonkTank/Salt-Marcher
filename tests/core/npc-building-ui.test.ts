@@ -20,8 +20,8 @@ test('NPC building search is visibly labelled and an older result cannot replace
   assert.deepEqual(labelled('npc-building-search'),['Haus oder Stadt suchen']);assert.deepEqual(labelled('npc-building-record-name'),['Neuer Haushaltsname (optional)']);assert.equal(calls.length,1);
   const search=document.getElementById('npc-building-search') as HTMLInputElement;search.value='Süd';search.dispatchEvent(new window.Event('input',{bubbles:true}));assert.match(document.getElementById('npc-building-results')!.textContent,/werden gesucht/);
   await wait(200);assert.equal(calls.length,2);assert.equal(calls[1]!.query.text,'Süd');
-  calls[1]!.resolve({ok:true,value:{npcId:'ada',name:'Ada',currentCityTitle:null,next:null,items:[{cityId:'south',unitId:'dock',title:'Südhafen',cityTitle:'Hafenstadt'}]}});await wait();
-  calls[0]!.resolve({ok:true,value:{npcId:'ada',name:'Ada',currentCityTitle:null,next:null,items:[{cityId:'north',unitId:'gate',title:'Nordtor',cityTitle:'Hafenstadt'}]}});await wait();
+  calls[1]!.resolve({ok:true,value:{npcId:'ada',name:'Ada',currentCityTitle:null,currentBinding:null,next:null,items:[{cityId:'south',unitId:'dock',title:'Südhafen',cityTitle:'Hafenstadt'}]}});await wait();
+  calls[0]!.resolve({ok:true,value:{npcId:'ada',name:'Ada',currentCityTitle:null,currentBinding:null,next:null,items:[{cityId:'north',unitId:'gate',title:'Nordtor',cityTitle:'Hafenstadt'}]}});await wait();
   const results=document.getElementById('npc-building-results')!;assert.match(results.textContent,/Südhafen/);assert.doesNotMatch(results.textContent,/Nordtor/);
   (document.getElementById('npc-building-record-name') as HTMLInputElement).value='Familie Abendrot';(results.querySelector('button') as HTMLButtonElement).click();assert.deepEqual(await choice,{kind:'assign',role:'home',npcId:'ada',cityId:'south',unitId:'dock',recordName:'Familie Abendrot'});
  }finally{if(oldShow)prototype.showModal=oldShow;else delete prototype.showModal;if(oldClose)prototype.close=oldClose;else delete prototype.close;Object.assign(globalThis,prior);}
