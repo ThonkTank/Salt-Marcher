@@ -130,6 +130,50 @@ Fortsetzen bis Ankunft, Route ausblenden, Abbruch, Bereichswechsel und Neustart
 am gespeicherten Hex. Zwei normale Exits, keine Rendererfehler. Keine umfassende
 Host-/200%-/Großroutenabnahme und keine behauptete neue Kartengrenzregel.
 
+## Scenegebundene Reisekonsole: fehlender Providerstand
+
+Die [Reise-Szenario-Quelle](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-travel-state-tab.md)
+verlangt genau eine Konsole für die fokussierte Scene. Ein Fokuswechsel entzieht
+in `world-ui.renderLiveWorld` sofort der bisherigen Reiseprojektion ihre
+Autorität: Timer aus, Frame/Route/Vorschau weg, Transport-/Platzierungsaktionen
+inaktiv und ein lokaler Ladehinweis. Ein aktueller Readfehler zeigt die konkrete
+Ursache in dieser Konsole sowie „Reisekontext erneut laden“. Retry liest nur den
+bestehenden SceneWorld-Provider. Es bucht weder Position noch Zeit und baut
+keinen Ersatzkontext aus der zuletzt sichtbaren Gruppe.
+
+Auch ein fehlgeschlagener Refresh derselben Scene entzieht ihrer alten
+Startvorschau und Wiedergabe die Autorität. Ein erfolgreicher Retry bindet die
+bestätigte Projektion neu; eine ältere Fehlerantwort darf den neueren Erfolg
+nicht löschen. Ein gewöhnlicher Same-Scene-Read wird vor seinem Ergebnis nicht
+vorsorglich angehalten, damit erfolgreiche Checkpoint-/After-Refreshes keine
+laufende Wiedergabe nach jedem Hex abbrechen. Der Fehler selbst stoppt sie.
+Kanonische Journey, Uhr und Position bleiben bei allen diesen Reads erhalten;
+Retry startet keine Wiedergabe und nimmt keinen alten Entwurf an.
+
+Die Store-/DOMfälle in `desktop-travel-target-dom.test.mjs` verzögern Fokusreads,
+prüfen Fehler/Retry, unveränderte SQLitefakten und alte Fehler nach neuerem
+Erfolg. Bestehende Wiedergabe-, Camp- und Wetterprüfungen bleiben angrenzende
+Teilbelege; daraus folgt keine vollständige Session-Shell-Abnahme.
+
+Die heutige Desktopoberfläche dockt den vorhandenen vollständigen Hexowner in
+Live ein. Das ist noch keine vollständige Trennung von Scenario-Konsole und
+Center-Canvas. Für die restliche gemeinsame Bedienung gilt daher:
+
+1. In `live.ts`/`renderer.ts` die ausdrückliche Reisewahl als lokale
+   Präsentationsentscheidung behandeln. Sie erhält den aktuell gewählten
+   Centerkontext; nur „Karte öffnen“, Routenplanung oder Platzierung darf diesen
+   ausdrücklich wechseln. Kein neuer Fachcommand allein für Scenarioauswahl.
+2. Bestehenden Hexowner in Bedien-/Canvasfläche zerlegen, ohne zweite
+   `frame`-/Routen-/Positionswahrheit. Beide lesen denselben revisionsgebundenen
+   Scene-/Mapstand. Loading, fehlende Karte, unplatzierte Gruppe und Providerfehler
+   jeweils sichtbar halten; kein alter Gruppenstand als scheinbar gültiger Ersatz.
+3. Abnahme mit zwei Scenes auf unterschiedlichen Karten, None-/Unavailable-
+   Provider, schnellen Karten-/Centerwechseln, langem Read und zurückgewiesenen
+   Commands. Nur ein erreichbarer Satz Transportaktionen, Fokus und Tastatur
+   erhalten, Retry ohne Mutation. Hex ist der reale aktuelle Scenario-Provider;
+   Dungeon bleibt bei seinen vorhandenen Commands und braucht vor einem späteren
+   gemeinsamen Anschluss einen tatsächlichen Adapter und eigene Abnahmen.
+
 ## Nächste ausführbare Lieferungen
 
 1. **Kontinuierliche Karte und ausdrückliche Passierbarkeit.** Die übergeordnete

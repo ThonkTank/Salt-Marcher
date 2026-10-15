@@ -200,3 +200,31 @@ for(const kind of ['wait','rest'])for(const switched of [false,true])test(`pendi
   x.document.getElementById('journey-'+kind).onclick();await until(()=>x.camps.length===1);assert.deepEqual(x.camps,[{sceneId:b.id,kind}]);assert.equal(x.store.sceneWorld(x.w.token,b.id).journey.status,'paused');assert.deepEqual(x.store.sceneWorld(x.w.token,b.id).position,other.position);assert.deepEqual(x.store.sceneWorld(x.w.token,b.id).scene.clock,other.scene.clock);
  }finally{if(x.hasReply())x.release();await x.ui.stopWorldPlayback();x.cleanup();}
 });
+
+async function liveContextFixture(){
+ const x=await travelFixture(),command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),c=x.store.executeLive(command({kind:'create-character',profile:{name:'Borin'}})).character;
+ let live=x.store.live(x.w.token);x.store.executeLive(command({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));live=x.store.live(x.w.token);const a=x.store.liveScene(x.w.token,x.scene.id),b=x.store.executeLive(command({kind:'move',sceneId:a.id,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,expectedClockRevision:a.clock.revision,expectedSceneMembershipRevision:a.membershipRevision,memberIds:[c.id],target:{kind:'new',title:'Nachhut',expectedContentRevision:a.revision}})).session.createdScene;
+ x.store.executeWorld(command({kind:'place-scene',sceneId:b.id,expectedSceneRevision:x.store.liveScene(x.w.token,b.id).revision,expectedPositionRevision:x.store.sceneWorld(x.w.token,b.id).position.revision,position:{mapId:x.map.id,q:3,r:0,locationId:null}}));
+ const preview=x.store.previewTravel(x.w.token,{sceneId:a.id,mapId:x.map.id,destination:{q:2,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:2000});x.store.executeWorld(command({kind:'journey',preview}));x.store.executeLive(command({kind:'focus',sceneId:a.id,expectedRevision:x.store.live(x.w.token).focusRevision}));
+ await x.ui.openWorld();x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,a.id);x.document.getElementById('live-travel-toggle').onclick();await until(()=>!x.document.getElementById('live-travel-host').hidden);await tick();await tick();return{...x,a,b,command,get:id=>x.document.getElementById(id)};
+}
+test('pending focus travel read removes the previous journey; failure stays explicit and a retry binds only the new scene',async()=>{
+ const x=await liveContextFixture();try{
+  assert.equal(x.get('journey-end').disabled,false);let release;const real=x.window.campaign.sceneWorld;x.window.campaign.sceneWorld=()=>new Promise(resolve=>release=resolve);const before=x.store.db.serialize(),read=x.ui.renderLiveWorld(x.w.token,x.b.id);
+  assert.equal(x.get('journey-end').disabled,true);assert.equal(x.get('journey-play').disabled,true);assert.doesNotMatch(x.get('world-journey-status').textContent,/Unterwegs/);assert.match(x.get('live-travel-context').textContent,/geladen/);
+  release({ok:false,error:'Scene momentan nicht lesbar'});await read;assert.match(x.get('live-travel-empty').textContent,/Scene momentan nicht lesbar/);assert.equal(x.get('live-travel-empty').hidden,false);assert.equal(x.get('world-current').textContent,'');assert.equal(x.get('live-travel-context').textContent,'');assert.equal(x.get('travel-place-cursor').disabled,true);assert.ok(x.store.db.serialize().equals(before));
+  x.window.campaign.sceneWorld=real;x.get('live-travel-retry').click();await until(()=>x.get('live-travel-context').textContent.includes('Nachhut'));assert.match(x.get('live-travel-context').textContent,/Nachhut/);assert.equal(x.get('live-travel-retry').hidden,true);assert.equal(x.get('live-travel-empty').hidden,true);assert.equal(x.get('travel-place-cursor').disabled,false);assert.match(x.get('world-current').textContent,/3,0/);assert.equal(x.get('journey-end').disabled,true);assert.ok(x.store.db.serialize().equals(before));
+ }finally{x.cleanup();}
+});
+test('a failed refresh of the same scene removes stale preview and playback controls without changing canonical travel',async()=>{
+ const x=await liveContextFixture();try{
+  x.enter('travel-q','1');x.enter('travel-r','0');x.preview();await until(()=>x.get('travel-preview-dialog').open);assert.equal(x.get('travel-preview-accept').disabled,false);const before=x.store.db.serialize();x.window.campaign.sceneWorld=async()=>({ok:false,error:'Provider ausgefallen'});await x.ui.renderLiveWorld(x.w.token,x.a.id);
+  assert.equal(x.get('travel-preview-accept').disabled,true);assert.equal(x.get('travel-preview-dialog').open,false);assert.equal(x.get('travel-evaluation').querySelectorAll('dd').length,0);assert.equal(x.get('journey-end').disabled,true);assert.equal(x.get('journey-play').disabled,true);assert.match(x.get('live-travel-empty').textContent,/Provider ausgefallen/);assert.ok(x.store.db.serialize().equals(before));
+ }finally{x.cleanup();}
+});
+test('an obsolete scene read error cannot clear a newer confirmed live travel context',async()=>{
+ const x=await liveContextFixture();try{
+  let release;const real=x.window.campaign.sceneWorld;x.window.campaign.sceneWorld=()=>new Promise(resolve=>release=resolve);const old=x.ui.renderLiveWorld(x.w.token,x.b.id);x.window.campaign.sceneWorld=real;await x.ui.renderLiveWorld(x.w.token,x.a.id);release({ok:false,error:'Alter Lesefehler'});await old;
+  assert.equal(x.get('live-travel-empty').hidden,true);assert.equal(x.get('journey-end').disabled,false);assert.doesNotMatch(x.get('live-travel-context').textContent,/Alter Lesefehler/);assert.match(x.get('world-journey-status').textContent,/Unterwegs/);
+ }finally{x.cleanup();}
+});
