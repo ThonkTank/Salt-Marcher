@@ -115,10 +115,12 @@ export function activateLive(workspace: Workspace) {
   sessionCloseOpeningBasis=null;handoffVisitDraft=null;const handoffDialog=document.getElementById('handoff-visit-dialog') as HTMLDialogElement|null;if(handoffDialog?.open)handoffDialog.close();
   visitBinder?.reset();timeNavigator?.reset();manualTimePreview=null;clockCalendar=null;timePreviewRequest++;liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
+  timeDrafts.clear();timeDraftOwner=null;
   context = workspace; data = null; sources = null;sessionChronicle=null;sessionChronicleError='';sessionChronicleRequest++; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
   get<HTMLInputElement>('live-knowledge-search').value='';
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
+  get('live-focus-bar').hidden=true;
   placePartyEditor(false);get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
   newCharacterBasis=null;get('character-result').textContent='';
   adoption = null; moveBasis = null;preparedNotesSceneId=null;preparedNoteIds.clear();
@@ -144,7 +146,7 @@ export async function openLive(planId?: string, visitId?: string) {
     sceneDraft = live.scene ? structuredClone(live.scene) : null;
     render();
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
-  } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-empty').hidden = false; tell((error as Error).message, true); }
+  } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true); }
 }
 export async function openPlannedVisitReview(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
  const owner=context,token=owner?.token,current=()=>stillCurrent()&&context===owner&&context?.token===token;if(!token||!current())return false;
@@ -174,6 +176,7 @@ function busy(on: boolean, structural = false, textSave = false) {
   sessionNavigatorBusy(on&&!textSave);
   for (const id of ['character-new', 'live-party-new', 'character-create-active', 'character-toggle', 'live-continue', 'adoption-preview', 'character-create', 'adoption-confirm', 'adoption-confirm-packet', 'character-cancel', 'adoption-cancel', 'group-move', 'time-advance', 'live-archives', 'move-confirm', 'move-cancel', 'live-moment-save','live-session-start','live-session-end']) get<HTMLButtonElement>(id).disabled = on && !textSave || !!sessionChronicleError && id.startsWith('live-session-') || id==='live-session-end'&&!!recapReadError();
   get<HTMLSelectElement>('scene-focus').disabled = on && !textSave;
+  for(const button of get('group-list').querySelectorAll<HTMLButtonElement>('button')) button.disabled=on&&!textSave;
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
   if (structural) for (const id of [...profileFields.map(([id]) => id), 'running-title', 'running-notes', 'running-read-aloud', 'running-location']) get<HTMLInputElement>(id).disabled = on;
@@ -337,6 +340,18 @@ function renderVisits() {
   for (const [index, visit] of (plan?.scenes ?? []).entries()) { const option = document.createElement('option'); option.value = visit.id; option.textContent = (index + 1) + '. ' + (visit.title || 'Unbenannter Besuch'); select.append(option); }
   get<HTMLButtonElement>('adoption-preview').disabled = !plan?.scenes.length || intentBlocked();
 }
+const timeDrafts=new Map<string,{amount:string;unit:string;reason:string}>();
+let timeDraftOwner:string|null=null;
+function timeContext(){
+ const owner=context&&data?.scene?context.token+'/'+data.scene.id:null;
+ if(owner===timeDraftOwner)return;
+ if(timeDraftOwner)timeDrafts.set(timeDraftOwner,{amount:value('time-amount'),unit:value('time-unit'),reason:value('time-reason')});
+ const draft=owner?timeDrafts.get(owner):null;
+ get<HTMLInputElement>('time-amount').value=draft?.amount??'10';
+ get<HTMLSelectElement>('time-unit').value=draft?.unit??'minutes';
+ get<HTMLInputElement>('time-reason').value=draft?.reason??'';
+ timeDraftOwner=owner;
+}
 function renderSceneMeta() {
   visitBinder?.contextChanged();timeNavigator?.contextChanged();npcCastBinder?.contextChanged();liveGenerator?.contextChanged();sessionNavigatorContext(context,data,sources,resumed);syncLivePacketContext();
   void refreshMusic();
@@ -348,6 +363,7 @@ function renderSceneMeta() {
   const active = data?.roster.filter(c => c.active && c.sceneId === scene?.id) ?? [];
   get('live-party').textContent = active.length ? 'Dabei: ' + active.map(c => c.profile.name).join(', ') : 'Leere Party – Scene bleibt verfügbar.';
   renderPartyReference();
+  timeContext();
   get('live-clock').textContent = scene ? 'Seit Kampagnenbeginn: ' + formatSceneInstant(scene.clock.instantMs) : '';
   renderTimePreview();
   void refreshScenePreparation();
@@ -359,6 +375,7 @@ function renderSceneMeta() {
     place.textContent = 'Ort bei Übernahme: ' + (sources?.locations.find(l => l.document.id === a.locationId)?.document.name ?? (a.locationId ? 'nicht verfügbar' : 'kein Ort'));
     origin.append(title, notes, place);
   } else origin.textContent = 'Noch kein vorbereiteter Besuch übernommen.';
+  get('running-context-summary').textContent=(sources?.locations.find(l=>l.document.id===sceneDraft?.locationId)?.document.name??(sceneDraft?.locationId?'Ort nicht verfügbar':'Kein Ort'))+' · Titel und Ort ändern';
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
   get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
 }
@@ -435,6 +452,7 @@ function renderScene() {
   if(data&&!data.scene&&!data.roster.length)get<HTMLDetailsElement>('live-party-details').open=true;
   placePartyEditor(resumed&&!!sceneDraft);
   if(preparedNotesSceneId!==data?.scene?.id){preparedNotesSceneId=data?.scene?.id??null;preparedNoteIds.clear();}
+  get('live-focus-bar').hidden = !resumed || !sceneDraft;
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
   get<HTMLButtonElement>('running-player-location').disabled=!sceneDraft?.locationId;
@@ -645,10 +663,11 @@ function renderGroups() {
     const option = document.createElement('option'); option.value = group.id;
     const people = data!.roster.filter(c => c.active && c.sceneId === group.id).map(c => c.profile.name).join(', ') || 'Leere Party';
     option.textContent = groupLabel(group); select.append(option);
+    if(group.id===data?.focusId)continue;
     const button = document.createElement('button'), name = document.createElement('strong'), facts = document.createElement('small');
     name.textContent = (group.title || 'Unbenannte Gruppe') + (group.primary ? ' · Hauptgruppe' : ''); facts.textContent = people + ' · ' + formatSceneInstant(group.clock.instantMs);
     button.append(name, facts); button.setAttribute('aria-pressed', String(data?.focusId === group.id)); button.disabled = intentBlocked();
-    button.onclick = () => { void changeFocus(group.id); }; cards.append(button);
+    button.onclick = () => { void (async()=>{if(await changeFocus(group.id))select.focus({preventScroll:true});})(); }; cards.append(button);
   }
   select.value = data?.focusId ?? '';
   get<HTMLButtonElement>('group-move').disabled = !data?.scene?.members.length || intentBlocked();
