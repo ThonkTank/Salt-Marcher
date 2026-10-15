@@ -36,9 +36,26 @@ weiterhin gesondert gesperrt.
 MD-MUEHLENAU-01 wurde mit einem neuen unabhängigen Tester für denselben
 öffentlichen kurzen Spielabend in originalem KWrite begonnen. Vorbereitung,
 Spielleitung und Wiederaufnahme bleiben im selben Chat; die Darstellung ist
-frei. Dieser einfache Text-/Markdownablauf liefert zunächst qualitative
-Nutzungsbelege, keine kontrollierte Zeitstudie. Ein Ergebnis liegt noch nicht
-vor; technische Anlaufkosten und Einschränkungen bleiben Teil des Berichts.
+frei. In originalem KWrite 26.08.1 wurde eine leitbare Vorbereitung erstellt:
+eine GM-Datei mit Ablauf, schematischer Karte, Raumtexten und Anfangsspielstand
+sowie ein separates öffentliches Handout. Normales Speichern und Wiederöffnen
+funktionierten. Die Raumsuche fand die Überschrift am unteren Fensterrand;
+zusätzliches Blättern war nötig. Karte, Beschreibung und Spielstand müssen
+manuell abgeglichen werden; ein daraus entstandener Fehler wurde noch nicht
+beobachtet. Der gleiche Tester erhielt anschließend die öffentliche
+Spielsituation. Spielleitung und abschließende Wiederaufnahme bleiben offen.
+Dieser einfache Text-/Markdownablauf liefert zunächst qualitative
+Nutzungsbelege, keine kontrollierte Zeitstudie; technische Anlaufkosten und
+Einschränkungen bleiben Teil des Berichts.
+
+Eine zu breite Anweisung zum UI-only-Schreiben führte dazu, dass auch der
+technische Vorbereitungsbericht in KWrite verfasst wurde. Der Vertrag wurde
+präzisiert: GM-Spielunterlagen und Handout entstehen weiterhin ausschließlich
+über normale UI; technische QA-Berichte dürfen separat erzeugt werden. Die
+ursprünglichen Dokumentationsschritte bleiben in den Rohspuren, zählen aber
+nicht als gewöhnliche GM-Arbeit. Es wurden keine Spielsituation oder Lösung
+verändert. Insbesondere werden daraus keine pauschalen Zeit-/Klickvergleiche
+abgeleitet.
 
 Der bestehende Cloud-Browserpilot ist mangels auflösbarer Gesprächs-ID nicht
 als ausgeführt bestätigt. Es wurde kein Ersatzlauf gestartet. Tatsächliche
