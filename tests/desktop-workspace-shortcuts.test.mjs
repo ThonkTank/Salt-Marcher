@@ -14,6 +14,7 @@ test('new instructions never interrupt the workspace and are marked shown only w
  await x.ui.initTutorial();assert.equal(x.dialog.open,false);assert.deepEqual(calls,['read']);assert.match(x.el('help').textContent,/neu/);
  x.el('help').click();await new Promise(r=>setImmediate(r));assert.equal(x.dialog.open,true);assert.deepEqual(calls,['read','shown']);assert.equal(x.el('help').textContent,'Hilfe');
  x.el('tutorial-skip').click();await new Promise(r=>setImmediate(r));assert.equal(x.dialog.open,false);assert.equal(calls.at(-1),'skipped');
+ x.el('help').click();await new Promise(r=>setImmediate(r));assert.equal(x.dialog.open,true);assert.equal(calls.at(-1),'shown');
 });
 test('help starts with the active area and its search filters the complete manual',async t=>{
  const x=setup(t);x.document.body.classList.add('has-workspace');x.el('atlas-tab').setAttribute('aria-pressed','false');x.el('live-tab').setAttribute('aria-pressed','true');
