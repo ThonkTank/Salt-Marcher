@@ -334,3 +334,5 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #key-copy-fields{display:flex;flex-wrap:wrap;gap:.6rem}#key-copy-preview pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:18rem;overflow:auto}#key-copy-preview details{border-top:1px solid var(--line);padding:.6rem 0}
 
 @media(max-width:760px){#volume-dialog .volume-views{grid-template-columns:1fr}#volume-dialog .volume-views svg{height:32vh;min-height:220px}}
+/* Result counts must not move the table editor's search field under the pointer. */
+#table-manager{height:92vh}
