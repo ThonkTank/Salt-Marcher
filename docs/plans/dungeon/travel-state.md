@@ -12,7 +12,13 @@ Abschnittszeiten, nächste Position, Scene-/Gruppen-/Positionsrevisionen und
 Geometriebasis. Jeder bestätigte Abschnitt bucht Weltzeit und Position in der
 vorhandenen Transaktion; `dungeon_receipt` verhindert doppelte Buchung.
 Unterbrechungen durch Wahrnehmung, Inhalte, Trigger oder Verfolgung bleiben
-GM-Entscheidungen. `dungeon-ui.ts` zeigt Status, Steuerung und manuellen Zeitansatz.
+GM-Entscheidungen. Eine neue Berechnung verwirft die vorherige Vorschau und
+aktualisiert sofort auch die Startfreigabe im gemeinsamen Atlas. Die UI
+übernimmt nur Antworten zur angefragten Gruppe, Zielposition, Bewegung und
+Zeitvorgabe; ausschließlich das automatische Gruppentempo darf der Provider
+auflösen. Lokale Zieländerungen verwerfen weiter verspätete Antworten. Eine
+abgewiesene Auswertung startet keine Reise; erneutes Vorbereiten bleibt möglich.
+`dungeon-ui.ts` zeigt Status, Steuerung und manuellen Zeitansatz.
 
 Freie GM-Platzierung merkt sichtbare Geometrie und öffentliche Inhalte, bucht
 keine Reisezeit und öffnet keine Encounter-/Suchhinweise. Bestätigte Bewegung

@@ -1,3 +1,4 @@
+import {canonicalJson} from './generation/canonical-json';
 import {journeyPlayback,type PlaybackFrame,type JourneySpeed} from './journey-playback';
 import {renderDungeonPace,dungeonPaceDirty,dungeonPaceDraft,acceptDungeonPace,clearDungeonPace} from './dungeon-pace-ui';
 import {drawDungeonContents} from './dungeon-content-live-ui';
@@ -198,12 +199,16 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
  el('dungeon-plan').onclick=()=>{
   if(!workspace||!data?.sceneId||!target)return;
   if(dungeonPaceDirty()){status('Tempovorgaben zuerst übernehmen oder offene Einstellungen verwerfen.',true);return;}
+  invalidatePreview();document.dispatchEvent(new Event('atlas-runtime'));
   const w=workspace,intent=routeIntent,request=structuredClone({sceneId:data.sceneId,...(data.travelPace?{useGroupPace:true}:{}),destination:target,movement:select('dungeon-movement').value as DungeonMovement,speedMetersPerMinute:number('dungeon-speed'),factor:number('dungeon-factor'),finalSeconds:el<HTMLInputElement>('dungeon-duration').value?number('dungeon-duration'):null});
   run(async o=>{
    const result=await window.campaign.previewDungeon(w.token,request);
    if(!current(o))return false;
    if(intent!==routeIntent){status('Ziel oder Reisedaten geändert. Vorschau neu berechnen.');return false;}
    if(!result.ok)throw new Error(result.error);
+   // Group speed is resolved by the provider; all other intent must match.
+   const echoed=request.useGroupPace?{...result.value.request,speedMetersPerMinute:request.speedMetersPerMinute}:result.value.request;
+   if(canonicalJson(echoed)!==canonicalJson(request))throw new Error('Auswertung gehört nicht zur angefragten Dungeonreise. Weg erneut vorbereiten.');
    preview=result.value;draw();return true;
   });
  };
