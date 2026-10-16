@@ -138,6 +138,7 @@ export function installLandscape(db: any) {
 export function installLandscapeIndex(db: any) {
   // Separate point/line/image candidates keep a world overview from scanning
   // every fine patch just to exclude it before requesting its display raster.
+  try { db.transaction(()=>{
   for(const [name,objects] of [['atlas_landscape_area',false],['atlas_landscape_objects',true]] as const){
     const condition=objects?"CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind')!='patch' ELSE 1 END":"1";
     const next=objects?"CASE WHEN json_valid(new.payload) THEN json_extract(new.payload,'$.kind')!='patch' ELSE 1 END":"1";
@@ -152,6 +153,13 @@ export function installLandscapeIndex(db: any) {
         INSERT INTO ${name} SELECT new.rowid,new.min_x,new.max_x,new.min_y,new.max_y WHERE ${next}; END;
       CREATE TEMP TRIGGER ${name}_delete AFTER DELETE ON main.atlas_landscape BEGIN
         DELETE FROM ${name} WHERE id=old.rowid; END;`);
+  }
+  })();return true;
+  } catch {
+    // Derived structures are optional. A failed rebuild rolls back all its TEMP
+    // DDL and must never block access to a different campaign's author data.
+    console.warn('Atlas spatial cache unavailable; using canonical bounds.');
+    return false;
   }
 }
 export function landscapeRegion(

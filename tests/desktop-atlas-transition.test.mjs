@@ -38,7 +38,7 @@ test('compact landscape commit is durable and idempotent without full atlas read
 });
 const rectangleBox={x:-1000,y:-1000,width:5000,height:5000};
 test('connection-local landscape index tracks movement, undo/redo, deletion and restart',t=>{
- const f=fixture(t),record=patch();const write=action=>f.store.executeAtlasCommit(f.command(action));
+ const f=fixture(t),record=patch();assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name='atlas_landscape_area'").get().n,1);const write=action=>f.store.executeAtlasCommit(f.command(action));
  write({kind:'landscape-put',record,expectedRevision:null});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,1);
  write({kind:'landscape-put',record:{...record,polygons:[rectangle(1e8,1e8,100,100)]},expectedRevision:1});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,0);
  write({kind:'undo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,1);write({kind:'redo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,0);
@@ -105,4 +105,14 @@ test('landscape search pages beyond 100 without copying geometry, then loads one
  assert.throws(()=>f.store.atlasObjects(f.w.token,{kind:'landscape',text:'Straße',limit:40,cursor:first.next}),/inzwischen geändert/);
  assert.equal(ids.length,251);assert.deepEqual(f.store.atlasLandscapeObject(f.w.token,ids.at(-1)),rows.at(-1));assert.throws(()=>f.store.atlasLandscapeObject(f.w.token,'missing'),/nicht gefunden/);
  const other=f.store.create('Other'),w=f.store.activate(other.id);assert.throws(()=>f.store.atlasLandscapeObject(w.token,rows[0].id),/nicht gefunden/);
+});
+
+test('an unavailable derived index cannot prevent opening an unrelated healthy campaign',t=>{
+ const f=fixture(t),r=patch();f.store.executeAtlasCommit(f.command({kind:'landscape-put',record:r,expectedRevision:null}));
+ const other=f.store.create('Foreign'),put=f.store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+ // An external damaged row may make an optional Rtree rebuild impossible.
+ f.store.db.exec('DROP TRIGGER temp.atlas_landscape_area_insert; DROP TRIGGER temp.atlas_landscape_objects_insert;');
+ put.run(other.id,'damaged',1,10,-10,0,1,'{broken original bytes');
+ f.fresh();assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records[0].id,r.id);assert.equal(f.store.db.prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=?').get(other.id).payload,'{broken original bytes');
+ assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name IN ('atlas_landscape_area','atlas_landscape_objects')").get().n,0);
 });
