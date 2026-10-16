@@ -289,3 +289,50 @@ Die nächsten Anschlüsse aus derselben Quelle bleiben ausdrücklich offen:
    Position, Fehler/Retry, Enter, schmaler Ansicht und200%; versteckte Provider
    dürfen keine neuen Listenreads starten. Providerintegration ersetzt weder die
    vollständige SRDquellenlieferung noch deren unabhängige Abnahme.
+
+## Bestehende Encounter-Vorlage auffüllen (0.149)
+
+Die [Originalanforderung Encounter Generation](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encounter/requirements/requirements-encounter-generation.md)
+verlangt einen festen additiven Bestand. Im Katalog kann der GM jetzt eine
+vorhandene Vorlage samt Planungsparty öffnen und im Generator „Aktuelle Vorlage
+auffüllen“ wählen. Die vorherige Vorlage bleibt unverändert. Jeder Vorschlag
+enthält unabhängige Eintrags-IDs, bewahrt die bestehenden Gegner einschließlich
+Mobwahl und benannter NPCs und erhält die Originalnotizen vor seiner ergänzten
+Herkunftsangabe. Die Vorschau benennt feste Basis, beibehaltene Gegner und
+Ergänzung getrennt; Übernahme verwendet den vorhandenen Vorlagenwriter.
+
+`GenerationRequest.fillPlan` bindet ID und gespeicherte Revision;
+`GenerationRun.fixedRoster` hält den vollständigen historischen Ausgangsstand.
+Der vorhandene pure Selector bewertet Gesamt-XP, Monsterzahl, Statblocks und
+Initiativeplätze aus festem Bestand plus Ergänzung. Harte Kompositionsregeln
+und Monsterfilter betreffen die Ergänzung. Ein bereits ausreichender Bestand
+braucht keinen künstlichen Zusatz. Ohne passende Ergänzung kann die nächste
+gültige Lösung außerhalb des Zielbands bleiben; die vorhandene Abweichungsanzeige
+bleibt bindend. Gewählte endliche Bestände zählen vorhandene Gegner desselben
+Kreaturtyps mit und werden beim Erzeugen nicht verbraucht.
+
+Benannte Basisfiguren werden aus zusätzlichen NPC-Kandidaten ausgeschlossen.
+Sie nochmals ausdrücklich als verbindliche Ergänzung auszuwählen ergibt eine
+konkrete Korrekturmeldung. Quelle, Partymitgliedschaft, HP und Scenezeit ändern
+sich beim Vorschlagen und Speichern einer Vorlage nicht. Die vorhandenen
+Preset-, Tabellen-, Katalog-, NPC- und Weltquellenprüfungen bleiben zuständig.
+Eine inzwischen geänderte Ausgangsvorlage sperrt eine neue Übernahme; ihre alte
+Vorschau bleibt mit Originalsnapshot lesbar. Bestehende Previewformate ohne
+Auffüllbasis bleiben gültig. Keine Schemaänderung, kein zweiter Selector.
+
+Die UI entwertet eine sichtbare Auffüllvorschau auch bei Änderungen an Namen,
+Notizen, Einträgen oder gewählter Ausgangsvorlage. Vor dem Erzeugen wird der
+bestehende Vorlagenentwurf abgeschlossen und dessen bestätigte Revision gebunden.
+Restart, Backup und unabhängiger Campaigntransfer erhalten die Vorschau;
+Kopien remappen ihre lokalen Vorlagen-/Eintrags-/NPC-IDs im bestehenden Walker,
+während Kreaturkatalogdaten und freie Prosa erhalten bleiben.
+
+Gezielte Store-/DOMfälle prüfen Füllung außerhalb des Ergänzungsfilters,
+Gesamtbewertung, unveränderte Quelle, keine künstliche Ergänzung, stale Basis,
+endlichen Bestand, NPC-Eindeutigkeit und unabhängige Kopie/Fresh. Native Linux-
+Belege prüfen tatsächliches Erzeugen/Übernehmen, getrennte Anzeige, erhaltene
+Notizen, Ablehnung einer alten Basis sowie normales Wiederöffnen.
+Das ist noch keine vollständige Scene-/Session-Parität: direktes Auffüllen
+persistenter Scenegruppen, vollständige konkrete Kapazitätsallokation bei
+ungleichen endlichen Statblockbeständen, p95-/200%-/Golden-/Plattformabnahme
+bleiben offen. Alle weiteren Anforderungen des Originals behalten ihren Umfang.
