@@ -135,3 +135,29 @@ test('initiative cells focus the existing draft editor and save grouped values w
  await until(()=>x.writes.length===1&&!input.disabled&&returned);const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;
  assert.ok(saved.participants.every(p=>p.initiative===17));assert.deepEqual(saved.participants.map(p=>p.hp),[7,7,7]);assert.equal(saved.turnId,x.combat.turnId);
 });
+
+
+test('two named template troops remain distinct through reinforcement, undo, reopen and campaign transfer',async t=>{
+ const x=fixture(t),plan=x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Zwei Trupps',notes:'',party:[],entries:[{id:'archers',creatureId:x.creature.id,count:3,grouped:true,groupName:'Schützen'},{id:'melee',creatureId:x.creature.id,count:3,grouped:true,groupName:'Nahkämpfer'}],sources:[],catalogHash:''}});
+ x.execute({kind:'create',sceneId:x.scene.id,title:plan.name,includeParty:false,expectedMembershipRevision:x.scene.membershipRevision,planId:plan.id,expectedPlanRevision:plan.revision});
+ const archer=x.combat.participants.find(p=>p.groupName==='Schützen'),melee=x.combat.participants.find(p=>p.groupName==='Nahkämpfer');assert.notEqual(archer.groupId,melee.groupId);
+ x.execute({kind:'edit',participantId:archer.id,changes:{initiative:14}});x.execute({kind:'edit',participantId:melee.id,changes:{initiative:9}});x.execute({kind:'start'});
+ const wounded=x.combat.participants[1];x.execute({kind:'damage',participantId:wounded.id,amount:5});const before=structuredClone(x.combat);
+ x.execute({kind:'add-creature',creatureId:x.creature.id,count:2,grouped:true,groupId:archer.groupId});
+ const archers=x.combat.participants.filter(p=>p.groupId===archer.groupId);assert.equal(archers.length,5);assert(archers.every(p=>p.groupName==='Schützen'&&p.initiative===14&&p.armorClass===15&&p.xp===50));assert.equal(archers.find(p=>p.id===wounded.id).hp,2);assert.equal(x.combat.turnId,before.turnId);assert(x.combat.sources[0].actions.length);
+ assert.equal(x.combat.participants.filter(p=>p.groupId===melee.groupId&&p.groupName==='Nahkämpfer'&&p.initiative===9&&p.hp===7).length,3);
+ const id=x.combat.id;x.store.close();x.store=new CampaignStore(x.file);x.w=x.store.activate(x.campaign.id);x.combat=x.store.combat(x.w.token,x.scene.id,id).combat;assert.equal(x.combat.participants.filter(p=>p.groupName==='Schützen').length,5);
+ const snapshot=x.root+'/troops.sqlite';await x.store.campaignSnapshot(x.w.token,snapshot);const target=new CampaignStore(x.root+'/target.sqlite');try{const copy=target.acceptCampaignSnapshot(snapshot,'Truppkopie',{}),w=target.activate(copy.id),row=target.db.prepare("SELECT id,scene_id FROM combat WHERE campaign_id=? AND json_extract(payload,'$.title')=?").get(copy.id,plan.name),copied=target.combat(w.token,row.scene_id,row.id).combat;assert.equal(copied.participants.filter(p=>p.groupName==='Schützen').length,5);assert.equal(copied.participants.find(p=>p.hp===2).groupName,'Schützen');await target.backup(x.root+'/copy-safe.sqlite');}finally{target.close();}
+ x.execute({kind:'undo'});assert.deepEqual(x.combat.participants,before.participants);assert.equal(x.combat.turnId,before.turnId);
+});
+test('troop rename changes all peers atomically, preserves individual aliases and rejects invalid labels',t=>{
+ const x=fixture(t);x.execute({kind:'add-creature',creatureId:x.creature.id,count:2,grouped:true,initiative:4});const before=structuredClone(x.combat),actor=x.combat.participants[0];
+ x.execute({kind:'edit',participantId:actor.id,changes:{groupName:'  Schützen  '}});assert(x.combat.participants.filter(p=>p.groupId===x.group).every(p=>p.groupName==='Schützen'));assert(x.combat.participants.filter(p=>p.groupId!==x.group).every(p=>p.groupName===undefined));assert.deepEqual(x.combat.participants.map(p=>p.name),before.participants.map(p=>p.name));
+ const bytes=x.store.db.serialize();for(const name of [123,'x'.repeat(121),null]){assert.throws(()=>x.execute({kind:'edit',participantId:actor.id,changes:{groupName:name}}),/Truppname/);assert(x.store.db.serialize().equals(bytes));}
+ x.execute({kind:'undo'});assert.deepEqual(x.combat.participants,before.participants);
+});
+test('runner saves one troop name for the selected group and offers it directly for reinforcement',async t=>{
+ const x=await uiFixture(t);x.el('combat-rows').querySelector('button').onclick();await until(()=>!x.el('fighter-name').disabled);
+ x.el('fighter-group-name').value='Schützen';x.el('fighter-group-name').dispatchEvent(new window.Event('input'));await tick();await tick();x.el('combat-participant-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);
+ assert.equal(x.writes[0].action.changes.groupName,'Schützen');assert.match(x.el('combat-creature-select').textContent,/Schützen · Goblin · vorhandene Initiative 9/);assert.equal([...x.el('combat-rows').querySelectorAll('small')].filter(e=>e.textContent==='Schützen').length,3);
+});

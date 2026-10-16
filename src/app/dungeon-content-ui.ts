@@ -1,3 +1,4 @@
+import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {Workspace,Room} from './contracts';
 import type {GraphView} from './graph-contracts';
 import type {DrawingElement} from './drawing-contracts';
@@ -91,7 +92,7 @@ async function write(value:DrawingElement,expected:number|null,adopt=true){
  writing=true;readVersion++;
  try{
   const ready=await before();if(!owns(o))throw cancelled;if(!ready)throw new Error('Offene Eingaben zuerst übernehmen oder verwerfen.');
-  const r=await window.campaign.executeDrawing(request);if(!owns(o))throw cancelled;if(!r.ok)throw new Error(r.error);
+  const r=await atlasDrawingWrite(request);if(!owns(o))throw cancelled;if(!r.ok)throw new Error(r.error);
   readVersion++;
   if(data)data={...data,geometry:{...data.geometry,rooms:r.value.workspace.rooms,drawing:r.value.view}};
   if(adopt&&editor===frame){

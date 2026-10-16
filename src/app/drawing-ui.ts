@@ -1,4 +1,6 @@
+import {atlasDrawingWrite,writeAtlas} from './campaign-atlas-author';
 import type {Workspace,Room,Point,Polygon,Result} from './contracts';import type {DrawingView,DrawingElement,DrawingAction,RoomStyle} from './drawing-contracts';import {newElement,elementSvg,roomPath,nearestAnchor,carveRoom} from './drawing-model';import {drawingToolControls} from './drawing-tool-controls';import {paint} from '../compute';
+let atlasFreeScope:string|null=null;export function atlasDrawingScope(scopeId:string|null){atlasFreeScope=scopeId;}
 const el=<T extends Element=HTMLElement>(id:string)=>document.getElementById(id) as unknown as T,field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value,unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 let context:()=>Workspace|null,selectedRoom:()=>Room|null,before:()=>Promise<boolean>,changed:(w:Workspace)=>Promise<void>,redraw:()=>void,tell:(s:string,error?:boolean)=>void,data:DrawingView|null=null,element:DrawingElement|null=null,path:Point[]=[],preview:Polygon[]|null=null,stroke:number|null=null,busy=false,dirty=false,styleDirty=false,loadGeneration=0;
 let styleBasis:{id:string;revision:number|null}|null=null,pendingStyle:{token:string;generation:number;id:string;task:Promise<boolean>}|null=null;
@@ -18,7 +20,7 @@ async function execute(action:DrawingAction){
  const command={commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action};
  if(!await prepare())throw new Error('Vorherige Eingabe abschließen.');
  if(!owned(w.token,generation))throw new Error('Zeichnungskontext gewechselt.');
- readRequest++;const response=await window.campaign.executeDrawing(command);
+ readRequest++;const response=action.kind==='create-room'&&action.scopeId===atlasFreeScope?await(async()=>{const r=await writeAtlas({...command,action:{kind:'room-create',scopeId:action.scopeId,floorId:action.floorId,name:action.name,polygons:action.polygons}});return r.ok?{ok:true as const,value:{workspace:r.value.atlas.workspace,view:r.value.atlas.geometry.drawing}}:r;})():await atlasDrawingWrite(command);
  if(!owned(w.token,generation))throw new Error('Zeichnungskontext gewechselt.');
  const result=unwrap(response);readRequest++;data=result.view;path=[];preview=null;
  await changed(result.workspace);if(!owned(w.token,generation))throw new Error('Zeichnungskontext gewechselt.');
@@ -76,6 +78,8 @@ function saveStyle():Promise<boolean>{
  pendingStyle=state;return state.task;
 }
 export async function flushDrawing(){const token=context()?.token,generation=loadGeneration;if(busy||stroke!==null||path.length){tell('Dungeonzug zuerst abschließen oder verwerfen.',true);return false;}if(!await saveStyle()||!owned(token,generation))return false;return await saveElement()&&owned(token,generation);}
+export function atlasDrawingDraft(){return{polygons:preview,path:[...path],floor:floor()};}
+export async function atlasDrawingPoint(p:Point){if(!context()||value('drawing-tool')==='select'||busy)return;if(!path.length&&!(await prepare()))return;const grid=field('drawing-snap').checked?Number(value('drawing-grid')):0;path.push({x:grid>0?Math.round(p.x/grid)*grid:p.x,y:grid>0?Math.round(p.y/grid)*grid:p.y});preview=shape();redraw();}
 export function initDrawing(status:typeof tell,getContext:typeof context,getSelected:typeof selectedRoom,flush:typeof before,apply:typeof changed,draw:typeof redraw){tell=status;context=getContext;selectedRoom=getSelected;before=flush;changed=apply;redraw=draw;
  el('drawing-tool').addEventListener('change',()=>{path=[];preview=null;redraw();});field('drawing-append').addEventListener('change',syncToolControls);el('drawing-finish').onclick=()=>run(finish);el('drawing-cancel').onclick=()=>{path=[];preview=null;stroke=null;redraw();};el('drawing-refresh').onclick=()=>run(reloadDrawing);el('drawing-show-section').onchange=el('drawing-slice-y').oninput=drawSection;
  const map=el<SVGSVGElement>('map');map.addEventListener('pointerdown',event=>{if(event.button!==0||value('drawing-tool')==='select')return;event.stopImmediatePropagation();event.preventDefault();run(async()=>{if(!path.length&&!(await prepare()))return;const p=point(event);path.push(p);map.focus();if(['room-cave','room-erase','scatter'].includes(value('drawing-tool'))){stroke=event.pointerId;map.setPointerCapture(stroke);}preview=shape();redraw();});},true);map.addEventListener('pointermove',event=>{if(stroke!==event.pointerId)return;event.stopImmediatePropagation();const p=point(event);if(path.length&&Math.hypot(path.at(-1)!.x-p.x,path.at(-1)!.y-p.y)<Math.max(.05,Number(value('drawing-brush'))/4))return;path.push(p);preview=shape();redraw();},true);map.addEventListener('pointerup',event=>{if(stroke===event.pointerId){event.stopImmediatePropagation();stroke=null;}} ,true);map.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();run(finish);}if(event.key==='Escape'){path=[];preview=null;stroke=null;redraw();}});

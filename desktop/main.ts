@@ -175,7 +175,7 @@ else {
     handle('catalog:info', () => creatureInfo());
     handle('catalog:search', (query: CreatureCatalogQuery) => searchCreatures(query));
     handle('catalog:creature', (id: string) => readCreature(id));
-    handle('campaign:encounter-plans', (token: string, search: string) => store.encounterPlans(token,search));
+    handle('campaign:encounter-plans', (token: string, search: string,limit?:number) => store.encounterPlans(token,search,limit));
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));
@@ -310,6 +310,12 @@ else {
     handle('player:art',async(token:string,kind:import('../src/app/player-contracts').PlayerAsset['kind'],subjectId:string|null,title:string)=>{store.playerView(token);const pick=await dialog.showOpenDialog(win,{title:'Bild für Spieleranzeige hinterlegen',properties:['openFile'],filters:[{name:'Bilder',extensions:['png','jpg','jpeg','webp']}]});if(pick.canceled||!pick.filePaths[0])return null;const filename=pick.filePaths[0];if((await stat(filename)).size>32*1024*1024)throw new Error('Bild ist größer als 32 MiB.');const image=nativeImage.createFromPath(filename),size=image.getSize();if(image.isEmpty()||size.width>8192||size.height>8192)throw new Error('Bildformat oder Bildmaße prüfen (maximal 8192 × 8192).');const bytes=image.resize({width:Math.min(size.width,2400),height:Math.round(size.height*Math.min(1,2400/size.width))}).toPNG(),sha256=createHash('sha256').update(bytes).digest('hex'),dir=path.join(dataDir,'player-images');await mkdir(dir,{recursive:true});await writeFile(path.join(dir,sha256+'.png'),bytes);return store.registerPlayerAsset(token,{id:randomUUID(),kind,subjectId,title,sha256,extension:'.png',bytes:bytes.length});});
     handle('city:activities',(token:string,q:import('../src/app/city-activity-contracts').CityActivityQuery)=>store.cityActivities(token,q));
     handle('city:buildings',(token:string,q:import('../src/app/city-contracts').CityBuildingQuery)=>store.cityBuildings(token,q));
+    handle('atlas:travel-preview',(token:string,p:import('../src/app/contracts').Point)=>store.previewAtlasTravel(token,p));
+    handle('atlas:travel',(c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand)=>store.executeAtlasTravel(c));
+    handle('atlas:export-png',async(token:string,bytes:number[],audience:'gm'|'public')=>{store.campaignAtlas(token);if(!['gm','public'].includes(audience)||!Array.isArray(bytes)||bytes.length>64*1024*1024||bytes.length<8||bytes.some(v=>!Number.isInteger(v)||v<0||v>255))throw new Error('Ungültige PNG-Ausgabe.');const buffer=Buffer.from(bytes);if(buffer.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')throw new Error('PNG-Signatur fehlt.');const selection=await dialog.showSaveDialog(win,{title:'Atlas als PNG ausgeben',defaultPath:audience==='public'?'Atlas-Spieler.png':'Atlas-GM.png',filters:[{name:'PNG',extensions:['png']}]});if(selection.canceled||!selection.filePath)return{cancelled:true};store.campaignAtlas(token);await writeFile(selection.filePath,buffer);return{cancelled:false};});
+    handle('atlas:import',(c:{commandId:string;token:string;campaignId:string;ticket:string;x:number;y:number})=>{const pending=imports.get(c.ticket);if(!pending)throw new Error('Importvorschau abgelaufen. Datei erneut wählen.');const result=store.executeAtlas({...c,action:{kind:'drawing-import',name:pending.name,rooms:pending.rooms,source:pending.bytes.toString('utf8'),x:c.x,y:c.y}});return{atlas:result.atlas,roomId:(result.result as {roomId:string|null}|null)?.roomId??null};});
+    handle('atlas:view',(token:string)=>store.campaignAtlas(token));
+    handle('atlas:execute',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlas(c));
     handle('city:list',(token:string)=>store.cities(token));
     handle('city:view',(token:string,id:string)=>store.city(token,id));
     handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>store.executeCity(c));
@@ -369,7 +375,7 @@ else {
     handle('campaign:discard-preparation-draft', (token: string, kind: PreparationEdit['kind'], id: string, writeId: string) => store.discardPreparationDraft(token, kind, id, writeId));
     handle('campaign:history', (token: string, direction: 'undo' | 'redo') => store.history(token, direction));
     handle('campaign:preview-import', async (): Promise<ImportPreview | null> => {
-      const chosen = await dialog.showOpenDialog(win, { title: 'v4-Dungeon als neue Kampagne übernehmen', filters: [{ name: 'Dungeon', extensions: ['dungeon'] }], properties: ['openFile'] });
+      const chosen = await dialog.showOpenDialog(win, { title: 'Dungeon in die Kampagnenwelt einfügen', filters: [{ name: 'Dungeon', extensions: ['dungeon'] }], properties: ['openFile'] });
       if (chosen.canceled || !chosen.filePaths[0]) return null;
       const bytes = readFileSync(chosen.filePaths[0]);
       if (bytes.length > 64 * 1024 * 1024) throw new Error('Dieser erste Import kann Dateien bis 64 MiB prüfen.');
