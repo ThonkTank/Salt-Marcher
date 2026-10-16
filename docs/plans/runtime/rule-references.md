@@ -49,9 +49,11 @@ Fakten sind noch nicht vollständig umgesetzt.
 
 Die Schnellsuche liest ihre fünf begrenzten Quellen unabhängig. Ein ausstehender
 Kreaturindex hält verknüpfte Begriffe und deren Detailansicht nicht zurück; Fehler
-bleiben bei ihrer Quelle sichtbar. Der Abschluss einer Enter-Suche öffnet nur
-dann automatisch den ersten Treffer, wenn inzwischen keine ausdrückliche
-Detailnavigation stattfand. DOM-/Storeprüfung und ein nativer Lauf mit verzögerter,
+bleiben bei ihrer Quelle sichtbar. Ein Enter-Intent bindet den laufenden Suchrequest und den bisherigen
+Detailkontext. Er öffnet genau den ersten schon verfügbaren oder neu eintreffenden
+Treffer, ohne auf andere Quellen zu warten oder dieselbe Suche erneut zu starten.
+Eine neue Query, Aktivierung, Schließen oder ausdrückliche Detailnavigation
+verwirft den Intent; später eintreffende Quellen ersetzen keine neue Auswahl. DOM-/Storeprüfung und ein nativer Lauf mit verzögerter,
 dann fehlerhafter Kreaturantwort bestätigen dies einschließlich Tastaturöffnung
 und unveränderter Autorenprosa nach erneutem Öffnen.
 
@@ -75,6 +77,16 @@ keine Schemaänderung oder Migration. Die Authoritygegenproben halten beide
 Reader einzeln zurück, liefern Fehler und fremde Sceneantworten und prüfen
 anschließende Commands/Revisionsbasen. Das ist DOM-/Controllernachweis, keine
 native Fehler-/Fokus-/Recoveryqualifikation.
+
+Die Enter-Gegenfälle in `desktop-quick-reference.test.mjs` halten einen
+Nebenindex offen, prüfen frühe Detailöffnung und genau einen Request je Quelle,
+binden schon sichtbare Teiltreffer ein und verwerfen verspätete Öffnungsabsichten
+nach Navigation/Close. Reads verändern weder Autorenprosa noch Kampagnenfakten.
+Eine neue Query invalidiert den alten Auftrag; bloß erneut Enter zu drücken
+startet keinen identischen Nebenindex ein zweites Mal. Die Gesamtstatuszeile
+wartet weiterhin auf die angefragten Quellen, während gesunde Referenzen bereits
+nutzbar sind. Das ist keine automatische Auflösung mehrdeutiger Begriffe und
+keine vollständige Reference-Graph-Lieferung.
 
 ## Automatische Begriffsreferenzen: nächste zusammenhängende Lieferung
 

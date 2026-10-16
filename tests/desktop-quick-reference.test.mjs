@@ -37,7 +37,7 @@ test('handoff rechecks the reviewed source after draining unsaved editor changes
 });
 test('a cancelled Enter query cannot override a newer explicit reference selection',async t=>{
  const x=await fixture(t),held=deferred(),original=x.window.campaign.searchDesk;let first=true;x.window.campaign.searchDesk=(...args)=>{if(first){first=false;return held.promise;}return original(...args);};
- x.el('quick-search').oninput();x.submit();x.submit();await tick();x.el('quick-results').querySelectorAll('button:not(.quick-more)')[1].click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');
+ x.el('quick-search').oninput();x.submit();x.el('quick-search').oninput();x.submit();await tick();x.el('quick-results').querySelectorAll('button:not(.quick-more)')[1].click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');
  held.resolve(await original(x.w.token,'world','',0));await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');
 });
 
@@ -59,4 +59,15 @@ test('a pending creature index cannot hold back linked terms or their readable t
  assert.deepEqual(requests,['world','creature','item','encounter','reference'],'each bounded source must be requested without waiting for another source');
  const references=[...x.el('quick-results').querySelectorAll('section')].find(s=>s.querySelector('h3')?.textContent==='Verknüpfte Begriffe'),alias=references.querySelector('[data-ref-id="'+beta.id+'"]');assert(alias,'the healthy linked target must be available before the creature reply');alias.click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');
  held.resolve({ok:false,error:'Creature index unavailable'});await tick();assert.match(x.el('quick-results').textContent,/Creature index unavailable/);assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');assert.deepEqual(x.store.live(x.w.token).scene.clock,scene.clock);assert.deepEqual(x.store.preparation(x.w.token).notes,source);
+});
+
+test('Enter opens the first healthy reference before a pending source settles without restarting the query',async t=>{
+ const x=await fixture(t),wait=deferred(),original=x.window.campaign.searchDesk,requests=[];x.window.campaign.searchDesk=(token,kind,...args)=>{requests.push(kind);return kind==='creature'?wait.promise:original(token,kind,...args);};const before=x.store.db.serialize();x.el('quick-kind').value='all';x.el('quick-kind').onchange();x.submit();await tick();assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Alpha');assert.deepEqual(requests,['world','creature','item','encounter','reference']);wait.resolve({ok:false,error:'Kreaturquelle ausgefallen'});await tick();assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Alpha');assert.match(x.el('quick-results').textContent,/Kreaturquelle ausgefallen/);assert.ok(x.store.db.serialize().equals(before));
+});
+test('Enter reuses partial results of the current search rather than issuing five duplicate reads',async t=>{
+ const x=await fixture(t),wait=deferred(),original=x.window.campaign.searchDesk,requests=[];x.el('quick-search').oninput();x.el('quick-close').click();x.el('quick-kind').value='all';x.window.campaign.searchDesk=(token,kind,...args)=>{requests.push(kind);return kind==='creature'?wait.promise:original(token,kind,...args);};await x.ui.openQuickReference();await tick();assert.ok(x.el('quick-results').querySelector('button'));x.submit();await tick();assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Alpha');assert.equal(requests.length,5);wait.resolve({ok:false,error:'Kreaturen später nicht verfügbar'});await tick();
+});
+test('a delayed healthy source cannot fulfill Enter after explicit detail navigation or closing',async t=>{
+ const x=await fixture(t),wait=deferred(),original=x.window.campaign.searchDesk,beta=x.store.preparation(x.w.token).notes.find(r=>r.note.title==='Beta').note;x.window.campaign.searchDesk=(token,kind,...args)=>kind==='world'?wait.promise:original(token,kind,...args);x.el('quick-search').oninput();x.submit();await tick();await x.ui.openQuickReference({kind:'note',id:beta.id});assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');wait.resolve(await original(x.w.token,'world','',0));await tick();assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');assert.equal(x.reads.filter(r=>r[1].id===x.note.id).length,0);
+ const closeWait=deferred();x.window.campaign.searchDesk=()=>closeWait.promise;x.el('quick-search').oninput();x.submit();await tick();x.el('quick-close').click();closeWait.resolve(await original(x.w.token,'world','',0));await tick();assert.equal(x.dialog.open,false);assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');
 });
