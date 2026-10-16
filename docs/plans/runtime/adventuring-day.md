@@ -330,3 +330,33 @@ Hypothetische Levelwechsel verändern weiterhin nicht die festen Startbudgets
 der Tages- und Rastvorschau. Hostprüfung umfasst Zielübernahme, eigene Gruppen,
 mehrere Levelwechsel, Encounterplan, Escape/Fokusrückkehr und Neustart mit
 unveränderten Partyfacts. Breite Plattform-, Zoom- und Großpartyabnahme bleibt offen.
+
+## Rastmarken innerhalb wiederholter Begegnungen (0.151)
+
+Die Topbarplanung zeigt bei einer Wiederholungszeile jetzt, nach welcher einzelnen
+Begegnung bekannte Figuren ihre nächste kurze oder lange Rast erreichen. Bereits
+vor der Zeile fällige Rasten erscheinen bei null Begegnungen. `projectDayRestStops`
+nutzt dasselbe `restFrame` wie Party und laufende Vorschau; frühe kurze Rasten,
+übrig gebliebene Abschnitte, überzogene Budgets und unbekannte Raststände behalten
+ihre Bedeutung. Die aufgerundete Belastung je Begegnung bleibt maßgeblich.
+Zählereignisse statt einer Matrix aus Figuren und Wiederholungen halten die
+Berechnung auf Partygröße plus tatsächlich angezeigte Marken begrenzt.
+
+„Hier kurze/lange Rast einplanen“ teilt eine Zeile an der gewählten Marke und setzt
+die Rast vor den verbleibenden Teil. Zum Beispiel werden zwölf Begegnungen zu
+„3 Begegnungen, kurze Rast, 9 Begegnungen“. Der vorherige Rastbeginn bleibt am
+ersten Teil; Quellen-ID und Revision, gesamte Gegnerzahl, Belastung und Verdienst
+bleiben erhalten. Ab einer bereits fälligen Marke wird die Rast vor die vorhandene
+Zeile gesetzt. Bei 20 Zeilen bleibt die Teilung gesperrt und erklärt die Grenze.
+Alte Ergebnisaktionen verlieren bei Eingaben, neuem Read, Schließen und
+Kampagnenwechsel ihre Wirkung. Der bestehende lokale Kampagnenentwurf speichert
+die entstandenen Zeilen/Rasten; es gibt kein neues Speicherschema und keine
+Party-, Zeit-, XP-, Encounter- oder Rastbuchung.
+
+Die Marken liegen nach vollständigen Begegnungen: eine Belastungsmarke kann im
+Kampf überschritten werden. Die Planung behauptet daher keine sichere Pause
+innerhalb eines Kampfs. Unbekannte Figuren erhalten keine erfundene Marke;
+eine geplante lange Rast kann wie bisher einen hypothetischen bekannten Zustand
+schaffen. Pausen gelten weiterhin für alle Rechnerfiguren. Am Ende der letzten
+Zeile ist keine weitere Begegnung aufzuteilen. Teilnehmerrasten, Dauer und
+Übernahme in einen gespeicherten Sessionablauf bleiben offen.

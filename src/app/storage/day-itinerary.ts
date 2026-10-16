@@ -1,7 +1,7 @@
 import {readEncounterPlan} from './encounters';
 import {assessEncounter,type EncounterParty} from '../encounter-contracts';
 import {xpShare,levelXp,restAfter,type Progress} from '../progression';
-import {projectDayPacing} from '../adventuring-day-model';
+import {projectDayPacing,projectDayRestStops} from '../adventuring-day-model';
 import type {DayPlanEntry,DayItinerary} from '../adventuring-day-contracts';
 
 /** Read saved source revisions only. Each fight is rounded separately like a real award. */
@@ -23,10 +23,11 @@ export function readDayItinerary(db:any,cam:string,entries:DayPlanEntry[],party:
   out.totalLoadXp+=load.total*entry.count;out.totalRewardXp+=reward.total*entry.count;
   if(![out.rawLoadXp,out.rawRewardXp,out.totalLoadXp,out.totalRewardXp].every(n=>Number.isSafeInteger(n)&&n<=1e12))throw new Error('Tagesplan überschreitet 1 Billion XP. Wiederholungen verringern.');
   if(entry.restBefore){out.plannedRests[entry.restBefore]++;for(const p of projected)p.rest=restAfter(p.rest,entry.restBefore);}
+  const restStops=projectDayRestStops(projected,load.share,entry.count);
   for(const p of projected){p.rest.longXp+=load.share*entry.count;p.rest.shortXp+=load.share*entry.count;}
   const pacing=projectDayPacing(initial,out.totalLoadXp,projected);
   out.stages.push({...entry,name:plan.name,difficulty:assessment.difficulty,baseXp:assessment.baseXp,adjustedXp:assessment.adjustedXp,multiplier:assessment.multiplier,loadShare:load.share,rewardShare:reward.share,cumulativeLoadXp:out.totalLoadXp,cumulativeRewardXp:out.totalRewardXp,
-   shortDue:pacing.projectedKnown?pacing.members.filter(m=>m.after?.due==='short').length:null,longDue:pacing.projectedKnown?pacing.members.filter(m=>m.after?.due==='long').length:null,knownRestStates:pacing.projectedKnown??0});
+   shortDue:pacing.projectedKnown?pacing.members.filter(m=>m.after?.due==='short').length:null,longDue:pacing.projectedKnown?pacing.members.filter(m=>m.after?.due==='long').length:null,knownRestStates:pacing.projectedKnown??0,restStops});
  }
  if(active)out.pacing={...projectDayPacing(initial,out.totalLoadXp,projected),plannedRests:out.plannedRests};
  return out;

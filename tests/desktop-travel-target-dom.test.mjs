@@ -338,3 +338,37 @@ for(const mismatch of ['scene','destination','waypoints','factor','duration','pa
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 test('automatic provider pace and reordered request keys retain their authentic preview without writes',async()=>{const x=await travelFixture();try{const original=x.window.campaign.previewTravel;x.enter('travel-party-pace','');x.document.getElementById('travel-party-pace').checked=true;x.document.getElementById('travel-party-pace').onchange();x.document.getElementById('travel-pace').value='99';x.window.campaign.previewTravel=async(token,request)=>{const result=await original(token,request);if(result.ok)result.value.request=Object.fromEntries(Object.entries(result.value.request).reverse());return result;};const before=x.store.db.serialize();x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.equal(x.document.getElementById('travel-preview-accept').disabled,false);assert.match(x.document.getElementById('travel-preview-itinerary').textContent,/langsamste Bewegung/);assert.ok(Number(x.document.getElementById('travel-pace').value)<99);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.sent.length,0);}finally{x.cleanup();}});
+test('a committed administrative placement preserves route input written while its reply is pending',async()=>{
+ const x=await travelFixture(),get=id=>x.document.getElementById(id);try{
+ const arrow=new x.window.Event('keydown',{bubbles:true,cancelable:true});Object.defineProperty(arrow,'key',{value:'ArrowRight'});get('world-map').dispatchEvent(arrow);await until(()=>get('travel-place-cursor').getAttribute('aria-label').includes('1,0'));
+ const before=x.store.sceneWorld(x.w.token,x.scene.id),writes=x.sent.length;x.hold();get('travel-place-cursor').onclick();await until(()=>x.hasReply());assert.equal(x.sent.at(-1).action.kind,'place-scene');x.enter('travel-waypoints','4,0; 5,0');x.enter('travel-q','6');x.enter('travel-r','0');x.release();await until(()=>get('travel-placement-status').textContent.includes('platziert'));
+ assert.equal(get('travel-waypoints').value,'4,0; 5,0');assert.equal(get('travel-q').value,'6');assert.equal(get('travel-r').value,'0');assert.equal(get('travel-preview-accept').disabled,true);assert.equal(x.sent.length,writes+1);const after=x.store.sceneWorld(x.w.token,x.scene.id);assert.equal(after.position.q,1);assert.equal(after.position.r,0);assert.equal(after.scene.clock.instantMs,before.scene.clock.instantMs);
+ x.preview();await until(()=>get('travel-preview-dialog').open);assert.equal(get('travel-preview-accept').disabled,false);assert.equal(x.sent.length,writes+1);
+ }finally{x.cleanup();}
+});
+test('a late administrative placement refresh cannot publish success in another selected scene',async()=>{
+ const x=await liveContextFixture();try{x.ui.setWorldSurface('world');const arrow=new x.window.Event('keydown',{bubbles:true,cancelable:true});Object.defineProperty(arrow,'key',{value:'ArrowRight'});x.get('world-map').dispatchEvent(arrow);await until(()=>x.get('travel-place-cursor').getAttribute('aria-label').includes('1,0'));
+ const real=x.window.campaign.sceneWorld;let release,held=false;x.window.campaign.sceneWorld=(token,id)=>id===x.a.id&&!held?(held=true,new Promise(r=>release=r)):real(token,id);x.get('travel-place-cursor').onclick();await until(()=>!!release);await x.select('world-scene',x.b.id);await until(()=>x.get('world-current').textContent.includes('3,0'));const status=x.get('travel-placement-status').textContent,bytes=x.store.db.serialize();release({ok:true,value:x.store.sceneWorld(x.w.token,x.a.id)});for(let i=0;i<12;i++)await tick();assert.equal(x.get('travel-placement-status').textContent,status);assert.ok(x.store.db.serialize().equals(bytes));assert.equal(x.store.sceneWorld(x.w.token,x.a.id).position.q,1);assert.equal(x.store.sceneWorld(x.w.token,x.b.id).position.q,3);
+ }finally{x.cleanup();}
+});
+
+for(const direct of [false,true])test(`another selected map cannot resume a paused journey (${direct?'direct callback':'visible control'})`,async()=>{
+ const x=await travelFixture();try{
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null}),j=x.store.executeWorld(command({kind:'journey',preview:p})).scene.journey;
+  x.store.executeWorld(command({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}));
+  const other={...x.map,id:randomUUID(),name:'Andere Karte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));await x.ui.openWorld();await x.select('world-map-select',other.id);
+  const get=id=>x.document.getElementById(id),bytes=x.store.db.serialize(),writes=x.writes;
+  if(direct){get('journey-play').onclick();for(let i=0;i<15;i++)await tick();assert.equal(x.writes,writes,'viewing another map cannot silently reactivate the old journey');}
+  else assert.equal(get('journey-play').disabled,true,'resume must agree with the timer map requirement');
+  assert.match(get('journey-playback-status').textContent,/Reisekarte/);assert.ok(x.store.db.serialize().equals(bytes));assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'paused');
+  await x.select('world-map-select',x.map.id);assert.equal(get('journey-play').disabled,false);get('journey-play').onclick();await until(()=>x.writes===writes+1);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey-state');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'active');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
+ }finally{x.cleanup();}
+});
+test('a valid new route on the displayed map is not blocked by a journey on the previous map',async()=>{
+ const x=await travelFixture();try{
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});x.store.executeWorld(command({kind:'journey',preview:p}));
+  const other={...x.map,id:randomUUID(),name:'Neue Reisekarte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));const f=x.store.sceneWorld(x.w.token,x.scene.id);x.store.executeWorld(command({kind:'place-scene',sceneId:x.scene.id,expectedSceneRevision:f.scene.revision,expectedPositionRevision:f.position.revision,position:{mapId:other.id,q:0,r:0,locationId:null}}));await x.ui.openWorld();x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);x.document.getElementById('live-travel-toggle').click();await until(()=>!x.document.getElementById('live-travel-host').hidden);x.enter('travel-q','1');x.enter('travel-r','0');x.preview();await until(()=>x.document.getElementById('travel-evaluation').querySelectorAll('dd').length===3);
+  assert.equal(x.document.getElementById('journey-play').disabled,false);assert.doesNotMatch(x.document.getElementById('journey-playback-status').textContent,/Reisekarte auswählen/);
+  x.document.getElementById('journey-play').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.mapId===other.id);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
+ }finally{x.cleanup();}
+});

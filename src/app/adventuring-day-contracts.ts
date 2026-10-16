@@ -1,7 +1,8 @@
 export interface DayRow {level:number;count:number}
 export interface DayPlanEntry {id:string;revision:number;count:number;restBefore?:'short'|'long'}
 export interface DayRequest {source:'active'|'custom';rows:DayRow[];totalXp:number;rewardXp?:number;encounters?:DayPlanEntry[]}
-export interface DayItineraryStage extends DayPlanEntry {name:string;difficulty:string|null;baseXp:number;adjustedXp:number;multiplier:number;loadShare:number;rewardShare:number;cumulativeLoadXp:number;cumulativeRewardXp:number;shortDue:number|null;longDue:number|null;knownRestStates:number}
+export interface DayRestStop {after:number;shortDue:number;longDue:number}
+export interface DayItineraryStage extends DayPlanEntry {name:string;difficulty:string|null;baseXp:number;adjustedXp:number;multiplier:number;loadShare:number;rewardShare:number;cumulativeLoadXp:number;cumulativeRewardXp:number;shortDue:number|null;longDue:number|null;knownRestStates:number;restStops?:DayRestStop[]}
 export interface DayItinerary {stages:DayItineraryStage[];partySize:number;rawLoadXp:number;rawRewardXp:number;totalLoadXp:number;totalRewardXp:number;pacing?:DayPacing;plannedRests:{short:number;long:number}}
 export interface DayProjection {name:string;count:number;beforeXp:number;afterXp:number;beforeLevel:number;afterLevel:number}
 export interface DayCalculation {partySize:number;dailyBudget:number;totalXp:number;rewardXp:number;shareXp:number;totalAwardXp:number;milestones:[number,number,number];thresholds:number[];completedDays:number;dayProgress:number;shortRests:number;longRests:number;timeline:{label:string;xp:number}[];projections:DayProjection[]}

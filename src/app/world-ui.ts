@@ -33,17 +33,19 @@ let liveWorld:SceneWorld|null=null,liveRequest=0,travelRequest=0,sceneRequest=0,
 let worldSurface='atlas',transportBusy=false,playbackJourneyId:string|null=null;
 const playback=journeyPlayback({read:playbackFrame,step:async basis=>{const j=frame?.journey;if(!j||j.revision!==basis.revision||j.nextIndex!==basis.nextIndex)return false;return changeJourney({kind:'journey-step',id:j.id,expectedRevision:j.revision,maxSteps:1});},changed:renderPlayback});
 function journeyBasisChanged(){const j=frame?.journey;return !!j&&!!frame&&(frame.scene.clock.revision!==j.clockRevision||frame.position.revision!==j.positionRevision||frame.scene.membershipRevision!==j.membershipRevision||world?.maps.find(m=>m.id===j.mapId)?.revision!==j.mapRevision);}
+function showsJourneyMap(){const j=frame?.journey;return !!j&&mapDraft?.id===j.mapId&&value('world-map-select')===j.mapId;}
 function playbackFrame(){
  const j=frame?.journey;
- if(!workspace||!j||j.status!=='active'||mapDraft?.id!==j.mapId||frame?.scene.id!==value('world-scene')||mapDraft.id!==value('world-map-select')||document.visibilityState==='hidden'||(worldSurface!=='world'&&!(liveSurface&&liveTravelOpen))||document.querySelector('dialog[open]')||journeyBasisChanged()||weatherDirty||weatherBusy||pending||uncertain||checkingWorldWrite||worldWrites.size||dirtyMap||dirtyCell||dirtyCalendar||dirtyPhenomenon)return null;
+ if(!workspace||!j||j.status!=='active'||!showsJourneyMap()||frame?.scene.id!==value('world-scene')||document.visibilityState==='hidden'||(worldSurface!=='world'&&!(liveSurface&&liveTravelOpen))||document.querySelector('dialog[open]')||journeyBasisChanged()||weatherDirty||weatherBusy||pending||uncertain||checkingWorldWrite||worldWrites.size||dirtyMap||dirtyCell||dirtyCalendar||dirtyPhenomenon)return null;
  return{key:workspace.token+':'+j.sceneId+':'+j.mapId+':'+j.id,revision:j.revision,nextIndex:j.nextIndex,seconds:j.segmentSeconds[j.nextIndex-1]!};
 }
 function renderPlayback(){
  const label=document.getElementById('journey-playback-status');if(!label)return;
  const j=frame?.journey,open=!!j&&['active','paused','interrupted'].includes(j.status),busy=transportBusy||playback.busy;
- label.textContent=playback.running?'Wiedergabe '+playback.speed+'× · jeder erreichte Hex bestätigt Position und Zeit.':open?'Wiedergabe pausiert · Fortsetzen startet am letzten bestätigten Hex.':'1× = eine Echtsekunde je Spielstunde. Geschwindigkeit ändert keine Reisezeit.';
+ const startable=!!preview&&!!frame&&!!mapDraft&&preview.request.sceneId===frame.scene.id&&preview.request.mapId===mapDraft.id&&frame.position.mapId===mapDraft.id&&!!frame.scene.members.length;
+ label.textContent=!startable&&open&&!showsJourneyMap()?'Für die Wiedergabe die Reisekarte auswählen.':playback.running?'Wiedergabe '+playback.speed+'× · jeder erreichte Hex bestätigt Position und Zeit.':open?'Wiedergabe pausiert · Fortsetzen startet am letzten bestätigten Hex.':'1× = eine Echtsekunde je Spielstunde. Geschwindigkeit ändert keine Reisezeit.';
  el('journey-speed').textContent=playback.speed+'×';el<HTMLButtonElement>('journey-slower').disabled=playback.speed===1;el<HTMLButtonElement>('journey-faster').disabled=playback.speed===10;
- const startable=!!preview&&!!frame&&!!mapDraft&&preview.request.sceneId===frame.scene.id&&preview.request.mapId===mapDraft.id&&frame.position.mapId===mapDraft.id&&!!frame.scene.members.length;const play=el<HTMLButtonElement>('journey-play');play.disabled=busy||(!startable&&(!open||playback.running||journeyBasisChanged()));play.textContent=startable?(preview!.continuation?'▶ Restreise starten':'▶ Reise starten'):j?.status==='paused'||j?.status==='interrupted'?'▶ Fortsetzen':'▶ Wiedergeben';play.setAttribute('aria-label',startable?'Ausgewertete Reise starten':'Reise wiedergeben');
+ const play=el<HTMLButtonElement>('journey-play');play.disabled=busy||(!startable&&(!open||!showsJourneyMap()||playback.running||journeyBasisChanged()));play.textContent=startable?(preview!.continuation?'▶ Restreise starten':'▶ Reise starten'):j?.status==='paused'||j?.status==='interrupted'?'▶ Fortsetzen':'▶ Wiedergeben';play.setAttribute('aria-label',startable?'Ausgewertete Reise starten':'Reise wiedergeben');
  for(const id of ['journey-step','journey-many'])if(busy)el<HTMLButtonElement>(id).disabled=true;
  el<HTMLButtonElement>('journey-pause').disabled=!open||transportBusy||!playback.running&&j?.status!=='active';
  el<HTMLButtonElement>('journey-end').disabled=!open||transportBusy;
@@ -54,7 +56,7 @@ async function transport(kind:'play'|'pause'|'end'|'step'|'many'){
  transportBusy=true;playback.stop();renderPlayback();
  try{
   await playback.settled();if(!ownsTravel(owner)||frame?.journey?.id!==journeyId)return;
-  const j=frame.journey;if(['arrived','ended'].includes(j.status))return;
+  const j=frame.journey;if(['arrived','ended'].includes(j.status)||kind==='play'&&!showsJourneyMap())return;
   const ok=kind==='play'?(j.status==='active'||await changeJourney({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'active'})):await changeJourney(kind==='step'||kind==='many'?{kind:'journey-step',id:j.id,expectedRevision:j.revision,maxSteps:kind==='step'?1:12}:{kind:'journey-state',id:j.id,expectedRevision:j.revision,state:kind==='pause'?'paused':'ended'});
   if(ok&&kind==='play'&&ownsTravel(owner))playback.play();
  }finally{transportBusy=false;renderJourney();}
@@ -282,13 +284,18 @@ function renderRouteDraft(){if(!document.getElementById('travel-stops'))return;c
 function placementKey(){const o=travelOwner();return o&&frame&&mapDraft&&o.mapId===mapDraft.id&&frame.scene.members.length&&frame.position.mapId===mapDraft.id&&(!liveSurface||liveTravelOpen&&liveFocusId===o.sceneId)?JSON.stringify([o.token,o.sceneId,o.mapId,frame.scene.revision,frame.scene.membershipRevision,frame.position.revision,frame.scene.clock.revision,mapDraft.revision,level,worldSurface,liveFocusId]):null;}
 async function placePartyAt(h:Hex,requireAuthored=false,key=placementKey()){
  const owner=travelOwner();if(!owner||!mapDraft||!frame)throw new Error('Karte und aktive Gruppe auswählen.');
- const scene=structuredClone(frame.scene),positionRevision=frame.position.revision,mapRevision=mapDraft.revision,locationId=world?.places.find(p=>p.mapId===owner.mapId&&!p.trashed&&hexKey(p)===hexKey(h))?.locationId??null;
+ const request=travelRequest,scene=structuredClone(frame.scene),positionRevision=frame.position.revision,mapRevision=mapDraft.revision,locationId=world?.places.find(p=>p.mapId===owner.mapId&&!p.trashed&&hexKey(p)===hexKey(h))?.locationId??null;
  if(frame.position.mapId===owner.mapId&&hexKey(frame.position)===hexKey(h)&&frame.position.locationId===locationId){el('travel-placement-status').textContent='Standort unverändert · keine neue Platzierung nötig.';el('travel-placement-status').dataset.error='false';return;}
  el('travel-placement-status').textContent='Platzierung wird geprüft…';el('travel-placement-status').dataset.error='false';
  playback.stop();if(playback.busy)throw new Error('Laufenden Reiseabschnitt zuerst abschließen.');
  if(!await flushWorld()||!ownsTravel(owner)||key!==placementKey())throw new Error('Gruppe oder Karte inzwischen geändert. Platzierung erneut wählen.');
  await raw({kind:'place-scene',sceneId:scene.id,expectedSceneRevision:scene.revision,expectedPositionRevision:positionRevision,placementBasis:{mapRevision,membershipRevision:scene.membershipRevision,requireAuthored},position:{...h,mapId:owner.mapId,locationId}},()=>ownsTravel(owner)&&key===placementKey());
- if(ownsTravel(owner)){resetRouteDraft();await reloadScene();renderMap();renderJourney();await after();el('travel-placement-status').dataset.error='false';el('travel-placement-status').textContent='Gruppe auf Hex '+hexKey(h)+' platziert · keine Reisezeit.';}
+ if(!ownsTravel(owner))return;
+ // A placement invalidates evaluations from the old position, not newer route input.
+ if(request===travelRequest)resetRouteDraft();else clearTravelPreview();
+ await reloadScene();if(!ownsTravel(owner))return;
+ renderMap();renderJourney();await after();if(!ownsTravel(owner))return;
+ el('travel-placement-status').dataset.error='false';el('travel-placement-status').textContent='Gruppe auf Hex '+hexKey(h)+' platziert · keine Reisezeit.';
 }
 async function placeRouteCursor(){const p=hexPoint(routeCursor,2**level);try{await placePartyAt(pointHex(p.x,p.y));}catch(error){el('travel-placement-status').textContent=(error as Error).message;el('travel-placement-status').dataset.error='true';throw error;}}
 
