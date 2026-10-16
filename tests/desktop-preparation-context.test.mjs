@@ -590,3 +590,13 @@ test('adding a scene waits for its inspector before focusing and selecting its p
  input.value='Ankunft an der Zollbrücke';input.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
  assert.equal(x.store.preparation(x.workspace.token).plans[0].scenes[0].title,'Ankunft an der Zollbrücke');
 });
+
+test('scene search finds saved and draft read-aloud without borrowing another plan text',async t=>{
+ const x=await fixture(t);await x.activate();const first=await x.ui.prepareNextVisit(null,{title:'Hinterhalt',notes:'GM privat',locationId:null});
+ x.el('visit-read-aloud').value='Zwischen den Bohlen glänzt ein Messer.';x.el('visit-read-aloud').oninput();assert.equal(await x.ui.flushPreparation(),true);
+ await x.ui.prepareNextVisit(first.planId,{title:'Weidenhain',notes:'Wer verlor das Messer?',locationId:null});
+ const search=text=>{x.el('scene-search').value=text;x.el('scene-search').dispatchEvent(new x.window.Event('input'));};search('Messer');assert.equal(x.el('scene-list').children.length,2);
+ [...x.el('scene-list').querySelectorAll('button')].find(b=>b.textContent.includes('Hinterhalt')).click();await settle();assert.equal(x.el('visit-read-aloud').value,'Zwischen den Bohlen glänzt ein Messer.');
+ x.el('visit-read-aloud').value='Eine Kupfermünze liegt hier.';x.el('visit-read-aloud').oninput();search('Kupfermünze');assert.equal(x.el('scene-list').children.length,1);assert.match(x.el('scene-list').textContent,/Hinterhalt/);
+ assert.equal(await x.ui.flushPreparation(),true);await x.ui.prepareNextVisit(null,{title:'Anderer Abend',notes:'',locationId:null,newPlan:true});search('Kupfermünze');assert.equal(x.el('scene-list').children.length,0);
+});
