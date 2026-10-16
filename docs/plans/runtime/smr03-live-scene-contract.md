@@ -837,8 +837,8 @@ Die Party bindet Lesen und Schreiben an Kampagnentoken, Figuren-ID und
 Fenstergeneration. Ein frischer Detailread prüft die gewählte Ledgerrevision,
 ohne eine Auswahl im versteckten Live-Beuteregister vorauszusetzen. Abgelaufene
 Antworten dürfen keine andere Figur oder geschlossenes Fenster überschreiben.
-Bei unbestätigter Buchung bleiben Eingaben erhalten; der vorhandene Spieltisch
-ist für Receipt-Recovery erreichbar. Es gibt keinen automatischen Neuversuch.
+Bei unbestätigter Buchung bleiben Eingaben erhalten; „Buchungsstatus prüfen“
+nutzt die vorhandene Receipt-Recovery direkt im Fenster. Es gibt keinen automatischen Neuversuch.
 
 Gezielte Panel-, Party- und Ledger-Verhaltenstests prüfen Suche/Paging,
 gleichnamige Figuren, Berichtigung, gespeicherte Verkaufspreise, stale Reads

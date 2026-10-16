@@ -37,7 +37,7 @@ export class PartyLootPanel {
   private more = node("button", "Ältere Beute");
   private retry = node("button", "Erneut laden");
   private back = node("button", "← Zur Party");
-  private recoverButton=node("button","Buchungsstatus im Spieltisch öffnen");
+  private recoverButton=node("button","Buchungsstatus prüfen");
   private form = node("form");
   private quantity = node("input");
   private reason = node("input");
@@ -56,7 +56,7 @@ export class PartyLootPanel {
       current: () => boolean,
     ) => Promise<void>,
     private dismiss: () => void,
-    private recover:()=>void=()=>{},
+    private recover:()=>Promise<void>=async()=>{},
   ) {
     root.id = "party-loot-panel";
     root.hidden = true;
@@ -151,7 +151,7 @@ export class PartyLootPanel {
     };
     this.historyMore.onclick = () => void this.loadHistory(true);
     this.historyRetry.onclick=()=>void this.loadHistory();
-    this.recoverButton.id="party-loot-recover";this.recoverButton.type="button";this.recoverButton.hidden=true;this.recoverButton.onclick=()=>this.recover();
+    this.recoverButton.id="party-loot-recover";this.recoverButton.type="button";this.recoverButton.hidden=true;this.recoverButton.onclick=()=>void this.recoverBooking();
     this.form.onsubmit = (e) => {
       e.preventDefault();
       void this.correct();
@@ -379,6 +379,24 @@ export class PartyLootPanel {
           if (history?.open) await this.loadHistory();
         }
       }
+    }
+  }
+  private async recoverBooking() {
+    const o=this.owner,item=this.selected;
+    if(!this.current(o)||!item||this.writing)return;
+    this.writing=true;this.lock();
+    try {
+      await this.recover();
+      if(!this.current(o))return;
+      const latest=unwrap(await window.campaign.ledgerItem(o!.token,item.id));
+      if(!this.current(o))return;
+      if(latest.id!==item.id||latest.characterId!==o!.id)throw Error("Eintrag gehört nicht zur gewählten Figur.");
+      if(latest.revision!==item.revision){this.selected=null;this.form.hidden=true;}
+      else this.detailStatus.textContent="Status geprüft. Eingabe bleibt erhalten; Buchungsmeldung oben beachten.";
+    } catch(e) {if(this.current(o))this.detailStatus.textContent=(e as Error).message;}
+    finally {
+      this.writing=false;
+      if(this.current(o)){this.lock();if(!this.selected){await this.load();if(this.root.querySelector<HTMLDetailsElement>("#party-loot-history")?.open)await this.loadHistory();}}
     }
   }
   private async loadHistory(more = false) {

@@ -45,3 +45,14 @@ test('correcting a sold entry preserves its actual recorded price',async t=>{
 test('paged personal loot can be searched without mixing the old page into a new filter',async t=>{
  const x=fixture(t),hero=x.heroes[0];for(let i=0;i<55;i++)x.store.executeProgress(x.command({kind:'manual-item',characterId:hero.id,expectedMembershipRevision:hero.membershipRevision,origin:'manual',item:{name:'Fund '+i,quantity:1,category:'equipment',valueGold:'1'},note:'Unterwegs'}));await x.open();const n=x.get('list').querySelectorAll('button').length;assert.equal(x.get('more').hidden,false);x.get('more').click();await until(()=>x.get('list').querySelectorAll('button').length>n);x.get('search').value='Silberner';x.get('search').oninput();await until(()=>x.get('list').querySelectorAll('button').length===1);assert.match(x.get('list').textContent,/Silberner/);assert.doesNotMatch(x.get('list').textContent,/Fund 2/);
 });
+
+test('Party receipt recovery reads the confirmed item without navigating away or resending the write',async t=>{
+ const x=fixture(t);await x.open();x.item().click();await until(()=>!x.get('form').querySelector('button').disabled);
+ const id=x.item().dataset.ledgerId;x.get('quantity').value='3';x.get('reason').value='Prüfung';
+ x.panel.commit=async()=>{throw Error('Antwort fehlt');};x.get('form').onsubmit({preventDefault(){}});await until(()=>!x.get('recover').hidden);
+ x.panel.recover=async()=>{};x.get('recover').click();await until(()=>x.get('detail-status').textContent.includes('Status geprüft'));
+ assert.equal(x.get('quantity').value,'3');assert.equal(x.get('reason').value,'Prüfung');assert.equal(x.get('form').hidden,false);
+ x.panel.recover=async()=>{const item=x.store.ledgerItem(x.w.token,id);x.store.executeProgress(x.command({kind:'ledger',entryId:id,expectedRevision:item.revision,operation:'correct',quantity:0,correctedQuantity:3,actualGold:'0',counterparty:'',reason:'Prüfung'}));};
+ x.get('recover').click();await until(()=>x.get('form').hidden&&x.get('list').textContent.includes('3 ×'));
+ assert.equal(x.sent.length,0);assert.equal(x.document.getElementById('party-loot-panel').hidden,false);
+});
