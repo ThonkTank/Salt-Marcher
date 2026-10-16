@@ -155,3 +155,16 @@ export async function atlasGraphWrite(
       }
     : r;
 }
+
+export async function atlasDefaultRoomWrite(
+  token: string,
+  campaignId: string,
+): Promise<Result<import("./contracts").Workspace>> {
+  const r = await writeAtlas({
+    commandId: crypto.randomUUID(),
+    token,
+    campaignId,
+    action: { kind: "room-default" },
+  });
+  return r.ok ? { ok: true, value: r.value.atlas.workspace } : r;
+}

@@ -569,3 +569,16 @@ test("shared ground wall vertices move adjacent rooms and the building shell in 
   x.write({ kind: "redo" });
   assert.equal(x.read().workspace.rooms[1].polygons[0].outer[0].y, -3);
 });
+
+test("default rooms from the key editor also use the common durable history", (t) => {
+  const x = fixture(t);
+  x.store.addRoom(x.w.token);
+  assert.equal(x.read().workspace.rooms.length, 1);
+  x.write({ kind: "undo" });
+  assert.equal(x.read().workspace.rooms.length, 0);
+  assert.equal(x.read().geometry.drawing.volumes.length, 0);
+  x.fresh();
+  x.write({ kind: "redo" });
+  assert.equal(x.read().workspace.rooms.length, 1);
+  assert.equal(x.read().geometry.drawing.volumes.length, 1);
+});

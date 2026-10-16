@@ -1,3 +1,4 @@
+import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
 import {CampaignAtlasWorkbench} from './campaign-atlas-ui';
 import {atlasRoomWrite,atlasHistoryWrite} from './campaign-atlas-author';
 import {initCampaignScreen,openCampaignScreen,hideCampaignScreen} from './campaign-screen-ui';
@@ -582,11 +583,11 @@ el('add-room').onclick = () => { void (async () => {
   const token = workspace?.token;
   if (!token || !roomContextCurrent(token) || !(await flush()) || !roomContextCurrent(token)) return;
   try {
-    const response = await api.addRoom(token);
+    const response = await atlasDefaultRoomWrite(token,workspace!.campaign.id);
     if (!roomContextCurrent(token)) return;
     workspace = unwrap(response); await reloadDrawing(); await setDraft();
     if (!roomContextCurrent(token)) return;
-    renderList(); updateHistory(); status('Raum mit Boden, Wänden und 10-Fuß-Decke angelegt und gespeichert.');
+    renderList(); updateHistory(); status('Raum angelegt und gespeichert.');
   } catch (error) { if (roomContextCurrent(token)) status((error as Error).message, true); }
 })(); };
 async function history(direction: 'undo' | 'redo') {

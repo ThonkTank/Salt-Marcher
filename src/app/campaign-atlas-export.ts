@@ -13,7 +13,7 @@ const ns = "http://www.w3.org/2000/svg";
 export function publicAtlasSVG(
   a: CampaignAtlas,
   box: CanvasBox,
-  frame: PlayerFrame,
+  frame?: PlayerFrame,
 ): SVGSVGElement {
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
@@ -84,7 +84,7 @@ export function publicAtlasSVG(
       stroke: "white",
       "stroke-width": box.width / 900,
     });
-  } else if (frame.mode === "map" && frame.map) {
+  } else if (frame?.mode === "map" && frame.map) {
     const map = frame.map;
     for (const cell of map.cells) {
       const p = atlasHexPoint(cell.q, cell.r, map.hexMeters),

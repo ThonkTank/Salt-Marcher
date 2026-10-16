@@ -1,3 +1,4 @@
+import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import {initKeyCopy,invalidateKeyCopy,syncKeyCopyControl} from './key-copy-ui';
 import {drawSurfaceKey} from './surface-key-ui';
@@ -151,7 +152,7 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
  el('key-open').onclick=()=>{const o=owner(),room=selected(),intent=++transition;run(async()=>{if(!(await before())||!owns(o)||intent!==transition)return;if(!room)throw new Error('Raum auswählen.');scopeId=room.scopeId;if(!await refresh()||!owns(o)||intent!==transition)return;openRoom(room.id);optionList('key-filter-level',records().filter(r=>r.kind==='level'&&r.scopeId===scopeId),null,'Alle Level');optionList('key-filter-group',records().filter(r=>r.kind==='group'&&r.scopeId===scopeId),null,'Alle Gruppen');el<HTMLDialogElement>('key-dialog').showModal();});};
  el('key-add-room').onclick=()=>{void moveEditor(async()=>{
   run(async()=>{const o=owner(),w=workspace();if(!w)return;if(!await before())throw new Error('Andere offene Eingaben zuerst prüfen.');if(!owns(o))return;
-   const result=await window.campaign.addRoom(w.token);if(!owns(o))return;if(!result.ok)throw new Error(result.error);
+   const result=await atlasDefaultRoomWrite(w.token,w.campaign.id);if(!owns(o))return;if(!result.ok)throw new Error(result.error);
    acknowledged=result.value;await publish(result.value);if(!owns(o)||!await refresh()||!owns(o))return;
    const room=result.value.rooms.find(r=>r.id===result.value.selectedId);if(!room)throw new Error('Neuer Raum konnte nicht geöffnet werden.');
    field('key-search').value='';select('key-filter-level').value='';select('key-filter-group').value='';select('key-filter').value='';listPage=0;openRoom(room.id);
