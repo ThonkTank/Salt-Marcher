@@ -4,6 +4,7 @@ export function rewardItemsEditor(
   items: (Omit<ItemInput, "quantity"> & { quantity: string | number })[],
   changed: () => void,
   raw = false,
+  catalogOnly = false,
 ) {
   root.replaceChildren();
   for (const [itemIndex, item] of items.entries()) {
@@ -69,7 +70,7 @@ export function rewardItemsEditor(
       label.append(document.createTextNode(text), control);
       return label;
     };
-    if (item.reference) {
+    if (item.reference || catalogOnly) {
       // Changing a catalog name or price used to silently drop its identity.
       // Instance editing changes quantity; definition facts stay in the catalog.
       legend.textContent = item.name;
@@ -83,6 +84,7 @@ export function rewardItemsEditor(
     }
     root.append(row);
   }
+  if (catalogOnly) return;
   const add = document.createElement("button");
   add.type = "button";
   add.textContent = "Weiteren Gegenstand hinzufügen";
