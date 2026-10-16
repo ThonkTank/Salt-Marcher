@@ -13,13 +13,14 @@ buildSync({entryPoints:['src/app/world-ui.ts'],outfile:base+'/world.cjs',bundle:
 async function fixture(t){
  const root=mkdtempSync(path.join(tmpdir(),'map-camera-')),file=path.join(root,'campaign.sqlite'),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(file),campaign=store.create('Passive Kamera'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
  store.executeLive(command({kind:'initialize',expectedRosterRevision:store.live(w.token).rosterRevision}));
- const map={id:randomUUID(),revision:0,name:'Originalkarte',hexMeters:1000,climate:'temperate',seed:'unchanged',cells:[]};store.executeWorld(command({kind:'map',map,expectedRevision:null}));
- const previous={window:globalThis.window,document:globalThis.document,DOMPoint:globalThis.DOMPoint},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
+ const map={...store.world(w.token).maps[0],revision:0,name:'Originalkarte',hexMeters:4828.032,climate:'temperate',seed:'unchanged',cells:[]};store.executeWorld(command({kind:'map',map,expectedRevision:store.world(w.token).maps[0].revision}));Object.assign(map,store.world(w.token).maps[0]);
+ const previous={window:globalThis.window,document:globalThis.document,DOMPoint:globalThis.DOMPoint,Event:globalThis.Event,CustomEvent:globalThis.CustomEvent},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
  class Matrix{inverse(){return new Matrix();}}
  class Point{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return new Point(this.x,this.y);}}
- Object.assign(globalThis,{window,document,DOMPoint:Point});const sent=[],messages=[];
+ Object.assign(globalThis,{window,document,DOMPoint:Point,Event:window.Event,CustomEvent:window.CustomEvent});const sent=[],messages=[];
  const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  window.campaign={world:async token=>response(()=>store.world(token)),preparation:async token=>response(()=>store.preparation(token)),live:async token=>response(()=>store.live(token)),sceneWorld:async(token,id)=>response(()=>store.sceneWorld(token,id)),executeWorld:async c=>{sent.push(structuredClone(c));return response(()=>store.executeWorld(c));}};
+ window.campaign.executeAtlas=async envelope=>{const reply=await window.campaign.executeWorld(envelope.action.command);return reply.ok?{ok:true,value:{atlas:store.campaignAtlas(envelope.token),result:reply.value}}:reply;};
  delete require.cache[require.resolve('../'+base+'/world.cjs')];const ui=require('../'+base+'/world.cjs');ui.initWorld(text=>messages.push(text),async()=>true,async()=>{},async()=>{});
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});ui.activateWorld(w);await ui.openWorld();
  const get=id=>document.getElementById(id),canvas=get('world-map'),captures=new Set();canvas.getScreenCTM=()=>new Matrix();canvas.setPointerCapture=id=>captures.add(id);canvas.hasPointerCapture=id=>captures.has(id);canvas.releasePointerCapture=id=>{captures.delete(id);};

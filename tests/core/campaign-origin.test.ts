@@ -29,7 +29,7 @@ test('campaign provenance records each successive copy without consuming source 
    for(const id of [copied.id,ns.id,nt.id]){assert.ok(!seen.has(id));seen.add(id);}
    assert.equal(ns.gmNotes,prose);assert.equal(nt.gmNotes,prose);assert.equal(ns.relations[0]?.targetId,nt.id);
    const origin=dbOf(next).prepare('SELECT * FROM campaign_origin').get();assert.equal(origin.source_id,campaign.id);assert.equal(origin.source_name,campaign.name);
-   assert.equal(origin.checksum,digest(origin.original_database));assert.deepEqual(JSON.parse(origin.original_database.toString()),{format:'Campaign provenance',version:1,campaignId:campaign.id,name:campaign.name,schema:44,sha256:digest(bytes)});
+   assert.equal(origin.checksum,digest(origin.original_database));assert.deepEqual(JSON.parse(origin.original_database.toString()),{format:'Campaign provenance',version:1,campaignId:campaign.id,name:campaign.name,schema:dbOf(store).pragma('user_version',{simple:true}),sha256:digest(bytes)});
    const map=JSON.parse(origin.local_map);assert.equal(map[source],ns.id);assert.equal(map[target],nt.id);
    next.executeWorldRelationPairHistory({commandId:'undo-'+hop,campaignId:copied.id,token:nw.token,expectedCursor:1,direction:'undo'});assert.equal(next.preparation(nw.token,'').notes.find(row=>row.note.id===ns.id)!.note.relations.length,0);
    next.executeWorldRelationPairHistory({commandId:'redo-'+hop,campaignId:copied.id,token:nw.token,expectedCursor:0,direction:'redo'});assert.equal(next.preparation(nw.token,'').notes.find(row=>row.note.id===nt.id)!.note.relations[0]?.targetId,ns.id);
