@@ -268,7 +268,9 @@ export function atlasDungeonState(){return{data,target,preview};}
 
 export function stopDungeonPlayback(){playback.stop();}
 export function syncDungeonLiveContext(token:string,sceneId:string){
- if(workspace?.token!==token||!document.getElementById('dungeon-travel-console')||liveContext===sceneId)return;
+ const console=document.getElementById('dungeon-travel-console');
+ if(workspace?.token!==token||!console||liveContext===sceneId)return;
+ for(let node=console.parentElement;node;node=node.parentElement)if(node.hidden)return;
  liveContext=sceneId;playback.stop();contextReady=false;readRequest++;invalidatePreview();dungeonTravelReadState(false,'Fokusgruppe geändert. Dungeonkontext wird geladen …');
  void openDungeon(sceneId).catch(e=>{if(workspace?.token===token&&liveContext===sceneId){dungeonTravelReadState(false,'Dungeonkontext nicht verfügbar: '+e.message);status(e.message,true);}});
 }
