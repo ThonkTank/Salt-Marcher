@@ -108,7 +108,7 @@ import {installSceneCheckSchema,readSceneChecks,executeSceneCheck,validateSceneC
 import type {SceneCheckCommand} from '../scene-check-contracts';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
-import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerItem, executeProgress, validateProgressBackup } from './progression';
+import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerDetail, executeProgress, validateProgressBackup } from './progression';
 import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
@@ -762,7 +762,7 @@ export class CampaignStore {
   treasure(token: string, id: string) { return readTreasure(this.db, this.guard(token), id); }
   ledger(token: string, query: LedgerQuery) { return readLedger(this.db, this.guard(token), query); }
   ledgerInventory(token:string,query:LedgerInventoryQuery){return readLedgerInventory(this.db,this.guard(token),query);}
-  ledgerItem(token: string, id: string) { return readLedgerItem(this.db, this.guard(token), id); }
+  ledgerItem(token: string, id: string) { return readLedgerDetail(this.db, this.guard(token), id); }
   commitStatus(ref:CommitReference,token:string):CommitOutcome{checkedCommitReference(ref);this.guard(token,ref.campaignId);return readCommitReceipt(this.db,ref);}
   ledgerParties(token:string){const cam=this.guard(token),rows:any[]=[];for(const kind of ['npc','faction'])rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.title') name FROM world_note WHERE campaign_id=? AND trashed=0 AND json_extract(payload,'$.kind')=? ORDER BY name LIMIT 2000").all(cam,kind).map((r:any)=>({...r,kind})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM location WHERE campaign_id=? AND trashed=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'location'})));rows.push(...this.db.prepare("SELECT id,json_extract(payload,'$.name') name FROM shop WHERE campaign_id=? AND coalesce(json_extract(payload,'$.trashed'),0)=0 ORDER BY name LIMIT 2000").all(cam).map((r:any)=>({...r,kind:'shop'})));return rows;}
   preparedGroups(token:string,search:string,after:string|null){return preparedGroups(this.db,this.guard(token),search,after);}

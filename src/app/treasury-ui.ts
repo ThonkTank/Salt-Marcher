@@ -212,7 +212,8 @@ function draw() {
   if (draft.revision !== book.revision)
     el("treasury-draft-status").textContent =
       "Schatz geändert. Entwurf bleibt erhalten; vor Übernahme abgleichen oder gespeicherten Stand laden.";
-  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true);
+  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true, true);
+  if(!draft.items.length)el<HTMLDetailsElement>('treasury-catalog-picker').open=true;
   const allocated = book.items.filter((i) => i.allocated > 0);
   el("treasury-allocated").textContent =
     allocated
@@ -435,6 +436,7 @@ async function history(more: boolean) {
 }
 async function findCatalog() {
   const current = editorOwner();
+  el('treasury-catalog-results').textContent='Gegenstände werden gesucht…';
   const q = {
     search: value("treasury-catalog-search"),
     category: "",
@@ -446,10 +448,18 @@ async function findCatalog() {
     after: 0,
     includeTrashed: false,
   };
-  const response = await window.campaign.itemDefinitions(q);
+  let response;
+  try{response=await window.campaign.itemDefinitions(q);}
+  catch(error){
+    if(!current()||q.search!==value('treasury-catalog-search'))return;
+    el('treasury-catalog-results').textContent='Suche fehlgeschlagen. Bitte erneut suchen.';
+    throw error;
+  }
   if (!current() || q.search !== value("treasury-catalog-search")) return;
+  if(!response.ok)el('treasury-catalog-results').textContent='Suche fehlgeschlagen: '+response.error;
   const p = unwrap(response);
   el("treasury-catalog-results").replaceChildren();
+  if(!p.items.length)el('treasury-catalog-results').textContent='Keine passenden Gegenstände gefunden.';
   for (const d of p.items) {
     const b = document.createElement("button");
     b.type = "button";
@@ -467,7 +477,7 @@ function addDefinition(d: ItemDefinition) {
     valueGold: goldText(d.unitCopper),
     reference: { kind: "authored", definitionId: d.id, revision: d.revision },
   });
-  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true);
+  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true, true);
   mark();
 }
 export function initTreasury(
@@ -481,7 +491,7 @@ export function initTreasury(
   if (ready) return;
   ready = true;
   distribution=new TreasureDistribution(status,()=>w,async()=>{if(!await flushTreasury())return false;if(dirty){tell("Schatzangaben zuerst übernehmen oder verwerfen.",true);return false;}return true;},execute);
-  const batch=document.createElement("button");batch.id="treasury-distribute";batch.type="button";batch.textContent="Beute gemeinsam verteilen…";el("treasury-allocate-form").after(batch);batch.onclick=()=>run(()=>distribution.open(book?.id));
+  const batch=document.createElement("button");batch.id="treasury-distribute";batch.type="button";batch.textContent="Beute gemeinsam verteilen…";el("treasury-apply").after(batch);batch.onclick=()=>run(()=>distribution.open(book?.id));
   onCommitState(lock);
   onCommitResolved((event) => {
     const meta = event.meta as { owner?: string; token?: string; generation?: number; editing?: number } | undefined;
@@ -536,6 +546,7 @@ export function initTreasury(
     e.preventDefault();
     run(findCatalog);
   };
+  el('treasury-catalog-search').oninput=()=>{el('treasury-catalog-results').textContent='Suche mit Enter oder „Suchen“ starten.';};
   el("treasury-move-form").onsubmit = (e) => {
     e.preventDefault();
     run(async () => {

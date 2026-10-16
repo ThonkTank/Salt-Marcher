@@ -5,6 +5,28 @@ test('batch preserves quantities, unknown values, recipients and exact replay th
 for(const fault of ['total','definition','membership','duplicate'])test('invalid '+fault+' in a later batch portion rolls all effects back',t=>{const x=fixture(t),a=x.portion(0,0,3),b=x.portion(0,1,1);if(fault==='total')b.quantity=3;if(fault==='definition')b.expectedDefinitionRevision++;if(fault==='membership')b.expectedMembershipRevision++;if(fault==='duplicate')Object.assign(b,a);const before=x.store.db.serialize();assert.throws(()=>x.store.executeProgress(x.command(x.action([a,b]))));assert.ok(x.store.db.serialize().equals(before));});
 test('a ledger fault in the second recipient rolls back the first allocation and receipt',t=>{const x=fixture(t);x.store.db.exec(`CREATE TRIGGER reject_later BEFORE INSERT ON character_ledger WHEN NEW.character_id='${x.characters[1].id}' BEGIN SELECT RAISE(ABORT,'controlled second ledger'); END`);const command=x.command(x.action([x.portion(0,0,2),x.portion(0,1,1)])),before=x.store.db.serialize();assert.throws(()=>x.store.executeProgress(command),/controlled second ledger/);assert.ok(x.store.db.serialize().equals(before));x.store.db.exec('DROP TRIGGER reject_later');assert.equal(x.store.executeProgress(command).ledgerIds.length,2);});
 
+test('equal personal items show their treasure source without copying it into grants or correction history',t=>{
+ const x=fixture(t),ack=x.store.executeProgress(x.command(x.action([x.portion(0,0,2)]))),entryId=ack.ledgerIds[0];
+ const query={characterId:x.characters[0].id,after:null,search:'Seil',status:''},before=x.store.db.serialize();
+ assert.equal(x.store.ledger(x.w.token,query).items[0].sourceTitle,'  Originalfund\r\n');
+ assert.equal(x.store.ledger(x.w.token,{...query,search:'Originalfund'}).items[0].id,entryId);
+ assert.equal(x.store.ledgerItem(x.w.token,entryId).sourceTitle,'  Originalfund\r\n');assert.ok(x.store.db.serialize().equals(before));
+ const correction=x.store.executeProgress(x.command({kind:'ledger',entryId,expectedRevision:1,operation:'correct',quantity:0,correctedQuantity:1,actualGold:'',counterparty:'',reason:'Menge berichtigt'}));
+ assert.equal(x.store.ledgerItem(x.w.token,correction.ledgerIds[0]).sourceTitle,'  Originalfund\r\n');
+ for(const row of x.store.db.prepare('SELECT payload FROM character_ledger').all())assert.equal(Object.hasOwn(JSON.parse(row.payload),'sourceTitle'),false);
+ for(const event of x.store.progressHistory(x.w.token,x.characters[0].id,null).items)assert.ok(!JSON.stringify(event.facts).includes('sourceTitle'));
+});
+
+test('an unavailable source does not hide its valid grant or expose a different campaign treasure',t=>{
+ const x=fixture(t),ack=x.store.executeProgress(x.command(x.action([x.portion(0,0,1)]))),row=x.store.db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(x.campaign.id,x.id);
+ const other=x.store.create('Andere Kampagne');x.w=x.store.activate(x.campaign.id);
+ x.store.db.prepare('INSERT INTO treasure VALUES(?,?,?,?,?)').run(other.id,row.id,row.revision,row.payload,row.checksum);
+ x.store.db.prepare('DELETE FROM treasure WHERE campaign_id=? AND id=?').run(x.campaign.id,x.id);
+ const query={characterId:x.characters[0].id,after:null,search:'',status:''},result=x.store.ledger(x.w.token,query);
+ assert.equal(result.items.length,1);assert.equal(result.items[0].sourceTitle,undefined);assert.equal(result.items[0].treasureId,x.id);
+ assert.equal(x.store.ledgerItem(x.w.token,ack.ledgerIds[0]).sourceTitle,undefined);
+});
+
 
 test('confirmed rewards retain original receipts and linked corrected history through Fresh and independent copy',async t=>{
  const x=fixture(t),hero=x.characters[0],other=x.characters[1];

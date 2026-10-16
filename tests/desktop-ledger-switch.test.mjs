@@ -83,3 +83,23 @@ test('personal loot names its owner immediately across character switches',async
   x.ui.progressionContext(x.w,x.live,null);assert.equal(x.el('ledger-character-heading').textContent,'Beute · Figur auswählen');
  }finally{await x.cleanup();}
 });
+
+ test('quantity correction starts from the selected total and hides irrelevant sale price',async()=>{
+ const x=await fixture();try{
+ x.el('ledger-operation').value='correct';x.el('ledger-operation').onchange();
+ assert.equal(x.el('ledger-quantity').value,'4');assert.equal(x.el('ledger-quantity-label').textContent,'Neue Gesamtmenge');assert.equal(x.el('ledger-price-field').hidden,true);
+ x.el('ledger-quantity').value='3';x.el('ledger-reason').value='Eine zu viel';x.submit();await x.ui.flushProgress();
+ assert.equal(x.store.ledgerItem(x.w.token,x.a.id).quantity,3);
+ const history=x.store.progressHistory(x.w.token,x.heroes[0].id,null).items.find(e=>e.kind==='loot-correction');assert(history);
+ x.choose(x.b.id);await until(()=>!x.el('ledger-quantity').disabled);assert.equal(x.el('ledger-quantity').value,'2');assert.equal(x.el('ledger-reason').value,'');
+ x.el('ledger-operation').value='given';x.el('ledger-operation').onchange();assert.equal(x.el('ledger-price-field').hidden,true);assert.equal(x.el('ledger-quantity').value,'1');
+ x.el('ledger-operation').value='sold';x.el('ledger-operation').onchange();assert.equal(x.el('ledger-price-field').hidden,false);
+ }finally{await x.cleanup();}
+});
+test('correcting a sold portion retains its actual sale price',async()=>{
+ const x=await fixture();try{x.fill();x.submit();await x.ui.flushProgress();
+ [...x.el('ledger-list').querySelectorAll('button')].find(b=>b.textContent.includes('Verkauft')).onclick();await until(()=>!x.el('ledger-quantity').disabled);
+ assert.equal(x.el('ledger-price').value,'3.00');x.el('ledger-operation').value='correct';x.el('ledger-operation').onchange();assert.equal(x.el('ledger-price-field').hidden,false);assert.equal(x.el('ledger-quantity').value,'1');
+ x.el('ledger-reason').value='Verkauf kontrolliert';x.submit();await x.ui.flushProgress();const page=x.store.ledger(x.w.token,{characterId:x.heroes[0].id,after:null,search:'',status:'sold'});assert.equal(page.items[0].actualSaleCopper,'300');
+ }finally{await x.cleanup();}
+});
