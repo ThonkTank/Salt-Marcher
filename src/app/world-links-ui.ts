@@ -6,7 +6,7 @@ import {campaignLocalId} from '../features/campaign/campaign-contracts';
 import type {WorldLinksPage,WorldLinkRef,WorldLinksQuery} from './world-links-contracts';
 import {worldLinkKey,worldLinkKinds} from './world-links-contracts';
 import {WorldLinksMap} from './world-links-map';
-import {renderCreatureDetail} from './catalog-ui';
+import {renderCreatureDetail} from './creature-detail-ui';
 import {encounterEntryLabel} from './encounter-contracts';
 import {openQuickReference} from './quick-reference-ui';
 import type {WorldRelationPairCommand,WorldRelationPairHistoryCommand,WorldRelationPairHistoryView} from './world-relation-pair-contracts';

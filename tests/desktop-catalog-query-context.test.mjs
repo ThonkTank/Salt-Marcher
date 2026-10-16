@@ -10,7 +10,7 @@ async function until(fn){for(let i=0;i<100&&!fn();i++)await tick();assert.ok(fn(
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
 const page=(name,offset=0,total=100)=>({rows:[{id:name,name,challengeRating:'1',type:'Humanoid',size:'Medium',ac:12,hp:10,xp:200}],offset,total,limit:25});
 async function fixture(t,metadataFailure=false,overrides={}){
- const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout,matchMedia:globalThis.matchMedia};Object.assign(globalThis,{window,document});window.matchMedia=()=>({matches:false});const timers=new Map();let timer=0;globalThis.setTimeout=(fn,delay)=>{timers.set(++timer,{fn,delay});return timer;};globalThis.clearTimeout=id=>timers.delete(id);t.after(()=>Object.assign(globalThis,previous));
+ const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout,matchMedia:globalThis.matchMedia};Object.assign(globalThis,{window,document});window.matchMedia=()=>({matches:false});window.HTMLElement.prototype.scrollIntoView=()=>{};const timers=new Map();let timer=0;globalThis.setTimeout=(fn,delay)=>{timers.set(++timer,{fn,delay});return timer;};globalThis.clearTimeout=id=>timers.delete(id);t.after(()=>Object.assign(globalThis,previous));
  const el=id=>document.getElementById(id),ok=value=>({ok:true,value}),reads=[],messages=[],liveAdds=[];
  window.campaign={creatureInfo:async()=>metadataFailure?{ok:false,error:'Catalog index unavailable'}:ok({notice:'Offlinequelle',hash:'pinned',types:[],sizes:[],habitats:[],alignments:[],subtypes:[]}),creatures:query=>{const d=deferred();reads.push({...d,query});return d.promise;},encounterPlans:async()=>ok([]),encounterTables:async()=>ok([]),lootTables:async()=>ok([]),generatorRegistry:async()=>ok({revision:1,presets:[]}),generationRuns:async()=>ok([]),generationSources:async()=>ok({sources:[],factions:[],locations:[]}),npcs:async()=>ok({rows:[],next:null,total:0})};
  Object.assign(window.campaign,overrides);
@@ -160,12 +160,11 @@ for(const failure of [false,true])test(`detail ${failure?'failure':'success'} re
 
 
 test('a creature clicked from the encounter roster reveals its detail on a wide screen and returns without changing the draft',async t=>{
- const x=await detailFixture(t),jumps=[],held=deferred();
+ const x=await detailFixture(t),jumps=[];
  window.matchMedia=()=>({matches:false});x.el('catalog-inspector').scrollIntoView=()=>jumps.push('detail');x.el('catalog-detail').focus=()=>{};x.el('encounter-builder').scrollIntoView=()=>jumps.push('plan');x.el('encounter-name').focus=()=>{};
  x.el('catalog-quantity').value='3';x.el('catalog-add').click();x.el('encounter-notes').value='Kornsäcke retten; Flucht vor Feuer.';x.el('encounter-notes').oninput();
- const before=x.el('encounter-entries').textContent;window.campaign.creature=()=>held.promise;
- x.el('encounter-entries').querySelector('button').click();await tick();assert.deepEqual(jumps,['detail']);assert.match(x.el('catalog-detail').textContent,/geladen/);
- held.resolve({ok:true,value:detail('Guard')});await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Guard');x.el('catalog-plan-open').click();
+ const before=x.el('encounter-entries').textContent;let reads=0;window.campaign.creature=async()=>{reads++;throw new Error('Current catalog must not be read for this snapshot');};
+ x.el('encounter-entries').querySelector('button').click();await tick();assert.deepEqual(jumps,['detail']);assert.equal(x.el('catalog-detail').querySelector('h3').textContent,'Guard');assert.equal(reads,0);assert.match(x.el('creature-reading-source').textContent,/Gespeicherter Quellenstand/);x.el('catalog-plan-open').click();
  assert.deepEqual(jumps,['detail','plan']);assert.equal(x.el('encounter-notes').value,'Kornsäcke retten; Flucht vor Feuer.');assert.equal(x.el('encounter-entries').textContent,before);assert.equal(x.el('encounter-entries').querySelector('input[type="number"]').value,'3');
 });
 
@@ -221,4 +220,15 @@ test('read-only statblocks expose signed ability modifiers without repeating imp
  assert.match(root.textContent,/A distinct\npoison effect/);assert.doesNotMatch(root.textContent,/Weitere Angaben/);assert.match(root.textContent,/A separate paralysis effect/);
  assert.equal(root.querySelectorAll('input,textarea,button').length,0);assert.deepEqual(original,snapshot);
  original.details='Additional habitat information.';x.el('catalog-rows').querySelector('button').click();await until(()=>root.textContent.includes('Additional habitat information.'));assert.match(root.textContent,/Weitere Angaben/);
+});
+
+test('saved encounter statblocks stay frozen through current catalog lookup and reading history',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Guard');await x.opened;const source={...detail('Guard'),name:'Guard – gespeicherter Stand',hp:17},saved={id:'saved-plan',revision:4,name:'Brückenwache',notes:'  Unverändert\r\n',party:[],entries:[{id:'guard-row',creatureId:'Guard',count:2,grouped:true}],sources:[source],catalogHash:'old-source'},before=JSON.stringify(saved),reads=[];
+ window.campaign.encounterPlan=async()=>({ok:true,value:structuredClone(saved)});window.campaign.creature=async id=>{reads.push(id);return{ok:true,value:{...detail(id),name:'Guard – heutiger Katalog',hp:99}};};
+ await x.ui.openCatalogReference({kind:'encounter',id:saved.id});x.el('catalog-items-tab').click();x.el('encounter-entries').querySelector('button').click();await tick();assert.equal(x.el('catalog-monsters').hidden,false);assert.match(x.el('catalog-detail').textContent,/gespeicherter Stand/);assert.match(x.el('creature-reading-source').textContent,/Brückenwache.*revision 4/);assert.deepEqual(reads,[]);for(const id of ['catalog-add','catalog-live-add','table-add-creature'])assert.equal(x.el(id).disabled,true);x.el('catalog-live-add').onclick();assert.deepEqual(x.liveAdds,[]);assert.equal(x.el('catalog-detail').querySelectorAll('input,textarea,button').length,0);
+ x.el('creature-reading-current').click();await until(()=>x.el('catalog-detail').textContent.includes('heutiger Katalog'));assert.deepEqual(reads,['Guard']);assert.equal(x.el('catalog-live-add').disabled,false);x.el('creature-reading-back').click();assert.match(x.el('catalog-detail').textContent,/gespeicherter Stand/);assert.equal(x.el('catalog-live-add').disabled,true);assert.deepEqual(reads,['Guard']);x.el('creature-reading-forward').click();await until(()=>reads.length===2);await tick();assert.match(x.el('catalog-detail').textContent,/heutiger Katalog/);assert.equal(JSON.stringify(saved),before);assert.equal(x.el('encounter-notes').value,saved.notes);
+ x.ui.activateCatalog({...x.w,token:'other',campaign:{id:'other'}});assert.equal(x.el('creature-reading-back').disabled,true);assert.equal(x.el('creature-reading-forward').disabled,true);assert.equal(x.el('creature-reading-source').textContent,'');
+});
+test('opening a saved statblock invalidates a pending catalog reply and never fabricates a missing snapshot',async t=>{
+ const x=await detailFixture(t),held=deferred();window.campaign.creature=()=>held.promise;await x.choose('Wolf');const plan={id:'saved',revision:2,name:'Alte Spur',notes:'',party:[],entries:[{id:'entry',creatureId:'Guard',count:1,grouped:false}],sources:[],catalogHash:'missing'};window.campaign.encounterPlan=async()=>({ok:true,value:plan});await x.ui.openCatalogReference({kind:'encounter',id:'saved'});x.el('encounter-entries').querySelector('button').click();assert.match(x.el('catalog-detail').textContent,/Gespeicherter Statblock nicht verfügbar/);held.resolve({ok:true,value:detail('Wolf')});await tick();await tick();assert.match(x.el('catalog-detail').textContent,/Gespeicherter Statblock nicht verfügbar/);assert.equal(x.el('catalog-live-add').disabled,true);
 });

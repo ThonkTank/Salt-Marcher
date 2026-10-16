@@ -6,7 +6,7 @@ import type {GenerationRequest,GenerationRun,GeneratorRegistry,EncounterTable,Wo
 import type {EncounterParty} from './encounter-contracts';
 import {encounterEntryLabel} from './encounter-contracts';
 import {xpLevel} from './progression';
-import {renderCreatureDetail} from './catalog-ui';
+import {renderCreatureDetail} from './creature-detail-ui';
 import {requiredNpcPicker} from './required-npc-picker';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;},button=(text:string,fn:()=>void)=>{const n=node('button',text);n.type='button';n.onclick=fn;return n;};
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
