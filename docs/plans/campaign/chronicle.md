@@ -42,6 +42,26 @@ Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
 - **Kopieren:** Unabhängige Kopien binden strukturelle Gruppen-, Figuren- und
   Folgespurverweise an ihre kopierten Inhalte; freie Prosa bleibt unverändert.
 
+## Vom bestätigten Moment zur Vorbereitung (16.10.2026)
+
+Nach dem Bestätigen einer Quest oder eines Gerüchts öffnet die Ergebniszeile
+mit „Quest öffnen…“ beziehungsweise „Gerücht öffnen…“ genau die angelegte
+Originalnotiz. Das erneute Suchen ihres Titels entfällt. Der Einstieg bleibt an
+die bestätigte Folgespur und die damalige Gruppe gebunden; ein Gruppenwechsel
+oder eine neuere Ergebniszeile entzieht der alten Schaltfläche ihre Autorität.
+Ein ausgefallener nachträglicher Wissensread nimmt die Speicherbestätigung
+nicht zurück. Ein fehlgeschlagenes Öffnen lässt dieselbe Originalnotiz erneut
+öffnen, ohne einen weiteren Moment anzulegen.
+
+Im vorhandenen Notizeditor können Beziehungen ergänzt werden. Seine
+„Notizmappe öffnen…“ übernimmt ausgewählte Originalnotizen direkt in einen
+bestehenden oder neuen Besuch. Damit braucht auch diese Zuordnung keine zweite
+Titelsuche. Bestehende Besuchsnotizen und die Originaltexte bleiben eigenständig.
+Der native Prüfweg `node tools/test-desktop-moment-follow-up.mjs --out=<Ordner>`
+führt Erfassung, Beziehung, Besuchszuordnung, reguläres Beenden sowie frisches
+Wiederfinden und Weiterbearbeiten mit isolierten Daten durch. Die
+Gegenstückprüfung derselben Aufgabe und menschliche Abnahme bleiben eigene Belege.
+
 ## Belege und offene Grenzen
 
 [Storeprüfung](../../../tests/desktop-chronicle-store.test.mjs),

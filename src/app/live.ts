@@ -815,7 +815,8 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
     const publishingWork=momentOwner;publishingWork.publishing=true;
     void(async()=>{try{
       if(!await flushLive()||!current())return;
-      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,draft,followUp:narrativeFollowUp?{kind:narrativeFollowUp,id:crypto.randomUUID()}:null});if(!ack)return;const work=momentWorks.get(sceneId);if(work&&sameLiveMomentDraft(work.basis,draft)&&!ack.scene?.momentDraft)work.basis=null;if(!current())return;
+      const followUpRef=narrativeFollowUp?{kind:narrativeFollowUp,id:crypto.randomUUID()}:null;
+      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,draft,followUp:followUpRef});if(!ack)return;const work=momentWorks.get(sceneId);if(work&&sameLiveMomentDraft(work.basis,draft)&&!ack.scene?.momentDraft)work.basis=null;if(!current())return;
       let refreshProblem=false;if(narrativeFollowUp){try{const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(!current())return;refreshProblem=true;}}
       const unchanged=canClearSavedLiveMoment(sceneId,momentOwner?.sceneId??null,draft,currentLiveMomentDraft());
       if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());captureMomentDraft();showMomentDraftState();if(followUp!=='deadline'&&followUp!=='visit')get<HTMLInputElement>('live-moment-title').focus();}
@@ -824,7 +825,16 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
         if(followUp==='deadline')await openMomentDeadline({title,summary,location},current);
         else await openMomentVisit(plan,{title,notes:summary,locationId:scene.locationId},current);
       }catch{refreshProblem=true;}
-      if(current())get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
+      if(current()){
+        const result=get('live-moment-result');result.textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
+        if(followUpRef){
+          const open=document.createElement('button');open.type='button';open.id='live-moment-follow-up-open';
+          open.textContent=followUpRef.kind==='quest'?'Quest öffnen…':'Gerücht öffnen…';
+          const valid=()=>current()&&open.isConnected&&result.contains(open);
+          open.onclick=()=>{if(!valid()||open.disabled)return;open.disabled=true;void openKnowledgeNote(followUpRef.id,valid).catch(error=>{if(valid())tell((error as Error).message,true);}).finally(()=>{if(valid())open.disabled=false;});};
+          result.append(document.createTextNode(' '),open);
+        }
+      }
     }catch(error){if(current())tell((error as Error).message,true);}finally{publishingWork.publishing=false;if(publishingWork.dirty&&!publishingWork.error)void saveMomentWork(publishingWork);}})();
   };
   get('live-session-start').onclick=()=>void startLiveSession();
