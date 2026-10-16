@@ -141,3 +141,9 @@ test('unknown or incomplete author commands cannot receive a successful compact 
  assert.throws(()=>f.store.executeAtlasCommit({...f.command({kind:'room-default'}),commandId:''}),/Atlasauftrag nicht gespeichert/);
  assert.equal(f.store.atlasIdentity(f.w.token).revision,before);assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_receipt').get().n,0);assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_command').get().n,0);
 });
+
+test('targeted reads and page cursors preserve existing opaque IDs without a new length restriction',t=>{
+ const id='a'.repeat(1500),f=fixture(t,[{id,scopeId:'local',floorId:'ground',number:'1',name:'Altbestand',revision:0,polygons:[rectangle(0,0,3,3)],sections:[]},{id:'z',scopeId:'local',floorId:'ground',number:'2',name:'Zweiter Raum',revision:0,polygons:[rectangle(5,0,3,3)],sections:[]}]);
+ assert.equal(f.store.atlasRoom(f.w.token,id).id,id);const page=f.store.atlasObjects(f.w.token,{kind:'room',text:'',limit:1});assert.equal(page.items[0].id,id);assert.equal(f.store.atlasObjects(f.w.token,{kind:'room',text:'',limit:1,cursor:page.next}).items[0].id,'z');
+ const record={...patch(),id,kind:'road',points:[{x:0,y:0},{x:10,y:0}],polygons:[],width:5};f.store.executeAtlasCommit(f.command({kind:'landscape-put',record,expectedRevision:null}));assert.equal(f.store.atlasLandscapeObject(f.w.token,id).id,id);
+});
