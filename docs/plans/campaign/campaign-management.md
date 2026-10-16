@@ -55,14 +55,35 @@ Storebelegen: erfolgloser Intentwrite ohne Dispatch, Name erhalten und Retry
 nur einmal; Cleanupfehler nach bestätigter Erstellung, zugängliche Arbeitsfläche
 und Wiederinitialisierung mit Statuslesen bei unveränderten DBbytes. Das
 qualifiziert weder beschädigte Vermerke noch vollständige Disk-/Crashfälle.
+Ein vor Dispatch gesicherter, nach Neustart aber nachweislich ungebuchter Auftrag
+ist ein eigener Wiederaufnahmefall. `check` liest nach dem null-Beleg zuerst den
+aktuellen Kampagnenkatalog. Scheitert dieser Read, bleibt der ursprüngliche
+Vermerk erhalten und ausschließlich erneut prüfbar. Erst mit aktuellem Katalog
+wird er entfernt: Create und Rename stellen den Namensdialog wieder her, Erase
+den Löschdialog mit eingegebener Bestätigung und derselben Ziel-ID. Trash/Restore
+kehren zum passenden vorhandenen Dialog zurück; Open verlangt erneut Auswahl.
+Fehlende oder inzwischen getrashte Ziele werden ausdrücklich erklärt, ohne
+Ersatzkampagne oder automatische Mutation. Nicht übertragbare Namensentwürfe
+bleiben im Ergebnistext sichtbar. Jede erneute Bestätigung erhält einen neuen
+Command auf dem gelesenen aktuellen Stand; der alte Auftrag bleibt ungebucht.
+
+Store-/DOMfälle prüfen diese Dialogfelder, Zielidentität, Restore ohne
+Aktivierung und fehlerhaftes Kataloglesen ohne Verlust des Vermerks. Eine native
+Profil-Neustartprobe prüft den vor Dispatch gesicherten Create-Intent, reine
+Statusprüfung mit unveränderten Datenbankbytes und genau eine ausdrückliche
+Erstellung nach Wiederherstellung des Namens. Rename-/Erase-Neustart, unbekannte
+Outcomes und beschädigte Vermerke behalten eigene Abnahmen.
+
 Weitere Abnahme am selben Kampagnenweg: Browser-/Profilneustart mit offenem
 Vermerk vor und nach Storecommit, unlesbarer oder beschädigter Vermerk mit
 klarer Wiederaufnahme, abgewiesene Registry-/Medienwrites und anschließendes
 sicheres Lesen/Exportieren. Die jeweilige Commandkennung und ihr Storebeleg
 bleiben Grundlage; kein blindes Wiederholen einer unbekannten Mutation.
 
-Grenzen: Der neue Einstellungsdialog liest Generatorpresets ohne Aktivierung;
-die bestehende detaillierte Presetbearbeitung und -zuweisung benötigt noch eine
-geöffnete Arbeitsfläche. Diese Unabhängigkeit bleibt offen. Historische und
-importierte Kampagnen ohne lokale Nutzungsmetadaten zeigen unbekannte Daten.
+Der vorhandene Einstellungsdialog lädt und bearbeitet Generatorpresets auch
+ohne geöffnete Arbeitsfläche. Die optionale Kampagnenzuweisung wählt ausdrücklich
+eine verfügbare Identität; Speichern oder Kopieren allein weist nichts zu.
+Der konkrete Presetvertrag und seine weiteren Abnahmen stehen in
+[Generatorregeln](generator-settings.md). Historische und importierte Kampagnen
+ohne lokale Nutzungsmetadaten zeigen unbekannte Daten.
 Vollständige OS-, Tastatur-, 200-%- und Crashqualifikation bleibt eigenständig.

@@ -58,7 +58,21 @@ async function execute(c:CampaignCatalogCommand){if(busy||pending)return;
   clearPending();await apply(accepted!);
  }catch(error){message((error as Error).message);}finally{busy=false;lock();}
 }
-async function check(){if(!pending||busy)return;busy=true;lock();try{const r=unwrap(await window.campaign.campaignCatalogOutcome(pending));clearPending();if(r)await apply(r);else message('Keine Änderung gebucht. Eingaben bleiben für einen neuen Versuch erhalten.');}catch(e){message((e as Error).message);}finally{busy=false;lock();}}
+function resumeUncommitted(command:CampaignCatalogCommand){
+ const row=command.kind==='create'?null:campaigns.find(c=>c.id===command.id);
+ if(command.kind==='create'){edit(null);el<HTMLInputElement>('campaign-identity-name').value=command.name;}
+ else if(!row){message('Keine Änderung gebucht. Die Zielkampagne ist nicht mehr verfügbar.'+(command.kind==='rename'?' Nicht gebuchter Namensentwurf: '+command.name:command.kind==='erase'?' Nicht verwendete Löschbestätigung: '+command.confirmName:''));return;}
+ else if(command.kind==='open'){message('Keine Öffnung gebucht. Kampagne erneut auswählen, um sie ausdrücklich zu öffnen.');return;}
+ else if(command.kind==='rename'){if(row.trashed){if(!dialog('campaign-trash-dialog').open)dialog('campaign-trash-dialog').showModal();message('Keine Namensänderung gebucht. Ziel zuerst wiederherstellen. Nicht gebuchter Namensentwurf: '+command.name);return;}edit(row);el<HTMLInputElement>('campaign-identity-name').value=command.name;}
+ else if(command.kind==='trash'&&command.trashed&&!row.trashed)edit(row);
+ else if(row.trashed){
+  if(!dialog('campaign-trash-dialog').open)dialog('campaign-trash-dialog').showModal();
+  if(command.kind==='erase'){erasing=row;el('campaign-delete-label').textContent=row.name;el<HTMLInputElement>('campaign-delete-name').value=command.confirmName;dialog('campaign-delete-dialog').showModal();el('campaign-delete-name').focus();}
+ }else{message('Keine Änderung gebucht. Kampagnenstatus inzwischen geändert. Aktuellen Eintrag erneut wählen.');return;}
+ message('Keine Änderung gebucht. Eingaben wiederhergestellt; aktuellen Kampagnenstand prüfen und erneut ausdrücklich bestätigen.');lock();
+}
+async function check(){if(!pending||busy)return;const command=pending;let uncommitted=false;busy=true;lock();try{const r=unwrap(await window.campaign.campaignCatalogOutcome(command));if(r){clearPending();await apply(r);}else{if(!await refresh())return;clearPending();uncommitted=true;}}catch(e){message((e as Error).message);}finally{busy=false;lock();}if(uncommitted)resumeUncommitted(command);}
+
 export function hideCampaignScreen(){document.body.classList.remove('campaign-screen-open');el('campaign-screen').hidden=true;}
 export async function openCampaignScreen(initial=false){if(busy)return false;if(!initial&&!await before())return false;if(busy)return false;document.body.classList.add('campaign-screen-open');el('campaign-screen').hidden=false;closeApplicationMenu();message('Kampagnen werden geladen…');try{const ready=await refresh();if(ready)readyMessage();return ready;}catch(e){message((e as Error).message);return false;}}
 export function initCampaignScreen(options:{before:typeof before;enter:typeof enter;changed:typeof changed;currentCampaign?:()=>string|null}){
