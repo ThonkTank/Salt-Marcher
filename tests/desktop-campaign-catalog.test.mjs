@@ -66,3 +66,15 @@ test('an older catalog completion cannot replace the latest failed read with old
  assert.match(get('campaign-screen-status').textContent,/Aktueller Katalog nicht lesbar/);assert.equal(get('campaign-screen-list').querySelectorAll('button').length,0);
  assert.equal(get('campaign-screen-list').getAttribute('aria-busy'),'false');
 });
+
+test('a campaign prepared only with world knowledge shows its retained content before and after trash',async t=>{
+ const x=await screenStorageFixture(t);x.newCampaign('Wissensrunde');await x.tick();
+ const w=x.store.campaignCatalogWorkspace(x.calls.at(-1).commandId),id=randomUUID(),note={version:1,id,revision:1,kind:'npc',title:'Fährfrau Ilse',readAloud:'',gmNotes:'Kennt den Schmugglerpfad.',relations:[],creatureId:null,deleted:false};
+ x.store.changePreparation({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,change:{kind:'note',note,expectedRevision:null}});
+ const before=x.store.db.serialize(),row=x.row(w.campaign.id);assert.equal(row.notes,1);assert.equal(row.rooms+row.locations+row.characters,0);assert.ok(x.store.db.serialize().equals(before));
+ await x.ui.openCampaignScreen();assert.match(x.document.getElementById('campaign-screen-list').textContent,/1 Wissenseintrag/);
+ x.store.changePreparation({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,change:{kind:'note-trash',id,expectedRevision:1,trashed:true}});
+ assert.equal(x.row(w.campaign.id).notes,1,'archived authored data still belongs to the campaign');
+ x.execute({kind:'trash',id:w.campaign.id,expectedRevision:0,trashed:true});await x.ui.openCampaignScreen();assert.match(x.document.getElementById('campaign-trash-list').textContent,/Wissensrunde.*1 Wissenseintrag/);
+ x.execute({kind:'trash',id:w.campaign.id,expectedRevision:1,trashed:false});assert.equal(x.row(w.campaign.id).notes,1);
+});
