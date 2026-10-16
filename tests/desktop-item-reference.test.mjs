@@ -70,3 +70,17 @@ test('the real rarity choice finds a variant group and keeps its complete refere
  x.el('item-reference-name').value='Belt of Giant Strength';x.el('item-reference-rarity').value='rare';x.el('item-reference-form').onsubmit({preventDefault(){}});await until(()=>x.el('item-reference-table').getAttribute('aria-busy')==='false');
  assert.equal(x.el('item-reference-rows').querySelector('button')?.textContent,'Belt of Giant Strength');x.el('item-reference-rows').querySelector('button').click();const detail=x.el('item-reference-detail');assert.match(detail.textContent,/Selten · Hill giant/);assert.match(detail.textContent,/Legendär · Storm giant/);assert.match(detail.textContent,/SRD 5.1/);assert.equal(detail.querySelectorAll('button,input,textarea').length,0);
 });
+
+
+test('sortable headers retain both directions and visible state without a second direction control',async t=>{
+ const x=fixture(t),queries=[];x.window.campaign.itemReferenceCatalog=async q=>{queries.push({...q});return{ok:true,value:read(q)};};x.catalog.show(true);await until(()=>x.el('item-reference-rows').children.length===50);
+ assert.equal(!!x.el('item-reference-direction'),false);
+ const header=key=>x.el('item-reference-table').querySelector('[data-sort="'+key+'"]'),settled=()=>x.el('item-reference-table').getAttribute('aria-busy')==='false';
+ assert.equal(header('name').textContent,'Name ↑');assert.equal(header('name').closest('th').getAttribute('aria-sort'),'ascending');
+ x.el('item-reference-minimum').value='5';x.el('item-reference-maximum').value='15';
+ for(const key of ['cost','category','rarity','name'])for(const direction of ['asc','desc']){
+  const count=queries.length;header(key).click();await until(()=>queries.length===count+1&&settled());assert.equal(queries.at(-1).sort,key);assert.equal(queries.at(-1).direction,direction);assert.equal(queries.at(-1).minimumCopper,'500');assert.equal(queries.at(-1).maximumCopper,'1500');assert.equal(header(key).textContent,({name:'Name',category:'Kategorie',rarity:'Seltenheit',cost:'Preis'})[key]+(direction==='asc'?' ↑':' ↓'));assert.equal(header(key).closest('th').getAttribute('aria-sort'),direction==='asc'?'ascending':'descending');assert.equal(x.el('item-reference-table').querySelectorAll('th[aria-sort="none"]').length,3);
+ }
+ const count=queries.length;x.catalog.show(false);x.catalog.show(true);await tick();assert.equal(queries.length,count);assert.equal(header('name').textContent,'Name ↓');
+ x.el('item-reference-form').querySelector('button[type="button"]').click();await until(()=>queries.length===count+1&&settled());assert.equal(queries.at(-1).direction,'desc');assert.equal(queries.at(-1).sort,'name');assert.equal(queries.at(-1).minimumCopper,'');assert.equal(queries.at(-1).maximumCopper,'');assert.equal(header('name').textContent,'Name ↓');
+});
