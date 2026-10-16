@@ -34,6 +34,30 @@ Membership-, Doppelzuordnungs- und kontrolliertem zweitem Ledgerfehler.
 Dialog-/Bestätigungsgrenzen. Das qualifiziert lokale Teilverträge, keine native
 oder vollständige Recovery-/Portabilitätsabnahme.
 
+## Identität bei fehlendem Schatz-Read
+
+Ein angeforderter Schatz ist erst nach bestätigtem Read die sichtbare Auswahl.
+`TreasureDistribution.loadBook` hält währenddessen den Picker beim tatsächlich
+geöffneten Schatz. Scheitert der Wechsel, bleiben dessen Rohmengen und Empfänger
+sichtbar erhalten; eine frühere Review wird ungültig. Der Fehler benennt, dass
+der bisherige Schatz offen bleibt. Erneute Auswahl des gewünschten Ziels liest
+neu, ohne automatisch eine Zuweisung zu senden. Nur ein erfolgreicher aktueller
+Read übernimmt dessen Identität und leert die neue Verteilung.
+
+Die bestehenden Owner-/Dialog-/Readgenerationen verwerfen ältere Antworten.
+Die gelesene Schatzkennung muss zur angeforderten Auswahl passen. Reset entfernt
+zusätzlich alte Grid-, Empfänger-, Auswahl- und Pagingprojektionen. Ein Fehler
+beim erneuten Öffnen zeigt daher keine früheren Posten; er bleibt lokal sichtbar,
+die Prüfung ist gesperrt und Auswahl liest ausdrücklich erneut. Der äußere
+Öffnungsablauf darf einen inneren Readfehler nicht als Erfolg überschreiben.
+
+Die Kontextproben prüfen Fehler mit erhaltenen A-Mengen, erfolgreichen B-Retry
+mit ausschließlich B-Zuweisung, leeres fehlerhaftes Erstladen und eine alte
+Fehlerantwort nach neuer bestätigter Auswahl. Das ist keine dauerhafte Sicherung
+unbestätigter Mengen beim Schließen; der unten beschriebene Workingdraftanschluss
+bleibt offen. Ledger-/Definition-/Mengenregeln und der vorhandene Batchwriter
+bleiben unverändert, ohne Schemaänderung oder zweiten Verteilungswriter.
+
 ## Belege nach späterer Korrektur und unabhängiger Kopie
 
 Die Storeprobe in `desktop-treasure-batch.test.mjs` verfolgt eine tatsächliche
