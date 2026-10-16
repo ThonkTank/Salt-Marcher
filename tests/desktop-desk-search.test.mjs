@@ -54,9 +54,11 @@ test('desk edits preserve exact GM prose and confirm under their original real-s
  const x=await fixture();try{
   const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
   window.campaign.keepDeskDraft=async(token,d,expected)=>response(()=>x.store.keepDeskDraft(token,d,expected));
-  window.campaign.changePreparation=async command=>response(()=>x.store.changePreparation(command));
+  window.campaign.changePreparationContent=async command=>response(()=>x.store.changePreparationContent(command));
   x.query('Hafen');x.submit();await until(()=>x.titles().length===40);x.el('desk-results').querySelector('button').onclick();await until(()=>!x.el('desk-editor').hidden);
   const field=x.el('desk-fields').querySelector('[aria-label="GM-Notizen"]');field.value='  Authored notes\r\nDo not normalize.\r\n';field.oninput();
+  window.campaign.changePreparation=async()=>{throw Error('Full preparation must not be needed for a desk edit');};
+  window.campaign.deskContent=async()=>{throw Error('A second content read must not be needed after a targeted acknowledgement');};
   assert.equal(await x.ui.flushSceneDesk(),true);
   const row=x.store.db.prepare("SELECT * FROM world_note WHERE campaign_id=? AND json_extract(payload,'$.title')='Hafen 00'").get(x.w.campaign.id),note=JSON.parse(row.payload);
   assert.equal(row.revision,2);assert.equal(note.gmNotes,'  Authored notes\r\nDo not normalize.\r\n');assert.deepEqual(note.relations,[]);assert.equal(note.readAloud,'');assert.equal(x.store.preparationDraft(x.w.token,'note',row.id),null);

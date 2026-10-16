@@ -477,8 +477,8 @@ async function applyContent():Promise<boolean>{
     c = content,
     n = version;
   try {
-    unwrap(
-      await window.campaign.changePreparation({
+    const fresh = unwrap(
+      await window.campaign.changePreparationContent({
         commandId: crypto.randomUUID(),
         campaignId: w.campaign.id,
         token,
@@ -486,8 +486,6 @@ async function applyContent():Promise<boolean>{
         change,
       }),
     );
-    if(!current())return false;
-    const fresh = unwrap(await window.campaign.deskContent(token, c.ref));
     if(!current()||content!==c)return false;
     if(fresh.revision!==c.revision+1)throw new Error("Inhalt nach Speicherung erneut geändert. Gesicherte Eingabe zuerst prüfen.");
     content = fresh;
