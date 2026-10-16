@@ -215,6 +215,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if (!a.changes || Object.keys(a.changes).some(k => !fields.includes(k))) throw new Error('Unbekanntes Kampffeld.');
           if(p.concentrationChecks?.length&&a.changes.concentrating===false)throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           if (p.healthKnown === false && ('hp' in a.changes || 'maxHp' in a.changes) && !('hp' in a.changes && 'maxHp' in a.changes)) throw new Error('Aktuelle und maximale HP gemeinsam eintragen.');
+          if(p.death?.dead&&a.changes.hp!==undefined&&a.changes.hp>0)throw new Error('Figur ist tot. Zum Wiederbeleben „Ins Leben zurückholen“ verwenden.');
           Object.assign(p, a.changes); if ('hp' in a.changes && 'maxHp' in a.changes) p.healthKnown = true; p.hp = Math.min(p.hp, p.maxHp);
           if(p.hp>0||(beforeHp>0&&p.hp===0)){delete p.death;delete p.deathLast;}
           if(!p.concentrating)delete p.concentrationChecks;
@@ -264,7 +265,11 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
             }
             applyCombatDamage(p,a.amount);
           }
-          else {p.hp = Math.min(p.maxHp, p.hp + a.amount);if(p.hp>0){delete p.death;delete p.deathLast;}}
+          else {if(p.death?.dead)throw new Error('Tote können nicht geheilt werden. Zum Wiederbeleben „Ins Leben zurückholen“ verwenden.');p.hp = Math.min(p.maxHp, p.hp + a.amount);if(p.hp>0){delete p.death;delete p.deathLast;}}
+        } else if(a.kind==='revive'){
+          const p=participant();if(!p.characterId||p.healthKnown===false||p.hp!==0||!p.death?.dead)throw new Error('Wiederbelebung benötigt eine tote Party-Figur mit bekannten HP.');
+          if(!Number.isSafeInteger(a.hp)||a.hp<1||a.hp>p.maxHp)throw new Error('HP nach Wiederbelebung müssen zwischen 1 und den maximalen HP liegen.');
+          p.hp=a.hp;p.concentrating=false;delete p.death;delete p.deathLast;delete p.concentrationChecks;
         } else if(a.kind==='death'||a.kind==='death-roll'){
           const p=participant();if(!p.characterId)throw new Error('Todesrettungswürfe sind nur für Party-Figuren verfügbar.');if(p.healthKnown===false)throw new Error('Todesrettungswürfe benötigen bekannte HP.');
           const roll=a.kind==='death-roll'?randomInt(1,21):null,result:DeathSaveResult=a.kind==='death'?a.result:roll===20?'natural-20':roll===1?'natural-1':roll!>=10?'success':'failure';

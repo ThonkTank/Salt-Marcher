@@ -40,6 +40,7 @@ export type CombatAction =
   | { kind:'hit';participantId:string;critical:boolean;source:{participantId:string;actionId:string};components:{key:string;amount:number;scale:'full'|'half'|'double'|'none';sourceCheckId?:string}[];attackCheckId?:string;legendary?:{participantId:string;actionId:string;cost:number};paidLegendary?:boolean }
   | { kind:'area-damage';amount:number;targets:{participantId:string;scale:'full'|'half'|'none'}[];source?:{participantId:string;actionId:string};legendary?:{participantId:string;actionId:string;cost:number} }
   | { kind: 'heal'; participantId: string; amount: number }
+  | { kind: 'revive'; participantId: string; hp: number }
   | { kind: 'death'; participantId:string;result:DeathSaveResult }
   | { kind: 'death-roll'; participantId:string }
   | { kind:'concentration-roll';participantId:string;modifier:number }
