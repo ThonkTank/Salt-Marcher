@@ -61,7 +61,7 @@ async function execute(c:CampaignCatalogCommand){if(busy||pending)return;
 async function check(){if(!pending||busy)return;busy=true;lock();try{const r=unwrap(await window.campaign.campaignCatalogOutcome(pending));clearPending();if(r)await apply(r);else message('Keine Änderung gebucht. Eingaben bleiben für einen neuen Versuch erhalten.');}catch(e){message((e as Error).message);}finally{busy=false;lock();}}
 export function hideCampaignScreen(){document.body.classList.remove('campaign-screen-open');el('campaign-screen').hidden=true;}
 export async function openCampaignScreen(initial=false){if(busy)return false;if(!initial&&!await before())return false;if(busy)return false;document.body.classList.add('campaign-screen-open');el('campaign-screen').hidden=false;closeApplicationMenu();message('Kampagnen werden geladen…');try{const ready=await refresh();if(ready)readyMessage();return ready;}catch(e){message((e as Error).message);return false;}}
-export function initCampaignScreen(options:{before:typeof before;enter:typeof enter;changed:typeof changed}){
+export function initCampaignScreen(options:{before:typeof before;enter:typeof enter;changed:typeof changed;currentCampaign?:()=>string|null}){
  applicationPopup=bindAnchoredPopup(el<HTMLButtonElement>('application-trigger'),el('application-popup'),176);el('application-trigger').onclick=()=>applicationPopup!.toggle();
  before=options.before;enter=options.enter;changed=options.changed;
  try{pending=JSON.parse(window.localStorage.getItem(pendingKey)??'null');}catch{message('Gespeicherter Kampagnenauftrag ist nicht lesbar.');}
@@ -73,7 +73,7 @@ export function initCampaignScreen(options:{before:typeof before;enter:typeof en
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-catalog-check]'))b.onclick=()=>void check();
  el('campaign-load-retry').onclick=()=>{if(busy||pending)return;busy=true;lock();void load().finally(()=>{busy=false;lock();});};
  el('campaign-screen-packages').onclick=()=>el('campaign-manager').click();
- el('application-settings').onclick=()=>{closeApplicationMenu();void import('./preset-settings-ui').then(ui=>ui.openPresetSettings(null)).catch(e=>message(e.message));};
+ el('application-settings').onclick=()=>{closeApplicationMenu();void import('./preset-settings-ui').then(ui=>ui.openPresetSettings(options.currentCampaign?.()??null)).catch(e=>message(e.message));};
  el('new-campaign').onclick=()=>void openCampaignScreen().then(ok=>{if(ok)edit(null);});el('rename-campaign').onclick=()=>void openCampaignScreen().then(ok=>{if(ok)edit(campaigns.find(c=>c.id===activeId)??null);});
  lock();
 }

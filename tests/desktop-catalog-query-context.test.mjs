@@ -157,3 +157,14 @@ for(const failure of [false,true])test(`detail ${failure?'failure':'success'} re
  const current=[...x.el('catalog-rows').querySelectorAll('button')];assert.equal(current.every((b,i)=>b===buttons[i]),true);assert.deepEqual(current.map(b=>b.getAttribute('aria-pressed')),[String(!failure),'false']);assert.equal(x.el('catalog-page').textContent,text);assert.equal(x.reads.length,1);
  if(failure){assert.equal(x.el('catalog-live-add').disabled,true);window.campaign.creature=async()=>({ok:true,value:detail('Wolf')});buttons[1].click();await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Wolf');assert.deepEqual(buttons.map(b=>b.getAttribute('aria-pressed')),['false','true']);assert.equal(buttons.every(b=>b.isConnected),true);}
 });
+
+
+test('a creature clicked from the encounter roster reveals its detail on a wide screen and returns without changing the draft',async t=>{
+ const x=await detailFixture(t),jumps=[],held=deferred();
+ window.matchMedia=()=>({matches:false});x.el('catalog-inspector').scrollIntoView=()=>jumps.push('detail');x.el('catalog-detail').focus=()=>{};x.el('encounter-builder').scrollIntoView=()=>jumps.push('plan');x.el('encounter-name').focus=()=>{};
+ x.el('catalog-quantity').value='3';x.el('catalog-add').click();x.el('encounter-notes').value='Kornsäcke retten; Flucht vor Feuer.';x.el('encounter-notes').oninput();
+ const before=x.el('encounter-entries').textContent;window.campaign.creature=()=>held.promise;
+ x.el('encounter-entries').querySelector('button').click();await tick();assert.deepEqual(jumps,['detail']);assert.match(x.el('catalog-detail').textContent,/geladen/);
+ held.resolve({ok:true,value:detail('Guard')});await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Guard');x.el('catalog-plan-open').click();
+ assert.deepEqual(jumps,['detail','plan']);assert.equal(x.el('encounter-notes').value,'Kornsäcke retten; Flucht vor Feuer.');assert.equal(x.el('encounter-entries').textContent,before);assert.equal(x.el('encounter-entries').querySelector('input[type="number"]').value,'3');
+});
