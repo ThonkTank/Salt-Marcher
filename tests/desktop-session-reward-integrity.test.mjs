@@ -104,3 +104,9 @@ test('session replay pins ledger semantics: changed grants create new run, repea
  const next=x.store.generateSession(x.w.token,request);assert.notEqual(next.id,run.id);assert.equal(next.lootGuidance.magic.received.Common,3);
  assert.equal(x.store.generateSession(x.w.token,request).id,next.id);assert.deepEqual(x.store.sessionRun(x.w.token,run.id),run);
 });
+
+test('new magic catalog candidates invalidate the unscoped reward calculation without replacing the saved run',t=>{
+ const x=fixture(t),run=generateGuided(x),request=run.origin.request;
+ x.store.executeItemShop(x.command({kind:'definition',expectedRevision:null,definition:{...x.definition,id:randomUUID(),revision:0,name:'Neuer Magiefund'}}));
+ const next=x.store.generateSession(x.w.token,request);assert.notEqual(next.id,run.id);assert.equal(next.origin.itemCatalog.length,run.origin.itemCatalog.length+1);assert.deepEqual(x.store.sessionRun(x.w.token,run.id),run);
+});
