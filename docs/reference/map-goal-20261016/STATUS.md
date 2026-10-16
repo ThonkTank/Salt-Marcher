@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source base: SaltMarcher migration candidate `33c37b56a4568aa0f6fdda3eaf9eeb3bfc1152d3`, version 0.157.0. These map changes are unfinished work on `qa/saltmarcher-maps`; migration CI success does not qualify this changed tree. The migration owner is preparing a linear replacement of the candidate. Transfer only these owned changes onto its accepted Main, preserving the old branches.
+Source base: accepted SaltMarcher Main `53f12716307a0584bae086dae4f2471bcd8754da`, version 0.157.0. Only the owned map change commit was cherry-picked onto `qa/saltmarcher-map-workflow-20261016`. The old WIP branch and checkouts remain preserved. This is an unfinished review candidate; migration CI success does not qualify the changed tree.
 
 ## GM task
 
@@ -20,9 +20,9 @@ The same complete task must be performed in an available comparator. Earlier Dun
 
 ## Verification boundary
 
-On this base, the six targeted city, location-flow, path, knowledge, Atlas and export test files passed 110/110. Both type checks, repository check, adapter build and desktop build passed before the final World recovery repair. The complete World DOM suite then passed 21/21. The same before/after-commit response-loss cases failed against the archived pre-repair modules and passed after repair. Additional assertions check that reconciliation leaves both World and Atlas database tables unchanged and creates no duplicate Atlas command.
+On the preceding migration base `33c37b56`, the six targeted city, location-flow, path, knowledge, Atlas and export test files passed 110/110. A further 141 targeted drawing, door, path, place and preparation checks passed. Both type checks, repository check, adapter build and desktop build passed; both type checks and the desktop build also passed after the World recovery repair. The complete World DOM suite then passed 21/21. The same before/after-commit response-loss cases failed against the archived pre-repair modules and passed after repair. Additional assertions check that reconciliation leaves both World and Atlas database tables unchanged and creates no duplicate Atlas command.
 
-The broader test run and post-repair build checks are recorded separately in the task workspace and are still pending at the time of this note. Do not interpret targeted results as a global pass or exact published-SHA qualification.
+Checks on the linear Main-based candidate are recorded separately in the task workspace and are pending at the time of this note. The earlier broad test run is exploratory evidence from the superseded migration base. Do not interpret targeted results as a global pass or exact published-SHA qualification.
 
 The task's browser surface loads the current product and existing synthetic QA campaign, but supported click and keyboard actions do not reach the page. Reload, fresh tabs, controller reset, documented alternatives and Escape did not restore interaction. No native save dialog was confirmed. Technical and DOM tests are not the missing actual UI rerun.
 
