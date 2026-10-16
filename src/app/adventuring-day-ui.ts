@@ -19,10 +19,12 @@ let workspace: Workspace | null = null,
   timer: ReturnType<typeof setTimeout> | null = null,
   tell: (s: string, error?: boolean) => void;
 let draftBlocked=false;
+let customRows:typeof rows|null=null;
 function keepDraft(){
+  if(source==='custom')customRows=rows.map(r=>({...r}));
   const id=workspace?.campaign?.id;if(!id||draftBlocked)return;
   try{
-    const draft:DayDraft={version:1,source,mode,rows:source==='custom'?rows.map(r=>({...r})):[],itinerary:dayItineraryDraft()};
+    const draft:DayDraft={version:1,source,mode,hasCustomRows:customRows!==null,rows:customRows??[],itinerary:dayItineraryDraft()};
     const raw=JSON.stringify(draft);readDayDraft(raw);
     window.localStorage.setItem(dayDraftKey(id),raw);
     el('day-draft-status').textContent='Planung auf diesem Gerät gesichert.';
@@ -33,6 +35,8 @@ function edited(){keepDraft();schedule();}
 const numericDraft = (value: string) => (value.trim() ? Number(value) : NaN);
 const opened = () => el("day-popover").matches(":popover-open");
 function state() {
+  el('day-active').setAttribute('aria-pressed',String(source==='active'));
+  el('day-custom').setAttribute('aria-pressed',String(source==='custom'));
   el("day-source").textContent =
     source === "active"
       ? "Aktive Party · bestätigte XP"
@@ -318,6 +322,7 @@ export function activateDayCalculator(next: Workspace | null) {
   timer = null;
   if (opened()) el("day-popover").hidePopover();
   rows = [];
+  customRows=null;
   source = "active";
   mode = "budget";
   el<HTMLInputElement>("day-total-xp").value = "0";
@@ -328,7 +333,7 @@ export function activateDayCalculator(next: Workspace | null) {
   el('day-draft-status').textContent='Planung wird auf diesem Gerät pro Kampagne gesichert.';
   if(next?.campaign?.id)try{
     const raw=window.localStorage.getItem(dayDraftKey(next.campaign.id));
-    if(raw!==null){draft=readDayDraft(raw);source=draft.source;mode=draft.mode;rows=draft.rows.map(r=>({...r}));el('day-draft-status').textContent='Gesicherte Planung wieder aufgenommen · Ergebnisse werden neu berechnet.';}
+    if(raw!==null){draft=readDayDraft(raw);source=draft.source;mode=draft.mode;customRows=draft.source==='custom'||draft.hasCustomRows?draft.rows.map(r=>({...r})):null;rows=source==='custom'?(customRows??[]):[];el('day-draft-status').textContent='Gesicherte Planung wieder aufgenommen · Ergebnisse werden neu berechnet.';}
   }catch{draftBlocked=true;el('day-draft-status').textContent='Gesicherte Planung nicht lesbar. Sie bleibt erhalten. Neue Eingaben werden erst nach „Planung zurücksetzen“ gesichert.';}
   activateDayItinerary(next,draft?.itinerary);
   el<HTMLButtonElement>("day-trigger").disabled = !next;
@@ -359,6 +364,10 @@ export function initDayCalculator(status: typeof tell, openParty: () => void,ope
     state();
     keepDraft();
     void refresh();
+  };
+  el('day-custom').onclick=()=>{
+    rows=(customRows??rows).map(r=>({...r}));
+    source='custom';state();renderRows();edited();
   };
   el("day-add").onclick = () => {
     if (rows.length >= 20) {
