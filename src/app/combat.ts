@@ -347,7 +347,7 @@ function render() {
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
   const recent=[...(view?.recent??knownRecent)];if(combat&&!recent.some(item=>item.id===combat.id))recent.unshift({id:combat.id,title:combat.title,phase:combat.phase});
-  for (const item of recent) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'retired'?' · archiviert':item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
+  for (const item of recent) { const option = document.createElement('option'); option.value = item.id; option.textContent = item.title + (item.sequence ? ' · Nr. '+item.sequence : '') + (item.phase === 'finished' ? ' · abgeschlossen' : item.phase === 'retired'?' · archiviert':item.phase === 'running' ? ' · läuft' : ' · vorbereitet'); history.append(option); }
   history.value = combat?.id ?? requestedCombatId ?? ''; history.hidden = recent.length < 2;
   const terminal=!!combat&&!editableCombat(combat);
   get('combat-controls').hidden = !combat || terminal;

@@ -28,7 +28,7 @@ export interface CombatResolution {combatId:string;sceneId:string;combatRevision
 export interface CombatView {
   combat: CombatState | null; canUndo: boolean; assessment?: EncounterAssessment;
   partyCandidates?: {characterId:string;name:string;membershipRevision:number;progressRevision:number;health:CharacterHealth|null}[];
-  recent: { id: string; title: string; phase: CombatState['phase'] }[];
+  recent: { id: string; title: string; phase: CombatState['phase']; sequence?: number }[];
 }
 export type CombatAction =
   | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }

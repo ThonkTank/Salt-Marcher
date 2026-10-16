@@ -138,7 +138,7 @@ export function readCombat(db: any, campaignId: string, sceneId: string, id?: st
     const partyCandidates=combat&&['preparing','running'].includes(combat.phase)?readLive(db,campaignId).roster.filter(c=>c.active&&c.sceneId===sceneId&&!combat.participants.some(p=>p.characterId===c.id)).map(c=>{const p=readProgressCharacter(db,campaignId,c.id);return {characterId:c.id,name:c.profile.name,membershipRevision:c.membershipRevision,progressRevision:p.revision,health:p.health};}):[];
     return { combat, partyCandidates, assessment: combat ? assessment(db,campaignId,combat) : undefined,
       canUndo: !!row && ['preparing','running'].includes(row.phase) && !!db.prepare('SELECT 1 FROM combat_undo WHERE campaign_id=? AND combat_id=? LIMIT 1').get(campaignId, row.id),
-      recent: db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase IN('preparing','running') DESC,ordinal DESC LIMIT 100").all(campaignId, sceneId).map((r: any) => { const c = decode(r); return { id: c.id, title: c.title, phase: c.phase }; }) };
+      recent: db.prepare("SELECT * FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY phase IN('preparing','running') DESC,ordinal DESC LIMIT 100").all(campaignId, sceneId).map((r: any) => { const c = decode(r); return { id: c.id, title: c.title, phase: c.phase, sequence: r.ordinal }; }) };
 
   })();
 }
