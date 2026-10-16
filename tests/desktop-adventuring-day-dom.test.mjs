@@ -197,3 +197,27 @@ test('pending calculation retains presentation geometry, and a failed read remov
  x.input(x.get('rows').querySelector('input'),'3');assert.equal(x.get('popover').getAttribute('aria-busy'),'true');assert.equal(x.get('summary').textContent,prior);
  await settled();reply({ok:false,error:'Lesen unterbrochen'});await tick();assert.equal(x.get('popover').getAttribute('aria-busy'),'false');assert.equal(x.get('summary').children.length,0);assert.match(x.get('status').textContent,/Lesen unterbrochen/);
 });
+
+test('comparing the active party preserves custom rows even when reactivated in active mode',async t=>{
+ const x=fixture(t);await x.open();const custom=x.get('custom');assert.ok(custom,'own planning has a direct return action');
+ const [level,count]=x.get('rows').querySelectorAll('input');x.input(level,'04');x.input(count,'5');await settled();
+ assert.match(x.get('summary').textContent,/5 Figuren.*8.500 XP Tagesbudget/);
+ x.get('active').onclick();await tick();assert.equal(x.calls.at(-1).source,'active');assert.equal(x.get('active').getAttribute('aria-pressed'),'true');
+ x.ui.activateDayCalculator({token:'fresh',campaign:{id:'campaign-a'}});await x.open();
+ assert.match(x.get('source').textContent,/Aktive Party/);custom.onclick();await settled();
+ assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['04','5']);assert.match(x.get('summary').textContent,/8.500 XP Tagesbudget/);
+ assert.equal(custom.getAttribute('aria-pressed'),'true');assert.equal(x.get('active').getAttribute('aria-pressed'),'false');
+ // An intentionally unfinished or empty comparison is a draft too.
+ x.input(x.get('rows').querySelectorAll('input')[1],'');x.get('active').onclick();await tick();custom.onclick();await settled();
+ assert.equal(x.get('rows').querySelectorAll('input')[1].value,'');assert.equal(x.get('summary').children.length,0);
+ x.get('clear').onclick();x.get('active').onclick();await tick();x.ui.activateDayCalculator({token:'fresh2',campaign:{id:'campaign-a'}});await x.open();custom.onclick();await settled();assert.equal(x.get('rows').children.length,0);
+});
+
+test('custom comparison rows remain campaign-local and reset returns to a fresh active-party copy',async t=>{
+ const x=fixture(t);await x.open();const custom=x.get('custom');assert.ok(custom);
+ x.input(x.get('rows').querySelector('input'),'4');x.input(x.get('rows').querySelectorAll('input')[1],'5');x.get('active').onclick();await tick();
+ x.ui.activateDayCalculator({token:'other',campaign:{id:'campaign-b'}});await x.open();custom.onclick();await settled();
+ assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['1','1']);
+ x.ui.activateDayCalculator({token:'back',campaign:{id:'campaign-a'}});await x.open();custom.onclick();await settled();assert.equal(x.get('rows').querySelector('input').value,'4');
+ x.get('draft-reset').onclick();await tick();custom.onclick();await settled();assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['1','1']);
+});
