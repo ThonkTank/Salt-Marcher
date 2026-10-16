@@ -9,6 +9,7 @@ import {buildSync} from 'esbuild';
 import {parseHTML,DOMParser} from 'linkedom';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/city-dom-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG} from './src/app/campaign-atlas-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({entryPoints:['src/app/landscape-raster.ts'],outfile:'.build/city-dom-raster.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/city-dom-store.cjs'),tick=()=>new Promise(resolve=>setImmediate(resolve));
 async function settle(){await tick();await tick();await tick();}
 async function until(fn){for(let i=0;i<60&&!fn();i++)await tick();assert.ok(fn(),'Expected city state did not arrive.');}
@@ -39,6 +40,21 @@ async function setup(){
  const writes=[],messages=[];let current;
  const reply=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};
  window.campaign={world:async token=>reply(()=>store.world(token)),landscapeFind:async(t,q)=>reply(()=>store.landscapeFind(t,q)),landscapeRegion:async(t,b,m)=>reply(()=>store.landscapeRegion(t,b,m)),campaignAtlas:async (token,groupView)=>reply(()=>store.campaignAtlas(token,groupView)),npcs:async(t,q)=>reply(()=>store.npcs(t,q)),cities:async t=>reply(()=>store.cities(t)),city:async(t,id)=>reply(()=>store.city(t,id)),executeCity:async command=>{writes.push(structuredClone(command));return reply(()=>store.executeAtlas({...command,action:command.action.kind==='undo'||command.action.kind==='redo'?{kind:command.action.kind}:{kind:'city',command}}).atlas.cities.find(c=>c.header.id===command.cityId));},executeAtlas:async command=>{if(!['city','undo','redo'].includes(command.action.kind))return reply(()=>store.executeAtlas(command));const city=command.action.kind==='city'?command.action.command:{...command,cityId:document.getElementById('city-select').value,action:command.action};const result=await window.campaign.executeCity(city);return result.ok?reply(()=>({atlas:store.campaignAtlas(command.token),result:result.value})):result;},exportCity:async()=>({ok:true,value:{cancelled:false}})};
+ // Bounded Atlas APIs use the actual store and browser-safe rasterizer, not a second campaign snapshot.
+ Object.assign(window.campaign,{
+  atlasOverview:async token=>reply(()=>store.atlasOverview(token)),
+  atlasObjects:async(token,q)=>reply(()=>store.atlasObjects(token,q)),
+  atlasRoom:async(token,id)=>reply(()=>store.atlasRoom(token,id)),
+  atlasLandscapeObject:async(token,id)=>reply(()=>store.atlasLandscapeObject(token,id)),
+  cityBuildings:async(token,q)=>reply(()=>store.cityBuildings(token,q)),
+  executeAtlasCommit:async command=>reply(()=>store.executeAtlasCommit(command)),
+  cancelLandscapeRaster:async()=>({ok:true,value:undefined}),
+  landscapeRaster:async(token,box,width,height)=>reply(()=>{
+   const {LandscapeRasterizer}=require('../.build/city-dom-raster.cjs'),raster=new LandscapeRasterizer(box,width,height);
+   for(const record of store.landscapeRegion(token,box,0).records)raster.paint(record);
+   return {...store.atlasIdentity(token),box,width,height,data:'data:image/png;base64,'+require('pngjs').PNG.sync.write({width,height,data:Buffer.from(raster.finish())}).toString('base64')};
+  }),
+ });
  delete require.cache[require.resolve('../.build/city-dom-ui.cjs')];const ui=require('../.build/city-dom-ui.cjs');ui.initCity((message,error)=>messages.push({message,error}));
  const activate=async name=>{current=store.activate(campaignIds[name]);ui.activateCity(current);await ui.openCity();};
  const select=async(which='one')=>{document.getElementById('city-tool').value='select';[...document.querySelectorAll('[data-city-unit="'+unitIds[which]+'"]')].at(-1).dispatchEvent(new window.Event('click',{bubbles:true}));await until(()=>document.getElementById('city-unit-name').value==='House '+which).catch(error=>{error.message+=' '+JSON.stringify(messages);throw error;});};

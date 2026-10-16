@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source base: SaltMarcher migration candidate `33c37b56a4568aa0f6fdda3eaf9eeb3bfc1152d3`, version 0.157.0. These map changes are unfinished work on `qa/saltmarcher-maps`; migration CI success does not qualify this changed tree. The migration owner is preparing a linear replacement of the candidate. Transfer only these owned changes onto its accepted Main, preserving the old branches.
+Source base: SaltMarcher Main `7d9aa8930c212563e1a7e85399f99b29771e41e7`, version 0.157.0. The owned Atlas changes were transferred to `qa/atlas-workflow-current-20261016`; the previous published candidate and all older checkouts remain preserved. The continuous Goal is paused by user request. Work continues only through the 90-minute heartbeat; the explicit owner acceptance condition is unchanged.
 
 ## GM task
 
@@ -20,10 +20,10 @@ The same complete task must be performed in an available comparator. Earlier Dun
 
 ## Verification boundary
 
-On this base, the six targeted city, location-flow, path, knowledge, Atlas and export test files passed 110/110. Both type checks, repository check, adapter build and desktop build passed before the final World recovery repair. The complete World DOM suite then passed 21/21. The same before/after-commit response-loss cases failed against the archived pre-repair modules and passed after repair. Additional assertions check that reconciliation leaves both World and Atlas database tables unchanged and creates no duplicate Atlas command.
+The previous published candidate `7452de70` passed its required exact-head CI (run `38916251233`). Its local suite reported 3,336 passed, zero failed and one optional skip; the outer session ended with signal 143, so a normal local process exit was not observed. Earlier scoped map checks and response-loss regressions are retained with that candidate.
 
-The broader test run and post-repair build checks are recorded separately in the task workspace and are still pending at the time of this note. Do not interpret targeted results as a global pass or exact published-SHA qualification.
+The current integration preserves Main's bounded landscape queries, paged search, compact commits, tiled exports and export cancellation. Public raster tiles and vector contours share a clip containing only currently visible cells. No current image layer is drawn when all cells are remembered-only. A raster-specific assertion extends the existing remembered-terrain regression. The new exhaustive Atlas command validator also recognizes `location-create`; the first integration run exposed this missing contract entry in three place/group-view cases. After repair, all 48 city/Atlas DOM cases passed, including canonical place creation, same-command recovery and the visible-versus-remembered raster clip. The 15 Main Atlas-transition checks, location-flow check and 21 World DOM checks passed in the first integration run. Both type checks, repository check and both builds passed after the contract repair. The new full suite and exact published-SHA CI remain separate pending qualifications recorded in the task checkpoint.
 
 The task's browser surface loads the current product and existing synthetic QA campaign, but supported click and keyboard actions do not reach the page. Reload, fresh tabs, controller reset, documented alternatives and Escape did not restore interaction. No native save dialog was confirmed. Technical and DOM tests are not the missing actual UI rerun.
 
-Next acceptance step: restore supported UI input, perform the entire task above in this build and a usable comparator, inspect persistence after a fresh host, and show the result for Aaron's explicit acceptance in the goal chat. Packaging, installation, native qualification and owner acceptance remain open. The goal stays active.
+Next acceptance step: restore supported UI input, perform the entire task above in this build and a usable comparator, inspect persistence after a fresh host, and show the result for Aaron's explicit acceptance in the goal chat. Packaging, installation, native qualification and owner acceptance remain open. The continuous Goal remains paused; the heartbeat continues the unfinished task.
