@@ -512,3 +512,13 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 .reward-item-row label{margin:0;min-width:0}.reward-item-row input,.reward-item-row select{margin:0;width:100%}
 .reward-item-row .reward-item-facts{grid-column:1/-1;margin:0;font-size:.85rem;color:#4b6074}
 .reward-item-row>button{align-self:end;justify-self:start}
+
+#live-party-quick{scroll-margin-top:calc(var(--workspace-content-offset) + var(--live-sticky-height))}
+.live-party-quick-card{min-width:0;border:1px solid var(--line);border-radius:.25rem;background:#fff}
+#live-party-reference .live-party-quick-card>[data-character-id]{width:100%;border:0;background:transparent}
+#live-party-reference .live-party-quick-card strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#live-party-reference .live-party-loot{margin:.15rem .65rem .6rem;font-size:.85rem;padding:.35rem .6rem}
+#ledger-character-heading{scroll-margin-top:calc(var(--workspace-content-offset) + var(--live-sticky-height))}
+
+#live-party-reference .live-party-passives{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;width:100%}
+#live-party-reference .live-party-passives>span{font-size:.75rem;overflow-wrap:anywhere}#live-party-reference .live-party-passives b{display:block;font-size:.9rem;color:var(--ink)}
