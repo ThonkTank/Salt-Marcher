@@ -20,7 +20,13 @@ export function drawLandscape(
   mpp: number,
   assets: Map<string, string>,
   references = true,
+  raster?: import("./landscape-raster").LandscapeRaster,
 ) {
+  let rasterDrawn=false;
+  const drawRaster=()=>{
+    if(!raster||rasterDrawn)return;rasterDrawn=true;
+    root.append(landscapeNode('image',{href:raster.data,x:0,y:0,width:raster.width,height:raster.height,transform:`translate(${raster.box.x-b.x} ${raster.box.y-b.y}) scale(${raster.box.width/raster.width} ${raster.box.height/raster.height})`,'pointer-events':'none','data-landscape-raster':'true'}));
+  };
   for (const r of [...records].sort(
     (a, b) =>
       (a.kind === "reference" ? -1 : a.kind === "patch" ? 0 : 1) -
@@ -28,6 +34,7 @@ export function drawLandscape(
       b.resolution - a.resolution ||
       (a.order ?? 0) - (b.order ?? 0),
   )) {
+    if(r.kind!=="reference")drawRaster();
     const g = landscapeNode("g", { "data-landscape-id": r.id });
     root.append(g);
     if (r.kind === "reference") {
@@ -45,7 +52,7 @@ export function drawLandscape(
           }),
         );
     } else if (r.kind === "patch") {
-      if (r.values.terrain)
+      if (r.values.terrain && !raster)
         g.append(
           landscapeNode("path", {
             d: roomPath(
@@ -106,6 +113,7 @@ export function drawLandscape(
       );
     }
   }
+  drawRaster();
 }
 export function drawLandscapeGrid(
   root: SVGElement,

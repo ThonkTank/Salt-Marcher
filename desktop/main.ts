@@ -1,3 +1,4 @@
+import {AtlasRasterService} from './atlas-raster';
 import {readItemReferenceCatalog} from '../src/app/storage/item-reference';
 import {exportSessionPacketFile} from './session-packet-export';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../src/app/npc-contracts';
@@ -315,11 +316,22 @@ else {
     handle('atlas:travel-preview',(token:string,p:import('../src/app/contracts').Point)=>store.previewAtlasTravel(token,p));
     handle('atlas:travel',(c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand)=>store.executeAtlasTravel(c));
     handle('atlas:find',(token:string,text:string)=>store.landscapeFind(token,text));
-    handle('atlas:region',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,metersPerPixel?:number)=>store.landscapeRegion(token,box,metersPerPixel));
+    handle('atlas:region',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,metersPerPixel?:number,includePatches?:boolean)=>store.landscapeRegion(token,box,metersPerPixel,includePatches));
     handle('atlas:reference-asset',(token:string,id:string)=>store.referenceAsset(token,id));
     handle('atlas:reference-import',async(token:string)=>{store.campaignAtlas(token);const pick=await dialog.showOpenDialog(win,{title:'Nachzeichenvorlage wählen',properties:['openFile'],filters:[{name:'Bild',extensions:['png','jpg','jpeg','webp']}]});if(pick.canceled||!pick.filePaths[0])return null;const file=pick.filePaths[0];if((await stat(file)).size>32*1024*1024)throw new Error('Vorlage ist größer als 32 MiB.');const image=nativeImage.createFromPath(file),size=image.getSize();if(image.isEmpty()||size.width>16384||size.height>16384)throw new Error('Bildmaße prüfen (bis 16384 Pixel).');const bytes=image.toPNG(),id=store.registerReference(token,'image/png',bytes);return{id,data:'data:image/png;base64,'+bytes.toString('base64'),...size};});
     handle('atlas:export-png',async(token:string,bytes:number[],audience:'gm'|'public',format:'png'|'jpeg'='png')=>{store.campaignAtlas(token);if(!['gm','public'].includes(audience)||!Array.isArray(bytes)||bytes.length>64*1024*1024||bytes.length<8||bytes.some(v=>!Number.isInteger(v)||v<0||v>255))throw new Error('Ungültige PNG-Ausgabe.');const buffer=Buffer.from(bytes);if(format!=='png'&&format!=='jpeg')throw new Error('Bildformat prüfen.');if(format==='png'?buffer.subarray(0,8).toString('hex')!=='89504e470d0a1a0a':buffer.subarray(0,2).toString('hex')!=='ffd8')throw new Error('Bildsignatur fehlt.');const selection=await dialog.showSaveDialog(win,{title:'Atlas ausgeben',defaultPath:(audience==='public'?'Atlas-Spieler.':'Atlas-GM.')+(format==='jpeg'?'jpg':'png'),filters:[{name:format.toUpperCase(),extensions:[format==='jpeg'?'jpg':'png']}]});if(selection.canceled||!selection.filePath)return{cancelled:true};store.campaignAtlas(token);await writeFile(selection.filePath,buffer);return{cancelled:false};});
     handle('atlas:import',(c:{commandId:string;token:string;campaignId:string;ticket:string;x:number;y:number})=>{const pending=imports.get(c.ticket);if(!pending)throw new Error('Importvorschau abgelaufen. Datei erneut wählen.');const result=store.executeAtlas({...c,action:{kind:'drawing-import',name:pending.name,rooms:pending.rooms,source:pending.bytes.toString('utf8'),x:c.x,y:c.y}});return{atlas:result.atlas,roomId:(result.result as {roomId:string|null}|null)?.roomId??null};});
+    const atlasRaster=new AtlasRasterService();
+    handle('atlas:raster',async(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,width:number,height:number,consumer:'view'|'export'='view')=>{
+      const before=store.atlasIdentity(token);
+      const result=await atlasRaster.read(store.filename,before.campaignId,before.revision,box,width,height,consumer);
+      if(store.atlasIdentity(token).revision!==before.revision)throw new Error('Atlasstand inzwischen geändert. Übersicht erneut laden.');
+      return result;
+    });
+    handle('atlas:overview',(token:string)=>store.atlasOverview(token));
+    handle('atlas:objects',(token:string,q:import('../src/app/campaign-atlas-contracts').AtlasObjectQuery)=>store.atlasObjects(token,q));
+    handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
+    handle('atlas:commit',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlasCommit(c));
     handle('atlas:view',(token:string)=>store.campaignAtlas(token));
     handle('atlas:execute',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlas(c));
     handle('city:list',(token:string)=>store.cities(token));
@@ -404,7 +416,7 @@ else {
       catch { backupError = 'Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.'; }
       finally { backupRunning = false; }
     }, 30000);
-    win.on('closed', () => { clearInterval(timer);playerDisplay.shutdown(); });
+    win.on('closed', () => { atlasRaster.close();clearInterval(timer);playerDisplay.shutdown(); });
     await win.loadURL(origin);
     app.on('before-quit', event => { if (!closeAllowed && win && !win.isDestroyed()) { event.preventDefault(); win.close(); } });
   }).catch(error => { console.error(error);dialog.showErrorBox('SaltMarcher kann nicht starten', String(error)); app.exit(1); });

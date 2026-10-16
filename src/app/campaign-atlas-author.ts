@@ -46,6 +46,20 @@ export async function writeAtlas(
   }
 }
 
+/** Terrain changes need a durable receipt, not another complete campaign copy. */
+export async function writeAtlasCommit(c: AtlasCommand): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>> {
+  if(pending.has(c.token)) return {ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
+  try {
+    const result=await window.campaign.executeAtlasCommit(c);
+    if(result.ok)document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:result.value}));
+    document.dispatchEvent(new Event('atlas-write-state'));
+    return result;
+  } catch(e) {
+    pending.set(c.token,structuredClone(c));document.dispatchEvent(new Event('atlas-write-state'));
+    return {ok:false,error:'Ausgang des Atlasauftrags unbekannt. Der Auftrag bleibt mit derselben Kennung für Speicherstand klären erhalten. '+(e as Error).message};
+  }
+}
+
 const wrap = (
   c: { commandId: string; token: string; campaignId: string },
   action: AtlasAction,
