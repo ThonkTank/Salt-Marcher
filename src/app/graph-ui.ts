@@ -1,3 +1,4 @@
+import {atlasGraphWrite} from './campaign-atlas-author';
 const nodeOrder=new Intl.Collator('de',{numeric:true});
 import {initDungeonBudget,drawDungeonBudget,resetDungeonBudget,hasDungeonBudgetDrafts,confirmDungeonBudget} from './dungeon-budget-ui';
 import type {Workspace,Room,Point} from './contracts';import type {GraphView,GraphAction,GraphDisplay,GraphContentCounts} from './graph-contracts';import {graphDisplay} from './graph-model';
@@ -27,7 +28,7 @@ async function command(action:GraphAction){
   const ready=await before();
   if(!owns(o))throw cancelled;
   if(!ready)throw new Error('Offene Eingaben zuerst übernehmen oder verwerfen.');
-  const r=await window.campaign.executeGraph(request);
+  const r=await atlasGraphWrite(request);
   if(!owns(o))throw cancelled;
   if(!r.ok)throw new Error(r.error);
   readVersion++;confirmDungeonBudget(r.value.view,budgetBase);data=r.value.view;

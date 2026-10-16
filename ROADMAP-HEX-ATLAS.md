@@ -2,6 +2,8 @@
 
 ## Atlas auf einen Blick
 
+**Aktueller Desktopumbau:** Pro Kampagne genau eine gemeinsame Karte mit räumlichen Stadt-/Gebäudebindungen und einer Autorhistorie. Bedienung, Nachweisgrenzen und offene Fachumfänge stehen in [ATLAS.md](docs/ATLAS.md). Obsidian wird nicht weiterentwickelt. Die folgende Übersicht hält den älteren Integrationsstand fest und ist keine Freigabe des Desktopumbaus.
+
 **Ziel:** Welt → Region → Stadt → Haus → Dungeonraum durch Zoom erreichen und direkt bearbeiten; eine Kamera, eine Undo/Redo-Folge und gemeinsame haltbare Daten.
 
 **Geprüfter Stand: 13.10.2026**, gemeinsamer Branch `active/installed-phase1`, Commit [af858153](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/commit/af85815313aac6e964e235d3e7acbdf294cce0e0). Der Atlas besitzt bereits einen benutzbaren Hex-/Ortskern, integrierte Stadt-/Dungeon-Teilabläufe und den ersten begrenzten Bildexport. Der vollständige Zielablauf und E2E-01 bleiben offen.

@@ -1,6 +1,6 @@
 # Dungeon-Editor und gemeinsame Kampagnenwerkstatt
 
-Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Das Repository enthält die bestehende Obsidian-Integration und einen eigenständigen Desktopkandidaten. Die technische Zielplattform ist Electron mit TypeScript und SQLite; der Übergang und die Produktabnahme sind noch offen.
+Ein lokaler Arbeitsraum für Spielleitungen: Eine Kampagnenkarte und ihre Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Das Produkt ist eine eigenständige Desktopanwendung mit Electron, TypeScript und SQLite. Obsidian wird nicht weitergeführt; sein Code und frühere Nachweise bleiben als historische Quellen im Repository.
 
 **Entwicklungsstand:** Dungeon-, Atlas-, Stadt- und Kampagnenfunktionen sind in unterschiedlicher Tiefe umgesetzt. Der dokumentierte Gesamtumfang und die plattformübergreifende Produktabnahme sind noch offen.
 
@@ -29,13 +29,9 @@ npm run build
 npm run build:desktop
 ```
 
-`npm run build` erzeugt das Obsidian-Plugin in `main.js`; `npm run build:desktop` erzeugt den Desktopbuild unter `.build/desktop`.
+`npm run build` bleibt der historische Pluginbuild; `npm run build:desktop` erzeugt den Desktopbuild unter `.build/desktop`.
 `npm test` nimmt alle lokalen `tests/*.test.mjs` automatisch auf und führt die Tests nacheinander aus. Native GUI-Prüfungen bleiben getrennte Aufrufe.
 Die Tests in `tests/native-reference/` benötigen zusätzlich die ursprünglichen Dungeondraft-Dateien im Nachbarverzeichnis `../dungeon-auswertung/`; mit diesen Quellen separat ausführen: `node --test --test-concurrency=1 "tests/native-reference/*.test.mjs"`.
-
-### Obsidian-Testlauf
-
-Nur einen separaten Testvault verwenden. `main.js`, `manifest.json` und `styles.css` nach `.obsidian/plugins/dungeon-editor/` kopieren, das Plugin aktivieren und in der Befehlspalette „Dungeon“ oder „Atlas“ öffnen. Obsidian Desktop benötigt mindestens Version 1.8.7 und WebGL. Build und Push installieren nichts in einem Vault.
 
 ### Desktop-Testlauf
 
@@ -43,7 +39,7 @@ Nur einen separaten Testvault verwenden. `main.js`, `manifest.json` und `styles.
 npm run start:desktop -- --data-dir /tmp/campaign-workbench-smoke
 ```
 
-Der Desktopkandidat speichert ohne `--data-dir` im lokalen Appdatenordner `CampaignWorkbench`. Er verbindet Kampagnenverwaltung, Vorbereitung, Live-Spiel, Katalog, Gegenstände, Welt/Atlas, Städte, Musik, Dungeonzeichnung und eine getrennte Spieleranzeige. Die Desktopfunktion ist ein Entwicklungsstand; offene Produktlücken und Abnahmen stehen in den Fachplänen.
+Die Desktopanwendung speichert ohne `--data-dir` im lokalen Appdatenordner `CampaignWorkbench`. Er verbindet Kampagnenverwaltung, Vorbereitung, Live-Spiel, Katalog, Gegenstände, einen gemeinsamen Atlas für Landschaft, Städte und Dungeonräume, Musik und eine getrennte Spieleranzeige. Die Desktopfunktion ist ein Entwicklungsstand; offene Produktlücken und Abnahmen stehen in den Fachplänen.
 
 Ein lokales Linux-x64-Paket entsteht mit:
 
@@ -51,9 +47,11 @@ Ein lokales Linux-x64-Paket entsteht mit:
 npm run package:desktop -- /tmp/campaign-workbench-linux-x64
 ```
 
+Die ursprünglichen Produktanforderungen bleiben erhalten. Für neue Kampagnen gilt das [gemeinsame Atlasmodell](docs/ATLAS.md); alte Testbestände ohne Atlaswurzel werden nicht als mehrere Karten migriert.
+
 ## Repositorykarte
 
-- `src/`: gemeinsamer Produktcode, Obsidian-Anschluss und Desktopoberfläche unter `src/app/`.
+- `src/`: Produktcode, historischer Obsidian-Anschluss und Desktopoberfläche unter `src/app/`.
 - `desktop/`: privilegierter Desktopprozess und schmale Preload-Brücken.
 - `tests/`: automatisierte Prüfungen und synthetische Fixtures.
 - `tools/`: Build-, Paket-, Referenz-, Fixture- und Hostwerkzeuge.
@@ -71,7 +69,7 @@ Produktabnahme. Bedienung, Grenzen und nächste Schritte stehen in den verlinkte
 | Bereich | Vorhandene Nutzerabläufe |
 | --- | --- |
 | Kampagne | Lokale Kampagnen öffnen, sichern, kopieren und übertragen; Verweise und Medien erhalten. Unabhängige Kopien bekommen eigene lokale Identitäten. |
-| Gemeinsamer Atlas | Hexkarte, Ortsverweise, Stadt- und Dungeonanschlüsse; Kartenbearbeitung und Reiseauswahl sind getrennte Werkzeuge. Der [Atlasplan](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) benennt die Lücken. |
+| Gemeinsamer Atlas | Genau eine Welt pro Kampagne. Landschaft, Städte, Häuser und Räume in derselben Fläche zeichnen, suchen und zoomen; gemeinsame Autorhistorie mit Undo/Redo, lokaler Gruppenweg und explizite Gebäudeeingänge. [Bedienung und Grenzen](docs/ATLAS.md). |
 | Stadt | Straßen und Flächen planen, Gebäudebestand erzeugen und nachbearbeiten; vollständiger Umfang und Grenzen im [Stadtplan](ROADMAP-CITIES.md). |
 | Dungeon zeichnen | Grundrisse, Räume, Objekte, Türen, Licht, Geschosse, Volumen und parametrische Passagen; bearbeitbarer Graph mit ausdrücklich bestätigter Rasterübersetzung. |
 | Dungeon vorbereiten | Raum-Keys, Vorlesetext, vererbte und referenzierte Vorlagen, regionale Beschreibungen, Budgets, Encounter-, Loot- und Curiosity-Kontexte auf räumlichen Ankern. |

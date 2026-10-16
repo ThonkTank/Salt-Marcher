@@ -98,7 +98,11 @@ function* mutableRows(db:any,table:string):Generator<any>{
  let row=first.get();
  while(row){const cursor=row.__rowid;yield row;row=next.get(cursor);}
 }
-export function remapSnapshot(db:any,sourceId:string,name:string,shared:Map<string,string>,historical:Map<string,string>):RemapResult{validateCampaignOrigins(db);validateCapabilityBytes(db);validateNpcRecovery(db);validateWorldRelationPairs(db);for(const row of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(row);const currentWorldRuns=new Set<string>();
+export function remapSnapshot(db:any,sourceId:string,name:string,shared:Map<string,string>,historical:Map<string,string>):RemapResult{
+ // A distinct campaign starts its own author command timeline. Spatial facts and runtime state are remapped below.
+ for(const table of ['atlas_command','atlas_receipt','atlas_travel_receipt'])if(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))db.prepare('DELETE FROM '+table).run();
+ if(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='campaign_atlas'").get())db.prepare('UPDATE campaign_atlas SET cursor=0').run();
+validateCampaignOrigins(db);validateCapabilityBytes(db);validateNpcRecovery(db);validateWorldRelationPairs(db);for(const row of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(row);const currentWorldRuns=new Set<string>();
  // ID remapping changes derived hashes, but must never bless an already stale route or track.
  const currentHexEnvironments=new Set<string>();
  let sourceWorld:ReturnType<typeof readWorld>|undefined;
