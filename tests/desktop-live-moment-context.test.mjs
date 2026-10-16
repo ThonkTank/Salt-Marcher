@@ -149,7 +149,7 @@ test('starting the prepared opening docks its packet and keeps exact prose witho
  [...x.el('live-session-resume-visits').querySelectorAll('button')].find(b=>b.textContent==='Spielabend beginnen + Text in Szene').click();await settle();await x.ui.flushLive();await settle();
  assert.equal(x.el('live-session-resume-dialog').open,false);assert.equal(x.el('session-packet-dialog').parentElement.id,'live-packet-host');
  assert.equal(x.el('session-packet-content').querySelector('h3').textContent,'Torwache');
- assert.equal(x.el('session-packet-content').querySelector('.packet-read-aloud .packet-text').textContent,text);
+ const reading=x.el('session-packet-content').querySelector('.packet-read-aloud .packet-text');assert.equal(reading.querySelector('strong')?.textContent,'Originaltext');assert.match(reading.textContent,/Am Tor\s+Originaltext/);
  const after=x.store.live(x.w.token).scene;assert.equal(after.readAloud,text);assert.deepEqual(after.adoption,before.adoption);assert.deepEqual(after.clock,before.clock);
  assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='start').length,starts+1);assert.deepEqual(x.messages.filter(m=>m.error),[]);
 });
