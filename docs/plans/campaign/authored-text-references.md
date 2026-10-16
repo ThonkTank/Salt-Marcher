@@ -151,6 +151,12 @@ Suche und eingehende Kanten berücksichtigen alle aktiven Textverweise. Begrenzt
 Leser zeigen einen Hinweis auf weitere Ziele; einzelne beschädigte Quellen
 werden als unvollständig gemeldet, gesunde Treffer bleiben erreichbar.
 
+Die Ortsmappe zeigt Quellabschnitte, Textverweise, Karten und Material unabhängig
+von der Gruppenantwort. Nur die Übergabe eines Abschnitts als Vorlesetext braucht
+eine bestätigte Fokusgruppe. Eine fehlgeschlagene Gruppenabfrage meldet diesen
+Teil lokal als nicht verfügbar; spätere Antworten eines verlassenen Ortes bleiben
+wirkungslos. DOM-Gegenproben und ein nativer Tastaturlauf prüfen diese Grenze.
+
 ## Autorenabsicht vor und während der Übernahme
 
 Der Zielread für Anlegen/Lösen eines Paars gehört zu genau einem geladenen
