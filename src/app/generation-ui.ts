@@ -74,7 +74,7 @@ function generationNotice(text:string,error=false){const node=get('generation-fe
 function restoreCatalog(){const browser=get('catalog-browser');if(catalogParent){catalogParent.insertBefore(browser,catalogNext);catalogParent=null;catalogNext=null;}const restore=restoreTableLookup;restoreTableLookup=null;restore?.();}
 function closeTable(){tableRequest++;get<HTMLDialogElement>('table-manager').close();restoreCatalog();tableDraft=null;get(get<HTMLButtonElement>('encounter-table-open').disabled?'encounter-table-new':'encounter-table-open').focus();}
 function requestTableClose(){if(pending)return;if(tableDraft&&JSON.stringify(tableDraft)!==tableBaseline){discard=closeTable;get<HTMLDialogElement>('generation-discard').showModal();}else closeTable();}
-export function generationCreature(creature:Creature){names.set(creature.id,creature.name);get('table-selected-creature').textContent=creature.name+' · HG '+creature.challengeRating+' · '+creature.xp+' XP';renderTableState();}
+export function generationCreature(creature:Creature|null){if(creature)names.set(creature.id,creature.name);get('table-selected-creature').textContent=creature?creature.name+' · HG '+creature.challengeRating+' · '+creature.xp+' XP':'Keine Kreatur gewählt.';renderTableState();}
 async function openTable(table?:EncounterTable){
  const w=workspace,g=generation,request=++tableRequest;if(!w||pending)return;
  try{

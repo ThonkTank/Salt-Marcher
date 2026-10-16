@@ -23,8 +23,8 @@ function adoptPlan(next:EncounterPlan,invalidateRequests=true){clearSaveTimer();
 export function activateCatalog(next:Workspace){
  clearSaveTimer();clearSearchTimer();saving=null;
  workspace=next;generation++;searchRequest++;clearResults('Katalog noch nicht geladen.');listRequest++;planRequest++;creatureRequest++;partyRequest++;
- plan=null;dirty=false;blocked=false;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;get<HTMLButtonElement>('catalog-add').disabled=true;
- activateGeneration(next);void refreshPlans();
+ plan=null;creature=null;dirty=false;blocked=false;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;
+ activateGeneration(next);renderCreatureSelection();void refreshPlans();
 }
 export async function openCatalog(){
  const token=workspace?.token,g=generation,request=searchRequest;
@@ -49,9 +49,7 @@ function beginTableLookup(){
   tableLookupQuery=null;if(!owned(token,g))return;
   clearSearchTimer();searchRequest++;creatureRequest++;offset=previousOffset;sort=previousSort;
   for(const field of fields)field.node.value=field.value;
-  creature=previousCreature;const detail=get('catalog-detail');
-  if(creature)renderCreatureDetail(detail,creature);else detail.textContent='Wähle eine Kreatur, um ihren vollständigen Statblock anzusehen.';
-  get<HTMLButtonElement>('catalog-add').disabled=!creature||!plan||blocked;get<HTMLButtonElement>('catalog-live-add').disabled=!creature||!workspace;
+  creature=previousCreature;renderCreatureSelection();
   void search();
  };
 }
@@ -62,10 +60,16 @@ async function search(){
 }
 
 function renderRows(){get('catalog-table').setAttribute('aria-busy','false');get('catalog-page').setAttribute('role','status');const body=get('catalog-rows');body.replaceChildren();for(const c of page?.rows??[]){const tr=document.createElement('tr'),td=document.createElement('td'),button=document.createElement('button');button.textContent=c.name;button.setAttribute('aria-pressed',String(creature?.id===c.id));button.onclick=()=>{void selectCreature(c.id);};td.append(button);tr.append(td);for(const text of [c.challengeRating,c.type,c.size,String(c.ac),String(c.hp),String(c.xp)]){const cell=document.createElement('td');cell.textContent=text;tr.append(cell);}body.append(tr);}get('catalog-page').textContent=page?.total?`${page.offset+1}–${Math.min(page.total,page.offset+page.limit)} von ${page.total} Kreaturen`:'Keine Kreaturen für diese Filter.';get<HTMLButtonElement>('catalog-prev').disabled=!page?.offset;get<HTMLButtonElement>('catalog-next').disabled=!page||page.offset+page.limit>=page.total;}
+function renderCreatureSelection(message='Wähle eine Kreatur, um ihren vollständigen Statblock anzusehen.',loading=false,error=false){
+ const root=get('catalog-detail');root.setAttribute('aria-busy',String(loading));
+ if(creature){root.removeAttribute('role');renderCreatureDetail(root,creature);}else{root.setAttribute('role',error?'alert':'status');root.textContent=message;}
+ generationCreature(creature);if(page)renderRows();
+ get<HTMLButtonElement>('catalog-add').disabled=!creature||!plan||blocked;get<HTMLButtonElement>('catalog-live-add').disabled=!creature||!workspace;
+}
 async function selectCreature(id:string){
- const token=workspace?.token,g=generation,request=++creatureRequest;
- try{const response=await window.campaign.creature(id);if(!owned(token,g)||request!==creatureRequest)return;const c=unwrap(response);creature=c;generationCreature(c);renderCreatureDetail(get('catalog-detail'),c);if(page)renderRows();get<HTMLButtonElement>('catalog-add').disabled=!plan||blocked;get<HTMLButtonElement>('catalog-live-add').disabled=!workspace;}
- catch(error){if(owned(token,g)&&request===creatureRequest)tell((error as Error).message,true);}
+ const token=workspace?.token,g=generation,request=++creatureRequest;creature=null;renderCreatureSelection('Statblock wird geladen …',true);
+ try{const response=await window.campaign.creature(id);if(!owned(token,g)||request!==creatureRequest)return;const c=unwrap(response);if(c.id!==id)throw new Error('Statblock gehört zu einer anderen Kreatur.');creature=c;renderCreatureSelection();}
+ catch(error){if(owned(token,g)&&request===creatureRequest){creature=null;renderCreatureSelection('Statblock nicht verfügbar: '+(error as Error).message,false,true);tell((error as Error).message,true);}}
 }
 export function renderCreatureDetail(root:HTMLElement,c:Creature,onRoll?:(action:CreatureAction,preset:CreatureRollPreset)=>void,actionControl?:(action:CreatureAction)=>{disabled:boolean;note:string}|null,onUse?:(action:CreatureAction)=>void){root.replaceChildren();const heading=document.createElement('h3');heading.textContent=c.name;root.append(heading);const line=(name:string,text:string)=>{if(!text)return null;const p=document.createElement('p'),strong=document.createElement('strong');strong.textContent=name+': ';p.append(strong,document.createTextNode(text));root.append(p);return p;};line('Art',c.size+' '+c.type+(c.subtype?' ('+c.subtype+')':'')+' · '+c.alignment);line('HG / XP',c.challengeRating+' / '+c.xp);line('Rüstungsklasse / HP',c.ac+' / '+c.hp+' ('+c.hitDice+')');line('Bewegung',c.speed);line('Attribute',Object.entries(c.abilities).map(([k,v])=>k.toUpperCase()+' '+v).join(' · '));line('Rettungswürfe',c.savingThrows);line('Fertigkeiten',c.skills);line('Sinne',c.senses);line('Sprachen',c.languages);line('Verwundbar',c.damageVulnerabilities);line('Resistenzen',c.damageResistances);line('Immunitäten',c.damageImmunities);line('Zustandsimmunitäten',c.conditionImmunities);for(const [title,actions]of [['Eigenschaften',c.traits],['Aktionen',c.actions],['Legendäre Aktionen',c.legendaryActions]] as const){if(!actions.length)continue;const h=document.createElement('h4');h.textContent=title;root.append(h);for(const a of actions){const p=line(a.name,a.description),presets=onRoll?creatureActionRolls(a):[],control=actionControl?.(a)??null;if(p&&(presets.length||control)){const tools=document.createElement('span');tools.className='toolbar statblock-rolls';for(const preset of presets){const button=document.createElement('button');button.type='button';button.textContent=preset.kind==='attack'?'Angriff '+preset.formula:preset.kind==='damage'?'Schaden '+preset.formula:(preset.kind==='save'?'Rettungswurf':'Probe')+' SG '+preset.dc;button.disabled=control?.disabled??false;if(control)button.dataset.statblockDisabled=String(control.disabled);button.onclick=()=>onRoll!(a,preset);tools.append(button);}if(control&&!presets.length&&onUse){const button=document.createElement('button');button.type='button';button.textContent='Einsetzen';button.disabled=control.disabled;button.dataset.statblockDisabled=String(control.disabled);button.onclick=()=>onUse(a);tools.append(button);}if(control){const status=document.createElement('small');status.textContent=control.note;tools.append(status);}p.append(tools);}}}line('Weitere Angaben',c.details);line('Quelle',c.sourceLabel+' · '+c.sourceVersion+' · CC BY 4.0');}
 async function refreshPlans(){
