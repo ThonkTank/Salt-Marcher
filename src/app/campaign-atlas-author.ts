@@ -105,13 +105,24 @@ export async function atlasRoomWrite(edit: Edit): Promise<Result<RoomCommit>> {
       }
     : { ok: false, error: "Raum nach Änderung nicht verfügbar." };
 }
+// World editors retain their field versions and reconcile lost replies read-only.
+export function settleAtlasWorldWrite(c: WorldCommand) {
+  const p = pending.get(c.token);
+  if (p?.campaignId === c.campaignId && p.commandId === c.commandId && p.action.kind === "world") {
+    pending.delete(c.token);
+    document.dispatchEvent(new Event("atlas-write-state"));
+  }
+}
 export async function atlasWorldWrite(
   c: WorldCommand,
 ): Promise<Result<WorldAck>> {
   if (!["map", "cell", "place", "place-presentation"].includes(c.action.kind))
     return window.campaign.executeWorld(c);
   const result = await wrap(c, { kind: "world", command: c });
-  if (!result.ok) return result;
+  if (!result.ok) {
+    if (pending.get(c.token)?.commandId === c.commandId) throw new Error(result.error);
+    return result;
+  }
   if (result.value.result)
     return { ok: true, value: result.value.result as WorldAck };
   const world = await window.campaign.world(c.token);
