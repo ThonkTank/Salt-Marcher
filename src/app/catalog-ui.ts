@@ -80,8 +80,12 @@ function renderCreatureSelection(message='Wähle eine Kreatur, um ihren vollstä
  generationCreature(creature);if(page)renderRows();
  get<HTMLButtonElement>('catalog-add').disabled=!creature||!plan||blocked;get<HTMLButtonElement>('catalog-live-add').disabled=!creature||!workspace;
 }
+function revealCreatureDetail(){
+ if(tableLookupQuery||!window.matchMedia?.('(max-width:1100px)').matches)return;
+ get('catalog-inspector').scrollIntoView({block:'start'});const detail=get('catalog-detail');detail.tabIndex=-1;detail.focus({preventScroll:true});
+}
 async function selectCreature(id:string){
- const token=workspace?.token,g=generation,request=++creatureRequest;creature=null;get('catalog-add-result').hidden=true;renderCreatureSelection('Statblock wird geladen …',true);
+ const token=workspace?.token,g=generation,request=++creatureRequest;creature=null;get('catalog-add-result').hidden=true;renderCreatureSelection('Statblock wird geladen …',true);revealCreatureDetail();
  try{const response=await window.campaign.creature(id);if(!owned(token,g)||request!==creatureRequest)return;const c=unwrap(response);if(c.id!==id)throw new Error('Statblock gehört zu einer anderen Kreatur.');creature=c;renderCreatureSelection();}
  catch(error){if(owned(token,g)&&request===creatureRequest){creature=null;renderCreatureSelection('Statblock nicht verfügbar: '+(error as Error).message,false,true);tell((error as Error).message,true);}}
 }
@@ -148,7 +152,7 @@ export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAd
  for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
  get('catalog-reset').onclick=()=>{const direction=value('catalog-direction');get<HTMLFormElement>('catalog-form').reset();get<HTMLInputElement>('catalog-direction').value=direction;offset=0;if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{const next=button.dataset.sort as CreatureCatalogQuery['sort'];get<HTMLInputElement>('catalog-direction').value=sort===next&&value('catalog-direction')==='asc'?'desc':'asc';sort=next;offset=0;void search();};
  get('catalog-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});get<HTMLElement>(plan?'encounter-name':'encounter-new').focus({preventScroll:true});};
- get('catalog-search-open').onclick=()=>{get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};
+ const returnToResults=()=>{get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;
  get('encounter-search').oninput=()=>void refreshPlans();
  get('encounter-list').onchange=()=>{void loadPlan(value('encounter-list'));};
  get('encounter-new').onclick=()=>report(()=>newPlan());

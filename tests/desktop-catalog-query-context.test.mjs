@@ -120,3 +120,13 @@ for(const message of ['Kreatur nicht gefunden.','Statblock-Speicher ausgefallen'
 test('a mismatching creature reply cannot enable handoff for another requested statblock',async t=>{const x=await detailFixture(t);window.campaign.creature=async()=>({ok:true,value:detail('Guard')});await x.choose('Wolf');assert.equal(x.el('catalog-detail').getAttribute('role'),'alert');assert.match(x.el('catalog-detail').textContent,/anderen Kreatur/);assert.equal(x.el('catalog-live-add').disabled,true);});
 test('an old detail error cannot clear a newer loaded selection',async t=>{const x=await detailFixture(t),held=deferred();window.campaign.creature=()=>held.promise;await x.choose('Wolf');window.campaign.creature=async id=>({ok:true,value:detail(id)});await x.choose('Dragon');x.messages.length=0;held.resolve({ok:false,error:'Überholter Statblockfehler'});await tick();await tick();assert.equal(x.el('catalog-detail').querySelector('h3').textContent,'Dragon');assert.equal(x.el('catalog-live-add').disabled,false);assert.deepEqual(x.messages,[]);});
 test('campaign activation clears the previous statblock, table selection and pending detail authority',async t=>{const x=await detailFixture(t),held=deferred();window.campaign.creature=()=>held.promise;await x.choose('Wolf');x.ui.activateCatalog({...x.w,token:'two',campaign:{id:'other'}});held.resolve({ok:true,value:detail('Wolf')});await tick();await tick();assert.equal(x.el('catalog-detail').querySelector('h3'),null);assert.match(x.el('catalog-detail').textContent,/Wähle eine Kreatur/);assert.equal(x.el('catalog-detail').getAttribute('aria-busy'),'false');assert.match(x.el('table-selected-creature').textContent,/Keine Kreatur/);for(const id of ['catalog-add','catalog-live-add','table-add-creature'])assert.equal(x.el(id).disabled,true);});
+
+
+test('a narrow catalog reveals pending detail and returns to the unchanged query without a second lookup',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Goblin');await x.opened;const jumps=[];
+ window.matchMedia=()=>({matches:true});x.el('catalog-inspector').scrollIntoView=()=>jumps.push('detail');x.el('catalog-detail').focus=()=>{};
+ x.el('catalog-browser').scrollIntoView=()=>jumps.push('results');x.el('catalog-search').focus=()=>{};
+ const held=deferred();window.campaign.creature=()=>held.promise;x.el('catalog-search').value='Goblin';x.el('catalog-rows').querySelector('button').click();await tick();
+ assert.deepEqual(jumps,['detail']);assert.match(x.el('catalog-detail').textContent,/geladen/);
+ held.resolve({ok:true,value:detail('Goblin')});await tick();await tick();x.el('catalog-results-return').click();assert.deepEqual(jumps,['detail','results']);assert.equal(x.el('catalog-search').value,'Goblin');assert.equal(x.reads.length,1);
+});
