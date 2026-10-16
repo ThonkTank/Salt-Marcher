@@ -86,6 +86,8 @@ export interface LedgerItem {
   treasureId: string | null; combatId: string | null; sceneId: string | null; locationId: string | null; instantMs: string | null; recordedAt: string; parentId: string | null;
   sourceTreasureId?:string;sourceTreasureItemId?:string;rewardCreditId?:string; creditedCopper?:string|null; recipientCharacterId?:string; sourceCharacterId?:string; sourceNoteId?:string; awardId?:string; provenance?:string; mergeTargetId?:string; counterpartyLink?:{kind:'shop'|'npc'|'location'|'faction';id:string};paidCopper?: string; instanceId?: string | null; counterpartyReference?: {shopId:string;owner:{kind:'npc'|'location';id:string}};
   currentName?:string; currentUnitCopper?:string|null;
+  /** Current source title for navigation; never part of the stored grant. */
+  sourceTitle?:string;
 }
 /** Allocate the recorded total price before quantity changes; whole copper stays in the remainder. */
 export function partitionLedgerPaidPrice(source:LedgerItem,portion:LedgerItem):void {

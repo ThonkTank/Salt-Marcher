@@ -228,9 +228,18 @@ export function readLedgerDefinition(db:any,item:LedgerItem){
  return readItemDefinition(db,item.reference.definitionId);
 }
 function ledgerView(db:any,item:LedgerItem){const definition=readLedgerDefinition(db,item);item.currentName=definition.name;item.currentUnitCopper=definition.unitCopper;return item;}
+function ledgerSource(db:any,cam:string,item:LedgerItem,titles?:Map<string,string|undefined>):LedgerItem{
+ const id=item.sourceTreasureId??item.treasureId;if(!id)return item;
+ if(titles?.has(id)){const title=titles.get(id);if(title!==undefined)item.sourceTitle=title;return item;}
+ // A missing historical source must not hide a valid personal grant.
+ try{const row=db.prepare('SELECT * FROM treasure WHERE campaign_id=? AND id=?').get(cam,id);if(row)item.sourceTitle=checkedTreasureRow(row).title;}catch{}
+ titles?.set(id,item.sourceTitle);
+ return item;
+}
 export function readLedgerItem(db: any, cam: string, id: string): LedgerItem {
   const item=checkedLedgerRow(db.prepare('SELECT * FROM character_ledger WHERE campaign_id=? AND id=?').get(cam,id));readLedgerDefinition(db,item);if(item.origin==='transfer'&&!item.rewardCreditId)item.rewardCreditId=transferCredit(db,cam,item);if(item.origin!=='transfer'&&item.status==='given'&&item.recipientCharacterId)item.creditedCopper=transferredValue(db,cam,item)?.toString()??null;return item;
 }
+export function readLedgerDetail(db:any,cam:string,id:string){return ledgerSource(db,cam,readLedgerItem(db,cam,id));}
 // Older transfers already record their parent chain. Resolve it lazily so old
 // campaign histories keep their bytes and receipts while new portions carry a stable credit.
 function transferCredit(db:any,cam:string,item:LedgerItem):string{
@@ -272,7 +281,7 @@ export function ledgerRewardValue(db:any,cam:string,item:LedgerItem):bigint|null
 export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage {
   return db.transaction(() => {
     if (!query || typeof query.search !== 'string' || query.search.length > 1000 || !['','received','sold','given'].includes(query.status)) throw new Error('Ungültige Beutesuche.');
-    const cursor = checkedCursor(query.after), needle = query.search.toLocaleLowerCase();
+    const cursor = checkedCursor(query.after), needle = query.search.toLocaleLowerCase(),sourceTitles=new Map<string,string|undefined>();
     readProgressCharacter(db, cam, query.characterId);
     const items:LedgerItem[]=[],problems:LedgerPage['problems']=[];let next:string|null=null,total=0n,hasMore=false,valueKnown=true,shown=0,unavailableCount=0;
     // Evaluate all required units for the total; share fifty page slots between
@@ -282,8 +291,9 @@ export function readLedger(db: any, cam: string, query: LedgerQuery): LedgerPage
       try{
         const item=checkedLedgerRow(row),value=ledgerRewardValue(db,cam,item);
         if(item.origin!=='purchase'&&item.origin!=='transfer'){if(value===null)valueKnown=false;else total+=value;}
-        if(onPage&&(!query.status||query.status===item.status)&&(!needle||(item.name+' '+item.currentName+' '+item.counterparty).toLocaleLowerCase().includes(needle))){
-          if(shown<50){items.push(item);shown++;next=String(row.cursor);}else hasMore=true;
+        if(onPage&&(!query.status||query.status===item.status)){
+          if(needle){ledgerSource(db,cam,item,sourceTitles);if(!(item.name+' '+item.currentName+' '+item.counterparty+' '+(item.sourceTitle??'')).toLocaleLowerCase().includes(needle))continue;}
+          if(shown<50){items.push(ledgerSource(db,cam,item,sourceTitles));shown++;next=String(row.cursor);}else hasMore=true;
         }
       }catch(error){
         unavailableCount++;valueKnown=false;
@@ -349,7 +359,7 @@ export function checkedItem(db: any, input: ItemInput) {
   return { id: randomUUID(), reference: { kind: 'authored' as const, definitionId: id, revision: 1 }, name: input.name, category: input.category, quantity: input.quantity, allocated: 0, unitCopper };
 }
 export function saveTreasure(db: any, cam: string, t: Treasure) { checkedTreasure(t);const stored={...t,items:t.items.map(i=>{const s={...i};delete s.currentDefinition;return s;})};const payload = json(stored); db.prepare('INSERT INTO treasure VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, t.id, t.revision, payload, hash(payload)); }
-export function saveLedger(db: any, cam: string, l: LedgerItem) { validateLedgerItem(l);const stored={...l};delete stored.currentName;delete stored.currentUnitCopper;delete stored.creditedCopper;const payload = json(stored); db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, l.id, l.characterId, l.revision, payload, hash(payload)); }
+export function saveLedger(db: any, cam: string, l: LedgerItem) { validateLedgerItem(l);const stored={...l};delete stored.currentName;delete stored.currentUnitCopper;delete stored.creditedCopper;delete stored.sourceTitle;const payload = json(stored); db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam, l.id, l.characterId, l.revision, payload, hash(payload)); }
 export function makeTreasure(db: any, cam: string, title: string, sceneId: string | null, combatId: string | null, inputs: ItemInput[], locationId?: string) {
   if (typeof title !== 'string' || title.length > 1000 || !Array.isArray(inputs) || inputs.length > 100) throw new Error('Ungültige Beute.');
   if (!inputs.length) return null;

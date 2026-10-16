@@ -508,6 +508,23 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #graph-preview-banner:not([hidden])~main #map{height:clamp(220px,calc(40vh - 120px),400px);min-height:220px}
 .map-canvas-controls{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;padding:.5rem 0}.map-canvas-controls button{font-size:.85rem;padding:.4rem .6rem}.map-canvas-controls span{font-size:.8rem;color:var(--ink);margin-left:auto}.map-canvas-state[hidden]{display:none}
 #treasury .reward-item-row{margin:0 0 .75rem;padding:.65rem;border:1px solid var(--line)}
+#treasury{padding:1.25rem;max-width:1500px;margin:auto}
+#treasury>.preparation-columns{grid-template-columns:minmax(15rem,22rem) minmax(0,1fr);gap:1rem;align-items:start}
+#treasury-editor{min-width:0}
+#treasury-draft-status{min-height:3.2em;margin:.5rem 0}
+#treasury-actions{position:sticky;top:var(--workspace-header-height,64px);z-index:3;padding:.55rem 0;background:#edf1f6;border-bottom:1px solid var(--line)}
+.treasury-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 .75rem}
+.treasury-fields>label:first-child{grid-column:1/-1}
+#treasury-catalog-picker{margin:.75rem 0;padding:.65rem;border:1px solid var(--line);background:#f7f9fc}
+#treasury-catalog-form{display:flex;gap:.5rem;align-items:end}
+#treasury-catalog-form label{flex:1;margin:.5rem 0 0;min-width:0}
+#treasury-catalog-results{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem;max-height:14rem;overflow:auto}
+#treasury .reward-item-row{grid-template-columns:minmax(0,1fr) 6rem auto;gap:.3rem .6rem;align-items:center}
+#treasury .reward-item-row .reward-item-facts{grid-column:auto}
+#treasury .reward-item-row>legend{overflow-wrap:anywhere}
+#treasury .reward-item-row>button{align-self:center}
+@media(max-width:1050px){#treasury>.preparation-columns{grid-template-columns:minmax(13rem,17rem) minmax(0,1fr)}#treasury .reward-item-row{grid-template-columns:minmax(0,1fr) 6rem}#treasury .reward-item-row>button{grid-column:1/-1}}
+@media(max-width:850px){#treasury>.preparation-columns{grid-template-columns:1fr}.treasury-fields{grid-template-columns:1fr}#treasury-actions{position:static}}
 .reward-item-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
 .reward-item-row label{margin:0;min-width:0}.reward-item-row input,.reward-item-row select{margin:0;width:100%}
 .reward-item-row .reward-item-facts{grid-column:1/-1;margin:0;font-size:.85rem;color:#4b6074}
