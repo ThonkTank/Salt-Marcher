@@ -247,15 +247,22 @@ test('a delayed map save cannot adopt an older map selection or cross campaign a
 
 test('Reise opens the one Hex console without changing the scene center; explicit map opening and map actions choose it',async()=>{
  const x=await liveContextFixture();try{
-  const before=x.store.db.serialize(),map=x.get('world-map');assert.equal(x.get('live-center-scene').hidden,false);assert.equal(x.get('live-center-map').hidden,true);assert.equal(x.get('live-travel-host').contains(x.get('world-map-select')),true);assert.equal(x.get('live-center-map').contains(map),true);assert.equal(x.get('live-travel-host').contains(map),false);
+  const before=x.store.db.serialize(),map=x.get('world-map');
+  assert.equal(x.get('live-center-tools').contains(x.get('live-travel-toggle')),true,'travel switch must remain beside the scene tabs');
+  assert.equal(x.get('live-travel-toggle').closest('[role=tablist]'),null,'the independent travel switch is not a center tab');
+  assert.equal(x.get('live-world-panel').firstElementChild,x.get('live-travel-host'),'travel commands precede optional weather');
+  assert.equal(x.get('live-travel-weather').open,false);
+  assert.equal(x.get('live-travel-navigation').contains(x.get('travel-place-cursor')),true);
+  assert.equal(x.get('live-travel-navigation').contains(x.get('world-zoom-in')),true);
+  assert.equal(x.get('live-center-scene').hidden,false);assert.equal(x.get('live-center-map').hidden,true);assert.equal(x.get('live-travel-host').contains(x.get('world-map-select')),true);assert.equal(x.get('live-center-map').contains(map),true);assert.equal(x.get('live-travel-host').contains(map),false);
   x.get('live-travel-map-open').click();assert.equal(x.get('live-center-scene').hidden,true);assert.equal(x.get('live-center-map').hidden,false);x.get('live-center-scene-tab').click();assert.equal(x.get('live-center-scene').hidden,false);x.get('travel-mode-route').click();assert.equal(x.get('live-center-map').hidden,false);
-  x.ui.setWorldSurface('world');assert.equal(x.get('world-travel-owner').contains(map),true);assert.equal(x.get('world-travel-owner').contains(x.get('world-map-select')),true);x.ui.setWorldSurface('live');assert.equal(x.document.querySelectorAll('#world-map').length,1);assert.equal(x.document.querySelectorAll('#journey-play').length,1);assert.ok(x.store.db.serialize().equals(before));
+  x.ui.setWorldSurface('world');assert.equal(x.get('live-travel-weather').open,true);assert.equal(x.get('live-center-tools').contains(x.get('live-travel-toggle')),true);assert.equal(x.get('world-travel-owner').contains(map),true);assert.equal(x.get('world-travel-owner').contains(x.get('world-map-select')),true);x.ui.setWorldSurface('live');assert.equal(x.document.querySelectorAll('#world-map').length,1);assert.equal(x.document.querySelectorAll('#journey-play').length,1);assert.ok(x.store.db.serialize().equals(before));
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 test('live keyboard waypoints evaluate inline and start with the preselected presentation speed',async()=>{
- const x=await travelFixture(),get=id=>x.document.getElementById(id);try{get('world-journey-console').scrollIntoView=()=>{};
+ const x=await travelFixture(),get=id=>x.document.getElementById(id);try{get('world-journey-console').scrollIntoView=()=>{};const rail=x.document.querySelector('.live-desk-reference');rail.scrollTop=12;rail.getBoundingClientRect=()=>({top:100});get('travel-evaluation').getBoundingClientRect=()=>({top:300});
   x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);get('live-travel-toggle').click();await until(()=>!get('live-travel-host').hidden&&get('travel-place-cursor').disabled===false);assert.equal(get('journey-play').disabled,true);get('travel-mode-route').click();const key=k=>{const e=new x.window.Event('keydown',{cancelable:true});Object.assign(e,{key:k});get('world-map').dispatchEvent(e);};key('ArrowRight');key('Enter');await until(()=>get('travel-stops').children.length===1);key('Enter');await until(()=>get('travel-stops').children.length===2);assert.equal(get('live-center-map').hidden,false);assert.match(get('travel-selected-hex').textContent,/1,0.*Kosten/);
-  x.preview();await until(()=>get('travel-evaluation').querySelectorAll('dd').length===3);assert.equal(get('travel-preview-dialog').open,false);assert.equal(get('journey-play').disabled,false);get('journey-faster').click();assert.equal(get('journey-speed').textContent,'2×');get('journey-play').click();await until(()=>get('journey-playback-status').textContent.startsWith('Wiedergabe 2×'));await x.ui.stopWorldPlayback();const journey=x.store.sceneWorld(x.w.token,x.scene.id).journey;assert.equal(journey.presentationSpeed,2);assert.equal(journey.route.length,2);assert.equal(get('travel-stops').children.length,0);get('journey-end').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.status==='ended');assert.equal(get('world-map').querySelector('[data-travel-route]'),null);assert.equal(get('journey-end').disabled,true);
+  x.preview();await until(()=>get('travel-evaluation').querySelectorAll('dd').length===3);assert.equal(get('travel-preview-dialog').open,false);assert.equal(rail.scrollTop,212,'inline preview reveals its result only inside the reference rail');assert.equal(get('travel-evaluation').nextElementSibling.id,'world-journey-console','evaluated route leads directly to its start control');assert.equal(get('journey-play').disabled,false);get('journey-faster').click();assert.equal(get('journey-speed').textContent,'2×');get('journey-play').click();await until(()=>get('journey-playback-status').textContent.startsWith('Wiedergabe 2×'));await x.ui.stopWorldPlayback();const journey=x.store.sceneWorld(x.w.token,x.scene.id).journey;assert.equal(journey.presentationSpeed,2);assert.equal(journey.route.length,2);assert.equal(get('travel-stops').children.length,0);get('journey-end').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.status==='ended');assert.equal(get('world-map').querySelector('[data-travel-route]'),null);assert.equal(get('journey-end').disabled,true);
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 
@@ -288,6 +295,20 @@ test('an unavailable live provider cancels placement still waiting for prior edi
 });
 
 
+test('rejected travel start explains the failure beside its controls without moving or losing the route',async()=>{
+ const x=await travelFixture(),get=id=>x.document.getElementById(id);try{
+  x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);get('live-travel-toggle').click();await until(()=>!get('live-travel-host').hidden);x.enter('travel-q','1');x.enter('travel-r','0');x.preview();await until(()=>get('journey-play').disabled===false);
+  const before=x.store.db.serialize(),route=get('travel-stops').textContent,real=x.window.campaign.executeWorld;
+  x.window.campaign.executeWorld=async command=>command.action.kind==='journey'?{ok:false,error:'Begegnung dieser Gruppe vor der Reise abschließen.'}:real(command);
+  get('journey-play').click();await until(()=>get('journey-feedback').textContent.includes('Begegnung dieser Gruppe'));
+  assert.equal(get('journey-feedback').hidden,false);assert.equal(get('journey-feedback').getAttribute('role'),'alert');assert.equal(get('world-journey-console').contains(get('journey-feedback')),true);assert.ok(x.store.db.serialize().equals(before));assert.equal(get('travel-stops').textContent,route);assert.equal(get('journey-play').disabled,false);
+  x.ui.activateWorld(x.w);assert.equal(get('journey-feedback').hidden,true,'a failed old owner must not follow the next scene');
+ }finally{await x.ui.stopWorldPlayback();x.cleanup();}
+});
+
+
+
+
 test('token placement requires its authored map and membership basis, while keyboard placement can use continuous sparse terrain',async()=>{
  const x=await travelFixture();try{
   const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),m=x.store.world(x.w.token).maps.find(m=>m.id===x.map.id);
@@ -297,4 +318,5 @@ test('token placement requires its authored map and membership basis, while keyb
   const clock=x.store.sceneWorld(x.w.token,x.scene.id).scene.clock;x.store.executeWorld(command(basis()));assert.deepEqual(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock,clock);assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).position.q,1);
   const a=basis();a.position.q=2;a.placementBasis.requireAuthored=false;x.store.executeWorld(command(a));assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).position.q,2);assert.deepEqual(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock,clock);
  }finally{x.cleanup();}
+
 });
