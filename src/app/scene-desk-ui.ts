@@ -1,3 +1,4 @@
+import {ScenePlaceBinder} from './scene-place-binder';
 import {campaignLocalId} from '../features/campaign/campaign-contracts';
 import { worldNoteDocument } from "../features/world/world-notes";
 import type { Workspace, Result } from "./contracts";
@@ -32,6 +33,7 @@ let w: Workspace | null = null,
   request = 0,
   searchRequest = 0,
   next: number | null = null;
+let placeBinder:ScenePlaceBinder|null=null,placeKey='';
 let searchPage: { kind: string; query: string } | null = null, searchBusy = false;
 let saving: Promise<boolean> | null = null,
   timer: ReturnType<typeof setTimeout> | null = null,
@@ -59,6 +61,7 @@ export function initSceneDesk(
   creature = add;
   if (initialized) return;
   initialized = true;
+  placeBinder=new ScenePlaceBinder(el('desk-place-material'),open,(ref,current)=>pin(ref,true,current));
   el('desk-create-check').onclick=()=>void checkCreation();
   el('desk-create-reload').onclick=()=>{if(!creationBusy&&!creationRead)void loadCreation();};
   el('desk-create-edit').onclick=()=>{if(creationBusy||!creation||el('desk-create-edit').hidden)return;creation.command=null;creationVersion++;void keepCreation();el('desk-create-edit').hidden=true;el('desk-create-status').textContent='Eingabe prüfen · noch nicht angelegt.';creationControls();};
@@ -86,10 +89,12 @@ export function sceneDeskContext(
 ) {
   w = workspace;
   scene = current;
+  const placeContext=[workspace?.token,current?.id,current?.locationId].join(':'),placeChanged=placeContext!==placeKey;
+  if(placeChanged){placeKey=placeContext;placeBinder?.reset();}
   const changed = (workspace?.token ?? "") + ":" + (current?.id ?? "");
   el("scene-desk").hidden = !workspace || !current;
   if (changed === key) {
-    if (desk && (desk.place?.ref.id ?? null) !== (current?.locationId ?? null))
+    if (placeChanged || desk && (desk.place?.ref.id ?? null) !== (current?.locationId ?? null))
       void refresh();
     return;
   }
@@ -122,6 +127,9 @@ async function refresh(openInitial=true) {
     if (!owns(token, id) || n !== request) return;
     desk = result;
     drawPins();
+    const place=result.place,location=scene?.locationId;
+    if(place&&!place.unavailable&&place.ref.id===location){placeBinder?.show(w!,location!,place.title,()=>owns(token,id)&&scene?.locationId===location);}
+    else placeBinder?.reset();
     if (!content&&openInitial) {
       const initial = result.pins.find((p) => !p.unavailable) ?? result.place;
       if (initial && !initial.unavailable) await open(initial.ref);
@@ -161,14 +169,14 @@ function drawPins() {
     root.textContent =
       "Noch nichts angeheftet. Suche nach Kampagnenwissen oder lege einen Eintrag direkt hier an.";
 }
-async function pin(ref:DeskRef,on:boolean){
+async function pin(ref:DeskRef,on:boolean,stillCurrent:()=>boolean=()=>true){
   if(!w||!scene||!desk)return;
   const current=editorOwner(),token=w.token,id=scene.id,revision=desk.revision;
-  if(!await flushSceneDesk()||!current())return;
+  if(!await flushSceneDesk()||!current()||!stillCurrent())return;
   const result=unwrap(await window.campaign.pinSceneDesk(token,id,revision,ref,on));
   if(!current())return;
   desk=result;drawPins();
-  if(on)await open(ref);
+  if(on&&stillCurrent())await open(ref,stillCurrent);
 }
 function invalidateSearch(changed = false) {
   searchRequest++;
@@ -225,13 +233,13 @@ async function search(more: boolean) {
     }
   }
 }
-async function open(ref: DeskRef) {
+async function open(ref: DeskRef,stillCurrent:()=>boolean=()=>true) {
   if(!w||!scene)return;
   const current=editorOwner(),token=w.token,id=scene.id,n=++request;
-  if(!await flushSceneDesk()||!current()||n!==request)return;
+  if(!await flushSceneDesk()||!current()||n!==request||!stillCurrent())return;
   const readVersion=version;
   const read=await window.campaign.deskContent(token,ref);
-  if(!current()||!owns(token,id)||n!==request)return;
+  if(!current()||!owns(token,id)||n!==request||!stillCurrent())return;
   const c=unwrap(read);
   let retained: PreparationDraft | null = null;
   if (c.note || c.location)
@@ -240,7 +248,7 @@ async function open(ref: DeskRef) {
     if(!current()||n!==request)return;
     retained=unwrap(read);
   }
-  if (!owns(token, id) || n !== request) return;
+  if (!owns(token, id) || n !== request || !stillCurrent()) return;
   if(version!==readVersion)return;
   editorEpoch++;version=0;savedVersion=0;
   content = c;

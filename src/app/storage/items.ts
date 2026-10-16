@@ -1,3 +1,4 @@
+import {npcIdsAtLocation} from './npc-world';
 import {drawCatalogRestock} from './catalog-restock';
 import {checkedCalendarEvent} from '../world-model';
 import {validateRestockTables,prepareRestockTables,drawRestockTable} from './shop-restock';
@@ -77,7 +78,7 @@ function listShops(db:any,cam:string,includeTrashed:boolean,accept?:(s:Shop)=>bo
  return list.sort((a,b)=>a.name.localeCompare(b.name));
 }
 export function readShops(db:any,cam:string,includeTrashed:boolean){return listShops(db,cam,includeTrashed);}
-export function sceneShops(db:any,cam:string,sceneId:string){const scene=db.prepare('SELECT location_id FROM live_scene WHERE campaign_id=? AND id=?').get(cam,sceneId);if(!scene)throw new Error('Scene fehlt.');const actors=new Set(scenePreparation(db,cam,sceneId).groups.flatMap(g=>g.actors).filter(a=>!a.unavailable).map(a=>a.id));return listShops(db,cam,false,s=>s.owner.kind==='location'?s.owner.id===scene.location_id:actors.has(s.owner.id));}
+export function sceneShops(db:any,cam:string,sceneId:string){const scene=db.prepare('SELECT location_id FROM live_scene WHERE campaign_id=? AND id=?').get(cam,sceneId);if(!scene)throw new Error('Scene fehlt.');const actors=new Set(scenePreparation(db,cam,sceneId).groups.flatMap(g=>g.actors).filter(a=>!a.unavailable).map(a=>a.id));if(scene.location_id)for(const id of npcIdsAtLocation(db,cam,scene.location_id))actors.add(id);return listShops(db,cam,false,s=>s.owner.kind==='location'?s.owner.id===scene.location_id:actors.has(s.owner.id));}
 
 function sceneTime(db:any,cam:string,id:string|null){
  if(!id)return{sceneId:null,locationId:null,instantMs:null};

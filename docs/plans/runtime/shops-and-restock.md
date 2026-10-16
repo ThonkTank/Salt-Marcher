@@ -15,6 +15,12 @@ kann denselben Shop mit Bestand, Preisen und Historie neu zuordnen; Handel
 behält die strukturierte Gegenpartei. Vor NPC-/Orttrash fehlen noch die
 Warnung mit betroffenen Shops und eine geführte Neuzuordnung.
 
+Die Sceneprojektion bezieht neben ihren vorbereiteten Figuren die tatsächlich
+am aktuellen Ort platzierten NSCs ein (`npcIdsAtLocation`). Ein Händler braucht
+keine zusätzliche Figurengruppe, damit sein Shop direkt im Livebereich erscheint.
+Lesen verändert weder Position, Bestand noch Ledger; Owner-/Shoptrash und
+Handelsregeln bleiben beim vorhandenen Shopreader/-writer.
+
 `restockDue` schreibt mit bestätigter Scenezeit/Weltfolgen atomar. Nur eine
 fällige automatische Regel benötigt den Shopowner: fehlende Owner manueller
 oder erst später fälliger Shops blockieren keine unabhängige Zeit. Shopstruktur
