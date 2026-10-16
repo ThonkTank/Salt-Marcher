@@ -42,7 +42,7 @@ const get = <T extends HTMLElement>(id: string) => document.getElementById(id) a
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-let context: Workspace | null = null, data: LiveView | null = null, sources: Preparation | null = null;
+let context: Workspace | null = null, data: LiveView | null = null, sources: Preparation | null = null,liveReadRequest=0;
 let sessionChronicle:ChronicleView|null=null,sessionChronicleError='',sessionChronicleRequest=0;
 type RecapText=import('./live-contracts').SessionRecapDraft;
 type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;saving?:Promise<boolean>};
@@ -107,6 +107,7 @@ const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes,
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:sceneDraft?.id===data.scene?.id?sceneDraft?.locationId??null:data.scene?.locationId??null}:null;
 export function activateLive(workspace: Workspace) {
+  liveReadRequest++;
   if(context){const retained=recapDrafts.get(context.campaign.id),text=recapFields();if(retained&&!equal(retained.text,text)){retained.text=text;retained.dirty=true;}}
   const draft=workspace?recapDrafts.get(workspace.campaign.id):undefined;
   get<HTMLTextAreaElement>('live-session-summary').value=draft?.text.summary??'';get<HTMLTextAreaElement>('live-session-handoff').value=draft?.text.handoff??'';
@@ -131,11 +132,12 @@ export function activateLive(workspace: Workspace) {
 }
 export async function openLive(planId?: string, visitId?: string) {
   if (!context) { tell('Bitte zuerst eine Kampagne öffnen.', true); return; }
-  const token = context.token;
+  const owner=context,token=owner.token,n=++liveReadRequest,current=()=>context===owner&&n===liveReadRequest;
   sessionChronicle=null;sessionChronicleError='Chronik wird geladen.';void refreshLiveSession();
   try {
-    const [liveResult,prepResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, '')]),live=unwrap(liveResult),prep=unwrap(prepResult);
-    if (context?.token !== token) return;
+    const [liveResult,prepResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, '')]);
+    if (!current()||!context) return;
+    const live=unwrap(liveResult),prep=unwrap(prepResult);
     let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     if(recap.readError&&!live.recapDraftError&&!recap.dirty){recap.text=live.recapDraft??{summary:'',handoff:''};recap.basis=live.recapDraft??null;get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     recap.readError=live.recapDraftError;showRecapSave();
@@ -146,7 +148,7 @@ export async function openLive(planId?: string, visitId?: string) {
     sceneDraft = live.scene ? structuredClone(live.scene) : null;
     render();
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
-  } catch (error) { data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true); }
+  } catch (error) { if(!current())return;data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true); }
 }
 export async function openPlannedVisitReview(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
  const owner=context,token=owner?.token,current=()=>stillCurrent()&&context===owner&&context?.token===token;if(!token||!current())return false;
@@ -188,6 +190,7 @@ function busy(on: boolean, structural = false, textSave = false) {
 }
 function mergeAck(ack: LiveAck, action: LiveAction) {
   if (!data) return;
+  liveReadRequest++;
   const priorScene = data.scene, priorCharacter = originalCharacter();
   data.rosterRevision = ack.rosterRevision;if(ack.archivedRosterCount!==undefined)data.archivedRosterCount=ack.archivedRosterCount;
   if (ack.character) {
@@ -222,6 +225,7 @@ function mergeAck(ack: LiveAck, action: LiveAction) {
 }
 async function execute(action: LiveAction): Promise<LiveAck | null> {
   if (!context || blocked || request) return null;
+  liveReadRequest++;
   const focusRevision = data?.focusRevision,previousLocationId=data?.scene?.locationId, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
   const structural = ['focus', 'move', 'membership', 'archive-character'].includes(action.kind);
   // Blur starts a text save before the user's button click arrives. Keep queued
@@ -267,6 +271,7 @@ export async function flushLive(): Promise<boolean> {
   return okay ? flushLive() : false;
 }
 function schedule() {
+  liveReadRequest++;
   if (timer) clearTimeout(timer);
   tell(blocked ? 'Schreiben gesperrt. Der Entwurf bleibt offen.' : 'Eingabe offen – noch nicht gespeichert.', blocked);
   if (!composing && !blocked) timer = setTimeout(() => { void flushLive(); }, 700);
