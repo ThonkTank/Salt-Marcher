@@ -1,0 +1,22 @@
+--- a/src/identity.py
++++ b/src/identity.py
+@@ -23,5 +23,5 @@
+  for d in [path]+sorted(x for x in path.rglob('*') if x.is_dir()):
+   groups.append(dict(path=str(d),limits={n:(d/n).read_text().strip() for n in limit_names if (d/n).exists()}))
+   for pid in (d/'cgroup.procs').read_text().split():members.append(dict(relative_cgroup=str(d.relative_to(path)),**proc(int(pid))))
+- shared=next(x for x in path.parents if x.name=='codex-dungeon-jobs.slice')
+- return dict(captured_mono_ns=time.monotonic_ns(),path=str(path),groups=groups,members=members,shared=dict(path=str(shared),limits={n:(shared/n).read_text().strip() for n in limit_names if (shared/n).exists()}))
++ shared=next((x for x in path.parents if x.name=='codex-dungeon-jobs.slice'),None)
++ return dict(captured_mono_ns=time.monotonic_ns(),path=str(path),groups=groups,members=members,shared=dict(path=str(shared),limits={n:(shared/n).read_text().strip() for n in limit_names if (shared/n).exists()}) if shared else None)
+--- a/src/service.py
++++ b/src/service.py
+@@ -30,7 +30,8 @@
+     def on_signal(sig,frame):
+         interrupted.append(sig);receipt(event='termination_signal',signal=sig,normal=False)
+     signal.signal(signal.SIGTERM,on_signal);signal.signal(signal.SIGINT,on_signal)
+-    if 'codex-dungeon-qa-' not in me.get('cgroup',''):raise RuntimeError('required QA cgroup absent')
++    unit=me.get('cgroup','').strip().rsplit('/',1)[-1]
++    if not (unit.startswith('codex-owned-') and unit.endswith('.service')):raise RuntimeError('owned UI process group absent')
+     auth=session/'Xauthority'
+     def field(b):return struct.pack('!H',len(b))+b
+     cookie=secrets.token_bytes(16);number=None

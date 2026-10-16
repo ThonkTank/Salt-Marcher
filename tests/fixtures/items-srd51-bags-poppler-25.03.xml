@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd">
+
+<pdf2xml producer="poppler" version="25.03.0">
+<page number="209" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="0" size="16" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="1" size="16" family="DXJJCX+GillSans-SemiBold" color="#000000"/>
+	<fontspec id="2" size="13" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="3" size="13" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="4" size="18" family="DXJJCX+GillSans-SemiBold" color="#943634"/>
+	<fontspec id="5" size="15" family="FNCRUV+Cambria" color="#000000"/>
+	<fontspec id="6" size="15" family="UHIGMC+Cambria" color="#000000"/>
+	<fontspec id="7" size="15" family="EMJVBH+Cambria" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>209</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="116" height="16" font="2"><b>d10    Damage   Type   </b></text>
+<text top="108" left="233" width="117" height="16" font="2"><b>d10    Damage   Type   </b></text>
+<text top="124" left="93" width="10" height="16" font="3">1   </text>
+<text top="124" left="123" width="27" height="16" font="3">Acid   </text>
+<text top="124" left="240" width="10" height="16" font="3">6   </text>
+<text top="124" left="270" width="49" height="16" font="3">Necrotic   </text>
+<text top="141" left="93" width="10" height="16" font="3">2   </text>
+<text top="141" left="123" width="28" height="16" font="3">Cold   </text>
+<text top="141" left="240" width="10" height="16" font="3">7   </text>
+<text top="141" left="270" width="40" height="16" font="3">Poison   </text>
+<text top="157" left="93" width="10" height="16" font="3">3   </text>
+<text top="157" left="123" width="24" height="16" font="3">Fire   </text>
+<text top="157" left="240" width="10" height="16" font="3">8   </text>
+<text top="157" left="270" width="43" height="16" font="3">Psychic   </text>
+<text top="174" left="93" width="10" height="16" font="3">4   </text>
+<text top="174" left="123" width="33" height="16" font="3">Force   </text>
+<text top="174" left="240" width="10" height="16" font="3">9   </text>
+<text top="174" left="270" width="45" height="16" font="3">Radiant   </text>
+<text top="190" left="93" width="10" height="16" font="3">5   </text>
+<text top="190" left="123" width="53" height="16" font="3">Lightning   </text>
+<text top="190" left="236" width="17" height="16" font="3">10   </text>
+<text top="190" left="270" width="49" height="16" font="3">Thunder   </text>
+<text top="220" left="86" width="184" height="21" font="4"><b>Armor of Vulnerability </b></text>
+<text top="242" left="86" width="266" height="17" font="5"><i>Armor   (plate),   rare   (requires   attunement)   </i></text>
+<text top="269" left="86" width="316" height="17" font="6">While   wearing   this   armor,   you   have   resistance   to   </text>
+<text top="286" left="86" width="312" height="17" font="6">one   of   the   following   damage   types:   bludgeoning,   </text>
+<text top="304" left="86" width="315" height="17" font="6">piercing,   or   slashing.   The   GM   chooses   the   type   or   </text>
+<text top="321" left="86" width="157" height="17" font="6">determines   it   randomly.   </text>
+<text top="339" left="100" width="41" height="17" font="7"><i><b>Curse.</b></i></text>
+<text top="339" left="142" width="280" height="17" font="6">   This   armor   is   cursed,   a   fact   that   is   revealed   </text>
+<text top="356" left="86" width="89" height="17" font="6">only   when   an   </text>
+<text top="356" left="176" width="47" height="17" font="5"><i>identify</i></text>
+<text top="356" left="223" width="184" height="17" font="6">   spell   is   cast   on   the   armor   or   </text>
+<text top="374" left="86" width="319" height="17" font="6">you   attune   to   it.   Attuning   to   the   armor   curses   you   </text>
+<text top="392" left="86" width="185" height="17" font="6">until   you   are   targeted   by   the   </text>
+<text top="392" left="271" width="83" height="17" font="5"><i>remove   curse</i></text>
+<text top="392" left="354" width="54" height="17" font="6">   spell   or   </text>
+<text top="409" left="86" width="323" height="17" font="6">similar   magic;   removing   the   armor   fails   to   end   the   </text>
+<text top="427" left="86" width="338" height="17" font="6">curse.   While   cursed,   you   have   vulnerability   to   two   of   </text>
+<text top="444" left="86" width="323" height="17" font="6">the   three   damage   types   associated   with   the   armor   </text>
+<text top="462" left="86" width="274" height="17" font="6">(not   the   one   to   which   it   grants   resistance).   </text>
+<text top="493" left="86" width="185" height="21" font="4"><b>Arrow-Catching Shield </b></text>
+<text top="514" left="86" width="271" height="17" font="5"><i>Armor   (shield),   rare   (requires   attunement)   </i></text>
+<text top="541" left="86" width="316" height="17" font="6">You   gain   a   +2   bonus   to   AC   against   ranged   attacks   </text>
+<text top="559" left="86" width="337" height="17" font="6">while   you   wield   this   shield.   This   bonus   is   in   addition   </text>
+<text top="576" left="86" width="301" height="17" font="6">to   the   shield’s   normal   bonus   to   AC.   In   addition,   </text>
+<text top="594" left="86" width="338" height="17" font="6">whenever   an   attacker   makes   a   ranged   attack   against   </text>
+<text top="611" left="86" width="294" height="17" font="6">a   target   within   5   feet   of   you,   you   can   use   your   </text>
+<text top="629" left="86" width="327" height="17" font="6">reaction   to   become   the   target   of   the   attack   instead.   </text>
+<text top="660" left="86" width="137" height="21" font="4"><b>Arrow of Slaying </b></text>
+<text top="681" left="86" width="171" height="17" font="5"><i>Weapon   (arrow),   very   rare   </i></text>
+<text top="708" left="86" width="21" height="17" font="6">An   </text>
+<text top="708" left="107" width="102" height="17" font="5"><i>arrow   of   slaying</i></text>
+<text top="708" left="209" width="212" height="17" font="6">   is   a   magic   weapon   meant   to   slay   </text>
+<text top="726" left="86" width="339" height="17" font="6">a   particular   kind   of   creature.   Some   are   more   focused   </text>
+<text top="743" left="86" width="258" height="17" font="6">than   others;   for   example,   there   are   both   </text>
+<text top="743" left="344" width="63" height="17" font="5"><i>arrows   of   </i></text>
+<text top="761" left="86" width="93" height="17" font="5"><i>dragon   slaying</i></text>
+<text top="761" left="179" width="31" height="17" font="6">   and   </text>
+<text top="761" left="210" width="186" height="17" font="5"><i>arrows   of   blue   dragon   slaying</i></text>
+<text top="761" left="396" width="30" height="17" font="6">.   If   a   </text>
+<text top="778" left="86" width="292" height="17" font="6">creature   belonging   to   the   type,   race,   or   group   </text>
+<text top="796" left="86" width="122" height="17" font="6">associated   with   an   </text>
+<text top="796" left="208" width="102" height="17" font="5"><i>arrow   of   slaying</i></text>
+<text top="796" left="310" width="94" height="17" font="6">   takes   damage   </text>
+<text top="814" left="86" width="312" height="17" font="6">from   the   arrow,   the   creature   must   make   a   DC   17   </text>
+<text top="831" left="86" width="308" height="17" font="6">Constitution   saving   throw,   taking   an   extra   6d10   </text>
+<text top="849" left="86" width="315" height="17" font="6">piercing   damage   on   a   failed   save,   or   half   as   much   </text>
+<text top="867" left="86" width="219" height="17" font="6">extra   damage   on   a   successful   one.   </text>
+<text top="884" left="86" width="68" height="17" font="6">    Once   an   </text>
+<text top="884" left="155" width="102" height="17" font="5"><i>arrow   of   slaying</i></text>
+<text top="884" left="256" width="165" height="17" font="6">   deals   its   extra   damage   to   </text>
+<text top="901" left="86" width="277" height="17" font="6">a   creature,   it   becomes   a   nonmagical   arrow.   </text>
+<text top="919" left="86" width="342" height="17" font="6">    Other   types   of   magic   ammunition   of   this   kind   exist,   </text>
+<text top="937" left="86" width="50" height="17" font="6">such   as   </text>
+<text top="937" left="136" width="93" height="17" font="5"><i>bolts   of   slaying</i></text>
+<text top="937" left="230" width="196" height="17" font="6">   meant   for   a   crossbow,   though   </text>
+<text top="954" left="86" width="171" height="17" font="6">arrows   are   most   common.   </text>
+<text top="108" left="493" width="105" height="21" font="4"><b>Bag of Beans </b></text>
+<text top="130" left="493" width="132" height="17" font="5"><i>Wondrous   item,   rare   </i></text>
+<text top="156" left="493" width="322" height="17" font="6">Inside   this   heavy   cloth   bag   are   3d4   dry   beans.   The   </text>
+<text top="174" left="493" width="338" height="17" font="6">bag   weighs   1/2   pound   plus   1/4   pound   for   each   bean   </text>
+<text top="191" left="493" width="73" height="17" font="6">it   contains.   </text>
+<text top="209" left="493" width="334" height="17" font="6">    If   you   dump   the   bag’s   contents   out   on   the   ground,   </text>
+<text top="226" left="493" width="335" height="17" font="6">they   explode   in   a   10-­‐‑foot   radius,   extending   from   the   </text>
+<text top="244" left="493" width="339" height="17" font="6">beans.   Each   creature   in   the   area,   including   you,   must   </text>
+<text top="262" left="493" width="341" height="17" font="6">make   a   DC   15   Dexterity   saving   throw,   taking   5d4   fire   </text>
+<text top="279" left="493" width="332" height="17" font="6">damage   on   a   failed   save,   or   half   as   much   damage   on   </text>
+<text top="297" left="493" width="329" height="17" font="6">a   successful   one.   The   fire   ignites   flammable   objects   </text>
+<text top="314" left="493" width="287" height="17" font="6">in   the   area   that   aren’t   being   worn   or   carried.   </text>
+<text top="332" left="493" width="331" height="17" font="6">    If   you   remove   a   bean   from   the   bag,   plant   it   in   dirt   </text>
+<text top="350" left="493" width="311" height="17" font="6">or   sand,   and   then   water   it,   the   bean   produces   an   </text>
+<text top="367" left="493" width="326" height="17" font="6">effect   1   minute   later   from   the   ground   where   it   was   </text>
+<text top="385" left="493" width="297" height="17" font="6">planted.   The   GM   can   choose   an   effect   from   the   </text>
+<text top="402" left="493" width="333" height="17" font="6">following   table,   determine   it   randomly,   or   create   an   </text>
+<text top="420" left="493" width="42" height="17" font="6">effect.   </text>
+<text top="446" left="498" width="31" height="16" font="2"><b>d100   </b></text>
+<text top="446" left="547" width="35" height="16" font="2"><b>Effect   </b></text>
+<text top="463" left="505" width="17" height="16" font="3">01   </text>
+<text top="463" left="547" width="232" height="16" font="3">5d4   toadstools   sprout.   If   a   creature   eats   a   </text>
+<text top="479" left="547" width="264" height="16" font="3">toadstool,   roll   any   die.   On   an   odd   roll,   the   eater   </text>
+<text top="496" left="547" width="248" height="16" font="3">must   succeed   on   a   DC   15   Constitution   saving   </text>
+<text top="512" left="547" width="259" height="16" font="3">throw   or   take   5d6   poison   damage   and   become   </text>
+<text top="529" left="547" width="258" height="16" font="3">poisoned   for   1   hour.   On   an   even   roll,   the   eater   </text>
+<text top="545" left="547" width="233" height="16" font="3">gains   5d6   temporary   hit   points   for   1   hour.   </text>
+<text top="562" left="495" width="306" height="16" font="3">02–10    A   geyser   erupts   and   spouts   water,   beer,   berry   </text>
+<text top="578" left="547" width="263" height="16" font="3">juice,   tea,   vinegar,   wine,   or   oil   (GM’s   choice)   30   </text>
+<text top="595" left="547" width="183" height="16" font="3">feet   into   the   air   for   1d12   rounds.   </text>
+<text top="611" left="495" width="305" height="16" font="3">11–20    A   treant   sprouts.   There’s   a   50   percent   chance   </text>
+<text top="628" left="547" width="230" height="16" font="3">that   the   treant   is   chaotic   evil   and   attacks.   </text>
+<text top="644" left="495" width="289" height="16" font="3">21–30    An   animate,   immobile   stone   statue   in   your   </text>
+<text top="661" left="547" width="249" height="16" font="3">likeness   rises.   It   makes   verbal   threats   against   </text>
+<text top="677" left="547" width="241" height="16" font="3">you.   If   you   leave   it   and   others   come   near,   it   </text>
+<text top="694" left="547" width="270" height="16" font="3">describes   you   as   the   most   heinous   of   villains   and   </text>
+<text top="710" left="547" width="265" height="16" font="3">directs   the   newcomers   to   find   and   attack   you.   If   </text>
+<text top="726" left="547" width="254" height="16" font="3">you   are   on   the   same   plane   of   existence   as   the   </text>
+<text top="743" left="547" width="237" height="16" font="3">statue,   it   knows   where   you   are.   The   statue   </text>
+<text top="760" left="547" width="195" height="16" font="3">becomes   inanimate   after   24   hours.   </text>
+<text top="776" left="495" width="305" height="16" font="3">31–40    A   campfire   with   blue   flames   springs   forth   and   </text>
+<text top="792" left="547" width="254" height="16" font="3">burns   for   24   hours   (or   until   it   is   extinguished).   </text>
+<text top="809" left="495" width="187" height="16" font="3">41–50    1d6   +   6   shriekers   sprout   </text>
+<text top="825" left="495" width="318" height="16" font="3">51–60    1d4   +   8   bright   pink   toads   crawl   forth.   Whenever   </text>
+<text top="842" left="547" width="257" height="16" font="3">a   toad   is   touched,   it   transforms   into   a   Large   or   </text>
+<text top="858" left="547" width="225" height="16" font="3">smaller   monster   of   the   GM’s   choice.   The   </text>
+<text top="875" left="547" width="262" height="16" font="3">monster   remains   for   1   minute,   then   disappears   </text>
+<text top="891" left="547" width="167" height="16" font="3">in   a   puff   of   bright   pink   smoke.   </text>
+<text top="908" left="495" width="282" height="16" font="3">61–70    A   hungry   bulette   burrows   up   and   attacks.   </text>
+<text top="924" left="495" width="313" height="16" font="3">71–80    A   fruit   tree   grows.   It   has   1d10   +   20   fruit,   1d8   of   </text>
+<text top="941" left="547" width="229" height="16" font="3">which   act   as   randomly   determined   magic   </text>
+<text top="957" left="547" width="265" height="16" font="3">potions,   while   one   acts   as   an   ingested   poison   of   </text>
+<text top="974" left="547" width="266" height="16" font="3">the   GM’s   choice.   The   tree   vanishes   after   1   hour.   </text>
+<text top="990" left="547" width="262" height="16" font="3">Picked   fruit   remains,   retaining   any   magic   for   30   </text>
+<text top="1006" left="547" width="31" height="16" font="3">days.   </text>
+<text top="1023" left="495" width="312" height="16" font="3">81–90    A   nest   of   1d4   +   3   eggs   springs   up.   Any   creature   </text>
+</page>
+<page number="210" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="8" size="18" family="WWROEK+Calibri" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>210</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="140" width="270" height="16" font="3">that   eats   an   egg   must   make   a   DC   20   Constitution   </text>
+<text top="124" left="140" width="254" height="16" font="3">saving   throw.   On   a   successful   save,   a   creature   </text>
+<text top="141" left="140" width="268" height="16" font="3">permanently   increases   its   lowest   ability   score   by   </text>
+<text top="157" left="140" width="268" height="16" font="3">1,   randomly   choosing   among   equally   low   scores.   </text>
+<text top="174" left="140" width="258" height="16" font="3">On   a   failed   save,   the   creature   takes   10d6   force   </text>
+<text top="190" left="140" width="243" height="16" font="3">damage   from   an   internal   magical   explosion.   </text>
+<text top="207" left="88" width="299" height="16" font="3">91–99    A   pyramid   with   a   60-­‐foot-­‐square   base   bursts   </text>
+<text top="223" left="140" width="247" height="16" font="3">upward.   Inside   is   a   sarcophagus   containing   a   </text>
+<text top="240" left="140" width="240" height="16" font="3">mummy   lord.   The   pyramid   is   treated   as   the   </text>
+<text top="256" left="140" width="267" height="16" font="3">mummy   lord’s   lair,   and   its   sarcophagus   contains   </text>
+<text top="273" left="140" width="159" height="16" font="3">treasure   of   the   GM’s   choice.   </text>
+<text top="289" left="98" width="17" height="16" font="3">00   </text>
+<text top="289" left="140" width="269" height="16" font="3">A   giant   beanstalk   sprouts,   growing   to   a   height   of   </text>
+<text top="306" left="140" width="254" height="16" font="3">the   GM’s   choice.   The   top   leads   where   the   GM   </text>
+<text top="322" left="140" width="264" height="16" font="3">chooses,   such   as   to   a   great   view,   a   cloud   giant’s   </text>
+<text top="339" left="140" width="220" height="16" font="3">castle,   or   a   different   plane   of   existence.   </text>
+<text top="369" left="86" width="141" height="21" font="4"><b>Bag of Devouring </b></text>
+<text top="390" left="86" width="162" height="17" font="5"><i>Wondrous   item,   very   rare   </i></text>
+<text top="417" left="86" width="219" height="17" font="6">This   bag   superficially   resembles   a   </text>
+<text top="417" left="306" width="93" height="17" font="5"><i>bag   of   holding   </i></text>
+<text top="417" left="399" width="25" height="17" font="6">but   </text>
+<text top="434" left="86" width="321" height="17" font="6">is   a   feeding   orifice   for   a   gigantic   extradimensional   </text>
+<text top="452" left="86" width="299" height="17" font="6">creature.   Turning   the   bag   inside   out   closes   the   </text>
+<text top="469" left="86" width="47" height="17" font="6">orifice.   </text>
+<text top="487" left="86" width="340" height="17" font="6">    The   extradimensional   creature   attached   to   the   bag   </text>
+<text top="505" left="86" width="332" height="17" font="6">can   sense   whatever   is   placed   inside   the   bag.   Animal   </text>
+<text top="522" left="86" width="301" height="17" font="6">or   vegetable   matter   placed   wholly   in   the   bag   is   </text>
+<text top="540" left="86" width="309" height="17" font="6">devoured   and   lost   forever.   When   part   of   a   living   </text>
+<text top="557" left="86" width="300" height="17" font="6">creature   is   placed   in   the   bag,   as   happens   when   </text>
+<text top="575" left="86" width="306" height="17" font="6">someone   reaches   inside   it,   there   is   a   50   percent   </text>
+<text top="593" left="86" width="324" height="17" font="6">chance   that   the   creature   is   pulled   inside   the   bag.   A   </text>
+<text top="610" left="86" width="318" height="17" font="6">creature   inside   the   bag   can   use   its   action   to   try   to   </text>
+<text top="628" left="86" width="301" height="17" font="6">escape   with   a   successful   DC   15   Strength   check.   </text>
+<text top="645" left="86" width="334" height="17" font="6">Another   creature   can   use   its   action   to   reach   into   the   </text>
+<text top="663" left="86" width="335" height="17" font="6">bag   to   pull   a   creature   out,   doing   so   with   a   successful   </text>
+<text top="680" left="86" width="336" height="17" font="6">DC   20   Strength   check   (provided   it   isn’t   pulled   inside   </text>
+<text top="698" left="86" width="336" height="17" font="6">the   bag   first).   Any   creature   that   starts   its   turn   inside   </text>
+<text top="716" left="86" width="257" height="17" font="6">the   bag   is   devoured,   its   body   destroyed.   </text>
+<text top="733" left="86" width="332" height="17" font="6">    Inanimate   objects   can   be   stored   in   the   bag,   which   </text>
+<text top="751" left="86" width="342" height="17" font="6">can   hold   a   cubic   foot   of   such   material.   However,   once   </text>
+<text top="769" left="86" width="333" height="17" font="6">each   day,   the   bag   swallows   any   objects   inside   it   and   </text>
+<text top="786" left="86" width="326" height="17" font="6">spits   them   out   into   another   plane   of   existence.   The   </text>
+<text top="804" left="86" width="226" height="17" font="6">GM   determines   the   time   and   plane.   </text>
+<text top="821" left="86" width="318" height="17" font="6">    If   the   bag   is   pierced   or   torn,   it   is   destroyed,   and   </text>
+<text top="839" left="86" width="305" height="17" font="6">anything   contained   within   it   is   transported   to   a   </text>
+<text top="856" left="86" width="236" height="17" font="6">random   location   on   the   Astral   Plane.   </text>
+<text top="887" left="86" width="121" height="21" font="4"><b>Bag of Holding </b></text>
+<text top="909" left="86" width="175" height="17" font="5"><i>Wondrous   item,   uncommon   </i></text>
+<text top="936" left="86" width="321" height="17" font="6">This   bag   has   an   interior   space   considerably   larger   </text>
+<text top="953" left="86" width="291" height="17" font="6">than   its   outside   dimensions,   roughly   2   feet   in   </text>
+<text top="971" left="86" width="330" height="17" font="6">diameter   at   the   mouth   and   4   feet   deep.   The   bag   can   </text>
+<text top="988" left="86" width="340" height="17" font="6">hold   up   to   500   pounds,   not   exceeding   a   volume   of   64   </text>
+<text top="1006" left="86" width="331" height="17" font="6">cubic   feet.   The   bag   weighs   15   pounds,   regardless   of   </text>
+<text top="108" left="493" width="287" height="17" font="6">its   contents.   Retrieving   an   item   from   the   bag   </text>
+<text top="126" left="493" width="122" height="17" font="6">requires   an   action.   </text>
+<text top="143" left="493" width="288" height="17" font="6">    If   the   bag   is   overloaded,   pierced,   or   torn,   it   </text>
+<text top="161" left="493" width="300" height="17" font="6">ruptures   and   is   destroyed,   and   its   contents   are   </text>
+<text top="178" left="493" width="310" height="17" font="6">scattered   in   the   Astral   Plane.   If   the   bag   is   turned   </text>
+<text top="196" left="493" width="338" height="17" font="6">inside   out,   its   contents   spill   forth,   unharmed,   but   the   </text>
+<text top="213" left="493" width="316" height="17" font="6">bag   must   be   put   right   before   it   can   be   used   again.   </text>
+<text top="231" left="493" width="336" height="17" font="6">Breathing   creatures   inside   the   bag   can   survive   up   to   </text>
+<text top="249" left="493" width="305" height="17" font="6">a   number   of   minutes   equal   to   10   divided   by   the   </text>
+<text top="266" left="493" width="309" height="17" font="6">number   of   creatures   (minimum   1   minute),   after   </text>
+<text top="284" left="493" width="226" height="17" font="6">which   time   they   begin   to   suffocate.   </text>
+<text top="301" left="493" width="74" height="17" font="6">    Placing   a   </text>
+<text top="301" left="567" width="89" height="17" font="5"><i>bag   of   holding</i></text>
+<text top="301" left="657" width="64" height="17" font="6">   inside   an   </text>
+<text top="319" left="493" width="236" height="17" font="6">extradimensional   space   created   by   a   </text>
+<text top="319" left="729" width="42" height="17" font="5"><i>handy   </i></text>
+<text top="337" left="493" width="63" height="17" font="5"><i>haversack</i></text>
+<text top="337" left="556" width="6" height="17" font="6">,   </text>
+<text top="337" left="562" width="83" height="17" font="5"><i>portable   hole</i></text>
+<text top="337" left="646" width="164" height="17" font="6">,   or   similar   item   instantly   </text>
+<text top="354" left="493" width="322" height="17" font="6">destroys   both   items   and   opens   a   gate   to   the   Astral   </text>
+<text top="372" left="493" width="324" height="17" font="6">Plane.   The   gate   originates   where   the   one   item   was   </text>
+<text top="390" left="493" width="331" height="17" font="6">placed   inside   the   other.   Any   creature   within   10   feet   </text>
+<text top="407" left="493" width="335" height="17" font="6">of   the   gate   is   sucked   through   it   to   a   random   location   </text>
+<text top="424" left="493" width="335" height="17" font="6">on   the   Astral   Plane.   The   gate   then   closes.   The   gate   is   </text>
+<text top="442" left="493" width="237" height="17" font="6">one-­‐‑way   only   and   can’t   be   reopened.   </text>
+<text top="473" left="493" width="108" height="21" font="4"><b>Bag of Tricks </b></text>
+<text top="495" left="493" width="175" height="17" font="5"><i>Wondrous   item,   uncommon   </i></text>
+<text top="521" left="493" width="340" height="17" font="6">This   ordinary   bag,   made   from   gray,   rust,   or   tan   cloth,   </text>
+<text top="539" left="493" width="322" height="17" font="6">appears   empty.   Reaching   inside   the   bag,   however,   </text>
+<text top="557" left="493" width="339" height="17" font="6">reveals   the   presence   of   a   small,   fuzzy   object.   The   bag   </text>
+<text top="574" left="493" width="123" height="17" font="6">weighs   1/2   pound.   </text>
+<text top="591" left="493" width="338" height="17" font="6">    You   can   use   an   action   to   pull   the   fuzzy   object   from   </text>
+<text top="609" left="493" width="327" height="17" font="6">the   bag   and   throw   it   up   to   20   feet.   When   the   object   </text>
+<text top="627" left="493" width="341" height="17" font="6">lands,   it   transforms   into   a   creature   you   determine   by   </text>
+<text top="644" left="493" width="262" height="17" font="6">rolling   a   d8   and   consulting   the   table   that   </text>
+<text top="662" left="493" width="284" height="17" font="6">corresponds   to   the   bag’s   color.   The   creature   </text>
+<text top="680" left="493" width="336" height="17" font="6">vanishes   at   the   next   dawn   or   when   it   is   reduced   to   0   </text>
+<text top="697" left="493" width="68" height="17" font="6">hit   points.   </text>
+<text top="715" left="493" width="271" height="17" font="6">    The   creature   is   friendly   to   you   and   your   </text>
+<text top="732" left="493" width="330" height="17" font="6">companions,   and   it   acts   on   your   turn.   You   can   use   a   </text>
+<text top="750" left="493" width="326" height="17" font="6">bonus   action   to   command   how   the   creature   moves   </text>
+<text top="768" left="493" width="336" height="17" font="6">and   what   action   it   takes   on   its   next   turn,   or   to   give   it   </text>
+<text top="785" left="493" width="319" height="17" font="6">general   orders,   such   as   to   attack   your   enemies.   In   </text>
+<text top="803" left="493" width="313" height="17" font="6">the   absence   of   such   orders,   the   creature   acts   in   a   </text>
+<text top="820" left="493" width="215" height="17" font="6">fashion   appropriate   to   its   nature.   </text>
+<text top="838" left="493" width="320" height="17" font="6">    Once   three   fuzzy   objects   have   been   pulled   from   </text>
+<text top="855" left="493" width="316" height="17" font="6">the   bag,   the   bag   can’t   be   used   again   until   the   next   </text>
+<text top="873" left="493" width="42" height="17" font="6">dawn.   </text>
+<text top="899" left="493" width="138" height="22" font="8"><b>Gray   Bag   of   Tricks   </b></text>
+<text top="926" left="493" width="82" height="16" font="2"><b>d8    Creature   </b></text>
+<text top="942" left="496" width="10" height="16" font="3">1   </text>
+<text top="942" left="523" width="43" height="16" font="3">Weasel   </text>
+<text top="959" left="496" width="10" height="16" font="3">2   </text>
+<text top="959" left="523" width="51" height="16" font="3">Giant   rat   </text>
+<text top="976" left="496" width="10" height="16" font="3">3   </text>
+<text top="976" left="523" width="42" height="16" font="3">Badger   </text>
+<text top="992" left="496" width="10" height="16" font="3">4   </text>
+<text top="992" left="523" width="29" height="16" font="3">Boar   </text>
+<text top="1008" left="496" width="10" height="16" font="3">5   </text>
+<text top="1008" left="523" width="47" height="16" font="3">Panther   </text>
+<text top="1027" left="496" width="10" height="16" font="3">6   </text>
+<text top="1027" left="523" width="74" height="16" font="3">Giant   badger   </text>
+</page>
+<page number="211" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="9" size="15" family="ZWSWFB+Symbol" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>211</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="90" width="10" height="16" font="3">7   </text>
+<text top="108" left="117" width="53" height="16" font="3">Dire   wolf   </text>
+<text top="124" left="90" width="10" height="16" font="3">8   </text>
+<text top="124" left="117" width="52" height="16" font="3">Giant   elk   </text>
+<text top="167" left="86" width="135" height="22" font="8"><b>Rust   Bag   of   Tricks   </b></text>
+<text top="194" left="86" width="82" height="16" font="2"><b>d8    Creature   </b></text>
+<text top="211" left="90" width="10" height="16" font="3">1   </text>
+<text top="211" left="117" width="21" height="16" font="3">Rat   </text>
+<text top="227" left="90" width="10" height="16" font="3">2   </text>
+<text top="227" left="117" width="25" height="16" font="3">Owl   </text>
+<text top="243" left="90" width="10" height="16" font="3">3   </text>
+<text top="243" left="117" width="42" height="16" font="3">Mastiff   </text>
+<text top="260" left="90" width="10" height="16" font="3">4   </text>
+<text top="260" left="117" width="30" height="16" font="3">Goat   </text>
+<text top="276" left="90" width="10" height="16" font="3">5   </text>
+<text top="276" left="117" width="60" height="16" font="3">Giant   goat   </text>
+<text top="293" left="90" width="10" height="16" font="3">6   </text>
+<text top="293" left="117" width="61" height="16" font="3">Giant   boar   </text>
+<text top="309" left="90" width="10" height="16" font="3">7   </text>
+<text top="309" left="117" width="26" height="16" font="3">Lion   </text>
+<text top="326" left="90" width="10" height="16" font="3">8   </text>
+<text top="326" left="117" width="67" height="16" font="3">Brown   bear   </text>
+<text top="369" left="86" width="130" height="22" font="8"><b>Tan   Bag   of   Tricks   </b></text>
+<text top="395" left="86" width="82" height="16" font="2"><b>d8    Creature   </b></text>
+<text top="412" left="90" width="10" height="16" font="3">1   </text>
+<text top="412" left="117" width="35" height="16" font="3">Jackal   </text>
+<text top="428" left="90" width="10" height="16" font="3">2   </text>
+<text top="428" left="117" width="25" height="16" font="3">Ape   </text>
+<text top="445" left="90" width="10" height="16" font="3">3   </text>
+<text top="445" left="117" width="45" height="16" font="3">Baboon   </text>
+<text top="461" left="90" width="10" height="16" font="3">4   </text>
+<text top="461" left="117" width="53" height="16" font="3">Axe   beak   </text>
+<text top="478" left="90" width="10" height="16" font="3">5   </text>
+<text top="478" left="117" width="60" height="16" font="3">Black   bear   </text>
+<text top="494" left="90" width="10" height="16" font="3">6   </text>
+<text top="494" left="117" width="74" height="16" font="3">Giant   weasel   </text>
+<text top="511" left="90" width="10" height="16" font="3">7   </text>
+<text top="511" left="117" width="69" height="16" font="3">Giant   hyena   </text>
+<text top="527" left="90" width="10" height="16" font="3">8   </text>
+<text top="527" left="117" width="30" height="16" font="3">Tiger   </text>
+<text top="557" left="86" width="114" height="21" font="4"><b>Bead of Force </b></text>
+<text top="579" left="86" width="132" height="17" font="5"><i>Wondrous   item,   rare   </i></text>
+<text top="605" left="86" width="327" height="17" font="6">This   small   black   sphere   measures   3/4   of   an   inch   in   </text>
+<text top="623" left="86" width="318" height="17" font="6">diameter   and   weighs   an   ounce.   Typically,   1d4   +   4   </text>
+<text top="640" left="86" width="86" height="17" font="5"><i>beads   of   force</i></text>
+<text top="640" left="173" width="129" height="17" font="6">   are   found   together.   </text>
+<text top="658" left="86" width="328" height="17" font="6">    You   can   use   an   action   to   throw   the   bead   up   to   60   </text>
+<text top="676" left="86" width="332" height="17" font="6">feet.   The   bead   explodes   on   impact   and   is   destroyed.   </text>
+<text top="693" left="86" width="326" height="17" font="6">Each   creature   within   a   10-­‐‑foot   radius   of   where   the   </text>
+<text top="711" left="86" width="306" height="17" font="6">bead   landed   must   succeed   on   a   DC   15   Dexterity   </text>
+<text top="728" left="86" width="332" height="17" font="6">saving   throw   or   take   5d4   force   damage.   A   sphere   of   </text>
+<text top="746" left="86" width="294" height="17" font="6">transparent   force   then   encloses   the   area   for   1   </text>
+<text top="764" left="86" width="303" height="17" font="6">minute.   Any   creature   that   failed   the   save   and   is   </text>
+<text top="781" left="86" width="312" height="17" font="6">completely   within   the   area   is   trapped   inside   this   </text>
+<text top="799" left="86" width="335" height="17" font="6">sphere.   Creatures   that   succeeded   on   the   save,   or   are   </text>
+<text top="816" left="86" width="331" height="17" font="6">partially   within   the   area,   are   pushed   away   from   the   </text>
+<text top="834" left="86" width="342" height="17" font="6">center   of   the   sphere   until   they   are   no   longer   inside   it.   </text>
+<text top="851" left="86" width="320" height="17" font="6">Only   breathable   air   can   pass   through   the   sphere’s   </text>
+<text top="869" left="86" width="220" height="17" font="6">wall.   No   attack   or   other   effect   can.   </text>
+<text top="887" left="86" width="316" height="17" font="6">    An   enclosed   creature   can   use   its   action   to   push   </text>
+<text top="904" left="86" width="322" height="17" font="6">against   the   sphere’s   wall,   moving   the   sphere   up   to   </text>
+<text top="922" left="86" width="337" height="17" font="6">half   the   creature’s   walking   speed.   The   sphere   can   be   </text>
+<text top="939" left="86" width="316" height="17" font="6">picked   up,   and   its   magic   causes   it   to   weigh   only   1   </text>
+<text top="957" left="86" width="330" height="17" font="6">pound,   regardless   of   the   weight   of   creatures   inside.   </text>
+<text top="108" left="493" width="167" height="21" font="4"><b>Belt of Dwarvenkind </b></text>
+<text top="130" left="493" width="275" height="17" font="5"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="156" left="493" width="300" height="17" font="6">While   wearing   this   belt,   you   gain   the   following   </text>
+<text top="174" left="493" width="59" height="17" font="6">benefits:   </text>
+<text top="205" left="493" width="7" height="15" font="9">•</text>
+<text top="201" left="507" width="276" height="17" font="6">Your   Constitution   score   increases   by   2,   to   a</text>
+<text top="219" left="507" width="103" height="17" font="6">maximum   of   20.</text>
+<text top="241" left="493" width="7" height="15" font="9">•</text>
+<text top="237" left="507" width="297" height="17" font="6">You   have   advantage   on   Charisma   (Persuasion)</text>
+<text top="255" left="507" width="249" height="17" font="6">checks   made   to   interact   with   dwarves.   </text>
+<text top="277" left="493" width="331" height="17" font="6">In   addition,   while   attuned   to   the   belt,   you   have   a   50   </text>
+<text top="294" left="493" width="321" height="17" font="6">percent   chance   each   day   at   dawn   of   growing   a   full   </text>
+<text top="312" left="493" width="325" height="17" font="6">beard   if   you’re   capable   of   growing   one,   or   a   visibly   </text>
+<text top="329" left="493" width="244" height="17" font="6">thicker   beard   if   you   already   have   one.   </text>
+<text top="347" left="493" width="295" height="17" font="6">    If   you   aren’t   a   dwarf,   you   gain   the   following   </text>
+<text top="365" left="493" width="273" height="17" font="6">additional   benefits   while   wearing   the   belt:   </text>
+<text top="396" left="493" width="7" height="15" font="9">•</text>
+<text top="392" left="507" width="290" height="17" font="6">You   have   advantage   on   saving   throws   against</text>
+<text top="410" left="507" width="299" height="17" font="6">poison,   and   you   have   resistance   against   poison</text>
+<text top="427" left="507" width="53" height="17" font="6">damage.</text>
+<text top="450" left="493" width="7" height="15" font="9">•</text>
+<text top="446" left="507" width="288" height="17" font="6">You   have   darkvision   out   to   a   range   of   60   feet.</text>
+<text top="468" left="493" width="7" height="15" font="9">•</text>
+<text top="464" left="507" width="262" height="17" font="6">You   can   speak,   read,   and   write   Dwarvish.</text>
+<text top="495" left="493" width="178" height="21" font="4"><b>Belt of Giant Strength </b></text>
+<text top="517" left="493" width="325" height="17" font="5"><i>Wondrous   item,   rarity   varies   (requires   attunement)   </i></text>
+<text top="543" left="493" width="340" height="17" font="6">While   wearing   this   belt,   your   Strength   score   changes   </text>
+<text top="561" left="493" width="311" height="17" font="6">to   a   score   granted   by   the   belt.   If   your   Strength   is   </text>
+<text top="579" left="493" width="333" height="17" font="6">already   equal   to   or   greater   than   the   belt’s   score,   the   </text>
+<text top="596" left="493" width="166" height="17" font="6">item   has   no   effect   on   you.   </text>
+<text top="613" left="493" width="332" height="17" font="6">    Six   varieties   of   this   belt   exist,   corresponding   with   </text>
+<text top="631" left="493" width="326" height="17" font="6">and   having   rarity   according   to   the   six   kinds   of   true   </text>
+<text top="649" left="493" width="73" height="17" font="6">giants.   The   </text>
+<text top="649" left="566" width="168" height="17" font="5"><i>belt   of   stone   giant   strength</i></text>
+<text top="649" left="734" width="55" height="17" font="6">   and   the   </text>
+<text top="649" left="789" width="42" height="17" font="5"><i>belt   of   </i></text>
+<text top="666" left="493" width="121" height="17" font="5"><i>frost   giant   strength</i></text>
+<text top="666" left="614" width="211" height="17" font="6">   look   different,   but   they   have   the   </text>
+<text top="684" left="493" width="79" height="17" font="6">same   effect.   </text>
+<text top="711" left="493" width="30" height="16" font="2"><b>Type   </b></text>
+<text top="711" left="602" width="51" height="16" font="2"><b>Strength   </b></text>
+<text top="711" left="678" width="36" height="16" font="2"><b>Rarity   </b></text>
+<text top="727" left="493" width="51" height="16" font="3">Hill   giant   </text>
+<text top="727" left="620" width="17" height="16" font="3">21   </text>
+<text top="727" left="683" width="28" height="16" font="3">Rare   </text>
+<text top="743" left="493" width="96" height="16" font="3">Stone/frost   giant   </text>
+<text top="743" left="620" width="17" height="16" font="3">23   </text>
+<text top="743" left="670" width="54" height="16" font="3">Very   rare   </text>
+<text top="760" left="493" width="54" height="16" font="3">Fire   giant   </text>
+<text top="760" left="620" width="17" height="16" font="3">25   </text>
+<text top="760" left="670" width="54" height="16" font="3">Very   rare   </text>
+<text top="776" left="493" width="65" height="16" font="3">Cloud   giant   </text>
+<text top="776" left="620" width="17" height="16" font="3">27   </text>
+<text top="776" left="667" width="60" height="16" font="3">Legendary   </text>
+<text top="793" left="493" width="67" height="16" font="3">Storm   giant   </text>
+<text top="793" left="620" width="17" height="16" font="3">29   </text>
+<text top="793" left="667" width="60" height="16" font="3">Legendary   </text>
+<text top="823" left="493" width="120" height="21" font="4"><b>Berserker Axe </b></text>
+<text top="844" left="493" width="293" height="17" font="5"><i>Weapon   (any   axe),   rare   (requires   attunement)   </i></text>
+<text top="871" left="493" width="304" height="17" font="6">You   gain   a   +1   bonus   to   attack   and   damage   rolls   </text>
+<text top="888" left="493" width="339" height="17" font="6">made   with   this   magic   weapon.   In   addition,   while   you   </text>
+<text top="906" left="493" width="337" height="17" font="6">are   attuned   to   this   weapon,   your   hit   point   maximum   </text>
+<text top="924" left="493" width="303" height="17" font="6">increases   by   1   for   each   level   you   have   attained.   </text>
+<text top="941" left="493" width="3" height="17" font="6">   </text>
+<text top="941" left="507" width="41" height="17" font="7"><i><b>Curse.</b></i></text>
+<text top="941" left="548" width="286" height="17" font="6">   This   axe   is   cursed,   and   becoming   attuned   to   </text>
+<text top="959" left="493" width="318" height="17" font="6">it   extends   the   curse   to   you.   As   long   as   you   remain   </text>
+<text top="976" left="493" width="296" height="17" font="6">cursed,   you   are   unwilling   to   part   with   the   axe,   </text>
+<text top="994" left="493" width="318" height="17" font="6">keeping   it   within   reach   at   all   times.   You   also   have   </text>
+<text top="1012" left="493" width="314" height="17" font="6">disadvantage   on   attack   rolls   with   weapons   other   </text>
+</page>
+<outline>
+<item page="1">SRD-CC_V1.1 preamble.pdf</item>
+<item page="3">SRD-OGL_V5.1.pdf</item>
+</outline>
+</pdf2xml>

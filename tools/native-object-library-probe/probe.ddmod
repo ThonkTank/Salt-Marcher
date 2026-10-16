@@ -1,0 +1,8 @@
+{
+  "name": "Codex Object Library Probe",
+  "unique_id": "Codex.ObjectLibraryProbe",
+  "version": "1.0.0",
+  "author": "Codex",
+  "description": "Read-only snapshots of the active native object library.",
+  "dd_version": "1.2.0.1"
+}

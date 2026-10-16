@@ -1,0 +1,8 @@
+{
+  "name": "Codex Selection Probe",
+  "unique_id": "Codex.SelectionProbe",
+  "version": "1.0.1",
+  "author": "Codex",
+  "description": "Read-only QA snapshots of native selection state on isolated maps.",
+  "dd_version": "1.2.0.1"
+}

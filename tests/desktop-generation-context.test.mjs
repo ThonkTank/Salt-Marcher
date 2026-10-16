@@ -1,0 +1,82 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {buildSync} from 'esbuild';
+import {parseHTML} from 'linkedom';
+buildSync({stdin:{contents:"export * from './src/app/generation-ui'; export {initCatalog,activateCatalog} from './src/app/catalog-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/generation-context-ui.cjs',bundle:true,platform:'node',format:'cjs'});
+const require=createRequire(import.meta.url),settle=async()=>{for(let i=0;i<15;i++)await new Promise(r=>setImmediate(r));};
+async function fixture(t){
+ const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document};Object.assign(globalThis,{window,document});t.after(()=>Object.assign(globalThis,previous));
+ for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:select.options[0]?.getAttribute('value')??''});
+ const el=id=>document.getElementById(id),ok=value=>({ok:true,value}),tables=[{id:'watch',name:'Waldsaum',entries:[],trashed:false,scope:'campaign'}],calls=[],messages=[],accepted=[];let filters={},party=true;
+ const plan={id:'plan',revision:1,name:'Fixed patrol',notes:'Original',entries:[{id:'existing',creatureId:'goblin',count:2,grouped:false}],party:[{id:'hero',name:'Ada',level:1,count:1}]};
+ const run=request=>({id:'run',seed:request.seed,request,revision:1,preset:{name:'Standard',revision:1},warnings:[],candidates:[{creatureId:'goblin'}],plans:[{name:'Waldsaum',sources:[{id:'goblin',name:'Goblin'}],entries:[{id:'g',creatureId:'goblin',count:1}],assessment:{baseXp:50,adjustedXp:50,difficulty:'easy'}}],acceptedPlanIds:[]});
+ let generate=async request=>ok(run(request));window.campaign={encounterTables:async()=>ok(tables),lootTables:async()=>ok([]),generatorRegistry:async()=>ok({revision:1,presets:[]}),generationRuns:async()=>ok([]),generationSources:async()=>ok({sources:[],factions:[],locations:[]}),npcs:async()=>ok({rows:[],next:null,total:0}),generateEncounters:async(_token,r)=>{calls.push(r);return generate(r);},acceptGeneration:async c=>{accepted.push(c);return ok({id:'accepted',name:'Accepted'});},encounterPlans:async()=>ok([]),creatures:async()=>ok({rows:[],total:0,offset:0,limit:25})};
+ delete require.cache[require.resolve('../.build/generation-context-ui.cjs')];const ui=require('../.build/generation-context-ui.cjs'),w={token:'one',campaign:{id:'camp'}};ui.initGeneration((...args)=>messages.push(args),{plan:async()=>party?plan:null,creature:()=>null,filters:()=>filters,info:()=>null,accept:async()=>{}});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}ui.activateGeneration(w);await settle();
+ el('catalog-reset').onclick=()=>{filters={};ui.generationCatalogFiltersChanged();};
+ return{el,ui,w,plan,calls,messages,accepted,setFilters:q=>{filters=q;ui.generationCatalogFiltersChanged();},setParty:value=>{party=value;},setGenerate:fn=>{generate=fn;},run,make:async()=>{el('generation-form').onsubmit({preventDefault(){}});await settle();},choice:()=>el('generation-preview').querySelector('article button')};
+}
+test('generation reveals every effective catalog filter without pagination or sorting noise',async t=>{
+ const x=await fixture(t);assert.deepEqual(x.ui.catalogFilterSummary({text:' Dragon ',crMin:0,crMax:2,types:['Dragon'],offset:25,sort:'hp',direction:'desc',limit:25}),['Name: Dragon','HG ab: 0','HG bis: 2','Typ: Dragon']);
+ const table=x.el('generation-tables').querySelector('input');table.checked=true;x.el('generation-time').value='night';x.setFilters({text:'Dragon',hpMax:10});assert.match(x.el('generation-catalog-summary').textContent,/Name: Dragon.*HP bis: 10/);x.el('generation-clear-catalog').click();assert.equal(table.checked,true);assert.equal(x.el('generation-time').value,'night');assert.match(x.el('generation-catalog-summary').textContent,/Keine zusätzlichen/);assert.equal(x.el('generation-clear-catalog').hidden,true);
+});
+test('catalog filter changes invalidate old proposal controls and preserve their actual basis',async t=>{
+ const x=await fixture(t);x.setFilters({text:'Goblin'});await x.make();assert.equal(x.choice().disabled,false);assert.match(x.el('generation-preview').textContent,/Katalogfilter dieser Vorschau: Name: Goblin/);
+ x.setFilters({text:'Dragon'});assert.equal(x.choice().disabled,true);assert.match(x.el('generation-preview').textContent,/Einstellungen geändert/);assert.match(x.el('generation-preview').textContent,/Katalogfilter dieser Vorschau: Name: Goblin/);
+ await x.make();assert.equal(x.calls[1].filters.text,'Dragon');assert.equal(x.choice().disabled,false);x.ui.generationPlanningChanged([{id:'hero',name:'Ada',level:2,count:4}]);assert.equal(x.choice().disabled,true);
+});
+test('missing party and generator failures are explained beside the action, stale errors cannot replace a new workspace',async t=>{
+ const x=await fixture(t);x.setParty(false);await x.make();assert.match(x.el('generation-feedback').textContent,/Zur Planungsparty/);assert.equal(x.calls.length,0);
+ x.setParty(true);x.setGenerate(async()=>({ok:false,error:'Keine Kreaturen nach Tabellen und Filtern.'}));await x.make();assert.match(x.el('generation-feedback').textContent,/Keine Kreaturen/);x.setFilters({text:'Dragon'});assert.equal(x.el('generation-feedback').textContent,'');
+ let finish;x.setGenerate(()=>new Promise(r=>finish=r));x.el('generation-form').onsubmit({preventDefault(){}});await settle();x.ui.activateGeneration({...x.w,token:'two'});finish({ok:false,error:'ALTER Fehler'});await settle();assert.doesNotMatch(x.el('generation-feedback').textContent,/ALTER/);
+});
+test('actual catalog input and reset notify the generator about their shared filters',async t=>{
+ const x=await fixture(t);x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await settle();
+ x.el('catalog-form').reset=()=>{for(const c of x.el('catalog-form').querySelectorAll('input'))c.value='';x.el('catalog-direction').value='asc';};
+ x.el('catalog-search').value='Dragon';x.el('catalog-search').oninput();assert.match(x.el('generation-catalog-summary').textContent,/Name: Dragon/);x.el('generation-clear-catalog').click();assert.match(x.el('generation-catalog-summary').textContent,/Keine zusätzlichen/);await new Promise(r=>setTimeout(r,250));
+});
+
+test('an out-of-band proposal states requested target and actual deviation before its deliberate acceptance',async t=>{
+ const x=await fixture(t);x.el('generation-difficulty').value='medium';x.setGenerate(async request=>{const run=x.run(request),p=run.plans[0];p.assessment={baseXp:300,adjustedXp:600,difficulty:'deadly'};p.composition={metrics:{adjustedXp:600,xpDelta:350}};return{ok:true,value:run};});
+ await x.make();const card=x.el('generation-preview').querySelector('article');assert.match(card.textContent,/Angefragt: Mittel.*Ziel 250 angepasste XP/);assert.match(card.textContent,/140 % über dem XP-Ziel/);assert.match(x.choice().textContent,/Abweichenden Vorschlag/);
+});
+
+const held=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
+function historyRun(x,id){const run=x.run({seed:id,filters:{}});run.id=id;run.plans[0].name='Vorschlag '+id;return run;}
+async function chooseHistory(x,id){x.el('generation-history').value=id;x.el('generation-history').onchange();await settle();}
+test('history selection removes prior preview authority and detached controls cannot accept a different loaded run',async t=>{
+ const x=await fixture(t);await x.make();const prior=x.choice(),pause=held();window.campaign.generationRun=()=>pause.promise;await chooseHistory(x,'second');assert.equal(!!x.choice(),false);assert.match(x.el('generation-feedback').textContent,/geladen/);prior.onclick();await settle();assert.deepEqual(x.accepted,[]);
+ pause.resolve({ok:true,value:historyRun(x,'second')});await settle();assert.match(x.el('generation-preview').textContent,/Vorschlag second/);prior.onclick();await settle();assert.deepEqual(x.accepted,[]);x.choice().onclick();await settle();assert.equal(x.accepted[0].runId,'second');
+});
+for(const transport of [false,true])test(`failed history read stays local, cannot accept prior preview and explicit retry recovers (${transport?'transport':'storage'})`,async t=>{
+ const x=await fixture(t);await x.make();window.campaign.generationRun=async()=>{if(transport)throw new Error('Historienquelle ausgefallen');return{ok:false,error:'Historienquelle ausgefallen'};};await chooseHistory(x,'retry');assert.equal(!!x.choice(),false);assert.match(x.el('generation-feedback').textContent,/Historienquelle ausgefallen/);assert.deepEqual(x.accepted,[]);window.campaign.generationRun=async()=>({ok:true,value:historyRun(x,'retry')});await chooseHistory(x,'retry');assert.equal(x.choice().disabled,false);assert.match(x.el('generation-preview').textContent,/Vorschlag retry/);
+});
+test('foreign history identity cannot be displayed or accepted as the requested proposal',async t=>{const x=await fixture(t);await x.make();window.campaign.generationRun=async()=>({ok:true,value:historyRun(x,'other')});await chooseHistory(x,'requested');assert.equal(!!x.choice(),false);assert.match(x.el('generation-feedback').textContent,/Auswahl/);assert.deepEqual(x.accepted,[]);});
+test('clearing a history selection invalidates its pending read and removes prior actions',async t=>{const x=await fixture(t);await x.make();const pause=held();window.campaign.generationRun=()=>pause.promise;await chooseHistory(x,'pending');await chooseHistory(x,'');pause.resolve({ok:true,value:historyRun(x,'pending')});await settle();assert.equal(!!x.choice(),false);assert.deepEqual(x.accepted,[]);});
+test('late history errors cannot clear a newer loaded preview',async t=>{const x=await fixture(t),pause=held();window.campaign.generationRun=()=>pause.promise;await chooseHistory(x,'old');window.campaign.generationRun=async()=>({ok:true,value:historyRun(x,'current')});await chooseHistory(x,'current');x.messages.length=0;pause.resolve({ok:false,error:'Old failure'});await settle();assert.match(x.el('generation-preview').textContent,/Vorschlag current/);assert.doesNotMatch(x.el('generation-feedback').textContent,/Old failure/);assert.deepEqual(x.messages,[]);});
+
+test('linked-loot controls stay bound to their displayed preview and use only that run seed',async t=>{
+ const x=await fixture(t),loot={id:'linked',revision:1,name:'Coins',entries:[],trashed:false},rolled=[];window.campaign.lootTables=async()=>({ok:true,value:[loot]});window.campaign.rollLoot=async c=>{rolled.push(c);return{ok:true,value:{items:[]}};};x.setGenerate(async request=>{const run=x.run(request);run.lootTables=[{id:loot.id,revision:1}];return{ok:true,value:run};});await x.make();const old=x.el('generation-preview').querySelectorAll('article button')[1];assert(!!old);window.campaign.generationRun=async()=>{const run=historyRun(x,'second');run.lootTables=[{id:loot.id,revision:1}];return{ok:true,value:run};};await chooseHistory(x,'second');old.onclick();await settle();assert.deepEqual(rolled,[]);x.el('generation-preview').querySelectorAll('article button')[1].onclick();await settle();assert.equal(rolled.length,1);assert.equal(rolled[0].seed,'second|loot|0');
+});
+test('a history event cannot replace a preview while its explicit acceptance is pending',async t=>{const x=await fixture(t),pause=held(),reads=[];await x.make();window.campaign.acceptGeneration=()=>pause.promise;window.campaign.generationRun=async(...args)=>{reads.push(args);return{ok:true,value:historyRun(x,'other')};};x.choice().onclick();await chooseHistory(x,'other');assert.deepEqual(reads,[]);pause.resolve({ok:true,value:{id:'saved',name:'Saved'}});await settle();assert.match(x.el('generation-preview').textContent,/Gespeicherte Vorlage öffnen/);});
+test('adopting the same planning party does not falsely stale an accepted or historical preview',async t=>{const x=await fixture(t);await x.make();x.ui.generationPlanningChanged(x.calls[0].party.map(p=>({...p,id:'copy-'+p.id})));assert.equal(x.choice().disabled,false);assert.doesNotMatch(x.el('generation-preview').textContent,/Einstellungen geändert/);x.setFilters({text:'Different'});x.ui.generationPlanningChanged(x.calls[0].party);assert.equal(x.choice().disabled,true);});
+
+test('fill mode sends the saved plan basis and a later roster edit invalidates its visible proposal',async t=>{const x=await fixture(t);x.ui.generationPlanningChanged(x.plan.party,x.plan);x.el('generation-fill').checked=true;await x.make();assert.deepEqual(x.calls[0].fillPlan,{id:'plan',revision:1});assert.equal(x.choice().disabled,false);x.ui.generationPlanningChanged(x.plan.party,{...x.plan,entries:[{...x.plan.entries[0],count:3}]});assert.equal(x.choice().disabled,true);assert.match(x.el('generation-preview').textContent,/Einstellungen geändert/);});
+
+test('effective preset defaults reach requests while explicit choices survive refresh until reset',async t=>{
+ const x=await fixture(t);let defaults={difficulty:'easy',amount:'few',balance:'even',diversity:'high'};
+ window.campaign.generatorRegistry=async()=>({ok:true,value:{revision:2,effectiveId:'patrol',presets:[{id:'patrol',name:'Patrouillen',config:{generationDefaults:defaults}}]}});
+ await x.ui.refreshGeneration();await x.make();for(const[key,value]of Object.entries(defaults))assert.equal(x.calls[0][key],value);
+ x.el('generation-difficulty').value='hard';x.el('generation-difficulty').oninput();
+ defaults={difficulty:'medium',amount:'many',balance:'varied',diversity:'low'};await x.ui.refreshGeneration();assert.equal(x.el('generation-difficulty').value,'hard');assert.equal(x.el('generation-amount').value,'many');assert.match(x.el('generation-defaults-source').textContent,/Eigene Auswahl/);
+ await x.make();assert.equal(x.calls[1].difficulty,'hard');assert.equal(x.calls[1].amount,'many');assert.equal(x.choice().disabled,false);
+ x.el('generation-use-defaults').onclick();assert.equal(x.el('generation-difficulty').value,'medium');assert.equal(x.choice().disabled,true);await x.make();assert.equal(x.calls[2].difficulty,'medium');
+ x.ui.activateGeneration({...x.w,token:'new',campaign:{id:'other'}});await settle();assert.equal(x.el('generation-difficulty').value,'medium');assert.doesNotMatch(x.el('generation-defaults-source').textContent,/Eigene Auswahl/);
+});
+test('planning prerequisites and the actual party are visible before generation',async t=>{
+ const x=await fixture(t);x.ui.generationPlanningChanged(null);assert.match(x.el('generation-party-context').textContent,/zuerst.*Vorlage/);
+ x.ui.generationPlanningChanged([]);assert.match(x.el('generation-party-context').textContent,/leer/);
+ x.ui.generationPlanningChanged([{name:'Reisende',level:3,count:4}]);assert.match(x.el('generation-party-context').textContent,/4 × Level 3/);
+ x.ui.generationPlanningChanged([{name:'Reisende',level:null,count:4}]);assert.match(x.el('generation-party-context').textContent,/Level fehlen/);
+});

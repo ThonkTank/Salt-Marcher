@@ -1,0 +1,81 @@
+import type {CombatAction,CombatState,Combatant} from './combat-contracts';
+import type {CreatureAction} from '../features/catalog/creature-catalog';
+import {creatureAverageDamage,creatureActionRolls} from './dice-formula';
+import {areaTargetDamage} from './area-damage';
+import {damageTypes,isDamageType,type DamageScale,type DamageType} from './damage-adjustment';
+type AreaAction=Extract<CombatAction,{kind:'area-damage'}>;
+type Row={actor:Combatant;check:HTMLInputElement;save:HTMLSelectElement;defense:HTMLSelectElement;preview:HTMLElement};
+const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
+const names:Record<DamageType,string>={acid:'Säure',bludgeoning:'Wucht',cold:'Kälte',fire:'Feuer',force:'Energie',lightning:'Blitz',necrotic:'Nekrotisch',piercing:'Stich',poison:'Gift',psychic:'Psychisch',radiant:'Gleißend',slashing:'Hieb',thunder:'Schall'};
+const choose=(select:HTMLSelectElement,value:string)=>{const options=[...select.querySelectorAll('option')];for(const option of options)option.selected=false;const chosen=options.find(o=>o.value===value);if(chosen)chosen.selected=true;};
+/** One typed damage pool, independent saves and defenses, one command and one undo. */
+export class CombatAreaPanel{
+ private combat:CombatState|null=null;private token:string|null=null;private blocked=true;private busy=false;
+ private draft:{combatId:string;revision:number;source?:AreaAction['source'];legendary?:AreaAction['legendary'];dc:number|null;fixedType?:DamageType;rows:Row[]}|null=null;
+ private title=node('h2');private amount=node('input');private type=node('select');private rows=node('div');private status=node('p');private hint=node('p');private apply=node('button','Schaden gemeinsam anwenden');private cancel=node('button','Abbrechen');private party=node('button','Party auswählen');
+ constructor(private root:HTMLElement,private execute:(action:CombatAction,revision:number)=>Promise<boolean>){
+  root.className='combat-area';root.hidden=true;this.amount.type='number';this.amount.min='1';this.amount.max='1000000';this.amount.step='1';this.amount.id='combat-area-amount';this.type.id='combat-area-type';
+  for(const [value,text]of [['','Schadensart wählen…'],...damageTypes.map(t=>[t,names[t]+' ('+t+')']),['manual','Schon berechneter Schaden']]){const o=node('option',text);o.value=value!;this.type.append(o);}choose(this.type,'');
+  const amountLabel=node('label','Gemeinsamer Schaden');amountLabel.htmlFor=this.amount.id;const typeLabel=node('label','Schadensart');typeLabel.htmlFor=this.type.id;
+  const tools=node('div');tools.className='combat-area-tools';const amountField=node('div'),typeField=node('div');amountField.append(amountLabel,this.amount);typeField.append(typeLabel,this.type);tools.append(amountField,typeField,this.party);
+  const headings=node('div');headings.className='combat-area-row combat-area-head';headings.append(node('span','Ziel'),node('span','Rettungswurf / Anteil'),node('span','Abwehr'));
+  this.status.setAttribute('role','status');this.hint.className='caption';this.apply.id='combat-area-apply';this.cancel.id='combat-area-cancel';this.rows.id='combat-area-targets';this.apply.type=this.cancel.type=this.party.type='button';
+  const footer=node('div');footer.className='toolbar';footer.append(this.apply,this.cancel);
+  root.append(this.title,tools,this.hint,headings,this.rows,this.status,footer);
+  this.cancel.onclick=()=>{if(!this.busy&&!this.blocked)this.close();};root.addEventListener('cancel',e=>{e.preventDefault();if(!this.busy&&!this.blocked)this.close();});
+  this.amount.oninput=()=>this.update();this.type.onchange=()=>{for(const row of this.draft?.rows??[])choose(row.defense,this.type.value==='manual'?'full':'auto');this.update();};
+  this.party.onclick=()=>{for(const row of this.draft?.rows??[])row.check.checked=!!row.actor.characterId&&row.actor.healthKnown!==false;this.update();};this.apply.onclick=()=>void this.commit();
+ }
+ private close(){this.draft=null;this.root.hidden=true;const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'&&typeof dialog.close==='function')dialog.close();else this.root.removeAttribute('open');}
+ context(combat:CombatState|null,token:string|null,blocked:boolean){
+  if(this.token!==token||this.combat?.id!==combat?.id){this.close();this.busy=false;}
+  this.combat=combat;this.token=token;this.blocked=blocked;this.update();
+ }
+ open(action?:{participantId:string;action:CreatureAction;legendary?:AreaAction['legendary']}){
+  const combat=this.combat;if(!combat||this.blocked||!['running','preparing'].includes(combat.phase))return;
+  if(this.draft){this.root.focus();return;}
+  const rolls=action?creatureActionRolls(action.action):[],dc=rolls.find(p=>p.kind==='save')?.dc??null,parts=rolls.filter(p=>p.kind==='damage'),known=[...new Set(parts.map(p=>p.damageType))],fixedType=known.length===1&&isDamageType(known[0])?known[0]:undefined;
+  this.draft={combatId:combat.id,revision:combat.revision,dc,fixedType,rows:[],...(action?{source:{participantId:action.participantId,actionId:action.action.id},legendary:action.legendary}:{})};
+  this.title.textContent=action?combat.participants.find(p=>p.id===action.participantId)?.name+' · '+action.action.name+(dc?' · SG '+dc:' · bestätigter Treffer'):'Flächenschaden';
+  this.amount.value=String(action&&(parts.length<=1||fixedType)?creatureAverageDamage(action.action)??'':'');choose(this.type,fixedType??'');
+  this.hint.textContent=parts.length>1&&!fixedType?'Mehrere Schadensarten: Betrag und Schadensart für diesen Anteil eintragen. Weitere Anteile getrennt anwenden.':'Spieler würfeln am Tisch. Ihr Ergebnis und die Abwehr werden getrennt berücksichtigt: erst der Rettungswurf, dann Resistenz oder Verwundbarkeit.';
+  this.rows.replaceChildren();
+  for(const p of combat.participants){
+   const row=node('div'),label=node('label'),check=node('input'),save=node('select'),defense=node('select'),preview=node('p');row.className='combat-area-row';preview.className='combat-area-preview';check.type='checkbox';check.value=p.id;check.setAttribute('aria-label','Ziel '+p.name);label.className='check-label';label.append(check,node('span',p.name+(p.healthKnown===false?' · HP offen':' · '+p.hp+'/'+p.maxHp+' HP')));
+   save.dataset.role='save';save.setAttribute('aria-label','Rettungswurf für '+p.name);defense.dataset.role='defense';defense.setAttribute('aria-label','Abwehr für '+p.name);
+   for(const [value,text]of [['full',dc?'Fehlgeschlagen · voll':'Voll'],['half',dc?'Bestanden · halb':'Halb (bestanden)'],['none','Kein Schaden']]){const o=node('option',text);o.value=value!;save.append(o);}choose(save,'full');
+   for(const [value,text]of [['auto','Statblock'],['full','Voll (manuell)'],['half','Resistenz · halb'],['double','Verwundbar · doppelt'],['none','Immun · kein Schaden']]){const o=node('option',text);o.value=value!;defense.append(o);}choose(defense,'auto');
+   check.onchange=save.onchange=defense.onchange=()=>this.update();row.append(label,save,defense,preview);this.rows.append(row);this.draft.rows.push({actor:p,check,save,defense,preview});
+  }
+  this.root.hidden=false;this.update();const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'){if(typeof dialog.showModal==='function')dialog.showModal();else this.root.setAttribute('open','');}else this.root.scrollIntoView({block:'nearest'});
+  this.amount.focus();this.amount.select?.();
+ }
+ private update(){
+  const draft=this.draft;if(!draft)return;
+  const stale=this.combat?.revision!==draft.revision||!this.combat||!['preparing','running'].includes(this.combat.phase),disabled=this.blocked||this.busy||stale,amount=Number(this.amount.value),manual=this.type.value==='manual',type=isDamageType(this.type.value)?this.type.value:undefined;
+  let count=0,valid=manual||!!type,total=0;
+  for(const row of draft.rows){
+   const {check,save,defense,preview}=row,actor=this.combat?.participants.find(p=>p.id===check.value);
+   check.disabled=disabled||!actor||actor.healthKnown===false;save.disabled=disabled||!check.checked;defense.disabled=disabled||!check.checked||manual;
+   preview.hidden=!check.checked;preview.textContent='';
+   if(!check.checked)continue;count++;
+   if(!this.amount.value||!Number.isSafeInteger(amount)||amount<1||amount>1000000||!actor||actor.healthKnown===false){valid=false;continue;}
+   if(!type&&!manual){preview.textContent='Schadensart wählen, damit die Zielabwehr berücksichtigt wird.';continue;}
+   const result=areaTargetDamage(this.combat!,actor,amount,save.value as 'full'|'half'|'none',type,manual?'full':defense.value as DamageScale);
+   if(result.amount===null){valid=false;preview.textContent=result.note;continue;}total+=result.amount;
+   const hp=Math.max(0,actor.hp-Math.max(0,result.amount-actor.tempHp)),temp=Math.max(0,actor.tempHp-result.amount);
+   preview.textContent=(save.value==='half'?'Rettungswurf: '+result.afterSave+' · ':'')+(manual?'Abwehr bereits eingerechnet':result.note)+' · '+result.amount+' Schaden → '+hp+'/'+actor.maxHp+' HP'+(temp?' + '+temp+' temp.':'');
+  }
+  this.amount.disabled=this.party.disabled=disabled;this.type.disabled=disabled||!!draft.fixedType;this.cancel.disabled=this.busy||this.blocked;
+  this.apply.disabled=disabled||!count||!valid||!this.amount.value||!Number.isSafeInteger(amount)||amount<1||amount>1000000;
+  this.status.textContent=stale?'Kampfstand geändert. Abbrechen und die Aktion mit dem aktuellen Stand neu öffnen.':count+' Ziele · '+(valid?total+' wirksamer Schaden gesamt · ':'')+'eine Bestätigung, eine Rücknahme. Temporäre HP und Konzentration werden berücksichtigt.';
+ }
+ private async commit(){
+  const draft=this.draft;if(!draft||this.apply.disabled)return;
+  const type=isDamageType(this.type.value)?this.type.value:undefined;
+  const targets=draft.rows.filter(row=>row.check.checked).map(row=>({participantId:row.actor.id,scale:row.save.value as 'full'|'half'|'none',defense:this.type.value==='manual'?'full' as const:row.defense.value as DamageScale}));
+  this.busy=true;this.update();
+  try{const ok=await this.execute({kind:'area-damage',amount:Number(this.amount.value),targets,...(type?{damageType:type}:{}),...(draft.source?{source:draft.source}:{}),...(draft.legendary?{legendary:draft.legendary}:{})},draft.revision);if(this.draft===draft&&ok){this.close();this.busy=false;}}
+  finally{if(this.draft===draft){this.busy=false;this.update();}}
+ }
+}

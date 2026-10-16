@@ -1,0 +1,59 @@
+/* Scoped to room reading views; source text and overview images are untouched. */
+.dnd-play-map-pane { display: flex; flex-direction: column; min-height: 0; height: 100%; padding: 0; overflow: hidden; }
+.dnd-play-map-pane > .dungeon-shared-map,
+.dnd-play-map-pane > .dnd-map-card { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; width: 100%; margin: 0; border: 0; border-radius: 0; }
+.dnd-play-map-pane > .dn-map-card { height: 100%; max-height: none; }
+.dnd-play-map-pane .dn-map-tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 3px; }
+.dnd-play-map-pane .dn-map-tools button { min-width: 0; min-height: 24px; height: 24px; padding: 2px 3px; white-space: nowrap; }
+.dnd-play-map-pane .dn-map-tools select,
+.dnd-play-map-pane .dn-map-status { display: none !important; }
+.dnd-play-map-pane .dm-stage,
+.dnd-play-map-pane .dnd-map-viewport,
+.dnd-play-map-pane .dn-map-viewport { flex: 1 1 auto; min-height: 0; height: auto; max-height: none; }
+.dnd-play-map-pane .dm-info,
+.dnd-play-map-pane .dn-map-info { max-height: 35%; overflow: auto; }
+.dnd-play-map-pane .dm-tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 3px; }
+.dnd-play-map-pane .dm-tools button { min-width: 0; min-height: 24px; padding: 2px 3px; white-space: nowrap; }
+.dnd-play-map-pane .dm-tools span { display: none; }
+.workspace-leaf-content[data-type^="dnd-dungeon-"] > .view-header { display: none; }
+.dnd-index-pane { height: 100%; padding: 16px 18px; overflow: auto; background: var(--background-primary); }
+.dnd-index-tab .workspace-tab-header-status-container { display: none; }
+.dnd-index-summary { margin: 0 0 1em; color: var(--text-normal); font-size: 1.35em; }
+.dnd-index-list { margin: 0; padding: 0; }
+.dnd-index-entry { margin: 0 0 1.25em; }
+.dnd-index-entry-heading { margin: 0 0 0.3em; font-size: 1em; line-height: var(--line-height-normal); }
+.dnd-index-entry-heading a.internal-link { font-weight: var(--font-semibold); text-decoration: none; }
+.dnd-index-meta { display: block; margin: 0 0 0.35em; color: var(--text-muted); font-size: var(--font-smallest); line-height: var(--line-height-tight); }
+.dnd-index-description { display: -webkit-box; overflow: hidden; color: var(--text-normal); font-size: var(--font-ui-small); line-height: var(--line-height-normal); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.dnd-index-description p { margin: 0; }
+.dnd-index-key .dnd-index-description { display: block; overflow: visible; font-style: italic; -webkit-line-clamp: unset; }
+.dnd-index-empty { margin: 0; padding: 18px 14px; color: var(--text-muted); text-align: center; }
+.dnd-play-overview .image-embed[src*="/Karten/"],
+.dnd-play-overview .internal-embed[src*=".dungeon"],
+.dnd-play-overview .dungeon-shared-map { display: none !important; }
+.dnd-play-room .internal-embed[src*=".dungeon"],
+.dnd-play-room .dungeon-shared-map { display: none !important; }
+.dnd-play-overview .inline-title { display: none; }
+.dnd-play-overview .metadata-container,
+.dnd-play-room .metadata-container { display: none !important; }
+.dnd-room-view .inline-title { display: none; }
+.dnd-room-view .image-embed { display: none !important; }
+.dnd-room-view .el-p:has(> p > .image-embed:only-child) { display: none; }
+/* The viewport may be narrow; the map itself keeps its saved width. */
+.dnd-room-media { float: right; width: var(--dnd-map-width, 500px); max-width: 50%; margin: 0 0 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+.dnd-map-card { width: 100%; min-width: 0; border: 1px solid var(--background-modifier-border); border-radius: 5px; overflow: hidden; }
+.dnd-map-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 5px; background: var(--background-secondary); }
+.dnd-map-tools button { padding: 3px 6px; height: 26px; font-size: 12px; }
+.dnd-map-scale { font-size: 11px; min-width: 32px; text-align: center; }
+.dnd-map-viewport { overflow: auto; max-height: min(620px, 70vh); cursor: grab; touch-action: none; overscroll-behavior: contain; background: var(--background-secondary); }
+.dnd-map-viewport.is-dragging { cursor: grabbing; }
+.dnd-room-media .dnd-map-viewport img { display: block; max-width: none !important; max-height: none !important; height: auto !important; margin: 0 !important; user-select: none; }
+.dnd-room-view .markdown-preview-sizer::after { content: ''; display: block; clear: both; }
+.dnd-room-view.dnd-narrow .dnd-room-media { float: none; max-width: 100%; margin: 0 0 16px auto; }
+.dnd-text-preview { position: fixed; z-index: 10000; width: max-content; max-width: min(420px, calc(100vw - 24px)); max-height: min(420px, calc(100vh - 24px)); overflow: auto; padding: 12px 15px; border: 1px solid var(--background-modifier-border); border-radius: 8px; background: var(--background-primary); color: var(--text-normal); box-shadow: 0 5px 24px #0005; font-size: 14px; line-height: 1.5; user-select: text; }
+.dnd-index-entry-heading a.dnd-v4-room-link { font-weight: var(--font-semibold); text-decoration: none; cursor: pointer; }
+.dnd-v4-outline { overflow: auto; padding: 12px; }
+.dnd-v4-outline h2 { margin: 0 0 10px; font-size: var(--font-ui-medium); }
+.dnd-v4-outline-entry { display: block; width: 100%; padding: 5px 8px; border: 0; background: transparent; color: var(--text-normal); text-align: left; cursor: pointer; }
+.dnd-v4-outline-entry:hover { background: var(--background-modifier-hover); }
+.dn-room-view .dn-structured-key .dungeon-shared-map { display: none !important; }

@@ -1,0 +1,7 @@
+{
+  "injected": true,
+  "nativePresentAtFailure": true,
+  "beforeManifestPreserved": true,
+  "nativeNotesAfterRollback": 0,
+  "journalAfterRollback": false
+}
