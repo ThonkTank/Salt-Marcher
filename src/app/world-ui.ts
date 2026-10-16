@@ -1,5 +1,6 @@
 import {AtlasLocationComposer,type AtlasLocationOwner} from './atlas-location-composer';
 import {arrangeAtlasWorkspace} from './atlas-workspace';
+import {syncDungeonLiveContext} from './dungeon-ui';
 import {atlasWorldWrite,settleAtlasWorldWrite} from './campaign-atlas-author';
 import {hexAccessLabel} from './hex-access';
 import {HexAccessChoices} from './hex-access-ui';
@@ -530,6 +531,7 @@ function renderPhenomenonOptions(){const s=el<HTMLSelectElement>('phen-select'),
 function renderPhenomenon(){el('phen-editor').hidden=!phenomenonDraft;if(!phenomenonDraft)return;const p=phenomenonDraft;for(const [id,v]of Object.entries({'phen-name':p.name,'phen-kind':p.kind,'phen-intensity':String(p.intensity*100),'phen-q':String(p.center.q),'phen-r':String(p.center.r),'phen-radius':String(p.radiusHexes),'phen-move-q':String(p.movement.q),'phen-move-r':String(p.movement.r),'phen-start':String(msDays(p.startMs)),'phen-duration':String(msDays(p.durationMs)),'phen-state':p.state,'phen-temperature':p.temperatureC===null?'':String(p.temperatureC),'phen-travel':p.travelFactor===null?'':String(p.travelFactor),'phen-notes':p.notes}))el<HTMLInputElement>(id).value=v;}
 function paintLiveWeather(result:SceneWorld,token:string,sceneId:string){const weather=result.weather;if(!weatherDirty&&!weatherBusy)populateWeatherInput(weather);el('live-world-summary').textContent=result.date+(weather?' · '+weather.label+' · '+weather.effects.temperatureC+' °C · Wind '+weather.windKmh+' km/h':'');el('live-weather-effects').textContent=weather?'Sicht '+weather.effects.visibilityMeters+' m · Reisefaktor '+weather.effects.travelFactor.toFixed(2)+' · '+weather.effects.perception+(weather.effects.combatNote?' · '+weather.effects.combatNote:''):'';const notices=el('live-world-notices');notices.replaceChildren();for(const n of result.notices){const card=document.createElement('p');card.textContent=n.text;card.append(button('Meldung ausblenden',async()=>{await action({kind:'notice-dismiss',sceneId,id:n.id});await renderLiveWorld(token,sceneId);}));notices.append(card);}for(const event of result.events){const p=document.createElement('p');p.textContent='Kalender: '+event.name+(event.notes?' · '+event.notes:'');notices.append(p);}lockWeather();void renderLiveAgenda(token,sceneId,liveRequest);}
 export async function renderLiveWorld(token:string,sceneId:string){
+ syncDungeonLiveContext(token,sceneId);
  const request=++liveRequest;liveFocusId=sceneId;if(liveTravelOpen&&liveSurface&&frame?.scene.id!==sceneId){el<HTMLSelectElement>('world-scene').value=sceneId;unavailableLiveTravel('Reisekontext wird geladen …');}
  if(weatherContext?.token!==token||weatherContext.sceneId!==sceneId){weatherContext={token,sceneId};weatherGeneration++;liveWorld=null;}
  if(!document.getElementById('live-world-summary'))return;

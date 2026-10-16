@@ -1,3 +1,4 @@
+import {mountDungeonTravelConsole,dungeonTravelRoute} from './dungeon-travel-console';
 import {atlasGeometryOnly} from './atlas-render-view';
 import {LiveAtlasPortal} from './live-atlas-portal';
 import {landscapeExportTiles} from "./atlas-landscape-export";
@@ -53,7 +54,7 @@ import {
 import {
   atlasDungeonTarget,
   atlasDungeonState,
-  openDungeon,
+  openDungeon,stopDungeonPlayback,
 } from "./dungeon-ui";
 const ns = "http://www.w3.org/2000/svg",
   get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -175,6 +176,7 @@ export class CampaignAtlasWorkbench {
     document.getElementById("workspace-navigation")!.after(this.root);
     get("atlas-building-interior").after(get("atlas-drawing-tools"));
     get("atlas-selection-title").after(get("atlas-interior-context"));
+    mountDungeonTravelConsole(get("atlas-local-console"));
     this.svg = this.root.querySelector("svg")!;
     this.camera = new PassiveMapCanvas(this.svg, {
       relative: true,
@@ -484,7 +486,7 @@ export class CampaignAtlasWorkbench {
       if(!visible){this.hide();return;}
       this.family='travel';this.landscape.setActive(false);
       void this.open().catch(error=>this.error(error));
-    },factor=>this.camera.zoom(factor));
+    },factor=>this.camera.zoom(factor),mounted=>{if(mounted)void openDungeon().catch(error=>this.error(error));else stopDungeonPlayback();});
   }
   hide() {
     this.navigationRequest++;
@@ -751,7 +753,7 @@ export class CampaignAtlasWorkbench {
         : f === "interior" || f === "decoration"
           ? ["atlas", "drawing-quick-tools", "drawing-toolbar", "drawing-tool-options", "drawing-feedback"]
           : f === "travel"
-            ? ["dungeon", "world"]
+            ? ["world"]
             : f === "terrain"
               ? []
               : [];
@@ -1481,6 +1483,7 @@ export class CampaignAtlasWorkbench {
     }
   }
   private renderTravel() {
+    const console=document.getElementById("atlas-local-console");if(console)console.dataset.dungeon=String(!!this.data?.geometry.position);
     const unavailable = this.travelReadState === "loading"
       ? "Reisekontext wird geladen …"
       : this.travelReadState === "failed"
@@ -1596,7 +1599,7 @@ export class CampaignAtlasWorkbench {
       this.localPreview = null;
       get("atlas-save-status").textContent = "Reisestand gespeichert";
       this.render();
-      try{await refreshWorldAfterAtlasTravel(w.token,sceneId);}catch(error){if(this.owner===w)this.opts.status('Reisestand gespeichert. Weltkontext erneut laden: '+(error as Error).message,true);}
+      try{await openDungeon();await refreshWorldAfterAtlasTravel(w.token,sceneId);}catch(error){if(this.owner===w)this.opts.status('Reisestand gespeichert. Weltkontext erneut laden: '+(error as Error).message,true);}
       return true;
     } catch (e) {
       if (this.owner === w && !acknowledged) {
@@ -2375,9 +2378,7 @@ export class CampaignAtlasWorkbench {
     }
     const runtime = atlasDungeonState(),
       route =
-        runtime.preview?.route ??
-        data.geometry.journey?.route.slice(data.geometry.journey.nextIndex) ??
-        [];
+        dungeonTravelRoute(data.geometry.journey,runtime.preview,data.geometry.sceneId);
     const points = route.filter(
       (p) => p.scopeId === b.ownerId && p.floorId === floor,
     );

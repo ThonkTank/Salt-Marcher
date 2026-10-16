@@ -80,3 +80,36 @@ test('replacing a Dungeon preview immediately notifies the shared Atlas that it 
  const original=x.window.campaign.previewDungeon;x.window.campaign.previewDungeon=async(...args)=>{const result=await original(...args);return new Promise(r=>release=()=>r(result));};
  x.get('dungeon-plan').click();await x.until(()=>!!release);const announced=cleared;release();await x.ui.flushDungeon();assert.equal(announced,true);assert.equal(x.sent.length,0);
 });
+
+
+buildSync({entryPoints:['src/app/dungeon-travel-console.ts'],outfile:'.build/dungeon-console-ui.cjs',bundle:true,platform:'node',format:'cjs'});
+test('the actual Dungeon controls work beside the Scene with room text, exact pose, rounds and retained perception',async t=>{
+ const x=await panel(t),{mountDungeonTravelConsole}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs');
+ const host=document.createElement('section');document.body.append(host);const original=x.get('dungeon-plan');mountDungeonTravelConsole(host);mountDungeonTravelConsole(host);await x.ui.openDungeon();
+ assert.equal(host.querySelectorAll('#dungeon-travel-console').length,1);assert.equal(host.querySelector('#dungeon-plan'),original);assert.equal(x.get('dungeon-travel-decisions').contains(original),true);assert.equal(x.get('dungeon-travel-settings').contains(original),false);assert.equal(x.get('dungeon').children.length,0);
+ assert.match(x.get('dungeon-position-facts').textContent,/2,?\.?29|2\.29/);assert.match(x.get('dungeon-position-facts').textContent,/Ada, Borin/);assert.match(x.get('dungeon-key-description').textContent,/Autorentext/);
+ x.get('dungeon').hidden=true;host.hidden=false;
+ x.get('dungeon-round-seconds').value='17';x.get('dungeon-round-seconds').oninput();x.get('dungeon-pace-save').click();await x.until(()=>x.sent.length===1);await x.ui.flushDungeon();assert.equal(x.view().travelPace.settings.explorationRoundSeconds,17);
+ x.get('dungeon-sense-score').value='18';x.get('dungeon-active-score').click();await x.until(()=>x.sent.length===2);await x.ui.flushDungeon();assert.equal(x.view().senses.settings.activeScore,18);
+ await x.ui.openDungeon();assert.equal(x.get('dungeon-sense-score').value,'18');assert.equal(x.get('dungeon-travel-controls').inert,false);
+ x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);x.get('dungeon-confirm').click();await x.until(()=>x.sent.length===3);await x.ui.flushDungeon();assert.ok(x.view().journey);
+ const before=x.view().instantMs;x.get('dungeon-place').click();await x.until(()=>x.sent.length===4);await x.ui.flushDungeon();assert.equal(x.view().instantMs,before,'explicit placement adds no time');assert.match(x.get('dungeon-position-facts').textContent,/22\.86/);
+});
+
+test('a delayed or changed live focus revokes old Dungeon commands and preserves pending settings until discard',async t=>{
+ const x=await panel(t),{mountDungeonTravelConsole}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs');const host=document.createElement('div');document.body.append(host);mountDungeonTravelConsole(host);await x.ui.openDungeon();
+ let reads=0;const originalRead=x.window.campaign.dungeon;x.window.campaign.dungeon=async(...args)=>{reads++;return originalRead(...args);};host.hidden=true;x.ui.syncDungeonLiveContext(x.w.token,'hidden-scene');await x.tick();assert.equal(reads,0,'a hidden travel console must not load all Dungeon data on Live focus');host.hidden=false;
+ x.get('dungeon-group-speed').value='12';assert.equal(await x.ui.flushDungeon(),false);
+ let v=x.store.live(x.w.token),scene=x.store.liveScene(x.w.token,x.scene.id);
+ const next=x.store.executeLive(x.command({kind:'move',sceneId:scene.id,expectedRosterRevision:v.rosterRevision,expectedFocusRevision:v.focusRevision,expectedClockRevision:scene.clock.revision,expectedSceneMembershipRevision:scene.membershipRevision,memberIds:[x.ids[1]],target:{kind:'new',title:'Nachhut',expectedContentRevision:scene.revision}})).session.createdScene;
+ x.store.executeLive(x.command({kind:'focus',sceneId:next.id,expectedRevision:x.store.live(x.w.token).focusRevision}));
+ const old=x.view(),real=x.window.campaign.dungeon;let release;x.window.campaign.dungeon=()=>new Promise(r=>release=r);x.ui.syncDungeonLiveContext(x.w.token,next.id);assert.equal(x.get('dungeon-travel-controls').inert,true);
+ x.get('dungeon-place').click();await x.tick();assert.equal(x.sent.length,0);
+ release({ok:true,value:old});await x.until(()=>x.get('dungeon-read-status').textContent.includes('verwerfen'));assert.equal(x.get('dungeon-group-speed').value,'12');assert.equal(x.get('dungeon-travel-controls').inert,true);
+ x.window.campaign.dungeon=real;x.get('dungeon-input-discard').click();await x.until(()=>x.get('dungeon-travel-controls').inert===false);assert.equal(x.ui.atlasDungeonState().data.sceneId,next.id);assert.equal(x.get('dungeon-group-speed').value,'');assert.equal(x.sent.length,0);
+});
+
+test('Dungeon route rendering retains its last checkpoint and hides ended or unrelated journeys',()=>{
+ const {dungeonTravelRoute}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs'),route=[{x:1},{x:2},{x:3}],j={request:{sceneId:'scene'},route,nextIndex:2,status:'active'};
+ assert.deepEqual(dungeonTravelRoute(j,null,'scene'),route.slice(1));j.status='decision';assert.deepEqual(dungeonTravelRoute(j,null,'scene'),route.slice(1));j.status='ended';assert.deepEqual(dungeonTravelRoute(j,null,'scene'),[]);j.status='arrived';assert.deepEqual(dungeonTravelRoute(j,null,'scene'),[]);j.status='active';assert.deepEqual(dungeonTravelRoute(j,null,'other'),[]);assert.deepEqual(dungeonTravelRoute(null,{request:{sceneId:'other'},route},'scene'),[]);
+});

@@ -858,3 +858,19 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #campaign-atlas[data-live-surface=true] #campaign-map{height:100%;width:100%;min-height:0;border:0;border-radius:0}
 #live-travel-host[data-shared-atlas=true] .legacy-hex-camera,#live-travel-host[data-shared-atlas=true] .world-map-selection{display:none!important}
 #live-atlas-local-travel{margin:.75rem 0}#live-atlas-local-travel .toolbar{flex-wrap:wrap}
+
+/* One GM Dungeon console, available beside either Live centre presentation. */
+#dungeon-travel-console{border-top:1px solid var(--line);padding-top:.7rem;margin-top:.8rem}
+#dungeon-travel-console>summary{font-weight:700;cursor:pointer}
+#dungeon-travel-console .dungeon-overview{display:block}
+#dungeon-travel-console #dungeon-map,#dungeon-travel-console #dungeon-edit{display:none!important}
+#dungeon-travel-console #dungeon-current-key{margin:.7rem 0;padding:.6rem;border:1px solid var(--line)}
+#dungeon-travel-console pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit}
+#dungeon-travel-console .toolbar{flex-wrap:wrap}
+#dungeon-travel-console input,#dungeon-travel-console select{max-width:100%;min-width:0}
+#dungeon-travel-console #dungeon-pace-controls{min-width:0}
+#dungeon-read-status:not(:empty){padding:.5rem;background:var(--selected)}
+#dungeon-travel-controls[inert]{opacity:.6}
+#atlas-panel #dungeon-travel-console #dungeon-plan,#atlas-panel #dungeon-travel-console #dungeon-confirm,#atlas-panel #dungeon-travel-console #dungeon-step,#atlas-panel #dungeon-travel-console #dungeon-round-step,#atlas-panel #dungeon-travel-console #dungeon-play,#atlas-panel #dungeon-travel-console #dungeon-pause,#atlas-panel #dungeon-travel-console #dungeon-end{display:inline-block}
+
+#atlas-local-console[data-dungeon=true]>.toolbar{display:none}
