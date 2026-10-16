@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,readFileSync,rmSync,mkdirSync,copyFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
@@ -27,7 +27,7 @@ async function fixture(t){
  Object.assign(globalThis,{document,window,HTMLInputElement:window.HTMLInputElement,HTMLSelectElement:window.HTMLSelectElement,HTMLTextAreaElement:window.HTMLTextAreaElement,Option,Event:window.Event,setTimeout:()=>1,clearTimeout:()=>{}});
  const messages=[],writes=[],wrap=f=>{try{return{ok:true,value:f()};}catch(e){return{ok:false,error:e.message};}};
  const storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
- window.campaign={};for(const method of ['narrative','ledgerParties','keepNarrativeDraft','discardNarrativeDraft','executeProgress','commitStatus','preparation','preparationDraft','keepPreparationDrafts','keepDeskDraft','discardPreparationDraft','selectPreparation','reconcilePreparation','reconcilePreparationContent','worldLinks','deskContent','searchDesk','worldRelationPairDraft','keepWorldRelationPairDraft','discardWorldRelationPairDraft','reconcileWorldRelationPair','executeWorldRelationPair','worldRelationPairHistory','executeWorldRelationPairHistory','reconcileWorldRelationPairHistory','live','session','executeSession','progress','encounterTables','sessionRuns','generationSources','npcs'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
+ window.campaign={};for(const method of ['narrative','ledgerParties','keepNarrativeDraft','discardNarrativeDraft','executeProgress','commitStatus','preparation','preparationDraft','keepPreparationDrafts','keepDeskDraft','discardPreparationDraft','selectPreparation','reconcilePreparation','reconcilePreparationContent','worldLinks','deskContent','searchDesk','worldRelationPairDraft','keepWorldRelationPairDraft','discardWorldRelationPairDraft','reconcileWorldRelationPair','executeWorldRelationPair','worldRelationPairHistory','executeWorldRelationPairHistory','reconcileWorldRelationPairHistory','live','session','executeSession','encounterPlans','progress','encounterTables','sessionRuns','generationSources','npcs'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
  window.campaign.changePreparation=async c=>{writes.push(c);return wrap(()=>store.changePreparation(c));};window.campaign.changePreparationContent=async c=>{writes.push(c);return wrap(()=>store.changePreparationContent(c));};
  const file=require.resolve('../'+base+'/ui.cjs');delete require.cache[file];const ui=require(file);ui.initPreparation((text,error)=>messages.push({text,error}),async()=>{});
  let owner=workspace;ui.initCommitControls(()=>owner,(text,error)=>messages.push({text,error}));const graph=new ui.WorldLinksWorkbench(()=>owner,()=>ui.leavePreparation(),text=>messages.push({text}),async(ref,current)=>ui.openPreparedNote(ref.id,current));
@@ -313,4 +313,29 @@ test('returning from a newly created place refreshes the quest location choices 
  const saved=x.store.narrative(x.workspace.token,note.id);
  assert.equal(saved.state.locationId,place.document.id);assert.equal(saved.state.status,'closed');assert.equal(saved.award,null);
  assert.equal(x.el('narrative-editor').querySelector('[aria-label="Quest-Ort"]').value,place.document.id);
+});
+
+async function encounterSearchFixture(t){
+ const x=await fixture(t);for(let i=0;i<12;i++)x.store.saveEncounterPlan({commandId:randomUUID(),campaignId:x.campaign.id,token:x.workspace.token,expectedRevision:null,plan:{id:randomUUID(),name:'Wache '+String(i).padStart(2,'0'),notes:'Original',party:[],entries:[],sources:[],catalogHash:''}});
+ const calls=[],read=x.window.campaign.encounterPlans;x.window.campaign.encounterPlans=async(...args)=>{calls.push(args);return read(...args);};await x.activate();await x.ui.prepareNextVisit(null,{title:'Besuch',notes:'  Roh\r\n',locationId:null});await settle();
+ return{...x,calls,search:async text=>{x.el('visit-encounter-search').value=text;x.el('visit-encounter-search').oninput();await settle();}};
+}
+test('session reads and new receipts omit the global Encounter catalog; inspector searches only on demand with eight choices',async t=>{
+ const x=await encounterSearchFixture(t),id=x.el('plans').value;assert.equal(x.calls.length,0);assert.deepEqual(x.store.session(x.workspace.token,id).encounters,[]);await x.search('W');assert.equal(x.calls.length,0);await x.search('Wache');assert.equal(x.calls.length,1);assert.equal(x.calls[0][2],9);assert.equal(x.el('visit-encounter').querySelectorAll('option').length,9);assert.match(x.el('visit-encounter-status').textContent,/eingrenzen/);
+ await x.search('Wache 11');const option=x.el('visit-encounter').querySelectorAll('option')[1];x.el('visit-encounter').value=option.value;x.el('visit-encounter').onchange();assert.equal(x.el('visit-attach').disabled,false);x.el('visit-attach').click();await until(()=>x.store.session(x.workspace.token,id).groups.length===1);await settle();assert.equal(x.store.session(x.workspace.token,id).groups[0].sourceEncounterId,option.value);assert.equal(x.el('visit-encounter-search').value,'Wache 11');
+ const row=x.store.db.prepare('SELECT payload FROM session_receipt ORDER BY rowid DESC LIMIT 1').get();assert.deepEqual(JSON.parse(row.payload).encounters,[]);assert.equal(x.store.encounterPlans(x.workspace.token,'').length,12);assert.equal(x.store.encounterPlans(x.workspace.token,'Wache',3).length,3);assert.throws(()=>x.store.encounterPlans(x.workspace.token,'Wache',0),/Suchgrenze/);
+});
+for(const outcome of ['result','failure'])test(`late Encounter search ${outcome} cannot replace a newer query or selected visit`,async t=>{
+ const x=await encounterSearchFixture(t),read=x.window.campaign.encounterPlans;let finish;x.window.campaign.encounterPlans=async(...args)=>args[1]==='Wache'?new Promise(r=>finish=()=>r(outcome==='failure'?{ok:false,error:'Alter Suchfehler'}:{ok:true,value:[{id:'old',revision:1,name:'Alt'}]})):read(...args);
+ await x.search('Wache');assert.ok(finish);assert.match(x.el('visit-encounter-status').textContent,/gesucht/);await x.search('Wache 11');const status=x.el('visit-encounter-status').textContent;finish();await settle();assert.equal(x.el('visit-encounter-status').textContent,status);assert.equal(x.el('visit-encounter').querySelectorAll('option').length,2);
+ await x.search('Wache');const plan=x.el('plans').value;await x.ui.prepareNextVisit(plan,{title:'Zweiter Besuch',notes:'',locationId:null});await settle();finish();await settle();assert.equal(x.el('visit-encounter-search').value,'');assert.equal(x.el('visit-encounter').querySelectorAll('option').length,1);assert.equal(x.el('visit-attach').disabled,true);
+});
+test('new authored inputs revoke pending Encounter results and saving preserves the query for a fresh search',async t=>{
+ const x=await encounterSearchFixture(t),read=x.window.campaign.encounterPlans;let finish;x.window.campaign.encounterPlans=async(...args)=>args[1]==='Wache'&&!finish?new Promise(r=>finish=async()=>r(await read(...args))):read(...args);
+ await x.search('Wache');x.el('visit-read-aloud').value='Neu';x.el('visit-read-aloud').oninput();await finish();await settle();assert.equal(x.el('visit-encounter').querySelectorAll('option').length,1);assert.equal(x.el('visit-attach').disabled,true);assert.equal(await x.ui.flushPreparation(),true);await settle();assert.equal(x.el('visit-encounter-search').value,'Wache');assert.equal(x.el('visit-encounter').querySelectorAll('option').length,9);
+});
+
+test('historical Session receipts replay their original catalog snapshot without rewriting bytes',async t=>{
+ const x=await encounterSearchFixture(t),planId=x.el('plans').value,profile=x.store.session(x.workspace.token,planId).profile,command={commandId:randomUUID(),campaignId:x.campaign.id,token:x.workspace.token,action:{kind:'profile',profile:{...profile,seed:'Historisch'},expectedRevision:profile.revision}},ack=x.store.executeSession(command),legacy={...ack,encounters:x.store.encounterPlans(x.workspace.token,'')},payload=JSON.stringify(legacy),checksum=createHash('sha256').update(payload).digest('hex');
+ x.store.db.prepare('UPDATE session_receipt SET payload=?,checksum=? WHERE command_id=?').run(payload,checksum,command.commandId);const fresh=new x.store.constructor(x.store.db.name);try{const w=fresh.activate(x.campaign.id),bytes=fresh.db.serialize();assert.deepEqual(fresh.executeSession({...command,token:w.token}),legacy);assert.ok(fresh.db.serialize().equals(bytes));assert.equal(fresh.db.prepare('SELECT payload FROM session_receipt WHERE command_id=?').get(command.commandId).payload,payload);assert.deepEqual(fresh.session(w.token,planId).encounters,[]);}finally{fresh.close();}
 });

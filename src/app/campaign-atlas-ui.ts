@@ -1345,6 +1345,8 @@ export class CampaignAtlasWorkbench {
     const j = this.data.localJourney,
       dp = this.data.geometry.journey,
       hp = this.data.scene?.journey;
+    const worldLeg=!this.data.geometry.position&&hp&&['active','paused','interrupted'].includes(hp.status)&&!j?.status.match(/^(active|paused)$/);
+    get('atlas-local-round').textContent=worldLeg?'Bis nächste Grenze':'Eine Runde';
     const text = this.localPreview
       ? this.localPreview.distanceMeters.toFixed(1) +
         " m · " +

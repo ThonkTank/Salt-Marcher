@@ -95,7 +95,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   creatureInfo: () => ipcRenderer.invoke('catalog:info'),
   creatures: (query: unknown) => ipcRenderer.invoke('catalog:search',query),
   creature: (id: string) => ipcRenderer.invoke('catalog:creature',id),
-  encounterPlans: (token: string,search: string) => ipcRenderer.invoke('campaign:encounter-plans',token,search),
+  encounterPlans: (token: string,search: string,limit?:number) => ipcRenderer.invoke('campaign:encounter-plans',token,search,limit),
   encounterPlan: (token: string,id: string) => ipcRenderer.invoke('campaign:encounter-plan',token,id),
   saveEncounterPlan: (command: unknown) => ipcRenderer.invoke('campaign:save-encounter-plan',command),
   ledgerParties:(token:string)=>ipcRenderer.invoke('campaign:ledger-parties',token),

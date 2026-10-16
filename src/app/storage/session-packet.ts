@@ -11,7 +11,7 @@ import type {SessionPacket,SessionPacketBlock} from '../session-packet-contracts
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 function payload(row:any){if(hash(row.payload)!==row.checksum)throw new Error('Eine Mappenquelle ist beschädigt.');return JSON.parse(row.payload);}
 export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket{return db.transaction(()=>{
- const session=readSession(db,cam,planId,false),plan=session.plan,warnings:string[]=[];
+ const session=readSession(db,cam,planId),plan=session.plan,warnings:string[]=[];
  const cache=new Map<string,SessionPacketBlock[]>(),locations=new Map<string,string>();
  const note=(id:string):SessionPacketBlock[]=>{
   const key='note:'+id;if(cache.has(key))return cache.get(key)!;

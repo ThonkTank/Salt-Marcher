@@ -15,6 +15,15 @@ optionale Ortsverweise im gemeinsamen SQLite-Store. `session-ui.ts`,
 Gruppen, Belohnungen sowie Ersetzung und Wiederverwendung. Die reinen
 `ManualPlan`-Codecs prüfen den gemeinsamen Planvertrag.
 
+Gespeicherte Begegnungen werden erst ab zwei Suchzeichen über den vorhandenen
+Katalogzugang gelesen. SQL begrenzt auf neun Metadatensätze: acht auswählbare
+Treffer plus Überlaufhinweis. Neue Eingaben, Besuchs-/Planwechsel und neuere
+Antworten entziehen alten Treffern die Freigabe. Dieselbe Besuchsauswahl behält
+beim Speichern den Suchtext und liest passende Treffer erneut. Angehängte Gruppen
+behalten ihren eigenen konkreten Begegnungsstand. Session-Lesungen und neue
+Schreibbelege enthalten keine globale Begegnungsliste mehr; historische Belege
+bleiben unverändert lesbar und wiederholbar.
+
 Der Live-Besuchsbinder zeigt übernommene Besuche seitenweise mit festgehaltenen
 Texten, Ergebnissen und Weltverweisen. Planänderungen ersetzen diese Übernahmen
 nicht; ältere Übernahmen ohne vollständige Bindung werden als solche markiert.

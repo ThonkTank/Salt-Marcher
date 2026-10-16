@@ -41,7 +41,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  if(parentChanged){sessionCopy?.reset();closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
  if(key===basis)return;
- basis=key;generation++;loadRequest++;closeStoryAward();
+ basis=key;generation++;loadRequest++;closeStoryAward();encounterRequest++;get<HTMLInputElement>('visit-encounter-search').value='';clearEncounterChoices('Mindestens zwei Zeichen eingeben.');
  if(timer)clearTimeout(timer);timer=null;
  profileDirty=false;visitDirty=false;view=null;profileDraft=null;visitDraft=null;
  if(parentChanged){generating=null;get<HTMLButtonElement>('session-generate').disabled=false;generationMessage('');closeProposalEditor();get('session-faction-picks').replaceChildren();groupDrafts.clear();previewRequest++;run=null;renderRun();for(const id of ['session-history','session-table-picks','session-locations','session-notes'])get(id).replaceChildren();}
@@ -87,7 +87,7 @@ async function acceptSessionResult(action:SessionAction,result:SessionView,gen:n
   // The writer changes only the revision and exact fraction normalization.
   // Keep the row objects captured by live input handlers and the focused DOM.
   profileDraft=latest?{...latest,revision:result.profile.revision}:structuredClone(result.profile);
-  budget();tell(profileDirty?'Neuere Planungseingabe noch offen.':'Planung gespeichert.');return;
+  budget();void searchEncounters();tell(profileDirty?'Neuere Planungseingabe noch offen.':'Planung gespeichert.');return;
  }else if(!profileDirty)profileDraft=structuredClone(result.profile);
  const confirmed=result.visits.find(v=>v.visitId===visitId)??null;
  if(action.kind==='visit'){
@@ -139,6 +139,7 @@ function lock(on:boolean){
   else if(lockedControls.has(c)){c.disabled=lockedControls.get(c)!;lockedControls.delete(c);}
  }
  if(!on){
+  get<HTMLButtonElement>('visit-attach').disabled=!encounterChoices.some(e=>e.id===value('visit-encounter'));
   const reward=visitDraft?.reward,sealed=!!reward?.placedTreasureId||!!reward?.awarded;
   for(const id of ['visit-has-reward','visit-reward-xp','visit-item-add'])get<HTMLInputElement>(id).disabled=sealed;
   for(const control of get('visit-reward-items').querySelectorAll<HTMLInputElement|HTMLButtonElement>('input,button'))control.disabled=sealed;
@@ -157,11 +158,11 @@ export async function flushSession():Promise<boolean>{
  if(group&&plan){if(!await execute({kind:'group-content',planId:plan.id,groupId:group.id,expectedRevision:group.revision,title:group.title,notes:group.notes}))return false;return flushSession();}
  return true;
 }
-function scheduleSession(message:string){inputChanged();if(timer)clearTimeout(timer);timer=setTimeout(()=>{void flushSession();},700);tell(message);}
+function scheduleSession(message:string){encounterRequest++;clearEncounterChoices('Offene Eingaben zuerst speichern.');inputChanged();if(timer)clearTimeout(timer);timer=setTimeout(()=>{void flushSession();},700);tell(message);}
 function scheduleVisit(){visitDirty=true;scheduleSession('Besuchseingabe offen.');}
 function render(){if(!view||!profileDraft)return;get<HTMLInputElement>('session-fraction').value=profileDraft.adventureDayFraction;get<HTMLInputElement>('session-seed').value=profileDraft.seed;get<HTMLInputElement>('session-scene-count').value=profileDraft.encounterCount==null?'':String(profileDraft.encounterCount);const members=get('session-party');members.replaceChildren();for(const c of roster){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=profileDraft.party.some(p=>p.id===c.characterId);box.onchange=()=>{if(!profileDraft)return;profileDraft.party=box.checked?[...profileDraft.party,{id:c.characterId,name:c.name,level:c.xp===null?null:xpLevel(c.xp).level,count:1}]:profileDraft.party.filter(p=>p.id!==c.characterId);profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();};label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?' · heute aktiv':' · inaktiv')));members.append(label);}renderParty();
  const locations=get('session-locations'),notes=get('session-notes');const chosenLocations=new Set([...locations.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value)),chosenNotes=new Set([...notes.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value));locations.replaceChildren();notes.replaceChildren();for(const row of sources?.locations.filter(l=>!l.trashed)??[])checkbox(locations,row.document.id,row.document.name,chosenLocations.has(row.document.id));for(const row of sources?.notes.filter(n=>!n.trashed)??[])checkbox(notes,row.note.id,row.note.title,chosenNotes.has(row.note.id));
- if(visitDraft){get<HTMLTextAreaElement>('visit-read-aloud').value=visitDraft.readAloud;const select=get<HTMLSelectElement>('visit-encounter'),old=select.value;select.replaceChildren();option(select,'','Encounter-Vorlage auswählen');for(const e of view.encounters)option(select,e.id,e.name);select.value=old;get<HTMLInputElement>('visit-has-reward').checked=!!visitDraft.reward;get('visit-reward-fields').hidden=!visitDraft.reward;get<HTMLInputElement>('visit-reward-xp').value=String(visitDraft.reward?.poolXp??0);renderRewardItems();const refs=get('visit-note-refs');refs.replaceChildren();for(const row of sources?.notes.filter(n=>!n.trashed)??[]){const box=checkbox(refs,row.note.id,row.note.title,visitDraft.noteIds.includes(row.note.id));box.onchange=()=>{if(!visitDraft)return;visitDraft.noteIds=box.checked?[...visitDraft.noteIds,box.value]:visitDraft.noteIds.filter(id=>id!==box.value);scheduleVisit();};}renderGroups();}
+ if(visitDraft){get<HTMLTextAreaElement>('visit-read-aloud').value=visitDraft.readAloud;void searchEncounters();get<HTMLInputElement>('visit-has-reward').checked=!!visitDraft.reward;get('visit-reward-fields').hidden=!visitDraft.reward;get<HTMLInputElement>('visit-reward-xp').value=String(visitDraft.reward?.poolXp??0);renderRewardItems();const refs=get('visit-note-refs');refs.replaceChildren();for(const row of sources?.notes.filter(n=>!n.trashed)??[]){const box=checkbox(refs,row.note.id,row.note.title,visitDraft.noteIds.includes(row.note.id));box.onchange=()=>{if(!visitDraft)return;visitDraft.noteIds=box.checked?[...visitDraft.noteIds,box.value]:visitDraft.noteIds.filter(id=>id!==box.value);scheduleVisit();};}renderGroups();}
  renderRun();lock(!!pending);
 }
 function checkbox(root:HTMLElement,id:string,text:string,checked:boolean){const label=document.createElement('label'),box=document.createElement('input');label.className='check-label';box.type='checkbox';box.value=id;box.checked=checked;label.append(box,document.createTextNode(text));root.append(label);return box;}
@@ -304,10 +305,27 @@ function closeStoryAward(){
  const dialog=get<HTMLDialogElement>('story-award-dialog');if(dialog.open)dialog.close();
 }
 function sameVisit(owner:PreviewOwner,id:string){return ownsPreview(owner)&&visitDraft?.visitId===id;}
+let encounterRequest=0,encounterChoices:SessionView['encounters']=[];
+function clearEncounterChoices(text:string){
+ encounterChoices=[];const select=get<HTMLSelectElement>('visit-encounter');select.replaceChildren();option(select,'','Encounter-Vorlage auswählen');select.value='';get<HTMLButtonElement>('visit-attach').disabled=true;get('visit-encounter-status').textContent=text;
+}
+async function searchEncounters(){
+ const request=++encounterRequest,owner=previewOwner(),visit=visitDraft,revision=plan?.revision,query=value('visit-encounter-search').trim();
+ clearEncounterChoices(query.length<2?'Mindestens zwei Zeichen eingeben.':'Begegnungen werden gesucht…');
+ if(!owner||!visit||query.length<2)return;
+ if(profileDirty||visitDirty){clearEncounterChoices('Offene Eingaben zuerst speichern.');return;}
+ const current=()=>request===encounterRequest&&sameVisit(owner,visit.visitId)&&plan?.revision===revision&&visitDraft?.revision===visit.revision&&value('visit-encounter-search').trim()===query;
+ try{
+  const rows=unwrap(await window.campaign.encounterPlans(owner.token,query,9));if(!current())return;
+  encounterChoices=rows.slice(0,8);const select=get<HTMLSelectElement>('visit-encounter');for(const e of encounterChoices)option(select,e.id,e.name);
+  get('visit-encounter-status').textContent=rows.length>8?'Mehr als acht Treffer. Suche eingrenzen.':rows.length?rows.length+' Treffer.':'Keine passende Begegnung.';
+ }catch(error){if(current())clearEncounterChoices((error as Error).message);}
+}
 async function attachEncounter(){
- const owner=previewOwner(),id=visitDraft?.visitId,encounter=view?.encounters.find(e=>e.id===value('visit-encounter'));
+ const owner=previewOwner(),id=visitDraft?.visitId,encounter=encounterChoices.find(e=>e.id===value('visit-encounter'));
  if(!owner||!id||!encounter)return;
- if(!await flushSession()||!sameVisit(owner,id))return;
+ const request=encounterRequest;
+ if(!await flushSession()||!sameVisit(owner,id)||request!==encounterRequest)return;
  await execute({kind:'attach',planId:owner.planId,visitId:id,expectedVisitRevision:visitDraft!.revision,encounterId:encounter.id,expectedEncounterRevision:encounter.revision});
 }
 async function placeReward(){
@@ -392,6 +410,8 @@ initProposalEditor();inputChanged=edited;tell=status;requiredPick=requiredNpcPic
 
  for(const id of ['session-fraction','session-seed'])get(id).oninput=()=>{if(profileDraft){profileDraft.adventureDayFraction=value('session-fraction');profileDraft.seed=value('session-seed');profileDirty=true;scheduleSession('Planungseingabe offen.');budget();}};get('session-scene-count').oninput=()=>{if(profileDraft){profileDraft.encounterCount=value('session-scene-count').trim()?Number(value('session-scene-count')):null;profileDirty=true;scheduleSession('Planungseingabe offen.');budget();}};get('session-profile-form').onsubmit=event=>{event.preventDefault();void flushSession();};get('session-free-party').onclick=()=>{if(profileDraft){profileDraft.party.push({id:crypto.randomUUID(),name:'Geplante Figuren',level:null,count:1});profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();}};
  get('visit-read-aloud').oninput=()=>{if(visitDraft){visitDraft.readAloud=value('visit-read-aloud');scheduleVisit();}};
+ get('visit-encounter-search').oninput=()=>{void searchEncounters();};
+ get('visit-encounter').onchange=()=>{get<HTMLButtonElement>('visit-attach').disabled=!encounterChoices.some(e=>e.id===value('visit-encounter'));};
  get('visit-attach').onclick=()=>{void attachEncounter();};
  get('visit-has-reward').oninput=()=>{if(!visitDraft)return;if(get<HTMLInputElement>('visit-has-reward').checked)visitDraft.reward??={id:crypto.randomUUID(),poolXp:0,items:[],placedTreasureId:null,awarded:false};else visitDraft.reward=null;get('visit-reward-fields').hidden=!visitDraft.reward;scheduleVisit();};
  get('visit-reward-xp').oninput=()=>{if(visitDraft?.reward){visitDraft.reward.poolXp=Number(value('visit-reward-xp'));scheduleVisit();}};

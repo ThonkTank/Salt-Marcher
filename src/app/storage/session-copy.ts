@@ -5,13 +5,13 @@ import {readPlan,readSession,saveDetail,newGroup,saveGroup} from './session';
 import {createHash} from 'node:crypto';
 /** Add authored preparation, preserving existing physical groups and booked rewards. */
 export function copySessionVisits(db:any,cam:string,a:Extract<SessionAction,{kind:'copy-visits'}>,publish:PlanPublisher){
- const contents=readSession(db,cam,a.sourcePlanId,false),source=contents.plan;
+ const contents=readSession(db,cam,a.sourcePlanId),source=contents.plan;
  if(contents.replacementBasis!==a.expectedSourceBasis)throw new Error('Quellplan oder Vorbereitung geändert. Auswahl erneut öffnen.');
  if(typeof a.name!=='string'||a.name.length>1000||typeof a.copyParty!=='boolean'||!Array.isArray(a.visitIds)||!a.visitIds.length||a.visitIds.length>1000||new Set(a.visitIds).size!==a.visitIds.length)throw new Error('Szenenauswahl und Planangaben prüfen.');
  const newPlan=a.expectedBasis===null;
  if(newPlan&&db.prepare('SELECT 1 FROM plan WHERE campaign_id=? AND id=?').get(cam,a.planId))throw new Error('Zielplan bereits vorhanden. Auswahl erneut öffnen.');
  const target=newPlan?{version:1 as const,id:campaignLocalId(a.planId),revision:1,name:a.name,scenes:[]}:readPlan(db,cam,a.planId);
- if(!newPlan&&readSession(db,cam,target.id,false).replacementBasis!==a.expectedBasis)throw new Error('Zielplan oder Vorbereitung geändert. Auswahl erneut öffnen.');
+ if(!newPlan&&readSession(db,cam,target.id).replacementBasis!==a.expectedBasis)throw new Error('Zielplan oder Vorbereitung geändert. Auswahl erneut öffnen.');
  if(!newPlan&&a.copyParty)throw new Error('Planungsparty nur für einen neuen Abend übernehmen.');
  const scenes=a.visitIds.map(id=>{const s=source.scenes.find(s=>s.id===id);if(!s)throw new Error('Ausgewählter Besuch fehlt.');return {...s,id:campaignLocalId(randomUUID())};});
  const originals=new Map(contents.groups.map(g=>{const row=db.prepare('SELECT draft_plan_id FROM prepared_group WHERE campaign_id=? AND id=?').get(cam,g.id),accepted=db.prepare('SELECT world_group_id FROM prepared_group_origin WHERE campaign_id=? AND source_group_id=?').get(cam,g.id);return [g.id,{group:g,acceptedId:accepted?.world_group_id??(row.draft_plan_id===null?g.id:null)}] as const;}));
