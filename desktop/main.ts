@@ -314,7 +314,7 @@ else {
     handle('city:activities',(token:string,q:import('../src/app/city-activity-contracts').CityActivityQuery)=>store.cityActivities(token,q));
     handle('city:buildings',(token:string,q:import('../src/app/city-contracts').CityBuildingQuery)=>store.cityBuildings(token,q));
     handle('atlas:travel-preview',(token:string,p:import('../src/app/contracts').Point)=>store.previewAtlasTravel(token,p));
-    handle('atlas:travel',(c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand)=>store.executeAtlasTravel(c));
+    handle('atlas:travel',(c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand,groupView=false)=>store.executeAtlasTravel(c,groupView));
     handle('atlas:find',(token:string,text:string)=>store.landscapeFind(token,text));
     handle('atlas:region',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,metersPerPixel?:number,includePatches?:boolean)=>store.landscapeRegion(token,box,metersPerPixel,includePatches));
     handle('atlas:reference-asset',(token:string,id:string)=>store.referenceAsset(token,id));
@@ -334,7 +334,7 @@ else {
     handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
     handle('atlas:commit',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlasCommit(c));
-    handle('atlas:view',(token:string)=>store.campaignAtlas(token));
+    handle('atlas:view',(token:string,groupView=false)=>store.campaignAtlas(token,groupView));
     handle('atlas:execute',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlas(c));
     handle('city:list',(token:string)=>store.cities(token));
     handle('city:view',(token:string,id:string)=>store.city(token,id));

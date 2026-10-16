@@ -9,7 +9,7 @@ import type { WorldCommand, AtlasMap, SceneWorld } from "./world-contracts";
 import type { DungeonView } from "./dungeon-contracts";
 export interface AtlasBinding {
   id: string;
-  kind: "city" | "dungeon";
+  kind: "city" | "dungeon" | "location";
   ownerId: string;
   parent: "world" | "building";
   parentId: string | null;
@@ -28,13 +28,16 @@ export interface CampaignAtlas {
   terrain: AtlasMap;
   bindings: AtlasBinding[];
   cities: CityView[];
+  places: (import("./world-contracts").AtlasPlace & {point:import("./contracts").Point})[];
   geometry: DungeonView;
   workspace: Workspace;
   scene: SceneWorld | null;
+  publicFrame?: import("./player-contracts").PlayerFrame;
   canUndo: boolean;
   canRedo: boolean;
 }
 export type AtlasAction =
+  | {kind:"location-create";mapId:string;expectedMapRevision:number;document:import("../features/location/location-schema").LocationDocument;point:import("./contracts").Point}
   | import("./atlas-landscape").LandscapeAction
   | {
       kind: "drawing-import";
@@ -139,7 +142,7 @@ export interface AtlasAPI {
     x: number;
     y: number;
   }): Promise<Result<{ atlas: CampaignAtlas; roomId: string | null }>>;
-  campaignAtlas(token: string): Promise<Result<CampaignAtlas>>;
+  campaignAtlas(token: string, groupView?: boolean): Promise<Result<CampaignAtlas>>;
   executeAtlas(
     command: AtlasCommand,
   ): Promise<Result<{ atlas: CampaignAtlas; result: unknown }>>;

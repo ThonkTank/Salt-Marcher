@@ -1,3 +1,4 @@
+import type {LocationDocument} from '../../features/location/location-schema';
 import {createHash} from 'node:crypto';
 import type {CityHeader,CityUnit,CityView,CityCommand,CityOverview,CityBuildingQuery,CityBuildingChoices} from '../city-contracts';
 import {npcRecord} from './npc-record';
@@ -60,12 +61,12 @@ function restoreCityHistory(db:any,c:CityCommand){
   const payload=JSON.stringify(h);db.prepare('UPDATE city_history SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),c.campaignId,peer.id);
  }
 }
-export function executeCity(db:any,c:CityCommand,guard:()=>void):CityView{return db.transaction(()=>{
+export function executeCity(db:any,c:CityCommand,guard:()=>void,createLocation?:(document:LocationDocument)=>void):CityView{return db.transaction(()=>{
  guard();if(!c.action||!['create','change','undo','redo'].includes(c.action.kind))throw new Error('Unbekannte Stadtaktion.');
  const fp=hash(JSON.stringify({...c,token:undefined})),receipt=db.prepare('SELECT fingerprint FROM city_receipt WHERE command_id=?').get(c.commandId);
  if(receipt){if(receipt.fingerprint!==fp)throw new Error('Änderungskennung anders verwendet.');return readCity(db,c.campaignId,c.cityId);}
  if(c.action.kind==='create'){
-  if(c.cityId!==c.action.header.id)throw new Error('Stadtkennung widersprüchlich.');if(db.prepare('SELECT 1 FROM city_document WHERE campaign_id=? AND id=?').get(c.campaignId,c.cityId))throw new Error('Stadt existiert bereits.');putHeader(db,c.campaignId,{...c.action.header,revision:1});
+  if(c.cityId!==c.action.header.id)throw new Error('Stadtkennung widersprüchlich.');checkedHeader(c.action.header);if(c.expectedRevision!==0)throw new Error('Neue Stadt benötigt einen leeren Ausgangsstand.');if(db.prepare('SELECT 1 FROM city_document WHERE campaign_id=? AND id=?').get(c.campaignId,c.cityId))throw new Error('Stadt existiert bereits.');if(c.action.location){if(c.action.location.id!==c.action.header.locationId||c.action.location.type!=='city')throw new Error('Neuer Stadtort passt nicht zum Stadtplan.');if(!createLocation)throw new Error('Ortsanlage ist hier nicht verfügbar.');createLocation(c.action.location);}const location=db.prepare('SELECT trashed FROM location WHERE campaign_id=? AND id=?').get(c.campaignId,c.action.header.locationId);if(!location||location.trashed)throw new Error('Ein aktiver Kampagnenort ist erforderlich.');putHeader(db,c.campaignId,{...c.action.header,revision:1});
  }else{
   const view=readCity(db,c.campaignId,c.cityId);if(view.header.revision!==c.expectedRevision)throw new Error('Stadtstand geändert. Aktualisiere die Ansicht und Vorschau.');
   if(c.action.kind==='change'){
