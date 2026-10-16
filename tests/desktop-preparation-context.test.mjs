@@ -191,7 +191,7 @@ test('a late session refresh cannot install its old preparation into another cam
 test('copy source prose and its approval basis come from the same current plan',async t=>{
  const x=await fixture(t);await x.activate();await x.ui.prepareNextVisit(null,{title:'Original',notes:'Alter sichtbarer Text',locationId:null});await settle();const plan=x.store.preparation(x.workspace.token).plans[0];x.el('session-copy-open').click();await settle();
  const fresh={...plan,scenes:plan.scenes.map(s=>({...s,notes:'  Neuer tatsächlicher Text\r\n'}))};x.store.changePreparation(x.command({kind:'plan',plan:fresh,expectedRevision:plan.revision}));x.el('session-copy-source').onchange();await settle();assert.match(x.el('session-copy-list').textContent,/Neuer tatsächlicher Text/);assert.doesNotMatch(x.el('session-copy-list').textContent,/Alter sichtbarer Text/);
- x.el('session-copy-confirm').click();await settle();const copy=x.store.preparation(x.workspace.token).plans.find(p=>p.id!==plan.id);assert(copy);assert.equal(copy.scenes[0].notes,fresh.scenes[0].notes);
+ x.el('session-copy-confirm').click();await until(()=>x.store.preparation(x.workspace.token).plans.some(p=>p.id!==plan.id));await settle();const copy=x.store.preparation(x.workspace.token).plans.find(p=>p.id!==plan.id);assert(copy);assert.equal(copy.scenes[0].notes,fresh.scenes[0].notes);
 });
 
 for(const target of ['new','existing'])test(`after copy status confirmation a newer ${target} selection can be explicitly submitted`,async t=>{
