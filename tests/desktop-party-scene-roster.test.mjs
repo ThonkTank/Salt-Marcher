@@ -1,0 +1,266 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
+import { buildSync } from "esbuild";
+import { parseHTML } from "linkedom";
+buildSync({
+  stdin: {
+    contents:
+      "export {CampaignStore} from './src/app/storage/store';export {PartyRosterPanel} from './src/app/party-roster-ui';export {partySceneLabels} from './src/app/party-overview';",
+    resolveDir: process.cwd(),
+  },
+  outfile: ".build/party-scene-roster.cjs",
+  bundle: true,
+  platform: "node",
+  format: "cjs",
+  external: ["better-sqlite3"],
+});
+const { CampaignStore, PartyRosterPanel, partySceneLabels } = createRequire(
+  import.meta.url,
+)("../.build/party-scene-roster.cjs");
+function fixture(t, count = 4) {
+  const root = mkdtempSync(tmpdir() + "/party-scene-roster-"),
+    x = { file: root + "/workbench.sqlite" };
+  x.store = new CampaignStore(x.file);
+  x.cam = x.store.create("Reisegruppe");
+  x.w = x.store.activate(x.cam.id);
+  x.command = (action) => ({
+    commandId: randomUUID(),
+    campaignId: x.cam.id,
+    token: x.w.token,
+    action,
+  });
+  x.heroes = Array.from(
+    { length: count },
+    (_, i) =>
+      x.store.executeLive(
+        x.command({
+          kind: "create-character",
+          profile: {
+            name: i < 2 ? "Iri" : "Figur " + i,
+            playerName: "Spieler " + i,
+          },
+        }),
+      ).character,
+  );
+  x.store.executeLive(
+    x.command({
+      kind: "initialize",
+      expectedRosterRevision: x.store.live(x.w.token).rosterRevision,
+    }),
+  );
+  x.action = (ids) => {
+    const v = x.store.live(x.w.token);
+    return {
+      kind: "scene-roster",
+      sceneId: v.scene.id,
+      expectedRosterRevision: v.rosterRevision,
+      expectedFocusRevision: v.focusRevision,
+      expectedSceneMembershipRevision: v.scene.membershipRevision,
+      memberIds: ids,
+    };
+  };
+  x.execute = (ids) => x.store.executeLive(x.command(x.action(ids)));
+  t.after(() => {
+    x.store.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+  return x;
+}
+test("one roster decision adds/removes the selected scene members atomically, reconciles masks, replays and survives restart", (t) => {
+  const x = fixture(t),
+    [a, b, c] = x.heroes;
+  const first = x.execute([a.id, b.id]),
+    scene = first.scene;
+  let combat = x.store.executeCombat({
+    ...x.command({
+      kind: "create",
+      sceneId: scene.id,
+      title: "Torwache",
+      includeParty: true,
+      expectedMembershipRevision: scene.membershipRevision,
+    }),
+    combatId: null,
+    expectedRevision: null,
+  }).combat;
+  const command = x.command(x.action([b.id, c.id])),
+    ack = x.store.executeLive(command);
+  assert.deepEqual(new Set(ack.scene.members), new Set([b.id, c.id]));
+  assert.equal(ack.rosterRevision, first.rosterRevision + 1);
+  assert.deepEqual(x.store.executeLive(command), ack);
+  assert.equal(x.store.liveStatus(command, x.w.token).outcome, "applied");
+  assert.equal(
+    x.store
+      .combat(x.w.token, scene.id, combat.id)
+      .combat.participants.some((p) => p.characterId === a.id),
+    false,
+  );
+  assert.equal(
+    x.store
+      .combat(x.w.token, scene.id, combat.id)
+      .combat.participants.some((p) => p.characterId === b.id),
+    true,
+  );
+  assert.equal(
+    x.store
+      .chronicle(x.w.token)
+      .entries.filter(
+        (e) => e.category === "party" && e.title.startsWith("Szenenroster"),
+      ).length,
+    2,
+  );
+  x.store.close();
+  x.store = new CampaignStore(x.file);
+  x.w = x.store.activate(x.cam.id);
+  const fresh = x.store.live(x.w.token);
+  assert.deepEqual(new Set(fresh.scene.members), new Set([b.id, c.id]));
+  assert.equal(fresh.roster.find((h) => h.id === a.id).active, false);
+  assert.equal(fresh.roster.find((h) => h.id === c.id).active, true);
+});
+test("foreign scene members and stale roster/focus reject the entire selection without partial writes", (t) => {
+  const x = fixture(t),
+    [a, b, c] = x.heroes;
+  x.execute([a.id, b.id]);
+  let v = x.store.live(x.w.token);
+  const moved = x.store.executeLive(
+    x.command({
+      kind: "move",
+      sceneId: v.scene.id,
+      expectedRosterRevision: v.rosterRevision,
+      expectedFocusRevision: v.focusRevision,
+      expectedClockRevision: v.scene.clock.revision,
+      expectedSceneMembershipRevision: v.scene.membershipRevision,
+      memberIds: [a.id],
+      target: {
+        kind: "new",
+        title: "",
+        expectedContentRevision: v.scene.revision,
+      },
+    }),
+  );
+  v = x.store.live(x.w.token);
+  const source = v.scenes.find((s) => s.id !== moved.session.createdScene.id);
+  x.store.executeLive(
+    x.command({
+      kind: "focus",
+      sceneId: source.id,
+      expectedRevision: v.focusRevision,
+    }),
+  );
+  const invalid = x.command(x.action([b.id, c.id, a.id])),
+    before = x.store.db.serialize();
+  assert.throws(() => x.store.executeLive(invalid), /anderen Szene/);
+  assert.ok(x.store.db.serialize().equals(before));
+  const stale = x.command(x.action([b.id, c.id]));
+  x.store.executeLive(
+    x.command({ kind: "create-character", profile: { name: "Später" } }),
+  );
+  const bytes = x.store.db.serialize();
+  assert.throws(() => x.store.executeLive(stale), /inzwischen geändert/);
+  assert.ok(x.store.db.serialize().equals(bytes));
+  assert.equal(x.store.liveStatus(stale, x.w.token).outcome, "conflict");
+});
+test("the 45-character selector retains filtered selections, excludes other scenes, and revokes stale apply callbacks", async (t) => {
+  const previous = globalThis.document;
+  globalThis.document = parseHTML(
+    "<html><body><section></section></body></html>",
+  ).document;
+  t.after(() => {
+    globalThis.document = previous;
+  });
+  const root = document.querySelector("section"),
+    roster = Array.from({ length: 45 }, (_, i) => ({
+      id: "pc-" + String(i).padStart(3, "0"),
+      profile: {
+        name: i < 2 ? "Iri" : "Figur " + i,
+        playerName: "Spieler " + i,
+      },
+      active: i < 3,
+      sceneId: i < 2 ? "scene-a" : i === 2 ? "scene-b" : null,
+    })),
+    view = {
+      roster,
+      rosterRevision: 4,
+      focusId: "scene-a",
+      focusRevision: 2,
+      scene: {
+        id: "scene-a",
+        membershipRevision: 3,
+        members: ["pc-000", "pc-001"],
+      },
+    };
+  let current = true,
+    action = null;
+  const panel = new PartyRosterPanel(
+    root,
+    async (a, valid) => {
+      if (valid()) action = a;
+    },
+    async () => {},
+    () => {},
+  );
+  panel.open(view, () => current);
+  const search = root.querySelector("input[type=search]"),
+    find = (id) =>
+      [...root.querySelectorAll("input[type=checkbox]")].find(
+        (i) => i.value === id,
+      );
+  assert.equal(find("pc-002"), undefined);
+  search.value = "Figur 44";
+  search.oninput();
+  const extra = find("pc-044");
+  extra.checked = true;
+  extra.onchange();
+  search.value = "Spieler 1";
+  search.oninput();
+  assert.match(
+    root.querySelector("#party-membership-count").textContent,
+    /3 ausgewählt/,
+  );
+  search.value = "Iri";
+  search.oninput();
+  assert.equal(root.querySelectorAll("input[type=checkbox]").length, 2);
+  root.querySelector("#party-membership-apply").onclick();
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(
+    new Set(action.memberIds),
+    new Set(["pc-000", "pc-001", "pc-044"]),
+  );
+  const saved = action;
+  current = false;
+  panel.lock();
+  root.querySelector("#party-membership-apply").onclick();
+  await new Promise((r) => setImmediate(r));
+  assert.equal(action, saved);
+  assert.equal(root.querySelector("#party-membership-apply").disabled, true);
+  assert.match(root.textContent, /Auswahl neu lesen/);
+});
+test("move destinations use place and membership, disambiguating only collisions without rewriting stored titles", () => {
+  const view = {
+      scenes: [
+        { id: "scene-a111", title: "Historischer Name", locationTitle: "Tor" },
+        { id: "scene-b222", title: "Anderer Titel", locationTitle: "Tor" },
+        {
+          id: "scene-c333",
+          title: "Nicht als Zieltext",
+          locationTitle: "Wald",
+        },
+      ],
+      roster: [
+        { active: true, sceneId: "scene-a111", profile: { name: "Iri" } },
+        { active: true, sceneId: "scene-b222", profile: { name: "Iri" } },
+        { active: true, sceneId: "scene-c333", profile: { name: "Ada" } },
+      ],
+    },
+    before = JSON.stringify(view),
+    labels = partySceneLabels(view);
+  assert.equal(labels.get("scene-a111"), "Tor · Iri · scene-a1");
+  assert.equal(labels.get("scene-b222"), "Tor · Iri · scene-b2");
+  assert.equal(labels.get("scene-c333"), "Wald · Ada");
+  assert.equal(JSON.stringify(view), before);
+});
+
+test('mask reconciliation failure rolls back the whole roster decision and its receipt',t=>{const x=fixture(t),[a,b,c]=x.heroes;x.execute([a.id,b.id]);const v=x.store.live(x.w.token);x.store.executeCombat({...x.command({kind:'create',sceneId:v.scene.id,title:'Torwache',includeParty:true,expectedMembershipRevision:v.scene.membershipRevision}),combatId:null,expectedRevision:null});x.store.db.exec("CREATE TRIGGER roster_reconcile_failure BEFORE INSERT ON mask_reconciliation_receipt BEGIN SELECT RAISE(ABORT,'reconciliation blocked'); END");const command=x.command(x.action([b.id,c.id])),before=x.store.db.serialize();assert.throws(()=>x.store.executeLive(command),/reconciliation blocked/);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.liveStatus(command,x.w.token).outcome,'not-applied');});
