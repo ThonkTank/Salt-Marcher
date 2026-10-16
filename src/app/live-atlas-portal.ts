@@ -11,6 +11,7 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
     private canvas: SVGSVGElement,
     private visibility: (visible: boolean) => void,
     private zoom: (factor: number) => void,
+    private context: (mounted:boolean)=>void = ()=>{},
   ) {}
   mount(map: HTMLElement, navigation: HTMLElement, console: HTMLElement) {
     if (this.mounted) return;
@@ -55,9 +56,12 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
       console.append(details);
       this.extras.push(details);
       move(local, details);
+      local.hidden=false;
+      details.open=!!local.querySelector('[data-in-dungeon="true"]');
     }
     const status = document.getElementById("atlas-save-status");
     if (status) move(status, console);
+    this.context(true);
   }
   show(visible: boolean) {
     if (this.mounted) this.visibility(visible);
@@ -67,6 +71,7 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
   }
   unmount() {
     if (!this.mounted) return;
+    this.context(false);
     this.visibility(false);
     delete this.root.dataset.liveSurface;
     for (const { node, marker } of this.homes) {

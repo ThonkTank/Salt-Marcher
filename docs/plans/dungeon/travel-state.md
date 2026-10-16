@@ -105,11 +105,39 @@ Das ist ein Storebeleg, keine native Gesamtqualifikation.
    sehr große Routen, unbekannte UI-Antwortausgänge und physische Hostvarianten
    bleiben unabhängig zu qualifizieren. Keine zusätzliche Zellinterpolation
    oder erfundene Position zwischen authored Geometriegrenzen.
-3. **Gemeinsamer Steuerungskontext.** Positions-/Heading-/Raumtexte, Ziel, aktive
-   Checks, Spuren/Verfolgung und NPC-Pendinggrenzen im vorhandenen Reisebereich
-   erreichbar halten. Gruppenbildung/-teilung bleibt beim Live-/Rosterowner,
-   NPC-Jobs bei Autonomy. Karten-/Ansichtswechsel darf keinen zweiten Reisestand
-   erzeugen.
+3. **Gemeinsamer Steuerungskontext geliefert.** Der gemeinsame Atlas enthält
+   dieselben Dungeon-Steuerungen als eigenen aufklappbaren Reisebereich. In
+   Leiten wandert dieser reale Bereich mit der vorhandenen Reisekonsole in die
+   rechte Spalte; Raumtexte und Reiseaktionen bleiben auch bei angezeigter Szene
+   erreichbar. Es wird kein zweiter Dungeon oder Reisestand angelegt. Die alte
+   Fachkarte bleibt ausgeblendet. Bestätigte Raumposition, Höhe, verfügbare
+   Ausrichtung, Gruppennamen und getrennte öffentliche/GM-/geheime Textblöcke
+   stehen bei der laufenden Reise. Tempo und Erkundungsrunde sind gebündelt;
+   Wahrnehmung, Spuren, Passagen, Inhalte, Trigger und NPC-Pendinggrenzen benutzen
+   ihre bisherigen Controls und Writer. Gruppenbildung/-teilung bleibt beim
+   Live-/Rosterowner, NPC-Jobs bei Autonomy.
+
+   Laden und Fokuswechsel sperren alte Aktionen sofort. Ein geänderter Fokus
+   überschreibt keine offenen Tempowerte oder Spureingaben; Verwerfen und
+   erneutes Laden übernehmen ausdrücklich den neuen Kontext. Eine erwartete
+   Fokusantwort wird gegen ihre Scene-ID geprüft. Bestätigte Atlasplatzierung
+   und lokale Bewegung aktualisieren auch den Dungeonlesekontext. Welt-, lokale
+   und Dungeon-Position bleiben beim bisherigen Writer. Abgeschlossene oder
+   abgebrochene Dungeonreisen zeichnen keine verbleibende Route; offene Routen
+   enthalten den letzten bestätigten Punkt. Das ist UI-Komposition vorhandener
+   Fähigkeiten, keine Lieferung dynamischer Akteurverfolgung, zusätzlicher
+   Sonderbewegungsprofile oder neuer Autonomyjobs.
+
+   Geprüft sind die vorhandenen Pace-/Round-/Atlasfälle und die tatsächliche
+   Konsole mit eigenem Rundentakt, Wahrnehmung und blockiertem Fokuswechsel.
+   Der isolierte native Ablauf bedient dieselben Controls bei angezeigter Szene
+   und Karte, speichert17Sekunden-Teilfortschritt, pausiert, beendet die App
+   regulär, startet neu, setzt weitere17Sekunden fort und bricht ab. Die exakte
+   Gesamtzeit34Sekunden, unveränderte ursprüngliche Zellposition während des
+   langen Abschnitts, aktives Wahrnehmungsergebnis und unveränderte
+   Autorenzeichnung sind nach Fresh geprüft. Beide App-Prozesse enden regulär.
+   Dies qualifiziert den beschriebenen Kernablauf, keine breite Indoor-,
+   Betriebssystem-, Accessibility- oder Autonomygesamtprüfung.
 4. **Zusammenhängend qualifizieren.** Native Ansichtwechsel, lange Texte, 200 %,
    langsame Reads und tatsächliche Prozessunterbrechung mit Reise, Trigger,
    Wahrnehmung, Verfolgung und NPCs prüfen. Weitere räumliche Owner gegen den Geometrieguard
