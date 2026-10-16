@@ -230,8 +230,47 @@ Tastaturwegpunkte, inline Start und Geschwindigkeitsübergabe, fehlende Karte un
 mutationsfreien Providerretry. Native Belege umfassen zwei Gruppen auf zwei
 Karten, Fokuswechsel mit offener Auswertung, Löschen, Start/Pause/Fortsetzen/
 Abbruch/Ankunft und Neustart. Kein Ersatz für vollständige200%-/Latenz-/
-Großroutenqualifikation. Direktes Party-Tokenziehen und weitere Session-Center-
-Anbieter bleiben offen; die ausdrückliche Tastaturplatzierung ist vorhanden.
+Großroutenqualifikation. Direktes Party-Tokenziehen folgt in 0.143 (unten). Weitere Session-Center-
+Anbieter und die genannten weitergehenden Abnahmen bleiben offen.
+
+## Direktes Party-Tokenziehen (0.143)
+
+Der eine vorhandene Party-Token ist direkt greifbar, sowohl im Atlas als auch
+auf der gemeinsamen Livekarte. Die Geste gewinnt am Token vor Kartenpan und
+Geländepinsel. Hintergrundgesten bleiben beim bestehenden passiven Canvas.
+Der Token rastet visuell auf das Zielhex ein und wird bis zur Bestätigung
+transparent und gestrichelt dargestellt; Position und Karte werden während der
+Bewegung nicht geschrieben. Loslassen auf einem beschriebenen Hex bestätigt
+administrative Platzierung ohne Reisezeit. Auch geerbte Beschreibung aus einer
+gröberen Ebene zählt als beschrieben. Die Tastaturalternative benutzt denselben
+Platzierungsweg und behält die bestehende freie Platzierung auf kontinuierlicher,
+ungezeichneter Landschaft.
+
+`hex-party-drag.ts` besitzt ausschließlich die vorläufige Zeigergeste. Der
+bestehende Hexadopter interpretiert native Canvas-Hits und CTM, Terrainbeschreibung
+und lokale Koordinaten. Scene, Mitglieder, Position, Karte, Ebene und Livefokus
+binden die Geste. Escape, Pointerabbruch, Fensterfokusverlust, Kameraaktionen oder
+ein neu gezeichneter Kartenstand entfernen die Vorschau. Außerhalb der Karte
+oder auf einem unbeschriebenen Ziel wird nichts gebucht. Ein Klick ohne Ziehen
+und eine Rückkehr zum bisherigen Standort erzeugen keine neue Platzierung.
+
+`placePartyAt` führt Drag und Tastatur zum bestehenden `place-scene`-Writer.
+Der Auftrag bindet zusätzlich die aktuelle Karten- und Membershiprevision und
+bei Drag die beschriebene Zielzelle. Der Writer prüft diese Fakten innerhalb
+seiner bisherigen Transaktion. Bestehende Ortsmarker werden über dieselbe
+Ortsbindung übernommen. Laufende Präsentation stoppt vor der Geste; ein bereits
+buchender Reiseabschnitt muss zunächst abschließen. Die administrative Position
+kann eine vorhandene Reisebasis veralten lassen; die vorhandene ausdrückliche
+Restwegbewertung bleibt dafür zuständig. Kein zweiter Token, keine zweite
+Position, keine neue Uhr und kein Schema.
+
+Gezielte Fälle prüfen vorläufiges Ziehen, genau einen Releaseauftrag, Abbruch,
+Ownerwechsel und atomare Ablehnung veralteter Karten-/Gruppenbasis. Ein bestehender
+Provider-Ausfallfall wählt jetzt ein tatsächlich anderes Cursorhex, damit er
+weiterhin einen wartenden Platzierungsauftrag statt eines wirkungslosen Klicks
+prüft. Native Prüfung umfasst Atlas mit und ohne aktiven Pinsel, Livekarte,
+Tastaturalternative, ungültiges Ziel, Escape, Gruppenwechsel und Neustart.
+Vollständige Plattform-, 200%- und Langroutenqualifikation bleiben offen.
 
 ## Nächste ausführbare Lieferungen
 
@@ -253,9 +292,9 @@ Anbieter bleiben offen; die ausdrückliche Tastaturplatzierung ist vorhanden.
 2. **Präsentation weiter qualifizieren.** Die vorhandene Wiedergabe auf großen
    Routen und bei 200% prüfen. Pointerinterpolation ist nicht Bestandteil der
    autoritativen Checkpoints; jede zusätzliche Animation bleibt reine Darstellung.
-3. **Gemeinsame Bedienung abschließen.** Karte/Token, Drag-Platzierung mit
-   Tastaturalternative, Wegpunkte und Auswahl im selben Scene-/Mapkontext
-   bedienen. Vorhandene Gesten prüfen, statt einen zweiten Renderer zu bauen.
+3. **Gemeinsame Bedienung weiter qualifizieren.** Vorhandene Drag-Platzierung,
+   Tastaturalternative, Wegpunkte und Auswahl im selben Scene-/Mapkontext mit
+   laufender Reise und verschachtelten Ortsmarkern bedienen.
    Die vorhandene dreiteilige Utilityauswertung mit kanonischen Biomen und
    späterer Transport-/Passierbarkeitsregel konsistent weiterführen. Mapwechsel
    leert nur transienten Entwurf/Auswertung; Scenewechsel übernimmt keine alte
