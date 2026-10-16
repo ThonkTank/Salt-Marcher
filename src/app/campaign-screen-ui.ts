@@ -3,10 +3,11 @@ import type {Result} from './contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const unwrap=<T>(r:Result<T>)=>{if(!r.ok)throw new Error(r.error);return r.value;};
 const pendingKey='campaign-catalog-pending';
+let storageNotice='';
 let before:()=>Promise<boolean>,enter:(receipt:CampaignCatalogReceipt)=>Promise<boolean>,changed:()=>Promise<void>;
 let campaigns:CampaignOverview[]=[],activeId:string|null=null,busy=false,pending:CampaignCatalogCommand|null=null,editing:CampaignOverview|null=null,erasing:CampaignOverview|null=null,entry:CampaignCatalogReceipt|null=null,request=0;
 const dialog=(id:string)=>el<HTMLDialogElement>(id);
-function message(text:string){el('campaign-screen-status').textContent=text;el('campaign-identity-status').textContent=text;el('campaign-trash-status').textContent=text;el('campaign-delete-status').textContent=text;}
+function message(text:string){if(storageNotice)text+=' '+storageNotice;el('campaign-screen-status').textContent=text;el('campaign-identity-status').textContent=text;el('campaign-trash-status').textContent=text;el('campaign-delete-status').textContent=text;}
 function lock(){for(const root of ['campaign-screen','campaign-identity-dialog','campaign-trash-dialog','campaign-delete-dialog'])for(const b of el(root).querySelectorAll<HTMLButtonElement|HTMLInputElement>('button,input'))b.disabled=busy||!!pending;for(const b of document.querySelectorAll<HTMLButtonElement>('[data-catalog-check]')){b.hidden=!pending;b.disabled=busy;}el<HTMLButtonElement>('campaign-load-retry').hidden=!entry;el<HTMLButtonElement>('campaign-load-retry').disabled=busy||!!pending;}
 const button=(text:string,run:()=>void)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=run;return b;};
 const date=(s:string|null)=>s?new Date(s).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}):'nicht bekannt';
@@ -24,13 +25,16 @@ function draw(){
 }
 function edit(c:CampaignOverview|null){if(busy||pending)return;editing=c;el('campaign-identity-heading').textContent=c?'Kampagne bearbeiten':'Neue Kampagne';el<HTMLInputElement>('campaign-identity-name').value=c?.name??'';el('campaign-identity-trash').hidden=!c;el('campaign-identity-status').textContent='';dialog('campaign-identity-dialog').showModal();el('campaign-identity-name').focus();}
 function closeIdentity(){if(busy||pending)return;dialog('campaign-identity-dialog').close();el<HTMLInputElement>('campaign-identity-name').value='';editing=null;}
-function clearPending(){pending=null;window.localStorage.removeItem(pendingKey);}
+function clearPending(){pending=null;try{window.localStorage.removeItem(pendingKey);storageNotice='';}catch(error){storageNotice='Der geklärte Auftragsvermerk konnte lokal nicht entfernt werden: '+(error as Error).message+'. Sein Buchungsstatus bleibt erneut prüfbar.';}}
 async function apply(receipt:CampaignCatalogReceipt){
  if(receipt.kind==='create'||receipt.kind==='open'){entry=receipt;closeIdentity();await changed();await load();}
  else{closeIdentity();dialog('campaign-delete-dialog').close();erasing=null;await changed();await refresh();message(receipt.kind==='rename'?'Name gespeichert.':receipt.kind==='erase'?'Kampagne dauerhaft gelöscht.':'Kampagnenstatus gespeichert. Wiederherstellen aktiviert keine Kampagne.');}
 }
 async function load(){if(!entry)return;const accepted=entry;try{if(await enter(accepted)){entry=null;hideCampaignScreen();}else message('Öffnung bestätigt. Arbeitsfläche konnte nicht vollständig geladen werden. Erneut laden versucht nur die Arbeitsfläche.');}catch(e){message((e as Error).message+' · Öffnung ist bereits bestätigt.');}}
-async function execute(c:CampaignCatalogCommand){if(busy||pending)return;busy=true;pending=c;window.localStorage.setItem(pendingKey,JSON.stringify(c));lock();let accepted:CampaignCatalogReceipt|null=null;
+async function execute(c:CampaignCatalogCommand){if(busy||pending)return;
+ // Persist the intent before dispatch; a failed local write must not lock the UI.
+ try{window.localStorage.setItem(pendingKey,JSON.stringify(c));storageNotice='';}catch(error){message('Auftrag nicht gestartet: '+(error as Error).message+'. Eingaben bleiben erhalten. Erneut versuchen.');return;}
+ busy=true;pending=c;lock();let accepted:CampaignCatalogReceipt|null=null;
  try{try{accepted=unwrap(await window.campaign.campaignCatalog(c));}catch(error){try{accepted=unwrap(await window.campaign.campaignCatalogOutcome(c));}catch{message('Ergebnis noch offen. Buchungsstatus prüfen, bevor du fortfährst.');return;}if(!accepted){clearPending();throw error;}}
   clearPending();busy=false;await apply(accepted!);
  }catch(error){message((error as Error).message);}finally{busy=false;lock();}

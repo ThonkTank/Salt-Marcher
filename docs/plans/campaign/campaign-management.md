@@ -37,6 +37,28 @@ pakete. Originaltexte und fremde Kampagnen bleiben bei Vorschau, Fehlern und
 Transfer unverändert. Der Bildschirm wartet vor dem Öffnen auf die vorhandenen
 strikten Flush-/Entwurfsgrenzen der zuständigen Editoren.
 
+Der lokale UI-Auftragsvermerk ist keine zweite Kampagnenwahrheit. Kann
+`campaign-screen-ui.execute` die neue Absicht nicht vermerken, sendet es keinen
+Storecommand und hält Namen/Bedienung für einen ausdrücklichen neuen Versuch
+offen. Erst der erfolgreiche Vermerk aktiviert den Pending-/Busy-Zustand.
+Nach geklärtem Storeergebnis darf dagegen ein fehlgeschlagenes Entfernen des
+Vermerks weder den angenommenen Beleg noch das Laden der Arbeitsfläche
+verwerfen. Der vorhandene Vermerk bleibt für eine erneute reine Statusabfrage
+erhalten; der Kampagnenbildschirm erklärt die fehlgeschlagene Bereinigung.
+Keine Mutation wird allein zur Bereinigung wiederholt, keine neue DB-/Journal-
+Pipeline oder Migration eingeführt.
+
+`desktop-campaign-catalog.test.mjs` verbindet DOMStoragefehler mit echten
+Storebelegen: erfolgloser Intentwrite ohne Dispatch, Name erhalten und Retry
+nur einmal; Cleanupfehler nach bestätigter Erstellung, zugängliche Arbeitsfläche
+und Wiederinitialisierung mit Statuslesen bei unveränderten DBbytes. Das
+qualifiziert weder beschädigte Vermerke noch vollständige Disk-/Crashfälle.
+Weitere Abnahme am selben Kampagnenweg: Browser-/Profilneustart mit offenem
+Vermerk vor und nach Storecommit, unlesbarer oder beschädigter Vermerk mit
+klarer Wiederaufnahme, abgewiesene Registry-/Medienwrites und anschließendes
+sicheres Lesen/Exportieren. Die jeweilige Commandkennung und ihr Storebeleg
+bleiben Grundlage; kein blindes Wiederholen einer unbekannten Mutation.
+
 Grenzen: Der neue Einstellungsdialog liest Generatorpresets ohne Aktivierung;
 die bestehende detaillierte Presetbearbeitung und -zuweisung benötigt noch eine
 geöffnete Arbeitsfläche. Diese Unabhängigkeit bleibt offen. Historische und
