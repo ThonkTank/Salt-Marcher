@@ -1,15 +1,15 @@
 import type {DungeonView} from './dungeon-contracts';
 import type {DungeonPaceSettings} from './dungeon-pace';
 type Context=NonNullable<DungeonView['travelPace']>;
-type Raw={movement:string;group:string;members:{characterId:string;excluded:boolean;speed:string}[]};
+type Raw={round:string;movement:string;group:string;members:{characterId:string;excluded:boolean;speed:string}[]};
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 let context:Context|null=null;
 const fmt=(n:number|null)=>n===null?'offen':n.toLocaleString('de-DE',{maximumFractionDigits:3})+' m/min';
-function raw():Raw|null{return context?{movement:el<HTMLSelectElement>('dungeon-movement').value,group:el<HTMLInputElement>('dungeon-group-speed').value,members:[...el('dungeon-pace-members').querySelectorAll<HTMLElement>('[data-character-id]')].map(row=>({characterId:row.dataset.characterId!,excluded:!row.querySelector<HTMLInputElement>('input[type=checkbox]')!.checked,speed:row.querySelector<HTMLInputElement>('input[type=number]')!.value}))}:null;}
+function raw():Raw|null{return context?{round:el<HTMLInputElement>('dungeon-round-seconds').value,movement:el<HTMLSelectElement>('dungeon-movement').value,group:el<HTMLInputElement>('dungeon-group-speed').value,members:[...el('dungeon-pace-members').querySelectorAll<HTMLElement>('[data-character-id]')].map(row=>({characterId:row.dataset.characterId!,excluded:!row.querySelector<HTMLInputElement>('input[type=checkbox]')!.checked,speed:row.querySelector<HTMLInputElement>('input[type=number]')!.value}))}:null;}
 const equal=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
 export function dungeonPaceDirty(){
  if(!context)return false;const settings=context.settings;
- const confirmed:Raw={movement:settings.movement,group:settings.groupMetersPerMinute===null?'':String(settings.groupMetersPerMinute),members:context.pace.members.map(member=>{
+ const confirmed:Raw={round:String(settings.explorationRoundSeconds??600),movement:settings.movement,group:settings.groupMetersPerMinute===null?'':String(settings.groupMetersPerMinute),members:context.pace.members.map(member=>{
   const own=settings.members.find(m=>m.characterId===member.characterId);
   return{characterId:member.characterId,excluded:member.excluded,speed:own?.metersPerMinute===null||own?.metersPerMinute===undefined?'':String(own.metersPerMinute)};
  })};
@@ -19,7 +19,7 @@ export function clearDungeonPace(){context=null;el('dungeon-pace-members').repla
 export function dungeonPaceDraft(){
  const r=raw();if(!r||!context)throw new Error('Aktuelle Gruppe zuerst laden.');
  const rate=(s:string)=>s.trim()===''?null:Number(s);
- const settings:DungeonPaceSettings={sceneId:context.settings.sceneId,revision:context.settings.revision,movement:r.movement as DungeonPaceSettings['movement'],groupMetersPerMinute:rate(r.group),members:r.members.filter(m=>m.excluded||m.speed.trim()!=='').map(m=>({characterId:m.characterId,excluded:m.excluded,metersPerMinute:rate(m.speed)}))};
+ const settings:DungeonPaceSettings={explorationRoundSeconds:Number(r.round),sceneId:context.settings.sceneId,revision:context.settings.revision,movement:r.movement as DungeonPaceSettings['movement'],groupMetersPerMinute:rate(r.group),members:r.members.filter(m=>m.excluded||m.speed.trim()!=='').map(m=>({characterId:m.characterId,excluded:m.excluded,metersPerMinute:rate(m.speed)}))};
  return{settings,expectedMembershipRevision:context.membershipRevision};
 }
 export function acceptDungeonPace(submitted:DungeonPaceSettings,next:Context){
@@ -36,6 +36,8 @@ export function renderDungeonPace(next:Context|undefined,changed:()=>void,reset=
  const speed=el<HTMLInputElement>('dungeon-speed');speed.readOnly=true;speed.value=next.pace.metersPerMinute===null?'':String(next.pace.metersPerMinute);
  if(dirty&&same)return;
  context=next;
+ el<HTMLInputElement>('dungeon-round-seconds').value=String(next.settings.explorationRoundSeconds??600);
+ const roundChoice=[60,300,600,900,1800].includes(next.settings.explorationRoundSeconds??600)?String(next.settings.explorationRoundSeconds??600):'custom';for(const option of el<HTMLSelectElement>('dungeon-round-preset').options)option.selected=option.value===roundChoice;
  el<HTMLSelectElement>('dungeon-movement').value=next.settings.movement;
  el<HTMLInputElement>('dungeon-group-speed').value=next.settings.groupMetersPerMinute===null?'':String(next.settings.groupMetersPerMinute);
  const root=el('dungeon-pace-members');root.replaceChildren();
