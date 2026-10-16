@@ -581,3 +581,12 @@ test('lazy activation defers the directory until its first ordinary opening',asy
  await x.ui.ensurePreparation(x.workspace);assert.equal(reads,1);assert.equal(x.el('preparation').inert,false);
  await x.ui.ensurePreparation(x.workspace);assert.equal(reads,1);
 });
+
+test('adding a scene waits for its inspector before focusing and selecting its placeholder',async t=>{
+ const x=await fixture(t);await x.activate();x.el('plan-create').click();await until(()=>!x.el('plan-controls').hidden);
+ const input=x.el('scene-title'),calls=[];input.focus=()=>calls.push({visible:!x.el('scene-editor').hidden,value:input.value});input.select=()=>calls.push('select');
+ x.el('scene-add').click();await until(()=>calls.length===2);
+ assert.deepEqual(calls,[{visible:true,value:'Neue Szene'},'select']);
+ input.value='Ankunft an der Zollbrücke';input.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
+ assert.equal(x.store.preparation(x.workspace.token).plans[0].scenes[0].title,'Ankunft an der Zollbrücke');
+});
