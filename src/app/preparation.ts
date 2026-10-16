@@ -11,7 +11,7 @@ import type { WorkspaceGeometry, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
 import { newLocation } from '../features/location/location-schema';
 import type { ManualPlan } from '../features/planner/manual-planner';
-import {initSession,sessionContext,sessionVisitReadAloud,flushSession,clearSessionTimeline,linkVisitNoteThread} from './session-ui';
+import {initSession,sessionContext,sessionVisitReadAlouds,flushSession,clearSessionTimeline,linkVisitNoteThread} from './session-ui';
 import { campaignLocalId } from '../features/campaign/campaign-contracts';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
@@ -340,9 +340,10 @@ function renderSceneList() {
   const plan = planDraft ?? originalPlan(),token=context?.token;
   const query=value('scene-search'),terms=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const locations=new Map(data.locations.map(row=>[row.document.id,row.document.name]));
+  const readAlouds=terms.length?sessionVisitReadAlouds(token,plan?.id):null;
   let matches=0,selectedVisible=false;
   plan?.scenes.forEach((scene, index) => {
-    const text=[scene.title,scene.notes,sessionVisitReadAloud(token,plan!.id,scene.id),scene.locationId?locations.get(scene.locationId)??'':''].join('\n').toLocaleLowerCase();
+    const text=[scene.title,scene.notes,readAlouds?.get(scene.id)??'',scene.locationId?locations.get(scene.locationId)??'':''].join('\n').toLocaleLowerCase();
     if(!terms.every(term=>text.includes(term)))return;
     matches++;if(scene.id===selectedScene)selectedVisible=true;
     const button = document.createElement('button'); button.textContent = `${index + 1}. ${scene.title || 'Unbenannte Szene'}`;
