@@ -110,6 +110,20 @@ zwei normale Exits ohne Rendererfehler. Die Queryplanprüfung bestätigt die Suc
 Latenz- oder Großbestandsabnahme. Vollständige Dialog-/Quellenlebenszyklus- und
 Generatorabnahme bleiben getrennt.
 
+### Unbekannter Speicherausgang
+
+Ein Transportabbruch beim vorhandenen `executeGeneration` hält den ursprünglichen
+Auftrag, Entwurf und die Speichersperre im offenen Manager. „Speicherausgang klären“
+verwendet dieselbe Kennung und Nutzlast: der vorhandene Receiptwriter bestätigt
+die erste Buchung oder führt den noch nicht angewandten Auftrag einmal aus.
+Schließen und weitere Saves bleiben bis zur bekannten Antwort gesperrt. Ein
+bestätigter Schreibfehler gibt den unveränderten Entwurf wieder frei. Ein direkter
+Aktivierungswechsel entzieht dem alten Auftrag seine UI-Autorität; er wird nicht
+in die neue Aktivierung übernommen. Kein neuer Receiptvertrag und kein Journal;
+die Klärungsabsicht selbst überlebt keinen Prozessneustart. Bereits bestätigte
+Tabellen bleiben nach Neustart normal lesbar. Separate Generierungs-/Lootroll-
+und Vorschlagsannahmeaufträge sind damit nicht vollständig qualifiziert.
+
 ### Weitere ausführbare Tabellenabschlüsse
 
 - **Gemeinsamen Manager einschließlich Fraktionsnesting am Host abschließen.**
