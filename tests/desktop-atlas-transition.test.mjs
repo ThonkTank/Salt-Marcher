@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
-for(const [name,file] of [['store','storage/store'],['position','atlas-position'],['raster','landscape-raster']])buildSync({entryPoints:['src/app/'+file+'.ts'],outfile:'.build/transition-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+for(const [name,file] of [['store','storage/store'],['position','atlas-position'],['raster','landscape-raster'],['export','atlas-landscape-export'],['public','campaign-atlas-export']])buildSync({entryPoints:['src/app/'+file+'.ts'],outfile:'.build/transition-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['desktop/atlas-raster-worker.ts'],outfile:'.build/transition-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['desktop/atlas-raster.ts'],outfile:'.build/transition-service.cjs',bundle:true,platform:'node',format:'cjs'});
 const {CampaignStore}=require('../.build/transition-store.cjs'),positions=require('../.build/transition-position.cjs'),{LandscapeRasterizer}=require('../.build/transition-raster.cjs');
@@ -115,4 +115,22 @@ test('an unavailable derived index cannot prevent opening an unrelated healthy c
  put.run(other.id,'damaged',1,10,-10,0,1,'{broken original bytes');
  f.fresh();assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records[0].id,r.id);assert.equal(f.store.db.prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=?').get(other.id).payload,'{broken original bytes');
  assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name IN ('atlas_landscape_area','atlas_landscape_objects')").get().n,0);
+});
+
+test('GM export tiles cover the requested pixels, reject mixed revisions and stop on cancellation or byte budget',async()=>{
+ const {landscapeExportTiles}=require('../.build/transition-export.cjs'),box={x:-12345,y:-98765,width:4e7,height:2e7},calls=[];
+ const read=async(part,width,height)=>{calls.push({part,width,height});return{ok:true,value:{campaignId:'c',revision:7,box:part,width,height,data:'data:image/png;base64,test'}};};
+ const tiles=await landscapeExportTiles(box,2050,1100,'c',7,read,()=>true);assert.equal(tiles.length,6);assert.deepEqual(calls.map(c=>[c.width,c.height]),[[1024,1024],[1024,1024],[2,1024],[1024,76],[1024,76],[2,76]]);const last=tiles.at(-1);assert(Math.abs(last.box.x+last.box.width-box.x-box.width)<1e-6);assert(Math.abs(last.box.y+last.box.height-box.y-box.height)<1e-6);
+ let running=true,count=0;await assert.rejects(landscapeExportTiles(box,2050,1100,'c',7,async(...args)=>{count++;running=false;return read(...args);},()=>running),/abgebrochen/);assert.equal(count,1);
+ await assert.rejects(landscapeExportTiles(box,100,100,'c',8,read,()=>true),/während der Ausgabe/);
+ const data='A'.repeat(8*1024*1024);await assert.rejects(landscapeExportTiles(box,8192,8192,'c',7,async(...args)=>{const r=await read(...args);r.value.data=data;return r;},()=>true),/Bildspeicher/);
+ assert.equal(calls.length<70,true);await assert.rejects(landscapeExportTiles(box,8193,1,'c',7,read,()=>true),/prüfen/);
+});
+
+test('public export uses remembered public terrain, never current hidden GM geometry',async t=>{
+ const {parseHTML}=await import('linkedom'),{document}=parseHTML('<html><body></body></html>'),previous=globalThis.document;globalThis.document=document;t.after(()=>{globalThis.document=previous;});
+ const {publicAtlasSVG}=require('../.build/transition-public.cjs'),snapshot={geometry:{position:null},perception:null},box={x:-5000,y:-5000,width:10000,height:10000};
+ const frame={mode:'map',title:'',map:{hexMeters:4828.032,position:{q:0,r:0},cells:[{q:0,r:0,terrain:'forest',road:false,river:false,visible:false,label:'Bekannter Wald'}],markers:[]}};
+ const secret={...patch(-1000,-1000,2000,2000,'water'),id:'secret-new-lake'};
+ const svg=publicAtlasSVG(snapshot,box,frame,[secret]).outerHTML;assert(svg.includes('#668b69'));assert(!svg.includes('#7fa8bd'),'A new unseen lake must not overwrite remembered forest');assert(!svg.includes('secret-new-lake'));assert(!svg.includes('data-landscape-id'));
 });

@@ -101,6 +101,7 @@ export interface AtlasCommitAck {
   canUndo: boolean; canRedo: boolean;
 }
 export interface AtlasAPI {
+  cancelLandscapeRaster(token:string,consumer:'view'|'export'):Promise<Result<void>>;
   landscapeRaster(token:string,box:import('./atlas-landscape').LandscapeBox,width:number,height:number,consumer?:'view'|'export'):Promise<Result<import('./landscape-raster').LandscapeRaster>>;
   atlasOverview(token: string): Promise<Result<AtlasOverview>>;
   atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;

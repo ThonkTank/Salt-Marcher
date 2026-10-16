@@ -20,12 +20,12 @@ export function drawLandscape(
   mpp: number,
   assets: Map<string, string>,
   references = true,
-  raster?: import("./landscape-raster").LandscapeRaster,
+  raster?: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[],
 ) {
   let rasterDrawn=false;
   const drawRaster=()=>{
     if(!raster||rasterDrawn)return;rasterDrawn=true;
-    root.append(landscapeNode('image',{href:raster.data,x:0,y:0,width:raster.width,height:raster.height,transform:`translate(${raster.box.x-b.x} ${raster.box.y-b.y}) scale(${raster.box.width/raster.width} ${raster.box.height/raster.height})`,'pointer-events':'none','data-landscape-raster':'true'}));
+    for(const tile of Array.isArray(raster)?raster:[raster])root.append(landscapeNode('image',{href:tile.data,x:0,y:0,width:tile.width,height:tile.height,transform:`translate(${tile.box.x-b.x} ${tile.box.y-b.y}) scale(${tile.box.width/tile.width} ${tile.box.height/tile.height})`,'pointer-events':'none','data-landscape-raster':'true'}));
   };
   for (const r of [...records].sort(
     (a, b) =>

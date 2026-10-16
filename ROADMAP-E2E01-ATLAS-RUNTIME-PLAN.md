@@ -297,8 +297,8 @@ bleiben kompatibel. Prozessnotizen und lokale Messpfade gehören nicht ins Repo.
 | 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Landschaft und Nichtflächen laufen am Writer mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen; fehlgeschlagener Indexaufbau rollt vollständig zurück und fällt auf kanonische Btree-Reads zurück, ohne andere Kampagnen zu sperren. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
 | 3 Übersicht/Frame | Effektive grobe/feine Eigenschaften vor Aggregation bestimmen. Vereinfachte Flächen/Symbole/Kacheln schützen Landschaft beim Herauszoomen. Render/Hit publizieren denselben revisionsgebundenen Frame. | Landschaftsflächen werden in einem separaten Lese-Worker zu begrenzten, revisionsgebundenen Rasterbildern aggregiert; grobe Vorgaben und feine Übersteuerungen bleiben geordnet, Löcher erhalten. Native Linux-Probe: 100000 Flächen, sichtbar Wald → Wasser malen → Save → Neustart → Undo, tatsächliche Bildschirmfarben. Noch keine persistente Kachelpyramide, vollständige Frame-/Hit-Umstellung oder Latenzfreigabe; B01/B04 offen. |
 | 4 Raumfachmodelle | Vorhandene Volumes/Lifecycle weiterverwenden. Gebäude außen/innen aus einem Zustand; echte Paths/Passages getrennt von dekorativen Linien. Reine Zeichnung nur ausdrücklich mit Preview umwandeln. | Grundlagen vorhanden, vollständiger Anschluss offen. 3-m-Wand x1,1 =3,3 m; 1,524-m-Dungeonzellen bleiben exakt; gestapelte Räume, Split/Merge, Anker/Prosa und gemeinsame Kamera/History. |
-| 5 Medien/Jobs | Hashreferenz von Bildtransport trennen, Auflösungsstufen/Kacheln, Bytecaches und Worker einführen. Aktive Drafts/Undo separat budgetieren. Nur Writer nimmt revisionsgebundene Ergebnisse an. | Rasterjobs sind pro Verbraucher abbrechbar und warten auf den Vorgängeraustritt; PNG-Cache 64 MiB, Bild bis 1024×1024, Aktivierung/Revision vor und nach dem Worker geprüft. 64/128/256-Vergleich, Vorlagenauflösungen, GPU-/Draftbudgets, Export und Assetdatei/BLOB-Entscheidung bleiben offen. |
-| 6 Verbraucher | Exakte Queries für Reise/Sicht; betroffene Routen/Perception invalidieren, Actorpreflight und gemeinsame Zeit erhalten. Gefilterte Playerprojektion/Assets, bereichsgebundener Export und vollständiger Transfer. | Physische Landschaftsänderungen pausieren aktive/pausierte Welt- und Lokalreisen atomar, ohne Position/Zeit zu ändern. Gegenprobe mit aktiver Reise; dekorative Änderungen brauchen keinen Geometrievollread. Konservative Kampagneninvalidierung, übrige Verbraucherumstellung und volle kausale Abnahme bleiben offen. Renderbilder liefern niemals Spielregeln. |
+| 5 Medien/Jobs | Hashreferenz von Bildtransport trennen, Auflösungsstufen/Kacheln, Bytecaches und Worker einführen. Aktive Drafts/Undo separat budgetieren. Nur Writer nimmt revisionsgebundene Ergebnisse an. | Rasterjobs sind pro Verbraucher abbrechbar und warten auf den Vorgängeraustritt; PNG-Cache 64 MiB, Bild bis 1024×1024, GM-Ausgabekacheln sequenziell bis 8192 Pixel Gesamtkante/256 MiB codiertem Bildspeicher und ausdrücklicher Abbruch, Aktivierung/Revision vor und nach dem Worker geprüft. 64/128/256-Vergleich, Vorlagenauflösungen, GPU-/Draftbudgets, Export und Assetdatei/BLOB-Entscheidung bleiben offen. |
+| 6 Verbraucher | Exakte Queries für Reise/Sicht; betroffene Routen/Perception invalidieren, Actorpreflight und gemeinsame Zeit erhalten. Gefilterte Playerprojektion/Assets, bereichsgebundener Export und vollständiger Transfer. | Physische Landschaftsänderungen pausieren aktive/pausierte Welt- und Lokalreisen atomar, ohne Position/Zeit zu ändern. Gegenprobe mit aktiver Reise; dekorative Änderungen brauchen keinen Geometrievollread. GM-PNG/JPEG nutzt dieselbe wirksame Landschaft kachelweise in Ausgabeauflösung. Öffentliche Ausgabe übernimmt nur freigegebene Sicht/Erinnerung, keine aktuellen verdeckten GM-Konturen. Konservative Kampagneninvalidierung, übrige Verbraucherumstellung und volle kausale Abnahme bleiben offen. Renderbilder liefern niemals Spielregeln. |
 | 7 Migration/Ablösung | Je Paket versionierte, in Kopie geprüfte Migration plus DB-/Medienbackup. Alte Adapter nach Verbraucherumstellung entfernen; keine permanente zweite Schreibautorität. | Offen. IDs, Textbytes, Links, Einheiten, Assets, Runtime und alte History vergleichen. Historische Commands/Receipts nicht wieder ausführen/umschreiben; keine pauschale Historylöschung. Bei Downgrade neuere Formate erklärt ablehnen. |
 
 Schritt 1 begrenzt zunächst Reads ohne Schemawechsel. Schritt 2 liefert die
@@ -365,6 +365,25 @@ Btree 15,74/45,36 ms. Die vollständige kalte Rasterberechnung benötigt dort
 aber gerade keine bestandene
 Kaltlade-/Latenzqualifikation: weitere lokale Invalidierung und Detailstufen
 sind erforderlich. Andere Hardware-/Lastbedingungen nicht daraus ableiten.
+
+Die native GM-Ausgabeprobe enthält vor der Korrektur keinen Wald, obwohl er im
+Viewport sichtbar ist: Die alte Größenfilterung entfernte sämtliche kleinen
+Autorenflächen. Der GM-Export verwendet nun sequenzielle Rasterkacheln in der
+angeforderten Ausgabeauflösung (maximal 1024² je Job), ergänzt weiter die
+Vektoren/Referenzen und lässt sich abbrechen. Der Probeweg prüft tatsächliche
+PNG-Pixel und den unveränderten Vorgängerexport nach Abbruch. Gemischte
+Revisionen, unvollständige Ergebnisse oder überschrittener Bildspeicher liefern
+keine Datei. Der Cache bleibt separat auf 64 MiB begrenzt; Canvas-/GPU-Kopien
+und maximale 8192-Ausgaben benötigen weiterhin Lastqualifikation.
+
+Ein unabhängiger Gegenfall belegt zudem eine Informationslücke im bisherigen
+öffentlichen Export: Aktuelle GM-Konturen wurden über bekannte Hexes gelegt,
+auch wenn diese nur erinnert und gerade nicht gesehen waren. Neuer ungesehener
+See überschreibt so alten Wald. Öffentliche Ausgabe verwendet ausschließlich
+die bestehende Sicht-/Erinnerungsprojektion; sie liest dafür weder GM-Flächen
+noch GM-Rasterbilder. Feinere öffentliche Küsten/Wege bleiben beauftragt und
+benötigen freigegebene, bei Sicht gespeicherte Geometrie samt Erinnerungsversion.
+Alte Erinnerungen nicht aus aktuellem GM-Wissen nachträglich vervollständigen.
 
 Die Landschaftssuche hat keine stille 100-Treffergrenze mehr: Metadatenseiten
 und ein exakter Objektread ersetzen den bisherigen Vollgeometriesuchread. Der

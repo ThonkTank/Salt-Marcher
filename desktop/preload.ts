@@ -178,6 +178,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   referenceAsset:(token,id)=>ipcRenderer.invoke('atlas:reference-asset',token,id),
   exportAtlasPNG:(token,bytes,audience,format)=>ipcRenderer.invoke('atlas:export-png',token,bytes,audience,format),
   importAtlas:(c)=>ipcRenderer.invoke('atlas:import',c),
+  cancelLandscapeRaster:(token,consumer)=>ipcRenderer.invoke('atlas:raster-cancel',token,consumer),
   landscapeRaster:(token,box,width,height,consumer)=>ipcRenderer.invoke('atlas:raster',token,box,width,height,consumer),
   atlasOverview:token=>ipcRenderer.invoke('atlas:overview',token),
   atlasObjects:(token,query)=>ipcRenderer.invoke('atlas:objects',token,query),
