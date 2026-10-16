@@ -46,7 +46,7 @@ export class TreasureDistribution {
   if(!reviewed||this.busy||!this.current(reviewed.owner,reviewed.generation)||!this.dialog.open)return;
   if(reviewed!==this.reviewed||reviewed.book!==this.book||!this.valid().ok||JSON.stringify(reviewed.action)!==JSON.stringify(this.allocationAction())){this.review.hidden=true;this.report('Verteilung geändert. Mengen und Empfänger erneut prüfen.',true);return;}
   const {owner:o,generation:g,action}=reviewed;this.lock(true);
-  try{const ok=await this.send(action);if(ok&&this.current(o,g)){this.report(action.allocations.length+' Beutezuordnungen zusammen gespeichert. Restmengen bleiben im Schatz.');this.reset();}else if(this.current(o,g))this.status.textContent='Verteilung bleibt offen. Hinweis im Kampagnenstatus prüfen; einen geänderten Schatz erneut auswählen.';}
+  try{const ok=await this.send(action);if(ok&&this.current(o,g))this.reset();else if(this.current(o,g))this.status.textContent='Verteilung bleibt offen. Hinweis im Kampagnenstatus prüfen; einen geänderten Schatz erneut auswählen.';}
   catch(e){if(this.current(o,g))this.report((e as Error).message,true);}finally{if(this.current(o,g))this.lock(false);}
  }
 }

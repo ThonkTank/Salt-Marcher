@@ -18,6 +18,13 @@ bekommt genau eine neue Revision. Ein ungültiger späterer Empfänger, eine fal
 Definition oder ein Ledgerfehler lässt keine frühere Teilzuweisung und kein
 Receipt zurück. Keine zweite allgemeine Verteilungsarchitektur.
 
+Ein bestätigtes Receipt entscheidet das Buchungsergebnis. Scheitert danach das
+Neuladen von Liste, Schatz, Verlauf oder abhängigen Ansichten, schließt die
+bereits gebuchte Verteilung. Der Kampagnenstatus nennt sowohl den gespeicherten
+Auftrag als auch den Anzeigefehler; eine zweite Erfolgsmeldung verdeckt ihn nicht.
+Ein abgelehnter oder ungeklärter Write hält die Eingaben weiterhin offen.
+
+
 Die Bestätigung trägt die tatsächlich angezeigte Action mit Mengen, Empfängern
 und ihren Basen. Veränderte Eingaben brauchen eine neue Prüfung. Ein alter
 Bestätigungsaufruf darf weder diese neue Verteilung buchen noch den nächsten

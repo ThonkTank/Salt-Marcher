@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';import {randomUUID} from 'node:crypto';impo
 buildSync({stdin:{contents:"export * from './src/app/treasury-ui';export {initCommitControls} from './src/app/commit-confirmation';",resolveDir:process.cwd(),sourcefile:'treasury-owner.ts'},outfile:'.build/treasury-owner.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));async function until(check){const deadline=Date.now()+5000;while(Date.now()<deadline){if(check())return;await delay(5);}assert.ok(check(),'expected treasury state');}
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return{resolve,promise};}
-async function fixture(t){
+async function fixture(t,changed=async()=>{}){
  const saved={window:globalThis.window,document:globalThis.document,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});const decorate=d=>{d.close=()=>{d.open=false;};d.showModal=()=>{d.open=true;};return d;},create=document.createElement.bind(document);for(const d of document.querySelectorAll('dialog'))decorate(d);document.createElement=(tag,...args)=>{const n=create(tag,...args);return tag==='dialog'?decorate(n):n;};for(const s of document.querySelectorAll('select'))Object.defineProperty(s,'value',{value:'',writable:true});
  const proto=window.HTMLSelectElement.prototype,previousValue=Object.getOwnPropertyDescriptor(proto,'value');Object.defineProperty(proto,'value',{configurable:true,get(){return this.__treasuryValue??this.options[0]?.value??'';},set(v){this.__treasuryValue=v;}});
  const timers=[],writes=[],commands=[],messages=[],book=(id,title)=>({id,revision:1,title,locationId:null,sceneId:null,combatId:null,items:[]}),books=new Map([['a',book('a','Alpha')],['b',book('b','Beta')]]),drafts=new Map(),ok=value=>({ok:true,value});let waitKeep=null,waitDiscard=null;
@@ -13,7 +13,7 @@ async function fixture(t){
  window.campaign={executeProgress:async command=>{commands.push(structuredClone(command));const fresh=book('new-'+commands.length,'Neuer Schatz');books.set(fresh.id,fresh);return ok({characters:[],notices:[],treasureId:fresh.id,ledgerIds:[]});},live:async()=>ok({scenes:[]}),treasures:async()=>ok({items:[...books.values()].map(t=>({...t,available:0})),next:null}),progress:async()=>ok({characters:[],notices:[]}),ledgerParties:async()=>ok([]),treasure:async(_token,id)=>ok(structuredClone(books.get(id))),treasuryDraft:async(_token,id)=>ok(drafts.get(id)??null),treasureHistory:async()=>ok({items:[],next:null}),
   keepTreasuryDraft:async(token,d,expected)=>{writes.push({token,d:structuredClone(d),expected});const waiting=waitKeep;waitKeep=null;if(waiting)await waiting.promise;drafts.set(d.treasureId,structuredClone(d));return ok();},
   discardTreasuryDraft:async(_token,id)=>{const waiting=waitDiscard;waitDiscard=null;if(waiting)await waiting.promise;drafts.delete(id);return ok();}};
- const filename=require.resolve('../.build/treasury-owner.cjs');delete require.cache[filename];const ui=require(filename);let active={token:'A',campaign:{id:'campaign-A'}};ui.initCommitControls(()=>active,(text,error)=>messages.push({text,error}));ui.initTreasury((text,error)=>messages.push({text,error}),async()=>{},async()=>{});ui.activateTreasury(active);await ui.openTreasury('a');
+ const filename=require.resolve('../.build/treasury-owner.cjs');delete require.cache[filename];const ui=require(filename);let active={token:'A',campaign:{id:'campaign-A'}};ui.initCommitControls(()=>active,(text,error)=>messages.push({text,error}));ui.initTreasury((text,error)=>messages.push({text,error}),changed,async()=>{});ui.activateTreasury(active);await ui.openTreasury('a');
  const el=id=>document.getElementById(id),edit=v=>{el('treasury-title').value=v;el('treasury-title').oninput();},switchTo=()=>{active={token:'B',campaign:{id:'campaign-B'}};ui.activateTreasury(active);return ui.openTreasury('b');};
  t.after(()=>{ui.activateTreasury(null);Object.defineProperty(proto,'value',previousValue);Object.assign(globalThis,saved);});return{ui,el,edit,switchTo,timers,writes,commands,drafts,messages,holdKeep(){waitKeep=deferred();return waitKeep;},holdDiscard(){waitDiscard=deferred();return waitDiscard;}};
 }
@@ -125,4 +125,24 @@ test('switching existing treasures rebinds visible catalog choices but changing 
  assert.equal(await x.ui.flushTreasury(),true);assert.equal(x.writes.at(-1).d.treasureId,'b');assert.equal(x.writes.at(-1).d.items[0].reference.definitionId,'gold');
  await x.switchTo();assert.equal(x.el('treasury-catalog-results').querySelector('button'),null);
  const count=x.el('treasury-rows').querySelectorAll('input').length;choice.click();assert.equal(x.el('treasury-rows').querySelectorAll('input').length,count);
+});
+
+for(const phase of ['after','list','detail','history','write','unresolved'])test('distribution reports its actual commit outcome when '+phase+' fails',async t=>{
+ let committed=false;
+ const failure='Controlled '+phase+' failure',x=await fixture(t,async()=>{if(committed&&phase==='after')throw new Error(failure);});
+ const person={characterId:'hero',name:'Ada',active:true,membershipRevision:1},book={id:'a',revision:1,title:'Alpha',items:[{id:'rope',name:'Seil',quantity:5,allocated:0,currentDefinition:{id:'rope-definition',revision:1,name:'Seil',unitCopper:'100',trashed:false}}]};
+ window.campaign.progress=async()=>({ok:true,value:{characters:[person],notices:[]}});
+ window.campaign.treasure=async()=>committed&&phase==='detail'?{ok:false,error:failure}:{ok:true,value:structuredClone(book)};
+ window.campaign.treasureHistory=async()=>committed&&phase==='history'?{ok:false,error:failure}:{ok:true,value:{items:[],next:null}};
+ const list=window.campaign.treasures;window.campaign.treasures=async(...args)=>committed&&phase==='list'?{ok:false,error:failure}:list(...args);
+ window.campaign.commitStatus=async()=>({ok:true,value:{outcome:phase==='unresolved'?'pending':'not-applied'}});
+ window.campaign.executeProgress=async command=>{x.commands.push(command);if(phase==='write'||phase==='unresolved')return{ok:false,error:failure};committed=true;return{ok:true,value:{characters:[person],notices:[],treasureId:'a',ledgerIds:['grant']}};};
+ x.el('distribution-review').scrollIntoView=()=>{};
+ await x.ui.openTreasureDistribution('a');const input=x.el('distribution-grid').querySelector('input');input.value='2';input.oninput();x.el('distribution-check').click();x.el('distribution-confirm').click();
+ await until(()=>x.messages.some(m=>m.text.includes(phase==='unresolved'?'Buchungsantwort fehlt':failure)));
+ await until(()=>!x.el('treasure-distribution-dialog').open||!x.el('distribution-confirm').disabled);
+ assert.equal(x.commands.length,1);assert.equal(committed,!['write','unresolved'].includes(phase));
+ assert.equal(x.el('treasure-distribution-dialog').open,['write','unresolved'].includes(phase));
+ if(['write','unresolved'].includes(phase)){assert.equal(input.value,'2');assert.ok(!x.messages.some(m=>m.text.includes('gespeichert')));}
+ else{assert.ok(x.messages.some(m=>m.text.includes('gespeichert')&&m.text.includes(failure)));assert.ok(!x.messages.some(m=>m.text.includes('Verteilung bleibt offen')));}
 });

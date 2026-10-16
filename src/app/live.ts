@@ -1,3 +1,4 @@
+import {partySceneLabels} from './party-overview';
 import {bindSceneGroupDrag} from './combat-group-ui';
 import {NpcCastBinder} from './npc-cast-ui';
 import {openPartyRest} from './party-topbar-ui';
@@ -229,7 +230,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
   if (!context || blocked || request) return null;
   liveReadRequest++;
   const focusRevision = data?.focusRevision,previousLocationId=data?.scene?.locationId, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
-  const structural = ['focus', 'move', 'membership', 'archive-character'].includes(action.kind);
+  const structural = ['focus', 'move', 'membership', 'scene-roster', 'archive-character'].includes(action.kind);
   // Blur starts a text save before the user's button click arrives. Keep queued
   // intents available; their handlers await flushLive before writing.
   requestIsTextSave = action.kind === 'profile' || action.kind === 'scene-content';
@@ -870,25 +871,8 @@ function initGroups() {
   get('scene-focus').onchange = () => { void (async () => {
     await changeFocus(value('scene-focus'));
   })(); };
-  get('group-move').onclick = () => { void (async () => {
-    const token = context?.token;
-    if (!(await flushLive()) || context?.token !== token || !data?.scene || data.focusRevision === null || !resumed) return;
-    const source = data.scene;
-    moveBasis = { kind: 'move', sceneId: source.id, expectedRosterRevision: data.rosterRevision, expectedFocusRevision: data.focusRevision, expectedSceneMembershipRevision: source.membershipRevision, expectedClockRevision: source.clock.revision };
-    moveTargets = structuredClone(data.scenes); get('move-members').replaceChildren();
-    get('move-source').textContent = groupLabel({...source,primary:source.id===data.primaryId});
-    for (const id of source.members) {
-      const c = data.roster.find(c => c.id === id)!;
-      const label = document.createElement('label'), box = document.createElement('input'); box.type = 'checkbox'; box.value = id;
-      label.append(box, document.createTextNode(' ' + c.profile.name)); get('move-members').append(label);
-    }
-    const select = get<HTMLSelectElement>('move-target'); select.replaceChildren();
-    const fresh = document.createElement('option'); fresh.value = ''; fresh.textContent = 'Neue unabhängige Gruppe'; select.append(fresh);
-    for (const g of moveTargets.filter(g => g.id !== source.id)) { const option = document.createElement('option'); option.value = g.id; option.textContent = groupLabel(g); select.append(option); }
-    select.value = ''; get('move-new-fields').hidden = false; get<HTMLInputElement>('move-title').value = '';
-    get<HTMLDialogElement>('move-dialog').showModal();
-    get('move-title').dataset.clockRevision = String(source.clock.revision); get('move-title').dataset.contentRevision = String(source.revision);
-  })(); };
+  get('group-move').onclick = () => {void openPartyMove().catch(error=>tell(error.message,true));};
+  get('move-all').onclick=()=>{for(const box of get('move-members').querySelectorAll<HTMLInputElement>('input'))box.checked=true;};
   get('move-target').onchange = () => { get('move-new-fields').hidden = !!value('move-target'); };
   get('move-cancel').onclick = () => { moveBasis = null; get<HTMLDialogElement>('move-dialog').close(); };
   get('move-form').onsubmit = event => { event.preventDefault(); void (async () => {
@@ -909,10 +893,10 @@ function initGroups() {
 }
 
 // Topbar commands share the existing writer, draft flushing and receipt recovery.
-export async function runPartyLive(token:string,action:LiveAction){
- if(context?.token!==token||!await flushLive())throw new Error('Offene Eingaben zuerst speichern oder den Speicherstatus im Spieltisch klären.');
+export async function runPartyLive(token:string,action:LiveAction,stillCurrent:()=>boolean=()=>true){
+ if(!stillCurrent()||context?.token!==token||!await flushLive())throw new Error('Offene Eingaben zuerst speichern oder den Speicherstatus im Spieltisch klären.');
  if(!data)await openLive();
- if(context?.token!==token||!data)throw new Error('Party nicht verfügbar.');
+ if(!stillCurrent()||context?.token!==token||!data)throw new Error('Party oder Auswahl nicht mehr verfügbar.');
  const ack=await execute(action);if(!ack)throw new Error('Änderung nicht bestätigt. Speicherstatus im Spieltisch prüfen; Eingabe bleibt erhalten.');
  if(ack.character&&characterDraft?.id===ack.character.id){characterDraft=structuredClone(ack.character);renderCharacter();}
  return ack;
@@ -975,4 +959,30 @@ async function markLiveSession(marker:'start'|'end',submittedSummary?:string,sub
 function leaveSessionCloseReview(){
   get<HTMLTextAreaElement>('live-session-summary').value=value('live-session-close-summary');get<HTMLTextAreaElement>('live-session-handoff').value=value('live-session-close-handoff');
   sessionCloseOpeningBasis=null;sessionCloseRequest++;get<HTMLDialogElement>('live-session-close-dialog').close();
+}
+
+export async function openPartyMove(ownerToken?:string,ownerSceneId?:string,stillCurrent:()=>boolean=()=>true){
+
+    const token = ownerToken??context?.token;if(ownerToken&&context?.token!==ownerToken)throw new Error('Kampagne gewechselt.');
+    const expectedScene=ownerSceneId??data?.scene?.id;
+    if(!stillCurrent()||!(await flushLive())||context?.token!==token)throw new Error('Offene Eingaben oder Kampagnenwechsel. Spieltisch prüfen.');
+    await openLive();
+    if(!stillCurrent()||context?.token!==token||!data?.scene||data.focusRevision===null||expectedScene!==data.scene.id)throw new Error('Szenenfokus geändert oder keine laufende Sitzung. Auswahl erneut öffnen.');
+    const source = data.scene;
+    moveBasis = { kind: 'move', sceneId: source.id, expectedRosterRevision: data.rosterRevision, expectedFocusRevision: data.focusRevision, expectedSceneMembershipRevision: source.membershipRevision, expectedClockRevision: source.clock.revision };
+    const labels=partySceneLabels(data);
+    moveTargets = structuredClone(data.scenes); get('move-members').replaceChildren();
+    get('move-source').textContent = labels.get(source.id)??groupLabel({...source,primary:source.id===data.primaryId});
+    for (const id of source.members) {
+      const c = data.roster.find(c => c.id === id)!;
+      const label = document.createElement('label'), box = document.createElement('input'); box.type = 'checkbox'; box.value = id;
+      label.append(box, document.createTextNode(' ' + c.profile.name)); get('move-members').append(label);
+    }
+    const select = get<HTMLSelectElement>('move-target'); select.replaceChildren();
+    const fresh = document.createElement('option'); fresh.value = ''; fresh.textContent = 'Neue unabhängige Gruppe'; select.append(fresh);
+    for (const g of moveTargets.filter(g => g.id !== source.id)) { const option = document.createElement('option'); option.value = g.id; option.textContent = labels.get(g.id)??groupLabel(g); select.append(option); }
+    select.value = ''; get('move-new-fields').hidden = false; get<HTMLInputElement>('move-title').value = '';
+    get<HTMLDialogElement>('move-dialog').showModal();
+    get('move-title').dataset.clockRevision = String(source.clock.revision); get('move-title').dataset.contentRevision = String(source.revision);
+    return true;
 }

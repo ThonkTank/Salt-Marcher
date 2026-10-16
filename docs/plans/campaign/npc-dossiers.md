@@ -82,6 +82,38 @@ Die bisherigen 4 MB Rohentwurf werden durch den zusätzlichen Command nicht halb
 die gebundene Gesamtpayloadgrenze beträgt 12 MB. Downgrade/Releasequalifikation
 und native Wiederaufnahme sind separat zu prüfen.
 
+## Bestätigte NPC-Verluste nach einem Kampf
+
+Die Nachbereitung eines abgeschlossenen Combat zeigt dessen benannte World-NPCs
+mit HP zum Abschluss und aktuellem Lebenszyklus. Die Auswahl beginnt leer; eine
+Schaltfläche wählt ausdrücklich die noch verfügbaren NPCs mit null Abschluss-HP.
+Erst „Ausgewählte NSCs als besiegt bestätigen“ ändert den World-Lebenszyklus.
+Auch ein überlebender NPC kann nach einer manuellen GM-Entscheidung ausgewählt
+werden. Das System leitet aus dem Ergebnistext weder Tod noch Gefangenschaft ab.
+HP, Statblock, Fraktion, Autorenprosa und laufende Masken werden nicht verändert.
+
+`confirm-npc-losses` benutzt den bestehenden Combat-Command-, Receipt- und
+ungeklärten Write-Pfad. Combatrevision sowie angezeigte NPC-Notiz-, Record- und
+Actorrevision binden die Zustimmung. Die ganze Auswahl wird vor jeder Mutation
+geprüft. World-Records, gemeinsame Chronik, Combat-Abschlussvermerk und Receipt
+werden atomar übernommen. Veraltete Profile verlangen eine neue Auswahl; Retry
+wiederholt keine Niederlage. Der Combat hält bereits bestätigte Actor-IDs, sodass
+auch nach ausdrücklicher Reaktivierung derselbe Abschluss keine zweite Niederlage
+buchen kann. Die unabhängige Kampagnenkopie remappt diese Referenzen mit.
+
+Von jeder verfügbaren Zeile führt „Weltprofil / Reaktivierung“ in den vorhandenen
+NPC-Editor. Aktivieren und eine eventuelle HP-Korrektur bleiben ausdrückliche
+Änderungen dort. Die bestätigte historische Niederlage bleibt dabei erhalten.
+Die Nachbereitung besitzt ihre eigenen Auswahl-/Ladesperren; allgemeine
+Kampf-Refreshes dürfen bestätigte Zeilen nicht erneut auswählbar machen.
+
+Lokale Store-/DOMfälle prüfen Bestätigung, Replay, Stale-Gesamtabbruch,
+Transaktionsrollback, Reopen, unabhängige Kopie und spätere Reaktivierung.
+Native Bedienung, vollständige CI und Main-Veröffentlichung sind gesonderte
+Belege. Ein Fraktionsbestand wird dabei nicht automatisch einem NPC oder einem
+unbenannten Kämpfer zugerechnet. Der gesonderte manuelle Bestandsabschluss sowie
+vollständige Plattform-/Accessibility-/Owner-Abnahme bleiben offen.
+
 ## Nächste Lieferung und Abnahme
 
 - Native Antwortverluste vor/nach Dispatch und beim Prüfen mit kontrollierter

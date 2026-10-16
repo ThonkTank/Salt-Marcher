@@ -1,4 +1,5 @@
 import {areaTargetDamage} from '../area-damage';
+import {confirmCombatNpcLosses} from './combat-world-losses';
 import {isDamageType,adjustedHitDamage} from '../damage-adjustment';
 import {npcRecord} from './npc-record';
 import {npcPosition} from './npc-world';
@@ -212,6 +213,15 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
     } else {
       state = decode(db.prepare('SELECT * FROM combat WHERE campaign_id=? AND id=?').get(cam, command.combatId));
       if (state.revision !== command.expectedRevision) throw new Error('Kampf wurde geändert. Bitte aktualisieren.');
+      if(a.kind==='confirm-npc-losses'){
+        if(readLiveScene(db,cam,state.sceneId).retired)throw new Error('Diese Gruppe ist nicht mehr aktiv.');
+        confirmCombatNpcLosses(db,cam,state,a.losses);
+        state.revision++;checkedCombat(state);const payload=JSON.stringify(state);
+        db.prepare('UPDATE combat SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(state.revision,payload,hash(payload),cam,state.id);
+        const result=readCombat(db,cam,state.sceneId,state.id),receipt=JSON.stringify(result);
+        db.prepare('INSERT INTO combat_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,receipt,hash(receipt));
+        return result;
+      }
       if (!['preparing','running'].includes(state.phase)) throw new Error(state.phase==='finished'?'Der abgeschlossene Kampf bleibt als Ergebnis erhalten. Beginne eine neue Begegnung.':'Der Kampf gehört zu einer archivierten Scene.');
       if (readLiveScene(db, cam, state.sceneId).retired) throw new Error('Diese Gruppe ist nicht mehr aktiv.');
       const before = JSON.stringify(state);

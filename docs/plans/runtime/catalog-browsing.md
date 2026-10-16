@@ -222,12 +222,17 @@ Einstimmung und exakte Preisgrenzen sind kombinierbar. Name/Kategorie/Seltenheit
 Preis sortieren mit stabiler Identität; unbekannte Preise bleiben unabhängig von
 der Richtung am Ende und werden nicht als Nullpreise in Preisgrenzen aufgenommen.
 50er-Seiten machen den gesamten vorhandenen Korpus erreichbar.
+Die Item-Spaltenköpfe wählen die Sortierung und wechseln ihre Richtung. Ein
+sichtbarer Pfeil und `aria-sort` zeigen dieselbe aktive Richtung; ein zusätzlicher
+Richtungswähler entfällt. Filterreset und Inhaltswechsel erhalten die Sortierung.
 Der Seltenheitsfilter berücksichtigt ausdrücklich benannte Varianten einer
 Definition. Die Auswahl enthält deren einzelne Seltenheiten; der Treffer bleibt
 die vollständige Quellgruppe mit unveränderten Fakten und Variantenangaben.
 
 `item-reference-ui.ts` zeigt Originalbeschreibung und Eigenschaften, Preis,
 Gewicht, Rüstung/Schaden sowie verfügbare weitere Quellenangaben und Attribution.
+Rüstungs-Stärkevoraussetzungen stehen unter „Stärke“ neben der getrennten
+Rüstungsklasse; ihre originalen Quellenwerte bleiben erhalten.
 Es gibt keine Erzeugungs-, Editier-, Lösch-, Vergabe- oder Inventaraktion.
 Loading, leere Treffer, ungültige Filter, fehlender Import, inkompatibles Schema
 und unerwarteter Lesefehler bleiben unterscheidbar. Neue Eingaben räumen alte
@@ -294,9 +299,8 @@ Die nächsten Anschlüsse aus derselben Quelle bleiben ausdrücklich offen:
    Query-/Requestguards weiterverwenden, keinen zweiten Providerbestand anlegen.
 3. Die verbleibenden fünf Abschnitte NPCs, Fraktionen, Orte, Encounter und
    Encountertabellen über ihre vorhandenen fachlichen Owner in den gemeinsamen
-   Inhaltswechsel aufnehmen. Zuerst gemeinsamen Status-/Pagingfooter und die alleinige
-   Headersortierung schließen; der separate Item-Richtungsselector ist noch eine
-   Abweichung. Eigene Abschnittsfilter und ausdrückliche Inspectoraktionen bleiben
+   Inhaltswechsel aufnehmen und den gemeinsamen Status-/Pagingfooter schließen.
+   Eigene Abschnittsfilter und ausdrückliche Inspectoraktionen bleiben
    erhalten. Abnahme pro Abschnitt: Wechsel mit unfertiger Eingabe, Seite/Auswahl/
    Position, Fehler/Retry, Enter, schmaler Ansicht und200%; versteckte Provider
    dürfen keine neuen Listenreads starten. Providerintegration ersetzt weder die
