@@ -19,11 +19,25 @@ function clearSearchTimer(){if(searchTimer)clearTimeout(searchTimer);searchTimer
 function clearResults(text:string,loading=false,error=false){
  page=null;get('catalog-rows').replaceChildren();get('catalog-page').textContent=text;get('catalog-page').setAttribute('role',error?'alert':'status');get('catalog-table').setAttribute('aria-busy',String(loading));get<HTMLButtonElement>('catalog-prev').disabled=true;get<HTMLButtonElement>('catalog-next').disabled=true;
 }
+function renderCatalogControls(){
+ const chips=get('catalog-filter-chips');chips.replaceChildren();
+ for(const input of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')){
+  if(input.id==='catalog-direction'||!input.value)continue;
+  const label=document.querySelector<HTMLLabelElement>('label[for="'+input.id+'"]')?.textContent??input.id;
+  const chip=document.createElement('button');chip.type='button';chip.textContent=label+': '+input.value+' ×';chip.setAttribute('aria-label',label+' entfernen');
+  chip.onclick=()=>{input.value='';input.oninput?.call(input,new Event('input'));input.focus();};chips.append(chip);
+ }
+ chips.hidden=!chips.childElementCount;
+ for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button')){
+  const column=button.dataset.sort!,active=column===sort;button.textContent=({name:'Name',cr:'HG',ac:'RK',hp:'HP',xp:'XP'} as Record<string,string>)[column]+(active?(value('catalog-direction')==='desc'?' ↓':' ↑'):'');
+  button.parentElement?.setAttribute('aria-sort',active?(value('catalog-direction')==='desc'?'descending':'ascending'):'none');
+ }
+}
 function adoptPlan(next:EncounterPlan,invalidateRequests=true){clearSaveTimer();saving=null;if(invalidateRequests)planRequest++;partyRequest++;editVersion++;plan=next;dirty=next.revision===0;blocked=false;get<HTMLDetailsElement>('encounter-library').open=false;get<HTMLDetailsElement>('encounter-party-details').open=next.party.length===0;renderPlan();}
 export function activateCatalog(next:Workspace){
  clearSaveTimer();clearSearchTimer();saving=null;
  workspace=next;generation++;searchRequest++;clearResults('Katalog noch nicht geladen.');listRequest++;planRequest++;creatureRequest++;partyRequest++;
- plan=null;creature=null;dirty=false;blocked=false;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;
+ plan=null;creature=null;dirty=false;blocked=false;get('catalog-add-result').hidden=true;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;
  activateGeneration(next);renderCreatureSelection();void refreshPlans();
 }
 export async function openCatalog(){
@@ -54,7 +68,7 @@ function beginTableLookup(){
  };
 }
 async function search(){
- clearSearchTimer();const request=++searchRequest,token=workspace?.token,g=generation;clearResults('Kreaturen werden gesucht…',true);
+ renderCatalogControls();clearSearchTimer();const request=++searchRequest,token=workspace?.token,g=generation;clearResults('Kreaturen werden gesucht…',true);
  try{const response=await window.campaign.creatures(query());if(!owned(token,g)||request!==searchRequest)return;page=unwrap(response);renderRows();}
  catch(error){if(owned(token,g)&&request===searchRequest){clearResults('Katalog konnte nicht geladen werden: '+(error as Error).message,false,true);tell((error as Error).message,true);}}
 }
@@ -66,8 +80,12 @@ function renderCreatureSelection(message='Wähle eine Kreatur, um ihren vollstä
  generationCreature(creature);if(page)renderRows();
  get<HTMLButtonElement>('catalog-add').disabled=!creature||!plan||blocked;get<HTMLButtonElement>('catalog-live-add').disabled=!creature||!workspace;
 }
+function revealCreatureDetail(){
+ if(tableLookupQuery||!window.matchMedia?.('(max-width:1100px)').matches)return;
+ get('catalog-inspector').scrollIntoView({block:'start'});const detail=get('catalog-detail');detail.tabIndex=-1;detail.focus({preventScroll:true});
+}
 async function selectCreature(id:string){
- const token=workspace?.token,g=generation,request=++creatureRequest;creature=null;renderCreatureSelection('Statblock wird geladen …',true);
+ const token=workspace?.token,g=generation,request=++creatureRequest;creature=null;get('catalog-add-result').hidden=true;renderCreatureSelection('Statblock wird geladen …',true);revealCreatureDetail();
  try{const response=await window.campaign.creature(id);if(!owned(token,g)||request!==creatureRequest)return;const c=unwrap(response);if(c.id!==id)throw new Error('Statblock gehört zu einer anderen Kreatur.');creature=c;renderCreatureSelection();}
  catch(error){if(owned(token,g)&&request===creatureRequest){creature=null;renderCreatureSelection('Statblock nicht verfügbar: '+(error as Error).message,false,true);tell((error as Error).message,true);}}
 }
@@ -131,8 +149,10 @@ function renderPlan(){get('encounter-editor').hidden=!plan;if(!plan)return;get<H
 export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAdd:(creatureId:string,count:number,grouped:boolean)=>Promise<void>){tell=status;prepare=onPrepare;
  initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
  get('catalog-form').onsubmit=event=>{event.preventDefault();offset=0;void search();};
- for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
- get('catalog-reset').onclick=()=>{get<HTMLFormElement>('catalog-form').reset();offset=0;sort='name';if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{sort=button.dataset.sort as CreatureCatalogQuery['sort'];offset=0;void search();};
+ for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
+ get('catalog-reset').onclick=()=>{const direction=value('catalog-direction');get<HTMLFormElement>('catalog-form').reset();get<HTMLInputElement>('catalog-direction').value=direction;offset=0;if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{const next=button.dataset.sort as CreatureCatalogQuery['sort'];get<HTMLInputElement>('catalog-direction').value=sort===next&&value('catalog-direction')==='asc'?'desc':'asc';sort=next;offset=0;void search();};
+ get('catalog-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});get<HTMLElement>(plan?'encounter-name':'encounter-new').focus({preventScroll:true});};
+ const returnToResults=()=>{get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;
  get('encounter-search').oninput=()=>void refreshPlans();
  get('encounter-list').onchange=()=>{void loadPlan(value('encounter-list'));};
  get('encounter-new').onclick=()=>report(()=>newPlan());
@@ -142,7 +162,7 @@ export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAd
  get('encounter-name').oninput=()=>{if(plan){plan.name=value('encounter-name');schedule();}};get('encounter-notes').oninput=()=>{if(plan){plan.notes=value('encounter-notes');schedule();}};
  get('encounter-party-add').onclick=()=>{if(plan){plan.party.push({id:crypto.randomUUID(),name:'Geplante Figur',level:null,count:1});renderPlan();schedule();}};
  get('encounter-party-current').onclick=()=>{void currentParty();};
- get('catalog-add').onclick=()=>{if(!plan||!creature||blocked)return;const count=Number(value('catalog-quantity'));if(!Number.isSafeInteger(count)||count<1||count>1000){tell('Positive ganze Kreaturmenge eingeben.',true);return;}plan.entries.push({id:crypto.randomUUID(),creatureId:creature.id,count,grouped:get<HTMLInputElement>('catalog-grouped').checked});if(!plan.sources.some(c=>c.id===creature!.id))plan.sources.push(creature);renderPlan();schedule();};
+ get('catalog-add').onclick=()=>{if(!plan||!creature||blocked)return;const count=Number(value('catalog-quantity'));if(!Number.isSafeInteger(count)||count<1||count>1000){tell('Positive ganze Kreaturmenge eingeben.',true);return;}plan.entries.push({id:crypto.randomUUID(),creatureId:creature.id,count,grouped:get<HTMLInputElement>('catalog-grouped').checked});if(!plan.sources.some(c=>c.id===creature!.id))plan.sources.push(creature);renderPlan();schedule();get('catalog-add-result').hidden=false;get('catalog-add-result').textContent=count+' × '+creature.name+' zur Vorlage „'+plan.name+'“ hinzugefügt.';};
  get('catalog-live-add').onclick=()=>{const selected=creature;if(selected)report(()=>onLiveAdd(selected.id,Number(value('catalog-quantity')),get<HTMLInputElement>('catalog-grouped').checked));};
  get('encounter-prepare').onclick=()=>report(async()=>{const w=workspace,source=plan,g=generation,request=planRequest;if(!w||!source)return;if(!await flushCatalog()||!owned(w.token,g)||plan!==source||request!==planRequest)return;await prepare(structuredClone(source));});
 }

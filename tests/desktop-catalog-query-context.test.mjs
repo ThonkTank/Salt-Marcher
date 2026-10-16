@@ -93,6 +93,20 @@ test('saving a table keeps its searched entry without making that search a gener
  await x.resolve(2,'Restored catalog');assert.match(x.el('catalog-rows').textContent,/Restored catalog/);
 });
 
+
+test('removing a numeric filter chip preserves the name and type criteria',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Goblin');await x.opened;
+ x.type('Goblin');x.el('catalog-type').value='Humanoid';x.el('catalog-type').oninput();x.el('catalog-cr-max').value='1';x.el('catalog-cr-max').oninput();
+ assert.equal(x.el('catalog-filter-chips').querySelectorAll('button').length,3);
+ x.el('catalog-cr-max').focus=()=>{};[...x.el('catalog-filter-chips').querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='HG bis entfernen').click();await x.debounce();
+ assert.equal(x.reads[1].query.text,'Goblin');assert.deepEqual(x.reads[1].query.types,['Humanoid']);assert.equal(x.reads[1].query.crMax,undefined);assert.equal(x.el('catalog-filter-chips').querySelectorAll('button').length,2);
+});
+test('column sorting toggles visibly and clearing filters keeps that sort and selected detail',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Goblin');await x.opened;
+ window.campaign.creature=async()=>({ok:true,value:{id:'Goblin',name:'Goblin',abilities:{},traits:[],actions:[],legendaryActions:[]}});x.el('catalog-rows').querySelector('button').click();await tick();await tick();
+ const hp=x.el('catalog-table').querySelector('[data-sort="hp"]');hp.click();await until(()=>x.reads.length===2);assert.equal(x.reads[1].query.direction,'asc');assert.equal(hp.parentElement.getAttribute('aria-sort'),'ascending');await x.resolve(1,'Goblin');hp.click();await until(()=>x.reads.length===3);assert.equal(x.reads[2].query.direction,'desc');assert.match(hp.textContent,/↓/);await x.resolve(2,'Goblin');
+ x.type('Dragon');x.el('catalog-reset').click();await until(()=>x.reads.length===4);assert.equal(x.reads[3].query.text,'');assert.equal(x.reads[3].query.sort,'hp');assert.equal(x.reads[3].query.direction,'desc');await x.resolve(3,'Goblin');assert.match(x.el('catalog-detail').textContent,/Goblin/);assert.equal(x.el('catalog-rows').querySelector('button').getAttribute('aria-pressed'),'true');
+});
 const detail=id=>({id,name:id,abilities:{str:10},traits:[],actions:[],legendaryActions:[]});
 async function detailFixture(t){const x=await fixture(t);window.campaign.creature=async id=>({ok:true,value:detail(id)});window.campaign.saveEncounterPlan=async c=>({ok:true,value:{...c.plan,revision:c.plan.revision+1}});await x.resolve(0,'Guard');await x.opened;x.el('catalog-rows').querySelector('button').click();await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Guard');x.el('encounter-new').click();await until(()=>!x.el('catalog-add').disabled);x.choose=async name=>{const n=x.reads.length;x.el('catalog-form').onsubmit({preventDefault(){}});await until(()=>x.reads.length>n);await x.resolve(n,name);x.el('catalog-rows').querySelector('button').click();await tick();};return x;}
 test('pending creature detail removes the previous statblock and its encounter, live and table actions',async t=>{
@@ -106,3 +120,13 @@ for(const message of ['Kreatur nicht gefunden.','Statblock-Speicher ausgefallen'
 test('a mismatching creature reply cannot enable handoff for another requested statblock',async t=>{const x=await detailFixture(t);window.campaign.creature=async()=>({ok:true,value:detail('Guard')});await x.choose('Wolf');assert.equal(x.el('catalog-detail').getAttribute('role'),'alert');assert.match(x.el('catalog-detail').textContent,/anderen Kreatur/);assert.equal(x.el('catalog-live-add').disabled,true);});
 test('an old detail error cannot clear a newer loaded selection',async t=>{const x=await detailFixture(t),held=deferred();window.campaign.creature=()=>held.promise;await x.choose('Wolf');window.campaign.creature=async id=>({ok:true,value:detail(id)});await x.choose('Dragon');x.messages.length=0;held.resolve({ok:false,error:'Überholter Statblockfehler'});await tick();await tick();assert.equal(x.el('catalog-detail').querySelector('h3').textContent,'Dragon');assert.equal(x.el('catalog-live-add').disabled,false);assert.deepEqual(x.messages,[]);});
 test('campaign activation clears the previous statblock, table selection and pending detail authority',async t=>{const x=await detailFixture(t),held=deferred();window.campaign.creature=()=>held.promise;await x.choose('Wolf');x.ui.activateCatalog({...x.w,token:'two',campaign:{id:'other'}});held.resolve({ok:true,value:detail('Wolf')});await tick();await tick();assert.equal(x.el('catalog-detail').querySelector('h3'),null);assert.match(x.el('catalog-detail').textContent,/Wähle eine Kreatur/);assert.equal(x.el('catalog-detail').getAttribute('aria-busy'),'false');assert.match(x.el('table-selected-creature').textContent,/Keine Kreatur/);for(const id of ['catalog-add','catalog-live-add','table-add-creature'])assert.equal(x.el(id).disabled,true);});
+
+
+test('a narrow catalog reveals pending detail and returns to the unchanged query without a second lookup',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Goblin');await x.opened;const jumps=[];
+ window.matchMedia=()=>({matches:true});x.el('catalog-inspector').scrollIntoView=()=>jumps.push('detail');x.el('catalog-detail').focus=()=>{};
+ x.el('catalog-browser').scrollIntoView=()=>jumps.push('results');x.el('catalog-search').focus=()=>{};
+ const held=deferred();window.campaign.creature=()=>held.promise;x.el('catalog-search').value='Goblin';x.el('catalog-rows').querySelector('button').click();await tick();
+ assert.deepEqual(jumps,['detail']);assert.match(x.el('catalog-detail').textContent,/geladen/);
+ held.resolve({ok:true,value:detail('Goblin')});await tick();await tick();x.el('catalog-results-return').click();assert.deepEqual(jumps,['detail','results']);assert.equal(x.el('catalog-search').value,'Goblin');assert.equal(x.reads.length,1);
+});
