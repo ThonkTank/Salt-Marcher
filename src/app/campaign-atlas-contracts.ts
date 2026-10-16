@@ -88,8 +88,8 @@ export interface AtlasOverview {
   landscapeBounds: import('./atlas-landscape').LandscapeBox | null;
 }
 export interface AtlasObjectQuery {
-  kind: 'room' | 'city'; text: string; limit: number;
-  cursor?: {revision: number; after: string; kind: 'room' | 'city'; text: string};
+  kind: 'room' | 'city' | 'landscape'; text: string; limit: number;
+  cursor?: {token: string; fence: number; revision: number; after: string; kind: 'room' | 'city' | 'landscape'; text: string};
 }
 export interface AtlasObjectPage {
   campaignId: string; token: string; revision: number;
@@ -104,6 +104,7 @@ export interface AtlasAPI {
   landscapeRaster(token:string,box:import('./atlas-landscape').LandscapeBox,width:number,height:number,consumer?:'view'|'export'):Promise<Result<import('./landscape-raster').LandscapeRaster>>;
   atlasOverview(token: string): Promise<Result<AtlasOverview>>;
   atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;
+  atlasLandscapeObject(token: string, id: string): Promise<Result<import('./atlas-landscape').LandscapeRecord>>;
   atlasRoom(token: string, id: string): Promise<Result<import('./contracts').Room>>;
   executeAtlasCommit(command: AtlasCommand): Promise<Result<AtlasCommitAck>>;
 

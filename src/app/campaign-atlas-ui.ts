@@ -821,18 +821,29 @@ export class CampaignAtlasWorkbench {
       root.append(b);
     };
     const token=this.owner!.token;
-    void window.campaign.landscapeFind(token,text).then(r=>{if(!r.ok)throw new Error(r.error);if(this.owner?.token!==token||get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')!==text)return;for(const record of r.value)add(record.name||record.kind,()=>{if(record.locationId)void this.navigateLocation(record.locationId);else{this.focus(record.points[0]!,15000);void this.setFamily('terrain',false).then(()=>this.landscape.select(record));}});}).catch(e=>this.error(e));
+
     const current=()=>this.owner?.token===token&&get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')===text;
     const more=(title:string,load:()=>Promise<void>)=>{const b=document.createElement('button');b.textContent=title;b.onclick=()=>{b.remove();void load().catch(e=>{if(current())this.error(e);});};root.append(b);};
-    const page=async(kind:'room'|'city',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
+    const page=async(kind:'room'|'city'|'landscape',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
       const result=await window.campaign.atlasObjects(token,{kind,text,limit:40,cursor});if(!current())return;if(!result.ok)throw new Error(result.error);
-      for(const item of result.value.items)add(kind==='room'?item.number+' · '+item.name:item.name,()=>void this.navigate(kind,item.id));
-      if(result.value.next)more(kind==='room'?'Weitere Räume':'Weitere Städte',()=>page(kind,result.value.next!));
+      for(const item of result.value.items)add(kind==='room'?item.number+' · '+item.name:item.name,()=>void (kind==='landscape'?this.navigateLandscape(item.id).catch(e=>this.error(e)):this.navigate(kind,item.id)));
+      if(result.value.next)more(kind==='room'?'Weitere Räume':kind==='city'?'Weitere Städte':'Weitere Landschaftsobjekte',()=>page(kind,result.value.next!));
     };
     const buildings=async(offset=0)=>{const result=await window.campaign.cityBuildings(token,{text,offset});if(!current())return;if(!result.ok)throw new Error(result.error);for(const item of result.value.items)add(item.cityTitle+' · '+item.title,()=>void this.navigate('city',item.cityId,item.unitId));if(result.value.next!==null)more('Weitere Häuser',()=>buildings(result.value.next!));};
-    for(const task of [page('room'),page('city'),buildings()])void task.catch(e=>{if(current())this.error(e);});
+    for(const task of [page('room'),page('city'),page('landscape'),buildings()])void task.catch(e=>{if(current())this.error(e);});
     for (const scope of this.data.scopes)
       if(scope.name.toLocaleLowerCase('de').includes(text))add(scope.name,()=>this.chooseScope(scope.id));
+  }
+
+  private async navigateLandscape(id:string) {
+    const owner=this.owner;if(!owner||!await this.flush()||!await this.opts.flush()||this.owner!==owner)return;
+    const result=await window.campaign.atlasLandscapeObject(owner.token,id);
+    if(this.owner!==owner)return;
+    if(!result.ok){this.error(new Error(result.error));return;}
+    const record=result.value;
+    await this.setFamily('terrain',false);if(this.owner!==owner)return;
+    if(record.points[0])this.focus(record.points[0],15000);
+    await this.landscape.select(record);
   }
 
   private async createCity() {
