@@ -16,6 +16,7 @@ export function renderSessionOrigin(root:HTMLElement,run:SessionRun){
   if(JSON.stringify(reward)!==JSON.stringify(run.proposals[index]?.reward??null)){const changed=document.createElement('p');changed.textContent='Die aktuelle Belohnung wurde seit dieser Berechnung bearbeitet.';section.append(changed);}
   details.append(section);
  }
+ if(origin.itemCatalog)text('Magiebeutekatalog bei Erstellung: '+origin.itemCatalog.length+' eigene Definitionen mit festgehaltenen Revisionen.');
  text('Gebundene Weltquellen: '+origin.locations.length+' Orte, '+origin.notes.length+' Welttexte. Die bei Erstellung gültigen Revisionen bleiben gespeichert.');
  root.append(details);
 }
