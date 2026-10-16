@@ -40,13 +40,13 @@ export function activateCatalog(next:Workspace){
  plan=null;creature=null;dirty=false;blocked=false;get('catalog-add-result').hidden=true;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;
  activateGeneration(next);renderCreatureSelection();void refreshPlans();
 }
-export async function openCatalog(){
- const token=workspace?.token,g=generation,request=searchRequest;
- try{if(!info){const response=await window.campaign.creatureInfo();if(!owned(token,g))return;if(!info){info=unwrap(response);get('catalog-credit').textContent=info.notice;for(const [id,list]of [['catalog-type',info.types],['catalog-size',info.sizes],['catalog-habitat',info.habitats],['catalog-alignment',info.alignments],['catalog-subtype',info.subtypes]] as const)for(const v of list)option(get<HTMLSelectElement>(id),v,v);}}
-  await search();if(!owned(token,g))return;if(workspace){await refreshPlans();if(owned(token,g))await refreshGeneration();}
- }catch(error){if(owned(token,g)&&request===searchRequest){clearResults('Katalog konnte nicht geladen werden: '+(error as Error).message,false,true);tell((error as Error).message,true);}}
+async function refreshCatalogInfo(){
+ if(info)return;const token=workspace?.token,g=generation,credit=get('catalog-credit');credit.textContent='Quellen- und Filterangaben werden geladen …';credit.setAttribute('role','status');
+ try{const response=await window.campaign.creatureInfo();if(!owned(token,g)||info)return;info=unwrap(response);credit.textContent=info.notice;credit.removeAttribute('role');for(const [id,list]of [['catalog-type',info.types],['catalog-size',info.sizes],['catalog-habitat',info.habitats],['catalog-alignment',info.alignments],['catalog-subtype',info.subtypes]] as const)for(const v of list)option(get<HTMLSelectElement>(id),v,v);}
+ catch(error){if(owned(token,g)&&!info){credit.textContent='Quellen- und Filterangaben nicht verfügbar: '+(error as Error).message;credit.setAttribute('role','alert');tell((error as Error).message,true);}}
 }
-export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){const token=workspace?.token,g=generation;if(!stillCurrent())return;await openCatalog();if(!owned(token,g)||!stillCurrent())return;if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
+export async function openCatalog(){await Promise.all([refreshCatalogInfo(),search(),refreshPlans(),refreshGeneration()]);}
+export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){if(!stillCurrent())return;void openCatalog();if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
 function query():CreatureCatalogQuery{
  const q:CreatureCatalogQuery={text:value('catalog-search'),offset,limit:25,sort,direction:value('catalog-direction') as 'asc'|'desc'};
