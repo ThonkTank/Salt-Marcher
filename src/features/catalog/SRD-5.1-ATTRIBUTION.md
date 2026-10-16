@@ -24,6 +24,15 @@ made before the correction cannot be accepted as a current proposal. Stored
 plan and combat snapshots are not rewritten on read. Explicitly saving a plan
 resolves its sources against the current catalog, as before.
 
+The same pinned upstream commit also supplies the twelve omitted creature
+reactions in `data/srd-5.1-reactions.json` (source file SHA-256
+`cbf1b6d0a94f6e13afd1480d647d288c61ba0ddc3d3a7842d1501852dc954237`).
+They are appended as reference traits named `Reaktion: …`, with stable IDs;
+no reaction use is automated. Their source versions include `+reactions.1`.
+The effective desktop catalog identity includes this supplement. Existing
+saved sources remain unchanged; current-catalog reads and explicit plan saves
+use the supplemented definition. The original artifact remains byte-identical.
+
 The same notice is exported as `SRD_5_1_NOTICE` for the future Catalog credits
 surface. CE-01 may not ship the Catalog UI until this notice is visibly
 reachable and the selected release packaging contains it.
