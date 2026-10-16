@@ -1,6 +1,6 @@
 {
   "round": 9,
-  "status": "progress; complete paired GUI case and joint day generator remain open",
+  "status": "progress; full native day case fixed and rerun; paired Sheet GUI/integration still open",
   "nativeBaseline": {
     "basis": "346443195622ad30262841044bb38551d231ea6a",
     "version": "0.156.0",
@@ -40,7 +40,7 @@
     "round8": "Runner comparison and original browser-state restoration remainopen"
   },
   "exit": "Baseline3apps,treasury2apps,XP2apps all normalclose receipts0; all3ownhelper jobs NORMAL_JOB_EXIT exit0",
-  "publication": "Local commits retained pending authorized SaltMarcher migration; no push to old target",
+  "publication": "Own commits transferred to isolated Salt-Marcher branch; no push yet; migration PR696 pending",
   "screenshots": [
     {
       "file": "day-loot-before-party.png",
@@ -97,6 +97,58 @@
     {
       "file": "day-loot-xp-reopen.png",
       "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-xp/runs/catalog-xp-after/frames/000131.png"
+    },
+    {
+      "file": "day-session-conflict-before.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-session/runs/session-day-before-r2/frames/000157.png"
+    },
+    {
+      "file": "day-session-entry-after.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-session/runs/session-day-after/frames/000010.png"
+    },
+    {
+      "file": "day-session-review-after.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-session/runs/session-day-after/frames/000174.png"
+    },
+    {
+      "file": "day-session-accepted-after.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-session/runs/session-day-after/frames/000183.png"
+    },
+    {
+      "file": "day-session-reopen-after.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-session/runs/session-day-after/frames/000238.png"
+    },
+    {
+      "file": "day-session-reward-reopen-after.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-session/runs/session-day-after/frames/000294.png"
     }
-  ]
+  ],
+  "sessionWorkflow": {
+    "baseline": "df37ad9edfd9951a57d32338544c4f5fb41c58ee;0.159.0",
+    "fix": "11f1998a2;0.160.0",
+    "finding": "Existing full session generator was overlooked in initial catalog-only baseline; previous missing-feature inference corrected",
+    "case": "Same UI-built4lvl5party;fraction0.6;count3;seedux09-day-loot;lootcompensation on",
+    "targets": [
+      1660,
+      2442,
+      4298
+    ],
+    "actualAdjustedXp": [
+      1650,
+      2450,
+      4300
+    ],
+    "actualBaseXp": [
+      825,
+      1225,
+      2150
+    ],
+    "lootEach": "4369gold+3silver+6copper; cumulative catch-up policy differs from Sheet",
+    "baselineFriction": "False Timeline changed conflict after plan rename; same proposals accepted after actualrestart",
+    "fixBehavior": "Firstconfirm accepted all3 without restarting; packet and realprocessrestart/reexport completed",
+    "outputs": "day-session-output.md; all4native UI exports byteidentical",
+    "outputSha256": "e86f12184177aafd61da86205080e731241d5feeea82af6c5c0a3376d1af1848",
+    "checks": "70focused pass;repo/type/desktoptype/builddesktop0; oldbasisfulltestinterrupted for newer migration; complete candidate gates pending",
+    "exit": "5properappstartsnormal0; runtime-missing launch127 retained as incomplete; helper normalexit0"
+  }
 }
