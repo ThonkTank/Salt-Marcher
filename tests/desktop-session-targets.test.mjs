@@ -37,7 +37,7 @@ test('encounter XP ceilings constrain complete rosters and rejection publishes n
 });
 
 test('same semantic request resumes edited session without new rows, through fresh open and independent copy',async t=>{
- const x=fixture(t),run=x.store.generateSession(x.w.token,x.request);
+ const x=fixture(t);for(const name of ['Westufer','Ostufer']){const id=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id,name,type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});x.request.locationIds.push(id);}const run=x.store.generateSession(x.w.token,x.request);
  assert.equal(run.origin.version,'session-origin-v1');assert.equal(run.origin.encounters.length,3);
  x.store.executeSession(x.command({kind:'edit-proposal',planId:x.planId,runId:run.id,index:0,expectedRevision:1,title:'Meine Brücke',notes:'  Wortgetreu\r\n',readAloud:'Still.',locationId:null,noteIds:[],reward:{poolXp:11,items:[]}}));
  const edited=x.store.sessionRun(x.w.token,run.id),before=x.store.db.serialize();
