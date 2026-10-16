@@ -1,3 +1,4 @@
+import {readItemReferenceCatalog} from '../src/app/storage/item-reference';
 import {exportSessionPacketFile} from './session-packet-export';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../src/app/npc-contracts';
 import {audioResponse} from './audio-response';
@@ -170,6 +171,7 @@ else {
     handle('campaign:generation-runs', (token: string) => store.generationRuns(token));
     handle('campaign:generation-run', (token: string,id: string) => store.generationRun(token,id));
     handle('campaign:roll-loot', (command: LootRollCommand) => store.rollLoot(command));
+    handle('catalog:items',(query:import('../src/app/item-reference-contracts').ItemReferenceQuery)=>readItemReferenceCatalog(query));
     handle('catalog:info', () => creatureInfo());
     handle('catalog:search', (query: CreatureCatalogQuery) => searchCreatures(query));
     handle('catalog:creature', (id: string) => readCreature(id));

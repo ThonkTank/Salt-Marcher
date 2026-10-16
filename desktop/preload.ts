@@ -91,6 +91,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   generationRuns: (token: string) => ipcRenderer.invoke('campaign:generation-runs',token),
   generationRun: (token: string,id: string) => ipcRenderer.invoke('campaign:generation-run',token,id),
   rollLoot: (command: import('../src/app/generation-contracts').LootRollCommand) => ipcRenderer.invoke('campaign:roll-loot',command),
+  itemReferenceCatalog:(query:import('../src/app/item-reference-contracts').ItemReferenceQuery)=>ipcRenderer.invoke('catalog:items',query),
   creatureInfo: () => ipcRenderer.invoke('catalog:info'),
   creatures: (query: unknown) => ipcRenderer.invoke('catalog:search',query),
   creature: (id: string) => ipcRenderer.invoke('catalog:creature',id),

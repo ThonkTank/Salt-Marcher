@@ -158,3 +158,39 @@ Die nächsten Anschlüsse bleiben ausführbar:
    alle Kreaturfilter und XPceiling schneiden, Loot-Konflikt nur warnen.
    Diese Quellenregeln brauchen eigene Store-/Nutzerablaufbelege; grüne
    Tabelleneditierung qualifiziert sie nicht automatisch.
+
+
+## SRD-Gegenstandsreferenz im gemeinsamen Katalog (0.146)
+
+Die gebundene Originalanforderung `requirements-items-catalog.md` verlangt eine
+schreibgeschützte öffentliche SRD-Referenz neben Monster. Der Desktop besitzt
+jetzt diesen eigenen Inhaltswechsel; die bestehende Gegenstands-/Shopverwaltung
+bleibt der getrennte Owner für authored Definitionen, Besitz und Handel.
+Der Encounterbereich bleibt beim Wechsel sichtbar und behält seinen Entwurf.
+Explizite Kreaturquellen und Tabellenlookups öffnen wieder den Monsterbereich.
+
+`storage/item-reference.ts` liest ausschließlich das vorhandene gepinnte
+`items-srd51-transcript.json` und prüft es lazy mit dem vorhandenen
+2020-12-Schema. Es schreibt weder Definitionen noch SQLite und gibt Kopien der
+Quellenrecords zurück. Name, Kategorie, Unterkategorie, Seltenheit, Magie,
+Einstimmung und exakte Preisgrenzen sind kombinierbar. Name/Kategorie/Seltenheit/
+Preis sortieren mit stabiler Identität; unbekannte Preise bleiben unabhängig von
+der Richtung am Ende und werden nicht als Nullpreise in Preisgrenzen aufgenommen.
+50er-Seiten machen den gesamten vorhandenen Korpus erreichbar.
+
+`item-reference-ui.ts` zeigt Originalbeschreibung und Eigenschaften, Preis,
+Gewicht, Rüstung/Schaden sowie verfügbare weitere Quellenangaben und Attribution.
+Es gibt keine Erzeugungs-, Editier-, Lösch-, Vergabe- oder Inventaraktion.
+Loading, leere Treffer, ungültige Filter, fehlender Import, inkompatibles Schema
+und unerwarteter Lesefehler bleiben unterscheidbar. Neue Eingaben räumen alte
+Ergebnisaktionen sofort ab; verspätete Antworten und alte Zeilen besitzen keine
+Auswahlberechtigung. Submit/Reset/Sort/Paging beenden den Debouncetimer.
+Tastaturwechsel zwischen beiden Kataloginhalten und schmale Inspectorführung
+bleiben ohne zusätzliche Navigationsfläche erreichbar.
+
+Der aktuelle Import enthält 289 Records und ist ausdrücklich unvollständig.
+Weitere magische Quellenabschnitte und die unabhängige Quellenabnahme fehlen;
+die Oberfläche behauptet keine Vollständigkeit. Provider-/DOMfälle prüfen die
+vollständige Erreichbarkeit des vorhandenen Korpus, Filter/Sortierung, genaue
+Rüstungs-/Waffenfakten, Ergebnisautorität und Fehlerisolation. Das ersetzt weder
+die offenen Quellenabschnitte noch breite native Plattform-/200%-Abnahme.

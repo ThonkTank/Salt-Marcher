@@ -1,3 +1,4 @@
+import {ItemReferenceCatalog} from './item-reference-ui';
 import {encounterEntryLabel} from './encounter-contracts';
 import type { Workspace, Result } from './contracts';
 import type { Creature, CreatureAction, CreatureCatalogQuery } from '../features/catalog/creature-catalog';
@@ -8,6 +9,8 @@ import { initGeneration, activateGeneration, flushGeneration, generationPlanning
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const value=(id:string)=>get<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
+let itemReference:ItemReferenceCatalog|null=null,catalogContent:'monster'|'items'='monster';
+function catalogContentView(content:'monster'|'items'){catalogContent=content;get('catalog-monsters').hidden=content!=='monster';itemReference?.show(content==='items');for(const [id,on]of [['catalog-monsters-tab',content==='monster'],['catalog-items-tab',content==='items']] as const){get(id).setAttribute('aria-selected',String(on));get(id).tabIndex=on?0:-1;}}
 let workspace:Workspace|null=null,info:CatalogInfo|null=null,page:CreaturePage|null=null,creature:Creature|null=null,plan:EncounterPlan|null=null;
 let generation=0,searchRequest=0,listRequest=0,planRequest=0,creatureRequest=0,partyRequest=0,editVersion=0,offset=0,sort:CreatureCatalogQuery['sort']='name',blocked=false,dirty=false;
 const owned=(token:string|undefined,g:number)=>generation===g&&workspace?.token===token;
@@ -35,7 +38,7 @@ function renderCatalogControls(){
 }
 function adoptPlan(next:EncounterPlan,invalidateRequests=true){clearSaveTimer();saving=null;if(invalidateRequests)planRequest++;partyRequest++;editVersion++;plan=next;dirty=next.revision===0;blocked=false;get<HTMLDetailsElement>('encounter-library').open=false;get<HTMLDetailsElement>('encounter-party-details').open=next.party.length===0;renderPlan();}
 export function activateCatalog(next:Workspace){
- clearSaveTimer();clearSearchTimer();saving=null;
+ clearSaveTimer();clearSearchTimer();saving=null;itemReference?.activate();
  workspace=next;generation++;searchRequest++;clearResults('Katalog noch nicht geladen.');listRequest++;planRequest++;creatureRequest++;partyRequest++;
  plan=null;creature=null;dirty=false;blocked=false;get('catalog-add-result').hidden=true;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;
  activateGeneration(next);renderCreatureSelection();void refreshPlans();
@@ -45,8 +48,8 @@ async function refreshCatalogInfo(){
  try{const response=await window.campaign.creatureInfo();if(!owned(token,g)||info)return;info=unwrap(response);credit.textContent=info.notice;credit.removeAttribute('role');for(const [id,list]of [['catalog-type',info.types],['catalog-size',info.sizes],['catalog-habitat',info.habitats],['catalog-alignment',info.alignments],['catalog-subtype',info.subtypes]] as const)for(const v of list)option(get<HTMLSelectElement>(id),v,v);}
  catch(error){if(owned(token,g)&&!info){credit.textContent='Quellen- und Filterangaben nicht verfügbar: '+(error as Error).message;credit.setAttribute('role','alert');tell((error as Error).message,true);}}
 }
-export async function openCatalog(){await Promise.all([refreshCatalogInfo(),search(),refreshPlans(),refreshGeneration()]);}
-export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){if(!stillCurrent())return;void openCatalog();if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
+export async function openCatalog(){itemReference?.show(catalogContent==='items');await Promise.all([refreshCatalogInfo(),catalogContent==='monster'?search():Promise.resolve(),refreshPlans(),refreshGeneration()]);}
+export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){if(!stillCurrent())return;catalogContentView('monster');void openCatalog();if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
 function query():CreatureCatalogQuery{
  const q:CreatureCatalogQuery={text:value('catalog-search'),offset,limit:25,sort,direction:value('catalog-direction') as 'asc'|'desc'};
@@ -56,6 +59,7 @@ function query():CreatureCatalogQuery{
 }
 // Reuse the catalog controls in the manager, but keep its lookups local to that task.
 function beginTableLookup(){
+ catalogContentView('monster');
  const token=workspace?.token,g=generation,previousCreature=creature,previousOffset=offset,previousSort=sort;
  const fields=[...get('catalog-form').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')].map(node=>({node,value:node.value}));
  tableLookupQuery=structuredClone(query());creatureRequest++;
@@ -147,12 +151,15 @@ function renderAssessment(){generationPlanningChanged(plan?.party??null);get('en
 function renderPlan(){get('encounter-editor').hidden=!plan;if(!plan)return;get<HTMLInputElement>('encounter-name').value=plan.name;get<HTMLTextAreaElement>('encounter-notes').value=plan.notes;const party=get('encounter-party');party.replaceChildren();for(const p of plan.party){const row=document.createElement('div');row.className='encounter-party-row';const name=document.createElement('input'),level=document.createElement('input'),count=document.createElement('input'),remove=document.createElement('button');name.value=p.name;name.maxLength=1000;name.setAttribute('aria-label','Geplanter Name');level.type='number';level.min='1';level.max='20';level.value=p.level===null?'':String(p.level);level.placeholder='Level unbekannt';level.setAttribute('aria-label','Geplantes Level');count.type='number';count.min='1';count.max='10000';count.value=String(p.count);count.setAttribute('aria-label','Anzahl geplanter Figuren');remove.textContent='Entfernen';remove.onclick=()=>{plan!.party=plan!.party.filter(c=>c.id!==p.id);renderPlan();schedule();};name.oninput=()=>{p.name=name.value;schedule();};level.oninput=()=>{p.level=level.value?Number(level.value):null;schedule();};count.oninput=()=>{p.count=Number(count.value);schedule();};row.append(name,level,count,remove);party.append(row);}
  const rows=get('encounter-entries');rows.replaceChildren();for(const e of plan.entries){const c=plan.sources.find(c=>c.id===e.creatureId),row=document.createElement('div');row.className='encounter-entry-row';const name=document.createElement('button'),count=document.createElement('input'),label=document.createElement('label'),group=document.createElement('input'),remove=document.createElement('button');name.textContent=(e.worldActorIds?encounterEntryLabel(e,plan.sources):c?.name??e.creatureId)+' · HG '+(c?.challengeRating??'?');name.onclick=()=>{void selectCreature(e.creatureId);};count.type='number';count.min='1';count.max='1000';count.value=String(e.count);count.min=String(Math.max(1,e.worldActorIds?.length??0));count.disabled=!!e.worldActorIds?.length&&e.worldActorIds.length===e.count&&!e.allowAnonymous;count.setAttribute('aria-label','Anzahl '+(c?.name??e.creatureId));count.oninput=()=>{e.count=Number(count.value);schedule();};group.type='checkbox';group.checked=e.grouped;group.onchange=()=>{e.grouped=group.checked;schedule();};label.className='check-label';label.append(group,document.createTextNode('Gemeinsame Initiative'));remove.textContent='Entfernen';remove.onclick=()=>{plan!.entries=plan!.entries.filter(p=>p.id!==e.id);renderPlan();schedule();};row.append(name,count,label,remove);rows.append(row);}renderAssessment();get<HTMLButtonElement>('catalog-add').disabled=!creature||blocked;}
 export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAdd:(creatureId:string,count:number,grouped:boolean)=>Promise<void>){tell=status;prepare=onPrepare;
+ itemReference=new ItemReferenceCatalog(get('catalog-item-reference'));
+ get('catalog-monsters-tab').onclick=()=>{catalogContentView('monster');if(!page)void search();};get('catalog-items-tab').onclick=()=>catalogContentView('items');
+ get('catalog-content-strip').onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const target=get<HTMLButtonElement>(e.key==='Home'?'catalog-monsters-tab':e.key==='End'?'catalog-items-tab':catalogContent==='monster'?'catalog-items-tab':'catalog-monsters-tab');target.click();target.focus();};
  initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
  get('catalog-form').onsubmit=event=>{event.preventDefault();offset=0;void search();};
  for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
  get('catalog-reset').onclick=()=>{const direction=value('catalog-direction');get<HTMLFormElement>('catalog-form').reset();get<HTMLInputElement>('catalog-direction').value=direction;offset=0;if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{const next=button.dataset.sort as CreatureCatalogQuery['sort'];get<HTMLInputElement>('catalog-direction').value=sort===next&&value('catalog-direction')==='asc'?'desc':'asc';sort=next;offset=0;void search();};
  get('catalog-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});get<HTMLElement>(plan?'encounter-name':'encounter-new').focus({preventScroll:true});};
- const returnToResults=()=>{get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;
+ const returnToResults=()=>{catalogContentView('monster');get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;
  get('encounter-search').oninput=()=>void refreshPlans();
  get('encounter-list').onchange=()=>{void loadPlan(value('encounter-list'));};
  get('encounter-new').onclick=()=>report(()=>newPlan());
