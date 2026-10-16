@@ -1,0 +1,37 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';
+const require=createRequire(import.meta.url);buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/session-targets-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({entryPoints:['src/app/generation/session-targets.ts'],outfile:'.build/session-targets.cjs',bundle:true,platform:'node',format:'cjs'});const {CampaignStore}=require('../.build/session-targets-store.cjs'),{sessionTargets}=require('../.build/session-targets.cjs');
+const party=[{id:'a',name:'Gruppe A',level:3,count:2},{id:'b',name:'Gruppe B',level:4,count:2}];
+test('original Golden allocation is exact and automatic count uses the original seeded policy',()=>{
+ const p=sessionTargets(party,'0.6','179974',3);assert.deepEqual(p.encounterTargets,[680,1000,1800]);assert.equal(p.budget,3480);assert.equal(p.audit.passed,true);
+ assert.equal(sessionTargets(party,'0.6','179974').encounterTargets.length,4);assert.deepEqual(sessionTargets([...party,{level:3,count:0}],'0.600','179974',3),p);
+ assert.deepEqual(sessionTargets([{level:1,count:1}],'0.005','name',1).encounterTargets,[2]); // half-up, not float truncation
+ assert.deepEqual(sessionTargets(party,'0','seed',1).encounterTargets,[0]);assert.throws(()=>sessionTargets(party,'0.6','seed',11),/1–10/);
+});
+function fixture(t){const root=mkdtempSync(path.join(tmpdir(),'session-targets-')),file=path.join(root,'work.sqlite'),store=new CampaignStore(file),cam=store.create('Begegnungsbogen'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:cam.id,action}),planId=randomUUID(),tableId=randomUUID();t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});store.changePreparation({...command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Nordmark',scenes:[]}}});store.executeSession(command({kind:'profile',expectedRevision:0,profile:{planId,revision:0,party,adventureDayFraction:'0.6',seed:'179974'}}));store.executeGeneration(command({kind:'table-save',expectedRevision:null,table:{id:tableId,revision:0,scope:'campaign',name:'Nordmark',description:'',entries:['guard','goblin','ogre','wolf'].map(creatureId=>({creatureId,weight:'1'})),habitats:[],time:'any',lootTableId:null,trashed:false}}));return{root,file,store,cam,w,command,planId,request:{planId,expectedProfileRevision:1,count:3,locationIds:[],noteIds:[],encounter:{tableIds:[tableId],filters:{},habitat:'',time:'any',difficulty:'medium',amount:'neutral',balance:'neutral',diversity:'neutral'}}};}
+test('complete session stores exact targets and each distinct encounter origin; fresh and campaign copy retain them',async t=>{
+ const x=fixture(t),run=x.store.generateSession(x.w.token,x.request);assert.deepEqual(run.targets.encounterTargets,[680,1000,1800]);assert.equal(new Set(run.proposals.map(p=>p.encounter.generationOrigin.runId)).size,3);assert.equal(run.usedXp,run.proposals.reduce((n,p)=>n+p.encounter.assessment.adjustedXp,0));assert(run.usedXp<=run.budget);assert.equal(x.store.preparation(x.w.token).plans[0].scenes.length,0);
+ const fresh=new CampaignStore(x.file);try{assert.deepEqual(fresh.sessionRun(fresh.activate(x.cam.id).token,run.id),run);}finally{fresh.close();}
+ const snapshot=path.join(x.root,'copy.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=x.store.acceptCampaignSnapshot(snapshot,'Nordmark Kopie',{}),w=x.store.activate(copy.id),row=x.store.db.prepare('SELECT id FROM session_run WHERE campaign_id=?').get(copy.id),copied=x.store.sessionRun(w.token,row.id);assert.deepEqual(copied.targets,run.targets);assert.notEqual(copied.id,run.id);assert(copied.proposals.every(p=>p.encounter.generationOrigin.runId!==run.proposals[p.index].encounter.generationOrigin.runId));
+});
+test('automatic generation and local regeneration retain the budget arc and authored text',t=>{
+ const x=fixture(t),run=x.store.generateSession(x.w.token,{...x.request,count:null});assert.equal(run.proposals.length,4);assert.equal(run.targets.requestedCount,null);x.store.executeSession(x.command({kind:'edit-proposal',planId:x.planId,runId:run.id,index:1,expectedRevision:1,title:'Brücke',notes:'  Eigene Notiz\r\n',readAloud:'  Vorlesen\r\n',locationId:null,noteIds:[],reward:null}));const edited=x.store.sessionRun(x.w.token,run.id),next=x.store.regenerateSessionProposal(x.w.token,run.id,1,'anderer-seed');assert.deepEqual(next.targets,run.targets);assert.equal(next.proposals[1].notes,'  Eigene Notiz\r\n');assert.deepEqual(next.proposals[0],edited.proposals[0]);assert.equal(x.store.generationRun(x.w.token,next.proposals[1].encounter.generationOrigin.runId).request.targetXp,run.targets.encounterTargets[1]);
+});
+test('failed later encounter rolls back the entire generation and its source runs',t=>{
+ const x=fixture(t),locations=['Gegnerquelle','Ohne Gegnerquelle'].map(name=>({id:randomUUID(),name}));for(const l of locations)x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,...l,type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});
+ x.store.executeGeneration(x.command({kind:'source-save',expectedRevision:null,source:{kind:'location',id:locations[0].id,revision:0,tableIds:x.request.encounter.tableIds,factionIds:[],stock:[]}}));let generated=0;x.store.db.function('observe_generation',()=>{generated++;return 0;});x.store.db.exec('CREATE TEMP TRIGGER observe_generation AFTER INSERT ON generation_run BEGIN SELECT observe_generation(); END');
+ const before=x.store.db.serialize();assert.throws(()=>x.store.generateSession(x.w.token,{...x.request,worldSourcesByLocation:true,locationIds:locations.map(l=>l.id)}));assert.equal(generated,1);assert.ok(before.equals(x.store.db.serialize()));assert.equal(x.store.db.prepare('SELECT count(*) n FROM session_run').get().n,0);assert.equal(x.store.db.prepare('SELECT count(*) n FROM generation_run').get().n,0);
+});
+
+test('ordinary planner catalog selection respects the remaining whole-session ceiling',t=>{
+ const x=fixture(t),request={...x.request,encounter:{...x.request.encounter,tableIds:[],difficulty:'weighted',amount:'standard'}};
+ const run=x.store.generateSession(x.w.token,request);
+ assert.deepEqual(run.targets.encounterTargets,[680,1000,1800]);assert.equal(run.proposals.length,3);assert.ok(run.usedXp<=3480);
+ assert.equal(run.usedXp,run.proposals.reduce((n,p)=>n+p.encounter.assessment.adjustedXp,0));
+ const fresh=new CampaignStore(x.file);try{assert.deepEqual(fresh.sessionRun(fresh.activate(x.cam.id).token,run.id),run);}finally{fresh.close();}
+});
+test('encounter XP ceilings constrain complete rosters and rejection publishes no partial run',t=>{
+ const x=fixture(t),request={...x.request.encounter,party,seed:'ceiling',title:'Schleusenwache',count:1,targetXp:500,xpCeiling:300};
+ const run=x.store.generateEncounters(x.w.token,request);assert.ok(run.plans[0].entries.length);assert.ok(run.plans[0].assessment.adjustedXp<=300);
+ const before=x.store.db.serialize();assert.throws(()=>x.store.generateEncounters(x.w.token,{...request,seed:'impossible',xpCeiling:0}));assert.deepEqual(x.store.db.serialize(),before);
+});

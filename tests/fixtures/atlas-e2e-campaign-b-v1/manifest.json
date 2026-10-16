@@ -1,0 +1,190 @@
+{
+  "kind": "e2e01-campaign-native-fixture",
+  "version": 1,
+  "fixtureVersion": "e2e01-campaign-b-v1",
+  "gate": "E2E-01",
+  "steward": "Campaign/Data",
+  "baseCommit": "9ff11e8e515f162272eab3edf59f5a823349c7aa",
+  "materialization": "independent native domain values; generator reads no Campaign-A fixture",
+  "input": [
+    {
+      "kind": "world",
+      "path": "Atlanten/E2E-01-Nebelmark-B.overworld",
+      "fixtureFile": "input/Atlanten/E2E-01-Nebelmark-B.overworld",
+      "sha256": "db386f07aae716cfdbd2aff26f0e4f71cdd776e655f4b6d82f9c5511269fe045",
+      "bytes": 2467
+    },
+    {
+      "kind": "terrain",
+      "path": "Atlasdaten/11111111-1111-4111-8111-000000000010/terrain/0_0_0.json",
+      "fixtureFile": "input/Atlasdaten/11111111-1111-4111-8111-000000000010/terrain/0_0_0.json",
+      "sha256": "82f96df20fb96f5d18c8755500a4871464cf59038484ce8bae102a72193001b8",
+      "bytes": 266
+    },
+    {
+      "kind": "terrain",
+      "path": "Atlasdaten/11111111-1111-4111-8111-000000000010/terrain/0_1_0.json",
+      "fixtureFile": "input/Atlasdaten/11111111-1111-4111-8111-000000000010/terrain/0_1_0.json",
+      "sha256": "b53ba3e9ed48ea1e2f1d35f7f0636021866445f75bb1dade0520d86eef1be19c",
+      "bytes": 269
+    },
+    {
+      "kind": "dungeon",
+      "path": "Dungeons/E2E-01-Nebelgewölbe-B/Karte.dungeon",
+      "fixtureFile": "input/Dungeons/E2E-01-Nebelgewölbe-B/Karte.dungeon",
+      "sha256": "97c20d25b3e666924a6a0057043bc41ac52162d438d46888bab534e097b24658",
+      "bytes": 1773
+    },
+    {
+      "kind": "location",
+      "path": "Orte/11111111-1111-4111-8111-000000000011.location",
+      "fixtureFile": "input/Orte/11111111-1111-4111-8111-000000000011.location",
+      "sha256": "87d989ded31eaabda402fb7a4be09b330bdd82f556c6f87b730fc6cb2ac6a8b7",
+      "bytes": 493
+    },
+    {
+      "kind": "location",
+      "path": "Orte/11111111-1111-4111-8111-000000000012.location",
+      "fixtureFile": "input/Orte/11111111-1111-4111-8111-000000000012.location",
+      "sha256": "4f8f2cc05b4d1e5511c5dc7b84a079117a64ba0d8aa3555bc79ad2f8596caa76",
+      "bytes": 471
+    },
+    {
+      "kind": "city",
+      "path": "Städte/11111111-1111-4111-8111-000000000100.city",
+      "fixtureFile": "input/Städte/11111111-1111-4111-8111-000000000100.city",
+      "sha256": "1468f60287b5923151cb77c33bf189c2f908fc89c84271ea4f088480a6c30c9f",
+      "bytes": 2374
+    }
+  ],
+  "campaign": {
+    "path": "Kampagnen/SaltMarcher/E2E-01-Nebelmark-B.campaign.json",
+    "fixtureFile": "input/Kampagnen/SaltMarcher/E2E-01-Nebelmark-B.campaign.json",
+    "sha256": "8cfca0cdd9fd286377585737b2ba6142bb76318d64f52004ae5b5dbc4db95904",
+    "bytes": 23450
+  },
+  "provenance": {
+    "worldClosureDigest": "sha256:d9eff7fc36dba702eebdc8b9511d59d9f7a62a1627e8dd35f1e3af0a47584666",
+    "owners": [
+      {
+        "ownerId": "atlas",
+        "ownerRevision": "owner:95e2fa8a4d1bf0f8cbbbee52c67870ce6f2b8d78e5a837820855cface347dda1",
+        "snapshotRevision": "snapshot:95e2fa8a4d1bf0f8cbbbee52c67870ce6f2b8d78e5a837820855cface347dda1",
+        "policyRevision": "policy:atlas:e2e01",
+        "policyDigest": "sha256:1c3b9616408014a8eb3aab7ffbf78eccd63082ff7de7dd9d2659b8cb9a67d4b4",
+        "adapterType": "native-atlas",
+        "generation": "source:95e2fa8a4d1bf0f8cbbbee52c67870ce6f2b8d78e5a837820855cface347dda1"
+      },
+      {
+        "ownerId": "city",
+        "ownerRevision": "owner:3c1a853659d605ee7800dc2c110cd4c4eb3543c030edd58bfbc33d08898da55e",
+        "snapshotRevision": "snapshot:3c1a853659d605ee7800dc2c110cd4c4eb3543c030edd58bfbc33d08898da55e",
+        "policyRevision": "policy:city:e2e01",
+        "policyDigest": "sha256:e1c5e2293dbf64e109b87e750468a1996c6b673b58a74a7e44e8bdcad788b89b",
+        "adapterType": "native-city",
+        "generation": "source:3c1a853659d605ee7800dc2c110cd4c4eb3543c030edd58bfbc33d08898da55e"
+      },
+      {
+        "ownerId": "dungeon",
+        "ownerRevision": "owner:83c16d7762b2384eec6c68523fd37dc1d2de6296dd029223c95101b4d2168d96",
+        "snapshotRevision": "snapshot:83c16d7762b2384eec6c68523fd37dc1d2de6296dd029223c95101b4d2168d96",
+        "policyRevision": "policy:dungeon:e2e01",
+        "policyDigest": "sha256:73d4f692dafac43c6c51f99e521fcc27950b0e747e2ffce497c66f2a900d2a7a",
+        "adapterType": "native-dungeon",
+        "generation": "source:83c16d7762b2384eec6c68523fd37dc1d2de6296dd029223c95101b4d2168d96"
+      }
+    ]
+  },
+  "initialOracle": {
+    "campaignId": "11111111-1111-4111-8111-000000000001",
+    "namespace": "11111111-1111-4111-8111-000000000002",
+    "registryId": "registry:e2e01:campaign-b-v1",
+    "registryRevision": "registry:campaign-b-v1",
+    "campaignName": "E2E-01 Nebelmark B",
+    "worldId": "11111111-1111-4111-8111-000000000010",
+    "worldName": "Nebelmark",
+    "locationIds": [
+      "11111111-1111-4111-8111-000000000011",
+      "11111111-1111-4111-8111-000000000012"
+    ],
+    "cityId": "11111111-1111-4111-8111-000000000100",
+    "buildingId": "11111111-1111-4111-8111-000000000105",
+    "dungeonId": "11111111-1111-4111-8111-000000000030",
+    "roomId": "11111111-1111-4111-8111-000000000031",
+    "roomSectionId": "11111111-1111-4111-8111-000000000034",
+    "locationNames": [
+      "Morgenhafen",
+      "Nebeltor"
+    ],
+    "cityName": "Morgenhafen",
+    "roomName": "Kartensaal",
+    "cityPlacement": {
+      "id": "11111111-1111-4111-8111-000000000201",
+      "kind": "city",
+      "documentId": "11111111-1111-4111-8111-000000000100",
+      "parent": {
+        "kind": "location",
+        "locationId": "11111111-1111-4111-8111-000000000011"
+      },
+      "offsetMeters": {
+        "x": 45,
+        "y": -30
+      },
+      "rotationRadians": 0.125
+    },
+    "dungeonPlacement": {
+      "id": "11111111-1111-4111-8111-000000000202",
+      "kind": "dungeon",
+      "documentId": "11111111-1111-4111-8111-000000000030",
+      "parent": {
+        "kind": "city-building",
+        "cityId": "11111111-1111-4111-8111-000000000100",
+        "buildingId": "11111111-1111-4111-8111-000000000105"
+      },
+      "anchor": {
+        "parentPointMeters": {
+          "x": 2,
+          "y": 3
+        },
+        "mapPointFields": {
+          "x": 3,
+          "y": 5
+        }
+      },
+      "rotationRadians": -0.25,
+      "surfaceFloorId": "11111111-1111-4111-8111-000000000032",
+      "entrances": [
+        {
+          "routeId": "11111111-1111-4111-8111-000000000033",
+          "floorId": "11111111-1111-4111-8111-000000000032",
+          "roomId": "11111111-1111-4111-8111-000000000031",
+          "pointFields": {
+            "x": 3,
+            "y": 5
+          }
+        }
+      ]
+    },
+    "terrainCells": [
+      {
+        "q": 0,
+        "r": 0,
+        "surface": "sea",
+        "terrain": "plain",
+        "color": "#496b63"
+      },
+      {
+        "q": 32,
+        "r": 0,
+        "surface": "land",
+        "terrain": "forest",
+        "color": "#8a7b55"
+      }
+    ],
+    "inventoryRecordCount": 13,
+    "picker": {
+      "label": "E2E-01 Nebelmark B",
+      "status": "available"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import {buildSync} from 'esbuild';
+import {parseHTML} from 'linkedom';
+
+buildSync({stdin:{contents:"export {openPresetSettings} from './src/app/preset-settings-ui'; export {initCampaignScreen} from './src/app/campaign-screen-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/preset-settings-ui-test.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/preset-settings-store-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/preset-settings-store-test.cjs');
+const settle=async()=>{for(let i=0;i<20;i++)await new Promise(r=>setImmediate(r));};
+async function fixture(t){
+ const root=mkdtempSync(path.join(tmpdir(),'preset-settings-')),store=new CampaignStore(path.join(root,'work.sqlite'));
+ const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document,localStorage:globalThis.localStorage,Event:globalThis.Event};
+ const memory=new Map(),storage={getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
+ Object.assign(globalThis,{window,document,localStorage:storage,Event:window.Event});window.localStorage=storage;
+ t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});Object.assign(globalThis,previous);});
+ for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:select.options[0]?.value??''});
+ for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
+ const append=document.head.append.bind(document.head);document.head.append=(...nodes)=>{append(...nodes);for(const n of nodes)if(n.tagName==='LINK')queueMicrotask(()=>n.onload());};
+ const ok=value=>({ok:true,value}),calls=[],registryReads=[];
+ window.campaign={campaignOverview:async()=>ok(store.campaignOverview()),presetRegistry:async id=>{registryReads.push(id);return ok(store.presetRegistry(id));},presetCommand:async c=>{calls.push(c);try{return ok(store.presetCommand(c));}catch(e){return{ok:false,error:e.message};}},presetOutcome:async c=>ok(store.presetOutcome(c))};
+ delete require.cache[require.resolve('../.build/preset-settings-ui-test.cjs')];const ui=require('../.build/preset-settings-ui-test.cjs'),el=id=>document.getElementById(id),campaign=store.create('Waldrand');
+ const open=async id=>{await ui.openPresetSettings(id);await settle();};
+ const edit=(id,value)=>{el(id).value=String(value);el('preset-form').oninput();};
+ const save=async()=>{el('preset-form').onsubmit({preventDefault(){}});await settle();};
+ return{window,document,store,ui,el,calls,registryReads,campaign,open,edit,save};
+}
+
+test('copied rules stay identifiable through editing, save and explicit assignment, then reopen as effective rules',async t=>{
+ const x=await fixture(t);await x.open(x.campaign.id);const system=x.store.presetRegistry(x.campaign.id).effectiveId;
+ x.el('preset-copy').onclick();const copyId=x.el('preset-selection').value;
+ assert.notEqual(copyId,system);assert.match(x.el('preset-selection').selectedOptions?.[0]?.textContent??x.el('preset-selection').querySelector('option:last-child').textContent,/Kopie.*Entwurf/);
+ x.edit('preset-name','Waldrand – einzelne Initiative');x.edit('preset-mob',0);
+ assert.match(x.el('preset-selection').querySelector('option:last-child').textContent,/Waldrand.*Entwurf/);
+ assert.equal(x.el('preset-assign').disabled,true);assert.equal(x.calls.length,0);
+ await x.save();assert.equal(x.calls.length,1);assert.equal(x.store.presetRegistry(x.campaign.id).effectiveId,system,'saving must not assign');
+ assert.equal(x.store.presetRegistry(null).presets.find(p=>p.id===copyId).config.combat.mobThreshold,0);
+ assert.doesNotMatch(x.el('preset-selection').querySelector('option:last-child').textContent,/Entwurf/);
+ assert.match(x.el('preset-status').textContent,/Preset gespeichert/);assert.equal(x.el('preset-status').closest('.preset-scroll'),null,'feedback stays outside the scrolling form');
+ x.el('preset-assign').onclick();await settle();assert.equal(x.calls.length,2);assert.equal(x.store.presetRegistry(x.campaign.id).effectiveId,copyId);
+ x.el('preset-close').onclick();await x.open(x.campaign.id);
+ assert.equal(x.el('preset-selection').value,copyId);assert.equal(x.el('preset-mob').value,'0');assert.match(x.el('preset-effective').textContent,/Waldrand – einzelne Initiative/);
+});
+
+test('invalid lower-form rules retain the draft and visible feedback without a storage command',async t=>{
+ const x=await fixture(t);await x.open(x.campaign.id);x.el('preset-copy').onclick();x.edit('preset-name','Unfertig');x.edit('preset-weight-easy',99);await x.save();
+ assert.equal(x.calls.length,0);assert.equal(x.el('preset-weight-track').style.visibility,'hidden');assert.match(x.el('preset-status').textContent,/zusammen 100/);assert.equal(x.el('preset-status').closest('.preset-scroll'),null);assert.equal(x.el('preset-weight-easy').value,'99');
+ x.el('preset-close').onclick();assert.equal(x.el('preset-discard').open,true);x.el('preset-discard-keep').onclick();assert.equal(x.el('preset-manager').open,true);assert.equal(x.el('preset-name').value,'Unfertig');x.edit('preset-weight-easy',25);assert.equal(x.el('preset-weight-track').style.visibility,'');await x.save();assert.equal(x.calls.length,1);
+});
+
+test('application settings follow the current workspace at click time, without assigning or requiring a campaign',async t=>{
+ const x=await fixture(t);let current=x.campaign.id;
+ x.ui.initCampaignScreen({before:async()=>true,enter:async()=>true,changed:async()=>{},currentCampaign:()=>current});
+ x.el('application-settings').onclick();await settle();assert.equal(x.registryReads.at(-1),current);assert.equal(x.el('preset-context').value,current);assert.equal(x.calls.length,0);
+ x.el('preset-close').onclick();current=null;x.el('application-settings').onclick();await settle();assert.equal(x.registryReads.at(-1),null);assert.equal(x.el('preset-context').value,'');assert.equal(x.el('preset-assign').disabled,true);assert.equal(x.calls.length,0);
+});
+
+
+test('an unresolved copied-preset save reopens with its named draft and only checks the receipt until deliberately retried',async t=>{
+ const x=await fixture(t);await x.open(x.campaign.id);x.el('preset-copy').onclick();x.edit('preset-name','Noch offen');const id=x.el('preset-selection').value,send=x.window.campaign.presetCommand;
+ x.window.campaign.presetCommand=async c=>{x.calls.push(c);throw new Error('Verbindung verloren');};await x.save();
+ assert.equal(x.calls.length,1);assert.equal(x.el('preset-check').hidden,false);assert.equal(x.el('preset-check').closest('.preset-scroll'),null);assert.equal(x.el('preset-save').disabled,true);
+ // A new renderer retains only the journaled command, not module state.
+ x.el('preset-manager').open=false;delete require.cache[require.resolve('../.build/preset-settings-ui-test.cjs')];const fresh=require('../.build/preset-settings-ui-test.cjs');await fresh.openPresetSettings(null);
+ assert.equal(x.calls.length,1);assert.equal(x.el('preset-context').value,x.campaign.id);assert.equal(x.el('preset-selection').value,id);assert.match(x.el('preset-selection').querySelector('option:last-child').textContent,/Noch offen.*Entwurf/);assert.equal(x.el('preset-name').value,'Noch offen');
+ x.el('preset-check').onclick();await settle();assert.equal(x.calls.length,1);assert.equal(x.el('preset-save').disabled,false);assert.equal(x.el('preset-name').value,'Noch offen');
+ x.window.campaign.presetCommand=send;await x.save();assert.equal(x.calls.length,2);assert.equal(x.store.presetRegistry(null).presets.find(p=>p.id===id).name,'Noch offen');
+});

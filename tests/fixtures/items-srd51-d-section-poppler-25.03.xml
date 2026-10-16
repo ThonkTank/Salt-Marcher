@@ -1,0 +1,828 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd">
+
+<pdf2xml producer="poppler" version="25.03.0">
+<page number="215" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="0" size="16" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="1" size="16" family="DXJJCX+GillSans-SemiBold" color="#000000"/>
+	<fontspec id="2" size="15" family="UHIGMC+Cambria" color="#000000"/>
+	<fontspec id="3" size="15" family="FNCRUV+Cambria" color="#000000"/>
+	<fontspec id="4" size="15" family="EMJVBH+Cambria" color="#000000"/>
+	<fontspec id="5" size="18" family="DXJJCX+GillSans-SemiBold" color="#943634"/>
+	<fontspec id="6" size="18" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="7" size="13" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="8" size="13" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="9" size="13" family="EKJQRM+Calibri" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>215</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="264" height="17" font="2">one   of   those   creatures.   You   don’t   need   to   </text>
+<text top="126" left="86" width="126" height="17" font="2">concentrate   on   this   </text>
+<text top="126" left="213" width="67" height="17" font="3"><i>suggestion</i></text>
+<text top="126" left="280" width="139" height="17" font="2">   to   maintain   it   during   </text>
+<text top="143" left="86" width="164" height="17" font="2">its   duration,   but   it   ends   if   </text>
+<text top="143" left="251" width="48" height="17" font="3"><i>scrying   </i></text>
+<text top="143" left="299" width="109" height="17" font="2">ends.   Once   used,   </text>
+<text top="161" left="86" width="24" height="17" font="2">the   </text>
+<text top="161" left="110" width="67" height="17" font="3"><i>suggestion</i></text>
+<text top="161" left="177" width="88" height="17" font="2">   power   of   the   </text>
+<text top="161" left="265" width="69" height="17" font="3"><i>crystal   ball</i></text>
+<text top="161" left="334" width="90" height="17" font="2">   can’t   be   used   </text>
+<text top="178" left="86" width="168" height="17" font="2">again   until   the   next   dawn.   </text>
+<text top="196" left="86" width="198" height="17" font="4"><i><b>    Crystal   Ball   of   True   Seeing.   </b></i></text>
+<text top="196" left="284" width="123" height="17" font="2">While   scrying   with   </text>
+<text top="213" left="86" width="326" height="17" font="2">the   crystal   ball,   you   have   truesight   with   a   radius   of   </text>
+<text top="231" left="86" width="252" height="17" font="2">120   feet   centered   on   the   spell’s   sensor.   </text>
+<text top="262" left="86" width="117" height="21" font="5"><b>Cube of Force </b></text>
+<text top="284" left="86" width="275" height="17" font="3"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="310" left="86" width="315" height="17" font="2">This   cube   is   about   an   inch   across.   Each   face   has   a   </text>
+<text top="328" left="86" width="333" height="17" font="2">distinct   marking   on   it   that   can   be   pressed.   The   cube   </text>
+<text top="345" left="86" width="341" height="17" font="2">starts   with   36   charges,   and   it   regains   1d20   expended   </text>
+<text top="363" left="86" width="145" height="17" font="2">charges   daily   at   dawn.   </text>
+<text top="381" left="86" width="319" height="17" font="2">    You   can   use   an   action   to   press   one   of   the   cube’s   </text>
+<text top="398" left="86" width="327" height="17" font="2">faces,   expending   a   number   of   charges   based   on   the   </text>
+<text top="416" left="86" width="313" height="17" font="2">chosen   face,   as   shown   in   the   Cube   of   Force   Faces   </text>
+<text top="433" left="86" width="334" height="17" font="2">table.   Each   face   has   a   different   effect.   If   the   cube   has   </text>
+<text top="451" left="86" width="314" height="17" font="2">insufficient   charges   remaining,   nothing   happens.   </text>
+<text top="468" left="86" width="321" height="17" font="2">Otherwise,   a   barrier   of   invisible   force   springs   into   </text>
+<text top="486" left="86" width="303" height="17" font="2">existence,   forming   a   cube   15   feet   on   a   side.   The   </text>
+<text top="504" left="86" width="340" height="17" font="2">barrier   is   centered   on   you,   moves   with   you,   and   lasts   </text>
+<text top="521" left="86" width="312" height="17" font="2">for   1   minute,   until   you   use   an   action   to   press   the   </text>
+<text top="539" left="86" width="314" height="17" font="2">cube’s   sixth   face,   or   the   cube   runs   out   of   charges.   </text>
+<text top="557" left="86" width="311" height="17" font="2">You   can   change   the   barrier’s   effect   by   pressing   a   </text>
+<text top="574" left="86" width="283" height="17" font="2">different   face   of   the   cube   and   expending   the   </text>
+<text top="591" left="86" width="333" height="17" font="2">requisite   number   of   charges,   resetting   the   duration.   </text>
+<text top="609" left="86" width="333" height="17" font="2">    If   your   movement   causes   the   barrier   to   come   into   </text>
+<text top="627" left="86" width="320" height="17" font="2">contact   with   a   solid   object   that   can’t   pass   through   </text>
+<text top="644" left="86" width="334" height="17" font="2">the   cube,   you   can’t   move   any   closer   to   that   object   as   </text>
+<text top="662" left="86" width="180" height="17" font="2">long   as   the   barrier   remains.   </text>
+<text top="688" left="86" width="151" height="22" font="6"><b>Cube   of   Force   Faces   </b></text>
+<text top="715" left="86" width="137" height="16" font="7"><b>Face    Charges    Effect   </b></text>
+<text top="731" left="96" width="10" height="16" font="8">1   </text>
+<text top="731" left="147" width="10" height="16" font="8">1   </text>
+<text top="731" left="189" width="221" height="16" font="8">Gases,   wind,   and   fog   can’t   pass   through   </text>
+<text top="748" left="189" width="65" height="16" font="8">the   barrier.   </text>
+<text top="764" left="96" width="10" height="16" font="8">2   </text>
+<text top="764" left="147" width="10" height="16" font="8">2   </text>
+<text top="764" left="189" width="221" height="16" font="8">Nonliving   matter   can’t   pass   through   the   </text>
+<text top="781" left="189" width="235" height="16" font="8">barrier.   Walls,   floors,   and   ceilings   can   pass   </text>
+<text top="797" left="189" width="150" height="16" font="8">through   at   your   discretion.   </text>
+<text top="814" left="96" width="10" height="16" font="8">3   </text>
+<text top="814" left="147" width="10" height="16" font="8">3   </text>
+<text top="814" left="189" width="201" height="16" font="8">Living   matter   can’t   pass   through   the   </text>
+<text top="830" left="189" width="44" height="16" font="8">barrier.   </text>
+<text top="847" left="96" width="10" height="16" font="8">4   </text>
+<text top="847" left="147" width="10" height="16" font="8">4   </text>
+<text top="847" left="189" width="239" height="16" font="8">Spell   effects   can’t   pass   through   the   barrier.   </text>
+<text top="863" left="96" width="10" height="16" font="8">5   </text>
+<text top="863" left="147" width="10" height="16" font="8">5   </text>
+<text top="863" left="189" width="209" height="16" font="8">Nothing   can   pass   through   the   barrier.   </text>
+<text top="880" left="189" width="238" height="16" font="8">Walls,   floors,   and   ceilings   can   pass   through   </text>
+<text top="896" left="189" width="103" height="16" font="8">at   your   discretion.   </text>
+<text top="913" left="96" width="10" height="16" font="8">6   </text>
+<text top="913" left="147" width="10" height="16" font="8">0   </text>
+<text top="913" left="189" width="133" height="16" font="8">The   barrier   deactivates.   </text>
+<text top="947" left="86" width="290" height="17" font="2">    The   cube   loses   charges   when   the   barrier   is   </text>
+<text top="964" left="86" width="338" height="17" font="2">targeted   by   certain   spells   or   comes   into   contact   with   </text>
+<text top="982" left="86" width="324" height="17" font="2">certain   spell   or   magic   item   effects,   as   shown   in   the   </text>
+<text top="1000" left="86" width="81" height="17" font="2">table   below.   </text>
+<text top="108" left="493" width="74" height="16" font="7"><b>Spell   or   Item   </b></text>
+<text top="108" left="612" width="74" height="16" font="7"><b>Charges   Lost   </b></text>
+<text top="124" left="493" width="70" height="16" font="9"><i>Disintegrate   </i></text>
+<text top="124" left="606" width="31" height="16" font="8">1d12   </text>
+<text top="141" left="493" width="91" height="16" font="9"><i>Horn   of   blasting   </i></text>
+<text top="141" left="606" width="31" height="16" font="8">1d10   </text>
+<text top="157" left="493" width="50" height="16" font="9"><i>Passwall   </i></text>
+<text top="157" left="606" width="24" height="16" font="8">1d6   </text>
+<text top="174" left="493" width="87" height="16" font="9"><i>Prismatic   spray   </i></text>
+<text top="174" left="606" width="31" height="16" font="8">1d20   </text>
+<text top="190" left="493" width="64" height="16" font="9"><i>Wall   of   fire   </i></text>
+<text top="190" left="606" width="24" height="16" font="8">1d4   </text>
+<text top="220" left="493" width="94" height="21" font="5"><b>Cubic Gate </b></text>
+<text top="242" left="493" width="168" height="17" font="3"><i>Wondrous   item,   legendary   </i></text>
+<text top="269" left="493" width="320" height="17" font="2">This   cube   is   3   inches   across   and   radiates   palpable   </text>
+<text top="286" left="493" width="319" height="17" font="2">magical   energy.   The   six   sides   of   the   cube   are   each   </text>
+<text top="303" left="493" width="334" height="17" font="2">keyed   to   a   different   plane   of   existence,   one   of   which   </text>
+<text top="321" left="493" width="323" height="17" font="2">is   the   Material   Plane.   The   other   sides   are   linked   to   </text>
+<text top="339" left="493" width="194" height="17" font="2">planes   determined   by   the   GM.   </text>
+<text top="356" left="507" width="325" height="17" font="2">You   can   use   an   action   to   press   one   side   of   the   cube   </text>
+<text top="374" left="493" width="69" height="17" font="2">to   cast   the   </text>
+<text top="374" left="562" width="28" height="17" font="3"><i>gate</i></text>
+<text top="374" left="590" width="233" height="17" font="2">   spell   with   it,   opening   a   portal   to   the   </text>
+<text top="392" left="493" width="332" height="17" font="2">plane   keyed   to   that   side.   Alternatively,   if   you   use   an   </text>
+<text top="409" left="493" width="300" height="17" font="2">action   to   press   one   side   twice,   you   can   cast   the   </text>
+<text top="409" left="793" width="38" height="17" font="3"><i>plane   </i></text>
+<text top="427" left="493" width="27" height="17" font="3"><i>shift</i></text>
+<text top="427" left="520" width="304" height="17" font="2">   spell   (save   DC   17)   with   the   cube   and   transport   </text>
+<text top="444" left="493" width="271" height="17" font="2">the   targets   to   the   plane   keyed   to   that   side.   </text>
+<text top="462" left="493" width="301" height="17" font="2">    The   cube   has   3   charges.   Each   use   of   the   cube   </text>
+<text top="480" left="493" width="324" height="17" font="2">expends   1   charge.   The   cube   regains   1d3   expended   </text>
+<text top="497" left="493" width="145" height="17" font="2">charges   daily   at   dawn.   </text>
+<text top="528" left="493" width="144" height="21" font="5"><b>Dagger of Venom </b></text>
+<text top="550" left="493" width="147" height="17" font="3"><i>Weapon   (dagger),   rare   </i></text>
+<text top="576" left="493" width="304" height="17" font="2">You   gain   a   +1   bonus   to   attack   and   damage   rolls   </text>
+<text top="594" left="493" width="197" height="17" font="2">made   with   this   magic   weapon.   </text>
+<text top="611" left="493" width="333" height="17" font="2">    You   can   use   an   action   to   cause   thick,   black   poison   </text>
+<text top="629" left="493" width="325" height="17" font="2">to   coat   the   blade.   The   poison   remains   for   1   minute   </text>
+<text top="647" left="493" width="330" height="17" font="2">or   until   an   attack   using   this   weapon   hits   a   creature.   </text>
+<text top="664" left="493" width="335" height="17" font="2">That   creature   must   succeed   on   a   DC   15   Constitution   </text>
+<text top="682" left="493" width="299" height="17" font="2">saving   throw   or   take   2d10   poison   damage   and   </text>
+<text top="699" left="493" width="329" height="17" font="2">become   poisoned   for   1   minute.   The   dagger   can’t   be   </text>
+<text top="717" left="493" width="259" height="17" font="2">used   this   way   again   until   the   next   dawn.   </text>
+<text top="748" left="493" width="125" height="21" font="5"><b>Dancing Sword </b></text>
+<text top="769" left="493" width="340" height="17" font="3"><i>Weapon   (any   sword),   very   rare   (requires   attunement)   </i></text>
+<text top="796" left="493" width="333" height="17" font="2">You   can   use   a   bonus   action   to   toss   this   magic   sword   </text>
+<text top="814" left="493" width="341" height="17" font="2">into   the   air   and   speak   the   command   word.   When   you   </text>
+<text top="831" left="493" width="330" height="17" font="2">do   so,   the   sword   begins   to   hover,   flies   up   to   30   feet,   </text>
+<text top="849" left="493" width="338" height="17" font="2">and   attacks   one   creature   of   your   choice   within   5   feet   </text>
+<text top="867" left="493" width="308" height="17" font="2">of   it.   The   sword   uses   your   attack   roll   and   ability   </text>
+<text top="884" left="493" width="201" height="17" font="2">score   modifier   to   damage   rolls.   </text>
+<text top="901" left="493" width="304" height="17" font="2">    While   the   sword   hovers,   you   can   use   a   bonus   </text>
+<text top="919" left="493" width="332" height="17" font="2">action   to   cause   it   to   fly   up   to   30   feet   to   another   spot   </text>
+<text top="937" left="493" width="307" height="17" font="2">within   30   feet   of   you.   As   part   of   the   same   bonus   </text>
+<text top="954" left="493" width="292" height="17" font="2">action,   you   can   cause   the   sword   to   attack   one   </text>
+<text top="972" left="493" width="173" height="17" font="2">creature   within   5   feet   of   it.   </text>
+<text top="989" left="493" width="317" height="17" font="2">    After   the   hovering   sword   attacks   for   the   fourth   </text>
+<text top="1007" left="493" width="332" height="17" font="2">time,   it   flies   up   to   30   feet   and   tries   to   return   to   your   </text>
+<text top="1025" left="493" width="332" height="17" font="2">hand.   If   you   have   no   hand   free,   it   falls   to   the   ground   </text>
+</page>
+<page number="216" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="10" size="15" family="ZWSWFB+Symbol" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>216</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="327" height="17" font="2">at   your   feet.   If   the   sword   has   no   unobstructed   path   </text>
+<text top="126" left="86" width="315" height="17" font="2">to   you,   it   moves   as   close   to   you   as   it   can   and   then   </text>
+<text top="143" left="86" width="306" height="17" font="2">falls   to   the   ground.   It   also   ceases   to   hover   if   you   </text>
+<text top="161" left="86" width="312" height="17" font="2">grasp   it   or   move   more   than   30   feet   away   from   it.   </text>
+<text top="191" left="86" width="219" height="21" font="5"><b>Decanter of Endless Water </b></text>
+<text top="213" left="86" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="240" left="86" width="316" height="17" font="2">This   stoppered   flask   sloshes   when   shaken,   as   if   it   </text>
+<text top="257" left="86" width="303" height="17" font="2">contains   water.   The   decanter   weighs   2   pounds.   </text>
+<text top="275" left="86" width="328" height="17" font="2">    You   can   use   an   action   to   remove   the   stopper   and   </text>
+<text top="293" left="86" width="331" height="17" font="2">speak   one   of   three   command   words,   whereupon   an   </text>
+<text top="310" left="86" width="319" height="17" font="2">amount   of   fresh   water   or   salt   water   (your   choice)   </text>
+<text top="328" left="86" width="342" height="17" font="2">pours   out   of   the   flask.   The   water   stops   pouring   out   at   </text>
+<text top="345" left="86" width="280" height="17" font="2">the   start   of   your   next   turn.   Choose   from   the   </text>
+<text top="363" left="86" width="119" height="17" font="2">following   options:   </text>
+<text top="394" left="86" width="7" height="15" font="10">•</text>
+<text top="391" left="100" width="234" height="17" font="2">“Stream”   produces   1   gallon   of   water.</text>
+<text top="413" left="86" width="7" height="15" font="10">•</text>
+<text top="409" left="100" width="252" height="17" font="2">“Fountain”   produces   5   gallons   of   water.</text>
+<text top="431" left="86" width="7" height="15" font="10">•</text>
+<text top="427" left="100" width="320" height="17" font="2">“Geyser”   produces   30   gallons   of   water   that   gushes</text>
+<text top="445" left="100" width="318" height="17" font="2">forth   in   a   geyser   30   feet   long   and   1   foot   wide.   As   a</text>
+<text top="462" left="100" width="312" height="17" font="2">bonus   action   while   holding   the   decanter,   you   can</text>
+<text top="480" left="100" width="319" height="17" font="2">aim   the   geyser   at   a   creature   you   can   see   within   30</text>
+<text top="498" left="100" width="301" height="17" font="2">feet   of   you.   The   target   must   succeed   on   a   DC   13</text>
+<text top="515" left="100" width="302" height="17" font="2">Strength   saving   throw   or   take   1d4   bludgeoning</text>
+<text top="533" left="100" width="311" height="17" font="2">damage   and   fall   prone.   Instead   of   a   creature,   you</text>
+<text top="550" left="100" width="279" height="17" font="2">can   target   an   object   that   isn’t   being   worn   or</text>
+<text top="568" left="100" width="323" height="17" font="2">carried   and   that   weighs   no   more   than   200   pounds.</text>
+<text top="585" left="100" width="316" height="17" font="2">The   object   is   either   knocked   over   or   pushed   up   to</text>
+<text top="603" left="100" width="146" height="17" font="2">15   feet   away   from   you.</text>
+<text top="634" left="86" width="134" height="21" font="5"><b>Deck of Illusions </b></text>
+<text top="656" left="86" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="682" left="86" width="315" height="17" font="2">This   box   contains   a   set   of   parchment   cards.   A   full   </text>
+<text top="700" left="86" width="295" height="17" font="2">deck   has   34   cards.   A   deck   found   as   treasure   is   </text>
+<text top="717" left="86" width="203" height="17" font="2">usually   missing   1d20   −   1   cards.   </text>
+<text top="735" left="86" width="325" height="17" font="2">    The   magic   of   the   deck   functions   only   if   cards   are   </text>
+<text top="752" left="86" width="316" height="17" font="2">drawn   at   random   (you   can   use   an   altered   deck   of   </text>
+<text top="770" left="86" width="328" height="17" font="2">playing   cards   to   simulate   the   deck).   You   can   use   an   </text>
+<text top="788" left="86" width="327" height="17" font="2">action   to   draw   a   card   at   random   from   the   deck   and   </text>
+<text top="805" left="86" width="317" height="17" font="2">throw   it   to   the   ground   at   a   point   within   30   feet   of   </text>
+<text top="823" left="86" width="30" height="17" font="2">you.   </text>
+<text top="841" left="86" width="321" height="17" font="2">    An   illusion   of   one   or   more   creatures   forms   over   </text>
+<text top="858" left="86" width="308" height="17" font="2">the   thrown   card   and   remains   until   dispelled.   An   </text>
+<text top="876" left="86" width="315" height="17" font="2">illusory   creature   appears   real,   of   the   appropriate   </text>
+<text top="893" left="86" width="333" height="17" font="2">size,   and   behaves   as   if   it   were   a   real   creature   except   </text>
+<text top="911" left="86" width="340" height="17" font="2">that   it   can   do   no   harm.   While   you   are   within   120   feet   </text>
+<text top="928" left="86" width="339" height="17" font="2">of   the   illusory   creature   and   can   see   it,   you   can   use   an   </text>
+<text top="946" left="86" width="334" height="17" font="2">action   to   move   it   magically   anywhere   within   30   feet   </text>
+<text top="964" left="86" width="337" height="17" font="2">of   its   card.   Any   physical   interaction   with   the   illusory   </text>
+<text top="981" left="86" width="332" height="17" font="2">creature   reveals   it   to   be   an   illusion,   because   objects   </text>
+<text top="999" left="86" width="305" height="17" font="2">pass   through   it.   Someone   who   uses   an   action   to   </text>
+<text top="1016" left="86" width="329" height="17" font="2">visually   inspect   the   creature   identifies   it   as   illusory   </text>
+<text top="108" left="493" width="330" height="17" font="2">with   a   successful   DC   15   Intelligence   (Investigation)   </text>
+<text top="126" left="493" width="295" height="17" font="2">check.   The   creature   then   appears   translucent.   </text>
+<text top="143" left="493" width="312" height="17" font="2">    The   illusion   lasts   until   its   card   is   moved   or   the   </text>
+<text top="161" left="493" width="306" height="17" font="2">illusion   is   dispelled.   When   the   illusion   ends,   the   </text>
+<text top="178" left="493" width="330" height="17" font="2">image   on   its   card   disappears,   and   that   card   can’t   be   </text>
+<text top="196" left="493" width="75" height="17" font="2">used   again.   </text>
+<text top="222" left="493" width="72" height="16" font="7"><b>Playing   Card   </b></text>
+<text top="222" left="617" width="44" height="16" font="7"><b>Illusion   </b></text>
+<text top="239" left="493" width="75" height="16" font="8">Ace   of   hearts   </text>
+<text top="239" left="617" width="66" height="16" font="8">Red   dragon   </text>
+<text top="256" left="493" width="79" height="16" font="8">King   of   hearts   </text>
+<text top="256" left="617" width="128" height="16" font="8">Knight   and   four   guards   </text>
+<text top="272" left="493" width="92" height="16" font="8">Queen   of   hearts   </text>
+<text top="272" left="617" width="115" height="16" font="8">Succubus   or   incubus   </text>
+<text top="288" left="493" width="78" height="16" font="8">Jack   of   hearts   </text>
+<text top="288" left="617" width="33" height="16" font="8">Druid   </text>
+<text top="305" left="493" width="76" height="16" font="8">Ten   of   hearts   </text>
+<text top="305" left="617" width="65" height="16" font="8">Cloud   giant   </text>
+<text top="321" left="493" width="81" height="16" font="8">Nine   of   hearts   </text>
+<text top="321" left="617" width="29" height="16" font="8">Ettin   </text>
+<text top="338" left="493" width="83" height="16" font="8">Eight   of   hearts   </text>
+<text top="338" left="617" width="49" height="16" font="8">Bugbear   </text>
+<text top="354" left="493" width="78" height="16" font="8">Two   of   hearts   </text>
+<text top="354" left="617" width="39" height="16" font="8">Goblin   </text>
+<text top="381" left="493" width="95" height="16" font="8">Ace   of   diamonds   </text>
+<text top="381" left="617" width="53" height="16" font="8">Beholder   </text>
+<text top="398" left="493" width="98" height="16" font="8">King   of   diamonds   </text>
+<text top="398" left="617" width="178" height="16" font="8">Archmage   and   mage   apprentice   </text>
+<text top="414" left="493" width="180" height="16" font="8">Queen   of   diamonds    Night   hag   </text>
+<text top="431" left="493" width="97" height="16" font="8">Jack   of   diamonds   </text>
+<text top="431" left="617" width="49" height="16" font="8">Assassin   </text>
+<text top="447" left="493" width="95" height="16" font="8">Ten   of   diamonds   </text>
+<text top="447" left="617" width="54" height="16" font="8">Fire   giant   </text>
+<text top="464" left="493" width="100" height="16" font="8">Nine   of   diamonds   </text>
+<text top="464" left="617" width="63" height="16" font="8">Ogre   mage   </text>
+<text top="480" left="493" width="102" height="16" font="8">Eight   of   diamonds   </text>
+<text top="480" left="617" width="32" height="16" font="8">Gnoll   </text>
+<text top="497" left="493" width="98" height="16" font="8">Two   of   diamonds   </text>
+<text top="497" left="617" width="42" height="16" font="8">Kobold   </text>
+<text top="524" left="493" width="79" height="16" font="8">Ace   of   spades   </text>
+<text top="524" left="617" width="25" height="16" font="8">Lich   </text>
+<text top="540" left="493" width="82" height="16" font="8">King   of   spades   </text>
+<text top="540" left="617" width="130" height="16" font="8">Priest   and   two   acolytes   </text>
+<text top="556" left="493" width="95" height="16" font="8">Queen   of   spades   </text>
+<text top="556" left="617" width="47" height="16" font="8">Medusa   </text>
+<text top="573" left="493" width="81" height="16" font="8">Jack   of   spades   </text>
+<text top="573" left="617" width="47" height="16" font="8">Veteran   </text>
+<text top="590" left="493" width="79" height="16" font="8">Ten   of   spades   </text>
+<text top="590" left="617" width="61" height="16" font="8">Frost   giant   </text>
+<text top="606" left="493" width="84" height="16" font="8">Nine   of   spades   </text>
+<text top="606" left="617" width="28" height="16" font="8">Troll   </text>
+<text top="622" left="493" width="86" height="16" font="8">Eight   of   spades   </text>
+<text top="622" left="617" width="59" height="16" font="8">Hobgoblin   </text>
+<text top="639" left="493" width="82" height="16" font="8">Two   of   spades   </text>
+<text top="639" left="617" width="39" height="16" font="8">Goblin   </text>
+<text top="666" left="493" width="69" height="16" font="8">Ace   of   clubs   </text>
+<text top="666" left="617" width="62" height="16" font="8">Iron   golem   </text>
+<text top="682" left="493" width="72" height="16" font="8">King   of   clubs   </text>
+<text top="682" left="617" width="182" height="16" font="8">Bandit   captain   and   three   bandits   </text>
+<text top="699" left="493" width="85" height="16" font="8">Queen   of   clubs   </text>
+<text top="699" left="617" width="43" height="16" font="8">Erinyes   </text>
+<text top="716" left="493" width="71" height="16" font="8">Jack   of   clubs   </text>
+<text top="716" left="617" width="56" height="16" font="8">Berserker   </text>
+<text top="732" left="493" width="69" height="16" font="8">Ten   of   clubs   </text>
+<text top="732" left="617" width="51" height="16" font="8">Hill   giant   </text>
+<text top="748" left="493" width="74" height="16" font="8">Nine   of   clubs   </text>
+<text top="748" left="617" width="30" height="16" font="8">Ogre   </text>
+<text top="765" left="493" width="76" height="16" font="8">Eight   of   clubs   </text>
+<text top="765" left="617" width="22" height="16" font="8">Orc   </text>
+<text top="781" left="493" width="72" height="16" font="8">Two   of   clubs   </text>
+<text top="781" left="617" width="42" height="16" font="8">Kobold   </text>
+<text top="808" left="493" width="55" height="16" font="8">Jokers   (2)   </text>
+<text top="808" left="617" width="129" height="16" font="8">You   (the   deck’s   owner)   </text>
+<text top="838" left="493" width="170" height="21" font="5"><b>Deck of Many Things </b></text>
+<text top="860" left="493" width="168" height="17" font="3"><i>Wondrous   item,   legendary   </i></text>
+<text top="886" left="493" width="337" height="17" font="2">Usually   found   in   a   box   or   pouch,   this   deck   contains   a   </text>
+<text top="904" left="493" width="328" height="17" font="2">number   of   cards   made   of   ivory   or   vellum.   Most   (75   </text>
+<text top="922" left="493" width="338" height="17" font="2">percent)   of   these   decks   have   only   thirteen   cards,   but   </text>
+<text top="939" left="493" width="167" height="17" font="2">the   rest   have   twenty-­‐‑two.   </text>
+<text top="957" left="493" width="313" height="17" font="2">    Before   you   draw   a   card,   you   must   declare   how   </text>
+<text top="975" left="493" width="335" height="17" font="2">many   cards   you   intend   to   draw   and   then   draw   them   </text>
+<text top="992" left="493" width="317" height="17" font="2">randomly   (you   can   use   an   altered   deck   of   playing   </text>
+<text top="1009" left="493" width="307" height="17" font="2">cards   to   simulate   the   deck).   Any   cards   drawn   in   </text>
+<text top="1027" left="493" width="327" height="17" font="2">excess   of   this   number   have   no   effect.   Otherwise,   as   </text>
+</page>
+<page number="217" position="absolute" top="0" left="0" height="1188" width="918">
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>217</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="313" height="17" font="2">soon   as   you   draw   a   card   from   the   deck,   its   magic   </text>
+<text top="126" left="86" width="333" height="17" font="2">takes   effect.   You   must   draw   each   card   no   more   than   </text>
+<text top="143" left="86" width="319" height="17" font="2">1   hour   after   the   previous   draw.   If   you   fail   to   draw   </text>
+<text top="161" left="86" width="331" height="17" font="2">the   chosen   number,   the   remaining   number   of   cards   </text>
+<text top="178" left="86" width="328" height="17" font="2">fly   from   the   deck   on   their   own   and   take   effect   all   at   </text>
+<text top="196" left="86" width="37" height="17" font="2">once.   </text>
+<text top="213" left="86" width="304" height="17" font="2">    Once   a   card   is   drawn,   it   fades   from   existence.   </text>
+<text top="231" left="86" width="311" height="17" font="2">Unless   the   card   is   the   Fool   or   the   Jester,   the   card   </text>
+<text top="249" left="86" width="341" height="17" font="2">reappears   in   the   deck,   making   it   possible   to   draw   the   </text>
+<text top="266" left="86" width="110" height="17" font="2">same   card   twice.   </text>
+<text top="293" left="86" width="72" height="16" font="7"><b>Playing   Card   </b></text>
+<text top="293" left="211" width="29" height="16" font="7"><b>Card   </b></text>
+<text top="309" left="86" width="95" height="16" font="8">Ace   of   diamonds   </text>
+<text top="309" left="211" width="40" height="16" font="8">Vizier*   </text>
+<text top="327" left="86" width="98" height="16" font="8">King   of   diamonds   </text>
+<text top="327" left="211" width="23" height="16" font="8">Sun   </text>
+<text top="344" left="86" width="160" height="16" font="8">Queen   of   diamonds    Moon   </text>
+<text top="360" left="86" width="97" height="16" font="8">Jack   of   diamonds   </text>
+<text top="360" left="211" width="25" height="16" font="8">Star   </text>
+<text top="376" left="86" width="98" height="16" font="8">Two   of   diamonds   </text>
+<text top="376" left="211" width="46" height="16" font="8">Comet*   </text>
+<text top="393" left="86" width="75" height="16" font="8">Ace   of   hearts   </text>
+<text top="393" left="211" width="62" height="16" font="8">The   Fates*   </text>
+<text top="410" left="86" width="79" height="16" font="8">King   of   hearts   </text>
+<text top="410" left="211" width="42" height="16" font="8">Throne   </text>
+<text top="426" left="86" width="92" height="16" font="8">Queen   of   hearts   </text>
+<text top="426" left="211" width="23" height="16" font="8">Key   </text>
+<text top="442" left="86" width="78" height="16" font="8">Jack   of   hearts   </text>
+<text top="442" left="211" width="38" height="16" font="8">Knight   </text>
+<text top="459" left="86" width="78" height="16" font="8">Two   of   hearts   </text>
+<text top="459" left="211" width="36" height="16" font="8">Gem*   </text>
+<text top="475" left="86" width="69" height="16" font="8">Ace   of   clubs   </text>
+<text top="475" left="211" width="45" height="16" font="8">Talons*   </text>
+<text top="492" left="86" width="72" height="16" font="8">King   of   clubs   </text>
+<text top="492" left="211" width="51" height="16" font="8">The   Void   </text>
+<text top="508" left="86" width="85" height="16" font="8">Queen   of   clubs   </text>
+<text top="508" left="211" width="42" height="16" font="8">Flames   </text>
+<text top="525" left="86" width="71" height="16" font="8">Jack   of   clubs   </text>
+<text top="525" left="211" width="29" height="16" font="8">Skull   </text>
+<text top="541" left="86" width="72" height="16" font="8">Two   of   clubs   </text>
+<text top="541" left="211" width="35" height="16" font="8">Idiot*   </text>
+<text top="558" left="86" width="79" height="16" font="8">Ace   of   spades   </text>
+<text top="558" left="211" width="50" height="16" font="8">Donjon*   </text>
+<text top="574" left="86" width="82" height="16" font="8">King   of   spades   </text>
+<text top="574" left="211" width="28" height="16" font="8">Ruin   </text>
+<text top="591" left="86" width="95" height="16" font="8">Queen   of   spades   </text>
+<text top="591" left="211" width="44" height="16" font="8">Euryale   </text>
+<text top="607" left="86" width="81" height="16" font="8">Jack   of   spades   </text>
+<text top="607" left="211" width="38" height="16" font="8">Rogue   </text>
+<text top="624" left="86" width="82" height="16" font="8">Two   of   spades   </text>
+<text top="624" left="211" width="53" height="16" font="8">Balance*   </text>
+<text top="640" left="86" width="89" height="16" font="8">Joker   (with   TM)   </text>
+<text top="640" left="211" width="33" height="16" font="8">Fool*   </text>
+<text top="657" left="86" width="108" height="16" font="8">Joker   (without   TM)   </text>
+<text top="657" left="211" width="35" height="16" font="8">Jester   </text>
+<text top="673" left="86" width="246" height="16" font="8">*Found   only   in   a   deck   with   twenty-­‐two   cards</text>
+<text top="707" left="97" width="57" height="17" font="4"><i><b>Balance.</b></i></text>
+<text top="707" left="155" width="271" height="17" font="2">   Your   mind   suffers   a   wrenching   alteration,</text>
+<text top="725" left="86" width="325" height="17" font="2">causing   your   alignment   to   change.   Lawful   becomes</text>
+<text top="742" left="86" width="335" height="17" font="2">chaotic,   good   becomes   evil,   and   vice   versa.   If   you   are</text>
+<text top="760" left="86" width="326" height="17" font="2">true   neutral   or   unaligned,   this   card   has   no   effect   on</text>
+<text top="778" left="86" width="27" height="17" font="2">you.</text>
+<text top="795" left="100" width="46" height="17" font="4"><i><b>Comet.</b></i></text>
+<text top="795" left="146" width="244" height="17" font="2">   If   you   single-­‐‑handedly   defeat   the   next</text>
+<text top="813" left="86" width="338" height="17" font="2">hostile   monster   or   group   of   monsters   you   encounter,</text>
+<text top="831" left="86" width="333" height="17" font="2">you   gain   experience   points   enough   to   gain   one   level.</text>
+<text top="848" left="86" width="215" height="17" font="2">Otherwise,   this   card   has   no   effect.</text>
+<text top="865" left="100" width="52" height="17" font="4"><i><b>Donjon.</b></i></text>
+<text top="865" left="152" width="270" height="17" font="2">   You   disappear   and   become   entombed   in   a</text>
+<text top="883" left="86" width="338" height="17" font="2">state   of   suspended   animation   in   an   extradimensional</text>
+<text top="901" left="86" width="324" height="17" font="2">sphere.   Everything   you   were   wearing   and   carrying</text>
+<text top="918" left="86" width="314" height="17" font="2">stays   behind   in   the   space   you   occupied   when   you</text>
+<text top="936" left="86" width="321" height="17" font="2">disappeared.   You   remain   imprisoned   until   you   are</text>
+<text top="954" left="86" width="315" height="17" font="2">found   and   removed   from   the   sphere.   You   can’t   be</text>
+<text top="971" left="86" width="244" height="17" font="2">located   by   any   divination   magic,   but   a   </text>
+<text top="971" left="331" width="29" height="17" font="3"><i>wish</i></text>
+<text top="971" left="359" width="59" height="17" font="2">   spell   can</text>
+<text top="989" left="86" width="337" height="17" font="2">reveal   the   location   of   your   prison.   You   draw   no   more</text>
+<text top="1006" left="86" width="38" height="17" font="2">cards.</text>
+<text top="108" left="493" width="3" height="17" font="2">   </text>
+<text top="108" left="504" width="55" height="17" font="4"><i><b>Euryale.</b></i></text>
+<text top="108" left="559" width="276" height="17" font="2">   The   card’s   medusa-­‐‑like   visage   curses   you.   </text>
+<text top="126" left="493" width="339" height="17" font="2">You   take   a   −2   penalty   on   saving   throws   while   cursed   </text>
+<text top="143" left="493" width="310" height="17" font="2">in   this   way.   Only   a   god   or   the   magic   of   The   Fates   </text>
+<text top="161" left="493" width="153" height="17" font="2">card   can   end   this   curse.   </text>
+<text top="178" left="493" width="3" height="17" font="2">   </text>
+<text top="178" left="507" width="25" height="17" font="4"><i><b>The</b></i></text>
+<text top="178" left="532" width="3" height="17" font="2">   </text>
+<text top="178" left="535" width="39" height="17" font="4"><i><b>Fates.</b></i></text>
+<text top="178" left="575" width="225" height="17" font="2">   Reality’s   fabric   unravels   and   spins   </text>
+<text top="196" left="493" width="332" height="17" font="2">anew,   allowing   you   to   avoid   or   erase   one   event   as   if   </text>
+<text top="213" left="493" width="325" height="17" font="2">it   never   happened.   You   can   use   the   card’s   magic   as   </text>
+<text top="231" left="493" width="301" height="17" font="2">soon   as   you   draw   the   card   or   at   any   other   time   </text>
+<text top="249" left="493" width="98" height="17" font="2">before   you   die.   </text>
+<text top="266" left="493" width="3" height="17" font="2">   </text>
+<text top="266" left="507" width="51" height="17" font="4"><i><b>Flames.</b></i></text>
+<text top="266" left="558" width="255" height="17" font="2">   A   powerful   devil   becomes   your   enemy.   </text>
+<text top="284" left="493" width="304" height="17" font="2">The   devil   seeks   your   ruin   and   plagues   your   life,   </text>
+<text top="301" left="493" width="317" height="17" font="2">savoring   your   suffering   before   attempting   to   slay   </text>
+<text top="319" left="493" width="320" height="17" font="2">you.   This   enmity   lasts   until   either   you   or   the   devil   </text>
+<text top="337" left="493" width="33" height="17" font="2">dies.   </text>
+<text top="354" left="493" width="3" height="17" font="2">   </text>
+<text top="354" left="507" width="32" height="17" font="4"><i><b>Fool.</b></i></text>
+<text top="354" left="539" width="272" height="17" font="2">   You   lose   10,000   XP,   discard   this   card,   and   </text>
+<text top="372" left="493" width="322" height="17" font="2">draw   from   the   deck   again,   counting   both   draws   as   </text>
+<text top="390" left="493" width="324" height="17" font="2">one   of   your   declared   draws.   If   losing   that   much   XP   </text>
+<text top="407" left="493" width="328" height="17" font="2">would   cause   you   to   lose   a   level,   you   instead   lose   an   </text>
+<text top="424" left="493" width="334" height="17" font="2">amount   that   leaves   you   with   just   enough   XP   to   keep   </text>
+<text top="442" left="493" width="70" height="17" font="2">your   level.   </text>
+<text top="460" left="493" width="3" height="17" font="2">   </text>
+<text top="460" left="507" width="33" height="17" font="4"><i><b>Gem.</b></i></text>
+<text top="460" left="540" width="277" height="17" font="2">   Twenty-­‐‑five   pieces   of   jewelry   worth   2,000   </text>
+<text top="477" left="493" width="333" height="17" font="2">gp   each   or   fifty   gems   worth   1,000   gp   each   appear   at   </text>
+<text top="495" left="493" width="64" height="17" font="2">your   feet.   </text>
+<text top="513" left="493" width="3" height="17" font="2">   </text>
+<text top="513" left="507" width="35" height="17" font="4"><i><b>Idiot.</b></i></text>
+<text top="513" left="542" width="267" height="17" font="2">   Permanently   reduce   your   Intelligence   by   </text>
+<text top="530" left="493" width="341" height="17" font="2">1d4   +   1   (to   a   minimum   score   of   1).   You   can   draw   one   </text>
+<text top="548" left="493" width="290" height="17" font="2">additional   card   beyond   your   declared   draws.   </text>
+<text top="565" left="493" width="3" height="17" font="2">   </text>
+<text top="565" left="507" width="42" height="17" font="4"><i><b>Jester.</b></i></text>
+<text top="565" left="549" width="268" height="17" font="2">   You   gain   10,000   XP,   or   you   can   draw   two   </text>
+<text top="583" left="493" width="296" height="17" font="2">additional   cards   beyond   your   declared   draws.   </text>
+<text top="600" left="493" width="3" height="17" font="2">   </text>
+<text top="600" left="507" width="28" height="17" font="4"><i><b>Key.</b></i></text>
+<text top="600" left="535" width="298" height="17" font="2">   A   rare   or   rarer   magic   weapon   with   which   you   </text>
+<text top="618" left="493" width="292" height="17" font="2">are   proficient   appears   in   your   hands.   The   GM   </text>
+<text top="635" left="493" width="136" height="17" font="2">chooses   the   weapon.   </text>
+<text top="653" left="493" width="3" height="17" font="2">   </text>
+<text top="653" left="507" width="49" height="17" font="4"><i><b>Knight.</b></i></text>
+<text top="653" left="556" width="268" height="17" font="2">   You   gain   the   service   of   a   4th-­‐‑level   fighter   </text>
+<text top="671" left="493" width="335" height="17" font="2">who   appears   in   a   space   you   choose   within   30   feet   of   </text>
+<text top="688" left="493" width="342" height="17" font="2">you.   The   fighter   is   of   the   same   race   as   you   and   serves   </text>
+<text top="706" left="493" width="303" height="17" font="2">you   loyally   until   death,   believing   the   fates   have   </text>
+<text top="724" left="493" width="335" height="17" font="2">drawn   him   or   her   to   you.   You   control   this   character.   </text>
+<text top="741" left="493" width="3" height="17" font="2">   </text>
+<text top="741" left="507" width="41" height="17" font="4"><i><b>Moon.</b></i></text>
+<text top="741" left="548" width="246" height="17" font="2">   You   are   granted   the   ability   to   cast   the   </text>
+<text top="741" left="793" width="29" height="17" font="3"><i>wish</i></text>
+<text top="741" left="822" width="3" height="17" font="2">   </text>
+<text top="759" left="493" width="104" height="17" font="2">spell   1d3   times.   </text>
+<text top="776" left="493" width="3" height="17" font="2">   </text>
+<text top="776" left="507" width="46" height="17" font="4"><i><b>Rogue.</b></i></text>
+<text top="776" left="553" width="267" height="17" font="2">   A   nonplayer   character   of   the   GM’s   choice   </text>
+<text top="794" left="493" width="316" height="17" font="2">becomes   hostile   toward   you.   The   identity   of   your   </text>
+<text top="811" left="493" width="321" height="17" font="2">new   enemy   isn’t   known   until   the   NPC   or   someone   </text>
+<text top="829" left="493" width="219" height="17" font="2">else   reveals   it.   Nothing   less   than   a   </text>
+<text top="829" left="712" width="29" height="17" font="3"><i>wish</i></text>
+<text top="829" left="740" width="54" height="17" font="2">   spell   or   </text>
+<text top="847" left="493" width="300" height="17" font="2">divine   intervention   can   end   the   NPC’s   hostility   </text>
+<text top="864" left="493" width="80" height="17" font="2">toward   you.   </text>
+<text top="882" left="493" width="3" height="17" font="2">   </text>
+<text top="882" left="507" width="35" height="17" font="4"><i><b>Ruin.</b></i></text>
+<text top="882" left="542" width="273" height="17" font="2">   All   forms   of   wealth   that   you   carry   or   own,   </text>
+<text top="899" left="493" width="309" height="17" font="2">other   than   magic   items,   are   lost   to   you.   Portable   </text>
+<text top="917" left="493" width="324" height="17" font="2">property   vanishes.   Businesses,   buildings,   and   land   </text>
+<text top="935" left="493" width="340" height="17" font="2">you   own   are   lost   in   a   way   that   alters   reality   the   least.   </text>
+<text top="952" left="493" width="310" height="17" font="2">Any   documentation   that   proves   you   should   own   </text>
+<text top="970" left="493" width="279" height="17" font="2">something   lost   to   this   card   also   disappears.   </text>
+<text top="987" left="493" width="3" height="17" font="2">   </text>
+<text top="987" left="507" width="37" height="17" font="4"><i><b>Skull.</b></i></text>
+<text top="987" left="544" width="282" height="17" font="2">   You   summon   an   avatar   of   death—a   ghostly   </text>
+<text top="1005" left="493" width="335" height="17" font="2">humanoid   skeleton   clad   in   a   tattered   black   robe   and   </text>
+<text top="1022" left="493" width="320" height="17" font="2">carrying   a   spectral   scythe.   It   appears   in   a   space   of   </text>
+</page>
+<page number="218" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="11" size="18" family="WWROEK+Calibri" color="#943634"/>
+	<fontspec id="12" size="15" family="EKJQRM+Calibri" color="#000000"/>
+	<fontspec id="13" size="15" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="14" size="15" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="15" size="15" family="IBJZTZ+ScalaSansOffc" color="#000000"/>
+	<fontspec id="16" size="15" family="WGCGMO+Calibri" color="#000000"/>
+	<fontspec id="17" size="16" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="18" size="15" family="XPUSJH+ScalaSansOffc" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>218</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="345" height="17" font="2">the   GM’s   choice   within   10   feet   of   you   and   attacks   you,   </text>
+<text top="126" left="86" width="345" height="17" font="2">warning   all   others   that   you   must   win   the   battle   alone.   </text>
+<text top="143" left="86" width="314" height="17" font="2">The   avatar   fights   until   you   die   or   it   drops   to   0   hit   </text>
+<text top="161" left="86" width="325" height="17" font="2">points,   whereupon   it   disappears.   If   anyone   tries   to   </text>
+<text top="178" left="86" width="306" height="17" font="2">help   you,   the   helper   summons   its   own   avatar   of   </text>
+<text top="196" left="86" width="337" height="17" font="2">death.   A   creature   slain   by   an   avatar   of   death   can’t   be   </text>
+<text top="213" left="86" width="101" height="17" font="2">restored   to   life.   </text>
+<text top="240" left="86" width="123" height="22" font="11"><b>Avatar   of   Death   </b></text>
+<text top="267" left="86" width="178" height="18" font="12"><i>Medium   undead,   neutral   evil   </i></text>
+<text top="294" left="86" width="74" height="18" font="13"><b>Armor   Class</b></text>
+<text top="294" left="161" width="22" height="18" font="14">   20   </text>
+<text top="317" left="86" width="61" height="18" font="13"><b>Hit   Points</b></text>
+<text top="317" left="147" width="276" height="18" font="14">   half   the   hit   point   maximum   of   its   summoner   </text>
+<text top="341" left="86" width="38" height="17" font="15"><b>Speed</b></text>
+<text top="340" left="125" width="144" height="18" font="14">   60   ft.,   fly   60   ft.   (hover)   </text>
+<text top="370" left="109" width="26" height="18" font="13"><b>STR   </b></text>
+<text top="370" left="162" width="28" height="18" font="13"><b>DEX   </b></text>
+<text top="370" left="214" width="31" height="18" font="13"><b>CON   </b></text>
+<text top="370" left="272" width="25" height="18" font="13"><b>INT   </b></text>
+<text top="370" left="324" width="28" height="18" font="13"><b>WIS   </b></text>
+<text top="370" left="377" width="30" height="18" font="13"><b>CHA   </b></text>
+<text top="393" left="99" width="316" height="18" font="14">16   (+3)    16   (+3)    16   (+3)    16   (+3)    16   (+3)    16   (+3)   </text>
+<text top="423" left="86" width="125" height="18" font="13"><b>Damage   Immunities</b></text>
+<text top="423" left="211" width="104" height="18" font="14">   necrotic,   poison   </text>
+<text top="446" left="86" width="135" height="18" font="13"><b>Condition   Immunities</b></text>
+<text top="446" left="221" width="202" height="18" font="14">   charmed,   frightened,   paralyzed,   </text>
+<text top="464" left="100" width="201" height="18" font="14">petrified,   poisoned,   unconscious   </text>
+<text top="487" left="86" width="42" height="18" font="13"><b>Senses</b></text>
+<text top="487" left="129" width="254" height="18" font="14">   darkvision   60   ft.,   truesight   60   ft.,   passive   </text>
+<text top="505" left="100" width="88" height="18" font="14">Perception   13   </text>
+<text top="528" left="86" width="65" height="18" font="13"><b>Languages</b></text>
+<text top="528" left="151" width="233" height="18" font="14">   all   languages   known   to   its   summoner   </text>
+<text top="551" left="86" width="61" height="18" font="13"><b>Challenge</b></text>
+<text top="551" left="147" width="59" height="18" font="14">   —   (0   XP)   </text>
+<text top="597" left="86" width="147" height="18" font="16"><i><b>Incorporeal   Movement.</b></i></text>
+<text top="597" left="233" width="186" height="18" font="14">   The   avatar   can   move   through   </text>
+<text top="615" left="86" width="314" height="18" font="14">other   creatures   and   objects   as   if   they   were   difficult   </text>
+<text top="633" left="86" width="341" height="18" font="14">terrain.   It   takes   5   (1d10)   force   damage   if   it   ends   its   turn   </text>
+<text top="651" left="86" width="103" height="18" font="14">inside   an   object.   </text>
+<text top="674" left="86" width="115" height="18" font="16"><i><b>Turning   Immunity.</b></i></text>
+<text top="674" left="202" width="209" height="18" font="14">   The   avatar   is   immune   to   features   </text>
+<text top="693" left="86" width="111" height="18" font="14">that   turn   undead.   </text>
+<text top="726" left="86" width="55" height="20" font="17"><b>Actions   </b></text>
+<text top="753" left="86" width="95" height="18" font="16"><i><b>Reaping   Scythe</b></i></text>
+<text top="754" left="182" width="7" height="17" font="18"><i><b>. </b></i></text>
+<text top="753" left="189" width="229" height="18" font="14">The   avatar   sweeps   its   spectral   scythe   </text>
+<text top="771" left="86" width="331" height="18" font="14">through   a   creature   within   5   feet   of   it,   dealing   7   (1d8   +   </text>
+<text top="789" left="86" width="300" height="18" font="14">3) slashing   damage   plus   4   (1d8)   necrotic   damage.</text>
+<text top="825" left="100" width="32" height="17" font="4"><i><b>Star.</b></i></text>
+<text top="825" left="132" width="283" height="17" font="2">   Increase   one   of   your   ability   scores   by   2.   The</text>
+<text top="843" left="86" width="260" height="17" font="2">score   can   exceed   20   but   can’t   exceed   24.   </text>
+<text top="860" left="100" width="28" height="17" font="4"><i><b>Sun.</b></i></text>
+<text top="860" left="129" width="272" height="17" font="2">   You   gain   50,000   XP,   and   a   wondrous   item   </text>
+<text top="878" left="86" width="315" height="17" font="2">(which   the   GM   determines   randomly)   appears   in   </text>
+<text top="896" left="86" width="78" height="17" font="2">your   hands.   </text>
+<text top="913" left="86" width="3" height="17" font="2">   </text>
+<text top="913" left="100" width="52" height="17" font="4"><i><b>Talons.   </b></i></text>
+<text top="913" left="153" width="232" height="17" font="2">Every   magic   item   you   wear   or   carry   </text>
+<text top="931" left="86" width="311" height="17" font="2">disintegrates.   Artifacts   in   your   possession   aren’t   </text>
+<text top="948" left="86" width="161" height="17" font="2">destroyed   but   do   vanish.   </text>
+<text top="966" left="86" width="3" height="17" font="2">   </text>
+<text top="966" left="100" width="52" height="17" font="4"><i><b>Throne.</b></i></text>
+<text top="966" left="153" width="251" height="17" font="2">   You   gain   proficiency   in   the   Persuasion   </text>
+<text top="984" left="86" width="305" height="17" font="2">skill,   and   you   double   your   proficiency   bonus   on   </text>
+<text top="1001" left="86" width="314" height="17" font="2">checks   made   with   that   skill.   In   addition,   you   gain   </text>
+<text top="1019" left="86" width="339" height="17" font="2">rightful   ownership   of   a   small   keep   somewhere   in   the   </text>
+<text top="108" left="493" width="342" height="17" font="2">world.   However,   the   keep   is   currently   in   the   hands   of   </text>
+<text top="126" left="493" width="329" height="17" font="2">monsters,   which   you   must   clear   out   before   you   can   </text>
+<text top="143" left="493" width="156" height="17" font="2">claim   the   keep   as   yours.   </text>
+<text top="161" left="493" width="3" height="17" font="2">   </text>
+<text top="161" left="507" width="43" height="17" font="4"><i><b>Vizier.</b></i></text>
+<text top="161" left="550" width="274" height="17" font="2">   At   any   time   you   choose   within   one   year   of   </text>
+<text top="178" left="493" width="282" height="17" font="2">drawing   this   card,   you   can   ask   a   question   in   </text>
+<text top="196" left="493" width="341" height="17" font="2">meditation   and   mentally   receive   a   truthful   answer   to   </text>
+<text top="213" left="493" width="339" height="17" font="2">that   question.   Besides   information,   the   answer   helps   </text>
+<text top="231" left="493" width="324" height="17" font="2">you   solve   a   puzzling   problem   or   other   dilemma.   In   </text>
+<text top="249" left="493" width="333" height="17" font="2">other   words,   the   knowledge   comes   with   wisdom   on   </text>
+<text top="266" left="493" width="102" height="17" font="2">how   to   apply   it.   </text>
+<text top="284" left="493" width="3" height="17" font="2">   </text>
+<text top="284" left="507" width="62" height="17" font="4"><i><b>The   Void.</b></i></text>
+<text top="284" left="569" width="266" height="17" font="2">   This   black   card   spells   disaster.   Your   soul   </text>
+<text top="301" left="493" width="334" height="17" font="2">is   drawn   from   your   body   and   contained   in   an   object   </text>
+<text top="319" left="493" width="330" height="17" font="2">in   a   place   of   the   GM’s   choice.   One   or   more   powerful   </text>
+<text top="337" left="493" width="338" height="17" font="2">beings   guard   the   place.   While   your   soul   is   trapped   in   </text>
+<text top="354" left="493" width="248" height="17" font="2">this   way,   your   body   is   incapacitated.   A   </text>
+<text top="354" left="741" width="29" height="17" font="3"><i>wish</i></text>
+<text top="354" left="769" width="37" height="17" font="2">   spell   </text>
+<text top="372" left="493" width="306" height="17" font="2">can’t   restore   your   soul,   but   the   spell   reveals   the   </text>
+<text top="390" left="493" width="342" height="17" font="2">location   of   the   object   that   holds   it.   You   draw   no   more   </text>
+<text top="407" left="493" width="41" height="17" font="2">cards.   </text>
+<text top="438" left="493" width="79" height="21" font="5"><b>Defender </b></text>
+<text top="459" left="493" width="263" height="17" font="3"><i>Weapon   (any   sword),   legendary   (requires   </i></text>
+<text top="477" left="493" width="82" height="17" font="3"><i>attunement)   </i></text>
+<text top="504" left="493" width="304" height="17" font="2">You   gain   a   +3   bonus   to   attack   and   damage   rolls   </text>
+<text top="521" left="493" width="197" height="17" font="2">made   with   this   magic   weapon.   </text>
+<text top="539" left="493" width="342" height="17" font="2">    The   first   time   you   attack   with   the   sword   on   each   of   </text>
+<text top="557" left="493" width="295" height="17" font="2">your   turns,   you   can   transfer   some   or   all   of   the   </text>
+<text top="574" left="493" width="335" height="17" font="2">sword’s   bonus   to   your   Armor   Class,   instead   of   using   </text>
+<text top="591" left="493" width="338" height="17" font="2">the   bonus   on   any   attacks   that   turn.   For   example,   you   </text>
+<text top="609" left="493" width="326" height="17" font="2">could   reduce   the   bonus   to   your   attack   and   damage   </text>
+<text top="627" left="493" width="326" height="17" font="2">rolls   to   +1   and   gain   a   +2   bonus   to   AC.   The   adjusted   </text>
+<text top="644" left="493" width="331" height="17" font="2">bonuses   remain   in   effect   until   the   start   of   your   next   </text>
+<text top="662" left="493" width="314" height="17" font="2">turn,   although   you   must   hold   the   sword   to   gain   a   </text>
+<text top="680" left="493" width="130" height="17" font="2">bonus   to   AC   from   it.   </text>
+<text top="710" left="493" width="122" height="21" font="5"><b>Demon Armor </b></text>
+<text top="732" left="493" width="296" height="17" font="3"><i>Armor   (plate),   very   rare   (requires   attunement)   </i></text>
+<text top="759" left="493" width="342" height="17" font="2">While   wearing   this   armor,   you   gain   a   +1   bonus   to   AC,   </text>
+<text top="776" left="493" width="298" height="17" font="2">and   you   can   understand   and   speak   Abyssal.   In   </text>
+<text top="794" left="493" width="341" height="17" font="2">addition,   the   armor’s   clawed   gauntlets   turn   unarmed   </text>
+<text top="811" left="493" width="314" height="17" font="2">strikes   with   your   hands   into   magic   weapons   that   </text>
+<text top="829" left="493" width="339" height="17" font="2">deal   slashing   damage,   with   a   +1   bonus   to   attack   rolls   </text>
+<text top="847" left="493" width="274" height="17" font="2">and   damage   rolls   and   a   damage   die   of   1d8.   </text>
+<text top="864" left="493" width="3" height="17" font="2">   </text>
+<text top="864" left="507" width="41" height="17" font="4"><i><b>Curse.</b></i></text>
+<text top="864" left="548" width="275" height="17" font="2">   Once   you   don   this   cursed   armor,   you   can’t   </text>
+<text top="882" left="493" width="237" height="17" font="2">doff   it   unless   you   are   targeted   by   the   </text>
+<text top="882" left="730" width="83" height="17" font="3"><i>remove   curse</i></text>
+<text top="882" left="813" width="3" height="17" font="2">   </text>
+<text top="899" left="493" width="338" height="17" font="2">spell   or   similar   magic.   While   wearing   the   armor,   you   </text>
+<text top="917" left="493" width="320" height="17" font="2">have   disadvantage   on   attack   rolls   against   demons   </text>
+<text top="935" left="493" width="339" height="17" font="2">and   on   saving   throws   against   their   spells   and   special   </text>
+<text top="952" left="493" width="57" height="17" font="2">abilities.   </text>
+</page>
+<page number="219" position="absolute" top="0" left="0" height="1188" width="918">
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>219</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="174" height="21" font="5"><b>Dimensional Shackles </b></text>
+<text top="130" left="86" width="132" height="17" font="3"><i>Wondrous   item,   rare   </i></text>
+<text top="156" left="86" width="328" height="17" font="2">You   can   use   an   action   to   place   these   shackles   on   an   </text>
+<text top="174" left="86" width="322" height="17" font="2">incapacitated   creature.   The   shackles   adjust   to   fit   a   </text>
+<text top="191" left="86" width="340" height="17" font="2">creature   of   Small   to   Large   size.   In   addition   to   serving   </text>
+<text top="209" left="86" width="293" height="17" font="2">as   mundane   manacles,   the   shackles   prevent   a   </text>
+<text top="226" left="86" width="325" height="17" font="2">creature   bound   by   them   from   using   any   method   of   </text>
+<text top="244" left="86" width="341" height="17" font="2">extradimensional   movement,   including   teleportation   </text>
+<text top="262" left="86" width="337" height="17" font="2">or   travel   to   a   different   plane   of   existence.   They   don’t   </text>
+<text top="279" left="86" width="295" height="17" font="2">prevent   the   creature   from   passing   through   an   </text>
+<text top="297" left="86" width="159" height="17" font="2">interdimensional   portal.   </text>
+<text top="314" left="86" width="337" height="17" font="2">    You   and   any   creature   you   designate   when   you   use   </text>
+<text top="332" left="86" width="338" height="17" font="2">the   shackles   can   use   an   action   to   remove   them.   Once   </text>
+<text top="350" left="86" width="337" height="17" font="2">every   30   days,   the   bound   creature   can   make   a   DC   30   </text>
+<text top="367" left="86" width="341" height="17" font="2">Strength   (Athletics)   check.   On   a   success,   the   creature   </text>
+<text top="385" left="86" width="246" height="17" font="2">breaks   free   and   destroys   the   shackles.   </text>
+<text top="415" left="86" width="147" height="21" font="5"><b>Dragon Scale Mail </b></text>
+<text top="437" left="86" width="326" height="17" font="3"><i>Armor   (scale   mail),   very   rare   (requires   attunement)   </i></text>
+<text top="464" left="86" width="341" height="17" font="2">Dragon   scale   mail   is   made   of   the   scales   of   one   kind   of   </text>
+<text top="481" left="86" width="311" height="17" font="2">dragon.   Sometimes   dragons   collect   their   cast-­‐‑off   </text>
+<text top="499" left="86" width="306" height="17" font="2">scales   and   gift   them   to   humanoids.   Other   times,   </text>
+<text top="517" left="86" width="312" height="17" font="2">hunters   carefully   skin   and   preserve   the   hide   of   a   </text>
+<text top="534" left="86" width="308" height="17" font="2">dead   dragon.   In   either   case,   dragon   scale   mail   is   </text>
+<text top="552" left="86" width="92" height="17" font="2">highly   valued.   </text>
+<text top="569" left="86" width="332" height="17" font="2">    While   wearing   this   armor,   you   gain   a   +1   bonus   to   </text>
+<text top="587" left="86" width="341" height="17" font="2">AC,   you   have   advantage   on   saving   throws   against   the   </text>
+<text top="604" left="86" width="329" height="17" font="2">Frightful   Presence   and   breath   weapons   of   dragons,   </text>
+<text top="622" left="86" width="328" height="17" font="2">and   you   have   resistance   to   one   damage   type   that   is   </text>
+<text top="640" left="86" width="332" height="17" font="2">determined   by   the   kind   of   dragon   that   provided   the   </text>
+<text top="657" left="86" width="140" height="17" font="2">scales   (see   the   table).   </text>
+<text top="675" left="86" width="304" height="17" font="2">    Additionally,   you   can   focus   your   senses   as   an   </text>
+<text top="692" left="86" width="282" height="17" font="2">action   to   magically   discern   the   distance   and   </text>
+<text top="710" left="86" width="316" height="17" font="2">direction   to   the   closest   dragon   within   30   miles   of   </text>
+<text top="728" left="86" width="297" height="17" font="2">you   that   is   of   the   same   type   as   the   armor.   This   </text>
+<text top="745" left="86" width="303" height="17" font="2">special   action   can’t   be   used   again   until   the   next   </text>
+<text top="763" left="86" width="42" height="17" font="2">dawn.   </text>
+<text top="789" left="86" width="120" height="16" font="7"><b>Dragon    Resistance   </b></text>
+<text top="789" left="236" width="120" height="16" font="7"><b>Dragon    Resistance   </b></text>
+<text top="806" left="86" width="32" height="16" font="8">Black   </text>
+<text top="806" left="144" width="27" height="16" font="8">Acid   </text>
+<text top="806" left="236" width="29" height="16" font="8">Gold   </text>
+<text top="806" left="293" width="24" height="16" font="8">Fire   </text>
+<text top="822" left="86" width="27" height="16" font="8">Blue   </text>
+<text top="822" left="144" width="53" height="16" font="8">Lightning   </text>
+<text top="822" left="236" width="37" height="16" font="8">Green   </text>
+<text top="822" left="293" width="40" height="16" font="8">Poison   </text>
+<text top="839" left="86" width="32" height="16" font="8">Brass   </text>
+<text top="839" left="144" width="24" height="16" font="8">Fire   </text>
+<text top="839" left="236" width="24" height="16" font="8">Red   </text>
+<text top="839" left="293" width="24" height="16" font="8">Fire   </text>
+<text top="855" left="86" width="111" height="16" font="8">Bronze    Lightning   </text>
+<text top="855" left="236" width="33" height="16" font="8">Silver   </text>
+<text top="855" left="293" width="28" height="16" font="8">Cold   </text>
+<text top="872" left="86" width="84" height="16" font="8">Copper    Acid   </text>
+<text top="872" left="236" width="36" height="16" font="8">White   </text>
+<text top="872" left="293" width="28" height="16" font="8">Cold   </text>
+<text top="901" left="86" width="117" height="21" font="5"><b>Dragon Slayer </b></text>
+<text top="923" left="86" width="167" height="17" font="3"><i>Weapon   (any   sword),   rare   </i></text>
+<text top="950" left="86" width="304" height="17" font="2">You   gain   a   +1   bonus   to   attack   and   damage   rolls   </text>
+<text top="967" left="86" width="197" height="17" font="2">made   with   this   magic   weapon.   </text>
+<text top="985" left="86" width="303" height="17" font="2">    When   you   hit   a   dragon   with   this   weapon,   the   </text>
+<text top="1003" left="86" width="327" height="17" font="2">dragon   takes   an   extra   3d6   damage   of   the   weapon’s   </text>
+<text top="1020" left="86" width="301" height="17" font="2">type.   For   the   purpose   of   this   weapon,   “dragon”   </text>
+<text top="108" left="493" width="282" height="17" font="2">refers   to   any   creature   with   the   dragon   type,   </text>
+<text top="126" left="493" width="246" height="17" font="2">including   dragon   turtles   and   wyverns.   </text>
+<text top="157" left="493" width="183" height="21" font="5"><b>Dust of Disappearance </b></text>
+<text top="178" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="205" left="493" width="339" height="17" font="2">Found   in   a   small   packet,   this   powder   resembles   very   </text>
+<text top="222" left="493" width="317" height="17" font="2">fine   sand.   There   is   enough   of   it   for   one   use.   When   </text>
+<text top="240" left="493" width="332" height="17" font="2">you   use   an   action   to   throw   the   dust   into   the   air,   you   </text>
+<text top="257" left="493" width="323" height="17" font="2">and   each   creature   and   object   within   10   feet   of   you   </text>
+<text top="275" left="493" width="320" height="17" font="2">become   invisible   for   2d4   minutes.   The   duration   is   </text>
+<text top="293" left="493" width="326" height="17" font="2">the   same   for   all   subjects,   and   the   dust   is   consumed   </text>
+<text top="310" left="493" width="333" height="17" font="2">when   its   magic   takes   effect.   If   a   creature   affected   by   </text>
+<text top="328" left="493" width="333" height="17" font="2">the   dust   attacks   or   casts   a   spell,   the   invisibility   ends   </text>
+<text top="345" left="493" width="112" height="17" font="2">for   that   creature.   </text>
+<text top="376" left="493" width="131" height="21" font="5"><b>Dust of Dryness </b></text>
+<text top="398" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="424" left="493" width="327" height="17" font="2">This   small   packet   contains   1d6   +   4   pinches   of   dust.   </text>
+<text top="442" left="493" width="324" height="17" font="2">You   can   use   an   action   to   sprinkle   a   pinch   of   it   over   </text>
+<text top="460" left="493" width="320" height="17" font="2">water.   The   dust   turns   a   cube   of   water   15   feet   on   a   </text>
+<text top="477" left="493" width="313" height="17" font="2">side   into   one   marble-­‐‑sized   pellet,   which   floats   or   </text>
+<text top="495" left="493" width="340" height="17" font="2">rests   near   where   the   dust   was   sprinkled.   The   pellet’s   </text>
+<text top="513" left="493" width="130" height="17" font="2">weight   is   negligible.   </text>
+<text top="530" left="493" width="313" height="17" font="2">    Someone   can   use   an   action   to   smash   the   pellet   </text>
+<text top="548" left="493" width="327" height="17" font="2">against   a   hard   surface,   causing   the   pellet   to   shatter   </text>
+<text top="565" left="493" width="322" height="17" font="2">and   release   the   water   the   dust   absorbed.   Doing   so   </text>
+<text top="583" left="493" width="156" height="17" font="2">ends   that   pellet’s   magic.   </text>
+<text top="600" left="493" width="317" height="17" font="2">    An   elemental   composed   mostly   of   water   that   is   </text>
+<text top="618" left="493" width="320" height="17" font="2">exposed   to   a   pinch   of   the   dust   must   make   a   DC   13   </text>
+<text top="635" left="493" width="308" height="17" font="2">Constitution   saving   throw,   taking   10d6   necrotic   </text>
+<text top="653" left="493" width="332" height="17" font="2">damage   on   a   failed   save,   or   half   as   much   damage   on   </text>
+<text top="671" left="493" width="109" height="17" font="2">a   successful   one.   </text>
+<text top="702" left="493" width="241" height="21" font="5"><b>Dust of Sneezing and Choking </b></text>
+<text top="723" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="750" left="493" width="326" height="17" font="2">Found   in   a   small   container,   this   powder   resembles   </text>
+<text top="768" left="493" width="202" height="17" font="2">very   fine   sand.   It   appears   to   be   </text>
+<text top="768" left="695" width="136" height="17" font="3"><i>dust   of   disappearance</i></text>
+<text top="768" left="832" width="6" height="17" font="2">,   </text>
+<text top="785" left="493" width="46" height="17" font="2">and   an   </text>
+<text top="785" left="539" width="47" height="17" font="3"><i>identify</i></text>
+<text top="785" left="586" width="225" height="17" font="2">   spell   reveals   it   to   be   such.   There   is   </text>
+<text top="803" left="493" width="157" height="17" font="2">enough   of   it   for   one   use.   </text>
+<text top="820" left="493" width="331" height="17" font="2">    When   you   use   an   action   to   throw   a   handful   of   the   </text>
+<text top="838" left="493" width="340" height="17" font="2">dust   into   the   air,   you   and   each   creature   that   needs   to   </text>
+<text top="855" left="493" width="330" height="17" font="2">breathe   within   30   feet   of   you   must   succeed   on   a   DC   </text>
+<text top="873" left="493" width="324" height="17" font="2">15   Constitution   saving   throw   or   become   unable   to   </text>
+<text top="891" left="493" width="325" height="17" font="2">breathe,   while   sneezing   uncontrollably.   A   creature   </text>
+<text top="908" left="493" width="335" height="17" font="2">affected   in   this   way   is   incapacitated   and   suffocating.   </text>
+<text top="926" left="493" width="326" height="17" font="2">As   long   as   it   is   conscious,   a   creature   can   repeat   the   </text>
+<text top="943" left="493" width="325" height="17" font="2">saving   throw   at   the   end   of   each   of   its   turns,   ending   </text>
+<text top="961" left="493" width="207" height="17" font="2">the   effect   on   it   on   a   success.   The   </text>
+<text top="961" left="700" width="109" height="17" font="3"><i>lesser   restoration</i></text>
+<text top="961" left="809" width="3" height="17" font="2">   </text>
+<text top="978" left="493" width="269" height="17" font="2">spell   can   also   end   the   effect   on   a   creature.   </text>
+</page>
+<page number="220" position="absolute" top="0" left="0" height="1188" width="918">
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>220</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="121" height="21" font="5"><b>Dwarven Plate </b></text>
+<text top="130" left="86" width="153" height="17" font="3"><i>Armor   (plate),   very   rare   </i></text>
+<text top="156" left="86" width="342" height="17" font="2">While   wearing   this   armor,   you   gain   a   +2   bonus   to   AC.   </text>
+<text top="174" left="86" width="328" height="17" font="2">In   addition,   if   an   effect   moves   you   against   your   will   </text>
+<text top="191" left="86" width="299" height="17" font="2">along   the   ground,   you   can   use   your   reaction   to   </text>
+<text top="209" left="86" width="332" height="17" font="2">reduce   the   distance   you   are   moved   by   up   to   10   feet.   </text>
+<text top="240" left="86" width="151" height="21" font="5"><b>Dwarven Thrower </b></text>
+<text top="261" left="86" width="271" height="17" font="3"><i>Weapon   (warhammer),   very   rare   (requires   </i></text>
+<text top="279" left="86" width="152" height="17" font="3"><i>attunement   by   a   dwarf)   </i></text>
+<text top="306" left="86" width="304" height="17" font="2">You   gain   a   +3   bonus   to   attack   and   damage   rolls   </text>
+<text top="323" left="86" width="310" height="17" font="2">made   with   this   magic   weapon.   It   has   the   thrown   </text>
+<text top="341" left="86" width="325" height="17" font="2">property   with   a   normal   range   of   20   feet   and   a   long   </text>
+<text top="358" left="86" width="329" height="17" font="2">range   of   60   feet.   When   you   hit   with   a   ranged   attack   </text>
+<text top="376" left="86" width="342" height="17" font="2">using   this   weapon,   it   deals   an   extra   1d8   damage   or,   if   </text>
+<text top="393" left="86" width="332" height="17" font="2">the   target   is   a   giant,   2d8   damage.   Immediately   after   </text>
+<text top="411" left="86" width="299" height="17" font="2">the   attack,   the   weapon   flies   back   to   your   hand.   </text>
+<text top="442" left="86" width="128" height="21" font="5"><b>Efficient Quiver </b></text>
+<text top="464" left="86" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="490" left="86" width="340" height="17" font="2">Each   of   the   quiver’s   three   compartments   connects   to   </text>
+<text top="508" left="86" width="333" height="17" font="2">an   extradimensional   space   that   allows   the   quiver   to   </text>
+<text top="525" left="86" width="317" height="17" font="2">hold   numerous   items   while   never   weighing   more   </text>
+<text top="543" left="86" width="330" height="17" font="2">than   2   pounds.   The   shortest   compartment   can   hold   </text>
+<text top="561" left="86" width="306" height="17" font="2">up   to   sixty   arrows,   bolts,   or   similar   objects.   The   </text>
+<text top="578" left="86" width="329" height="17" font="2">midsize   compartment   holds   up   to   eighteen   javelins   </text>
+<text top="596" left="86" width="324" height="17" font="2">or   similar   objects.   The   longest   compartment   holds   </text>
+<text top="613" left="86" width="338" height="17" font="2">up   to   six   long   objects,   such   as   bows,   quarterstaffs,   or   </text>
+<text top="631" left="86" width="48" height="17" font="2">spears.   </text>
+<text top="648" left="86" width="319" height="17" font="2">    You   can   draw   any   item   the   quiver   contains   as   if   </text>
+<text top="666" left="86" width="280" height="17" font="2">doing   so   from   a   regular   quiver   or   scabbard.   </text>
+<text top="697" left="86" width="111" height="21" font="5"><b>Efreeti Bottle </b></text>
+<text top="719" left="86" width="162" height="17" font="3"><i>Wondrous   item,   very   rare   </i></text>
+<text top="745" left="86" width="338" height="17" font="2">This   painted   brass   bottle   weighs   1   pound.   When   you   </text>
+<text top="763" left="86" width="336" height="17" font="2">use   an   action   to   remove   the   stopper,   a   cloud   of   thick   </text>
+<text top="780" left="86" width="345" height="17" font="2">smoke   flows   out   of   the   bottle.   At   the   end   of   your   turn,   </text>
+<text top="798" left="86" width="326" height="17" font="2">the   smoke   disappears   with   a   flash   of   harmless   fire,   </text>
+<text top="815" left="86" width="298" height="17" font="2">and   an   efreeti   appears   in   an   unoccupied   space   </text>
+<text top="833" left="86" width="138" height="17" font="2">within   30   feet   of   you.   </text>
+<text top="851" left="86" width="334" height="17" font="2">    The   first   time   the   bottle   is   opened,   the   GM   rolls   to   </text>
+<text top="868" left="86" width="166" height="17" font="2">determine   what   happens.   </text>
+<text top="895" left="92" width="31" height="16" font="7"><b>d100   </b></text>
+<text top="895" left="142" width="35" height="16" font="7"><b>Effect   </b></text>
+<text top="911" left="89" width="290" height="16" font="8">01–10    The   efreeti   attacks   you.   After   fighting   for   5   </text>
+<text top="928" left="142" width="253" height="16" font="8">rounds,   the   efreeti   disappears,   and   the   bottle   </text>
+<text top="944" left="142" width="85" height="16" font="8">loses   its   magic.   </text>
+<text top="961" left="89" width="310" height="16" font="8">11–90    The   efreeti   serves   you   for   1   hour,   doing   as   you   </text>
+<text top="977" left="142" width="272" height="16" font="8">command.   Then   the   efreeti   returns   to   the   bottle,   </text>
+<text top="994" left="142" width="268" height="16" font="8">and   a   new   stopper   contains   it.   The   stopper   can’t   </text>
+<text top="1010" left="142" width="272" height="16" font="8">be   removed   for   24   hours.   The   next   two   times   the   </text>
+<text top="1027" left="142" width="259" height="16" font="8">bottle   is   opened,   the   same   effect   occurs.   If   the   </text>
+<text top="108" left="548" width="232" height="16" font="8">bottle   is   opened   a   fourth   time,   the   efreeti   </text>
+<text top="124" left="548" width="263" height="16" font="8">escapes   and   disappears,   and   the   bottle   loses   its   </text>
+<text top="141" left="548" width="39" height="16" font="8">magic.   </text>
+<text top="157" left="495" width="326" height="16" font="8">91–00    The   efreeti   can   cast   the   wish   spell   three   times   for   </text>
+<text top="174" left="548" width="273" height="16" font="8">you.   It   disappears   when   it   grants   the   final   wish   or   </text>
+<text top="190" left="548" width="238" height="16" font="8">after   1   hour,   and   the   bottle   loses   its   magic.   </text>
+<text top="220" left="493" width="126" height="21" font="5"><b>Elemental Gem </b></text>
+<text top="242" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="269" left="493" width="340" height="17" font="2">This   gem   contains   a   mote   of   elemental   energy.   When   </text>
+<text top="286" left="493" width="328" height="17" font="2">you   use   an   action   to   break   the   gem,   an   elemental   is   </text>
+<text top="303" left="493" width="211" height="17" font="2">summoned   as   if   you   had   cast   the   </text>
+<text top="303" left="704" width="112" height="17" font="3"><i>conjure   elemental</i></text>
+<text top="303" left="816" width="3" height="17" font="2">   </text>
+<text top="321" left="493" width="319" height="17" font="2">spell,   and   the   gem’s   magic   is   lost.   The   type   of   gem   </text>
+<text top="339" left="493" width="322" height="17" font="2">determines   the   elemental   summoned   by   the   spell.   </text>
+<text top="365" left="493" width="29" height="16" font="7"><b>Gem   </b></text>
+<text top="365" left="628" width="127" height="16" font="7"><b>Summoned   Elemental   </b></text>
+<text top="382" left="493" width="78" height="16" font="8">Blue   sapphire   </text>
+<text top="382" left="628" width="77" height="16" font="8">Air   elemental   </text>
+<text top="402" left="493" width="91" height="16" font="8">Yellow   diamond   </text>
+<text top="402" left="628" width="91" height="16" font="8">Earth   elemental   </text>
+<text top="423" left="493" width="84" height="16" font="8">Red   corundum   </text>
+<text top="423" left="628" width="82" height="16" font="8">Fire   elemental   </text>
+<text top="444" left="493" width="48" height="16" font="8">Emerald   </text>
+<text top="444" left="628" width="96" height="16" font="8">Water   elemental   </text>
+<text top="478" left="493" width="98" height="21" font="5"><b>Elven Chain </b></text>
+<text top="500" left="493" width="158" height="17" font="3"><i>Armor   (chain   shirt),   rare   </i></text>
+<text top="526" left="493" width="345" height="17" font="2">You   gain   a   +1   bonus   to   AC   while   you   wear   this   armor.   </text>
+<text top="544" left="493" width="342" height="17" font="2">You   are   considered   proficient   with   this   armor   even   if   </text>
+<text top="561" left="493" width="267" height="17" font="2">you   lack   proficiency   with   medium   armor.   </text>
+<text top="592" left="493" width="160" height="21" font="5"><b>Eversmoking Bottle </b></text>
+<text top="614" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="640" left="493" width="330" height="17" font="2">Smoke   leaks   from   the   lead-­‐‑stoppered   mouth   of   this   </text>
+<text top="658" left="493" width="325" height="17" font="2">brass   bottle,   which   weighs   1   pound.   When   you   use   </text>
+<text top="676" left="493" width="311" height="17" font="2">an   action   to   remove   the   stopper,   a   cloud   of   thick   </text>
+<text top="693" left="493" width="334" height="17" font="2">smoke   pours   out   in   a   60-­‐‑foot   radius   from   the   bottle.   </text>
+<text top="711" left="493" width="320" height="17" font="2">The   cloud’s   area   is   heavily   obscured.   Each   minute   </text>
+<text top="728" left="493" width="318" height="17" font="2">the   bottle   remains   open   and   within   the   cloud,   the   </text>
+<text top="746" left="493" width="292" height="17" font="2">radius   increases   by   10   feet   until   it   reaches   its   </text>
+<text top="764" left="493" width="186" height="17" font="2">maximum   radius   of   120   feet.   </text>
+<text top="781" left="493" width="317" height="17" font="2">    The   cloud   persists   as   long   as   the   bottle   is   open.   </text>
+<text top="799" left="493" width="276" height="17" font="2">Closing   the   bottle   requires   you   to   speak   its   </text>
+<text top="816" left="493" width="301" height="17" font="2">command   word   as   an   action.   Once   the   bottle   is   </text>
+<text top="834" left="493" width="299" height="17" font="2">closed,   the   cloud   disperses   after   10   minutes.   A   </text>
+<text top="851" left="493" width="320" height="17" font="2">moderate   wind   (11   to   20   miles   per   hour)   can   also   </text>
+<text top="869" left="493" width="307" height="17" font="2">disperse   the   smoke   after   1   minute,   and   a   strong   </text>
+<text top="887" left="493" width="327" height="17" font="2">wind   (21   or   more   miles   per   hour)   can   do   so   after   1   </text>
+<text top="904" left="493" width="45" height="17" font="2">round.   </text>
+<text top="935" left="493" width="143" height="21" font="5"><b>Eyes of Charming </b></text>
+<text top="957" left="493" width="318" height="17" font="3"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="984" left="493" width="320" height="17" font="2">These   crystal   lenses   fit   over   the   eyes.   They   have   3   </text>
+<text top="1001" left="493" width="307" height="17" font="2">charges.   While   wearing   them,   you   can   expend   1   </text>
+<text top="1018" left="493" width="194" height="17" font="2">charge   as   an   action   to   cast   the   </text>
+<text top="1018" left="687" width="86" height="17" font="3"><i>charm   person</i></text>
+<text top="1018" left="773" width="37" height="17" font="2">   spell   </text>
+</page>
+<outline>
+<item page="1">SRD-CC_V1.1 preamble.pdf</item>
+<item page="3">SRD-OGL_V5.1.pdf</item>
+</outline>
+</pdf2xml>
