@@ -11,13 +11,13 @@ const base='.build/autonomy-context',require=createRequire(import.meta.url),tick
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['src/app/autonomy-ui.ts'],outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 async function until(check){for(let i=0;i<100;i++){if(check())return;await tick();}assert.ok(check(),'Expected autonomy state did not arrive');}
-async function fixture(t){
+async function fixture(t,jobSeconds=60){
  const root=mkdtempSync(path.join(tmpdir(),'autonomy-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'world.sqlite')),rows=[];
  for(const name of ['Alpha','Beta']){
   const cam=store.create(name),w=store.activate(cam.id),id=randomUUID(),cmd=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
   store.changePreparation({...cmd(null),change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title:name,readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});
   store.executeAutonomy(cmd({kind:'actor',expectedRevision:null,initialLocationId:null,actor:{id,revision:0,enabled:true,paused:false,role:name,needs:[],jobPriorities:{},assignedJobId:null,allowConflict:false,defense:12,attackBonus:0,maxHpLossPercent:10,cursor:0,offsetSeconds:0,jobId:null,progressSeconds:0,pending:null}}));
-  store.executeAutonomy(cmd({kind:'job',expectedRevision:null,job:{id:randomUUID(),revision:0,name:name+' wartet',kind:'wait',locationId:null,routeId:null,targetActorId:null,roles:[],priority:1,durationSeconds:60,exclusive:false,enabled:true,needEffects:{},maxDamage:0}}));
+  store.executeAutonomy(cmd({kind:'job',expectedRevision:null,job:{id:randomUUID(),revision:0,name:name+' wartet',kind:'wait',locationId:null,routeId:null,targetActorId:null,roles:[],priority:1,durationSeconds:jobSeconds,exclusive:false,enabled:true,needEffects:{},maxDamage:0}}));
   const scene=store.executeLive(cmd({kind:'initialize',expectedRosterRevision:0})).scene;store.executeLive(cmd({kind:'advance-clock',sceneId:scene.id,expectedRevision:0,amount:1800,unit:'seconds',calendarVersion:'relative-v1',reason:'Explizit bestätigte NPC-Zeit'}));rows.push({cam,id});
  }
  const saved={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});window.HTMLElement.prototype.scrollIntoView=()=>{};
@@ -55,4 +55,30 @@ test('two queued starts share one runner and cancellation stops its next chunk',
 
 test('an older read in the same activation cannot replace a newer read',async t=>{
  const x=await fixture(t);x.holdRead();const old=x.ui.openAutonomy();await until(()=>x.held.length===1);const a=x.store.autonomy(x.current().token).actors[0];x.store.executeAutonomy({commandId:randomUUID(),campaignId:x.rows[0].cam.id,token:x.current().token,action:{kind:'actor',actor:{...a,role:'Späterer Stand'},expectedRevision:a.revision,initialLocationId:null}});await x.ui.openAutonomy();x.release();await old;x.get('filter').value='Späterer Stand';x.draw();assert.match(x.get('actors').textContent,/Alpha/);assert.match(x.get('actor-result').textContent,/1 NPCs/);
+});
+
+test('compact actor setup preserves need edits and current job feedback through save and reopen',async t=>{
+ const x=await fixture(t,3600);await x.edit(0,'Torwache');
+ const settings=x.get('needs-settings');assert.equal(settings.hasAttribute('open'),false);
+ settings.setAttribute('open','');
+ // The fixture has no needs yet; add one using the ordinary UI before editing it.
+ x.get('new-need-name').value='Wachsamkeit';x.get('add-need').click();
+ const need=x.get('needs').querySelector('[data-need-field="value"]');assert.ok(need);need.value='37';
+ x.get('actor-form').dispatchEvent(new window.Event('input'));settings.removeAttribute('open');
+ assert.equal(await x.ui.flushAutonomy(),true);await x.ui.openAutonomy();
+ const saved=x.store.autonomy(x.current().token).actors.find(a=>a.id===x.rows[0].id);
+ assert.equal(saved.role,'Torwache');assert.equal(saved.needs.find(n=>n.name==='Wachsamkeit').value,37);
+ assert.match(x.get('actors').textContent,/Kein laufender Job/);
+ x.get('catchup').click();await until(()=>!x.get('catchup').disabled&&x.sent.some(c=>c.action.kind==='catch-up'));
+ assert.match(x.get('actors').textContent,/Aktueller Job: Alpha wartet · 30 \/ 60 min/);
+});
+
+test('special job controls can be opened without clearing normal job inputs',async t=>{
+ const x=await fixture(t);x.get('job-new').click();await until(()=>!x.get('job-form').hidden);
+ x.get('job-name').value='Torpatrouille';x.get('job-duration').value='15';
+ x.get('job-kind').value='patrol';x.get('job-kind').onchange();assert.equal(x.get('job-special').open,true);
+ assert.equal(x.get('job-name').value,'Torpatrouille');assert.equal(x.get('job-duration').value,'15');
+ x.get('job-kind').value='wait';x.get('job-form').dispatchEvent(new window.Event('input'));
+ assert.equal(await x.ui.flushAutonomy(),true);const saved=x.store.autonomy(x.current().token).jobs.find(j=>j.name==='Torpatrouille');
+ assert.equal(saved.kind,'wait');assert.equal(saved.durationSeconds,900);
 });
