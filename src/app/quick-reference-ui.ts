@@ -2,7 +2,7 @@ import {textReferences} from './text-references';
 import {refreshSceneDeskPins} from './scene-desk-ui';
 import type {Workspace,Result} from './contracts';
 import type {DeskRef,DeskEntry,DeskContent} from './scene-desk-contracts';
-import {renderCreatureDetail} from './catalog-ui';
+import {renderCreatureDetail} from './creature-detail-ui';
 import {encounterEntryLabel} from './encounter-contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};

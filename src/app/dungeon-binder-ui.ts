@@ -1,4 +1,4 @@
-import {renderCreatureDetail} from './catalog-ui';
+import {renderCreatureDetail} from './creature-detail-ui';
 import type {DrawingElement} from './drawing-contracts';
 import type {Workspace,Room} from './contracts';
 import {DungeonBinderIndex,unplacedBinderPublicText} from './dungeon-binder-model';

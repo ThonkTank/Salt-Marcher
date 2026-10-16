@@ -11,7 +11,7 @@ import type {
 import type { LiveScene } from "./live-contracts";
 import { newLocation } from "../features/location/location-schema";
 import { showNarrative, flushNarrative } from "./narrative-ui";
-import { renderCreatureDetail } from "./catalog-ui";
+import { renderCreatureDetail } from "./creature-detail-ui";
 import type { EncounterPlan } from "./encounter-contracts";
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
