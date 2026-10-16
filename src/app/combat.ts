@@ -142,7 +142,7 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
       const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
       if (generation !== gen) return false;
       acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
-      if(['create','edit','damage','hit','area-damage','heal','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
+      if(['create','edit','damage','hit','area-damage','heal','revive','death','death-roll','concentration','concentration-roll','undo','finish','remove','add-party'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:(action.kind==='damage'||action.kind==='hit')&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
       const concentrationActor=action.kind==='area-damage'?result.combat?.participants.find(p=>p.concentrationChecks?.length):actor;
@@ -298,6 +298,9 @@ function lock() {
   get<HTMLInputElement>('fighter-concentration').disabled=blocked()||!!fighter?.concentrationChecks?.length;
   for(const result of ['roll','success','failure','natural-20','natural-1','stabilize','dead'] as const)get<HTMLButtonElement>('fighter-death-'+result).disabled=deathUnavailable||deathControls.terminal;
   get<HTMLButtonElement>('fighter-death-reset').disabled=deathUnavailable||!deathControls.reset;
+  get<HTMLButtonElement>('fighter-heal').disabled=blocked()||unknown||!!fighter?.death?.dead;
+  get<HTMLButtonElement>('fighter-revive').disabled=deathUnavailable||!fighter?.death?.dead;
+  get<HTMLInputElement>('fighter-revive-hp').disabled=deathUnavailable||!fighter?.death?.dead;
   hitPanel?.context(view?.combat??null,workspace?.token??null,blocked());
   areaPanel?.context(view?.combat??null,workspace?.token??null,blocked());
   renderAttackEffect();
@@ -388,6 +391,10 @@ function renderEditor() {
   get('fighter-quick-health').textContent=p?(p.healthKnown===false?'HP noch offen':p.hp+' / '+p.maxHp+' HP'+(p.tempHp?' + '+p.tempHp+' temporäre HP':''))+' · Initiative '+p.initiative+' · RK '+p.armorClass:'';
   get('fighter-health-hint').hidden = p?.healthKnown !== false;
   for (const id of ['fighter-damage','fighter-heal']) get<HTMLButtonElement>(id).disabled = blocked() || p?.healthKnown === false;
+  get<HTMLButtonElement>('fighter-heal').disabled=blocked()||p?.healthKnown===false||!!p?.death?.dead;
+  get('fighter-revival').hidden=!p?.death?.dead;
+  get('fighter-healing-hint').textContent=p?.death?.dead?'Tot: Normale Heilung ist nicht möglich. Nach erfolgreicher Wiederbelebung unten ins Leben zurückholen.':'Schaden verbraucht zuerst temporäre HP. Heilung endet bei den maximalen HP.';
+  get<HTMLInputElement>('fighter-revive-hp').max=String(p?.maxHp??1);
   for (const [id, field] of [['fighter-name', 'name'], ['fighter-initiative', 'initiative'], ['fighter-bonus', 'initiativeBonus'], ['fighter-ac', 'armorClass'], ['fighter-hp', 'hp'], ['fighter-max-hp', 'maxHp'], ['fighter-temp-hp', 'tempHp'], ['fighter-conditions', 'conditions']] as const) get<HTMLInputElement>(id).value = draft?draft.values[id]??'':p?.healthKnown === false && (field === 'hp' || field === 'maxHp') ? '' : String(p?.[field] ?? '');
   get<HTMLInputElement>('fighter-concentration').checked = draft?draft.concentrating:p?.concentrating ?? false;
   get('fighter-concentration-hint').hidden = !p?.concentrating;
@@ -448,6 +455,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
     if(!get<HTMLButtonElement>('fighter-damage').disabled&&amount.reportValidity())get<HTMLButtonElement>('fighter-damage').click();
   });
   get('fighter-heal').onclick = () => { if (selected) void execute({ kind: 'heal', participantId: selected, amount: Number(value('fighter-amount')) }); };
+  get('fighter-revive').onclick=()=>{if(selected)void execute({kind:'revive',participantId:selected,hp:Number(value('fighter-revive-hp'))});};
   get('fighter-death-roll').onclick=()=>{if(selected)void execute({kind:'death-roll',participantId:selected});};
   for(const result of ['success','failure','natural-20','natural-1','stabilize','dead','reset'] as const)get('fighter-death-'+result).onclick=()=>{if(selected)void execute({kind:'death',participantId:selected,result});};
   get('combat-roll-damage').onclick=()=>void applyRolledDamage('full');
