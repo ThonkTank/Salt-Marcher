@@ -32,28 +32,33 @@ function renderSelected(){
  });
  if(!selected.length)root.textContent='Noch keine Begegnungen gewählt. Suche gespeicherte Vorlagen und füge sie dem Tagesplan hinzu.';
 }
+function pendingChoices(message:string){
+ el('day-plan-matches').replaceChildren();el('day-plan-matches').setAttribute('aria-busy','true');
+ el('day-plan-search-status').textContent=message;
+}
 async function search(){
  const owner=workspace,request=++generation;if(!owner)return;
- el('day-plan-search-status').textContent='Vorlagen werden geladen…';
+ pendingChoices('Vorlagen werden geladen…');
  try{
   const result=await window.campaign.encounterPlans(owner.token,el<HTMLInputElement>('day-plan-search').value);
   if(workspace?.token!==owner.token||request!==generation)return;if(!result.ok)throw new Error(result.error);
-  const root=el('day-plan-matches');root.replaceChildren();
-  for(const plan of result.value.slice(0,40))root.append(button(plan.name+' · hinzufügen',()=>{
+  const root=el('day-plan-matches');root.replaceChildren();root.setAttribute('aria-busy','false');
+  for(const plan of result.value.slice(0,40)){const choice=button(plan.name+' · hinzufügen',()=>{
+   if(workspace?.token!==owner.token||request!==generation||!enabled()||!choice.isConnected)return;
    if(selected.length>=20){el('day-plan-search-status').textContent='Höchstens 20 Planzeilen. Für Wiederholungen die Anzahl ändern.';return;}
    selected.push({...plan,count:'1'});renderSelected();notify();
-  }));
+  });root.append(choice);}
   el('day-plan-search-status').textContent=result.value.length>40?'Erste 40 Treffer. Suche genauer, um weitere Vorlagen zu finden.':result.value.length?'Nur gespeicherte Vorlagen. Änderungen im Encounter-Editor zuerst speichern.':'Keine passenden gespeicherten Vorlagen.';
- }catch(error){if(workspace?.token===owner.token&&request===generation){el('day-plan-matches').replaceChildren();el('day-plan-search-status').textContent=(error as Error).message;}}
+ }catch(error){if(workspace?.token===owner.token&&request===generation){el('day-plan-matches').replaceChildren();el('day-plan-matches').setAttribute('aria-busy','false');el('day-plan-search-status').textContent=(error as Error).message;}}
 }
 async function reload(){
- const owner=workspace,request=++generation;if(!owner)return;el('day-plan-search-status').textContent='Gewählte Vorlagen werden aktualisiert…';
+ const owner=workspace,request=++generation;if(!owner)return;pendingChoices('Gewählte Vorlagen werden aktualisiert…');
  try{
   const result=await window.campaign.encounterPlans(owner.token,'');if(workspace?.token!==owner.token||request!==generation)return;if(!result.ok)throw new Error(result.error);
   const versions=new Map(result.value.map(p=>[p.id,p]));
   for(const entry of selected){const latest=versions.get(entry.id);if(!latest)throw new Error('Gewählte Vorlage fehlt: '+entry.name+'. Entfernen oder im Encounter-Editor wiederherstellen.');}
   selected=selected.map(entry=>({...entry,...versions.get(entry.id)!}));renderSelected();notify();void search();
- }catch(error){if(workspace?.token===owner.token&&request===generation)el('day-plan-search-status').textContent=(error as Error).message;}
+ }catch(error){if(workspace?.token===owner.token&&request===generation){el('day-plan-matches').setAttribute('aria-busy','false');el('day-plan-search-status').textContent=(error as Error).message;}}
 }
 export function dayItineraryRequest():DayPlanEntry[]|undefined{
  return enabled()?selected.map(p=>({id:p.id,revision:p.revision,count:p.count.trim()?Number(p.count):NaN,...(p.restBefore?{restBefore:p.restBefore}:{})})):undefined;
@@ -107,7 +112,7 @@ export function dayItineraryDraft():DayItineraryDraft {
 }
 export function activateDayItinerary(next:Workspace|null,draft?:DayItineraryDraft){
  workspace=next;generation++;editRevision++;if(timer)clearTimeout(timer);timer=null;selected=[];manual={load:'0',reward:'0',separate:false};el<HTMLInputElement>('day-use-encounters').checked=false;el<HTMLInputElement>('day-plan-search').value='';el('day-plan-edit-status').textContent='';
- el('day-plan-matches').replaceChildren();el('day-plan-result').replaceChildren();el('day-plan-search-status').textContent='';renderSelected();inputs();
+ el('day-plan-matches').replaceChildren();el('day-plan-matches').setAttribute('aria-busy','false');el('day-plan-result').replaceChildren();el('day-plan-search-status').textContent='';renderSelected();inputs();
  if(draft){
   selected=draft.selected.map(p=>({...p}));manual={...draft.manual};el<HTMLInputElement>('day-use-encounters').checked=draft.enabled;
   el<HTMLInputElement>('day-total-xp').value=draft.enabled?'':manual.load;el<HTMLInputElement>('day-reward-xp').value=draft.enabled?'':manual.reward;
@@ -123,6 +128,6 @@ export function initDayItinerary(refresh:()=>void){
   else{el<HTMLInputElement>('day-total-xp').value=manual.load;el<HTMLInputElement>('day-reward-xp').value=manual.reward;el<HTMLInputElement>('day-separate-reward').checked=manual.separate;}
   inputs();notify();
  };
- el('day-plan-search').oninput=()=>{generation++;if(timer)clearTimeout(timer);timer=setTimeout(()=>{timer=null;void search();},150);};
+ el('day-plan-search').oninput=()=>{generation++;if(timer)clearTimeout(timer);pendingChoices('Vorlagen werden gesucht…');timer=setTimeout(()=>{timer=null;void search();},150);};
  el('day-plan-reload').onclick=()=>void reload();el('day-plan-clear').onclick=()=>{selected=[];renderSelected();notify();};
 }
