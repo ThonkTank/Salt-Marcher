@@ -94,3 +94,21 @@ test('a faction creates through the shared table manager and adopts only the con
  x.el('source-table-new').click();await settle();x.el('table-name').value='Neue Haupttabelle';x.el('table-name').oninput();x.el('table-scope').value='installation';x.el('table-scope').oninput();x.select('guard');x.el('table-add-creature').click();const readSources=window.campaign.generationSources;window.campaign.generationSources=async()=>({ok:false,error:'Post-save source read unavailable'});await x.save();window.campaign.generationSources=readSources;const created=x.store.encounterTables(x.w.token,true).find(t=>t.name==='Neue Haupttabelle');assert.equal(created.scope,'installation');assert.equal(created.revision,1);assert.equal(x.el('source-primary').value,created.id);assert.equal(x.el('world-source-manager').open,true);assert.equal(raw.value,'-01');assert.equal(stock().value,'05');const current=()=>x.store.generationSources(x.w.token).sources.find(s=>s.id===id);assert.equal(current().revision,1);assert.deepEqual(current().tableIds,[x.table.id]);
  x.el('world-source-form').onsubmit({preventDefault(){}});await settle();assert.equal(x.el('world-source-manager').open,false);assert.equal(current().revision,2);assert.deepEqual(current().tableIds,[created.id]);assert.deepEqual(current().stock,[{creatureId:'guard',limit:5}]);assert.equal(current().disposition,-1);assert.equal(x.store.preparation(x.w.token,'').notes.find(r=>r.note.id===id).note.gmNotes,' Geheim\r\n');
 });
+
+for(const committed of [false,true])test(`unknown encounter table save ${committed?'after':'before'} commit keeps its draft locked until the original request is resolved`,async t=>{
+ const x=await fixture(t,'encounter'),execute=window.campaign.executeGeneration,calls=[];
+ window.campaign.executeGeneration=async c=>{calls.push(structuredClone(c));if(calls.length===1){if(committed)await execute(c);throw new Error('Save reply lost');}return execute(c);};
+ x.el('table-name').value='Wachen bestätigt';x.el('table-name').oninput();await x.save();
+ assert.equal(x.read().revision,committed?2:1);assert.equal(x.el('table-manager').open,true);assert.equal(x.el('table-name').disabled,true);assert.equal(x.el('table-save').disabled,true);
+ x.el('table-close').click();assert.equal(x.el('table-manager').open,true);assert.equal(Boolean(x.el('generation-discard').open),false);await x.save();assert.equal(calls.length,1);
+ assert.equal(await x.ui.flushGeneration(),false);assert.equal(x.el('generation-write-recovery').hidden,false);assert.match(x.el('generation-write-recovery').textContent,/unbekannt/);
+ x.el('generation-write-retry').click();x.el('generation-write-retry').click();await settle();assert.equal(calls.length,2);assert.deepEqual(calls[1],calls[0]);assert.equal(x.read().revision,2);assert.equal(x.read().name,'Wachen bestätigt');assert.equal(x.el('table-manager').open,false);assert.equal(x.el('generation-write-recovery').hidden,true);assert.equal(x.read().description,'Rohtext');
+ x.el('encounter-table-open').click();await settle();x.el('table-name').value='Neue Änderung';x.el('table-name').oninput();await x.save();assert.equal(x.read().revision,3);assert.notEqual(calls[2].commandId,calls[0].commandId);
+});
+
+test('activation revokes an unresolved old table command without retrying it in the new context',async t=>{
+ const x=await fixture(t,'encounter'),execute=window.campaign.executeGeneration;let calls=0;window.campaign.executeGeneration=async()=>{calls++;throw new Error('No response');};
+ x.el('table-name').value='Alter Entwurf';x.el('table-name').oninput();await x.save();assert.equal(x.el('generation-write-recovery').hidden,false);
+ x.ui.activateGeneration(x.w);await settle();assert.equal(x.el('generation-write-recovery').hidden,true);assert.equal(x.el('table-manager').open,false);assert.equal(calls,1);assert.equal(x.read().revision,1);
+ window.campaign.executeGeneration=execute;x.el('encounter-table-list').value=x.table.id;x.el('encounter-table-open').click();await settle();assert.equal(x.el('table-name').value,'Wachen');assert.equal(x.el('table-name').disabled,false);
+});

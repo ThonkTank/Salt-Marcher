@@ -23,17 +23,20 @@ function applyPresetDefaults(){
  get('generation-defaults-source').textContent='Vorgaben: '+preset!.name+(defaultOverrides.size?' · Eigene Auswahl bleibt erhalten.':'');
  if(changed&&run){previewDirty=true;renderPreview();}
 }
+let retryWrite:(()=>void)|null=null;
+function resumeWrite(){const retry=retryWrite;retryWrite=null;get('generation-write-recovery').hidden=true;get<HTMLButtonElement>('generation-write-retry').disabled=true;retry?.();}
 let pending:Promise<boolean>|null=null,tell:(text:string,error?:boolean)=>void,bridge:Bridge,discard:()=>void;
 let tableCreated:((table:EncounterTable)=>void)|null=null;
 let catalogParent:Node|null=null,catalogNext:Node|null=null,restoreTableLookup:(()=>void)|null=null;const names=new Map<string,string>();
 export function activateGeneration(next:Workspace){
- lock(false);pending=null;workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
+ resumeWrite();lock(false);pending=null;workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
  defaultOverrides.clear();tables=[];lootTables=[];registry=null;run=null;tableCreated=null;tableDraft=null;lootDraft=null;previewDirty=false;planningBasis=null;fillBasis=null;
  for(const id of ['table-manager','loot-table-manager','preset-manager','generation-discard'])if(get<HTMLDialogElement>(id).open)get<HTMLDialogElement>(id).close();
  generationPlanningChanged(null);get('generation-defaults-source').textContent='';restoreCatalog();sourceRefreshNotice();get('generation-workspace').hidden=false;get('generation-feedback').textContent='';renderPreview();void refreshGeneration();
 }
 export async function flushGeneration(){
+ if(retryWrite){tell('Speicherausgang zuerst im offenen Generatorbereich klären.',true);return false;}
  if(get<HTMLDialogElement>('preset-manager').open){tell('Schließe zuerst die Generator-Einstellungen. Ungespeicherte Änderungen bleiben dort erhalten.',true);return false;}
  const w=workspace,g=generation;if(!w)return true;
  if(worldSourceOpen()){tell('Speichere oder schließe die offenen Weltquellen zuerst.',true);return false;}
@@ -60,7 +63,18 @@ function command(action:GenerationCommand['action']){
  const w=workspace,g=generation;if(!w)return Promise.resolve(false);
  const request={commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,action:structuredClone(action)};
  return operation(async()=>{
-  refreshRequest++;const response=await window.campaign.executeGeneration(request);if(!owned(w.token,g))return false;
+  refreshRequest++;let response;
+  while(owned(w.token,g)){
+   try{response=await window.campaign.executeGeneration(request);break;}
+   catch(error){
+    if(!owned(w.token,g))return false;
+    const recovery=get('generation-write-recovery'),host=['table-manager','loot-table-manager','world-source-manager'].map(id=>get<HTMLDialogElement>(id)).find(dialog=>dialog.open)??get('generation-workspace');
+    host.append(recovery);recovery.hidden=false;get<HTMLButtonElement>('generation-write-retry').disabled=false;
+    tell('Speicherausgang unbekannt: '+(error as Error).message+'. Ursprüngliche Änderung zuerst klären.',true);
+    await new Promise<void>(resolve=>{retryWrite=resolve;get<HTMLButtonElement>('generation-write-retry').focus();});
+   }
+  }
+  if(!response||!owned(w.token,g))return false;
   const result=unwrap(response);tables=result.tables;lootTables=result.lootTables;registry=result.registry;renderOverview();
   // The write is confirmed. A later projection read cannot turn it into a failed save.
   try{const sources=unwrap(await window.campaign.generationSources(w.token));if(!owned(w.token,g))return false;refreshRequest++;setWorldSources(sources,tables);sourceRefreshNotice();}
@@ -173,6 +187,7 @@ function rollSelectedLoot(){const table=lootTables.find(t=>t.id===value('loot-ta
 export function initGeneration(status:typeof tell,callbacks:Bridge){
  for(const [a,b]of [['generation-npc-only','generation-npc-mixed'],['generation-npc-mixed','generation-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
 tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required-npcs',tell);
+ const recovery=document.createElement('div');recovery.id='generation-write-recovery';recovery.hidden=true;recovery.setAttribute('role','alert');recovery.innerHTML='<p>Speicherausgang unbekannt. Die ursprüngliche Änderung wird beim Klären bestätigt oder einmalig gespeichert. Entwurf und Schließen bleiben bis dahin gesperrt.</p><button id="generation-write-retry" type="button">Speicherausgang klären</button>';get('generation-workspace').append(recovery);get('generation-write-retry').onclick=resumeWrite;
  ensureLootUI();
  get('encounter-generate').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-tables').closest('fieldset')!.scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
