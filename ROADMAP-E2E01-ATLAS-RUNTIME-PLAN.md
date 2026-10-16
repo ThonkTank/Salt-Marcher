@@ -404,7 +404,10 @@ natürlicher Nummernsortierung; Fortsetzungen binden Filter, Aktivierung und
 einen opaken Änderungsstand. Je Suchoberfläche läuft höchstens ein ersetzbarer
 Job, der Nachfolger wartet auf dessen tatsächliches Ende. Geänderte Suchstände
 werden ausdrücklich neu gestartet, nicht mit älteren Seiten vermischt. Das
-Verzeichnis bleibt unter den Fachdetails erreichbar. Detailantworten und
+Verzeichnis bleibt unter den Fachdetails erreichbar. Kontext und ausdrückliche
+Aktualisierung lösen gemeinsam genau eine Suche aus, auch nach einem vorher
+leeren Ergebnis. Raumtexte verwenden beim Bearbeiten denselben Helfer wie der
+Key-Editor: unveränderte Rohtextspannen behalten ihre Zeilenumbrüche. Detailantworten und
 schreibende Befehle akzeptieren weiterhin bestehende lange IDs.
 
 Zeichenansichten erhalten Geometrie ohne gesamte Keys, archivierte Raumtexte

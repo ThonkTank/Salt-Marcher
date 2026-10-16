@@ -3,14 +3,13 @@ import type {RoomDirectoryPage,RoomSummary} from './contracts';
 export class RoomDirectoryView {
  private request=0;private token:string|null=null;private text='';private rows:RoomSummary[]=[];private next:RoomDirectoryPage['next']=null;private selected:string|null=null;private summary:{total:number;unreadable:number}|null=null;private problems:{number:string;message:string}[]=[];
  constructor(private readonly root:HTMLElement,private readonly open:(id:string)=>void,private readonly api=window.campaign){}
- context(token:string|null,text:string,selected:string|null,problems:{number:string;message:string}[]=[]){
+ context(token:string|null,text:string,selected:string|null,problems:{number:string;message:string}[]=[],refresh=false){
   this.selected=selected;this.problems=problems;
-  if(token===this.token&&text===this.text&&this.rows.length){this.draw();return;}
+  if(token===this.token&&text===this.text&&this.rows.length&&!refresh){this.draw();return;}
   const previous=this.token;this.token=token;this.text=text;this.rows=[];this.next=null;this.summary=null;this.request++;
   if(previous&&previous!==token)void this.api.cancelRoomDirectory(previous).catch(()=>{});
   if(token)void this.load(false);else this.root.replaceChildren();
  }
- refresh(){if(this.token)void this.load(false);}
  private async load(more:boolean){
   const token=this.token,text=this.text,n=++this.request;if(!token)return;
   const cursor=more?this.next:undefined;if(!more){this.rows=[];this.next=null;this.summary=null;}

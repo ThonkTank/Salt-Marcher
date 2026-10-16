@@ -41,3 +41,12 @@ test('a confirmed room revision retires old raster failures and waits for the ma
  const before=view.load();await turn();assert.equal(images,1);view.invalidate(1);resolveImage({ok:false,error:'Atlasstand inzwischen geändert.'});await before;assert.deepEqual(errors,[]);
  await view.load();assert.equal(regions,1,'the old map must not start a new raster');data.revision=1;const after=view.load();await turn();resolveImage({ok:true,value:{revision:1,box,width:100,height:100,data:'data:image/png;base64,AA=='}});await after;assert.equal(view.raster.revision,1);assert.equal(regions,2);assert.deepEqual(errors,[]);
 });
+test('confirmed edits refresh the same directory once and replace stale matches without losing selection',async()=>{
+ const x=setup();x.view.context('A','Spur','1');response(x.calls[0],[entry('1')]);await turn();
+ x.view.context('A','Spur','1',[],true);assert.equal(x.calls.length,2);assert.equal(x.calls[1].q.cursor,undefined);response(x.calls[1],[{...entry('1'),name:'Neue Spur',revision:1}]);await turn();
+ assert.match(x.root.textContent,/Neue Spur/);assert.equal(x.root.querySelector('button').getAttribute('aria-pressed'),'true');
+ x.view.context('A','Spur','1');assert.equal(x.calls.length,2,'selection alone retains the loaded page');
+ x.view.context('A','Spur','1',[],true);assert.equal(x.calls.length,3);response(x.calls[2],[]);await turn();assert.equal(x.root.querySelector('button'),null);
+ x.view.context('A','Spur','1',[],true);assert.equal(x.calls.length,4,'an empty result has one intentional refresh');response(x.calls[3],[entry('2')]);await turn();assert.match(x.root.textContent,/2\. 2/);
+ x.view.context('B','Spur',null,[],true);assert.equal(x.calls.length,5,'a new context and explicit refresh share one request');response(x.calls[4],[entry('3')]);await turn();assert.match(x.root.textContent,/3\. 3/);
+});
