@@ -216,6 +216,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   live: (token: string) => ipcRenderer.invoke('campaign:live', token),
   liveScene: (token: string, id: string) => ipcRenderer.invoke('campaign:live-scene', token, id),
   liveArchives: (token: string, after: string | null) => ipcRenderer.invoke('campaign:live-archives', token, after),
+  keepLiveMomentDraft:(token:string,id:string,draft:import('../src/app/live-moment-drafts').LiveMomentDraft|null,expected:import('../src/app/live-moment-drafts').LiveMomentDraft|null)=>ipcRenderer.invoke('campaign:keep-live-moment-draft',token,id,draft,expected),
   keepSessionRecapDraft:(token:string,draft:import('../src/app/live-contracts').SessionRecapDraft,expected:import('../src/app/live-contracts').SessionRecapDraft|null)=>ipcRenderer.invoke('campaign:keep-session-recap-draft',token,draft,expected),
   executeLive: (command: unknown) => ipcRenderer.invoke('campaign:execute-live', command),
   liveStatus: (command: unknown, token: string) => ipcRenderer.invoke('campaign:live-status', command, token),

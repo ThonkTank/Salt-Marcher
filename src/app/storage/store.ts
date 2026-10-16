@@ -1,3 +1,4 @@
+import {keepLiveMomentDraft as keepMomentDraft,readLiveMomentDraft} from './live-moment-drafts';
 import {atlasPartyPoint} from '../atlas-runtime-model';
 import {installLandscape,installLandscapeIndex,landscapeRegion,executeLandscape} from './atlas-landscape';
 import {installAtlasTravel,atlasEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
@@ -664,6 +665,7 @@ export class CampaignStore {
   private validateDatabase(db: any) {
     validateCampaignAtlases(db);
     for(const row of db.prepare("SELECT value FROM settings WHERE key LIKE 'session-recap:%'").iterate())checkedSessionRecapDraft(JSON.parse(row.value));
+    for(const row of db.prepare('SELECT campaign_id,scene_id FROM live_moment_draft').iterate())readLiveMomentDraft(db,row.campaign_id,row.scene_id);
     validateExtensionSettings(db);
     validateCapabilityBytes(db);
     validateCampaignOrigins(db);
@@ -1088,6 +1090,7 @@ export class CampaignStore {
     if(value===undefined)return null;
     const draft=JSON.parse(value);checkedSessionRecapDraft(draft);return draft;
   }
+  keepLiveMomentDraft(token:string,sceneId:string,draft:import('../live-moment-drafts').LiveMomentDraft|null,expected:import('../live-moment-drafts').LiveMomentDraft|null){return this.db.transaction(()=>{const cam=this.guard(token),scene=readLiveScene(this.db,cam,sceneId);if(scene.retired)throw new Error('Momententwurf gehört zu einer früheren Scene.');keepMomentDraft(this.db,cam,sceneId,draft,expected);}).immediate();}
   keepSessionRecapDraft(token:string,draft:import('../live-contracts').SessionRecapDraft,expected:import('../live-contracts').SessionRecapDraft|null){
     checkedSessionRecapDraft(draft);if(expected!==null)checkedSessionRecapDraft(expected);
     return this.db.transaction(()=>{const cam=this.guard(token),current=this.readSessionRecapDraft(cam),same=(a:any,b:any)=>a===null?b===null:!!b&&a.summary===b.summary&&a.handoff===b.handoff;
