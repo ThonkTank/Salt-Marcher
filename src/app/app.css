@@ -682,3 +682,6 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #party-popover .party-xp-actions{display:flex;gap:.3rem;flex-wrap:wrap}
 #party-popover #party-xp-preview{margin:.3rem 0;font-size:.75rem}
 #party-popover #party-xp-status:empty{display:none}
+
+/* Saved monster partitions project as compact cards; individual actors remain reachable. */
+#combat-table .combat-mob-row>td{padding:.6rem .2rem} .combat-mob-card{border:1px solid #8aa5bd;border-radius:.4rem;padding:.65rem;background:#f1f5fa}.combat-mob-card .toolbar{gap:.45rem;margin:.25rem 0}.combat-mob-card p{font-size:.8rem;margin:.35rem 0}.combat-mob-card strong{flex:1}.combat-mob-card button{max-width:100%;overflow-wrap:anywhere}.combat-mob-card button[aria-pressed=true]{background:#d2e3ef}#combat-table .completed-turn:not(.current-turn){background:#edf0f2}#combat-table tr[hidden]{display:none}
