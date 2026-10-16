@@ -137,7 +137,14 @@
       "basis": "609775c3",
       "log": "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-07/tests-final-integration.log"
     },
-    "final_desktop_typecheck": "passed on609775c3"
+    "final_desktop_typecheck": "passed on609775c3",
+    "day_planner_refresh": {
+      "passed": 3,
+      "failed": 0,
+      "basis": "4fa49c52",
+      "log": "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-07/tests-day-final.log"
+    },
+    "publish_desktop_typecheck": "passed on4fa49c52"
   },
   "competitor": {
     "builder": "https://koboldplus.club/",
@@ -383,5 +390,6 @@
   },
   "human_acceptance": "not claimed",
   "integrated_native_reopen_basis": "609775c3",
-  "integrated_native_reopen": "Saved13 participants, Bram19HP28 current, initiative panel8groups with values18/19/13/8 and14/9/3/8; own app/helper exit0"
+  "integrated_native_reopen": "Saved13 participants, Bram19HP28 current, initiative panel8groups with values18/19/13/8 and14/9/3/8; own app/helper exit0",
+  "final_source_basis": "4fa49c522ed70fad0ac109e6518a1dfa14312892"
 }
