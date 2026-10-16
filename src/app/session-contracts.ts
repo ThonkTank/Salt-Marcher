@@ -6,7 +6,7 @@ import type {ItemInput,ProgressGuard} from './progression';
 import type {GenerationRequest} from './generation-contracts';
 import type {ManualPlan} from '../features/planner/manual-planner';
 export interface SessionProfile {planId:string;revision:number;party:EncounterParty[];adventureDayFraction:string;seed:string;encounterCount?:number|null}
-export interface VisitDetail {visitId:string;revision:number;readAloud:string;noteIds:string[];groupIds:string[];reward:{id:string;poolXp:number;items:ItemInput[];placedTreasureId:string|null;awarded:boolean}|null}
+export interface VisitDetail {allocationXp?:number;restAfter?:{beforeVisitId:string;kind:'short'|'long'};visitId:string;revision:number;readAloud:string;noteIds:string[];groupIds:string[];reward:{id:string;poolXp:number;items:ItemInput[];placedTreasureId:string|null;awarded:boolean}|null}
 export interface WorldActor {defeated?:boolean;disposition?:number;role?:import('./npc-contracts').NpcRole;id:string;name:string;creatureId:string;revision:number;hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean;unavailable:boolean;entryId:string}
 export interface PreparedGroup {id:string;revision:number;title:string;notes:string;sourceEncounterId:string;sourceRevision:number;locationId:string|null;plan:EncounterPlan;actors:WorldActor[]}
 export interface SessionView {replacementBasis?:string;profile:SessionProfile;visits:VisitDetail[];groups:PreparedGroup[];encounters:{id:string;revision:number;name:string}[]}
@@ -26,6 +26,7 @@ export interface SessionGenerationOrigin {
 }
 export interface SessionRun {origin?:SessionGenerationOrigin;targets?:import('./generation/session-targets').SessionTargets;lootGuidance?:SessionLootGuidance;worldSourcesByLocation?:boolean;id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
 export type SessionAction=
+ |{kind:'scene-planning';planId:string;expectedPlanRevision:number;visitId:string;expectedVisitRevision:number;allocationXp?:number|null;rest?:{beforeVisitId:string;kind:'short'|'long'|null}}
  |{kind:'copy-visits';planId:string;expectedBasis:string|null;name:string;sourcePlanId:string;expectedSourceBasis:string;visitIds:string[];copyParty:boolean}
  |{kind:'accept-proposals';planId:string;expectedPlanRevision:number;runId:string;proposals:{index:number;expectedRevision:number}[]}
  |{kind:'reject-proposal';planId:string;runId:string;index:number;expectedRevision:number;rejected:boolean}

@@ -1,3 +1,4 @@
+import {copyVisitPlanning} from '../session-day';
 import {randomUUID} from 'node:crypto';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
 import type {SessionAction,PlanPublisher} from '../session-contracts';
@@ -20,7 +21,7 @@ export function replaceSessionPlan(db:any,cam:string,a:Extract<SessionAction,{ki
   const old=contents!.visits.find(v=>v.visitId===source!.scenes[index]!.id)!;
   const groupIds=old.groupIds.map(id=>{const original=originals.get(id);if(!original)throw new Error('Vorlagengruppe fehlt.');if(original.acceptedId)return original.acceptedId;const g=newGroup(db,cam,original.group.plan,target.id,scene.id);g.title=original.group.title;g.notes=original.group.notes;saveGroup(db,cam,g,target.id,scene.id);return g.id;});
   const reward=old.reward?structuredClone(old.reward):null;if(reward&&!reward.awarded)reward.id=randomUUID();
-  saveDetail(db,cam,target.id,{...structuredClone(old),visitId:scene.id,revision:0,groupIds,reward});
+  const copied=structuredClone(old);delete copied.restAfter;saveDetail(db,cam,target.id,{...copied,...copyVisitPlanning(old,source!.scenes.map(s=>s.id),scenes.map(s=>s.id)),visitId:scene.id,revision:0,groupIds,reward});
  }
  if(a.copyParty&&contents){const p={...structuredClone(contents.profile),planId:target.id,revision:before.profile.revision+1},payload=JSON.stringify(p);db.prepare('INSERT INTO session_profile VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,plan_id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,target.id,p.revision,payload,hash(payload));}
  const facts=JSON.stringify({recordedAt:new Date().toISOString(),text:'Spielabendplan ersetzt'+(source?' aus '+(source.name||'unbenannter Vorlage'):''),facts:{kind:'plan-replaced',planId:target.id,sourcePlanId:source?.id??null,previousVisitIds:target.scenes.map(s=>s.id),visitIds:scenes.map(s=>s.id)}});db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(cam,randomUUID(),null,facts,hash(facts));

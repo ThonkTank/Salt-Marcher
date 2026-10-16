@@ -1,3 +1,4 @@
+import {SessionDayPanel} from './session-day-ui';
 import {renderEncounterComposition,compositionPreferences,preferenceSelect,type CompositionPreference} from './encounter-composition-ui';
 import {renderSessionOrigin} from './session-origin-ui';
 import {sessionTargets} from './generation/session-targets';
@@ -17,6 +18,7 @@ import {xpLevel,xpShare,type ItemInput} from './progression';
 import {type GenerationRequest} from './generation-contracts';
 import type {SessionProfile,VisitDetail,PreparedGroup,SessionView,SessionAction,SessionRun,SessionProposal} from './session-contracts';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>get<HTMLInputElement>(id).value,unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
+let dayPanel:SessionDayPanel,dayRequest=0;
 let proposalReview:SessionReview;
 let sessionCopy:SessionCopy;
 let magicPick:ReturnType<typeof magicPoolPicker>;
@@ -37,12 +39,13 @@ let storyRequest=0,storyAward:StoryAward|null=null;
 function previewOwner():PreviewOwner|null{return workspace&&plan?{token:workspace.token,planId:plan.id}:null;}
 function ownsPreview(owner:PreviewOwner){return workspace?.token===owner.token&&plan?.id===owner.planId;}
 export function sessionContext(next:Workspace|null,current:ManualPlan|null,selected:string|null,data:Preparation|null){
+ const planChanged=current?.revision!==plan?.revision;
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
  const key=JSON.stringify([next?.token,current?.id,selected]);
- workspace=next;plan=current;visitId=selected;sources=data;
+ workspace=next;plan=current;visitId=selected;sources=data;if(!next||!current)dayPanel?.reset();
  if(parentChanged){for(const key of Object.keys(compositionPreferences))get<HTMLSelectElement>('session-'+key).value='preset';sessionCopy?.reset();closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
- if(key===basis)return;
+ if(key===basis){if(planChanged&&next&&current)return refreshDay();return;}
  basis=key;generation++;loadRequest++;closeStoryAward();encounterRequest++;get<HTMLInputElement>('visit-encounter-search').value='';clearEncounterChoices('Mindestens zwei Zeichen eingeben.');
  if(timer)clearTimeout(timer);timer=null;
  profileDirty=false;visitDirty=false;view=null;profileDraft=null;visitDraft=null;
@@ -50,6 +53,13 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  get('visit-groups').replaceChildren();get('visit-reward-items').replaceChildren();
  lock(true);get<HTMLButtonElement>('session-refresh').disabled=false;
  if(next&&current)return load();
+}
+/** Refresh confirmed day metadata without rebuilding live profile or scene inputs. */
+async function refreshDay(){
+ if(!workspace||!plan)return;const token=workspace.token,id=plan.id,revision=plan.revision,gen=generation,request=++dayRequest;
+ const current=()=>workspace?.token===token&&plan?.id===id&&plan.revision===revision&&generation===gen&&request===dayRequest;
+ try{const result=unwrap(await window.campaign.session(token,id));if(!current())return;if(result.profile.planId!==id||result.plan&&(result.plan.id!==id||result.plan.revision!==revision))throw new Error('Tagesplan inzwischen geändert. Spielabend-Inhalte aktualisieren.');view=result;if(profileDraft)dayPanel?.render(plan!,result,profileDraft);lock(!!pending);}
+ catch(error){if(current())tell((error as Error).message,true);}
 }
 async function load(){
  if(!workspace||!plan)return;
@@ -134,7 +144,7 @@ const lockedControls=new WeakMap<HTMLInputElement|HTMLSelectElement|HTMLButtonEl
 function lock(on:boolean){
  on=on||!!workspace&&hasPendingCommit(workspace.campaign.id);
  get<HTMLButtonElement>('plan-replace').disabled=on||!workspace||!plan;
- for(const id of ['session-panel','visit-preparation','plan-replacement-dialog'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
+ for(const id of ['session-panel','session-day-plan','visit-preparation','plan-replacement-dialog'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
   const liveInput=inputWriting?.token===workspace?.token&&inputWriting?.generation===generation&&inputWriting?.planId===plan?.id&&c instanceof HTMLInputElement&&c.type!=='checkbox'&&(inputWriting.kind==='profile'?(!!c.closest('#session-profile-form')||c.id==='session-scene-count'):!!c.closest('#visit-reward-items'));
   if(on&&liveInput)continue;
   if(on){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
@@ -170,7 +180,7 @@ function render(){if(!view||!profileDraft)return;get<HTMLInputElement>('session-
 }
 function checkbox(root:HTMLElement,id:string,text:string,checked:boolean){const label=document.createElement('label'),box=document.createElement('input');label.className='check-label';box.type='checkbox';box.value=id;box.checked=checked;label.append(box,document.createTextNode(text));root.append(label);return box;}
 function renderParty(){const root=get('session-party-levels');root.replaceChildren();if(profileDraft?.party.length){const head=document.createElement('div');head.className='session-party-row caption';for(const text of ['Figuren','Level','Anzahl','']){const label=document.createElement('span');label.textContent=text;head.append(label);}root.append(head);}for(const p of profileDraft?.party??[]){const row=document.createElement('div');row.className='session-party-row';const name=document.createElement('span'),level=document.createElement('input'),count=document.createElement('input');name.textContent=p.name;level.type='number';level.min='1';level.max='20';level.value=p.level===null?'':String(p.level);level.placeholder='Level';level.setAttribute('aria-label','Planungslevel '+p.name);count.type='number';count.min='1';count.value=String(p.count);count.setAttribute('aria-label','Planungsanzahl '+p.name);level.oninput=()=>{p.level=level.value?Number(level.value):null;profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};count.oninput=()=>{p.count=Number(count.value);profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};const remove=document.createElement('button');remove.type='button';remove.textContent='Entfernen';remove.setAttribute('aria-label',p.name+' aus der Planung entfernen');remove.onclick=()=>{if(!profileDraft)return;profileDraft.party=profileDraft.party.filter(row=>row.id!==p.id);profileDirty=true;scheduleSession('Planungseingabe offen.');render();};row.append(name,level,count,remove);root.append(row);}budget();}
-function budget(){try{
+function budget(){if(plan&&view&&profileDraft)dayPanel?.render(plan,view,profileDraft);try{
  const party=profileDraft?.party??[];
  if(!party.length||party.some(p=>p.level===null)){get('session-budget').textContent='Manuelle Vorbereitung bleibt möglich. Für die Generierung fehlen bekannte Party-Level.';return;}
  const targets=sessionTargets(party,value('session-fraction'),value('session-seed'),value('session-scene-count').trim()?Number(value('session-scene-count')):null);
@@ -410,6 +420,7 @@ export async function clearSessionTimeline(){
  return execute({kind:'replace-plan',planId:owner.planId,expectedBasis:target.replacementBasis,name:plan.name,sourcePlanId:null,expectedSourceBasis:null,copyParty:false});
 }
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote,edited:()=>void=()=>{},offerVisit?:(planId:string,visitId:string,current:()=>boolean)=>Promise<void>){
+ dayPanel=new SessionDayPanel(async(action,current)=>{if(!current()||!await baseFlush()||!current()||!await flushSession()||!current())return false;return execute(action);},async(id,current)=>{if(!current()||!await baseFlush()||!current()||!await flushSession()||!current())return;await baseRefresh(id,plan?.id);},status);
  const preferenceRoot=get('session-composition-preferences');for(const key of Object.keys(compositionPreferences) as CompositionPreference[]){const label=document.createElement('label');label.textContent=compositionPreferences[key].label+' ';label.append(preferenceSelect(key,'session-'+key,true));preferenceRoot.append(label);}
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});

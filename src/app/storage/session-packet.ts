@@ -1,3 +1,4 @@
+import {restLabel} from '../session-day';
 import {readNarrative} from './narrative';
 import {readSessionProgress} from './visit-outcomes';
 import {visitOutcomeLabel} from '../visit-outcome-contracts';
@@ -51,6 +52,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
   }
   for(const id of noteIds)blocks.push(...note(id));
   const r=detail.reward;if(r)blocks.push({heading:'Belohnung',kind:'reward',action:{kind:'reward'},text:[r.poolXp+' Gruppen-XP',r.awarded?'XP bereits vergeben':'XP noch nicht vergeben',r.placedTreasureId?'Beute bereits platziert':'Beute noch nicht platziert',...r.items.map(i=>`${i.quantity} × ${i.name} · ${i.valueGold} GM je Stück · ${i.category}`)].join('\n')});
+  if(detail.allocationXp!==undefined)blocks.push({heading:'Geplantes Szenenbudget',kind:'gm',text:detail.allocationXp+' angepasste XP · Ziel für diese Szene'});if(detail.restAfter)blocks.push({heading:restLabel(detail.restAfter.kind)+' nach dieser Szene',kind:'gm',text:'Vor '+(plan.scenes[index+1]?.title||'der nächsten Szene')+'. Beim Spielen ausdrücklich rasten; dieser Eintrag plant nur die Pause.'});
   const played=progress.visits[index]!;if(played.count)blocks.push({heading:'Spielverlauf · '+played.count+' Übernahmen',kind:'gm',text:played.occurrences.map(o=>(o.sceneTitle||'Gruppe')+' · '+(o.outcome?visitOutcomeLabel(o.outcome.status):'Begonnen, Ergebnis noch offen')+(o.outcome?' · '+o.outcome.recordedAt+'\n'+o.outcome.text:'')).join('\n\n')+(played.count>5?'\n\nNur die fünf neuesten Übernahmen angezeigt.':'')});
   return {id:v.id,title:v.title||'Besuch '+(index+1),locationId:v.locationId,location:v.locationId?locations.get(v.locationId)??'Nicht verfügbarer Ort':null,blocks};
  });

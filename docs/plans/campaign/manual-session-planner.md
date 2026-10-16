@@ -234,3 +234,24 @@ Gesamtruns, semantischer Origin-Deduplizierung, strukturierten Warncodes und
 vollständiger Loot-/Packing-Parität ist daraus nicht ableitbar. Aktuelle Runs
 enthalten weiterhin editierbare Vorschläge und die vorhandenen getrennten
 Beuteausgleichs-/Tabellenpfade.
+
+## Tagesbelastung, Szenenziele und Rasten
+
+Der manuelle Plan zeigt die tatsächlichen angepassten XP seiner angehängten
+Begegnungen, das gesamte Planungsbudget und verbleibende oder überschrittene XP.
+Mehrere Gruppen derselben Szene werden gemeinsam bewertet. Leere Szenen tragen
+keine Gegner-XP bei; unbekannte Level oder XP bleiben sichtbar offen. Jede Szene
+kann ein eigenes nichtnegatives XP-Ziel erhalten, einschließlich ausdrücklich 0.
+
+Kurze und lange Rasten werden ausschließlich zwischen zwei Nachbarszenen
+geplant. Die lange Rast beginnt einen neuen Belastungsabschnitt; das gesamte
+Planungsbudget bleibt unverändert. Vorschläge nach XP-Belastung sind Hinweise,
+keine automatische Rast oder Änderung der Partywerte. Ziele und geplante Rasten
+stehen auch in der GM-Mappe. Umordnen entfernt nur auseinandergerissene
+Rastbindungen; Kopieren und Ersetzen binden erhaltene Nachbarpaare an neue IDs.
+Der Schreibauftrag prüft angezeigte Plan- und Besuchsrevision atomar.
+
+[Gezielte Prüfungen](../../../tests/desktop-session-day.test.mjs) decken Budget,
+Restbindung, Quelle, Reopen, Replay, Kopie und entfernte Controls ab. Der
+vollständige ursprüngliche Session-Planner-Umfang, insbesondere die asynchrone
+Ein-Schritt-Generierung und strukturierte Reward-Orchestrierung, bleibt offen.
