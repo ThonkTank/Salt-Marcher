@@ -1,3 +1,4 @@
+import {openDesktopKeyFromAtlas} from './qa-key-entry.mjs';
 import {currentProcessGroup} from './process-group.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,readFile,writeFile,stat} from 'node:fs/promises';
@@ -36,7 +37,7 @@ async function launch(){
  if(await page.locator('#tutorial-dialog').isVisible())await page.locator('#tutorial-skip').click();
  await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.locator('#workspace-navigation').waitFor({state:'visible'});if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();
  await page.locator('#atlas-tab').click();
- await page.locator('#key-open').click();await page.locator('#key-dialog').waitFor({state:'visible'});
+ await openDesktopKeyFromAtlas(page);await page.locator('#key-dialog').waitFor({state:'visible'});
  return page;
 }
 async function close(){
