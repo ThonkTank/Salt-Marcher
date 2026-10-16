@@ -1,3 +1,4 @@
+import {adjustedHitDamage} from '../damage-adjustment';
 import {npcRecord} from './npc-record';
 import {npcPosition} from './npc-world';
 import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
@@ -233,9 +234,9 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
             else{if(!a.legendary||a.legendary.participantId!==attacker.id||a.legendary.actionId!==action.id)throw new Error('Legendärer Treffer benötigt die passenden Aktionskosten.');spendLegendaryAction(state,attacker.id,action.id,a.legendary.cost);}
           }else if(a.legendary||a.paidLegendary)throw new Error('Dieser Angriff ist keine legendäre Aktion.');
           const known=new Map(creatureActionRolls(action).filter(roll=>roll.kind==='damage').map(roll=>[creatureRollKey(roll),roll])),keys=new Set<string>(),checks=new Set<string>();let total=0;
-          for(const part of a.components){const preset=part&&known.get(part.key);if(!preset||keys.has(part.key)||!Number.isSafeInteger(part.amount)||part.amount<0||part.amount>1000000||!['full','half','double','none'].includes(part.scale))throw new Error('Schadensanteile müssen eindeutig aus der Aktion stammen und gültige Beträge enthalten.');keys.add(part.key);
+          for(const part of a.components){const preset=part&&known.get(part.key);if(!preset||keys.has(part.key)||!Number.isSafeInteger(part.amount)||part.amount<0||part.amount>1000000||!['auto','full','half','double','none'].includes(part.scale))throw new Error('Schadensanteile müssen eindeutig aus der Aktion stammen und gültige Beträge enthalten.');keys.add(part.key);
             if(part.sourceCheckId){const check=readCheck(part.sourceCheckId);if(checks.has(check.id)||check.formulaKind!=='damage'||check.total!==part.amount||check.formula!==(a.critical?criticalDamageFormula(preset.formula):preset.formula)||check.label!==preset.label+(a.critical?' · Kritisch':''))throw new Error('Schadensbetrag passt nicht zum gespeicherten Anteil.');checks.add(check.id);}
-            total+=part.scale==='half'?Math.floor(part.amount/2):part.scale==='double'?part.amount*2:part.scale==='none'?0:part.amount;
+            const adjusted=adjustedHitDamage(preset,part.amount,part.scale,state.sources?.find(source=>source.id===p.sourceId));if(adjusted.amount===null)throw new Error(adjusted.note);total+=adjusted.amount;
           }
           if(!Number.isSafeInteger(total)||total>1000000)throw new Error('Gesamtschaden überschreitet 1.000.000.');
           if(total)applyCombatDamage(p,total,a.critical);if(legendary)attacker.legendaryActions!.hitResolved=true;

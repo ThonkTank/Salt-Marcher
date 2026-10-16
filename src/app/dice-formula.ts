@@ -1,7 +1,7 @@
 import type {Creature,CreatureAction} from '../features/catalog/creature-catalog';
 
 export interface ParsedDiceFormula {count:number;sides:number;modifier:number;formula:string}
-export interface CreatureRollPreset {kind:'attack'|'damage'|'save'|'check';label:string;formula:string;dc:number|null}
+export interface CreatureRollPreset {kind:'attack'|'damage'|'save'|'check';label:string;formula:string;dc:number|null;damageType?:string}
 export const creatureRollKey=(preset:CreatureRollPreset)=>[preset.kind,preset.label,preset.formula,preset.dc??''].join('\0');
 export function legendaryActionCost(action:Pick<CreatureAction,'name'>){const match=/\(\s*costs?\s+(\d+)\s+actions?\s*\)/i.exec(action.name),cost=match?Number(match[1]):1;return Number.isSafeInteger(cost)&&cost>=1&&cost<=3?cost:1;}
 
@@ -22,7 +22,7 @@ export function creatureActionRolls(action:CreatureAction):CreatureRollPreset[]{
   const attack=/([+-]\s*\d+)\s+to hit/i.exec(action.description);
   if(attack){const modifier=Number(attack[1]!.replace(/\s/g,''));add({kind:'attack',label:action.name+' · Angriff',formula:'1d20'+(modifier>=0?'+':'')+modifier,dc:null});}
   const damage=/\d+\s*\((\d{1,3}d\d{1,5}(?:\s*[+-]\s*\d{1,6})?)\)\s*([a-z]+)\s+damage/gi;
-  for(let match; (match=damage.exec(action.description));)add({kind:'damage',label:action.name+' · '+match[2]+' Schaden',formula:parseDiceFormula(match[1]!).formula,dc:null});
+  for(let match; (match=damage.exec(action.description));)add({kind:'damage',label:action.name+' · '+match[2]+' Schaden',formula:parseDiceFormula(match[1]!).formula,dc:null,damageType:match[2]!.toLowerCase()});
   const resisted=/DC\s+(\d+)\s+([A-Za-z]+)\s+(saving throw|check)/gi;
   for(let match; (match=resisted.exec(action.description));){const kind=match[3]!.toLowerCase()==='check'?'check':'save';add({kind,label:action.name+' · '+match[2]+' '+(kind==='save'?'Rettungswurf':'Probe'),formula:'1d20',dc:Number(match[1])});}
   return found;

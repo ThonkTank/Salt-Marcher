@@ -37,7 +37,7 @@ export type CombatAction =
   | { kind: 'add'; name: string; count: number; grouped: boolean; maxHp: number; armorClass: number; initiativeBonus: number }
   | { kind: 'edit'; participantId: string; changes: Partial<Pick<Combatant, 'name' | 'initiative' | 'initiativeBonus' | 'armorClass' | 'hp' | 'maxHp' | 'tempHp' | 'conditions' | 'concentrating' | 'xp' | 'countForMultiplier'>> }
   | { kind: 'damage'; participantId: string; amount: number; sourceCheckId?:string; sourceScale?:'full'|'half'|'double' }
-  | { kind:'hit';participantId:string;critical:boolean;source:{participantId:string;actionId:string};components:{key:string;amount:number;scale:'full'|'half'|'double'|'none';sourceCheckId?:string}[];attackCheckId?:string;legendary?:{participantId:string;actionId:string;cost:number};paidLegendary?:boolean }
+  | { kind:'hit';participantId:string;critical:boolean;source:{participantId:string;actionId:string};components:{key:string;amount:number;scale:'auto'|'full'|'half'|'double'|'none';sourceCheckId?:string}[];attackCheckId?:string;legendary?:{participantId:string;actionId:string;cost:number};paidLegendary?:boolean }
   | { kind:'area-damage';amount:number;targets:{participantId:string;scale:'full'|'half'|'none'}[];source?:{participantId:string;actionId:string};legendary?:{participantId:string;actionId:string;cost:number} }
   | { kind: 'heal'; participantId: string; amount: number }
   | { kind: 'revive'; participantId: string; hp: number }
