@@ -1,14 +1,11 @@
 import {createHash} from 'node:crypto';
 import {canonicalJson} from '../generation/canonical-json';
 import type {CampaignCatalogCommand,CampaignCatalogReceipt} from '../campaign-contracts';
+import {validateCampaignCatalogCommand} from '../campaign-catalog-command';
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 export function installCampaignCatalog(db:any){db.exec(`CREATE TABLE IF NOT EXISTS campaign_usage(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id),created_at TEXT,last_opened_at TEXT) STRICT;CREATE TABLE IF NOT EXISTS campaign_catalog_receipt(command_id TEXT PRIMARY KEY,subject_id TEXT NOT NULL,fingerprint TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;`);}
 export function catalogCommand(c:CampaignCatalogCommand){
- if(!c||typeof c.commandId!=='string'||!c.commandId||c.commandId.length>128||!['create','open','rename','trash','erase'].includes(c.kind))throw new Error('Kampagnenauftrag ungültig.');
- if(c.kind==='create'||c.kind==='rename')if(typeof c.name!=='string'||!c.name.trim()||c.name.trim().length>100)throw new Error('Kampagnenname benötigt 1–100 Zeichen.');
- if(c.kind!=='create'&&(typeof c.id!=='string'||!c.id))throw new Error('Kampagnenkennung fehlt.');
- if(c.kind==='rename'||c.kind==='trash'||c.kind==='erase')if(!Number.isSafeInteger(c.expectedRevision)||c.expectedRevision<0)throw new Error('Kampagnenstand fehlt.');
- if(c.kind==='trash'&&typeof c.trashed!=='boolean')throw new Error('Papierkorbaktion ungültig.');
+ validateCampaignCatalogCommand(c);
  return hash(canonicalJson(c));
 }
 export function catalogOutcome(db:any,c:CampaignCatalogCommand):CampaignCatalogReceipt|null{

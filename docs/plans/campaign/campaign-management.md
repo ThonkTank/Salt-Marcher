@@ -54,7 +54,7 @@ Pipeline oder Migration eingeführt.
 Storebelegen: erfolgloser Intentwrite ohne Dispatch, Name erhalten und Retry
 nur einmal; Cleanupfehler nach bestätigter Erstellung, zugängliche Arbeitsfläche
 und Wiederinitialisierung mit Statuslesen bei unveränderten DBbytes. Das
-qualifiziert weder beschädigte Vermerke noch vollständige Disk-/Crashfälle.
+qualifiziert zunächst weder beschädigte Vermerke noch vollständige Disk-/Crashfälle.
 Ein vor Dispatch gesicherter, nach Neustart aber nachweislich ungebuchter Auftrag
 ist ein eigener Wiederaufnahmefall. `check` liest nach dem null-Beleg zuerst den
 aktuellen Kampagnenkatalog. Scheitert dieser Read, bleibt der ursprüngliche
@@ -72,11 +72,51 @@ Aktivierung und fehlerhaftes Kataloglesen ohne Verlust des Vermerks. Eine native
 Profil-Neustartprobe prüft den vor Dispatch gesicherten Create-Intent, reine
 Statusprüfung mit unveränderten Datenbankbytes und genau eine ausdrückliche
 Erstellung nach Wiederherstellung des Namens. Rename-/Erase-Neustart, unbekannte
-Outcomes und beschädigte Vermerke behalten eigene Abnahmen.
+Outcomes und vollständige Disk-/Crashfälle behalten eigene Abnahmen.
+
+## Unlesbare lokale Auftragsvermerke
+
+`campaign-catalog-command.ts` validiert denselben unveränderten Commandvertrag
+vor dem Storefingerprint und beim Wiederlesen lokaler Absichten. Die Prüfung
+normalisiert keine Namen, IDs oder Bytes und ändert bestehende Belege nicht.
+Ein fehlender Schlüssel bedeutet keine offene Absicht; ein Lesefehler oder
+ungültiges JSON/Commandformat bedeutet dagegen ausdrücklich unklaren Zustand.
+Die Kampagnenliste bleibt lesbar, neue Identitätsaufträge bleiben gesperrt und
+die Warnung bleibt nach dem Katalogread sichtbar. „Auftragsvermerk erneut lesen“
+versucht nur den lokalen Read und danach für einen gültigen Command den
+vorhandenen Buchungsstatus. Es sendet keine Mutation. Ungebuchte gültige
+Absichten erhalten weiterhin ihre Dialogfelder und brauchen neue Bestätigung.
+
+Bei beschädigten lesbaren Bytes zeigt der Bildschirm das Original als
+schreibgeschützten Text. Ausschließlich „Beschädigten Vermerk sichern und
+freigeben“ kopiert es unter eine neue lokale Sicherungskennung und prüft die
+wortgetreue Rücklesbarkeit. Nur wenn auch der aktuelle ursprüngliche Schlüssel
+noch dieselben Bytes enthält, wird dieser entfernt. Geänderte Vermerke werden
+neu gelesen; fehlgeschlagene Sicherung oder Entfernung erhält die Sperre. Ein erneuter Versuch
+verwendet eine schon bestätigte Sicherung desselben Originals weiter.
+Ein bloßer Zugriffsfehler ohne gelesene Bytes bietet keine Freigabe. Die
+Sicherung bleibt auf demselben Gerät, gehört nicht zum Kampagnenpaket und ist
+kein zweites Buchungsjournal. Der Bildschirm erklärt, dass bereits gebuchte
+Wirkungen weder zurückgenommen noch automatisch wiederholt werden; vor einem
+neuen Auftrag ist der aktuelle Kampagnenstand maßgeblich. Keine DBmigration.
+
+Die gezielten DOM-/Storefälle prüfen einen bereits gebuchten Create-Command
+nach vorübergehend fehlendem lokalem Lesezugriff, JSON-/Formatfehler, unveränderte
+Originalbytes, Sicherungs-/Entfernungsfehler, ausgetauschte Vermerke und erst
+nach der Freigabe ausdrücklich erstellte Kampagnen. Die reine Statusklärung
+und lokale Sicherung verändern keine Datenbankbytes. Vollständige
+Disk-/Crash-/Mehrfensterqualifikation bleibt eine eigene Abnahme. Nativ geprüft:
+Lesefehler nach Profilreload, Sperre und reine Belegprüfung vor Freigabe des
+Arbeitsflächenladens, Sicherungsfehler, explizite Freigabe, Auswahl zwischen
+zwei gleichnamigen Identitäten und Profilneustart mit erhaltener Sicherung und
+Originalnotiz. Zwei normale Exits, keine Rendererfehler. Das vollständige
+Arbeitsflächenladen speichert die gewählte Vorbereitungsnotiz als UI-Präferenz;
+dies ist von der bytegleichen Belegprüfung und lokalen Sicherung getrennt.
+
 
 Weitere Abnahme am selben Kampagnenweg: Browser-/Profilneustart mit offenem
-Vermerk vor und nach Storecommit, unlesbarer oder beschädigter Vermerk mit
-klarer Wiederaufnahme, abgewiesene Registry-/Medienwrites und anschließendes
+Vermerk vor und nach Storecommit, Vermerkwiederaufnahme einschließlich Prozessabbruch zwischen lokaler Sicherung
+und Schlüsselentfernung, abgewiesene Registry-/Medienwrites und anschließendes
 sicheres Lesen/Exportieren. Die jeweilige Commandkennung und ihr Storebeleg
 bleiben Grundlage; kein blindes Wiederholen einer unbekannten Mutation.
 

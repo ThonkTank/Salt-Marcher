@@ -1,3 +1,4 @@
+import type {DamageScale,DamageType} from './damage-adjustment';
 import type {CombatDraftAPI} from './combat-draft-contracts';
 import type { Result } from './contracts';
 import {checkedHealth,type FinishRewards,type CombatReward,type CharacterHealth,type DeathSaveResult} from './progression';
@@ -39,7 +40,7 @@ export type CombatAction =
   | { kind: 'edit'; participantId: string; changes: Partial<Pick<Combatant, 'name' | 'groupName' | 'initiative' | 'initiativeBonus' | 'armorClass' | 'hp' | 'maxHp' | 'tempHp' | 'conditions' | 'concentrating' | 'xp' | 'countForMultiplier'>> }
   | { kind: 'damage'; participantId: string; amount: number; sourceCheckId?:string; sourceScale?:'full'|'half'|'double' }
   | { kind:'hit';participantId:string;critical:boolean;source:{participantId:string;actionId:string};components:{key:string;amount:number;scale:'auto'|'full'|'half'|'double'|'none';sourceCheckId?:string}[];attackCheckId?:string;legendary?:{participantId:string;actionId:string;cost:number};paidLegendary?:boolean }
-  | { kind:'area-damage';amount:number;targets:{participantId:string;scale:'full'|'half'|'none'}[];source?:{participantId:string;actionId:string};legendary?:{participantId:string;actionId:string;cost:number} }
+  | { kind:'area-damage';amount:number;damageType?:DamageType;targets:{participantId:string;scale:'full'|'half'|'none';defense?:DamageScale}[];source?:{participantId:string;actionId:string};legendary?:{participantId:string;actionId:string;cost:number} }
   | { kind: 'heal'; participantId: string; amount: number }
   | { kind: 'revive'; participantId: string; hp: number }
   | { kind: 'death'; participantId:string;result:DeathSaveResult }

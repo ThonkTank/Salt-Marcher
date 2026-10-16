@@ -19,6 +19,18 @@ keine Reisezeit und öffnet keine Encounter-/Suchhinweise. Bestätigte Bewegung
 prüft diese Hinweise weiterhin und hält zur GM-Klärung an. Bereits offene
 Hinweise bleiben bei einer freien Platzierung erhalten.
 
+Passagenlinks prüfen neben Scope und Entfernung auch den Raum und das Geschoss
+der Gruppe gegen den Quellanker. Überlagerte Rasterkoordinaten eines anderen
+Geschosses erlauben keinen Durchgang. Fehlende Orts-/Passagenziele und ungebundene
+Zielpassagen bleiben mit lokaler Beschreibung sichtbar, sind aber keine aktivierten
+Reiseaktionen. Die Oberfläche verwendet den vorhandenen `passageStatuses`-Read;
+der Writer prüft das Ziel erneut und verwirft einen ungültigen Befehl atomar.
+`desktop-dungeon-passage.test.mjs` prüft diese Grenzen sowie gültige Landung,
+konfigurierte Zusatzzeit, Receiptwiederholung und Fresh. Gewöhnliche Durchgangszeit
+zusätzlich zur Autoren-Zusatzzeit und Heading bei verlinkter Landung bleiben
+separat aus dem vollständigen Reisevertrag zu liefern; der Linktest bestätigt sie
+nicht.
+
 Beim unabhängigen Kampagnentransfer binden `campaign-data.ts` und
 `dungeonGeometryBasis` ausschließlich zuvor aktuelle Geometriebasen an die neuen
 lokalen Kennungen. Dasselbe gilt für die ursprüngliche Spurbasis einer Verfolgung.

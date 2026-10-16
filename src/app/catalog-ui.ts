@@ -21,7 +21,12 @@ let generation=0,searchRequest=0,listRequest=0,planRequest=0,creatureRequest=0,p
 const owned=(token:string|undefined,g:number)=>generation===g&&workspace?.token===token;
 let saving:Promise<boolean>|null=null,timer:ReturnType<typeof setTimeout>|null=null,searchTimer:ReturnType<typeof setTimeout>|null=null;
 let tell:(text:string,error?:boolean)=>void,prepare:(plan:EncounterPlan)=>Promise<void>;
-let tableLookupQuery:CreatureCatalogQuery|null=null;
+let tableLookupQuery:CreatureCatalogQuery|null=null,startingPlan=false;
+function renderCatalogPlan(){
+ const button=get<HTMLButtonElement>('catalog-add');button.disabled=!creature||!workspace||blocked||startingPlan;button.textContent=startingPlan?'Vorlage wird angelegt …':plan?'Zur Vorlage hinzufügen':'Neue Vorlage mit Auswahl beginnen';
+ get('catalog-plan-open').textContent=plan?'Vorlage: '+plan.name+' ↓':'Gespeicherte Vorlagen / leere Vorlage ↓';
+ const summary=get('catalog-plan-roster');summary.hidden=!plan;summary.textContent=plan?(plan.entries.length?plan.entries.map(e=>encounterEntryLabel(e,plan!.sources)).join(' · '):'Noch keine Kreaturen hinzugefügt.')+'\n'+get('encounter-assessment').textContent:'';
+}
 function clearSaveTimer(){if(timer)clearTimeout(timer);timer=null;}
 function clearSearchTimer(){if(searchTimer)clearTimeout(searchTimer);searchTimer=null;}
 function clearResults(text:string,loading=false,error=false){
@@ -44,7 +49,7 @@ function renderCatalogControls(){
 function adoptPlan(next:EncounterPlan,invalidateRequests=true){clearSaveTimer();saving=null;if(invalidateRequests)planRequest++;partyRequest++;editVersion++;plan=next;dirty=next.revision===0;blocked=false;get<HTMLDetailsElement>('encounter-library').open=false;get<HTMLDetailsElement>('encounter-party-details').open=next.party.length===0;renderPlan();}
 export function activateCatalog(next:Workspace){
  clearSaveTimer();clearSearchTimer();saving=null;itemReference?.activate();
- workspace=next;generation++;searchRequest++;clearResults('Katalog noch nicht geladen.');listRequest++;planRequest++;creatureRequest++;partyRequest++;
+ workspace=next;startingPlan=false;generation++;searchRequest++;clearResults('Katalog noch nicht geladen.');listRequest++;planRequest++;creatureRequest++;partyRequest++;
  plan=null;creature=null;dirty=false;blocked=false;get('catalog-add-result').hidden=true;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;
  activateGeneration(next);renderCreatureSelection();void refreshPlans();
 }
@@ -88,7 +93,7 @@ function renderCreatureSelection(message='Wähle eine Kreatur, um ihren vollstä
  const root=get('catalog-detail');root.setAttribute('aria-busy',String(loading));
  if(creature){root.removeAttribute('role');renderCreatureDetail(root,creature);}else{root.setAttribute('role',error?'alert':'status');root.textContent=message;}
  generationCreature(creature);for(const button of get('catalog-rows').querySelectorAll<HTMLButtonElement>('button[data-creature-id]'))button.setAttribute('aria-pressed',String(button.dataset.creatureId===creature?.id));
- get<HTMLButtonElement>('catalog-add').disabled=!creature||!plan||blocked;get<HTMLButtonElement>('catalog-live-add').disabled=!creature||!workspace;
+ renderCatalogPlan();get<HTMLButtonElement>('catalog-live-add').disabled=!creature||!workspace;
 }
 function revealCreatureDetail(fromPlan=false){
  if(tableLookupQuery||!fromPlan&&!window.matchMedia?.('(max-width:1100px)').matches)return;
@@ -122,7 +127,7 @@ function save():Promise<boolean>{
     dirty=editVersion!==version;
    }
    if(!owned(w.token,g)||plan!==draft)return false;tell('Encounter-Vorlage gespeichert.');void refreshPlans();return true;
-  }catch(error){if(owned(w.token,g)&&plan===draft){blocked=true;tell((error as Error).message+' Entwurf bleibt offen. Lade den gespeicherten Stand oder erstelle eine Kopie.',true);}return false;}
+  }catch(error){if(owned(w.token,g)&&plan===draft){blocked=true;renderCatalogPlan();tell((error as Error).message+' Entwurf bleibt offen. Lade den gespeicherten Stand oder erstelle eine Kopie.',true);}return false;}
   finally{if(saving===task)saving=null;}
  });saving=task;return task;
 }
@@ -140,12 +145,13 @@ async function loadPlan(id:string,reload=false){
   adoptPlan(unwrap(response));
  }catch(error){if(owned(w.token,g)&&request===planRequest)tell((error as Error).message,true);}
 }
-async function newPlan(copy=false){
+async function newPlan(copy=false,initial?:{creature:Creature;count:number;grouped:boolean}){
  const w=workspace,source=plan,g=generation,request=++planRequest;if(!w){tell('Öffne eine Kampagne, um Encounter-Vorlagen zu speichern.',true);return;}if(copy&&!source)return;
  if(copy&&blocked){if(!await flushGeneration())return;}else if(!await flushCatalog())return;
  if(!owned(w.token,g)||request!==planRequest)return;
  const next:EncounterPlan=copy?{...structuredClone(source!),id:crypto.randomUUID(),revision:0,name:source!.name+' (Kopie)',party:source!.party.map(p=>({...p,id:crypto.randomUUID()})),entries:source!.entries.map(e=>({...e,id:crypto.randomUUID()}))}:{id:crypto.randomUUID(),revision:0,name:'Neue Begegnung',notes:'',party:[],entries:[],sources:[],catalogHash:info?.hash??''};
- adoptPlan(next);get('encounter-name').focus();await save();
+ if(initial){next.name=initial.creature.name+' – Begegnung';next.entries.push({id:crypto.randomUUID(),creatureId:initial.creature.id,count:initial.count,grouped:initial.grouped});next.sources.push(initial.creature);}
+ adoptPlan(next);if(!initial)get('encounter-name').focus();await save();
 }
 async function currentParty(){
  const w=workspace,source=plan,g=generation,request=++partyRequest;if(!w||!source)return;const party=JSON.stringify(source.party);
@@ -154,9 +160,9 @@ async function currentParty(){
  }catch(error){if(owned(w.token,g)&&plan===source&&request===partyRequest)tell((error as Error).message,true);}
 }
 
-function renderAssessment(){generationPlanningChanged(plan?.party??null,plan);get('encounter-party-summary').textContent='Planungsparty · '+(plan?.party.reduce((n,p)=>n+p.count,0)??0)+' Figuren';try{const assessment=plan?assessEncounter(plan.party,plan.entries.map(e=>({xp:plan!.sources.find(c=>c.id===e.creatureId)?.xp,count:e.count}))):null;get('encounter-assessment').textContent=assessment?assessment.baseXp+' Basis-XP · ×'+assessment.multiplier+' · '+assessment.adjustedXp+' angepasste XP · '+(assessment.difficulty??'Schwierigkeit unbekannt: Party-Level fehlen')+(assessment.partySize?' · '+assessment.partySize+' geplante Figuren':' · Ohne Planungsparty'):'';get('encounter-thresholds').textContent=assessment&&assessment.partySize&&!assessment.unknownLevels?'Schwellen: Leicht '+assessment.thresholds[0]+' · Mittel '+assessment.thresholds[1]+' · Schwer '+assessment.thresholds[2]+' · Tödlich '+assessment.thresholds[3]:'';}catch(error){get('encounter-assessment').textContent=(error as Error).message;get('encounter-thresholds').textContent='';}}
+function renderAssessment(){generationPlanningChanged(plan?.party??null,plan);get('encounter-party-summary').textContent='Planungsparty · '+(plan?.party.reduce((n,p)=>n+p.count,0)??0)+' Figuren';try{const assessment=plan?assessEncounter(plan.party,plan.entries.map(e=>({xp:plan!.sources.find(c=>c.id===e.creatureId)?.xp,count:e.count}))):null;get('encounter-assessment').textContent=assessment?assessment.baseXp+' Basis-XP · ×'+assessment.multiplier+' · '+assessment.adjustedXp+' angepasste XP · '+(assessment.difficulty??'Schwierigkeit unbekannt: Party-Level fehlen')+(assessment.partySize?' · '+assessment.partySize+' geplante Figuren':' · Ohne Planungsparty'):'';get('encounter-thresholds').textContent=assessment&&assessment.partySize&&!assessment.unknownLevels?'Schwellen: Leicht '+assessment.thresholds[0]+' · Mittel '+assessment.thresholds[1]+' · Schwer '+assessment.thresholds[2]+' · Tödlich '+assessment.thresholds[3]:'';}catch(error){get('encounter-assessment').textContent=(error as Error).message;get('encounter-thresholds').textContent='';}renderCatalogPlan();}
 function renderPlan(){get('encounter-editor').hidden=!plan;if(!plan)return;get<HTMLInputElement>('encounter-name').value=plan.name;get<HTMLTextAreaElement>('encounter-notes').value=plan.notes;const party=get('encounter-party');party.replaceChildren();for(const p of plan.party){const row=document.createElement('div');row.className='encounter-party-row';const name=document.createElement('input'),level=document.createElement('input'),count=document.createElement('input'),remove=document.createElement('button');name.value=p.name;name.maxLength=1000;name.setAttribute('aria-label','Geplanter Name');level.type='number';level.min='1';level.max='20';level.value=p.level===null?'':String(p.level);level.placeholder='Level unbekannt';level.setAttribute('aria-label','Geplantes Level');count.type='number';count.min='1';count.max='10000';count.value=String(p.count);count.setAttribute('aria-label','Anzahl geplanter Figuren');remove.textContent='Entfernen';remove.onclick=()=>{plan!.party=plan!.party.filter(c=>c.id!==p.id);renderPlan();schedule();};name.oninput=()=>{p.name=name.value;schedule();};level.oninput=()=>{p.level=level.value?Number(level.value):null;schedule();};count.oninput=()=>{p.count=Number(count.value);schedule();};row.append(name,level,count,remove);party.append(row);}
- const rows=get('encounter-entries');rows.replaceChildren();for(const e of plan.entries){const c=plan.sources.find(c=>c.id===e.creatureId),row=document.createElement('div');row.className='encounter-entry-row';const name=document.createElement('button'),count=document.createElement('input'),label=document.createElement('label'),group=document.createElement('input'),remove=document.createElement('button');name.textContent=(e.worldActorIds?encounterEntryLabel(e,plan.sources):c?.name??e.creatureId)+' · HG '+(c?.challengeRating??'?');name.onclick=()=>{void selectCreature(e.creatureId,true);};count.type='number';count.min='1';count.max='1000';count.value=String(e.count);count.min=String(Math.max(1,e.worldActorIds?.length??0));count.disabled=!!e.worldActorIds?.length&&e.worldActorIds.length===e.count&&!e.allowAnonymous;count.setAttribute('aria-label','Anzahl '+(c?.name??e.creatureId));count.oninput=()=>{e.count=Number(count.value);schedule();};group.type='checkbox';group.checked=e.grouped;group.onchange=()=>{e.grouped=group.checked;schedule();};label.className='check-label';label.append(group,document.createTextNode('Gemeinsame Initiative'));remove.textContent='Entfernen';remove.onclick=()=>{plan!.entries=plan!.entries.filter(p=>p.id!==e.id);renderPlan();schedule();};const title=document.createElement('input');title.className='encounter-group-name';title.maxLength=120;title.value=e.groupName??'';title.placeholder='Truppname (optional), z. B. Schützen';title.setAttribute('aria-label','Truppname '+(c?.name??e.creatureId));title.oninput=()=>{e.groupName=title.value;schedule();};row.append(name,count,label,remove,title);rows.append(row);}renderAssessment();get<HTMLButtonElement>('catalog-add').disabled=!creature||blocked;}
+ const rows=get('encounter-entries');rows.replaceChildren();for(const e of plan.entries){const c=plan.sources.find(c=>c.id===e.creatureId),row=document.createElement('div');row.className='encounter-entry-row';const name=document.createElement('button'),count=document.createElement('input'),label=document.createElement('label'),group=document.createElement('input'),remove=document.createElement('button');name.textContent=(e.worldActorIds?encounterEntryLabel(e,plan.sources):c?.name??e.creatureId)+' · HG '+(c?.challengeRating??'?');name.onclick=()=>{void selectCreature(e.creatureId,true);};count.type='number';count.min='1';count.max='1000';count.value=String(e.count);count.min=String(Math.max(1,e.worldActorIds?.length??0));count.disabled=!!e.worldActorIds?.length&&e.worldActorIds.length===e.count&&!e.allowAnonymous;count.setAttribute('aria-label','Anzahl '+(c?.name??e.creatureId));count.oninput=()=>{e.count=Number(count.value);schedule();};group.type='checkbox';group.checked=e.grouped;group.onchange=()=>{e.grouped=group.checked;schedule();};label.className='check-label';label.append(group,document.createTextNode('Gemeinsame Initiative'));remove.textContent='Entfernen';remove.onclick=()=>{plan!.entries=plan!.entries.filter(p=>p.id!==e.id);renderPlan();schedule();};const title=document.createElement('input');title.className='encounter-group-name';title.maxLength=120;title.value=e.groupName??'';title.placeholder='Truppname (optional), z. B. Schützen';title.setAttribute('aria-label','Truppname '+(c?.name??e.creatureId));title.oninput=()=>{e.groupName=title.value;schedule();};row.append(name,count,label,remove,title);rows.append(row);}renderAssessment();renderCatalogPlan();}
 export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAdd:(creatureId:string,count:number,grouped:boolean)=>Promise<void>){tell=status;prepare=onPrepare;
  itemReference=new ItemReferenceCatalog(get('catalog-item-reference'));
  const showMonsters=()=>{catalogContentView('monster');if(!page&&get('catalog-table').getAttribute('aria-busy')!=='true'&&get('catalog-page').getAttribute('role')!=='alert')void search();};
@@ -177,7 +183,10 @@ export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAd
  get('encounter-name').oninput=()=>{if(plan){plan.name=value('encounter-name');schedule();}};get('encounter-notes').oninput=()=>{if(plan){plan.notes=value('encounter-notes');schedule();}};
  get('encounter-party-add').onclick=()=>{if(plan){plan.party.push({id:crypto.randomUUID(),name:'Geplante Figur',level:null,count:1});renderPlan();schedule();}};
  get('encounter-party-current').onclick=()=>{void currentParty();};
- get('catalog-add').onclick=()=>{if(!plan||!creature||blocked)return;const count=Number(value('catalog-quantity'));if(!Number.isSafeInteger(count)||count<1||count>1000){tell('Positive ganze Kreaturmenge eingeben.',true);return;}plan.entries.push({id:crypto.randomUUID(),creatureId:creature.id,count,grouped:get<HTMLInputElement>('catalog-grouped').checked});if(!plan.sources.some(c=>c.id===creature!.id))plan.sources.push(creature);renderPlan();schedule();get('catalog-add-result').hidden=false;get('catalog-add-result').textContent=count+' × '+creature.name+' zur Vorlage „'+plan.name+'“ hinzugefügt.';};
+ get('catalog-add').onclick=()=>{const selected=creature,w=workspace,g=generation;if(!selected||!w||blocked||startingPlan)return;const count=Number(value('catalog-quantity')),grouped=!!get<HTMLInputElement>('catalog-grouped').checked;if(!Number.isSafeInteger(count)||count<1||count>1000){tell('Positive ganze Kreaturmenge eingeben.',true);return;}
+  if(!plan){startingPlan=true;renderCatalogPlan();report(async()=>{try{await newPlan(false,{creature:selected,count,grouped});}finally{if(owned(w.token,g)){startingPlan=false;renderCatalogPlan();}}});return;}
+  plan.entries.push({id:crypto.randomUUID(),creatureId:selected.id,count,grouped});if(!plan.sources.some(c=>c.id===selected.id))plan.sources.push(selected);renderPlan();schedule();get('catalog-add-result').hidden=false;get('catalog-add-result').textContent=count+' × '+selected.name+' zur Vorlage „'+plan.name+'“ hinzugefügt.';
+ };
  get('catalog-live-add').onclick=()=>{const selected=creature;if(selected)report(()=>onLiveAdd(selected.id,Number(value('catalog-quantity')),get<HTMLInputElement>('catalog-grouped').checked));};
  get('encounter-prepare').onclick=()=>report(async()=>{const w=workspace,source=plan,g=generation,request=planRequest;if(!w||!source)return;if(!await flushCatalog()||!owned(w.token,g)||plan!==source||request!==planRequest)return;await prepare(structuredClone(source));});
 }
