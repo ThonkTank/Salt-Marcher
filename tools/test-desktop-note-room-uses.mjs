@@ -1,3 +1,4 @@
+import {openDesktopKeyFromAtlas} from './qa-key-entry.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,readFile,writeFile,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -17,7 +18,7 @@ try{
  let page=await launch();results.currentIncoming=await page.locator('#note-incoming').innerText();results.incomingButtons=await page.locator('#note-incoming button').allTextContents();
  if(before){
   await page.locator('#note-incoming').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'incoming.png')});
-  await page.locator('#atlas-tab').click();await page.locator('#key-open').click();await page.locator('#key-search').fill('Nera');results.manualRoomSearch=await page.locator('#key-room-list button').allTextContents();assert.equal(results.manualRoomSearch.length,2);
+  await page.locator('#atlas-tab').click();await openDesktopKeyFromAtlas(page);await page.locator('#key-search').fill('Nera');results.manualRoomSearch=await page.locator('#key-room-list button').allTextContents();assert.equal(results.manualRoomSearch.length,2);
   await page.locator('#key-room-list button').filter({hasText:'Archiv'}).click();
  }else{
   await page.waitForFunction(()=>document.querySelectorAll('#note-room-uses-list button').length===2);results.roomUses=await page.locator('#note-room-uses-list button').allTextContents();
