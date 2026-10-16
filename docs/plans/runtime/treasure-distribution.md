@@ -58,6 +58,35 @@ unbestätigter Mengen beim Schließen; der unten beschriebene Workingdraftanschl
 bleibt offen. Ledger-/Definition-/Mengenregeln und der vorhandene Batchwriter
 bleiben unverändert, ohne Schemaänderung oder zweiten Verteilungswriter.
 
+## Weiteren Schatz anlegen bei offenen Eingaben
+
+`treasury-new` sichert vor dem kanonischen Create den bisherigen Rohentwurf über
+`flushTreasury`/`keepTreasuryDraft`. Unvollständige Mengen und freie Notizen werden
+als Arbeitsstand erhalten; sie werden dadurch nicht zu bestätigten Schatzmengen.
+Scheitert das Sichern, bleibt der bisherige Editor offen und es entsteht kein
+neuer Schatz. Weitere Eingaben während des wartenden Keeps werden noch vor dem
+Wechsel gesichert. Der vorhandene Pendingguard verhindert doppelte Anlagen bei
+schnell wiederholtem Klick. Nach dem Entwurfsdrain wird er erneut geprüft, bevor
+die Editorgeneration wechselt: Ein inzwischen gestarteter Applycommand behält
+seine Autorität und wird nicht durch den wartenden Create widerrufen. Kampagnen-/Editorwechsel widerrufen den alten Auftrag.
+
+Vor dem Create wird die bisherige Editorgeneration widerrufen; das entwertet
+ältere Schatz-Auswahlreads und verzögerte Debouncecallbacks. Sie dürfen
+einen danach angelegten Schatz nicht nachträglich aus dem Editor verdrängen.
+Rohentwurf, ursprüngliche Schatzrevision/Definitionreferenzen und bereits vergebene
+Mengen bleiben im bestehenden Store. Wiederöffnung/Fresh liest denselben Entwurf;
+Übernahme verlangt weiterhin den vorhandenen Revisionsabgleich. Kein neues
+Draftformat, keine Migration und kein zweiter Schatzwriter.
+
+`desktop-treasury-owner-dom.test.mjs` deckt Create vor Debounce, Keepfehler,
+neuere Eingaben während Keep, Doppelklick, Kampagnenwechsel und späte Auswahl ab.
+Die Zuordnungsprobe bestätigt zusätzlich den bereits vorhandenen Flushschutz,
+ohne dafür eine weitere Produktabstraktion einzuführen. Die native Probe mit tatsächlichem SQLite-Savefehler prüft unvollständige Mengen,
+unveränderte Allocations/Ledger, blockierten Create und Wiederaufnahme im Editor
+sowie einem frisch geöffneten Store. Diese Grenze betrifft Schatzentwürfe;
+die unbestätigten Mengen des separaten Verteilungsdialogs brauchen weiterhin
+den unten benannten dauerhaften Workingdraftanschluss.
+
 ## Belege nach späterer Korrektur und unabhängiger Kopie
 
 Die Storeprobe in `desktop-treasure-batch.test.mjs` verfolgt eine tatsächliche
@@ -77,6 +106,29 @@ bereits importierte fehlerhafte Historienlinks werden dadurch nicht repariert.
 
 Das qualifiziert Storezustände und Referenzen, keinen echten IPC-Antwortverlust,
 UI-Pendingablauf oder portierten Replay eines ursprünglichen Commands.
+
+## Offene kanonische Itemgrenze
+
+Die gepinnte Lootanforderung verlangt unveränderliche Definitionreferenzen mit
+Version/Artefakthash auch für historische Generatorruns und kanonische Münzen;
+Schätze und Character Loot besitzen ausschließlich Instanz-/Verteilungsfakten.
+Die heutigen `Treasure.items`-/Ledgerpayloads enthalten noch kopierte Namen,
+Kategorien und Werte. Die vorhandene Versionsauflösung und aktuelle Definition-
+Projektion allein erfüllen diesen vollständigen Vertrag nicht.
+
+Vor einer Formatumstellung müssen `storage/progression.ts`, Generatorannahme,
+`storage/item-definitions.ts` und Campaigncopy/-import gemeinsam die tatsächlich
+beobachteten Altwerte in immutable Legacydefinitionen überführen. Historische
+Werte niemals aus einer neueren Definition erfinden oder still aktualisieren.
+Originalpayloads und Runprovenienz erhalten; Referenzen und Allocations bei Kopie
+vollständig remappen. Die neue Definition muss außerdem die in der Originalquelle
+benötigten Stackability-/Container-/Komponentenfakten tragen. Erst mit diesen
+Fakten lassen sich nicht stapelbare Einzelinstanzen und gültige Packzuordnungen
+an der vorhandenen Schreibgrenze abschließend prüfen. Abnahmen: Altbestand und
+Run nach Neustart/Copy exakt, neuer Katalog beeinflusst nur neue Auswahl,
+Schatz-/Ledgerkorrektur erhält dieselbe Itemidentität, nicht stapelbare Zuweisung
+über einer Einheit schreibt nichts. Dieser Migrations-/Quellenauftrag bleibt
+offen; die hier beschriebenen Entwurfs- und Batchtests ersetzen ihn nicht.
 
 ## Nächste ausführbare Schritte
 
