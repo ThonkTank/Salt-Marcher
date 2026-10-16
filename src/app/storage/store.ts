@@ -147,8 +147,8 @@ export class CampaignStore {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
-    if(schema===44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
     if (schema > 46) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
     this.extensionRegistry=new ExtensionRegistry(this.db);
     const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
     if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) { this.db.close(); throw new Error('SQLite-Wartungsstand zu alt.'); }

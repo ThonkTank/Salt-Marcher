@@ -361,7 +361,7 @@ function render() {
           if(generation!==gen||view?.combat?.id!==id||selected!==p.id)return;
           const target=get<HTMLInputElement>(initiative?'fighter-initiative':p.healthKnown===false?'fighter-hp':'fighter-amount');
           if(initiative||p.healthKnown===false)get<HTMLDetailsElement>('fighter-values').open=true;
-          if(!target.disabled){target.focus({preventScroll:true});target.select();if(initiative||p.healthKnown===false)target.scrollIntoView({block:'center'});}
+          if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'center'});}
         })();};td.append(health);
       }else td.textContent=text;
       tr.append(td);
