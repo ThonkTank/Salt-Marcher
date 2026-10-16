@@ -402,6 +402,11 @@ function checkPositions(db: any, cam: string) {
     });
   }
 }
+const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
+  'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
+  'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
+  'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
+};
 export function executeAtlasWrite(
   db: any,
   c: AtlasCommand,
@@ -409,6 +414,7 @@ export function executeAtlasWrite(
   after?: () => void,
   validatePositions = true,
 ): unknown {
+  if(!c||typeof c.commandId!=='string'||!c.commandId||!c.action||!Object.hasOwn(atlasActionKinds,c.action.kind))throw new Error('Unbekannten oder unvollständigen Atlasauftrag nicht gespeichert.');
   captureSetup(db);
   return db
     .transaction(() => {

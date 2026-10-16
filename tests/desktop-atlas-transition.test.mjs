@@ -134,3 +134,10 @@ test('public export uses remembered public terrain, never current hidden GM geom
  const secret={...patch(-1000,-1000,2000,2000,'water'),id:'secret-new-lake'};
  const svg=publicAtlasSVG(snapshot,box,frame,[secret]).outerHTML;assert(svg.includes('#668b69'));assert(!svg.includes('#7fa8bd'),'A new unseen lake must not overwrite remembered forest');assert(!svg.includes('secret-new-lake'));assert(!svg.includes('data-landscape-id'));
 });
+
+test('unknown or incomplete author commands cannot receive a successful compact commit receipt',t=>{
+ const f=fixture(t),before=f.store.atlasIdentity(f.w.token).revision;
+ for(const action of [{kind:'landscape-future-action'},{kind:'unknown'},{}])assert.throws(()=>f.store.executeAtlasCommit(f.command(action)),/Atlasauftrag nicht gespeichert/);
+ assert.throws(()=>f.store.executeAtlasCommit({...f.command({kind:'room-default'}),commandId:''}),/Atlasauftrag nicht gespeichert/);
+ assert.equal(f.store.atlasIdentity(f.w.token).revision,before);assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_receipt').get().n,0);assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_command').get().n,0);
+});

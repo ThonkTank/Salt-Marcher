@@ -332,7 +332,7 @@ export class CampaignStore {
   private applyAtlas(c:AtlasCommand){
     this.guard(c.token,c.campaignId);
     let landscapeEnvironment=false;
-    const landscapeOnly=c.action.kind.startsWith('landscape-');
+    const landscapeOnly=typeof c.action?.kind==='string'&&c.action.kind.startsWith('landscape-');
     const nested=(v:{token:string;campaignId:string;commandId:string})=>{if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId)throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');};
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
