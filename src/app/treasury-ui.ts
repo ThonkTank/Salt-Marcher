@@ -497,13 +497,16 @@ export function initTreasury(
     }
   });
   el("treasury-new").onclick = () =>
-    run(() =>
-      execute({
+    run(async () => {
+      const current = editorOwner();
+      if (!(await flushTreasury()) || !current()) return;
+      editing++; // Revoke reads and timers belonging to the previous treasure editor.
+      await execute({
         kind: "treasure-create",
         title: "Neuer Schatz",
         locationId: null,
-      }),
-    );
+      });
+    });
   el<HTMLFormElement>('treasury-filter-form').onsubmit=e=>{e.preventDefault();run(async()=>{if(!await flushTreasury())return;const selected=value('treasury-filter-anchor'),parts=selected.split(':');listQuery={search:value('treasury-filter-search'),anchor:parts[0] as TreasureQuery['anchor'],...(parts[1]?{anchorId:parts.slice(1).join(':')}:{}),remainingOnly:el<HTMLInputElement>('treasury-filter-remaining').checked};await openTreasury();});};
   el('treasury-anchor-apply').onclick=()=>run(async()=>{if(!book||!await flushTreasury())return;if(dirty)throw new Error('Schatzangaben zuerst übernehmen oder verwerfen.');const target=value('treasury-anchor-target'),reason=value('treasury-anchor-reason').trim();if(!reason)throw new Error('Neue Zuordnung begründen.');const [kind,...ids]=target.split(':');if(!['scene','location','unplaced'].includes(kind!))throw new Error('Zielzuordnung auswählen.');await execute({kind:'treasure-anchor',treasureId:book.id,expectedRevision:book.revision,anchor:kind==='unplaced'?{kind:'unplaced'}:{kind:kind as 'scene'|'location',id:ids.join(':')},reason});});
   el("treasury-refresh").onclick = () => run(() => openTreasury());
