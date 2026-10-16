@@ -16,7 +16,7 @@ export function liveHexSurface(){
  weather.id='live-travel-weather';weatherTitle.textContent='Wetter und Fristen';weather.append(weatherTitle);
  for(const child of [...panel.children])if(child!==host){if(child.tagName==='H3')child.remove();else weather.append(child);}
  weather.open=true;panel.append(host,weather);
- const open=document.createElement('button');open.type='button';open.id='live-travel-map-open';open.textContent='Karte öffnen';open.onclick=()=>{show('map');get('world-map').focus();};host.append(open);
+ const open=document.createElement('button');open.type='button';open.id='live-travel-map-open';open.textContent='Karte öffnen';open.onclick=()=>{show('map');get('world-map').focus({preventScroll:true});};host.append(open);
  const canvas=get('world-map').closest<HTMLElement>('.world-map-canvas')!;
  const zoom=get('world-zoom-in').parentElement!,travel=get('world-travel-form').closest<HTMLElement>('.world-travel')!;
  const camera=[zoom,get('world-map').parentElement!.querySelector<HTMLElement>('.map-canvas-controls')!,get('travel-draft-status'),get('travel-place-cursor')];
