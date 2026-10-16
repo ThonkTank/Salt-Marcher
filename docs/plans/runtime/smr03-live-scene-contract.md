@@ -659,6 +659,26 @@ Restart und Import dürfen nie zuletzt bekannte unsafe Ausgabe reaktivieren.
     nicht-farbige Zustände erhalten dieselben Scene-/Party-Aktionen und
     vollständige zugängliche Namen.
 
+## XP-Entwurf und aktualisierte Partybasis
+
+Der historische Party-Dropdown verweist ausdrücklich auf die konsolidierte
+[Party-window-Quelle](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/party/requirements/requirements-party-window.md).
+Ein offener XP-Entwurf in `party-topbar-ui.ts` hält nur die CharacterId;
+`xpBasis` liest Profil und Fortschritt aus dem erfolgreich übernommenen
+Party-Snapshot. Aktualisieren behält rohe Betrags-/Modus-/Grundfelder und
+berechnet Titel/Vorschau neu. Vorschau und Bestätigung verwenden denselben
+`changeCharacterXp`-Stand; der bestehende Writer prüft weiterhin dessen Revision.
+Bei laufendem, fehlgeschlagenem oder nicht mehr zur Figur passendem Read gibt
+es keine Bestätigungsautorität. Retry liest nur neu und löst keine XP-Buchung aus.
+
+DOM-Gegenfälle prüfen alle drei XP-Modi, Umbenennung, fehlende Figur,
+fehlgeschlagenen/pending Read und unvollständige Rohbeträge. Native IPC-/SQLite-
+Probe prüft eine zwischenzeitlich bestätigte XP-/Profiländerung, kontrollierten
+Lesefehler und Retry, genau eine ausdrückliche Korrektur auf der neuen Revision,
+Preview/Readback-Gleichheit sowie unveränderte Rastfakten und Scene-Uhr.
+Die Party-History, gebündelte Roster-/Movebedienung und Migration unten bleiben
+eigenständige offene Lieferungen; dieser Korrekturweg benötigt keine neue Tabelle.
+
 ## Offene Produktanschlüsse
 
 Die Desktopanwendung verwendet [SQLite-Commands](../../../src/app/storage/live.ts), [Maskenabgleich](../../../src/app/storage/mask-health.ts) und [GM-Oberfläche](../../../src/app/live.ts). Gesamt-E2E-02 und weitere Plattformen bleiben getrennt zu belegen. Die providerunabhängige immutable Sourceprojektion aktiviert keine Playerausgabe: absent/disabled bleibt Default-Deny. Vor einer SMR-10-Bridge sind Knowledge-/Perception-/Fog-/Camera-Filter sowie TN-21/TN-24/TN-31 und AC-L10/AC-T07 zu belegen. Music/Weather/Shops erhalten immutable Focus-/LiveScene-Consumer mit none/stale/Fehlerzuständen; Capability-, Cancellation- und Recoverygrenzen bleiben erforderlich.
