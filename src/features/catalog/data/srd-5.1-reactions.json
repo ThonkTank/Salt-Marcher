@@ -1,0 +1,139 @@
+{
+  "source": "https://github.com/5e-bits/5e-database/blob/3f5593ea004c4f5a2af95603087ce4de72689d9f/src/2014/en/5e-SRD-Monsters.json",
+  "sourceSha256": "cbf1b6d0a94f6e13afd1480d647d288c61ba0ddc3d3a7842d1501852dc954237",
+  "sourceVersion": "v5.10.0+reactions.1",
+  "creatures": [
+    {
+      "id": "bandit-captain",
+      "name": "Bandit Captain",
+      "traits": [
+        {
+          "id": "bandit-captain:reaction:1",
+          "name": "Reaktion: Parry",
+          "description": "The captain adds 2 to its AC against one melee attack that would hit it. To do so, the captain must see the attacker and be wielding a melee weapon."
+        }
+      ]
+    },
+    {
+      "id": "black-pudding",
+      "name": "Black Pudding",
+      "traits": [
+        {
+          "id": "black-pudding:reaction:1",
+          "name": "Reaktion: Split",
+          "description": "When a pudding that is Medium or larger is subjected to lightning or slashing damage, it splits into two new puddings if it has at least 10 hit points. Each new pudding has hit points equal to half the original pudding's, rounded down. New puddings are one size smaller than the original pudding."
+        }
+      ]
+    },
+    {
+      "id": "chain-devil",
+      "name": "Chain Devil",
+      "traits": [
+        {
+          "id": "chain-devil:reaction:1",
+          "name": "Reaktion: Unnerving Mask",
+          "description": "When a creature the devil can see starts its turn within 30 feet of the devil, the devil can create the illusion that it looks like one of the creature's departed loved ones or bitter enemies. If the creature can see the devil, it must succeed on a DC 14 Wisdom saving throw or be frightened until the end of its turn."
+        }
+      ]
+    },
+    {
+      "id": "erinyes",
+      "name": "Erinyes",
+      "traits": [
+        {
+          "id": "erinyes:reaction:1",
+          "name": "Reaktion: Parry",
+          "description": "The erinyes adds 4 to its AC against one melee attack that would hit it. To do so, the erinyes must see the attacker and be wielding a melee weapon."
+        }
+      ]
+    },
+    {
+      "id": "gladiator",
+      "name": "Gladiator",
+      "traits": [
+        {
+          "id": "gladiator:reaction:1",
+          "name": "Reaktion: Parry",
+          "description": "The gladiator adds 3 to its AC against one melee attack that would hit it. To do so, the gladiator must see the attacker and be wielding a melee weapon."
+        }
+      ]
+    },
+    {
+      "id": "knight",
+      "name": "Knight",
+      "traits": [
+        {
+          "id": "knight:reaction:1",
+          "name": "Reaktion: Parry",
+          "description": "The knight adds 2 to its AC against one melee attack that would hit it. To do so, the knight must see the attacker and be wielding a melee weapon."
+        }
+      ]
+    },
+    {
+      "id": "marilith",
+      "name": "Marilith",
+      "traits": [
+        {
+          "id": "marilith:reaction:1",
+          "name": "Reaktion: Parry",
+          "description": "The marilith adds 5 to its AC against one melee attack that would hit it. To do so, the marilith must see the attacker and be wielding a melee weapon."
+        }
+      ]
+    },
+    {
+      "id": "noble",
+      "name": "Noble",
+      "traits": [
+        {
+          "id": "noble:reaction:1",
+          "name": "Reaktion: Parry",
+          "description": "The noble adds 2 to its AC against one melee attack that would hit it. To do so, the noble must see the attacker and be wielding a melee weapon."
+        }
+      ]
+    },
+    {
+      "id": "ochre-jelly",
+      "name": "Ochre Jelly",
+      "traits": [
+        {
+          "id": "ochre-jelly:reaction:1",
+          "name": "Reaktion: Split",
+          "description": "When a jelly that is Medium or larger is subjected to lightning or slashing damage, it splits into two new jellies if it has at least 10 hit points. Each new jelly has hit points equal to half the original jelly's, rounded down. New jellies are one size smaller than the original jelly."
+        }
+      ]
+    },
+    {
+      "id": "shield-guardian",
+      "name": "Shield Guardian",
+      "traits": [
+        {
+          "id": "shield-guardian:reaction:1",
+          "name": "Reaktion: Shield",
+          "description": "When a creature makes an attack against the wearer of the guardian's amulet, the guardian grants a +2 bonus to the wearer's AC if the guardian is within 5 feet of the wearer."
+        }
+      ]
+    },
+    {
+      "id": "shrieker",
+      "name": "Shrieker",
+      "traits": [
+        {
+          "id": "shrieker:reaction:1",
+          "name": "Reaktion: Shriek",
+          "description": "When bright light or a creature is within 30 feet of the shrieker, it emits a shriek audible within 300 feet of it. The shrieker continues to shriek until the disturbance moves out of range and for 1d4 of the shrieker's turns afterward"
+        }
+      ]
+    },
+    {
+      "id": "stone-giant",
+      "name": "Stone Giant",
+      "traits": [
+        {
+          "id": "stone-giant:reaction:1",
+          "name": "Reaktion: Rock Catching",
+          "description": "If a rock or similar object is hurled at the giant, the giant can, with a successful DC 10 Dexterity saving throw, catch the missile and take no bludgeoning damage from it."
+        }
+      ]
+    }
+  ]
+}

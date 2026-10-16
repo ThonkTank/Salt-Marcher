@@ -1,7 +1,9 @@
 import assetIdentity from "./catalog-asset.json";
+import reactionSupplement from "./data/srd-5.1-reactions.json";
 
 export const SRD_5_1_ARTIFACT_SHA256 = assetIdentity.artifactSha256;
-// Local errata are separate from the byte-identical, pinned source artifact.
+// Local source corrections are separate from the byte-identical, pinned artifact.
+export const SRD_5_1_REACTION_SUPPLEMENT = deepFreeze(reactionSupplement);
 export const SRD_5_1_XP_CORRECTIONS = deepFreeze([
   {id:'brass-dragon-wyrmling',cr:1,from:100,to:200,source:'https://www.dndbeyond.com/monsters/16814-brass-dragon-wyrmling'},
   {id:'deep-gnome-svirfneblin',cr:0.5,from:50,to:100,source:'https://www.dndbeyond.com/monsters/17211-deep-gnome-svirfneblin'},
@@ -287,14 +289,18 @@ export class CreatureCatalog {
     this.manifest = deepFreeze(parsed.manifest);
     this.creatures = deepFreeze(parsed.creatures.map((creature) => {
       const correction = SRD_5_1_XP_CORRECTIONS.find(c=>c.id===creature.id);
+      const reaction = reactionSupplement.creatures.find(c=>c.id===creature.id);
+      if(reaction && reaction.name!==creature.name)
+        throw new Error('Reaktionsquelle passt nicht zur Kreatur: '+creature.id);
       if(correction && (creature.cr!==correction.cr || creature.xp!==correction.from))
         throw new Error('Katalogkorrektur passt nicht mehr zur gepinnten Quelle: '+creature.id);
       return {
       ...creature,
       xp:correction?.to??creature.xp,
+      traits:reaction?[...creature.traits,...reaction.traits]:creature.traits,
       sourceId: "srd-5.1",
       sourceLabel: parsed.manifest.sourceDocument,
-      sourceVersion: parsed.manifest.catalogVersion+(correction?'+xp-errata.1':''),
+      sourceVersion: parsed.manifest.catalogVersion+(correction?'+xp-errata.1':'')+(reaction?'+reactions.1':''),
       rulesVersion: "2014" as const,
       legacy: true,
     };}));
