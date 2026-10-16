@@ -13,6 +13,17 @@ copied without further data changes from SaltMarcher's pinned
 source hash, source URL, license and attribution remain embedded in
 `data/srd-5.1.generated.json`.
 
+The pinned artifact remains unchanged. The runtime applies four explicit XP
+errata from the official 2014 statblocks: [Brass Dragon Wyrmling](https://www.dndbeyond.com/monsters/16814-brass-dragon-wyrmling)
+(100 → 200), [Deep Gnome](https://www.dndbeyond.com/monsters/17211-deep-gnome-svirfneblin)
+(50 → 100), [Dretch](https://www.dndbeyond.com/monsters/16846-dretch) (25 → 50),
+and [Riding Horse](https://www.dndbeyond.com/monsters/16997-riding-horse) (25 → 50).
+Their source versions include `+xp-errata.1`. The desktop catalog identity
+hashes the artifact identity together with this correction list, so a preview
+made before the correction cannot be accepted as a current proposal. Stored
+plan and combat snapshots are not rewritten on read. Explicitly saving a plan
+resolves its sources against the current catalog, as before.
+
 The same notice is exported as `SRD_5_1_NOTICE` for the future Catalog credits
 surface. CE-01 may not ship the Catalog UI until this notice is visibly
 reachable and the selected release packaging contains it.
