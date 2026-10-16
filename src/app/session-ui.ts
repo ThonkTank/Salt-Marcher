@@ -41,9 +41,11 @@ let storyRequest=0,storyAward:StoryAward|null=null;
 function previewOwner():PreviewOwner|null{return workspace&&plan?{token:workspace.token,planId:plan.id}:null;}
 function ownsPreview(owner:PreviewOwner){return workspace?.token===owner.token&&plan?.id===owner.planId;}
 /** Text already owned by the displayed plan; no extra catalog or session read. */
-export function sessionVisitReadAloud(token:string|undefined,planId:string,selected:string):string{
- if(!token||workspace?.token!==token||plan?.id!==planId||view?.profile.planId!==planId)return '';
- return (visitDraft?.visitId===selected?visitDraft:view.visits.find(v=>v.visitId===selected))?.readAloud??'';
+export function sessionVisitReadAlouds(token:string|undefined,planId:string|undefined):ReadonlyMap<string,string>{
+ if(!token||!planId||workspace?.token!==token||plan?.id!==planId||view?.profile.planId!==planId)return new Map();
+ const texts=new Map(view.visits.map(v=>[v.visitId,v.readAloud]));
+ if(visitDraft)texts.set(visitDraft.visitId,visitDraft.readAloud);
+ return texts;
 }
 export function sessionContext(next:WorkspaceGeometry|null,current:ManualPlan|null,selected:string|null,data:Preparation|null){
  const planChanged=current?.revision!==plan?.revision;
