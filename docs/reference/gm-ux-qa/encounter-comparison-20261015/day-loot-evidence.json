@@ -192,5 +192,24 @@
     "tests": "43 packet/context/export/retention passed; new actual-store regression fails before fix at Pony count 2, passes after; verifies whitespace-equivalent action/trait/legendary details, distinct author prose, read-only DB and unchanged frozen payload after Fresh. Repo, both type checks, desktop build passed.",
     "screenshot": "day-packet-pony-once.png",
     "comparison": "Sheet sign-in still required; runner DOM control still times out. No competitor completion or owner acceptance."
+  },
+  "savedLootSettingsFix": {
+    "nativeBasis": "4e4da11a74179e1217189474e5cf01b4301a3113",
+    "exportSha256": "b6bbfccdabd1f7e5aa3b5f788fea06277090e9eacd0d065514f649114e19fc73",
+    "beforeAfterRestartByteEqual": true,
+    "priorQualifiedPacketByteEqual": true,
+    "originalSavedRunPayloadChecksumUnchanged": true,
+    "native": "Load original guidance-only preview; loot checkbox restored automatically without manual toggle; regenerate same4lvl5/.6day/3/seed; accept3firstconfirmation; packet; UIexport; normalclose0; actualrestart; packet3visits; UIreexport; normalclose0",
+    "notProven": "Native explicit magic pool lifecycle; paired Sheet GUI; round8 runner restoration; owner acceptance",
+    "baseline": "3fe8839851f8d07c362c43067120b8fe63a36dc6",
+    "finding": "Loading stored preview leaves loot off; initial origin-only implementation missed guidance-only previews. Final implementation restores explicit saved request or retained lootGuidance; frozen data unchanged.",
+    "tests": "60/60 affected UI/review/reward-integrity/retention tests pass. Initial request-origin regression red before fix. Guidance-only native check initially still unchecked, corrected then visibly checked. Explicit pool revision/empty/unrestricted and stale controls covered technically.",
+    "localChecks": "repo, renderer and desktop typechecks, desktop build exit0; renderer types/build rerun after guidance-only extension",
+    "before": "day-loot-load-before.png",
+    "after": "day-loot-load-after.png",
+    "processes": "Four own app starts normal close_receipt0; own helper13029 NORMAL_JOB_EXIT0; no own workers left",
+    "ci": "Pending on published candidate",
+    "mainIntegration": "Pending",
+    "ownerAcceptance": "Open"
   }
 }
