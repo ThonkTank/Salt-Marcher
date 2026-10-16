@@ -549,11 +549,14 @@ export async function openPreparedNote(id:string,stillCurrent=()=>true) {
 }
 export async function prepareNoteLocation(id:string,locationId:string){const token=context?.token;await openPreparedNote(id);if(!token||context?.token!==token||selectedNote!==id)throw new Error('Auftrag für Ortsbindung nicht verfügbar.');await prepareNarrativeLocation(token,id,locationId);tell('Zielort in den narrativen Angaben vorbelegt. Speichern bestätigt die Ortsbindung.');}
 export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
-  const token=context?.token,request=preparationLoad;
-  if (!token||!(await flushPreparation())||context?.token!==token||preparationLoad!==request||!stillCurrent()) return;
-  const row = data.locations.find(row => row.document.id === id);
+  const token=context?.token,request=preparationLoad,current=()=>context?.token===token&&preparationLoad===request&&stillCurrent();
+  if (!token||!(await flushPreparation())||!current()) return;
+  const input=()=>JSON.stringify({noteDraft,planDraft,locationDraft,selectedNote,selectedPlan,selectedLocation}),before=input();
+  const next=unwrap(await window.campaign.preparation(token,''));if(!current())return;
+  if(input()!==before){tell('Neue Vorbereitungseingabe bleibt offen. Ort bei Bedarf erneut öffnen.',true);return;}
+  usePreparation(next);const row = data.locations.find(row => row.document.id === id);
   if (!row) { tell('Ort ist nicht verfügbar. Die Ortskennung bleibt erhalten.', true); return; }
-  showPreparationArea(false);selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); renderLocations();
+  showPreparationArea(false);selectedLocation = id; get<HTMLInputElement>('location-trash').checked = row.trashed; showLocations(true); await renderLocations();
 }
 export async function openPreparedVisit(planId:string,visitId:string,current:()=>boolean=()=>true){
   const owner=context,token=owner?.token,epoch=preparationLoad,valid=()=>current()&&context===owner&&context?.token===token&&preparationLoad===epoch;

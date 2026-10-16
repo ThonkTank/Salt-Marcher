@@ -1,5 +1,8 @@
+import {drawLandscape,landscapeNode} from "./atlas-landscape-view";
+import {hexPolygon,type LandscapeRecord} from "./atlas-landscape";
 import type { CampaignAtlas } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
+import {atlasPartyPoint} from "./atlas-runtime-model";
 import type { PlayerFrame } from "./player-contracts";
 import {
   atlasFrame,
@@ -14,10 +17,15 @@ export function publicAtlasSVG(
   a: CampaignAtlas,
   box: CanvasBox,
   frame?: PlayerFrame,
+  landscape:LandscapeRecord[]=[],
+  unitsPerPixel = box.width / 1000,
+  rasters:import("./landscape-raster").LandscapeRaster[] = [],
 ): SVGSVGElement {
+  const mpp=Number.isFinite(unitsPerPixel)&&unitsPerPixel>0?unitsPerPixel:box.width/1000;
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
   svg.setAttribute("xmlns", ns);
+  svg.setAttribute("font-family", "Noto Sans, sans-serif");
   const add = (
     tag: string,
     attrs: Record<string, string | number>,
@@ -58,8 +66,8 @@ export function publicAtlasSVG(
       add(
         "text",
         {
-          ...p,
-          "font-size": box.width / 100,
+          x:p.x,y:p.y-12*mpp,
+          "font-size": 12*mpp,
           "text-anchor": "middle",
           fill: "#203532",
         },
@@ -71,7 +79,7 @@ export function publicAtlasSVG(
       add("circle", {
         cx: p.x,
         cy: p.y,
-        r: box.width / 250,
+        r: 5*mpp,
         fill: m.kind === "npc" ? "#8964a5" : "#39766a",
       });
     }
@@ -79,10 +87,10 @@ export function publicAtlasSVG(
     add("circle", {
       cx: p.x,
       cy: p.y,
-      r: box.width / 180,
+      r: 7*mpp,
       fill: "#244f87",
       stroke: "white",
-      "stroke-width": box.width / 900,
+      "stroke-width": 2*mpp,
     });
   } else if (frame?.mode === "map" && frame.map) {
     const map = frame.map;
@@ -100,26 +108,48 @@ export function publicAtlasSVG(
           "#b8c896",
         opacity: cell.visible ? 1 : 0.55,
       });
-      if (cell.label)
+    }
+    const visibleCells=map.cells.filter(cell=>cell.visible);
+    if((landscape.length||rasters.length)&&visibleCells.length){
+      const defs=landscapeNode('defs'),clip=landscapeNode('clipPath',{id:'visible-landscape'});
+      // Known but unseen cells retain their remembered facts. Current GM geometry
+      // is only a raster layer over the publicly visible cells.
+      for(const cell of visibleCells){
+        const polygon=hexPolygon(cell.q,cell.r,map.hexMeters);
+        clip.append(landscapeNode('path',{d:roomPath([{outer:polygon.outer.map(p=>({x:p.x-box.x,y:p.y-box.y})),holes:[]}])}));
+      }
+      defs.append(clip);svg.append(defs);
+      const visible=landscapeNode('g',{'clip-path':'url(#visible-landscape)'});
+      drawLandscape(visible,landscape.filter(r=>r.kind==='patch'||r.kind==='river'||r.kind==='road'),box,mpp,new Map(),false,rasters.length?rasters:undefined);
+      svg.append(visible);
+    }
+    // Public names stay above the landscape layer.
+    for(const cell of map.cells){
+      const p=atlasHexPoint(cell.q,cell.r,map.hexMeters);
+      if (cell.label && map.hexMeters/mpp>45)
         add(
           "text",
           {
             x: p.x - box.x,
-            y: p.y - box.y,
-            "font-size": map.hexMeters / 15,
+            y: p.y - box.y-12*mpp,
+            "font-size": 12*mpp,
             fill: "#203532",
             "text-anchor": "middle",
           },
           cell.label,
         );
     }
-    // Remembered cells deliberately keep their public snapshot. Current GM
-    // contours must not replace unseen terrain, even inside a known hex.
-    const p = atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
+    const markerRows=new Map<string,number>();
+    for(const marker of map.markers??[]){
+      const at=atlasHexPoint(marker.q,marker.r,map.hexMeters),key=marker.q+','+marker.r,row=markerRows.get(key)??0;
+      if(row===0)add('circle',{cx:at.x-box.x,cy:at.y-box.y,r:7*mpp,fill:'#f7f2df',stroke:'#305e88','stroke-width':2*mpp,opacity:marker.visible?1:.6});
+      if(marker.label){add('text',{x:at.x-box.x,y:at.y-box.y+(24+row*16)*mpp,'font-size':12*mpp,'text-anchor':'middle',fill:'#203532'},marker.label);markerRows.set(key,row+1);}
+    }
+    const p = atlasPartyPoint(a)??atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
     add("circle", {
       cx: p.x - box.x,
       cy: p.y - box.y,
-      r: box.width / 180,
+      r: 7*mpp,
       fill: "#244f87",
     });
   } else
