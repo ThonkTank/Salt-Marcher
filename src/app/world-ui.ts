@@ -450,6 +450,7 @@ function collectMarker(){if(!markerDraft||el<HTMLFieldSetElement>('world-marker-
 async function flushMarker():Promise<boolean>{
  if(markerSaving)return markerSaving;
  if(!markerDraft?.dirty)return true;
+ if(uncertain)return false;
  const token=workspace?.token,draft=markerDraft;
  const operation=Promise.resolve().then(async()=>{try{
   await Promise.all([...worldWrites]);
