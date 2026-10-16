@@ -171,7 +171,8 @@ Attribute, Modifikatoren, Eigenschaften, Aktionen und Quellen werden damit
 ausschließlich den Encounter; der Kreaturkatalog bleibt schreibgeschützt.
 
 Ein Gegnerklick in der Encounter-Vorlage zeigt deren eingefrorenen Quellenstand
-mit Vorlagentitel und Revision. Er benötigt keinen heutigen Katalogzugriff.
+mit Vorlagentitel und Revision. Ein noch offener Entwurf ist ausdrücklich als
+unbestätigter Entwurfsstand beschriftet. Er benötigt keinen heutigen Katalogzugriff.
 Fehlt dieser gespeicherte Statblock, bleibt die Lücke sichtbar. Die ausdrückliche
 Aktion „Aktuellen Katalogstand ansehen“ öffnet die heutige Definition zum Lesen
 und für neue Katalogübernahmen; sie ersetzt die Vorlagenquelle nicht. Der
