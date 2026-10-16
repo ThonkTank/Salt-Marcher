@@ -260,13 +260,18 @@ test('saving a renamed plan immediately updates the selected plan label',async t
  assert.equal([...x.el('plans').options].find(o=>o.value===saved.id).textContent,saved.name);
 });
 
-test('a full generated evening can be batch accepted through preparation with the real store',async t=>{
+for(const externalChange of [false,true])test('a renamed evening uses its saved plan revision and '+(externalChange?'rejects a later external change':'accepts all three scenes without reopening'),async t=>{
  const x=await fixture(t);for(const method of ['generateSession','sessionRun'])x.window.campaign[method]=async(...args)=>{try{return{ok:true,value:x.store[method](...args)};}catch(e){return{ok:false,error:e.message};}};
  await x.activate();x.el('plan-create').click();await until(()=>!!x.el('plans').value);await settle();
+ x.el('plan-name').value='Drei Begegnungen mit Beute';x.el('plan-name').dispatchEvent(new x.window.Event('input'));
+ const partyControls=x.el('session-party-levels');assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.el('session-party-levels'),partyControls);
+ assert.equal(x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value).revision,2);
  for(const level of ['3','4']){x.el('session-free-party').click();const rows=x.el('session-party-levels').querySelectorAll('.session-party-row'),inputs=rows[rows.length-1].querySelectorAll('input');inputs[0].value=level;inputs[0].oninput();inputs[1].value='2';inputs[1].oninput();}
  x.el('session-fraction').value='0.6';x.el('session-fraction').oninput();x.el('session-seed').value='179974';x.el('session-seed').oninput();x.el('session-scene-count').value='3';x.el('session-scene-count').oninput();assert.equal(await x.ui.flushPreparation(),true);
  x.el('session-generate-form').onsubmit({preventDefault(){}});await settle();assert.equal(x.el('session-preview').querySelectorAll('[data-proposal-index]').length,3,JSON.stringify(x.messages.slice(-4))+' '+x.el('session-generation-feedback').textContent);
- x.el('session-select-visible').click();x.el('session-review-selection').click();x.el('session-selection-confirm').click();for(const deadline=Date.now()+2000;Date.now()<deadline&&x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value).scenes.length!==3;)await delay(5);await settle();
+ x.el('session-select-visible').click();x.el('session-review-selection').click();
+ if(externalChange){const plan=x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value);x.store.changePreparation(x.command({kind:'plan',expectedRevision:plan.revision,plan:{...plan,name:'Zwischenzeitlich geändert'}}));}
+ x.el('session-selection-confirm').click();if(externalChange){await until(()=>x.messages.some(m=>/Timeline geändert/.test(m.text)));assert.equal(x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value).scenes.length,0);assert.equal(x.el('session-selection-dialog').open,true);assert.ok(x.messages.some(m=>/Timeline geändert/.test(m.text)));return;}for(const deadline=Date.now()+2000;Date.now()<deadline&&x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value).scenes.length!==3;)await delay(5);await settle();
  assert.equal(x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value).scenes.length,3,JSON.stringify(x.messages.slice(-4))+' '+x.el('session-selection-dialog').textContent);
 });
 
