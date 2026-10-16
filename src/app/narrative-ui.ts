@@ -284,7 +284,11 @@ export async function showNarrative(
     };
     placeHook=async id=>{if(!current()||!places.some(p=>p.id===id))throw new Error('Zielort nicht verfügbar.');place.value=id;s.locationId=id;markDirty();place.focus();return persist();};
     placeLabel.append(place);
-    heading.textContent = "Narrativer Status und Belohnung";
+    heading.textContent = "Status und Ort";
+    const statusLabel = document.createElement("label");
+    statusLabel.append("Status", status);
+    const statusHint = document.createElement("p");
+    statusHint.textContent = "Offen oder geschlossen festhalten. Das vergibt keine Belohnung.";
     for (const [id, label] of [
       ["open", "Offen"],
       ["closed", "Geschlossen"],
@@ -305,6 +309,8 @@ export async function showNarrative(
     pool.inputMode = "numeric";
     pool.value = s.poolXp;
     pool.setAttribute("aria-label", "Quest-XP-Pool");
+    const poolLabel = document.createElement("label");
+    poolLabel.append("XP-Pool", pool);
     pool.oninput = () => {
       if (!active()) return;
       s.poolXp = pool.value;
@@ -473,17 +479,12 @@ export async function showNarrative(
         dialog.showModal();
       })().catch((e) => tell((e as Error).message, true));
     };
-    panel.append(
-      heading,
-      draftStatus,
-      status,
-      placeLabel,
-      pool,
-      contributors,
-      items,
-      save,
-      resolve,
-    );
+    const rewards = document.createElement("details"),
+      rewardsSummary = document.createElement("summary");
+    rewardsSummary.textContent = "Belohnung (optional)";
+    rewards.open = !!d.award || s.poolXp !== "0" || s.items.length > 0;
+    rewards.append(rewardsSummary, poolLabel, contributors, items, resolve);
+    panel.append(heading, draftStatus, statusLabel, placeLabel, statusHint, rewards, save);
     const discard = document.createElement("button");
     discard.textContent = "Eingabe verwerfen";
     discard.onclick = () =>
