@@ -12,7 +12,8 @@ Abschnittszeiten, nächste Position, Scene-/Gruppen-/Positionsrevisionen und
 Geometriebasis. Jeder bestätigte Abschnitt bucht Weltzeit und Position in der
 vorhandenen Transaktion; `dungeon_receipt` verhindert doppelte Buchung.
 Unterbrechungen durch Wahrnehmung, Inhalte, Trigger oder Verfolgung bleiben
-GM-Entscheidungen. Eine neue Berechnung verwirft die vorherige Vorschau. Die UI
+GM-Entscheidungen. Eine neue Berechnung verwirft die vorherige Vorschau und
+aktualisiert sofort auch die Startfreigabe im gemeinsamen Atlas. Die UI
 übernimmt nur Antworten zur angefragten Gruppe, Zielposition, Bewegung und
 Zeitvorgabe; ausschließlich das automatische Gruppentempo darf der Provider
 auflösen. Lokale Zieländerungen verwerfen weiter verspätete Antworten. Eine

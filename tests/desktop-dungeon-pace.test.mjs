@@ -74,3 +74,9 @@ test('Dungeon preview accepts provider group speed and reordered keys, but drops
  x.get('dungeon-plan').click();await x.until(()=>!!release);x.get('dungeon-height-step').value='1';x.get('dungeon-height-step').oninput();release();await x.ui.flushDungeon();
  assert.equal(x.get('dungeon-confirm').disabled,true);assert.equal(x.ui.atlasDungeonState().preview,null);assert.equal(x.sent.length,0);assert.ok(x.store.db.serialize().equals(before));
 });
+test('replacing a Dungeon preview immediately notifies the shared Atlas that it can no longer start',async t=>{
+ const x=await panel(t);x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);let cleared=false,release;
+ x.window.document.addEventListener('atlas-runtime',()=>{if(x.ui.atlasDungeonState().preview===null)cleared=true;});
+ const original=x.window.campaign.previewDungeon;x.window.campaign.previewDungeon=async(...args)=>{const result=await original(...args);return new Promise(r=>release=()=>r(result));};
+ x.get('dungeon-plan').click();await x.until(()=>!!release);const announced=cleared;release();await x.ui.flushDungeon();assert.equal(announced,true);assert.equal(x.sent.length,0);
+});

@@ -199,7 +199,7 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
  el('dungeon-plan').onclick=()=>{
   if(!workspace||!data?.sceneId||!target)return;
   if(dungeonPaceDirty()){status('Tempovorgaben zuerst übernehmen oder offene Einstellungen verwerfen.',true);return;}
-  invalidatePreview();
+  invalidatePreview();document.dispatchEvent(new Event('atlas-runtime'));
   const w=workspace,intent=routeIntent,request=structuredClone({sceneId:data.sceneId,...(data.travelPace?{useGroupPace:true}:{}),destination:target,movement:select('dungeon-movement').value as DungeonMovement,speedMetersPerMinute:number('dungeon-speed'),factor:number('dungeon-factor'),finalSeconds:el<HTMLInputElement>('dungeon-duration').value?number('dungeon-duration'):null});
   run(async o=>{
    const result=await window.campaign.previewDungeon(w.token,request);
