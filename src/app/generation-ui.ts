@@ -15,15 +15,23 @@ const owned=(token:string,g:number)=>workspace?.token===token&&generation===g;
 const lockedControls=new Map<HTMLInputElement|HTMLButtonElement|HTMLSelectElement,boolean>();
 let tableDraft:EncounterTable|null=null,lootDraft:LootTable|null=null,tableBaseline='',lootBaseline='',generation=0,previewDirty=false;
 let planningBasis:string|null=null,fillBasis:string|null=null;
+const defaultKeys=['difficulty','amount','balance','diversity'] as const;
+const defaultOverrides=new Set<string>();
+function applyPresetDefaults(){
+ const preset=registry?.presets.find(p=>p.id===registry?.effectiveId),defaults=preset?.config?.generationDefaults;if(!defaults)return;
+ let changed=false;for(const key of defaultKeys){const control=get<HTMLSelectElement>('generation-'+key);if(!defaultOverrides.has(key)&&control.value!==defaults[key]){control.value=defaults[key];changed=true;}}
+ get('generation-defaults-source').textContent='Vorgaben: '+preset!.name+(defaultOverrides.size?' · Eigene Auswahl bleibt erhalten.':'');
+ if(changed&&run){previewDirty=true;renderPreview();}
+}
 let pending:Promise<boolean>|null=null,tell:(text:string,error?:boolean)=>void,bridge:Bridge,discard:()=>void;
 let tableCreated:((table:EncounterTable)=>void)|null=null;
 let catalogParent:Node|null=null,catalogNext:Node|null=null,restoreTableLookup:(()=>void)|null=null;const names=new Map<string,string>();
 export function activateGeneration(next:Workspace){
  lock(false);pending=null;workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
- tables=[];lootTables=[];registry=null;run=null;tableCreated=null;tableDraft=null;lootDraft=null;previewDirty=false;planningBasis=null;fillBasis=null;
+ defaultOverrides.clear();tables=[];lootTables=[];registry=null;run=null;tableCreated=null;tableDraft=null;lootDraft=null;previewDirty=false;planningBasis=null;fillBasis=null;
  for(const id of ['table-manager','loot-table-manager','preset-manager','generation-discard'])if(get<HTMLDialogElement>(id).open)get<HTMLDialogElement>(id).close();
- restoreCatalog();sourceRefreshNotice();get('generation-workspace').hidden=false;get('generation-feedback').textContent='';renderPreview();void refreshGeneration();
+ generationPlanningChanged(null);get('generation-defaults-source').textContent='';restoreCatalog();sourceRefreshNotice();get('generation-workspace').hidden=false;get('generation-feedback').textContent='';renderPreview();void refreshGeneration();
 }
 export async function flushGeneration(){
  if(get<HTMLDialogElement>('preset-manager').open){tell('Schließe zuerst die Generator-Einstellungen. Ungespeicherte Änderungen bleiben dort erhalten.',true);return false;}
@@ -68,7 +76,7 @@ export function sourceActionAvailability(selectedId:string,sources:readonly {id:
 function renderSourceActions(){const encounter=sourceActionAvailability(value('encounter-table-list'),tables),loot=sourceActionAvailability(value('loot-table-list'),lootTables);get<HTMLButtonElement>('encounter-table-open').disabled=!encounter.selected;get<HTMLButtonElement>('encounter-table-trash').disabled=!encounter.selected;get<HTMLButtonElement>('loot-table-open').disabled=!loot.selected;get<HTMLButtonElement>('loot-table-trash').disabled=!loot.selected;get<HTMLButtonElement>('loot-table-roll').disabled=!loot.usable;}
 function renderOverview(){const list=get<HTMLSelectElement>('encounter-table-list'),old=list.value,selected=new Set([...get('generation-tables').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value));list.replaceChildren();option(list,'','Tabelle auswählen');const root=get('generation-tables');root.replaceChildren();for(const t of tables){if(!t.trashed||get<HTMLInputElement>('tables-trash-visible').checked)option(list,t.id,t.name+' · '+(t.scope==='installation'?'Installation':'Kampagne')+(t.trashed?' · Papierkorb':''));if(!t.trashed){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=t.id;box.checked=selected.has(t.id);box.onchange=()=>{previewDirty=true;sourceLabel();renderPreview();};label.className='check-label';label.append(box,document.createTextNode(t.name));root.append(label);}}list.value=old;
  const lootList=get<HTMLSelectElement>('loot-table-list'),lootOld=lootList.value;lootList.replaceChildren();option(lootList,'','Beutetabelle auswählen');for(const t of lootTables)if(!t.trashed||get<HTMLInputElement>('loot-trash-visible').checked)option(lootList,t.id,t.name+(t.trashed?' · Papierkorb':''));if(lootTables.some(t=>t.id===lootOld&&(!t.trashed||get<HTMLInputElement>('loot-trash-visible').checked)))lootList.value=lootOld;
- sourceLabel();renderSourceActions();
+ sourceLabel();renderSourceActions();applyPresetDefaults();
  const presets=get<HTMLSelectElement>('generator-preset-list'),current=presets.value;presets.replaceChildren();for(const p of registry?.presets??[])option(presets,p.id,p.name+(p.system?' · geschützt':''));presets.value=current||registry?.effectiveId||'';get('generator-effective').textContent='Wirksam für diese Kampagne: '+(registry?.presets.find(p=>p.id===registry?.effectiveId)?.name??'Systempreset');const habitat=get<HTMLSelectElement>('generation-habitat');if(habitat.options.length===1)for(const h of bridge.info()?.habitats??[])option(habitat,h,h);if(pending)lock(true);}
 function sourceLabel(){const world=worldSourceFilters();get('generation-source').textContent=world.locationId||world.factionIds?.length?'Nur gemeinsame Quellen des Weltkontexts, gewählter Tabellen, Umgebung und Katalogfilter.':get('generation-tables').querySelectorAll('input:checked').length?'Nur die ausgewählten Tabellen, Umgebung und Katalogfilter.':'Keine Tabelle ausgewählt: normaler Monsterkatalog mit Umgebung und Katalogfiltern.';renderCatalogContext();}
 export function catalogFilterSummary(query:CreatureCatalogQuery):string[]{
@@ -77,7 +85,7 @@ export function catalogFilterSummary(query:CreatureCatalogQuery):string[]{
 }
 function renderCatalogContext(){const filters=catalogFilterSummary(bridge.filters());get('generation-catalog-summary').textContent=filters.length?'Aktive Katalogfilter: '+filters.join(' · '):'Keine zusätzlichen Katalogfilter.';get('generation-clear-catalog').hidden=!filters.length;}
 const partyBasis=(party:EncounterPlan['party']|null)=>JSON.stringify(party?.map(p=>[p.name,p.level,p.count])??null);
-export function generationPlanningChanged(party:EncounterPlan['party']|null,plan?:EncounterPlan|null){const next=partyBasis(party),base=plan?JSON.stringify([plan.id,plan.revision,plan.name,plan.notes,plan.entries]):null,changed=fillBasis!==base;fillBasis=base;const partyChanged=planningBasis!==next;planningBasis=next;if(!partyChanged&&!changed)return;get('generation-feedback').textContent='';if(run&&(partyBasis(run.request.party)!==next||get<HTMLInputElement>('generation-fill').checked&&changed)){previewDirty=true;renderPreview();}}
+export function generationPlanningChanged(party:EncounterPlan['party']|null,plan?:EncounterPlan|null){const next=partyBasis(party),base=plan?JSON.stringify([plan.id,plan.revision,plan.name,plan.notes,plan.entries]):null,changed=fillBasis!==base;fillBasis=base;const partyChanged=planningBasis!==next;planningBasis=next;get('generation-party-context').textContent=party===null?'Für Vorschläge zuerst eine Vorlage mit Planungsparty öffnen.':!party.length?'Planungsparty ist leer. Figuren und Level über „Zur Planungsparty“ eintragen.':party.some(p=>p.level===null)?'Planungsparty: '+party.reduce((n,p)=>n+p.count,0)+' Figuren · Level fehlen.':'Planungsparty: '+party.map(p=>p.count+' × Level '+p.level).join(' · ');if(!partyChanged&&!changed)return;get('generation-feedback').textContent='';if(run&&(partyBasis(run.request.party)!==next||get<HTMLInputElement>('generation-fill').checked&&changed)){previewDirty=true;renderPreview();}}
 
 export function generationCatalogFiltersChanged(){renderCatalogContext();if(!pending)get('generation-feedback').textContent='';if(run){previewDirty=true;renderPreview();}}
 function generationNotice(text:string,error=false){const node=get('generation-feedback');node.textContent=text;node.classList.toggle('generation-warning',error);tell(text,error);}
@@ -194,6 +202,7 @@ tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required
  get('generator-settings').onclick=()=>{void import('./preset-settings-ui').then(ui=>ui.openPresetSettings(workspace?.campaign.id??null,value('generator-preset-list'))).catch(e=>tell(e.message,true));};
  window.addEventListener('generator-registry-changed',()=>void refreshGeneration());
  get('generation-discard-keep').onclick=()=>get<HTMLDialogElement>('generation-discard').close();get('generation-discard-confirm').onclick=()=>{get<HTMLDialogElement>('generation-discard').close();discard();};
- get('generation-refresh').onclick=()=>{void refreshGeneration();};for(const control of get('generation-fields').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))control.oninput=()=>{previewDirty=true;renderPreview();};
+ get('generation-refresh').onclick=()=>{void refreshGeneration();};for(const control of get('generation-fields').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))control.oninput=()=>{const key=control.id.replace('generation-','');if(defaultKeys.some(k=>k===key)){defaultOverrides.add(key);applyPresetDefaults();}previewDirty=true;renderPreview();};
+ get('generation-use-defaults').onclick=()=>{defaultOverrides.clear();applyPresetDefaults();};
  get('generation-form').onsubmit=event=>{event.preventDefault();generate();};get('generation-history').onchange=()=>{void loadHistory();};
 }

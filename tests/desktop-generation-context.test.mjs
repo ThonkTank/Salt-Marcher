@@ -63,3 +63,20 @@ test('a history event cannot replace a preview while its explicit acceptance is 
 test('adopting the same planning party does not falsely stale an accepted or historical preview',async t=>{const x=await fixture(t);await x.make();x.ui.generationPlanningChanged(x.calls[0].party.map(p=>({...p,id:'copy-'+p.id})));assert.equal(x.choice().disabled,false);assert.doesNotMatch(x.el('generation-preview').textContent,/Einstellungen geändert/);x.setFilters({text:'Different'});x.ui.generationPlanningChanged(x.calls[0].party);assert.equal(x.choice().disabled,true);});
 
 test('fill mode sends the saved plan basis and a later roster edit invalidates its visible proposal',async t=>{const x=await fixture(t);x.ui.generationPlanningChanged(x.plan.party,x.plan);x.el('generation-fill').checked=true;await x.make();assert.deepEqual(x.calls[0].fillPlan,{id:'plan',revision:1});assert.equal(x.choice().disabled,false);x.ui.generationPlanningChanged(x.plan.party,{...x.plan,entries:[{...x.plan.entries[0],count:3}]});assert.equal(x.choice().disabled,true);assert.match(x.el('generation-preview').textContent,/Einstellungen geändert/);});
+
+test('effective preset defaults reach requests while explicit choices survive refresh until reset',async t=>{
+ const x=await fixture(t);let defaults={difficulty:'easy',amount:'few',balance:'even',diversity:'high'};
+ window.campaign.generatorRegistry=async()=>({ok:true,value:{revision:2,effectiveId:'patrol',presets:[{id:'patrol',name:'Patrouillen',config:{generationDefaults:defaults}}]}});
+ await x.ui.refreshGeneration();await x.make();for(const[key,value]of Object.entries(defaults))assert.equal(x.calls[0][key],value);
+ x.el('generation-difficulty').value='hard';x.el('generation-difficulty').oninput();
+ defaults={difficulty:'medium',amount:'many',balance:'varied',diversity:'low'};await x.ui.refreshGeneration();assert.equal(x.el('generation-difficulty').value,'hard');assert.equal(x.el('generation-amount').value,'many');assert.match(x.el('generation-defaults-source').textContent,/Eigene Auswahl/);
+ await x.make();assert.equal(x.calls[1].difficulty,'hard');assert.equal(x.calls[1].amount,'many');assert.equal(x.choice().disabled,false);
+ x.el('generation-use-defaults').onclick();assert.equal(x.el('generation-difficulty').value,'medium');assert.equal(x.choice().disabled,true);await x.make();assert.equal(x.calls[2].difficulty,'medium');
+ x.ui.activateGeneration({...x.w,token:'new',campaign:{id:'other'}});await settle();assert.equal(x.el('generation-difficulty').value,'medium');assert.doesNotMatch(x.el('generation-defaults-source').textContent,/Eigene Auswahl/);
+});
+test('planning prerequisites and the actual party are visible before generation',async t=>{
+ const x=await fixture(t);x.ui.generationPlanningChanged(null);assert.match(x.el('generation-party-context').textContent,/zuerst.*Vorlage/);
+ x.ui.generationPlanningChanged([]);assert.match(x.el('generation-party-context').textContent,/leer/);
+ x.ui.generationPlanningChanged([{name:'Reisende',level:3,count:4}]);assert.match(x.el('generation-party-context').textContent,/4 × Level 3/);
+ x.ui.generationPlanningChanged([{name:'Reisende',level:null,count:4}]);assert.match(x.el('generation-party-context').textContent,/Level fehlen/);
+});
