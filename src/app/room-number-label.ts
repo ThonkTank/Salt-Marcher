@@ -2,7 +2,7 @@ import type {Room} from './contracts';
 import {centerInRoom} from './dungeon-model';
 
 /** A passive key to the room list, readable at every camera scale. */
-export function appendRoomNumber(scene:SVGGElement,room:Room,unitsPerPixel:number){
+export function appendRoomNumber(scene:SVGElement,room:Room,unitsPerPixel:number){
   if(!Number.isFinite(unitsPerPixel)||unitsPerPixel<=0)return;
   let at;
   try{at=centerInRoom(room);}catch{return;} // A missing label must never hide the map.
