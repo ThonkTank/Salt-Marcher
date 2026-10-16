@@ -147,3 +147,13 @@ test('old metadata failure cannot replace the new campaign source credit or resu
 test('explicit saved encounter source opens while the browsing query and registry remain pending',async t=>{
  const x=await fixture(t);await x.resolve(0,'Guard');await x.opened;window.campaign.generatorRegistry=()=>deferred().promise;window.campaign.encounterPlan=async(token,id)=>({ok:true,value:{id,revision:1,name:'Viewed source',notes:'  Unchanged author prose\r\n',party:[],entries:[],sources:[],catalogHash:'pinned'}});const opened=x.ui.openCatalogReference({kind:'encounter',id:'source'});await until(()=>x.el('encounter-name').value==='Viewed source');await opened;assert.equal(x.el('encounter-notes').value,'  Unchanged author prose\r\n');assert.deepEqual(x.liveAdds,[]);
 });
+
+for(const failure of [false,true])test(`detail ${failure?'failure':'success'} retains the result buttons and updates selection without rebuilding rows`,async t=>{
+ const x=await fixture(t),held=deferred();window.campaign.creature=()=>held.promise;
+ x.reads[0].resolve({ok:true,value:{...page('Guard'),rows:[...page('Guard').rows,...page('Wolf').rows]}});await x.opened;
+ const buttons=[...x.el('catalog-rows').querySelectorAll('button')],text=x.el('catalog-page').textContent;
+ buttons[0].click();assert.equal(buttons.every(b=>b.isConnected),true);assert.deepEqual(buttons.map(b=>b.getAttribute('aria-pressed')),['false','false']);
+ held.resolve(failure?{ok:false,error:'Controlled detail error'}:{ok:true,value:detail('Guard')});await until(()=>x.el('catalog-detail').getAttribute('aria-busy')==='false');
+ const current=[...x.el('catalog-rows').querySelectorAll('button')];assert.equal(current.every((b,i)=>b===buttons[i]),true);assert.deepEqual(current.map(b=>b.getAttribute('aria-pressed')),[String(!failure),'false']);assert.equal(x.el('catalog-page').textContent,text);assert.equal(x.reads.length,1);
+ if(failure){assert.equal(x.el('catalog-live-add').disabled,true);window.campaign.creature=async()=>({ok:true,value:detail('Wolf')});buttons[1].click();await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Wolf');assert.deepEqual(buttons.map(b=>b.getAttribute('aria-pressed')),['false','true']);assert.equal(buttons.every(b=>b.isConnected),true);}
+});

@@ -44,6 +44,14 @@ wiederholt die Abfrage. Falsche Kreatur-IDs und überholte Antworten erhalten
 keine Übergabeautorität. Kampagnenwechsel leert die Auswahl; beim Schließen
 einer Tabellensuche wird die vorherige Auswahl wiederhergestellt. Der
 Statblock bleibt schreibgeschützte Quelleninformation.
+Detail-Loading, Erfolg und Fehler erneuern nur Statblock und Auswahlmarkierung;
+sie bauen die Trefferzeilen nicht erneut auf. Ergebnisbuttons tragen die stabile
+Creature-ID. Damit bleiben DOMidentität und Desktop-Tastaturfokus bei Enter,
+langsamem Read, Fehler und ausdrücklichem Retry erhalten. Bei schmalem Viewport
+bleibt die vorhandene ausdrückliche Fokusführung zum Inspector wirksam. Erst
+eine neue Ergebnisquery ersetzt die Zeilen; die weiterhin sichtbare ID wird
+dabei wie bisher markiert. Keine zweite Auswahl- oder Tastaturverwaltung.
+
 Es gibt keine neue Persistenz oder Schemaänderung.
 
 `desktop-catalog-query-context.test.mjs` verzögert Query-/Detailantworten und
@@ -55,9 +63,12 @@ Retry und gesperrte Übergaben während Laden/Fehler.
 Invalidierung alter Generierungsvorschläge. Verzögerte Quellen werden einzeln
 geprüft; derselbe Lesefluss ist in der nativen Desktop-App mit echtem Korpus
 und vier gleichzeitig ausstehenden Nebenquellen geprüft. Das sind begrenzte
-Controller-/DOM- und native Lesebelege;
-native Tastatur/Fokus, Langlisten und fachliche Generierung benötigen ihre
-eigenen Nachweise.
+Controller-/DOM- und native Lesebelege.
+Ein zusätzlicher nativer Enterlauf prüft den Ergebnisfokus vor/während/nach
+Detailread, kontrolliertem Fehler und Retry sowie die schmale Inspectorführung;
+Linkedomidentität allein gilt dafür nicht als Fokusbeleg. Vollständige
+Tastaturnavigation, Langlisten und fachliche Generierung benötigen weiter eigene
+Nachweise.
 
 ## Nächste ausführbare Lieferungen
 
