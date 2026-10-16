@@ -1,5 +1,6 @@
 import type {CombatResolution} from '../combat-contracts';
 import {readCombat} from './combat';
+import {combatNpcLosses} from './combat-world-losses';
 import {readLiveScene} from './live';
 import {checkedTreasureRow} from './progression';
 
@@ -16,6 +17,6 @@ export function readCombatResolution(db:any,cam:string,sceneId:string,combatId:s
    if(items.length===25){more=true;break;}
    items.push({id:t.id,revision:t.revision,title:t.title,source,quantity:t.items.reduce((n,i)=>n+i.quantity,0),available:t.items.reduce((n,i)=>n+i.quantity-i.allocated,0)});last=String(row.cursor);
   }
-  return{combatId:combat.id,sceneId,combatRevision:combat.revision,sceneRevision:scene.revision,outcome:combat.outcome,rewards:combat.rewards??null,treasures:items,next:more?last:null};
+  return{combatId:combat.id,sceneId,combatRevision:combat.revision,sceneRevision:scene.revision,outcome:combat.outcome,rewards:combat.rewards??null,npcLosses:combatNpcLosses(db,cam,combat),treasures:items,next:more?last:null};
  })();
 }
