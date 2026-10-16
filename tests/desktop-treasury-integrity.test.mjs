@@ -65,3 +65,16 @@ test('allocated history and editable remaining quantities have independent bound
  x.store.executeProgress(edit(2));const award=x.store.executeProgress(x.command({kind:'allocate',treasureId:x.id,expectedRevision:3,itemId:lot.id,expectedDefinitionRevision:lot.currentDefinition.revision,quantity:1000000,characterId:member.id,expectedMembershipRevision:member.membershipRevision}));
  const ledger=x.store.ledgerItem(x.w.token,award.ledgerIds[0]);x.store.executeProgress(edit(4));const book=x.store.treasure(x.w.token,x.id);assert.equal(book.items[0].quantity,2000000);assert.equal(book.items[0].allocated,1000000);assert.deepEqual(x.store.ledgerItem(x.w.token,ledger.id),ledger);await x.store.backup(path.join(x.root,'restocked-safe.sqlite'));
 });
+
+test('canonical coin denominations can be selected, partly distributed and reopened without redefining value',t=>{
+ const x=fixture(t),member=activeMember(x);x.store.discardTreasuryDraft(x.w.token,x.id,x.draft.writeId);
+ const q={search:'',category:'coins',magic:'',rarity:'',attunement:'',sort:'name',direction:'asc',after:0,includeTrashed:false};
+ const coins=x.store.itemDefinitions(q).items;assert.equal(coins.filter(d=>d.id.startsWith('srd51-coin-')).length,5);
+ const gold=coins.find(d=>d.name==='Goldmünze');assert.equal(gold.unitCopper,'100');assert.equal(gold.source.kind,'srd51');
+ const reference={kind:'authored',definitionId:gold.id,revision:gold.revision};
+ const id=x.store.executeProgress(x.command({kind:'treasure-create',title:'Münzfund',locationId:null})).treasureId;
+ x.store.executeProgress(x.command({kind:'treasure-edit',treasureId:id,expectedRevision:1,title:'Münzfund',locationId:null,reason:'Fund',items:[{lotId:null,item:{name:gold.name,category:'coins',quantity:21,valueGold:'1',reference}}]}));
+ const lot=x.store.treasure(x.w.token,id).items[0],result=x.store.executeProgress(x.command({kind:'allocate-batch',treasureId:id,expectedRevision:2,allocations:[{itemId:lot.id,expectedDefinitionRevision:gold.revision,quantity:10,characterId:member.id,expectedMembershipRevision:member.membershipRevision}]}));
+ const ledger=x.store.ledgerItem(x.w.token,result.ledgerIds[0]);assert.deepEqual(ledger.reference,reference);assert.equal(ledger.quantity,10);
+ const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.cam.id),rest=fresh.treasure(w.token,id).items[0];assert.equal(rest.quantity-rest.allocated,11);assert.deepEqual(rest.reference,reference);assert.equal(rest.currentDefinition.unitCopper,'100');assert.deepEqual(fresh.ledgerItem(w.token,ledger.id).reference,reference);}finally{fresh.close();}
+});
