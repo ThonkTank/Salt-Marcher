@@ -47,7 +47,7 @@ import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './mu
 import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPlayback} from './world-ui';
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
 import { validateRoom, type Room, type RoomGeometry, type WorkspaceGeometry, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
-import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,prepareNextVisit,showDayPreparation } from './preparation';
+import { activatePreparation, ensurePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,prepareNextVisit,showDayPreparation } from './preparation';
 import {setNoteRoomNavigation} from './preparation';
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openPlannedVisitReview,prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
@@ -190,7 +190,7 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
     case 'city': await openCity(); break;
     case 'autonomy': await openAutonomy(); break;
     case 'dungeon': await openDungeon(); break;
-    case 'preparation': if(owner)await activatePreparation(owner);break;
+    case 'preparation': if(owner)await ensurePreparation(owner);break;
   }
   window.requestAnimationFrame(() => {
     if (workspace !== owner || activationIntent !== intent || viewRequest !== request || activationFailed) return;

@@ -127,8 +127,12 @@ export async function leavePreparation(): Promise<boolean> {
   try { await retainOpenDrafts(); tell('Offene Vorbereitung als Arbeitsentwurf gesichert.'); return true; }
   catch (error) { tell('Vorbereitung kann noch nicht verlassen werden: ' + (error as Error).message, true); return false; }
 }
+/** Opening preserves this editor; explicit activation renews its generation. */
+export async function ensurePreparation(workspace:WorkspaceGeometry) {
+  if(context?.token===workspace.token&&preparationLoaded)return;
+  await activatePreparation(workspace);
+}
 export async function activatePreparation(workspace: WorkspaceGeometry,load=true) {
-  if(load&&context?.token===workspace.token&&preparationLoaded)return;
   preparationLoaded=false;
   noteThread?.reset();
   roomUses?.reset();

@@ -412,7 +412,10 @@ oder sämtliche Elementnotizen. Ein gewähltes Element wird vollständig
 nachgelesen; die Key-Werkzeuge behalten ihre vollständigen Autorenansichten.
 Vorbereitung wird bei Aktivierung zurückgesetzt und erst bei tatsächlichem
 Bedarf geladen; die Liveansicht darf ihre benötigten Wissensquellen weiterhin
-lesen. Aktiver Raum, bestätigter Detailstand und Arbeitsentwurf sind getrennt;
+lesen. Normales Öffnen (`ensurePreparation`) erhält den aktiven Editor;
+ausdrückliches Neuaktivieren (`activatePreparation`) lädt neu und erneuert
+die Generation, damit frühere Save-/Quell-/Referenzantworten den neuen Stand
+nicht ersetzen. Aktiver Raum, bestätigter Detailstand und Arbeitsentwurf sind getrennt;
 Kampagnen-/Raumwechsel verwerfen keine ungültigen oder unbestätigten Entwürfe.
 Die Geschosssynchronisierung erhält einen schon auf diesem Geschoss gewählten
 Raum. Kompakte Raumcommits behalten die bisherigen Atlas-/Raumreceipts und
