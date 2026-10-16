@@ -13,7 +13,8 @@ export type PreparationChange =
   | { kind: 'location'; expectedRevision: number | null; document: LocationDocument }
   | { kind: 'location-trash'; id: string; expectedRevision: number; trashed: boolean }
   | { kind: 'plan'; expectedRevision: number | null; plan: ManualPlan; opening?:{visitId:string;readAloud:string;noteIds:string[]} };
-export interface PreparationCommand { commandId: string; token: string; campaignId?: string; draftWriteId?: string; change: PreparationChange }
+export interface SceneCreation { sceneId: string; expectedSceneRevision: number; expectedMembershipRevision: number; expectedDeskRevision: number; pin: boolean; contributors: string[] }
+export interface PreparationCommand { sceneCreation?: SceneCreation; commandId: string; token: string; campaignId?: string; draftWriteId?: string; change: PreparationChange }
 export type PreparationEdit = Extract<PreparationChange, { kind: 'note' | 'plan' | 'location' }>;
 export interface PreparationDraft { version: 1; writeId: string; change: PreparationEdit; failedCommand: PreparationCommand | null }
 function draftFields(value: object, required: string[], optional: string[] = []) {

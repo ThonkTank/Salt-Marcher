@@ -29,7 +29,7 @@ import {readWorldSources,installWorldSources} from './world-sources';
 import {removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
 import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft,validateGroups} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
-import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk} from './scene-desk';
+import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk,applySceneCreation,readSceneCreationDraft,keepSceneCreationDraft} from './scene-desk';
 import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft,validateFinishDrafts} from './finish-drafts';
 import {installNarrative,readNarrative,saveNarrative,validateNarrativeState,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
 import {readPreparedGroup} from './session';
@@ -644,6 +644,8 @@ export class CampaignStore {
   searchDesk(token:string,kind:string,search:string,offset:number){return searchDesk(this.db,this.guard(token),kind,search,offset);}
   deskContent(token:string,ref:import('../scene-desk-contracts').DeskRef){return deskContent(this.db,this.guard(token),ref);}
   pinSceneDesk(token:string,id:string,revision:number,ref:import('../scene-desk-contracts').DeskRef,pin:boolean){return pinSceneDesk(this.db,this.guard(token),id,revision,ref,pin);}
+  sceneCreationDraft(token:string,sceneId:string){return readSceneCreationDraft(this.db,this.guard(token),sceneId);}
+  keepSceneCreationDraft(token:string,sceneId:string,draft:import('../scene-desk-contracts').SceneCreationDraft|null,expected:string|null){return keepSceneCreationDraft(this.db,this.guard(token),sceneId,draft,expected);}
   keepDeskDraft(token:string,draft:PreparationDraft,expected:string|null){return this.db.transaction(()=>{const target=preparationTarget(draft.change),old=this.preparationDraft(token,target.kind,target.id);if((old?.writeId??null)!==expected)throw new Error('Notizeingabe inzwischen an anderer Stelle geändert.');this.keepPreparationDrafts(token,[draft]);}).immediate();}
   finishDraft(token:string,owner:import('../finish-draft-contracts').FinishOwner){return readFinishDraft(this.db,this.guard(token),owner);}
   keepFinishDraft(token:string,draft:import('../finish-draft-contracts').FinishDraft,expected:string|null){return keepFinishDraft(this.db,this.guard(token),draft,expected);}
@@ -1001,6 +1003,7 @@ export class CampaignStore {
       if(change.kind==='plan'&&change.opening){const o=change.opening;
         this.executeSession({commandId:command.commandId+'|opening',campaignId,token:command.token,action:{kind:'visit',planId:change.plan.id,expectedRevision:0,detail:{visitId:o.visitId,revision:0,readAloud:o.readAloud,noteIds:o.noteIds,groupIds:[],reward:null}}});
       }
+      applySceneCreation(this.db,campaignId,command);
       this.db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(command.commandId, fingerprint, campaignId, targetId, revision);
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
       if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);

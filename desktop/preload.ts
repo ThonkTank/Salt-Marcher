@@ -106,6 +106,8 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   searchDesk:(token:string,kind:string,search:string,offset:number)=>ipcRenderer.invoke('campaign:search-desk',token,kind,search,offset),
   deskContent:(token:string,ref:unknown)=>ipcRenderer.invoke('campaign:desk-content',token,ref),
   pinSceneDesk:(token:string,id:string,revision:number,ref:unknown,pin:boolean)=>ipcRenderer.invoke('campaign:pin-scene-desk',token,id,revision,ref,pin),
+  sceneCreationDraft:(token:string,id:string)=>ipcRenderer.invoke('campaign:scene-creation-draft',token,id),
+  keepSceneCreationDraft:(token:string,id:string,draft:unknown,expected:string|null)=>ipcRenderer.invoke('campaign:keep-scene-creation-draft',token,id,draft,expected),
   keepDeskDraft:(token:string,draft:unknown,expected:string|null)=>ipcRenderer.invoke('campaign:keep-desk-draft',token,draft,expected),
   finishDraft:(token:string,owner:unknown)=>ipcRenderer.invoke('campaign:finish-draft',token,owner),
   keepFinishDraft:(token:string,draft:unknown,expected:string|null)=>ipcRenderer.invoke('campaign:keep-finish-draft',token,draft,expected),
