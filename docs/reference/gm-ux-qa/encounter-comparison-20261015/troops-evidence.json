@@ -256,5 +256,23 @@
     "Manual initiative editing still opens full values editor",
     "Large rosters retain nested scrolling",
     "No human GM acceptance or complete D&D Beyond runner parity claimed"
-  ]
+  ],
+  "integrated_smoke": {
+    "basis": "9a3dd7cc0ab136063d37c8433d44b403d69f593d",
+    "version": "0.154.0",
+    "schema": 45,
+    "native": "Existing reinforced15 opened after shared Atlas integration, Alba current; five Schützen14, three Nahkämpfer9; GoblinB2/7, WolfAProne verified; normal app and helper exits0",
+    "close": {
+      "ok": true,
+      "exit_code": 0,
+      "product_descendants_remaining": []
+    },
+    "build_sha256": {
+      ".build/desktop/main.cjs": "97f63a4b53db6e7bfb931fd7c036a770128fc7c4d4cb617ecd1ec185ccf3a544",
+      ".build/desktop/ui/renderer.js": "235e78436de1c4f593dbb6662d97aad4937d9c962039c678d415f251709e8268",
+      ".build/desktop/ui/index.html": "5411a346502067ef5d1477c356540b5ce7f423745f3939ad1be601da0ca1883c",
+      ".build/desktop/ui/app.css": "aabc570b082720f03970740cd11cd771ddcfe780f5c64e17ccea57361ea8316e"
+    },
+    "tests": "Combined47 combat/draft +8 Atlas:54/55 initially; obsolete schema33 package-import expectation failed due documented schema45 policy. Updated test checks explicit rejection, unchanged package and unchanged target plus owned local-store draft initialization. Affected draft suite retest10/10; other45 cases passed in initial merged run. Desktop typecheck passed."
+  }
 }
