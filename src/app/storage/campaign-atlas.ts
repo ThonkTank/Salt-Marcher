@@ -22,6 +22,7 @@ export function createCampaignAtlas(db: any, cam: string) {
       revision: 1,
       name: "Atlas",
       hexMeters: 4828.032,
+      metricVersion: 2,
       climate: "temperate",
       seed: cam,
       cells: [],
@@ -143,6 +144,7 @@ const tracked = [
   "location_map",
   "world_note",
   "atlas_binding",
+  "atlas_landscape",
   "atlas_entrance",
   "atlas_local_journey",
   "npc_position",
@@ -493,6 +495,7 @@ export function validateCampaignAtlases(db: any) {
   for (const table of [
     "campaign_atlas",
     "atlas_binding",
+    ...(schema>=46?["atlas_landscape","atlas_reference_asset","atlas_landscape_migration"]:[]),
     "atlas_command",
     "atlas_receipt",
     "atlas_import_source",

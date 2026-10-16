@@ -1,3 +1,4 @@
+import {effectiveLandscape} from '../atlas-landscape';
 import { atlasPartyPoint } from "../atlas-runtime-model";
 import { createHash } from "node:crypto";
 import type { Point } from "../contracts";
@@ -178,8 +179,8 @@ export function previewAtlasLocal(
       a.geometry.travelPace?.pace.reason ?? "Gruppentempo fehlt.",
     );
   const accessible = (p: Point) => {
-    const cell = cellAt(a.terrain, atlasHexAt(p, a.terrain.hexMeters), 0);
-    return !hexAccessProblem(cell) && !(cell.terrain === "water" && !cell.road);
+    const cell = {...cellAt(a.terrain, atlasHexAt(p, a.terrain.hexMeters), 0),...effectiveLandscape(a.terrain.landscape??[],p)};
+    return !hexAccessProblem(cell) && cell.terrain !== "water";
   };
   if (!accessible(end))
     throw new Error(

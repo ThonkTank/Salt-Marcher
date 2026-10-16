@@ -649,3 +649,5 @@ setInterval(() => { void (async () => {
   try { const message = unwrap(await api.backupStatus()); el('backup-status').hidden = !message; el('backup-status').textContent = message; }
   catch { el('backup-status').hidden = false; el('backup-status').textContent = 'Status der Wiederherstellungskopie nicht verfügbar.'; }
 })(); }, 5000);
+
+document.addEventListener('atlas-location-request',e=>{const ref=(e as CustomEvent).detail;if(!workspace||!campaignAtlas)return;void (async()=>{if(!await leaveWorkspace())return;showTab('atlas');await campaignAtlas!.navigateLocation(ref.id,ref.sectionId);})().catch(e=>status(e.message,true));});

@@ -11,7 +11,7 @@ export class PassiveMapCanvas {
  private readonly controls:HTMLDivElement;private readonly back:HTMLButtonElement;private readonly forward:HTMLButtonElement;private readonly resetButton:HTMLButtonElement;
  private past:CanvasBox[]=[];private future:CanvasBox[]=[];private views=new Map<string,SavedView>();private wheelAt=0;
  private restored=false;private scene:SVGGElement|null=null;
- constructor(readonly root:SVGSVGElement,private options:{relative?:boolean;initial:CanvasBox;minWidth?:number;maxWidth?:number;pan?:(event:PointerEvent)=>boolean;prepareCamera?:()=>void;locked?:()=>boolean;changed?:(box:CanvasBox,reason:CameraReason)=>void}){
+ constructor(readonly root:SVGSVGElement,private options:{relative?:boolean;initial:CanvasBox;minWidth?:number;maxWidth?:number|(()=>number);pan?:(event:PointerEvent)=>boolean;prepareCamera?:()=>void;locked?:()=>boolean;changed?:(box:CanvasBox,reason:CameraReason)=>void}){
   this.box={...options.initial};this.initial={...options.initial};this.apply();
   const doc=root.ownerDocument;
   this.controls=doc.createElement('div');this.controls.className='map-canvas-controls';this.controls.dataset.canvasFor=root.id;this.controls.setAttribute('role','group');this.controls.setAttribute('aria-label','Kartenansicht');
@@ -50,6 +50,7 @@ export class PassiveMapCanvas {
  private remember(box:CanvasBox){if(same(box,this.box))return;if(!this.past.length||!same(this.past.at(-1)!,box))this.past.push({...box});if(this.past.length>32)this.past.shift();this.future=[];this.refreshControls();}
  set(box:CanvasBox,notify=false,reason:CameraReason='set',coalesce=false){
   if(!Object.values(box).every(Number.isFinite)||box.width<=0||box.height<=0)throw new Error('Kartenausschnitt benötigt endliche positive Maße.');
+  if(typeof this.options.maxWidth==='function'){const max=this.options.maxWidth();if(box.width>max){const ratio=max/box.width;box={x:box.x+box.width*(1-ratio)/2,y:box.y+box.height*(1-ratio)/2,width:max,height:box.height*ratio};}}
   this.wheelAt=0;const before=this.box;this.box={...box};if(!this.drag&&!coalesce)this.remember(before);this.apply();this.refreshControls();if(notify)this.options.changed?.(this.view,reason);
  }
  /** Opaque presentation contexts never contain adopter-owned map data. At most 32 are cached. */
@@ -62,7 +63,7 @@ export class PassiveMapCanvas {
  defaultView(box:CanvasBox){this.initial={...box};this.past=[];this.future=[];this.refreshControls();}
  zoom(factor:number,anchor={x:this.box.x+this.box.width/2,y:this.box.y+this.box.height/2},coalesce=false){
   if(!Number.isFinite(factor)||factor<=0)return;
-  const width=Math.min(this.options.maxWidth??1e12,Math.max(this.options.minWidth??.001,this.box.width*factor)),ratio=width/this.box.width;
+  const width=Math.min((typeof this.options.maxWidth==='function'?this.options.maxWidth():this.options.maxWidth)??1e12,Math.max(this.options.minWidth??.001,this.box.width*factor)),ratio=width/this.box.width;
   this.set({x:anchor.x-(anchor.x-this.box.x)*ratio,y:anchor.y-(anchor.y-this.box.y)*ratio,width,height:this.box.height*ratio},true,'zoom',coalesce);
  }
  reset(){this.cancel();this.set(this.initial,true,'reset');}

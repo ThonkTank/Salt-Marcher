@@ -199,7 +199,7 @@ separat budgetiert; ein Preview ist kein Autosave der Vorschlagswahrheit.
 
 ## Mehrstufige Landschaft und Atlasgestaltung
 
-Hexgröße bezeichnet Mittelpunktabstand: 3, 9, 27, … Meilen mit Faktor 3;
+Hexgröße bezeichnet den Abstand gegenüberliegender Kanten: 3, 9, 27, … Meilen mit Faktor 3 (bei regelmäßigen Nachbarhexes zugleich Mittelpunktabstand). Die kleinste Stufe beträgt 3 Meilen; die weiteste Kameraansicht umfasst eine erdgroße Referenz von etwa 40.000 × 20.000 km, ohne die Welt zu begrenzen;
 größere Stufen bei Bedarf, gemeinsamer Ursprung/Ausrichtung. Reguläre Hexes
 verschiedener Stufen verschachteln sich nicht exakt. Daher wird jede
 Eigenschaft über positive Flächenüberschneidung von gröberer Vorgabe und
