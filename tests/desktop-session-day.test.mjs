@@ -12,3 +12,10 @@ const path=x.root+'/copy.sqlite';await x.store.campaignSnapshot(x.w.token,path);
 });
 test('removed day controls cannot change a later displayed plan; a real control retains its shown plan revision',t=>{const x=fixture(t),old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><section><div id="session-panel"></div></section></body></html>');Object.assign(globalThis,{window,document});const values=new WeakMap();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return values.get(this)??'';},set(v){values.set(this,v);}});const calls=[],panel=new SessionDayPanel(async(a,current)=>{if(current())calls.push(a);},async()=>{},()=>{});t.after(()=>Object.assign(globalThis,old));const s=x.read();panel.render(s.plan,s,s.profile);const select=document.querySelector('select'),handler=select.onchange;select.value='short';panel.render({...s.plan,id:randomUUID()},s,s.profile);handler();assert.equal(calls.length,0);const fresh=document.querySelector('select');fresh.value='long';fresh.onchange();assert.equal(calls[0].expectedPlanRevision,s.plan.revision);assert.equal(calls[0].rest.kind,'long');assert.equal(calls[0].rest.beforeVisitId,s.plan.scenes[1].id);panel.reset();fresh.onchange();assert.equal(calls.length,1);
 });
+
+test('budget remains visible while the optional day table is folded and preserves the user choice on refresh',t=>{
+ const x=fixture(t),old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><div id="session-panel"></div></body></html>');Object.assign(globalThis,{window,document});t.after(()=>Object.assign(globalThis,old));
+ const panel=new SessionDayPanel(async()=>false,async()=>{},()=>{}),s=x.read();panel.render(s.plan,s,s.profile);
+ const root=document.getElementById('session-day-plan');assert.ok(!root.open);assert.match(root.querySelector('summary').textContent,/3000 angepasste XP.*600 XP überschritten/);
+ root.open=true;panel.render(s.plan,s,s.profile);assert.equal(root.open,true);root.open=false;panel.render(s.plan,s,s.profile);assert.equal(root.open,false);
+});
