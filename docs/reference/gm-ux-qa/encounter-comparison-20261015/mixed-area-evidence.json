@@ -75,7 +75,13 @@
       "failed": 0,
       "log": "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-08/tests-catalog-integration.log"
     },
-    "desktop_typecheck_and_build": "passed on645c1fea"
+    "desktop_typecheck_and_build": "passed on645c1fea",
+    "final_campaign_generation_integration": {
+      "passed": 45,
+      "failed": 0,
+      "log": "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/encounter-run-08/tests-final-integration.log"
+    },
+    "final_desktop_typecheck": "passed oncd699f7a"
   },
   "native_control_incident": "After primarycasepass and durableundo, delayed wheel delivery misdirected optionalprobe and started emptychase inownedfixture. It was explicitly ended throughUI with QA note; no userdata affected. Optionalprobe then reopened fromverifiedcombatheader and completed/cancelled. Incident retained inrawtrace, notproductfriction.",
   "process_receipts": {
@@ -243,5 +249,7 @@
     "before": 0,
     "after": 0
   },
-  "human_acceptance": "not claimed"
+  "human_acceptance": "not claimed",
+  "final_source_basis": "cd699f7a4d8baab6b7657aeeee39322af251f9c8",
+  "native_control_incident_cleanup_verified": "Own emptychase statusfinished, revision2, QAoutcome persisted; actualcase combat unchanged."
 }
