@@ -34,7 +34,7 @@ async function launch(){
  page.setDefaultTimeout(10000);
  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
  if(await page.locator('#tutorial-dialog').isVisible())await page.locator('#tutorial-skip').click();
- await page.locator('#campaigns').selectOption(campaign.id);
+ await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.locator('#workspace-navigation').waitFor({state:'visible'});if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();
  await page.locator('#atlas-tab').click();
  await page.locator('#key-open').click();await page.locator('#key-dialog').waitFor({state:'visible'});
  return page;
