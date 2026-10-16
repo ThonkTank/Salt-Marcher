@@ -240,8 +240,8 @@ export async function flushWorld(): Promise<boolean> {
   return operation;
 }
 type TravelOwner={token:string;sceneId:string;mapId:string};
-function travelOwner():TravelOwner|null{return workspace?{token:workspace.token,sceneId:value('world-scene'),mapId:value('world-map-select')}:null;}
-function ownsTravel(owner:TravelOwner){return workspace?.token===owner.token&&value('world-scene')===owner.sceneId&&value('world-map-select')===owner.mapId;}
+function travelOwner():TravelOwner|null{return workspace&&frame?.scene.id===value('world-scene')?{token:workspace.token,sceneId:frame.scene.id,mapId:value('world-map-select')}:null;}
+function ownsTravel(owner:TravelOwner){return workspace?.token===owner.token&&frame?.scene.id===owner.sceneId&&value('world-scene')===owner.sceneId&&value('world-map-select')===owner.mapId;}
 function clearTravelPreview(){
  travelRequest++;preview=null;if(document.getElementById('travel-evaluation'))el('travel-evaluation').textContent='Keine aktuelle Routenauswertung.';el('travel-preview-summary').textContent='';el('travel-preview-warnings').replaceChildren();el('travel-preview-itinerary').replaceChildren();el<HTMLButtonElement>('travel-preview-accept').disabled=true;
  const dialog=el<HTMLDialogElement>('travel-preview-dialog');if(dialog.open)dialog.close();
@@ -379,10 +379,17 @@ export function activateWorld(w:Workspace){mapSelection++;el('world-map-select')
 export async function openWorld(){if(!workspace)return;const token=workspace.token,[w,p,l]=await Promise.all([window.campaign.world(token),window.campaign.preparation(token,''),window.campaign.live(token)]);if(workspace.token!==token)return;world=unwrap(w);sources=unwrap(p);live=unwrap(l);const maps=el<HTMLSelectElement>('world-map-select'),old=mapDraft?.id??maps.value;maps.replaceChildren();for(const m of world.maps)option(maps,m.id,m.name);maps.value=world.maps.some(m=>m.id===old)?old:world.maps[0]?.id??'';if(maps.value!==old)resetRouteDraft();mapDraft=world.maps.find(m=>m.id===maps.value)?structuredClone(world.maps.find(m=>m.id===maps.value)!):null;const scenes=el<HTMLSelectElement>('world-scene'),prior=scenes.value;scenes.replaceChildren();for(const s of live.scenes)option(scenes,s.id,s.title||'Gruppe '+s.id.slice(0,6));scenes.value=liveTravelOpen&&liveSurface?live.focusId??'':live.scenes.some(s=>s.id===prior)?prior:live.focusId??'';if(scenes.value!==prior)resetRouteDraft();renderLocationOptions();loadMarkerEditor();await reloadScene();renderMapFields();renderCalendar();renderPhenomenonOptions();renderMap();renderCell();renderJourney();}
 async function reloadScene(){
  const token=workspace?.token,id=value('world-scene'),request=++sceneRequest;
+ const current=()=>workspace?.token===token&&value('world-scene')===id&&request===sceneRequest;
  if(!token||!id){frame=null;return;}
- const loaded=unwrap(await window.campaign.sceneWorld(token,id));
- if(workspace?.token===token&&value('world-scene')===id&&request===sceneRequest){if(frame&&(frame.scene.id!==loaded.scene.id||frame.scene.clock.revision!==loaded.scene.clock.revision||frame.position.revision!==loaded.position.revision||frame.scene.membershipRevision!==loaded.scene.membershipRevision))clearTravelPreview();const entering=frame?.scene.id!==loaded.scene.id;frame=loaded;if(entering&&loaded.journey&&['active','paused','interrupted'].includes(loaded.journey.status)){routeMode='target';renderRouteDraft();}}
+ if(frame?.scene.id!==id){frame=null;playback.stop();resetRouteDraft();renderMap();renderJourney();renderRouteDraft();el('world-current').textContent='Reisekontext wird geladen …';}
+ try{
+  const result=await window.campaign.sceneWorld(token,id);if(!current())return;const loaded=unwrap(result);
+  if(loaded.scene.id!==id)throw new Error('Reisekontext gehört zu einer anderen Gruppe.');
+  if(frame&&(frame.scene.clock.revision!==loaded.scene.clock.revision||frame.position.revision!==loaded.position.revision||frame.scene.membershipRevision!==loaded.scene.membershipRevision))clearTravelPreview();
+  const entering=frame?.scene.id!==loaded.scene.id;frame=loaded;if(entering&&loaded.journey&&['active','paused','interrupted'].includes(loaded.journey.status)){routeMode='target';renderRouteDraft();}
+ }catch(error){if(!current())return;frame=null;playback.stop();clearTravelPreview();renderMap();renderJourney();renderRouteDraft();el('world-current').textContent='Reisekontext nicht verfügbar: '+(error as Error).message;throw error;}
 }
+
 function renderMapFields(){const picker=el<HTMLSelectElement>('world-map-select');if(mapDraft){const opt=[...picker.options].find(o=>o.value===mapDraft!.id);if(opt)opt.textContent=mapDraft.name;}el('world-map-workspace').hidden=!mapDraft;if(!mapDraft)return;el<HTMLInputElement>('world-map-name').value=mapDraft.name;el<HTMLInputElement>('world-hex-size').value=String(mapDraft.hexMeters/1000);el<HTMLSelectElement>('world-climate').value=mapDraft.climate;el<HTMLInputElement>('world-seed').value=mapDraft.seed;}
 type MarkerDraft={id:string;revision:number;presentation:MarkerPresentation;dirty:boolean};
 let markerDraft:MarkerDraft|null=null,markerSaving:Promise<boolean>|null=null,markerSelection=0;

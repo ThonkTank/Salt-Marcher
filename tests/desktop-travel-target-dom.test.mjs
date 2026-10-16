@@ -244,3 +244,25 @@ test('a delayed map save cannot adopt an older map selection or cross campaign a
   x.enter('hex-label','C behalten');x.hold();await x.select('world-map-select',b.id);await until(x.hasReply);const campaign=x.store.create('Neue Kampagne'),w=x.store.activate(campaign.id);x.ui.activateWorld(w);await x.ui.openWorld();x.release();await tick();await tick();assert.equal(x.document.getElementById('world-map-select').value,'');assert.equal(x.document.getElementById('world-map-workspace').hidden,true);assert.equal(x.document.getElementById('world-map-select').getAttribute('aria-busy'),'false');assert.equal(x.store.world(w.token).maps.length,0);
  }finally{if(x.hasReply())x.release();x.cleanup();}
 });
+
+test('Atlas group selection removes the prior travel context while loading and after failure, then retries without writes',async()=>{
+ const x=await liveContextFixture();let release;try{x.ui.setWorldSurface('world');const real=x.window.campaign.sceneWorld,before=x.store.db.serialize();x.window.campaign.sceneWorld=()=>new Promise(r=>release=r);await x.select('world-scene',x.b.id);await until(()=>!!release);assert.equal(x.get('journey-end').disabled,true);assert.equal(x.get('travel-place-cursor').disabled,true);assert.doesNotMatch(x.get('world-journey-status').textContent,/Unterwegs/);assert.match(x.get('world-current').textContent,/geladen/);
+ release({ok:false,error:'Gewählte Gruppe nicht verfügbar'});await until(()=>x.get('world-current').textContent.includes('nicht verfügbar'));assert.equal(x.get('travel-place-cursor').disabled,true);assert.ok(x.store.db.serialize().equals(before));x.window.campaign.sceneWorld=real;await x.select('world-scene',x.b.id);await until(()=>x.get('world-current').textContent.includes('3,0'));assert.equal(x.get('travel-place-cursor').disabled,false);assert.ok(x.store.db.serialize().equals(before));
+ }finally{release?.({ok:false,error:'Probe beendet'});x.cleanup();}
+});
+test('a failed Atlas group read cannot place the previous group under the new picker selection',async()=>{
+ const x=await liveContextFixture();try{x.ui.setWorldSurface('world');x.window.campaign.sceneWorld=async()=>({ok:false,error:'Gewählte Gruppe nicht verfügbar'});await x.select('world-scene',x.b.id);await until(()=>x.statuses.some(s=>s.includes('Gewählte Gruppe nicht verfügbar')));const before=x.store.db.serialize(),writes=x.sent.length;x.get('travel-place-cursor').onclick();await tick();await tick();await tick();await tick();assert.equal(x.sent.length,writes);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.sceneWorld(x.w.token,x.a.id).journey.status,'active');
+ }finally{x.cleanup();}
+});
+test('Atlas rejects a provider reply for another group instead of presenting its journey as the selection',async()=>{
+ const x=await liveContextFixture();try{x.ui.setWorldSurface('world');const foreign=x.store.sceneWorld(x.w.token,x.a.id),before=x.store.db.serialize();x.window.campaign.sceneWorld=async()=>({ok:true,value:foreign});await x.select('world-scene',x.b.id);await tick();await tick();assert.equal(x.get('travel-place-cursor').disabled,true);assert.match(x.get('world-current').textContent,/anderen Gruppe/);assert.doesNotMatch(x.get('world-journey-status').textContent,/Unterwegs/);assert.ok(x.store.db.serialize().equals(before));
+ }finally{x.cleanup();}
+});
+test('an older failed Atlas group read cannot report into a newer recovered context',async()=>{
+ const x=await liveContextFixture();let release;try{x.ui.setWorldSurface('world');const real=x.window.campaign.sceneWorld;x.window.campaign.sceneWorld=()=>new Promise(r=>release=r);await x.select('world-scene',x.b.id);await until(()=>!!release);x.window.campaign.sceneWorld=real;await x.select('world-scene',x.a.id);await until(()=>!x.get('journey-end').disabled);x.statuses.length=0;release({ok:false,error:'Alter Providerfehler'});await tick();await tick();assert.equal(x.get('journey-end').disabled,false);assert.match(x.get('world-journey-status').textContent,/Unterwegs/);assert.deepEqual(x.statuses,[]);
+ }finally{release?.({ok:false,error:'Probe beendet'});x.cleanup();}
+});
+test('an unavailable live provider cancels placement still waiting for prior editor saves',async()=>{
+ const x=await liveContextFixture();try{const before=x.store.db.serialize(),writes=x.sent.length;x.holdBefore();x.get('travel-place-cursor').onclick();await until(()=>x.hasBefore());x.window.campaign.sceneWorld=async()=>({ok:false,error:'Provider inzwischen nicht verfügbar'});await x.ui.renderLiveWorld(x.w.token,x.a.id);assert.equal(x.get('travel-place-cursor').disabled,true);x.releaseBefore();await x.ui.flushWorld();await tick();assert.equal(x.sent.length,writes);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.sceneWorld(x.w.token,x.a.id).journey.status,'active');
+ }finally{if(x.hasBefore())x.releaseBefore();x.cleanup();}
+});
