@@ -283,6 +283,18 @@ test('an older failed Atlas group read cannot report into a newer recovered cont
  }finally{release?.({ok:false,error:'Probe beendet'});x.cleanup();}
 });
 test('an unavailable live provider cancels placement still waiting for prior editor saves',async()=>{
- const x=await liveContextFixture();try{const before=x.store.db.serialize(),writes=x.sent.length;x.holdBefore();x.get('travel-place-cursor').onclick();await until(()=>x.hasBefore());x.window.campaign.sceneWorld=async()=>({ok:false,error:'Provider inzwischen nicht verfügbar'});await x.ui.renderLiveWorld(x.w.token,x.a.id);assert.equal(x.get('travel-place-cursor').disabled,true);x.releaseBefore();await x.ui.flushWorld();await tick();assert.equal(x.sent.length,writes);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.sceneWorld(x.w.token,x.a.id).journey.status,'active');
+ const x=await liveContextFixture();try{const before=x.store.db.serialize(),writes=x.sent.length;const arrow=new x.window.Event('keydown',{bubbles:true,cancelable:true});Object.defineProperty(arrow,'key',{value:'ArrowRight'});x.get('world-map').dispatchEvent(arrow);x.holdBefore();x.get('travel-place-cursor').onclick();await until(()=>x.hasBefore());x.window.campaign.sceneWorld=async()=>({ok:false,error:'Provider inzwischen nicht verfügbar'});await x.ui.renderLiveWorld(x.w.token,x.a.id);assert.equal(x.get('travel-place-cursor').disabled,true);x.releaseBefore();await x.ui.flushWorld();await tick();assert.equal(x.sent.length,writes);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.sceneWorld(x.w.token,x.a.id).journey.status,'active');
  }finally{if(x.hasBefore())x.releaseBefore();x.cleanup();}
+});
+
+
+test('token placement requires its authored map and membership basis, while keyboard placement can use continuous sparse terrain',async()=>{
+ const x=await travelFixture();try{
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),m=x.store.world(x.w.token).maps.find(m=>m.id===x.map.id);
+  m.cells=[{q:1,r:0,level:0,terrain:'plains',elevationM:0,climate:null,road:false,river:false,label:'Furt',faction:'',interrupt:''}];x.store.executeWorld(command({kind:'map',expectedRevision:m.revision,map:m}));await x.ui.openWorld();
+  const basis=()=>{const f=x.store.sceneWorld(x.w.token,x.scene.id);return{kind:'place-scene',sceneId:x.scene.id,expectedSceneRevision:f.scene.revision,expectedPositionRevision:f.position.revision,placementBasis:{mapRevision:x.store.world(x.w.token).maps.find(m=>m.id===x.map.id).revision,membershipRevision:f.scene.membershipRevision,requireAuthored:true},position:{mapId:x.map.id,q:1,r:0,locationId:null}};};
+  for(const modify of [a=>a.placementBasis.mapRevision++,a=>a.placementBasis.membershipRevision++,a=>a.position.q=2]){const a=basis();modify(a);const before=x.store.db.serialize();assert.throws(()=>x.store.executeWorld(command(a)));assert.deepEqual(x.store.db.serialize(),before);}
+  const clock=x.store.sceneWorld(x.w.token,x.scene.id).scene.clock;x.store.executeWorld(command(basis()));assert.deepEqual(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock,clock);assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).position.q,1);
+  const a=basis();a.position.q=2;a.placementBasis.requireAuthored=false;x.store.executeWorld(command(a));assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).position.q,2);assert.deepEqual(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock,clock);
+ }finally{x.cleanup();}
 });
