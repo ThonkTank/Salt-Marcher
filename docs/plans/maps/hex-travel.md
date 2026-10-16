@@ -285,23 +285,49 @@ prüft. Native Prüfung umfasst Atlas mit und ohne aktiven Pinsel, Livekarte,
 Tastaturalternative, ungültiges Ziel, Escape, Gruppenwechsel und Neustart.
 Vollständige Plattform-, 200%- und Langroutenqualifikation bleiben offen.
 
+## Ausdrückliche Passierbarkeit und Reisevoraussetzungen (0.147)
+
+Hexe besitzen optional `access`: eine ausdrückliche Sperre mit Begründung oder
+benannte Voraussetzung wie „Boot“. Fehlende Vorgabe bedeutet passierbar; auch
+ungezeichnetes Gelände bleibt Ebene. Der bestehende Hexeditor schreibt dieselbe
+Karte. Terrainmalen erhält die Vorgabe, gröbere authored Vorgaben werden wie
+andere Hexfakten geerbt. Frei passierbar entfernt die lokale Vorgabe.
+
+Der GM markiert für eine konkrete Reise vorhandene Voraussetzungen. Diese
+Angabe ist keine Inventarprüfung und verändert kein Ledger. Die Auswahl gehört
+zur angezeigten Campaign/Scene/Karte/Reise. Akzeptierte Angaben werden in
+`Journey.supplies` und dem bestehenden Verlaufsbeleg gespeichert. Leere Auswahl
+benötigt kein neues Feld; es gibt keine neue Tabelle oder Schemafassung.
+
+`findRoute` umgeht gesperrte und ohne Voraussetzung nicht betretbare Hexe;
+ein solches Ziel beziehungsweise ein solcher ausdrücklicher Wegpunkt wird
+verständlich abgewiesen. Restwegprüfung prüft jeden verbliebenen Abschnitt.
+Straßen und feste Enddauer heben keine Sperre auf. Start vergleicht weiterhin
+die vollständige aktuelle Vorschau; Schritte prüfen die bestätigte Kartenbasis
+und den Zugang vor Position/Zeit/Weltfolgen. Eine geänderte Karte verlangt
+Neubewertung und kann keinen alten Reiseauftrag nachträglich autorisieren.
+Administrative Platzierung bleibt eine ausdrücklich andere, zeitlose GM-Aktion.
+
+Die GM-Karte markiert Sperren mit × und Voraussetzungen mit !, ergänzt Titel
+und Inspektor. In der passiven Wissensansicht werden diese GM-Marker unterdrückt.
+Die angenommene Reise zeigt ihre Angaben auch nach Neustart; die bestehende
+Wiedergabe startet weiterhin nur ausdrücklich.
+
+Gezielt geprüft: sparse Umwege, Straße versus Sperre, fehlender Transport trotz
+Enddauer, Start-/Step-/Restweg-Ablehnung bei Kartenänderung, unveränderte Bytes
+bei Ablehnung, Fresh und unabhängiger Campaigntransfer. Vollständige Transport-,
+Inventar-, Fraktions- oder biologische Bewegungsregeln entstehen dadurch nicht.
+
 ## Nächste ausführbare Lieferungen
 
-1. **Kontinuierliche Karte und ausdrückliche Passierbarkeit.** Die übergeordnete
-   [Program-Capability-Quelle](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md)
-   verlangt mehrere kontinuierliche Hexkarten ohne feste gezeichnete Ausdehnung.
-   Die frühere Forderung dieses Plans nach einer erst zu entscheidenden
-   Kartenfläche entfällt; keine Footprintmigration oder künstliche Kartengrenze.
-   `AtlasMap` besitzt sparse Zellen, `cellAt` liefert für nicht beschriebene
-   Flächen Ebene. Ungezeichnet ist kein Sperrterrain. Fachlich gesperrte Wege
-   oder erforderlichen Transport ausdrücklich modellieren, statt aus der
-   Zeichnungslücke abzuleiten; `Terrain` allein besitzt derzeit keinen
-   gesperrten Zustand. Danach `findRoute`, Vorschau, Start und Checkpoint mit
-   derselben Regel prüfen. Abnahme: Weg außerhalb gezeichneter Zellen bleibt
-   möglich, ausdrückliche Sperre und bestätigte Transportvorgabe, geänderte
-   Route und fehlende Voraussetzungen verändern weder Position noch Zeit.
-   Aktuelle Such-/Abschnittsgrenzen sind Rechenbudgets, keine Kartenränder;
-   lange Reisen müssen sich nachvollziehbar in Abschnitte teilen lassen.
+1. **Gemeinsamer Biomkatalog und größere Routen.** Die ursprüngliche Hexquelle
+   verlangt installationseigene, im Editor verwaltete Biome und denselben
+   Definitionsbestand für Kreaturfilterung. Die aktuelle Terrainmenge ist weiter
+   fest; Custom-Biome, definierte Zuordnung der bisherigen Habitatstrings,
+   geschützte Built-ins und Transferkonflikte fehlen. Die neue Passierbarkeit
+   ist unabhängig davon und ersetzt diesen Umfang nicht. Die aktuelle
+   Routensuche bleibt ein Rechenbudget mit erklärter Abschnittsteilung, keine
+   Begrenzung der kontinuierlichen Kartenfläche.
 2. **Präsentation weiter qualifizieren.** Die vorhandene Wiedergabe auf großen
    Routen und bei 200% prüfen. Pointerinterpolation ist nicht Bestandteil der
    autoritativen Checkpoints; jede zusätzliche Animation bleibt reine Darstellung.
@@ -309,7 +335,7 @@ Vollständige Plattform-, 200%- und Langroutenqualifikation bleiben offen.
    Tastaturalternative, Wegpunkte und Auswahl im selben Scene-/Mapkontext mit
    laufender Reise und verschachtelten Ortsmarkern bedienen.
    Die vorhandene dreiteilige Utilityauswertung mit kanonischen Biomen und
-   späterer Transport-/Passierbarkeitsregel konsistent weiterführen. Mapwechsel
+   vorhandener ausdrücklicher Transport-/Passierbarkeitsregel konsistent weiterführen. Mapwechsel
    leert nur transienten Entwurf/Auswertung; Scenewechsel übernimmt keine alte
    Antwort. Reiseansicht allein erzwingt keinen anderen Arbeitskontext.
    Native Abnahme mit Kartenwechsel, langen Routen,200%, Fehlerantwort,

@@ -1,10 +1,11 @@
+import type {HexAccess} from './hex-access';
 import type {DungeonPose} from './dungeon-contracts';
 import type {Result} from './contracts';
 import type {LiveScene} from './live-contracts';
 export type Terrain='plains'|'forest'|'hills'|'mountains'|'water'|'marsh'|'desert'|'snow';
 export type Climate='temperate'|'cold'|'arid'|'tropical';
 export interface Hex {q:number;r:number}
-export interface AtlasCell extends Hex {level:number;terrain:Terrain;elevationM:number;climate:Climate|null;road:boolean;river:boolean;label:string;faction:string;interrupt:string}
+export interface AtlasCell extends Hex {access?:HexAccess;level:number;terrain:Terrain;elevationM:number;climate:Climate|null;road:boolean;river:boolean;label:string;faction:string;interrupt:string}
 export interface AtlasMap {id:string;revision:number;name:string;hexMeters:number;climate:Climate;seed:string;cells:AtlasCell[]}
 export interface MarkerPresentation {title:string;symbol:string;size:number;labelPosition:'above'|'below'|'right'|'hidden';curve:number}
 export interface AtlasPlace extends Hex {mapId:string;locationId:string;revision:number;name:string;trashed:boolean;presentation?:MarkerPresentation;presentationRevision?:number}
@@ -14,10 +15,10 @@ export interface WeatherEffects {visibilityMeters:number;travelFactor:number;per
 export interface Weather {label:string;kind:'clear'|'clouds'|'rain'|'snow'|'fog'|'storm';intensity:number;windKmh:number;effects:WeatherEffects;source:string}
 export interface WeatherPhenomenon {id:string;revision:number;mapId:string;name:string;kind:Weather['kind'];intensity:number;center:Hex;radiusHexes:number;movement:Hex;startMs:string;durationMs:string;state:'active'|'paused'|'ended';pausedAtMs:string|null;temperatureC:number|null;travelFactor:number|null;notes:string}
 export interface ScenePosition extends Hex {revision:number;mapId:string|null;locationId:string|null;dungeon?:DungeonPose|null}
-export interface Journey {id:string;revision:number;sceneId:string;mapId:string;mapRevision:number;clockRevision:number;positionRevision:number;environmentBasis:string;actorIds:string[];membershipRevision:number;status:'active'|'paused'|'interrupted'|'arrived'|'ended';route:Hex[];nextIndex:number;paceKmh:number;usePartyPace?:boolean;factor:number;finalSeconds:number|null;plannedSeconds:number;segmentSeconds:number[];destinationLocationId:string|null;reason:string;createdAt:string;presentationSpeed?:1|2|5|10;continuedFrom?:{id:string;revision:number;completedSteps:number}}
+export interface Journey {supplies?:string[];id:string;revision:number;sceneId:string;mapId:string;mapRevision:number;clockRevision:number;positionRevision:number;environmentBasis:string;actorIds:string[];membershipRevision:number;status:'active'|'paused'|'interrupted'|'arrived'|'ended';route:Hex[];nextIndex:number;paceKmh:number;usePartyPace?:boolean;factor:number;finalSeconds:number|null;plannedSeconds:number;segmentSeconds:number[];destinationLocationId:string|null;reason:string;createdAt:string;presentationSpeed?:1|2|5|10;continuedFrom?:{id:string;revision:number;completedSteps:number}}
 export interface WorldView {calendar:FantasyCalendar;maps:AtlasMap[];places:AtlasPlace[];events:CalendarEvent[];phenomena:WeatherPhenomenon[]}
 export interface SceneWorld {scene:LiveScene;position:ScenePosition;date:string;weather:Weather|null;weatherOverrideRevision:number|null;events:CalendarEvent[];notices:{id:string;text:string}[];journey:Journey|null;knowledge:{mapId:string;q:number;r:number}[];history:{id:string;text:string}[]}
-export interface TravelRequest {sceneId:string;destination:Hex;mapId:string;destinationLocationId:string|null;waypoints:Hex[];paceKmh:number;usePartyPace?:boolean;factor:number;finalSeconds:number|null;continuation?:{journeyId:string;expectedRevision:number}}
+export interface TravelRequest {supplies?:string[];sceneId:string;destination:Hex;mapId:string;destinationLocationId:string|null;waypoints:Hex[];paceKmh:number;usePartyPace?:boolean;factor:number;finalSeconds:number|null;continuation?:{journeyId:string;expectedRevision:number}}
 export interface TravelStage {index:number;hex:Hex;seconds:number;arrival:string;placeName:string;terrain:Terrain;weather:Weather;interrupt:string}
 export interface TravelPreview {environmentBasis:string;request:TravelRequest;route:Hex[];distanceMeters:number;durationSeconds:number;terrainCost:number;segmentSeconds:number[];calendarRevision:number;mapRevision:number;clockRevision:number;positionRevision:number;membershipRevision:number;actorIds:string[];weather:Weather|null;departure:string;arrival:string;warnings:string[];stages:TravelStage[];events:{name:string;date:string;state:'active'|'upcoming'}[];continuation?:{journeyId:string;revision:number;completedSteps:number;previousRemainingSeconds:number}}
 export type WorldAction=
