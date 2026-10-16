@@ -85,7 +85,7 @@ test('a landscape edit pauses an active local trip without changing confirmed po
  const preview=f.store.previewAtlasTravel(f.w.token,{x:20,y:0});f.store.executeAtlasTravel({...command({kind:'start',preview}),sceneId:scene.id});const before=f.store.sceneWorld(f.w.token,scene.id);
  f.store.campaignAtlas=()=>{throw new Error('No complete atlas for terrain');};f.store.executeAtlasCommit(command({kind:'landscape-put',record:patch(),expectedRevision:null}));
  const row=f.store.db.prepare('SELECT payload FROM atlas_local_journey WHERE campaign_id=? AND scene_id=?').get(f.campaign.id,scene.id);assert.equal(JSON.parse(row.payload).status,'paused');const after=f.store.sceneWorld(f.w.token,scene.id);assert.deepEqual(after.position,before.position);assert.deepEqual(after.scene.clock,before.scene.clock);
- f.store.executeAtlasCommit(command({kind:'undo'}));assert.equal(JSON.parse(f.store.db.prepare('SELECT payload FROM atlas_local_journey WHERE campaign_id=? AND scene_id=?').get(f.campaign.id,scene.id).payload).status,'active');
+ f.store.executeAtlasCommit(command({kind:'undo'}));const restored=JSON.parse(f.store.db.prepare('SELECT payload FROM atlas_local_journey WHERE campaign_id=? AND scene_id=?').get(f.campaign.id,scene.id).payload);assert.equal(restored.status,'paused');assert.match(restored.reason,/vor Fortsetzung/);assert(restored.revision>JSON.parse(row.payload).revision);
  f.store.executeAtlasCommit(command({kind:'redo'}));assert.equal(JSON.parse(f.store.db.prepare('SELECT payload FROM atlas_local_journey WHERE campaign_id=? AND scene_id=?').get(f.campaign.id,scene.id).payload).status,'paused');
 });
 
