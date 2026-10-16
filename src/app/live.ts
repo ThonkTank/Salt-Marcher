@@ -961,13 +961,13 @@ function leaveSessionCloseReview(){
   sessionCloseOpeningBasis=null;sessionCloseRequest++;get<HTMLDialogElement>('live-session-close-dialog').close();
 }
 
-export async function openPartyMove(ownerToken?:string,ownerSceneId?:string){
+export async function openPartyMove(ownerToken?:string,ownerSceneId?:string,stillCurrent:()=>boolean=()=>true){
 
     const token = ownerToken??context?.token;if(ownerToken&&context?.token!==ownerToken)throw new Error('Kampagne gewechselt.');
     const expectedScene=ownerSceneId??data?.scene?.id;
-    if(!(await flushLive())||context?.token!==token)throw new Error('Offene Eingaben oder Kampagnenwechsel. Spieltisch prüfen.');
+    if(!stillCurrent()||!(await flushLive())||context?.token!==token)throw new Error('Offene Eingaben oder Kampagnenwechsel. Spieltisch prüfen.');
     await openLive();
-    if(context?.token!==token||!data?.scene||data.focusRevision===null||expectedScene!==data.scene.id)throw new Error('Szenenfokus geändert oder keine laufende Sitzung. Auswahl erneut öffnen.');
+    if(!stillCurrent()||context?.token!==token||!data?.scene||data.focusRevision===null||expectedScene!==data.scene.id)throw new Error('Szenenfokus geändert oder keine laufende Sitzung. Auswahl erneut öffnen.');
     const source = data.scene;
     moveBasis = { kind: 'move', sceneId: source.id, expectedRosterRevision: data.rosterRevision, expectedFocusRevision: data.focusRevision, expectedSceneMembershipRevision: source.membershipRevision, expectedClockRevision: source.clock.revision };
     const labels=partySceneLabels(data);
