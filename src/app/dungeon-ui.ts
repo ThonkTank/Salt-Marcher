@@ -112,7 +112,9 @@ function drawSenses(){
  for(const p of data.drawing.passages?.filter(p=>p.roomId===data!.position?.roomId)??[]){
   for(const[key,title]of [['outbound','Weiter'],['inbound','Zurück']] as const){
    const side=p[key];if(side.target.kind==='geometry')continue;
-   const b=document.createElement('button');b.textContent=title+' über Passage · '+(side.description||side.target.kind)+' · '+(data.drawing.passageStatuses?.find(s=>s.id===p.id)?.[key]??'');b.disabled=!p.assigned||!side.passable;
+   const state=data.drawing.passageStatuses?.find(s=>s.id===p.id)?.[key],b=document.createElement('button');
+   b.textContent=title+' über Passage · '+(side.description||side.target.kind)+' · '+(state??'Ziel noch nicht geprüft');
+   b.disabled=!p.assigned||!side.passable||!['verlinkt','Ortslink'].includes(state??'');
    b.onclick=()=>{if(data?.sceneId)perform({kind:'passage-traverse',sceneId:data.sceneId,passageId:p.id,expectedRevision:p.revision,side:key,movement:select('dungeon-movement').value as DungeonMovement});};links.append(b);
   }
  }
