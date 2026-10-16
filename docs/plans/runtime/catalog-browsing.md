@@ -222,6 +222,9 @@ Einstimmung und exakte Preisgrenzen sind kombinierbar. Name/Kategorie/Seltenheit
 Preis sortieren mit stabiler Identität; unbekannte Preise bleiben unabhängig von
 der Richtung am Ende und werden nicht als Nullpreise in Preisgrenzen aufgenommen.
 50er-Seiten machen den gesamten vorhandenen Korpus erreichbar.
+Der Seltenheitsfilter berücksichtigt ausdrücklich benannte Varianten einer
+Definition. Die Auswahl enthält deren einzelne Seltenheiten; der Treffer bleibt
+die vollständige Quellgruppe mit unveränderten Fakten und Variantenangaben.
 
 `item-reference-ui.ts` zeigt Originalbeschreibung und Eigenschaften, Preis,
 Gewicht, Rüstung/Schaden sowie verfügbare weitere Quellenangaben und Attribution.
@@ -233,7 +236,7 @@ Auswahlberechtigung. Submit/Reset/Sort/Paging beenden den Debouncetimer.
 Tastaturwechsel zwischen beiden Kataloginhalten und schmale Inspectorführung
 bleiben ohne zusätzliche Navigationsfläche erreichbar.
 
-Der aktuelle Import enthält 289 Records und ist ausdrücklich unvollständig.
+Der aktuelle Import ist ausdrücklich unvollständig.
 Weitere magische Quellenabschnitte und die unabhängige Quellenabnahme fehlen;
 die Oberfläche behauptet keine Vollständigkeit. Provider-/DOMfälle prüfen die
 vollständige Erreichbarkeit des vorhandenen Korpus, Filter/Sortierung, genaue
