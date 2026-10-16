@@ -1,4 +1,4 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {LiveScene,LiveAction} from './live-contracts';
 import type {AgendaPage,AgendaCursor,AgendaItem} from './agenda-contracts';
 import type {TimeRequest,TimePreview} from './time-plan-contracts';
@@ -6,7 +6,7 @@ import {agendaUnitLabels,calendarParts,calendarInstant,type AgendaUnit} from './
 import {calendarDate} from './world-model';
 import {formatDuration} from './time-plan-model';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;},button=(text:string,fn:()=>void)=>{const b=node('button',text);b.type='button';b.onclick=fn;return b;},field=(text:string,control:HTMLElement)=>{const label=node('label',text);label.append(control);return label;};
-type Context={workspace:Workspace;scene:LiveScene};
+type Context={workspace:WorkspaceGeometry;scene:LiveScene};
 export class TimeNavigator {
  private dialog=node('dialog');private mode=node('select');private amount=node('input');private unit=node('select');private dateFields=new Map<string,HTMLInputElement|HTMLSelectElement>();private dateBox=node('div');private durationBox=node('div');private eventBox=node('section');private eventList=node('div');private search=node('input');private phase=node('select');private reason=node('input');private summary=node('div');private status=node('p');private currentDate=node('p');private confirm=button('Zeit ausdrücklich verstreichen lassen',()=>void this.apply());private recovery=button('Speicherstatus prüfen',()=>void this.recover());private calculate=button('Vorschau berechnen',()=>void this.preview());private next=button('Weitere Ereignisse',()=>{if(this.page?.next){this.cursor=this.page.next;void this.read();}});private prev=button('Erste Ereignisse',()=>{this.cursor=null;void this.read();});private owner:Context|null=null;private page:AgendaPage|null=null;private cursor:AgendaCursor|null=null;private selected:AgendaItem|null=null;private preselected:{eventId:string;expectedRevision:number;phase:'start'|'end';sceneId:string;title?:string}|null=null;private result:TimePreview|null=null;private request=0;private reading=0;private busy=false;private epoch=0;private loading=false;private readVersion=0;private refresh=button('Kalender und Ereignisse neu lesen',()=>{if(!this.busy&&this.recovery.hidden)void this.read();});
  constructor(private tell:(s:string,error?:boolean)=>void,private context:()=>Context|null,private flush:()=>Promise<boolean>,private execute:(action:Extract<LiveAction,{kind:'advance-clock'}>,stillCurrent:()=>boolean)=>Promise<boolean>,private recoverWrite:()=>Promise<boolean>){

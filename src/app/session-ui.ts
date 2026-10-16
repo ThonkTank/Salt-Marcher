@@ -12,7 +12,7 @@ import {requiredNpcPicker} from './required-npc-picker';
 import {budgetRarities} from './dungeon-budget-contracts';
 import {encounterEntryLabel} from './encounter-contracts';
 import {initProposalEditor,openProposalEditor,proposalEditorOpen,closeProposalEditor} from './session-proposal-editor';
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
 import type {ManualPlan} from '../features/planner/manual-planner';
 import {xpLevel,xpShare,type ItemInput} from './progression';
@@ -25,7 +25,7 @@ let noteOrganizer:VisitNoteOrganizer;
 let sessionCopy:SessionCopy;
 let magicPick:ReturnType<typeof magicPoolPicker>;
 let requiredPick:ReturnType<typeof requiredNpcPicker>;
-let workspace:Workspace|null=null,plan:ManualPlan|null=null,visitId:string|null=null,sources:Preparation|null=null,view:SessionView|null=null,profileDraft:SessionProfile|null=null,visitDraft:VisitDetail|null=null,run:SessionRun|null=null;
+let workspace:WorkspaceGeometry|null=null,plan:ManualPlan|null=null,visitId:string|null=null,sources:Preparation|null=null,view:SessionView|null=null,profileDraft:SessionProfile|null=null,visitDraft:VisitDetail|null=null,run:SessionRun|null=null;
 type GroupDraft=Pick<PreparedGroup,'id'|'revision'|'title'|'notes'>;
 const groupDrafts=new Map<string,GroupDraft>();
 let generation=0,loadRequest=0,previewRequest=0,basis='',profileDirty=false,visitDirty=false,timer:ReturnType<typeof setTimeout>|null=null,pending:Promise<boolean>|null=null;
@@ -40,7 +40,7 @@ type StoryAward={owner:PreviewOwner;visitId:string;revision:number;rewardId:stri
 let storyRequest=0,storyAward:StoryAward|null=null;
 function previewOwner():PreviewOwner|null{return workspace&&plan?{token:workspace.token,planId:plan.id}:null;}
 function ownsPreview(owner:PreviewOwner){return workspace?.token===owner.token&&plan?.id===owner.planId;}
-export function sessionContext(next:Workspace|null,current:ManualPlan|null,selected:string|null,data:Preparation|null){
+export function sessionContext(next:WorkspaceGeometry|null,current:ManualPlan|null,selected:string|null,data:Preparation|null){
  const planChanged=current?.revision!==plan?.revision;
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
  const key=JSON.stringify([next?.token,current?.id,selected]);

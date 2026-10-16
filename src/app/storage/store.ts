@@ -1,3 +1,7 @@
+import {drawingElement} from './drawing';
+import {dungeonMapView} from './dungeon-play';
+import {roomGeometries,visibleRoomWhere,roomDirectoryQuery,roomOrder} from './room-reads';
+import type {WorkspaceShell,WorkspaceGeometry,RoomDirectoryQuery} from '../contracts';
 import {keepLiveMomentDraft as keepMomentDraft,readLiveMomentDraft} from './live-moment-drafts';
 import {atlasPartyPoint} from '../atlas-runtime-model';
 import {installLandscape,installLandscapeIndex,landscapeRegion,executeLandscape} from './atlas-landscape';
@@ -311,16 +315,32 @@ export class CampaignStore {
     return record;
   }
   atlasRoom(token:string,id:string):Room {
+    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.atlasRoom(token,id));
     const cam=this.guard(token);
     if(typeof id!=='string'||!id)throw new Error('Raumkennung prüfen.');
     const row=this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam,id);
     if(!row)throw new Error('Raum nicht gefunden.');
     return this.decode(row);
   }
+  atlasRoomCommit(edit:Edit):import('../contracts').RoomCommit {
+    this.applyAtlas({commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,action:{kind:'room-edit',edit}});
+    return{...this.edit(edit),atlasRevision:atlasRoot(this.db,edit.campaignId).revision};
+  }
   executeAtlasCommit(c:AtlasCommand):import('../campaign-atlas-contracts').AtlasCommitAck {
     this.applyAtlas(c);
     const root=atlasRoot(this.db,c.campaignId);
     return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...atlasHistoryState(this.db,c.campaignId)};
+  }
+  atlasRenderView(token:string,groupView=false):import('../campaign-atlas-contracts').AtlasRenderView {
+    if(typeof groupView!=='boolean')throw new Error('Gruppensicht prüfen.');
+    const cam=this.guard(token);return this.db.transaction(()=>{
+      const root=atlasRoot(this.db,cam),workspace=this.workspaceGeometry(token),drawing=this.graphShadow?this.withGraph(()=>drawingView(this.db,cam,true)):undefined,geometry=dungeonMapView(this.db,cam,workspace,drawing);
+      geometry.rooms=workspace.rooms;
+      const perception=geometry.position&&geometry.sceneId?dungeonDisplay(this.db,cam,geometry.sceneId,playerSettings(this.db,cam),playerObservers(this.db,cam).list,geometry):null;
+      const terrain=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),bindings=atlasBindings(this.db,cam),cities=this.cities(token).cities.map(h=>this.city(token,h.id));
+      const places=readWorld(this.db,cam,false).places.filter(p=>p.mapId===terrain.id).map(p=>{const b=bindings.find(b=>b.kind==='location'&&b.ownerId===p.locationId)??bindings.find(b=>b.kind==='city'&&cities.some(c=>c.header.id===b.ownerId&&c.header.locationId===p.locationId));return {...p,point:b?{x:b.x,y:b.y}:atlasHexPoint(p.q,p.r,terrain.hexMeters)};});
+      return{...(groupView?{publicFrame:projectAtlasGroup(this.db,cam)}:{}),places,scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain,bindings,cities,geometry,workspace,scene:geometry.sceneId?this.sceneWorld(token,geometry.sceneId):null,...atlasHistoryState(this.db,cam)};
+    })();
   }
   campaignAtlas(token:string,groupView=false):CampaignAtlas{
     if(typeof groupView!=='boolean')throw new Error('Gruppensicht prüfen.');
@@ -376,7 +396,7 @@ export class CampaignStore {
       if(a.kind==='graph-accept'){nested(a.command);if(a.command.action.kind!=='accept')throw new Error('Nur bestätigte Graphübernahme.');return this.executeGraph(a.command);}
       if(a.kind==='world'){nested(a.command);if(a.command.action.kind==='map'&&a.command.action.map.id!==atlasRoot(this.db,cam).map_id)throw new Error('Jede Kampagne besitzt genau einen Atlas. Inhalte in die bestehende Welt einfügen.');return this.executeWorld(a.command);}
       if(a.kind==='drawing'){nested(a.command);const action=a.command.action,before=action.kind==='shape'?this.workspace().rooms.find(r=>r.id===action.roomId):null,elements=before?this.drawing(c.token).elements:[];const result=this.executeDrawing(a.command);if(before)this.coupleAtlasWall(c,before,elements);return result;}
-      if(a.kind==='room-edit'){nested(a.edit);const before=this.workspace().rooms.find(r=>r.id===a.edit.roomId),elements=before?this.drawing(c.token).elements:[];const result=this.edit(a.edit);if(before)this.coupleAtlasWall(c,before,elements);return result;}
+      if(a.kind==='room-edit'){nested(a.edit);const before=this.atlasRoom(c.token,a.edit.roomId),elements=before?this.drawing(c.token).elements:[];const result=this.edit(a.edit);if(before)this.coupleAtlasWall(c,before,elements);return result;}
       if(a.kind==='city'){nested(a.command);const before=a.command.action.kind==='change'?this.city(c.token,a.command.cityId):null;
         const result=this.executeCity(a.command);
         // Building pose is inherited by its interiors. Scale their local geometry
@@ -481,12 +501,13 @@ export class CampaignStore {
     const payload = json({ polygons: room.polygons, sections: room.sections });
     this.db.prepare('INSERT INTO room VALUES(?,?,?,?,?,?,?,?,?)').run(campaignId, room.id, room.scopeId, room.number, room.name, 0, payload, hash(payload), room.floorId);
   }
-  activate(campaignId: string): Workspace {this.chronicleRead?.close();this.chronicleRead=null;
+  activate(campaignId: string): Workspace {this.activateShell(campaignId);return this.workspace();}
+  activateShell(campaignId:string):WorkspaceShell {this.chronicleRead?.close();this.chronicleRead=null;
     if(this.graphShadow&&this.graphShadow.campaignId!==campaignId)throw new Error('Offene Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen.');
     if (!this.db.prepare('SELECT c.id FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE c.id=? AND l.trashed=0').get(campaignId)) throw new Error('Kampagne nicht gefunden.');
     this.active = { campaignId, token: randomUUID() };
     this.db.transaction(()=>{this.db.prepare("INSERT INTO settings VALUES('active',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(campaignId);noteCampaignOpened(this.db,campaignId);}).immediate();
-    return this.workspace();
+    return this.workspaceShell();
   }
   private guard(token: string, campaignId = this.active?.campaignId) {
     if (!this.active || token !== this.active.token || campaignId !== this.active.campaignId) throw new Error('Diese Eingabe gehört zu einer früheren Kampagnenaktivierung.');
@@ -579,6 +600,31 @@ export class CampaignStore {
     const document=checkedLocationDocument(JSON.parse(row.payload));
     if(document.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1)throw new Error("Ortszuordnung widersprüchlich.");
     return document;
+  }
+  workspaceShell():WorkspaceShell {
+    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspaceShell());
+    if(!this.active)throw new Error('Bitte eine Kampagne öffnen.');
+    const {campaignId,token}=this.active;this.guard(token);
+    return this.db.transaction(()=>{
+      const campaign=this.db.prepare('SELECT * FROM campaign WHERE id=?').get(campaignId);
+      const valid=this.db.prepare(`SELECT r.id FROM room r WHERE ${visibleRoomWhere} AND r.id=?`).get(campaignId,campaign.selected_id);
+      let first=valid;if(!first)for(const row of this.db.prepare(`SELECT r.id,r.number FROM room r WHERE ${visibleRoomWhere}`).iterate(campaignId))if(!first||roomOrder(row,first)<0)first=row;
+      return{graphPreview:this.graphShadow?.state(),campaign:{id:campaign.id,name:campaign.name,revision:campaign.revision},token,selectedId:first?.id??null,
+        canUndo:!!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId,campaign.cursor),
+        canRedo:!!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId,campaign.cursor+1)};
+    })();
+  }
+  workspaceGeometry(token:string):WorkspaceGeometry {
+    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspaceGeometry(token));
+    const cam=this.guard(token);
+    return this.db.transaction(()=>({...this.workspaceShell(),...roomGeometries(this.db,cam),floors:this.db.prepare(`SELECT f.id,f.scope_id scopeId,f.name,f.source_elevation sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`).all(cam)}))();
+  }
+  roomReadSource(token:string,q?:RoomDirectoryQuery):{filename:string;campaignId:string;token:string;fence:string}{
+    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.roomReadSource(token,q));
+    const campaignId=this.guard(token),filename=this.db.name;
+    const fence=hash(JSON.stringify([filename,this.db.prepare('SELECT total_changes() n').get().n,this.graphShadow?.state()??null]));
+    if(q){roomDirectoryQuery(q);if(q.cursor&&(q.cursor.token!==token||q.cursor.fence!==fence))throw new Error('Raumsuche inzwischen geändert. Suche erneut beginnen.');}
+    return{filename,campaignId,token,fence};
   }
   workspace(): Workspace {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspace());
@@ -923,6 +969,8 @@ export class CampaignStore {
     return result;
   }).immediate(); }
   preparedGroup(token:string,id:string){return readPreparedGroup(this.db,this.guard(token),id);}
+  drawingMap(token:string):import('../drawing-contracts').DrawingMapView{if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.drawingMap(token));return drawingView(this.db,this.guard(token),true);}
+  drawingElement(token:string,id:string):import('../drawing-contracts').DrawingElement{if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.drawingElement(token,id));return drawingElement(this.db,this.guard(token),id);}
   dungeon(token:string){const cam=this.guard(token),view=dungeonView(this.db,cam);return this.graphShadow?{...view,...dungeonGeometry(this.graphShadow.db,cam),drawing:{...drawingView(this.graphShadow.db,cam),graphPreview:this.graphShadow.state()}}:view;}
   previewDungeon(token:string,r:DungeonRequest){return previewDungeon(this.db,this.guard(token),r);}
   executeDungeon(c:DungeonCommand){if(this.graphShadow)throw new Error('Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen. Dungeon-Leiten nutzt die bestätigte Geometrie.');return executeDungeon(this.db,c,()=>{this.guard(c.token,c.campaignId);},command=>this.executeLive(command),command=>this.executeCombat(command),command=>this.executeProgress(command));}
@@ -992,10 +1040,12 @@ export class CampaignStore {
     if(changed){if(command.kind==='open'||command.kind==='create'||(command.kind==='trash'&&command.trashed||command.kind==='erase')&&this.active?.campaignId===result.campaignId){this.active=null;this.chronicleRead?.close();this.chronicleRead=null;}this.backupEpoch++;}
     return result;
   }
-  campaignCatalogWorkspace(commandId:string):Workspace{
+  campaignCatalogWorkspace(commandId:string):Workspace;
+  campaignCatalogWorkspace(commandId:string,projection:true):WorkspaceShell;
+  campaignCatalogWorkspace(commandId:string,projection=false):Workspace|WorkspaceShell{
     const row=this.db.prepare('SELECT payload,checksum FROM campaign_catalog_receipt WHERE command_id=?').get(commandId);if(!row||hash(row.payload)!==row.checksum)throw new Error('Öffnungsbeleg fehlt.');const receipt=JSON.parse(row.payload) as CampaignCatalogReceipt;
     if(!['open','create'].includes(receipt.kind)||this.list().activeId!==receipt.campaignId||!this.list().campaigns.some(c=>c.id===receipt.campaignId))throw new Error('Die aktive Kampagne wurde inzwischen gewechselt. Kampagne ausdrücklich neu öffnen.');
-    this.chronicleRead?.close();this.chronicleRead=null;this.active={campaignId:receipt.campaignId,token:randomUUID()};return this.workspace();
+    this.chronicleRead?.close();this.chronicleRead=null;this.active={campaignId:receipt.campaignId,token:randomUUID()};return projection?this.workspaceShell():this.workspace();
   }
 
   campaignOverview(){return this.db.transaction(()=>campaignOverview(this.db))();}

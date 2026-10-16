@@ -1,4 +1,4 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {DeskRef} from './scene-desk-contracts';
 import type {LocationMaterialKind,LocationMaterial} from './location-notebook-contracts';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
@@ -7,7 +7,7 @@ export class ScenePlaceBinder{
  private epoch=0;
  constructor(private root:HTMLElement,private open:(ref:DeskRef,current:()=>boolean)=>Promise<void>,private pin:(ref:DeskRef,current:()=>boolean)=>Promise<void>){}
  reset(){this.epoch++;this.root.replaceChildren();this.root.hidden=true;}
- show(owner:Workspace,locationId:string,title:string,owns:()=>boolean){
+ show(owner:WorkspaceGeometry,locationId:string,title:string,owns:()=>boolean){
   this.reset();const epoch=this.epoch,current=()=>epoch===this.epoch&&owns();this.root.hidden=false;
   this.root.append(node('h4','Am Ort · '+title),node('p','Ortsgebundene Inhalte öffnen und direkt bearbeiten. Angeheftete Inhalte bleiben auch nach dem Ortswechsel für diese Gruppe griffbereit.'));
   for(const [kind,label]of [['npc','NSCs'],['narrative','Aufträge und Gerüchte'],['faction','Fraktionen']] as [LocationMaterialKind,string][]){

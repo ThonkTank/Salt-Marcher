@@ -1,10 +1,10 @@
 import {passageCenter} from './path-opening';
-import type {Room,Point} from './contracts';
-import type {DrawingView} from './drawing-contracts';
+import type {RoomGeometry,Point} from './contracts';
+import type {DrawingMapView} from './drawing-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
 
 /** Render openings from assigned physical passages, including the generated corridor's end wall. */
-export function roomWallPath(room:Room,visibleRooms:Room[],view:DrawingView){
+export function roomWallPath(room:RoomGeometry,visibleRooms:RoomGeometry[],view:DrawingMapView){
  const visible=new Set(visibleRooms.map(r=>r.id)),openings:{point:Point;width:number;vertical:boolean}[]=[];
  for(const p of view.passages??[]){
   if(p.roomId!==room.id&&p.otherRoomId!==room.id)continue;

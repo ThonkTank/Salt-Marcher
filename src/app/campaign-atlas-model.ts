@@ -1,4 +1,4 @@
-import type { CampaignAtlas, AtlasBinding } from "./campaign-atlas-contracts";
+import type { AtlasRenderView, AtlasBinding } from "./campaign-atlas-contracts";
 import type { Point } from "./contracts";
 export interface AtlasFrame {
   x: number;
@@ -13,7 +13,7 @@ export const atlasToLocal = (p: Point, f: AtlasFrame): Point => ({
   x: (p.x - f.x) * Math.cos(f.angle) + (p.y - f.y) * Math.sin(f.angle),
   y: -(p.x - f.x) * Math.sin(f.angle) + (p.y - f.y) * Math.cos(f.angle),
 });
-export function atlasFrame(atlas: CampaignAtlas, b: AtlasBinding): AtlasFrame {
+export function atlasFrame(atlas: AtlasRenderView, b: AtlasBinding): AtlasFrame {
   if (b.parent === "world") return { x: b.x, y: b.y, angle: b.angle };
   const city = atlas.cities.find((c) =>
       c.units.some((u) => u.id === b.parentId),

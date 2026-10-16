@@ -1,4 +1,4 @@
-import type { CampaignAtlas } from "./campaign-atlas-contracts";
+import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import {
   drawLandscape,
@@ -9,7 +9,7 @@ import { atlasFrame, frameTransform } from "./campaign-atlas-model";
 import { citySvg } from "./city-model";
 import { roomPath, elementSvg } from "./drawing-model";
 export function atlasRegionSVG(
-  data: CampaignAtlas,
+  data: AtlasRenderView,
   records: LandscapeRecord[],
   box: LandscapeBox,
   width: number,

@@ -1,5 +1,5 @@
 import {renderEncounterComposition,compositionPreferences,preferenceSelect,type CompositionPreference} from './encounter-composition-ui';
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {LiveView} from './live-contracts';
 import type {CombatAction} from './combat-contracts';
 import type {GenerationRequest,GenerationRun,GeneratorRegistry,EncounterTable,WorldSources} from './generation-contracts';
@@ -10,7 +10,7 @@ import {renderCreatureDetail} from './creature-detail-ui';
 import {requiredNpcPicker} from './required-npc-picker';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;},button=(text:string,fn:()=>void)=>{const n=node('button',text);n.type='button';n.onclick=fn;return n;};
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-type Context={workspace:Workspace;live:LiveView};
+type Context={workspace:WorkspaceGeometry;live:LiveView};
 const key=(c:Context|null)=>c?JSON.stringify([c.workspace.token,c.live.scene?.id,c.live.scene?.membershipRevision,c.live.focusRevision,c.live.scene?.locationId]):'';
 export class LiveEncounterGenerator {
  private dialog=node('dialog');private fields=node('div');private cards=node('div');private status=node('p');private summary=node('p');private tablePicks=node('div');private factionPicks=node('div');private history=node('select');private seed=node('input');private title=node('input');private filter=node('input');private habitat=node('input');private difficulty=node('select');private time=node('select');private count=node('select');private location=node('input');private npcs=node('select');private make=button('Vorschläge erzeugen',()=>void this.generate());private fresh=button('Neue Auswahl mit neuem Seed',()=>{this.seed.value=crypto.randomUUID();void this.generate();});private required:ReturnType<typeof requiredNpcPicker>;

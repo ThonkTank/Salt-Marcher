@@ -1,12 +1,12 @@
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved} from './commit-confirmation';
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
 import type {ManualPlan} from '../features/planner/manual-planner';
 import type {SessionView,SessionSnapshot,SessionCommand} from './session-contracts';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 const button=(text:string,click:()=>void)=>{const n=node('button',text);n.type='button';n.onclick=click;return n;};
 const unwrap=<T>(r:Result<T>)=>{if(!r.ok)throw new Error(r.error);return r.value;};
-type Context={workspace:Workspace;plan:ManualPlan;sources:Preparation};
+type Context={workspace:WorkspaceGeometry;plan:ManualPlan;sources:Preparation};
 export class SessionCopy {
  private dialog=node('dialog');private source=node('select');private target=node('select');private name=node('input');private party=node('input');private search=node('input');private list=node('div');private order=node('ol');private summary=node('p');private message=node('p');private confirm=button('Szenen übernehmen',()=>void this.submit());private selected:string[]=[];private data:Preparation|null=null;private sourceView:SessionSnapshot|null=null;private targetView:SessionView|null=null;private owner:Context|null=null;private generation=0;private sourceRequest=0;private targetRequest=0;private renderVersion=0;private busy=false;private page=0;
  constructor(private tell:(text:string,error?:boolean)=>void,private context:()=>Context|null,private flush:()=>Promise<boolean>,private completed:(planId:string,visitId:string)=>Promise<void>){

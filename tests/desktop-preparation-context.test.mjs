@@ -575,3 +575,17 @@ test('a delayed packet-source opening cannot borrow the editor after another cam
  const x=await fixture(t),p=await packetOriginal(x),read=x.window.campaign.preparation;let release,held=false;x.window.campaign.preparation=async(...args)=>{const result=await read(...args);if(!held){held=true;await new Promise(r=>release=r);}return result;};p.open();await until(()=>!!release);
  const other=x.store.create('Andere Kampagne'),w=x.store.activate(other.id),id=randomUUID();x.store.changePreparation({commandId:randomUUID(),token:w.token,campaignId:other.id,change:{kind:'note',expectedRevision:null,note:{...x.original,id,title:'Anderes Original'}}});x.setOwner(w);await x.ui.activatePreparation(w);release();await settle();assert.equal(x.el('session-packet-dialog').open,false);assert.equal(x.el('packet-note-editor').contains(x.el('note-editor')),false);assert.equal(x.el('note-title').value,'Anderes Original');assert.equal(x.writes.length,0);
 });
+
+
+test('ordinary lazy opening preserves an existing preparation draft without rereading its directory',async t=>{
+ const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);
+ x.el('note-gm').value='  Noch nicht gespeichert\r\n';x.el('note-gm').dispatchEvent(new x.window.Event('input'));
+ const read=x.window.campaign.preparation;let reads=0;x.window.campaign.preparation=async(...args)=>{reads++;return read(...args);};
+ await x.ui.ensurePreparation(x.workspace);assert.equal(reads,0);assert.equal(x.el('note-gm').value,'  Noch nicht gespeichert\r\n');assert.equal(x.writes.length,0);
+});
+test('lazy activation defers the directory until its first ordinary opening',async t=>{
+ const x=await fixture(t),read=x.window.campaign.preparation;let reads=0;x.window.campaign.preparation=async(...args)=>{reads++;return read(...args);};
+ await x.ui.activatePreparation(x.workspace,false);assert.equal(reads,0);assert.equal(x.el('preparation').inert,true);
+ await x.ui.ensurePreparation(x.workspace);assert.equal(reads,1);assert.equal(x.el('preparation').inert,false);
+ await x.ui.ensurePreparation(x.workspace);assert.equal(reads,1);
+});

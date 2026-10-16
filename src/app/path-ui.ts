@@ -1,15 +1,15 @@
 import {passageCenter} from './path-opening';
 import {atlasDrawingWrite} from './campaign-atlas-author';
-import type {Workspace,Room} from './contracts';
-import type {DrawingView,DrawingAction} from './drawing-contracts';
+import type {WorkspaceGeometry,Room} from './contracts';
+import type {DrawingMapView,DrawingAction} from './drawing-contracts';
 import type {DungeonPath,PathPreview,ConnectionForm,PassageSide,DungeonPassage} from './path-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
 import {volumeProjection} from './volume-model';
 import {roomPath} from './drawing-model';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
-let workspace:()=>Workspace|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:Workspace)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
-let data:DrawingView|null=null,draft:DungeonPath|null=null,sourceDraft:DungeonPath|null=null,sourceRevision:number|null=null,preview:PathPreview|null=null;
+let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
+let data:DrawingMapView|null=null,draft:DungeonPath|null=null,sourceDraft:DungeonPath|null=null,sourceRevision:number|null=null,preview:PathPreview|null=null;
 let generation=0,readRequest=0,editIntent=0,pending:Promise<boolean>|null=null,writing=false;
 let locations:{id:string;name:string}[]=[];
 const formIds=['path-name','path-notes','path-from','path-to','path-from-pin','path-to-pin','path-from-x','path-from-y','path-from-z','path-from-face','path-to-x','path-to-y','path-to-z','path-to-face','path-waypoints','path-forms','path-widths','path-heights','path-factors','path-medium'];
@@ -70,7 +70,7 @@ function acknowledgePassage(a:Extract<DrawingAction,{kind:'passage'}>,submitted?
   else d.base=confirmed;
  }
 }
-async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
+async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingMapView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
  if(!await before()||!current(o))return false;
  const w=workspace();if(!w)return false;
  writing=true;++readRequest;
@@ -83,7 +83,7 @@ async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingView)=>vo
  if(!current(o))return false;
  invalidatePreview();confirmed?.(committedView);drawList();return true;
 }
-function perform(a:DrawingAction,message:string,after?:(view:DrawingView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
+function perform(a:DrawingAction,message:string,after?:(view:DrawingMapView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
  const captured=structuredClone(a),submitted=side?structuredClone(side):undefined;
  run(async o=>{if(!await command(captured,o,after,submitted))return false;tell(message);return true;});
 }
@@ -203,7 +203,7 @@ function openPathEditor(pathId?:string){
   return true;
  });
 }
-export function renderRoomPaths(view:DrawingView){
+export function renderRoomPaths(view:DrawingMapView){
  const panel=el('room-path-context');if(!panel)return;panel.replaceChildren();
  const room=selected?.(),w=workspace?.(),paths=room?(view.paths??[]).filter(p=>p.roomId===room.id||p.from.roomId===room.id||p.to.roomId===room.id):[];
  panel.hidden=!paths.length;if(!w||!room)return;

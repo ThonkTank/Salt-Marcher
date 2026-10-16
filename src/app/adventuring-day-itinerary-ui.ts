@@ -1,11 +1,11 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {DayPlanEntry,DayItinerary,DayItineraryStage} from './adventuring-day-contracts';
 import type {DayItineraryDraft} from './adventuring-day-draft';
 
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const format=(n:number)=>n.toLocaleString('de-DE');
 type Choice={id:string;revision:number;name:string;count:string;restBefore?:'short'|'long'};
-let workspace:Workspace|null=null,selected:Choice[]=[],generation=0,timer:ReturnType<typeof setTimeout>|null=null,changed:()=>void;
+let workspace:WorkspaceGeometry|null=null,selected:Choice[]=[],generation=0,timer:ReturnType<typeof setTimeout>|null=null,changed:()=>void;
 let manual={load:'0',reward:'0',separate:false};
 let editRevision=0;
 const enabled=()=>el<HTMLInputElement>('day-use-encounters').checked;
@@ -110,7 +110,7 @@ export function renderDayItinerary(value:DayItinerary|undefined,current:()=>bool
 export function dayItineraryDraft():DayItineraryDraft {
  return {enabled:enabled(),selected:selected.map(p=>({...p})),manual:enabled()?{...manual}:{load:el<HTMLInputElement>('day-total-xp').value,reward:el<HTMLInputElement>('day-reward-xp').value,separate:el<HTMLInputElement>('day-separate-reward').checked}};
 }
-export function activateDayItinerary(next:Workspace|null,draft?:DayItineraryDraft){
+export function activateDayItinerary(next:WorkspaceGeometry|null,draft?:DayItineraryDraft){
  workspace=next;generation++;editRevision++;if(timer)clearTimeout(timer);timer=null;selected=[];manual={load:'0',reward:'0',separate:false};el<HTMLInputElement>('day-use-encounters').checked=false;el<HTMLInputElement>('day-plan-search').value='';el('day-plan-edit-status').textContent='';
  el('day-plan-matches').replaceChildren();el('day-plan-matches').setAttribute('aria-busy','false');el('day-plan-result').replaceChildren();el('day-plan-search-status').textContent='';renderSelected();inputs();
  if(draft){

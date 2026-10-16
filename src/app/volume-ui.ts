@@ -1,5 +1,5 @@
 import {atlasDrawingWrite} from './campaign-atlas-author';
-import type {Workspace,Room} from './contracts';
+import type {WorkspaceGeometry,Room,RoomGeometry} from './contracts';
 import type {DrawingView} from './drawing-contracts';
 import type {DungeonVolume,VolumeCell,VolumeAction} from './volume-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
@@ -8,7 +8,7 @@ import {roomPath} from './drawing-model';
 import {brushStroke,volumeArea,extendStroke,voxelKey,type VolumeBrush} from './volume-stroke';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
-let workspace:()=>Workspace|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:Workspace)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
+let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
 let data:DrawingView|null=null,generation=0,readRequest=0,roomId:string|null=null,gesture:number|null=null;
 let pending:Promise<boolean>|null=null,writing=false;
 let cells=new Map<string,VolumeCell>();
@@ -34,7 +34,7 @@ function clearStroke(){gesture=null;stroke=null;cells.clear();basis=null;renderC
 function message(text:string,error=false){el('volume-stroke-status').textContent=text;el('volume-stroke-status').setAttribute('role',error?'alert':'status');}
 
 let acknowledgedRoom:Room|null=null;
-let derived:{room:Room;height:number;volume:DungeonVolume}|null=null;
+let derived:{room:RoomGeometry;height:number;volume:DungeonVolume}|null=null;
 let renderedVolume:DungeonVolume|null=null,renderedSlice=NaN,isometricSource:DungeonVolume|null=null;
 function room(){const current=roomId===null?null:workspace()?.rooms.find(r=>r.id===roomId)??data?.hiddenRooms.find(r=>r.id===roomId)??null;return acknowledgedRoom?.id===roomId&&(!current||acknowledgedRoom.revision>current.revision)?acknowledgedRoom:current;}
 function currentVolume(){

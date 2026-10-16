@@ -3,7 +3,7 @@ import {journeyPlayback,type PlaybackFrame,type JourneySpeed} from './journey-pl
 import {renderDungeonPace,dungeonPaceDirty,dungeonPaceDraft,acceptDungeonPace,clearDungeonPace} from './dungeon-pace-ui';
 import {drawDungeonContents} from './dungeon-content-live-ui';
 import type {DungeonMovement} from './volume-contracts';
-import type {Workspace,Point} from './contracts';
+import type {WorkspaceGeometry,Point} from './contracts';
 import type {DungeonView,DungeonPose,DungeonPreview,DungeonAction,DungeonSenseAction,DungeonTraceRules} from './dungeon-contracts';
 import {centerInRoom} from './dungeon-model';
 import {appendRoomNumber} from './room-number-label';
@@ -12,7 +12,7 @@ import {trackAt} from './track-model';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const select=(id:string)=>el<HTMLSelectElement>(id),number=(id:string)=>Number(el<HTMLInputElement>(id).value);
 let traceStart:DungeonPose|null=null;
-let workspace:Workspace|null=null,data:DungeonView|null=null,target:DungeonPose|null=null,preview:DungeonPreview|null=null;
+let workspace:WorkspaceGeometry|null=null,data:DungeonView|null=null,target:DungeonPose|null=null,preview:DungeonPreview|null=null;
 let generation=0,readRequest=0,routeIntent=0,job:Promise<boolean>|null=null;
 let status:(s:string,error?:boolean)=>void=()=>{};let navigateCombat:(id:string)=>void=()=>{};
 type FieldValue=string|boolean;
@@ -236,7 +236,7 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
  bind('dungeon-npc-place',()=>{const npc=data?.npcs.find(n=>n.id===select('dungeon-npc').value);return npc&&target?{kind:'npc-place',actorId:npc.id,expectedRevision:npc.revision,pose:target}:null;});
  el('dungeon-edit').onclick=()=>el('atlas-tab').click();
 }
-export function activateDungeon(w:Workspace){
+export function activateDungeon(w:WorkspaceGeometry){
  playback.stop();generation++;readRequest++;routeIntent++;job=null;workspace=w;data=null;target=null;preview=null;traceStart=null;fieldBase.clear();trackDrafts.clear();confirmedFields=null;clearDungeonPace();
  el('dungeon-trace-start-label').textContent='';
 }

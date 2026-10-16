@@ -1,4 +1,4 @@
-import type {Polygon,Room} from './contracts';import {inside,combineRooms} from './drawing-model';import type {DungeonVolume,VolumeColumn,VolumeAction,VolumeSpan} from './volume-contracts';import {VOXEL_METERS as U,MAX_VOLUME_COLUMNS,MAX_VOLUME_CELLS} from './volume-contracts';
+import type {Polygon,RoomGeometry} from './contracts';import {inside,combineRooms} from './drawing-model';import type {DungeonVolume,VolumeColumn,VolumeAction,VolumeSpan} from './volume-contracts';import {VOXEL_METERS as U,MAX_VOLUME_COLUMNS,MAX_VOLUME_CELLS} from './volume-contracts';
 export function volumeOrigin(v:DungeonVolume){
  let x=Infinity,y=Infinity,z=Infinity;
  for(const column of v.columns){
@@ -8,7 +8,7 @@ export function volumeOrigin(v:DungeonVolume){
  return{x,y,z};
 }
 export const cellKey=(x:number,y:number)=>x+','+y;
-export function volumeFromRoom(room:Room,heightSteps=2,id=room.id):DungeonVolume {const points=room.polygons.flatMap(p=>p.outer),minX=Math.floor(Math.min(...points.map(p=>p.x))/U),maxX=Math.ceil(Math.max(...points.map(p=>p.x))/U),minY=Math.floor(Math.min(...points.map(p=>p.y))/U),maxY=Math.ceil(Math.max(...points.map(p=>p.y))/U);if((maxX-minX)*(maxY-minY)>MAX_VOLUME_COLUMNS)throw new Error('Kontur für diesen Volumenzug verkleinern.');const columns:VolumeColumn[]=[];for(let y=minY;y<maxY;y++)for(let x=minX;x<maxX;x++)if(inside({x:(x+.5)*U,y:(y+.5)*U},room.polygons))columns.push({x,y,spans:[{z:0,height:heightSteps,floor:true,ceiling:true,medium:'air'}]});if(!columns.length)throw new Error('Kontur enthält keine 5-Fuß-Zelle.');return{id,revision:0,roomId:room.id,scopeId:room.scopeId,floorId:room.floorId,columns,faces:{}};}
+export function volumeFromRoom(room:RoomGeometry,heightSteps=2,id=room.id):DungeonVolume {const points=room.polygons.flatMap(p=>p.outer),minX=Math.floor(Math.min(...points.map(p=>p.x))/U),maxX=Math.ceil(Math.max(...points.map(p=>p.x))/U),minY=Math.floor(Math.min(...points.map(p=>p.y))/U),maxY=Math.ceil(Math.max(...points.map(p=>p.y))/U);if((maxX-minX)*(maxY-minY)>MAX_VOLUME_COLUMNS)throw new Error('Kontur für diesen Volumenzug verkleinern.');const columns:VolumeColumn[]=[];for(let y=minY;y<maxY;y++)for(let x=minX;x<maxX;x++)if(inside({x:(x+.5)*U,y:(y+.5)*U},room.polygons))columns.push({x,y,spans:[{z:0,height:heightSteps,floor:true,ceiling:true,medium:'air'}]});if(!columns.length)throw new Error('Kontur enthält keine 5-Fuß-Zelle.');return{id,revision:0,roomId:room.id,scopeId:room.scopeId,floorId:room.floorId,columns,faces:{}};}
 function normalize(spans:VolumeSpan[],overlay?:VolumeSpan){
  let result:VolumeSpan[]=[];
  if(overlay){

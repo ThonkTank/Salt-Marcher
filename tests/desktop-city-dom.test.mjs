@@ -9,12 +9,13 @@ import {buildSync} from 'esbuild';
 import {parseHTML,DOMParser} from 'linkedom';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/city-dom-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG} from './src/app/campaign-atlas-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs'});
+for(const [name,entry] of [['service','desktop/room-directory.ts'],['worker','desktop/room-directory-worker.ts']])buildSync({entryPoints:[entry],outfile:'.build/city-dom-directory-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['src/app/landscape-raster.ts'],outfile:'.build/city-dom-raster.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/city-dom-store.cjs'),tick=()=>new Promise(resolve=>setImmediate(resolve));
 async function settle(){await tick();await tick();await tick();}
 async function until(fn){for(let i=0;i<60&&!fn();i++)await tick();assert.ok(fn(),'Expected city state did not arrive.');}
 async function setup(){
- const root=mkdtempSync(path.join(tmpdir(),'city-dom-')),store=new CampaignStore(path.join(root,'campaign.sqlite'));
+ const root=mkdtempSync(path.join(tmpdir(),'city-dom-')),store=new CampaignStore(path.join(root,'campaign.sqlite')),directory=new (require('../.build/city-dom-directory-service.cjs').RoomDirectoryService)(path.resolve('.build/city-dom-directory-worker.cjs'));
  const campaignIds={},cityIds={one:randomUUID(),two:randomUUID()},unitIds={one:randomUUID(),two:randomUUID()};
  for(const name of ['Alpha','Beta']){
   const c=store.create(name,[]),w=store.activate(c.id),locationId=randomUUID();campaignIds[name]=c.id;
@@ -42,6 +43,11 @@ async function setup(){
  window.campaign={world:async token=>reply(()=>store.world(token)),landscapeFind:async(t,q)=>reply(()=>store.landscapeFind(t,q)),landscapeRegion:async(t,b,m,includePatches)=>reply(()=>store.landscapeRegion(t,b,m,includePatches)),campaignAtlas:async (token,groupView)=>reply(()=>store.campaignAtlas(token,groupView)),npcs:async(t,q)=>reply(()=>store.npcs(t,q)),cities:async t=>reply(()=>store.cities(t)),city:async(t,id)=>reply(()=>store.city(t,id)),executeCity:async command=>{writes.push(structuredClone(command));return reply(()=>store.executeAtlas({...command,action:command.action.kind==='undo'||command.action.kind==='redo'?{kind:command.action.kind}:{kind:'city',command}}).atlas.cities.find(c=>c.header.id===command.cityId));},executeAtlas:async command=>{if(!['city','undo','redo'].includes(command.action.kind))return reply(()=>store.executeAtlas(command));const city=command.action.kind==='city'?command.action.command:{...command,cityId:document.getElementById('city-select').value,action:command.action};const result=await window.campaign.executeCity(city);return result.ok?reply(()=>({atlas:store.campaignAtlas(command.token),result:result.value})):result;},exportCity:async()=>({ok:true,value:{cancelled:false}})};
  // Bounded Atlas APIs use the actual store and browser-safe rasterizer, not a second campaign snapshot.
  Object.assign(window.campaign,{
+  atlasRenderView:async(token,groupView)=>reply(()=>store.atlasRenderView(token,groupView)),
+  drawingMap:async token=>reply(()=>store.drawingMap(token)),
+  drawingElement:async(token,id)=>reply(()=>store.drawingElement(token,id)),
+  roomDirectory:async(token,q)=>{try{const source=store.roomReadSource(token,q),value=await directory.read(source,q);if(store.roomReadSource(token).fence!==source.fence)throw new Error('Raumsuche inzwischen geändert.');return{ok:true,value};}catch(error){return{ok:false,error:error.message};}},
+  cancelRoomDirectory:async()=>{directory.cancel();return{ok:true,value:undefined};},
   atlasOverview:async token=>reply(()=>store.atlasOverview(token)),
   atlasObjects:async(token,q)=>reply(()=>store.atlasObjects(token,q)),
   atlasRoom:async(token,id)=>reply(()=>store.atlasRoom(token,id)),
@@ -65,7 +71,7 @@ async function setup(){
  document.getElementById('city-zoom').value='1';document.getElementById('city-seed').value='city-seed';document.getElementById('city-density').value='0.5';document.getElementById('city-size').value='8';document.getElementById('city-reach').value='80';
  await activate('Alpha');await select();document.getElementById('city-location').value=store.city(current.token,cityIds.one).header.locationId;
  return{store,ui,window,document,cityIds,unitIds,writes,messages,timers,activate,select,choose,enter,click,drain,current:()=>current,
-  async cleanup(){await drain();timers.clear();store.close();Object.assign(globalThis,saved);rmSync(root,{recursive:true,force:true});}
+  async cleanup(){await drain();await directory.close();timers.clear();store.close();Object.assign(globalThis,saved);rmSync(root,{recursive:true,force:true});}
  };
 }
 
@@ -303,7 +309,7 @@ test('shared Atlas routes target clicks into the house preview and retains selec
  try{
   const w=x.current(),storage=new Map();Object.assign(globalThis,{DOMPoint:class {constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return{x:this.x,y:this.y};}},requestAnimationFrame:fn=>{queueMicrotask(()=>fn(0));return 0;},cancelAnimationFrame:()=>{},localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)}});
   const binding={id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0};x.store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'bind',binding,expectedRevision:null}});
-  x.window.campaign.campaignAtlas=async token=>({ok:true,value:x.store.campaignAtlas(token)});
+  x.window.campaign.atlasRenderView=async token=>({ok:true,value:x.store.atlasRenderView(token)});
   atlas=new x.ui.CampaignAtlasWorkbench({selectRoom:async()=>{},roomDraft:()=>null,flush:()=>x.ui.flushCity(),updated:async()=>{},status:(message,error)=>x.messages.push({message,error})});
   for(const select of x.document.querySelectorAll('#campaign-atlas select')){select.add=o=>select.append(o);let chosen='';Object.defineProperty(select,'value',{get(){const options=[...select.querySelectorAll('option')];return options.find(o=>o.value===chosen)?.value??options[0]?.value??'';},set(v){chosen=String(v);}});}
   const svg=x.document.getElementById('campaign-map');Object.defineProperty(svg,'clientWidth',{value:800});Object.defineProperty(svg,'clientHeight',{value:500});svg.getScreenCTM=()=>({inverse:()=>({})});
@@ -377,7 +383,7 @@ async function interiorSurface(x){
  x.click('atlas-building-interior');await until(()=>surface.atlas.family==='interior');await settle();
  const point=(type,at,target=surface.svg)=>{const e=new x.window.Event(type,{bubbles:true});Object.assign(e,{button:0,pointerId:7,clientX:at.x-Number(surface.svg.dataset.atlasOriginX),clientY:at.y-Number(surface.svg.dataset.atlasOriginY)});target.dispatchEvent(e);};
  const tool=name=>x.document.querySelector('[data-drawing-tool="'+name+'"]').click();
- return {...surface,tool,point,workspace:()=>workspace,async rectangle(name,a,b,target){tool('room-rectangle');x.enter('drawing-room-name',name);point('pointerdown',a,typeof target==='string'?surface.svg.querySelector(target):target);point('pointermove',b);point('pointerup',b);await until(()=>x.store.campaignAtlas(x.current().token).workspace.rooms.some(r=>r.name===name)).catch(error=>{error.message+=' '+JSON.stringify(x.messages);throw error;});await x.drain();await settle();}};
+ return {...surface,tool,point,workspace:()=>workspace,async activate(name){await x.activate(name);workspace=x.current();selected=null;await x.ui.activateDrawing(workspace);surface.atlas.activate(workspace);},async rectangle(name,a,b,target){tool('room-rectangle');x.enter('drawing-room-name',name);point('pointerdown',a,typeof target==='string'?surface.svg.querySelector(target):target);point('pointermove',b);point('pointerup',b);await until(()=>x.store.campaignAtlas(x.current().token).workspace.rooms.some(r=>r.name===name)).catch(error=>{error.message+=' '+JSON.stringify(x.messages);throw error;});await x.drain();await settle();}};
 }
 
 test('house interior reopens through the same visible action without creating a second scope',async()=>{
@@ -413,6 +419,20 @@ test('Atlas search navigation retains an unfinished room instead of silently dis
  }finally{await s.close();}
 });
 
+test('Atlas finds complete room prose through the directory worker while its map retains geometry only',async()=>{
+ const x=await setup(),s=await interiorSurface(x);
+ try{
+  const f=s.atlas.frame(s.atlas.scopeId);await s.rectangle('Cellar',{x:f.x-3,y:f.y-3},{x:f.x+3,y:f.y+3});
+  const room=x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.name==='Cellar'),edit={commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,roomId:room.id,expectedRevision:room.revision,name:room.name,polygons:room.polygons,sections:room.sections.map(section=>section.kind==='markdown'?{...section,markdown:'Only in prose: azurblauer Kellerfund'}:section)};
+  x.store.executeAtlas({...edit,action:{kind:'room-edit',edit}});await s.atlas.refresh();
+  assert.equal(JSON.stringify(s.atlas.data).includes('azurblauer Kellerfund'),false);assert.ok(s.atlas.data.workspace.rooms.every(r=>!('sections' in r)));
+  const read=x.window.campaign.roomDirectory;let searched;x.window.campaign.roomDirectory=(...args)=>(searched=read(...args));
+  x.document.getElementById('atlas-search').value='azurblauer Kellerfund';x.document.getElementById('atlas-search').oninput();assert.ok(searched);assert.equal((await searched).ok,true);await settle();
+  const match=[...x.document.getElementById('atlas-search-results').querySelectorAll('button')].find(b=>b.textContent.includes('Cellar'));assert.ok(match);match.click();await until(()=>s.atlas.selection?.id===room.id);
+  assert.equal(s.atlas.scopeId,room.scopeId);assert.equal(x.store.atlasRoom(x.current().token,room.id).sections[0].markdown,edit.sections[0].markdown);
+ }finally{await s.close();}
+});
+
 test('a scope search result retains an unfinished room and opens after explicit cancellation',async()=>{
  const x=await setup(),s=await interiorSurface(x);
  try{
@@ -431,7 +451,7 @@ test('a city navigation waiting for editors cannot move the next campaign',async
  try{
   s.atlas.opts.flush=()=>new Promise(resolve=>release=resolve);
   const pending=s.atlas.navigate('city',x.cityIds.two);await until(()=>!!release);
-  await x.activate('Beta');s.atlas.activate(x.current());await s.atlas.open();
+  await s.activate('Beta');await s.atlas.open();
   const before=x.store.db.serialize(),family=s.atlas.family,box=s.svg.getAttribute('viewBox');
   release(true);await pending;
   assert.equal(s.atlas.scopeId,null);assert.equal(s.atlas.selection,null);assert.equal(s.atlas.family,family);assert.equal(s.svg.getAttribute('viewBox'),box);assert.ok(x.store.db.serialize().equals(before));
@@ -452,10 +472,10 @@ test('a newer Atlas navigation wins over an older request waiting for editors',a
 test('a late Atlas navigation read cannot select an object in the next campaign',async()=>{
  const x=await setup(),s=await interiorSurface(x);let release;
  try{
-  const read=x.window.campaign.campaignAtlas;let first=true;
-  x.window.campaign.campaignAtlas=async(...args)=>{const result=await read(...args);if(first){first=false;return new Promise(resolve=>release=()=>resolve(result));}return result;};
+  const read=x.window.campaign.atlasRenderView;let first=true;
+  x.window.campaign.atlasRenderView=async(...args)=>{const result=await read(...args);if(first){first=false;return new Promise(resolve=>release=()=>resolve(result));}return result;};
   const pending=s.atlas.navigate('city',x.cityIds.two);await until(()=>!!release);
-  await x.activate('Beta');s.atlas.activate(x.current());await s.atlas.open();
+  await s.activate('Beta');await s.atlas.open();
   const box=s.svg.getAttribute('viewBox'),before=x.store.db.serialize();release();await pending;
   assert.equal(s.atlas.selection,null);assert.equal(s.atlas.cityId,null);assert.equal(s.atlas.scopeId,null);assert.equal(s.svg.getAttribute('viewBox'),box);assert.ok(x.store.db.serialize().equals(before));
  }finally{if(release)release();await s.close();}
@@ -530,7 +550,7 @@ test('a waiting floor switch cannot change the next campaign or report success t
   const scopeId=s.atlas.scopeId;
   await s.atlas.write({kind:'drawing',command:{commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action:{kind:'floor',scopeId,id:'upper',name:'Obergeschoss',elevation:3,cloneId:null,hidden:false}}},true);
   s.atlas.opts.flush=()=>new Promise(resolve=>release=resolve);const picker=x.document.getElementById('atlas-floor');picker.value='upper';picker.onchange();await until(()=>!!release);
-  await x.activate('Beta');s.atlas.activate(x.current());const before=x.store.db.serialize(),messages=x.messages.length;
+  await s.activate('Beta');const before=x.store.db.serialize(),messages=x.messages.length;
   release(true);await settle();assert.equal(s.atlas.floorId,'ground');assert.equal(s.atlas.scopeId,null);assert.equal(x.messages.length,messages);assert.ok(x.store.db.serialize().equals(before));
  }finally{if(release)release(false);await s.close();}
 });
@@ -560,8 +580,8 @@ test('group-view room labels come from live public perception rather than GM roo
   const labels=s.svg.querySelector('[data-atlas-public-view]');assert.ok(labels);mapEvidence(s.svg,'interior-public.svg');assert.match(labels.textContent,/Public taproom/);assert.doesNotMatch(labels.textContent,/GM:|Hidden vault/);assert.equal(labels.querySelectorAll('[data-room-number]').length,0);assert.equal(labels.getAttribute('transform'),null);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.playerView(x.current().token).frame.mode,'blank');
   s.point('pointerdown',at(0,0));s.point('pointermove',at(2,2));s.point('pointerup',at(2,2));s.point('click',at(0,0));await settle();assert.ok(x.store.db.serialize().equals(before));assert.equal(x.ui.atlasDrawingDraft().path.length,0);
   player({kind:'settings',settings:{blank:true,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}});await s.atlas.refresh();assert.equal(s.svg.querySelector('[data-atlas-public-view]').textContent,'');
-  const read=x.window.campaign.campaignAtlas,stable=x.store.db.serialize();x.window.campaign.campaignAtlas=async()=>({ok:false,error:'Context unavailable'});await s.atlas.refresh();assert.match(x.document.getElementById('atlas-view-status').textContent,/nicht verfügbar/);assert.equal(x.document.getElementById('atlas-view-refresh').hidden,false);assert.equal(s.svg.querySelector('[data-atlas-public-view]').querySelectorAll('circle,path').length,0);assert.doesNotMatch(s.svg.textContent,/GM:|Public taproom/);
-  x.window.campaign.campaignAtlas=read;x.click('atlas-view-refresh');await until(()=>s.atlas.travelReadState==='ready');assert.ok(s.svg.querySelector('[data-atlas-public-view]').querySelector('circle'));assert.ok(x.store.db.serialize().equals(stable));
+  const read=x.window.campaign.atlasRenderView,stable=x.store.db.serialize();x.window.campaign.atlasRenderView=async()=>({ok:false,error:'Context unavailable'});await s.atlas.refresh();assert.match(x.document.getElementById('atlas-view-status').textContent,/nicht verfügbar/);assert.equal(x.document.getElementById('atlas-view-refresh').hidden,false);assert.equal(s.svg.querySelector('[data-atlas-public-view]').querySelectorAll('circle,path').length,0);assert.doesNotMatch(s.svg.textContent,/GM:|Public taproom/);
+  x.window.campaign.atlasRenderView=read;x.click('atlas-view-refresh');await until(()=>s.atlas.travelReadState==='ready');assert.ok(s.svg.querySelector('[data-atlas-public-view]').querySelector('circle'));assert.ok(x.store.db.serialize().equals(stable));
   toggle.checked=false;toggle.onchange();await until(()=>!s.svg.querySelector('[data-atlas-public-view]'));const gm=s.svg.querySelector('[data-atlas-room-labels="'+first.scopeId+'"]');assert.match(gm.textContent,/GM: Taproom contact/);assert.match(gm.textContent,/GM: Hidden vault/);assert.equal(gm.querySelectorAll('[data-room-number]').length,2);
  }finally{await s.close();}
 });

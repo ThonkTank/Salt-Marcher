@@ -1,11 +1,11 @@
 import type { Point } from "./contracts";
-import type { CampaignAtlas } from "./campaign-atlas-contracts";
+import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import {
   atlasFrame,
   localToAtlas,
   atlasHexPoint,
 } from "./campaign-atlas-model";
-export function atlasPartyPoint(a: CampaignAtlas): Point | null {
+export function atlasPartyPoint(a: AtlasRenderView): Point | null {
   const p = a.geometry.position;
   if (p) {
     const b = a.bindings.find(

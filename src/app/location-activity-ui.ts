@@ -1,8 +1,8 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {LocationActivityPage,LocationVisit} from './location-activity-contracts';
 import type {CityActivitySite} from './city-activity-contracts';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
-export interface LocationActivityContext {workspace:Workspace;locationId:string;revision:number}
+export interface LocationActivityContext {workspace:WorkspaceGeometry;locationId:string;revision:number}
 export class LocationActivityBinder {
  readonly element=node('details');private scene=node('select');private search=node('input');private status=node('p');private rows=node('div');private previous=node('button','Vorige 40');private next=node('button','Weitere 40');private offset=0;private nextOffset:number|null=null;private request=0;private key='';private sceneChoiceRequired=false;private timer:ReturnType<typeof setTimeout>|null=null;
  constructor(private context:()=>LocationActivityContext|null,private openNpc:(id:string,current:()=>boolean)=>Promise<void>,private openHouse:(site:CityActivitySite,current:()=>boolean)=>Promise<void>){

@@ -1,4 +1,4 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {LiveView} from './live-contracts';
 import {xpLevel,type ProgressView,type ProgressAction} from './progression';
 import {partyAwardShares} from './party-xp-model';
@@ -7,8 +7,8 @@ const value=(id:string)=>el<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 const number=(n:number)=>n.toLocaleString('de-DE');
 type Choice={xp:boolean;load:boolean};
-let owner:Workspace|null=null,live:LiveView|null=null,progress:ProgressView|null=null,choices=new Map<string,Choice>(),generation=0,loading=false,limit=40;
-let current:()=>Workspace|null,save:(token:string,action:ProgressAction,done:()=>void)=>void;
+let owner:WorkspaceGeometry|null=null,live:LiveView|null=null,progress:ProgressView|null=null,choices=new Map<string,Choice>(),generation=0,loading=false,limit=40;
+let current:()=>WorkspaceGeometry|null,save:(token:string,action:ProgressAction,done:()=>void)=>void;
 export function resetPartyAwards(){generation++;owner=null;live=null;progress=null;choices.clear();el('party-award-panel').hidden=true;el<HTMLInputElement>('party-award-xp').value='0';el<HTMLInputElement>('party-award-load').value='0';el<HTMLInputElement>('party-award-reason').value='Spielabend abgeschlossen';}
 async function load(fresh=false){const w=current(),request=++generation;if(!w)return;loading=true;el('party-award-status').textContent='Figurenstände werden geladen…';el<HTMLButtonElement>('party-award-submit').disabled=true;
  try{const [l,p]=await Promise.all([window.campaign.live(w.token),window.campaign.progress(w.token)]);if(w.token!==current()?.token||request!==generation)return;owner=w;live=unwrap(l);progress=unwrap(p);const old=fresh?new Map<string,Choice>():choices;choices=new Map(live.roster.map(c=>[c.id,old.get(c.id)??{xp:c.active&&c.sceneId===live!.focusId,load:c.active&&c.sceneId===live!.focusId}]));for(const c of live.roster)if(!c.active)choices.get(c.id)!.load=false;loading=false;el('party-award-basis').textContent='Bestätigte Figurenstände · Fokus: '+(live.scene?.title||'Keine laufende Gruppe')+' · '+live.roster.length+' Rosterfiguren';render();preview();el('party-award-status').textContent='';}

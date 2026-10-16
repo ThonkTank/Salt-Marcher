@@ -1,11 +1,11 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {PlayerView,PlayerAction,PlayerObserver,PlayerSettings,PlayerCommand} from './player-contracts';
 import {renderPlayer} from './player-render';
 const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T,input=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>input(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 type Owner={id:string;token:string;generation:number};
 type FieldValue=string|boolean;
-let context:()=>Workspace|null,before:()=>Promise<boolean>,tell:(s:string,error?:boolean)=>void,view:PlayerView|null=null,viewOwner:Owner|null=null,generation=0,presentation=0,actions=0;
+let context:()=>WorkspaceGeometry|null,before:()=>Promise<boolean>,tell:(s:string,error?:boolean)=>void,view:PlayerView|null=null,viewOwner:Owner|null=null,generation=0,presentation=0,actions=0;
 let baseline=new Map<string,FieldValue>();
 function owner():Owner|null{const w=context();return w?{id:w.campaign.id,token:w.token,generation}:null;}
 function owns(o:Owner){const w=context();return o.generation===generation&&w?.token===o.token&&w.campaign.id===o.id;}

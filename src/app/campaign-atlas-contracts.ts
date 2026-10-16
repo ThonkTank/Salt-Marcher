@@ -1,8 +1,9 @@
+import type {DrawingElement,DrawingElementGeometry} from './drawing-contracts';
 import type {
   AtlasEntrance,
   AtlasLocalJourney,
 } from "./atlas-travel-contracts";
-import type { Result, Workspace, Edit, Polygon } from "./contracts";
+import type { Result, WorkspaceState, Room, RoomGeometry, Edit, Polygon } from "./contracts";
 import type { CityCommand, CityView } from "./city-contracts";
 import type { DrawingCommand } from "./drawing-contracts";
 import type { WorldCommand, AtlasMap, SceneWorld } from "./world-contracts";
@@ -18,7 +19,7 @@ export interface AtlasBinding {
   angle: number;
   revision: number;
 }
-export interface CampaignAtlas {
+export interface CampaignAtlas<R extends RoomGeometry = Room,E extends DrawingElementGeometry = DrawingElement> {
   scopes: { id: string; name: string }[];
   perception: import("./dungeon-contracts").DungeonDisplay | null;
   entrances: AtlasEntrance[];
@@ -29,8 +30,8 @@ export interface CampaignAtlas {
   bindings: AtlasBinding[];
   cities: CityView[];
   places: (import("./world-contracts").AtlasPlace & {point:import("./contracts").Point})[];
-  geometry: DungeonView;
-  workspace: Workspace;
+  geometry: DungeonView<R,E>;
+  workspace: WorkspaceState<R>;
   scene: SceneWorld | null;
   publicFrame?: import("./player-contracts").PlayerFrame;
   canUndo: boolean;
@@ -103,7 +104,10 @@ export interface AtlasCommitAck {
   campaignId: string; commandId: string; revision: number;
   canUndo: boolean; canRedo: boolean;
 }
+export type AtlasRenderView = CampaignAtlas<RoomGeometry,DrawingElementGeometry>;
 export interface AtlasAPI {
+  atlasRoomCommit(edit:Edit):Promise<Result<import('./contracts').RoomCommit>>;
+  atlasRenderView(token:string,groupView?:boolean):Promise<Result<AtlasRenderView>>;
   cancelLandscapeRaster(token:string,consumer:'view'|'export'):Promise<Result<void>>;
   landscapeRaster(token:string,box:import('./atlas-landscape').LandscapeBox,width:number,height:number,consumer?:'view'|'export'):Promise<Result<import('./landscape-raster').LandscapeRaster>>;
   atlasOverview(token: string): Promise<Result<AtlasOverview>>;

@@ -4,14 +4,14 @@ import type {FinishOwner,RewardItemDraft} from './finish-draft-contracts';
 import {drawLedgerStacks} from './ledger-stack-ui';
 import {rewardItemsEditor} from './reward-items-ui';
 import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
-import type { Workspace, Result } from './contracts';
+import type { WorkspaceGeometry, Result } from './contracts';
 import {formatInstant,advanceInstant,type LiveScene,type LiveView} from './live-contracts';
 import type { EncounterAssessment } from './encounter-contracts';
 import { deathSaveControls, xpInput, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
-let workspace: Workspace | null = null, live: LiveView | null = null, selected: string | null = null, view: ProgressView | null = null;
+let workspace: WorkspaceGeometry | null = null, live: LiveView | null = null, selected: string | null = null, view: ProgressView | null = null;
 let contextBasis = '';
 let generation = 0, loadNumber = 0, pending: Promise<boolean> | null = null, selectedLedger: string | null = null;
 let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = null, ledger: LedgerPage = {items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'};
@@ -35,7 +35,7 @@ export function progressCharacters(){return view?.characters??[];}
 export function hasHealthDraft(characterId:string){return !!workspace&&healthDrafts.has(workspace.campaign.id+':'+characterId);}
 function publishProgress(){for(const listener of progressListeners)listener();}
 const healthKey=()=>workspace&&selected?workspace.campaign.id+':'+selected:null;
-export function progressionContext(next: Workspace | null, data: LiveView | null, characterId: string | null) {
+export function progressionContext(next: WorkspaceGeometry | null, data: LiveView | null, characterId: string | null) {
   const basis = JSON.stringify([next?.token, data?.rosterRevision, data?.focusId]);
   const changed = basis !== contextBasis; contextBasis = basis;
   const selectionChanged = characterId !== selected;
@@ -258,7 +258,7 @@ async function loadHistory(more = false) {
   }catch(error){tell((error as Error).message,true);}
 }
 function item(prefix: string): ItemInput { return { name:value(prefix+'-name'),quantity:Number(value(prefix+'-quantity')),valueGold:value(prefix+'-value'),category:value(prefix+'-category') as ItemCategory }; }
-export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:Workspace;poolXp?:number;items?:ItemInput[];owner:FinishOwner}) {
+export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:WorkspaceGeometry;poolXp?:number;items?:ItemInput[];owner:FinishOwner}) {
   const request=++finishRequest,gen=generation,owner=options?.workspace??workspace;
   if(!owner)return false;
   const current=()=>request===finishRequest&&gen===generation;

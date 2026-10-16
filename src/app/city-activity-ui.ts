@@ -1,7 +1,7 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {CityActivityPage,CityActivitySite} from './city-activity-contracts';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
-export interface CityActivityContext {workspace:Workspace;cityId:string;revision:number;unit:{id:string;name:string}|null}
+export interface CityActivityContext {workspace:WorkspaceGeometry;cityId:string;revision:number;unit:{id:string;name:string}|null}
 export class CityActivityBinder {
  private root=node('details');private scene=node('select');private search=node('input');private house=node('input');private houseLabel=node('span');private status=node('p');private rows=node('div');private previous=node('button','Vorige 40');private next=node('button','Weitere 40');private offset=0;private nextOffset:number|null=null;private request=0;private key='';private scope='';private sceneChoiceRequired=false;private timer:ReturnType<typeof setTimeout>|null=null;
  constructor(private context:()=>CityActivityContext|null,private openHouse:(site:CityActivitySite,current:()=>boolean)=>Promise<void>,private openNpc:(id:string,current:()=>boolean)=>Promise<void>,private openLocation:(id:string,current:()=>boolean)=>Promise<void>=async()=>{}){

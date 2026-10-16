@@ -56,11 +56,19 @@ einfachere behalten; fehlende Nachweise als offen führen.
 | B04 | Wirksame Landschaft vor maßstabsabhängiger Zusammenfassung bestimmen | Raster-/Vektorkacheln, vereinfachte Konturen und Kombination; Landschaftserhalt, Ränder und lokale Invalidierung entscheiden. |
 | B05 | Austauschbare feste Ladeeinheiten und getrennte Bytecaches | Adaptive Bereiche/statisch-dynamische Indizes nach Dichtemessung. Cachevergleich 64/128/256 MiB je Klasse; kleinste geeignete Variante wählen. |
 | B06 | Hashadressierte Assetdateien gemäß Speicherziel | Bestehende SQLite-BLOBs und begründete Mischform bis zum Medien-/Backup-/Transfervergleich erhalten. Kein bloßer Dateiformatwechsel ohne Gesamtnutzen. |
-| B07 | Begrenzte Worker, genau ein Writer | DBthread/isolierter Medienprozess; WASM nur für gemessene Kerne. Kopien, Speicher, Cancel und Fehlerisolation entscheiden. |
+| B07 | Begrenzte Worker, genau ein Writer; abbrechbare Raumtextscans je Suchoberfläche | DBthread/isolierter Medienprozess; WASM nur für gemessene Kerne. Kopien, Speicher, Cancel und Fehlerisolation entscheiden. |
 | B08 | Dungeon-Zellvolumes und metrische Gebäudeprismen | Intervall-/Chunkrepräsentation und spezialisierte Geometriekerne optimierbar; keine zweite physische Wahrheit oder freie universelle CSGpflicht. |
 | B09 | Transaktionen, Deltas und Receipts weiterführen | Kompaktere Patches/Checkpoints nach Langzeitmessung. Alte History muss weiter lesbar und kausal rücknehmbar bleiben. |
 | B10 | Lokale/regionale Navigation mit gemeinsamen Übergängen und Zeit | Navmesh/hierarchischer Graph/Kostenfelder nach echten Aufgaben; keine vorsorgliche Dauersimulation. |
 | B11 | Electron/TypeScript/SQLite | Andere WebView/native2D erst bei belegtem unerfüllbarem Speicher-/Grafik-/OS-/Installationsziel. |
+
+Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
+Darstellungsgeometrie und vollständigen ausgewählten Autoreninhalt. Diese
+Projektionen sind keine zweite Schreibautorität. Die aktuelle Volltextsuche
+scannt unveränderliche Quelldaten im Worker; ein abgeleiteter Volltextindex
+bleibt eine messungsabhängige Alternative. Persistente Text-/Geometrietrennung
+und Byte-/Geometriebudgets bleiben offen; reine Metadatenseiten schließen die
+Speicherqualifikation nicht ab.
 
 Kugelprojektion, Serverpflicht, allgemeines Multiuser-Editing und freie
 3D-Meshmodellierung werden derzeit nicht verfolgt; ein veränderter Produktauftrag

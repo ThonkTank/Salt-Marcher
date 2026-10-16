@@ -1,6 +1,6 @@
 import {drawLandscape,landscapeNode} from "./atlas-landscape-view";
 import {hexPolygon,type LandscapeRecord} from "./atlas-landscape";
-import type { CampaignAtlas } from "./campaign-atlas-contracts";
+import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
 import {atlasPartyPoint} from "./atlas-runtime-model";
 import type { PlayerFrame } from "./player-contracts";
@@ -14,7 +14,7 @@ import { terrainColors } from "./world-model";
 const ns = "http://www.w3.org/2000/svg";
 /** Public output is built from the existing public projection, never by hiding GM nodes. */
 export function publicAtlasSVG(
-  a: CampaignAtlas,
+  a: AtlasRenderView,
   box: CanvasBox,
   frame?: PlayerFrame,
   landscape:LandscapeRecord[]=[],

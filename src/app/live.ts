@@ -15,7 +15,7 @@ import {initSceneDesk,sceneDeskContext,flushSceneDesk} from './scene-desk-ui';
 import {refreshMusic} from './music-ui';
 import {renderLiveWorld} from './world-ui';
 import {renderSceneShops} from './items-ui';
-import type { Workspace, Result } from './contracts';
+import type { WorkspaceGeometry, Result } from './contracts';
 import { checkedCharacterProfile, formatInstant, type Character, type CharacterProfile, type LiveScene, type LiveView, type LiveAction, type LiveCommand, type LiveAck } from './live-contracts';
 import type { Preparation } from './preparation-contracts';
 import { reinforceWorldGroup,prepareGeneratedCombat,addWorldNpc,initCombat, combatContext, flushCombat, prepareCombatPlan, addCatalogCreature, prepareWorldGroup,openExistingCombat } from './combat';
@@ -44,7 +44,7 @@ const get = <T extends HTMLElement>(id: string) => document.getElementById(id) a
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-let context: Workspace | null = null, data: LiveView | null = null, sources: Preparation | null = null,liveReadRequest=0;
+let context: WorkspaceGeometry | null = null, data: LiveView | null = null, sources: Preparation | null = null,liveReadRequest=0;
 let sessionChronicle:ChronicleView|null=null,sessionChronicleError='',sessionChronicleRequest=0;
 type RecapText=import('./live-contracts').SessionRecapDraft;
 type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;saving?:Promise<boolean>};
@@ -69,7 +69,7 @@ async function retryRecapSave(){
  }catch(error){if(context===w){state.error='Rückblickentwurf nicht gesichert: '+(error as Error).message;showRecapSave();}}
 }
 function queueRecapSave(text?:RecapText){if(!context)return;const w=context,state=recapDrafts.get(w.campaign.id);if(!state||state.readError)return;state.text=text??recapFields();state.dirty=true;showRecapSave();void saveRecap(w,state);}
-async function saveRecap(w:Workspace,state:RecapWork):Promise<boolean>{
+async function saveRecap(w:WorkspaceGeometry,state:RecapWork):Promise<boolean>{
  if(state.saving)return state.saving;
  if(!state.dirty)return true;
  if(state.readError)return false;
@@ -81,7 +81,7 @@ let selected: string | null = null, characterDraft: Character | null = null, sce
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
 let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
 let requestIsTextSave = false;
-type MomentWork={w:Workspace;sceneId:string;text:LiveMomentDraft;basis:LiveMomentDraft|null;dirty:boolean;error:string;readError:string;publishing?:boolean;saving?:Promise<boolean>};
+type MomentWork={w:WorkspaceGeometry;sceneId:string;text:LiveMomentDraft;basis:LiveMomentDraft|null;dirty:boolean;error:string;readError:string;publishing?:boolean;saving?:Promise<boolean>};
 const momentWorks=new Map<string,MomentWork>();let momentOwner:MomentWork|null=null;
 let narrativeGeneration=0,narrativeCache=new Map<string,NarrativeView>(),narrativeProblems=new Map<string,string>(),narrativeLoading=new Set<string>();
 const intentBlocked = () => !!request && !requestIsTextSave;
@@ -109,7 +109,7 @@ const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:sceneDraft?.id===data.scene?.id?sceneDraft?.locationId??null:data.scene?.locationId??null}:null;
-export function activateLive(workspace: Workspace) {
+export function activateLive(workspace: WorkspaceGeometry) {
   liveReadRequest++;
   if(context){const retained=recapDrafts.get(context.campaign.id),text=recapFields();if(retained&&!equal(retained.text,text)){retained.text=text;retained.dirty=true;}}
   const draft=workspace?recapDrafts.get(workspace.campaign.id):undefined;

@@ -1,3 +1,4 @@
+import {atlasGeometryOnly} from './atlas-render-view';
 import {landscapeExportTiles} from "./atlas-landscape-export";
 import {AtlasLocationComposer,type AtlasLocationOwner} from "./atlas-location-composer";
 import {atlasLocationWrite} from "./campaign-atlas-author";
@@ -29,11 +30,11 @@ import {
   recoverAtlasWrite,
 } from "./campaign-atlas-author";
 import type {
-  CampaignAtlas,
+  AtlasRenderView,
   AtlasAction,
   AtlasBinding,
 } from "./campaign-atlas-contracts";
-import type { Workspace, Point, Room } from "./contracts";
+import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames, cellAt } from "./world-model";
 import { citySvg, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
@@ -46,6 +47,7 @@ import {
   atlasDrawingDraft,
   drawingOverlay,
   atlasDrawingScope,
+  reloadDrawing,
 } from "./drawing-ui";
 import {
   atlasDungeonTarget,
@@ -79,9 +81,13 @@ export class CampaignAtlasWorkbench {
   private svg: SVGSVGElement;
   private camera: PassiveMapCanvas;
   private landscape: LandscapeWorkbench;
-  private data: CampaignAtlas | null = null;
-  private owner: Workspace | null = null;
+  private projection:AtlasRenderView|null=null;
+  private get data(){return this.projection;}
+  private set data(value:AtlasRenderView|null){this.projection=value?atlasGeometryOnly(value):null;}
+  private owner: WorkspaceGeometry | null = null;
   private request = 0;
+  private searchRequest=0;
+  private opening:{owner:WorkspaceGeometry;task:Promise<void>}|null=null;
   private busy = false;
   private exporting = false;
   private exportCancelled = false;
@@ -148,7 +154,7 @@ export class CampaignAtlasWorkbench {
       selectRoom: (id: string) => Promise<void>;
       roomDraft: () => Room | null;
       flush: () => Promise<boolean>;
-      updated: (w: Workspace) => Promise<void>;
+      updated: (w: WorkspaceGeometry) => Promise<void>;
       status: (s: string, error?: boolean) => void;
       readLocation?:(id:string,current:()=>boolean)=>Promise<void>;
       editLocation?:(id:string,current:()=>boolean,back:()=>Promise<void>)=>Promise<void>;
@@ -420,11 +426,18 @@ export class CampaignAtlasWorkbench {
       }
     });
     document.addEventListener("atlas-written", (e) => {
-      const a = (e as CustomEvent<CampaignAtlas>).detail;
+      const a = (e as CustomEvent<AtlasRenderView>).detail;
       if (a?.workspace.token !== this.owner?.token) return;
+      this.landscape.invalidate(a.revision);
       this.data = a;
       if(this.groupView)void this.refresh();
       this.scheduleRender();
+    });
+    document.addEventListener('atlas-invalidated',e=>{
+      const detail=(e as CustomEvent<{campaignId:string;token?:string;revision?:number}>).detail;
+      if(detail?.campaignId!==this.owner?.campaign.id||detail.token&&detail.token!==this.owner?.token)return;
+      if(detail.revision!==undefined)this.landscape.invalidate(detail.revision);
+      if(!this.busy&&!this.root.hidden)void this.refresh();
     });
     document.addEventListener("atlas-draft", () => this.scheduleRender());
     document.addEventListener('atlas-city-focus',e=>{
@@ -466,7 +479,7 @@ export class CampaignAtlasWorkbench {
     this.playback.stop();
     this.root.hidden = true;
   }
-  activate(w: Workspace) {
+  activate(w: WorkspaceGeometry) {
     this.navigationRequest++;
     this.groupViewRequest++;
     this.placeRequest++;this.locationComposer.contextChanged();
@@ -478,6 +491,7 @@ export class CampaignAtlasWorkbench {
     this.entranceDraft = null;
     this.bindingDirty = false;
     this.owner = w;
+    this.searchRequest++;get('atlas-search-results').replaceChildren();
     this.landscape.context(w.token);
     this.data = null;
     this.request++;
@@ -506,9 +520,11 @@ export class CampaignAtlasWorkbench {
     }
   }
   async open() {
-    this.root.hidden = false;
-    await this.refresh();
-    await this.setFamily(this.family, false);
+    this.root.hidden=false;const owner=this.owner;if(!owner)return;
+    if(this.opening?.owner===owner)return this.opening.task;
+    const task=(async()=>{await this.refresh();if(this.owner!==owner||this.root.hidden)return;await this.setFamily(this.family,false);})();
+    this.opening={owner,task};
+    try{await task;}finally{if(this.opening?.task===task)this.opening=null;}
   }
   async refresh() {
     const w = this.owner,
@@ -522,7 +538,7 @@ export class CampaignAtlasWorkbench {
     this.render();
     this.renderTravel();
     try {
-      const r = await window.campaign.campaignAtlas(w.token,this.groupView);
+      const r = await window.campaign.atlasRenderView(w.token,this.groupView);
       if (this.owner !== w || request !== this.request) return;
       if (!r.ok) throw new Error(r.error);
       this.data = r.value;
@@ -745,6 +761,7 @@ export class CampaignAtlasWorkbench {
     }
     this.root.dataset.family = f;
     if(f==="city")get<HTMLDetailsElement>("atlas-advanced").open=true;
+    if(f==='interior'||f==='decoration')await reloadDrawing();
     if (f === "city" && this.cityId) await openCityReference(this.cityId);
     if (f === "travel") {
       await this.refresh();
@@ -764,7 +781,7 @@ export class CampaignAtlasWorkbench {
       await this.refresh();
     }catch(error){if(this.owner===owner&&request===this.groupViewRequest)this.error(error);}
   }
-  private drawGroupView(root:SVGElement,data:CampaignAtlas,box:CanvasBox) {
+  private drawGroupView(root:SVGElement,data:AtlasRenderView,box:CanvasBox) {
     const group=shape('g',{'font-family':'Noto Sans, sans-serif'});group.dataset.atlasPublicView='true';
     const status=get('atlas-view-status');status.hidden=false;
     try {
@@ -835,8 +852,7 @@ export class CampaignAtlasWorkbench {
     const select = get<HTMLSelectElement>("floors"),
       v = JSON.stringify([this.scopeId, this.floorId]);
     if ([...select.options].some((o) => o.value === v)) {
-      select.value = v;
-      select.dispatchEvent(new Event("change"));
+      if(select.value!==v){select.value = v;select.dispatchEvent(new Event("change"));}
     }
   }
   async navigateLocation(id:string,sectionId?:string){await this.refresh();await this.setFamily('terrain',false);const p=await this.landscape.openLocation(id,sectionId);if(p)this.focus(p,15000);}
@@ -868,7 +884,7 @@ export class CampaignAtlasWorkbench {
       }
     } else {
       const r = this.data.workspace.rooms.find((r) => r.id === id);
-      if (!r) return;
+      if (!r) {await this.opts.selectRoom(id);return;}
       this.selection = { kind: "room", id };
       this.scopeId = r.scopeId;
       this.floorId = r.floorId;
@@ -930,6 +946,7 @@ export class CampaignAtlasWorkbench {
     this.render();
   }
   private search() {
+    const request=++this.searchRequest;
     const root = get("atlas-search-results");
     root.replaceChildren();
     const text = get<HTMLInputElement>("atlas-search")
@@ -948,15 +965,21 @@ export class CampaignAtlasWorkbench {
     for(const place of this.data.places)if(!place.trashed&&!this.data.cities.some(c=>c.header.locationId===place.locationId)&&place.name.toLocaleLowerCase("de").includes(text))add(place.name,()=>void this.navigatePlace(place.locationId));
     const token=this.owner!.token;
 
-    const current=()=>this.owner?.token===token&&get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')===text;
+    const current=()=>request===this.searchRequest&&this.owner?.token===token&&get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')===text;
     const more=(title:string,load:()=>Promise<void>)=>{const b=document.createElement('button');b.textContent=title;b.onclick=()=>{b.remove();void load().catch(e=>{if(current())this.error(e);});};root.append(b);};
-    const page=async(kind:'room'|'city'|'landscape',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
+    const page=async(kind:'city'|'landscape',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
       const result=await window.campaign.atlasObjects(token,{kind,text,limit:40,cursor});if(!current())return;if(!result.ok)throw new Error(result.error);
-      for(const item of result.value.items)add(kind==='room'?item.number+' · '+item.name:item.name,()=>void (kind==='landscape'?this.navigateLandscape(item.id).catch(e=>this.error(e)):this.navigate(kind,item.id)));
-      if(result.value.next)more(kind==='room'?'Weitere Räume':kind==='city'?'Weitere Städte':'Weitere Landschaftsobjekte',()=>page(kind,result.value.next!));
+      for(const item of result.value.items)add(item.name,()=>void (kind==='landscape'?this.navigateLandscape(item.id).catch(e=>this.error(e)):this.navigate(kind,item.id)));
+      if(result.value.next)more(kind==='city'?'Weitere Städte':'Weitere Landschaftsobjekte',()=>page(kind,result.value.next!));
+    };
+    const rooms=async(cursor?:import('./contracts').RoomDirectoryQuery['cursor'])=>{
+      const result=await window.campaign.roomDirectory(token,{text,limit:40,...(cursor?{cursor}: {})},'atlas');if(!current())return;if(!result.ok)throw new Error(result.error);
+      for(const item of result.value.items)add(item.number+' · '+item.name,()=>void this.navigate('room',item.id));
+      if(result.value.unreadable){const warning=document.createElement('p');warning.setAttribute('role','alert');warning.textContent=result.value.unreadable+' Raumtexte konnten nicht durchsucht werden.';root.append(warning);}
+      if(result.value.next)more('Weitere Räume',()=>rooms(result.value.next!));
     };
     const buildings=async(offset=0)=>{const result=await window.campaign.cityBuildings(token,{text,offset});if(!current())return;if(!result.ok)throw new Error(result.error);for(const item of result.value.items)add(item.cityTitle+' · '+item.title,()=>void this.navigate('city',item.cityId,item.unitId));if(result.value.next!==null)more('Weitere Häuser',()=>buildings(result.value.next!));};
-    for(const task of [page('room'),page('city'),page('landscape'),buildings()])void task.catch(e=>{if(current())this.error(e);});
+    for(const task of [rooms(),page('city'),page('landscape'),buildings()])void task.catch(e=>{if(current())this.error(e);});
     for (const scope of this.data.scopes)
       if(scope.name.toLocaleLowerCase('de').includes(text))add(scope.name,()=>void this.chooseScope(scope.id).catch(e=>this.error(e)));
   }
@@ -1253,9 +1276,8 @@ export class CampaignAtlasWorkbench {
       "[data-atlas-vertex]",
     );
     if (handle && this.data) {
-      const room = this.data.workspace.rooms.find(
-        (r) => r.id === handle.dataset.id,
-      );
+      const selected=this.opts.roomDraft();
+      const room=selected?.id===handle.dataset.id?selected:null;
       if (room) {
         this.vertexDrag = {
           id: e.pointerId,
@@ -2081,7 +2103,7 @@ export class CampaignAtlasWorkbench {
       const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
       let svg:SVGSVGElement;
       if(audience==='public'){
-        const publicSnapshot=await window.campaign.campaignAtlas(owner.token,true);
+        const publicSnapshot=await window.campaign.atlasRenderView(owner.token,true);
         if(this.owner!==owner||this.exportCancelled)return;
         if(!publicSnapshot.ok)throw new Error(publicSnapshot.error);
         if(publicSnapshot.value.revision!==snapshot.revision)throw new Error("Atlas wurde während der Ausgabe geändert. Erneut ausgeben.");

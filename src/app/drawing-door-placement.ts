@@ -1,8 +1,8 @@
-import type {Point,Room} from './contracts';
+import type {Point,RoomGeometry} from './contracts';
 import {nearestAnchor} from './drawing-model';
 
 /** Pick the wall before applying any grid snap, then keep the door inside that wall. */
-export function doorPlacement(point:Point,rooms:Room[],width:number,preferredId:string|null){
+export function doorPlacement(point:Point,rooms:RoomGeometry[],width:number,preferredId:string|null){
  const ordered=[...rooms].sort((a,b)=>Number(b.id===preferredId)-Number(a.id===preferredId));
  let chosen:ReturnType<typeof nearestAnchor>=null;
  for(const room of ordered){const candidate=nearestAnchor(point,room);if(candidate&&(!chosen||candidate.distance<chosen.distance-1e-8))chosen=candidate;}
