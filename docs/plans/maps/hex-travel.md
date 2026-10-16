@@ -342,6 +342,25 @@ Enddauer, Start-/Step-/Restweg-Ablehnung bei Kartenänderung, unveränderte Byte
 bei Ablehnung, Fresh und unabhängiger Campaigntransfer. Vollständige Transport-,
 Inventar-, Fraktions- oder biologische Bewegungsregeln entstehen dadurch nicht.
 
+## Feldbeschriftungen in dichten Ausschnitten
+
+`world-ui.renderMapScene` misst die dargestellten Feldnamen mit der aktuellen
+Schrift und prüft ihre Rechtecke vor dem Veröffentlichen des gemeinsamen
+Scene-Roots. Bei Kollision bleibt das ausgewählte Hex beziehungsweise der
+Reisecursor bevorzugt sichtbar; weitere Texte folgen stabil der Hexreihenfolge.
+Der Abstand unter dem Hexzentrum folgt der Textgröße, damit ein lesbarer Name
+bei kleiner Darstellung nicht die benachbarte Hexmitte überdeckt. Mehr Platz
+durch Zoom oder geänderte Auswahl berechnet dieselbe Projektion neu.
+
+Ausgeblendete Feldnamen bleiben vollständig im Hex-Tooltip und Inspektor.
+Karte, Auswahlbefehle und Reiseautorität bleiben beim bisherigen Owner; keine
+Migration, Schreiboperation oder gespeicherte Labelposition. Die ausdrücklich
+bearbeitbare Ortsmarkerpräsentation bleibt eigenständig. Die DOM-Probe prüft
+Auswahlpriorität, Rückkehr nach Zoom/Reset und unveränderte gespeicherte Werte;
+`test-desktop-travel-target.mjs` prüft echte native Textrechtecke, Label- und
+Nachbarhexklicks neben dem bestehenden Reise-/Neustartpfad. Das ist keine
+Abnahme beliebiger Markerkrümmungen, aller Schriften, großer Karten oder200%.
+
 ## Nächste ausführbare Lieferungen
 
 1. **Gemeinsamer Biomkatalog und größere Routen.** Die ursprüngliche Hexquelle

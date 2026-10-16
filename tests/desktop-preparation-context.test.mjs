@@ -184,7 +184,7 @@ for(const change of ['selection','target','name','party'])test(`copy status conf
 
 test('a late session refresh cannot install its old preparation into another campaign',async t=>{
  const x=await fixture(t);await x.activate();await x.ui.prepareNextVisit(null,{title:'Alter Abend',notes:'GM',locationId:null});await settle();x.el('visit-read-aloud').value='Speichern';x.el('visit-read-aloud').dispatchEvent(new x.window.Event('input'));
- const read=x.window.campaign.preparation;let release;x.window.campaign.preparation=async(...args)=>{const result=await read(...args);if(args[0]===x.workspace.token&&!release)await new Promise(resolve=>release=resolve);return result;};const saving=x.ui.flushPreparation();await settle();assert(release);
+ const read=x.window.campaign.preparation;let release;x.window.campaign.preparation=async(...args)=>{const result=await read(...args);if(args[0]===x.workspace.token&&!release)await new Promise(resolve=>release=resolve);return result;};const saving=x.ui.flushPreparation();await until(()=>!!release);
  const b=x.store.create('Neue Kampagne'),w=x.store.activate(b.id),id=randomUUID();x.store.changePreparation({commandId:randomUUID(),campaignId:b.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title:'Neue Quelle',readAloud:'Neu',gmNotes:'Bleibt',relations:[],creatureId:null,deleted:false}}});x.setOwner(w);await x.ui.activatePreparation(w);release();await saving;assert.equal(x.el('note-title').value,'Neue Quelle');assert.equal(x.el('plans').querySelectorAll('option').length,0);
 });
 
