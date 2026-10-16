@@ -39,3 +39,10 @@ for(const kind of ['route','pursuit','stale-geometry','stale-volume','stale-trac
  }finally{copy.close();}
  assert.ok(x.store.db.serialize().equals(source));assert.ok(readFileSync(filename).equals(snapshot));
 });
+
+
+test('free GM placement clears the old route heading without time or authored effects, including Fresh',t=>{
+ const x=setup(t,false);let v=x.current(),j=v.journey;x.run({kind:'state',sceneId:x.scene.id,id:j.id,expectedRevision:j.revision,status:'active'});v=x.current();x.run({kind:'step',sceneId:x.scene.id,id:j.id,expectedRevision:v.journey.revision,maxSteps:1});v=x.current();assert.equal(typeof v.keyHeading,'number');
+ const instant=v.instantMs,geometry=x.store.drawing(x.w.token);x.run({kind:'place',sceneId:x.scene.id,expectedPositionRevision:v.positionRevision,pose:x.origin});v=x.current();assert.equal(v.keyHeading,null);assert.equal(v.instantMs,instant);assert.deepEqual(x.store.drawing(x.w.token),geometry);
+ x.store.close();x.store=new CampaignStore(x.file);x.w=x.store.activate(x.cam.id);assert.equal(x.current().keyHeading,null);assert.equal(x.current().instantMs,instant);
+});

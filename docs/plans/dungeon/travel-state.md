@@ -112,7 +112,8 @@ Das ist ein Storebeleg, keine native Gesamtqualifikation.
    erreichbar. Es wird kein zweiter Dungeon oder Reisestand angelegt. Die alte
    Fachkarte bleibt ausgeblendet. Bestätigte Raumposition, Höhe, verfügbare
    Ausrichtung, Gruppennamen und getrennte öffentliche/GM-/geheime Textblöcke
-   stehen bei der laufenden Reise. Tempo und Erkundungsrunde sind gebündelt;
+   stehen bei der laufenden Reise. Eine freie GM-Platzierung übernimmt keine
+   Ausrichtung aus der früheren Route; diese wird als unbestimmt gezeigt. Tempo und Erkundungsrunde sind gebündelt;
    Wahrnehmung, Spuren, Passagen, Inhalte, Trigger und NPC-Pendinggrenzen benutzen
    ihre bisherigen Controls und Writer. Gruppenbildung/-teilung bleibt beim
    Live-/Rosterowner, NPC-Jobs bei Autonomy.
