@@ -14,3 +14,8 @@ export interface GroupsAPI {
  keepGroupDraft(token:string,draft:GroupDraft,expected:string|null):Promise<Result<void>>;
  discardGroupDraft(token:string,id:string,writeId:string):Promise<Result<void>>;
 }
+
+/** Facts shown before a physical group enters initiative; notes are not combat input. */
+export function groupCombatBasis(group:GroupView):string {
+ return JSON.stringify([group.id,group.revision,group.locationId,group.actors.map(a=>[a.id,a.revision,a.profileRevision,a.entryId,a.creatureId,a.name,a.hp,a.maxHp,a.tempHp,a.conditions,a.concentrating,a.role??'hostile',!!a.defeated,a.unavailable,a.locationId??null])]);
+}
