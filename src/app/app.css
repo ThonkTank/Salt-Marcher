@@ -548,3 +548,7 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #catalog>#encounter-builder{position:static;max-height:none;overflow:visible;margin:1rem 0;padding:.75rem}
 .catalog-heading{flex-wrap:wrap}.catalog-heading h2{margin-right:auto}
 #catalog-browser{scroll-margin-top:var(--workspace-content-offset)}
+#catalog>.catalog-heading{gap:.5rem;align-items:center}#catalog>.catalog-heading h2{font-size:1.05rem;margin:.25rem auto .25rem 0}#catalog>.catalog-heading p{font-size:.75rem;margin:.25rem 0}
+#catalog>.catalog-heading button,#catalog .catalog-add-controls button,#catalog .catalog-add-controls input{font-size:12px;min-height:28px;height:28px;padding:.2rem .4rem}
+#catalog .catalog-add-controls label{font-size:12px}#catalog .catalog-add-controls .time-fields{display:flex;gap:.8rem;align-items:end}#catalog-quantity{width:5rem}
+#catalog .catalog-table-scroll{max-height:max(10rem,min(45vh,calc(100dvh - var(--workspace-content-offset) - 20rem)))}
