@@ -311,7 +311,7 @@ test('shared Atlas routes target clicks into the house preview and retains selec
   const binding={id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0};x.store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'bind',binding,expectedRevision:null}});
   x.window.campaign.atlasRenderView=async token=>({ok:true,value:x.store.atlasRenderView(token)});
   atlas=new x.ui.CampaignAtlasWorkbench({selectRoom:async()=>{},roomDraft:()=>null,flush:()=>x.ui.flushCity(),updated:async()=>{},status:(message,error)=>x.messages.push({message,error})});
-  for(const select of x.document.querySelectorAll('#campaign-atlas select')){select.add=o=>select.append(o);let chosen='';Object.defineProperty(select,'value',{get(){const options=[...select.querySelectorAll('option')];return options.find(o=>o.value===chosen)?.value??options[0]?.value??'';},set(v){chosen=String(v);}});}
+  for(const select of x.document.querySelectorAll('#campaign-atlas select'))if(!Object.hasOwn(select,'value')){select.add=o=>select.append(o);let chosen='';Object.defineProperty(select,'value',{get(){const options=[...select.querySelectorAll('option')];return options.find(o=>o.value===chosen)?.value??options[0]?.value??'';},set(v){chosen=String(v);}});}
   const svg=x.document.getElementById('campaign-map');Object.defineProperty(svg,'clientWidth',{value:800});Object.defineProperty(svg,'clientHeight',{value:500});svg.getScreenCTM=()=>({inverse:()=>({})});
   atlas.activate(w);await atlas.open();await atlas.navigate('city',x.cityIds.one,x.unitIds.one);await settle();
   const original=x.store.city(w.token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one),before=x.writes.length;
