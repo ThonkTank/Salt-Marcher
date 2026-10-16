@@ -714,8 +714,7 @@ sind keine Suchinhalte. Filtern und Blättern bleiben lesend; Aufklappzustand un
 Rastempfängerauswahl bleiben erhalten. `desktop-party-search.test.mjs` prüft dies
 mit45 Figuren, gleichen Namen, Spielersuche, Kennung und Paging.
 
-Persönliche Loot-/Katalogübergabe aus diesem Popup, gemeinsam gebündelte
-Roster-/Movebedienung, Party-Undo/Redo und die restliche Fenstermigration bleiben
+Persönliche Loot-/Katalogübergabe aus diesem Popup, Party-Undo/Redo und die restliche Fenstermigration bleiben
 offen; vorhandene XP-/Rast- und Scenecommands qualifizieren diese Punkte nicht.
 Die neue [Rastvormerkung und Scene-Bindung](adventuring-day.md#rastentscheidung-vor-dem-schreiben)
 schließt einen begrenzten Entscheidungsweg. Die weiteren Anschlüsse folgen aus
@@ -777,3 +776,40 @@ Sie belegen ihren jeweiligen Kern-/Hostumfang. [P02/P03/P04/C01](../../../ROADMA
 prüfen den neuen gemeinsamen Anschluss; Modell-PASS ist kein Store-/OS-/
 Runtime-/Player-PASS. Tatsächliche Tastatur/200 %, physischer Input und
 independent review bleiben direkte Produktbelege.
+
+### Szenenroster gemeinsam übernehmen und bewegen
+
+Das kompakte Partyfenster zeigt bei einer laufenden Sitzung ausschließlich
+die Figuren der fokussierten Szene und deren Rastmittelwert. Unter Aktionen
+öffnet „Aktives Szenenroster bearbeiten“ eine Suchauswahl für aktuelle und
+inaktive Figuren. Name, Spieler und Kennung bleiben sichtbar; Filterwechsel
+erhalten die gesamte Auswahl. Suche, Anzahl und Übernahme bleiben auch bei
+240×160px erreichbar, die Liste scrollt separat. Die Auswahl wird erst mit
+„Übernehmen“ gemeinsam bestätigt. Andere Szenen werden über „Figuren gemeinsam
+verschieben“ erreicht; der bestehende Move-Dialog erhält „Alle auswählen“ und
+Ziele aus Ort und tatsächlichen Mitgliedern. Nur gleiche Beschriftungen erhalten
+eine kurze Kennung. Historische Szenentitel werden nicht umbenannt. Namenlose
+neue Szenen erben weiterhin Ort, Position und Uhr über den vorhandenen Command.
+Ein Split wechselt den Fokus nur nach der bestehenden Lifecycle-Regel.
+
+`scene-roster` bindet eine komplette Auswahl an Roster-, Fokus- und
+Szenenmitgliedschaftsrevision. Alle ausgewählten IDs werden vor der ersten
+Mutation auf Verfügbarkeit und Szenenzugehörigkeit geprüft. Hinzufügen und
+Entfernen, Masken-/Chaseabgleich, Scene-Cleanup, Chronikeintrag und Receipt
+liegen in derselben bestehenden SQLite-Transaktion. Ein Repeat erhält dasselbe
+Receipt; ein Reconciliationfehler rollt auch Party- und Receiptänderungen zurück.
+Dies ist eine gemeinsame Membershipänderung, keine Schleife separat bestätigter
+Einzelbefehle. Keine neue Tabelle oder Schemaänderung.
+
+Die Probe mit45 Figuren prüft gleiche Namen, Auswahl außerhalb des Filters und
+Tastaturfokus. Storefälle prüfen Reopen, Replay, Fremdszenen, Stale-Basis und
+atomaren Rollback im Maskenabgleich. Ein nativer Ablauf übernimmt die Auswahl,
+teilt eine namenlose Szene ab, führt sie über das bestehende Ziel wieder
+zusammen und liest den Zustand nach vollständigem Neustart.
+
+Offen bleiben Party-Undo/Redo einschließlich100-Schritt-History, persönliche
+Loot-/Katalogübergaben, vollständige Fenstermigration und OS-/200%-Abnahme.
+Der strenge aktuelle Livereader akzeptiert weiterhin keine beschädigte aktive
+Zuordnung ohne Szene; die historische „Ohne Szene“-Recovery benötigt einen
+eigenen, ausdrücklich begrenzten Migrationsanschluss. Die Chronik dieses Commands
+ist kein Ersatz für die noch fehlende kausale Party-Undo-History.
