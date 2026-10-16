@@ -190,24 +190,48 @@ prüfen Fehler/Retry, unveränderte SQLitefakten und alte Fehler nach neuerem
 Erfolg. Bestehende Wiedergabe-, Camp- und Wetterprüfungen bleiben angrenzende
 Teilbelege; daraus folgt keine vollständige Session-Shell-Abnahme.
 
-Die heutige Desktopoberfläche dockt den vorhandenen vollständigen Hexowner in
-Live ein. Das ist noch keine vollständige Trennung von Scenario-Konsole und
-Center-Canvas. Für die restliche gemeinsame Bedienung gilt daher:
+## Getrennte Live-Mitte und Reisekonsole (0.141)
 
-1. In `live.ts`/`renderer.ts` die ausdrückliche Reisewahl als lokale
-   Präsentationsentscheidung behandeln. Sie erhält den aktuell gewählten
-   Centerkontext; nur „Karte öffnen“, Routenplanung oder Platzierung darf diesen
-   ausdrücklich wechseln. Kein neuer Fachcommand allein für Scenarioauswahl.
-2. Bestehenden Hexowner in Bedien-/Canvasfläche zerlegen, ohne zweite
-   `frame`-/Routen-/Positionswahrheit. Beide lesen denselben revisionsgebundenen
-   Scene-/Mapstand. Loading, fehlende Karte, unplatzierte Gruppe und Providerfehler
-   jeweils sichtbar halten; kein alter Gruppenstand als scheinbar gültiger Ersatz.
-3. Abnahme mit zwei Scenes auf unterschiedlichen Karten, None-/Unavailable-
-   Provider, schnellen Karten-/Centerwechseln, langem Read und zurückgewiesenen
-   Commands. Nur ein erreichbarer Satz Transportaktionen, Fokus und Tastatur
-   erhalten, Retry ohne Mutation. Hex ist der reale aktuelle Scenario-Provider;
-   Dungeon bleibt bei seinen vorhandenen Commands und braucht vor einem späteren
-   gemeinsamen Anschluss einen tatsächlichen Adapter und eigene Abnahmen.
+Die Live-Mitte besitzt jetzt eine ausdrückliche Auswahl Szene/Karte. Reise öffnet
+die Hexkonsole im Referenzbereich neben der bestehenden Mitte und erhält deren
+Inhalt. Nur Karte öffnen, Ziel-/Wegpunktwahl, Platzierung oder der Kartentab
+wählen die Karte ausdrücklich. Bei schmalem Viewport bleiben beide Bereiche
+in der bestehenden einspaltigen Anordnung erreichbar. Die rechte Konsole kann
+unabhängig scrollen. Die Kartenfläche selbst enthält dort keine Werkzeugleiste
+oder Statuszeile und füllt ihre Zeile; Kameraaktionen bleiben in der Konsole.
+
+`live-hex-surface.ts` verschiebt ausschließlich vorhandene DOM-Knoten zwischen
+Atlas und Live. Karte, Kartenwahl, Ziel-/Routenbedienung und Transport existieren
+jeweils einmal. `world-ui.ts` bleibt Besitzer von SceneWorld-Frame, Mapentwurf,
+Cursor/Wegpunkten, Utilityauswertung und Journeyplayback. Beim Rückwechsel
+werden dieselben Knoten an ihre vorhandenen Plätze zurückgegeben. Die
+Szenen-/Kartentabs haben keine Worldcommands und erzeugen keine zweite Position.
+
+Die Konsole zeigt Standort, gewählte Hexkoordinate, Terrain und Utilitykosten.
+Jede Aktivierung im Wegpunktmodus fügt einen geordneten Eintrag hinzu; gleiche
+aufeinanderfolgende Ziele bleiben im Entwurf sichtbar, ohne zusätzliche
+Bewegungskosten zu erfinden. Löschen entfernt Entwurf und Auswertung.
+Die gemeinsame dreiteilige Auswertung erscheint in Live inline. Erst deren
+angenommener startbarer Stand aktiviert Reise starten; im Atlas bleibt die
+vorhandene Vorschau mit ausdrücklicher Bestätigung erhalten. Vor Start gewählte
+1/2/5/10× fließen unverändert in den vorhandenen Journeycommand. Pause/Fortsetzen
+und Stoppen verwenden weiterhin die kanonischen Zustandsbefehle. Angekommene
+und abgebrochene Reisen zeigen finalen Status/Position ohne Routengeometrie.
+
+Ladeabsichten binden sich an Workspace, Fokus und aktuelle Readgeneration.
+Eine verspätete Weltantwort übernimmt keine alte Fokusgruppe. Eine nicht im
+aktuellen Providerstand enthaltene Gruppenkarte bleibt ausdrücklich fehlend;
+Retry liest den echten Welt- und Sceneprovider neu, statt die alte Karte oder
+einen Ersatz für gültig auszugeben. Bestehende Guards verhindern die Annahme
+alter Routenauswertungen nach Fokus-, Karten-, Membership- oder Zeitänderung.
+
+Gezielte Store-/DOMfälle prüfen die geteilte Oberfläche, unabhängige Mitte,
+Tastaturwegpunkte, inline Start und Geschwindigkeitsübergabe, fehlende Karte und
+mutationsfreien Providerretry. Native Belege umfassen zwei Gruppen auf zwei
+Karten, Fokuswechsel mit offener Auswertung, Löschen, Start/Pause/Fortsetzen/
+Abbruch/Ankunft und Neustart. Kein Ersatz für vollständige200%-/Latenz-/
+Großroutenqualifikation. Direktes Party-Tokenziehen und weitere Session-Center-
+Anbieter bleiben offen; die ausdrückliche Tastaturplatzierung ist vorhanden.
 
 ## Nächste ausführbare Lieferungen
 
