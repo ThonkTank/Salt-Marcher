@@ -1,4 +1,5 @@
-import {adjustedHitDamage} from '../damage-adjustment';
+import {areaTargetDamage} from '../area-damage';
+import {isDamageType,adjustedHitDamage} from '../damage-adjustment';
 import {npcRecord} from './npc-record';
 import {npcPosition} from './npc-world';
 import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
@@ -254,13 +255,14 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if(!Number.isSafeInteger(total)||total>1000000)throw new Error('Gesamtschaden überschreitet 1.000.000.');
           if(total)applyCombatDamage(p,total,a.critical);if(legendary)attacker.legendaryActions!.hitResolved=true;
         } else if(a.kind==='area-damage'){
+          if(a.damageType!==undefined&&!isDamageType(a.damageType))throw new Error('Unbekannte Schadensart.');
           if(!Number.isSafeInteger(a.amount)||a.amount<1||a.amount>1000000||!Array.isArray(a.targets)||!a.targets.length||a.targets.length>1000)throw new Error('Flächenschaden benötigt einen positiven Betrag und Ziele.');
-          if(a.source){const actor=state.participants.find(p=>p.id===a.source!.participantId),source=state.sources?.find(c=>c.id===actor?.sourceId);if(!source||![...source.actions,...source.legendaryActions].some(action=>action.id===a.source!.actionId))throw new Error('Aktion gehört nicht zu diesem Teilnehmer.');if(source.legendaryActions.some(action=>action.id===a.source!.actionId)&&!a.legendary)throw new Error('Legendäre Aktion benötigt ihre Aktionskosten.');}
+          if(a.source){const actor=state.participants.find(p=>p.id===a.source!.participantId),source=state.sources?.find(c=>c.id===actor?.sourceId);if(!source||![...source.actions,...source.legendaryActions].some(action=>action.id===a.source!.actionId))throw new Error('Aktion gehört nicht zu diesem Teilnehmer.');if(source.legendaryActions.some(action=>action.id===a.source!.actionId)&&!a.legendary)throw new Error('Legendäre Aktion benötigt ihre Aktionskosten.');const action=[...source.actions,...source.legendaryActions].find(action=>action.id===a.source!.actionId)!,types=creatureActionRolls(creatureActionForRolls(source,action)).filter(p=>p.kind==='damage').map(p=>p.damageType);if(a.damageType&&types.length&&!types.includes(a.damageType))throw new Error('Schadensart gehört nicht zur gespeicherten Aktion.');}
           if(a.legendary){if(!a.source||a.source.participantId!==a.legendary.participantId||a.source.actionId!==a.legendary.actionId)throw new Error('Legendäre Schadensquelle stimmt nicht überein.');spendLegendaryAction(state,a.legendary.participantId,a.legendary.actionId,a.legendary.cost);}
           const ids=new Set<string>();for(const target of a.targets){
-            if(!target||ids.has(target.participantId)||!['full','half','none'].includes(target.scale))throw new Error('Schadensziele müssen eindeutig und gültig sein.');ids.add(target.participantId);
+            if(!target||ids.has(target.participantId)||!['full','half','none'].includes(target.scale)||target.defense!==undefined&&!['auto','full','half','double','none'].includes(target.defense)||!a.damageType&&target.defense!==undefined&&target.defense!=='full')throw new Error('Schadensziele müssen eindeutig und gültig sein.');ids.add(target.participantId);
             const p=state.participants.find(p=>p.id===target.participantId);if(!p||p.healthKnown===false)throw new Error('Schadensziel fehlt oder seine HP sind noch offen.');
-            const amount=target.scale==='none'?0:target.scale==='half'?Math.floor(a.amount/2):a.amount;if(amount)applyCombatDamage(p,amount);
+            const adjusted=areaTargetDamage(state,p,a.amount,target.scale,a.damageType,target.defense??(a.damageType?'auto':'full'));if(adjusted.amount===null)throw new Error(p.name+': '+adjusted.note);if(adjusted.amount)applyCombatDamage(p,adjusted.amount);
           }
           if(a.legendary)state.participants.find(p=>p.id===a.legendary!.participantId)!.legendaryActions!.hitResolved=true;
         } else if (a.kind === 'damage' || a.kind === 'heal') {
