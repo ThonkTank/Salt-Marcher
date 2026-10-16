@@ -98,6 +98,7 @@ test('the actual Dungeon controls work beside the Scene with room text, exact po
 
 test('a delayed or changed live focus revokes old Dungeon commands and preserves pending settings until discard',async t=>{
  const x=await panel(t),{mountDungeonTravelConsole}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs');const host=document.createElement('div');document.body.append(host);mountDungeonTravelConsole(host);await x.ui.openDungeon();
+ let reads=0;const originalRead=x.window.campaign.dungeon;x.window.campaign.dungeon=async(...args)=>{reads++;return originalRead(...args);};host.hidden=true;x.ui.syncDungeonLiveContext(x.w.token,'hidden-scene');await x.tick();assert.equal(reads,0,'a hidden travel console must not load all Dungeon data on Live focus');host.hidden=false;
  x.get('dungeon-group-speed').value='12';assert.equal(await x.ui.flushDungeon(),false);
  let v=x.store.live(x.w.token),scene=x.store.liveScene(x.w.token,x.scene.id);
  const next=x.store.executeLive(x.command({kind:'move',sceneId:scene.id,expectedRosterRevision:v.rosterRevision,expectedFocusRevision:v.focusRevision,expectedClockRevision:scene.clock.revision,expectedSceneMembershipRevision:scene.membershipRevision,memberIds:[x.ids[1]],target:{kind:'new',title:'Nachhut',expectedContentRevision:scene.revision}})).session.createdScene;
