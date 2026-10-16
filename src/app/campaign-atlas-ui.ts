@@ -115,6 +115,7 @@ export class CampaignAtlasWorkbench {
     revision: number;
     membership: number;
   } | null = null;
+  private travelReadState: "loading" | "ready" | "failed" = "loading";
   private previewRequest = 0;
   private localPreview: AtlasLocalPreview | null = null;
   private entranceId: string | null = null;
@@ -141,7 +142,7 @@ export class CampaignAtlasWorkbench {
       .map(([id, title]) => `<option value="${id}">${title}</option>`)
       .join(
         "",
-      )}</select></label><label>Hexstufe<select id="atlas-hex-level">${Array.from({ length: 13 }, (_, i) => `<option value="${i}">${i === 0 ? "Lokale Hexes" : "Stufe " + i}</option>`).join("")}</select></label><label>Name<input id="atlas-new-name" value="Neue Stadt"></label><div id="atlas-create-tools"><button id="atlas-create-city">Stadt hier anlegen</button><button id="atlas-create-dungeon">Dungeon hier anlegen</button></div><button id="atlas-building-interior" hidden>Innenraumhülle anlegen</button><label id="atlas-floor-field">Geschoss<select id="atlas-floor"></select></label><label><input id="atlas-roofs" type="checkbox" checked> Dächer anzeigen</label><label><input id="atlas-slice-enabled" type="checkbox"> Höhenschnitt</label><label>Höhe in m<input id="atlas-slice" type="number" step="any" value="0"></label><button id="atlas-room-draw">Raumrechteck zeichnen</button><button id="atlas-draft-cancel" hidden>Zug verwerfen</button></section><section id="atlas-context-fields"><label><input id="atlas-perception" type="checkbox"> Wissen und Sicht der Gruppe</label><button id="atlas-connect-entrance" hidden>Eingang verbinden</button><div id="atlas-local-console" hidden><h3>Reise der Fokusgruppe</h3><p id="atlas-local-status" role="status"></p><div class="toolbar"><button id="atlas-local-preview">Weg prüfen</button><button id="atlas-local-start" disabled>Reise starten</button><button id="atlas-local-step">Ein Schritt</button><button id="atlas-local-round">Eine Runde</button><button id="atlas-local-play">Wiedergabe starten</button><button id="atlas-local-pause">Pause</button><button id="atlas-local-end">Beenden</button></div><label id="atlas-entrance-field" hidden>Eingang<select id="atlas-entrance-choice"></select></label><button id="atlas-local-entrance" hidden>Durch Eingang</button><details><summary>Gruppe platzieren</summary><p>Versetzt die Fokusgruppe ohne Reisezeit an den zuletzt gewählten Punkt.</p><button id="atlas-local-place">Hier platzieren</button></details></div></section><details id="atlas-placement" hidden><summary>Räumliche Einordnung</summary><label>X in m<input id="atlas-binding-x" type="number" step="any"></label><label>Y in m<input id="atlas-binding-y" type="number" step="any"></label><label>Drehung in Grad<input id="atlas-binding-angle" type="number" step="any"></label><button id="atlas-binding-save">Einordnung übernehmen</button></details><details><summary>Atlas ausgeben</summary><label>Inhalt<select id="atlas-export-audience"><option value="gm">GM-Ansicht</option><option value="public">Wissen der Fokusgruppe</option></select></label><button id="atlas-export-png">Ausschnitt als PNG</button></details><details id="atlas-advanced"><summary>Fachwerkzeuge und Details</summary><div id="atlas-advanced-fields"></div></details></aside></div>`;
+      )}</select></label><label>Hexstufe<select id="atlas-hex-level">${Array.from({ length: 13 }, (_, i) => `<option value="${i}">${i === 0 ? "Lokale Hexes" : "Stufe " + i}</option>`).join("")}</select></label><label>Name<input id="atlas-new-name" value="Neue Stadt"></label><div id="atlas-create-tools"><button id="atlas-create-city">Stadt hier anlegen</button><button id="atlas-create-dungeon">Dungeon hier anlegen</button></div><button id="atlas-building-interior" hidden>Innenraumhülle anlegen</button><label id="atlas-floor-field">Geschoss<select id="atlas-floor"></select></label><label><input id="atlas-roofs" type="checkbox" checked> Dächer anzeigen</label><label><input id="atlas-slice-enabled" type="checkbox"> Höhenschnitt</label><label>Höhe in m<input id="atlas-slice" type="number" step="any" value="0"></label><button id="atlas-room-draw">Raumrechteck zeichnen</button><button id="atlas-draft-cancel" hidden>Zug verwerfen</button></section><section id="atlas-context-fields"><label><input id="atlas-perception" type="checkbox"> Wissen und Sicht der Gruppe</label><button id="atlas-connect-entrance" hidden>Eingang verbinden</button><div id="atlas-local-console" hidden><h3>Reise der Fokusgruppe</h3><p id="atlas-local-status" role="status"></p><button id="atlas-local-refresh" hidden>Reisekontext erneut laden</button><div class="toolbar"><button id="atlas-local-preview">Weg prüfen</button><button id="atlas-local-start" disabled>Reise starten</button><button id="atlas-local-step">Ein Schritt</button><button id="atlas-local-round">Eine Runde</button><button id="atlas-local-play">Wiedergabe starten</button><button id="atlas-local-pause">Pause</button><button id="atlas-local-end">Beenden</button></div><label id="atlas-entrance-field" hidden>Eingang<select id="atlas-entrance-choice"></select></label><button id="atlas-local-entrance" hidden>Durch Eingang</button><details><summary>Gruppe platzieren</summary><p>Versetzt die Fokusgruppe ohne Reisezeit an den zuletzt gewählten Punkt.</p><button id="atlas-local-place">Hier platzieren</button></details></div></section><details id="atlas-placement" hidden><summary>Räumliche Einordnung</summary><label>X in m<input id="atlas-binding-x" type="number" step="any"></label><label>Y in m<input id="atlas-binding-y" type="number" step="any"></label><label>Drehung in Grad<input id="atlas-binding-angle" type="number" step="any"></label><button id="atlas-binding-save">Einordnung übernehmen</button></details><details><summary>Atlas ausgeben</summary><label>Inhalt<select id="atlas-export-audience"><option value="gm">GM-Ansicht</option><option value="public">Wissen der Fokusgruppe</option></select></label><button id="atlas-export-png">Ausschnitt als PNG</button></details><details id="atlas-advanced"><summary>Fachwerkzeuge und Details</summary><div id="atlas-advanced-fields"></div></details></aside></div>`;
     document.getElementById("workspace-navigation")!.after(this.root);
     this.svg = this.root.querySelector("svg")!;
     this.camera = new PassiveMapCanvas(this.svg, {
@@ -307,7 +308,8 @@ export class CampaignAtlasWorkbench {
           j.status !== "active" ||
           this.root.hidden ||
           document.hidden ||
-          !this.owner
+          !this.owner ||
+          this.travelReadState !== "ready"
         )
           return null;
         return {
@@ -342,6 +344,7 @@ export class CampaignAtlasWorkbench {
       "entrance",
     ])
       get("atlas-local-" + kind).onclick = () => void this.travelControl(kind);
+    get("atlas-local-refresh").onclick = () => void this.refresh();
     get("atlas-connect-entrance").onclick = () => {
       this.entranceDraft = [];
       get("atlas-hint").textContent =
@@ -420,10 +423,14 @@ export class CampaignAtlasWorkbench {
     return this.lastPoint;
   }
   hide() {
+    this.previewRequest++;
+    this.localPreview = null;
     this.playback.stop();
     this.root.hidden = true;
   }
   activate(w: Workspace) {
+    this.travelReadState = "loading";
+    this.previewRequest++;
     this.playback.stop();
     this.localPreview = null;
     this.entranceId = null;
@@ -467,14 +474,31 @@ export class CampaignAtlasWorkbench {
     const w = this.owner,
       request = ++this.request;
     if (!w) return;
+    const retry = this.travelReadState === "failed";
+    this.travelReadState = "loading";
+    this.previewRequest++;
+    this.localPreview = null;
+    this.playback.stop();
+    this.render();
+    this.renderTravel();
     try {
       const r = await window.campaign.campaignAtlas(w.token);
       if (this.owner !== w || request !== this.request) return;
       if (!r.ok) throw new Error(r.error);
       this.data = r.value;
+      this.travelReadState = "ready";
+      if (retry) {
+        get("atlas-save-status").textContent = "Reisekontext aktualisiert";
+        get("atlas-save-status").dataset.error = "false";
+        this.opts.status("Reisekontext aktualisiert");
+      }
       this.render();
     } catch (e) {
-      if (this.owner === w) this.error(e);
+      if (this.owner === w && request === this.request) {
+        this.travelReadState = "failed";
+        this.error(e);
+        this.renderTravel();
+      }
     }
   }
   private remember() {
@@ -1341,6 +1365,18 @@ export class CampaignAtlasWorkbench {
     }
   }
   private renderTravel() {
+    const unavailable = this.travelReadState === "loading"
+      ? "Reisekontext wird geladen …"
+      : this.travelReadState === "failed"
+        ? "Reisekontext nicht verfügbar. Erneut laden, bevor du weiterreist."
+        : !this.data?.scene ? "Keine Fokusgruppe für eine Reise vorhanden." : "";
+    const locked = this.busy || !!this.pendingTravel || !!unavailable;
+    get("atlas-advanced-fields").inert = this.family === "travel" && locked;
+    get("atlas-local-refresh").hidden = this.travelReadState !== "failed";
+    get<HTMLButtonElement>("atlas-local-refresh").disabled = this.busy;
+    for (const kind of ["preview", "place", "entrance", "start", "step", "round", "play", "pause", "end"])
+      get<HTMLButtonElement>("atlas-local-" + kind).disabled = locked;
+    if (unavailable) get("atlas-local-status").textContent = unavailable;
     if (!this.data) return;
     const j = this.data.localJourney,
       dp = this.data.geometry.journey,
@@ -1366,9 +1402,9 @@ export class CampaignAtlasWorkbench {
           : hp
             ? "Weltreise: " + hp.status
             : "Ziel in der Karte wählen und Weg prüfen.";
-    get("atlas-local-status").textContent = text;
+    get("atlas-local-status").textContent = unavailable || text;
     get<HTMLButtonElement>("atlas-local-start").disabled =
-      this.busy || !(this.localPreview || atlasDungeonState().preview);
+      locked || !(this.localPreview || (this.data.geometry.position && atlasDungeonState().preview));
     get("atlas-local-play").textContent = this.playback?.running
       ? "Wiedergabe anhalten"
       : "Wiedergabe starten";
@@ -1417,7 +1453,7 @@ export class CampaignAtlasWorkbench {
       : "Eingang betreten";
     for (const kind of ["step", "round", "play", "pause", "end"])
       get<HTMLButtonElement>("atlas-local-" + kind).disabled =
-        this.busy ||
+        locked ||
         ![j?.status, dp?.status, hp?.status].some(
           (s) => s === "active" || s === "paused",
         );
@@ -1425,7 +1461,7 @@ export class CampaignAtlasWorkbench {
   private async travel(action: AtlasTravelAction) {
     const w = this.owner,
       sceneId = this.data?.geometry.sceneId;
-    if (!w || !sceneId || this.busy || this.pendingTravel) return false;
+    if (!w || !sceneId || this.busy || this.pendingTravel || this.travelReadState !== "ready") return false;
     const command = {
       commandId: crypto.randomUUID(),
       campaignId: w.campaign.id,
@@ -1473,7 +1509,7 @@ export class CampaignAtlasWorkbench {
       await this.playback.settled();
     }
     const a = this.data;
-    if (!a?.scene) return;
+    if (!a?.scene || this.travelReadState !== "ready" || this.busy || this.pendingTravel || this.root.hidden) return;
     try {
       if (kind === "place") {
         await this.travel({
@@ -1514,14 +1550,23 @@ export class CampaignAtlasWorkbench {
           get<HTMLFormElement>("world-travel-form").requestSubmit();
           return;
         }
+        this.localPreview = null;
+        this.render();
         const owner = this.owner,
           request = ++this.previewRequest,
           r = await window.campaign.previewAtlasTravel(
             this.owner!.token,
             this.lastPoint,
           );
-        if (owner !== this.owner || request !== this.previewRequest) return;
+        if (owner !== this.owner || request !== this.previewRequest || a !== this.data || this.root.hidden || this.travelReadState !== "ready") return;
         if (!r.ok) throw new Error(r.error);
+        if (r.value.sceneId !== a.geometry.sceneId) {
+          this.travelReadState = "failed";
+          this.localPreview = null;
+          this.render();
+          this.renderTravel();
+          throw new Error("Fokusgruppe inzwischen geändert. Reisekontext erneut laden.");
+        }
         this.localPreview = r.value;
         this.render();
         return;
