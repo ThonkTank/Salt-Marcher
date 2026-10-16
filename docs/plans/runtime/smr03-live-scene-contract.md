@@ -456,6 +456,12 @@ sowie app-weite Shellpräferenzen bleiben ausdrücklich von Fachzuständen
 getrennt. Fenster öffnen, schließen, fokussieren, minimieren oder neu anordnen
 startet, pausiert oder beendet weder Scene noch Masken, Travel oder Audio.
 
+Der Desktopladestand gehört zur aktuellen Aktivierung und Ladeanfrage. Neuere
+Eingaben und Speicheraufträge verwerfen ältere Ladeantworten einschließlich
+ihren Fehlern. Eine verspätete Antwort darf weder den Gruppenfokus zurücksetzen
+noch neue Texte ersetzen oder die inzwischen geladene Arbeitsfläche ausblenden.
+Ein Fehler der aktuellen Anfrage bleibt sichtbar und ausdrücklich erneut ladbar.
+
 Erst SMR-10 darf aus der aktuellen Focus-/Scene-Source eine getrennte sichere
 Playerprojektion ableiten. Deren Owner muss vor Aktivierung Character-Knowledge,
 aktuelle Perception und GM-Truth trennen; Fog/Camera sowie
