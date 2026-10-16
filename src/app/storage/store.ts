@@ -273,7 +273,9 @@ export class CampaignStore {
     if (!entry || entry.room_id !== room.id || !Number.isSafeInteger(entry.ordinal) || entry.ordinal < 1 || !Number.isSafeInteger(entry.guard_revision) || entry.guard_revision < 0) throw new Error('Raumhistory ist beschädigt. Originaldaten bleiben erhalten.');
     const before = JSON.parse(entry.before_json) as Room, after = JSON.parse(entry.after_json) as Room;
     for (const value of [before, after]) {
-      if (!value || value.id !== room.id || value.scopeId !== room.scopeId || value.floorId !== room.floorId || value.number !== room.number || !Number.isSafeInteger(value.revision) || value.revision < 0) throw new Error('Raumhistory zeigt nicht auf ihren ursprünglichen Raum. Originaldaten bleiben erhalten.');
+      // Display keys may change independently of this geometry/text snapshot.
+      // Identity belongs to the room ID and its scope, never its current number.
+      if (!value || value.id !== room.id || value.scopeId !== room.scopeId || value.floorId !== room.floorId || typeof value.number !== 'string' || !Number.isSafeInteger(value.revision) || value.revision < 0) throw new Error('Raumhistory zeigt nicht auf ihren ursprünglichen Raum. Originaldaten bleiben erhalten.');
       validateRoom(value);
     }
     if (after.revision !== before.revision + 1) throw new Error('Raumhistory besitzt keine gültige Revisionsfolge.');
