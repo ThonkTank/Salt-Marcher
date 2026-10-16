@@ -671,3 +671,14 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #session-day-table input { min-width:6rem; }
 #session-day-table .session-day-gap td { background:var(--white); border-left:3px solid var(--blue); }
 .session-day-gap select { width:auto; max-width:100%; }
+/* Keep a single XP decision in view instead of scrolling through the roster. */
+#party-popover.party-editing-xp>:not(.party-window-heading):not(#party-xp-editor){display:none}
+#party-popover #party-xp-editor{border:0;padding:.3rem 0}
+#party-popover .party-xp-heading{display:flex;align-items:center;gap:.4rem}
+#party-popover .party-xp-heading h3{flex:1;min-width:0;margin:0;font-size:.85rem}
+#party-popover #party-xp-current{margin:.2rem 0;font-size:.8rem}
+#party-popover .party-xp-amount{display:flex;align-items:center;gap:.5rem;margin:.2rem 0}
+#party-popover .party-xp-amount input{width:7rem;min-width:0;margin:0;padding:.25rem}
+#party-popover .party-xp-actions{display:flex;gap:.3rem;flex-wrap:wrap}
+#party-popover #party-xp-preview{margin:.3rem 0;font-size:.75rem}
+#party-popover #party-xp-status:empty{display:none}
