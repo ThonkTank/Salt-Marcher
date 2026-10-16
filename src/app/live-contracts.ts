@@ -33,7 +33,7 @@ export interface LiveView {
   recapDraft?: SessionRecapDraft | null;
   recapDraftError?: string;
   rosterRevision: number; roster: Character[]; archivedRosterCount?:number; primaryId: string | null; focusId: string | null; focusRevision: number | null;
-  scenes: { id: string; title: string; primary: boolean; members: number; membershipRevision: number; clock: LiveScene['clock'] }[];
+  scenes: { id: string; title: string; primary: boolean; locationId?:string|null;locationTitle?:string|null; members: number; membershipRevision: number; clock: LiveScene['clock'] }[];
   archiveCount: number;
   scene: LiveScene | null;
 }
@@ -47,6 +47,7 @@ export type LiveAction =
   | {kind:'visit-outcome';sceneId:string;expectedRevision:number;adoptionId:string;status:VisitOutcomeStatus;outcome:string}
   | { kind: 'scene-content'; sceneId: string; expectedRevision: number; title: string; notes: string; readAloud?:string; locationId: string | null }
   | { kind: 'focus'; sceneId: string; expectedRevision: number }
+  | {kind:'scene-roster';sceneId:string;expectedRosterRevision:number;expectedFocusRevision:number;expectedSceneMembershipRevision:number;memberIds:string[]}
   | { kind: 'move'; sceneId: string; expectedRosterRevision: number; expectedFocusRevision: number; expectedClockRevision: number; expectedSceneMembershipRevision: number; memberIds: string[];
       target: { kind: 'new'; title: string; expectedContentRevision: number } | { kind: 'existing'; sceneId: string; expectedClockRevision: number; expectedMembershipRevision: number } }
   | { kind: 'live-moment'; sceneId: string; expectedRevision: number; category: 'combat'|'narrative'|'reward'|'travel'|'party'|'world'; title: string; summary: string; draft?:LiveMomentDraft; followUp?:{kind:'quest'|'rumor';id:string}|null }
@@ -102,7 +103,7 @@ export function validateLiveCommand(command: LiveCommand) {
   if ('expectedRevision' in action && (!Number.isSafeInteger(action.expectedRevision) || action.expectedRevision < 0)) throw new Error('Ungültige Zielrevision.');
   if ('expectedRosterRevision' in action && (!Number.isSafeInteger(action.expectedRosterRevision) || action.expectedRosterRevision < 0)) throw new Error('Ungültige Partyrevision.');
   if ('expectedPlanRevision' in action && (!Number.isSafeInteger(action.expectedPlanRevision) || action.expectedPlanRevision < 0)) throw new Error('Ungültige Planrevision.');
-  if (action.kind === 'move' && (!Number.isSafeInteger(action.expectedSceneMembershipRevision) || action.expectedSceneMembershipRevision < 0 || !Number.isSafeInteger(action.expectedFocusRevision) || action.expectedFocusRevision < 0)) throw new Error('Ungültige Gruppenrevision.');
+  if ((action.kind === 'move'||action.kind==='scene-roster') && (!Number.isSafeInteger(action.expectedSceneMembershipRevision) || action.expectedSceneMembershipRevision < 0 || !Number.isSafeInteger(action.expectedFocusRevision) || action.expectedFocusRevision < 0)) throw new Error('Ungültige Gruppenrevision.');
   if(action.kind==='visit-outcome'&&(!['open','completed','skipped'].includes(action.status)||typeof action.outcome!=='string'||action.outcome.length>2000000))throw new Error('Besuchsergebnis prüfen.');
   const fields = action as unknown as Record<string, unknown>;
   for (const key of ['characterId', 'sceneId', 'planId', 'visitId','adoptionId']) {

@@ -112,10 +112,17 @@ export function readLive(db: any, campaignId: string): LiveView {
   })();
 }
 const archiveCount = (db: any, campaignId: string): number => db.prepare('SELECT count(*) n FROM scene_lifecycle WHERE campaign_id=? AND retired=1').get(campaignId).n;
+function scenePlace(db:any,campaignId:string,sceneId:string){
+ const scene=db.prepare('SELECT location_id FROM live_scene WHERE campaign_id=? AND id=?').get(campaignId,sceneId),locationId=scene?.location_id??null;
+ if(!locationId)return{locationId:null,locationTitle:null};
+ const row=db.prepare('SELECT payload,checksum FROM location WHERE campaign_id=? AND id=?').get(campaignId,locationId);
+ let locationTitle='Ort nicht lesbar';if(row&&hash(row.payload)===row.checksum){try{locationTitle=checkedLocationDocument(JSON.parse(row.payload)).name;}catch{}}
+ return{locationId,locationTitle};
+}
 function activeSummaries(db: any, campaignId: string, primaryId: string): LiveView['scenes'] {
   return db.prepare('SELECT s.id,s.title,l.membership_revision FROM live_scene s JOIN scene_lifecycle l ON l.campaign_id=s.campaign_id AND l.id=s.id WHERE s.campaign_id=? AND l.retired=0 ORDER BY s.id').all(campaignId).map((row: any) => {
     const members = db.prepare('SELECT count(*) n FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1').get(campaignId, row.id).n;
-    return { id: row.id, title: row.title, primary: row.id === primaryId, members, membershipRevision: row.membership_revision, clock: clock(db, campaignId, row.id) };
+    return { ...scenePlace(db,campaignId,row.id),id: row.id, title: row.title, primary: row.id === primaryId, members, membershipRevision: row.membership_revision, clock: clock(db, campaignId, row.id) };
   });
 }
 export function readArchives(db: any, campaignId: string, after: string | null) {
@@ -169,7 +176,7 @@ function recordPartyHistory(db:any,campaignId:string,sceneId:string|null,text:st
 function targetRevision(db: any, campaignId: string, action: LiveCommand['action'], targetId: string): number | null {
   const table = action.kind === 'membership' ? 'roster_member' : action.kind === 'profile' || action.kind === 'archive-character' || action.kind === 'create-character' ? 'character_profile' : 'live_scene';
   if (!db.prepare('SELECT 1 FROM ' + table + ' WHERE campaign_id=? AND id=?').get(campaignId, targetId)) return null;
-  if (action.kind === 'move') return db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision ?? null;
+  if (action.kind === 'move'||action.kind==='scene-roster') return db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision ?? null;
   if (table === 'live_scene') {
     const current = readLiveScene(db, campaignId, targetId); if (current.retired) return null;
     if (action.kind === 'advance-clock') return current.clock.revision;
@@ -192,11 +199,11 @@ export function liveStatus(db: any, command: LiveCommand): LiveStatus {
       let changed = targetId !== null && 'expectedRevision' in action && targetRevision(db, command.campaignId, action, targetId) !== action.expectedRevision;
       if(action.kind==='advance-clock'&&action.calendarVersion==='campaign-calendar-v1'){const calendar=readWorldCalendar(db,command.campaignId),state=db.prepare('SELECT focus_id,focus_revision FROM live_state WHERE campaign_id=?').get(command.campaignId);changed ||= calendar.revision!==action.calendar.revision||calendar.daySeconds!==action.calendar.daySeconds||state?.focus_id!==action.sceneId||state?.focus_revision!==action.expectedFocusRevision;if(action.eventTarget){try{const event=readClockEvent(db,command.campaignId,action.eventTarget.eventId);changed ||= event.revision!==action.eventTarget.expectedRevision;}catch{changed=true;}}}
       if (action.kind === 'focus') changed = db.prepare('SELECT focus_revision FROM live_state WHERE campaign_id=?').get(command.campaignId)?.focus_revision !== action.expectedRevision;
-      if (action.kind === 'move') {
+      if (action.kind === 'move'||action.kind==='scene-roster') {
         const source = currentScene(db, command.campaignId, action.sceneId);
         const state = db.prepare('SELECT focus_revision FROM live_state WHERE campaign_id=?').get(command.campaignId);
         changed = db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(command.campaignId)?.revision !== action.expectedRosterRevision ||
-          state?.focus_revision !== action.expectedFocusRevision || source.clock.revision !== action.expectedClockRevision || source.membershipRevision !== action.expectedSceneMembershipRevision;
+          state?.focus_revision !== action.expectedFocusRevision || action.kind==='move'&&source.clock.revision !== action.expectedClockRevision || source.membershipRevision !== action.expectedSceneMembershipRevision;
       }
       return { outcome: changed ? 'conflict' : 'not-applied', receipt: null, targetChanged: changed };
     }
@@ -304,6 +311,18 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       if (before.active !== action.active) recordPartyHistory(db,campaignId,action.active?action.targetSceneId:before.sceneId,
         'Figur '+(action.active?'aktiviert: ':'deaktiviert: ')+before.profile.name,
         {kind:'party-membership',characterIds:[before.id],active:action.active,fromSceneId:before.sceneId,toSceneId:action.active?action.targetSceneId:null});
+    } else if(action.kind==='scene-roster'){
+      const current=readLive(db,campaignId),source=currentScene(db,campaignId,action.sceneId);
+      if(current.focusId!==source.id||current.focusRevision!==action.expectedFocusRevision||current.rosterRevision!==action.expectedRosterRevision||source.membershipRevision!==action.expectedSceneMembershipRevision)throw new Error('Party oder Szenenfokus inzwischen geändert. Auswahl neu lesen.');
+      if(!Array.isArray(action.memberIds)||action.memberIds.length>10000||new Set(action.memberIds).size!==action.memberIds.length)throw new Error('Eindeutige Figurenauswahl erforderlich.');
+      const selected=new Set(action.memberIds),eligible=current.roster.filter(c=>!c.archived&&(!c.active||c.sceneId===null||c.sceneId===source.id));
+      for(const id of selected)if(typeof id!=='string'||!eligible.some(c=>c.id===id))throw new Error('Figur nicht verfügbar oder in einer anderen Szene. Gemeinsames Verschieben verwenden.');
+      const changed=eligible.filter(c=>selected.has(c.id)?!c.active||c.sceneId!==source.id:c.active&&c.sceneId===source.id);
+      for(const c of changed)db.prepare('UPDATE roster_member SET active=?,scene_id=?,membership_revision=membership_revision+1 WHERE campaign_id=? AND id=?').run(Number(selected.has(c.id)),selected.has(c.id)?source.id:null,campaignId,c.id);
+      if(changed.length){db.prepare('UPDATE roster_state SET revision=revision+1 WHERE campaign_id=?').run(campaignId);db.prepare('UPDATE scene_lifecycle SET membership_revision=membership_revision+1 WHERE campaign_id=? AND id=?').run(campaignId,source.id);}
+      targetId=source.id;revision=current.rosterRevision+Number(changed.length>0);
+      session=sessionDelta(db,campaignId,changed.map(c=>c.id),cleanupScenes(db,campaignId,null),[source.id]);scene=currentScene(db,campaignId,session.focusId);
+      if(changed.length)recordPartyHistory(db,campaignId,source.id,'Szenenroster übernommen: '+action.memberIds.length+' Figuren',{kind:'party-roster',characterIds:changed.map(c=>c.id),memberIds:action.memberIds,sceneId:source.id});
     } else if (action.kind === 'focus') {
       const current = readLive(db, campaignId);
       if (current.focusRevision !== action.expectedRevision) throw new Error('Gruppenfokus wurde inzwischen geändert.');
@@ -340,7 +359,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       session = sessionDelta(db, campaignId, action.memberIds, cleanupScenes(db, campaignId, destination.id), [source.id, destination.id]);
       if (created) {
         const target = currentScene(db, campaignId, destination.id);
-        session.createdScene = { id: target.id, title: target.title, primary: session.primaryId === target.id, members: target.members.length, membershipRevision: target.membershipRevision, clock: target.clock };
+        session.createdScene = { ...scenePlace(db,campaignId,target.id),id: target.id, title: target.title, primary: session.primaryId === target.id, members: target.members.length, membershipRevision: target.membershipRevision, clock: target.clock };
       }
       targetId = source.id; revision = action.expectedRosterRevision + 1;
       scene = currentScene(db, campaignId, session.focusId);
