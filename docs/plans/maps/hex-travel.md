@@ -1,6 +1,6 @@
 # Hexreise: Laufzustand, Kopien und verbleibende Nutzerfähigkeiten
 
-Stand: 15.10.2026. Quellen: [Hex Travel](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel.md)
+Stand: 16.10.2026. Quellen: [Hex Travel](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel.md)
 und [Hex Travel Console](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel-state.md).
 [Produktziele](../../PRODUCT.md), [Kartenbearbeitung](hex-editing.md),
 [Wetter](../runtime/weather.md), [Zeit und Restock](../runtime/shops-and-restock.md)
@@ -177,6 +177,13 @@ vorsorglich angehalten, damit erfolgreiche Checkpoint-/After-Refreshes keine
 laufende Wiedergabe nach jedem Hex abbrechen. Der Fehler selbst stoppt sie.
 Kanonische Journey, Uhr und Position bleiben bei allen diesen Reads erhalten;
 Retry startet keine Wiedergabe und nimmt keinen alten Entwurf an.
+
+Dieselbe Grenze gilt bei der Gruppenwahl im Atlas: Während des Wechsels und
+nach einem aktuellen Ladefehler steht der vorherige Frame nicht für Reise- oder
+Platzierungsbefehle bereit. Jede Antwort muss zur gewählten Gruppe gehören.
+Ein wartender Befehl prüft diese Bindung erneut, bevor er schreibt. Die erneute
+ausdrückliche Gruppenwahl liest den Provider erneut; alte Fehler dürfen einen
+inzwischen erfolgreich geladenen Kontext nicht verändern.
 
 Die Store-/DOMfälle in `desktop-travel-target-dom.test.mjs` verzögern Fokusreads,
 prüfen Fehler/Retry, unveränderte SQLitefakten und alte Fehler nach neuerem
