@@ -92,3 +92,18 @@ test('saving a table keeps its searched entry without making that search a gener
  assert.equal(x.el('catalog-search').value,'');assert.match(x.el('generation-catalog-summary').textContent,/Keine zusätzlichen/);
  await x.resolve(2,'Restored catalog');assert.match(x.el('catalog-rows').textContent,/Restored catalog/);
 });
+
+
+test('removing a numeric filter chip preserves the name and type criteria',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Goblin');await x.opened;
+ x.type('Goblin');x.el('catalog-type').value='Humanoid';x.el('catalog-type').oninput();x.el('catalog-cr-max').value='1';x.el('catalog-cr-max').oninput();
+ assert.equal(x.el('catalog-filter-chips').querySelectorAll('button').length,3);
+ x.el('catalog-cr-max').focus=()=>{};[...x.el('catalog-filter-chips').querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='HG bis entfernen').click();await x.debounce();
+ assert.equal(x.reads[1].query.text,'Goblin');assert.deepEqual(x.reads[1].query.types,['Humanoid']);assert.equal(x.reads[1].query.crMax,undefined);assert.equal(x.el('catalog-filter-chips').querySelectorAll('button').length,2);
+});
+test('column sorting toggles visibly and clearing filters keeps that sort and selected detail',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Goblin');await x.opened;
+ window.campaign.creature=async()=>({ok:true,value:{id:'Goblin',name:'Goblin',abilities:{},traits:[],actions:[],legendaryActions:[]}});x.el('catalog-rows').querySelector('button').click();await tick();await tick();
+ const hp=x.el('catalog-table').querySelector('[data-sort="hp"]');hp.click();await until(()=>x.reads.length===2);assert.equal(x.reads[1].query.direction,'asc');assert.equal(hp.parentElement.getAttribute('aria-sort'),'ascending');await x.resolve(1,'Goblin');hp.click();await until(()=>x.reads.length===3);assert.equal(x.reads[2].query.direction,'desc');assert.match(hp.textContent,/↓/);await x.resolve(2,'Goblin');
+ x.type('Dragon');x.el('catalog-reset').click();await until(()=>x.reads.length===4);assert.equal(x.reads[3].query.text,'');assert.equal(x.reads[3].query.sort,'hp');assert.equal(x.reads[3].query.direction,'desc');await x.resolve(3,'Goblin');assert.match(x.el('catalog-detail').textContent,/Goblin/);assert.equal(x.el('catalog-rows').querySelector('button').getAttribute('aria-pressed'),'true');
+});
