@@ -1,10 +1,10 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {GroupView,GroupDraft,GroupRow,GroupAction} from './groups-contracts';
 import type {ProgressCommand,ProgressAck} from './progression';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved} from './commit-confirmation';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-let workspace:Workspace|null=null,book:GroupView|null=null,draft:GroupDraft|null=null;
+let workspace:WorkspaceGeometry|null=null,book:GroupView|null=null,draft:GroupDraft|null=null;
 let places:{id:string;name:string}[]=[],templates:{id:string;revision:number;name:string}[]=[],list:{items:{id:string;title:string;locationId:string|null;count:number}[];next:string|null}={items:[],next:null};
 let tell:(s:string,error?:boolean)=>void,after:()=>Promise<void>,enter:(id?:string)=>Promise<void>,openActor:(id:string,current?:()=>boolean)=>Promise<void>=async()=>{};
 let listRequest=0,listBusy=false,listQuery:string|null=null;
@@ -15,7 +15,7 @@ const run=(fn:()=>Promise<unknown>)=>{const current=editorOwner();void fn().catc
 function option(select:HTMLSelectElement,id:string,name:string){const o=document.createElement('option');o.value=id;o.textContent=name;select.append(o);}
 function lock(){const blocked=!workspace||!!pending||hasPendingCommit(workspace.campaign.id);for(const c of el('groups').querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement|HTMLTextAreaElement>('input,select,button,textarea'))c.disabled=blocked;el<HTMLButtonElement>('groups-apply').disabled=blocked||!draft||!dirty;el<HTMLButtonElement>('groups-more').disabled=blocked||listBusy||listQuery===null||!list.next;}
 function mark(){if(!draft)return;dirty=true;version++;if(timer)clearTimeout(timer);const current=editorOwner();timer=setTimeout(()=>{if(current())void keep();},250);el('groups-draft-status').textContent='Offene Gruppenangaben werden gesichert…';lock();}
-export function activateGroups(w:Workspace|null){workspace=w;generation++;editing++;keeping=null;pending=null;request++;listRequest++;listBusy=false;listQuery=null;el('groups-search-status').textContent='';book=null;draft=null;dirty=false;writeId=null;version=saved=0;if(timer)clearTimeout(timer);timer=null;list={items:[],next:null};el('groups-editor').hidden=true;el('groups-list').replaceChildren();el('groups-creature-results').replaceChildren();lock();}
+export function activateGroups(w:WorkspaceGeometry|null){workspace=w;generation++;editing++;keeping=null;pending=null;request++;listRequest++;listBusy=false;listQuery=null;el('groups-search-status').textContent='';book=null;draft=null;dirty=false;writeId=null;version=saved=0;if(timer)clearTimeout(timer);timer=null;list={items:[],next:null};el('groups-editor').hidden=true;el('groups-list').replaceChildren();el('groups-creature-results').replaceChildren();lock();}
 function rowOf(c:{id:string;name:string;hp:number},suffix=''):GroupRow{return{id:null,creatureId:c.id,revision:0,profileRevision:0,name:c.name+suffix,hp:String(c.hp),maxHp:String(c.hp),tempHp:'0',conditions:'',concentrating:false,gmNotes:'',readAloud:''};}
 function fromGroup(g:GroupView):GroupDraft{
  const actors:GroupRow[]=g.actors.map(a=>({id:a.id,creatureId:a.creatureId,revision:a.revision,profileRevision:a.profileRevision,name:a.name,hp:String(a.hp),maxHp:String(a.maxHp),tempHp:String(a.tempHp),conditions:a.conditions,concentrating:a.concentrating,gmNotes:a.gmNotes,readAloud:a.readAloud}));

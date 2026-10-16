@@ -1,6 +1,6 @@
 import { pendingAtlasWrite } from "./campaign-atlas-author";
 import polygonClipping from "polygon-clipping";
-import type { CampaignAtlas, AtlasAction } from "./campaign-atlas-contracts";
+import type { AtlasRenderView, AtlasAction } from "./campaign-atlas-contracts";
 import type { Point, Polygon } from "./contracts";
 import {
   emptyRecord,
@@ -76,6 +76,7 @@ export class LandscapeWorkbench {
   private token = "";
   private key = "";
   private request = 0;
+  private minimumRevision=0;
   private active = false;
   private tool: Tool = "select";
   private points: Point[] = [];
@@ -100,7 +101,7 @@ export class LandscapeWorkbench {
       redraw: () => void;
       write: (a: AtlasAction) => Promise<unknown>;
       error: (e: unknown) => void;
-      data: () => CampaignAtlas | null;
+      data: () => AtlasRenderView | null;
     },
   ) {
     this.panel.id = "atlas-landscape-tools";
@@ -354,7 +355,7 @@ export class LandscapeWorkbench {
     this.token = token;
     this.cancel();
     this.records = [];
-    this.raster = undefined;
+    this.raster = undefined;this.minimumRevision=0;
     this.assets.clear();
     this.key = "";
     this.request++;
@@ -379,9 +380,10 @@ export class LandscapeWorkbench {
     }
     return record.points[0];
   }
+  invalidate(revision:number){if(Number.isSafeInteger(revision)&&revision>=this.minimumRevision){this.minimumRevision=revision;this.request++;this.key="";}}
   async load(box = this.host.box(), force = false) {
     const data = this.host.data();
-    if (!data || !this.token) return;
+    if (!data || !this.token || data.revision<this.minimumRevision) return;
     const key = JSON.stringify([this.token, data.revision, box]);
     if (!force && this.key === key) return;
     this.key = key;

@@ -1,8 +1,8 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {ChronicleCategory,ChronicleView,ChroniclePage,ChronicleCursor} from './chronicle-contracts';
 
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
-let workspace:Workspace|null=null,data:ChroniclePage|null=null,generation=0,tell:(message:string,error?:boolean)=>void,openFollowUp:((id:string,token:string)=>Promise<void>)|null=null;
+let workspace:WorkspaceGeometry|null=null,data:ChroniclePage|null=null,generation=0,tell:(message:string,error?:boolean)=>void,openFollowUp:((id:string,token:string)=>Promise<void>)|null=null;
 let searchTimer:ReturnType<typeof setTimeout>|null=null,loading=false,pageIndex=0,cursors:(ChronicleCursor|null)[]=[null],exporting:{id:string;token:string}|null=null;
 const labels:Record<ChronicleCategory,string>={combat:'Kampf',narrative:'Quest',reward:'Beute',travel:'Reise',party:'Party',world:'Welt'};
 function matches(entry:ChronicleView['entries'][number]){const category=el<HTMLSelectElement>('chronicle-category').value,needle=el<HTMLInputElement>('chronicle-search').value.trim().toLocaleLowerCase();return(category==='all'||entry.category===category)&&(!needle||[entry.title,entry.summary,entry.handoff,entry.scene,entry.location,...entry.people].some(v=>v?.toLocaleLowerCase().includes(needle)));}
@@ -22,7 +22,7 @@ export function initChronicle(status:typeof tell,open?:typeof openFollowUp){
 }
 function problem(error:unknown){return(error as Error).message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '');}
 function clearChronicle(){data=null;el('chronicle-list').replaceChildren();el('chronicle-count').textContent='';lock();}
-export function activateChronicle(next:Workspace|null){suspendChronicle();workspace=next;generation++;clearChronicle();el('chronicle-export-status').textContent='';el('chronicle').setAttribute('aria-busy','false');}
+export function activateChronicle(next:WorkspaceGeometry|null){suspendChronicle();workspace=next;generation++;clearChronicle();el('chronicle-export-status').textContent='';el('chronicle').setAttribute('aria-busy','false');}
 export async function openChronicle(){if(searchTimer)clearTimeout(searchTimer);searchTimer=null;releaseRead();cursors=[null];pageIndex=0;clearChronicle();await loadPage(null,0);}
 async function loadPage(cursor:ChronicleCursor|null,index:number){
  const current=workspace,version=++generation;if(!current)return;const category=el<HTMLSelectElement>('chronicle-category').value as ChronicleCategory|'all',search=el<HTMLInputElement>('chronicle-search').value;loading=true;lock();el('chronicle').setAttribute('aria-busy','true');el('chronicle-count').textContent='Chronikseite wird geladen…';

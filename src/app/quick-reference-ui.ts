@@ -1,6 +1,6 @@
 import {textReferences} from './text-references';
 import {refreshSceneDeskPins} from './scene-desk-ui';
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {DeskRef,DeskEntry,DeskContent} from './scene-desk-contracts';
 import {renderCreatureDetail} from './creature-detail-ui';
 import {encounterEntryLabel} from './encounter-contracts';
@@ -12,7 +12,7 @@ const kinds:Kind[]=['world','creature','item','encounter','reference'],labels:Re
 export interface QuickReferenceAction {kind:'edit'|'read-aloud'|'creature'|'encounter'|'source'|'connections';content:DeskContent;sceneId:string|null;count?:number;grouped?:boolean}
 let searching=false;
 let enterIntent:{token:string;search:number;content:number}|null=null;
-let workspace:Workspace|null=null,searchRequest=0,contentRequest=0,timer:ReturnType<typeof setTimeout>|null=null,history:DeskRef[]=[],position=-1;
+let workspace:WorkspaceGeometry|null=null,searchRequest=0,contentRequest=0,timer:ReturnType<typeof setTimeout>|null=null,history:DeskRef[]=[],position=-1;
 let tell:(s:string,error?:boolean)=>void,drain:()=>Promise<boolean>,handoff:(action:QuickReferenceAction)=>Promise<void>;
 const owned=(token:string,n:number)=>workspace?.token===token&&contentRequest===n&&el<HTMLDialogElement>('quick-reference').open;
 function button(text:string,action:()=>Promise<unknown>,scope:'content'|'search'='content'){
@@ -70,7 +70,7 @@ async function openContent(ref:DeskRef,remember=true){
 }
 function close(){enterIntent=null;searching=false;searchRequest++;contentRequest++;if(timer)clearTimeout(timer);timer=null;el<HTMLDialogElement>('quick-reference').close();}
 export async function openQuickReference(ref?:DeskRef,stillCurrent=()=>true){if(!workspace||!stillCurrent())return;if(document.querySelector('dialog:modal:not(#quick-reference)'))return;const dialog=el<HTMLDialogElement>('quick-reference');if(dialog.open){if(ref)await openContent(ref);else el<HTMLInputElement>('quick-search').select();return;}const token=workspace.token;if(!await drain()||workspace?.token!==token||!stillCurrent())return;dialog.showModal();el<HTMLInputElement>('quick-search').focus();void search();if(ref)await openContent(ref);else if(position>=0)await openContent(history[position]!,false);}
-export function activateQuickReference(w:Workspace){close();workspace=w;history=[];position=-1;el('quick-document').replaceChildren(node('p','Wähle einen Treffer.'));el('quick-results').replaceChildren();el<HTMLInputElement>('quick-search').value='';el<HTMLSelectElement>('quick-kind').value='all';el<HTMLButtonElement>('quick-reference-open').disabled=false;historyButtons();}
+export function activateQuickReference(w:WorkspaceGeometry){close();workspace=w;history=[];position=-1;el('quick-document').replaceChildren(node('p','Wähle einen Treffer.'));el('quick-results').replaceChildren();el<HTMLInputElement>('quick-search').value='';el<HTMLSelectElement>('quick-kind').value='all';el<HTMLButtonElement>('quick-reference-open').disabled=false;historyButtons();}
 export function initQuickReference(status:typeof tell,flush:typeof drain,use:typeof handoff){
  tell=status;drain=flush;handoff=use;const shortcut=node('button','Schnellsuche');shortcut.id='quick-reference-open';shortcut.type='button';shortcut.disabled=true;shortcut.title='Schnellsuche · Strg+K';el('narrative-journal-open').after(shortcut);
  const dialog=node('dialog');dialog.id='quick-reference';dialog.innerHTML='<div class="toolbar"><h2>GM-Schnellsuche</h2><button id="quick-back" type="button" disabled>Zurück</button><button id="quick-forward" type="button" disabled>Vorwärts</button><button id="quick-refresh" type="button">Inhalt aktualisieren</button><button id="quick-close" type="button">Schließen</button></div><p>Private GM-Referenz. Lesen und Anheften verändern keine Zeit oder Belohnungen. Übergaben an den Spieltisch bestätigst du ausdrücklich.</p><div class="quick-columns"><section class="quick-index"><form id="quick-search-form"><label for="quick-search">Inhalte suchen</label><input id="quick-search" type="search" maxlength="1000" placeholder="Name, Ort, Regel oder Beschreibung"><label for="quick-kind">Quellen</label><select id="quick-kind"><option value="all">Alle Quellen</option><option value="world">Welt und Regeln</option><option value="creature">Kreaturen</option><option value="item">Gegenstände</option><option value="encounter">Begegnungen</option><option value="reference">Verknüpfte Begriffe</option></select></form><p id="quick-search-status" role="status"></p><div id="quick-results"></div></section><article id="quick-document"><p>Wähle einen Treffer.</p></article></div>';document.body.append(dialog);

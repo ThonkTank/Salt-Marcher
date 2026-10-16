@@ -1,3 +1,4 @@
+import {RoomDirectoryService} from './room-directory';
 import {AtlasRasterService} from './atlas-raster';
 import {readItemReferenceCatalog} from '../src/app/storage/item-reference';
 import {exportSessionPacketFile} from './session-packet-export';
@@ -95,13 +96,25 @@ else {
     function handle<T>(name: string, operation: (...args: any[]) => T | Promise<T>) {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
-        try { const value=await operation(...args);if(name.includes(':execute')||['campaign:activate','campaign:catalog','campaign:catalog-workspace','campaign:trash','campaign:erase','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
+        try { const value=await operation(...args);if(name.includes(':execute')||['atlas:room-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:trash','campaign:erase','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
         catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.' }; }
       });
     }
     handle('campaign:installation-settings',()=>store.campaignInstallationSettings());
     handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')imports.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishCampaignFiles(c.id);}return result;});
     handle('campaign:catalog-outcome',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalogOutcome(c);if(result?.kind==='erase')await finishCampaignFiles(result.campaignId);return result;});
+    handle('campaign:catalog-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();return store.campaignCatalogWorkspace(id,true);});
+    handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();imports.clear();return store.activateShell(id);});
+    handle('campaign:workspace-geometry',(token:string)=>store.workspaceGeometry(token));
+    const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService();
+    let roomReadBarrier=0;
+    async function afterRoomReaders<T>(operation:()=>T):Promise<T>{
+      roomReadBarrier++;
+      try{await Promise.all([roomDirectory.cancelAndWait(),atlasRoomDirectory.cancelAndWait()]);return operation();}
+      finally{roomReadBarrier--;}
+    }
+    handle('campaign:room-directory-cancel',(token:string,consumer:'atlas'|'directory'='directory')=>{store.roomReadSource(token);if(!['atlas','directory'].includes(consumer))throw new Error('Raumsuche prüfen.');(consumer==='atlas'?atlasRoomDirectory:roomDirectory).cancel();});
+    handle('campaign:room-directory',async(token:string,q:import('../src/app/contracts').RoomDirectoryQuery,consumer:'atlas'|'directory'='directory')=>{if(roomReadBarrier)throw new Error('Graphwechsel läuft. Raumsuche danach aktualisieren.');if(!['atlas','directory'].includes(consumer))throw new Error('Raumsuche prüfen.');const source=store.roomReadSource(token,q),result=await(consumer==='atlas'?atlasRoomDirectory:roomDirectory).read(source,q);if(store.roomReadSource(token).fence!==source.fence)throw new Error('Raumsuche inzwischen geändert. Suche erneut beginnen.');return result;});
     handle('campaign:catalog-workspace',(id:string)=>store.campaignCatalogWorkspace(id));
     handle('campaign:list', () => store.list());
     handle('extensions:preview',async()=>{const selected=await dialog.showOpenDialog(win,{title:'Extensionpaket prüfen',properties:['openFile'],filters:[{name:'Extensionpaket (JSON)',extensions:['json']}]});if(selected.canceled||!selected.filePaths[0])return null;const file=await open(selected.filePaths[0],'r');try{if(!(await file.stat()).isFile())throw new Error('Eine Paketdatei wählen.');const bytes=Buffer.alloc(extensionPackageLimit+1);let length=0;while(length<bytes.length){const r=await file.read(bytes,length,bytes.length-length,length);if(!r.bytesRead)break;length+=r.bytesRead;}return store.extensionPreview(bytes.subarray(0,length));}finally{await file.close();}});
@@ -303,8 +316,10 @@ else {
     handle('campaign:discard-group-draft',(token:string,id:string,writeId:string)=>store.discardGroupDraft(token,id,writeId));
     handle('campaign:prepared-group',(token:string,id:string)=>store.preparedGroup(token,id));
     handle('graph:view',(token:string,scopeId:string)=>store.graph(token,scopeId));
-    handle('graph:execute',(c:import('../src/app/graph-contracts').GraphCommand)=>store.executeGraph(c));
+    handle('graph:execute',async(c:import('../src/app/graph-contracts').GraphCommand)=>{if(['restore','accept'].includes(c.action?.kind))return afterRoomReaders(()=>store.executeGraph(c));return store.executeGraph(c);});
     handle('drawing:path-preview',(token:string,p:import('../src/app/path-contracts').DungeonPath)=>store.previewPath(token,p));
+    handle('drawing:map',(token:string)=>store.drawingMap(token));
+    handle('drawing:element',(token:string,id:string)=>store.drawingElement(token,id));
     handle('drawing:view',(token:string)=>store.drawing(token));
     handle('drawing:execute',(c:import('../src/app/drawing-contracts').DrawingCommand)=>store.executeDrawing(c));
     handle('drawing:feature',(token:string,id:string,sceneId:string,expected:number,action:'activate'|'reset'|'correct',charges:number|null,commandId:string)=>store.activateFeature(token,id,sceneId,expected,action,charges,commandId));
@@ -338,10 +353,12 @@ else {
     handle('atlas:overview',(token:string)=>store.atlasOverview(token));
     handle('atlas:objects',(token:string,q:import('../src/app/campaign-atlas-contracts').AtlasObjectQuery)=>store.atlasObjects(token,q));
     handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));
+    handle('atlas:room-commit',(edit:import('../src/app/contracts').Edit)=>store.atlasRoomCommit(edit));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
     handle('atlas:commit',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlasCommit(c));
+    handle('atlas:render-view',(token:string)=>store.atlasRenderView(token));
     handle('atlas:view',(token:string)=>store.campaignAtlas(token));
-    handle('atlas:execute',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlas(c));
+    handle('atlas:execute',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{if(c.action?.kind==='graph-accept')return afterRoomReaders(()=>store.executeAtlas(c));return store.executeAtlas(c);});
     handle('city:list',(token:string)=>store.cities(token));
     handle('city:view',(token:string,id:string)=>store.city(token,id));
     handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>store.executeCity(c));
@@ -416,7 +433,7 @@ else {
     });
     handle('campaign:backup-status', () => backupError);
     handle('campaign:tutorial', (state?: 'shown' | 'finished' | 'skipped') => store.tutorial(state));
-    ipcMain.on('campaign:close-ready', event => { if (event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && event.senderFrame.url === origin) { closeAllowed = true; win.close(); } });
+    ipcMain.on('campaign:close-ready', event => { if (event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && event.senderFrame.url === origin) { void Promise.all([roomDirectory.close(),atlasRoomDirectory.close()]).then(()=>{if(win.isDestroyed())return;closeAllowed = true;win.close();}); } });
     win.on('close', event => { if (!closeAllowed) { event.preventDefault(); win.webContents.send('campaign:close'); } });
     const timer = setInterval(async () => {
       if (backupRunning) return;
@@ -425,7 +442,7 @@ else {
       catch { backupError = 'Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.'; }
       finally { backupRunning = false; }
     }, 30000);
-    win.on('closed', () => { atlasRaster.close();clearInterval(timer);playerDisplay.shutdown(); });
+    win.on('closed', () => { atlasRaster.close();roomDirectory.close();atlasRoomDirectory.close();clearInterval(timer);playerDisplay.shutdown(); });
     await win.loadURL(origin);
     app.on('before-quit', event => { if (!closeAllowed && win && !win.isDestroyed()) { event.preventDefault(); win.close(); } });
   }).catch(error => { console.error(error);dialog.showErrorBox('SaltMarcher kann nicht starten', String(error)); app.exit(1); });

@@ -1,5 +1,5 @@
 import {atlasDrawingWrite} from './campaign-atlas-author';
-import type {Workspace,Room} from './contracts';
+import type {WorkspaceGeometry,Room} from './contracts';
 import type {GraphView} from './graph-contracts';
 import type {DrawingElement} from './drawing-contracts';
 import type {DungeonContent} from './dungeon-budget-contracts';
@@ -8,7 +8,7 @@ const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),select=(id:string)=>el<HTMLSelectElement>(id);
 const fields=['content-room','content-kind','content-reference','content-name','content-public','content-notes','content-tags','content-categories','content-x','content-y','content-z','content-xp','content-encounter-owner','content-search-method','content-search-dc','content-search-notes','content-revealed'] as const;
 type Form={values:string[];secret:boolean};
-let workspace:()=>Workspace|null,selected:()=>Room|null,before:()=>Promise<boolean>,publish:(w:Workspace)=>Promise<void>,notify:()=>Promise<void>,tell:(s:string,error?:boolean)=>void;
+let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,publish:(w:WorkspaceGeometry)=>Promise<void>,notify:()=>Promise<void>,tell:(s:string,error?:boolean)=>void;
 let data:GraphView|null=null,element:DrawingElement|null=null,scopeId='',generation=0,readVersion=0,openVersion=0,frame=0;
 let pending:Promise<boolean>|null=null,writing=false,failed=false,baseline:Form|null=null;
 const cancelled=Symbol('obsolete content operation');

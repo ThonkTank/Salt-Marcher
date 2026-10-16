@@ -1,10 +1,10 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import {checkedCommitReference,commitFingerprintInput,type CommitFamily,type CommitCommand,type CommitReference} from './commit-receipt';
 
 export interface CommitResolution {ref:CommitReference;value:unknown;meta:unknown}
 const entries=new Map<string,{ref:CommitReference;meta:unknown}>(),preparing=new Set<string>();
 const stateListeners=new Set<()=>void>(),resolutionListeners=new Set<(event:CommitResolution)=>void|Promise<void>>();
-let context:()=>Workspace|null=()=>null,tell:(message:string,error?:boolean)=>void=()=>{},checking=false;
+let context:()=>WorkspaceGeometry|null=()=>null,tell:(message:string,error?:boolean)=>void=()=>{},checking=false;
 const key=(campaignId:string)=>'pending-booking:'+campaignId;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 

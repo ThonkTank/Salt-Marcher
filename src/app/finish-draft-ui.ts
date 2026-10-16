@@ -1,4 +1,4 @@
-import type { Workspace } from "./contracts";
+import type { WorkspaceGeometry } from "./contracts";
 import type {
   FinishDraft,
   FinishOwner,
@@ -17,7 +17,7 @@ type Values = Pick<
   | "items"
 >;
 type Session = {
-  w: Workspace;
+  w: WorkspaceGeometry;
   owner: FinishOwner;
   draft: FinishDraft | null;
   defaults: Values;
@@ -153,7 +153,7 @@ export async function resetFinishDraft() {
   return true;
 }
 export async function beginFinishDraft(
-  w: Workspace,
+  w: WorkspaceGeometry,
   owner: FinishOwner,
   readItems: () => RewardItemDraft[],
   restoreItems: (items: RewardItemDraft[]) => void,

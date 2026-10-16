@@ -1,6 +1,6 @@
 import {TreasureDistribution} from "./treasure-distribution-ui";
 import type { ItemDefinition } from "./items-contracts";
-import type { Workspace, Result } from "./contracts";
+import type { WorkspaceGeometry, Result } from "./contracts";
 import type {
   Treasure,
   TreasurePage,
@@ -35,7 +35,7 @@ function anchorChoices(){const controls=[el<HTMLSelectElement>('treasury-filter-
 function queryKey(){return JSON.stringify(listQuery);}
 async function readList(token:string,after:string|null){const query=structuredClone(listQuery),key=queryKey(),request=++listRequest,response=await window.campaign.treasures(token,after,query);if(w?.token!==token||key!==queryKey()||request!==listRequest)return null;return unwrap(response);}
 
-let w: Workspace | null = null,
+let w: WorkspaceGeometry | null = null,
   book: Treasure | null = null,
   draft: TreasuryDraft | null = null,
   writeId: string | null = null,
@@ -88,7 +88,7 @@ function snapshot(): TreasuryDraft {
     reason: value("treasury-reason"),
   };
 }
-export function activateTreasury(next: Workspace | null) {
+export function activateTreasury(next: WorkspaceGeometry | null) {
   distribution?.reset();w = next;
   generation++;
   editing++;
