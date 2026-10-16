@@ -35,6 +35,7 @@ export type CombatAction =
   | {kind:'add-party';characterId:string;expectedMembershipRevision:number;expectedProgressRevision:number;initiative?:number}
   | { kind: 'add-creature'; creatureId: string; count: number; grouped: boolean; groupId?: string; initiative?: number }
   | { kind: 'add'; name: string; count: number; grouped: boolean; maxHp: number; armorClass: number; initiativeBonus: number }
+  | {kind:'initiative';values:{participantId:string;initiative:number}[];start?:boolean}
   | { kind: 'edit'; participantId: string; changes: Partial<Pick<Combatant, 'name' | 'groupName' | 'initiative' | 'initiativeBonus' | 'armorClass' | 'hp' | 'maxHp' | 'tempHp' | 'conditions' | 'concentrating' | 'xp' | 'countForMultiplier'>> }
   | { kind: 'damage'; participantId: string; amount: number; sourceCheckId?:string; sourceScale?:'full'|'half'|'double' }
   | { kind:'hit';participantId:string;critical:boolean;source:{participantId:string;actionId:string};components:{key:string;amount:number;scale:'auto'|'full'|'half'|'double'|'none';sourceCheckId?:string}[];attackCheckId?:string;legendary?:{participantId:string;actionId:string;cost:number};paidLegendary?:boolean }

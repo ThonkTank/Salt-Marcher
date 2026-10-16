@@ -1,3 +1,4 @@
+import {CombatInitiativePanel} from './combat-initiative-ui';
 import {CombatHitPanel} from './combat-hit-ui';
 import {CombatAreaPanel} from './combat-area-ui';
 import {renderCombatActions} from './combat-actions-ui';
@@ -32,6 +33,7 @@ let workspace: Workspace | null = null, scene: LiveScene | null = null, view: Co
 let resolution:CombatResolutionPanel|null=null;
 let hitPanel:CombatHitPanel|null=null;
 let areaPanel:CombatAreaPanel|null=null;
+let initiativePanel:CombatInitiativePanel|null=null;
 let reinforcementRequest=0,reinforcementBusy=false;
 let reinforcementResults:{id:string;name:string;challengeRating:string}[]=[];
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
@@ -86,7 +88,7 @@ async function listDrafts(more=false){
  if(!workspace||!view?.combat)return;const token=workspace.token,id=view.combat.id,g=generation,r=++draftPageRequest;
  try{const page=unwrap(await window.campaign.combatDrafts(token,id,more?draftCursor:null));if(g!==generation||r!==draftPageRequest||view?.combat?.id!==id)return;
   const root=get('combat-draft-list');if(!more)root.replaceChildren();for(const entry of page.items){const row=document.createElement('p'),show=document.createElement('button'),discard=document.createElement('button');show.type=discard.type='button';show.textContent='Entwurf: '+(entry.label||'Ohne Titel');discard.textContent='Verwerfen';
-   show.onclick=()=>{void(async()=>{const d=unwrap(await window.campaign.combatDraft(token,id,entry.kind,entry.targetId));if(g!==generation||view?.combat?.id!==id)return;if(!d||d.writeId!==entry.writeId)throw new Error('Entwurf inzwischen geändert. Liste aktualisieren.');get<HTMLTextAreaElement>('combat-draft-preview').value=d.kind==='notes'?d.values.title+'\n\n'+d.values.notes:Object.entries(d.values).map(([key,text])=>({'fighter-name':'Name','fighter-group-name':'Truppname','fighter-initiative':'Initiative','fighter-bonus':'Initiativebonus','fighter-ac':'Rüstungsklasse','fighter-hp':'Aktuelle HP','fighter-max-hp':'Maximale HP','fighter-temp-hp':'Temporäre HP','fighter-conditions':'Zustände','fighter-xp':'Kreatur-XP'} as Record<string,string>)[key]+': '+text).join('\n')+'\nKonzentration: '+(d.concentrating?'ja':'nein')+'\nFür Schwierigkeit zählen: '+(d.counted?'ja':'nein');get('combat-draft-preview').hidden=false;})().catch(error=>tell(error.message,true));};
+   show.onclick=()=>{void(async()=>{const d=unwrap(await window.campaign.combatDraft(token,id,entry.kind,entry.targetId));if(g!==generation||view?.combat?.id!==id)return;if(!d||d.writeId!==entry.writeId)throw new Error('Entwurf inzwischen geändert. Liste aktualisieren.');get<HTMLTextAreaElement>('combat-draft-preview').value=d.kind==='initiative'?d.values.map(v=>(view?.combat?.participants.find(p=>p.id===v.participantId)?.name??v.participantId)+': '+v.raw).join('\n'):d.kind==='notes'?d.values.title+'\n\n'+d.values.notes:Object.entries(d.values).map(([key,text])=>({'fighter-name':'Name','fighter-group-name':'Truppname','fighter-initiative':'Initiative','fighter-bonus':'Initiativebonus','fighter-ac':'Rüstungsklasse','fighter-hp':'Aktuelle HP','fighter-max-hp':'Maximale HP','fighter-temp-hp':'Temporäre HP','fighter-conditions':'Zustände','fighter-xp':'Kreatur-XP'} as Record<string,string>)[key]+': '+text).join('\n')+'\nKonzentration: '+(d.concentrating?'ja':'nein')+'\nFür Schwierigkeit zählen: '+(d.counted?'ja':'nein');get('combat-draft-preview').hidden=false;})().catch(error=>tell(error.message,true));};
    discard.onclick=()=>{void(async()=>{if(!workspace||workspace.token!==token||!await draftCache.flush(workspace.campaign.id))return;unwrap(await window.campaign.discardCombatDraft(token,id,entry.kind,entry.targetId,entry.writeId));const key=combatDraftKey(workspace.campaign.id,id,entry.kind,entry.targetId),d=draftCache.values.get(key);if(d?.writeId===entry.writeId)draftCache.consumed(workspace.campaign.id,d);if(g===generation){renderEditor();renderNotes();await listDrafts();}})().catch(error=>tell(error.message,true));};row.append(show,discard);root.append(row);}
   for(const problem of page.problems){const p=document.createElement('p');p.textContent='Entwurf nicht lesbar: '+problem.message;root.append(p);}draftCursor=page.next;get('combat-draft-more').hidden=!draftCursor;
  }catch(error){if(g===generation)tell((error as Error).message,true);}
@@ -127,7 +129,7 @@ async function load(id?: string):Promise<boolean> {
 
 async function execute(action: CombatAction, expectedRevision?:number,stillCurrent:()=>boolean=()=>true): Promise<boolean> {
   if (!workspace || !scene || blocked()||!stillCurrent()) return false;
-  loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='notes'?notesDraft():editDraft;
+  loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='initiative'&&workspace&&view?.combat?draftCache.values.get(combatDraftKey(workspace.campaign.id,view.combat.id,'initiative',view.combat.id)):action.kind==='notes'?notesDraft():editDraft;
   const priorDamageDeath=action.kind==='damage'||action.kind==='hit'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
   const priorEffects=action.kind==='next'||action.kind==='start'?view?.combat?.participants.flatMap(actor=>(actor.timedEffects??[]).map(effect=>({actorId:actor.id,actor:actor.name,...effect})))??[]:[];
   const gen = generation;
@@ -301,6 +303,7 @@ function lock() {
   get<HTMLButtonElement>('fighter-heal').disabled=blocked()||unknown||!!fighter?.death?.dead;
   get<HTMLButtonElement>('fighter-revive').disabled=deathUnavailable||!fighter?.death?.dead;
   get<HTMLInputElement>('fighter-revive-hp').disabled=deathUnavailable||!fighter?.death?.dead;
+  initiativePanel?.context(view?.combat??null,workspace?{campaignId:workspace.campaign.id,token:workspace.token}:null,blocked());
   hitPanel?.context(view?.combat??null,workspace?.token??null,blocked());
   areaPanel?.context(view?.combat??null,workspace?.token??null,blocked());
   renderAttackEffect();
@@ -353,7 +356,7 @@ function render() {
       if(index===0||index===2){
         const initiative=index===0,health=document.createElement('button');health.type='button';health.className='combat-value '+(initiative?'combat-initiative':'combat-health');health.dataset.combatReadonly=String(!editableCombat(combat!));health.textContent=text;
         health.setAttribute('aria-label',p.name+' · '+(initiative?'Initiative '+text+' bearbeiten':text+' HP · '+(p.healthKnown===false?'Werte eintragen':'Schaden oder Heilung')));
-        health.onclick=()=>{void(async()=>{
+        health.onclick=()=>{if(initiative){void initiativePanel?.open(p.id);return;}void(async()=>{
           const gen=generation,id=combat!.id;await chooseFighter(p.id);
           if(generation!==gen||view?.combat?.id!==id||selected!==p.id)return;
           const target=get<HTMLInputElement>(initiative?'fighter-initiative':p.healthKnown===false?'fighter-hp':'fighter-amount');
@@ -411,12 +414,12 @@ function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)retu
 async function recoveredCombat(event:CommitResolution){
   if(event.ref.family!=='combat'||workspace?.campaign.id!==event.ref.campaignId)return;
   const result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft}|undefined;
-  if(meta?.token===workspace.token&&meta.editorDraft)draftCache.consumed(workspace.campaign.id,meta.editorDraft);
+  if(meta?.token===workspace.token&&meta.editorDraft){draftCache.consumed(workspace.campaign.id,meta.editorDraft);if(meta.editorDraft.kind==='initiative')initiativePanel?.accepted(meta.editorDraft);}
   if(result.combat&&scene&&result.combat.sceneId===scene.id&&(!view?.combat||view.combat.id===result.combat.id))await load(result.combat.id);
   await refreshProgress();if(afterSaved)await afterSaved();
 }
 export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
-  tell = status;afterSaved=refresh;hitPanel=new CombatHitPanel(get('combat-hit-effect'),(action,revision)=>execute(action,revision),async(opening,preset,formula,critical)=>{let result:SceneCheck|null=null;const actor=view?.combat?.participants.find(p=>p.id===opening.attackerId),id=view?.combat?.id,gen=generation;if(!actor||!id)return null;await rollSceneFormula({label:preset.label+(critical?' · Kritisch':''),actor:actor.name,formula,formulaKind:'damage',dc:null,sourceCreatureId:actor.sourceId!,sourceActionId:opening.action.id},check=>{if(generation===gen&&view?.combat?.id===id)result=check;});return result;});areaPanel=new CombatAreaPanel(get('combat-area-effect'),(action,revision)=>execute(action,revision));get('combat-area-open').onclick=()=>areaPanel?.open();resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution);onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
+  tell = status;afterSaved=refresh;initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftCache,(action,revision)=>execute(action,revision),status);get('combat-initiative-open').onclick=()=>void initiativePanel?.open();hitPanel=new CombatHitPanel(get('combat-hit-effect'),(action,revision)=>execute(action,revision),async(opening,preset,formula,critical)=>{let result:SceneCheck|null=null;const actor=view?.combat?.participants.find(p=>p.id===opening.attackerId),id=view?.combat?.id,gen=generation;if(!actor||!id)return null;await rollSceneFormula({label:preset.label+(critical?' · Kritisch':''),actor:actor.name,formula,formulaKind:'damage',dc:null,sourceCreatureId:actor.sourceId!,sourceActionId:opening.action.id},check=>{if(generation===gen&&view?.combat?.id===id)result=check;});return result;});areaPanel=new CombatAreaPanel(get('combat-area-effect'),(action,revision)=>execute(action,revision));get('combat-area-open').onclick=()=>areaPanel?.open();resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution);onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
   for(const id of [...fighterFields,'fighter-group-name','fighter-concentration','fighter-counted'])get(id).addEventListener('input',keepFighterDraft);
   get('fighter-reload').onclick=()=>{void(async()=>{if(!workspace||!view?.combat||!selected)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,target=selected,g=generation;await draftCache.discard(token,cam,id,'fighter',target);if(g===generation){await chooseFighter(target);await listDrafts();}})().catch(error=>tell(error.message,true));};
   for(const id of ['combat-edit-title','combat-notes'])get(id).addEventListener('input',keepNotesDraft);
