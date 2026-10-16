@@ -103,3 +103,24 @@ test('correcting a sold portion retains its actual sale price',async()=>{
  x.el('ledger-reason').value='Verkauf kontrolliert';x.submit();await x.ui.flushProgress();const page=x.store.ledger(x.w.token,{characterId:x.heroes[0].id,after:null,search:'',status:'sold'});assert.equal(page.items[0].actualSaleCopper,'300');
  }finally{await x.cleanup();}
 });
+
+test('Party correction uses its own fresh item even when the Live ledger selects another item',async()=>{
+ const x=await fixture();try{
+  const action={kind:'ledger',entryId:x.b.id,expectedRevision:x.b.revision,operation:'correct',quantity:0,correctedQuantity:1,actualGold:'0',counterparty:'',reason:'Im Partyfenster geprüft'};
+  assert.equal(await x.ui.executePartyProgress(action,()=>true),true);
+  assert.equal(x.store.ledgerItem(x.w.token,x.b.id).quantity,1);
+  assert.equal(x.store.ledgerItem(x.w.token,x.a.id).quantity,4);
+  assert.equal(x.writes.length,1);
+  assert.equal(await x.ui.executePartyProgress(action,()=>true),false);
+  assert.equal(x.writes.length,1,'stale basis must not send another command');
+ }finally{await x.cleanup();}
+});
+test('closing Party while its fresh item is read revokes the pending correction',async()=>{
+ const x=await fixture();try{
+  const held=deferred(),read=window.campaign.ledgerItem;let current=true;
+  window.campaign.ledgerItem=()=>held.promise;
+  const task=x.ui.executePartyProgress({kind:'ledger',entryId:x.b.id,expectedRevision:x.b.revision,operation:'correct',quantity:0,correctedQuantity:1,actualGold:'0',counterparty:'',reason:'Prüfung'},()=>current);
+  current=false;held.resolve(await read(x.w.token,x.b.id));
+  assert.equal(await task,false);assert.equal(x.writes.length,0);assert.equal(x.store.ledgerItem(x.w.token,x.b.id).quantity,2);
+ }finally{await x.cleanup();}
+});

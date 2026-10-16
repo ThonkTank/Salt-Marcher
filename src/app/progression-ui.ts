@@ -53,10 +53,18 @@ export async function refreshProgress(deliverNotices=true) {
   try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result;publishProgress(); const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
   catch (error) { if (gen === generation) tell((error as Error).message, true); }
 }
-export async function executePartyProgress(action: ProgressAction){return execute(action);}
-async function execute(action: ProgressAction): Promise<boolean> {
+export async function executePartyProgress(action: ProgressAction, stillCurrent:()=>boolean=()=>true){
+  if(action.kind!=='ledger')return stillCurrent()&&execute(action);
+  // The Party owns its item selection; do not require the hidden Live ledger selection.
+  const token=workspace?.token,gen=generation;
+  if(!token||!stillCurrent()||action.operation!=='correct')return false;
+  const item=unwrap(await window.campaign.ledgerItem(token,action.entryId));
+  if(!stillCurrent()||workspace?.token!==token||gen!==generation||item.id!==action.entryId||item.revision!==action.expectedRevision)return false;
+  return execute(action,item);
+}
+async function execute(action: ProgressAction, partyItem?:LedgerItem): Promise<boolean> {
   if (!workspace || pending||hasPendingCommit(workspace.campaign.id)) return false;
-  if ((action.kind==='ledger'||action.kind==='ledger-split'||action.kind==='ledger-merge'||action.kind==='ledger-transfer') && (!ledgerEditable()||action.entryId!==selectedLedger)) return false;
+  if ((action.kind==='ledger'||action.kind==='ledger-split'||action.kind==='ledger-merge'||action.kind==='ledger-transfer') && !(action.kind==='ledger'&&action.operation==='correct'&&partyItem?.id===action.entryId&&partyItem.revision===action.expectedRevision) && (!ledgerEditable()||action.entryId!==selectedLedger)) return false;
   loadNumber++; // Pending reads cannot replace the receipt of this confirmed write.
   const gen = generation, command: ProgressCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token, action:structuredClone(action) };
   const meta={owner:'progress',token:workspace.token,generation:gen,action:command.action,healthDraft:action.kind==='health'?structuredClone(healthDrafts.get(workspace.campaign.id+':'+action.characterId)):undefined};
