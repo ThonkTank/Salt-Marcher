@@ -11,7 +11,7 @@ export class PassiveMapCanvas {
  private readonly controls:HTMLDivElement;private readonly back:HTMLButtonElement;private readonly forward:HTMLButtonElement;private readonly resetButton:HTMLButtonElement;
  private past:CanvasBox[]=[];private future:CanvasBox[]=[];private views=new Map<string,SavedView>();private wheelAt=0;
  private restored=false;private scene:SVGGElement|null=null;
- constructor(readonly root:SVGSVGElement,private options:{initial:CanvasBox;minWidth?:number;maxWidth?:number;pan?:(event:PointerEvent)=>boolean;prepareCamera?:()=>void;locked?:()=>boolean;changed?:(box:CanvasBox,reason:CameraReason)=>void}){
+ constructor(readonly root:SVGSVGElement,private options:{relative?:boolean;initial:CanvasBox;minWidth?:number;maxWidth?:number;pan?:(event:PointerEvent)=>boolean;prepareCamera?:()=>void;locked?:()=>boolean;changed?:(box:CanvasBox,reason:CameraReason)=>void}){
   this.box={...options.initial};this.initial={...options.initial};this.apply();
   const doc=root.ownerDocument;
   this.controls=doc.createElement('div');this.controls.className='map-canvas-controls';this.controls.dataset.canvasFor=root.id;this.controls.setAttribute('role','group');this.controls.setAttribute('aria-label','Kartenansicht');
@@ -39,13 +39,13 @@ export class PassiveMapCanvas {
   const finish=(e:PointerEvent)=>{if(this.drag?.id!==e.pointerId)return;const moved=this.drag.moved;this.cancel();if(moved||e.button===1){e.preventDefault();e.stopImmediatePropagation();}};
   root.addEventListener('pointerup',finish,true);root.addEventListener('pointercancel',finish,true);root.addEventListener('lostpointercapture',()=>this.cancel());
   root.addEventListener('click',e=>{if(this.suppressClick||this.failed){this.suppressClick=false;e.preventDefault();e.stopImmediatePropagation();}},true);
-  root.addEventListener('wheel',e=>{if(!e.deltaY)return;e.preventDefault();e.stopImmediatePropagation();if(this.failed||this.options.locked?.()||this.drag)return;const matrix=root.getScreenCTM?.();const p=matrix?new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse()):undefined;const burst=Date.now()-this.wheelAt<300;this.zoom(e.deltaY>0?1.2:1/1.2,p,burst);this.wheelAt=Date.now();},{capture:true,passive:false});
+  root.addEventListener('wheel',e=>{if(!e.deltaY)return;e.preventDefault();e.stopImmediatePropagation();if(this.failed||this.options.locked?.()||this.drag)return;const matrix=root.getScreenCTM?.();const p=matrix?new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse()):undefined;const burst=Date.now()-this.wheelAt<300;this.zoom(e.deltaY>0?1.2:1/1.2,p&&this.options.relative?{x:p.x+this.box.x,y:p.y+this.box.y}:p,burst);this.wheelAt=Date.now();},{capture:true,passive:false});
  }
  private screenStart(drag:NonNullable<PassiveMapCanvas['drag']>){return drag.start.matrixTransform(drag.inverse.inverse());}
  get view(){return{...this.box};}
  get panning(){return!!this.drag;}
  get contextRestored(){return this.restored;}
- private apply(){this.root.setAttribute('viewBox',`${this.box.x} ${this.box.y} ${this.box.width} ${this.box.height}`);}
+ private apply(){this.root.setAttribute('viewBox',`${this.options.relative?0:this.box.x} ${this.options.relative?0:this.box.y} ${this.box.width} ${this.box.height}`);}
  private refreshControls(){this.back.disabled=!this.past.length;this.forward.disabled=!this.future.length;this.resetButton.disabled=same(this.box,this.initial);}
  private remember(box:CanvasBox){if(same(box,this.box))return;if(!this.past.length||!same(this.past.at(-1)!,box))this.past.push({...box});if(this.past.length>32)this.past.shift();this.future=[];this.refreshControls();}
  set(box:CanvasBox,notify=false,reason:CameraReason='set',coalesce=false){

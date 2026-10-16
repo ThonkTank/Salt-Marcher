@@ -1,3 +1,4 @@
+import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {Workspace,Room} from './contracts';
 import type {DrawingView,DrawingAction} from './drawing-contracts';
 import type {DungeonPath,PathPreview,ConnectionForm,PassageSide,DungeonPassage} from './path-contracts';
@@ -69,7 +70,7 @@ async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingView)=>vo
  if(!await before()||!current(o))return false;
  const w=workspace();if(!w)return false;
  writing=true;++readRequest;
- const result=await window.campaign.executeDrawing({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:a});
+ const result=await atlasDrawingWrite({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:a});
  if(!current(o))return false;
  if(!result.ok)throw new Error(result.error);
  ++readRequest;const committedView=result.value.view;data=committedView;
