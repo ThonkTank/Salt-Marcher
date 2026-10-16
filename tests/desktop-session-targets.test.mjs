@@ -22,3 +22,16 @@ test('failed later encounter rolls back the entire generation and its source run
  x.store.executeGeneration(x.command({kind:'source-save',expectedRevision:null,source:{kind:'location',id:locations[0].id,revision:0,tableIds:x.request.encounter.tableIds,factionIds:[],stock:[]}}));let generated=0;x.store.db.function('observe_generation',()=>{generated++;return 0;});x.store.db.exec('CREATE TEMP TRIGGER observe_generation AFTER INSERT ON generation_run BEGIN SELECT observe_generation(); END');
  const before=x.store.db.serialize();assert.throws(()=>x.store.generateSession(x.w.token,{...x.request,worldSourcesByLocation:true,locationIds:locations.map(l=>l.id)}));assert.equal(generated,1);assert.ok(before.equals(x.store.db.serialize()));assert.equal(x.store.db.prepare('SELECT count(*) n FROM session_run').get().n,0);assert.equal(x.store.db.prepare('SELECT count(*) n FROM generation_run').get().n,0);
 });
+
+test('ordinary planner catalog selection respects the remaining whole-session ceiling',t=>{
+ const x=fixture(t),request={...x.request,encounter:{...x.request.encounter,tableIds:[],difficulty:'weighted',amount:'standard'}};
+ const run=x.store.generateSession(x.w.token,request);
+ assert.deepEqual(run.targets.encounterTargets,[680,1000,1800]);assert.equal(run.proposals.length,3);assert.ok(run.usedXp<=3480);
+ assert.equal(run.usedXp,run.proposals.reduce((n,p)=>n+p.encounter.assessment.adjustedXp,0));
+ const fresh=new CampaignStore(x.file);try{assert.deepEqual(fresh.sessionRun(fresh.activate(x.cam.id).token,run.id),run);}finally{fresh.close();}
+});
+test('encounter XP ceilings constrain complete rosters and rejection publishes no partial run',t=>{
+ const x=fixture(t),request={...x.request.encounter,party,seed:'ceiling',title:'Schleusenwache',count:1,targetXp:500,xpCeiling:300};
+ const run=x.store.generateEncounters(x.w.token,request);assert.ok(run.plans[0].entries.length);assert.ok(run.plans[0].assessment.adjustedXp<=300);
+ const before=x.store.db.serialize();assert.throws(()=>x.store.generateEncounters(x.w.token,{...request,seed:'impossible',xpCeiling:0}));assert.deepEqual(x.store.db.serialize(),before);
+});

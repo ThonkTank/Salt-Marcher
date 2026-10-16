@@ -184,7 +184,8 @@ export function selectEncounter(
   entropy: EncounterEntropy,
   config: GeneratorPresetConfigV3,
   partySize: number,
-  fixed: FixedRoster = emptyFixedRoster
+  fixed: FixedRoster = emptyFixedRoster,
+  maximumAdjustedXp: number = Infinity
 ): SelectedEncounter {
   const evaluationContext = candidateEvaluationContext(config, partySize, fixed)
   let chosenBlocks: readonly Block[] | undefined
@@ -196,7 +197,8 @@ export function selectEncounter(
   let fitCandidateCount = 0
 
   // An explicit roster can already be a complete encounter. Never force filler.
-  if (fixed.units.some(unit => unit.quantity > 0)) {
+  if (fixed.units.some(unit => unit.quantity > 0) &&
+      evaluateCandidate([], [], evaluationContext, target).adjustedXp <= maximumAdjustedXp) {
     chosenBlocks = []
     chosenCombinationId = 'fixed-roster'
     chosenEvaluation = evaluateCandidate([], [], evaluationContext, target)
@@ -233,6 +235,7 @@ export function selectEncounter(
         evaluationContext,
         target
       )
+      if (current.adjustedXp > maximumAdjustedXp) return
       const fit = withinTargetBand(current.delta, target)
       if (fit) fitCandidateCount += 1
       const domainOrder = chosenEvaluation

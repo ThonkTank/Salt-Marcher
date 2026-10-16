@@ -248,3 +248,12 @@ test('unresolved profile replies stop further writes without replacing the later
  assert.equal(await x.ui.flushPreparation(),false);assert.equal(writes,1);assert.equal(x.el('session-party-levels').querySelector('input'),level);assert.equal(level.disabled,true,'only an actual unresolved write locks the draft');
  x.el('session-generate-form').onsubmit({preventDefault(){}});await settle();assert.equal(writes,1);assert.match(x.el('session-generation-feedback').textContent,/keine neue Vorschau/);assert.doesNotMatch(x.el('session-generation-feedback').textContent,/werden erzeugt/);
 });
+
+test('saving a renamed plan immediately updates the selected plan label',async t=>{
+ const x=await fixture(t);await x.activate();await x.ui.prepareNextVisit(null,{title:'Schleuse',notes:'Eigene Vorbereitung',locationId:null});await settle();
+ x.el('plan-name').value='Nacht an der Schleuse';x.el('plan-name').dispatchEvent(new x.window.Event('input',{bubbles:true}));
+ assert.equal(await x.ui.flushPreparation(),true);
+ const saved=x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value);
+ assert.equal(saved.name,'Nacht an der Schleuse');
+ assert.equal([...x.el('plans').options].find(o=>o.value===saved.id).textContent,saved.name);
+});

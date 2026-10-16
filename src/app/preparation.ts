@@ -208,6 +208,8 @@ export async function flushPreparation(skipSession=false,skipNarrative=false): P
       const sent = structuredClone(planDraft!);
       if (!(await change({ kind: 'plan', expectedRevision: sent.revision, plan: sent }, false))) return false;
       if (planDraft) planDraft = { ...planDraft, revision: originalPlan()!.revision };
+      const option=[...get<HTMLSelectElement>('plans').options].find(o=>o.value===sent.id);
+      if(option)option.textContent=originalPlan()!.name||'Unbenannter Plan';
       renderSceneList(); renderSceneLocation();
     }
     if (changedLocation) {
