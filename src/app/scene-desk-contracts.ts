@@ -18,7 +18,8 @@ export interface DeskEntry {
   title: string;
   label: string;
   unavailable?: boolean;
-  preview?: { label: string; text: string };
+  revision?: number;
+  preview?: import("./preparation-contracts").NoteSearchPreview | { label: string; text: string };
 }
 export interface DeskContent extends DeskEntry {
   links?: {label:string;entry:DeskEntry}[];
@@ -44,7 +45,7 @@ export interface SceneDeskAPI {
   sceneDesk(token: string, sceneId: string): Promise<Result<SceneDesk>>;
   searchDesk(
     token: string,
-    kind: "world" | "item" | "creature" | "encounter" | "reference",
+    kind: "world" | "note" | "item" | "creature" | "encounter" | "reference",
     search: string,
     offset: number,
   ): Promise<Result<{ entries: DeskEntry[]; next: number | null;notice?:string }>>;

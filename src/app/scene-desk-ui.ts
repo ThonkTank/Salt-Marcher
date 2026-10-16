@@ -212,7 +212,7 @@ async function search(more: boolean) {
         button(entry.label + " · " + entry.title, () => open(entry.ref)),
         button("An Szene heften", () => pin(entry.ref, true)),
       );
-      if (entry.preview) {
+      if (entry.preview && "label" in entry.preview) {
         const preview = document.createElement("p");
         preview.className = "desk-search-preview";
         preview.textContent = entry.preview.label + " · " + entry.preview.text;

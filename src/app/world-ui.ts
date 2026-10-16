@@ -1,4 +1,4 @@
-import {atlasWorldWrite} from './campaign-atlas-author';
+import {atlasWorldWrite,acknowledgeAtlasWorldStatus} from './campaign-atlas-author';
 import {hexAccessLabel} from './hex-access';
 import {HexAccessChoices} from './hex-access-ui';
 import {canonicalJson} from './generation/canonical-json';
@@ -139,6 +139,7 @@ async function resolveWorldWrite(): Promise<WorldReconciliation|null> {
       const result = unwrap(await window.campaign.reconcileWorld(captured.command, token));
       if (workspace?.token !== token || uncertain !== captured) return null;
       if (result.outcome === 'applied') adoptConfirmedWorldWrite(captured.command, result.ack, captured.versions,captured.weatherIntent);
+      acknowledgeAtlasWorldStatus(captured.command);
       uncertain = null; showUncertainWorldWrite();
       tell(result.outcome === 'applied' ? 'Weltänderung bestätigt. Spätere Eingaben bleiben offen.' : 'Weltänderung wurde nicht übernommen. Eingabe bleibt offen.');
       return result;

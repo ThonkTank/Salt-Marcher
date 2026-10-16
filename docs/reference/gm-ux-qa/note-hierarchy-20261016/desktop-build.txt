@@ -1,0 +1,5 @@
+
+> dungeon-editor@0.158.0 build:desktop
+> node tools/build-desktop.mjs
+
+Desktop build ready: .build/desktop/main.cjs

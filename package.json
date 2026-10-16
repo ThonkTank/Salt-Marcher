@@ -1,6 +1,6 @@
 {
   "name": "saltmarcher",
-  "version": "0.157.0",
+  "version": "0.158.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -72,12 +72,19 @@
     "test:desktop-text-references": "node --test --test-concurrency=1 tests/desktop-text-references.test.mjs tests/desktop-text-reference-store.test.mjs tests/desktop-text-reference-completeness.test.mjs tests/desktop-text-reference-readers.test.mjs",
     "test:desktop-session-resume": "node --test --test-concurrency=1 tests/desktop-session-resume-context.test.mjs",
     "test:desktop-trade-price": "node --test --test-concurrency=1 tests/desktop-trade-paid-price.test.mjs",
-    "test:desktop-shop-owner": "node --test --test-concurrency=1 tests/desktop-shop-owner-time.test.mjs tests/desktop-shop-restock-boundary.test.mjs"
+    "test:desktop-shop-owner": "node --test --test-concurrency=1 tests/desktop-shop-owner-time.test.mjs tests/desktop-shop-restock-boundary.test.mjs",
+    "test:desktop-key-note-context-ui": "npm run build:desktop && node tools/test-desktop-key-note-context.mjs",
+    "test:desktop-long-key-ui": "npm run build:desktop && node tools/test-desktop-long-key.mjs",
+    "test:desktop-key-note-capture-ui": "npm run build:desktop && node tools/test-desktop-key-note-capture.mjs",
+    "test:desktop-note-room-uses-ui": "npm run build:desktop && node tools/test-desktop-note-room-uses.mjs",
+    "test:desktop-key-lookup-ui": "npm run build:desktop && node tools/test-desktop-key-lookup.mjs"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
     "clipper-lib": "^6.4.2",
+    "entities": "8.1.0",
     "fflate": "0.8.3",
+    "marked": "18.0.14",
     "pixi.js": "8.22.0",
     "png-tools": "1.1.1",
     "pngjs": "^7.0.0",
@@ -93,8 +100,8 @@
     "esbuild": "^0.25.0",
     "linkedom": "^0.18.13",
     "obsidian": "^1.8.7",
-    "prettier": "^3.6.2",
     "playwright-core": "1.62.1",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.0"
   },
   "productName": "SaltMarcher",
