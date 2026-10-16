@@ -1,6 +1,7 @@
 import {initCampaignScreen,openCampaignScreen,hideCampaignScreen} from './campaign-screen-ui';
 import {PassiveMapCanvas} from './passive-map-canvas';
 import {roomCameraBox} from './room-camera';
+import {appendRoomNumber} from './room-number-label';
 import {initWorkspaceNavigation,syncWorkspaceNavigation} from './workspace-navigation';
 import {WorkspacePositions,workspaceTabs,readWorkspaceView,rememberWorkspaceView,type WorkspaceTab} from './workspace-view';
 import {bindAtlasHistoryShortcut} from './workspace-shortcuts';
@@ -368,9 +369,11 @@ function svgElement(name: string, attributes: Record<string, string>) {
 function draw(){const visible=workspace?.rooms.some(r=>JSON.stringify([r.scopeId,r.floorId])===el<HTMLSelectElement>('floors').value);dungeonCanvas.render(drawScene,visible?'':'Noch keine Geometrie in dieser Ansicht. Raum anlegen oder eine andere Ebene wählen.');}
 function drawScene(map:SVGGElement) {
   syncGraphBanner(workspace);
+  const visible:Room[]=[];
   for (const saved of workspace?.rooms ?? []) {
     const room = draft?.id === saved.id ? draft : saved;
     if (JSON.stringify([room.scopeId, room.floorId]) !== el<HTMLSelectElement>('floors').value) continue;
+    visible.push(room);
     const path = room.polygons.flatMap(p => [p.outer, ...p.holes]).map(ring => 'M' + ring.map(p => `${p.x},${p.y}`).join('L') + 'Z').join(' ');
     const style = roomDrawingStyle(room.id);
     const isSelected = room.id === draft?.id;
@@ -387,8 +390,10 @@ function drawScene(map:SVGGElement) {
     shape.addEventListener('click', () => { void selectRoom(room.id); }); map.append(shape);
   }
   drawingOverlay(map);
-  if (!draft||JSON.stringify([draft.scopeId,draft.floorId])!==el<HTMLSelectElement>('floors').value) return;
   const host=el<SVGSVGElement & HTMLElement>('map'),box=dungeonCanvas.view;
+  const unitsPerPixel=Math.max(box.width/host.clientWidth,box.height/host.clientHeight);
+  for(const room of visible)appendRoomNumber(map,room,unitsPerPixel);
+  if (!draft||JSON.stringify([draft.scopeId,draft.floorId])!==el<HTMLSelectElement>('floors').value) return;
   draft.polygons[0]!.outer.forEach((p, index) => {
     const handle = svgElement('circle', { cx: String(p.x), cy: String(p.y), r: String(box.width / 85), class: 'handle' });
     handle.addEventListener('pointerdown', event => {
@@ -397,6 +402,7 @@ function drawScene(map:SVGGElement) {
     }); map.append(handle);
   });
 }
+new ResizeObserver(()=>draw()).observe(el('map'));
 function fit(all=false) {
   const visible=(workspace?.rooms??[]).map(saved=>draft?.id===saved.id?draft:saved).filter(room=>JSON.stringify([room.scopeId,room.floorId])===el<HTMLSelectElement>('floors').value);
   const box=roomCameraBox(all?visible:draft?[draft]:visible);if(box){const [x,y,width,height]=box.split(' ').map(Number);dungeonCanvas.set({x:x!,y:y!,width:width!,height:height!});}
