@@ -9,13 +9,14 @@ const require=createRequire(import.meta.url),settle=async()=>{for(let i=0;i<15;i
 async function fixture(t){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document};Object.assign(globalThis,{window,document});t.after(()=>Object.assign(globalThis,previous));
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:select.options[0]?.getAttribute('value')??''});
+ Object.defineProperty(window.HTMLInputElement.prototype,'checked',{configurable:true,get(){return this.hasAttribute('checked');},set(value){this.toggleAttribute('checked',!!value);}});
  const el=id=>document.getElementById(id),ok=value=>({ok:true,value}),tables=[{id:'watch',name:'Waldsaum',entries:[],trashed:false,scope:'campaign'}],calls=[],messages=[],accepted=[];let filters={},party=true;
  const plan={id:'plan',revision:1,name:'Fixed patrol',notes:'Original',entries:[{id:'existing',creatureId:'goblin',count:2,grouped:false}],party:[{id:'hero',name:'Ada',level:1,count:1}]};
  const run=request=>({id:'run',seed:request.seed,request,revision:1,preset:{name:'Standard',revision:1},warnings:[],candidates:[{creatureId:'goblin'}],plans:[{name:'Waldsaum',sources:[{id:'goblin',name:'Goblin'}],entries:[{id:'g',creatureId:'goblin',count:1}],assessment:{baseXp:50,adjustedXp:50,difficulty:'easy'}}],acceptedPlanIds:[]});
  let generate=async request=>ok(run(request));window.campaign={encounterTables:async()=>ok(tables),lootTables:async()=>ok([]),generatorRegistry:async()=>ok({revision:1,presets:[]}),generationRuns:async()=>ok([]),generationSources:async()=>ok({sources:[],factions:[],locations:[]}),npcs:async()=>ok({rows:[],next:null,total:0}),generateEncounters:async(_token,r)=>{calls.push(r);return generate(r);},acceptGeneration:async c=>{accepted.push(c);return ok({id:'accepted',name:'Accepted'});},encounterPlans:async()=>ok([]),creatures:async()=>ok({rows:[],total:0,offset:0,limit:25})};
  delete require.cache[require.resolve('../.build/generation-context-ui.cjs')];const ui=require('../.build/generation-context-ui.cjs'),w={token:'one',campaign:{id:'camp'}};ui.initGeneration((...args)=>messages.push(args),{plan:async()=>party?plan:null,creature:()=>null,filters:()=>filters,info:()=>null,accept:async()=>{}});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}ui.activateGeneration(w);await settle();
  el('catalog-reset').onclick=()=>{filters={};ui.generationCatalogFiltersChanged();};
- return{el,ui,w,plan,calls,messages,accepted,setFilters:q=>{filters=q;ui.generationCatalogFiltersChanged();},setParty:value=>{party=value;},setGenerate:fn=>{generate=fn;},run,make:async()=>{el('generation-form').onsubmit({preventDefault(){}});await settle();},choice:()=>el('generation-preview').querySelector('article button')};
+ return{el,ui,w,plan,tables,calls,messages,accepted,setFilters:q=>{filters=q;ui.generationCatalogFiltersChanged();},setParty:value=>{party=value;},setGenerate:fn=>{generate=fn;},run,make:async()=>{el('generation-form').onsubmit({preventDefault(){}});await settle();},choice:()=>el('generation-preview').querySelector('article button')};
 }
 test('generation reveals every effective catalog filter without pagination or sorting noise',async t=>{
  const x=await fixture(t);assert.deepEqual(x.ui.catalogFilterSummary({text:' Dragon ',crMin:0,crMax:2,types:['Dragon'],offset:25,sort:'hp',direction:'desc',limit:25}),['Name: Dragon','HG ab: 0','HG bis: 2','Typ: Dragon']);
@@ -79,4 +80,17 @@ test('planning prerequisites and the actual party are visible before generation'
  x.ui.generationPlanningChanged([]);assert.match(x.el('generation-party-context').textContent,/leer/);
  x.ui.generationPlanningChanged([{name:'Reisende',level:3,count:4}]);assert.match(x.el('generation-party-context').textContent,/4 × Level 3/);
  x.ui.generationPlanningChanged([{name:'Reisende',level:null,count:4}]);assert.match(x.el('generation-party-context').textContent,/Level fehlen/);
+});
+
+
+test('using the overview table explicitly replaces only generator table sources without generating or changing filters',async t=>{
+ const x=await fixture(t);window.HTMLElement.prototype.scrollIntoView=()=>{};
+ x.tables.push({id:'night',name:'Nebelpfad',entries:[],trashed:false,scope:'campaign'});await x.ui.refreshGeneration();
+ const boxes=[...x.el('generation-tables').querySelectorAll('input')];boxes[0].checked=true;
+ x.el('generation-time').value='night';x.setFilters({text:'Wolf'});await x.make();assert.equal(x.choice().disabled,false);
+ x.el('encounter-table-list').value='night';x.el('encounter-table-list').oninput();assert.equal(x.el('encounter-table-use').disabled,false);x.el('encounter-table-use').click();
+ assert.deepEqual([...x.el('generation-tables').querySelectorAll('input')].filter(b=>b.checked).map(b=>b.value),['night']);assert.equal(x.calls.length,1,'source choice itself must not generate');assert.equal(x.accepted.length,0);assert.equal(x.choice().disabled,true,'previous proposal needs regeneration');assert.equal(x.el('generation-time').value,'night');
+ await x.make();assert.deepEqual(x.calls[1].tableIds,['night']);assert.equal(x.calls[1].filters.text,'Wolf');assert.equal(x.calls[1].time,'night');
+ x.tables[1].trashed=true;await x.ui.refreshGeneration();x.el('encounter-table-list').value='night';x.el('encounter-table-list').oninput();assert.equal(x.el('encounter-table-use').disabled,true);
+ x.el('encounter-table-use').onclick();assert.equal(x.calls.length,2);assert.equal(x.el('generation-tables').querySelector('input').checked,false);
 });
