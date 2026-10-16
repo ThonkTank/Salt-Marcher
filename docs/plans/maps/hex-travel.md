@@ -67,8 +67,8 @@ vollständige Scene-/Mapwechsel-, Latenz- oder native Reiseabnahme.
 ## Früherer Kartenwechsel und erhaltene Owner-Regeln
 
 Der folgende Wechselvertrag beschreibt die frühere Hexkonsole. Die aktuelle
-Atlaswurzel lässt keine zweite Karte anlegen; entsprechende Mehrkartenfixtures
-sind umzusetzen. Erhalten bleibt die fachliche Schutzregel für Wechsel zwischen
+Atlaswurzel lässt keine zweite Karte anlegen; die früheren Mehrkartenfixtures
+werden deshalb ausdrücklich auf ihre heutige fachliche Wirkung bezogen. Erhalten bleibt die fachliche Schutzregel für Wechsel zwischen
 Kampagnen und realen Reisekontexten: Erst den alten Owner abschließen, dann den
 neuen bestätigten Stand übernehmen, ohne offene Texte zu verlieren.
 
@@ -397,13 +397,18 @@ Desktoplauf prüft tatsächliche Schaltflächen, gehaltene Antworten, Fehler/Ret
 und Fokuswechsel: Statusklärung verändert keine DBbytes; eine alte Antwort wird
 verworfen, erst ein neuer ausdrücklicher Start/Schritt bewegt die neue Gruppe.
 Normaler Exit und frischer Store bestätigen Fokus, getrennte Uhren und lokalen
-Laufstand. Das ist keine vollständige native Neustart-/Indoor-/200%-Abnahme. Die bisherigen `desktop-travel-target-dom`-Fälle erzeugen
-in ihrem gemeinsamen Fixture eine zweite unabhängige Hexkarte und werden vom
-aktuellen Ein-Atlas-Guard bereits vor dem jeweiligen Bedienfall abgewiesen.
-Diese roten Eingangsfehler sind keine bestandene Abnahme der neuen Workbench.
-Die Fixtureumstellung muss die aktuelle Atlaswurzel verwenden; alte Mehrkartenfälle
-benötigen eine ausdrückliche Zuordnung zu Kampagnenwechsel/Import oder zur
-Ein-Atlas-Ablehnung, ohne die verbleibenden Bedienfälle wegzulassen.
+Laufstand. Das ist keine vollständige native Neustart-/Indoor-/200%-Abnahme. Beim ersten Lauf scheiterten sämtliche51
+`desktop-travel-target-dom`-Fälle bereits am Anlegen einer zweiten Karte. Das
+Fixture verwendet jetzt die tatsächliche Atlaswurzel samt Revision, den realen
+Atlaswriter für authored Worldbefehle und die DOM-eigenen Eventkonstruktoren.
+Vorhandene Verzögerungs-/Fehlerports beobachten weiterhin denselben Worldauftrag.
+Sechs frühere Mehrkartenfälle werden ausdrücklich ersetzt: unbekannte Karten-ID
+nach abgewiesenem Save, neuere ungültige Auswahl und Kampagnenwechsel während
+Save, fehlende Rootkarte im Providerread mit Retry, gesperrte Fortsetzung bei
+fehlendem Provider (Schaltfläche und direkter Callback) und getrennte Reisen
+zweier Scenes auf derselben Rootkarte. Die übrigen Bedienassertions bleiben erhalten;
+kein Fall wird übersprungen. Das ist keine Mehrkartenfreigabe oder vollständige
+Abnahme der neuen Workbench.
 
 Die durchgehende Live-/Atlas-Komposition bleibt gesondert zu qualifizieren:
 `live-hex-surface` dockt weiterhin die Hexkonsole, die neue Workbench besitzt auch
