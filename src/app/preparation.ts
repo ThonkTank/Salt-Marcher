@@ -13,6 +13,10 @@ function showPreparationArea(plan:boolean){
  get('preparation-knowledge-workspace').hidden=plan;get('preparation-planning-workspace').hidden=!plan;
  get('preparation-knowledge').setAttribute('aria-pressed',String(!plan));get('preparation-planning').setAttribute('aria-pressed',String(plan));
 }
+export function showDayPreparation(){
+ showPreparationArea(true);get<HTMLDetailsElement>('session-panel').open=true;
+ get(planDraft?'session-fraction':'plan-create').focus();
+}
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
 let context: Workspace | null = null;
 let data: Preparation = { notes: [], plans: [], locations: [], maps: [], problems: [], selection: { noteId: null, planId: null, sceneId: null } };
@@ -211,6 +215,8 @@ export async function flushPreparation(skipSession=false,skipNarrative=false): P
       const option=[...get<HTMLSelectElement>('plans').options].find(o=>o.value===sent.id);
       if(option)option.textContent=originalPlan()!.name||'Unbenannter Plan';
       renderSceneList(); renderSceneLocation();
+      // Publish the acknowledged plan revision without replacing live session inputs.
+      await sessionContext(context,planDraft,selectedScene,data);
     }
     if (changedLocation) {
       const sent = structuredClone(locationDraft!);
