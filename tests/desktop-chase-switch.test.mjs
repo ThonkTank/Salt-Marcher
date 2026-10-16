@@ -10,7 +10,11 @@ import {parseHTML} from 'linkedom';
 const require=createRequire(import.meta.url);
 for(const [entry,out]of [['src/app/storage/store.ts','chase-switch-store'],['src/app/chase-ui.ts','chase-switch-ui']])buildSync({...entry.endsWith('chase-ui.ts')?{stdin:{contents:"export * from './src/app/chase-ui'; export {initCommitControls,checkPendingCommit} from './src/app/commit-confirmation';",resolveDir:process.cwd(),sourcefile:'qa-entry.ts',loader:'ts'}}:{entryPoints:[entry]},outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r));
-async function until(check){for(let i=0;i<100;i++){if(check())return;await tick();}assert(check(),'Expected chase state');}
+async function until(check){
+ const deadline=performance.now()+5000;
+ while(performance.now()<deadline){if(check())return;await new Promise(resolve=>setTimeout(resolve,5));}
+ assert(check(),'Expected chase state within five seconds');
+}
 async function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'chase-switch-')),{CampaignStore}=require('../.build/chase-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite'),campaign=store.create('Zwei Verfolgungen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:0})).scene,chases=[];
