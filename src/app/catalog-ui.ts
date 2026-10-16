@@ -10,7 +10,12 @@ const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const value=(id:string)=>get<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 let itemReference:ItemReferenceCatalog|null=null,catalogContent:'monster'|'items'='monster';
-function catalogContentView(content:'monster'|'items'){catalogContent=content;get('catalog-monsters').hidden=content!=='monster';itemReference?.show(content==='items');for(const [id,on]of [['catalog-monsters-tab',content==='monster'],['catalog-items-tab',content==='items']] as const){get(id).setAttribute('aria-selected',String(on));get(id).tabIndex=on?0:-1;}}
+function catalogContentView(content:'monster'|'items'){
+ if(content==='items'){
+  clearSearchTimer();searchRequest++;creatureRequest++;get('catalog-table').setAttribute('aria-busy','false');
+  if(get('catalog-detail').getAttribute('aria-busy')==='true')renderCreatureSelection();
+ }
+ catalogContent=content;get('catalog-monsters').hidden=content!=='monster';itemReference?.show(content==='items');for(const [id,on]of [['catalog-monsters-tab',content==='monster'],['catalog-items-tab',content==='items']] as const){get(id).setAttribute('aria-selected',String(on));get(id).tabIndex=on?0:-1;}}
 let workspace:Workspace|null=null,info:CatalogInfo|null=null,page:CreaturePage|null=null,creature:Creature|null=null,plan:EncounterPlan|null=null;
 let generation=0,searchRequest=0,listRequest=0,planRequest=0,creatureRequest=0,partyRequest=0,editVersion=0,offset=0,sort:CreatureCatalogQuery['sort']='name',blocked=false,dirty=false;
 const owned=(token:string|undefined,g:number)=>generation===g&&workspace?.token===token;
@@ -72,6 +77,7 @@ function beginTableLookup(){
  };
 }
 async function search(){
+ if(catalogContent!=='monster')return;
  renderCatalogControls();clearSearchTimer();const request=++searchRequest,token=workspace?.token,g=generation;clearResults('Kreaturen werden gesucht…',true);
  try{const response=await window.campaign.creatures(query());if(!owned(token,g)||request!==searchRequest)return;page=unwrap(response);renderRows();}
  catch(error){if(owned(token,g)&&request===searchRequest){clearResults('Katalog konnte nicht geladen werden: '+(error as Error).message,false,true);tell((error as Error).message,true);}}
@@ -89,6 +95,7 @@ function revealCreatureDetail(fromPlan=false){
  get('catalog-inspector').scrollIntoView({block:'start'});const detail=get('catalog-detail');detail.tabIndex=-1;detail.focus({preventScroll:true});
 }
 async function selectCreature(id:string,fromPlan=false){
+ if(catalogContent!=='monster')return;
  const token=workspace?.token,g=generation,request=++creatureRequest;creature=null;get('catalog-add-result').hidden=true;renderCreatureSelection('Statblock wird geladen …',true);revealCreatureDetail(fromPlan);
  try{const response=await window.campaign.creature(id);if(!owned(token,g)||request!==creatureRequest)return;const c=unwrap(response);if(c.id!==id)throw new Error('Statblock gehört zu einer anderen Kreatur.');creature=c;renderCreatureSelection();}
  catch(error){if(owned(token,g)&&request===creatureRequest){creature=null;renderCreatureSelection('Statblock nicht verfügbar: '+(error as Error).message,false,true);tell((error as Error).message,true);}}
@@ -152,14 +159,15 @@ function renderPlan(){get('encounter-editor').hidden=!plan;if(!plan)return;get<H
  const rows=get('encounter-entries');rows.replaceChildren();for(const e of plan.entries){const c=plan.sources.find(c=>c.id===e.creatureId),row=document.createElement('div');row.className='encounter-entry-row';const name=document.createElement('button'),count=document.createElement('input'),label=document.createElement('label'),group=document.createElement('input'),remove=document.createElement('button');name.textContent=(e.worldActorIds?encounterEntryLabel(e,plan.sources):c?.name??e.creatureId)+' · HG '+(c?.challengeRating??'?');name.onclick=()=>{void selectCreature(e.creatureId,true);};count.type='number';count.min='1';count.max='1000';count.value=String(e.count);count.min=String(Math.max(1,e.worldActorIds?.length??0));count.disabled=!!e.worldActorIds?.length&&e.worldActorIds.length===e.count&&!e.allowAnonymous;count.setAttribute('aria-label','Anzahl '+(c?.name??e.creatureId));count.oninput=()=>{e.count=Number(count.value);schedule();};group.type='checkbox';group.checked=e.grouped;group.onchange=()=>{e.grouped=group.checked;schedule();};label.className='check-label';label.append(group,document.createTextNode('Gemeinsame Initiative'));remove.textContent='Entfernen';remove.onclick=()=>{plan!.entries=plan!.entries.filter(p=>p.id!==e.id);renderPlan();schedule();};const title=document.createElement('input');title.className='encounter-group-name';title.maxLength=120;title.value=e.groupName??'';title.placeholder='Truppname (optional), z. B. Schützen';title.setAttribute('aria-label','Truppname '+(c?.name??e.creatureId));title.oninput=()=>{e.groupName=title.value;schedule();};row.append(name,count,label,remove,title);rows.append(row);}renderAssessment();get<HTMLButtonElement>('catalog-add').disabled=!creature||blocked;}
 export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAdd:(creatureId:string,count:number,grouped:boolean)=>Promise<void>){tell=status;prepare=onPrepare;
  itemReference=new ItemReferenceCatalog(get('catalog-item-reference'));
- get('catalog-monsters-tab').onclick=()=>{catalogContentView('monster');if(!page)void search();};get('catalog-items-tab').onclick=()=>catalogContentView('items');
+ const showMonsters=()=>{catalogContentView('monster');if(!page&&get('catalog-table').getAttribute('aria-busy')!=='true'&&get('catalog-page').getAttribute('role')!=='alert')void search();};
+ get('catalog-monsters-tab').onclick=showMonsters;get('catalog-items-tab').onclick=()=>catalogContentView('items');
  get('catalog-content-strip').onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const target=get<HTMLButtonElement>(e.key==='Home'?'catalog-monsters-tab':e.key==='End'?'catalog-items-tab':catalogContent==='monster'?'catalog-items-tab':'catalog-monsters-tab');target.click();target.focus();};
  initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
  get('catalog-form').onsubmit=event=>{event.preventDefault();offset=0;void search();};
  for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
  get('catalog-reset').onclick=()=>{const direction=value('catalog-direction');get<HTMLFormElement>('catalog-form').reset();get<HTMLInputElement>('catalog-direction').value=direction;offset=0;if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{const next=button.dataset.sort as CreatureCatalogQuery['sort'];get<HTMLInputElement>('catalog-direction').value=sort===next&&value('catalog-direction')==='asc'?'desc':'asc';sort=next;offset=0;void search();};
  get('catalog-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});get<HTMLElement>(plan?'encounter-name':'encounter-new').focus({preventScroll:true});};
- const returnToResults=()=>{catalogContentView('monster');get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;
+ const returnToResults=()=>{showMonsters();get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;
  get('encounter-search').oninput=()=>void refreshPlans();
  get('encounter-list').onchange=()=>{void loadPlan(value('encounter-list'));};
  get('encounter-new').onclick=()=>report(()=>newPlan());
