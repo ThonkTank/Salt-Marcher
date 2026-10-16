@@ -17,7 +17,13 @@ export interface SessionLootBasis {ledger:{id:string;characterId:string;revision
 export interface SessionMagicPoolItem {definitionId:string;revision:number;name:string;rarity:BudgetRarity}
 export interface SessionMagicGuidance {pool?:SessionMagicPoolItem[];expectedBefore:Record<BudgetRarity,number>;expectedAfter:Record<BudgetRarity,number>;received:Record<BudgetRarity,number>;target:Record<BudgetRarity,number>;allocations:Record<BudgetRarity,number>[];missing:Record<BudgetRarity,number>;warnings:string[];characters:{characterId:string;received:Record<BudgetRarity,number>}[]}
 export interface SessionLootGuidance {basis?:SessionLootBasis;magic?:SessionMagicGuidance;version:'cumulative-gold-v1'|'cumulative-gold-magic-v2';preset:{id:string;revision:number;hash:string};rewardXp:number;expectedBeforeCopper:string;expectedAfterCopper:string;receivedCopper:string;baselineCopper:string;differenceCopper:string;targetCopper:string;allocationsCopper:string[];characters:{characterId:string;name:string;xp:number;revision:number;receivedCopper:string;expectedBeforeCopper:string;expectedAfterCopper:string}[]}
-export interface SessionRun {targets?:import('./generation/session-targets').SessionTargets;lootGuidance?:SessionLootGuidance;worldSourcesByLocation?:boolean;id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
+export interface SessionGenerationOrigin {
+ version:'session-origin-v1'; request:SessionGenerationRequest;
+ locations:{id:string;revision:number}[]; notes:{id:string;revision:number}[];
+ encounters:{runId:string;seed:string;catalogHash:string;preset:{id:string;name:string;revision:number;hash:string}}[];
+ rewards:({poolXp:number;items:ItemInput[]}|null)[];
+}
+export interface SessionRun {origin?:SessionGenerationOrigin;targets?:import('./generation/session-targets').SessionTargets;lootGuidance?:SessionLootGuidance;worldSourcesByLocation?:boolean;id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
 export type SessionAction=
  |{kind:'copy-visits';planId:string;expectedBasis:string|null;name:string;sourcePlanId:string;expectedSourceBasis:string;visitIds:string[];copyParty:boolean}
  |{kind:'accept-proposals';planId:string;expectedPlanRevision:number;runId:string;proposals:{index:number;expectedRevision:number}[]}

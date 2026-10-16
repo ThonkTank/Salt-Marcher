@@ -7,6 +7,26 @@ zusätzliche Abläufe.
 
 Bindende Generierungsvorgaben: [Iststand, Quellenprüfung und nächste Schritte](generation-constraints.md).
 
+## Vorschauen wieder aufnehmen und ihre Berechnung lesen
+
+Gleiche gespeicherte Planungsrevision, gleicher Seed, dieselben Inhaltsvorgaben
+und unveränderte Welt-, Katalog-, Preset-, Tabellen- und Beutegrundlagen öffnen
+jetzt dieselbe Vorschau. Wiederholung erzeugt keine zusätzlichen Encounterläufe.
+Eigene Szenentexte, Belohnungsänderungen und Übernahmestände bleiben erhalten.
+„Neuer Seed für weiteren Entwurf“ macht eine zusätzliche Berechnung ausdrücklich.
+Geänderte Quellrevisionen oder relevante Ledger-/XP-Grundlagen erzeugen einen
+neuen Lauf; vorherige Ergebnisse bleiben lesbar. Einzelne Neugenerierungen
+bleiben eigene gespeicherte Varianten und ersetzen die gemeinsame Herkunft nicht.
+
+„Gespeicherte Berechnungsgrundlage“ zeigt pro Szene die ursprünglichen Seeds,
+Presetnamen/-revisionen und Regel-/Kataloghashes sowie ursprüngliche strukturierte
+Belohnungen neben dem Hinweis auf spätere Bearbeitung. Neustart und unabhängige
+Kampagnenkopie erhalten diese Herkunft mit korrekt umgebundenen Referenzen.
+Ältere Vorschauen besitzen keinen nachträglich erfundenen Herkunftsbeleg.
+Dies liefert Wiederaufnahme und Nachvollziehbarkeit; der vollständige originale
+Reward-Engineumfang einschließlich aller Packing-/Channel-/Curse-Regeln und
+asynchroner Orchestrierung bleibt ein eigener offener Produktumfang.
+
 ## Aktueller Anschluss
 
 Die Desktopvorbereitung speichert Pläne, geordnete Besuche, exakte Notizen und
