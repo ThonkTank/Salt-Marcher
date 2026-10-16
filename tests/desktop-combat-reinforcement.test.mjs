@@ -101,11 +101,11 @@ test('condition shortcuts wait for the selected working draft and stay blocked o
 
 test('HP cells reuse the target editor and Enter applies one damage command to that individual',async t=>{
  const x=await uiFixture(t),target=x.combat.participants[1],amount=x.el('fighter-amount');let focused=false;
- amount.focus=()=>{focused=true;};amount.select=()=>{};amount.reportValidity=()=>Number(amount.value)>0;
+ const scrolls=[];amount.scrollIntoView=options=>scrolls.push(options.block);amount.focus=()=>{focused=true;};amount.select=()=>{};amount.reportValidity=()=>Number(amount.value)>0;
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];
  assert.equal(cells.length,3);assert.match(cells[1].getAttribute('aria-label'),/Goblin B.*7 \/ 7/);
  cells[1].onclick();await until(()=>focused);assert.equal(x.writes.length,0);
- assert.equal(x.el('combat-selected-name').textContent,target.name);
+ assert.equal(x.el('combat-selected-name').textContent,target.name);assert.deepEqual(scrolls,['center']);
  amount.value='3';
  const enter=(repeat=false)=>{const e=new window.Event('keydown',{cancelable:true});e.key='Enter';e.repeat=repeat;amount.dispatchEvent(e);};
  enter();enter();await until(()=>x.writes.length===1&&!x.el('fighter-damage').disabled);
@@ -119,11 +119,11 @@ test('HP cells reuse the target editor and Enter applies one damage command to t
 
 test('an HP lookup that completes after a target switch cannot steal the new editor focus',async t=>{
  const x=await uiFixture(t),amount=x.el('fighter-amount'),replies=[];let focused=0;
- amount.focus=()=>focused++;amount.select=()=>{};
+ let scrolled=0;amount.scrollIntoView=()=>scrolled++;amount.focus=()=>focused++;amount.select=()=>{};
  window.campaign.combatDraft=()=>new Promise(resolve=>replies.push(resolve));
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];cells[0].onclick();await until(()=>replies.length===1);cells[1].onclick();await until(()=>replies.length===2);
  replies[1]({ok:true,value:null});await until(()=>focused===1);replies[0]({ok:true,value:null});await tick();await tick();
- assert.equal(focused,1);assert.equal(x.el('combat-selected-name').textContent,x.combat.participants[1].name);assert.equal(x.writes.length,0);
+ assert.equal(focused,1);assert.equal(scrolled,1);assert.equal(x.el('combat-selected-name').textContent,x.combat.participants[1].name);assert.equal(x.writes.length,0);
 });
 
 test('initiative cells open one field per group and never submit the fighter HP draft',async t=>{

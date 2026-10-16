@@ -8,7 +8,7 @@ function fixture(t){
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});window.localStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
  const ok=value=>({ok:true,value});window.campaign={progress:async()=>ok({characters:[],notices:[]}),ledgerParties:async()=>ok([]),treasures:async()=>ok({items:[],next:null}),lootBalance:async()=>ok({characters:[],leaderCopper:'0',suggestedCharacterIds:[]})};
  delete require.cache[path.resolve('.build/loot-balance-dom.cjs')];const ui=require('../.build/loot-balance-dom.cjs');ui.initProgress(()=>{});
- const context=id=>ui.progressionContext({token:id,campaign:{id}}, {rosterRevision:0,focusId:null},null),row=(name,unknownEntries=0)=>({characterId:name,name,active:true,copper:'200',unknownEntries,gapCopper:'0'});
+ const context=id=>ui.progressionContext({token:id,campaign:{id}}, {roster:[],rosterRevision:0,focusId:null},null),row=(name,unknownEntries=0)=>({characterId:name,name,active:true,copper:'200',unknownEntries,gapCopper:'0'});
  return{window,document,context,row,text:()=>document.getElementById('loot-balance-list').textContent};
 }
 test('late campaign A balance cannot replace the current campaign B comparison',async t=>{
