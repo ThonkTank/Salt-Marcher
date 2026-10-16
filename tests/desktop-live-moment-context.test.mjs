@@ -435,3 +435,30 @@ for(const saveFirst of [false,true])test(`a live read cannot overwrite ${saveFir
 test('a current live load failure stays visible and can be explicitly retried',async t=>{
  const x=await setup(t),read=x.window.campaign.live;x.window.campaign.live=async()=>({ok:false,error:'Aktuelle Scene nicht verfügbar'});await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,true);assert.ok(x.messages.some(m=>m.error&&m.text==='Aktuelle Scene nicht verfügbar'));x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('scene-focus').value,x.scene.id);
 });
+
+
+test('party loot opens the named owner and returns to that scene card without writing profiles',async t=>{
+ const x=await setup(t),scrolls=[],focuses=[];
+ x.el('ledger-character-heading').scrollIntoView=()=>scrolls.push('loot');x.el('ledger-character-heading').focus=()=>{};
+ x.el('live-party-quick').scrollIntoView=()=>scrolls.push('party');
+ const before=x.store.live(x.w.token);
+ const oldHealth=x.el('live-party-reference').querySelector('[data-character-id]');
+ assert.match(oldHealth.textContent,/Wahrnehmung —Einsicht —Untersuchung —/);assert.match(oldHealth.textContent,/Sprachen: —/);
+ x.el('live-party-reference').querySelectorAll('.live-party-loot')[1].click();await settle();
+ assert.equal(x.el('live-loot-back').hidden,false);assert.equal(x.el('ledger-character-heading').textContent,'Beute: Borin');
+ assert.deepEqual(scrolls,['loot']);assert.deepEqual(x.store.live(x.w.token),before);assert.equal(x.commands.length,0);
+ x.el('live-party-reference').querySelector('[data-character-id="'+x.heroes[1].id+'"]').focus=()=>focuses.push('Borin');
+ x.el('live-loot-back').click();assert.deepEqual(scrolls,['loot','party']);assert.deepEqual(focuses,['Borin']);assert.equal(x.el('live-loot-back').hidden,true);
+});
+test('detached party loot and delayed flush cannot jump after the focused group changes',async t=>{
+ const x=await setup(t),scrolls=[];x.el('ledger-character-heading').scrollIntoView=()=>scrolls.push('loot');x.el('ledger-character-heading').focus=()=>{};
+ const old=x.el('live-party-reference').querySelector('.live-party-loot'),release=x.defer('scene-content');
+ x.el('running-notes').value='Noch offene Szene';x.el('running-notes').oninput();old.click();await settle();
+ await x.focusOther();release();await settle();assert.deepEqual(scrolls,[]);assert.equal(x.el('live-loot-back').hidden,true);
+ old.click();await settle();assert.deepEqual(scrolls,[]);assert.match(x.el('running-title').value,/Andere Gruppe/);
+});
+test('leaving a loot owner scene removes the return action',async t=>{
+ const x=await setup(t);x.el('ledger-character-heading').scrollIntoView=()=>{};x.el('ledger-character-heading').focus=()=>{};
+ x.el('live-party-reference').querySelector('.live-party-loot').click();await settle();assert.equal(x.el('live-loot-back').hidden,false);
+ await x.focusOther();assert.equal(x.el('live-loot-back').hidden,true);
+});
