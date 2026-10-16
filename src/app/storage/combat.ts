@@ -57,7 +57,7 @@ function reinforcePreparedGroup(db:any,cam:string,state:CombatState,a:Extract<Co
   // Once prepared, a source entry keeps its partition even when its living count changes.
   const mob=peers.length?peers[0]!.partitionKind==='mob':state.generatorPreset.mobThreshold>0&&selected.filter(actor=>actor.entryId===entry.id).length>=state.generatorPreset.mobThreshold;
   const shared=mob?(peers[0]?.groupId??randomUUID()):undefined;
-  for(const actor of actors){addNamedActor(db,cam,state,actor.id,scene.locationId,entry.id,shared,source);const p=state.participants.at(-1)!;p.initiative=mob&&peers.length?peers[0]!.initiative:a.initiative;p.groupName=peers[0]?.groupName??entry.groupName?.trim()??group.title;}
+  for(const actor of actors){addNamedActor(db,cam,state,actor.id,scene.locationId,entry.id,shared,source);const p=state.participants.at(-1)!;p.initiative=mob&&peers.length?peers[0]!.initiative:a.initiative;const name=peers.length?peers[0]!.groupName:entry.groupName?.trim();if(name)p.groupName=name;if(mob&&peers.length){p.initiativeBonus=peers[0]!.initiativeBonus;if(peers[0]!.hiddenFromPlayers)p.hiddenFromPlayers=true;}}
  }
  event(db,cam,null,'combat-group-entry',{combatId:state.id,groupId:group.id,actorIds:incoming.map(actor=>actor.id)});
 }
