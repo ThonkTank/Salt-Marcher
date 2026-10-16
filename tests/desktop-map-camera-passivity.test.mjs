@@ -26,7 +26,7 @@ async function fixture(t){
  const event=(type,fields={})=>{const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{clientX:0,clientY:0},fields);canvas.dispatchEvent(e);return e;};
  const enter=(id,value)=>{get(id).value=value;get(id).dispatchEvent(new window.Event('input',{bubbles:true}));};
  const panButton=()=>document.querySelector('[data-world-pan="5,0"]').onclick();
- const camera={pan:panButton,alt:()=>event('keydown',{key:'ArrowRight',altKey:true}),zoom:()=>get('world-zoom-in').onclick(),wheel:()=>event('wheel',{deltaY:-1}),resize:()=>window.dispatchEvent(new window.Event('resize')),reset:()=>get('world-view-reset').onclick()};
+ const camera={pan:panButton,alt:()=>event('keydown',{key:'ArrowRight',altKey:true}),zoom:()=>get('world-zoom-in').onclick(),wheel:()=>event('wheel',{deltaY:-1}),resize:()=>window.dispatchEvent(new window.Event('resize')),reset:()=>document.querySelector('.map-canvas-controls[data-canvas-for="world-map"] button:last-of-type').onclick()};
  const digest=()=>createHash('sha256').update(store.db.serialize()).digest('hex');
  t.after(()=>{Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});});
  return{store,w,map,get,canvas,event,enter,camera,digest,sent,messages,

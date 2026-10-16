@@ -32,3 +32,15 @@ test('only a complete current scene is published and passive hits return its DOM
  const {dom,root,canvas}=fixture();let hit=null;dom.window.document.elementFromPoint=()=>hit;canvas.render(scene=>{const rect=dom.window.document.createElementNS(root.namespaceURI,'rect');rect.id='old';scene.append(rect);assert.equal(root.querySelector('#old'),null);});hit=root.querySelector('#old');assert.equal(canvas.hit(0,0),hit);const old=hit;
  canvas.render(scene=>{assert.equal(root.querySelector('#old'),old);const marker=dom.window.document.createElementNS(root.namespaceURI,'circle');scene.append(marker);assert.equal(marker.isConnected,false);});assert.equal(old.isConnected,false);assert.equal(canvas.hit(0,0),null);hit=root.querySelector('circle');assert.equal(canvas.hit(0,0),hit);assert.equal(root.children.length,1);assert.equal(root.firstChild.dataset.mapScene,'true');canvas.render(()=>{throw Error('fail');});assert.equal(canvas.hit(0,0),null);
 });
+
+for(const action of ['pan','zoom','reset','drag'])test(`wheel zoom history starts a new gesture after ${action}`,t=>{
+ const {dom,root,canvas,pointer}=fixture(),initial=canvas.view,now=Date.now;let time=1000;Date.now=()=>time;t.after(()=>Date.now=now);
+ const wheel=()=>{root.dispatchEvent(new dom.window.MouseEvent('wheel',{deltaY:-1,clientX:150,clientY:100,bubbles:true,cancelable:true}));time+=50;};
+ wheel();wheel();const firstZoom=canvas.view;
+ if(action==='pan')canvas.pan(30,20);else if(action==='zoom')canvas.zoom(.8);else if(action==='reset')canvas.reset();else{pointer('pointerdown',0,0);pointer('pointermove',30,20);pointer('pointerup',30,20);}
+ const intervening=canvas.view;wheel();wheel();assert.notDeepEqual(canvas.view,intervening);
+ canvas.previous();assert.deepEqual(canvas.view,intervening,'previous view must undo only the latest wheel gesture');
+ canvas.previous();assert.deepEqual(canvas.view,firstZoom,'the separate camera action retains its own history step');
+ canvas.previous();assert.deepEqual(canvas.view,initial,'the first wheel burst remains one step');
+ canvas.next();assert.deepEqual(canvas.view,firstZoom);
+});
