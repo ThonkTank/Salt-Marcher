@@ -1,6 +1,6 @@
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,writeFile,readFile,stat} from 'node:fs/promises';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
@@ -12,7 +12,7 @@ const seed=new CampaignStore(file),campaign=seed.create('Waldwelt'),w=seed.activ
 seed.db.transaction(()=>{for(let i=0;i<100000;i++){const x=i%316*5000,y=Math.floor(i/316)*5000,r={id:randomUUID(),revision:1,kind:'patch',name:'Wald',points:[],polygons:[{outer:[{x,y},{x:x+5000,y},{x:x+5000,y:y+5000},{x,y:y+5000}],holes:[]}],resolution:4828.032,width:0,values:{terrain:'forest'}};put.run(campaign.id,r.id,1,x,x+5000,y,y+5000,JSON.stringify(r));}})();seed.tutorial('skipped');seed.close();
 const bus=profile+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,bus,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});
 for(let i=0;i<100;i++){if(await stat(bus).then(()=>true).catch(()=>false))break;await new Promise(r=>setTimeout(r,20));}
-let app,closed=true;const errors=[],launches=[],results={profile,sourceRevision:process.env.SOURCE_REVISION??'working-tree'};
+let app,closed=true;const errors=[],launches=[],results={profile,sourceRevision:(process.env.SOURCE_REVISION??execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim())+(execFileSync('git',['status','--porcelain','--untracked-files=no'],{encoding:'utf8'}).trim()?'+dirty':'')};
 async function launch(){app=await _electron.launch({executablePath:source+'/node_modules/electron/dist/electron',args:[source+'/.build/desktop/main.cjs','--data-dir',profile,'--ozone-platform=x11'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus},timeout:30000});closed=false;launches.push(app.process().pid);const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true',null,{timeout:30000});if(await page.locator('#tutorial-dialog').isVisible())await page.locator('#tutorial-skip').click();await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.locator('#atlas-tab').click();await page.locator('#atlas-overview').click();await page.locator('[data-landscape-raster]').waitFor({timeout:30000});return page;}
 async function pixels(page){await page.locator('[data-landscape-raster]').evaluate(async el=>{const image=new Image();image.src=el.getAttribute('href');await image.decode();});const data=await page.locator('[data-landscape-raster]').getAttribute('href'),png=PNG.sync.read(Buffer.from(data.split(',')[1],'base64'));let forest=0,water=0;for(let i=0;i<png.data.length;i+=4){if(png.data[i]===102&&png.data[i+1]===139&&png.data[i+2]===105&&png.data[i+3])forest++;if(png.data[i]===127&&png.data[i+1]===168&&png.data[i+2]===189&&png.data[i+3])water++;}return{forest,water,width:png.width,height:png.height};}
 async function visiblePixels(page){
@@ -24,6 +24,10 @@ async function visiblePixels(page){
 async function close(){const exit=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});closed=true;}
 try{
  let page=await launch();results.before=await pixels(page);assert(results.before.forest>100);assert.equal(results.before.water,0);results.visibleBefore=await visiblePixels(page);assert(results.visibleBefore.forest>100,'Forest must be visible in the actual map');await writeFile(path.join(output,'raster-before.png'),Buffer.from((await page.locator('[data-landscape-raster]').getAttribute('href')).split(',')[1],'base64'));await page.screenshot({path:path.join(output,'world-before.png')});
+ const rasterBeforePan=await page.locator('[data-landscape-raster]').getAttribute('href'),transformBeforePan=await page.locator('[data-landscape-raster]').getAttribute('transform'),pan=await page.locator('#campaign-map').boundingBox();
+ await page.mouse.move(pan.x+pan.width/2,pan.y+pan.height/2);await page.mouse.down({button:'middle'});await page.mouse.move(pan.x+pan.width/2+15,pan.y+pan.height/2+8,{steps:5});await page.mouse.up({button:'middle'});
+ await page.waitForFunction(before=>document.querySelector('[data-landscape-raster]').getAttribute('transform')!==before,transformBeforePan);await page.waitForTimeout(250);assert.equal(await page.locator('[data-landscape-raster]').getAttribute('href'),rasterBeforePan,'Small camera move reuses the buffered raster');
+ await page.mouse.down({button:'middle'});await page.mouse.move(pan.x+pan.width/2,pan.y+pan.height/2,{steps:5});await page.mouse.up({button:'middle'});results.bufferedPan=true;
  await app.evaluate(({ipcMain})=>{ipcMain.removeHandler('atlas:execute');ipcMain.handle('atlas:execute',()=>{throw new Error('Full atlas endpoint must not be used for terrain commit.');});});
  await page.locator('[data-family="terrain"]').click();await page.locator('#land-tool').selectOption('paint');await page.locator('#land-radius').fill('200000');await page.locator('#atlas-terrain').selectOption('water');await page.locator('#atlas-hex-level').selectOption('0');
  const box=await page.locator('#campaign-map').boundingBox();await page.mouse.click(box.x+box.width*.52,box.y+box.height*.52);await page.locator('#land-finish').click();

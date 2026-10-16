@@ -4,7 +4,6 @@ import type { CampaignAtlas, AtlasAction } from "./campaign-atlas-contracts";
 import type { Point, Polygon } from "./contracts";
 import {
   emptyRecord,
-  HEX_METERS,
   hexSize,
   hexPolygon,
   distance,
@@ -400,11 +399,19 @@ export class LandscapeWorkbench {
     }
     let raster: import("./landscape-raster").LandscapeRaster | undefined;
     {
-      const aspect=box.width/box.height,width=Math.max(1,Math.round(512*Math.min(1,aspect))),height=Math.max(1,Math.round(512*Math.min(1,1/aspect)));
-      const image=await window.campaign.landscapeRaster(token,box,width,height);
-      if(n!==this.request||token!==this.token)return;
-      if(!image.ok||image.value.revision!==r.value.revision){this.records=[];this.raster=undefined;html('land-reload').hidden=false;this.say('Übersicht nicht verfügbar. Ansicht erneut laden.');this.host.error(new Error(image.ok?'Atlasstand geändert. Übersicht erneut laden.':image.error));this.host.redraw();return;}
-      raster=image.value;
+      const current=this.raster, pixelsPerMeter=512/Math.max(box.width,box.height);
+      const covers=current&&current.revision===r.value.revision&&current.box.x<=box.x&&current.box.y<=box.y&&current.box.x+current.box.width>=box.x+box.width&&current.box.y+current.box.height>=box.y+box.height&&current.width/current.box.width>=pixelsPerMeter/1.5;
+      if(covers)raster=current;
+      else {
+        // Reuse a buffered, aligned loading unit during small camera moves.
+        // Double its pixels as well as its extent; author geometry is unchanged.
+        const buffered={x:Math.floor(box.x/(box.width/2))*(box.width/2)-box.width/2,y:Math.floor(box.y/(box.height/2))*(box.height/2)-box.height/2,width:box.width*2,height:box.height*2};
+        const aspect=box.width/box.height,width=Math.max(1,Math.round(1024*Math.min(1,aspect))),height=Math.max(1,Math.round(1024*Math.min(1,1/aspect)));
+        const image=await window.campaign.landscapeRaster(token,buffered,width,height);
+        if(n!==this.request||token!==this.token)return;
+        if(!image.ok||image.value.revision!==r.value.revision){this.records=[];this.raster=undefined;html('land-reload').hidden=false;this.say('Übersicht nicht verfügbar. Ansicht erneut laden.');this.host.error(new Error(image.ok?'Atlasstand geändert. Übersicht erneut laden.':image.error));this.host.redraw();return;}
+        raster=image.value;
+      }
     }
     this.records = r.value.records;
     this.raster = raster;

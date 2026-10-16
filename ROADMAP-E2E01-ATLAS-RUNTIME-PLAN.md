@@ -350,12 +350,21 @@ erlaubt jetzt lokale eingebettete Bilder, ohne Skript- oder Netzrechte zu öffne
 
 Die Landschaftsanzeige aggregiert bei jedem Maßstab, damit dichtes kleinteiliges
 Gelände auch zwischen Welt- und Detailansicht erhalten bleibt. Der Worker liest
-überlappende Autorenflächen streaming und unveränderlich; SQL-Sortierung und
-Neuberechnung pro kaltem Ausschnitt sind noch kein zeitlich begrenzter
+überlappende Autorenflächen streaming und unveränderlich; Gepufferte ausgerichtete Ladebereiche werden bei kleinen Kamerabewegungen
+wiederverwendet. SQL-Sortierung und Neuberechnung pro kaltem Ausschnitt sind noch kein zeitlich begrenzter
 Kachellookup. Alte Welt-/Reiseinspektoren bleiben vollständig lesend: Ein bloß
 abgeschnittener Landschaftsbestand würde außerhalb des Ausschnitts falsche
 Geländevorgaben suggerieren. Deren Umstellung braucht zuerst ausdrückliche
 Abdeckungs-/Unbekannt-Semantik und exakte Punkt-/Routenqueries.
+
+Die isolierte 100000-Flächen-Probe auf dem belasteten Entwicklungsrechner
+liefert für 40 identische Regionabfragen Rtree-Median 0,88 ms/p95 17,75 ms gegenüber
+Btree 15,74/45,36 ms. Die vollständige kalte Rasterberechnung benötigt dort
+8,39 s; eine Wiederholung unter höherer Last 12,65 s (Region-Rtree
+11,11/47,19 ms, Btree 22,96/57,53 ms). Das stützt die Indexrichtung, zeigt
+aber gerade keine bestandene
+Kaltlade-/Latenzqualifikation: weitere lokale Invalidierung und Detailstufen
+sind erforderlich. Andere Hardware-/Lastbedingungen nicht daraus ableiten.
 
 Nächster zusammenhängender Anschluss ist Schritt 1: initiale Welt-/City-/Room-
 Metadaten von tatsächlicher Geometrie und Prosa trennen; räumliche Seiten mit
