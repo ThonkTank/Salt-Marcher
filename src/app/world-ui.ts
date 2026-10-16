@@ -260,7 +260,7 @@ function travelFeedback(text=''){const message=document.getElementById('journey-
 function travelFailure(error:unknown){const text=(error as Error).message;travelFeedback(text);tell(text,true);}
 function clearTravelPreview(){
  travelFeedback();
- travelRequest++;preview=null;if(document.getElementById('travel-evaluation'))el('travel-evaluation').textContent='Keine aktuelle Routenauswertung.';el('travel-preview-summary').textContent='';el('travel-preview-warnings').replaceChildren();el('travel-preview-itinerary').replaceChildren();el<HTMLButtonElement>('travel-preview-accept').disabled=true;
+ travelRequest++;preview=null;document.dispatchEvent(new Event('atlas-draft'));if(document.getElementById('travel-evaluation'))el('travel-evaluation').textContent='Keine aktuelle Routenauswertung.';el('travel-preview-summary').textContent='';el('travel-preview-warnings').replaceChildren();el('travel-preview-itinerary').replaceChildren();el<HTMLButtonElement>('travel-preview-accept').disabled=true;
  const dialog=el<HTMLDialogElement>('travel-preview-dialog');if(dialog.open)dialog.close();if(document.getElementById('travel-console-warnings'))el('travel-console-warnings').replaceChildren();renderPlayback();
 }
 function resetRouteDraft(){accessChoices?.render('',[]);routeStops=[];routeCursor={q:0,r:0};clearTravelPreview();if(document.getElementById('travel-waypoints')){el<HTMLInputElement>('travel-waypoints').value='';el<HTMLSelectElement>('world-destination').value='';el<HTMLInputElement>('travel-q').value='0';el<HTMLInputElement>('travel-r').value='0';renderRouteDraft();}}
@@ -315,7 +315,7 @@ async function makeTravelPreview(continueJourney=false){
   const echoed=requested.usePartyPace?{...result.request,paceKmh:requested.paceKmh}:result.request;
   if(canonicalJson(echoed)!==canonicalJson(requested))throw new Error('Auswertung gehört nicht zur angefragten Reise. Erneut auswerten.');
   if(result.request.usePartyPace)el<HTMLInputElement>('travel-pace').value=String(result.request.paceKmh);
-  preview=result;renderTravelEvaluation(el('travel-evaluation'),result);el('travel-preview-summary').textContent=(result.distanceMeters/1000).toFixed(2)+' km · '+(result.durationSeconds/3600).toFixed(2)+' Stunden · '+(result.route.length-1)+' Abschnitte · Ankunft: '+result.arrival;
+  preview=result;document.dispatchEvent(new Event('atlas-draft'));renderTravelEvaluation(el('travel-evaluation'),result);el('travel-preview-summary').textContent=(result.distanceMeters/1000).toFixed(2)+' km · '+(result.durationSeconds/3600).toFixed(2)+' Stunden · '+(result.route.length-1)+' Abschnitte · Ankunft: '+result.arrival;
   const warnings=el('travel-preview-warnings');warnings.replaceChildren();for(const warning of result.warnings){const p=document.createElement('p');p.textContent=warning;warnings.append(p);}
   renderTravelBriefing(el('travel-preview-itinerary'),result);el<HTMLButtonElement>('travel-preview-accept').textContent=result.continuation?'Restreise starten':'Reise starten';renderMap();el<HTMLButtonElement>('travel-preview-accept').disabled=false;if(liveSurface&&liveTravelOpen){el<HTMLDetailsElement>('travel-advanced').open=false;const root=el('travel-console-warnings');root.replaceChildren();for(const text of result.warnings){const p=document.createElement('p');p.textContent=text;root.append(p);}renderJourney();revealTravelInRail(el('travel-evaluation'));}else el<HTMLDialogElement>('travel-preview-dialog').showModal();
   tell('Route und Reisezeit ausgewertet.');
