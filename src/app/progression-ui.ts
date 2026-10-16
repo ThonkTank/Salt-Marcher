@@ -173,6 +173,13 @@ function renderTreasure() {
   if (t?.items.some(i=>i.id===old && i.quantity>i.allocated)) select.value=old;
   get('treasure-provenance').textContent = t ? (t.combatId ? 'Aus Kampf · ' : 'Manuelle Beute · ') + (t.sceneId ? 'Gruppe ' + t.sceneId.slice(0,8) : 'Unverortet') + (t.locationId ? ' · Ort ' + t.locationId.slice(0,8) : '') : '';
 }
+function ledgerOperationFields(resetQuantity=false) {
+  const correct=value('ledger-operation')==='correct';
+  get('ledger-quantity-label').textContent=correct?'Neue Gesamtmenge':'Teilmenge';
+  get('ledger-price-field').hidden=value('ledger-operation')==='given'||correct&&ledgerDetail?.status!=='sold';
+  get<HTMLInputElement>('ledger-quantity').min=correct?'0':'1';
+  if(resetQuantity)get<HTMLInputElement>('ledger-quantity').value=String(correct?ledgerDetail?.quantity??0:1);
+}
 function renderLedger() {
   const name=live?.roster.find(c=>c.id===selected)?.profile.name??view?.characters.find(c=>c.characterId===selected)?.name;
   get('ledger-character-heading').textContent=name?'Beute: '+name:'Beute · Figur auswählen';
@@ -188,7 +195,7 @@ function renderLedger() {
   get('ledger-retry').hidden=!ledgerDetailError||!selectedLedger;
   const l=ledgerDetail; get('ledger-editor').hidden=!l;
   get('ledger-detail').textContent=l?l.name+(l.sourceTitle?' · Fund: '+l.sourceTitle:'')+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.sourceTreasureId?' · Ursprünglicher Schatz '+l.sourceTreasureId.slice(0,8):'')+(l.rewardCreditId?' · Loot-Gutschrift bei ursprünglichem Empfänger · Herkunft '+l.rewardCreditId.slice(0,8):'')+(l.creditedCopper!==undefined?' · Aktueller gutgeschriebener Lootwert: '+(l.creditedCopper===null?'unbekannt':gold(l.creditedCopper)):'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
-  drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute);lock();
+  ledgerOperationFields();drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute);lock();
 }
 async function loadTreasures(more=false,preferredId?:string) {
   if(!workspace)return;const token=workspace.token,request=++treasureRequest,before=treasures;
@@ -228,7 +235,7 @@ async function loadLedgerItem(id:string){
     if(!current())return;
     const detail=unwrap(reply);
     if(detail.id!==id||detail.characterId!==characterId)throw new Error('Der gelesene Beuteeintrag gehört nicht zur Auswahl.');
-    if(ledgerFormOwner!==id){get<HTMLInputElement>('ledger-counterparty').value=detail.status==='received'?'':detail.counterparty;get<HTMLSelectElement>('ledger-linked-counterparty').value=detail.counterpartyLink?detail.counterpartyLink.kind+':'+detail.counterpartyLink.id:'';}
+    if(ledgerFormOwner!==id){get<HTMLInputElement>('ledger-quantity').value=String(value('ledger-operation')==='correct'?detail.quantity:1);get<HTMLInputElement>('ledger-reason').value='';const price=BigInt(detail.actualSaleCopper??'0');get<HTMLInputElement>('ledger-price').value=(price/100n).toString()+'.'+(price%100n).toString().padStart(2,'0');get<HTMLInputElement>('ledger-counterparty').value=detail.status==='received'?'':detail.counterparty;get<HTMLSelectElement>('ledger-linked-counterparty').value=detail.counterpartyLink?detail.counterpartyLink.kind+':'+detail.counterpartyLink.id:'';}
     ledgerDetail=detail;ledgerFormOwner=id;
   }catch(error){if(current())ledgerDetailError=(error as Error).message;}
   finally{if(current()){ledgerDetailLoading=false;renderLedger();}}
@@ -312,6 +319,7 @@ export function initProgress(status: typeof tell,onRestSaved?:(scene:LiveScene)=
   get('loot-allocate-form').onsubmit=event=>{event.preventDefault();const t=treasure,c=view?.characters.find(c=>c.characterId===value('loot-recipient'));const i=t?.items.find(i=>i.id===value('treasure-item'));if(t&&c&&i?.currentDefinition)void execute({kind:'allocate',treasureId:t.id,expectedRevision:t.revision,expectedDefinitionRevision:i.currentDefinition.revision,itemId:i.id,quantity:Number(value('loot-quantity')),characterId:c.characterId,expectedMembershipRevision:c.membershipRevision});else tell('Beute und Empfänger wählen und aktuellen Gegenstand laden.',true);};
   get('manual-loot-form').onsubmit=event=>{event.preventDefault();const c=view?.characters.find(c=>c.characterId===value('manual-loot-recipient'));if(c)void execute({kind:'manual-item',characterId:c.characterId,expectedMembershipRevision:c.membershipRevision,origin:value('manual-loot-origin') as 'award'|'purchase'|'manual',item:item('manual-loot'),note:value('manual-loot-note')});};
   get('ledger-search').oninput=()=>{void loadLedger().catch(error=>tell(error.message,true));};get('ledger-filter').onchange=()=>{void loadLedger().catch(error=>tell(error.message,true));};
+  get('ledger-operation').onchange=()=>ledgerOperationFields(true);
   get('ledger-retry').onclick=()=>{if(selectedLedger)void loadLedgerItem(selectedLedger);};
   get('ledger-form').onsubmit=event=>{event.preventDefault();if(!ledgerEditable()){tell('Beuteeintrag derzeit nicht verfügbar. Eingaben bleiben erhalten.',true);return;}const l=ledgerDetail;if(l)void execute({kind:'ledger',entryId:l.id,expectedRevision:l.revision,operation:value('ledger-operation') as 'sold'|'given'|'correct',quantity:Number(value('ledger-quantity')),correctedQuantity:Number(value('ledger-quantity')),actualGold:value('ledger-price'),counterparty:value('ledger-counterparty'),counterpartyLink:value('ledger-linked-counterparty')?{kind:value('ledger-linked-counterparty').split(':')[0] as 'shop'|'npc'|'location'|'faction',id:value('ledger-linked-counterparty').slice(value('ledger-linked-counterparty').indexOf(':')+1)}:undefined,reason:value('ledger-reason')});};
   for(const id of ['finish-xp','finish-no-xp','finish-has-loot'])get(id).oninput=finishPreview;
