@@ -35,3 +35,19 @@ test('malformed recap draft cannot replace a valid campaign snapshot',async t=>{
  const x=fixture(t),snapshot=path.join(x.root,'safe-recap.sqlite');x.store.keepSessionRecapDraft(x.w.token,{summary:'Erhalten',handoff:''},null);await x.store.campaignSnapshot(x.w.token,snapshot);const safe=readFileSync(snapshot);
  x.store.db.prepare('UPDATE settings SET value=? WHERE key=?').run(JSON.stringify({summary:42,handoff:''}),'session-recap:'+x.cam.id);const original=x.store.db.serialize();await assert.rejects(x.store.campaignSnapshot(x.w.token,snapshot),/Rückblickentwurf/);assert.ok(readFileSync(snapshot).equals(safe));assert.ok(x.store.db.serialize().equals(original));
 });
+
+test('independent acceptance records local creation once without importing source usage or opening the copy',async t=>{
+ const x=fixture(t),snapshot=path.join(x.root,'copy.sqlite');
+ x.store.db.prepare('UPDATE campaign_usage SET created_at=?,last_opened_at=? WHERE campaign_id=?').run('2001-01-01T00:00:00.000Z','2002-01-01T00:00:00.000Z',x.cam.id);
+ await x.store.campaignSnapshot(x.w.token,snapshot);
+ const before=x.store.db.serialize(),target=new CampaignStore(path.join(x.root,'usage-target.sqlite')),ticket=randomUUID(),start=new Date().toISOString();
+ try{
+  const copy=target.acceptCampaignSnapshot(snapshot,'Sonntagsrunde',{},ticket),usage=target.campaignOverview().find(c=>c.id===copy.id);
+  assert(usage.createdAt>=start&&usage.createdAt<=new Date().toISOString());assert.equal(usage.lastOpenedAt,null);
+  assert.equal(target.list().activeId,null);
+  assert.deepEqual(target.acceptCampaignSnapshot(snapshot,'Sonntagsrunde',{},ticket),copy);
+  assert.deepEqual(target.campaignOverview().find(c=>c.id===copy.id),usage);
+  assert(x.store.db.serialize().equals(before));
+  const fresh=new CampaignStore(path.join(x.root,'usage-target.sqlite'));try{assert.deepEqual(fresh.campaignOverview().find(c=>c.id===copy.id),usage);}finally{fresh.close();}
+ }finally{target.close();}
+});
