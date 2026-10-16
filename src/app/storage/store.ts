@@ -108,6 +108,7 @@ import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../prog
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
 import type { EncounterPlanCommand } from '../encounter-contracts';
+import { readPresetRegistry,executePresetCommand,readPresetOutcome } from './preset-registry';
 import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
 import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, validateSessionRuns, scenePreparation, cleanSessionVisits } from './session';
@@ -599,6 +600,9 @@ export class CampaignStore {
   executeSceneCheck(command:SceneCheckCommand){return executeSceneCheck(this.db,command,()=>this.guard(command.token,command.campaignId));}
   encounterTables(token: string, includeTrashed: boolean) { return readEncounterTables(this.db,this.guard(token),includeTrashed); }
   lootTables(token: string, includeTrashed: boolean) { return readLootTables(this.db,this.guard(token),includeTrashed); }
+  presetRegistry(campaignId:string|null){return readPresetRegistry(this.db,campaignId);}
+  presetCommand(command:import('../generation-contracts').PresetCommand){return executePresetCommand(this.db,command);}
+  presetOutcome(command:import('../generation-contracts').PresetCommand){return readPresetOutcome(this.db,command);}
   generatorRegistry(token: string) { return readGeneratorRegistry(this.db,this.guard(token)); }
   executeGeneration(command: GenerationCommand) { return executeGeneration(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   generateEncounters(token: string, request: GenerationRequest) { return generateEncounters(this.db,this.guard(token),request); }

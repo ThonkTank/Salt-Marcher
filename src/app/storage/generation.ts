@@ -21,6 +21,7 @@ export function installGenerationSchema(db:any){db.exec(`CREATE TABLE IF NOT EXI
  CREATE TABLE IF NOT EXISTS generation_run(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS generation_acceptance(campaign_id TEXT NOT NULL,run_id TEXT NOT NULL,proposal_index INTEGER NOT NULL,plan_id TEXT NOT NULL,PRIMARY KEY(campaign_id,run_id,proposal_index),FOREIGN KEY(campaign_id,run_id) REFERENCES generation_run(campaign_id,id),FOREIGN KEY(campaign_id,plan_id) REFERENCES encounter_plan(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS generation_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL REFERENCES campaign(id),fingerprint TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;`);
+ db.exec('CREATE TABLE IF NOT EXISTS generator_registry_receipt(command_id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;');
  installWorldSources(db);
  db.prepare('INSERT OR IGNORE INTO generator_meta VALUES(1,0)').run();const config=checkedGeneratorConfig(artifact.config as GeneratorPreset['config']),preset:GeneratorPreset={id:systemId,revision:1,name:'Systempreset',system:true,config,hash:hash(canonicalJson(config))},payload=json(preset);db.prepare('INSERT OR IGNORE INTO generator_preset VALUES(?,?,1,?,?)').run(systemId,1,payload,hash(payload));
 }
@@ -66,11 +67,7 @@ export function executeGeneration(db:any,command:GenerationCommand,guard:()=>voi
  }else if(a.kind==='loot-trash'){
   const t=readLootTable(db,cam,a.id);if(t.revision!==a.expectedRevision)throw new Error('Loot-Tabelle geändert.');t.revision++;t.trashed=a.trashed;const payload=json(t);db.prepare('UPDATE loot_table SET revision=?,trashed=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(t.revision,t.trashed?1:0,payload,hash(payload),cam,t.id);
  }else{
-  const registry=readGeneratorRegistry(db,cam);if(registry.revision!==a.expectedRegistryRevision)throw new Error('Preset-Registry geändert. Entwurf erhalten; Registry aktualisieren und bewusst erneut wählen.');
-  if(a.kind==='preset-save'){const p=structuredClone(a.preset);if(!p?.id||p.id===systemId||p.system||typeof p.name!=='string'||!p.name.trim()||p.name.length>1000)throw new Error('Nur benannte Preset-Kopien sind editierbar.');const old=registry.presets.find(c=>c.id===p.id);if(old&&old.revision!==p.revision)throw new Error('Preset geändert.');p.config=checkedGeneratorConfig(p.config);p.revision=(old?.revision??0)+1;p.hash=hash(canonicalJson(p.config));const payload=json(p);db.prepare('INSERT INTO generator_preset VALUES(?,?,0,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(p.id,p.revision,payload,hash(payload));
-  }else if(a.kind==='preset-assign'){if(a.id!==null&&!registry.presets.some(p=>p.id===a.id))throw new Error('Preset nicht verfügbar.');if(a.id===null||a.id===systemId)db.prepare('DELETE FROM generator_assignment WHERE campaign_id=?').run(cam);else db.prepare('INSERT INTO generator_assignment VALUES(?,?) ON CONFLICT(campaign_id) DO UPDATE SET preset_id=excluded.preset_id').run(cam,a.id);
-  }else if(a.kind==='preset-delete'){if(!a.id||a.id===systemId)throw new Error('Systempreset ist geschützt.');if(!registry.presets.some(p=>p.id===a.id))throw new Error('Preset nicht verfügbar.');db.prepare('DELETE FROM generator_preset WHERE id=?').run(a.id);
-  }else throw new Error('Unbekannte Generatoraktion.');db.prepare('UPDATE generator_meta SET revision=revision+1 WHERE id=1').run();
+  mutatePreset(db,cam,a);
  }
  const result={tables:readEncounterTables(db,cam,true),lootTables:readLootTables(db,cam,true),registry:readGeneratorRegistry(db,cam)},payload=json(result);db.prepare('INSERT INTO generation_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload));return result;
 }).immediate();}
@@ -176,3 +173,12 @@ export function acceptGeneration(db:any,command:{commandId:string;campaignId:str
  plan.generationOrigin={runId:run.id,index:command.index,seed:run.seed,preset:run.preset};
  const saved=saveEncounterPlan(db,{commandId:command.commandId+'|plan',campaignId:cam,token:command.token,plan,expectedRevision:null},guard);db.prepare('INSERT INTO generation_acceptance VALUES(?,?,?,?)').run(cam,run.id,command.index,saved.id);const payload=json(saved);db.prepare('INSERT INTO generation_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload));return saved;
  }).immediate();}
+
+/** The installation editor and campaign generator use the same policy mutation. */
+export function mutatePreset(db:any,cam:string|null,a:import('../generation-contracts').PresetAction){
+  const registry=readGeneratorRegistry(db,cam??'');if(registry.revision!==a.expectedRegistryRevision)throw new Error('Preset-Registry geändert. Entwurf erhalten; Registry aktualisieren und bewusst erneut wählen.');
+  if(a.kind==='preset-save'){const p=structuredClone(a.preset);if(!p?.id||p.id===systemId||p.system||typeof p.name!=='string'||!p.name.trim()||p.name.length>1000)throw new Error('Nur benannte Preset-Kopien sind editierbar.');const old=registry.presets.find(c=>c.id===p.id);if(old?old.revision!==p.revision:p.revision!==0)throw new Error('Preset geändert.');p.config=checkedGeneratorConfig(p.config);p.revision=(old?.revision??0)+1;p.hash=hash(canonicalJson(p.config));const payload=json(p);db.prepare('INSERT INTO generator_preset VALUES(?,?,0,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(p.id,p.revision,payload,hash(payload));
+  }else if(a.kind==='preset-assign'){if(a.id!==null&&!registry.presets.some(p=>p.id===a.id))throw new Error('Preset nicht verfügbar.');if(!cam)throw new Error('Wähle eine Kampagne für die Zuweisung.');if(a.id===null||a.id===systemId)db.prepare('DELETE FROM generator_assignment WHERE campaign_id=?').run(cam);else db.prepare('INSERT INTO generator_assignment VALUES(?,?) ON CONFLICT(campaign_id) DO UPDATE SET preset_id=excluded.preset_id').run(cam,a.id);
+  }else if(a.kind==='preset-delete'){if(!a.id||a.id===systemId)throw new Error('Systempreset ist geschützt.');if(!registry.presets.some(p=>p.id===a.id))throw new Error('Preset nicht verfügbar.');db.prepare('DELETE FROM generator_preset WHERE id=?').run(a.id);
+  }else throw new Error('Unbekannte Generatoraktion.');db.prepare('UPDATE generator_meta SET revision=revision+1 WHERE id=1').run();
+}

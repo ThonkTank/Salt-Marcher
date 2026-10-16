@@ -626,7 +626,7 @@ for (const id of workspaceTabs) el(id + '-tab').onclick = () => { void (async ()
   if (await leaveWorkspace()) await reopenView(id);
 })().catch(error => status(error.message, true)); };
 initWorkspaceNavigation();
-initCampaignScreen({settingsEditorAvailable:()=>!!workspace&&!activationFailed,before:async()=>!workspace||activationFailed||await flushAll(),changed:async()=>{await refreshCampaignShell();},enter:async receipt=>{await activate(receipt.campaignId,receipt.commandId);return!activationFailed&&workspace?.campaign.id===receipt.campaignId;}});
+initCampaignScreen({before:async()=>!workspace||activationFailed||await flushAll(),changed:async()=>{await refreshCampaignShell();},enter:async receipt=>{await activate(receipt.campaignId,receipt.commandId);return!activationFailed&&workspace?.campaign.id===receipt.campaignId;}});
 void openCampaignScreen(true);
 setInterval(() => { void (async () => {
   try { const message = unwrap(await api.backupStatus()); el('backup-status').hidden = !message; el('backup-status').textContent = message; }
