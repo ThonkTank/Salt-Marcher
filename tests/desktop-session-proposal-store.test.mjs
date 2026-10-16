@@ -133,7 +133,7 @@ test('a delayed accepted batch read cannot populate the next plan in the real se
  const create=document.createElement.bind(document);document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='select')Object.defineProperty(node,'value',{value:'',writable:true});if(tag==='dialog'){node.showModal=()=>{node.open=true;};node.close=()=>{node.open=false;};}return node;};
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  const requireUI=createRequire(import.meta.url),file=requireUI.resolve('../.build/session-review-owner.cjs');delete requireUI.cache[file];const ui=requireUI(file),messages=[];
- let held=false,release;const tick=()=>new Promise(r=>setImmediate(r)),until=async fn=>{for(let i=0;i<100&&!fn();i++)await tick();assert.ok(fn());};
+ let held=false,release;const tick=()=>new Promise(r=>setImmediate(r)),until=async fn=>{const deadline=Date.now()+3000;while(!fn()&&Date.now()<deadline)await new Promise(r=>setTimeout(r,5));assert.ok(fn());};
  t.after(async()=>{if(release)release();ui.sessionContext(null,null,null,null);await tick();Object.assign(globalThis,saved);});
  const nextId=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:nextId,revision:1,name:'Next evening',scenes:[]}}});
  const ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};window.campaign={};
@@ -142,7 +142,7 @@ test('a delayed accepted batch read cannot populate the next plan in the real se
  ui.initSession((...args)=>messages.push(args),async()=>true,async()=>{},async()=>{});
  const context=async id=>{const sources=x.store.preparation(x.w.token);await ui.sessionContext(x.w,sources.plans.find(p=>p.id===id),null,sources);};
  await context(x.planId);const history=document.getElementById('session-history');history.value=x.run.id;history.onchange();await until(()=>document.querySelectorAll('.session-proposal').length===2);
- document.getElementById('session-select-visible').click();document.getElementById('session-review-selection').click();held=true;document.getElementById('session-selection-confirm').click();await until(()=>typeof release==='function');
+ document.getElementById('session-select-visible').click();document.getElementById('session-review-selection').click();await until(()=>document.getElementById('session-selection-dialog').open&&!document.getElementById('session-selection-confirm').disabled);held=true;document.getElementById('session-selection-confirm').click();await until(()=>typeof release==='function');
  assert.equal(x.store.preparation(x.w.token).plans.find(p=>p.id===x.planId).scenes.length,2);
  await context(nextId);assert.equal(document.getElementById('session-preview').textContent,'');release();await tick();await tick();await tick();
  assert.equal(document.getElementById('session-preview').textContent,'');assert.ok(!messages.some(([text])=>text.includes('Die Spielabendmappe ist bereit')));assert.equal(x.store.preparation(x.w.token).plans.find(p=>p.id===nextId).scenes.length,0);

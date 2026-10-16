@@ -1,0 +1,168 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {parseHTML} from 'linkedom';
+import {createRequire} from 'node:module';
+import {buildSync} from 'esbuild';
+buildSync({entryPoints:['src/app/note-thread-ui.ts'],outfile:'.build/note-thread-dom-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {NoteThreadDialog}=createRequire(import.meta.url)('../.build/note-thread-dom-test.cjs');
+const tick=()=>new Promise(r=>setImmediate(r)),until=async f=>{const end=Date.now()+2000;while(!f()&&Date.now()<end)await tick();assert(f(),'expected note-thread state');},deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{resolve,promise};};
+const note=(id,kind='npc')=>({version:1,id,revision:2,title:id,kind,readAloud:'  Vorlesen\r\n',gmNotes:'GM '+id,relations:[],creatureId:null,deleted:false});
+const entry=(id,status='untracked',unavailable=false)=>({id,title:id,kind:status==='untracked'?'npc':'rumor',revision:2,labels:['Quelle'],status,unavailable,preview:'Auszug '+id,stamp:id.padEnd(64,'a').slice(0,64)}),ok=value=>({ok:true,value});
+function fixture(t){
+ const {window,document}=parseHTML('<html><body><section id=home><div id=preparation-problems></div><div id=note-editor><button id=note-back></button><input id=note-title><textarea id=note-gm></textarea></div><button id=preparation-apply></button><button id=preparation-reconcile></button><button id=preparation-refresh></button></section></body></html>'),prior=globalThis.document;globalThis.document=document;
+ const values=new WeakMap();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return values.get(this)??this.querySelector('option')?.value??'';},set(v){values.set(this,v);}});
+ window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};window.HTMLElement.prototype.focus=()=>{};
+ const root={...note('Mappe','quest'),relations:['Nera','Offene Spur','Erledigt'].map(targetId=>({targetId,label:'Quelle'}))},all=[entry('Nera'),entry('Offene Spur','open'),entry('Erledigt','closed')],calls=[],adds=[],used=[],rooms=[],messages=[];
+ let valid=true,blocked=false,read=async(_t,_id,_offset,active)=>ok({root,entries:active?all.filter(e=>e.status!=='closed'):all,total:all.length,next:null}),detail=async(_t,r)=>ok({ref:r,revision:2,note:note(r.id)}),search=async()=>ok({entries:[],next:null}),check=async()=>ok(undefined),use=async(target,selection)=>{used.push({target,selection});return true;},add=async(r,ids)=>{adds.push({root:r,ids});return false;};
+ let detach=async()=>false;
+ let edit=async(id,current)=>{el('note-title').value=id;el('note-gm').value='Original '+id;return current();},back=async current=>{el('note-title').value='Mappe';return current();};
+ const owner={token:'A',id:root.id,plans:[{id:'P',name:'Abend',scenes:[{id:'V',title:'Ermitteln'}]}],current:()=>valid,blocked:()=>blocked,edit:(...a)=>edit(...a),returnToRoot:(...a)=>back(...a),room:async(id,current,restore)=>{rooms.push({id,current,restore});return true;},add:(...a)=>add(...a),detach:(...a)=>detach(...a),use:(...a)=>use(...a)};
+ const ui=new NoteThreadDialog({prepare:async()=>owner,api:{noteThread:(...a)=>{calls.push(a);return read(...a);},checkNoteThread:(...a)=>check(...a),deskContent:(...a)=>detail(...a),searchDesk:(...a)=>search(...a),noteRoomUses:async()=>ok({entries:[{id:'Archiv',title:'Archiv',number:'2',unavailable:false}],next:null})},tell:(...a)=>messages.push(a)});
+ const el=id=>document.getElementById(id),click=name=>[...el('note-thread-dialog').querySelectorAll('button')].find(b=>b.textContent===name).onclick(),select=(id,value)=>{el(id).value=value;el(id).onchange();};
+ t.after(()=>{ui.reset();globalThis.document=prior;});return{ui,el,click,select,root,all,calls,adds,used,rooms,messages,owner,setDetach:f=>detach=f,setEdit:f=>edit=f,setBack:f=>back=f,setRead:f=>read=f,setDetail:f=>detail=f,setSearch:f=>search=f,setCheck:f=>check=f,setUse:f=>use=f,setAdd:f=>add=f,retire:()=>valid=false,block:()=>blocked=true};
+}
+test('one map reads original sources and room context with confirmed status, selecting only open and untracked sources',async t=>{
+ const x=fixture(t);await x.ui.open();await until(()=>x.el('note-thread-sources').textContent.includes('Raumhinweise: Archiv'));assert.match(x.el('note-thread-sources').textContent,/GM Nera/);assert.match(x.el('note-thread-sources').textContent,/Gerücht · Offen/);assert.doesNotMatch(x.el('note-thread-sources').textContent,/Erledigt/);assert.match(x.el('note-thread-choice').textContent,/^3 Originalnotizen/);x.click('Raum öffnen: Archiv');assert.equal(x.rooms[0].id,'Archiv');assert(x.rooms[0].current());x.ui.reset();assert.equal(x.rooms[0].current(),false);
+});
+test('closed, unknown and unavailable sources remain explicit and unchecked in the full view',async t=>{
+ const x=fixture(t);x.all.push(entry('Unbekannt','unknown'),entry('Fehlt','untracked',true));await x.ui.open();x.el('note-thread-active').checked=false;x.el('note-thread-active').onchange();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===5);const cards=[...x.el('note-thread-sources').querySelectorAll('article')];for(const id of ['Erledigt','Unbekannt','Fehlt'])assert.equal(cards.find(c=>c.dataset.noteId===id).querySelector('input').checked,false);assert.equal(cards.find(c=>c.dataset.noteId==='Fehlt').querySelector('input').disabled,true);assert.match(x.el('note-thread-sources').textContent,/Status nicht lesbar/);
+});
+test('selection is snapshotted before validation and existing destination has no copied source prose',async t=>{
+ const x=fixture(t),wait=deferred();x.setCheck(()=>wait.promise);await x.ui.open();x.el('note-thread-use').onclick();await tick();assert.equal(x.el('note-thread-active').disabled,true);x.el('note-thread-include-root').checked=false;wait.resolve(ok());await until(()=>x.used.length===1);const {selection,target}=x.used[0];assert.equal(selection.includeRoot,true);assert.deepEqual(selection.entries.map(e=>e.id),['Nera','Offene Spur']);assert.equal(target.planId,'P');assert.equal(target.visitId,'V');assert.equal('gmNotes' in selection,false);await until(()=>!x.el('note-thread-dialog').open);
+});
+test('new plan and visit need explicit names, retain them after failed save and never retry automatically',async t=>{
+ const x=fixture(t);x.setUse(async(target,selection)=>{x.used.push({target,selection});return false;});await x.ui.open();x.select('note-thread-plan','');x.el('note-thread-plan-name').value='';x.el('note-thread-use').onclick();await tick();assert.equal(x.used.length,0);x.el('note-thread-plan-name').value='Fortsetzung';x.el('note-thread-visit-title').value='Nachtwache befragen';x.el('note-thread-use').onclick();await until(()=>x.used.length===1&&!x.el('note-thread-use').disabled);assert.deepEqual(x.used[0].target,{planId:null,visitId:null,planName:'Fortsetzung',title:'Nachtwache befragen'});assert.match(x.el('note-thread-status').textContent,/keine automatische Wiederholung/);assert.equal(x.el('note-thread-plan-name').value,'Fortsetzung');await tick();assert.equal(x.used.length,1);
+});
+test('changed-source validation failure preserves selection and never calls the writer',async t=>{
+ const x=fixture(t);x.setCheck(async()=>({ok:false,error:'Quelle inzwischen geändert'}));await x.ui.open();x.el('note-thread-use').onclick();await until(()=>x.el('note-thread-status').textContent.includes('inzwischen'));assert.equal(x.used.length,0);assert.equal(x.el('note-thread-dialog').open,true);assert.match(x.el('note-thread-choice').textContent,/^3/);
+});
+test('a delayed validation cannot write after reset and reopening the same root',async t=>{
+ const x=fixture(t),wait=deferred();x.setCheck(()=>wait.promise);await x.ui.open();x.el('note-thread-use').onclick();await tick();x.ui.reset();await x.ui.open();wait.resolve(ok());await tick();assert.equal(x.used.length,0);assert.equal(x.el('note-thread-dialog').open,true);
+});
+test('a retired owner cannot write even if a disabled control is retained',async t=>{
+ const x=fixture(t);await x.ui.open();x.retire();x.el('note-thread-use').onclick();await tick();assert.equal(x.used.length,0);x.click('Schließen');assert.equal(x.el('note-thread-dialog').open,false);
+});
+test('blocked editor and unknown commit stop both additions and preparation',async t=>{
+ const x=fixture(t);await x.ui.open();x.block();x.el('note-thread-use').onclick();await tick();assert.equal(x.used.length,0);assert.equal(x.adds.length,0);
+});
+test('old source text cannot overwrite a refreshed root and literal source text never creates markup',async t=>{
+ const x=fixture(t),wait=deferred();x.setDetail(()=>wait.promise);await x.ui.open();x.setDetail(async(_t,r)=>ok({ref:r,revision:2,note:{...note(r.id),gmNotes:'<img src=x onerror=bad()> Neu'}}));x.click('Aktualisieren');await until(()=>x.el('note-thread-sources').textContent.includes('onerror'));wait.resolve(ok({ref:{kind:'note',id:'Nera'},revision:2,note:{...note('Nera'),gmNotes:'VERALTET'}}));await tick();assert.doesNotMatch(x.el('note-thread-sources').textContent,/VERALTET/);assert.equal(x.el('note-thread-sources').querySelector('img'),null);
+});
+test('wrong identity or mismatched note revision blocks preparation without erasing readable metadata',async t=>{
+ const x=fixture(t);x.setDetail(async(_t,r)=>ok({ref:r,revision:2,note:{...note(r.id),revision:3}}));await x.ui.open();await until(()=>x.el('note-thread-sources').textContent.includes('Quelle geändert'));assert.equal(x.el('note-thread-use').disabled,true);assert.match(x.el('note-thread-sources').textContent,/Nera/);
+});
+test('failed additional page preserves old sources and explicit refresh recovers',async t=>{
+ const x=fixture(t);x.setRead(async(_t,_id,offset)=>offset?{ok:false,error:'Seite offline'}:ok({root:x.root,entries:[x.all[0]],total:3,next:40}));await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-status').textContent==='Seite offline');assert.match(x.el('note-thread-sources').textContent,/Nera/);assert.equal(x.el('note-thread-use').disabled,true);x.setRead(async()=>ok({root:x.root,entries:x.all,total:3,next:null}));x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,3);
+});
+test('a root revision change between pages cannot silently combine two different collections',async t=>{
+ const x=fixture(t);x.setRead(async(_t,_id,offset)=>ok({root:{...x.root,revision:offset?3:2},entries:[x.all[offset?1:0]],total:3,next:offset?null:40}));await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-status').textContent.includes('Übersichtsnotiz geändert'));assert.equal(x.el('note-thread-use').disabled,true);assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,1);
+});
+test('search excludes existing members, keeps unavailable choices disabled, and adds selected identities in one ordinary relation update',async t=>{
+ const x=fixture(t);x.setSearch(async()=>ok({entries:[{ref:{kind:'note',id:'Nera'},title:'Nera'},{ref:{kind:'note',id:'Neu'},title:'Neu',label:'NSC'},{ref:{kind:'note',id:'Fehlt'},title:'Fehlt',unavailable:true}],next:null}));await x.ui.open();x.el('note-thread-find').onclick();await until(()=>x.el('note-thread-candidates').querySelectorAll('input').length===2);const boxes=x.el('note-thread-candidates').querySelectorAll('input');assert.equal(boxes[1].disabled,true);boxes[0].checked=true;boxes[0].onchange();assert.equal(boxes[1].disabled,true);x.el('note-thread-add').onclick();await until(()=>x.adds.length===1&&!x.el('note-thread-add').disabled);assert.deepEqual(x.adds[0].ids,['Neu']);assert.equal(x.adds[0].root.id,'Mappe');assert.equal(x.el('note-thread-dialog').open,true);
+});
+test('older search response and removed source control cannot act on a reopened collection',async t=>{
+ const x=fixture(t),wait=deferred();await x.ui.open();const old=x.el('note-thread-sources').querySelector('input');x.setSearch(()=>wait.promise);x.el('note-thread-find').onclick();x.ui.reset();await x.ui.open();wait.resolve(ok({entries:[{ref:{kind:'note',id:'STALE'},title:'STALE'}],next:null}));await tick();old.checked=false;old.onchange();assert.doesNotMatch(x.el('note-thread-candidates').textContent,/STALE/);assert.match(x.el('note-thread-choice').textContent,/^3/);assert.equal(x.adds.length,0);
+});
+test('filtering and refresh retain deliberate source choices and custom destination names; changed sources need a fresh choice',async t=>{
+ const x=fixture(t);await x.ui.open();const box=x.el('note-thread-sources').querySelector('input');box.checked=false;box.onchange();x.select('note-thread-plan','');x.el('note-thread-plan-name').value='Mein nächster Abend';x.el('note-thread-visit-title').value='Meine offene Frage';x.el('note-thread-active').checked=false;x.el('note-thread-active').onchange();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===3);assert.equal(x.el('note-thread-sources').querySelector('input').checked,false);assert.equal(x.el('note-thread-plan-name').value,'Mein nächster Abend');assert.equal(x.el('note-thread-visit-title').value,'Meine offene Frage');const open=x.all[1];open.stamp='changed'.padEnd(64,'a');x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-sources').querySelectorAll('input')[1].checked,false);assert.equal(x.el('note-thread-plan-name').value,'Mein nächster Abend');
+});
+
+test('source editing mounts the identical author controls and returns with choices and destination names intact',async t=>{
+ const x=fixture(t);await x.ui.open();const editor=x.el('note-editor'),field=x.el('note-gm');x.select('note-thread-plan','');x.el('note-thread-plan-name').value='Meine Fortsetzung';x.el('note-thread-visit-title').value='Meine Frage';field.disabled=true;
+ x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);assert(x.el('note-thread-editor').contains(editor));assert.equal(x.el('note-gm'),field);assert.equal(field.disabled,true);assert.equal(x.el('note-back').hidden,true);assert(x.ui.ownsNote('Nera'));assert(x.ui.ownsNote('Mappe'));
+ x.setBack(async current=>{x.all[0].stamp='fresh'.padEnd(64,'a');return current();});x.el('note-thread-return').onclick();await until(()=>x.el('note-thread-editor').hidden);assert(x.el('home').contains(editor));assert.equal(x.el('note-back').hidden,false);assert.equal(x.el('note-thread-plan-name').value,'Meine Fortsetzung');assert.equal(x.el('note-thread-visit-title').value,'Meine Frage');assert.equal(x.el('note-thread-sources').querySelector('input').checked,true);assert.equal(x.el('note-title').ownerDocument.querySelectorAll('#note-editor').length,1);
+});
+test('unconfirmed or composing source input keeps the actual editor available on return and close',async t=>{
+ const x=fixture(t);await x.ui.open();x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);x.setBack(async()=>false);x.el('note-thread-return').onclick();await until(()=>!x.el('note-thread-return').disabled);assert.equal(x.el('note-thread-editor').hidden,false);assert.match(x.el('note-thread-editor-status').textContent,/Eingabe noch nicht übernommen/);x.click('Schließen');await until(()=>!x.el('note-thread-return').disabled);assert.equal(x.el('note-thread-dialog').open,true);assert(x.el('note-thread-editor').contains(x.el('note-editor')));
+});
+test('late editor opening cannot replace or focus a reset and reopened map',async t=>{
+ const x=fixture(t),wait=deferred();x.setEdit(()=>wait.promise);await x.ui.open();x.click('Notiz bearbeiten…');await tick();x.ui.reset();await x.ui.open();wait.resolve(true);await tick();assert.equal(x.el('note-thread-editor').hidden,true);assert(x.el('home').contains(x.el('note-editor')));assert.equal(x.ui.editorId,null);
+});
+test('late editor return cannot close or redraw a reopened map',async t=>{
+ const x=fixture(t),wait=deferred();await x.ui.open();x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);x.setBack(()=>wait.promise);x.el('note-thread-return').onclick();await tick();x.ui.reset();await x.ui.open();wait.resolve(true);await tick();assert.equal(x.el('note-thread-dialog').open,true);assert.equal(x.el('note-thread-editor').hidden,true);assert.equal(x.ui.rootId,'Mappe');
+});
+test('closing an edited source flushes through its owner and restores the one editor',async t=>{
+ const x=fixture(t);await x.ui.open();x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);let returns=0;x.setBack(async current=>{returns++;return current();});x.click('Schließen');await until(()=>!x.el('note-thread-dialog').open);assert.equal(returns,1);assert(x.el('home').contains(x.el('note-editor')));
+});
+
+
+test('source removal previews both text fields and relationships, then retains other choices and destination names',async t=>{
+ const x=fixture(t),calls=[];x.root.relations.push({targetId:'Nera',label:'kennt'});x.root.readAloud='[Nera](dungeon-ref:note/Nera)';x.root.gmNotes='Vor [Nera](dungeon-ref:note/Nera).';await x.ui.open();
+ x.select('note-thread-plan','');x.el('note-thread-plan-name').value='Mein Abend';x.el('note-thread-visit-title').value='Meine Spur';const box=[...x.el('note-thread-sources').querySelectorAll('input')].find(e=>e.value==='Offene Spur');box.checked=false;box.onchange();
+ const card=x.el('note-thread-sources').querySelector('[data-note-id="Nera"]');assert.match(card.textContent,/2 Beziehungen entfernen: Quelle · kennt/);assert.match(card.textContent,/1 Textverweis in „Zum Vorlesen“/);assert.match(card.textContent,/1 Textverweis in „GM-Notizen“/);
+ x.setDetach(async(root,id,current)=>{calls.push({root,id,valid:current()});x.setRead(async()=>ok({root:{...x.root,revision:3,readAloud:'Nera',gmNotes:'Vor Nera.',relations:x.root.relations.filter(r=>r.targetId!==id)},entries:[x.all[1]],total:2,next:null}));return true;});
+ [...card.querySelectorAll('button')].find(b=>b.textContent==='Verknüpfungen hier lösen').onclick();await until(()=>!x.el('note-thread-sources').querySelector('[data-note-id="Nera"]')&&x.el('note-thread-editor').hidden);
+ assert.equal(calls.length,1);assert.equal(calls[0].root.revision,2);assert.equal(calls[0].id,'Nera');assert.equal(calls[0].valid,true);assert.equal(x.el('note-thread-sources').querySelector('input').checked,false);assert.equal(x.el('note-thread-plan-name').value,'Mein Abend');assert.equal(x.el('note-thread-visit-title').value,'Meine Spur');assert.equal(x.el('note-editor').closest('#note-thread-editor'),null);
+});
+
+test('an unconfirmed unlink retains the original editor and does not offer an automatic second write',async t=>{
+ const x=fixture(t);let calls=0;x.setDetach(async()=>{calls++;x.block();return false;});await x.ui.open();const confirm=[...x.el('note-thread-sources').querySelectorAll('button')].find(b=>b.textContent==='Verknüpfungen hier lösen');confirm.onclick();await until(()=>x.el('note-thread-editor-status').textContent.includes('Speicherstatus prüfen'));
+ assert.equal(x.el('note-thread-editor').hidden,false);assert(x.el('note-thread-editor').contains(x.el('preparation-reconcile')));confirm.onclick();await tick();assert.equal(calls,1);assert(x.el('note-thread-sources').querySelector('[data-note-id="Nera"]'));
+});
+
+test('a late unlink acknowledgement cannot return or redraw the editor of a reopened map',async t=>{
+ const x=fixture(t),wait=deferred();let savedCurrent;x.setDetach(async(_root,_id,current)=>{savedCurrent=current;return wait.promise;});await x.ui.open();[...x.el('note-thread-sources').querySelectorAll('button')].find(b=>b.textContent==='Verknüpfungen hier lösen').onclick();await until(()=>!!savedCurrent);x.ui.reset();await x.ui.open();const reads=x.calls.length;assert.equal(savedCurrent(),false);wait.resolve(true);await tick();await tick();assert.equal(x.calls.length,reads);assert.equal(x.el('note-thread-editor').hidden,true);assert.equal(x.el('note-thread-dialog').open,true);assert.equal(x.el('note-editor').closest('#note-thread-editor'),null);
+});
+
+
+test('family sources stay readable and route to paired relationship editing without offering a one-sided unlink',async t=>{
+ const x=fixture(t);x.root.kind='npc';x.root.relations[0].familyKind='partner';await x.ui.open();const card=x.el('note-thread-sources').querySelector('[data-note-id="Nera"]');assert.match(card.textContent,/als Paar unter „Zusammenhänge“/);assert.equal([...card.querySelectorAll('button')].some(b=>b.textContent==='Verknüpfungen hier lösen'),false);assert.equal(x.el('note-thread-dialog').open,true);assert(x.el('note-thread-sources').textContent.includes('Offene Spur'));
+});
+
+
+function recoveryFixture(x){
+ const link='[Quelle](dungeon-ref:note/Zurück)',before={...x.root,revision:1,gmNotes:'Vor '+link+'.\n',relations:[...x.root.relations,{targetId:'Zurück',label:'Quelle'}]},after={...before,revision:2,gmNotes:'Vor Quelle.\n',relations:x.root.relations};
+ Object.assign(x.root,after);
+ return {id:'H',sourceId:'Zurück',title:'Die alte Quelle',before,after};
+}
+test('recovery history is requested only on demand and uses the existing original editor and manual confirmation',async t=>{
+ const x=fixture(t),recovery=recoveryFixture(x),writes=[];x.owner.restore=async(root,r,current)=>{writes.push({root,r,current});return false;};x.setRead(async(_t,_id,_o,_a,history)=>ok({root:x.root,entries:x.all,total:3,next:null,recoveries:history?[recovery]:[]}));
+ await x.ui.open();assert.equal(x.calls.length,1);assert.equal(x.calls[0][4],undefined);x.click('Gelöste Quellen wiederherstellen…');await until(()=>x.el('note-thread-recoveries').querySelectorAll('article').length===1);assert.equal(x.calls[1][4],true);x.click('Verknüpfungen wiederherstellen');await until(()=>writes.length===1&&!x.el('note-thread-return').disabled);assert.equal(writes[0].r.sourceId,'Zurück');assert.equal(x.el('note-thread-editor').hidden,false);assert.match(x.el('note-thread-editor-status').textContent,/noch nicht bestätigt/);await tick();assert.equal(writes.length,1);x.ui.reset();assert.equal(writes[0].current(),false);
+});
+test('conflicting recovery keeps original evidence visible and cannot invoke a write',async t=>{
+ const x=fixture(t),recovery=recoveryFixture(x);x.root.gmNotes='Später völlig geändert.\n';let writes=0;x.owner.restore=async()=>{writes++;return true;};x.setRead(async()=>ok({root:x.root,entries:x.all,total:3,next:null,recoveries:[recovery]}));await x.ui.open();x.click('Gelöste Quellen wiederherstellen…');await until(()=>x.el('note-thread-recoveries').querySelector('pre'));const action=[...x.el('note-thread-recoveries').querySelectorAll('button')].find(b=>b.textContent==='Verknüpfungen wiederherstellen');assert.equal(action.disabled,true);action.onclick();await tick();assert.equal(writes,0);assert.match(x.el('note-thread-recoveries').textContent,/geändert|mehrdeutig/);assert.match(x.el('note-thread-recoveries').querySelector('pre').textContent,/dungeon-ref:note\/Zurück/);
+});
+test('a delayed history response cannot populate another opening of the same map',async t=>{
+ const x=fixture(t),recovery=recoveryFixture(x),wait=deferred();await x.ui.open();x.setRead(()=>wait.promise);x.click('Gelöste Quellen wiederherstellen…');x.ui.reset();x.setRead(async()=>ok({root:x.root,entries:x.all,total:3,next:null}));await x.ui.open();wait.resolve(ok({root:x.root,entries:x.all,total:3,next:null,recoveries:[recovery]}));await tick();assert.doesNotMatch(x.el('note-thread-recoveries').textContent,/Die alte Quelle/);
+});
+
+test('only a verified trash source can open the identical original editor while remaining excluded from preparation',async t=>{
+ const x=fixture(t),source={...x.all[0],unavailable:true,trashed:true,notice:'Originalnotiz liegt im Papierkorb'};x.setRead(async()=>ok({root:x.root,entries:[source,x.all[1]],total:2,next:null}));await x.ui.open();const card=x.el('note-thread-sources').querySelector('article');assert.match(card.textContent,/Nera.*Papierkorb/);assert.equal(card.querySelector('input').disabled,true);x.click('Original im Papierkorb ansehen…');await until(()=>x.el('note-thread-editor').hidden===false&&!x.el('note-thread-return').disabled);assert.equal(x.ui.editorId,'Nera');assert(x.el('note-thread-editor').contains(x.el('note-editor')));x.el('note-thread-return').onclick();await until(()=>x.el('note-thread-editor').hidden);assert.equal(x.el('note-thread-sources').querySelector('input').disabled,true);
+});
+test('unavailable source with no verified trash metadata never exposes the trash editor action',async t=>{
+ const x=fixture(t);x.all[0].unavailable=true;await x.ui.open();const card=x.el('note-thread-sources').querySelector('article');assert.equal([...card.querySelectorAll('button')].find(b=>b.textContent==='Notiz bearbeiten…').disabled,true);assert.equal([...card.querySelectorAll('button')].some(b=>b.textContent==='Original im Papierkorb ansehen…'),false);
+});
+
+function candidateNotes(x){
+ const candidates=['Nordtor','Südstadt'].map(id=>({ref:{kind:'note',id},title:'Nera',label:'NSC',revision:2}));
+ x.setSearch(async()=>ok({entries:candidates,next:null}));x.setDetail(async(_t,ref)=>ok({ref,revision:2,note:{...note(ref.id),title:'Nera',gmNotes:'Aktueller Einsatz: '+ref.id}}));return candidates;
+}
+test('the full original can be inspected and chosen before linking without losing prior choices or destination',async t=>{
+ const x=fixture(t);candidateNotes(x);await x.ui.open();const original=x.el('note-editor'),box=x.el('note-thread-sources').querySelector('input');box.checked=false;box.onchange();x.select('note-thread-plan','');x.el('note-thread-plan-name').value='Mein Abend';x.el('note-thread-visit-title').value='Meine Frage';x.el('note-thread-find').onclick();await until(()=>x.el('note-thread-candidates').querySelectorAll('article').length===2);x.el('note-thread-candidates').querySelector('button').onclick();await until(()=>!x.el('note-thread-editor').hidden&&!x.el('note-thread-choose-source').disabled);assert.strictEqual(x.el('note-editor'),original);assert.equal(x.ui.editorId,'Nordtor');assert.equal(x.adds.length,0);x.el('note-thread-choose-source').onclick();await until(()=>x.el('note-thread-editor').hidden&&!x.el('note-thread-add').disabled);assert.equal(x.el('note-thread-candidates').querySelector('input').checked,true);assert.equal(x.el('note-thread-candidates').querySelectorAll('input')[1].checked,false);assert.equal(x.el('note-thread-plan-name').value,'Mein Abend');assert.equal(x.el('note-thread-visit-title').value,'Meine Frage');assert.equal(x.el('note-thread-sources').querySelector('input').checked,false);assert.equal(x.adds.length,0);x.el('note-thread-add').onclick();await until(()=>x.adds.length===1&&!x.el('note-thread-return').disabled);assert.deepEqual(x.adds[0].ids,['Nordtor']);assert.equal(x.ui.editorId,'Mappe');assert.match(x.el('note-thread-editor-status').textContent,/noch nicht bestätigt/);
+});
+test('returning from candidate inspection without choosing does not stage it',async t=>{
+ const x=fixture(t);candidateNotes(x);await x.ui.open();x.el('note-thread-find').onclick();await until(()=>x.el('note-thread-candidates').querySelector('button'));x.el('note-thread-candidates').querySelector('button').onclick();await until(()=>!x.el('note-thread-return').disabled);x.el('note-thread-return').onclick();await until(()=>x.el('note-thread-editor').hidden);assert.equal(x.el('note-thread-add').disabled,true);assert.equal(x.el('note-thread-candidates').querySelector('input').checked,false);assert.equal(x.adds.length,0);
+});
+test('a retired candidate read cannot stage a source in a later opening',async t=>{
+ const x=fixture(t),wait=deferred();candidateNotes(x);await x.ui.open();x.el('note-thread-find').onclick();await until(()=>x.el('note-thread-candidates').querySelector('button'));x.el('note-thread-candidates').querySelector('button').onclick();await until(()=>!x.el('note-thread-choose-source').disabled);x.setDetail(async(_t,ref)=>ref.id==='Nordtor'?wait.promise:ok({ref,revision:2,note:note(ref.id)}));x.el('note-thread-choose-source').onclick();await until(()=>x.el('note-thread-editor').hidden);x.ui.reset();await x.ui.open();wait.resolve(ok({ref:{kind:'note',id:'Nordtor'},revision:2,note:note('Nordtor')}));await tick();assert.equal(x.el('note-thread-add').disabled,true);assert.equal(x.adds.length,0);assert.doesNotMatch(x.el('note-thread-status').textContent,/vorgemerkt/);
+});
+for(const fault of ['unavailable','identity','revision'])test(`candidate ${fault} at the final availability check cannot be staged`,async t=>{
+ const x=fixture(t);candidateNotes(x);await x.ui.open();x.el('note-thread-find').onclick();await until(()=>x.el('note-thread-candidates').querySelector('button'));x.el('note-thread-candidates').querySelector('button').onclick();await until(()=>!x.el('note-thread-choose-source').disabled);x.setDetail(async(_t,ref)=>ref.id!=='Nordtor'?ok({ref,revision:2,note:note(ref.id)}):ok({ref,revision:2,unavailable:fault==='unavailable',note:{...note(fault==='identity'?'anderes Original':ref.id),revision:fault==='revision'?3:2}}));x.el('note-thread-choose-source').onclick();await until(()=>x.el('note-thread-editor').hidden&&x.el('note-thread-status').textContent.includes('nicht verlässlich'));assert.equal(x.el('note-thread-add').disabled,true);assert.equal(x.adds.length,0);
+});
+
+test('a failed root reread preserves its error and cannot mark a reviewed candidate as ready',async t=>{
+ const x=fixture(t);candidateNotes(x);await x.ui.open();x.el('note-thread-find').onclick();await until(()=>x.el('note-thread-candidates').querySelector('button'));x.el('note-thread-candidates').querySelector('button').onclick();await until(()=>!x.el('note-thread-choose-source').disabled);x.setRead(async()=>({ok:false,error:'Mappe gerade nicht lesbar'}));x.el('note-thread-choose-source').onclick();await until(()=>x.el('note-thread-editor').hidden&&x.el('note-thread-status').textContent.includes('gerade nicht lesbar'));assert.equal(x.el('note-thread-add').disabled,true);assert.equal(x.el('note-thread-candidates').querySelector('input').checked,false);assert.equal(x.adds.length,0);
+});
+
+test('an opened map starts at the selected planning visit and retains an explicit different destination across source rereads',async t=>{
+ const x=fixture(t);x.owner.plans.push({id:'Q',name:'Aktueller Abend',scenes:[{id:'earlier',title:'Früher'},{id:'selected',title:'Aktueller Besuch'}]});x.owner.destination={planId:'Q',visitId:'selected'};await x.ui.open();assert.equal(x.el('note-thread-plan').value,'Q');assert.equal(x.el('note-thread-visit').value,'selected');
+ x.select('note-thread-plan','P');assert.equal(x.el('note-thread-visit').value,'V');x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
+ x.ui.reset();await x.ui.open();assert.equal(x.el('note-thread-plan').value,'Q');assert.equal(x.el('note-thread-visit').value,'selected');
+});
+for(const destination of [{planId:'missing',visitId:'foreign'},{planId:'P',visitId:'foreign'}])test(`an unavailable or cross-plan destination cannot select the foreign visit (${destination.planId})`,async t=>{
+ const x=fixture(t);x.owner.plans.push({id:'Q',name:'Anderer Abend',scenes:[{id:'foreign',title:'Anderer Besuch'}]});x.owner.destination=destination;await x.ui.open();assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
+});
+
+test('passive completed checklist items are not rewritten as map source choices',async t=>{
+ const x=fixture(t);x.setDetail(async(_token,ref)=>ok({ref,revision:2,note:{...note(ref.id),gmNotes:'- [x] Zeichen erkannt\n- [ ] Liste prüfen'}}));await x.ui.open();await until(()=>x.el('note-thread-sources').querySelector('.markdown-task input'));const box=x.el('note-thread-sources').querySelector('.markdown-task input');assert.equal(box.checked,true);assert.equal(box.disabled,true);x.el('note-thread-include-root').checked=false;x.el('note-thread-include-root').onchange();assert.equal(box.checked,true);assert.equal(box.disabled,true);
+});
