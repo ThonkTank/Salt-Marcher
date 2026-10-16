@@ -297,6 +297,7 @@ async function execute(action: ProgressAction) {
       action: structuredClone(action),
     };
   const task = Promise.resolve().then(async () => {
+    let confirmed = false;
     try {
       const ack = await writeConfirmed<ProgressAck>(
         "progress",
@@ -305,6 +306,7 @@ async function execute(action: ProgressAction) {
         () => current() && w?.token === token && generation === g,
         { owner: "treasury", action: command.action, token, generation: g, editing },
       );
+      confirmed = true;
       if (!current()) return false;
       dirty = false;
       draft = null;
@@ -337,8 +339,8 @@ async function execute(action: ProgressAction) {
       );
       return true;
     } catch (e) {
-      if (current()) tell((e as Error).message, true);
-      return false;
+      if (current()) tell((confirmed ? "Schatzänderung gespeichert. Anzeige konnte nicht aktualisiert werden: " : "") + (e as Error).message, true);
+      return confirmed && current();
     } finally {
       if (pending === task) pending = null;
       lock();
