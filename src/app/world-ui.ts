@@ -282,13 +282,18 @@ function renderRouteDraft(){if(!document.getElementById('travel-stops'))return;c
 function placementKey(){const o=travelOwner();return o&&frame&&mapDraft&&o.mapId===mapDraft.id&&frame.scene.members.length&&frame.position.mapId===mapDraft.id&&(!liveSurface||liveTravelOpen&&liveFocusId===o.sceneId)?JSON.stringify([o.token,o.sceneId,o.mapId,frame.scene.revision,frame.scene.membershipRevision,frame.position.revision,frame.scene.clock.revision,mapDraft.revision,level,worldSurface,liveFocusId]):null;}
 async function placePartyAt(h:Hex,requireAuthored=false,key=placementKey()){
  const owner=travelOwner();if(!owner||!mapDraft||!frame)throw new Error('Karte und aktive Gruppe auswählen.');
- const scene=structuredClone(frame.scene),positionRevision=frame.position.revision,mapRevision=mapDraft.revision,locationId=world?.places.find(p=>p.mapId===owner.mapId&&!p.trashed&&hexKey(p)===hexKey(h))?.locationId??null;
+ const request=travelRequest,scene=structuredClone(frame.scene),positionRevision=frame.position.revision,mapRevision=mapDraft.revision,locationId=world?.places.find(p=>p.mapId===owner.mapId&&!p.trashed&&hexKey(p)===hexKey(h))?.locationId??null;
  if(frame.position.mapId===owner.mapId&&hexKey(frame.position)===hexKey(h)&&frame.position.locationId===locationId){el('travel-placement-status').textContent='Standort unverändert · keine neue Platzierung nötig.';el('travel-placement-status').dataset.error='false';return;}
  el('travel-placement-status').textContent='Platzierung wird geprüft…';el('travel-placement-status').dataset.error='false';
  playback.stop();if(playback.busy)throw new Error('Laufenden Reiseabschnitt zuerst abschließen.');
  if(!await flushWorld()||!ownsTravel(owner)||key!==placementKey())throw new Error('Gruppe oder Karte inzwischen geändert. Platzierung erneut wählen.');
  await raw({kind:'place-scene',sceneId:scene.id,expectedSceneRevision:scene.revision,expectedPositionRevision:positionRevision,placementBasis:{mapRevision,membershipRevision:scene.membershipRevision,requireAuthored},position:{...h,mapId:owner.mapId,locationId}},()=>ownsTravel(owner)&&key===placementKey());
- if(ownsTravel(owner)){resetRouteDraft();await reloadScene();renderMap();renderJourney();await after();el('travel-placement-status').dataset.error='false';el('travel-placement-status').textContent='Gruppe auf Hex '+hexKey(h)+' platziert · keine Reisezeit.';}
+ if(!ownsTravel(owner))return;
+ // A placement invalidates evaluations from the old position, not newer route input.
+ if(request===travelRequest)resetRouteDraft();else clearTravelPreview();
+ await reloadScene();if(!ownsTravel(owner))return;
+ renderMap();renderJourney();await after();if(!ownsTravel(owner))return;
+ el('travel-placement-status').dataset.error='false';el('travel-placement-status').textContent='Gruppe auf Hex '+hexKey(h)+' platziert · keine Reisezeit.';
 }
 async function placeRouteCursor(){const p=hexPoint(routeCursor,2**level);try{await placePartyAt(pointHex(p.x,p.y));}catch(error){el('travel-placement-status').textContent=(error as Error).message;el('travel-placement-status').dataset.error='true';throw error;}}
 

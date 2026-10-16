@@ -86,6 +86,27 @@ Intent nach jedem Await prüfen und transienten Stand erst bei bestätigter
 Übernahme zurücksetzen. Eine spätere echte asynchrone Kartenquelle braucht
 entsprechende Readabnahmen; lokale SQLite-Ergebnisse allein ersetzen sie nicht.
 
+## Platzierung und spätere Routenabsichten
+
+Administrative Platzierung bestätigt nur den angefragten Standort, ohne Zeit
+zu buchen. `placePartyAt` hält zusätzlich die bestehende `travelRequest`-Version
+fest. Bei unverändertem Entwurf setzt die bestätigte Platzierung ihn wie bisher
+zurück. Wurden während einer langsamen Antwort neue Wegpunkte/Zielwerte eingegeben,
+bleiben diese Rohfelder, Stationen und der neue Cursor erhalten. Nur die am alten
+Standort ermittelte Auswertung verliert ihre Startautorität; eine neue ausdrückliche
+Auswertung beginnt am tatsächlich bestätigten Hex. Kein automatischer Reisestart,
+kein zweiter Entwurfsspeicher oder neuer Platzierungscommand.
+
+Nach Platzierungsantwort, Scene-Nachread und anschließendem UIrefresh wird der
+ursprüngliche Scene-/Map-/Campaignowner erneut geprüft. Ein alter Nachread darf
+in einer inzwischen anderen Gruppe weder Erfolg melden noch deren Planung ändern.
+Direkter Drag und Tastaturalternative verwenden denselben Platzierungsweg.
+Store-/DOMgegenfälle prüfen gehaltene Antworten, erhaltene rohe Wegpunkte,
+anschließende read-only Neuauswertung und einen Gruppenwechsel während Nachread;
+kanonische Position und Uhr bleiben dabei von der Anzeige getrennte Nachweise.
+Eine native IPCverzögerung prüft denselben Bedienpfad. Das ersetzt keine vollständige
+Großrouten-, Drag-/Plattform- oder200%-Abnahme.
+
 ## Unabhängige Kampagnenkopie
 
 `campaign-data.remapSnapshot` ändert lokale IDs. Die Reise-Umweltbasis enthält
