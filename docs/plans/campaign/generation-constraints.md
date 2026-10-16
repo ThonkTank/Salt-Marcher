@@ -166,6 +166,33 @@ nicht. Bindende Beiträge aller ausgewählten Fraktionen, Poolerschöpfung,
 NPC-Rename/Healthänderung zwischen Vorschau/Annahme, Fresh/Import und Wechsel
 zwischen benannten NPCs und Katalogkreaturen brauchen eigene Gegenproben.
 
+## Komposition verstehen und Vorlieben ändern
+
+Katalogvorschau, Spielabendvorschläge und der Generator für die aktuelle
+Live-Gruppe zeigen dieselben gespeicherten Kompositionsdaten: Rollen/HG,
+Mengen und positive Statblock-Slots je CR-Block, Gesamtzahlen für Kreaturen,
+Statblocks und Initiativeplätze, XP-Ziel/Ergebnis/Abstand, untersuchte
+Kompositionen und Treffer im ±5%-XP-Band. Die Anzeige berechnet keine neuen
+Kandidaten und leitet fehlende Daten älterer Vorschauen nicht aus Gegnernamen ab.
+Bei Auffüllvorschauen beschreiben die Blöcke die Ergänzung; die Kennzahlen
+berücksichtigen die feste Basis zusammen mit der Ergänzung. Soft-Diagnosen
+zeigen Wert, Zielbereich und gespeicherten normierten Abstand. Die Menge der
+XP-Bandtreffer wird ausdrücklich nicht als Menge vollständig erfüllter weicher
+Zielbereiche bezeichnet.
+
+Anzahl, Stärkeverteilung und Statblock-Vielfalt sind jetzt auch im Live-Generator
+wählbar; Änderungen sperren die Übernahme bis zur passenden neuen Vorschau.
+Eine geladene Vorschau stellt ihre gespeicherten Vorlieben wieder her. Die
+Spielabendplanung bietet dieselben Vorlieben, zunächst als „Vorgabe des wirksamen
+Presets“. Die tatsächliche Presetvorgabe wird bei Erzeugung gelesen und als
+konkreter Request gespeichert; eigene Auswahl bleibt davon unabhängig. Die
+XP-Ziele des Spielabends stammen weiter aus dessen Adventure-Day-Allokation.
+Die vorhandene Selektor-Rangfolge und alle harten Bindungen bleiben erhalten.
+
+Diese UI-Lieferung ersetzt keine vollständige Scene-Auffüllung, keine
+abstrakte Session-Orchestrierung und keine unabhängige Selector-/Skalierungs-
+oder Plattformabnahme.
+
 ## Vorschau für die laufende Gruppe
 
 `live-generation-ui.ts` liest aktive Mitglieder der fokussierten Scene und deren

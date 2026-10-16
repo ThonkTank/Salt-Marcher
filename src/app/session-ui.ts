@@ -1,3 +1,4 @@
+import {renderEncounterComposition,compositionPreferences,preferenceSelect,type CompositionPreference} from './encounter-composition-ui';
 import {renderSessionOrigin} from './session-origin-ui';
 import {sessionTargets} from './generation/session-targets';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved} from './commit-confirmation';
@@ -39,7 +40,7 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
  const key=JSON.stringify([next?.token,current?.id,selected]);
  workspace=next;plan=current;visitId=selected;sources=data;
- if(parentChanged){sessionCopy?.reset();closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
+ if(parentChanged){for(const key of Object.keys(compositionPreferences))get<HTMLSelectElement>('session-'+key).value='preset';sessionCopy?.reset();closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
  if(key===basis)return;
  basis=key;generation++;loadRequest++;closeStoryAward();encounterRequest++;get<HTMLInputElement>('visit-encounter-search').value='';clearEncounterChoices('Mindestens zwei Zeichen eingeben.');
@@ -278,7 +279,7 @@ async function selectRun(){
  try{
   const selected=unwrap(await window.campaign.sessionRun(owner.token,id));
   if(!ownsPreview(owner)||request!==previewRequest)return;
-  run=selected;renderRun();
+  run=selected;if(selected.origin)for(const key of Object.keys(compositionPreferences) as CompositionPreference[])get<HTMLSelectElement>('session-'+key).value=selected.origin.request.encounter[key];renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
 async function generatePreview(){
@@ -287,7 +288,9 @@ async function generatePreview(){
  try{
   if(!await flushSession()){if(ownsPreview(owner)&&request===previewRequest)generationMessage('Planungseingaben zuerst prüfen und speichern. Es wurde keine neue Vorschau erzeugt.',true);return;}
   if(!ownsPreview(owner)||request!==previewRequest||!view)return;
-  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={requiredNpcIds:requiredPick.ids(),includeNpcs:get<HTMLInputElement>('session-npc-mixed').checked,npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:'standard',balance:'neutral',diversity:'neutral'};
+  const registry=unwrap(await window.campaign.generatorRegistry(owner.token));if(!ownsPreview(owner)||request!==previewRequest||!view)return;const defaults=registry.presets.find(p=>p.id===registry.effectiveId)!.config.generationDefaults;
+  const preference=<K extends CompositionPreference>(key:K):GenerationRequest[K]=>{const selected=value('session-'+key);return(selected==='preset'?defaults[key]:selected) as GenerationRequest[K];};
+  const encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>={requiredNpcIds:requiredPick.ids(),includeNpcs:get<HTMLInputElement>('session-npc-mixed').checked,npcOnly:get<HTMLInputElement>('session-npc-only').checked,factionIds:[...get('session-faction-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),tableIds:[...get('session-table-picks').querySelectorAll<HTMLInputElement>('input:checked')].map(box=>box.value),filters:{text:value('session-monster-filter')},habitat:'',time:'any',difficulty:'weighted',amount:preference('amount'),balance:preference('balance'),diversity:preference('diversity')};
   const generated=unwrap(await window.campaign.generateSession(owner.token,{magicPool:magicPick.selection(),compensateMagic:get<HTMLInputElement>('session-magic-compensate').checked,compensateLoot:get<HTMLInputElement>('session-loot-compensate').checked,worldSourcesByLocation:get<HTMLInputElement>('session-world-sources').checked,planId:owner.planId,expectedProfileRevision:view.profile.revision,count:value('session-scene-count').trim()?Number(value('session-scene-count')):null,locationIds:[...get('session-locations').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),noteIds:[...get('session-notes').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),encounter}));
   if(!ownsPreview(owner)||request!==previewRequest)return;
   run=generated;renderRun();generationMessage('Gespeicherte Vorschau geöffnet · '+generated.proposals.length+' Szenen · '+generated.usedXp+' von '+generated.budget+' XP · '+generated.proposals.filter(p=>p.acceptedVisitId).length+' bereits in der Timeline.');get('session-preview').scrollIntoView({block:'start'});tell('Gespeicherte Spielabend-Vorschau geöffnet.');
@@ -313,7 +316,7 @@ function renderRun(){
   const edit=document.createElement('button');edit.textContent='Inhalte und Belohnung bearbeiten…';edit.disabled=!!p.acceptedVisitId;edit.onclick=()=>{const owner=previewOwner();if(!owner||run!==source||!sources)return;openProposalEditor(p,sources,async value=>{if(!ownsPreview(owner)||run!==source)throw new Error('Vorschlagskontext geändert.');if(!await execute({kind:'edit-proposal',planId:owner.planId,runId:source.id,index:p.index,expectedRevision:p.revision??1,...value})||!ownsPreview(owner)||run!==source)return false;const updated=unwrap(await window.campaign.sessionRun(owner.token,source.id));if(!ownsPreview(owner)||run!==source)return false;run=updated;renderRun();return true;},()=>ownsPreview(owner)&&run===source);};
   const loot=document.createElement('button');loot.textContent='Nur Beute neu erzeugen';loot.disabled=!!p.acceptedVisitId||(!p.rewardOrigin&&!source.lootGuidance);loot.onclick=()=>{void regenerateReward(source,p.index);};
   const reject=document.createElement('button');reject.textContent=p.rejected?'Vorschlag wiederherstellen':'Vorschlag verwerfen';reject.disabled=!!p.acceptedVisitId;reject.onclick=()=>{void rejectProposal(source,p.index);};
-  card.append(title,text,encounter,reward,edit,accept,regenerate,loot,reject);if(!p.rewardEdited)for(const warning of p.rewardWarnings??[]){const message=document.createElement('p');message.textContent=warning;card.append(message);}if(p.needsEncounterRefresh){const warning=document.createElement('p');warning.textContent='Ort geändert: Begegnung neu erzeugen, damit die Ortsquellen gelten.';card.append(warning);}proposalReview.decorate(card,p,sources);root.append(card);
+  card.append(title,text,encounter,reward);renderEncounterComposition(card,p.encounter.composition,source.origin?.request.encounter,!!source.origin?.request.encounter.fillPlan);card.append(edit,accept,regenerate,loot,reject);if(!p.rewardEdited)for(const warning of p.rewardWarnings??[]){const message=document.createElement('p');message.textContent=warning;card.append(message);}if(p.needsEncounterRefresh){const warning=document.createElement('p');warning.textContent='Ort geändert: Begegnung neu erzeugen, damit die Ortsquellen gelten.';card.append(warning);}proposalReview.decorate(card,p,sources);root.append(card);
  }
  const mappe=document.createElement('button');mappe.type='button';mappe.textContent='Spielabendmappe öffnen';mappe.id='session-review-open-packet';mappe.onclick=()=>get<HTMLButtonElement>('session-packet-open').click();root.append(mappe);
 }
@@ -407,6 +410,7 @@ export async function clearSessionTimeline(){
  return execute({kind:'replace-plan',planId:owner.planId,expectedBasis:target.replacementBasis,name:plan.name,sourcePlanId:null,expectedSourceBasis:null,copyParty:false});
 }
 export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRefresh:typeof refreshBase,navigateNote:typeof openNote,edited:()=>void=()=>{},offerVisit?:(planId:string,visitId:string,current:()=>boolean)=>Promise<void>){
+ const preferenceRoot=get('session-composition-preferences');for(const key of Object.keys(compositionPreferences) as CompositionPreference[]){const label=document.createElement('label');label.textContent=compositionPreferences[key].label+' ';label.append(preferenceSelect(key,'session-'+key,true));preferenceRoot.append(label);}
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
 proposalReview=new SessionReview(acceptSelectedProposals,sessionReviewBasis);
