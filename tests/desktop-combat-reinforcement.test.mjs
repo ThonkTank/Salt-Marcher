@@ -9,11 +9,11 @@ import {parseHTML} from 'linkedom';
 
 mkdirSync('.build/reinforcement/catalog',{recursive:true});
 copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/reinforcement/catalog/srd-5.1.generated.json');
-buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {searchCreatures} from './src/app/storage/encounters';",resolveDir:process.cwd()},outfile:'.build/reinforcement/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {searchCreatures} from './src/app/storage/encounters';export {rolledMonsterInitiatives,initiativeNumber} from './src/app/combat-initiative';",resolveDir:process.cwd()},outfile:'.build/reinforcement/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['src/app/combat.ts'],outfile:'.build/reinforcement/ui.cjs',bundle:true,platform:'node',format:'cjs'});
-const require=createRequire(import.meta.url),{CampaignStore,searchCreatures}=require('../.build/reinforcement/store.cjs');
+const require=createRequire(import.meta.url),{CampaignStore,searchCreatures,rolledMonsterInitiatives,initiativeNumber}=require('../.build/reinforcement/store.cjs');
 const tick=()=>new Promise(r=>setImmediate(r));
-async function until(check){for(let i=0;i<150&&!check();i++)await tick();assert.ok(check(),'Expected reinforcement state');}
+async function until(check){const deadline=Date.now()+5000;while(!check()&&Date.now()<deadline)await new Promise(r=>setTimeout(r,10));assert.ok(check(),'Expected reinforcement state');}
 function fixture(t){
  const root=mkdtempSync(tmpdir()+'/reinforcement-'),file=root+'/campaign.sqlite',x={root,file,store:new CampaignStore(file)};
  x.campaign=x.store.create('Goblin-Hinterhalt');x.w=x.store.activate(x.campaign.id);
@@ -52,7 +52,7 @@ test('invalid or conflicting initiative rejects the whole reinforcement and leav
 
 async function uiFixture(t){
  const x=fixture(t),old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
- Object.assign(globalThis,{window,document});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:''});
+ Object.assign(globalThis,{window,document});window.HTMLInputElement.prototype.select=()=>{};for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:''});
  const saved=new Map();window.localStorage={getItem:k=>saved.get(k)??null,setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)};
  const reply=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};
  const writes=[],queries=[],messages=[];window.campaign={};
@@ -126,14 +126,12 @@ test('an HP lookup that completes after a target switch cannot steal the new edi
  assert.equal(focused,1);assert.equal(x.el('combat-selected-name').textContent,x.combat.participants[1].name);assert.equal(x.writes.length,0);
 });
 
-test('initiative cells focus the existing draft editor and save grouped values without changing health',async t=>{
- const x=await uiFixture(t),target=x.combat.participants[1],input=x.el('fighter-initiative');let focused=false,scrolled=false;
- input.focus=()=>{focused=true;};input.select=()=>{};input.scrollIntoView=()=>{scrolled=true;};let returned=false;x.el('combat-panel').scrollIntoView=()=>{returned=true;};Object.defineProperty(document,'activeElement',{configurable:true,value:input});
- const cells=[...x.el('combat-rows').querySelectorAll('.combat-initiative')];assert.equal(cells.length,3);assert.match(cells[1].getAttribute('aria-label'),/Goblin B.*Initiative 9/);
- cells[1].onclick();await until(()=>focused&&scrolled);assert.equal(x.el('fighter-values').open,true);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);
- input.value='17';input.dispatchEvent(new window.Event('input'));x.el('combat-participant-form').onsubmit({preventDefault(){}});
- await until(()=>x.writes.length===1&&!input.disabled&&returned);const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;
- assert.ok(saved.participants.every(p=>p.initiative===17));assert.deepEqual(saved.participants.map(p=>p.hp),[7,7,7]);assert.equal(saved.turnId,x.combat.turnId);
+test('initiative cells open one field per group and never submit the fighter HP draft',async t=>{
+ const x=await uiFixture(t),target=x.combat.participants[1];x.el('combat-rows').querySelector('button').onclick();await until(()=>!x.el('fighter-name').disabled);x.el('fighter-hp').value='2';x.el('fighter-hp').dispatchEvent(new window.Event('input'));await tick();await tick();
+ const cells=[...x.el('combat-rows').querySelectorAll('.combat-initiative')];assert.equal(cells.length,3);cells[1].onclick();await until(()=>x.el('combat-initiative-dialog').querySelectorAll('input[data-participant-id]').length===1);
+ const input=x.el('combat-initiative-dialog').querySelector('input[data-participant-id]');assert.equal(input.dataset.participantId,x.combat.participants[0].id);input.value='17';input.dispatchEvent(new window.Event('input'));x.el('initiative-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-initiative-dialog').hasAttribute('open'));
+ const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;assert.equal(x.writes[0].action.kind,'initiative');assert.ok(saved.participants.every(p=>p.initiative===17));assert.deepEqual(saved.participants.map(p=>p.hp),[7,7,7]);assert.equal(saved.turnId,x.combat.turnId);
+ const f=x.store.combatDraft(x.w.token,x.combat.id,'fighter',x.combat.participants[0].id);assert.equal(f.values['fighter-hp'],'2');assert.equal(x.store.combatDraft(x.w.token,x.combat.id,'initiative',x.combat.id),null);
 });
 
 
@@ -160,4 +158,26 @@ test('runner saves one troop name for the selected group and offers it directly 
  const x=await uiFixture(t);x.el('combat-rows').querySelector('button').onclick();await until(()=>!x.el('fighter-name').disabled);
  x.el('fighter-group-name').value='Schützen';x.el('fighter-group-name').dispatchEvent(new window.Event('input'));await tick();await tick();x.el('combat-participant-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);
  assert.equal(x.writes[0].action.changes.groupName,'Schützen');assert.match(x.el('combat-creature-select').textContent,/Schützen · Goblin · vorhandene Initiative 9/);assert.equal([...x.el('combat-rows').querySelectorAll('small')].filter(e=>e.textContent==='Schützen').length,3);
+});
+
+
+test('initiative raw input survives close, a failed save and reopening without a combat write',async t=>{
+ const x=await uiFixture(t);x.el('combat-initiative-open').onclick();await until(()=>x.el('initiative-rows').querySelector('input')&&!x.el('initiative-save').disabled);
+ const input=x.el('initiative-rows').querySelector('input');input.value=' +17 ';input.dispatchEvent(new window.Event('input'));
+ x.el('initiative-close').onclick();await until(()=>!x.el('combat-initiative-dialog').hasAttribute('open'));
+ assert.equal(x.store.combatDraft(x.w.token,x.combat.id,'initiative',x.combat.id).values[0].raw,' +17 ');
+ x.el('combat-initiative-open').onclick();await until(()=>x.el('initiative-rows').querySelector('input')&&!x.el('initiative-save').disabled);assert.equal(x.el('initiative-rows').querySelector('input').value,' +17 ');
+ window.campaign.executeCombat=async()=>({ok:false,error:'Controlled save rejection'});x.el('initiative-form').onsubmit({preventDefault(){}});await until(()=>x.el('initiative-status').textContent.includes('nicht übernommen'));
+ assert.equal(x.el('initiative-save').disabled,false);assert.equal(x.el('initiative-rows').querySelector('input').value,' +17 ');assert.ok(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants.every(p=>p.initiative===9));
+});
+test('late initiative lookup cannot reopen a different encounter',async t=>{
+ const x=await uiFixture(t);let resolve;const original=window.campaign.combatDraft;window.campaign.combatDraft=(...args)=>args[2]==='initiative'?new Promise(r=>{resolve=r;}):original(...args);x.el('combat-initiative-open').onclick();await until(()=>!!resolve);
+ const other=x.execute({kind:'create',sceneId:x.scene.id,title:'Andere Begegnung',includeParty:false,expectedMembershipRevision:x.scene.membershipRevision});await x.ui.openExistingCombat(other.id);resolve({ok:true,value:null});await tick();await tick();assert.equal(x.el('combat-initiative-dialog').hasAttribute('open'),false);assert.equal(x.el('initiative-rows').querySelectorAll('input').length,0);assert.equal(x.writes.length,0);
+});
+
+
+test('initiative previews roll once per troop with its bonus and never roll player entries',t=>{
+ const x=fixture(t),hero={...x.combat.participants[0],id:'hero',groupId:'hero-group',characterId:'hero-character',initiative:18,initiativeBonus:99},c={...x.combat,participants:[hero,...x.combat.participants]};
+ for(const [mode,expected,calls] of [['normal',5,1],['advantage',19,2],['disadvantage',5,2]]){let i=0;const result=rolledMonsterInitiatives(c,mode,()=>[3,17][i++]);assert.equal(i,calls);assert.deepEqual(result,[{participantId:x.combat.participants[0].id,initiative:expected}]);assert.equal(hero.initiative,18);}
+ for(const raw of ['', '1.5','1e2','1000001'])assert.throws(()=>initiativeNumber(raw));assert.equal(initiativeNumber(' +19 '),19);assert.equal(initiativeNumber('-2'),-2);
 });

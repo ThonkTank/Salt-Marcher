@@ -19,23 +19,33 @@ async function fixture() {
   const store = new CampaignStore(filename), campaign = store.create('Welteditor'), w = store.activate(campaign.id);
   const command = action => ({ commandId: randomUUID(), campaignId: campaign.id, token: w.token, action });
   const scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: store.live(w.token).rosterRevision })).scene;
-  const map = { id: randomUUID(), revision: 0, name: 'Region', hexMeters: 4828.032, climate: 'temperate', seed: 'world-test', cells: [] };
+  const baseMap = store.world(w.token).maps[0];
+  const map = { ...baseMap, name: 'Region', hexMeters: 4828.032, climate: 'temperate', seed: 'world-test', cells: [] };
   const event = { id: randomUUID(), revision: 0, name: 'Markt', startMs: '0', durationMs: '86400000', repeatMs: null, locationId: null, notes: 'Vorher', trashed: false };
   const phenomenon = { id: randomUUID(), revision: 0, mapId: map.id, name: 'Nebel', kind: 'fog', intensity: .5, center: { q: 0, r: 0 }, radiusHexes: 3, movement: { q: 0, r: 0 }, startMs: '0', durationMs: '86400000', state: 'active', pausedAtMs: null, temperatureC: null, travelFactor: null, notes: 'Vorher' };
-  for (const action of [{ kind: 'map', map, expectedRevision: null }, { kind: 'calendar-event', event, expectedRevision: null }, { kind: 'phenomenon', phenomenon, expectedRevision: null }]) store.executeWorld(command(action));
-  const saved = { window: globalThis.window, document: globalThis.document };
+  for (const action of [{ kind: 'map', map, expectedRevision: baseMap.revision }, { kind: 'calendar-event', event, expectedRevision: null }, { kind: 'phenomenon', phenomenon, expectedRevision: null }]) store.executeWorld(command(action));
+  const saved = { window: globalThis.window, document: globalThis.document, Event: globalThis.Event, CustomEvent: globalThis.CustomEvent };
   const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
-  Object.assign(globalThis, { window, document });
+  Object.assign(globalThis, { window, document, Event: window.Event, CustomEvent: window.CustomEvent });
   let hold = false, release, beforeHold = false, releaseBefore, writes = 0;
-  const sent = [], statuses = [], camps = [];
+  const sent = [], statuses = [], camps = [], atlasReplies = new Map();
   const response = fn => { try { return { ok: true, value: fn() }; } catch (error) { return { ok: false, error: error.message }; } };
   window.campaign = {
     world: async token => response(() => store.world(token)), preparation: async token => response(() => store.preparation(token)), live: async token => response(() => store.live(token)),
     sceneWorld: async (token, id) => response(() => store.sceneWorld(token, id)),
+    executeAtlas: async c => {
+      assert.equal(c.action.kind,'world');
+      const r=await window.campaign.executeWorld(c.action.command);
+      return r.ok?{ok:true,value:{atlas:atlasReplies.get(c.commandId)??store.campaignAtlas(c.token),result:r.value}}:r;
+    },
     reconcileWorld: async (command, token) => response(() => store.reconcileWorld(command, token)),
     executeWorld: async c => {
       writes++; const captured = structuredClone(c); sent.push(captured);
-      const result = response(() => store.executeWorld(captured));
+      const result = response(() => {
+        if(!['map','cell','place','place-presentation'].includes(captured.action.kind))return store.executeWorld(captured);
+        const ack=store.executeAtlas({...captured,action:{kind:'world',command:captured}});
+        atlasReplies.set(captured.commandId,ack.atlas);return ack.result;
+      });
       if (hold) { hold = false; return new Promise(resolve => { release = () => resolve(result); }); }
       return result;
     },
@@ -229,19 +239,19 @@ test('an obsolete scene read error cannot clear a newer confirmed live travel co
  }finally{x.cleanup();}
 });
 
-test('a rejected save during map selection retains the real map and route; retry saves the old owner before switching',async()=>{
+test('a stale unavailable map selection retains root drafts on save failure; retry saves only the real owner',async()=>{
  const x=await travelFixture();try{
-  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),other={...x.map,id:randomUUID(),name:'B-Karte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));await x.ui.openWorld();x.enter('travel-waypoints','0,1');x.enter('travel-q','2');x.enter('hex-label','Offene A-Prosa');const before=x.store.db.serialize(),real=x.window.campaign.executeWorld;x.window.campaign.executeWorld=async()=>({ok:false,error:'Speicherfehler A'});
-  await x.select('world-map-select',other.id);await until(()=>x.statuses.some(s=>s.includes('Speicherfehler A')));
-  assert.equal(x.document.getElementById('world-map-select').value,x.map.id);assert.equal(x.document.getElementById('world-map-name').value,'Region');assert.equal(x.document.getElementById('hex-label').value,'Offene A-Prosa');assert.equal(x.document.getElementById('travel-stops').children.length,2);assert.equal(x.document.getElementById('travel-preview-accept').disabled,true);assert.ok(x.store.db.serialize().equals(before));
-  x.window.campaign.executeWorld=real;await x.select('world-map-select',other.id);await until(()=>x.document.getElementById('world-map-name').value==='B-Karte');assert.equal(x.store.world(x.w.token).maps.find(m=>m.id===x.map.id).cells.find(c=>c.q===0&&c.r===0).label,'Offene A-Prosa');assert.equal(x.store.world(x.w.token).maps.find(m=>m.id===other.id).cells.length,0);assert.equal(x.document.getElementById('world-map-select').value,other.id);assert.equal(x.document.getElementById('travel-stops').children.length,0);assert.equal(x.document.getElementById('hex-label').value,'');assert.equal(x.document.getElementById('travel-q').value,'0');assert.equal(x.document.getElementById('travel-evaluation').querySelectorAll('dd').length,0);
+  const unavailable=randomUUID();x.enter('travel-waypoints','0,1');x.enter('travel-q','2');x.enter('hex-label','Offene A-Prosa');const before=x.store.db.serialize(),real=x.window.campaign.executeWorld;x.window.campaign.executeWorld=async()=>({ok:false,error:'Speicherfehler A'});
+  await x.select('world-map-select',unavailable);await until(()=>x.statuses.some(s=>s.includes('Speicherfehler A')));
+  assert.equal(x.document.getElementById('world-map-select').value,x.map.id);assert.equal(x.document.getElementById('hex-label').value,'Offene A-Prosa');assert.equal(x.document.getElementById('travel-stops').children.length,2);assert.ok(x.store.db.serialize().equals(before));
+  x.window.campaign.executeWorld=real;await x.select('world-map-select',unavailable);await until(()=>x.statuses.some(s=>s.includes('nicht mehr verfügbar')));const maps=x.store.world(x.w.token).maps;assert.equal(maps.length,1);assert.equal(maps[0].id,x.map.id);assert.equal(maps[0].cells.find(c=>c.q===0&&c.r===0).label,'Offene A-Prosa');assert.equal(x.document.getElementById('world-map-select').value,x.map.id);assert.equal(x.document.getElementById('travel-stops').children.length,2);assert.equal(x.document.getElementById('travel-preview-accept').disabled,true);
  }finally{x.cleanup();}
 });
 
-test('a delayed map save cannot adopt an older map selection or cross campaign activation',async()=>{
+test('a delayed root save cannot adopt unavailable selections or overwrite another campaign root',async()=>{
  const x=await travelFixture();try{
-  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),b={...x.map,id:randomUUID(),name:'B-Karte'},c={...x.map,id:randomUUID(),name:'C-Karte'};for(const map of [b,c])x.store.executeWorld(command({kind:'map',map,expectedRevision:null}));await x.ui.openWorld();x.enter('hex-label','A behalten');x.hold();await x.select('world-map-select',b.id);await until(x.hasReply);await x.select('world-map-select',c.id);assert.equal(x.document.getElementById('world-map-select').value,x.map.id,'pending choices must not impersonate a loaded map');x.release();await x.ui.flushWorld();await until(()=>x.document.getElementById('world-map-name').value==='C-Karte');assert.equal(x.document.getElementById('world-map-select').value,c.id);assert.equal(x.document.getElementById('world-map-select').getAttribute('aria-busy'),'false');
-  x.enter('hex-label','C behalten');x.hold();await x.select('world-map-select',b.id);await until(x.hasReply);const campaign=x.store.create('Neue Kampagne'),w=x.store.activate(campaign.id);x.ui.activateWorld(w);await x.ui.openWorld();x.release();await tick();await tick();assert.equal(x.document.getElementById('world-map-select').value,'');assert.equal(x.document.getElementById('world-map-workspace').hidden,true);assert.equal(x.document.getElementById('world-map-select').getAttribute('aria-busy'),'false');assert.equal(x.store.world(w.token).maps.length,0);
+  const unavailable=randomUUID(),newer=randomUUID();x.enter('hex-label','A behalten');x.hold();await x.select('world-map-select',unavailable);await until(x.hasReply);await x.select('world-map-select',newer);assert.equal(x.document.getElementById('world-map-select').value,x.map.id);x.release();await x.ui.flushWorld();await until(()=>x.document.getElementById('world-map-select').getAttribute('aria-busy')==='false');assert.equal(x.document.getElementById('world-map-select').value,x.map.id);assert.equal(x.store.world(x.w.token).maps.length,1);
+  x.enter('hex-label','A weiter behalten');x.hold();await x.select('world-map-select',unavailable);await until(x.hasReply);const campaign=x.store.create('Neue Kampagne'),w=x.store.activate(campaign.id),root=x.store.world(w.token).maps[0],before=x.store.db.serialize();x.ui.activateWorld(w);await x.ui.openWorld();x.release();await tick();await tick();assert.equal(x.document.getElementById('world-map-select').value,root.id);assert.equal(x.document.getElementById('world-map-workspace').hidden,false);assert.equal(x.document.getElementById('world-map-select').getAttribute('aria-busy'),'false');assert.deepEqual(x.store.world(w.token).maps,[root]);assert.ok(x.store.db.serialize().equals(before));
  }finally{if(x.hasReply())x.release();x.cleanup();}
 });
 
@@ -276,9 +286,9 @@ test('cold live travel opening replaces the loading placement hint when its grou
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 
-test('a focused scene whose map was absent stays explicit; retry refreshes the real map provider without mutation',async()=>{
+test('a provider missing the real root stays explicit; retry reloads that same map without mutation',async()=>{
  const x=await liveContextFixture();try{
-  const map={...x.map,id:randomUUID(),name:'Nachträglich geladene Karte'};x.store.executeWorld(x.command({kind:'map',map,expectedRevision:null}));const sc=x.store.sceneWorld(x.w.token,x.b.id);x.store.executeWorld(x.command({kind:'place-scene',sceneId:x.b.id,expectedSceneRevision:sc.scene.revision,expectedPositionRevision:sc.position.revision,position:{mapId:map.id,q:8,r:0,locationId:null}}));const before=x.store.db.serialize();await x.ui.renderLiveWorld(x.w.token,x.b.id);assert.equal(x.get('world-map-select').value,'');assert.match(x.get('live-travel-empty').textContent,/nicht verfügbar/);assert.equal(x.get('live-travel-retry').hidden,false);assert.equal(x.get('journey-play').disabled,true);x.get('live-travel-retry').click();await until(()=>x.get('world-map-select').value===map.id&&x.get('live-travel-retry').hidden);assert.match(x.get('world-current').textContent,/8,0/);assert.ok(x.store.db.serialize().equals(before));
+  const sc=x.store.sceneWorld(x.w.token,x.b.id);x.store.executeWorld(x.command({kind:'place-scene',sceneId:x.b.id,expectedSceneRevision:sc.scene.revision,expectedPositionRevision:sc.position.revision,position:{mapId:x.map.id,q:8,r:0,locationId:null}}));const before=x.store.db.serialize(),real=x.window.campaign.world;x.window.campaign.world=async token=>{const r=await real(token);return r.ok?{ok:true,value:{...r.value,maps:[]}}:r;};await x.ui.openWorld();await x.ui.renderLiveWorld(x.w.token,x.b.id);assert.equal(x.get('world-map-select').value,'');assert.match(x.get('live-travel-empty').textContent,/nicht verfügbar/);assert.equal(x.get('live-travel-retry').hidden,false);assert.equal(x.get('journey-play').disabled,true);x.window.campaign.world=real;x.get('live-travel-retry').click();await until(()=>x.get('world-map-select').value===x.map.id&&x.get('live-travel-retry').hidden);assert.match(x.get('world-current').textContent,/8,0/);assert.ok(x.store.db.serialize().equals(before));
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 
@@ -352,25 +362,22 @@ test('a late administrative placement refresh cannot publish success in another 
  }finally{x.cleanup();}
 });
 
-for(const direct of [false,true])test(`another selected map cannot resume a paused journey (${direct?'direct callback':'visible control'})`,async()=>{
+for(const direct of [false,true])test(`an unavailable root provider cannot resume a paused journey (${direct?'direct callback':'visible control'})`,async()=>{
  const x=await travelFixture();try{
   const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null}),j=x.store.executeWorld(command({kind:'journey',preview:p})).scene.journey;
   x.store.executeWorld(command({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}));
-  const other={...x.map,id:randomUUID(),name:'Andere Karte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));await x.ui.openWorld();await x.select('world-map-select',other.id);
+  const real=x.window.campaign.world;x.window.campaign.world=async token=>{const r=await real(token);return r.ok?{ok:true,value:{...r.value,maps:[]}}:r;};await x.ui.openWorld();
   const get=id=>x.document.getElementById(id),bytes=x.store.db.serialize(),writes=x.writes;
-  if(direct){get('journey-play').onclick();for(let i=0;i<15;i++)await tick();assert.equal(x.writes,writes,'viewing another map cannot silently reactivate the old journey');}
+  if(direct){get('journey-play').onclick();for(let i=0;i<15;i++)await tick();assert.equal(x.writes,writes,'a missing provider cannot silently reactivate the journey');}
   else assert.equal(get('journey-play').disabled,true,'resume must agree with the timer map requirement');
   assert.match(get('journey-playback-status').textContent,/Reisekarte/);assert.ok(x.store.db.serialize().equals(bytes));assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'paused');
-  await x.select('world-map-select',x.map.id);assert.equal(get('journey-play').disabled,false);get('journey-play').onclick();await until(()=>x.writes===writes+1);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey-state');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'active');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
+  x.window.campaign.world=real;await x.ui.openWorld();assert.equal(get('journey-play').disabled,false);get('journey-play').onclick();await until(()=>x.writes===writes+1);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey-state');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'active');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
  }finally{x.cleanup();}
 });
-test('a valid new route on the displayed map is not blocked by a journey on the previous map',async()=>{
+test('a valid route for the focused scene is not blocked by another scene journey on the same root',async()=>{
  const x=await travelFixture();try{
-  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});x.store.executeWorld(command({kind:'journey',preview:p}));
-  const other={...x.map,id:randomUUID(),name:'Neue Reisekarte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));const f=x.store.sceneWorld(x.w.token,x.scene.id);x.store.executeWorld(command({kind:'place-scene',sceneId:x.scene.id,expectedSceneRevision:f.scene.revision,expectedPositionRevision:f.position.revision,position:{mapId:other.id,q:0,r:0,locationId:null}}));await x.ui.openWorld();x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);x.document.getElementById('live-travel-toggle').click();await until(()=>!x.document.getElementById('live-travel-host').hidden);x.enter('travel-q','1');x.enter('travel-r','0');x.preview();await until(()=>x.document.getElementById('travel-evaluation').querySelectorAll('dd').length===3);
-  assert.equal(x.document.getElementById('journey-play').disabled,false);assert.doesNotMatch(x.document.getElementById('journey-playback-status').textContent,/Reisekarte auswählen/);
-  x.document.getElementById('journey-play').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.mapId===other.id);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
- }finally{x.cleanup();}
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),pc=x.store.executeLive(command({kind:'create-character',profile:{name:'Bela',speedFeet:30}})).character;let live=x.store.live(x.w.token);x.store.executeLive(command({kind:'membership',characterId:pc.id,expectedRevision:pc.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));live=x.store.live(x.w.token);const a=x.store.liveScene(x.w.token,x.scene.id),b=x.store.executeLive(command({kind:'move',sceneId:a.id,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,expectedClockRevision:a.clock.revision,expectedSceneMembershipRevision:a.membershipRevision,memberIds:[pc.id],target:{kind:'new',title:'Nachhut',expectedContentRevision:a.revision}})).session.createdScene;const f=x.store.sceneWorld(x.w.token,b.id);x.store.executeWorld(command({kind:'place-scene',sceneId:b.id,expectedSceneRevision:f.scene.revision,expectedPositionRevision:f.position.revision,position:{mapId:x.map.id,q:0,r:0,locationId:null}}));const p=x.store.previewTravel(x.w.token,{sceneId:a.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});x.store.executeWorld(command({kind:'journey',preview:p}));const original=x.store.sceneWorld(x.w.token,a.id);x.store.executeLive(command({kind:'focus',sceneId:b.id,expectedRevision:x.store.live(x.w.token).focusRevision}));await x.ui.openWorld();x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,b.id);x.document.getElementById('live-travel-toggle').click();await until(()=>!x.document.getElementById('live-travel-host').hidden);x.enter('travel-q','1');x.enter('travel-r','0');x.preview();await until(()=>x.document.getElementById('travel-evaluation').querySelectorAll('dd').length===3);assert.equal(x.document.getElementById('journey-play').disabled,false);x.document.getElementById('journey-play').click();await until(()=>!!x.store.sceneWorld(x.w.token,b.id).journey);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey');assert.equal(x.sent.at(-1).action.preview.request.sceneId,b.id);assert.equal(x.store.sceneWorld(x.w.token,b.id).scene.clock.instantMs,'0');assert.deepEqual(x.store.sceneWorld(x.w.token,a.id),original);
+ }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 
 test('crowded Hex labels favour the selected Hex, return with zoom, and leave complete map facts intact',async()=>{

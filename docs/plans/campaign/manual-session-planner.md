@@ -48,6 +48,11 @@ veränderte Auswahl öffnet keine Mappe aus einem älteren Auftrag.
 - Ein leerer XP-Pool einer manuellen Belohnung bleibt eine offene Eingabe.
   Speichern und Verlassen warten auf eine Zahl oder das Entfernen der Belohnung;
   ausdrücklich eingegebene `0` ist gültig und wird nicht aus Leere abgeleitet.
+- Beutezeilen behalten ihre Eingabeknoten beim Ergänzen, Entfernen und nach
+  bestätigtem Speichern. Unfertige Mengen bleiben offen; nur positive ganze
+  Mengen geben den Schreibauftrag frei. Zeilenbefehle greifen auf den aktuellen
+  Besuch zu; entfernte Controls ändern keine neue Belohnung. Erneutes Anlegen
+  nach Entfernen zeigt leere Beute und den neuen XP-Wert.
 - Ersetzen prüft Ziel- und Vorlagenbasis gemeinsam in einer Transaktion.
   Reihenfolge, Ortsverweise, Prosa und Wissensbezüge werden übernommen;
   „Timeline leeren“ entfernt die Besuche ohne neue Party oder neuen Plannamen.

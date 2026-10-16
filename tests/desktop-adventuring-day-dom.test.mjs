@@ -150,6 +150,59 @@ test('campaign-local planning restores exact inputs, itinerary order, rests and 
  x.get('draft-reset').onclick();await tick();assert.equal(x.saved.size,0);assert.match(x.get('source').textContent,/Aktive Party/);assert.equal(x.get('mode-budget').getAttribute('aria-pressed'),'true');
 });
 
+test('new searches revoke old encounter choices immediately while keeping the selected plan',async t=>{
+ const x=fixture(t);await x.open();
+ window.campaign.encounterPlans=async()=>({ok:true,value:[{id:'patrol',revision:1,name:'Patrouille'}]});
+ x.get('use-encounters').checked=true;x.get('use-encounters').onchange();await tick();
+ const old=x.get('plan-matches').querySelector('button');old.onclick();
+ x.input(x.get('plan-selected').querySelector('input'),'03');
+ let finish;window.campaign.encounterPlans=()=>new Promise(resolve=>{finish=resolve;});
+ x.input(x.get('plan-search'),'Hinterhalt');
+ assert.equal(x.get('plan-matches').children.length,0,'old choices must disappear before the debounce starts');
+ old.onclick();assert.equal(x.get('plan-selected').querySelectorAll('input').length,1,'a revoked choice cannot append another row');
+ await settled();assert.equal(x.get('plan-matches').getAttribute('aria-busy'),'true');
+ assert.equal(x.get('plan-selected').querySelector('input').value,'03');
+ finish({ok:true,value:[{id:'ambush',revision:2,name:'Hinterhalt'}]});await tick();
+ assert.equal(x.get('plan-matches').getAttribute('aria-busy'),'false');
+ x.get('plan-matches').querySelector('button').onclick();await settled();
+ assert.deepEqual(x.calls.at(-1).encounters,[{id:'patrol',revision:1,count:3},{id:'ambush',revision:2,count:1}]);
+});
+
+test('a failed explicit template refresh revokes old choices, preserves selected revisions and can be retried',async t=>{
+ const x=fixture(t);await x.open();
+ window.campaign.encounterPlans=async()=>({ok:true,value:[{id:'patrol',revision:1,name:'Patrouille'}]});
+ x.get('use-encounters').checked=true;x.get('use-encounters').onchange();await tick();
+ const old=x.get('plan-matches').querySelector('button');old.onclick();
+ let finish;window.campaign.encounterPlans=()=>new Promise(resolve=>{finish=resolve;});
+ x.get('plan-reload').onclick();
+ assert.equal(x.get('plan-matches').children.length,0);old.onclick();
+ assert.equal(x.get('plan-selected').querySelectorAll('input').length,1);
+ finish({ok:false,error:'Vorlagenablage offline'});await tick();
+ assert.match(x.get('plan-search-status').textContent,/offline/);assert.equal(x.get('plan-matches').getAttribute('aria-busy'),'false');
+ await settled();assert.equal(x.calls.at(-1).encounters[0].revision,1);
+ window.campaign.encounterPlans=async()=>({ok:true,value:[{id:'patrol',revision:4,name:'Patrouille neu'}]});
+ x.get('plan-reload').onclick();await tick();await settled();
+ assert.equal(x.calls.at(-1).encounters[0].revision,4);assert.equal(x.get('plan-matches').getAttribute('aria-busy'),'false');
+ assert.match(x.get('plan-selected').textContent,/Patrouille neu/);
+});
+
+test('late search answers cannot reopen obsolete choices after a newer search or campaign switch',async t=>{
+ const x=fixture(t);await x.open();const pending=[];
+ window.campaign.encounterPlans=(token,query)=>new Promise(resolve=>pending.push({token,query,resolve}));
+ x.get('use-encounters').checked=true;x.get('use-encounters').onchange();
+ x.input(x.get('plan-search'),'neu');await settled();
+ assert.equal(pending.length,2);
+ pending[0].resolve({ok:true,value:[{id:'old',revision:1,name:'Alter Treffer'}]});await tick();
+ assert.equal(x.get('plan-matches').children.length,0);assert.equal(x.get('plan-matches').getAttribute('aria-busy'),'true');
+ pending[1].resolve({ok:true,value:[{id:'new',revision:2,name:'Neuer Treffer'}]});await tick();
+ const choice=x.get('plan-matches').querySelector('button');assert.match(choice.textContent,/Neuer Treffer/);
+ x.input(x.get('plan-search'),'noch später');await settled();
+ x.ui.activateDayCalculator({token:'b',campaign:{id:'campaign-b'}});await x.open();
+ pending[2].resolve({ok:true,value:[{id:'late',revision:3,name:'Falsche Kampagne'}]});await tick();choice.onclick();
+ assert.equal(x.get('plan-matches').children.length,0);assert.equal(x.get('plan-matches').getAttribute('aria-busy'),'false');
+ assert.equal(x.get('plan-selected').querySelectorAll('input').length,0);assert.equal(x.saved.has('dungeon-editor:day-draft:v1:campaign-b'),false);
+});
+
 test('damaged drafts remain untouched and persistence failures never claim a saved plan',async t=>{
  const x=fixture(t);await x.open();const key='dungeon-editor:day-draft:v1:campaign-a';
  x.saved.set(key,'{broken');x.ui.activateDayCalculator({token:'fresh',campaign:{id:'campaign-a'}});await x.open();

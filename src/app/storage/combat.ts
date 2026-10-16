@@ -15,6 +15,7 @@ import { readGeneratorRegistry,readGenerationRun,acceptGeneration } from './gene
 import {readWorldActor,readPreparedGroup} from './session';
 import type { Creature } from '../../features/catalog/creature-catalog';
 import {creatureActionForRolls,creatureActionRolls,creatureRollKey,parseDiceFormula,criticalDamageFormula,legendaryActionCost} from '../dice-formula';
+import {initiativeBasisMatches,initiativeNumber} from '../combat-initiative';
 import {fighterDraftBasisMatches} from '../combat-draft-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function applyDamageDeath(p:Combatant,result:'failure'|'dead'){
@@ -70,6 +71,11 @@ function combatParty(db: any, cam: string, state: CombatState) {
 }
 function assessment(db: any, cam: string, state: CombatState) {
   return assessEncounter(state.partyBasis??combatParty(db,cam,state),state.participants.filter(p=>!p.characterId).map(p=>({xp:p.xp,count:1,countForMultiplier:p.countForMultiplier})));
+}
+function startCombat(db:any,cam:string,state:CombatState){
+          if (state.phase !== 'preparing' || !state.participants.length) throw new Error('Füge Teilnehmer hinzu, bevor du den Kampf beginnst.');
+          if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
+          state.partyBasis=combatParty(db,cam,state); state.assessment=assessment(db,cam,state); state.phase = 'running'; state.round = 1; state.turnId = combatOrder(state)[0]!.id;for(const actor of state.participants)resetLegendary(state,actor);tickEffects(state.participants.find(actor=>actor.id===state.turnId)!,'start');
 }
 function label(index: number) { let result=''; do { result=String.fromCharCode(65+index%26)+result;index=Math.floor(index/26)-1; } while(index>=0);return result; }
 function legendarySource(state:CombatState,p:Combatant){return state.sources?.find(source=>source.id===p.sourceId&&source.legendaryActions.length);}
@@ -135,12 +141,13 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
     const a = command.action, cam = command.campaignId;
     let consumedDraft:import('../combat-draft-contracts').CombatWorkingDraft|null=null;
     if(command.draftWriteId!==undefined){
-      if(typeof command.draftWriteId!=='string'||!command.draftWriteId||!command.combatId||(a.kind!=='edit'&&a.kind!=='notes'))throw new Error('Ungültige Entwurfsübernahme.');
-      consumedDraft=readCombatDraft(db,cam,command.combatId,a.kind==='edit'?'fighter':'notes',a.kind==='edit'?a.participantId:command.combatId);
+      if(typeof command.draftWriteId!=='string'||!command.draftWriteId||!command.combatId||(a.kind!=='edit'&&a.kind!=='notes'&&a.kind!=='initiative'))throw new Error('Ungültige Entwurfsübernahme.');
+      consumedDraft=readCombatDraft(db,cam,command.combatId,a.kind==='edit'?'fighter':a.kind==='initiative'?'initiative':'notes',a.kind==='edit'?a.participantId:command.combatId);
       if(!consumedDraft||consumedDraft.writeId!==command.draftWriteId)throw new Error('Kampfeingabe inzwischen geändert.');
-      const current=decode(db.prepare('SELECT * FROM combat WHERE campaign_id=? AND id=?').get(cam,command.combatId)),basis=consumedDraft.kind==='fighter'?current.participants.find(p=>p.id===consumedDraft!.targetId):{title:current.title,notes:current.notes};
-      const matches=consumedDraft.kind==='fighter'&&basis?fighterDraftBasisMatches(consumedDraft.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(consumedDraft.basis);
+      const current=decode(db.prepare('SELECT * FROM combat WHERE campaign_id=? AND id=?').get(cam,command.combatId)),basis=consumedDraft.kind==='initiative'?null:consumedDraft.kind==='fighter'?current.participants.find(p=>p.id===consumedDraft!.targetId):{title:current.title,notes:current.notes};
+      const matches=consumedDraft.kind==='initiative'?initiativeBasisMatches(consumedDraft.basis,current):consumedDraft.kind==='fighter'&&basis?fighterDraftBasisMatches(consumedDraft.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(consumedDraft.basis);
       if(!matches)throw new Error('Gespeicherte Werte des Entwurfs wurden geändert. Zuerst abgleichen.');
+      if(consumedDraft.kind==='initiative'&&a.kind==='initiative'){const submitted=[...a.values].sort((x,y)=>x.participantId.localeCompare(y.participantId)),saved=consumedDraft.values.map(v=>({participantId:v.participantId,initiative:initiativeNumber(v.raw)})).sort((x,y)=>x.participantId.localeCompare(y.participantId));if(JSON.stringify(submitted)!==JSON.stringify(saved))throw new Error('Initiativeeingabe stimmt nicht mit dem gesicherten Entwurf überein.');}
     }
     let state: CombatState;
     if (a.kind === 'create') {
@@ -209,6 +216,10 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if (!Number.isSafeInteger(a.count) || a.count < 1 || a.count > 100 || state.participants.length + a.count > 1000) throw new Error('Bitte 1–100 Teilnehmer hinzufügen.');
           const shared = randomUUID();
           for (let i = 0; i < a.count; i++) { const id = randomUUID(); state.participants.push({ id, characterId: null, groupId: a.grouped ? shared : id, name: a.count > 1 ? a.name + ' ' + (i + 1) : a.name, initiative: 0, initiativeBonus: a.initiativeBonus, armorClass: a.armorClass, hp: a.maxHp, maxHp: a.maxHp, tempHp: 0, conditions: '', concentrating: false }); }
+        } else if(a.kind==='initiative'){
+          if(!Array.isArray(a.values)||!a.values.length||a.values.length>1000||a.start!==undefined&&typeof a.start!=='boolean')throw new Error('Initiative benötigt gültige Teilnehmerwerte.');
+          const groups=new Set<string>();for(const value of a.values){const p=state.participants.find(p=>p.id===value.participantId);if(!p||groups.has(p.groupId)||!Number.isSafeInteger(value.initiative)||Math.abs(value.initiative)>1000000)throw new Error('Initiativegruppe fehlt, ist doppelt oder besitzt einen ungültigen Wert.');groups.add(p.groupId);for(const peer of state.participants.filter(peer=>peer.groupId===p.groupId))peer.initiative=value.initiative;}
+          if(a.start)startCombat(db,cam,state);
         } else if (a.kind === 'edit') {
           const p = participant();
           const beforeHp=p.hp;
@@ -302,9 +313,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           const rolls = new Map<string, number>();
           for (const p of state.participants.filter(p => !p.characterId)) { if (!rolls.has(p.groupId)) { const x = randomInt(1, 21), y = a.mode === 'normal' ? x : randomInt(1, 21); rolls.set(p.groupId, (a.mode === 'advantage' ? Math.max(x, y) : Math.min(x, y)) + p.initiativeBonus); } p.initiative = rolls.get(p.groupId)!; }
         } else if (a.kind === 'start') {
-          if (state.phase !== 'preparing' || !state.participants.length) throw new Error('Füge Teilnehmer hinzu, bevor du den Kampf beginnst.');
-          if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
-          state.partyBasis=combatParty(db,cam,state); state.assessment=assessment(db,cam,state); state.phase = 'running'; state.round = 1; state.turnId = combatOrder(state)[0]!.id;for(const actor of state.participants)resetLegendary(state,actor);tickEffects(state.participants.find(actor=>actor.id===state.turnId)!,'start');
+          startCombat(db,cam,state);
         } else if (a.kind === 'next') {
           if (state.phase !== 'running') throw new Error('Kampf zuerst beginnen.');
           if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');

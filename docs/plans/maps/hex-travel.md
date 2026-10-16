@@ -6,6 +6,12 @@ und [Hex Travel Console](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a
 [Wetter](../runtime/weather.md), [Zeit und Restock](../runtime/shops-and-restock.md)
 und [Dungeonreise](../dungeon/travel-state.md) behalten ihre eigenen Regeln.
 
+Maßgeblich ist jetzt die [gemeinsame Atlasfläche](../../ATLAS.md) mit genau einer
+Karte pro Kampagne. Die unten genannten versionierten Hex-/Live-Belege stammen
+teilweise aus dem früheren Mehrkartenaufbau. Sie beschreiben lokale Teilbelege,
+keine erneute Abnahme der aktuellen Workbench; die aktuellen Integrationsgrenzen
+und nächsten Schritte stehen unter „Reisekontext im gemeinsamen Atlas“.
+
 ## Vorhandener Ablauf und Datenregeln
 
 `world-ui.ts` besitzt die bestehende Karten-/Reisekonsole. Geordnete Wegpunkte
@@ -58,7 +64,13 @@ mehr als40Abschnitte, Checkpointfortsetzung, gefälschte Kosten ohne Schreibwirk
 und vollständiges Leeren des transienten Auswertungsstands. Das ersetzt keine
 vollständige Scene-/Mapwechsel-, Latenz- oder native Reiseabnahme.
 
-## Kartenwahl und fehlgeschlagene Speicherung
+## Früherer Kartenwechsel und erhaltene Owner-Regeln
+
+Der folgende Wechselvertrag beschreibt die frühere Hexkonsole. Die aktuelle
+Atlaswurzel lässt keine zweite Karte anlegen; die früheren Mehrkartenfixtures
+werden deshalb ausdrücklich auf ihre heutige fachliche Wirkung bezogen. Erhalten bleibt die fachliche Schutzregel für Wechsel zwischen
+Kampagnen und realen Reisekontexten: Erst den alten Owner abschließen, dann den
+neuen bestätigten Stand übernehmen, ohne offene Texte zu verlieren.
 
 Die Kartenwahl übernimmt ihr Ziel erst nach erfolgreichem Speichern des bisher
 geöffneten Kartenentwurfs. Währenddessen bleibt der Picker an die tatsächlich
@@ -360,6 +372,54 @@ Auswahlpriorität, Rückkehr nach Zoom/Reset und unveränderte gespeicherte Wert
 `test-desktop-travel-target.mjs` prüft echte native Textrechtecke, Label- und
 Nachbarhexklicks neben dem bestehenden Reise-/Neustartpfad. Das ist keine
 Abnahme beliebiger Markerkrümmungen, aller Schriften, großer Karten oder200%.
+
+## Reisekontext im gemeinsamen Atlas
+
+`CampaignAtlasWorkbench` bietet die lokale Reisekonsole unter **Erkunden**.
+Ein erneutes `campaignAtlas`-Lesen entwertet ihre nicht angenommene Vorschau
+sofort, stoppt automatische Wiedergabe und sperrt lokale Reise-, Eingangs- und
+Platzierungsaktionen. Die letzte bestätigte Geometrie bleibt sichtbar; der
+Reisestatus nennt Laden beziehungsweise den Lesefehler. **Reisekontext erneut
+laden** liest denselben Workspace erneut. Eine erfolgreiche Antwort ersetzt
+keine Reiseentscheidung: Das Ziel bleibt erhalten, eine neue Vorschau und ein
+neuer ausdrücklicher Start sind nötig. Ohne Fokusgruppe bleiben Aktionen gesperrt.
+
+Eine verspätete Vorschau darf nur an denselben Workspace, dieselbe gelesene
+Atlasinstanz und ihre aktuelle Anfragegeneration gebunden werden. Antwort-Scene
+und aktueller Fokus müssen übereinstimmen. Verlassen der Atlasfläche und
+Aktivieren einer Kampagne entwerten offene Vorschauen ebenfalls. Alte Lesefehler
+überschreiben keine neuere bestätigte Antwort. SQLite-Writer und Receipts bleiben
+allein für Position, Zeit, Revisionen und Wiederholbarkeit zuständig; kein Schema
+und keine Migration für diesen transienten Zustand.
+
+Sieben Controller-/DOM-Gegenfälle verwenden reale Storeprojektionen. Der native
+Desktoplauf prüft tatsächliche Schaltflächen, gehaltene Antworten, Fehler/Retry
+und Fokuswechsel: Statusklärung verändert keine DBbytes; eine alte Antwort wird
+verworfen, erst ein neuer ausdrücklicher Start/Schritt bewegt die neue Gruppe.
+Normaler Exit und frischer Store bestätigen Fokus, getrennte Uhren und lokalen
+Laufstand. Das ist keine vollständige native Neustart-/Indoor-/200%-Abnahme. Beim ersten Lauf scheiterten sämtliche51
+`desktop-travel-target-dom`-Fälle bereits am Anlegen einer zweiten Karte. Das
+Fixture verwendet jetzt die tatsächliche Atlaswurzel samt Revision, den realen
+Atlaswriter für authored Worldbefehle und die DOM-eigenen Eventkonstruktoren.
+Vorhandene Verzögerungs-/Fehlerports beobachten weiterhin denselben Worldauftrag.
+Sechs frühere Mehrkartenfälle werden ausdrücklich ersetzt: unbekannte Karten-ID
+nach abgewiesenem Save, neuere ungültige Auswahl und Kampagnenwechsel während
+Save, fehlende Rootkarte im Providerread mit Retry, gesperrte Fortsetzung bei
+fehlendem Provider (Schaltfläche und direkter Callback) und getrennte Reisen
+zweier Scenes auf derselben Rootkarte. Die übrigen Bedienassertions bleiben erhalten;
+kein Fall wird übersprungen. Das ist keine Mehrkartenfreigabe oder vollständige
+Abnahme der neuen Workbench.
+
+Die durchgehende Live-/Atlas-Komposition bleibt gesondert zu qualifizieren:
+`live-hex-surface` dockt weiterhin die Hexkonsole, die neue Workbench besitzt auch
+lokale Fußwege und Eingangskontext. Nächste Lieferung: denselben bestätigten
+Fokus, aktive lokale/Hex-/Dungeonreise, Unklarheitszustand und gemeinsamen
+Canvas beim Wechsel Leiten → Erkunden → Leiten bedienen; die Shell delegiert an
+den tatsächlich zuständigen Writer. Keine zweite Position oder unabhängige
+Route. Abnahme: lokaler Schritt, Weltgrenze und Eingang jeweils mit Fokuswechsel,
+Neustart und unveränderten Ziel-/Zeitfakten; reine Konsolenwahl erhält den
+Center-Tab. Eine zusätzliche Konsole oder grüne Storefälle allein erfüllen das
+ursprüngliche Reise-Szenarioziel nicht.
 
 ## Nächste ausführbare Lieferungen
 
