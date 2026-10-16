@@ -29,6 +29,7 @@ const goldText = (cp: string | null) =>
     ? ""
     : BigInt(cp) / 100n + "." + (BigInt(cp) % 100n).toString().padStart(2, "0");
 let distribution:TreasureDistribution;
+let catalogResults: {search:string;items:ItemDefinition[]} | null = null;
 let listQuery:TreasureQuery={search:'',anchor:'all'},listRequest=0,anchorScenes:{id:string;title:string}[]=[];
 function anchorChoices(){const controls=[el<HTMLSelectElement>('treasury-filter-anchor'),el<HTMLSelectElement>('treasury-anchor-target')];for(const select of controls){const prior=select.value;select.replaceChildren();if(select.id==='treasury-filter-anchor'){option(select,'all','Alle Schätze');option(select,'inbox','Posteingang: nicht platziert oder Zuordnung offen');option(select,'scene','Alle Gruppen');option(select,'location','Alle Orte');}else option(select,'unplaced','Nicht platziert');for(const scene of anchorScenes)option(select,'scene:'+scene.id,'Gruppe: '+scene.title);for(const place of places)option(select,'location:'+place.id,'Ort: '+place.name);if([...select.options].some(o=>o.value===prior))select.value=prior;}}
 function queryKey(){return JSON.stringify(listQuery);}
@@ -106,6 +107,8 @@ export function activateTreasury(next: Workspace | null) {
   if (timer) clearTimeout(timer);
   el("treasury-editor").hidden = true;
   el("treasury-list").replaceChildren();
+  catalogResults = null;
+  drawCatalogResults();
 }
 export async function openTreasury(id?: string) {
   if (!w) return;
@@ -244,6 +247,7 @@ function draw() {
   recipient.replaceChildren();
   for (const p of people?.characters.filter((p) => p.active) ?? [])
     option(recipient, p.characterId, p.name);
+  drawCatalogResults();
   lock();
 }
 async function keep(): Promise<boolean> {
@@ -436,6 +440,7 @@ async function history(more: boolean) {
 }
 async function findCatalog() {
   const current = editorOwner();
+  catalogResults = null;
   el('treasury-catalog-results').textContent='Gegenstände werden gesucht…';
   const q = {
     search: value("treasury-catalog-search"),
@@ -458,12 +463,22 @@ async function findCatalog() {
   if (!current() || q.search !== value("treasury-catalog-search")) return;
   if(!response.ok)el('treasury-catalog-results').textContent='Suche fehlgeschlagen: '+response.error;
   const p = unwrap(response);
+  catalogResults = {search:q.search,items:p.items};
+  drawCatalogResults();
+}
+function drawCatalogResults() {
+  const current = editorOwner();
   el("treasury-catalog-results").replaceChildren();
-  if(!p.items.length)el('treasury-catalog-results').textContent='Keine passenden Gegenstände gefunden.';
-  for (const d of p.items) {
+  if(!catalogResults || catalogResults.search !== value('treasury-catalog-search')) {
+    el('treasury-catalog-results').textContent='Suche mit Enter oder „Suchen“ starten.';
+    return;
+  }
+  if(!catalogResults.items.length)el('treasury-catalog-results').textContent='Keine passenden Gegenstände gefunden.';
+  for (const d of catalogResults.items) {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = d.name + (d.unitCopper === null ? " · Wert offen" : "");
+    b.disabled = !!pending || (!!w && hasPendingCommit(w.campaign.id));
     b.onclick = () => { if (current()) addDefinition(d); };
     el("treasury-catalog-results").append(b);
   }
@@ -546,7 +561,7 @@ export function initTreasury(
     e.preventDefault();
     run(findCatalog);
   };
-  el('treasury-catalog-search').oninput=()=>{el('treasury-catalog-results').textContent='Suche mit Enter oder „Suchen“ starten.';};
+  el('treasury-catalog-search').oninput=()=>{catalogResults=null;drawCatalogResults();};
   el("treasury-move-form").onsubmit = (e) => {
     e.preventDefault();
     run(async () => {
