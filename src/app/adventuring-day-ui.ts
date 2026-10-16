@@ -3,7 +3,8 @@ import type { Workspace } from "./contracts";
 import type { DayView } from "./adventuring-day-contracts";
 import { onProgressChanged } from "./progression-ui";
 import {renderDayPacing} from './adventuring-day-pacing-ui';
-import {initDayItinerary,activateDayItinerary,dayItineraryRequest,renderDayItinerary} from './adventuring-day-itinerary-ui';
+import {initDayItinerary,activateDayItinerary,dayItineraryRequest,renderDayItinerary,dayItineraryDraft,refreshDayItineraryChoices} from './adventuring-day-itinerary-ui';
+import {dayDraftKey,readDayDraft,type DayDraft} from './adventuring-day-draft';
 
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -16,6 +17,17 @@ let workspace: Workspace | null = null,
   generation = 0,
   timer: ReturnType<typeof setTimeout> | null = null,
   tell: (s: string, error?: boolean) => void;
+let draftBlocked=false;
+function keepDraft(){
+  const id=workspace?.campaign?.id;if(!id||draftBlocked)return;
+  try{
+    const draft:DayDraft={version:1,source,mode,rows:source==='custom'?rows.map(r=>({...r})):[],itinerary:dayItineraryDraft()};
+    const raw=JSON.stringify(draft);readDayDraft(raw);
+    window.localStorage.setItem(dayDraftKey(id),raw);
+    el('day-draft-status').textContent='Planung auf diesem Gerät gesichert.';
+  }catch{el('day-draft-status').textContent='Planung konnte auf diesem Gerät nicht gesichert werden. Eingaben vor dem Schließen kopieren.';}
+}
+function edited(){keepDraft();schedule();}
 // Keep editing text until the calculation boundary; an empty field is not zero.
 const numericDraft = (value: string) => (value.trim() ? Number(value) : NaN);
 const opened = () => el("day-popover").matches(":popover-open");
@@ -57,20 +69,20 @@ function renderRows() {
       row.level = level.value;
       source = "custom";
       state();
-      schedule();
+      edited();
     };
     count.oninput = () => {
       row.count = count.value;
       source = "custom";
       state();
-      schedule();
+      edited();
     };
     remove.onclick = () => {
       rows.splice(i, 1);
       source = "custom";
       state();
       renderRows();
-      schedule();
+      edited();
     };
     const field = (title: string, input: HTMLInputElement) => {
       const label = document.createElement("label");label.append(document.createTextNode(title),input);return label;
@@ -294,7 +306,6 @@ function schedule() {
   }, 120);
 }
 export function activateDayCalculator(next: Workspace | null) {
-  activateDayItinerary(next);
   workspace = next;
   generation++;
   if (timer) clearTimeout(timer);
@@ -302,24 +313,34 @@ export function activateDayCalculator(next: Workspace | null) {
   if (opened()) el("day-popover").hidePopover();
   rows = [];
   source = "active";
+  mode = "budget";
   el<HTMLInputElement>("day-total-xp").value = "0";
   el<HTMLInputElement>("day-reward-xp").value = "0";
   el<HTMLInputElement>("day-separate-reward").checked = false;
+  draftBlocked=false;
+  let draft:DayDraft|undefined;
+  el('day-draft-status').textContent='Planung wird auf diesem Gerät pro Kampagne gesichert.';
+  if(next?.campaign?.id)try{
+    const raw=window.localStorage.getItem(dayDraftKey(next.campaign.id));
+    if(raw!==null){draft=readDayDraft(raw);source=draft.source;mode=draft.mode;rows=draft.rows.map(r=>({...r}));el('day-draft-status').textContent='Gesicherte Planung wieder aufgenommen · Ergebnisse werden neu berechnet.';}
+  }catch{draftBlocked=true;el('day-draft-status').textContent='Gesicherte Planung nicht lesbar. Sie bleibt erhalten. Neue Eingaben werden erst nach „Planung zurücksetzen“ gesichert.';}
+  activateDayItinerary(next,draft?.itinerary);
   el<HTMLButtonElement>("day-trigger").disabled = !next;
   el("day-trigger").textContent = "Rastbudget";
   el('day-trigger').setAttribute('aria-busy','false');
   el('day-popover').setAttribute('aria-busy','false');
   el('day-pacing').replaceChildren();
+  for(const id of ['day-summary','day-timeline','day-current'])el(id).replaceChildren();
   el("party-shortcut").textContent = "Party öffnen";
   renderRows();
   state();
   if (next) void refresh();
 }
 export function initDayCalculator(status: typeof tell, openParty: () => void,openEncounters:()=>void=()=>{}) {
-  initDayItinerary(()=>{state();schedule();});
+  initDayItinerary(()=>{state();edited();});
   tell = status;
   const popup=bindAnchoredPopup(el<HTMLButtonElement>('day-trigger'),el('day-popover'),760);
-  el('day-trigger').onclick=()=>{if(popup.toggle())void refresh();};
+  el('day-trigger').onclick=()=>{if(popup.toggle()){refreshDayItineraryChoices();void refresh();}};
   el('day-close').onclick=popup.close;
   el('day-plan-open-encounters').onclick=()=>{popup.close();openEncounters();};
   el("day-party-open").onclick = () => {
@@ -329,6 +350,7 @@ export function initDayCalculator(status: typeof tell, openParty: () => void,ope
   el("day-active").onclick = () => {
     source = "active";
     state();
+    keepDraft();
     void refresh();
   };
   el("day-add").onclick = () => {
@@ -340,26 +362,32 @@ export function initDayCalculator(status: typeof tell, openParty: () => void,ope
     source = "custom";
     state();
     renderRows();
-    schedule();
+    edited();
   };
   el("day-clear").onclick = () => {
     rows = [];
     source = "custom";
     state();
     renderRows();
-    schedule();
+    edited();
   };
   for (const m of ["budget", "progress"] as const)
     el("day-mode-" + m).onclick = () => {
       mode = m;
       state();
-      schedule();
+      edited();
     };
   for (const id of ["day-total-xp", "day-reward-xp", "day-separate-reward"])
     el(id).addEventListener("input", () => {
       state();
-      schedule();
+      edited();
     });
+  el('day-draft-reset').onclick=()=>{
+    const owner=workspace;if(!owner)return;
+    try{window.localStorage.removeItem(dayDraftKey(owner.campaign.id));}
+    catch{el('day-draft-status').textContent='Planung konnte nicht zurückgesetzt werden. Gespeicherte Eingaben bleiben erhalten.';return;}
+    activateDayCalculator(owner);popup.open();void refresh();
+  };
   onProgressChanged(schedule);
   document.addEventListener("campaign-party-changed", schedule);
   state();

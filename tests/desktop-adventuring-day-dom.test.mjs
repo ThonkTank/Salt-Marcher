@@ -28,6 +28,8 @@ function fixture(t) {
   const ui = require("../.build/adventuring-day-dom.cjs"),
     get = (id) => dom.document.getElementById("day-" + id),
     calls = [];
+  const saved=new Map();
+  dom.window.localStorage={getItem:key=>saved.get(key)??null,setItem:(key,value)=>saved.set(key,value),removeItem:key=>saved.delete(key)};
   dom.window.innerWidth=1000;dom.window.innerHeight=800;get("trigger").getBoundingClientRect=()=>({left:700,right:800,top:20,bottom:60,width:100,height:40});
   let open = false;
   get("popover").matches = () => open;
@@ -75,7 +77,7 @@ function fixture(t) {
     () => {},
     () => {},
   );
-  ui.activateDayCalculator({ token: "owner" });
+  ui.activateDayCalculator({ token: "owner",campaign:{id:'campaign-a'} });
   t.after(() => {
     ui.activateDayCalculator(null);
     Object.assign(globalThis, previous);
@@ -89,6 +91,7 @@ function fixture(t) {
     get,
     calls,
     input,
+    ui,saved,
     open: async () => {
       await tick();
       get("trigger").onclick();
@@ -119,6 +122,49 @@ test("unfinished custom rows keep their exact text when another row is added or 
   await settled();
   assert.equal(x.calls.at(-1).rows[0].count, 2);
   assert.match(x.get("summary").textContent, /600 XP Tagesbudget/);
+});
+
+test('campaign-local planning restores exact inputs, itinerary order, rests and manual XP without accepting new template revisions',async t=>{
+ const x=fixture(t);await x.open();
+ const [level,count]=x.get('rows').querySelectorAll('input');x.input(level,'03');x.input(count,'4');
+ x.get('mode-progress').onclick();x.input(x.get('total-xp'),'1600');x.get('separate-reward').checked=true;x.input(x.get('separate-reward'),'on');x.input(x.get('reward-xp'),'800');
+ window.campaign.encounterPlans=async()=>({ok:true,value:[{id:'patrol',revision:1,name:'Patrouille'},{id:'ambush',revision:2,name:'Hinterhalt'}]});
+ x.get('use-encounters').checked=true;x.get('use-encounters').onchange();await tick();
+ const choices=x.get('plan-matches').querySelectorAll('button');choices[0].onclick();choices[1].onclick();
+ x.input(x.get('plan-selected').querySelector('input'),'3');
+ const rest=x.get('plan-selected').lastElementChild.querySelector('select');Object.defineProperty(rest,'value',{configurable:true,writable:true,value:'short'});rest.onchange();
+ x.get('plan-selected').lastElementChild.querySelector('button').onclick();await settled();
+ assert.match(x.get('draft-status').textContent,/gesichert/);
+ const raw=[...x.saved.values()][0];assert.equal(JSON.parse(raw).itinerary.manual.load,'1600');assert.equal(JSON.parse(raw).itinerary.manual.reward,'800');
+ // Reactivation changes the runtime token, discards module state and rereads storage.
+ x.ui.activateDayCalculator({token:'other',campaign:{id:'campaign-b'}});assert.equal(x.get('summary').children.length,0);await x.open();
+ assert.match(x.get('source').textContent,/Aktive Party/);assert.equal(x.get('use-encounters').checked,false);assert.equal(x.get('plan-selected').querySelectorAll('input').length,0);
+ window.campaign.encounterPlans=async()=>({ok:true,value:[{id:'patrol',revision:9,name:'Patrouille neu'},{id:'ambush',revision:8,name:'Hinterhalt neu'}]});
+ x.ui.activateDayCalculator({token:'fresh',campaign:{id:'campaign-a'}});await x.open();
+ assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['03','4']);
+ assert.equal(x.get('mode-progress').getAttribute('aria-pressed'),'true');assert.equal(x.get('use-encounters').checked,true);
+ assert.deepEqual(x.calls.at(-1).encounters,[{id:'ambush',revision:2,count:1,restBefore:'short'},{id:'patrol',revision:1,count:3}]);
+ assert.match(x.get('plan-matches').textContent,/Patrouille neu/);assert.equal([...x.saved.values()][0],raw,'opening/searching must not overwrite the saved basis');
+ x.get('use-encounters').checked=false;x.get('use-encounters').onchange();
+ assert.equal(x.get('total-xp').value,'1600');assert.equal(x.get('reward-xp').value,'800');assert.equal(x.get('separate-reward').checked,true);
+ x.get('draft-reset').onclick();await tick();assert.equal(x.saved.size,0);assert.match(x.get('source').textContent,/Aktive Party/);assert.equal(x.get('mode-budget').getAttribute('aria-pressed'),'true');
+});
+
+test('damaged drafts remain untouched and persistence failures never claim a saved plan',async t=>{
+ const x=fixture(t);await x.open();const key='dungeon-editor:day-draft:v1:campaign-a';
+ x.saved.set(key,'{broken');x.ui.activateDayCalculator({token:'fresh',campaign:{id:'campaign-a'}});await x.open();
+ assert.match(x.get('draft-status').textContent,/nicht lesbar/);x.input(x.get('rows').querySelector('input'),'3');assert.equal(x.saved.get(key),'{broken');
+ const remove=window.localStorage.removeItem;window.localStorage.removeItem=()=>{throw new Error('Storage unavailable');};
+ x.get('draft-reset').onclick();assert.equal(x.saved.get(key),'{broken');assert.match(x.get('draft-status').textContent,/nicht zurückgesetzt/);window.localStorage.removeItem=remove;
+ x.get('draft-reset').onclick();await tick();assert.equal(x.saved.has(key),false);
+ window.localStorage.setItem=()=>{throw new Error('QuotaExceededError');};x.input(x.get('rows').querySelector('input'),'3');await settled();
+ assert.match(x.get('draft-status').textContent,/nicht gesichert/);assert.match(x.get('summary').textContent,/1.200 XP Tagesbudget/);
+});
+
+test('an unfinished field survives reactivation without becoming a calculated zero',async t=>{
+ const x=fixture(t);await x.open();x.input(x.get('rows').querySelector('input'),'3');x.input(x.get('rows').querySelectorAll('input')[1],'');
+ x.ui.activateDayCalculator({token:'fresh',campaign:{id:'campaign-a'}});await x.open();
+ assert.equal(x.get('rows').querySelectorAll('input')[1].value,'');assert.equal(x.get('summary').children.length,0);assert.match(x.get('status').textContent,/Zeilen/);
 });
 
 test('mixed-level planning stays independent of live Party warnings and survives popup reopening', async t => {

@@ -133,8 +133,13 @@ Figuren angezeigt. Dazwischen werden keine Rasten oder Levelwechsel angenommen.
 Bei eigenen Zeilen bleiben aktuelle Party-Raststände unabhängig. Etappen und
 XP→Tage verwenden die verteilten Summen; die ursprünglichen Summen stehen daneben.
 Manuelle XP-Eingaben werden vor Planmodus bewahrt und beim Ausschalten wieder
-hergestellt. Suchantworten sind an Workspace/Antwortgeneration gebunden. Der Plan
-bleibt ein lokaler Rechnerentwurf bis Kampagnenreaktivierung oder Neustart.
+hergestellt. Suchantworten sind an Workspace/Antwortgeneration gebunden. Die Rechnereingaben bleiben ein lokaler Entwurf auf diesem Gerät, getrennt je Kampagne.
+Eigene Levelgruppen, manuelle XP und der geordnete Encounterplan einschließlich
+Vorlagenrevisionen und Rasten werden nach Aktivierung oder Neustart wieder aufgenommen.
+Ergebnisse werden neu gelesen und berechnet; eine Quelländerung benötigt weiterhin
+„Vorlagen aktualisieren“. Der Entwurf gehört nicht zum Kampagnenexport. Speicherfehler
+werden angezeigt, beschädigte Entwürfe bleiben bis zum ausdrücklichen Zurücksetzen
+erhalten. DOM-Regressionen prüfen Wiederaufnahme, Kampagnenwechsel und Fehlerpfade.
 
 Gezielte Prüfung: Storeablauf mit echter Vorlagenspeicherung, abweichender alter
 Vorlagenparty, Wiederholungen, Rundung, eigener Sechserparty, unveränderten

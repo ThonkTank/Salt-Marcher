@@ -1,5 +1,6 @@
 import type {Workspace} from './contracts';
 import type {DayPlanEntry,DayItinerary} from './adventuring-day-contracts';
+import type {DayItineraryDraft} from './adventuring-day-draft';
 
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const format=(n:number)=>n.toLocaleString('de-DE');
@@ -66,10 +67,20 @@ export function renderDayItinerary(value:DayItinerary|undefined){
   li.append(node('p','Bis hier: '+format(stage.cumulativeLoadXp)+' Belastung / '+format(stage.cumulativeRewardXp)+' Verdienst insgesamt.'+(stage.shortDue===null?' Raststand offen.':' Danach: '+stage.shortDue+' Figuren brauchen eine kurze, '+stage.longDue+' eine lange Rast · '+stage.knownRestStates+' / '+value.partySize+' bekannte Raststände.')));list.append(li);
  }root.append(list);
 }
-export function activateDayItinerary(next:Workspace|null){
+export function dayItineraryDraft():DayItineraryDraft {
+ return {enabled:enabled(),selected:selected.map(p=>({...p})),manual:enabled()?{...manual}:{load:el<HTMLInputElement>('day-total-xp').value,reward:el<HTMLInputElement>('day-reward-xp').value,separate:el<HTMLInputElement>('day-separate-reward').checked}};
+}
+export function activateDayItinerary(next:Workspace|null,draft?:DayItineraryDraft){
  workspace=next;generation++;if(timer)clearTimeout(timer);timer=null;selected=[];manual={load:'0',reward:'0',separate:false};el<HTMLInputElement>('day-use-encounters').checked=false;el<HTMLInputElement>('day-plan-search').value='';
  el('day-plan-matches').replaceChildren();el('day-plan-result').replaceChildren();el('day-plan-search-status').textContent='';renderSelected();inputs();
+ if(draft){
+  selected=draft.selected.map(p=>({...p}));manual={...draft.manual};el<HTMLInputElement>('day-use-encounters').checked=draft.enabled;
+  el<HTMLInputElement>('day-total-xp').value=draft.enabled?'':manual.load;el<HTMLInputElement>('day-reward-xp').value=draft.enabled?'':manual.reward;
+  el<HTMLInputElement>('day-separate-reward').checked=draft.enabled||manual.separate;
+  el<HTMLDetailsElement>('day-plan-panel').open=draft.enabled;renderSelected();inputs();
+ }
 }
+export function refreshDayItineraryChoices(){if(enabled())void search();}
 export function initDayItinerary(refresh:()=>void){
  changed=refresh;
  el('day-use-encounters').onchange=()=>{
