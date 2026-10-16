@@ -28,7 +28,7 @@ function draw(){
 }
 function edit(c:CampaignOverview|null){if(busy||pending)return;editing=c;el('campaign-identity-heading').textContent=c?'Kampagne bearbeiten':'Neue Kampagne';el<HTMLInputElement>('campaign-identity-name').value=c?.name??'';el('campaign-identity-trash').hidden=!c;el('campaign-identity-status').textContent='';dialog('campaign-identity-dialog').showModal();el('campaign-identity-name').focus();}
 function closeIdentity(){if(busy||pending)return;dialog('campaign-identity-dialog').close();el<HTMLInputElement>('campaign-identity-name').value='';editing=null;}
-function clearPending(){pending=null;try{window.localStorage.removeItem(pendingKey);storageNotice='';}catch(error){storageNotice='Der geklärte Auftragsvermerk konnte lokal nicht entfernt werden: '+(error as Error).message+'. Sein Buchungsstatus bleibt erneut prüfbar.';}}
+function clearPending(){pending=null;try{window.localStorage.removeItem(pendingKey);storageNotice='';}catch{storageNotice='Der geklärte Auftragsvermerk konnte lokal nicht entfernt werden. Sein Buchungsstatus bleibt erneut prüfbar.';}}
 async function apply(receipt:CampaignCatalogReceipt){
  if(receipt.kind==='create'||receipt.kind==='open'){entry=receipt;closeIdentity();await changed();await load();}
  else{closeIdentity();dialog('campaign-delete-dialog').close();erasing=null;await changed();await refresh();message(receipt.kind==='rename'?'Name gespeichert.':receipt.kind==='erase'?'Kampagne dauerhaft gelöscht.':'Kampagnenstatus gespeichert. Wiederherstellen aktiviert keine Kampagne.');}
@@ -36,7 +36,7 @@ async function apply(receipt:CampaignCatalogReceipt){
 async function load(){if(!entry)return;const accepted=entry;try{if(await enter(accepted)){entry=null;hideCampaignScreen();}else message('Öffnung bestätigt. Arbeitsfläche konnte nicht vollständig geladen werden. Erneut laden versucht nur die Arbeitsfläche.');}catch(e){message((e as Error).message+' · Öffnung ist bereits bestätigt.');}}
 async function execute(c:CampaignCatalogCommand){if(busy||pending)return;
  // Persist the intent before dispatch; a failed local write must not lock the UI.
- try{window.localStorage.setItem(pendingKey,JSON.stringify(c));storageNotice='';}catch(error){message('Auftrag nicht gestartet: '+(error as Error).message+'. Eingaben bleiben erhalten. Erneut versuchen.');return;}
+ try{window.localStorage.setItem(pendingKey,JSON.stringify(c));storageNotice='';}catch(error){const reason=(error as Error).name==='QuotaExceededError'?'Lokaler Speicher für die Wiederaufnahme ist voll.':'Lokaler Speicher für die Wiederaufnahme ist nicht verfügbar.';message('Auftrag nicht gestartet: '+reason+' Eingaben bleiben erhalten. Erneut versuchen.');return;}
  busy=true;pending=c;lock();let accepted:CampaignCatalogReceipt|null=null;
  try{try{accepted=unwrap(await window.campaign.campaignCatalog(c));}catch(error){try{accepted=unwrap(await window.campaign.campaignCatalogOutcome(c));}catch{message('Ergebnis noch offen. Buchungsstatus prüfen, bevor du fortfährst.');return;}if(!accepted){clearPending();throw error;}}
   clearPending();busy=false;await apply(accepted!);
