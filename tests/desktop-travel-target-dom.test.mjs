@@ -372,3 +372,12 @@ test('a valid new route on the displayed map is not blocked by a journey on the 
   x.document.getElementById('journey-play').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.mapId===other.id);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
  }finally{x.cleanup();}
 });
+
+test('crowded Hex labels favour the selected Hex, return with zoom, and leave complete map facts intact',async()=>{
+ const x=await fixture(),command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action});try{
+ const map=x.store.world(x.w.token).maps[0],cell=(q,label)=>({q,r:0,level:0,terrain:'plains',elevationM:0,climate:null,road:false,river:false,label,faction:'',interrupt:''});map.cells=[cell(1,'Spuren'),cell(2,'Zielpunkt')];x.store.executeWorld(command({kind:'map',map,expectedRevision:map.revision}));await x.ui.openWorld();const root=x.document.getElementById('world-map'),shown=()=>[...root.querySelectorAll('[data-hex-label]')].map(n=>n.textContent),bytes=x.store.db.serialize(),writes=x.writes;
+ assert.deepEqual(shown(),['Spuren']);assert.match(root.querySelector('polygon[data-q="2"][data-r="0"] title').textContent,/Zielpunkt/);root.querySelector('polygon[data-q="2"][data-r="0"]').dispatchEvent(new x.window.Event('click'));await until(()=>x.document.getElementById('hex-label').value==='Zielpunkt');assert.deepEqual(shown(),['Zielpunkt']);
+ for(let i=0;i<6;i++)x.document.getElementById('world-zoom-in').onclick();assert.deepEqual(shown(),['Spuren','Zielpunkt']);root.querySelector('[data-hex-label="1,0"]').dispatchEvent(new x.window.Event('click'));await until(()=>x.document.getElementById('hex-label').value==='Spuren');assert.equal(x.document.getElementById('travel-q').value,'1');
+ x.document.querySelector('.map-canvas-controls[data-canvas-for="world-map"] button:last-of-type').onclick();assert.deepEqual(shown(),['Spuren']);assert.equal(x.writes,writes);assert.ok(x.store.db.serialize().equals(bytes));assert.deepEqual(x.store.world(x.w.token).maps[0].cells,map.cells);
+ }finally{x.cleanup();}
+});
