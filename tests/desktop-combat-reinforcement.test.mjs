@@ -90,7 +90,7 @@ test('a failed search leaves known statblocks usable and a new search can recove
 
 test('condition shortcuts wait for the selected working draft and stay blocked on a read failure',async t=>{
  const x=await uiFixture(t);let resolve;window.campaign.combatDraft=()=>new Promise(r=>{resolve=r;});
- x.el('combat-table').querySelector('tbody button').onclick();await until(()=>!!resolve);
+ x.el('combat-table').querySelector('[data-mob-front-id]').onclick();await until(()=>!!resolve);
  const buttons=()=>[...x.el('fighter-condition-shortcuts').querySelectorAll('button')];
  assert.ok(buttons().length);assert.ok(buttons().every(b=>b.disabled));
  x.el('combat-participant-form').onsubmit({preventDefault(){}});assert.equal(x.writes.length,0);
@@ -101,7 +101,7 @@ test('condition shortcuts wait for the selected working draft and stay blocked o
 test('condition shortcuts cannot adopt unrelated raw values and resume after explicit discard or adoption',async t=>{
  const x=await uiFixture(t),oldEvent=globalThis.Event;globalThis.Event=window.Event;t.after(()=>{globalThis.Event=oldEvent;});
  const actor=x.combat.participants[0],form=x.el('combat-participant-form');form.requestSubmit=()=>form.onsubmit({preventDefault(){}});
- x.el('combat-rows').querySelector('button').onclick();await until(()=>!x.el('fighter-hp').disabled);
+ x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-hp').disabled);
  const buttons=()=>[...x.el('fighter-condition-shortcuts').querySelectorAll('button')];
  const input=(id,raw)=>{x.el(id).value=raw;x.el(id).dispatchEvent(new window.Event('input',{bubbles:true}));};
  input('fighter-hp','1');input('fighter-initiative','14');
@@ -148,7 +148,7 @@ test('an HP lookup that completes after a target switch cannot steal the new edi
 });
 
 test('initiative cells open one field per group and never submit the fighter HP draft',async t=>{
- const x=await uiFixture(t),target=x.combat.participants[1];x.el('combat-rows').querySelector('button').onclick();await until(()=>!x.el('fighter-name').disabled);x.el('fighter-hp').value='2';x.el('fighter-hp').dispatchEvent(new window.Event('input'));await tick();await tick();
+ const x=await uiFixture(t),target=x.combat.participants[1];x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-name').disabled);x.el('fighter-hp').value='2';x.el('fighter-hp').dispatchEvent(new window.Event('input'));await tick();await tick();
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-initiative')];assert.equal(cells.length,3);cells[1].onclick();await until(()=>x.el('combat-initiative-dialog').querySelectorAll('input[data-participant-id]').length===1);
  const input=x.el('combat-initiative-dialog').querySelector('input[data-participant-id]');assert.equal(input.dataset.participantId,x.combat.participants[0].id);input.value='17';input.dispatchEvent(new window.Event('input'));x.el('initiative-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-initiative-dialog').hasAttribute('open'));
  const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;assert.equal(x.writes[0].action.kind,'initiative');assert.ok(saved.participants.every(p=>p.initiative===17));assert.deepEqual(saved.participants.map(p=>p.hp),[7,7,7]);assert.equal(saved.turnId,x.combat.turnId);
@@ -176,7 +176,7 @@ test('troop rename changes all peers atomically, preserves individual aliases an
  x.execute({kind:'undo'});assert.deepEqual(x.combat.participants,before.participants);
 });
 test('runner saves one troop name for the selected group and offers it directly for reinforcement',async t=>{
- const x=await uiFixture(t);x.el('combat-rows').querySelector('button').onclick();await until(()=>!x.el('fighter-name').disabled);
+ const x=await uiFixture(t);x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-name').disabled);
  x.el('fighter-group-name').value='Schützen';x.el('fighter-group-name').dispatchEvent(new window.Event('input'));await tick();await tick();x.el('combat-participant-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);
  assert.equal(x.writes[0].action.changes.groupName,'Schützen');assert.match(x.el('combat-creature-select').textContent,/Schützen · Goblin · vorhandene Initiative 9/);assert.equal([...x.el('combat-rows').querySelectorAll('small')].filter(e=>e.textContent==='Schützen').length,3);
 });
