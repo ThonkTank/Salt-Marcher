@@ -33,7 +33,7 @@ export type SessionAction=
  |{kind:'edit-proposal';planId:string;runId:string;index:number;expectedRevision:number;title:string;notes:string;readAloud:string;locationId:string|null;noteIds:string[];reward:SessionProposal['reward']}
  |{kind:'replace-plan';planId:string;expectedBasis:string;name:string;sourcePlanId:string|null;expectedSourceBasis:string|null;copyParty:boolean}
  |{kind:'profile';profile:SessionProfile;expectedRevision:number}
- |{kind:'visit';planId:string;detail:VisitDetail;expectedRevision:number}
+ |{kind:'visit';planId:string;detail:VisitDetail;expectedRevision:number;noteThread?:import('./note-thread-contracts').NoteThreadSelection}
  |{kind:'attach';planId:string;visitId:string;expectedVisitRevision:number;encounterId:string;expectedEncounterRevision:number}
  |{kind:'detach';planId:string;visitId:string;expectedVisitRevision:number;groupId:string}
  |{kind:'place';planId:string;groupId:string;expectedRevision:number;locationId:string;expectedLocationRevision:number}

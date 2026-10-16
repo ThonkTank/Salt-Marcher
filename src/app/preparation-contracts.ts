@@ -12,7 +12,7 @@ export type PreparationChange =
   | { kind: 'note-trash'; id: string; expectedRevision: number; trashed: boolean }
   | { kind: 'location'; expectedRevision: number | null; document: LocationDocument }
   | { kind: 'location-trash'; id: string; expectedRevision: number; trashed: boolean }
-  | { kind: 'plan'; expectedRevision: number | null; plan: ManualPlan; opening?:{visitId:string;readAloud:string;noteIds:string[]} };
+  | { kind: 'plan'; expectedRevision: number | null; plan: ManualPlan; opening?:{visitId:string;readAloud:string;noteIds:string[];noteThread?:import('./note-thread-contracts').NoteThreadSelection} };
 export interface SceneCreation { sceneId: string; expectedSceneRevision: number; expectedMembershipRevision: number; expectedDeskRevision: number; pin: boolean; contributors: string[] }
 export interface PreparationCommand { sceneCreation?: SceneCreation; commandId: string; token: string; campaignId?: string; draftWriteId?: string; change: PreparationChange }
 export type PreparationEdit = Extract<PreparationChange, { kind: 'note' | 'plan' | 'location' }>;
@@ -58,7 +58,9 @@ export function checkedPreparationDraft(value: PreparationDraft): PreparationDra
   }
   return value;
 }
+export interface NoteRoomUsesPage {entries:{id:string;title:string;number:string;place:string;excerpt:string;unavailable:boolean}[];next:number|null;notice?:string}
 export interface PreparationAPI {
+  noteRoomUses(token:string,noteId:string,offset:number):Promise<import('./contracts').Result<NoteRoomUsesPage>>;
   preparation(token: string, search: string): Promise<import('./contracts').Result<Preparation>>;
   changePreparation(command: PreparationCommand): Promise<import('./contracts').Result<Preparation>>;
   selectPreparation(token: string, selection: PreparationSelection): Promise<import('./contracts').Result<void>>;

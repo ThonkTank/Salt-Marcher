@@ -119,6 +119,12 @@ else {
     handle('campaign:room-draft', (token: string, roomId: string) => store.roomDraft(token, roomId));
     handle('campaign:keep-room-draft', (token: string, roomId: string, draft: WorkingRoomDraft | null) => store.keepRoomDraft(token, roomId, draft));
     handle('campaign:preparation', (token: string, search: string) => store.preparation(token, search));
+    handle('campaign:note-room-uses', (token:string,id:string,offset:number) => store.noteRoomUses(token,id,offset));
+    handle('campaign:note-thread',(token:string,id:string,offset:number,active:boolean,history=false)=>store.noteThread(token,id,offset,active,history));
+    handle('campaign:check-note-thread',(token:string,s:import('../src/app/note-thread-contracts').NoteThreadSelection)=>store.checkNoteThread(token,s));
+    handle('campaign:key-note-choices',(token:string,query:string)=>store.keyNoteChoices(token,query));
+    handle('campaign:capture-key-note', (c:import('../src/app/key-note-capture-contracts').KeyNoteCaptureCommand) => store.captureKeyNote(c));
+    handle('campaign:key-note-capture-status', (c:import('../src/app/key-note-capture-contracts').KeyNoteCaptureCommand,token:string) => store.keyNoteCaptureStatus(c,token));
     handle('campaign:scene-visits',(token:string,sceneId:string,after:string|null)=>store.sceneVisits(token,sceneId,after));
     handle('campaign:session-progress',(token:string,id:string,sceneId?:string)=>store.sessionProgress(token,id,sceneId));
     handle('campaign:session-packet',(token:string,id:string)=>store.sessionPacket(token,id));

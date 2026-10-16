@@ -30,6 +30,7 @@ import {initExtensions} from './extensions-ui';
 import {initDungeonContent,activateDungeonContent,flushDungeonContent} from './dungeon-content-ui';
 import {initGraph,activateGraph,flushGraph,syncGraphBanner,refreshOpenGraph} from './graph-ui';
 import {initKeys,activateKeys,flushKeys} from './key-ui';
+import {setKeyReferenceStatus,openRoomKey} from './key-ui';
 import {initPaths,activatePaths,flushPaths} from './path-ui';
 import {initCommitControls} from './commit-confirmation';
 import {initVolume,activateVolume,flushVolume} from './volume-ui';
@@ -45,6 +46,7 @@ import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPl
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
 import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,prepareNextVisit,showDayPreparation } from './preparation';
+import {setNoteRoomNavigation} from './preparation';
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openPlannedVisitReview,prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
 import { initCatalog, activateCatalog, openCatalog, openCatalogReference, flushCatalog } from './catalog-ui';
@@ -89,7 +91,7 @@ let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
 const status = (text: string, error = false) => { el('status').textContent = text; el('status').dataset.error = String(error); };
 initExtensions(status);
 initChronicle(status,async(id,token)=>{if(!(await leaveWorkspace())||workspace?.token!==token)return;showTab('preparation');await openPreparedNote(id);});
-initPreparation(status, async scopeId => {
+initPreparation((text,error)=>{status(text,error);setKeyReferenceStatus(text,error);}, async scopeId => {
   if (!workspace || !(await leaveWorkspace())) return;
   const room = workspace.rooms.find(room => room.scopeId === scopeId);
   if (!room) { status('Diese Zeichnung enthält noch keinen verfügbaren Raum.', true); return; }
@@ -136,10 +138,11 @@ initVolume(status,()=>workspace,()=>draft,async()=>{if(activating||activationFai
 initTriggers(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDungeonContent()&&await flushGraph()&&await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
 initDungeonContent(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushGraph()&&await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},refreshOpenGraph);
 initGraph(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},()=>showTab('atlas'),selectRoom);
-initKeys(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},selectRoom);
+initKeys(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},selectRoom,{open:openPreparedNote,flush:flushPreparation,map:async id=>{await selectRoom(id);showTab('atlas');}});
+setNoteRoomNavigation((id,current,restore)=>openRoomKey(id,current,()=>{if(current()){showTab('preparation');restore();}}));
 initPaths(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
 initDungeon(status,id=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await openExistingCombat(id);})().catch(error=>status(error.message,true));});
-const dungeonBinder=new DungeonBinder(()=>workspace,leaveWorkspace,status,async(id,action)=>{const token=workspace?.token;if(!token||!await leaveWorkspace()||workspace?.token!==token)return;if(action==='target'){showTab('atlas');await campaignAtlas?.navigate('room',id);await selectDungeonRoom(id);}else{showTab('atlas');await campaignAtlas?.navigate('room',id);if(action==='edit'&&workspace?.token===token&&workspace.selectedId===id)el('key-open').click();}});
+const dungeonBinder=new DungeonBinder(()=>workspace,leaveWorkspace,status,async(id,action)=>{const token=workspace?.token;if(!token||!await leaveWorkspace()||workspace?.token!==token)return;if(action==='target'){showTab('atlas');await campaignAtlas?.navigate('room',id);await selectDungeonRoom(id);}else{showTab('atlas');await campaignAtlas?.navigate('room',id);if(action==='edit'&&workspace?.token===token&&workspace.selectedId===id)el('key-open').click();}},(id,target,current,returned,left)=>openRoomKey(id,current,returned,target,'Zurück zum Binder',left));
 initAutonomy(status);
 initCity(status,id=>worldLinks.open({kind:'note',id}),async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,undefined,current);},async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;await locationNotebook.open(id);});
 initWorld(status,flushLive,async()=>{await openLive();},async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();},async(sceneId,kind)=>{if(kind==='wait')await openTimeNavigator(undefined,sceneId);else await openTravelRest(sceneId);});
