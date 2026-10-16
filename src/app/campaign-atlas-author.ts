@@ -119,13 +119,25 @@ export async function atlasRoomWrite(edit: Edit): Promise<Result<RoomCommit>> {
       }
     : { ok: false, error: "Raum nach Änderung nicht verfügbar." };
 }
+/** A read-only World receipt check also resolves its matching atomic Atlas envelope. */
+export function acknowledgeAtlasWorldStatus(c: WorldCommand) {
+  const saved = pending.get(c.token);
+  if (saved?.action.kind !== 'world' || saved.commandId !== c.commandId ||
+      JSON.stringify(saved.action.command) !== JSON.stringify(c)) return;
+  pending.delete(c.token);
+  document.dispatchEvent(new Event('atlas-write-state'));
+}
 export async function atlasWorldWrite(
   c: WorldCommand,
 ): Promise<Result<WorldAck>> {
   if (!["map", "cell", "place", "place-presentation"].includes(c.action.kind))
     return window.campaign.executeWorld(c);
   const result = await wrap(c, { kind: "world", command: c });
-  if (!result.ok) return result;
+  if (!result.ok) {
+    const saved = pending.get(c.token);
+    if (saved?.commandId === c.commandId && saved.action.kind === 'world') throw new Error(result.error);
+    return result;
+  }
   if (result.value.result)
     return { ok: true, value: result.value.result as WorldAck };
   const world = await window.campaign.world(c.token);

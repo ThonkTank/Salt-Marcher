@@ -1,5 +1,6 @@
 import {renderEncounterComposition,compositionPreferences,preferenceSelect,type CompositionPreference} from './encounter-composition-ui';
 import {renderSessionOrigin} from './session-origin-ui';
+import {VisitNoteOrganizer} from './visit-note-organizer';
 import {sessionTargets} from './generation/session-targets';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved} from './commit-confirmation';
 import {SessionReview,sameSessionReviewBasis,type SessionReviewBasis} from './session-review-ui';
@@ -18,6 +19,7 @@ import {type GenerationRequest} from './generation-contracts';
 import type {SessionProfile,VisitDetail,PreparedGroup,SessionView,SessionAction,SessionRun,SessionProposal} from './session-contracts';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>get<HTMLInputElement>(id).value,unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 let proposalReview:SessionReview;
+let noteOrganizer:VisitNoteOrganizer;
 let sessionCopy:SessionCopy;
 let magicPick:ReturnType<typeof magicPoolPicker>;
 let requiredPick:ReturnType<typeof requiredNpcPicker>;
@@ -42,8 +44,8 @@ export function sessionContext(next:Workspace|null,current:ManualPlan|null,selec
  workspace=next;plan=current;visitId=selected;sources=data;
  if(parentChanged){for(const key of Object.keys(compositionPreferences))get<HTMLSelectElement>('session-'+key).value='preset';sessionCopy?.reset();closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
- if(key===basis)return;
- basis=key;generation++;loadRequest++;closeStoryAward();encounterRequest++;get<HTMLInputElement>('visit-encounter-search').value='';clearEncounterChoices('Mindestens zwei Zeichen eingeben.');
+ if(key===basis){syncVisitNotes();return;}
+ basis=key;noteOrganizer?.context(null);generation++;loadRequest++;closeStoryAward();encounterRequest++;get<HTMLInputElement>('visit-encounter-search').value='';clearEncounterChoices('Mindestens zwei Zeichen eingeben.');
  if(timer)clearTimeout(timer);timer=null;
  profileDirty=false;visitDirty=false;view=null;profileDraft=null;visitDraft=null;
  if(parentChanged){generating=null;get<HTMLButtonElement>('session-generate').disabled=false;generationMessage('');closeProposalEditor();get('session-faction-picks').replaceChildren();groupDrafts.clear();previewRequest++;run=null;renderRun();for(const id of ['session-history','session-table-picks','session-locations','session-notes'])get(id).replaceChildren();}
@@ -93,7 +95,8 @@ async function acceptSessionResult(action:SessionAction,result:SessionView,gen:n
  }else if(!profileDirty)profileDraft=structuredClone(result.profile);
  const confirmed=result.visits.find(v=>v.visitId===visitId)??null;
  if(action.kind==='visit'){
-  const latest=visitDraft;
+  let latest=visitDraft;
+  if(action.noteThread&&latest?.visitId===action.detail.visitId){const ids=[...action.noteThread.entries.map(e=>e.id),...(action.noteThread.includeRoot?[action.noteThread.rootId]:[])];latest={...latest,noteIds:[...new Set([...latest.noteIds,...ids])]};}
   visitDirty=!!latest&&visitInput(latest)!==visitInput(action.detail);
   visitDraft=visitDirty&&confirmed?{...structuredClone(confirmed),readAloud:latest!.readAloud,noteIds:latest!.noteIds,reward:latest!.reward}:structuredClone(confirmed);
  }else if(!visitDirty)visitDraft=structuredClone(confirmed);
@@ -149,6 +152,7 @@ function lock(on:boolean){
   get<HTMLButtonElement>('visit-reward-award').disabled=!!reward?.awarded;
   get<HTMLButtonElement>('visit-reward-place').disabled=!!reward?.placedTreasureId;
  }
+ noteOrganizer?.lock(on);
 }
 export async function flushSession():Promise<boolean>{
  if(proposalEditorOpen()){tell('Speichere oder schließe den geöffneten Vorschlag zuerst.',true);return false;}
@@ -161,12 +165,25 @@ export async function flushSession():Promise<boolean>{
  if(group&&plan){if(!await execute({kind:'group-content',planId:plan.id,groupId:group.id,expectedRevision:group.revision,title:group.title,notes:group.notes}))return false;return flushSession();}
  return true;
 }
+export async function linkVisitNoteThread(token:string,planId:string,targetVisit:string,selection:import('./note-thread-contracts').NoteThreadSelection,stillCurrent:()=>boolean):Promise<boolean>{
+ const gen=generation,current=()=>workspace?.token===token&&plan?.id===planId&&visitDraft?.visitId===targetVisit&&generation===gen&&stillCurrent();
+ if(!current()||!await flushSession()||!current()||!visitDraft)return false;
+ const ids=[...new Set([...visitDraft.noteIds,...selection.entries.map(e=>e.id),...(selection.includeRoot?[selection.rootId]:[])])];
+ if(JSON.stringify(ids)===JSON.stringify(visitDraft.noteIds))return true;
+ return await execute({kind:'visit',planId,expectedRevision:visitDraft.revision,detail:{...structuredClone(visitDraft),noteIds:ids},noteThread:selection})&&current();
+}
 function scheduleSession(message:string){encounterRequest++;clearEncounterChoices('Offene Eingaben zuerst speichern.');inputChanged();if(timer)clearTimeout(timer);timer=setTimeout(()=>{void flushSession();},700);tell(message);}
 function scheduleVisit(){visitDirty=true;scheduleSession('Besuchseingabe offen.');}
 function render(){if(!view||!profileDraft)return;get<HTMLInputElement>('session-fraction').value=profileDraft.adventureDayFraction;get<HTMLInputElement>('session-seed').value=profileDraft.seed;get<HTMLInputElement>('session-scene-count').value=profileDraft.encounterCount==null?'':String(profileDraft.encounterCount);const members=get('session-party');members.replaceChildren();for(const c of roster){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=profileDraft.party.some(p=>p.id===c.characterId);box.onchange=()=>{if(!profileDraft)return;profileDraft.party=box.checked?[...profileDraft.party,{id:c.characterId,name:c.name,level:c.xp===null?null:xpLevel(c.xp).level,count:1}]:profileDraft.party.filter(p=>p.id!==c.characterId);profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();};label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?' · heute aktiv':' · inaktiv')));members.append(label);}renderParty();
  const locations=get('session-locations'),notes=get('session-notes');const chosenLocations=new Set([...locations.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value)),chosenNotes=new Set([...notes.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value));locations.replaceChildren();notes.replaceChildren();for(const row of sources?.locations.filter(l=>!l.trashed)??[])checkbox(locations,row.document.id,row.document.name,chosenLocations.has(row.document.id));for(const row of sources?.notes.filter(n=>!n.trashed)??[])checkbox(notes,row.note.id,row.note.title,chosenNotes.has(row.note.id));
- if(visitDraft){get<HTMLTextAreaElement>('visit-read-aloud').value=visitDraft.readAloud;void searchEncounters();get<HTMLInputElement>('visit-has-reward').checked=!!visitDraft.reward;get('visit-reward-fields').hidden=!visitDraft.reward;get<HTMLInputElement>('visit-reward-xp').value=String(visitDraft.reward?.poolXp??0);renderRewardItems();const refs=get('visit-note-refs');refs.replaceChildren();for(const row of sources?.notes.filter(n=>!n.trashed)??[]){const box=checkbox(refs,row.note.id,row.note.title,visitDraft.noteIds.includes(row.note.id));box.onchange=()=>{if(!visitDraft)return;visitDraft.noteIds=box.checked?[...visitDraft.noteIds,box.value]:visitDraft.noteIds.filter(id=>id!==box.value);scheduleVisit();};}renderGroups();}
- renderRun();lock(!!pending);
+ if(visitDraft){get<HTMLTextAreaElement>('visit-read-aloud').value=visitDraft.readAloud;void searchEncounters();get<HTMLInputElement>('visit-has-reward').checked=!!visitDraft.reward;get('visit-reward-fields').hidden=!visitDraft.reward;get<HTMLInputElement>('visit-reward-xp').value=String(visitDraft.reward?.poolXp??0);renderRewardItems();renderGroups();}
+ syncVisitNotes();renderRun();lock(!!pending);
+}
+function syncVisitNotes(){
+ const token=workspace?.token,planId=plan?.id,id=visitDraft?.visitId,gen=generation;
+ if(!token||!planId||!id){noteOrganizer?.context(null);return;}
+ const current=()=>workspace?.token===token&&plan?.id===planId&&visitDraft?.visitId===id&&generation===gen&&!!plan.scenes.some(s=>s.id===id);
+ noteOrganizer?.context({key:JSON.stringify([token,planId,id,gen]),token,notes:sources?.notes??[],current,ids:()=>current()?visitDraft!.noteIds:[],change:(noteId,linked)=>{if(!current())return;const ids=visitDraft!.noteIds,next=linked?[...new Set([...ids,noteId])]:ids.filter(id=>id!==noteId);if(JSON.stringify(ids)===JSON.stringify(next))return;visitDraft!.noteIds=next;scheduleVisit();},edit:async(noteId,current)=>{if(current()&&await flushSession()&&current())await openNote(noteId);}});
 }
 function checkbox(root:HTMLElement,id:string,text:string,checked:boolean){const label=document.createElement('label'),box=document.createElement('input');label.className='check-label';box.type='checkbox';box.value=id;box.checked=checked;label.append(box,document.createTextNode(text));root.append(label);return box;}
 function renderParty(){const root=get('session-party-levels');root.replaceChildren();if(profileDraft?.party.length){const head=document.createElement('div');head.className='session-party-row caption';for(const text of ['Figuren','Level','Anzahl','']){const label=document.createElement('span');label.textContent=text;head.append(label);}root.append(head);}for(const p of profileDraft?.party??[]){const row=document.createElement('div');row.className='session-party-row';const name=document.createElement('span'),level=document.createElement('input'),count=document.createElement('input');name.textContent=p.name;level.type='number';level.min='1';level.max='20';level.value=p.level===null?'':String(p.level);level.placeholder='Level';level.setAttribute('aria-label','Planungslevel '+p.name);count.type='number';count.min='1';count.value=String(p.count);count.setAttribute('aria-label','Planungsanzahl '+p.name);level.oninput=()=>{p.level=level.value?Number(level.value):null;profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};count.oninput=()=>{p.count=Number(count.value);profileDirty=true;scheduleSession('Planungseingabe offen.');budget();};const remove=document.createElement('button');remove.type='button';remove.textContent='Entfernen';remove.setAttribute('aria-label',p.name+' aus der Planung entfernen');remove.onclick=()=>{if(!profileDraft)return;profileDraft.party=profileDraft.party.filter(row=>row.id!==p.id);profileDirty=true;scheduleSession('Planungseingabe offen.');render();};row.append(name,level,count,remove);root.append(row);}budget();}
@@ -413,8 +430,9 @@ export function initSession(status:typeof tell,baseFlush:typeof flushBase,baseRe
  const preferenceRoot=get('session-composition-preferences');for(const key of Object.keys(compositionPreferences) as CompositionPreference[]){const label=document.createElement('label');label.textContent=compositionPreferences[key].label+' ';label.append(preferenceSelect(key,'session-'+key,true));preferenceRoot.append(label);}
  for(const [a,b]of [['session-npc-only','session-npc-mixed'],['session-npc-mixed','session-npc-only']])get(a!).addEventListener('change',()=>{if(get<HTMLInputElement>(a!).checked)get<HTMLInputElement>(b!).checked=false;});
  get('session-magic-compensate').addEventListener('change',()=>{if(get<HTMLInputElement>('session-magic-compensate').checked)get<HTMLInputElement>('session-loot-compensate').checked=true;else magicPick.disable();});get('session-loot-compensate').addEventListener('change',()=>{if(!get<HTMLInputElement>('session-loot-compensate').checked){get<HTMLInputElement>('session-magic-compensate').checked=false;magicPick.disable();}});
+noteOrganizer=new VisitNoteOrganizer(get('visit-note-refs'),{searchDesk:(...a)=>window.campaign.searchDesk(...a),deskContent:(...a)=>window.campaign.deskContent(...a),noteRoomUses:(...a)=>window.campaign.noteRoomUses(...a)});
 proposalReview=new SessionReview(acceptSelectedProposals,sessionReviewBasis);
-initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id}:null,async()=>await flushBase()&&await flushSession(),offerVisit);
+initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id,visitId}:null,async()=>await flushBase()&&await flushSession(),offerVisit);
 sessionCopy=new SessionCopy(status,()=>workspace&&plan&&sources?{workspace,plan,sources}:null,async()=>await flushSession()&&await flushBase(),async (planId,visitId)=>{await refreshBase(visitId,planId);});
 onCommitState(()=>lock(!view||!!pending));onCommitResolved(async event=>{
  if(event.ref.family!=='session'||event.ref.campaignId!==workspace?.campaign.id)return;

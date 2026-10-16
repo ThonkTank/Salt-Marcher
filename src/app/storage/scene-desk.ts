@@ -1,3 +1,4 @@
+import {searchNoteChoices} from './note-choice-search';
 import type { PreparationCommand } from '../preparation-contracts';
 import {saveNarrative,validateNarrativeState} from './narrative';
 import {documentReferences} from '../text-references';
@@ -258,6 +259,7 @@ export function searchDesk(
     offset > 1000000
   )
     throw new Error("Suchanfrage ungültig.");
+  if (kind === "note") return searchNoteChoices(db,cam,search,offset);
   if (kind === "reference") return searchTextReferences(db,cam,search,offset);
   if (kind === "creature") {
     const p = searchCreatures({ text: search, offset, limit: 40 });

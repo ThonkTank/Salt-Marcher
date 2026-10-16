@@ -1,0 +1,4 @@
+
+> dungeon-editor@0.133.0 check
+> tsc --noEmit
+
