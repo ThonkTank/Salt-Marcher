@@ -25,7 +25,9 @@
   CI must pass `npm run check:repo`, `npm run check`, `npm run check:desktop`,
   `npm test`, `npm run build`, and `npm run build:desktop`.
 - Locally run the tests and type/build checks for affected entry points, plus
-  relevant native UI checks. Use a complete local `npm test` run to diagnose
+  relevant native UI checks. Prepare shared test assets once with
+  `node build.mjs --test` before targeted Node test invocations in a fresh copy.
+  Use a complete local `npm test` run to diagnose
   full-suite or host-specific problems; the mandatory CI owns full-repository
   qualification, so routine patches need no second identical full-suite gate.
 - Build Linux packages with `npm run package:desktop -- <output-directory>`.
