@@ -1,6 +1,6 @@
 {
   "round": 9,
-  "status": "progress; full native day case fixed and rerun; paired Sheet GUI/integration still open",
+  "status": "progress; full native case and linear integration rerun complete; candidate CI/local full tests and paired Sheet GUI remain open",
   "nativeBaseline": {
     "basis": "346443195622ad30262841044bb38551d231ea6a",
     "version": "0.156.0",
@@ -40,7 +40,7 @@
     "round8": "Runner comparison and original browser-state restoration remainopen"
   },
   "exit": "Baseline3apps,treasury2apps,XP2apps all normalclose receipts0; all3ownhelper jobs NORMAL_JOB_EXIT exit0",
-  "publication": "Own commits transferred to isolated Salt-Marcher branch; no push yet; migration PR696 pending",
+  "publication": "Linear PR716 supersedes closed historicalPR697; historicalbranchespreserved; no old mergehistory innewcandidate",
   "screenshots": [
     {
       "file": "day-loot-before-party.png",
@@ -121,6 +121,14 @@
     {
       "file": "day-session-reward-reopen-after.png",
       "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-session/runs/session-day-after/frames/000294.png"
+    },
+    {
+      "file": "day-session-linear-accepted.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-linear/runs/linear-adoption/frames/000107.png"
+    },
+    {
+      "file": "day-session-linear-reopened.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-linear/runs/linear-adoption/frames/000148.png"
     }
   ],
   "sessionWorkflow": {
@@ -150,5 +158,17 @@
     "outputSha256": "e86f12184177aafd61da86205080e731241d5feeea82af6c5c0a3376d1af1848",
     "checks": "70focused pass;repo/type/desktoptype/builddesktop0; oldbasisfulltestinterrupted for newer migration; complete candidate gates pending",
     "exit": "5properappstartsnormal0; runtime-missing launch127 retained as incomplete; helper normalexit0"
+  },
+  "linearIntegration": {
+    "basis": "ce76521bcb27d2597999d0a6ca902ad89e3377ec",
+    "baseMain": "8a712a619",
+    "version": "0.160.0",
+    "branch": "qa/encounter-day-loot-linear",
+    "pr": "https://github.com/ThonkTank/Salt-Marcher/pull/716",
+    "case": "Own copy of pre-adoption baseline; enter via catalog; rename plan to linear; load same stored3proposals; select/review/firstconfirm accepts3; export; normalclose;actualrestart;reopenpacket;reexport",
+    "exportHash": "61ec9cf9f9d03801aa644b614cddb2e042381597e2741b67fdb6e954c57f17c8",
+    "exportComparison": "Both UI exports byteidentical;3encounters/3rewards;4369gold+3silver+6copper each",
+    "exit": "2appstarts normalclose receipts0; helper NORMAL_JOB_EXIT0",
+    "checks": "90focused0;first5localgates0;fulltest andrequired716CI running"
   }
 }
