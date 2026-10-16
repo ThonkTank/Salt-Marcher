@@ -11,10 +11,10 @@ const require=createRequire(import.meta.url);
 for(const [entry,out]of [['src/app/storage/store.ts','combat-switch-store'],['src/app/combat.ts','combat-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let i=0;i<100;i++){if(check())return;await tick();}assert(check(),'Expected encounter state');}
-async function fixture(){
+async function fixture({empty=false}={}){
  const root=mkdtempSync(path.join(tmpdir(),'combat-switch-')),{CampaignStore}=require('../.build/combat-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite'),campaign=store.create('Zwei Begegnungen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:0})).scene,combats=[];
- for(const [index,[title,name,hp]]of [['Torwache','Wache',10],['Keller','Wolf',8]].entries()){let c=store.executeCombat({...command({kind:'create',sceneId:scene.id,title,includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;c=store.executeCombat({...command({kind:'add',name,count:1,grouped:false,maxHp:hp,armorClass:10,initiativeBonus:0}),combatId:c.id,expectedRevision:c.revision}).combat;if(index===0)c=store.executeCombat({...command({kind:'finish',outcome:'Überstanden'}),combatId:c.id,expectedRevision:c.revision}).combat;combats.push(c);}
+ for(const [index,[title,name,hp]]of [['Torwache','Wache',10],['Keller','Wolf',8]].entries()){let c=store.executeCombat({...command({kind:'create',sceneId:scene.id,title,includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;if(!empty||index===0)c=store.executeCombat({...command({kind:'add',name,count:1,grouped:false,maxHp:hp,armorClass:10,initiativeBonus:0}),combatId:c.id,expectedRevision:c.revision}).combat;if(index===0)c=store.executeCombat({...command({kind:'finish',outcome:'Überstanden'}),combatId:c.id,expectedRevision:c.revision}).combat;combats.push(c);}
  const [a,b]=combats,previous={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});
  const storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});
@@ -51,3 +51,24 @@ test('a reply for a different encounter never becomes the editable selected enco
 });
 
 test('quick picker displays stable combat numbers for otherwise identical titles',async()=>{const x=await fixture();try{const c=x.store.combat(x.w.token,x.a.sceneId,x.b.id).combat;x.store.executeCombat({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,combatId:c.id,expectedRevision:c.revision,action:{kind:'notes',title:'Torwache',notes:''}});x.el('combat-refresh').onclick();await until(()=>x.el('combat-title').textContent==='Torwache');const options=[...x.el('combat-history').children];assert.equal(options.length,2);assert(options.every(o=>/Torwache · Nr. [0-9]+/.test(o.textContent)));assert.equal(new Set(options.map(o=>o.textContent.match(/Nr. [0-9]+/)[0])).size,2);}finally{x.cleanup();}});
+
+
+test('the next encounter stays ahead of completed resolution and empty preparation explains the missing roster',async()=>{
+ const x=await fixture({empty:true});try{
+  assert.equal(x.el('combat-start').disabled,true);assert.match(x.el('combat-assessment').textContent,/Füge Teilnehmer/);assert.equal(x.el('combat-add-details').open,true);assert.equal(x.el('combat-add-details').querySelector('summary').textContent,'Gegner vorbereiten');assert.equal(x.writes.length,0);
+  x.choose(x.a.id);await until(()=>x.el('combat-title').textContent==='Torwache');const children=[...x.el('combat-panel').children];assert.ok(children.indexOf(x.el('combat-creation'))<children.indexOf(x.el('combat-resolution')),'next preparation must be reachable before a potentially long result/loot list');assert.equal(x.el('combat-creation').hidden,false);
+ }finally{x.cleanup();}
+});
+
+test('a party-only preparation cannot start through either start command; rejection preserves initiative and HP',()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'combat-readiness-')),{CampaignStore}=require('../.build/combat-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite');try{
+  const cam=store.create('Ada am Zollhaus'),w=store.activate(cam.id),cmd=action=>({commandId:randomUUID(),token:w.token,campaignId:cam.id,action});let scene=store.executeLive(cmd({kind:'initialize',expectedRosterRevision:0})).scene;
+  const c=store.executeLive(cmd({kind:'create-character',profile:{name:'Ada'}})).character,live=store.live(w.token);
+  scene=store.executeLive(cmd({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision})).scene;
+  let combat=store.executeCombat({...cmd({kind:'create',sceneId:scene.id,title:'Hinterhalt',includeParty:true,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;
+  assert.equal(combat.participants.length,1);const before=store.db.serialize(),act=action=>store.executeCombat({...cmd(action),combatId:combat.id,expectedRevision:combat.revision});
+  assert.throws(()=>act({kind:'start'}),/keine kampffähigen Gegner/);
+  assert.throws(()=>act({kind:'initiative',values:[{participantId:combat.participants[0].id,initiative:19}],start:true}),/keine kampffähigen Gegner/);assert.ok(store.db.serialize().equals(before));
+  combat=act({kind:'add',name:'Späher',count:1,grouped:false,maxHp:7,armorClass:15,initiativeBonus:2}).combat;combat=act({kind:'start'}).combat;assert.equal(combat.phase,'running');assert.equal(combat.participants.length,2);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});

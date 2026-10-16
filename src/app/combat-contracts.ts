@@ -67,6 +67,11 @@ export interface CombatAPI extends CombatDraftAPI {
   combat(token: string, sceneId: string, combatId?: string): Promise<Result<CombatView>>;
   executeCombat(command: CombatCommand): Promise<Result<CombatView>>;
 }
+export function combatStartIssue(combat:CombatState):string|null {
+  if(!combat.participants.length)return 'Füge Teilnehmer hinzu, bevor du den Kampf beginnst.';
+  if(!combat.participants.some(p=>!p.characterId&&p.role!=='friendly'&&p.role!=='neutral'&&p.hp>0&&!p.death?.dead))return 'Noch keine kampffähigen Gegner. Füge eine vorbereitete Monstergruppe oder Gegner hinzu, bevor du den Kampf beginnst.';
+  return null;
+}
 export function combatOrder(combat: CombatState): Combatant[] {
   return combat.participants.map((p, index) => ({ p, index })).sort((a, b) => b.p.initiative - a.p.initiative || a.index - b.index).map(({ p }) => p);
 }
