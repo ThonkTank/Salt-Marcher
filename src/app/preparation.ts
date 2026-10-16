@@ -682,7 +682,16 @@ function renderRelations() {
   for (const source of campaignNotes.values()) { if (!source.note.relations.some(relation => relation.targetId === selectedNote)) continue; const button = document.createElement('button'); button.textContent = `Verweis von ${source.note.title}${source.trashed ? ' (Papierkorb)' : ''}`; button.onclick = () => {if(button.isConnected)navigate(source.note.id);}; get('note-incoming').append(button); }
 }
 function initLocationActions() {
-  for (const [id, show] of [['knowledge-tab', false], ['locations-tab', true]] as const) get(id).onclick = () => { void (async () => { if (await leavePreparation()) showLocations(show); })(); };
+  for (const [id, show] of [['knowledge-tab', false], ['locations-tab', true]] as const) get(id).onclick = () => {
+    void (async () => {
+      const owner = context, request = preparationLoad;
+      if (!await leavePreparation() || context !== owner || preparationLoad !== request) return;
+      showLocations(show);
+      // Locations may have been created, renamed or trashed while the note
+      // editor was hidden. Reopen its narrative context with the current list.
+      if (!show) await renderNotes();
+    })().catch(error => tell(error.message, true));
+  };
   get('location-new').onclick = () => { get<HTMLDialogElement>('location-dialog').showModal(); get('new-location-name').focus(); };
   get('location-cancel').onclick = () => get<HTMLDialogElement>('location-dialog').close();
   get('location-form').onsubmit = event => { event.preventDefault(); void (async () => {
