@@ -167,6 +167,16 @@ test('an unfinished field survives reactivation without becoming a calculated ze
  assert.equal(x.get('rows').querySelectorAll('input')[1].value,'');assert.equal(x.get('summary').children.length,0);assert.match(x.get('status').textContent,/Zeilen/);
 });
 
+test('choosing a level reward preserves that manual planning input across reactivation',async t=>{
+ const x=fixture(t),read=window.campaign.adventuringDay;
+ window.campaign.adventuringDay=async(...args)=>{const result=await read(...args);result.value.advancement={atMaximum:0,reached:[],next:[{level:4,groupXp:7200,shareXp:1800,missingGroupXp:7200,members:[{name:'Level 3',count:4}],stage:null}]};return result;};
+ await x.open();x.input(x.get('rows').querySelector('input'),'3');x.input(x.get('rows').querySelectorAll('input')[1],'4');await settled();
+ x.get('levels').querySelector('li button').onclick();await settled();
+ assert.equal(x.get('reward-xp').value,'7200');assert.equal(x.get('separate-reward').checked,true);assert.match(x.get('draft-status').textContent,/gesichert/);
+ x.ui.activateDayCalculator({token:'fresh',campaign:{id:'campaign-a'}});await x.open();
+ assert.equal(x.get('reward-xp').value,'7200');assert.equal(x.get('total-xp').value,'0');assert.equal(x.get('mode-progress').getAttribute('aria-pressed'),'true');
+});
+
 test('mixed-level planning stays independent of live Party warnings and survives popup reopening', async t => {
  const x=fixture(t);await x.open();
  const [level,count]=x.get('rows').querySelectorAll('input');x.input(level,'3');x.input(count,'2');x.get('add').onclick();
