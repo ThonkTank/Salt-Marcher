@@ -708,6 +708,12 @@ zweistufigen Rastweg. Ein nativer Linuxlauf prüft360/240px, lange Namen,
 Tastaturaufklappen, Schnellwertauswahl ohne Campaignwrite, Rast ohne Zeitänderung,
 XP-Schwellenwechsel und Fresh samt Einstellungen und zwei normalen Exits.
 Das ist keine vollständige Tastatur-/200%- oder Betriebssystemabnahme.
+Die Roster-Suche vergleicht IDs und tatsächliche Profilwerte einschließlich
+Klasse, Sprachen und Zahlen. Interne JSON-Feldnamen und Serialisierungszeichen
+sind keine Suchinhalte. Filtern und Blättern bleiben lesend; Aufklappzustand und
+Rastempfängerauswahl bleiben erhalten. `desktop-party-search.test.mjs` prüft dies
+mit45 Figuren, gleichen Namen, Spielersuche, Kennung und Paging.
+
 Persönliche Loot-/Katalogübergabe aus diesem Popup, gemeinsam gebündelte
 Roster-/Movebedienung, Party-Undo/Redo und die restliche Fenstermigration bleiben
 offen; vorhandene XP-/Rast- und Scenecommands qualifizieren diese Punkte nicht.
