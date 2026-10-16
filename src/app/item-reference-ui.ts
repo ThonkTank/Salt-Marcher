@@ -4,7 +4,7 @@ const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n
 const labels:Record<string,string>={equipment:'Ausrüstung','magic-item':'Magischer Gegenstand',common:'Gewöhnlich',uncommon:'Ungewöhnlich',rare:'Selten','very-rare':'Sehr selten',legendary:'Legendär',required:'Erforderlich','not-required':'Nicht erforderlich',unspecified:'Nicht angegeben'};
 const label=(s:string)=>labels[s]??s.replaceAll('-',' ');
 export class ItemReferenceCatalog{
- private request=0;private active=false;private timer:ReturnType<typeof setTimeout>|null=null;private offset=0;private sort:ItemReferenceQuery['sort']='name';private page:ItemReferencePage|null=null;
+ private request=0;private active=false;private needsSearch=true;private pending=false;private timer:ReturnType<typeof setTimeout>|null=null;private offset=0;private sort:ItemReferenceQuery['sort']='name';private page:ItemReferencePage|null=null;
  private form=node('form');private fields=new Map<string,HTMLInputElement|HTMLSelectElement>();private body=node('tbody');private detail=node('article');private state=node('p');private credit=node('p');private prev=node('button','← Zurück');private next=node('button','Weiter →');private table=node('table');
  constructor(private root:HTMLElement){
   root.id='catalog-item-reference';root.setAttribute('role','tabpanel');root.setAttribute('aria-labelledby','catalog-items-tab');root.className='catalog-columns item-reference-columns';root.hidden=true;
@@ -18,23 +18,29 @@ export class ItemReferenceCatalog{
   browser.append(this.form,this.state,scroll,paging,this.credit);inspector.append(node('h3','Gegenstandsreferenz'),node('p','Schreibgeschützte lokale SRD-Quelle'),this.detail);root.append(browser,inspector);this.invalidate('Items noch nicht geladen.');
  }
  activate(){this.invalidate('Items noch nicht geladen.');}
- show(on:boolean){this.active=on;this.root.hidden=!on;if(on)void this.search();else this.invalidate('Items noch nicht geladen.');}
- private invalidate(text:string){this.request++;if(this.timer)clearTimeout(this.timer);this.timer=null;this.page=null;this.body.replaceChildren();this.detail.replaceChildren(node('p','Wähle einen Gegenstand.'));this.state.textContent=text;this.state.setAttribute('role','status');this.table.setAttribute('aria-busy','false');this.prev.disabled=this.next.disabled=true;}
+ show(on:boolean){
+  this.active=on;this.root.hidden=!on;
+  if(on){if(this.needsSearch&&!this.pending&&!this.timer)void this.search();}
+  else this.cancelRequest();
+ }
+ // Hiding stops scheduling and response authority, retaining the accepted page.
+ private cancelRequest(){this.request++;if(this.timer)clearTimeout(this.timer);this.timer=null;this.pending=false;this.table.setAttribute('aria-busy','false');}
+ private invalidate(text:string){this.cancelRequest();this.needsSearch=true;this.page=null;this.body.replaceChildren();this.detail.replaceChildren(node('p','Wähle einen Gegenstand.'));this.state.textContent=text;this.state.setAttribute('role','status');this.prev.disabled=this.next.disabled=true;}
  private query():ItemReferenceQuery{const value=(key:string)=>this.fields.get(key)!.value,money=(key:string)=>{try{return value(key).trim()?copper(value(key)):'';}catch{return'invalid';}};return{name:value('name'),category:value('category'),subcategory:value('subcategory'),rarity:value('rarity'),magic:value('magic') as ItemReferenceQuery['magic'],attunement:value('attunement'),minimumCopper:money('minimum'),maximumCopper:money('maximum'),sort:this.sort,direction:value('direction') as ItemReferenceQuery['direction'],offset:this.offset};}
  private async search(){
-  if(!this.active)return;this.invalidate('Items werden gesucht…');const request=this.request;this.table.setAttribute('aria-busy','true');
-  try{const result=await window.campaign.itemReferenceCatalog(this.query());if(!this.active||request!==this.request)return;if(!result.ok)throw new Error(result.error);this.page=result.value;this.render(request);}
-  catch(e){if(this.active&&request===this.request){this.state.textContent='Items konnten nicht gelesen werden: '+(e as Error).message+' · Mit Suchen erneut versuchen.';this.state.setAttribute('role','alert');}}
-  finally{if(this.active&&request===this.request)this.table.setAttribute('aria-busy','false');}
+  if(!this.active)return;this.invalidate('Items werden gesucht…');const request=this.request;this.pending=true;this.table.setAttribute('aria-busy','true');
+  try{const result=await window.campaign.itemReferenceCatalog(this.query());if(!this.active||request!==this.request)return;if(!result.ok)throw new Error(result.error);this.page=result.value;this.needsSearch=false;this.render();}
+  catch(e){if(this.active&&request===this.request){this.needsSearch=false;this.state.textContent='Items konnten nicht gelesen werden: '+(e as Error).message+' · Mit Suchen erneut versuchen.';this.state.setAttribute('role','alert');}}
+  finally{if(this.active&&request===this.request){this.pending=false;this.table.setAttribute('aria-busy','false');}}
  }
- private render(request:number){
+ private render(){
   const page=this.page!;this.credit.textContent=page.message+' · '+page.license;
   for(const [key,values]of [['category',page.categories],['subcategory',page.subcategories],['rarity',page.rarities]] as const){const select=this.fields.get(key) as HTMLSelectElement,chosen=select.value;select.replaceChildren();for(const value of ['',...values]){const o=node('option',value?label(value):'Alle');o.value=value;select.append(o);}select.value=chosen;}
   if(page.status!=='ready'){this.state.textContent=page.message;this.state.setAttribute('role',page.status==='missing'?'status':'alert');return;}
   this.state.textContent=page.total?`${page.offset+1}–${Math.min(page.total,page.offset+page.limit)} von ${page.total} Gegenständen`:'Keine Gegenstände für diese Filter.';
   this.prev.disabled=!page.offset;this.next.disabled=page.offset+page.limit>=page.total;
   for(const th of this.table.querySelectorAll('th')){const b=th.querySelector('button')!;th.setAttribute('aria-sort',b.dataset.sort===this.sort?(this.fields.get('direction')!.value==='asc'?'ascending':'descending'):'none');}
-  for(const item of page.rows){const tr=node('tr'),name=node('td'),button=node('button',item.name);button.type='button';button.dataset.itemId=item.id;button.setAttribute('aria-pressed','false');button.onclick=()=>{if(!this.active||request!==this.request||!button.isConnected)return;for(const b of this.body.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===button));this.inspect(item);if(window.matchMedia?.('(max-width:1100px)').matches){this.detail.scrollIntoView({block:'start'});this.detail.tabIndex=-1;this.detail.focus({preventScroll:true});}};name.append(button);tr.append(name,...[label(item.category),label(item.rarity?.value??item.rarity?.sourceText??'Nicht angegeben'),item.cost?.sourceText??'Nicht angegeben'].map(s=>node('td',s)));this.body.append(tr);}
+  for(const item of page.rows){const tr=node('tr'),name=node('td'),button=node('button',item.name);button.type='button';button.dataset.itemId=item.id;button.setAttribute('aria-pressed','false');button.onclick=()=>{if(!this.active||page!==this.page||!button.isConnected)return;for(const b of this.body.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===button));this.inspect(item);if(window.matchMedia?.('(max-width:1100px)').matches){this.detail.scrollIntoView({block:'start'});this.detail.tabIndex=-1;this.detail.focus({preventScroll:true});}};name.append(button);tr.append(name,...[label(item.category),label(item.rarity?.value??item.rarity?.sourceText??'Nicht angegeben'),item.cost?.sourceText??'Nicht angegeben'].map(s=>node('td',s)));this.body.append(tr);}
  }
  private inspect(item:ItemReferenceRecord){
   this.detail.replaceChildren(node('h4',item.name));const facts=node('dl'),fact=(name:string,value:string)=>facts.append(node('dt',name),node('dd',value));fact('Kategorie',label(item.category)+' · '+label(item.subcategory));fact('Magisch',item.magic?'Ja':'Nein');fact('Seltenheit',label(item.rarity?.value??item.rarity?.sourceText??'Nicht angegeben'));fact('Einstimmung',label(item.attunement));fact('Preis',item.cost?.sourceText??'Nicht angegeben');fact('Gewicht',item.weight?.sourceText??'Nicht angegeben');

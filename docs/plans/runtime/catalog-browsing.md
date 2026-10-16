@@ -1,4 +1,4 @@
-# Kreaturkatalog: verbindlicher Suchstand und nächste Filterlieferung
+# Gemeinsamer Katalog: Suchstand und nächste Lieferungen
 
 Stand: 16.10.2026. [Original Catalog Tab UI](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/creatures/requirements/requirements-creatures-catalog.md),
 [Katalog-/Encountervertrag](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
@@ -194,3 +194,53 @@ die Oberfläche behauptet keine Vollständigkeit. Provider-/DOMfälle prüfen di
 vollständige Erreichbarkeit des vorhandenen Korpus, Filter/Sortierung, genaue
 Rüstungs-/Waffenfakten, Ergebnisautorität und Fehlerisolation. Das ersetzt weder
 die offenen Quellenabschnitte noch breite native Plattform-/200%-Abnahme.
+
+
+## Inhaltswechsel und Wiederaufnahme
+
+[Catalog Requirements](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/catalog/requirements/requirements-catalog.md)
+verlangt pro Abschnitt erhaltene Filter, Sortierung, Seite, akzeptierte Treffer,
+Auswahl und Ergebnisposition. Das Ausblenden der Itemreferenz entzieht laufenden
+Antworten die Autorität und beendet den Debouncetimer; es leert keinen abgeschlossenen
+Anzeigezustand. Bei Rückkehr bleiben dieselben DOMzeilen samt Auswahl, Inspector und
+Scrollposition erhalten, ohne zusätzlichen Quellenread. Die Zeilen binden an die
+akzeptierte Pageidentität; eine nur zum Abbruch erhöhte Requestnummer darf ihre
+Bedienung nach Rückkehr nicht sperren. Eine neue Eingabe oder Campaignaktivierung
+entzieht dagegen der alten Page die Auswahlberechtigung und leert sie weiterhin.
+
+Eine unterbrochene Suche wird bei Rückkehr genau einmal aus den aktuellen rohen
+Filterwerten fortgesetzt; wiederholtes Öffnen startet keine parallele Anfrage.
+Eine bereits angezeigte Fehlerantwort bleibt mit ausdrücklichem Suchen als Retry
+erhalten. Fehlender Import, ungültiger Filter und leeres Ergebnis werden ebenfalls
+nicht beim bloßen Tabwechsel neu gelesen. Es gibt keinen zusätzlichen Speicher-
+oder Migrationsvertrag: die Quelle ist lokal und read-only, Campaignaktivierung
+setzt den transienten Zustand zurück.
+
+Die Itemreferenztests zählen Reads und prüfen Page/Sort/Auswahl, abgebrochenen
+Debounce, verspätete Antwort, Campaignreset und ausdrückliches Fehlerretry. Ein
+nativer Tabwechsel prüft zusätzlich Scrollposition und erneute Enterauswahl mit
+dem gebundenen Korpus; kontrollierte IPCverzögerungen/-fehler werden dabei getrennt
+von echten Quellenfehlern bezeichnet. Das ist keine Gesamtabnahme des Katalogs.
+
+Die nächsten Anschlüsse aus derselben Quelle bleiben ausdrücklich offen:
+
+1. `catalogContentView`, Monster-`search`/Detailreads und `openCatalog` an die
+   aktive Inhaltsansicht binden: Timer beenden, alte Antworten entmächtigen,
+   akzeptierten Monsterstand erhalten und fehlende Reads bei Rückkehr starten.
+   Quellen-/Vorlagen-/Generatorreads nur aus ihrem sichtbaren Owner auslösen.
+   Abnahme: Wechsel während Debounce, Query und Detailread; weder unsichtbare
+   Folgequery noch Auswahleffekt, unveränderte Encounterentwürfe und Filterscope.
+2. In beiden Providern akzeptierte Treffer während eines ausdrücklich angeforderten
+   Refresh sichtbar erhalten, dabei ausstehenden Filterstand und aktuelle Treffer
+   unterscheiden und Fehler ohne falsche Erfolgsmeldung zeigen. Auswahl/Scroll bei
+   unveränderter Quellen-ID erhalten; verschwundene IDs ausdrücklich entwerten.
+   Query-/Requestguards weiterverwenden, keinen zweiten Providerbestand anlegen.
+3. Die verbleibenden fünf Abschnitte NPCs, Fraktionen, Orte, Encounter und
+   Encountertabellen über ihre vorhandenen fachlichen Owner in den gemeinsamen
+   Inhaltswechsel aufnehmen. Zuerst gemeinsamen Status-/Pagingfooter und die alleinige
+   Headersortierung schließen; der separate Item-Richtungsselector ist noch eine
+   Abweichung. Eigene Abschnittsfilter und ausdrückliche Inspectoraktionen bleiben
+   erhalten. Abnahme pro Abschnitt: Wechsel mit unfertiger Eingabe, Seite/Auswahl/
+   Position, Fehler/Retry, Enter, schmaler Ansicht und200%; versteckte Provider
+   dürfen keine neuen Listenreads starten. Providerintegration ersetzt weder die
+   vollständige SRDquellenlieferung noch deren unabhängige Abnahme.
