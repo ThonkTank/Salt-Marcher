@@ -75,7 +75,8 @@ export function catalogFilterSummary(query:CreatureCatalogQuery):string[]{
  return Object.entries(labels).flatMap(([key,label])=>{const value=query[key as keyof typeof labels],text=Array.isArray(value)?value.join(', '):value===undefined?'':String(value).trim();return text?[label+': '+text]:[];});
 }
 function renderCatalogContext(){const filters=catalogFilterSummary(bridge.filters());get('generation-catalog-summary').textContent=filters.length?'Aktive Katalogfilter: '+filters.join(' · '):'Keine zusätzlichen Katalogfilter.';get('generation-clear-catalog').hidden=!filters.length;}
-export function generationPlanningChanged(party:EncounterPlan['party']|null){const next=JSON.stringify(party);if(planningBasis===next)return;planningBasis=next;get('generation-feedback').textContent='';if(run&&JSON.stringify(run.request.party)!==next){previewDirty=true;renderPreview();}}
+const partyBasis=(party:EncounterPlan['party']|null)=>JSON.stringify(party?.map(p=>[p.name,p.level,p.count])??null);
+export function generationPlanningChanged(party:EncounterPlan['party']|null){const next=partyBasis(party);if(planningBasis===next)return;planningBasis=next;get('generation-feedback').textContent='';if(run&&partyBasis(run.request.party)!==next){previewDirty=true;renderPreview();}}
 export function generationCatalogFiltersChanged(){renderCatalogContext();if(!pending)get('generation-feedback').textContent='';if(run){previewDirty=true;renderPreview();}}
 function generationNotice(text:string,error=false){const node=get('generation-feedback');node.textContent=text;node.classList.toggle('generation-warning',error);tell(text,error);}
 
