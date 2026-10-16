@@ -130,6 +130,7 @@ export const lessons = [
 ];
 
 export const tutorialSurfaceLessons={
+  'application-trigger':'campaign','campaign-header-name':'campaign','campaign-screen-open':'campaign','application-settings':'generator-presets',
   'world-links-open':'world-links',
   'agenda-open':'campaign-agenda',
   'live-generation-open':'live-generation',
@@ -195,7 +196,7 @@ export const tutorialCapabilityLessons={
   'player-observers':'player-display','player-discover':'player-display','player-forget':'player-display','player-mask-save':'player-display',
   'world-map-new':'atlas-hex','world-map-copy':'atlas-hex','world-map-form':'atlas-hex','world-map-export':'atlas-hex','world-map-import':'atlas-hex','hex-form':'atlas-hex','world-anchor-save':'atlas-hex','world-place-group':'atlas-hex','world-reveal':'player-display',
   'live-travel-toggle':'live-travel','travel-mode-target':'map-route','travel-mode-route':'map-route','travel-place-cursor':'map-route',
-  'world-travel-form':'travel-checkpoints','travel-preview-accept':'travel-checkpoints','journey-step':'travel-checkpoints','journey-many':'travel-checkpoints','journey-pause':'travel-checkpoints','journey-resume':'travel-checkpoints','journey-end':'travel-checkpoints',
+  'world-travel-form':'travel-checkpoints','travel-preview-accept':'travel-checkpoints','journey-step':'travel-checkpoints','journey-many':'travel-checkpoints','journey-pause':'travel-checkpoints','journey-play':'travel-checkpoints','journey-end':'travel-checkpoints',
   'calendar-form':'calendar-events','world-agenda-open':'campaign-agenda','phen-editor':'weather-control','weather-override-form':'weather-control','weather-release':'weather-control',
   'audio-pick':'music-library','audio-export':'music-library','audio-import':'music-library','audio-cancel-transfer':'music-library','audio-search-form':'music-library','audio-editor':'music-library','audio-clone':'music-library','music-axes':'music-library','music-axis-add':'music-library','music-axis-save':'music-library',
   'music-mini-open':'music-transport','music-seek':'music-transport','music-settings':'music-transport','music-queue':'music-transport',
