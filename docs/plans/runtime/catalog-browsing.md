@@ -89,3 +89,61 @@ eigenen Nachweise.
    Ziel nicht still umdeuten. Quellenbestand bleibt read-only. Native
    Queryfehler, schnelles Tippen, Enter, Paging,200%, Gruppenumwahl und
    Fokuswiederaufnahme mit echtem Korpus prüfen.
+
+## Begegnungstabellen: bestätigter Save und nachgelagerte Anzeige
+
+Die gepinnte Originalanforderung `requirements-encountertable.md` verlangt
+revisionierte Tabellen, einen gemeinsamen Manager mit Kreaturfilterung,
+geschützte Close-/Discardabläufe und kontrollierte Weltquellenbindungen.
+Der Desktop verwendet `generation-ui.ts`/`world-source-ui.ts` und den
+transaktionalen Owner `storage/generation.ts`; die Auswahl bleibt read-only.
+Bestehende Tabellen behalten ihren Scope. Die sichtbare Dezimalgewichtung ist
+weiterhin eine offene Abweichung vom ursprünglichen Ganzzahlbereich1..10;
+Altgewichte werden nicht still gerundet oder verworfen.
+
+`executeGeneration` bestätigt Tabellen-/Loot-/Presetresultat in seinem Receipt.
+Der Controller übernimmt dieses Resultat sofort nach erfolgreicher Antwort.
+Ein anschließender `generationSources`-Read kann diesen Write nicht zum
+fehlgeschlagenen Save erklären. Bei Readfehler schließt der erfolgreich
+abgeschlossene Manager, die Übersicht enthält die bestätigte Revision, und
+„Änderung bestätigt“ benennt den fehlgeschlagenen Refresh samt ausdrücklichem
+Aktualisieren. Der Hinweis steht auch direkt beim Tabellenbereich und bleibt
+bis zu erfolgreichem Refresh sichtbar. Ein weiterer Edit bindet an die neue Revision; er wiederholt
+keinen alten Save. Weltquellenprosa und offene Factionentwürfe werden bei einem
+Readfehler nicht geleert. Ihre bestehenden Revisionschecks bleiben wirksam.
+Ein fehlgeschlagener Write lässt dagegen den Entwurf offen. Keine Schemaänderung,
+zweiter Writer oder neuer Tabellenbestand.
+
+Die Store-/DOMfälle in `desktop-table-weights.test.mjs` trennen bestätigten
+Write mit danach defektem Result-/Transportread von einem abgewiesenen Write
+und prüfen den nächsten Edit mit der bestätigten Basis. Scope-/Generationtests
+sichern die angrenzenden Grenzen. Das beweist keine Recovery eines unbekannten
+Schreibausgangs und keine vollständige native Tabellenabnahme.
+
+Die nächsten Anschlüsse bleiben ausführbar:
+
+1. **Unbekannten Ausgang wieder aufnehmen.** Der bestehende persistierte
+   `generation_receipt` ist die Ergebnisquelle. Dessen Status und ursprünglichen
+   Command/Fingerprint über die vorhandene Commit-/Recoverygrenze anbinden,
+   statt einen neuen Command zu erfinden. Bestätigt, unbekannt und fehlgeschlagener
+   Read bleiben getrennte Zustände. Momentan blockiert auch ein langsamer
+   Nachread den laufenden UIauftrag. Verlorene Antwort, Close/Escape während
+   Save, Restart und spätere Registryänderung gemeinsam qualifizieren.
+2. **Factionanschluss liefern.** Aus `world-source-ui` denselben Tabellenmanager
+   über dem unveränderten Factiondraft öffnen, neue Tabelle zurückgeben und dort
+   auswählen. Neue Scopewahl bleibt sichtbar. Cancel/Discard benötigen dieselbe
+   Closeanfrage; nur oberstes Modal ist interaktiv. Native Fokus-/Esc-/200%-Probe
+   schließt diese Anforderung ab, keine zweite Tabellenmaske.
+3. **Delete von Papierkorb unterscheiden.** `table-trash` erhält heute reversible
+   Verknüpfungen. Das ist kein Beleg für endgültiges Delete der Originalquelle.
+   Den finalen Löschweg mit `world_source`-Ortslinks, Factionhaupttabelle und
+   abgeleiteten Bestandslimits in derselben Transaktion liefern; Installation
+   betrifft sämtliche Campaigns. Restore darf keine früher entfernte Bindung
+   erfinden. Stale Revision, Fehler bei späterer Faction und unveränderte freie
+   Prosa/Receipts sind notwendige Abnahmen.
+4. **Quellregeln vollständig schließen.** Gewichtbereich vor neuem Schreiben
+   verbindlich entscheiden und vorhandene exakte Altgewichte ausdrücklich
+   migrieren/erhalten. No-table-Fallback von gewählter leerer Tabelle trennen,
+   alle Kreaturfilter und XPceiling schneiden, Loot-Konflikt nur warnen.
+   Diese Quellenregeln brauchen eigene Store-/Nutzerablaufbelege; grüne
+   Tabelleneditierung qualifiziert sie nicht automatisch.

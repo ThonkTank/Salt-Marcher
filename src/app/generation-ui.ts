@@ -22,7 +22,7 @@ export function activateGeneration(next:Workspace){
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
  tables=[];lootTables=[];registry=null;run=null;tableDraft=null;lootDraft=null;previewDirty=false;planningBasis=null;
  for(const id of ['table-manager','loot-table-manager','preset-manager','generation-discard'])if(get<HTMLDialogElement>(id).open)get<HTMLDialogElement>(id).close();
- restoreCatalog();get('generation-workspace').hidden=false;get('generation-feedback').textContent='';renderPreview();void refreshGeneration();
+ restoreCatalog();sourceRefreshNotice();get('generation-workspace').hidden=false;get('generation-feedback').textContent='';renderPreview();void refreshGeneration();
 }
 export async function flushGeneration(){
  if(get<HTMLDialogElement>('preset-manager').open){tell('Schließe zuerst die Generator-Einstellungen. Ungespeicherte Änderungen bleiben dort erhalten.',true);return false;}
@@ -37,9 +37,10 @@ export async function refreshGeneration(){
  try{const results=await Promise.all([window.campaign.encounterTables(w.token,true),window.campaign.lootTables(w.token,true),window.campaign.generatorRegistry(w.token),window.campaign.generationRuns(w.token),window.campaign.generationSources(w.token)]);
   if(!owned(w.token,g)||request!==refreshRequest)return;
   const nextTables=unwrap(results[0]),nextLootTables=unwrap(results[1]),nextRegistry=unwrap(results[2]),history=unwrap(results[3]);
-  setWorldSources(unwrap(results[4]),nextTables);tables=nextTables;lootTables=nextLootTables;registry=nextRegistry;renderOverview();const runs=get<HTMLSelectElement>('generation-history'),selected=runs.value;runs.replaceChildren();option(runs,'','Frühere Vorschau auswählen');for(const r of history)option(runs,r.id,r.title+' · '+r.count+' · Seed '+r.seed);if(history.some(r=>r.id===selected))runs.value=selected;
- }catch(error){if(owned(w.token,g)&&request===refreshRequest)tell((error as Error).message,true);}
+  setWorldSources(unwrap(results[4]),nextTables);sourceRefreshNotice();tables=nextTables;lootTables=nextLootTables;registry=nextRegistry;renderOverview();const runs=get<HTMLSelectElement>('generation-history'),selected=runs.value;runs.replaceChildren();option(runs,'','Frühere Vorschau auswählen');for(const r of history)option(runs,r.id,r.title+' · '+r.count+' · Seed '+r.seed);if(history.some(r=>r.id===selected))runs.value=selected;
+ }catch(error){if(owned(w.token,g)&&request===refreshRequest){sourceRefreshNotice('Tabellen und Weltquellen konnten nicht aktualisiert werden: '+(error as Error).message);tell((error as Error).message,true);}}
 }
+function sourceRefreshNotice(text=''){const node=get('generation-source-status');node.hidden=!text;node.textContent=text;}
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
 function operation(fn:()=>Promise<boolean>,report:typeof tell=tell):Promise<boolean>{
  const w=workspace,g=generation;if(!w||pending)return Promise.resolve(false);
@@ -49,7 +50,14 @@ function operation(fn:()=>Promise<boolean>,report:typeof tell=tell):Promise<bool
 function command(action:GenerationCommand['action']){
  const w=workspace,g=generation;if(!w)return Promise.resolve(false);
  const request={commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,action:structuredClone(action)};
- return operation(async()=>{refreshRequest++;const response=await window.campaign.executeGeneration(request);if(!owned(w.token,g))return false;const result=unwrap(response),sources=unwrap(await window.campaign.generationSources(w.token));if(!owned(w.token,g))return false;refreshRequest++;tables=result.tables;lootTables=result.lootTables;registry=result.registry;setWorldSources(sources,tables);renderOverview();tell('Tabellen, Weltquellen und Generator gespeichert.');return true;});
+ return operation(async()=>{
+  refreshRequest++;const response=await window.campaign.executeGeneration(request);if(!owned(w.token,g))return false;
+  const result=unwrap(response);tables=result.tables;lootTables=result.lootTables;registry=result.registry;renderOverview();
+  // The write is confirmed. A later projection read cannot turn it into a failed save.
+  try{const sources=unwrap(await window.campaign.generationSources(w.token));if(!owned(w.token,g))return false;refreshRequest++;setWorldSources(sources,tables);sourceRefreshNotice();}
+  catch(error){if(!owned(w.token,g))return false;const notice='Änderung bestätigt; Weltquellen konnten nicht aktualisiert werden: '+(error as Error).message+' Über „Tabellen und Presets aktualisieren“ erneut lesen.';sourceRefreshNotice(notice);tell(notice,true);return true;}
+  tell('Tabellen, Weltquellen und Generator gespeichert.');return true;
+ });
 }
 function lock(on:boolean){
  if(!on){for(const [control,disabled]of lockedControls)control.disabled=disabled;lockedControls.clear();return;}
