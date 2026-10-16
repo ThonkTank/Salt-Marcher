@@ -185,3 +185,9 @@ Im NSC-Dossier erscheinen Laden und Fehler direkt im aufgeklappten Statblock.
 Ein verspätetes Ergebnis darf weder eine andere Kreatur noch einen anderen
 Dossierkontext ersetzen. Die lokale und native Prüfung dieses Anschlusses ist
 von der vollständigen Fach-/OS-/Owner-Abnahme weiterhin getrennt.
+
+Der aktuelle SRD-Katalog ergänzt die zwölf im gebundenen Import fehlenden
+Reaktionen aus derselben Upstream-Version als „Reaktion: …“ in den vorhandenen
+Eigenschaften. Diese Texte sind lesbare Regelreferenzen ohne automatische
+Reaktionsauflösung. Gespeicherte Vorlagen-/Kampfquellen bleiben unverändert;
+„Aktuellen Katalogstand ansehen“ zeigt die ergänzte Definition.
