@@ -278,3 +278,18 @@ test('encounter count belongs to its plan, survives reopening and clears back to
  x.el('session-scene-count').value='';x.el('session-scene-count').oninput();assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.store.session(x.workspace.token,first).profile.encounterCount,null);await x.activate();await settle();assert.equal(x.el('session-scene-count').value,'');
  for(const bad of [0,11,1.5]){const profile=x.store.session(x.workspace.token,first).profile;assert.throws(()=>x.store.executeSession({commandId:randomUUID(),campaignId:x.campaign.id,token:x.workspace.token,action:{kind:'profile',profile:{...profile,encounterCount:bad},expectedRevision:profile.revision}}),/Begegnungszahl/);assert.equal(x.store.session(x.workspace.token,first).profile.revision,profile.revision);}
 });
+
+async function manualReward(t){
+ const x=await fixture(t);await x.activate();const target=await x.ui.prepareNextVisit(null,{title:'Belohnter Besuch',notes:'  Exakte Planung\r\n',locationId:null});await settle();
+ x.el('visit-has-reward').checked=true;x.el('visit-has-reward').oninput();x.el('visit-reward-xp').value='60';x.el('visit-reward-xp').oninput();assert.equal(await x.ui.flushPreparation(),true);await settle();
+ const send=x.window.campaign.executeSession,calls=[];x.window.campaign.executeSession=async c=>{calls.push(c);return send(c);};return{...x,target,calls,reward:()=>x.store.session(x.workspace.token,target.planId).visits.find(v=>v.visitId===target.visitId).reward};
+}
+test('an empty manual reward XP input cannot autosave as zero or release navigation; explicit zero remains valid',async t=>{
+ const x=await manualReward(t),original=x.reward(),before=x.store.db.serialize();
+ x.el('visit-reward-xp').value='';x.el('visit-reward-xp').oninput();x.el('visit-reward-save').click();await settle();
+ assert.equal(x.calls.length,0,'unfinished XP must not dispatch a mutation');assert.deepEqual(x.reward(),original);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.el('visit-reward-xp').value,'');assert.equal(await x.ui.leavePreparation(),false);assert.match(x.messages.at(-1).text,/Story-XP/);
+ x.el('visit-reward-xp').value='0';x.el('visit-reward-xp').oninput();assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.calls.length,1);assert.equal(x.reward().poolXp,0);assert.equal(x.reward().id,original.id);
+});
+test('removing the manual reward remains possible while its XP field is unfinished',async t=>{
+ const x=await manualReward(t);x.el('visit-reward-xp').value='';x.el('visit-reward-xp').oninput();x.el('visit-has-reward').checked=false;x.el('visit-has-reward').oninput();assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.reward(),null);assert.equal(x.calls.length,1);
+});
