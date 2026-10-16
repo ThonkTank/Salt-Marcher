@@ -351,3 +351,24 @@ test('a late administrative placement refresh cannot publish success in another 
  const real=x.window.campaign.sceneWorld;let release,held=false;x.window.campaign.sceneWorld=(token,id)=>id===x.a.id&&!held?(held=true,new Promise(r=>release=r)):real(token,id);x.get('travel-place-cursor').onclick();await until(()=>!!release);await x.select('world-scene',x.b.id);await until(()=>x.get('world-current').textContent.includes('3,0'));const status=x.get('travel-placement-status').textContent,bytes=x.store.db.serialize();release({ok:true,value:x.store.sceneWorld(x.w.token,x.a.id)});for(let i=0;i<12;i++)await tick();assert.equal(x.get('travel-placement-status').textContent,status);assert.ok(x.store.db.serialize().equals(bytes));assert.equal(x.store.sceneWorld(x.w.token,x.a.id).position.q,1);assert.equal(x.store.sceneWorld(x.w.token,x.b.id).position.q,3);
  }finally{x.cleanup();}
 });
+
+for(const direct of [false,true])test(`another selected map cannot resume a paused journey (${direct?'direct callback':'visible control'})`,async()=>{
+ const x=await travelFixture();try{
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null}),j=x.store.executeWorld(command({kind:'journey',preview:p})).scene.journey;
+  x.store.executeWorld(command({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'paused'}));
+  const other={...x.map,id:randomUUID(),name:'Andere Karte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));await x.ui.openWorld();await x.select('world-map-select',other.id);
+  const get=id=>x.document.getElementById(id),bytes=x.store.db.serialize(),writes=x.writes;
+  if(direct){get('journey-play').onclick();for(let i=0;i<15;i++)await tick();assert.equal(x.writes,writes,'viewing another map cannot silently reactivate the old journey');}
+  else assert.equal(get('journey-play').disabled,true,'resume must agree with the timer map requirement');
+  assert.match(get('journey-playback-status').textContent,/Reisekarte/);assert.ok(x.store.db.serialize().equals(bytes));assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'paused');
+  await x.select('world-map-select',x.map.id);assert.equal(get('journey-play').disabled,false);get('journey-play').onclick();await until(()=>x.writes===writes+1);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey-state');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'active');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
+ }finally{x.cleanup();}
+});
+test('a valid new route on the displayed map is not blocked by a journey on the previous map',async()=>{
+ const x=await travelFixture();try{
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:null});x.store.executeWorld(command({kind:'journey',preview:p}));
+  const other={...x.map,id:randomUUID(),name:'Neue Reisekarte'};x.store.executeWorld(command({kind:'map',map:other,expectedRevision:null}));const f=x.store.sceneWorld(x.w.token,x.scene.id);x.store.executeWorld(command({kind:'place-scene',sceneId:x.scene.id,expectedSceneRevision:f.scene.revision,expectedPositionRevision:f.position.revision,position:{mapId:other.id,q:0,r:0,locationId:null}}));await x.ui.openWorld();x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);x.document.getElementById('live-travel-toggle').click();await until(()=>!x.document.getElementById('live-travel-host').hidden);x.enter('travel-q','1');x.enter('travel-r','0');x.preview();await until(()=>x.document.getElementById('travel-evaluation').querySelectorAll('dd').length===3);
+  assert.equal(x.document.getElementById('journey-play').disabled,false);assert.doesNotMatch(x.document.getElementById('journey-playback-status').textContent,/Reisekarte auswählen/);
+  x.document.getElementById('journey-play').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.mapId===other.id);await x.ui.stopWorldPlayback();assert.equal(x.sent.at(-1).action.kind,'journey');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');
+ }finally{x.cleanup();}
+});

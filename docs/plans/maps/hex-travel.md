@@ -250,8 +250,10 @@ angenommener startbarer Stand aktiviert Reise starten; im Atlas bleibt die
 vorhandene Vorschau mit ausdrücklicher Bestätigung erhalten. Vor Start gewählte
 1/2/5/10× fließen unverändert in den vorhandenen Journeycommand. Der Hauptknopf
 startet oder setzt fort; Pause und Stoppen verwenden weiterhin die kanonischen
-Zustandsbefehle. Angekommene
-und abgebrochene Reisen zeigen finalen Status/Position ohne Routengeometrie.
+Zustandsbefehle. Timer, Fortsetzen-Knopf und dessen Auftrag verlangen dieselbe
+ausgewählte Reisekarte. Eine andere Ansicht aktiviert keine pausierte Reise.
+Angekommene und abgebrochene Reisen zeigen finalen Status/Position ohne
+Routengeometrie.
 
 Ladeabsichten binden sich an Workspace, Fokus und aktuelle Readgeneration.
 Eine verspätete Weltantwort übernimmt keine alte Fokusgruppe. Eine nicht im
