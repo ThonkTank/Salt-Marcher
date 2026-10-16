@@ -33,6 +33,28 @@ Die [Storeprüfung](../../../tests/desktop-world-source-constraints.test.mjs)
 deckt fehlende Quellen, ausgeschlossene Tabellen/Orte, Nullbestand, endliche
 Bestände, geänderte Quellenbasis und beschädigte Auswahlquellen ab.
 
+## Gespeicherte Vorschau ausdrücklich übernehmen
+
+Die Historienauswahl entfernt zuerst die vorherige Vorschau samt Aktionen.
+Laden und Fehler stehen am Generator; dieselbe Auswahl wiederholt den Read.
+Nur eine Antwort mit passender Run-ID erhält wieder Übernahmeaktionen.
+Eine leere Auswahl, neuere Abfrage oder Kampagnenaktivierung invalidiert alte
+Antworten. Eine laufende ausdrückliche Übernahme wird durch Historienereignisse
+nicht ersetzt. Vorschau- und verknüpfte Beuteaktionen sind an den dargestellten
+Run gebunden. Die Übernahme derselben Planungsparty wie im Run macht eine
+Vorschau nicht fälschlich veraltet; andere geänderte Kriterien bleiben gesperrt.
+Ein entfernter alter Button kann keine neue Vorschau übernehmen
+oder deren Seed für alte Beute benutzen.
+
+Die vorhandenen Request-, Operations- und Store-Revisionsgrenzen genügen;
+kein zusätzlicher Statusautomat oder persistenter Verlauf. DOMgegenproben
+verzögern/fehlen Historienreads, liefern fremde IDs, prüfen alte Klickhandler,
+Retry und Seedbindung. Ein nativer Lauf mit zwei echten Generierungen prüft
+lokalen Fehler, falsche Antwort, Retry und erst danach die ausdrücklich gewählte
+Übernahme. Nach erneutem Öffnen bleibt die konkrete Zusammensetzung erhalten;
+der erste Run und die unveränderlichen Generierungsdaten bleiben unverändert.
+Das ist keine vollständige Selector-, Preset- oder Plattformabnahme.
+
 ## Encounter-Tabellen: Identität und Geltungsbereich
 
 Eine Encounter-Tabelle erhält bei der Neuanlage ausdrücklich `campaign` oder
