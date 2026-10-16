@@ -313,7 +313,15 @@ async function selectRun(){
  try{
   const selected=unwrap(await window.campaign.sessionRun(owner.token,id));
   if(!ownsPreview(owner)||request!==previewRequest)return;
-  run=selected;if(selected.origin)for(const key of Object.keys(compositionPreferences) as CompositionPreference[])get<HTMLSelectElement>('session-'+key).value=selected.origin.request.encounter[key];renderRun();
+  run=selected;
+  if(selected.origin){
+   const saved=selected.origin.request;
+   for(const key of Object.keys(compositionPreferences) as CompositionPreference[])get<HTMLSelectElement>('session-'+key).value=saved.encounter[key];
+   get<HTMLInputElement>('session-loot-compensate').checked=!!(saved.compensateLoot||saved.compensateMagic);
+   get<HTMLInputElement>('session-magic-compensate').checked=!!saved.compensateMagic;
+   magicPick.restore(saved.magicPool,selected.lootGuidance?.magic?.pool??[]);
+  }
+  renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
 async function generatePreview(){
