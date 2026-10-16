@@ -8,10 +8,13 @@ export function liveHexSurface(){
  const toolbar=document.createElement('div');toolbar.id='live-center-tools';toolbar.append(tabs);
  writing.append(toolbar,scene,map);
  let center:'scene'|'map'='scene',docked=false;
+ // Native focus scrolling must not move a sticky travel button between press and release.
+ const panelFocus=(event:MouseEvent)=>{const button=(event.target as Element).closest<HTMLButtonElement>('button');if(!docked||event.button!==0||!button||button.disabled)return;event.preventDefault();button.focus({preventScroll:true});};
  const sceneTab=document.createElement('button'),mapTab=document.createElement('button');
  for(const [button,id,label]of [[sceneTab,'scene','Szene'],[mapTab,'map','Karte']] as const){button.type='button';button.id='live-center-'+id+'-tab';button.textContent=label;button.setAttribute('role','tab');button.setAttribute('aria-controls','live-center-'+id);button.onclick=()=>show(id);tabs.append(button);get('live-center-'+id).setAttribute('aria-labelledby',button.id);}
  const reference=document.querySelector<HTMLElement>('.live-desk-reference')!,panel=get('live-world-panel'),panelHome=document.createComment('world panel home');panel.before(panelHome);
  const toggle=get('live-travel-toggle');toolbar.append(toggle);
+ panel.addEventListener('mousedown',panelFocus);
  const host=get('live-travel-host'),weather=document.createElement('details'),weatherTitle=document.createElement('summary');
  weather.id='live-travel-weather';weatherTitle.textContent='Wetter und Fristen';weather.append(weatherTitle);
  for(const child of [...panel.children])if(child!==host){if(child.tagName==='H3')child.remove();else weather.append(child);}

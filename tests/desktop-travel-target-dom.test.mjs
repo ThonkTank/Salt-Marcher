@@ -305,3 +305,13 @@ test('rejected travel start explains the failure beside its controls without mov
   x.ui.activateWorld(x.w);assert.equal(get('journey-feedback').hidden,true,'a failed old owner must not follow the next scene');
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
+
+
+test('mouse focus cannot scroll an open travel command away before release; keyboard and other clicks remain native',async()=>{
+ const x=await liveContextFixture();try{
+  const button=x.get('world-group-center'),calls=[];button.focus=options=>calls.push(options);
+  const press=which=>{const e=new x.window.Event('mousedown',{bubbles:true,cancelable:true});Object.defineProperty(e,'button',{value:which});button.dispatchEvent(e);return e;};
+  assert.equal(press(0).defaultPrevented,true);assert.deepEqual(calls,[{preventScroll:true}]);assert.equal(press(2).defaultPrevented,false);
+  x.ui.setWorldSurface('world');assert.equal(press(0).defaultPrevented,false);
+ }finally{await x.ui.stopWorldPlayback();x.cleanup();}
+});
