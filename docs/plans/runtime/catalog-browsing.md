@@ -131,6 +131,29 @@ und prüfen den nächsten Edit mit der bestätigten Basis. Scope-/Generationtest
 sichern die angrenzenden Grenzen. Das beweist keine Recovery eines unbekannten
 Schreibausgangs und keine vollständige native Tabellenabnahme.
 
+Der Fraktions-/Ortsquelleneditor verwendet für Escape und Abbrechen dieselbe
+Closeanfrage und denselben vorhandenen `generation-discard`-Dialog wie Tabellen
+und Beute. Der Baselinevergleich berücksichtigt rohe Controlwerte einschließlich
+Checkboxen; auch eine Schreibweise wie `02` statt `2` bleibt ein offener Entwurf.
+Weiterbearbeiten hält Inputs und ursprüngliche Revision, Verwerfen schließt ohne
+Write. Während `source-save` bleibt der Editor auch bei Escape offen und nimmt
+keinen zweiten Submit an. Ein abgewiesener Write erhält Rohtext und Basis; erst
+ein bestätigter Save schließt genau seinen Editor. Campaignreset entwertet alte
+Save-/Discardcallbacks. Store-CAS und die bestehende Generationtransaktion bleiben
+die einzige Schreibgrenze; es gibt keine neue Entwurfspersistenz.
+
+Die Fraktionshaupttabelle erscheint nur im eigenen Selector. Ortscheckboxen
+zeigen nur ortseigene Tabellen; sie duplizieren keine Fraktionstabelle als
+vermeintlich fehlende Verknüpfung.
+
+Die World-Source-DOMfälle prüfen diese Modalzustände, beide Closewege, Rohwerte,
+Doppelsubmit und Contextreset. Eine native Probe verzögert den IPCdispatch und
+weist den echten SQLitewrite durch einen Trigger ab: Escape während Save,
+Weiterbearbeiten, Retry und ausdrückliches Verwerfen erhalten den richtigen
+Bestand und unveränderte Autorenprosa. Frisches Storelesen ist vom vollständigen
+Appneustart getrennt. Unbekannte Schreibausgänge bleiben der folgende offene
+Recoveryanschluss; der geschützte Dialog beweist ihre Klärung nicht.
+
 Die nächsten Anschlüsse bleiben ausführbar:
 
 1. **Unbekannten Ausgang wieder aufnehmen.** Der bestehende persistierte

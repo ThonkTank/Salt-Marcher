@@ -167,7 +167,7 @@ tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
  get('generation-plan-open').onclick=()=>{get('generation-feedback').textContent='';get('encounter-builder').scrollIntoView({block:'start'});const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');target.focus({preventScroll:true});};
  get('catalog-tables').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};
- initWorldSourceUI(command,()=>{previewDirty=true;sourceLabel();renderPreview();});
+ initWorldSourceUI(command,()=>{previewDirty=true;sourceLabel();renderPreview();},close=>{discard=close;get<HTMLDialogElement>('generation-discard').showModal();});
  get('encounter-table-list').oninput=renderSourceActions;get('loot-table-list').oninput=renderSourceActions;renderSourceActions();
  get('encounter-table-new').onclick=()=>{report(()=>openTable());};get('encounter-table-open').onclick=()=>{const t=tables.find(t=>t.id===value('encounter-table-list'));if(t)report(()=>openTable(t));};get('table-close').onclick=requestTableClose;get<HTMLDialogElement>('table-manager').addEventListener('cancel',event=>{event.preventDefault();requestTableClose();});get<HTMLDialogElement>('table-manager').addEventListener('close',restoreCatalog);
  for(const id of ['table-name','table-description','table-scope','table-habitats','table-time','table-loot-link'])get(id).oninput=()=>{
