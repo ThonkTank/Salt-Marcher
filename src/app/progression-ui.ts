@@ -174,6 +174,8 @@ function renderTreasure() {
   get('treasure-provenance').textContent = t ? (t.combatId ? 'Aus Kampf · ' : 'Manuelle Beute · ') + (t.sceneId ? 'Gruppe ' + t.sceneId.slice(0,8) : 'Unverortet') + (t.locationId ? ' · Ort ' + t.locationId.slice(0,8) : '') : '';
 }
 function renderLedger() {
+  const name=live?.roster.find(c=>c.id===selected)?.profile.name??view?.characters.find(c=>c.characterId===selected)?.name;
+  get('ledger-character-heading').textContent=name?'Beute: '+name:'Beute · Figur auswählen';
   const root=get('ledger-list');root.replaceChildren();
   const entries=ledger.items, cumulative=ledger.totalCopper===null?null:BigInt(ledger.totalCopper);
   get('ledger-summary').textContent=ledgerLoaded?'Kumulativ erhaltene Beute: '+(cumulative===null?'nicht vollständig bekannt':gold(cumulative.toString()))+' · Käufe ausgeschlossen; Weitergaben zählen einmal beim ursprünglichen Empfänger, spätere Verkaufspreise aktualisieren den Wert.'+(ledger.unavailableCount?' · '+ledger.unavailableCount+' Einträge nicht verfügbar.':''):selected?'Beute wird geladen.':'Figur auswählen.';
