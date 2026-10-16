@@ -117,6 +117,11 @@ prüfen Pfadanker und Feldeintritt bei dieser Größe. Die automatische Ankerwah
 behält nur die nächstgelegene Grenzfläche und erhält die Reihenfolge bei Gleichstand.
 Das sind lokale Prüfungen; eine native Gesamtqualifikation bleibt offen.
 
+Öffentliche Raum-Key-Ausgaben verwenden die stabile Raumnummer und das öffentliche
+Raumlabel. Interne Levelnamen stehen nur in der GM-Fassung. Das gilt für Markdown,
+das druckbare Karte-/Key-Dokument und den Key-Anteil des öffentlichen JSON;
+Autoreninhalte und Levelzuordnungen werden dabei nicht verändert.
+
 ## Direkte Rasterzüge (0.130, 15.10.2026)
 
 Der Desktop-Volumeneditor bietet zusammenhängende Pinselzüge mit rundem oder

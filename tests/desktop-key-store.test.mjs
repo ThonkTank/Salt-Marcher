@@ -6,8 +6,9 @@ import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-for(const [name,entry] of [['store','storage/store'],['model','key-model'],['contracts','key-contracts']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/key-storage-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+for(const [name,entry] of [['store','storage/store'],['model','key-model'],['contracts','key-contracts'],['document','key-document']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/key-storage-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/key-storage-store.cjs'),{emptyKey}=require('../.build/key-storage-contracts.cjs'),{renderDungeonKey}=require('../.build/key-storage-model.cjs'),sha=s=>createHash('sha256').update(s).digest('hex');
+const {dungeonKeyMarkdown,dungeonKeyDocument}=require('../.build/key-storage-document.cjs');
 function fixture(t){
  const dir=mkdtempSync(path.join(tmpdir(),'key-store-')),store=new CampaignStore(path.join(dir,'source.sqlite')),room={id:randomUUID(),scopeId:'local',floorId:'ground',number:'1',name:'Authored room',revision:0,polygons:[{outer:[{x:0,y:0},{x:3.048,y:0},{x:3.048,y:3.048},{x:0,y:3.048}],holes:[]}],sections:[{id:randomUUID(),kind:'markdown',markdown:'  Legacy GM prose\r\n'}]},campaign=store.create('Key integrity',[room]),w=store.activate(campaign.id);
  const send=action=>store.executeDrawing({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action}),key=emptyKey(room),block=(visibility,text)=>({id:randomUUID(),kind:'text',visibility,text,templateId:null,suppressed:[],searchMethod:'',dc:null,discoveryNotes:'  Private discovery note\r\n',revealedText:''});
@@ -15,6 +16,24 @@ function fixture(t){
  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});return{dir,store,room,campaign,w,send,key:store.drawing(w.token).keyContent[0],geometry:store.dungeon(w.token)};
 }
 function replace(x,edit){const row=x.store.db.prepare('SELECT * FROM dungeon_key_content WHERE id=?').get(x.room.id),value=JSON.parse(row.payload);edit(value);const payload=JSON.stringify(value);x.store.db.prepare('UPDATE dungeon_key_content SET payload=?,checksum=? WHERE id=?').run(payload,sha(payload),x.room.id);return value;}
+
+test('public Dungeon exports retain stable room numbers and public labels without internal Level names',t=>{
+ const x=fixture(t),name='GM-Ebene & <Geheimarchiv>',level={...emptyKey(x.room),id:randomUUID(),kind:'level',name,zSteps:[0,1],blocks:[]};
+ x.send({kind:'key-content',content:level,expectedRevision:null});
+ x.send({kind:'key-content',content:{...x.key,levelId:level.id},expectedRevision:x.key.revision});
+ x.send({kind:'style',style:{id:x.room.id,revision:0,scopeId:x.room.scopeId,ceilingMeters:3.048,fill:'#d8cbb5',wall:'#574b3f',publicLabel:'Eingang',secret:false},expectedRevision:null});
+ for(const secret of [false,true]){
+  const current=x.store.drawing(x.w.token).keyContent.find(k=>k.id===level.id);x.send({kind:'key-content',content:{...current,secret},expectedRevision:current.revision});
+  const g=x.store.dungeon(x.w.token),before=x.store.db.serialize();
+  for(const output of [dungeonKeyMarkdown(g,x.room.scopeId,true),dungeonKeyDocument(g,x.room.scopeId,true)]){
+   assert.ok(output.includes('1. Eingang'));assert.ok(output.includes('Public authored prose'));
+   for(const privateText of ['GM-Ebene','Geheimarchiv','Authored room','Legacy GM prose','Private hidden answer','Unknown hidden secret','Private discovery note'])assert.ok(!output.includes(privateText),privateText+' must remain private');
+  }
+  const gm=dungeonKeyMarkdown(g,x.room.scopeId,false),html=dungeonKeyDocument(g,x.room.scopeId,false);
+  assert.ok(gm.includes(name+' · 1. Authored room'));assert.ok(html.includes('GM-Ebene &amp; &lt;Geheimarchiv&gt; · 1. Authored room'));
+  assert.ok(gm.includes('Private hidden answer'));assert.ok(html.includes('Private hidden answer'));assert.ok(x.store.db.serialize().equals(before));
+ }
+});
 const damages=[['identity',c=>c.id='wrong'],['scope',c=>c.scopeId='wrong'],['kind',c=>c.kind='template'],['revision',c=>c.revision++],['secret flag',c=>c.secret='false'],['block visibility',c=>c.blocks.find(b=>b.visibility==='gm').visibility='private'],['suppression list',c=>c.blocks[1].suppressed='size'],['tag list',c=>c.tags='invalid'],['tag value',c=>c.tags=[false]],['reference identity',c=>c.references=[{kind:'npc',id:9,label:'Preserved label'}]],['reference label',c=>c.references=[{kind:'npc',id:'ref',label:false}]],['status',c=>c.status=false],['attribute object',c=>c.attributes=[]],['block duplicate',c=>c.blocks.push(c.blocks[0])],['level identity',c=>c.levelId=9],['DC',c=>c.blocks[0].dc='12']];
 for(const[name,damage]of damages)test(`checksummed key ${name} damage cannot be read or replace a qualified backup`,async t=>{const x=fixture(t),file=path.join(x.dir,'safe.sqlite');await x.store.backup(file);const bytes=readFileSync(file);replace(x,damage);const before=x.store.db.serialize();assert.throws(()=>x.store.drawing(x.w.token));await assert.rejects(x.store.backup(file));assert.ok(readFileSync(file).equals(bytes));assert.deepEqual(x.store.db.serialize(),before);});
 test('public key rendering refuses unknown visibility before exposing private prose',t=>{const x=fixture(t),bad=structuredClone(x.key);bad.blocks.find(b=>b.visibility==='gm').visibility='private';assert.throws(()=>renderDungeonKey(x.room,[bad],x.geometry,{audience:'public',heading:null,discovered:new Set()}));});
