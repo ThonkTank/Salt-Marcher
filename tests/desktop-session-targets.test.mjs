@@ -35,3 +35,22 @@ test('encounter XP ceilings constrain complete rosters and rejection publishes n
  const run=x.store.generateEncounters(x.w.token,request);assert.ok(run.plans[0].entries.length);assert.ok(run.plans[0].assessment.adjustedXp<=300);
  const before=x.store.db.serialize();assert.throws(()=>x.store.generateEncounters(x.w.token,{...request,seed:'impossible',xpCeiling:0}));assert.deepEqual(x.store.db.serialize(),before);
 });
+
+test('same semantic request resumes edited session without new rows, through fresh open and independent copy',async t=>{
+ const x=fixture(t),run=x.store.generateSession(x.w.token,x.request);
+ assert.equal(run.origin.version,'session-origin-v1');assert.equal(run.origin.encounters.length,3);
+ x.store.executeSession(x.command({kind:'edit-proposal',planId:x.planId,runId:run.id,index:0,expectedRevision:1,title:'Meine Brücke',notes:'  Wortgetreu\r\n',readAloud:'Still.',locationId:null,noteIds:[],reward:{poolXp:11,items:[]}}));
+ const edited=x.store.sessionRun(x.w.token,run.id),before=x.store.db.serialize();
+ assert.deepEqual(x.store.generateSession(x.w.token,{...x.request,compensateLoot:false,compensateMagic:false,worldSourcesByLocation:false}),edited);
+ assert.ok(before.equals(x.store.db.serialize()));assert.equal(edited.origin.rewards[0],null);
+ const fresh=new CampaignStore(x.file);try{assert.deepEqual(fresh.generateSession(fresh.activate(x.cam.id).token,x.request),edited);}finally{fresh.close();}
+ const snapshot=path.join(x.root,'resume.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copiedCam=x.store.acceptCampaignSnapshot(snapshot,'Kopie mit Herkunft',{}),w=x.store.activate(copiedCam.id),row=x.store.db.prepare('SELECT id FROM session_run WHERE campaign_id=?').get(copiedCam.id),copied=x.store.sessionRun(w.token,row.id);
+ assert.notEqual(copied.origin.encounters[0].runId,run.origin.encounters[0].runId);
+ const copiedBefore=x.store.db.serialize();assert.deepEqual(x.store.generateSession(w.token,copied.origin.request),copied);assert.ok(copiedBefore.equals(x.store.db.serialize()));
+});
+test('source revisions create a new calculation while previous authored results and original rewards remain readable',t=>{
+ const x=fixture(t),run=x.store.generateSession(x.w.token,x.request),table=x.store.encounterTables(x.w.token,false).find(t=>t.id===x.request.encounter.tableIds[0]);
+ x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:table.revision,table:{...table,name:'Andere Quelle'}}));
+ const next=x.store.generateSession(x.w.token,x.request);assert.notEqual(next.id,run.id);assert.deepEqual(x.store.sessionRun(x.w.token,run.id),run);assert.equal(x.store.generateSession(x.w.token,x.request).id,next.id);
+ const regenerated=x.store.regenerateSessionProposal(x.w.token,next.id,0,'extra-entwurf');assert.equal(regenerated.origin,undefined);assert.equal(x.store.generateSession(x.w.token,x.request).id,next.id);
+});
