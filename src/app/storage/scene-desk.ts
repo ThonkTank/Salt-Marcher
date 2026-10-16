@@ -211,6 +211,38 @@ export function pinSceneDesk(
     })
     .immediate();
 }
+/** Only authored, readable prose is shown; never JSON metadata or hidden IDs. */
+function searchPreview(search: string, fields: {label:string;text:string}[]): DeskEntry['preview'] {
+  const needle = search.trim().toLocaleLowerCase();
+  if (!needle) return undefined;
+  for (const field of fields) {
+    const text = field.text.replace(/\s+/gu, ' ').trim(), index = text.toLocaleLowerCase().indexOf(needle);
+    if (index < 0) continue;
+    let from = Math.max(0, index - 56);
+    if (from && /[\uDC00-\uDFFF]/u.test(text[from]!)) from--;
+    const excerpt = Array.from(text.slice(from,from+402)).slice(0,200).join('');
+    return {label:field.label, text:(from ? '… ' : '') + excerpt + (from+excerpt.length < text.length ? ' …' : '')};
+  }
+  return undefined;
+}
+function authoredPreview(row:any, search:string): DeskEntry['preview'] {
+  if (!search.trim()) return undefined;
+  try {
+    const raw = decoded(row);
+    if (row.kind === 'note') {
+      const note = worldNoteDocument(raw);
+      if (note.id !== row.id || note.revision !== row.revision) return undefined;
+      return searchPreview(search,[{label:'GM-Notiz',text:note.gmNotes},{label:'Vorlesetext',text:note.readAloud}]);
+    }
+    if (row.kind === 'location') {
+      const location = checkedLocationDocument(raw);
+      if (location.id !== row.id) return undefined;
+      return searchPreview(search,location.sections.map(s=>({label:s.title,text:s.markdown})));
+    }
+    if (raw.id !== row.id || raw.revision !== row.revision) return undefined;
+    return searchPreview(search,[{label:'Encounter-Notiz',text:typeof raw.notes === 'string' ? raw.notes : ''}]);
+  } catch { return undefined; }
+}
 export function searchDesk(
   db: any,
   cam: string,
@@ -264,8 +296,8 @@ export function searchDesk(
     throw new Error("Suchbereich ungültig.");
   const sql =
     kind === "encounter"
-      ? `SELECT 'encounter' kind,id,name title,'Encounter' label FROM encounter_plan WHERE campaign_id=@cam AND instr(lower(name||' '||payload),lower(@search))>0 ORDER BY title,id LIMIT 41 OFFSET @offset`
-      : `SELECT 'note' kind,id,json_extract(payload,'$.title') title,json_extract(payload,'$.kind') label FROM world_note WHERE campaign_id=@cam AND trashed=0 AND json_valid(payload) AND instr(lower(json_extract(payload,'$.title')||' '||json_extract(payload,'$.readAloud')||' '||json_extract(payload,'$.gmNotes')),lower(@search))>0 UNION ALL SELECT 'location' kind,id,json_extract(payload,'$.name') title,'Ort' label FROM location WHERE campaign_id=@cam AND trashed=0 AND json_valid(payload) AND instr(lower(payload),lower(@search))>0 ORDER BY title,id LIMIT 41 OFFSET @offset`;
+      ? `SELECT 'encounter' kind,id,name title,'Encounter' label,payload,checksum,revision FROM encounter_plan WHERE campaign_id=@cam AND instr(lower(name||' '||payload),lower(@search))>0 ORDER BY title,id LIMIT 41 OFFSET @offset`
+      : `SELECT 'note' kind,id,json_extract(payload,'$.title') title,json_extract(payload,'$.kind') label,payload,checksum,revision FROM world_note WHERE campaign_id=@cam AND trashed=0 AND json_valid(payload) AND instr(lower(json_extract(payload,'$.title')||' '||json_extract(payload,'$.readAloud')||' '||json_extract(payload,'$.gmNotes')),lower(@search))>0 UNION ALL SELECT 'location' kind,id,json_extract(payload,'$.name') title,'Ort' label,payload,checksum,revision FROM location WHERE campaign_id=@cam AND trashed=0 AND json_valid(payload) AND instr(lower(payload),lower(@search))>0 ORDER BY title,id LIMIT 41 OFFSET @offset`;
   const rows = db.prepare(sql).all({ cam, search, offset });
   return {
     entries: rows
@@ -273,6 +305,7 @@ export function searchDesk(
       .map((r: any) => ({
         ref: { kind: r.kind, id: r.id },
         title: r.title,
+        preview: authoredPreview(r, search),
         label:
           (
             {

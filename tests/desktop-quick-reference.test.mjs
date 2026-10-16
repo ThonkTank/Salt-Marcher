@@ -71,3 +71,12 @@ test('a delayed healthy source cannot fulfill Enter after explicit detail naviga
  const x=await fixture(t),wait=deferred(),original=x.window.campaign.searchDesk,beta=x.store.preparation(x.w.token).notes.find(r=>r.note.title==='Beta').note;x.window.campaign.searchDesk=(token,kind,...args)=>kind==='world'?wait.promise:original(token,kind,...args);x.el('quick-search').oninput();x.submit();await tick();await x.ui.openQuickReference({kind:'note',id:beta.id});assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');wait.resolve(await original(x.w.token,'world','',0));await tick();assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');assert.equal(x.reads.filter(r=>r[1].id===x.note.id).length,0);
  const closeWait=deferred();x.window.campaign.searchDesk=()=>closeWait.promise;x.el('quick-search').oninput();x.submit();await tick();x.el('quick-close').click();closeWait.resolve(await original(x.w.token,'world','',0));await tick();assert.equal(x.dialog.open,false);assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');
 });
+
+test('quick results expose the matching private note excerpt as literal text before any source is opened',async t=>{
+ const x=await fixture(t),text='😀 '.repeat(160)+'Bernsteinharz führt Mara zum Wachhaus <img src=x onerror=alert(1)>.';
+ x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:{...x.note,gmNotes:text}}));
+ x.el('quick-close').click();x.el('quick-search').value='Bernsteinharz';x.el('quick-reference-open').click();await tick();
+ const preview=x.el('quick-results').querySelector('.desk-search-preview');assert.ok(preview);assert.match(preview.textContent,/GM-Notiz.*Bernsteinharz führt Mara zum Wachhaus/);
+ assert.equal(x.el('quick-results').querySelector('img'),null);assert.equal(x.reads.length,0);
+ x.el('quick-results').querySelector('button').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');assert.ok(x.el('quick-document').textContent.includes(text));
+});

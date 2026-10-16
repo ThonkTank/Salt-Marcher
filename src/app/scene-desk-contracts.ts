@@ -17,6 +17,7 @@ export interface DeskEntry {
   title: string;
   label: string;
   unavailable?: boolean;
+  preview?: { label: string; text: string };
 }
 export interface DeskContent extends DeskEntry {
   links?: {label:string;entry:DeskEntry}[];

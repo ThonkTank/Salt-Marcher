@@ -62,3 +62,32 @@ test('desk edits preserve exact GM prose and confirm under their original real-s
   assert.equal(row.revision,2);assert.equal(note.gmNotes,'  Authored notes\r\nDo not normalize.\r\n');assert.deepEqual(note.relations,[]);assert.equal(note.readAloud,'');assert.equal(x.store.preparationDraft(x.w.token,'note',row.id),null);
  }finally{x.cleanup();}
 });
+
+test('matching note excerpts distinguish equal titles without opening their editors or interpreting markup',async()=>{
+ const x=await fixture();try{
+  const keyword='Bernsteinharz',texts=['Mara sah den Boten mit Bernsteinharz zum Wachhaus gehen.','Rasmus verkauft Bernsteinharz, hat den Boten aber nicht gesehen.'];
+  for(const [i,text] of texts.entries())x.store.changePreparation({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,change:{kind:'note',expectedRevision:null,note:{version:1,id:randomUUID(),revision:1,kind:'npc',title:'Brückenspuren',readAloud:'',gmNotes:'Vorlauf '.repeat(60)+'😀 '+text+' <img src=x onerror=alert(1)> '+ 'Nachlauf '.repeat(60),relations:[],creatureId:null,deleted:false}}});
+  let reads=0;const read=window.campaign.deskContent;window.campaign.deskContent=(...args)=>{reads++;return read(...args);};
+  const before=x.store.db.serialize();x.query(keyword);x.submit();await until(()=>x.titles().length===2);
+  const previews=[...x.el('desk-results').querySelectorAll('.desk-search-preview')];assert.equal(previews.length,2);assert.ok(previews.every(p=>p.textContent.includes(keyword)));
+  assert.ok(previews.some(p=>p.textContent.includes('zum Wachhaus')));assert.ok(previews.some(p=>p.textContent.includes('nicht gesehen')));
+  assert.equal(x.el('desk-results').querySelector('img'),null);assert.equal(reads,0);assert.ok(x.store.db.serialize().equals(before));
+  assert.ok(previews.every(p=>Array.from(p.textContent).length<225));
+ }finally{x.cleanup();}
+});
+
+test('place sections and encounter notes produce readable excerpts while damaged and trashed notes do not',async()=>{
+ const x=await fixture();try{
+  const command={commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id},id=randomUUID();
+  x.store.changePreparation({...command,change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id,name:'Wachhaus',type:'poi',sections:[{id:randomUUID(),title:'Spuren',markdown:'Unter den Dielen liegt Bernsteinharz.'}],detailMaps:[],keyLinks:[]}}});
+  const notes=x.store.searchDesk(x.w.token,'world','Bernsteinharz',0);assert.equal(notes.entries.length,1);assert.deepEqual(notes.entries[0].preview,{label:'Spuren',text:'Unter den Dielen liegt Bernsteinharz.'});
+  const plan=x.store.saveEncounterPlan({...command,commandId:randomUUID(),expectedRevision:null,plan:{id:randomUUID(),revision:1,name:'Patrouille',notes:'Trägt eine Bernsteinharz-Kiste.',party:[],entries:[],sources:[],catalogHash:''}});
+  assert.deepEqual(x.store.searchDesk(x.w.token,'encounter','Bernsteinharz',0).entries[0].preview,{label:'Encounter-Notiz',text:plan.notes});
+  const note=x.store.preparation(x.w.token).notes[0].note;
+  x.store.changePreparation({...command,commandId:randomUUID(),change:{kind:'note',expectedRevision:note.revision,note:{...note,gmNotes:'Bernsteinharz in beschädigter Quelle'}}});
+  x.store.db.prepare('UPDATE world_note SET checksum=? WHERE id=?').run('damaged',note.id);
+  assert.equal(x.store.searchDesk(x.w.token,'world','Bernsteinharz',0).entries.find(row=>row.ref.id===note.id).preview,undefined);
+  x.store.db.prepare('UPDATE world_note SET trashed=1 WHERE id=?').run(note.id);
+  assert.equal(x.store.searchDesk(x.w.token,'world','Bernsteinharz',0).entries.some(row=>row.ref.id===note.id),false);
+ }finally{x.cleanup();}
+});
