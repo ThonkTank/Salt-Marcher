@@ -58,7 +58,8 @@ Im vorhandenen Notizeditor können Beziehungen ergänzt werden. Seine
 bestehenden oder neuen Besuch. Damit braucht auch diese Zuordnung keine zweite
 Titelsuche. Bestehende Besuchsnotizen und die Originaltexte bleiben eigenständig.
 Der native Prüfweg `node tools/test-desktop-moment-follow-up.mjs --out=<Ordner>`
-führt Erfassung, Beziehung, Besuchszuordnung, reguläres Beenden sowie frisches
+(optional `--zoom=2` für 200 %) führt Erfassung, Beziehung, Besuchszuordnung,
+reguläres Beenden sowie frisches
 Wiederfinden und Weiterbearbeiten mit isolierten Daten durch. Die
 Gegenstückprüfung derselben Aufgabe und menschliche Abnahme bleiben eigene Belege.
 
