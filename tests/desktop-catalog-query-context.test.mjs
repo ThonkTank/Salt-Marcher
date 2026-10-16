@@ -211,3 +211,14 @@ test('the first selected creature starts a saved plan without leaving the catalo
 test('first-add save failure keeps the populated draft blocked and a campaign change cannot revive its context',async t=>{
  const held=deferred(),x=await fixture(t);window.campaign.creature=async id=>({ok:true,value:detail(id)});window.campaign.saveEncounterPlan=()=>held.promise;await x.resolve(0,'Skeleton');await x.opened;x.el('catalog-rows').querySelector('button').click();await until(()=>!x.el('catalog-add').disabled);x.el('catalog-quantity').value='1';x.el('catalog-add').click();await until(()=>x.el('encounter-entries').children.length===1);held.resolve({ok:false,error:'Disk unavailable'});await until(()=>x.messages.some(m=>m[0].includes('Disk unavailable')));assert.equal(x.el('catalog-add').disabled,true);assert.match(x.el('catalog-plan-roster').textContent,/Skeleton/);x.ui.activateCatalog({...x.w,token:'new',campaign:{id:'next'}});assert.equal(x.el('catalog-plan-roster').hidden,true);assert.doesNotMatch(x.el('catalog-plan-open').textContent,/Skeleton/);assert.equal(x.el('catalog-add').disabled,true);
 });
+
+test('read-only statblocks expose signed ability modifiers without repeating imported trait text',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Ghast');await x.opened;
+ const original={...detail('Ghast'),abilities:{str:16,dex:17,con:10,int:11,wis:9,cha:8},traits:[{name:'Stench',description:'A distinct\npoison effect.'}],actions:[{name:'Claws',description:'A separate paralysis effect.'}],details:' A distinct poison effect. '};
+ const snapshot=structuredClone(original);window.campaign.creature=async()=>({ok:true,value:original});x.el('catalog-rows').querySelector('button').click();await until(()=>x.el('catalog-detail').querySelector('.creature-abilities'));
+ const root=x.el('catalog-detail'),cells=[...root.querySelectorAll('.creature-abilities>div')];
+ assert.deepEqual(cells.map(c=>[c.querySelector('dt').textContent,c.querySelector('dd').textContent]),[['STR','16 (+3)'],['DEX','17 (+3)'],['CON','10 (+0)'],['INT','11 (+0)'],['WIS','9 (-1)'],['CHA','8 (-1)']]);
+ assert.match(root.textContent,/A distinct\npoison effect/);assert.doesNotMatch(root.textContent,/Weitere Angaben/);assert.match(root.textContent,/A separate paralysis effect/);
+ assert.equal(root.querySelectorAll('input,textarea,button').length,0);assert.deepEqual(original,snapshot);
+ original.details='Additional habitat information.';x.el('catalog-rows').querySelector('button').click();await until(()=>root.textContent.includes('Additional habitat information.'));assert.match(root.textContent,/Weitere Angaben/);
+});
