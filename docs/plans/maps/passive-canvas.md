@@ -14,7 +14,9 @@ derselben Wurzel. Der SVG-Host und seine Capture-Listener bleiben stabil.
 
 Die gemeinsame Kameraleiste bietet vorige/nächste Ansicht und Zurücksetzen.
 Ein Ziehen ist ein Verlaufsschritt; unmittelbar aufeinanderfolgende
-Mausradereignisse bilden eine Zoomgeste. Je Kontext bleiben höchstens32
+Mausradereignisse bilden eine Zoomgeste. Eine dazwischen ausgeführte
+Kameraaktion beginnt für das nächste Mausradereignis einen neuen Verlaufsschritt.
+Je Kontext bleiben höchstens32
 Verlaufsschritte und höchstens32 zuletzt besuchte Ansichtskontexte im Speicher.
 Die Schlüssel sind undurchsichtige Zeichenfolgen. Der Cache enthält nur
 Ausschnitte, Defaultausschnitte und deren Verlauf, keine Kartenobjekte.

@@ -39,7 +39,7 @@ export class PassiveMapCanvas {
   const finish=(e:PointerEvent)=>{if(this.drag?.id!==e.pointerId)return;const moved=this.drag.moved;this.cancel();if(moved||e.button===1){e.preventDefault();e.stopImmediatePropagation();}};
   root.addEventListener('pointerup',finish,true);root.addEventListener('pointercancel',finish,true);root.addEventListener('lostpointercapture',()=>this.cancel());
   root.addEventListener('click',e=>{if(this.suppressClick||this.failed){this.suppressClick=false;e.preventDefault();e.stopImmediatePropagation();}},true);
-  root.addEventListener('wheel',e=>{if(!e.deltaY)return;e.preventDefault();e.stopImmediatePropagation();if(this.failed||this.options.locked?.()||this.drag)return;const matrix=root.getScreenCTM?.();const p=matrix?new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse()):undefined;const previous=this.view,burst=Date.now()-this.wheelAt<300;this.wheelAt=Date.now();this.zoom(e.deltaY>0?1.2:1/1.2,p,burst);if(!same(previous,this.box))this.refreshControls();},{capture:true,passive:false});
+  root.addEventListener('wheel',e=>{if(!e.deltaY)return;e.preventDefault();e.stopImmediatePropagation();if(this.failed||this.options.locked?.()||this.drag)return;const matrix=root.getScreenCTM?.();const p=matrix?new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse()):undefined;const burst=Date.now()-this.wheelAt<300;this.zoom(e.deltaY>0?1.2:1/1.2,p,burst);this.wheelAt=Date.now();},{capture:true,passive:false});
  }
  private screenStart(drag:NonNullable<PassiveMapCanvas['drag']>){return drag.start.matrixTransform(drag.inverse.inverse());}
  get view(){return{...this.box};}
@@ -50,7 +50,7 @@ export class PassiveMapCanvas {
  private remember(box:CanvasBox){if(same(box,this.box))return;if(!this.past.length||!same(this.past.at(-1)!,box))this.past.push({...box});if(this.past.length>32)this.past.shift();this.future=[];this.refreshControls();}
  set(box:CanvasBox,notify=false,reason:CameraReason='set',coalesce=false){
   if(!Object.values(box).every(Number.isFinite)||box.width<=0||box.height<=0)throw new Error('Kartenausschnitt benötigt endliche positive Maße.');
-  const before=this.box;this.box={...box};if(!this.drag&&!coalesce)this.remember(before);this.apply();this.refreshControls();if(notify)this.options.changed?.(this.view,reason);
+  this.wheelAt=0;const before=this.box;this.box={...box};if(!this.drag&&!coalesce)this.remember(before);this.apply();this.refreshControls();if(notify)this.options.changed?.(this.view,reason);
  }
  /** Opaque presentation contexts never contain adopter-owned map data. At most 32 are cached. */
  context(key:string,initial:CanvasBox,restore=true){
