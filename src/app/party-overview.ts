@@ -20,3 +20,9 @@ export function characterRestHint(p:Progress|undefined){
  const f=restFrame(p);if(!f)return(p.xp===null?'XP und damit Tagesbudget offen. ':'Rastabschnitte nicht verlässlich bekannt. ')+'Gespeicherte Tagesbelastung '+p.rest.longXp+' XP; kurze Rast '+p.rest.shortXp+' XP.';
  return'Tagesbelastung '+p.rest.longXp+' / '+f.budget+' XP; kurze Rast '+p.rest.shortXp+' XP; '+f.sections+' verbleibende Rastabschnitte.'+(f.overdue?' Lange Rast fällig.':' Nächste Rastmarke bei '+Math.ceil(f.nextRest)+' XP Tagesbelastung.');
 }
+
+/** Place and present membership describe a destination without renaming stored scenes. */
+export function partySceneLabels(view:import('./live-contracts').LiveView){
+ const labels=view.scenes.map(scene=>({id:scene.id,label:(scene.locationTitle||'Ohne Ort')+' · '+(view.roster.filter(c=>c.active&&c.sceneId===scene.id).map(c=>c.profile.name).join(', ')||'Keine Figuren')}));
+ return new Map(labels.map(scene=>[scene.id,scene.label+(labels.filter(other=>other.label===scene.label).length>1?' · '+scene.id.slice(0,8):'')]));
+}

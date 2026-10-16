@@ -1110,6 +1110,7 @@ export class CampaignStore {
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){
       const a=command.action;
+      if(a.kind==='scene-roster'){const ids=ack.session?.members.filter(m=>!m.active).map(m=>m.id)??[],retired=new Set(ack.session?.retired.map(s=>s.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'||a.kind==='membership'&&!a.active||a.kind==='archive-character'&&a.archived){const ids=a.kind==='move'?a.memberIds:[a.characterId],retired=new Set(ack.session?.retired.map(scene=>scene.id)??[]);removePartyFromMasks(this.db,command.campaignId,ids,command.commandId,retired);reconcileChaseParticipants(this.db,command.campaignId,ids,command.commandId,retired);}
       if(a.kind==='move'&&ack.session?.createdScene)inheritScenePosition(this.db,command.campaignId,a.sceneId,ack.session.createdScene.id);
       // Title/notes alone have no World consequence; broken optional weather cannot veto their save.
