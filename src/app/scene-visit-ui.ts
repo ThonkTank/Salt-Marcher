@@ -2,7 +2,7 @@ import type {Workspace,Result} from './contracts';
 import type {LiveScene} from './live-contracts';
 import type {SceneVisit,SceneVisitPage} from './scene-visit-contracts';
 import {visitOutcomeLabel} from './visit-outcome-contracts';
-import {renderCreatureDetail} from './catalog-ui';
+import {renderCreatureDetail} from './creature-detail-ui';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;},button=(text:string,fn:()=>void)=>{const n=node('button',text);n.type='button';n.onclick=fn;return n;},unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 type Context={workspace:Workspace;scene:LiveScene};
 export class SceneVisitBinder {

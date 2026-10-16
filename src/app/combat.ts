@@ -13,7 +13,7 @@ import type { Workspace, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
 import { combatConditions,combatOrder, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
-import { renderCreatureDetail } from './catalog-ui';
+import { renderCreatureDetail } from './creature-detail-ui';
 import type { EncounterPlan } from './encounter-contracts';
 import type {PreparedGroup} from './session-contracts';
 import {rollSceneCheck,rollSceneFormula} from './rule-reference-ui';

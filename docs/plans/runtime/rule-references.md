@@ -119,7 +119,7 @@ nicht.
    Unicodezeichen, Emoji vor einem Treffer, „Opportunity Attack“ vor „Attack“,
    wiederholte Namen, Fraktion/Ort mit gleichem Namen und sehr langer Text.
 3. **Lesen im laufenden Kontext.** Gemeinsame Projektion in Sessionprosa,
-   `catalog-ui.renderCreatureDetail`, Zustandslabels, Gruppennotizen und
+   `creature-detail-ui.renderCreatureDetail`, Zustandslabels, Gruppennotizen und
    Referenzdetails anschließen. Detailnavigation über vorhandene Deskreader;
    Scenezuordnung des Vor-/Zurückverlaufs explizit machen (Schnellsuche besitzt
    bislang einen Dialogverlauf). Vorschau nach 350 ms Hover/Fokus, 150 ms
@@ -160,3 +160,27 @@ nicht.
    semantische Receipts, archivierte Quellen und Erasure schließen. GM-Notizen
    bleiben in der GM-Oberfläche; die passive Anzeige verwendet ihre geprüfte
    Projektion. Danach die offenen nativen Nutzerabläufe abnehmen.
+
+
+## Kreatur-Statblocks und gespeicherte Quellen
+
+Katalog, Kampftisch, Schnellsuche, Weltgraph, Dungeon-/Besuchsmappe und
+Generator verwenden denselben Statblockrenderer in `creature-detail-ui.ts`.
+Attribute, Modifikatoren, Eigenschaften, Aktionen und Quellen werden damit
+über alle Leseorte gleich dargestellt. Die optionalen Kampfaktionen ändern
+ausschließlich den Encounter; der Kreaturkatalog bleibt schreibgeschützt.
+
+Ein Gegnerklick in der Encounter-Vorlage zeigt deren eingefrorenen Quellenstand
+mit Vorlagentitel und Revision. Er benötigt keinen heutigen Katalogzugriff.
+Fehlt dieser gespeicherte Statblock, bleibt die Lücke sichtbar. Die ausdrückliche
+Aktion „Aktuellen Katalogstand ansehen“ öffnet die heutige Definition zum Lesen
+und für neue Katalogübernahmen; sie ersetzt die Vorlagenquelle nicht. Der
+Leseverlauf wechselt zwischen diesen Ständen, ohne die Suche oder den
+Vorlagenentwurf zu ändern. Beim Kampagnenwechsel wird der Verlauf geleert.
+Eingefrorene Leseansichten erteilen keine Katalog- oder Live-Übernahmeautorität.
+
+Im NSC-Dossier erscheinen Laden und Fehler direkt im aufgeklappten Statblock.
+„Statblock erneut laden“ wiederholt nur den Lesezugriff für dieselbe Kennung.
+Ein verspätetes Ergebnis darf weder eine andere Kreatur noch einen anderen
+Dossierkontext ersetzen. Die lokale und native Prüfung dieses Anschlusses ist
+von der vollständigen Fach-/OS-/Owner-Abnahme weiterhin getrennt.
