@@ -963,6 +963,16 @@ Referenz. Kampagnen-/Requestwechsel sowie widerrufene externe Übergaben entzieh
 späten Antworten Autorität. Die bestehenden Commit-/Detailguards und kanonischen
 Writer bleiben zuständig; keine Schemaänderung oder importierte Mutation.
 
+Suchtext, Filter und Sortierung aktualisieren die vorhandene Itemliste nach
+200ms Eingabepause. Neue Eingaben entziehen alten Queryantworten sofort ihre
+Gültigkeit und leeren die alten Ergebnisaktionen. Submit startet unmittelbar;
+Submit, Reset und Aktivierung verwerfen den alten Timer. Paging wird erst mit
+einer erfolgreichen Trefferseite wieder freigegeben; nach Fehlern startet
+Submit von Seite1. Die unabhängig gelesene Referenz und offene Definitionen
+bleiben dabei erhalten. Store-/DOMgegenproben sowie ein nativer Leselauf mit
+echtem SRD prüfen Tippen, Enter, Filter, verspätete Antworten, Seitenfehler und
+Recovery. Quellen-, Versions-, Tabellen- und Encounterdaten bleiben unverändert.
+
 Nächste Lieferungen verwenden diese vorhandenen Reader statt eines zweiten
 Itembestands: Zuerst Items als read-only Bereich nach Monster anschließen und
 Definitionen, Vergabe sowie Shops über ausdrückliche Übergaben erreichen.
