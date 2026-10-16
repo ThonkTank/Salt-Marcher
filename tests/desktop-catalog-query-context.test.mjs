@@ -164,7 +164,7 @@ test('a creature clicked from the encounter roster reveals its detail on a wide 
  window.matchMedia=()=>({matches:false});x.el('catalog-inspector').scrollIntoView=()=>jumps.push('detail');x.el('catalog-detail').focus=()=>{};x.el('encounter-builder').scrollIntoView=()=>jumps.push('plan');x.el('encounter-name').focus=()=>{};
  x.el('catalog-quantity').value='3';x.el('catalog-add').click();x.el('encounter-notes').value='Kornsäcke retten; Flucht vor Feuer.';x.el('encounter-notes').oninput();
  const before=x.el('encounter-entries').textContent;let reads=0;window.campaign.creature=async()=>{reads++;throw new Error('Current catalog must not be read for this snapshot');};
- x.el('encounter-entries').querySelector('button').click();await tick();assert.deepEqual(jumps,['detail']);assert.equal(x.el('catalog-detail').querySelector('h3').textContent,'Guard');assert.equal(reads,0);assert.match(x.el('creature-reading-source').textContent,/Gespeicherter Quellenstand/);x.el('catalog-plan-open').click();
+ x.el('encounter-entries').querySelector('button').click();await tick();assert.deepEqual(jumps,['detail']);assert.equal(x.el('catalog-detail').querySelector('h3').textContent,'Guard');assert.equal(reads,0);assert.match(x.el('creature-reading-source').textContent,/Quellenstand im Vorlagenentwurf/);x.el('catalog-plan-open').click();
  assert.deepEqual(jumps,['detail','plan']);assert.equal(x.el('encounter-notes').value,'Kornsäcke retten; Flucht vor Feuer.');assert.equal(x.el('encounter-entries').textContent,before);assert.equal(x.el('encounter-entries').querySelector('input[type="number"]').value,'3');
 });
 
