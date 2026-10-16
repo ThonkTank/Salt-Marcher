@@ -212,7 +212,8 @@ function draw() {
   if (draft.revision !== book.revision)
     el("treasury-draft-status").textContent =
       "Schatz geändert. Entwurf bleibt erhalten; vor Übernahme abgleichen oder gespeicherten Stand laden.";
-  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true);
+  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true, true);
+  if(!draft.items.length)el<HTMLDetailsElement>('treasury-catalog-picker').open=true;
   const allocated = book.items.filter((i) => i.allocated > 0);
   el("treasury-allocated").textContent =
     allocated
@@ -467,7 +468,7 @@ function addDefinition(d: ItemDefinition) {
     valueGold: goldText(d.unitCopper),
     reference: { kind: "authored", definitionId: d.id, revision: d.revision },
   });
-  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true);
+  rewardItemsEditor(el("treasury-rows"), draft.items, mark, true, true);
   mark();
 }
 export function initTreasury(
@@ -481,7 +482,7 @@ export function initTreasury(
   if (ready) return;
   ready = true;
   distribution=new TreasureDistribution(status,()=>w,async()=>{if(!await flushTreasury())return false;if(dirty){tell("Schatzangaben zuerst übernehmen oder verwerfen.",true);return false;}return true;},execute);
-  const batch=document.createElement("button");batch.id="treasury-distribute";batch.type="button";batch.textContent="Beute gemeinsam verteilen…";el("treasury-allocate-form").after(batch);batch.onclick=()=>run(()=>distribution.open(book?.id));
+  const batch=document.createElement("button");batch.id="treasury-distribute";batch.type="button";batch.textContent="Beute gemeinsam verteilen…";el("treasury-apply").after(batch);batch.onclick=()=>run(()=>distribution.open(book?.id));
   onCommitState(lock);
   onCommitResolved((event) => {
     const meta = event.meta as { owner?: string; token?: string; generation?: number; editing?: number } | undefined;
