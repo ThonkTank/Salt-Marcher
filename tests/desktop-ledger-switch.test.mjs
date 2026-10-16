@@ -72,3 +72,14 @@ test('unfinished XP correction cannot reset character XP; explicit zero still wo
   assert.equal(x.writes.length,1);assert.equal(x.store.progress(x.w.token).characters.find(c=>c.characterId===id).xp,0);
  }finally{await x.cleanup();}
 });
+
+test('personal loot names its owner immediately across character switches',async()=>{
+ const x=await fixture();try{
+  assert.equal(x.el('ledger-character-heading').textContent,'Beute: Ada');
+  x.ui.progressionContext(x.w,x.live,x.heroes[1].id);
+  assert.equal(x.el('ledger-character-heading').textContent,'Beute: Borin');
+  await until(()=>x.el('ledger-list').querySelectorAll('button').length===0);
+  assert.equal(x.el('ledger-character-heading').textContent,'Beute: Borin');
+  x.ui.progressionContext(x.w,x.live,null);assert.equal(x.el('ledger-character-heading').textContent,'Beute · Figur auswählen');
+ }finally{await x.cleanup();}
+});

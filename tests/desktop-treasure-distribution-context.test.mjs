@@ -9,3 +9,14 @@ test('reset while pre-open flush is pending prevents that old open',async t=>{co
 test('a detached amount input cannot alter values after a grid redraw',async t=>{const x=await fixture(t),old=x.input();x.el('distribution-even').click();old.value='1';old.oninput();x.review();x.submit();await settle();assert.equal(x.sent[0].allocations[0].quantity,10);});
 
 test('detached paging controls cannot change a reopened allocation grid',async t=>{const x=await fixture(t);x.book.items=Array.from({length:30},(_,i)=>({...x.book.items[0],id:'item-'+i}));await x.open();const buttons=[...x.el('distribution-grid').previousElementSibling.querySelectorAll('button')];const forward=buttons[1];assert.equal(forward.disabled,false);x.ui.reset();await x.open();forward.onclick();assert.equal(x.input().dataset.itemId,'item-0');});
+
+test('small distributions omit unused search and paging while keeping direct assignment',async t=>{
+ const x=await fixture(t);assert.equal(x.el('distribution-person-search').hidden,true);
+ assert.equal(x.el('distribution-grid').previousElementSibling.children.length,0);
+ const direct=x.el('distribution-grid').querySelector('details');assert.ok(direct);assert.ok(!direct.open);
+ direct.querySelector('button').click();x.review();x.submit();await settle();assert.equal(x.sent[0].allocations[0].quantity,10);
+});
+test('recipient search remains available when the active party spans columns',async t=>{
+ const x=await fixture(t);for(let i=0;i<9;i++)x.people.push({...x.people[0],characterId:'hero-'+i,name:'Figur '+i});await x.open();
+ assert.equal(x.el('distribution-person-search').hidden,false);assert.match(x.el('distribution-grid').previousElementSibling.textContent,/Empfänger 1 \/ 2/);
+});

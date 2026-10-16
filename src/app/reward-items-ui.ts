@@ -9,6 +9,7 @@ export function rewardItemsEditor(
   for (const [itemIndex, item] of items.entries()) {
     const row = document.createElement("fieldset"),
       legend = document.createElement("legend");
+    row.className = 'reward-item-row';
     legend.textContent = "Gegenstand " + (itemIndex + 1);
     const name = document.createElement("input"),
       quantity = document.createElement("input"),
@@ -63,7 +64,23 @@ export function rewardItemsEditor(
       rewardItemsEditor(root, items, changed, raw);
       changed();
     };
-    row.append(legend, name, category, quantity, value, remove);
+    const field = (text: string, control: HTMLElement) => {
+      const label = document.createElement('label');
+      label.append(document.createTextNode(text), control);
+      return label;
+    };
+    if (item.reference) {
+      // Changing a catalog name or price used to silently drop its identity.
+      // Instance editing changes quantity; definition facts stay in the catalog.
+      legend.textContent = item.name;
+      const facts = document.createElement('p');
+      facts.className = 'reward-item-facts';
+      facts.textContent = [...category.options].find(o => o.value === item.category)?.textContent + ' · ' + item.valueGold + ' Gold pro Stück';
+      row.append(legend, facts, field('Menge', quantity), remove);
+    } else {
+      row.append(legend, field('Gegenstand', name), field('Kategorie', category),
+        field('Menge', quantity), field('Gold pro Stück', value), remove);
+    }
     root.append(row);
   }
   const add = document.createElement("button");
