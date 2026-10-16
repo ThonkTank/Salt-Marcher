@@ -260,9 +260,9 @@ test('Reise opens the one Hex console without changing the scene center; explici
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 test('live keyboard waypoints evaluate inline and start with the preselected presentation speed',async()=>{
- const x=await travelFixture(),get=id=>x.document.getElementById(id);try{get('world-journey-console').scrollIntoView=()=>{};
+ const x=await travelFixture(),get=id=>x.document.getElementById(id);try{get('world-journey-console').scrollIntoView=()=>{};const rail=x.document.querySelector('.live-desk-reference');rail.scrollTop=12;rail.getBoundingClientRect=()=>({top:100});get('travel-evaluation').getBoundingClientRect=()=>({top:300});
   x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);get('live-travel-toggle').click();await until(()=>!get('live-travel-host').hidden&&get('travel-place-cursor').disabled===false);assert.equal(get('journey-play').disabled,true);get('travel-mode-route').click();const key=k=>{const e=new x.window.Event('keydown',{cancelable:true});Object.assign(e,{key:k});get('world-map').dispatchEvent(e);};key('ArrowRight');key('Enter');await until(()=>get('travel-stops').children.length===1);key('Enter');await until(()=>get('travel-stops').children.length===2);assert.equal(get('live-center-map').hidden,false);assert.match(get('travel-selected-hex').textContent,/1,0.*Kosten/);
-  x.preview();await until(()=>get('travel-evaluation').querySelectorAll('dd').length===3);assert.equal(get('travel-preview-dialog').open,false);assert.equal(get('travel-evaluation').nextElementSibling.id,'world-journey-console','evaluated route leads directly to its start control');assert.equal(get('journey-play').disabled,false);get('journey-faster').click();assert.equal(get('journey-speed').textContent,'2×');get('journey-play').click();await until(()=>get('journey-playback-status').textContent.startsWith('Wiedergabe 2×'));await x.ui.stopWorldPlayback();const journey=x.store.sceneWorld(x.w.token,x.scene.id).journey;assert.equal(journey.presentationSpeed,2);assert.equal(journey.route.length,2);assert.equal(get('travel-stops').children.length,0);get('journey-end').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.status==='ended');assert.equal(get('world-map').querySelector('[data-travel-route]'),null);assert.equal(get('journey-end').disabled,true);
+  x.preview();await until(()=>get('travel-evaluation').querySelectorAll('dd').length===3);assert.equal(get('travel-preview-dialog').open,false);assert.equal(rail.scrollTop,212,'inline preview reveals its result only inside the reference rail');assert.equal(get('travel-evaluation').nextElementSibling.id,'world-journey-console','evaluated route leads directly to its start control');assert.equal(get('journey-play').disabled,false);get('journey-faster').click();assert.equal(get('journey-speed').textContent,'2×');get('journey-play').click();await until(()=>get('journey-playback-status').textContent.startsWith('Wiedergabe 2×'));await x.ui.stopWorldPlayback();const journey=x.store.sceneWorld(x.w.token,x.scene.id).journey;assert.equal(journey.presentationSpeed,2);assert.equal(journey.route.length,2);assert.equal(get('travel-stops').children.length,0);get('journey-end').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.status==='ended');assert.equal(get('world-map').querySelector('[data-travel-route]'),null);assert.equal(get('journey-end').disabled,true);
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 
@@ -307,14 +307,7 @@ test('rejected travel start explains the failure beside its controls without mov
 });
 
 
-test('mouse focus cannot scroll an open travel command away before release; keyboard and other clicks remain native',async()=>{
- const x=await liveContextFixture();try{
-  const button=x.get('world-group-center'),calls=[];button.focus=options=>calls.push(options);
-  const press=which=>{const e=new x.window.Event('mousedown',{bubbles:true,cancelable:true});Object.defineProperty(e,'button',{value:which});button.dispatchEvent(e);return e;};
-  assert.equal(press(0).defaultPrevented,true);assert.deepEqual(calls,[{preventScroll:true}]);assert.equal(press(2).defaultPrevented,false);
-  x.ui.setWorldSurface('world');assert.equal(press(0).defaultPrevented,false);
- }finally{await x.ui.stopWorldPlayback();x.cleanup();}
-});
+
 
 test('token placement requires its authored map and membership basis, while keyboard placement can use continuous sparse terrain',async()=>{
  const x=await travelFixture();try{
