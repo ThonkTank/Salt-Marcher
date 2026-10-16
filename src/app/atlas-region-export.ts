@@ -20,6 +20,7 @@ export function atlasRegionSVG(
     references: boolean;
     floorId: string;
     roofs: boolean;
+    rasters?: import("./landscape-raster").LandscapeRaster[];
   },
 ) {
   const svg = landscapeNode("svg", {
@@ -34,7 +35,7 @@ export function atlasRegionSVG(
       fill: "#b8c896",
     }),
   );
-  drawLandscape(svg, records, box, mpp, assets, options.references);
+  drawLandscape(svg, records, box, mpp, assets, options.references,options.rasters);
   if (options.grid) drawLandscapeGrid(svg, box, options.level, mpp);
   for (const city of data.cities) {
     const binding = data.bindings.find(

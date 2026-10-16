@@ -71,6 +71,7 @@ export class LandscapeWorkbench {
   readonly panel = document.createElement("section");
   readonly assets = new Map<string, string>();
   records: LandscapeRecord[] = [];
+  private raster: import("./landscape-raster").LandscapeRaster | undefined;
   exportBox: LandscapeBox | null = null;
   private token = "";
   private key = "";
@@ -104,7 +105,7 @@ export class LandscapeWorkbench {
   ) {
     this.panel.id = "atlas-landscape-tools";
     this.panel.hidden = true;
-    this.panel.innerHTML = `<h3>Region vorbereiten</h3><label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option><option value="export">Ausgabebereich wählen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button></div><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
+    this.panel.innerHTML = `<h3>Region vorbereiten</h3><label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option><option value="export">Ausgabebereich wählen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
     html("atlas-tool-fields").after(this.panel);
     html<HTMLSelectElement>("land-tool").onchange = () => {
       if (this.hasDraft()) {
@@ -142,6 +143,7 @@ export class LandscapeWorkbench {
     html("land-finish").onclick = () =>
       void this.finish().catch((e) => this.host.error(e));
     html("land-cancel").onclick = () => this.cancel();
+    html("land-reload").onclick = () => void this.load(this.host.box(), true);
     html("land-reference").onclick = () =>
       void this.importReference().catch((e) => this.host.error(e));
     html("land-grid").onchange = () => this.host.redraw();
@@ -352,6 +354,7 @@ export class LandscapeWorkbench {
     this.token = token;
     this.cancel();
     this.records = [];
+    this.raster = undefined;
     this.assets.clear();
     this.key = "";
     this.request++;
@@ -384,14 +387,35 @@ export class LandscapeWorkbench {
     this.key = key;
     const n = ++this.request,
       token = this.token;
-    const r = await window.campaign.landscapeRegion(token, box,box.width/Math.max(1,this.svg.clientWidth));
+    const mpp=box.width/Math.max(1,this.svg.clientWidth);
+    const r = await window.campaign.landscapeRegion(token, box,mpp,false);
     if (n !== this.request || token !== this.token) return;
     if (!r.ok) {
-      this.key = "";
+      this.records=[];this.raster=undefined;html("land-reload").hidden=false;
+      this.say("Ansicht nicht verfügbar. Ansicht erneut laden.");
       this.host.error(new Error(r.error));
+      this.host.redraw();
       return;
     }
+    let raster: import("./landscape-raster").LandscapeRaster | undefined;
+    {
+      const current=this.raster, pixelsPerMeter=512/Math.max(box.width,box.height);
+      const covers=current&&current.revision===r.value.revision&&current.box.x<=box.x&&current.box.y<=box.y&&current.box.x+current.box.width>=box.x+box.width&&current.box.y+current.box.height>=box.y+box.height&&current.width/current.box.width>=pixelsPerMeter/1.5;
+      if(covers)raster=current;
+      else {
+        // Reuse a buffered, aligned loading unit during small camera moves.
+        // Double its pixels as well as its extent; author geometry is unchanged.
+        const buffered={x:Math.floor(box.x/(box.width/2))*(box.width/2)-box.width/2,y:Math.floor(box.y/(box.height/2))*(box.height/2)-box.height/2,width:box.width*2,height:box.height*2};
+        const aspect=box.width/box.height,width=Math.max(1,Math.round(1024*Math.min(1,aspect))),height=Math.max(1,Math.round(1024*Math.min(1,1/aspect)));
+        const image=await window.campaign.landscapeRaster(token,buffered,width,height);
+        if(n!==this.request||token!==this.token)return;
+        if(!image.ok||image.value.revision!==r.value.revision){this.records=[];this.raster=undefined;html('land-reload').hidden=false;this.say('Übersicht nicht verfügbar. Ansicht erneut laden.');this.host.error(new Error(image.ok?'Atlasstand geändert. Übersicht erneut laden.':image.error));this.host.redraw();return;}
+        raster=image.value;
+      }
+    }
     this.records = r.value.records;
+    this.raster = raster;
+    html("land-reload").hidden = true;
     const select = html<HTMLSelectElement>("land-object");
     select.replaceChildren(new Option("Auf der Karte auswählen", ""));
     for (const record of this.records.filter((r) => r.kind !== "patch"))
@@ -426,7 +450,7 @@ export class LandscapeWorkbench {
           r.id === this.selected!.id ? this.selected! : r,
         )
       : this.records;
-    drawLandscape(root, records, box, mpp, this.assets);
+    drawLandscape(root, records, box, mpp, this.assets,true,this.raster);
     const auto = html<HTMLInputElement>("land-auto-level").checked,
       level = auto
         ? Math.max(
@@ -736,16 +760,12 @@ export class LandscapeWorkbench {
     this.vertex = 0;
     const token = this.token;
     if (record.locationId) {
-      const r = await window.campaign.preparation(token, "");
+      const r = await window.campaign.deskContent(token, {kind:"location",id:record.locationId});
       if (token !== this.token || this.selected?.id !== record.id) return;
       if (!r.ok) throw new Error(r.error);
-      const row = r.value.locations.find(
-        (l) => l.document.id === record.locationId,
-      );
-      if (row) {
-        this.doc = structuredClone(row.document);
-        this.docRevision = row.revision;
-      }
+      if (!r.value.location || r.value.unavailable)throw new Error("Ortsinhalt nicht verfügbar. Originaldaten bleiben erhalten.");
+      this.doc = structuredClone(r.value.location);
+      this.docRevision = r.value.revision;
     }
     this.inspector();
     this.host.redraw();

@@ -31,6 +31,42 @@ unbenötigte Detailoptionen; es verschiebt keine schwer umkehrbaren Entscheidung
 
 ## Gewählte Grundstruktur
 
+### Vorläufiges Atlasziel und überprüfbare Alternativen (16.10.2026)
+
+Der beauftragte Atlasumbau konkretisiert diese Grundlage; Lieferstand,
+Migrationsschritte und direkte Abnahmen stehen ausschließlich im
+[Runtimeplan](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#umstellung-auf-das-vorläufige-atlaszielsystem).
+Produktregeln bleiben verbindlich: ein wachsender ebener Meterraum, gemeinsame
+Kamera/Auswahl/History, geschützte grobe/feine Bearbeitung, stabile Identitäten
+und Texte, lokale Offline-Nutzung, sichere passive Anzeige und unabhängiger
+Kampagnentransfer. Referenzziel sind gewöhnliche 16-GiB-Laptops; Speicherlimits
+auf größeren Rechnern ersetzen deren physische Qualifikation nicht.
+
+Die folgenden Technikentscheidungen sind ausdrücklich vorläufig. Ein Wechsel
+erhält die Fachregeln und benötigt einen passenden Vergleich, keine neue
+allgemeine Freigabeschranke. Reihenfolge: Korrektheit/Inhaltsschutz, Fähigkeiten,
+Reaktionszeit/Speicher, Gesamtaufwand. Bei gleich geeigneten Lösungen die
+einfachere behalten; fehlende Nachweise als offen führen.
+
+| ID | Arbeitsrichtung | Weiter betrachtete Alternative / Wechselnachweis |
+| --- | --- | --- |
+| B01 | Begrenzte, gezielt aktualisierte SVGdarstellung | Canvas2D, danach vorhandenes Pixi/WebGL; gleiche Szene, Gesten, Hit, Texte, Export und Grafikfehler. Native2D erst bei belegtem Plattformhindernis. |
+| B02 | SQLite-Rtree als Kandidatenindex | Bestehender Btree, Suchraster/Quadtree, BVH für genaue Tests; Grenzen, Dichte, lange Geometrie und Änderungskosten messen. Exakte Geometrie bleibt getrennt. |
+| B03 | Exakte 1000-m-Bereichsadresse plus lokaler Offset, versionierter Codec | Andere Bereichsgröße/lokales Festkomma nur mit Präzisions- und Transfernachweis; kein vorzeitiges globales Double. |
+| B04 | Wirksame Landschaft vor maßstabsabhängiger Zusammenfassung bestimmen | Raster-/Vektorkacheln, vereinfachte Konturen und Kombination; Landschaftserhalt, Ränder und lokale Invalidierung entscheiden. |
+| B05 | Austauschbare feste Ladeeinheiten und getrennte Bytecaches | Adaptive Bereiche/statisch-dynamische Indizes nach Dichtemessung. Cachevergleich 64/128/256 MiB je Klasse; kleinste geeignete Variante wählen. |
+| B06 | Hashadressierte Assetdateien gemäß Speicherziel | Bestehende SQLite-BLOBs und begründete Mischform bis zum Medien-/Backup-/Transfervergleich erhalten. Kein bloßer Dateiformatwechsel ohne Gesamtnutzen. |
+| B07 | Begrenzte Worker, genau ein Writer | DBthread/isolierter Medienprozess; WASM nur für gemessene Kerne. Kopien, Speicher, Cancel und Fehlerisolation entscheiden. |
+| B08 | Dungeon-Zellvolumes und metrische Gebäudeprismen | Intervall-/Chunkrepräsentation und spezialisierte Geometriekerne optimierbar; keine zweite physische Wahrheit oder freie universelle CSGpflicht. |
+| B09 | Transaktionen, Deltas und Receipts weiterführen | Kompaktere Patches/Checkpoints nach Langzeitmessung. Alte History muss weiter lesbar und kausal rücknehmbar bleiben. |
+| B10 | Lokale/regionale Navigation mit gemeinsamen Übergängen und Zeit | Navmesh/hierarchischer Graph/Kostenfelder nach echten Aufgaben; keine vorsorgliche Dauersimulation. |
+| B11 | Electron/TypeScript/SQLite | Andere WebView/native2D erst bei belegtem unerfüllbarem Speicher-/Grafik-/OS-/Installationsziel. |
+
+Kugelprojektion, Serverpflicht, allgemeines Multiuser-Editing und freie
+3D-Meshmodellierung werden derzeit nicht verfolgt; ein veränderter Produktauftrag
+kann sie wieder relevant machen. Beobachtung der Technik ist keine Erlaubnis,
+Atlasumfang oder externe Datenbindungen zu verkleinern.
+
 **Ein modularer TypeScript-Kern in einer eigenständigen Electron-Anwendung,
 ein lokaler SQLite-Schreibdienst, eine Atlasoberfläche.** Die
 [Plattformentscheidung](ROADMAP-SALTMARCHER-PLATFORM-ADR.md) begründet Alternativen
@@ -42,7 +78,7 @@ die noch erforderlichen Implementationsbeweise.
 | Fachmodule | Werttypen, Invarianten, reine Berechnungen, Commandplanung | Kein Electron/Obsidian, SQL, Dateisystem, DOM oder Netz; reproduzierbare Resultate auf identischen Inputs |
 | Anwendung | Aktivierung, Zugriffsprüfung, Command, betroffene Records, Konflikt/Cancel, Projektionen | Eine Änderung kann mehrere Fachmodule betreffen, besitzt aber eine gemeinsame Commitentscheidung |
 | Lokaler Schreibdienst | SQLite, Validierung an der Schreibgrenze, Revisionen, Receipts, Assets, Recovery und Migration | Ausschließlich dieser Dienst schreibt Produktdaten; UI und Extensions erhalten keine DB-Verbindung |
-| GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text, gemeinsame Kamera/Werkzeuge, Pixi-Kartenszene | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
+| GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text, gemeinsame Kamera/Werkzeuge, begrenzte SVG-/Rasterdarstellung (Renderervergleich B01 offen) | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
 | Hintergrundjobs | Abbrechbare Geometrie, Generatoren, Suche/Export, Medienprüfung | Unveränderlicher Input, gebundene Basisrevision und Aktivierung; Resultate erhalten keine eigene Schreibberechtigung |
 | Passive Anzeige / Extensions | Redigierte Anzeige bzw. ausdrücklich erlaubte Fähigkeiten | Getrennte Prozesse und enge DTOs; keine versteckten GM-Daten oder ungeprüften privilegierten Aufrufe |
 
