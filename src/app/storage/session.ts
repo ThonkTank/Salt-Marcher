@@ -157,7 +157,7 @@ export function validateSessionRuns(db:any){
 function normalizedSessionRequest(request:SessionGenerationRequest):SessionGenerationRequest {
  const r=structuredClone(request);r.count??=null;r.compensateLoot=r.compensateLoot===true;r.compensateMagic=r.compensateMagic===true;r.worldSourcesByLocation=r.worldSourcesByLocation===true;
  r.encounter.npcOnly=r.encounter.npcOnly===true;r.encounter.includeNpcs=r.encounter.includeNpcs===true;
- for(const key of ['factionIds','requiredNpcIds','excludedNpcIds'] as const)r.encounter[key]??=[];if(r.encounter.filters.text==='')delete r.encounter.filters.text;
+ for(const key of ['factionIds','requiredNpcIds','excludedNpcIds'] as const)r.encounter[key]??=[];if(r.encounter.filters.text===''){const {text,...filters}=r.encounter.filters;r.encounter.filters=filters;}
  r.magicPool?.sort((a,b)=>a.definitionId.localeCompare(b.definitionId));return r;
 }
 function sessionWorldBasis(db:any,cam:string,request:SessionGenerationRequest){
@@ -169,7 +169,8 @@ function reusableSession(db:any,cam:string,p:SessionProfile,request:SessionGener
  // Inspect only this plan/profile. Old runs without a semantic origin remain readable.
  for(const row of db.prepare("SELECT * FROM session_run WHERE campaign_id=? AND plan_id=? AND json_extract(payload,'$.profileRevision')=? AND json_extract(payload,'$.origin.version')='session-origin-v1' ORDER BY rowid DESC").iterate(cam,p.planId,p.revision)){
   const saved=decoded<SessionRun>(row),origin=saved.origin!;
-  if(canonicalJson(origin.request)!==normalized||canonicalJson(origin.locations)!==canonicalJson(basis.locations)||canonicalJson(origin.notes)!==canonicalJson(basis.notes))continue;
+  const ordered=(refs:{id:string;revision:number}[])=>refs.slice().sort((a,b)=>a.id.localeCompare(b.id));
+  if(canonicalJson(normalizedSessionRequest(origin.request))!==normalized||canonicalJson(ordered(origin.locations))!==canonicalJson(basis.locations)||canonicalJson(ordered(origin.notes))!==canonicalJson(basis.notes))continue;
   const run=sessionRunRow(db,row);
   try{
    for(const ref of origin.encounters){const source=readGenerationRun(db,cam,ref.runId);assertGenerationSourcesCurrent(db,cam,source);const registry=readGeneratorRegistry(db,cam);if(registry.presets.find(p=>p.id===registry.effectiveId)?.revision!==ref.preset.revision)throw new Error('Regelrevision geändert.');for(const loot of source.lootTables??[]){const current=db.prepare('SELECT revision,trashed FROM loot_table WHERE campaign_id=? AND id=?').get(cam,loot.id);if(!current||current.trashed||current.revision!==loot.revision)throw new Error('Beutequelle geändert.');}}

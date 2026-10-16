@@ -140,6 +140,7 @@ function lock(on:boolean){
   else if(lockedControls.has(c)){c.disabled=lockedControls.get(c)!;lockedControls.delete(c);}
  }
  if(!on){
+  if(generating?.token===workspace?.token&&generating?.planId===plan?.id)get<HTMLButtonElement>('session-generate').disabled=true;
   get<HTMLButtonElement>('visit-attach').disabled=!encounterChoices.some(e=>e.id===value('visit-encounter'));
   const reward=visitDraft?.reward,sealed=!!reward?.placedTreasureId||!!reward?.awarded;
   for(const id of ['visit-has-reward','visit-reward-xp','visit-item-add'])get<HTMLInputElement>(id).disabled=sealed;
