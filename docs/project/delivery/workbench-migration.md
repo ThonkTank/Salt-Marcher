@@ -13,7 +13,7 @@ Kampagnenwerkstatt, wird unter dem Namen **SaltMarcher** im Repository
 `main`. Die bisherige SaltMarcher-Implementierung wird dadurch abgelöst.
 
 Übernommener veröffentlichter Dungeon-Stand:
-`eb143c805f33fcfade80b005e4bfe5b949f51af0`.
+`7795e3e98d10fcda4f7ddb9522985d69f9a06829`.
 Der Übernahmecommit verbindet beide Historien. Das frühere SaltMarcher bleibt
 zusätzlich unter `archive/saltmarcher-before-workbench-20261016` zugänglich.
 Originalanforderungen, Lizenzen und unveränderliche Quellenbindungen bleiben
@@ -61,6 +61,15 @@ Implementierung angeschlossen: vorhandene Sichtbarkeitszeile, gemeinsamer
 Atlas-Schreibvertrag, gezielte Chronikabfragen mit Cursor und bestehender Atlas.
 Die Erwartungen an Datenschutz, Personen, Orte und Wiederaufnahme bleiben
 bestehen; alle sechs gezielten Prüfungen bestanden danach.
+
+Der erste vollständige Kandidatenlauf erfasste weitere 113 Fehler. Die
+überwiegend älteren Testaufbauten wurden auf den bereits angelegten kanonischen
+Atlas, dessen Hexgröße und aktuelle Schreib-/Leseverträge umgestellt. Veraltete
+Testpakete werden gemäß dem bestehenden Produktvertrag abgewiesen, ihre Bytes
+bleiben erhalten. Auch der Öffnungsweg ist korrigiert: Eine fehlende Tabelle
+für Verfolgungsentwürfe führt bei allen bekannten aktuellen Schemas vor
+weiteren Schreibschritten zum Abbruch; eine unbekannte neuere Version bleibt
+ein eigener Fehlerfall.
 
 Der Übernahme-PR dokumentiert den genauen Kandidaten und dessen vollständige
 CI. Eine grüne technische Migration ersetzt keine fachliche Produktabnahme.

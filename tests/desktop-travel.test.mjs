@@ -17,8 +17,8 @@ function setup(interrupt='',destination=false){
  const character=x.live({kind:'create-character',profile:{name:'Iri'}}).character,roster=store.live(workspace.token);
  x.live({kind:'membership',characterId:character.id,expectedRevision:character.membershipRevision,expectedRosterRevision:roster.rosterRevision,active:true,targetSceneId:null,expectedFocusRevision:roster.focusRevision});
  x.scene=x.live({kind:'initialize',expectedRosterRevision:store.live(workspace.token).rosterRevision}).scene;
- x.map={id:randomUUID(),revision:0,name:'Region',hexMeters:1000,climate:'temperate',seed:'travel-review',cells:[{q:1,r:0,level:0,terrain:'plains',elevationM:0,climate:null,road:false,river:false,label:'',faction:'',interrupt}]};
- x.world({kind:'map',map:x.map,expectedRevision:null});x.map=store.world(workspace.token).maps[0];
+ x.map={...store.world(workspace.token).maps[0],revision:0,name:'Region',hexMeters:4828.032,climate:'temperate',seed:'travel-review',cells:[{q:1,r:0,level:0,terrain:'plains',elevationM:0,climate:null,road:false,river:false,label:'',faction:'',interrupt}]};
+ x.world({kind:'map',map:x.map,expectedRevision:store.world(workspace.token).maps[0].revision});x.map=store.world(workspace.token).maps[0];
  x.world({kind:'place-scene',sceneId:x.scene.id,position:{mapId:x.map.id,q:0,r:0,locationId:null},expectedSceneRevision:x.scene.revision,expectedPositionRevision:0});
  x.weather={label:'Klar',kind:'clear',intensity:0,windKmh:0,effects:{visibilityMeters:10000,travelFactor:1,perception:'Normal',temperatureC:15,ambience:[],combatNote:''},source:'GM-Override'};
  x.world({kind:'weather-override',sceneId:x.scene.id,expectedClockRevision:0,expectedOverrideRevision:store.sceneWorld(workspace.token,x.scene.id).weatherOverrideRevision,weather:x.weather});
