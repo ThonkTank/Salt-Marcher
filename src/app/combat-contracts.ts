@@ -5,7 +5,7 @@ import type { Creature } from '../features/catalog/creature-catalog';
 import type { EncounterAssessment, EncounterParty } from './encounter-contracts';
 export const combatConditions=[['Blind','Blinded'],['Bezaubert','Charmed'],['Taub','Deafened'],['Verängstigt','Frightened'],['Gepackt','Grappled'],['Handlungsunfähig','Incapacitated'],['Unsichtbar','Invisible'],['Gelähmt','Paralyzed'],['Versteinert','Petrified'],['Vergiftet','Poisoned'],['Liegend','Prone'],['Festgesetzt','Restrained'],['Betäubt','Stunned'],['Bewusstlos','Unconscious']] as const;
 export interface Combatant {role?:import('./npc-contracts').NpcRole;
-  id: string; characterId: string | null; groupId: string; name: string;
+  id: string; characterId: string | null; groupId: string; groupName?: string; name: string;
   initiative: number; initiativeBonus: number; armorClass: number;
   hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean;
   death?:CharacterHealth['death'];deathLast?:{result:DeathSaveResult;roll:number|null};
@@ -35,7 +35,7 @@ export type CombatAction =
   | {kind:'add-party';characterId:string;expectedMembershipRevision:number;expectedProgressRevision:number;initiative?:number}
   | { kind: 'add-creature'; creatureId: string; count: number; grouped: boolean; groupId?: string; initiative?: number }
   | { kind: 'add'; name: string; count: number; grouped: boolean; maxHp: number; armorClass: number; initiativeBonus: number }
-  | { kind: 'edit'; participantId: string; changes: Partial<Pick<Combatant, 'name' | 'initiative' | 'initiativeBonus' | 'armorClass' | 'hp' | 'maxHp' | 'tempHp' | 'conditions' | 'concentrating' | 'xp' | 'countForMultiplier'>> }
+  | { kind: 'edit'; participantId: string; changes: Partial<Pick<Combatant, 'name' | 'groupName' | 'initiative' | 'initiativeBonus' | 'armorClass' | 'hp' | 'maxHp' | 'tempHp' | 'conditions' | 'concentrating' | 'xp' | 'countForMultiplier'>> }
   | { kind: 'damage'; participantId: string; amount: number; sourceCheckId?:string; sourceScale?:'full'|'half'|'double' }
   | { kind:'hit';participantId:string;critical:boolean;source:{participantId:string;actionId:string};components:{key:string;amount:number;scale:'auto'|'full'|'half'|'double'|'none';sourceCheckId?:string}[];attackCheckId?:string;legendary?:{participantId:string;actionId:string;cost:number};paidLegendary?:boolean }
   | { kind:'area-damage';amount:number;targets:{participantId:string;scale:'full'|'half'|'none'}[];source?:{participantId:string;actionId:string};legendary?:{participantId:string;actionId:string;cost:number} }
@@ -68,12 +68,14 @@ export function checkedCombat(state: CombatState): CombatState {
   if (!state || !state.id || !state.sceneId || !['preparing', 'running', 'finished', 'retired'].includes(state.phase) || !Number.isSafeInteger(state.revision) || state.revision < 1 || !Number.isSafeInteger(state.round) || state.round < 0) throw new Error('Ungültiger Kampfstand.');
   if (typeof state.title !== 'string' || state.title.length > 1000 || typeof state.notes !== 'string' || state.notes.length > 2000000 || typeof state.outcome !== 'string' || state.outcome.length > 10000 || !Array.isArray(state.participants) || state.participants.length > 1000) throw new Error('Ungültige Kampfinhalte.');
   if(state.phase==='retired'&&(!!state.outcome||state.rewards!==undefined))throw new Error('Archivierter Kampf darf kein abgeleitetes Ergebnis besitzen.');
-  const ids = new Set<string>(), characterIds=new Set<string>(),initiatives = new Map<string, number>();
+  const ids = new Set<string>(), characterIds=new Set<string>(),initiatives = new Map<string, number>(), groupNames = new Map<string,string>();
   for (const p of state.participants) {
     checkedCombatant(p);if(ids.has(p.id))throw new Error('Doppelter Initiativeeintrag.');ids.add(p.id);
     if(p.characterId){if(characterIds.has(p.characterId))throw new Error('Figur steht mehrfach in derselben Initiative.');characterIds.add(p.characterId);}
     if (initiatives.has(p.groupId) && initiatives.get(p.groupId) !== p.initiative) throw new Error('Eine Initiativegruppe benötigt einen gemeinsamen Wert.');
     initiatives.set(p.groupId, p.initiative);
+    if(groupNames.has(p.groupId)&&groupNames.get(p.groupId)!==(p.groupName??''))throw new Error('Eine Initiativegruppe benötigt einen gemeinsamen Truppnamen.');
+    groupNames.set(p.groupId,p.groupName??'');
   }
   for(const p of state.participants)if(p.legendaryActions?.lastUsedRound!==undefined&&p.legendaryActions.lastUsedRound>state.round)throw new Error('Legendäre Aktionsrunde ist ungültig.');
   if (state.turnId !== null && !ids.has(state.turnId) || state.phase === 'running' && (!state.turnId || !state.round)) throw new Error('Aktueller Zug fehlt.');
@@ -82,6 +84,7 @@ export function checkedCombat(state: CombatState): CombatState {
 
 export function checkedCombatant(p:Combatant):Combatant {
     if (!p || typeof p.id!=='string' || !p.id || typeof p.groupId!=='string' || !p.groupId || typeof p.name !== 'string' || !p.name.trim() || p.name.length > 1000 || typeof p.conditions !== 'string' || p.conditions.length > 4000 || typeof p.concentrating !== 'boolean') throw new Error('Ungültiger Initiativeeintrag.');
+    if(p.groupName!==undefined&&(typeof p.groupName!=='string'||p.groupName.length>120||p.groupName!==p.groupName.trim()))throw new Error('Truppname benötigt höchstens 120 Zeichen ohne äußere Leerzeichen.');
     if(p.role!==undefined&&!['friendly','neutral','hostile'].includes(p.role))throw new Error('Ungültige Begegnungsrolle.');
     if (p.healthKnown !== undefined && typeof p.healthKnown !== 'boolean' || p.healthKnown === false && !p.characterId) throw new Error('Unbekannter HP-Status ungültig.');
     for (const value of [p.initiative, p.initiativeBonus, p.armorClass, p.hp, p.maxHp, p.tempHp]) if (!Number.isSafeInteger(value) || Math.abs(value) > 1000000) throw new Error('Kampfwerte benötigen ganze Zahlen bis 1.000.000.');

@@ -591,3 +591,12 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #catalog-content-strip [aria-selected=true],#item-reference-table [aria-pressed=true]{font-weight:700;border-color:var(--blue);background:var(--selected)}
 
 #desk-results .desk-search-preview{flex-basis:100%;margin:.15rem 0 .5rem}#quick-results .desk-search-preview,#desk-results .desk-search-preview{color:var(--ink);font-size:.9rem;line-height:1.4;overflow-wrap:anywhere;white-space:normal}
+
+/* Keep a mixed encounter readable without repeating the initiative explanation below every name. */
+#combat-table td small{display:inline;margin-left:.4rem;overflow-wrap:anywhere}
+#combat-table td:first-child{min-width:8rem}
+#combat-table th,#combat-table td{padding:.25rem .3rem}
+.encounter-entry-row .encounter-group-name{grid-column:1/-1;margin-top:-.3rem}
+#fighter-group-name-field{grid-column:1/-1}
+
+#combat-table td:first-child>button{display:inline-block;vertical-align:middle}
