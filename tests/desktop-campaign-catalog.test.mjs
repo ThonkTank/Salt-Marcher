@@ -28,6 +28,45 @@ async function screenStorageFixture(t,hooks={}){
  const ui=init();await ui.openCampaignScreen(true);const tick=async()=>{for(let i=0;i<20;i++)await new Promise(r=>setImmediate(r));};
  return{...x,window,document,memory,calls,init,ui,tick,get entries(){return entries;},rejectWrite:v=>rejectWrite=v,rejectRemove:v=>rejectRemove=v,newCampaign(name){document.getElementById('campaign-screen-create').onclick();document.getElementById('campaign-identity-name').value=name;document.getElementById('campaign-identity-form').onsubmit({preventDefault(){}});}};
 }
+
+test('an unreadable local intent blocks new commands until its existing receipt can be read',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),key='campaign-catalog-pending';
+ const command={commandId:randomUUID(),kind:'create',name:'Bereits gebucht'},receipt=x.store.campaignCatalog(command),raw=JSON.stringify(command);x.memory.set(key,raw);
+ const read=x.window.localStorage.getItem;x.window.localStorage.getItem=()=>{throw new Error('Lokaler Speicher vorübergehend gesperrt');};
+ const ui=x.init();await ui.openCampaignScreen(true);const bytes=x.store.db.serialize();
+ assert.equal(get('campaign-screen-create').disabled,true);assert.match(get('campaign-screen-status').textContent,/Auftragsvermerk.*nicht lesbar/);
+ x.newCampaign('Nicht senden');await x.tick();assert.equal(x.calls.length,0);assert.equal(x.memory.get(key),raw);
+ x.window.localStorage.getItem=read;get('campaign-screen').querySelector('[data-catalog-check]').onclick();await x.tick();
+ assert.equal(x.calls.length,0);assert.equal(x.entries,1);assert.equal(x.store.list().activeId,receipt.campaignId);assert.equal(x.memory.has(key),false);assert.ok(x.store.db.serialize().equals(bytes));
+});
+
+for(const raw of ['{broken',JSON.stringify({commandId:'retained-id',kind:'create',name:42})])test('a damaged intent is preserved until explicit byte-exact backup frees campaign selection: '+raw,async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),key='campaign-catalog-pending';x.memory.set(key,raw);const ui=x.init();await ui.openCampaignScreen(true);const bytes=x.store.db.serialize();
+ assert.equal(get('campaign-screen-create').disabled,true);assert.equal(get('campaign-pending-recovery').hidden,false);assert.equal(get('campaign-pending-raw').value,raw);
+ get('campaign-screen').querySelector('[data-catalog-check]').onclick();await x.tick();assert.equal(x.memory.get(key),raw);assert.equal(x.calls.length,0);
+ x.rejectWrite(true);get('campaign-pending-preserve').onclick();await x.tick();assert.equal(x.memory.get(key),raw);assert.equal(get('campaign-screen-create').disabled,true);
+ x.rejectWrite(false);get('campaign-pending-preserve').onclick();await x.tick();
+ assert.equal(x.memory.has(key),false);assert.ok([...x.memory].some(([k,v])=>k.startsWith(key+'-unreadable:')&&v===raw));assert.equal(get('campaign-screen-create').disabled,false);assert.equal(x.calls.length,0);assert.ok(x.store.db.serialize().equals(bytes));
+ x.newCampaign('Ausdrücklich neu');await x.tick();assert.equal(x.calls.length,1);assert.equal(x.store.list().campaigns.length,1);
+});
+
+test('recovery never removes a newer intent that replaced the damaged bytes',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),key='campaign-catalog-pending';x.memory.set(key,'{broken');const ui=x.init();await ui.openCampaignScreen(true);
+ const command={commandId:randomUUID(),kind:'create',name:'Anderer offener Entwurf'},raw=JSON.stringify(command);x.memory.set(key,raw);get('campaign-pending-preserve').onclick();await x.tick();
+ assert.equal(x.memory.get(key),raw);assert.equal(x.calls.length,0);assert.equal(get('campaign-screen-create').disabled,true);
+ get('campaign-screen').querySelector('[data-catalog-check]').onclick();await x.tick();assert.equal(get('campaign-identity-name').value,command.name);assert.equal(x.calls.length,0);
+});
+
+for(const failure of ['unconfirmed-backup','remove-failed'])test('damaged intent recovery keeps the lock when '+failure,async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),key='campaign-catalog-pending',raw='{original bytes';x.memory.set(key,raw);const ui=x.init();await ui.openCampaignScreen(true);const bytes=x.store.db.serialize();
+ if(failure==='unconfirmed-backup')x.window.localStorage.setItem=()=>{};else x.rejectRemove(true);
+ get('campaign-pending-preserve').onclick();await x.tick();
+ assert.equal(x.memory.get(key),raw);assert.equal(get('campaign-screen-create').disabled,true);assert.equal(get('campaign-pending-raw').value,raw);assert.match(get('campaign-screen-status').textContent,/nicht sicher freigegeben/);assert.equal(x.calls.length,0);assert.ok(x.store.db.serialize().equals(bytes));
+ if(failure==='remove-failed'){
+  x.rejectRemove(false);get('campaign-pending-preserve').onclick();await x.tick();
+  assert.equal(x.memory.has(key),false);assert.equal([...x.memory.keys()].filter(k=>k.startsWith(key+'-unreadable:')).length,1,'retry reuses the already verified copy');assert.equal(x.calls.length,0);
+ }
+});
 test('an unwritable campaign intent journal reports no dispatch, keeps the name and allows an explicit retry',async t=>{
  const x=await screenStorageFixture(t);x.rejectWrite(true);x.newCampaign('Nur einmal');await x.tick();assert.equal(x.calls.length,0);assert.equal(x.store.list().campaigns.length,0);assert.equal(x.document.getElementById('campaign-identity-name').value,'Nur einmal');assert.equal(x.document.getElementById('campaign-identity-name').disabled,false);assert.match(x.document.getElementById('campaign-identity-status').textContent,/nicht gestartet.*Speicher.*voll/i);x.rejectWrite(false);x.document.getElementById('campaign-identity-form').onsubmit({preventDefault(){}});await x.tick();assert.equal(x.calls.length,1);assert.equal(x.store.list().campaigns.length,1);assert.equal(x.entries,1);assert.equal(x.memory.size,0);
 });
