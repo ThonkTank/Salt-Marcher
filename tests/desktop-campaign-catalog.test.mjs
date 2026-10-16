@@ -34,3 +34,47 @@ test('an unwritable campaign intent journal reports no dispatch, keeps the name 
 test('a cleanup failure cannot hide a confirmed campaign and its retained intent resumes by reading the receipt',async t=>{
  const x=await screenStorageFixture(t);x.rejectRemove(true);x.newCampaign('Bestätigt');await x.tick();assert.equal(x.calls.length,1);assert.equal(x.entries,1);assert.equal(x.document.body.classList.contains('campaign-screen-open'),false);assert.equal(x.store.list().campaigns.length,1);assert.equal(x.memory.size,1);await x.ui.openCampaignScreen();assert.match(x.document.getElementById('campaign-screen-status').textContent,/Vermerk.*entfernt/i);x.rejectRemove(false);x.init();await x.tick();const before=x.store.db.serialize();const check=x.document.querySelector('[data-catalog-check]');check.onclick();await x.tick();assert.equal(x.calls.length,1,'recovery must read the existing receipt, never repeat creation');assert.equal(x.entries,2);assert.equal(x.memory.size,0);assert.equal(x.store.list().campaigns.length,1);assert.ok(x.store.db.serialize().equals(before),'receipt lookup/workspace retry must not create usage or campaign mutations');
 });
+
+test('returning to campaign selection removes stale opening and trash actions until the current catalog is known',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id);
+ x.newCampaign('Freitag');await x.tick();await x.ui.openCampaignScreen();
+ const first=x.store.list().activeId;
+ x.newCampaign('Sonntag');await x.tick();const current=x.store.list().activeId;
+ assert.notEqual(current,first);assert.match(get('campaign-screen-list').textContent,/Freitag.*aktiv/);
+ const read=x.window.campaign.campaignOverview;let reply;
+ x.window.campaign.campaignOverview=()=>new Promise(resolve=>{reply=resolve;});
+ const opening=x.ui.openCampaignScreen();await x.tick();
+ assert.equal(get('campaign-screen-list').querySelectorAll('button').length,0,'old Fortsetzen must not remain actionable while the newly active campaign is loading');
+ assert.equal(get('campaign-trash-list').querySelectorAll('button').length,0);assert.equal(get('campaign-screen-list').getAttribute('aria-busy'),'true');
+ reply({ok:false,error:'Katalog derzeit nicht lesbar'});await opening;
+ assert.equal(get('campaign-screen-list').querySelectorAll('button').length,0);assert.match(get('campaign-screen-list').textContent,/nicht geladen/);assert.match(get('campaign-screen-status').textContent,/nicht lesbar/);
+ assert.equal(get('campaign-screen-list').getAttribute('aria-busy'),'false');assert.equal(get('campaign-screen-refresh').disabled,false);
+ x.window.campaign.campaignOverview=async()=>({ok:false,error:'Katalog weiterhin nicht lesbar'});get('rename-campaign').onclick();await x.tick();
+ assert.equal(get('campaign-identity-dialog').open,false,'Name ändern must not open a stale identity after a failed catalog read');
+ x.window.campaign.campaignOverview=read;get('campaign-screen-refresh').onclick();await x.tick();
+ assert.match(get('campaign-screen-status').textContent,/Kampagne wählen/);
+ const card=get('campaign-screen-list').querySelector('[data-campaign-id="'+current+'"]');assert.match(card.textContent,/Sonntag.*aktiv/);
+ const before=x.calls.length;card.querySelector('button').onclick();await x.tick();assert.equal(x.calls.length,before+1);assert.equal(x.calls.at(-1).id,current);assert.equal(x.store.list().activeId,current);
+});
+
+test('an older catalog completion cannot replace the latest failed read with old actions or success feedback',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),replies=[];
+ x.window.campaign.campaignOverview=()=>new Promise(resolve=>replies.push(resolve));
+ const old=x.ui.openCampaignScreen();await x.tick();const latest=x.ui.openCampaignScreen();await x.tick();
+ replies[1]({ok:false,error:'Aktueller Katalog nicht lesbar'});await latest;
+ replies[0]({ok:true,value:[]});await old;
+ assert.match(get('campaign-screen-status').textContent,/Aktueller Katalog nicht lesbar/);assert.equal(get('campaign-screen-list').querySelectorAll('button').length,0);
+ assert.equal(get('campaign-screen-list').getAttribute('aria-busy'),'false');
+});
+
+test('a campaign prepared only with world knowledge shows its retained content before and after trash',async t=>{
+ const x=await screenStorageFixture(t);x.newCampaign('Wissensrunde');await x.tick();
+ const w=x.store.campaignCatalogWorkspace(x.calls.at(-1).commandId),id=randomUUID(),note={version:1,id,revision:1,kind:'npc',title:'Fährfrau Ilse',readAloud:'',gmNotes:'Kennt den Schmugglerpfad.',relations:[],creatureId:null,deleted:false};
+ x.store.changePreparation({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,change:{kind:'note',note,expectedRevision:null}});
+ const before=x.store.db.serialize(),row=x.row(w.campaign.id);assert.equal(row.notes,1);assert.equal(row.rooms+row.locations+row.characters,0);assert.ok(x.store.db.serialize().equals(before));
+ await x.ui.openCampaignScreen();assert.match(x.document.getElementById('campaign-screen-list').textContent,/1 Wissenseintrag/);
+ x.store.changePreparation({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,change:{kind:'note-trash',id,expectedRevision:1,trashed:true}});
+ assert.equal(x.row(w.campaign.id).notes,1,'archived authored data still belongs to the campaign');
+ x.execute({kind:'trash',id:w.campaign.id,expectedRevision:0,trashed:true});await x.ui.openCampaignScreen();assert.match(x.document.getElementById('campaign-trash-list').textContent,/Wissensrunde.*1 Wissenseintrag/);
+ x.execute({kind:'trash',id:w.campaign.id,expectedRevision:1,trashed:false});assert.equal(x.row(w.campaign.id).notes,1);
+});

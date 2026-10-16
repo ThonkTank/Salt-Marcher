@@ -1,5 +1,5 @@
 import type {Campaign,Result} from './contracts';
-export interface CampaignOverview extends Campaign {trashed:boolean;rooms:number;locations:number;characters:number;maps:number;audio:number;trashRevision:number;createdAt:string|null;lastOpenedAt:string|null}
+export interface CampaignOverview extends Campaign {trashed:boolean;rooms:number;locations:number;characters:number;notes:number;maps:number;audio:number;trashRevision:number;createdAt:string|null;lastOpenedAt:string|null}
 export type SharedKind='item'|'preset'|'table'|'audio'|'mood';
 export type ConflictChoice='keep-current'|'keep-imported'|'keep-both';
 export interface DefinitionConflict {key:string;kind:SharedKind;id:string;name:string;incoming:string;existing:string;affectedCampaigns:number}
