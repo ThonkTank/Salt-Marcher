@@ -1,11 +1,11 @@
 import {createHash} from 'node:crypto';
 import {recordMaskReconciliation} from './mask-reconciliation';
 import {checkedCombat,combatOrder,type CombatState} from '../combat-contracts';
-import {checkedHealth,checkedHealthStatus} from '../progression';
+import {checkedHealth,checkedHealthStatus,type CharacterHealth} from '../progression';
 import {readProgressCharacter,saveProgress,event} from './progression';
 import {readWorldActor,writeWorldActorHealth} from './session';
 const json=(v:unknown)=>JSON.stringify(v),hash=(s:string)=>createHash('sha256').update(s).digest('hex');
-const health=(p:{hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean})=>({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating});
+const health=(p:CharacterHealth):CharacterHealth=>({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:structuredClone(p.death)}:{})});
 const status=(p:{tempHp:number;conditions:string;concentrating:boolean})=>({tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating});
 function decode(row:any):CombatState {if(hash(row.payload)!==row.checksum)throw new Error('Kampfstand beschädigt.');return checkedCombat(JSON.parse(row.payload));}
 function save(db:any,cam:string,s:CombatState){checkedCombat(s);const payload=json(s);db.prepare('UPDATE combat SET revision=?,phase=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(s.revision,s.phase,payload,hash(payload),cam,s.id);}
@@ -14,7 +14,7 @@ export function publishCombatHealth(db:any,cam:string,state:CombatState,before?:
  for(const actor of state.participants){
   if(actor.characterId){const p=readProgressCharacter(db,cam,actor.characterId);let changed=false;
    if(actor.healthKnown===false){const next=checkedHealthStatus(status(actor));if(p.health!==null||json(status(p.combatStatus??{tempHp:0,conditions:'',concentrating:false}))!==json(next)){p.health=null;p.combatStatus=next;changed=true;}}
-   else {const next=checkedHealth(health(actor));if(json(p.health?health(p.health):null)!==json(next)){p.health={...next,...(next.hp===0&&p.health?.death?{death:p.health.death}:{})};delete p.combatStatus;changed=true;}}
+   else {const next=checkedHealth(health(actor));if(json(p.health?health(p.health):null)!==json(next)){p.health=next;delete p.combatStatus;changed=true;}}
    if(changed)saveProgress(db,cam,p);
   }else if(actor.worldActorId){const canonical=readWorldActor(db,cam,actor.worldActorId),prior=before?.participants.find(p=>p.worldActorId===actor.worldActorId),expected=prior?.worldActorRevision??actor.worldActorRevision;
    if(canonical.revision!==expected||canonical.unavailable)throw new Error('NPC-Zustand geändert. Kampfstand aktualisieren.');
@@ -27,10 +27,12 @@ export function syncOpenMaskHealth(db:any,cam:string,exceptId?:string,renames:Re
  const people=new Map<string,ReturnType<typeof readProgressCharacter>>(),npcs=new Map<string,ReturnType<typeof readWorldActor>>();
  for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase IN('preparing','running') ORDER BY ordinal").all(cam)){
   if(row.id===exceptId)continue;const s=decode(row);let changed=false;
-  for(const actor of s.participants){const previous=json(actor);
-   if(actor.characterId){if(!people.has(actor.characterId))people.set(actor.characterId,readProgressCharacter(db,cam,actor.characterId));const p=people.get(actor.characterId)!;
+  for(const actor of s.participants){const previous=json(actor),priorHp=actor.hp,priorDeath=json(actor.death);
+   if(actor.characterId){if(!people.has(actor.characterId))people.set(actor.characterId,readProgressCharacter(db,cam,actor.characterId));const p=people.get(actor.characterId)!;delete actor.death;
     if(p.health){Object.assign(actor,health(p.health));actor.healthKnown=true;}else{Object.assign(actor,status(p.combatStatus??{tempHp:0,conditions:'',concentrating:false}));actor.healthKnown=false;}
    }else if(actor.worldActorId){if(!npcs.has(actor.worldActorId))npcs.set(actor.worldActorId,readWorldActor(db,cam,actor.worldActorId));const p=npcs.get(actor.worldActorId)!,rename=renames.get(actor.worldActorId);if(rename&&actor.name===rename.before)actor.name=rename.after;Object.assign(actor,health(p));actor.worldActorRevision=p.revision;}
+   if(actor.characterId&&(actor.hp!==priorHp||json(actor.death)!==priorDeath))delete actor.deathLast;
+   if(!actor.concentrating)delete actor.concentrationChecks;
    if(json(actor)!==previous)changed=true;
   }
   if(changed){s.revision++;s.sharedNotice='Name, HP oder Zustände wurden in einer anderen Maske oder am Weltinhalt geändert. Ältere Schritte dieser Begegnung sind nicht mehr rückgängig verfügbar.';save(db,cam,s);db.prepare('DELETE FROM combat_undo WHERE campaign_id=? AND combat_id=?').run(cam,s.id);}

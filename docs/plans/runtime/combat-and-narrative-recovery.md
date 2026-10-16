@@ -1,6 +1,6 @@
 # Kampfentwürfe und narrative Belohnungen: Datenregeln und nächste Lieferung
 
-Stand: 14.10.2026. Ergänzt den [Party-/Liveplan](smr03-live-scene-contract.md)
+Stand: 16.10.2026. Ergänzt den [Party-/Liveplan](smr03-live-scene-contract.md)
 und die [manuelle Vorbereitung](../campaign/manual-session-planner.md).
 Der Atlas ist keine Voraussetzung für diese Abläufe. Gesamtumfang und
 Lieferabhängigkeiten bleiben in [SCOPE](../../SCOPE.md) und [ROADMAP](../../ROADMAP.md).
@@ -165,6 +165,38 @@ nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
    darf diese Personen nicht aus versteckten Historien rekonstruieren. Danach native
    Spielabendprobe mit Vorbereitung, Live-Scene, Belohnung und Fresh. Lokale
    Tabellen-/Checksumprüfungen ersetzen diese Produktabnahme nicht.
+
+## Gemeinsame Gesundheitsfakten über Kampfmasken
+
+Die [Encounter-Originalanforderung](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encounter/requirements/requirements-encounter.md)
+trennt Scene-/Partygesundheit von Initiative, Runde und Zug. Der bestehende
+`storage/mask-health.ts`-Anschluss publiziert deshalb den vollständigen bestätigten
+PC-Gesundheitswert, einschließlich optionaler Todesrettungen, in
+`character_progress` und die anderen offenen Kampfmasken derselben Figur.
+Er übernimmt neue Zähler und entfernt Todesflags nach Heilung ausdrücklich;
+ein fehlendes Optionalfeld darf keine ältere Kopie zurücklassen. Die lokale
+letzte Todeswurfmeldung wird bei geänderten gemeinsamen HP/Todesfakten entfernt.
+Endet die gemeinsame Konzentration, entfallen unauflösbare offene Prüfungen in
+den anderen Masken. Initiative, Teilnehmeridentität, Runde und Zug bleiben erhalten.
+
+Der bestehende gemeinsame Write aktualisiert diese Projektionen atomar, erhöht
+betroffene Maskenrevisionen und entwertet deren älteres Undo. Undo im ursprünglichen
+Owner publiziert die tatsächlich wiederhergestellten Gesundheitsfakten erneut.
+Abgeschlossene Kämpfe bleiben historische Ergebnisse und werden nicht synchronisiert.
+Die vorhandene Reopenmigration übernimmt den neuesten offenen PC-Fakt pro Figur
+mit derselben vollständigen Projektion; keine neue Tabelle oder Schemaänderung.
+Bereits verlorene historische Fakten werden dabei nicht erfunden.
+
+Echte Storegegenfälle prüfen zwei Masken mit abwechselnden Erfolgen/Fehlschlägen,
+kanonische Progressbytes, Heilung/Undo/Reopen, unveränderte abgeschlossene History
+und beendete Konzentration bei offener Prüfung. Native Bedienung prüft den
+entsprechenden Todesrettungs-/Heilungsweg und die gesperrte alte Undoaktion.
+Dies ersetzt nicht die vollständige Mehrgruppen-Selection und Reconciliation
+von NPC-Quellen oder den ursprünglichen Resolutionablauf. Als nächste Anschlüsse
+bleiben Sourcegruppen-IDs/Revisionsbasis und aktuelle Scene-Party für Evaluation,
+Start und Verstärkung gemeinsam zu binden; verworfene oder fremde Gruppen dürfen
+keine Runtime erzeugen. Rewardpolicy und einmaliger Abschluss benötigen danach
+einen gemeinsamen Restart-/Scenewechselnachweis, unabhängig von Gesundheitsproben.
 
 ## Nachbereitung und bestehende Schätze
 
