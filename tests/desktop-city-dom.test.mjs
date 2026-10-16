@@ -398,6 +398,69 @@ test('house interior reopens through the same visible action without creating a 
  }finally{await s.close();}
 });
 
+test('Atlas search navigation retains an unfinished room instead of silently discarding it',async()=>{
+ const x=await setup(),s=await interiorSurface(x);
+ try{
+  const scope=s.atlas.scopeId,before=x.store.db.serialize();
+  s.tool('room-rectangle');x.enter('drawing-room-name','Unfinished store');await x.ui.atlasDrawingPoint({x:-3,y:-3});
+  await s.atlas.navigate('city',x.cityIds.two);
+  assert.equal(s.atlas.family,'interior');assert.equal(s.atlas.scopeId,scope);
+  assert.equal(x.ui.atlasDrawingDraft().path.length,1);assert.ok(x.store.db.serialize().equals(before));
+  assert.ok(x.messages.some(m=>m.error&&/abschließen oder verwerfen/.test(m.message)));
+  await x.ui.atlasDrawingPoint({x:3,y:3});x.click('drawing-finish');await until(()=>x.store.campaignAtlas(x.current().token).workspace.rooms.some(r=>r.name==='Unfinished store'));await x.drain();
+  await s.atlas.navigate('city',x.cityIds.two);assert.equal(s.atlas.family,'city');assert.equal(s.atlas.cityId,x.cityIds.two);
+  assert.equal(x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.name==='Unfinished store').scopeId,scope);
+ }finally{await s.close();}
+});
+
+test('a scope search result retains an unfinished room and opens after explicit cancellation',async()=>{
+ const x=await setup(),s=await interiorSurface(x);
+ try{
+  const scope=s.atlas.scopeId;
+  const created=await s.atlas.write({kind:'dungeon-create',name:'Other cellar',x:300,y:400},true),other=created.result.id;
+  const before=x.store.db.serialize();s.tool('room-rectangle');await x.ui.atlasDrawingPoint({x:-3,y:-3});
+  await s.atlas.chooseScope(other);
+  assert.equal(s.atlas.scopeId,scope);assert.equal(x.ui.atlasDrawingDraft().path.length,1);assert.ok(x.store.db.serialize().equals(before));
+  s.atlas.cancel();await s.atlas.chooseScope(other);
+  assert.equal(s.atlas.scopeId,other);assert.equal(x.ui.atlasDrawingDraft().floor.scopeId,other);assert.equal(x.ui.atlasDrawingDraft().path.length,0);
+ }finally{await s.close();}
+});
+
+test('a city navigation waiting for editors cannot move the next campaign',async()=>{
+ const x=await setup(),s=await interiorSurface(x);let release;
+ try{
+  s.atlas.opts.flush=()=>new Promise(resolve=>release=resolve);
+  const pending=s.atlas.navigate('city',x.cityIds.two);await until(()=>!!release);
+  await x.activate('Beta');s.atlas.activate(x.current());await s.atlas.open();
+  const before=x.store.db.serialize(),family=s.atlas.family,box=s.svg.getAttribute('viewBox');
+  release(true);await pending;
+  assert.equal(s.atlas.scopeId,null);assert.equal(s.atlas.selection,null);assert.equal(s.atlas.family,family);assert.equal(s.svg.getAttribute('viewBox'),box);assert.ok(x.store.db.serialize().equals(before));
+ }finally{if(release)release(false);await s.close();}
+});
+
+test('a newer Atlas navigation wins over an older request waiting for editors',async()=>{
+ const x=await setup(),s=await interiorSurface(x);let release;
+ try{
+  let first=true;s.atlas.opts.flush=()=>{if(first){first=false;return new Promise(resolve=>release=resolve);}return Promise.resolve(true);};
+  const pending=s.atlas.navigate('city',x.cityIds.two);await until(()=>!!release);
+  await s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);
+  const box=s.svg.getAttribute('viewBox');release(true);await pending;
+  assert.equal(s.atlas.cityId,x.cityIds.one);assert.equal(s.atlas.selection.id,x.unitIds.one);assert.equal(s.svg.getAttribute('viewBox'),box);
+ }finally{if(release)release(false);await s.close();}
+});
+
+test('a late Atlas navigation read cannot select an object in the next campaign',async()=>{
+ const x=await setup(),s=await interiorSurface(x);let release;
+ try{
+  const read=x.window.campaign.campaignAtlas;let first=true;
+  x.window.campaign.campaignAtlas=async(...args)=>{const result=await read(...args);if(first){first=false;return new Promise(resolve=>release=()=>resolve(result));}return result;};
+  const pending=s.atlas.navigate('city',x.cityIds.two);await until(()=>!!release);
+  await x.activate('Beta');s.atlas.activate(x.current());await s.atlas.open();
+  const box=s.svg.getAttribute('viewBox'),before=x.store.db.serialize();release();await pending;
+  assert.equal(s.atlas.selection,null);assert.equal(s.atlas.cityId,null);assert.equal(s.atlas.scopeId,null);assert.equal(s.svg.getAttribute('viewBox'),box);assert.ok(x.store.db.serialize().equals(before));
+ }finally{if(release)release();await s.close();}
+});
+
 test('drawing a second house room from a selected corner does not move the first room',async()=>{
  const x=await setup(),s=await interiorSurface(x);
  try{

@@ -97,6 +97,7 @@ export class CampaignAtlasWorkbench {
   private placeRequest=0;
   private floorId = "ground";
   private floorRequest=0;
+  private navigationRequest = 0;
   private groupView=false;
   private groupViewRequest=0;
   private lastPoint: Point = { x: 0, y: 0 };
@@ -458,6 +459,7 @@ export class CampaignAtlasWorkbench {
     return this.lastPoint;
   }
   hide() {
+    this.navigationRequest++;
     this.groupViewRequest++;
     this.previewRequest++;
     this.localPreview = null;
@@ -465,6 +467,7 @@ export class CampaignAtlasWorkbench {
     this.root.hidden = true;
   }
   activate(w: Workspace) {
+    this.navigationRequest++;
     this.groupViewRequest++;
     this.placeRequest++;this.locationComposer.contextChanged();
     this.travelReadState = "loading";
@@ -639,7 +642,16 @@ export class CampaignAtlasWorkbench {
           )
         : null;
   }
-  private chooseScope(id: string) {
+  private async navigationGuard() {
+    const owner = this.owner, request = ++this.navigationRequest;
+    const current = () => this.owner === owner &&
+      this.navigationRequest === request && !this.root.hidden;
+    if (!owner || !await this.opts.flush() || !current()) return null;
+    return current;
+  }
+  private async chooseScope(id: string) {
+    const current = await this.navigationGuard();
+    if (!current?.()) return;
     const b = this.data?.bindings.find(
       (b) => b.kind === "dungeon" && b.ownerId === id,
     );
@@ -648,10 +660,10 @@ export class CampaignAtlasWorkbench {
     this.floorId =
       this.data!.workspace.floors.find((f) => f.scopeId === id)?.id ?? "ground";
     this.selection = { kind: "scope", id };
-    void this.setFamily("interior", false).then(() => {
-      this.syncDrawingFloor();
-      this.focus(atlasFrame(this.data!, b), 50);
-    });
+    await this.setFamily("interior", false);
+    if (!current()) return;
+    this.syncDrawingFloor();
+    this.focus(atlasFrame(this.data!, b), 50);
   }
   private frame(scopeId: string) {
     const b = this.data?.bindings.find(
@@ -829,15 +841,19 @@ export class CampaignAtlasWorkbench {
   }
   async navigateLocation(id:string,sectionId?:string){await this.refresh();await this.setFamily('terrain',false);const p=await this.landscape.openLocation(id,sectionId);if(p)this.focus(p,15000);}
   async navigate(kind: "city" | "room", id: string, unitId?: string) {
+    const current = await this.navigationGuard();
+    if (!current?.()) return;
     await this.refresh();
-    if (!this.data) return;
+    if (!current() || !this.data) return;
     if (kind === "city") {
       this.cityId = id;
       this.selection = unitId
         ? { kind: "building", id: unitId, cityId: id }
         : { kind: "city", id };
       await this.setFamily("city", false);
+      if (!current()) return;
       await openCityReference(id, unitId);
+      if (!current()) return;
       const c = this.data.cities.find((c) => c.header.id === id),
         b = this.data.bindings.find(
           (b) => b.kind === "city" && b.ownerId === id,
@@ -857,7 +873,9 @@ export class CampaignAtlasWorkbench {
       this.scopeId = r.scopeId;
       this.floorId = r.floorId;
       await this.opts.selectRoom(id);
+      if (!current()) return;
       await this.setFamily("interior", false);
+      if (!current()) return;
       this.syncDrawingFloor();
       const points = r.polygons.flatMap((p) => p.outer),
         at = localToAtlas(
@@ -940,7 +958,7 @@ export class CampaignAtlasWorkbench {
     const buildings=async(offset=0)=>{const result=await window.campaign.cityBuildings(token,{text,offset});if(!current())return;if(!result.ok)throw new Error(result.error);for(const item of result.value.items)add(item.cityTitle+' · '+item.title,()=>void this.navigate('city',item.cityId,item.unitId));if(result.value.next!==null)more('Weitere Häuser',()=>buildings(result.value.next!));};
     for(const task of [page('room'),page('city'),page('landscape'),buildings()])void task.catch(e=>{if(current())this.error(e);});
     for (const scope of this.data.scopes)
-      if(scope.name.toLocaleLowerCase('de').includes(text))add(scope.name,()=>this.chooseScope(scope.id));
+      if(scope.name.toLocaleLowerCase('de').includes(text))add(scope.name,()=>void this.chooseScope(scope.id).catch(e=>this.error(e)));
   }
 
   private async navigateLandscape(id:string) {
@@ -1113,7 +1131,7 @@ export class CampaignAtlasWorkbench {
       }
       if(kind==='place'&&id){const owner=this.owner;if(!await this.opts.flush()||this.owner!==owner)return;const place=this.data?.places.find(p=>p.locationId===id&&!p.trashed);if(!place)return;if(this.family==='travel'){this.lastPoint={...place.point};atlasWorldTarget(place,place.locationId);}else await this.setFamily('navigation',false);this.selection={kind:'place',id};this.render();get('atlas-panel').scrollTop=0;return;}
       if (kind === "scope" && id) {
-        this.chooseScope(id);
+        await this.chooseScope(id);
         return;
       }
       if (kind === "room" && id) {
