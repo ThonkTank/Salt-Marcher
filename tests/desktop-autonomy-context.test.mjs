@@ -82,3 +82,18 @@ test('special job controls can be opened without clearing normal job inputs',asy
  assert.equal(await x.ui.flushAutonomy(),true);const saved=x.store.autonomy(x.current().token).jobs.find(j=>j.name==='Torpatrouille');
  assert.equal(saved.kind,'wait');assert.equal(saved.durationSeconds,900);
 });
+
+
+test('configuring a new NPC preserves opt-out until the GM explicitly enables autonomy',async t=>{
+ const x=await fixture(t),w=x.current(),id=randomUUID();
+ x.store.changePreparation({commandId:randomUUID(),campaignId:w.campaign.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title:'Tilda',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false}}});
+ await x.ui.openAutonomy();x.get('actor').value=id;x.get('actor').onchange();await until(()=>!x.get('actor-form').hidden&&x.get('actor-title').textContent.includes('Tilda'));
+ assert.equal(x.get('enabled').checked,false);
+ x.get('role').value='Anlegerwache';x.get('actor-form').dispatchEvent(new window.Event('input'));
+ assert.equal(await x.ui.flushAutonomy(),true);
+ let actor=x.store.autonomy(w.token).actors.find(a=>a.id===id);assert.equal(actor.enabled,false);assert.equal(actor.role,'Anlegerwache');
+ x.ui.activateAutonomy(w);await x.ui.openAutonomy();x.get('actor').value=id;x.get('actor').onchange();await until(()=>!x.get('actor-form').hidden&&x.get('actor-title').textContent.includes('Tilda'));assert.equal(x.get('enabled').checked,false);
+ x.get('enabled').checked=true;x.get('actor-form').dispatchEvent(new window.Event('input'));assert.equal(await x.ui.flushAutonomy(),true);
+ x.ui.activateAutonomy(w);await x.ui.openAutonomy();x.get('actor').value=id;x.get('actor').onchange();await until(()=>!x.get('actor-form').hidden&&x.get('actor-title').textContent.includes('Tilda'));
+ actor=x.store.autonomy(w.token).actors.find(a=>a.id===id);assert.equal(actor.enabled,true);assert.equal(x.get('enabled').checked,true);
+});
