@@ -1,0 +1,10 @@
+body {
+  font: 16px system-ui;
+  background: #f4efe4;
+  color: #241b12;
+  padding: 2rem;
+}
+input {
+  font: inherit;
+  padding: 0.5rem;
+}

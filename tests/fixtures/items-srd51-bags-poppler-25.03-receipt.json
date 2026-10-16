@@ -1,0 +1,31 @@
+{
+  "fixtureVersion": 1,
+  "source": "official-SRD-5.1",
+  "license": "CC-BY-4.0",
+  "attributionAsset": "src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md",
+  "sourcePdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+  "sourcePdfBytes": 3158713,
+  "sourcePdfPages": 403,
+  "sourcePdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+  "extractor": "pdftohtml",
+  "extractorVersion": "25.03.0",
+  "arguments": [
+    "-xml",
+    "-f",
+    "209",
+    "-l",
+    "211",
+    "-stdout",
+    "-i",
+    "<hash-pinned-official-pdf>"
+  ],
+  "physicalPages": [
+    209,
+    210,
+    211
+  ],
+  "xmlSha256": "53d10bd6a4e56f6a28b1c9e33f8cfb63afe5ab4979e7ae8b546adb7de0b008bf",
+  "xmlBytes": 46411,
+  "modification": "none: full original XML output for three pages; no text, coordinate or font rewriting",
+  "limits": "Actual local Poppler 25.03 output, not a claimed 25.07 extraction. Offline fixture regression is not a fresh PDF run, installed Obsidian, GUI or physical acceptance."
+}

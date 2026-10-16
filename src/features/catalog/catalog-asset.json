@@ -1,0 +1,13 @@
+{
+  "source": "src/features/catalog/data/srd-5.1.generated.json",
+  "artifactSha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
+  "baseline": {
+    "commit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
+    "mainBytes": 1189370
+  },
+  "limits": {
+    "gzipBytes": 122880,
+    "base64Characters": 164000,
+    "mainJsGrowthBytes": 180000
+  }
+}

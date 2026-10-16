@@ -1,0 +1,36 @@
+--- a/src/identity.py
++++ b/src/identity.py
+@@ -14,12 +14,21 @@
+  try:
+   stat=p.joinpath('stat').read_text().split(') ',1)[1].split()
+   env=dict(x.split('=',1) for x in p.joinpath('environ').read_bytes().decode(errors='replace').split('\0') if '=' in x)
+-  return dict(pid=pid,ppid=int(stat[1]),state=stat[0],starttime=stat[19],cgroup=p.joinpath('cgroup').read_text(),exe=str(p.joinpath('exe').resolve()),argv=p.joinpath('cmdline').read_bytes().decode(errors='replace').split('\0')[:-1],effective_environment={k:env[k] for k in SAFE_ENV if k in env})
++  return dict(pid=pid,ppid=int(stat[1]),state=stat[0],process_group=int(stat[2]),session_id=int(stat[3]),starttime=stat[19],cgroup=p.joinpath('cgroup').read_text(),exe=str(p.joinpath('exe').resolve()),argv=p.joinpath('cmdline').read_bytes().decode(errors='replace').split('\0')[:-1],effective_environment={k:env[k] for k in SAFE_ENV if k in env})
+  except (OSError,ValueError):return dict(pid=pid,missing=True)
+ def scope(me):
+  path=Path('/sys/fs/cgroup')/me['cgroup'].split(':',2)[2].strip().lstrip('/')
+  limit_names=['memory.max','memory.high','memory.swap.max','cpu.max','pids.max','memory.current','memory.events','cgroup.events']
+  groups=[];members=[]
++ owned_session=os.environ.get('CODEX_OWNED_UI_SESSION')
++ if owned_session:
++  sid=int(owned_session)
++  if os.getsid(0)!=sid or os.getpgrp()!=sid:raise RuntimeError('owned UI session mismatch')
++  for entry in Path('/proc').iterdir():
++   if entry.name.isdigit():
++    member=proc(int(entry.name))
++    if member.get('session_id')==sid:members.append(member)
++  return dict(captured_mono_ns=time.monotonic_ns(),path='session:'+str(sid),groups=[],members=members,shared=None)
+  for d in [path]+sorted(x for x in path.rglob('*') if x.is_dir()):
+   groups.append(dict(path=str(d),limits={n:(d/n).read_text().strip() for n in limit_names if (d/n).exists()}))
+   for pid in (d/'cgroup.procs').read_text().split():members.append(dict(relative_cgroup=str(d.relative_to(path)),**proc(int(pid))))
+--- a/src/service.py
++++ b/src/service.py
+@@ -31,7 +31,7 @@
+         interrupted.append(sig);receipt(event='termination_signal',signal=sig,normal=False)
+     signal.signal(signal.SIGTERM,on_signal);signal.signal(signal.SIGINT,on_signal)
+     unit=me.get('cgroup','').strip().rsplit('/',1)[-1]
+-    if not (unit.startswith('codex-owned-') and unit.endswith('.service')):raise RuntimeError('owned UI process group absent')
++    if not ((unit.startswith('codex-owned-') and unit.endswith('.service')) or (os.environ.get('CODEX_OWNED_UI_SESSION')==str(os.getsid(0))==str(os.getpgrp()) and os.getsid(0)!=os.getsid(proc(os.getsid(0))['ppid']))):raise RuntimeError('owned UI process group absent')
+     auth=session/'Xauthority'
+     def field(b):return struct.pack('!H',len(b))+b
+     cookie=secrets.token_bytes(16);number=None

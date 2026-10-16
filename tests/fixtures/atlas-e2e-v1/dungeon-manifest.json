@@ -1,0 +1,40 @@
+{
+  "kind": "atlas-e2e-dungeon-fixture",
+  "version": 1,
+  "owner": "Dungeon-Strang",
+  "state": "owner_fixture_and_atlas_history_adapter_candidate",
+  "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090818808",
+  "documentId": "00000000-0000-4000-8000-000000000030",
+  "roomId": "00000000-0000-4000-8000-000000000031",
+  "floorId": "00000000-0000-4000-8000-000000000032",
+  "entranceRouteId": "00000000-0000-4000-8000-000000000033",
+  "sectionId": "00000000-0000-4000-8000-000000000034",
+  "input": {
+    "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+    "fixtureFile": "input/Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+    "sha256": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+    "bytes": 1747
+  },
+  "expected": {
+    "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+    "fixtureFile": "expected/Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+    "sha256": "a86e366f64d44c81e797ee8660de3f54e05bf1ad4a09a2db9bb8002e6eac7429",
+    "bytes": 1790
+  },
+  "action": "replace only section 00000000-0000-4000-8000-000000000034 Markdown with the exact expected CRLF text through one composed AtlasHistory command",
+  "nativeClosure": {
+    "document": "the canonical V4 .dungeon bytes are the sole persisted Dungeon payload",
+    "keys": "Room Key sections are derived from those bytes and are not a second authority",
+    "sessionRevision": "runtime-local only; absent from snapshot and fixture"
+  },
+  "externalBindings": {
+    "locationId": "00000000-0000-4000-8000-000000000011",
+    "houseId": "00000000-0000-4000-8000-000000000105",
+    "state": "reserved counterparts only; persisted House-to-Dungeon binding contract remains a Steward integration input"
+  },
+  "limitations": [
+    "No renderer, placement, House binding, Vault transaction, P02/P04 or Complete-Import implementation is claimed.",
+    "The owner adapter executes only in externally supplied AtlasHistory and never double-commits through Session history.",
+    "Save, fresh process, native host and the complete shared fixture closure remain open for the single PR #13 candidate."
+  ]
+}

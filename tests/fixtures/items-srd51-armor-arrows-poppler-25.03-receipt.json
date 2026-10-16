@@ -1,0 +1,27 @@
+{
+  "kind": "official-pdf-extractor-subset",
+  "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+  "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+  "pdfBytes": 3158713,
+  "physicalPdfPages": [
+    208,
+    209
+  ],
+  "extractor": "pdftohtml",
+  "version": "25.03.0",
+  "args": [
+    "-xml",
+    "-f",
+    "208",
+    "-l",
+    "209",
+    "-stdout",
+    "-i"
+  ],
+  "fullExtractSha256": "7a6eac1d4a81499d4bb136aac27a4bc2527ffd67985e8ddf4f24a242481cb3de",
+  "fixtureSha256": "817a22fe85a82a972d905ae58e19db42c210fb7ed989b8acb79ba47f63221048",
+  "subset": "Original XML page/font attributes and text nodes: exact SRD footer runs on both pages; page 208 from Armor of Resistance to end; page 209 from resistance table through Bag of Beans heading. No coordinates or text rewritten.",
+  "license": "CC-BY-4.0",
+  "attributionAsset": "src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md",
+  "limits": "Real 25.03.0 source output, not a claimed 25.07.0 extraction or UI/host acceptance. High-coordinate cases are separate derived regression inputs."
+}

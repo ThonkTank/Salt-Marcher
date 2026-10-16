@@ -1,0 +1,395 @@
+module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
+  chooseTool, waitForFileAbsent }) => {
+  const prefix = "Dungeons/Parity/Repair-";
+  const savedPath = path.join(qa, "phase1-repair-saved.json");
+  const editorState = () => page.evaluate(() => {
+    const editor = app.workspace.activeLeaf?.view?.editor;
+    return editor && { document: editor.session.document(), dirty: editor.session.dirty,
+      snap: editor.snapEnabled, tool: editor.tool, draft: editor.pathDraft?.points ?? null,
+      preview: editor.renderer.previewSize?.visible };
+  });
+  const at = (point) => page.evaluate((point) => {
+    const renderer = app.workspace.activeLeaf.view.editor.renderer;
+    const box = renderer.canvas.getBoundingClientRect();
+    const screen = { x: box.x + renderer.camera.x + point.x * renderer.camera.scale,
+      y: box.y + renderer.camera.y + point.y * renderer.camera.scale };
+    if (screen.x < box.x || screen.x >= box.right ||
+        screen.y < box.y || screen.y >= box.bottom)
+      throw new Error("Test point outside canvas: " + JSON.stringify(point));
+    return screen;
+  }, point);
+  const count = (expected) => page.waitForFunction((expected) => {
+    const editor = app.workspace.activeLeaf?.view?.editor;
+    return !!editor && !editor.paintWorker && editor.session.document().entities
+      .filter((entity) => entity.kind === "building").length === expected;
+  }, expected, { timeout: 45000 });
+  const buildings = async () => (await editorState()).document.entities
+    .filter((entity) => entity.kind === "building");
+  const keyBytes = (relative) => fs.readFileSync(path.join(vault, relative));
+  const digest = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+  async function open(name) {
+    await page.evaluate(async (file) => {
+      await app.workspace.getLeaf(false).openFile(app.vault.getAbstractFileByPath(file));
+    }, prefix + name + ".dungeon");
+    await page.locator(".dn-canvas canvas").waitFor({ state: "visible" });
+  }
+  async function click(point) {
+    const screen = await at(point);
+    await page.mouse.click(screen.x, screen.y);
+  }
+  async function double(point) {
+    const screen = await at(point);
+    await page.mouse.dblclick(screen.x, screen.y, { delay: 90 });
+  }
+  async function drag(a, b, modifier) {
+    const from = await at(a), to = await at(b);
+    if (modifier) await page.keyboard.down(modifier);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 8 });
+    await page.mouse.up();
+    if (modifier) await page.keyboard.up(modifier);
+  }
+  async function save(name) {
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await waitForFileAbsent(path.join(vault, prefix + name + ".dungeon.draft"));
+    await page.waitForFunction(() => app.workspace.activeLeaf?.view?.editor?.session.dirty === false);
+  }
+  async function preview() {
+    await open("Preview");
+    const contours = [];
+    const handles = [{ x: 4, y: 4 }, { x: 5, y: 4 }, { x: 5, y: 3 }];
+    for (let index = 0; index < handles.length; index++) {
+      await chooseTool("Polygonraum");
+      await click({ x: 1, y: 2 });
+      await click({ x: 6, y: 2 });
+      const vertex = await at({ x: 6, y: 5 });
+      const handle = await at(handles[index]);
+      await page.keyboard.down("Shift");
+      await page.mouse.move(vertex.x, vertex.y);
+      await page.mouse.down();
+      await page.mouse.move(handle.x, handle.y, { steps: 8 });
+      assert.equal((await editorState()).draft.length, 2);
+      await page.screenshot({ path: path.join(out, `held-handle-${index + 1}.png`) });
+      await page.mouse.up();
+      await page.keyboard.up("Shift");
+      await click({ x: 1, y: 5 });
+      await double({ x: 1, y: 5 });
+      await count(1);
+      const contour = (await buildings())[0].polygons[0].outer;
+      contours.push(contour);
+      assert.equal(contour.length, 20);
+      await page.locator(".dn-canvas canvas").focus();
+      await page.keyboard.press("Control+z");
+      await count(0);
+    }
+    assert.deepEqual(contours[1], contours[0]);
+    assert.deepEqual(contours[2], contours[0]);
+    fs.writeFileSync(path.join(out, "held-contours.json"), JSON.stringify(contours, null, 2));
+    checks.push("Three held Shift handles captured before release; each commits the same 20-point contour");
+  }
+  async function snap() {
+    await open("Snap");
+    await chooseTool("Raum");
+    const button = page.getByRole("button", { name: "Snap", exact: true });
+    assert.equal(await button.getAttribute("aria-pressed"), "true");
+    const pressSaveKey = async () => {
+      await page.locator(".dn-canvas canvas").focus();
+      assert.equal(await page.evaluate(() => document.activeElement?.tagName), "CANVAS");
+      await page.keyboard.down("Control");
+      await page.keyboard.press("s", { delay: 80 });
+      await page.keyboard.up("Control");
+      await page.waitForFunction(() => app.workspace.activeLeaf?.view?.editor?.saving === false);
+    };
+    await pressSaveKey();
+    assert.equal((await editorState()).snap, false);
+    assert.equal(await button.getAttribute("aria-pressed"), "false");
+    await drag({ x: 1.25, y: 1.25 }, { x: 3.75, y: 3.75 });
+    await count(1);
+    const outer = (await buildings())[0].polygons[0].outer;
+    assert.ok(outer.some((point) => Math.abs(point.x - Math.round(point.x)) > 0.1));
+    await pressSaveKey();
+    assert.equal((await editorState()).snap, true);
+    await save("Snap");
+    assert.equal((await editorState()).snap, true);
+    fs.writeFileSync(path.join(out, "snap-contour.json"), JSON.stringify(outer, null, 2));
+    checks.push("Ctrl+S toggles Snap both ways; toolbar Save preserves it; off stores free coordinates");
+  }
+  async function room() {
+    await open("Room");
+    await chooseTool("Raum");
+    await drag({ x: 2, y: 2 }, { x: 6, y: 6 });
+    await count(1);
+    const building = (await buildings())[0];
+    await page.evaluate(async (id) => {
+      await app.workspace.activeLeaf.view.editor.select(id);
+    }, building.id);
+    await page.getByRole("button", { name: "Raum anlegen", exact: true }).click();
+    const room = (await buildings())[0];
+    assert.equal(room.id, building.id);
+    assert.ok(room.number && room.note?.path);
+    await save("Room");
+    const originalKey = keyBytes(room.note.path);
+    let keyBaseline = originalKey;
+    const assertRoom = async (holes, expectedDoor) => {
+      const state = await editorState();
+      const current = state.document.entities.find((entity) => entity.id === room.id);
+      assert.equal(current?.number, room.number);
+      assert.equal(current?.note?.path, room.note.path);
+      assert.equal(current?.polygons[0]?.holes.length, holes);
+      assert.ok(current.wallWidth > 0);
+      assert.equal(state.document.entities.filter((entity) =>
+        entity.kind === "door" && entity.anchor?.boundaryId === room.id).length, expectedDoor);
+      assert.deepEqual(keyBytes(room.note.path), keyBaseline);
+      return current;
+    };
+    await assertRoom(0, 0);
+    await drag({ x: 5, y: 3 }, { x: 7, y: 5 });
+    await page.waitForFunction((id) => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      return !editor?.paintWorker && editor?.session.document().entities
+        .find((entity) => entity.id === id)?.polygons[0].outer
+        .some((point) => point.x === 7);
+    }, room.id);
+    await assertRoom(0, 0);
+    await drag({ x: 3, y: 4 }, { x: 4, y: 5 }, "Alt");
+    await page.waitForFunction((id) => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      return !editor?.paintWorker && editor?.session.document().entities
+        .find((entity) => entity.id === id)?.polygons[0].holes.length === 1;
+    }, room.id);
+    const withHole = await assertRoom(1, 0);
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    await page.waitForFunction((id) => app.workspace.activeLeaf?.view?.editor
+      ?.session.document().entities.find((entity) => entity.id === id)
+      ?.polygons[0].holes.length === 0, room.id);
+    await assertRoom(0, 0);
+    await page.keyboard.press("Control+y");
+    await page.waitForFunction((id) => app.workspace.activeLeaf?.view?.editor
+      ?.session.document().entities.find((entity) => entity.id === id)
+      ?.polygons[0].holes.length === 1, room.id);
+    assert.deepEqual(await assertRoom(1, 0), withHole);
+    await save("Room");
+    await chooseTool("Tür");
+    await click({ x: 4, y: 2 });
+    await page.waitForFunction((id) => app.workspace.activeLeaf?.view?.editor
+      ?.session.document().entities.some((entity) =>
+        entity.kind === "door" && entity.anchor?.boundaryId === id), room.id);
+    await save("Room");
+    keyBaseline = keyBytes(room.note.path);
+    assert.ok(keyBaseline.length > originalKey.length);
+    await assertRoom(1, 1);
+    await chooseTool("Raum");
+    await drag({ x: 3.5, y: 1.5 }, { x: 4.5, y: 3 }, "Alt");
+    await page.waitForFunction((id) => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      return !editor?.paintWorker && editor.session.document().entities
+        .find((entity) => entity.id === id)?.polygons[0].outer.length > 8;
+    }, room.id);
+    await assertRoom(1, 1);
+    await drag({ x: 3, y: 1.5 }, { x: 5, y: 3 }, "Alt");
+    await page.waitForFunction(() => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      return !editor?.paintWorker && !editor.session.document().entities
+        .some((entity) => entity.kind === "door");
+    });
+    await assertRoom(1, 0);
+    await page.locator(".dn-canvas canvas").focus();
+    await page.keyboard.press("Control+z");
+    await page.waitForFunction(() => app.workspace.activeLeaf?.view?.editor
+      ?.session.document().entities.some((entity) => entity.kind === "door"));
+    await assertRoom(1, 1);
+    await page.keyboard.press("Control+y");
+    await page.waitForFunction(() => !app.workspace.activeLeaf?.view?.editor
+      ?.session.document().entities.some((entity) => entity.kind === "door"));
+    await assertRoom(1, 0);
+    await save("Room");
+    assert.deepEqual(keyBytes(room.note.path), keyBaseline);
+    const saved = await editorState();
+    assert.equal(saved.dirty, false);
+    fs.writeFileSync(savedPath, JSON.stringify({ document: saved.document,
+      roomId: room.id, roomNumber: room.number, keyPath: room.note.path,
+      initialKeySha256: digest(originalKey), keySha256: digest(keyBaseline) }, null, 2));
+    await page.screenshot({ path: path.join(out, "room-final.png") });
+    checks.push("Numbered room retains ID and exact key bytes through overlap, Alt hole, portal cuts, history and save");
+  }
+  async function inputTrace(forceCaptureLoss = false, outsideCanvas = false) {
+    const startTrace = () => page.evaluate(() => {
+      window.__phase1InputAbort?.abort();
+      const abort = new AbortController();
+      window.__phase1InputAbort = abort;
+      window.__phase1InputTrace = [];
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      const canvas = editor?.renderer.canvas;
+      if (!canvas) throw new Error("Canvas missing for input trace");
+      const record = (where) => (event) => {
+        if (window.__phase1InputTrace.length >= 512) return;
+        const current = app.workspace.activeLeaf?.view?.editor;
+        const pointer = event instanceof PointerEvent ? event.pointerId : undefined;
+        window.__phase1InputTrace.push({
+          time: Math.round(performance.now() * 10) / 10,
+          where, type: event.type, key: event instanceof KeyboardEvent ? event.key : undefined,
+          pointer, buttons: event instanceof PointerEvent ? event.buttons : undefined,
+          x: event instanceof PointerEvent ? event.clientX : undefined,
+          y: event instanceof PointerEvent ? event.clientY : undefined,
+          target: event.target?.tagName,
+          active: document.activeElement?.tagName,
+          gesture: current?.gesture && { pointer: current.gesture.pointer,
+            tool: current.gesture.tool, moved: current.gesture.moved },
+          capture: pointer !== undefined ? canvas.hasPointerCapture(pointer) : undefined,
+          paint: !!current?.paintWorker,
+          buildings: current?.session.document().entities
+            .filter((entity) => entity.kind === "building").length,
+          defaultPrevented: event.defaultPrevented,
+        });
+      };
+      for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel",
+        "gotpointercapture", "lostpointercapture", "keydown"])
+        window.addEventListener(type, record("window-capture"),
+          { capture: true, signal: abort.signal });
+      for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel",
+        "gotpointercapture", "lostpointercapture", "keydown"])
+        canvas.addEventListener(type, record("canvas-bubble"),
+          { signal: abort.signal });
+    });
+    const snapshot = () => page.evaluate(() => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      return { viewType: app.workspace.activeLeaf?.view?.getViewType?.(),
+        tool: editor?.tool, active: document.activeElement?.tagName,
+        gesture: editor?.gesture && { pointer: editor.gesture.pointer,
+          tool: editor.gesture.tool, moved: editor.gesture.moved },
+        paint: !!editor?.paintWorker,
+        buildings: editor?.session.document().entities
+          .filter((entity) => entity.kind === "building").length,
+        trace: window.__phase1InputTrace ?? [] };
+    });
+    const stopTrace = () => page.evaluate(() => window.__phase1InputAbort?.abort());
+    const releaseCapture = () => page.evaluate(() => {
+      const editor = app.workspace.activeLeaf?.view?.editor;
+      const pointer = editor?.gesture?.pointer;
+      if (pointer === undefined) return { gesture: false, captured: false };
+      const canvas = editor.renderer.canvas;
+      const captured = canvas.hasPointerCapture(pointer);
+      if (captured) canvas.releasePointerCapture(pointer);
+      return { gesture: true, captured };
+    });
+    const outside = () => page.evaluate(() => {
+      const canvas = app.workspace.activeLeaf.view.editor.renderer.canvas;
+      const box = canvas.getBoundingClientRect();
+      const candidates = [
+        { x: box.right + 12, y: box.top + box.height / 2 },
+        { x: box.left - 12, y: box.top + box.height / 2 },
+        { x: box.left + box.width / 2, y: box.bottom + 12 },
+        { x: box.left + box.width / 2, y: box.top - 12 },
+      ];
+      const point = candidates.find(({ x, y }) => x >= 0 && x < innerWidth &&
+        y >= 0 && y < innerHeight && document.elementFromPoint(x, y) !== canvas);
+      if (!point) throw new Error("No point outside canvas inside editor window");
+      return point;
+    });
+    await open("Room");
+    const outsidePoint = outsideCanvas ? await outside() : undefined;
+    await chooseTool("Raum");
+    await startTrace();
+    const from = await at({ x: 2, y: 2 }), to = await at({ x: 6, y: 5 });
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 8 });
+    if (!outsideCanvas)
+      await page.screenshot({ path: path.join(out, "input-held-rectangle.png") });
+    const rectangleRelease = forceCaptureLoss ? await releaseCapture() : undefined;
+    if (outsidePoint) await page.mouse.move(outsidePoint.x, outsidePoint.y, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(1000);
+    const rectangle = await snapshot();
+    await stopTrace();
+    fs.writeFileSync(path.join(out, "input-rectangle-trace.json"),
+      JSON.stringify({ from, to, outsidePoint, forcedRelease: rectangleRelease,
+        ...rectangle }, null, 2));
+
+    await open("Snap");
+    await chooseTool("Raum");
+    await startTrace();
+    const cancelFrom = await at({ x: 2, y: 2 }), cancelTo = await at({ x: 4, y: 4 });
+    await page.mouse.move(cancelFrom.x, cancelFrom.y);
+    await page.mouse.down();
+    await page.mouse.move(cancelTo.x, cancelTo.y, { steps: 8 });
+    const escapeRelease = forceCaptureLoss ? await releaseCapture() : undefined;
+    if (outsidePoint) await page.mouse.move(outsidePoint.x, outsidePoint.y, { steps: 8 });
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const escape = await snapshot();
+    await stopTrace();
+    fs.writeFileSync(path.join(out, "input-escape-trace.json"),
+      JSON.stringify({ from: cancelFrom, to: cancelTo,
+        outsidePoint, forcedRelease: escapeRelease, ...escape }, null, 2));
+    let pointerCancel;
+    if (outsidePoint) {
+      await open("Preview");
+      await chooseTool("Raum");
+      await startTrace();
+      const cancelFrom = await at({ x: 2, y: 2 });
+      const cancelTo = await at({ x: 4, y: 4 });
+      await page.mouse.move(cancelFrom.x, cancelFrom.y);
+      await page.mouse.down();
+      await page.mouse.move(cancelTo.x, cancelTo.y, { steps: 8 });
+      const cancelRelease = await releaseCapture();
+      await page.mouse.move(outsidePoint.x, outsidePoint.y, { steps: 8 });
+      await page.evaluate(({ x, y }) => {
+        const pointer = app.workspace.activeLeaf.view.editor.gesture?.pointer;
+        if (pointer === undefined) throw new Error("Gesture ended before pointercancel");
+        window.dispatchEvent(new PointerEvent("pointercancel", {
+          bubbles: true, pointerId: pointer, clientX: x, clientY: y,
+        }));
+      }, outsidePoint);
+      await page.mouse.up();
+      pointerCancel = await snapshot();
+      await stopTrace();
+      fs.writeFileSync(path.join(out, "input-pointercancel-trace.json"),
+        JSON.stringify({ outsidePoint, forcedRelease: cancelRelease,
+          ...pointerCancel }, null, 2));
+    }
+    assert.equal(rectangle.buildings, 1, "Rectangle completion did not create a Building");
+    assert.equal(escape.viewType, "dungeon-native-map", "Escape closed the editor tab");
+    assert.equal(escape.buildings, 0, "Escape changed the map");
+    assert.equal(escape.tool, "select", "Escape did not leave Building drawing");
+    if (outsidePoint) {
+      assert.equal(rectangleRelease?.captured, true);
+      assert.ok(rectangle.trace.some(event => event.type === "pointerup" &&
+        event.target !== "CANVAS" && event.capture === false));
+      assert.equal(escape.buildings, 0);
+      assert.equal(pointerCancel?.buildings, 0, "Pointer-cancel changed the map");
+      assert.equal(pointerCancel?.gesture, undefined, "Pointer-cancel left a gesture");
+      checks.push("Lost capture outside canvas completes once; Escape and pointer-cancel abort");
+    }
+    checks.push("Pointer timeline confirms rectangle completion and Escape cancellation");
+  }
+  async function edit() {
+    if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "snap") return snap();
+    if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "input") return inputTrace();
+    if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "input-loss") return inputTrace(true);
+    if (process.env.DUNGEON_PHASE1_REPAIR_ONLY === "input-outside")
+      return inputTrace(true, true);
+    await preview();
+    await snap();
+    await room();
+  }
+  async function reopen() {
+    const saved = JSON.parse(fs.readFileSync(savedPath, "utf8"));
+    await open("Room");
+    const state = await editorState();
+    assert.deepEqual(state.document.entities, saved.document.entities);
+    assert.equal(state.dirty, false);
+    assert.equal(digest(keyBytes(saved.keyPath)), saved.keySha256);
+    assert.equal(state.document.entities.find((entity) => entity.id === saved.roomId)?.number,
+      saved.roomNumber);
+    await page.screenshot({ path: path.join(out, "room-reopen.png") });
+    await open("Snap");
+    assert.ok((await buildings())[0].polygons[0].outer.some((point) =>
+      Math.abs(point.x - Math.round(point.x)) > 0.1));
+    checks.push("Fresh process restores numbered room, key bytes and fractional Snap-off contour");
+  }
+  return { edit, reopen };
+};

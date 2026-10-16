@@ -1,0 +1,915 @@
+import {
+  type Entity,
+  type Floor,
+  type Id,
+  type MapDocument,
+  type DungeonContent,
+  type DungeonVolume,
+  type Settings,
+  type SmartTileCell,
+  type TerrainMask,
+  immutable,
+  validateDocument,
+  validateEntity,
+  validateSettings,
+  validateSmartTileCells,
+  validateTerrainMasks,
+  validateFloor,
+  validateContent,
+  validateDungeonVolumes,
+  collectReservedDocumentIds,
+  safePath,
+} from "./model";
+
+export interface RecordChange<T> {
+  readonly id: Id;
+  readonly before: T | null;
+  readonly after: T | null;
+  readonly beforeIndex?: number;
+  readonly afterIndex?: number;
+}
+export interface TextPatch {
+  readonly path: string;
+  readonly offset: number;
+  readonly before: string;
+  readonly after: string;
+  readonly create?: boolean;
+}
+export interface Command {
+  readonly label: string;
+  readonly entities?: readonly RecordChange<Entity>[];
+  readonly floors?: readonly RecordChange<Floor>[];
+  readonly settings?: { readonly before: Settings; readonly after: Settings };
+  readonly smartTiles?: {
+    readonly before: readonly SmartTileCell[] | undefined;
+    readonly after: readonly SmartTileCell[] | undefined;
+  };
+  readonly terrainMasks?: {
+    readonly before: readonly TerrainMask[] | undefined;
+    readonly after: readonly TerrainMask[] | undefined;
+  };
+  readonly volumes?: {
+    readonly before: readonly DungeonVolume[] | undefined;
+    readonly after: readonly DungeonVolume[] | undefined;
+  };
+  readonly content?: {
+    readonly before: DungeonContent;
+    readonly after: DungeonContent;
+  };
+  readonly texts?: readonly TextPatch[];
+  readonly affectsRules?: boolean;
+}
+export interface ChangeEvent {
+  readonly ids: ReadonlySet<Id>;
+  readonly entityOrder: boolean;
+  readonly notes: ReadonlySet<string>;
+  readonly floors: boolean;
+  readonly settings: boolean;
+  readonly smartTiles?: boolean;
+  readonly terrainMasks?: boolean;
+  readonly volumes?: boolean;
+  readonly paletteOnly?: boolean;
+  readonly content: boolean;
+  readonly revision: number;
+  readonly rulesRevision: number;
+  readonly label: string;
+}
+export interface SaveSnapshot {
+  readonly document: MapDocument;
+  readonly notes: ReadonlyMap<string, string | null>;
+  readonly revision: number;
+}
+export interface DraftState {
+  readonly document: MapDocument;
+  readonly notes: readonly {
+    path: string;
+    base: string | null;
+    current: string | null;
+  }[];
+}
+interface NoteDraft {
+  base: string | null;
+  current: string | null;
+}
+function sameOrder(a: readonly Id[], b: readonly Id[]): boolean {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+function sameValue(a: unknown, b: unknown): boolean {
+  return a === b || JSON.stringify(a) === JSON.stringify(b);
+}
+function ordered<T>(
+  records: ReadonlyMap<Id, T>,
+  changes: readonly RecordChange<T>[],
+): Map<Id, T> {
+  const changed = new Set(changes.map((change) => change.id)),
+    entries = [...records].filter(([id]) => !changed.has(id)),
+    additions = changes
+      .filter(
+        (change): change is RecordChange<T> & { readonly after: T } =>
+          change.after !== null,
+      )
+      .map((change, order) => ({ change, order }))
+      .sort(
+        (a, b) =>
+          (a.change.afterIndex ?? Number.MAX_SAFE_INTEGER) -
+            (b.change.afterIndex ?? Number.MAX_SAFE_INTEGER) ||
+          a.order - b.order,
+      );
+  for (const { change } of additions)
+    entries.splice(
+      Math.min(change.afterIndex ?? entries.length, entries.length),
+      0,
+      [change.id, change.after],
+    );
+  return new Map(entries);
+}
+
+function indexedRecordChanges<T>(
+  changes: readonly RecordChange<T>[] | undefined,
+  records: ReadonlyMap<Id, T>,
+): readonly RecordChange<T>[] | undefined {
+  if (!changes) return undefined;
+  const positions = new Map(
+    [...records.keys()].map((id, index) => [id, index]),
+  );
+  let append = records.size;
+  return changes.map((change) => {
+    const current = positions.get(change.id);
+    return {
+      ...change,
+      ...(change.before
+        ? { beforeIndex: change.beforeIndex ?? current }
+        : {}),
+      ...(change.after
+        ? {
+            afterIndex:
+              change.afterIndex ?? (change.before ? current : append++),
+          }
+        : {}),
+    };
+  });
+}
+
+/** Validate and apply one record-change set without mutating its input. */
+function projectRecordChanges<T>(
+  records: ReadonlyMap<Id, T>,
+  changes: readonly RecordChange<T>[],
+): Map<Id, T> {
+  if (new Set(changes.map((change) => change.id)).size !== changes.length)
+    throw new Error("Mehrfache Änderung derselben Kennung.");
+  const next = new Map(records);
+  for (const change of changes) {
+    if (!sameValue(records.get(change.id) ?? null, change.before))
+      throw new Error("Veraltete Änderung: " + change.id);
+    if (
+      change.after &&
+      typeof change.after === "object" &&
+      "id" in change.after &&
+      (change.after as { id?: unknown }).id !== change.id
+    )
+      throw new Error("Abweichende Datensatzkennung: " + change.id);
+    for (const index of [change.beforeIndex, change.afterIndex])
+      if (index !== undefined && (!Number.isInteger(index) || index < 0))
+        throw new Error("Ungültige Datensatzposition: " + change.id);
+    if (change.after) next.set(change.id, change.after);
+    else next.delete(change.id);
+  }
+  return ordered(next, changes);
+}
+
+/**
+ * Apply one already planned map command to an immutable document without a
+ * Session, history, note, draft or persistence side effect.
+ *
+ * This is the shared projection boundary for callers that must preview the
+ * exact entity/floor ordering and document validation used by native map
+ * commands before handing the result to their own transaction coordinator.
+ */
+export function projectDocumentCommand(
+  raw: MapDocument,
+  command: Command,
+): MapDocument {
+  validateDocument(raw);
+  if (command.texts?.some((patch) => patch.before !== patch.after || patch.create))
+    throw new Error("Raumtexte brauchen den bestehenden Session-Dateipfad.");
+  const entities = new Map(raw.entities.map((entity) => [entity.id, entity])),
+    floors = new Map(raw.floors.map((floor) => [floor.id, floor]));
+  const entityChanges = indexedRecordChanges(command.entities, entities) ?? [],
+    floorChanges = indexedRecordChanges(command.floors, floors) ?? [],
+    nextEntities = projectRecordChanges(entities, entityChanges),
+    nextFloors = projectRecordChanges(floors, floorChanges);
+  if (command.settings && !sameValue(command.settings.before, raw.settings))
+    throw new Error("Veraltete Karteneinstellungen.");
+  if (command.content && !sameValue(command.content.before, raw.content))
+    throw new Error("Veraltete Dungeon-Inhalte.");
+  if (command.smartTiles && !sameValue(command.smartTiles.before, raw.smartTiles))
+    throw new Error("Veraltete Smart-Tile-Zellen.");
+  if (
+    command.terrainMasks &&
+    !sameValue(command.terrainMasks.before, raw.terrainMasks)
+  )
+    throw new Error("Veraltete Terrainmasken.");
+  if (command.volumes && !sameValue(command.volumes.before, raw.volumes))
+    throw new Error("Veraltete Dungeon-Volumes.");
+  if (!nextFloors.size) throw new Error("Mindestens ein Geschoss bleibt erforderlich.");
+  const document = immutable(
+    structuredClone({
+      ...raw,
+      entities: [...nextEntities.values()],
+      floors: [...nextFloors.values()],
+      settings: command.settings?.after ?? raw.settings,
+      content: command.content?.after ?? raw.content,
+      ...(command.smartTiles
+        ? { smartTiles: command.smartTiles.after }
+        : raw.smartTiles === undefined
+          ? {}
+          : { smartTiles: raw.smartTiles }),
+      ...(command.terrainMasks
+        ? { terrainMasks: command.terrainMasks.after }
+        : raw.terrainMasks === undefined
+          ? {}
+          : { terrainMasks: raw.terrainMasks }),
+      ...(command.volumes
+        ? { volumes: command.volumes.after }
+        : raw.volumes === undefined
+          ? {}
+          : { volumes: raw.volumes }),
+    }),
+  );
+  validateDocument(document);
+  return document;
+}
+export function textPatch(
+  path: string,
+  before: string,
+  after: string,
+): TextPatch {
+  let start = 0;
+  while (
+    start < before.length &&
+    start < after.length &&
+    before[start] === after[start]
+  )
+    start++;
+  let end = 0;
+  while (
+    end < before.length - start &&
+    end < after.length - start &&
+    before[before.length - 1 - end] === after[after.length - 1 - end]
+  )
+    end++;
+  return {
+    path,
+    offset: start,
+    before: before.slice(start, before.length - end),
+    after: after.slice(start, after.length - end),
+  };
+}
+export class Session {
+  private records = new Map<Id, Entity>();
+  private levels = new Map<Id, Floor>();
+  private notes = new Map<string, NoteDraft>();
+  private listeners = new Set<(event: ChangeEvent) => void>();
+  private past: Command[] = [];
+  private future: Command[] = [];
+  private lockOverrides = new Map<Id, boolean>();
+  private references = new Map<Id, Set<Id>>();
+  private dirtyIds = new Set<Id>();
+  private dirtyOrder = false;
+  private dirtyFloors = new Set<Id>();
+  private mutationsHeld = false;
+  private savedRecords: Map<Id, Entity>;
+  private savedFloors: Map<Id, Floor>;
+  private savedSettings: Settings;
+  private stateSettings: Settings;
+  private savedContent: DungeonContent;
+  private stateContent: DungeonContent;
+  private stateSmartTiles?: readonly SmartTileCell[];
+  private savedSmartTiles?: readonly SmartTileCell[];
+  private stateTerrainMasks?: readonly TerrainMask[];
+  private savedTerrainMasks?: readonly TerrainMask[];
+  private stateVolumes?: readonly DungeonVolume[];
+  private savedVolumes?: readonly DungeonVolume[];
+  readonly id: Id;
+  readonly version: 3 | 4;
+  revision = 0;
+  rulesRevision = 0;
+  constructor(
+    doc: MapDocument,
+    private readonly historyLimit = Infinity,
+  ) {
+    validateDocument(doc);
+    doc = immutable(structuredClone(doc));
+    this.id = doc.id;
+    this.version = doc.version;
+    this.stateSettings = doc.settings;
+    this.stateContent = doc.content;
+    this.stateSmartTiles = doc.smartTiles;
+    this.stateTerrainMasks = doc.terrainMasks;
+    this.stateVolumes = doc.volumes;
+    for (const f of doc.floors) this.levels.set(f.id, f);
+    for (const e of doc.entities) {
+      this.records.set(e.id, e);
+      this.index(e, true);
+    }
+    this.savedRecords = new Map(this.records);
+    this.savedFloors = new Map(this.levels);
+    this.savedSettings = this.stateSettings;
+    this.savedContent = this.stateContent;
+    this.savedSmartTiles = doc.smartTiles;
+    this.savedTerrainMasks = doc.terrainMasks;
+    this.savedVolumes = doc.volumes;
+  }
+  get settings(): Settings {
+    return this.stateSettings;
+  }
+  get entities(): ReadonlyMap<Id, Entity> {
+    return this.records;
+  }
+  get floors(): ReadonlyMap<Id, Floor> {
+    return this.levels;
+  }
+  get content(): DungeonContent {
+    return this.stateContent;
+  }
+  get smartTiles(): readonly SmartTileCell[] | undefined {
+    return this.stateSmartTiles;
+  }
+  get terrainMasks(): readonly TerrainMask[] | undefined {
+    return this.stateTerrainMasks;
+  }
+  get volumes(): readonly DungeonVolume[] | undefined {
+    return this.stateVolumes;
+  }
+  private visibleSmartTiles(): readonly SmartTileCell[] | undefined {
+    return this.stateSmartTiles?.filter((cell) =>
+      cell.x < this.stateSettings.width && cell.y < this.stateSettings.height);
+  }
+  get canUndo(): boolean {
+    return this.past.length > 0;
+  }
+  get canRedo(): boolean {
+    return this.future.length > 0;
+  }
+  get dirty(): boolean {
+    return (
+      this.dirtyIds.size > 0 ||
+      this.dirtyOrder ||
+      this.dirtyFloors.size > 0 ||
+      this.stateSettings !== this.savedSettings ||
+      this.stateContent !== this.savedContent ||
+      JSON.stringify(this.visibleSmartTiles()) !== JSON.stringify(this.savedSmartTiles) ||
+      JSON.stringify(this.stateTerrainMasks) !== JSON.stringify(this.savedTerrainMasks) ||
+      JSON.stringify(this.stateVolumes) !== JSON.stringify(this.savedVolumes) ||
+      [...this.notes.values()].some((n) => n.base !== n.current)
+    );
+  }
+  get historySize(): number {
+    return this.past.length;
+  }
+  /** Keep the first-save snapshot stable until its pending view is handed off. */
+  holdMutations(): () => void {
+    if (this.mutationsHeld) throw new Error("Kartenänderungen sind bereits gesperrt.");
+    this.mutationsHeld = true;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.mutationsHeld = false;
+    };
+  }
+  private assertMutable(): void {
+    if (this.mutationsHeld)
+      throw new Error("Karte wird gespeichert; Änderungen bitte danach wiederholen.");
+  }
+  subscribe(fn: (event: ChangeEvent) => void): () => void {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
+  dependents(id: Id): ReadonlySet<Id> {
+    return this.references.get(id) ?? new Set();
+  }
+  private index(e: Entity, add: boolean): void {
+    const parent =
+      e.kind === "door"
+        ? e.anchor?.boundaryId
+        : e.kind !== "building"
+          ? e.roomId
+          : undefined;
+    if (parent) {
+      if (add) {
+        const s = this.references.get(parent) ?? new Set();
+        s.add(e.id);
+        this.references.set(parent, s);
+      } else {
+        const s = this.references.get(parent);
+        s?.delete(e.id);
+        if (!s?.size) this.references.delete(parent);
+      }
+    }
+  }
+  loadNote(path: string, text: string | null): void {
+    this.assertMutable();
+    safePath(path);
+    const n = this.notes.get(path);
+    if (n && n.base !== text)
+      throw new Error(
+        "Der Raumtext wurde außerhalb des Entwurfs geändert: " + path,
+      );
+    if (!n) this.notes.set(path, { base: text, current: text });
+  }
+  note(path: string): string | null | undefined {
+    return this.notes.get(path)?.current;
+  }
+  noteBaseline(path: string): string | null | undefined {
+    return this.notes.get(path)?.base;
+  }
+  setLocked(id: Id, locked: boolean): void {
+    this.setLockedMany([id], locked);
+  }
+  /** Native palette edits belong to the map, but do not enter Undo history. */
+  setObjectPalette(colors: readonly string[]): void {
+    this.assertMutable();
+    const palette = [...colors];
+    const next = immutable({ ...this.stateSettings, objectPalette: palette });
+    validateSettings(next);
+    if (JSON.stringify(next) === JSON.stringify(this.stateSettings)) return;
+    // Rebase settings commands so Undo/Redo of other map options preserves
+    // palette changes made after those commands.
+    const rebase = (command: Command): Command => command.settings
+      ? immutable({ ...command, settings: {
+          before: { ...command.settings.before, objectPalette: palette },
+          after: { ...command.settings.after, objectPalette: palette },
+        } })
+      : command;
+    this.past = this.past.map(rebase);
+    this.future = this.future.map(rebase);
+    this.stateSettings = next;
+    this.revision++;
+    this.emit({
+      ids: new Set(), entityOrder: false, notes: new Set(), floors: false,
+      settings: true, content: false, revision: this.revision,
+      paletteOnly: true,
+      rulesRevision: this.rulesRevision, label: "Objektpalette ändern",
+    });
+  }
+  /** Map Settings applies Building Wear immediately without an Undo step. */
+  setBuildingWearMode(mode: NonNullable<Settings["buildingWearMode"]>): void {
+    this.assertMutable();
+    const update = (settings: Settings): Settings => ({ ...settings,
+      buildingWearMode: mode, nativeBuildingWear: mode !== "none" });
+    const next = immutable(update(this.stateSettings));
+    validateSettings(next);
+    if (JSON.stringify(next) === JSON.stringify(this.stateSettings)) return;
+    const rebase = (command: Command): Command => command.settings
+      ? immutable({ ...command, settings: {
+          before: update(command.settings.before),
+          after: update(command.settings.after),
+        } })
+      : command;
+    this.past = this.past.map(rebase);
+    this.future = this.future.map(rebase);
+    this.stateSettings = JSON.stringify(next) === JSON.stringify(this.savedSettings)
+      ? this.savedSettings : next;
+    this.revision++;
+    this.emit({
+      ids: new Set(), entityOrder: false, notes: new Set(), floors: false,
+      settings: true, content: false, revision: this.revision,
+      rulesRevision: this.rulesRevision, label: "Gebäudeabnutzung ändern",
+    });
+  }
+  setLockedMany(ids: Iterable<Id>, locked: boolean): void {
+    this.assertMutable();
+    const changes = [...new Set(ids)].map((id) => {
+      const current = this.records.get(id);
+      if (!current) throw new Error("Kartenobjekt wurde entfernt: " + id);
+      const after = immutable({ ...current, locked });
+      return { id, current, after };
+    }).filter(({ current }) => !!current.locked !== locked);
+    if (!changes.length) return;
+    const proposed = new Map(changes.map(({ id, after }) => [id, after]));
+    for (const { after } of changes)
+      validateEntity(after, this.levels, (candidate) =>
+        proposed.get(candidate) ?? this.records.get(candidate),
+        this.version,
+      );
+    for (const { id, after } of changes) {
+      this.records.set(id, after);
+      this.lockOverrides.set(id, locked);
+      if (JSON.stringify(this.savedRecords.get(id)) === JSON.stringify(after))
+        this.dirtyIds.delete(id);
+      else this.dirtyIds.add(id);
+    }
+    this.revision++;
+    this.emit({
+      ids: new Set(changes.map(({ id }) => id)),
+      entityOrder: false,
+      notes: new Set(),
+      floors: false,
+      settings: false,
+      content: false,
+      revision: this.revision,
+      rulesRevision: this.rulesRevision,
+      label: locked ? "Element sperren" : "Element entsperren",
+    });
+  }
+  execute(command: Command): void {
+    this.assertMutable();
+    const removedBuildings = new Set((command.entities ?? [])
+      .filter((change) => change.before?.kind === "building" && change.after === null)
+      .map((change) => change.id));
+    if (!command.smartTiles && removedBuildings.size && this.stateSmartTiles?.some((cell) =>
+      cell.buildingId && removedBuildings.has(cell.buildingId)))
+      command = { ...command, smartTiles: {
+        before: this.stateSmartTiles,
+        after: this.stateSmartTiles.filter((cell) =>
+          !cell.buildingId || !removedBuildings.has(cell.buildingId)),
+      } };
+    if (
+      !(
+        command.entities?.length ||
+        command.floors?.length ||
+        command.settings ||
+        command.smartTiles ||
+        command.terrainMasks ||
+        command.volumes ||
+        command.content ||
+        command.texts?.some((p) => p.before !== p.after || p.create)
+      )
+    )
+      return;
+    const owned = immutable(
+        structuredClone({
+          ...command,
+          ...(command.entities
+            ? { entities: indexedRecordChanges(command.entities, this.records) }
+            : {}),
+          ...(command.floors
+            ? { floors: indexedRecordChanges(command.floors, this.levels) }
+            : {}),
+        }),
+      ),
+      event = this.apply(owned, false);
+    this.past.push(owned);
+    this.future = [];
+    if (
+      Number.isFinite(this.historyLimit) &&
+      this.past.length > this.historyLimit
+    )
+      this.past.shift();
+    this.emit(event);
+  }
+  undo(): void {
+    this.assertMutable();
+    const c = this.past.at(-1);
+    if (!c) return;
+    const event = this.apply(c, true);
+    this.past.pop();
+    this.future.push(c);
+    this.emit(event);
+  }
+  redo(): void {
+    this.assertMutable();
+    const c = this.future.at(-1);
+    if (!c) return;
+    const event = this.apply(c, false);
+    this.future.pop();
+    this.past.push(c);
+    this.emit(event);
+  }
+  /** Dungeondraft clears the available history after a confirmed map resize. */
+  clearHistory(): void {
+    if (!this.past.length && !this.future.length) return;
+    this.past = [];
+    this.future = [];
+    this.emit({
+      ids: new Set(), entityOrder: false, notes: new Set(), floors: false,
+      settings: false, content: false, revision: this.revision,
+      rulesRevision: this.rulesRevision, label: "Verlauf nach Kartengröße zurücksetzen",
+    });
+  }
+  private apply(c: Command, inverse: boolean): ChangeEvent {
+    const entityChanges = (c.entities ?? []).map((p) => {
+      const change = inverse
+        ? {
+            id: p.id,
+            before: p.after,
+            after: p.before,
+            beforeIndex: p.afterIndex,
+            afterIndex: p.beforeIndex,
+          }
+        : p;
+      const locked = this.lockOverrides.get(p.id);
+      if (locked === undefined) return change;
+      const withLock = (entity: Entity | null): Entity | null =>
+        entity ? { ...entity, locked } : null;
+      return {
+        ...change,
+        before: withLock(change.before),
+        after: withLock(change.after),
+      };
+    });
+    const floorChanges = (c.floors ?? []).map((p) =>
+      inverse
+        ? {
+            id: p.id,
+            before: p.after,
+            after: p.before,
+            beforeIndex: p.afterIndex,
+            afterIndex: p.beforeIndex,
+          }
+        : p,
+    );
+    const nextEntities = projectRecordChanges(this.records, entityChanges),
+      nextFloors = projectRecordChanges(this.levels, floorChanges),
+      get = (id: Id): Entity | undefined => nextEntities.get(id);
+    for (const p of floorChanges) {
+      if (p.after) {
+        validateFloor(p.after);
+      }
+    }
+    if (!nextFloors.size)
+      throw new Error("Mindestens ein Geschoss bleibt erforderlich.");
+    const affected = new Set(entityChanges.map((p) => p.id));
+    for (const p of entityChanges)
+      for (const id of this.dependents(p.id)) affected.add(id);
+    for (const p of entityChanges)
+      for (const e of [p.before, p.after])
+        if (e?.kind === "door" && e.anchor)
+          affected.add(e.anchor.boundaryId);
+    if (floorChanges.length)
+      for (const e of this.records.values()) affected.add(e.id);
+    for (const id of affected) {
+      const e = get(id);
+      if (e) {
+        if (e.id !== id) throw new Error("Abweichende Objektkennung.");
+        validateEntity(e, nextFloors, get, this.version);
+      }
+    }
+    let settings = this.stateSettings;
+    if (c.settings) {
+      const before = inverse ? c.settings.after : c.settings.before;
+      settings = inverse ? c.settings.before : c.settings.after;
+      if (!sameValue(before, this.stateSettings))
+        throw new Error("Veraltete Karteneinstellungen.");
+      validateSettings(settings);
+    }
+    let content = this.stateContent;
+    if (c.content) {
+      const before = inverse ? c.content.after : c.content.before;
+      content = inverse ? c.content.before : c.content.after;
+      if (!sameValue(before, this.stateContent))
+        throw new Error("Veraltete Dungeon-Inhalte.");
+    }
+    let smartTiles = this.stateSmartTiles;
+    if (c.smartTiles) {
+      const before = inverse ? c.smartTiles.after : c.smartTiles.before;
+      smartTiles = inverse ? c.smartTiles.before : c.smartTiles.after;
+      if (!sameValue(before, this.stateSmartTiles))
+        throw new Error("Veraltete Smart-Tile-Zellen.");
+      if (smartTiles !== undefined)
+        validateSmartTileCells(smartTiles, settings.width, settings.height, nextFloors, true);
+    }
+    let terrainMasks = this.stateTerrainMasks;
+    if (c.terrainMasks) {
+      const before = inverse ? c.terrainMasks.after : c.terrainMasks.before;
+      terrainMasks = inverse ? c.terrainMasks.before : c.terrainMasks.after;
+      if (!sameValue(before, this.stateTerrainMasks))
+        throw new Error("Veraltete Terrainmasken.");
+    }
+    if (terrainMasks !== undefined && (c.terrainMasks || c.settings || floorChanges.length))
+      validateTerrainMasks(terrainMasks, settings.width, settings.height, nextFloors);
+    let volumes = this.stateVolumes;
+    if (c.volumes) {
+      if (this.version !== 4)
+        throw new Error("Dungeon-Volumes benötigen Kartenformat V4.");
+      const before = inverse ? c.volumes.after : c.volumes.before;
+      volumes = inverse ? c.volumes.before : c.volumes.after;
+      if (!sameValue(before, this.stateVolumes))
+        throw new Error("Veraltete Dungeon-Volumes.");
+    }
+    validateContent(content, nextEntities, this.version);
+    const prospective: MapDocument = {
+      format: "dungeon-map",
+      version: this.version,
+      id: this.id,
+      settings,
+      floors: [...nextFloors.values()],
+      entities: [...nextEntities.values()],
+      content,
+      ...(smartTiles === undefined ? {} : { smartTiles }),
+      ...(terrainMasks === undefined ? {} : { terrainMasks }),
+      ...(volumes === undefined ? {} : { volumes }),
+    };
+    const keySectionIds = (entity: Entity | null): readonly Id[] =>
+        entity?.kind === "building" && entity.key
+          ? entity.key.sections.map(({ id }) => id)
+          : [],
+      reservedIdsMayHaveChanged = !!c.content || entityChanges.some((change) =>
+        change.before === null || change.after === null ||
+        !sameValue(keySectionIds(change.before), keySectionIds(change.after)),
+      ) || floorChanges.some((change) =>
+        change.before === null || change.after === null,
+      );
+    if (volumes !== undefined && (c.volumes || reservedIdsMayHaveChanged))
+      validateDungeonVolumes(
+        volumes,
+        settings.width,
+        settings.height,
+        collectReservedDocumentIds(prospective),
+      );
+    const noteValues = new Map<string, string | null>();
+    const patches = inverse ? [...(c.texts ?? [])].reverse() : (c.texts ?? []);
+    for (const p of patches) {
+      safePath(p.path);
+      const note = this.notes.get(p.path);
+      if (!note) throw new Error("Text zuerst laden: " + p.path);
+      const current = noteValues.has(p.path)
+        ? noteValues.get(p.path)!
+        : note.current;
+      const old = inverse ? p.after : p.before,
+        next = inverse ? p.before : p.after;
+      if (p.create) {
+        if (inverse) {
+          if (current !== p.after)
+            throw new Error("Geänderter neuer Raumtext.");
+          noteValues.set(p.path, null);
+        } else {
+          if (current !== null || p.before !== "" || p.offset !== 0)
+            throw new Error("Datei existiert bereits.");
+          noteValues.set(p.path, p.after);
+        }
+        continue;
+      }
+      if (
+        current === null ||
+        !Number.isInteger(p.offset) ||
+        p.offset < 0 ||
+        current.slice(p.offset, p.offset + old.length) !== old
+      )
+        throw new Error("Veraltete Textänderung: " + p.path);
+      noteValues.set(
+        p.path,
+        current.slice(0, p.offset) +
+          next +
+          current.slice(p.offset + old.length),
+      );
+    }
+    // Validate everything before mutating; observers see only a complete joint command.
+    const previousOrder = entityChanges.length ? [...this.records.keys()] : [];
+    for (const p of entityChanges) {
+      const previous = this.records.get(p.id);
+      if (previous) this.index(previous, false);
+      if (p.after) this.index(p.after, true);
+      if (sameValue(this.savedRecords.get(p.id) ?? null, p.after))
+        this.dirtyIds.delete(p.id);
+      else this.dirtyIds.add(p.id);
+    }
+    if (entityChanges.length)
+      this.records = nextEntities;
+    const entityOrder = entityChanges.length > 0 &&
+      !sameOrder(previousOrder, [...this.records.keys()]);
+    if (entityChanges.length)
+      this.dirtyOrder = !sameOrder(
+        [...this.records.keys()], [...this.savedRecords.keys()],
+      );
+    for (const p of floorChanges) {
+      if (sameValue(this.savedFloors.get(p.id) ?? null, p.after))
+        this.dirtyFloors.delete(p.id);
+      else this.dirtyFloors.add(p.id);
+    }
+    if (floorChanges.length)
+      this.levels = nextFloors;
+    this.stateSettings = sameValue(settings, this.savedSettings)
+      ? this.savedSettings
+      : settings;
+    this.stateContent = sameValue(content, this.savedContent)
+      ? this.savedContent
+      : content;
+    this.stateSmartTiles = smartTiles;
+    this.stateTerrainMasks = terrainMasks;
+    this.stateVolumes = volumes;
+    for (const [path, current] of noteValues)
+      this.notes.get(path)!.current = current;
+    this.revision++;
+    if (c.affectsRules || c.content) this.rulesRevision++;
+    return {
+      ids: affected,
+      entityOrder,
+      notes: new Set(noteValues.keys()),
+      floors: !!floorChanges.length,
+      settings: !!c.settings,
+      smartTiles: !!c.smartTiles,
+      terrainMasks: !!c.terrainMasks,
+      volumes: !!c.volumes,
+      content: !!c.content,
+      revision: this.revision,
+      rulesRevision: this.rulesRevision,
+      label: (inverse ? "Rückgängig: " : "") + c.label,
+    };
+  }
+  private emit(event: ChangeEvent): void {
+    for (const fn of this.listeners) {
+      try {
+        fn(event);
+      } catch (error) {
+        console.error(
+          "Dungeon-Ansicht konnte nicht aktualisiert werden",
+          error,
+        );
+      }
+    }
+  }
+  document(): MapDocument {
+    return {
+      format: "dungeon-map",
+      version: this.version,
+      id: this.id,
+      settings: this.stateSettings,
+      floors: [...this.levels.values()],
+      entities: [...this.records.values()],
+      content: this.stateContent,
+      ...(this.stateSmartTiles !== undefined
+        ? { smartTiles: this.visibleSmartTiles() }
+        : {}),
+      ...(this.stateTerrainMasks !== undefined
+        ? { terrainMasks: this.stateTerrainMasks }
+        : {}),
+      ...(this.stateVolumes !== undefined ? { volumes: this.stateVolumes } : {}),
+    };
+  }
+  snapshot(): SaveSnapshot {
+    return {
+      document: this.document(),
+      notes: new Map(
+        [...this.notes]
+          .filter(([, n]) => n.base !== n.current)
+          .map(([p, n]) => [p, n.current]),
+      ),
+      revision: this.revision,
+    };
+  }
+  draft(): DraftState {
+    return {
+      document: this.document(),
+      notes: [...this.notes]
+        .filter(([, n]) => n.base !== n.current)
+        .map(([path, n]) => ({ path, ...n })),
+    };
+  }
+  static restore(baseline: MapDocument, draft: DraftState): Session {
+    if (baseline.id !== draft.document.id)
+      throw new Error("Entwurf gehört zu einer anderen Karte.");
+    const session = new Session(draft.document);
+    for (const n of draft.notes) {
+      safePath(n.path);
+      if (
+        ![n.base, n.current].every((v) => v === null || typeof v === "string")
+      )
+        throw new Error("Ungültiger Textentwurf.");
+      session.notes.set(n.path, { base: n.base, current: n.current });
+    }
+    session.markSaved({
+      document: immutable(structuredClone(baseline)),
+      notes: new Map(),
+      revision: 0,
+    });
+    return session;
+  }
+  markSaved(snapshot: SaveSnapshot): void {
+    this.savedRecords = new Map(
+      snapshot.document.entities.map((e) => [e.id, e]),
+    );
+    this.dirtyOrder = !sameOrder(
+      [...this.records.keys()], [...this.savedRecords.keys()],
+    );
+    this.savedFloors = new Map(snapshot.document.floors.map((f) => [f.id, f]));
+    this.savedSettings = snapshot.document.settings;
+    this.savedContent = snapshot.document.content;
+    this.savedSmartTiles = snapshot.document.smartTiles;
+    this.savedTerrainMasks = snapshot.document.terrainMasks;
+    this.savedVolumes = snapshot.document.volumes;
+    const equal = (a: unknown, b: unknown) =>
+      a === b || JSON.stringify(a) === JSON.stringify(b);
+    if (equal(this.stateSettings, this.savedSettings))
+      this.stateSettings = this.savedSettings;
+    if (equal(this.stateContent, this.savedContent))
+      this.stateContent = this.savedContent;
+    if (equal(this.stateVolumes, this.savedVolumes))
+      this.stateVolumes = this.savedVolumes;
+    this.dirtyIds = new Set(
+      [
+        ...new Set([...this.records.keys(), ...this.savedRecords.keys()]),
+      ].filter((id) => !equal(this.records.get(id), this.savedRecords.get(id))),
+    );
+    this.dirtyFloors = new Set(
+      [...new Set([...this.levels.keys(), ...this.savedFloors.keys()])].filter(
+        (id) => !equal(this.levels.get(id), this.savedFloors.get(id)),
+      ),
+    );
+    for (const [path, base] of snapshot.notes) {
+      const n = this.notes.get(path);
+      if (n) n.base = base;
+    }
+  }
+}

@@ -1,0 +1,132 @@
+"""Compare the native and Host 18x12 gallery cards at 50% / 32 px per field.
+
+Pass the native saved map and screenshot after fresh reopen, the Host gallery24
+manifest and screenshot after fresh reopen, and an output JSON path.
+"""
+import argparse
+from io import BytesIO
+import json
+import re
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageCms
+
+
+def cell_ids(level):
+    return [int(value) for value in re.findall(r"-?\d+", level["tiles"]["cells"])]
+
+
+def tile_pixels(image, origin, index):
+    left = origin[0] + index % 6 * 96
+    top = origin[1] + index // 6 * 96
+    return np.concatenate([
+        np.asarray(image.crop((left + dx + 3, top + dy + 3,
+                               left + dx + 29, top + dy + 29)), dtype=np.int16)
+        .reshape(-1, 3)
+        for dy in (0, 32) for dx in (0, 32)
+    ])
+
+
+def full_tile_pixels(image, origin, index):
+    left = origin[0] + index % 6 * 96
+    top = origin[1] + index // 6 * 96
+    return np.asarray(image.crop((left, top, left + 64, top + 64)),
+                      dtype=np.int16)
+
+
+def audit(native_map, native_image, host_manifest, host_image,
+          native_grid_off_image=None, host_forced_srgb=False):
+    level = json.loads(native_map.read_text())["world"]["levels"]["0"]
+    ids = cell_ids(level)
+    host = json.loads(host_manifest.read_text())
+    assert len(level["shapes"]["polygons"]) == 24
+    assert len(level["walls"]) == 0
+    assert len(ids) == 18 * 12 and len(host) == 24
+    original = Image.open(native_image).convert("RGB")
+    host_png = Image.open(host_image)
+    assert "chromaticity" in Image.open(native_image).info
+    if "icc_profile" in host_png.info:
+        editor = ImageCms.profileToProfile(
+            host_png, ImageCms.ImageCmsProfile(BytesIO(host_png.info["icc_profile"])),
+            ImageCms.createProfile("sRGB"), outputMode="RGB")
+        host_profile = "embedded Skia ICC converted to sRGB"
+    else:
+        assert host_forced_srgb, "Unprofiled Host screenshot requires --host-forced-srgb"
+        editor = host_png.convert("RGB")
+        host_profile = "Chromium --force-color-profile=srgb"
+    grid_off = (Image.open(native_grid_off_image).convert("RGB")
+                if native_grid_off_image else None)
+    if grid_off:
+        assert grid_off.size == original.size
+    rows = []
+    for index, item in enumerate(host):
+        x, y = index % 6 * 3, index // 6 * 3
+        cells = [ids[(y + dy) * 18 + x + dx]
+                 for dy in (0, 1) for dx in (0, 1)]
+        assert len(set(cells)) == 1 and cells[0] >= 0
+        tile_id = cells[0]
+        path = level["tiles"]["lookup"][str(tile_id)]
+        colors = [level["tiles"]["colors"][(y + dy) * 18 + x + dx]
+                  for dy in (0, 1) for dx in (0, 1)]
+        assert len(set(colors)) == 1
+        assert path == item["image"], (index, path, item["image"])
+        assert colors[0].lower() == "ff" + item["storedColor"].lower()
+        difference = np.abs(tile_pixels(original, (352, 288), index) -
+                            tile_pixels(editor, (512, 234), index))
+        row = {"index": index, "texturePath": path,
+                     "nativeColor": colors[0], "hostColor": item["storedColor"],
+                     "nativeTileId": tile_id,
+                     "imageMae": round(float(difference.mean()), 3),
+                     "imageP95": round(float(np.percentile(difference, 95)), 3),
+                     "channelMae": [round(float(value), 3)
+                                    for value in difference.mean(axis=0)]}
+        if grid_off:
+            full_diff = np.abs(full_tile_pixels(grid_off, (352, 288), index) -
+                               full_tile_pixels(editor, (512, 234), index))
+            edge = np.ones((64, 64), dtype=bool)
+            edge[3:61, 3:61] = False
+            row["fullTileMae"] = round(float(full_diff.mean()), 3)
+            row["outerThreePixelMae"] = round(float(full_diff[edge].mean()), 3)
+            row["innerFiftyEightPixelMae"] = round(float(full_diff[~edge].mean()), 3)
+            row["fullTileP95"] = round(float(np.percentile(full_diff, 95)), 3)
+        rows.append(row)
+    assert len({row["texturePath"] for row in rows}) == 24
+    result = {"reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+            "nativeMap": str(native_map), "nativeScreenshot": str(native_image),
+            "hostManifest": str(host_manifest), "hostScreenshot": str(host_image),
+            "colorManagement": f"Original sRGB chromaticity; Host {host_profile}",
+            "shapeCount": 24, "wallCount": 0,
+            "uniqueTexturePaths": 24, "exactDefaultColors": 24,
+            "meanImageMae": round(sum(row["imageMae"] for row in rows) / 24, 3),
+            "maximumImageMae": max(row["imageMae"] for row in rows),
+            "styles": rows}
+    if grid_off:
+        result["nativeGridOffScreenshot"] = str(native_grid_off_image)
+        result["meanFullTileMae"] = round(
+            sum(row["fullTileMae"] for row in rows) / 24, 3)
+        result["maximumFullTileMae"] = max(row["fullTileMae"] for row in rows)
+        result["fullTileScope"] = (
+            "Each 64x64 two-by-two shape, including its outer three pixel border; "
+            "blank map background is excluded.")
+    return result
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("native_map", type=Path)
+    parser.add_argument("native_image", type=Path)
+    parser.add_argument("host_manifest", type=Path)
+    parser.add_argument("host_image", type=Path)
+    parser.add_argument("output", type=Path)
+    parser.add_argument("--native-grid-off-image", type=Path)
+    parser.add_argument("--host-forced-srgb", action="store_true")
+    args = parser.parse_args()
+    result = audit(args.native_map, args.native_image,
+                   args.host_manifest, args.host_image,
+                   args.native_grid_off_image, args.host_forced_srgb)
+    args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+    print(json.dumps({key: result[key] for key in
+                      ("shapeCount", "uniqueTexturePaths", "exactDefaultColors",
+                       "meanImageMae", "maximumImageMae", "meanFullTileMae",
+                       "maximumFullTileMae") if key in result}))

@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thonktank.invalid/schema/items-srd51-transcript-v1.json",
+  "title": "SRD 5.1 Items source transcript",
+  "$comment": "CE-02-I02-S01 work in progress: the equipment taxonomy and inventory contract are closed; magic-item inventory, transcript and merge contracts remain incomplete.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "complete", "source", "records"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "complete": { "type": "boolean" },
+    "source": { "$ref": "#/$defs/source" },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "occurrenceId": {
+      "type": "string",
+      "pattern": "^srd51:(equipment|magic-item):[a-z0-9-]+:[0-9]+$"
+    },
+    "subcategory": {
+      "enum": [
+        "armor-light", "armor-medium", "armor-heavy", "shield",
+        "weapon-simple-melee", "weapon-simple-ranged", "weapon-martial-melee", "weapon-martial-ranged",
+        "adventuring-gear-standard", "ammunition", "arcane-focus", "druidic-focus", "holy-symbol", "kit", "potion", "equipment-pack",
+        "artisans-tools", "gaming-set", "musical-instrument", "other-tools",
+        "mount-or-animal", "tack-harness-or-drawn-vehicle", "waterborne-vehicle",
+        "armor", "wondrous-item", "weapon", "ring"
+      ]
+    },
+    "rarityValue": {
+      "enum": ["common", "uncommon", "rare", "very-rare", "legendary", "artifact"]
+    },
+    "rarityChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variantId", "label", "value", "occurrenceId"],
+      "properties": {
+        "variantId": { "type": "string", "pattern": "^srd51:magic-item:[a-z0-9-]+:[0-9]+#variant:[0-9]+$" },
+        "label": { "$ref": "#/$defs/nonEmpty" },
+        "value": { "$ref": "#/$defs/rarityValue" },
+        "occurrenceId": { "$ref": "#/$defs/occurrenceId" }
+      }
+    },
+    "rarity": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": { "const": "fixed" },
+            "value": { "$ref": "#/$defs/rarityValue" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "sourceText", "choices"],
+          "properties": {
+            "kind": { "const": "varies" },
+            "sourceText": { "$ref": "#/$defs/nonEmpty" },
+            "choices": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/rarityChoice" }
+            }
+          }
+        }
+      ]
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "copperPieces": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+      }
+    },
+    "weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "pounds": { "type": "string", "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.0*[1-9][0-9]*)$" }
+      }
+    },
+    "speed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText", "unit", "value"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "unit": { "enum": ["ft/round", "mph"] },
+        "value": { "type": "string", "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.0*[1-9][0-9]*)$" }
+      }
+    },
+    "carryingCapacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText", "pounds"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "pounds": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+      }
+    },
+    "sourcedText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "occurrenceId"],
+      "properties": {
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "occurrenceId": { "$ref": "#/$defs/occurrenceId" }
+      }
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "occurrenceId"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmpty" },
+        "description": { "$ref": "#/$defs/nonEmpty" },
+        "occurrenceId": { "$ref": "#/$defs/occurrenceId" }
+      }
+    },
+    "damage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diceText", "typeText"],
+      "properties": {
+        "diceText": { "$ref": "#/$defs/nonEmpty" },
+        "typeText": { "$ref": "#/$defs/nonEmpty" },
+        "versatileDiceText": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "armor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["armorClassText"],
+      "properties": {
+        "armorClassText": { "$ref": "#/$defs/nonEmpty" },
+        "dexterityRuleText": { "$ref": "#/$defs/nonEmpty" },
+        "strengthRequirementText": { "$ref": "#/$defs/nonEmpty" },
+        "stealthRuleText": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "recordSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "pdfUrl", "pdfPages", "printedPages", "occurrenceIds"],
+      "properties": {
+        "document": { "const": "SRD 5.1" },
+        "pdfUrl": { "const": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf" },
+        "pdfPages": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "integer", "minimum": 1, "maximum": 403 } },
+        "printedPages": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "integer", "minimum": 1, "maximum": 403 } },
+        "occurrenceIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/occurrenceId" } }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "category", "magic", "attunement", "properties", "description", "source"],
+      "properties": {
+        "id": { "$ref": "#/$defs/occurrenceId" },
+        "name": { "$ref": "#/$defs/nonEmpty" },
+        "category": { "enum": ["equipment", "magic-item"] },
+        "subcategory": { "$ref": "#/$defs/subcategory" },
+        "magic": { "type": "boolean" },
+        "rarity": { "$ref": "#/$defs/rarity" },
+        "attunement": { "enum": ["required", "not-required", "unspecified"] },
+        "sourceHeader": { "$ref": "#/$defs/sourcedText" },
+        "cost": { "$ref": "#/$defs/cost" },
+        "weight": { "$ref": "#/$defs/weight" },
+        "speed": { "$ref": "#/$defs/speed" },
+        "carryingCapacity": { "$ref": "#/$defs/carryingCapacity" },
+        "properties": { "type": "array", "items": { "$ref": "#/$defs/property" } },
+        "description": { "type": "array", "items": { "$ref": "#/$defs/sourcedText" } },
+        "damage": { "$ref": "#/$defs/damage" },
+        "armor": { "$ref": "#/$defs/armor" },
+        "source": { "$ref": "#/$defs/recordSource" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "pdfUrl", "pdfSha256", "license"],
+      "properties": {
+        "document": { "const": "SRD 5.1" },
+        "pdfUrl": { "const": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf" },
+        "pdfSha256": { "const": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0" },
+        "license": { "const": "CC-BY-4.0" }
+      }
+    },
+    "inventoryOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "feed", "sectionId", "sourceKind", "sourceTable", "sourceLabel", "firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "ordinal", "variantId", "mergeIntoId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/occurrenceId" },
+        "feed": { "enum": ["equipment", "magic-item"] },
+        "sectionId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "sourceKind": { "enum": ["table-row", "standalone-entry", "detail-heading", "fact-row", "cross-reference"] },
+        "sourceTable": { "$ref": "#/$defs/nonEmpty" },
+        "sourceLabel": { "$ref": "#/$defs/nonEmpty" },
+        "firstPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "firstPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "ordinal": { "type": "integer", "minimum": 1 },
+        "variantId": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+        "mergeIntoId": { "oneOf": [{ "$ref": "#/$defs/occurrenceId" }, { "type": "null" }] }
+      }
+    },
+    "inventorySection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "feed", "sourceKind", "firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "expectedOccurrences", "capturedOccurrences", "complete"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "feed": { "enum": ["equipment", "magic-item"] },
+        "sourceKind": { "enum": ["table-row", "standalone-entry", "detail-heading", "mixed"] },
+        "firstPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "firstPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "expectedOccurrences": { "type": "integer", "minimum": 0 },
+        "capturedOccurrences": { "type": "integer", "minimum": 0 },
+        "inventoryComplete": { "type": "boolean" },
+        "transcriptComplete": { "type": "boolean" },
+        "complete": { "type": "boolean" }
+      }
+    },
+    "helperDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["helperIndex", "helperName", "sourceText", "disposition", "sourceOccurrenceIds", "canonicalId"],
+      "properties": {
+        "helperIndex": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "helperName": { "$ref": "#/$defs/nonEmpty" },
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "disposition": { "enum": ["pack-prose-only", "split-primary-occurrences", "expanded-primary-occurrences", "merge-to-first-occurrence"] },
+        "sourceOccurrenceIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/occurrenceId" } },
+        "canonicalId": { "oneOf": [{ "$ref": "#/$defs/occurrenceId" }, { "type": "null" }] }
+      }
+    },
+    "inventoryCrossReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "feed", "sectionId", "sourceKind", "sourceTable", "sourceLabel", "sourceText", "firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "targetSectionIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^srd51:(equipment|magic-item):[a-z0-9-]+:cross-reference:[0-9]+$" },
+        "feed": { "enum": ["equipment", "magic-item"] },
+        "sectionId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "sourceKind": { "const": "cross-reference" },
+        "sourceTable": { "$ref": "#/$defs/nonEmpty" },
+        "sourceLabel": { "$ref": "#/$defs/nonEmpty" },
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "firstPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "firstPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "targetSectionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9-]+$" } }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences", "helperDispositions", "crossReferences"],
+      "properties": {
+        "inventoryVersion": { "const": 1 },
+        "complete": { "type": "boolean" },
+        "expectedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
+        "capturedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
+        "sections": { "type": "array", "items": { "$ref": "#/$defs/inventorySection" } },
+        "occurrences": { "type": "array", "items": { "$ref": "#/$defs/inventoryOccurrence" } },
+        "helperDispositions": { "type": "array", "items": { "$ref": "#/$defs/helperDisposition" } },
+        "crossReferences": { "type": "array", "items": { "$ref": "#/$defs/inventoryCrossReference" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "component": "city-e2e-v1",
+  "gate": "E2E-01",
+  "assignment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090818808",
+  "cityId": "00000000-0000-4000-8000-000000000100",
+  "elementIds": [
+    "00000000-0000-4000-8000-000000000101",
+    "00000000-0000-4000-8000-000000000102",
+    "00000000-0000-4000-8000-000000000103",
+    "00000000-0000-4000-8000-000000000104",
+    "00000000-0000-4000-8000-000000000105",
+    "00000000-0000-4000-8000-000000000106"
+  ],
+  "files": [
+    {
+      "fixtureFile": "input/Städte/00000000-0000-4000-8000-000000000100.city",
+      "sha256": "c2dcd6cc4b3a220ed8e46d02c4e63a3336bda5f8ee7e6152cfab136124aa395c",
+      "bytes": 2595
+    },
+    {
+      "fixtureFile": "expected/Städte/00000000-0000-4000-8000-000000000100.city",
+      "sha256": "c2dcd6cc4b3a220ed8e46d02c4e63a3336bda5f8ee7e6152cfab136124aa395c",
+      "bytes": 2595
+    }
+  ],
+  "externalReferences": {
+    "atlasId": "00000000-0000-4000-8000-000000000010",
+    "cityLocationId": "00000000-0000-4000-8000-000000000011",
+    "poiLocationId": "00000000-0000-4000-8000-000000000012",
+    "houseId": "00000000-0000-4000-8000-000000000105",
+    "bindingState": "pending_confirmed_spatial_port_no_city_v1_field"
+  },
+  "scope": "Synthetic City component only. Expected bytes are the unchanged baseline, not the complete integrated edit/reopen outcome. No persistent foreign binding or Campaign/import/host/E2E PASS."
+}
