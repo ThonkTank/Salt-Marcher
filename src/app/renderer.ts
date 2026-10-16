@@ -26,7 +26,7 @@ import {initNpcs,activateNpcs,openNpcs,openNpcProfile,createNpcAtLocation,prepar
 import {initGroups,activateGroups,openGroups,prepareGroupLocation,createGroupAtLocation,flushGroups} from './groups-ui';
 import {refreshProgress} from './progression-ui';
 import {initTreasury,activateTreasury,openTreasury,flushTreasury} from './treasury-ui';
-import {openExistingCombat} from './combat';
+import {openExistingCombat,setCombatNpcNavigation} from './combat';
 import {initTriggers,activateTriggers,flushTriggers} from './trigger-ui';
 import {initExtensions} from './extensions-ui';
 import {initDungeonContent,activateDungeonContent,flushDungeonContent} from './dungeon-content-ui';
@@ -130,6 +130,7 @@ initQuickReference(status,leaveWorkspace,async action=>{
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
 el('catalog-day-plan').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;await reopenView('preparation');showDayPreparation();})().catch(error=>status(error.message,true));};
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
+setCombatNpcNavigation(async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openNpcProfile(id,undefined,current);});
 setNpcNavigation(async(id,contact,current)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,contact,current);},async(id,current)=>{if(!await leaveWorkspace()||!current())return;showTab('autonomy');await openAutonomy(id);},navigateNpcPlaces);
 initGroups(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);await openNpcs(false);},async(id,sourceCurrent=()=>true)=>{const owner=workspace,current=()=>workspace===owner&&sourceCurrent();if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openNpcProfile(id,undefined,current);});
 setGroupNavigation(async(id,current=()=>true)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups(id);if(current())await openNpcs(false);});

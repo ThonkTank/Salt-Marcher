@@ -19,18 +19,22 @@ export interface Combatant {role?:import('./npc-contracts').NpcRole;
   xp?: number; countForMultiplier?: boolean; sourceId?: string; sourceOrdinal?: number; worldActorId?:string;worldActorRevision?:number;sourceEntryId?:string; partitionKind?:'mob'|'individual';
 }
 export interface CombatState {
+  worldLosses?:{actorId:string;name:string;recordRevision:number}[];
   id: string; sceneId: string; revision: number; title: string;
   phase: 'preparing' | 'running' | 'finished' | 'retired'; round: number; turnId: string | null;
   sharedNotice?:string;
   participants: Combatant[]; notes: string; outcome: string; rewards?: CombatReward; sources?: Creature[]; sourceSerials?: Record<string,number>; assessment?: EncounterAssessment; partyBasis?: EncounterParty[]; generatorPreset?: {id:string;revision:number;hash:string;mobThreshold:number}; planOrigin?: { id: string; revision: number; name: string };
 }
-export interface CombatResolution {combatId:string;sceneId:string;combatRevision:number;sceneRevision:number;outcome:string;rewards:CombatReward|null;treasures:{id:string;revision:number;title:string;source:'combat'|'scene'|'location';quantity:number;available:number}[];next:string|null}
+export interface CombatLossBasis {participantId:string;actorId:string;noteRevision:number;recordRevision:number;actorRevision:number}
+export interface CombatLossCandidate {participantId:string;actorId:string;name:string;combatHp:number;status:'available'|'confirmed'|'defeated'|'unavailable';basis:CombatLossBasis|null}
+export interface CombatResolution {combatId:string;sceneId:string;combatRevision:number;sceneRevision:number;outcome:string;rewards:CombatReward|null;npcLosses?:CombatLossCandidate[];treasures:{id:string;revision:number;title:string;source:'combat'|'scene'|'location';quantity:number;available:number}[];next:string|null}
 export interface CombatView {
   combat: CombatState | null; canUndo: boolean; assessment?: EncounterAssessment;
   partyCandidates?: {characterId:string;name:string;membershipRevision:number;progressRevision:number;health:CharacterHealth|null}[];
   recent: { id: string; title: string; phase: CombatState['phase']; sequence?: number }[];
 }
 export type CombatAction =
+  | {kind:'confirm-npc-losses';losses:CombatLossBasis[]}
   | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
   | {kind:'add-prepared-group';preparedGroupId:string;expectedPreparedRevision:number;expectedRosterBasis:string;worldActorIds:string[];initiative:number}
   | {kind:'add-world-actor';actorId:string;expectedActorRevision:number;expectedRecordRevision:number}
@@ -71,6 +75,7 @@ export function checkedCombat(state: CombatState): CombatState {
   if (!state || !state.id || !state.sceneId || !['preparing', 'running', 'finished', 'retired'].includes(state.phase) || !Number.isSafeInteger(state.revision) || state.revision < 1 || !Number.isSafeInteger(state.round) || state.round < 0) throw new Error('Ungültiger Kampfstand.');
   if (typeof state.title !== 'string' || state.title.length > 1000 || typeof state.notes !== 'string' || state.notes.length > 2000000 || typeof state.outcome !== 'string' || state.outcome.length > 10000 || !Array.isArray(state.participants) || state.participants.length > 1000) throw new Error('Ungültige Kampfinhalte.');
   if(state.phase==='retired'&&(!!state.outcome||state.rewards!==undefined))throw new Error('Archivierter Kampf darf kein abgeleitetes Ergebnis besitzen.');
+  if(state.worldLosses!==undefined&&(!Array.isArray(state.worldLosses)||state.worldLosses.length>1000||state.worldLosses.length!==new Set(state.worldLosses.map(l=>l?.actorId)).size||state.worldLosses.some(l=>!l||typeof l.actorId!=='string'||!l.actorId||typeof l.name!=='string'||!l.name.trim()||!Number.isSafeInteger(l.recordRevision)||l.recordRevision<1||!state.participants.some(p=>p.worldActorId===l.actorId))))throw new Error('Bestätigte NPC-Verluste sind ungültig.');
   const ids = new Set<string>(), characterIds=new Set<string>(),initiatives = new Map<string, number>(), groupNames = new Map<string,string>();
   for (const p of state.participants) {
     checkedCombatant(p);if(ids.has(p.id))throw new Error('Doppelter Initiativeeintrag.');ids.add(p.id);
