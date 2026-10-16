@@ -154,6 +154,25 @@ Bestand und unveränderte Autorenprosa. Frisches Storelesen ist vom vollständig
 Appneustart getrennt. Unbekannte Schreibausgänge bleiben der folgende offene
 Recoveryanschluss; der geschützte Dialog beweist ihre Klärung nicht.
 
+Der Fraktionseditor öffnet über „Neue Haupttabelle anlegen“ denselben
+Tabellenmanager oberhalb seines weiterhin montierten Entwurfs. Neuanlage beginnt
+im Campaignscope und erlaubt ausdrücklich den Installationsscope. Cancel/Discard
+kehrt ohne Änderung zur Fraktion zurück; der Fokus landet auf dem Auslöser.
+Bestätigter Save liefert genau den Record aus der Generationantwort zurück,
+auch wenn der anschließende Quellenrefresh ausfällt. Nur die Haupttabellenwahl
+und ihre davon abhängigen Bestände ändern sich: gemeinsame Kreaturen behalten
+Limits samt rohem Eingabetext, entfernte Kreaturen verlieren die Limits,
+neue Einträge sind unbegrenzt. Haltung und weitere offene Felder bleiben erhalten.
+Eine Rückgabe nach Contextreset besitzt keine Auswahlberechtigung.
+
+Die neue Tabelle ist bereits ein eigener bestätigter Datensatz. Erst „Quellen
+speichern“ bindet sie mit der ursprünglichen Fraktionsrevision; Verwerfen der
+Fraktion löscht die separat angelegte Tabelle nicht. Kein impliziter Fraktionswrite,
+keine kopierten Tabellen oder neue Persistenzgrenze. DOM-/Storefälle und ein
+nativer verschachtelter Ablauf prüfen Discard, nur oberstes Modal interaktiv,
+Fokusrückkehr, Rawfields, Installationsscope und kontrollierten Nachreadfehler.
+Vollständige200%- und unbekannte-Write-Abnahme bleiben offen.
+
 Die nächsten Anschlüsse bleiben ausführbar:
 
 1. **Unbekannten Ausgang wieder aufnehmen.** Der bestehende persistierte
@@ -163,11 +182,14 @@ Die nächsten Anschlüsse bleiben ausführbar:
    Read bleiben getrennte Zustände. Momentan blockiert auch ein langsamer
    Nachread den laufenden UIauftrag. Verlorene Antwort, Close/Escape während
    Save, Restart und spätere Registryänderung gemeinsam qualifizieren.
-2. **Factionanschluss liefern.** Aus `world-source-ui` denselben Tabellenmanager
-   über dem unveränderten Factiondraft öffnen, neue Tabelle zurückgeben und dort
-   auswählen. Neue Scopewahl bleibt sichtbar. Cancel/Discard benötigen dieselbe
-   Closeanfrage; nur oberstes Modal ist interaktiv. Native Fokus-/Esc-/200%-Probe
-   schließt diese Anforderung ab, keine zweite Tabellenmaske.
+2. **Verschachtelte Anlage vollständig qualifizieren.** Der Factionanschluss
+   verwendet jetzt den gemeinsamen Manager und bestätigten Rückgaberecord.
+   Restprüfung:200%, vollständige Tastaturwege, Appneustart nach getrenntem
+   Table-/Factionwrite sowie unbekannter Ausgang eines der beiden Saves.
+   Fraktionsentwurf und neu bestätigte Tabelle getrennt wiederfinden; abgewiesene
+   Fraktionsrevision darf die angelegte Tabelle nicht löschen oder ihren Scope
+   ändern. Weitere inline Konsumenten verwenden denselben Anschluss, keinen
+   zweiten Tabelleneditor.
 3. **Delete von Papierkorb unterscheiden.** `table-trash` erhält heute reversible
    Verknüpfungen. Das ist kein Beleg für endgültiges Delete der Originalquelle.
    Den finalen Löschweg mit `world_source`-Ortslinks, Factionhaupttabelle und
