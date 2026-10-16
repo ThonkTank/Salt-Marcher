@@ -282,7 +282,7 @@ die damaligen internen Schnittstellen.
 ## Umstellung auf das vorläufige Atlaszielsystem
 
 Beauftragte Ausführung vom 16.10.2026. Ausgang des neuen SaltMarcher-Zweigs ist
-`c25f958727fd38df32d98d78674c36d83e124130`; vor jeder Lieferung den tatsächlichen
+`53f12716307a0584bae086dae4f2471bcd8754da`; vor jeder Lieferung den tatsächlichen
 Integrationsstand prüfen. Repositoryübernahme und Nutzdatenmigration sind
 verschiedene Vorgänge. Die alte SaltMarcher-DB niemals als Workbench-DB öffnen.
 `CampaignWorkbench`, `.kwcampaign`, `.kwmusic` und gebundene Originalformate
