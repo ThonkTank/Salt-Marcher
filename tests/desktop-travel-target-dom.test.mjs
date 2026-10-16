@@ -247,7 +247,7 @@ test('a delayed map save cannot adopt an older map selection or cross campaign a
 
 test('Reise opens the one Hex console without changing the scene center; explicit map opening and map actions choose it',async()=>{
  const x=await liveContextFixture();try{
-  const before=x.store.db.serialize(),map=x.get('world-map');
+  const before=x.store.db.serialize(),map=x.get('world-map');assert.match(x.get('travel-placement-status').textContent,/Party-Token ziehen/);
   assert.equal(x.get('live-center-tools').contains(x.get('live-travel-toggle')),true,'travel switch must remain beside the scene tabs');
   assert.equal(x.get('live-travel-toggle').closest('[role=tablist]'),null,'the independent travel switch is not a center tab');
   assert.equal(x.get('live-world-panel').firstElementChild,x.get('live-travel-host'),'travel commands precede optional weather');
@@ -260,9 +260,19 @@ test('Reise opens the one Hex console without changing the scene center; explici
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 test('live keyboard waypoints evaluate inline and start with the preselected presentation speed',async()=>{
- const x=await travelFixture(),get=id=>x.document.getElementById(id);try{get('world-journey-console').scrollIntoView=()=>{};const rail=x.document.querySelector('.live-desk-reference');rail.scrollTop=12;rail.getBoundingClientRect=()=>({top:100});get('travel-evaluation').getBoundingClientRect=()=>({top:300});
+ const x=await travelFixture(),get=id=>x.document.getElementById(id);try{let outerScrolls=0;get('world-journey-console').scrollIntoView=()=>{outerScrolls++;};const rail=x.document.querySelector('.live-desk-reference');rail.scrollTop=12;rail.getBoundingClientRect=()=>({top:100});get('travel-evaluation').getBoundingClientRect=()=>({top:300});get('world-journey-console').getBoundingClientRect=()=>({top:150});
   x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);get('live-travel-toggle').click();await until(()=>!get('live-travel-host').hidden&&get('travel-place-cursor').disabled===false);assert.equal(get('journey-play').disabled,true);get('travel-mode-route').click();const key=k=>{const e=new x.window.Event('keydown',{cancelable:true});Object.assign(e,{key:k});get('world-map').dispatchEvent(e);};key('ArrowRight');key('Enter');await until(()=>get('travel-stops').children.length===1);key('Enter');await until(()=>get('travel-stops').children.length===2);assert.equal(get('live-center-map').hidden,false);assert.match(get('travel-selected-hex').textContent,/1,0.*Kosten/);
-  x.preview();await until(()=>get('travel-evaluation').querySelectorAll('dd').length===3);assert.equal(get('travel-preview-dialog').open,false);assert.equal(rail.scrollTop,212,'inline preview reveals its result only inside the reference rail');assert.equal(get('travel-evaluation').nextElementSibling.id,'world-journey-console','evaluated route leads directly to its start control');assert.equal(get('journey-play').disabled,false);get('journey-faster').click();assert.equal(get('journey-speed').textContent,'2×');get('journey-play').click();await until(()=>get('journey-playback-status').textContent.startsWith('Wiedergabe 2×'));await x.ui.stopWorldPlayback();const journey=x.store.sceneWorld(x.w.token,x.scene.id).journey;assert.equal(journey.presentationSpeed,2);assert.equal(journey.route.length,2);assert.equal(get('travel-stops').children.length,0);get('journey-end').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.status==='ended');assert.equal(get('world-map').querySelector('[data-travel-route]'),null);assert.equal(get('journey-end').disabled,true);
+  x.preview();await until(()=>get('travel-evaluation').querySelectorAll('dd').length===3);assert.equal(get('travel-preview-dialog').open,false);assert.equal(rail.scrollTop,212,'inline preview reveals its result only inside the reference rail');assert.equal(get('travel-evaluation').nextElementSibling.id,'world-journey-console','evaluated route leads directly to its start control');assert.equal(get('journey-play').disabled,false);get('journey-faster').click();assert.equal(get('journey-speed').textContent,'2×');get('journey-play').click();await until(()=>get('journey-playback-status').textContent.startsWith('Wiedergabe 2×'));await x.ui.stopWorldPlayback();const journey=x.store.sceneWorld(x.w.token,x.scene.id).journey;assert.equal(journey.presentationSpeed,2);assert.equal(outerScrolls,0,'starting inline travel must not scroll the whole GM desk');assert.equal(rail.scrollTop,262,'transport is revealed inside its own reference rail');assert.equal(journey.route.length,2);assert.equal(get('travel-stops').children.length,0);get('journey-end').click();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).journey.status==='ended');assert.equal(get('world-map').querySelector('[data-travel-route]'),null);assert.equal(get('journey-end').disabled,true);
+ }finally{await x.ui.stopWorldPlayback();x.cleanup();}
+});
+
+test('cold live travel opening replaces the loading placement hint when its group arrives',async()=>{
+ const x=await travelFixture(),get=id=>x.document.getElementById(id);try{
+  x.ui.activateWorld(x.w);x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);
+  get('live-travel-toggle').click();await until(()=>!get('travel-place-cursor').disabled&&get('live-travel-host').hidden===false);
+  assert.match(get('travel-placement-status').textContent,/Party-Token ziehen/);
+  get('travel-place-cursor').click();await until(()=>get('travel-placement-status').textContent.includes('Standort unverändert'));
+  get('world-zoom-in').click();assert.match(get('travel-placement-status').textContent,/Standort unverändert/,'ordinary redraws preserve the last placement receipt');
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 
