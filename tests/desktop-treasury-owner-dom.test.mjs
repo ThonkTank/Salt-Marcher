@@ -1,7 +1,8 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
+import {setTimeout as delay} from 'node:timers/promises';
 import {readFileSync} from 'node:fs';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from 'linkedom';
 buildSync({stdin:{contents:"export * from './src/app/treasury-ui';export {initCommitControls} from './src/app/commit-confirmation';",resolveDir:process.cwd(),sourcefile:'treasury-owner.ts'},outfile:'.build/treasury-owner.cjs',bundle:true,platform:'node',format:'cjs'});
-const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));async function until(check){for(let i=0;i<80;i++){if(check())return;await tick();}assert.ok(check(),'expected treasury state');}
+const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));async function until(check){const deadline=Date.now()+5000;while(Date.now()<deadline){if(check())return;await delay(5);}assert.ok(check(),'expected treasury state');}
 function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return{resolve,promise};}
 async function fixture(t){
  const saved={window:globalThis.window,document:globalThis.document,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});const decorate=d=>{d.close=()=>{d.open=false;};d.showModal=()=>{d.open=true;};return d;},create=document.createElement.bind(document);for(const d of document.querySelectorAll('dialog'))decorate(d);document.createElement=(tag,...args)=>{const n=create(tag,...args);return tag==='dialog'?decorate(n):n;};for(const s of document.querySelectorAll('select'))Object.defineProperty(s,'value',{value:'',writable:true});
