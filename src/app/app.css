@@ -713,3 +713,12 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 .combat-npc-losses { border-block: 1px solid var(--border); margin-block: 1rem; padding-block: .75rem; }
 .combat-npc-loss-list { max-height: 20rem; overflow: auto; }
 .combat-npc-loss-list article { padding: .5rem; border-bottom: 1px solid var(--border); }
+
+/* The Live desk presents the same Atlas node and camera as campaign editing. */
+#live-center-map #campaign-atlas[data-live-surface=true]{height:100%;padding:0;overflow:hidden}
+#campaign-atlas[data-live-surface=true]>.atlas-command-bar,#campaign-atlas[data-live-surface=true]>#atlas-search-results,#campaign-atlas[data-live-surface=true] #atlas-panel{display:none!important}
+#campaign-atlas[data-live-surface=true] .atlas-layout{display:block;height:100%}
+#campaign-atlas[data-live-surface=true] .atlas-stage{position:relative;height:100%;min-height:0}
+#campaign-atlas[data-live-surface=true] #campaign-map{height:100%;width:100%;min-height:0;border:0;border-radius:0}
+#live-travel-host[data-shared-atlas=true] .legacy-hex-camera,#live-travel-host[data-shared-atlas=true] .world-map-selection{display:none!important}
+#live-atlas-local-travel{margin:.75rem 0}#live-atlas-local-travel .toolbar{flex-wrap:wrap}

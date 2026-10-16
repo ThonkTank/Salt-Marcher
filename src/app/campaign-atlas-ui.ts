@@ -1,4 +1,5 @@
 import {atlasGeometryOnly} from './atlas-render-view';
+import {LiveAtlasPortal} from './live-atlas-portal';
 import {landscapeExportTiles} from "./atlas-landscape-export";
 import {atlasRegionSVG} from "./atlas-region-export";
 import {LandscapeWorkbench} from "./atlas-landscape-ui";
@@ -6,12 +7,12 @@ import {earthView} from "./atlas-landscape";
 import { appendRoomNumber } from "./room-number-label";
 import { atlasPNG, publicAtlasSVG } from "./campaign-atlas-export";
 import { journeyPlayback } from "./journey-playback";
-import { atlasPartyPoint } from "./atlas-runtime-model";
+import { atlasPartyPoint,atlasWorldRoute } from "./atlas-runtime-model";
 import type {
   AtlasLocalPreview,
   AtlasTravelAction,
 } from "./atlas-travel-contracts";
-import { openWorld, atlasWorldTarget, atlasWorldTravelState } from "./world-ui";
+import { openWorld, atlasWorldTarget, atlasWorldTravelState,refreshWorldAfterAtlasTravel } from "./world-ui";
 import { PassiveMapCanvas, type CanvasBox } from "./passive-map-canvas";
 import {
   atlasFrame,
@@ -83,6 +84,8 @@ export class CampaignAtlasWorkbench {
   private request = 0;
   private searchRequest=0;
   private opening:{owner:WorkspaceGeometry;task:Promise<void>}|null=null;
+  private livePortal:LiveAtlasPortal|null=null;
+  private liveVisible=false;
   private busy = false;
   private exporting = false;
   private exportCancelled = false;
@@ -424,7 +427,9 @@ export class CampaignAtlasWorkbench {
     });
     document.addEventListener("atlas-draft", () => this.scheduleRender());
     document.addEventListener("atlas-runtime", () => {
-      if (this.root.hidden || this.refreshTimer) return;
+      if (this.root.hidden) return;
+      if(this.liveDocked){this.request++;this.previewRequest++;this.localPreview=null;this.travelReadState='loading';this.playback.stop();this.renderTravel();}
+      if(this.refreshTimer)return;
       this.refreshTimer = setTimeout(() => {
         this.refreshTimer = null;
         void this.refresh();
@@ -447,6 +452,16 @@ export class CampaignAtlasWorkbench {
   }
   get insertionPoint() {
     return this.lastPoint;
+  }
+  get liveDocked(){return !!this.livePortal?.mounted;}
+  liveSurface(){
+    return this.livePortal??=new LiveAtlasPortal(this.root,this.svg,visible=>{
+      if(this.liveVisible===visible&&this.root.hidden===!visible)return;
+      this.liveVisible=visible;
+      if(!visible){this.hide();return;}
+      this.family='travel';this.landscape.setActive(false);
+      void this.open().catch(error=>this.error(error));
+    },factor=>this.camera.zoom(factor));
   }
   hide() {
     this.previewRequest++;
@@ -1470,6 +1485,7 @@ export class CampaignAtlasWorkbench {
       this.localPreview = null;
       get("atlas-save-status").textContent = "Reisestand gespeichert";
       this.render();
+      try{await refreshWorldAfterAtlasTravel(w.token,sceneId);}catch(error){if(this.owner===w)this.opts.status('Reisestand gespeichert. Weltkontext erneut laden: '+(error as Error).message,true);}
       return true;
     } catch (e) {
       if (this.owner === w && !acknowledged) {
@@ -1893,10 +1909,7 @@ export class CampaignAtlasWorkbench {
         );
       }
       const travel = atlasWorldTravelState(),
-        route =
-          travel.preview?.route ??
-          data.scene?.journey?.route.slice(data.scene.journey.nextIndex) ??
-          [];
+        route = atlasWorldRoute(data,travel.preview);
       if (route.length)
         root.append(
           shape("polyline", {
@@ -1942,7 +1955,7 @@ export class CampaignAtlasWorkbench {
         marker.dataset.id = e.id;
         root.append(marker);
       }
-      const localRoute = this.localPreview?.route ?? data.localJourney?.route;
+      const localRoute = this.localPreview?.route ?? (data.localJourney&&['active','paused'].includes(data.localJourney.status)?data.localJourney.route:[]);
       if (localRoute?.length)
         root.append(
           shape("polyline", {

@@ -1,5 +1,12 @@
 import type { Point } from "./contracts";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
+import type {TravelPreview,Hex} from './world-contracts';
+export function atlasWorldRoute(a:AtlasRenderView,preview:TravelPreview|null):Hex[]{
+ const scene=a.scene;
+ if(preview&&preview.request.sceneId===scene?.scene.id&&preview.request.mapId===a.terrain.id)return preview.route;
+ const j=scene?.journey;
+ return j&&j.sceneId===scene?.scene.id&&j.mapId===a.terrain.id&&['active','paused','interrupted'].includes(j.status)?j.route.slice(Math.max(0,j.nextIndex-1)):[];
+}
 import {
   atlasFrame,
   localToAtlas,

@@ -1,6 +1,7 @@
 import {workspaceGeometryOnly as geometryOnly} from './atlas-render-view';
 import {RoomDirectoryView} from './room-directory-ui';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
+import {setLiveAtlasSurface} from './live-hex-surface';
 import {CampaignAtlasWorkbench} from './campaign-atlas-ui';
 import {atlasRoomWrite,atlasHistoryWrite} from './campaign-atlas-author';
 import {initCampaignScreen,openCampaignScreen,hideCampaignScreen} from './campaign-screen-ui';
@@ -158,11 +159,11 @@ initLive(status, async id => {
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
 campaignAtlas=new CampaignAtlasWorkbench({selectRoom,roomDraft:()=>draft,flush:leaveWorkspace,updated:async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();},status});
+setLiveAtlasSurface(campaignAtlas.liveSurface());
 for(const id of ['world','city','dungeon'])el(id+'-tab').hidden=true;
 el('atlas-tab').textContent='Atlas';
 function showTab(selected: WorkspaceTab, restored?: number) {
   const atlasSurface=['atlas','world','city','dungeon'].includes(selected);if(atlasSurface)selected='atlas';
-  if(campaignAtlas){if(atlasSurface)void campaignAtlas.open();else campaignAtlas.hide();}
 
   if(selected!=='chronicle')suspendChronicle();
   if (workspace) workspacePositions.capture(workspace.campaign.id, window.scrollY);
@@ -170,6 +171,7 @@ function showTab(selected: WorkspaceTab, restored?: number) {
   viewRequest++; activeTab = selected;
   if (workspace) rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: selected, scrollY: 0});
   setWorldSurface(selected);setSessionPacketSurface(selected);
+  if(campaignAtlas){if(atlasSurface)void campaignAtlas.open();else if(selected!=='live'||!campaignAtlas.liveDocked)campaignAtlas.hide();}
   for (const id of workspaceTabs) { el(id).hidden = atlasSurface?true:id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
   syncWorkspaceNavigation();
   window.scrollTo(0, 0);
