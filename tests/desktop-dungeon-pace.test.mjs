@@ -34,3 +34,43 @@ for(const field of ['group','member','exclude'])test(`acknowledged ${field} sett
  const desired=ui.dungeonPaceDraft();assert.equal(desired.settings.groupMetersPerMinute,null);assert.deepEqual(desired.settings.members,[]);const latest=x.run({kind:'pace-settings',sceneId:x.scene.id,...desired});ui.acceptDungeonPace(desired.settings,latest.travelPace);ui.renderDungeonPace(latest.travelPace,()=>{});assert.equal(ui.dungeonPaceDirty(),false);assert.equal(x.view().travelPace.settings.revision,2);assert.equal(x.view().travelPace.settings.groupMetersPerMinute,null);assert.deepEqual(x.view().travelPace.settings.members,[]);assert.deepEqual(x.store.drawing(x.w.token),geometry);assert.deepEqual(x.store.live(x.w.token),live);
  const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.cam.id);assert.deepEqual(fresh.dungeon(w.token).travelPace,latest.travelPace);}finally{fresh.close();}
 });
+
+buildSync({entryPoints:['src/app/dungeon-ui.ts'],outfile:'.build/dungeon-pace-panel.cjs',bundle:true,platform:'node',format:'cjs'});
+async function panel(t){
+ const x=fixture(t),{parseHTML}=await import('linkedom'),{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
+ const previous={window:globalThis.window,document:globalThis.document,Event:globalThis.Event,ResizeObserver:globalThis.ResizeObserver};
+ Object.assign(globalThis,{window,document,Event:window.Event,ResizeObserver:class{observe(){}}});t.after(()=>Object.assign(globalThis,previous));
+ for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:select.options[0]?.value??''});
+ const statuses=[],sent=[],tick=()=>new Promise(r=>setImmediate(r));
+ const until=async predicate=>{for(let i=0;i<100;i++){if(predicate())return;await tick();}throw Error('Dungeon panel did not settle');};
+ window.campaign={dungeon:async()=>({ok:true,value:x.view()}),previewDungeon:async(token,request)=>({ok:true,value:x.store.previewDungeon(token,request)}),executeDungeon:async command=>{sent.push(command);return{ok:true,value:x.store.executeDungeon(command)};}};
+ const require=createRequire(import.meta.url);delete require.cache[require.resolve('../.build/dungeon-pace-panel.cjs')];const ui=require('../.build/dungeon-pace-panel.cjs');ui.initDungeon(message=>statuses.push(message));ui.activateDungeon(x.w);await ui.openDungeon();
+ const get=id=>document.getElementById(id);return{...x,window,ui,get,statuses,sent,tick,until};
+}
+for(const mismatch of ['destination','scene','movement','factor','duration','pace-source'])test(`Dungeon preview rejects a response for different ${mismatch} before any journey is confirmed`,async t=>{
+ const x=await panel(t),original=x.window.campaign.previewDungeon,before=x.store.db.serialize();
+ x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);
+ x.window.campaign.previewDungeon=async(token,request)=>{
+  const changed=structuredClone(request);
+  if(mismatch==='destination')changed.destination.x+=1.524;
+  if(mismatch==='scene'){const response=await original(token,request);response.value.request.sceneId='other-scene';return response;}
+  if(mismatch==='movement'){changed.useGroupPace=false;changed.movement='crawl';}
+  if(mismatch==='factor')changed.factor=2;
+  if(mismatch==='duration')changed.finalSeconds=100;
+  if(mismatch==='pace-source')changed.useGroupPace=false;
+  return original(token,changed);
+ };
+ x.get('dungeon-plan').click();await x.until(()=>x.get('dungeon-confirm').disabled===false||x.statuses.length>0);
+ assert.equal(x.get('dungeon-confirm').disabled,true);assert.equal(x.ui.atlasDungeonState().preview,null);assert.match(x.statuses.at(-1),/angefragten Dungeonreise/);assert.equal(x.sent.length,0);assert.ok(x.store.db.serialize().equals(before));
+ x.window.campaign.previewDungeon=original;x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);x.get('dungeon-confirm').click();await x.until(()=>x.sent.length===1);await x.ui.flushDungeon();
+ assert.equal(x.sent[0].action.kind,'journey');assert.deepEqual(x.view().journey.request.destination,x.ui.atlasDungeonState().target);assert.equal(x.view().instantMs,'0');
+});
+test('Dungeon preview accepts provider group speed and reordered keys, but drops a delayed response after a target edit',async t=>{
+ const x=await panel(t),original=x.window.campaign.previewDungeon,before=x.store.db.serialize();let release;
+ x.get('dungeon-speed').value='999';x.window.campaign.previewDungeon=async(token,request)=>{const result=await original(token,request);result.value.request=Object.fromEntries(Object.entries(result.value.request).reverse());return result;};
+ x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);assert.equal(x.ui.atlasDungeonState().preview.request.speedMetersPerMinute,60.96);assert.equal(x.sent.length,0);assert.ok(x.store.db.serialize().equals(before));
+ x.get('dungeon-refresh').click();await x.ui.flushDungeon();
+ x.window.campaign.previewDungeon=async(token,request)=>{const result=await original(token,request);return new Promise(r=>release=()=>r(result));};
+ x.get('dungeon-plan').click();await x.until(()=>!!release);x.get('dungeon-height-step').value='1';x.get('dungeon-height-step').oninput();release();await x.ui.flushDungeon();
+ assert.equal(x.get('dungeon-confirm').disabled,true);assert.equal(x.ui.atlasDungeonState().preview,null);assert.equal(x.sent.length,0);assert.ok(x.store.db.serialize().equals(before));
+});
