@@ -38,6 +38,7 @@ function fixture(t){
   const create=dom.document.createElement.bind(dom.document);
   dom.document.createElement=(tag,...args)=>{const node=create(tag,...args);if(tag==='input')Object.defineProperty(node,'checked',{get(){return this.hasAttribute('checked');},set(v){this.toggleAttribute('checked',v);}});return node;};
   const get=id=>dom.document.getElementById('party-'+id),commits=[];
+  const preferences=new Map();dom.window.localStorage={getItem:key=>preferences.get(key)??null,setItem:(key,value)=>preferences.set(key,value)};
   dom.window.innerWidth=1000;dom.window.innerHeight=800;
   get('shortcut').getBoundingClientRect=()=>({left:700,right:800,top:20,bottom:60,width:100,height:40});
   let open=false;
@@ -118,4 +119,15 @@ test('a failed refresh discards the confirmation and cannot reuse stale recipien
   x.dom.window.campaign.live=async()=>({ok:false,error:'Read nicht verfügbar'});x.get('refresh').onclick();await tick();x.click('short');await tick();
   assert.equal(x.commits.length,0);assert.equal(x.digest(),bytes);assert.equal(x.get('rest-cancel').hidden,true);assert.match(x.get('status').textContent,/Read nicht verfügbar/);
   x.dom.window.campaign.live=live;x.get('refresh').onclick();await tick();x.click('short');await tick();assert.equal(x.commits.length,0);x.click('short');await tick();assert.equal(x.commits.length,1);
+});
+
+test('compact Party details and installation quick fields only change presentation, with current rest average',async t=>{
+ const x=fixture(t);await x.openParty();const bytes=x.digest(),card=()=>x.get('active').querySelector('.party-card');
+ assert.equal(card().querySelector('.party-card-details').hidden,true);
+ assert.match(x.get('rest-average').textContent,/Rast Ø/);assert.match(x.get('rest-average').firstChild.title,/1 von 1/);
+ card().querySelector('.party-member-toggle').onclick();assert.equal(card().querySelector('.party-card-details').hidden,false);assert.equal(card().querySelector('.party-quick-facts').hidden,true);
+ const languages=x.get('quick-fields').querySelector('input[value=languages]');languages.checked=true;languages.onchange();
+ assert.equal(card().querySelector('.party-card-details').hidden,false);assert.match(x.dom.window.localStorage.getItem('party-quick-fields-v1'),/languages/);
+ card().querySelector('.party-member-toggle').onclick();assert.match(card().querySelector('.party-quick-facts').textContent,/Sprachen offen/);
+ assert.equal(x.digest(),bytes);assert.equal(x.commits.length,0);
 });

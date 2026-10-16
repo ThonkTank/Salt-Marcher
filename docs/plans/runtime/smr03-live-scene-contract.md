@@ -668,15 +668,36 @@ Der integrierte SQLite-Adapter entfernt bei bestätigtem Move oder Deactivate ve
 ### Konsolidierte Party: ausführbare Anschlussfolge
 
 Die gebundene `requirements-party-window.md` bleibt vollständig maßgeblich.
-Der aktuelle Topbar-Popup ist eine Teilimplementation; vorhandene XP-/Rast- und
-Scenecommands qualifizieren weder die kompakte Oberfläche noch Party-Undo/Redo.
+Der Topbar-Popup ist eine Teilimplementation. Ab0.148 startet er mit360×220px,
+lässt sich bis240×160px verkleinern und scrollt intern. Seine Größe und die
+ausgewählten zehn Schnellwerte bleiben installationsweit über Neustart erhalten.
+Figuren beginnen eingeklappt; Name, XP- und Rastfenster stehen in einer Zeile,
+Schnellwerte darunter. Aufklappen ersetzt sie durch alle optionalen Profilwerte
+und Aktionen. Namen bleiben vollständig lesbar. XP zeigt aktuellen Level und
+relativen Fortschritt; Tastaturfokus/Tooltip nennen Gesamtstand und nächste
+Schwelle beziehungsweise Maximum oder fehlende XP.
+
+Die Kopfzeile bleibt beim Scrollen sichtbar und mittelt ausschließlich
+verlässliche `restFrame`-Füllungen ungewichtet. Fehlende Figurenstände markieren
+eine Teilbasis; gemeinsame Marken erscheinen nur bei gleicher Abschnittszahl.
+Unbekannte Stände behaupten keine Füllung. Der reine Presenter verwendet die
+bestehende Fortschrittsrechnung und schreibt keine zweite Fachwahrheit.
+
+Gezielte Modell-/Store-/DOMfälle prüfen diese Anzeigen und den bestehenden
+zweistufigen Rastweg. Ein nativer Linuxlauf prüft360/240px, lange Namen,
+Tastaturaufklappen, Schnellwertauswahl ohne Campaignwrite, Rast ohne Zeitänderung,
+XP-Schwellenwechsel und Fresh samt Einstellungen und zwei normalen Exits.
+Das ist keine vollständige Tastatur-/200%- oder Betriebssystemabnahme.
+Persönliche Loot-/Katalogübergabe aus diesem Popup, gemeinsam gebündelte
+Roster-/Movebedienung, Party-Undo/Redo und die restliche Fenstermigration bleiben
+offen; vorhandene XP-/Rast- und Scenecommands qualifizieren diese Punkte nicht.
 Die neue [Rastvormerkung und Scene-Bindung](adventuring-day.md#rastentscheidung-vor-dem-schreiben)
 schließt einen begrenzten Entscheidungsweg. Die weiteren Anschlüsse folgen aus
 der aktuellen Produktstruktur, nicht aus zu kopierenden SaltMarcher-Schemanummern:
 
 | Nutzerwirkung / nächster Schritt | Bereiche und Datenregel | Abnahme und Abhängigkeit |
 |---|---|---|
-| Party auf kleinem Raum lesen | `party-topbar-ui.ts`, `index.html`, bestehende Styles; eingeklappte Zeilen, auswählbare zehn Quickfields, gemeinsame `restFrame`-Projektion und ungewichteter Teilbasis-Mittelwert; keine zweite Fortschrittsrechnung | 360/240 px, 200 %, lange Namen, Tastatur/Fokus; unbekannte und gemischte Rastabschnitte. Bestehende Geometrie-/Shellpräferenzen vor Änderung inventarisieren. |
+| Party auf kleinem Raum lesen | `party-topbar-ui.ts`, `party-overview.ts`, `index.html`, bestehende Styles: kompakter Teilstand oben. Keine zweite Fortschrittsrechnung. Vorher bestand nur die flüchtige820px-Breite ohne Geometriepräferenz; neue Maße ersetzen keine fremde Shellgeometrie. | Weitere direkte Ledger-/Katalogübergabe,200%, vollständige Tastatur/Fokus- und Fenstermigrationsabnahme; die lokalen360/240px-Belege ersetzen sie nicht. |
 | Mehrere Mitglieder bewusst ändern | Party-Rosteroberfläche an bestehende Membership-/Movecommands; stabile CharacterIds, Auswahl außerhalb des Filters erhalten; andere Scenes nur über gemeinsamen Move | 45 Figuren, gleiche Namen, Filter-ABA, Stale Roster/Focus; eine fehlgeschlagene Teilaktion darf keine vermeintlich vollständige Batchbestätigung liefern. Vor Batchadapter Atomarität festlegen und prüfen. |
 | Gruppe gemeinsam bewegen | Bestehender `LiveAction.move` und Scene-/Maskenreconciliation; bestehendes/neues Ziel mit Ort und Mitgliedern, namenlose neue Scene mit geerbtem Ort/Uhr | Split/Rejoin samt divergenten Uhren, letzte Figur, Combat/Journey, Fehler/Replay; keine eigene Movefachlogik im Party-Popup. |
 | Bestätigte Partyaktionen zurücknehmen | Bestehende `executeLive`-/`executeProgress`-/Lootreceipts und gezielte Vorher-/Nachherfelder inventarisieren; Schema und atomaren Historyanschluss in deren vorhandenen Transaktionen ergänzen | Erst echte XP-, Rast-, Profil-, Membership-, Move- und Lootfälle samt Konflikt/Replyverlust/Fresh schließen; danach 100 Schritte, Redobranch und Importinvalidierung. Keine Ableitung inverser Aktionen allein aus Text-/Anzeigehistory. Der normative Historyvertrag oben bleibt unverändert. |
