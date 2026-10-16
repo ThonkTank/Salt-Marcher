@@ -16,7 +16,7 @@ function fixture(){
  const edit=(c,action)=>store.executeCombat({...command(action),combatId:c.id,expectedRevision:c.revision}).combat;
  const add=(c,id=npc.id)=>{const n=store.npc(w.token,id);return edit(c,{kind:'add-world-actor',actorId:id,expectedActorRevision:n.actorRevision,expectedRecordRevision:n.record.revision});};
  const make=(title)=>{let c=store.executeCombat({...command({kind:'create',sceneId:scene.id,title,includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;return add(c);};
- let finished=edit(make('Gestern'),{kind:'finish',outcome:'Unverändert beendet'}),a=make('Torwache'),b=make('Hinterhalt');a=edit(a,{kind:'edit',participantId:a.participants[0].id,changes:{initiative:17}});a=edit(a,{kind:'start'});
+ let finished=edit(make('Gestern'),{kind:'finish',outcome:'Unverändert beendet'}),a=make('Torwache'),b=make('Hinterhalt');a=edit(a,{kind:'edit',participantId:a.participants[0].id,changes:{initiative:17}});a=edit(a,{kind:'add-creature',creatureId:'goblin',count:1,grouped:false});a=edit(a,{kind:'start'});
  const current=id=>store.combat(w.token,scene.id,id).combat,raw=id=>store.db.prepare('SELECT revision,payload,checksum FROM combat WHERE id=?').get(id);
  const rename=(name='Borin Nachtwache')=>{const old=store.npc(w.token,npc.id);return{commandId:randomUUID(),campaignId:campaign.id,token:w.token,expectedNoteRevision:old.noteRevision,expectedRecordRevision:old.record.revision,expectedActorRevision:old.actorRevision,expectedPositionRevision:old.positionRevision,npc:{...old,name}};};
  return{root,file,store,campaign,w,command,npc,scene,a,b,finished,current,raw,rename,createNpc,add,edit,cleanup(){store.close();rmSync(root,{recursive:true,force:true});}};
