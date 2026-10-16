@@ -557,3 +557,20 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 
 #catalog-inspector{scroll-margin-top:var(--workspace-content-offset)}#catalog-results-return{display:none}
 @media(max-width:1100px){#catalog-results-return{display:inline-block;font-size:12px;min-height:28px;height:28px;padding:.2rem .4rem;margin-bottom:.6rem}}
+
+/* The travel switch stays beside the scene center; optional weather follows the console. */
+#live-center-tools{display:flex;align-items:flex-start;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem}
+#live-center-tools #live-center-tabs{margin:0}#live-center-tools #live-travel-toggle{margin-left:auto}
+#live-travel-weather{margin-top:.5rem}#live-travel-weather>summary{font-weight:600}
+#live-travel-host.live-travel-owner{font-size:.875rem}
+#live-travel-host.live-travel-owner :is(button,input,select){min-height:28px;padding:.25rem .4rem;font-size:inherit}
+#live-travel-host.live-travel-owner p{margin:.45rem 0}
+#live-travel-host.live-travel-owner .world-travel>h3{margin:.5rem 0}
+#live-travel-host.live-travel-owner .world-map-selection label{margin:0}
+#live-travel-host.live-travel-owner .world-map-selection select{max-width:100%}
+#live-travel-host.live-travel-owner #live-travel-context{margin-top:0}
+@media(min-width:901px) and (min-height:740px){
+ .live-desk-reference>#live-world-panel:has(#live-travel-host:not([hidden])){position:sticky;top:calc(var(--workspace-content-offset) + var(--live-focus-height,0px));max-height:calc(100dvh - var(--workspace-content-offset) - var(--live-focus-height,0px) - 4rem);z-index:1}
+}
+
+#journey-feedback:not([hidden]){color:#a51c30;font-weight:600;border-left:3px solid currentColor;padding:.4rem .5rem;background:#fff}
