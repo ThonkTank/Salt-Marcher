@@ -175,7 +175,7 @@ else {
     handle('catalog:info', () => creatureInfo());
     handle('catalog:search', (query: CreatureCatalogQuery) => searchCreatures(query));
     handle('catalog:creature', (id: string) => readCreature(id));
-    handle('campaign:encounter-plans', (token: string, search: string) => store.encounterPlans(token,search));
+    handle('campaign:encounter-plans', (token: string, search: string,limit?:number) => store.encounterPlans(token,search,limit));
     handle('campaign:encounter-plan', (token: string,id: string) => store.encounterPlan(token,id));
     handle('campaign:save-encounter-plan', (command: EncounterPlanCommand) => store.saveEncounterPlan(command));
     handle('campaign:ledger-parties',(token:string)=>store.ledgerParties(token));

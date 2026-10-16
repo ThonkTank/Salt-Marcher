@@ -612,7 +612,7 @@ export class CampaignStore {
   generationRuns(token: string) { return readGenerationRuns(this.db,this.guard(token)); }
   generationRun(token: string, id: string) { return readGenerationRun(this.db,this.guard(token),id); }
   rollLoot(command: LootRollCommand) { return rollLoot(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
-  encounterPlans(token: string, search: string) { return readEncounterPlans(this.db,this.guard(token),search); }
+  encounterPlans(token: string, search: string, limit?:number) { return readEncounterPlans(this.db,this.guard(token),search,limit); }
   encounterPlan(token: string, id: string) { return readEncounterPlan(this.db,this.guard(token),id); }
   saveEncounterPlan(command: EncounterPlanCommand) { return saveEncounterPlan(this.db,command,()=>{this.guard(command.token,command.campaignId);}); }
   progressHistory(token: string, characterId: string, after: string | null) { return readProgressHistory(this.db, this.guard(token), characterId, after); }

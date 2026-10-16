@@ -31,7 +31,7 @@ export interface EncounterAPI {
   creatureInfo(): Promise<Result<CatalogInfo>>;
   creatures(query: CreatureCatalogQuery): Promise<Result<CreaturePage>>;
   creature(id: string): Promise<Result<Creature>>;
-  encounterPlans(token: string, search: string): Promise<Result<{ id: string; revision: number; name: string }[]>>;
+  encounterPlans(token: string, search: string, limit?: number): Promise<Result<{ id: string; revision: number; name: string }[]>>;
   encounterPlan(token: string, id: string): Promise<Result<EncounterPlan>>;
   saveEncounterPlan(command: EncounterPlanCommand): Promise<Result<EncounterPlan>>;
 }
