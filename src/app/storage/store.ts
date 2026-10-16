@@ -1,6 +1,11 @@
 import {keepLiveMomentDraft as keepMomentDraft,readLiveMomentDraft} from './live-moment-drafts';
 import {atlasPartyPoint} from '../atlas-runtime-model';
 import {installLandscape,installLandscapeIndex,landscapeRegion,executeLandscape} from './atlas-landscape';
+import {rememberSourceUnlink,validateNoteSourceHistory} from './note-source-history';
+import {readNoteThread,checkNoteThread} from './note-thread';
+import {captureKeyNote,keyNoteCaptureStatus,readKeyNoteChoices} from './key-note-capture';
+import type {KeyNoteCaptureCommand} from '../key-note-capture-contracts';
+import {readNoteRoomUses} from './note-room-uses';
 import {installAtlasTravel,atlasEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
 import {atlasHexPoint,atlasHexAt,atlasFrame,localToAtlas} from '../campaign-atlas-model';
 import {newLocation} from '../../features/location/location-schema';
@@ -702,6 +707,7 @@ export class CampaignStore {
       const draft = this.decodePreparationDraft(row), target = preparationTarget(draft.change), table = this.preparationDraftTable(target.kind);
       if (!db.prepare(`SELECT 1 FROM ${table} WHERE campaign_id=? AND id=?`).get(row.campaign_id, target.id)) throw new Error('Vorbereitungsentwurf hat ein fehlendes Ziel.');
     }
+    validateNoteSourceHistory(db);
     for (const row of db.prepare('SELECT * FROM world_note').iterate()) this.decodeNote(row, 'Beschädigte Notiz im Backupkandidaten.');
     for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
@@ -763,6 +769,20 @@ export class CampaignStore {
       const workspace = this.workspace();
       return { outcome: receipt ? 'applied' : current.revision === edit.expectedRevision ? 'not-applied' : 'conflict',
         targetChanged: current.revision !== (receipt?.revision ?? edit.expectedRevision) || !workspace.rooms.some(room => room.id === edit.roomId), workspace };
+    })();
+  }
+  captureKeyNote(c:KeyNoteCaptureCommand){return captureKeyNote(this.db,c,()=>{this.guard(c.token,c.campaignId);},(note,expectedRevision)=>this.commitPreparation({commandId:c.commandId+'|note',campaignId:c.campaignId,token:c.token,change:{kind:'note',expectedRevision,note}}));}
+  noteThread(token:string,id:string,offset=0,active=true,history=false){return readNoteThread(this.db,this.guard(token),id,offset,active,history);}
+  checkNoteThread(token:string,selection:import('../note-thread-contracts').NoteThreadSelection){return checkNoteThread(this.db,this.guard(token),selection);}
+  keyNoteChoices(token:string,query:string){const cam=this.guard(token);return this.db.transaction(()=>readKeyNoteChoices(this.db,cam,query))();}
+  keyNoteCaptureStatus(c:KeyNoteCaptureCommand,token=c.token){return keyNoteCaptureStatus(this.db,c,()=>{this.guard(token,c.campaignId);});}
+  noteRoomUses(token:string,id:string,offset=0):import('../preparation-contracts').NoteRoomUsesPage {
+    if(typeof id!=='string'||!id||id.length>1000)throw new Error('Ungültiges Notizziel.');
+    const cam=this.guard(token);
+    return this.db.transaction(()=>{const row=this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);
+      if(!row)throw new Error('Notiz nicht verfügbar.');const note=this.decodeNote(row);
+      if(note.id!==row.id||note.revision!==row.revision)throw new Error('Notiz falsch zugeordnet.');
+      return readNoteRoomUses(this.db,cam,note,offset);
     })();
   }
   preparation(token: string, search = ''): Preparation {
@@ -1179,6 +1199,7 @@ export class CampaignStore {
         }
         revision = (old?.revision ?? 0) + 1;
         const note: Note = { ...change.note, revision }, payload = json(note);
+        rememberSourceUnlink(this.db,campaignId,command.commandId,oldNote,note);
         this.db.prepare('INSERT INTO world_note VALUES(?,?,?,0,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(campaignId, targetId, revision, payload, hash(payload));
         this.db.prepare('DELETE FROM note_search WHERE campaign_id=? AND note_id=?').run(campaignId, targetId);
         this.db.prepare('INSERT INTO note_search(campaign_id,note_id,title,body) VALUES(?,?,?,?)').run(campaignId, targetId, note.title, note.readAloud + '\n' + note.gmNotes);
@@ -1235,7 +1256,7 @@ export class CampaignStore {
         });
       }
       if(change.kind==='plan')cleanSessionVisits(this.db,campaignId,change.plan.id,change.plan.scenes.map(s=>s.id));
-      if(change.kind==='plan'&&change.opening){const o=change.opening;
+      if(change.kind==='plan'&&change.opening){const o=change.opening;if(o.noteThread!==undefined){checkNoteThread(this.db,campaignId,o.noteThread);const ids=[...o.noteThread.entries.map(e=>e.id),...(o.noteThread.includeRoot?[o.noteThread.rootId]:[])];if(ids.some(id=>!o.noteIds.includes(id)))throw new Error('Notizmappenauswahl passt nicht zum neuen Besuch.');}
         this.executeSession({commandId:command.commandId+'|opening',campaignId,token:command.token,action:{kind:'visit',planId:change.plan.id,expectedRevision:0,detail:{visitId:o.visitId,revision:0,readAloud:o.readAloud,noteIds:o.noteIds,groupIds:[],reward:null}}});
       }
       applySceneCreation(this.db,campaignId,command);

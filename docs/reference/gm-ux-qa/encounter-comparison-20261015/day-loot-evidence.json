@@ -170,5 +170,27 @@
     "exportComparison": "Both UI exports byteidentical;3encounters/3rewards;4369gold+3silver+6copper each",
     "exit": "2appstarts normalclose receipts0; helper NORMAL_JOB_EXIT0",
     "checks": "90focused0;first5localgates0;fulltest andrequired716CI running"
+  },
+  "packetProjection": {
+    "basis": "53a41224e27708586f0549034e50ad857cf1783c",
+    "base": "c0f0b249c",
+    "version": "0.160.0",
+    "case": "Same four level-5 PCs, 0.6 adventuring day, three encounters, ux09-day-loot seed, explicit loot compensation",
+    "native": "Old preview correctly rejected after catalog reaction update; regenerated with same parameters, accepted all three, read packet, native Markdown save, normal close, real restart, reopen, second native Markdown save. Two starts and own helper normal exit 0.",
+    "results": {
+      "adjustedXp": [
+        1650,
+        2450,
+        4300
+      ],
+      "lootGoldTotal": "13108.08",
+      "visits": 3,
+      "rewards": 3,
+      "exportBeforeAfterRestartSha256": "b6bbfccdabd1f7e5aa3b5f788fea06277090e9eacd0d065514f649114e19fc73",
+      "exportDifferenceFromOriginal": "Exactly five redundant paragraphs removed: Manticore trait, Pony attack, both Weretiger traits, Ogre attack. All other output byte-identical."
+    },
+    "tests": "43 packet/context/export/retention passed; new actual-store regression fails before fix at Pony count 2, passes after; verifies whitespace-equivalent action/trait/legendary details, distinct author prose, read-only DB and unchanged frozen payload after Fresh. Repo, both type checks, desktop build passed.",
+    "screenshot": "day-packet-pony-once.png",
+    "comparison": "Sheet sign-in still required; runner DOM control still times out. No competitor completion or owner acceptance."
   }
 }

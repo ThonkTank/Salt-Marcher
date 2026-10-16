@@ -1,3 +1,4 @@
+import {installNoteSourceHistory,validateNoteSourceHistory} from './note-source-history';
 import {installCampaignCatalog,noteCampaignCreated} from './campaign-catalog';
 import {readWorld,travelEnvironmentBasis} from './world';
 import {dungeonGeometry,dungeonGeometryBasis} from './dungeon-play';
@@ -15,7 +16,7 @@ import {canonicalJson} from '../generation/canonical-json';
 import {checkedAudioRegistry,musicStateAssetCount} from './music';
 export const quote=(s:string)=>'"'+s.replace(/"/g,'""')+'"';
 export const digest=(v:string|Buffer)=>createHash('sha256').update(v).digest('hex');
-export function installCampaignSchema(db:any){installCampaignCatalog(db);db.exec(`CREATE TABLE IF NOT EXISTS campaign_lifecycle(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id),revision INTEGER NOT NULL,trashed INTEGER NOT NULL DEFAULT 0) STRICT;
+export function installCampaignSchema(db:any){installCampaignCatalog(db);installNoteSourceHistory(db);db.exec(`CREATE TABLE IF NOT EXISTS campaign_lifecycle(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id),revision INTEGER NOT NULL,trashed INTEGER NOT NULL DEFAULT 0) STRICT;
  CREATE TABLE IF NOT EXISTS campaign_origin(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id),source_id TEXT NOT NULL,source_name TEXT NOT NULL,local_map TEXT NOT NULL,original_database BLOB NOT NULL,checksum TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS campaign_management_receipt(command_id TEXT PRIMARY KEY,subject_id TEXT NOT NULL,fingerprint TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS campaign_capability(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,capability TEXT NOT NULL,version INTEGER NOT NULL,references_json TEXT NOT NULL,body BLOB NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
@@ -55,6 +56,7 @@ function walk(v:any,fn:(s:string,key:string)=>string,key='',moods=false):any{if(
 function walkCampaignPayload(table:string,value:any,fn:(s:string,key:string)=>string,rowKind?:string){
  // This event owns a local ledger reference; generic sourceId fields remain opaque.
  if(table==='progress_event'&&rowKind==='loot-transfer-received')value.sourceId=fn(value.sourceId,'entryId');
+ else if(table==='note_source_history')value.sourceId=fn(value.sourceId,'noteId');
  else if(table==='world_relation_pair_history')value.sourceId=fn(value.sourceId,'noteId');
  else if(table==='world_relation_pair_draft')value.command.action.sourceId=fn(value.command.action.sourceId,'noteId');
  return walk(value,fn);
@@ -102,7 +104,7 @@ export function remapSnapshot(db:any,sourceId:string,name:string,shared:Map<stri
  // A distinct campaign starts its own author command timeline. Spatial facts and runtime state are remapped below.
  for(const table of ['atlas_command','atlas_receipt','atlas_travel_receipt'])if(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))db.prepare('DELETE FROM '+table).run();
  if(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='campaign_atlas'").get())db.prepare('UPDATE campaign_atlas SET cursor=0').run();
-validateCampaignOrigins(db);validateCapabilityBytes(db);validateNpcRecovery(db);validateWorldRelationPairs(db);for(const row of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(row);const currentWorldRuns=new Set<string>();
+validateCampaignOrigins(db);validateCapabilityBytes(db);validateNoteSourceHistory(db);validateNpcRecovery(db);validateWorldRelationPairs(db);for(const row of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(row);const currentWorldRuns=new Set<string>();
  // ID remapping changes derived hashes, but must never bless an already stale route or track.
  const currentHexEnvironments=new Set<string>();
  let sourceWorld:ReturnType<typeof readWorld>|undefined;
