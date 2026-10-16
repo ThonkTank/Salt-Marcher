@@ -943,6 +943,45 @@ Suche, Filter, Sortierung, Seite, Auswahl und beide Scrollpositionen. Tests
 prüfen v1→v2, beschädigtes Item bei intaktem Monster, unbekannte Zukunft,
 Item→Monster→Item und frischen Prozess-Restore.
 
+### Aktueller Desktopanschluss und nächste Abnahmen (16.10.2026)
+
+Der vorstehende gemeinsame Provider-/Shellvertrag ist Zielplanung. Der Desktop
+verwendet heute `app/items-ui.ts`, `storage/item-definitions.ts` und
+`storage/srd-items.ts`; er besitzt noch keinen vollständigen CE-02-Itemsbereich.
+Sein kombinierter Gegenstands-/Shoparbeitsbereich bietet lokale Referenzdetails,
+getrennt aufgeklappte eigene Definitionen und ausdrückliche Vergabe-/Shopaktionen.
+Das ist kein Beleg für den read-only SharedCatalogvertrag oder einen vollständigen
+SRD-Korpus. Die vorhandenen Quellen-/Importbelege bleiben separat erforderlich.
+
+Die Referenzliste und eine ausdrücklich übergebene Item-ID starten nach dem
+bestehenden Entwurfsdrain unabhängig von Vorbereitung, Fortschritt und Live-Szene.
+Eine wartende oder fehlgeschlagene Nebenabfrage blockiert keinen gesunden lokalen
+Itemreader. Vergabe-/Shopkontext bleibt bis zu einem erfolgreichen Read gesperrt;
+ein Fehler steht lokal mit ausdrücklichem Retry, alte Empfänger oder Shopdaten
+erhalten keine neue Schreibautorität. Wiederholung erhält Suchtext und aktuelle
+Referenz. Kampagnen-/Requestwechsel sowie widerrufene externe Übergaben entziehen
+späten Antworten Autorität. Die bestehenden Commit-/Detailguards und kanonischen
+Writer bleiben zuständig; keine Schemaänderung oder importierte Mutation.
+
+Nächste Lieferungen verwenden diese vorhandenen Reader statt eines zweiten
+Itembestands: Zuerst Items als read-only Bereich nach Monster anschließen und
+Definitionen, Vergabe sowie Shops über ausdrückliche Übergaben erreichen.
+Danach `ItemQuery`/Reader/Controls gemeinsam um Unterkategorie und Kostenbereich
+sowie Kategorie-/Raritätssortierung ergänzen; unbekannte Werte bleiben unbekannt,
+und vorhandene IDs, Ledger-/Shopreferenzen und historische Revisionen erhalten.
+Korpus-/Schemafehler gegenüber fehlendem Import unterscheiden und ausschließlich
+Items sperren. Migration betrifft bei späterem Workspaceanschluss den oben
+beschriebenen Suchzustand; für diesen Entkopplungsschritt gibt es keine Migration.
+Abnahmen: offline Quelle+Detail, alle Filter/Sort/Paging mit realem Korpus,
+Item→Monster→Item samt Auswahl, Nebenquelle langsam/fehlerhaft plus Retry,
+unveränderte Encounter-/Ledger-/Shoptruth sowie native Tastatur/Fokus und200%.
+
+`desktop-item-selection.test.mjs` prüft mit echtem Store und kontrollierten DOMreads
+alle drei wartenden Nebenquellen, Result-/Transportfehler, Retry, alte Aktivierung
+und widerrufene Detailübergabe. Shopwechsel-/Rewardtests sichern die angrenzenden
+Aktionen. Diese lokalen Belege ersetzen weder die vollständige Korpus-/Quellen-
+noch SharedCatalog-, Plattform- oder Produktabnahme.
+
 ### Lieferbestand und Prüfanforderungen
 
 `CE-02-I02-S01` besitzt Inventar, Identitäts-/Merge-Ledger, vollständiges

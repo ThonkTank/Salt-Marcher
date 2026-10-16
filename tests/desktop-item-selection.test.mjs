@@ -104,3 +104,57 @@ test('collapsed active filters remain visible and reset preserves the lookup tex
   assert.equal(x.el('item-search').value,'Cloak');assert.equal(x.el('item-filter-magic').value,'');assert.equal(x.el('item-filter-rarity').value,'');assert.equal(x.el('item-filter-reset').hidden,true);assert.equal(x.writes.length,0);
  }finally{await x.cleanup();}
 });
+
+for(const source of ['preparation','progress','live'])test(`item reference stays readable while ${source} is pending and dependent actions stay locked`,async()=>{
+ const x=await fixture(),pause=held(),original=window.campaign[source];let opening;
+ try{
+  window.campaign[source]=()=>pause.promise;x.ui.activateItems(x.w);opening=x.ui.openItems();
+  await until(()=>x.el('items-results').children.length>0);
+  const item=x.store.itemDefinitions({search:'Abacus',category:'',magic:'',rarity:'',attunement:'',sort:'name',direction:'asc',after:0,includeTrashed:false}).items.find(i=>i.source.kind==='srd51');assert(item);
+  const reference=x.ui.openItemReference(item.id);
+  await until(()=>x.el('item-reference-title').textContent===item.name&&!x.el('item-copy').disabled);
+  assert.equal(x.el('item-award').disabled,true);assert.equal(x.el('item-treasure').disabled,true);assert.equal(x.el('shop-new').disabled,true);
+  x.el('item-award').onclick();x.el('item-treasure').onclick();await tick();assert.equal(x.writes.length,0);
+  pause.resolve(await original(x.w.token,source==='preparation'?'':undefined));await Promise.all([opening,reference]);
+  assert.equal(x.el('item-award').disabled,false);assert.equal(x.el('item-reference-title').textContent,item.name);
+ }finally{pause.resolve(await original(x.w.token,source==='preparation'?'':undefined));if(opening)await opening;x.ui.activateItems(x.w);await x.cleanup();}
+});
+for(const transport of [false,true])test(`failed item usage context is local, invalidates old actions and retries without blocking references (${transport?'transport':'storage'})`,async()=>{
+ const x=await fixture(),original=window.campaign.preparation;try{
+  const before=x.store.progress(x.w.token),live=x.store.live(x.w.token);
+  window.campaign.preparation=async()=>{if(transport)throw new Error('Preparation unavailable');return{ok:false,error:'Preparation unavailable'};};
+  await x.ui.openItems();
+  assert.match(x.el('item-context-status').textContent,/Preparation unavailable/);assert.equal(x.el('item-context-status').getAttribute('role'),'alert');assert.equal(x.el('item-context-retry').hidden,false);
+  assert(x.el('items-results').children.length>0);assert.equal(x.el('item-award').disabled,true);assert.equal(x.el('shop-new').disabled,true);
+  x.el('item-award').onclick();x.el('item-treasure').onclick();x.el('shop-new').onclick();await tick();assert.equal(x.writes.length,0);
+  await x.choose(x.defs[1].id);await until(()=>x.el('item-reference-title').textContent==='Heiltrank');assert.equal(x.el('item-copy').disabled,false);
+  window.campaign.preparation=original;x.el('item-context-retry').onclick();await until(()=>x.el('item-context-status').hidden&&!x.el('item-award').disabled);
+  assert.equal(x.el('item-reference-title').textContent,'Heiltrank');assert.deepEqual(x.messages,[]);assert.deepEqual(x.store.progress(x.w.token),before);assert.deepEqual(x.store.live(x.w.token),live);assert.equal(x.writes.length,0);
+ }finally{window.campaign.preparation=original;await x.cleanup();}
+});
+test('an obsolete usage-context failure cannot revoke a newer activation',async()=>{
+ const x=await fixture(),original=window.campaign.preparation,pause=held();let old;
+ try{
+  window.campaign.preparation=()=>pause.promise;old=x.ui.openItems();await tick();await tick();
+  x.ui.activateItems(x.w);window.campaign.preparation=original;await x.ui.openItems();await x.choose(x.defs[1].id);await until(()=>x.el('item-reference-title').textContent==='Heiltrank');
+  pause.reject(new Error('Old context failure'));await old;assert.equal(x.el('item-context-status').hidden,true);assert.equal(x.el('item-award').disabled,false);assert.deepEqual(x.messages,[]);
+ }finally{pause.resolve(await original(x.w.token,''));if(old)await old;await x.cleanup();}
+});
+
+test('a cancelled external item handoff cannot replace the detail after its read finishes',async()=>{
+ const x=await fixture(),original=window.campaign.itemDefinition,pause=held();let opening,current=true;
+ try{
+  window.campaign.itemDefinition=id=>id===x.defs[1].id?pause.promise:original(id);
+  opening=x.ui.openItemReference(x.defs[1].id,()=>current);await until(()=>!x.el('item-load-status').hidden);current=false;
+  pause.resolve(await original(x.defs[1].id));await opening;
+  assert.equal(x.el('item-reference-title').textContent,'Seil');assert.equal(x.el('item-load-status').hidden,true);assert.equal(x.el('item-copy').disabled,false);assert.equal(x.writes.length,0);
+ }finally{pause.resolve(await original(x.defs[1].id));if(opening)await opening;await x.cleanup();}
+});
+
+test('a known usage-context failure is shown even if another source never finishes',async()=>{
+ const x=await fixture(),progress=window.campaign.progress,live=window.campaign.live,pause=held();let opening;
+ try{
+  window.campaign.progress=async()=>({ok:false,error:'Progress unavailable'});window.campaign.live=()=>pause.promise;opening=x.ui.openItems();
+  await until(()=>x.el('item-context-status').getAttribute('role')==='alert');assert.match(x.el('item-context-status').textContent,/Progress unavailable/);assert.equal(x.el('item-context-retry').hidden,false);assert.equal(x.el('item-award').disabled,true);assert.equal(x.writes.length,0);
+ }finally{pause.resolve(await live(x.w.token));if(opening)await opening;window.campaign.progress=progress;window.campaign.live=live;await x.cleanup();}
+});

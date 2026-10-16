@@ -47,3 +47,14 @@ test('campaign activation invalidates pending shop and seller replies',async()=>
 test('editing the shop name preserves untouched CRLF notes while explicit prose edits still save',async()=>{
  const x=await fixture();try{const original=x.shops[0].notes;x.el('shop-notes').value=original.replace(/\r\n/g,'\n');x.el('shop-name').value='Neuer Hafenladen';x.el('shop-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.notes,original);x.el('shop-notes').value='Neue\nNotiz';x.el('shop-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.notes,'Neue\nNotiz');}finally{await x.cleanup();}
 });
+
+test('failed shared usage context revokes a loaded shop until explicit recovery',async()=>{
+ const x=await fixture(),preparation=window.campaign.preparation;
+ try{
+  const before=x.store.shop(x.w.token,x.shops[0].id);window.campaign.preparation=async()=>({ok:false,error:'Shop owner context unavailable'});await x.ui.openItems();
+  assert.equal(x.el('shop-fields').disabled,true);assert.equal(x.el('shop-sale-fields').disabled,true);assert.equal(x.el('shop-new').disabled,true);
+  x.buy();x.sell();await x.settle();assert.equal(x.writes.length,0);assert.deepEqual(x.store.shop(x.w.token,x.shops[0].id),before);
+  window.campaign.preparation=preparation;x.el('item-context-retry').onclick();await until(()=>x.el('item-context-status').hidden&&!x.el('shop-fields').disabled);
+  assert.equal(x.el('shop-name').value,x.shops[0].name);assert.deepEqual(x.messages,[]);assert.equal(x.writes.length,0);
+ }finally{window.campaign.preparation=preparation;await x.cleanup();}
+});
