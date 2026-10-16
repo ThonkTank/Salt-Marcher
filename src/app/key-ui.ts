@@ -1,3 +1,4 @@
+import {atlasDrawingWrite} from './campaign-atlas-author';
 import {initKeyCopy,invalidateKeyCopy,syncKeyCopyControl} from './key-copy-ui';
 import {drawSurfaceKey} from './surface-key-ui';
 import type {Workspace,Room} from './contracts';import type {DrawingView,DrawingAction} from './drawing-contracts';import type {KeyContent,KeyBlock,KeyBatch,KeyTextEdit} from './key-contracts';import {emptyKey} from './key-contracts';import {renderDungeonKey,expandedKeyBlocks,keyAttributes} from './key-model';import type {DungeonGeometry} from './dungeon-contracts';
@@ -38,7 +39,7 @@ async function command(action:DrawingAction){
  const request={commandId:uuid(),token:w.token,campaignId:w.campaign.id,action:structuredClone(action)};
  const ready=await before();if(!owns(o))return null;if(!ready)throw new Error('Andere offene Eingaben zuerst prüfen.');
  readVersion++;
- const r=await window.campaign.executeDrawing(request);if(!owns(o))return null;if(!r.ok)throw new Error(r.error);
+ const r=await atlasDrawingWrite(request);if(!owns(o))return null;if(!r.ok)throw new Error(r.error);
  readVersion++;data=r.value.view;acknowledged=r.value.workspace;advancePreparedBatch(request.action,r.value);
  try{await publish(r.value.workspace);}catch(e){if(owns(o))tell('Key gespeichert; Kartenanzeige konnte nicht aktualisiert werden: '+(e as Error).message,true);}
  if(!owns(o))return null;

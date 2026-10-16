@@ -1,3 +1,5 @@
+import type{AtlasTravelAPI as importAtlasTravelAPI}from'./atlas-travel-contracts';
+import type {AtlasAPI as importAtlasAPI} from './campaign-atlas-contracts';
 import type {ItemReferenceAPI} from './item-reference-contracts';
 import type {LocationNotebookAPI} from './location-notebook-contracts';
 import type {WorldLinksAPI} from './world-links-contracts';
@@ -53,7 +55,7 @@ export interface RoomCommit { room: Room; token: string; canUndo: boolean; canRe
 export interface WorkingRoomDraft { room: Room; points: string; pointsChanged: boolean; failedEdit: Edit | null }
 export interface ImportPreview { ticket: string; name: string; roomCount: number; sourceHash: string; warnings: string[] }
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
-export interface DesktopAPI extends ItemReferenceAPI, LocationNotebookAPI, WorldLinksAPI,TimePlanAPI,importAgendaAPI, NarrativeJournalAPI,SessionPacketAPI,MaskHistoryAPI,NpcAPI,ExtensionAPI,GraphAPI, DungeonAPI,DrawingAPI, AutonomyAPI, PlayerAPI, CityAPI, PreparationAPI, LiveAPI, CombatAPI, ProgressAPI, EncounterAPI, GenerationAPI, SessionAPI, ItemsAPI, WorldAPI, MusicAPI, CampaignManagementAPI, ChronicleAPI, ChaseAPI, RuleReferenceAPI, SceneCheckAPI {
+export interface DesktopAPI extends importAtlasAPI,importAtlasTravelAPI, ItemReferenceAPI, LocationNotebookAPI, WorldLinksAPI,TimePlanAPI,importAgendaAPI, NarrativeJournalAPI,SessionPacketAPI,MaskHistoryAPI,NpcAPI,ExtensionAPI,GraphAPI, DungeonAPI,DrawingAPI, AutonomyAPI, PlayerAPI, CityAPI, PreparationAPI, LiveAPI, CombatAPI, ProgressAPI, EncounterAPI, GenerationAPI, SessionAPI, ItemsAPI, WorldAPI, MusicAPI, CampaignManagementAPI, ChronicleAPI, ChaseAPI, RuleReferenceAPI, SceneCheckAPI {
   commitStatus(ref:CommitReference,token:string):Promise<Result<CommitOutcome>>;
   list(): Promise<Result<{ campaigns: Campaign[]; activeId: string | null }>>;
   create(name: string): Promise<Result<Campaign>>;

@@ -1,3 +1,4 @@
+import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {Workspace,Room} from './contracts';
 import type {DrawingView} from './drawing-contracts';
 import type {DungeonVolume,VolumeCell,VolumeAction} from './volume-contracts';
@@ -55,7 +56,7 @@ function run(fn:(o:Owner)=>Promise<boolean>){
 async function command(a:VolumeAction,o:Owner){
  const w=workspace();if(!w||!current(o))return false;
  writing=true;++readRequest;
- const result=await window.campaign.executeDrawing({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:a});
+ const result=await atlasDrawingWrite({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:a});
  if(!current(o))return false;
  if(!result.ok)throw new Error(result.error);
  data=result.value.view;acknowledgedRoom=null;
