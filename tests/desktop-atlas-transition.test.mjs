@@ -95,3 +95,14 @@ test('large authored polygon bounds do not depend on the JavaScript argument lim
  const dir=mkdtempSync(tmpdir()+'/atlas-bounds-'),store=new CampaignStore(dir+'/campaign.sqlite');
  try{const campaign=store.create('Dense'),w=store.activate(campaign.id);store.executeAtlasCommit({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action:{kind:'landscape-put',record:p,expectedRevision:null}});assert.equal(store.atlasOverview(w.token).landscapeBounds.width,99999);}finally{store.close();rmSync(dir,{recursive:true,force:true});}
 });
+
+test('landscape search pages beyond 100 without copying geometry, then loads one exact object',t=>{
+ const f=fixture(t),put=f.store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)'),rows=Array.from({length:251},(_,i)=>({...patch(),revision:1,kind:'road',id:'road-'+String(i).padStart(4,'0'),name:'Äußere Straße '+i,points:[{x:i,y:0},{x:i+10,y:0}],polygons:[],width:5}));
+ f.store.db.transaction(()=>{for(const r of rows)put.run(f.campaign.id,r.id,1,r.points[0].x,r.points[1].x,0,0,JSON.stringify(r));})();
+ let cursor,ids=[];do{const page=f.store.atlasObjects(f.w.token,{kind:'landscape',text:'ÄUẞERE',limit:40,cursor});assert(!JSON.stringify(page).includes('polygons'));ids.push(...page.items.map(r=>r.id));cursor=page.next;}while(cursor);
+ const first=f.store.atlasObjects(f.w.token,{kind:'landscape',text:'Straße',limit:40}),before=f.store.atlasIdentity(f.w.token).revision;
+ f.store.db.prepare('UPDATE atlas_landscape SET payload=? WHERE campaign_id=? AND id=?').run(JSON.stringify({...rows[50],name:'Anderer Verlauf'}),f.campaign.id,rows[50].id);assert.equal(f.store.atlasIdentity(f.w.token).revision,before);
+ assert.throws(()=>f.store.atlasObjects(f.w.token,{kind:'landscape',text:'Straße',limit:40,cursor:first.next}),/inzwischen geändert/);
+ assert.equal(ids.length,251);assert.deepEqual(f.store.atlasLandscapeObject(f.w.token,ids.at(-1)),rows.at(-1));assert.throws(()=>f.store.atlasLandscapeObject(f.w.token,'missing'),/nicht gefunden/);
+ const other=f.store.create('Other'),w=f.store.activate(other.id);assert.throws(()=>f.store.atlasLandscapeObject(w.token,rows[0].id),/nicht gefunden/);
+});

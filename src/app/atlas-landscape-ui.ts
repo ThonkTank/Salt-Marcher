@@ -760,16 +760,12 @@ export class LandscapeWorkbench {
     this.vertex = 0;
     const token = this.token;
     if (record.locationId) {
-      const r = await window.campaign.preparation(token, "");
+      const r = await window.campaign.deskContent(token, {kind:"location",id:record.locationId});
       if (token !== this.token || this.selected?.id !== record.id) return;
       if (!r.ok) throw new Error(r.error);
-      const row = r.value.locations.find(
-        (l) => l.document.id === record.locationId,
-      );
-      if (row) {
-        this.doc = structuredClone(row.document);
-        this.docRevision = row.revision;
-      }
+      if (!r.value.location || r.value.unavailable)throw new Error("Ortsinhalt nicht verfügbar. Originaldaten bleiben erhalten.");
+      this.doc = structuredClone(r.value.location);
+      this.docRevision = r.value.revision;
     }
     this.inspector();
     this.host.redraw();

@@ -330,6 +330,7 @@ else {
     });
     handle('atlas:overview',(token:string)=>store.atlasOverview(token));
     handle('atlas:objects',(token:string,q:import('../src/app/campaign-atlas-contracts').AtlasObjectQuery)=>store.atlasObjects(token,q));
+    handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
     handle('atlas:commit',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlasCommit(c));
     handle('atlas:view',(token:string)=>store.campaignAtlas(token));
