@@ -308,7 +308,7 @@ async function setDraft() {
   for (const floor of workspace!.floors) { const option = document.createElement('option'); option.value = JSON.stringify([floor.scopeId, floor.id]); option.textContent = floor.name; floors.append(option); }
   floors.value = JSON.stringify([room.scopeId, room.floorId]);
   renderRoomInputs(room, token);
-  updatePoints(); if(dungeonCanvas.context(workspace!.campaign.id+':'+floors.value,{x:0,y:0,width:24,height:18}))fit(true);draw();
+  updatePoints(); if(dungeonCanvas.context(workspace!.campaign.id+':'+floors.value,{x:0,y:0,width:24,height:18})&&!dungeonCanvas.contextRestored){fit(true);dungeonCanvas.defaultView(dungeonCanvas.view);}draw();
   if (room && token) {
     roomDraftLoading = true; roomEditable(false); updateHistory(); status('Arbeitsentwurf wird geprüft und geladen.');
     try {
@@ -366,9 +366,8 @@ function svgElement(name: string, attributes: Record<string, string>) {
   const item = document.createElementNS(svgNS, name); Object.entries(attributes).forEach(([key, value]) => item.setAttribute(key, value)); return item;
 }
 function draw(){const visible=workspace?.rooms.some(r=>JSON.stringify([r.scopeId,r.floorId])===el<HTMLSelectElement>('floors').value);dungeonCanvas.render(drawScene,visible?'':'Noch keine Geometrie in dieser Ansicht. Raum anlegen oder eine andere Ebene wählen.');}
-function drawScene() {
+function drawScene(map:SVGGElement) {
   syncGraphBanner(workspace);
-  const map = el<HTMLElement>('map'); map.replaceChildren();
   for (const saved of workspace?.rooms ?? []) {
     const room = draft?.id === saved.id ? draft : saved;
     if (JSON.stringify([room.scopeId, room.floorId]) !== el<HTMLSelectElement>('floors').value) continue;
@@ -387,14 +386,14 @@ function drawScene() {
     const title = svgElement('title', {}); title.textContent = `${room.number}. ${room.name}`; shape.append(title);
     shape.addEventListener('click', () => { void selectRoom(room.id); }); map.append(shape);
   }
-  drawingOverlay(map as unknown as SVGSVGElement);
+  drawingOverlay(map);
   if (!draft||JSON.stringify([draft.scopeId,draft.floorId])!==el<HTMLSelectElement>('floors').value) return;
-  const box = (map as unknown as SVGSVGElement).viewBox.baseVal;
+  const host=el<SVGSVGElement & HTMLElement>('map'),box=dungeonCanvas.view;
   draft.polygons[0]!.outer.forEach((p, index) => {
     const handle = svgElement('circle', { cx: String(p.x), cy: String(p.y), r: String(box.width / 85), class: 'handle' });
     handle.addEventListener('pointerdown', event => {
       if ((event as PointerEvent).button!==0 || pending || composing || pointer || roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed) return;
-      pointer = { index, id: (event as PointerEvent).pointerId, before: structuredClone(draft!.polygons) }; (map as unknown as SVGSVGElement).setPointerCapture(pointer.id); event.preventDefault();
+      pointer = { index, id: (event as PointerEvent).pointerId, before: structuredClone(draft!.polygons) }; host.setPointerCapture(pointer.id); event.preventDefault();
     }); map.append(handle);
   });
 }

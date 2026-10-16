@@ -506,3 +506,4 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #graph-connection-result{flex-basis:100%;margin:.4rem 0;padding:.6rem;border-left:3px solid var(--blue);background:#eef4f8}
 @media(min-height:740px){#graph-dialog>.toolbar:first-child{position:sticky;top:0;z-index:2;background:#fff;padding:.5rem 0;border-bottom:1px solid var(--line)}}
 #graph-preview-banner:not([hidden])~main #map{height:clamp(220px,calc(40vh - 120px),400px);min-height:220px}
+.map-canvas-controls{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;padding:.5rem 0}.map-canvas-controls button{font-size:.85rem;padding:.4rem .6rem}.map-canvas-controls span{font-size:.8rem;color:var(--ink);margin-left:auto}.map-canvas-state[hidden]{display:none}

@@ -71,3 +71,10 @@ test('Alt arrows retain a fractional camera position and resize releases a share
  const left=Number(x.canvas.getAttribute('viewBox').split(' ')[0]);x.camera.alt();assert.equal(Number(x.canvas.getAttribute('viewBox').split(' ')[0]),left+100);
  x.event('pointerdown',{pointerId:13,button:1,clientX:0,clientY:0});x.event('pointermove',{pointerId:13,clientX:30,clientY:0});const box=x.canvas.getAttribute('viewBox');x.camera.resize();x.event('pointermove',{pointerId:13,clientX:800,clientY:0});x.event('pointerup',{pointerId:13,button:1});assert.equal(x.canvas.getAttribute('viewBox'),box);await tick();assert.equal(x.digest(),before);assert.equal(x.sent.length,0);
 });
+
+for(const action of ['previous','next','reset'])test('shared '+action+' control preserves dirty authoring inputs and sends no command',async t=>{
+ const x=await fixture(t);x.camera.pan();x.camera.zoom();const controls=document.querySelector('.map-canvas-controls[data-canvas-for="world-map"]'),buttons=controls.querySelectorAll('button');
+ if(action==='next')buttons[0].onclick();
+ x.enter('hex-elevation','invalid');x.enter('hex-label','Originaler Entwurf');const before=x.digest(),box=x.canvas.getAttribute('viewBox');
+ buttons[action==='previous'?0:action==='next'?1:2].onclick();await tick();assert.notEqual(x.canvas.getAttribute('viewBox'),box);assert.equal(x.get('hex-elevation').value,'invalid');assert.equal(x.get('hex-label').value,'Originaler Entwurf');assert.equal(x.sent.length,0);assert.equal(x.digest(),before);
+});
