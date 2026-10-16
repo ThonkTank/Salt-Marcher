@@ -79,3 +79,8 @@ test('map projection preserves party visibility, public labels and NPC markers w
  f.store.executeDungeon(command({kind:'npc-place',actorId:npcId,expectedRevision:null,pose:{scopeId:'local',floorId:'ground',roomId:r.id,x:3.048,y:1.524,z:0}}));
  const full=f.store.campaignAtlas(w.token),map=f.store.atlasRenderView(w.token);assert(map.perception);for(const field of ['known','visible','markers','labels'])assert.deepEqual(map.perception[field],full.perception[field]);assert.equal(map.geometry.npcs.length,1);assert.deepEqual(map.geometry.npcs,full.geometry.npcs);assert(!('description' in map.perception));assert(!JSON.stringify(map).includes('PRIVATE'));
 });
+for(const field of ['secret','id','scopeId','kind','revision'])test('map projection rejects checksummed key metadata damage: '+field,t=>{
+ const f=fixture(t),w=f.store.activateShell(f.cam.id);f.store.executeDrawing({commandId:randomUUID(),token:w.token,campaignId:f.cam.id,action:{kind:'key-batch',rooms:[{id:'room-00001',expectedRevision:0,keyRevision:null}],patch:{gmNotes:{mode:'replace',text:'key'}}}});
+ const row=f.store.db.prepare('SELECT * FROM dungeon_key_content WHERE campaign_id=? AND id=?').get(f.cam.id,'room-00001'),key=JSON.parse(row.payload);key[field]=field==='secret'?0:field==='revision'?'0':'different';const payload=JSON.stringify(key);f.store.db.prepare('UPDATE dungeon_key_content SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),f.cam.id,row.id);
+ assert.throws(()=>f.store.drawing(w.token),/Key/);assert.throws(()=>f.store.drawingMap(w.token),/Key/);assert.equal(f.store.db.prepare('SELECT payload FROM dungeon_key_content WHERE campaign_id=? AND id=?').get(f.cam.id,row.id).payload,payload);
+});
