@@ -274,5 +274,11 @@
       ".build/desktop/ui/app.css": "aabc570b082720f03970740cd11cd771ddcfe780f5c64e17ccea57361ea8316e"
     },
     "tests": "Combined47 combat/draft +8 Atlas:54/55 initially; obsolete schema33 package-import expectation failed due documented schema45 policy. Updated test checks explicit rejection, unchanged package and unchanged target plus owned local-store draft initialization. Affected draft suite retest10/10; other45 cases passed in initial merged run. Desktop typecheck passed."
+  },
+  "final_session_integration": {
+    "basis": "46d1db5f9b07f2fba380ae775391cfddc3a2caf5",
+    "incoming": "6e0ad78d",
+    "tests": "71/71 preparation-context and combat-reinforcement cases pass; desktop typecheck pass",
+    "change": "Bounded saved-encounter search in session planner and world-travel continuation wording; troop fields retained; no second claim of a full native workflow at this later head"
   }
 }
