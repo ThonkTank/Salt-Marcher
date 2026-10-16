@@ -267,14 +267,23 @@ nativer Tabwechsel prüft zusätzlich Scrollposition und erneute Enterauswahl mi
 dem gebundenen Korpus; kontrollierte IPCverzögerungen/-fehler werden dabei getrennt
 von echten Quellenfehlern bezeichnet. Das ist keine Gesamtabnahme des Katalogs.
 
+Auch die Monstersuche beendet beim Inhaltswechsel ihren Debouncetimer und entzieht
+laufenden Query-/Statblockantworten die Autorität. Versteckte Zeilen starten keinen
+Statblockread. Akzeptierte Seite, Sortierung und Auswahl bleiben erhalten; eine
+unterbrochene Suche startet bei Rückkehr einmal mit den aktuellen Filtern. Ein
+unterbrochener Statblock zeigt wieder die Auswahlaufforderung und wird ausdrücklich
+neu gewählt. Sichtbare Suchfehler bleiben bis zum Suchen-Retry stehen.
+`desktop-catalog-query-context.test.mjs` prüft diese Wechsel einschließlich später
+Erfolge und Fehler. Quellen-, Vorlagen- und Generatorreads sind davon getrennte
+Owner und bleiben im folgenden Anschluss offen.
+
 Die nächsten Anschlüsse aus derselben Quelle bleiben ausdrücklich offen:
 
-1. `catalogContentView`, Monster-`search`/Detailreads und `openCatalog` an die
-   aktive Inhaltsansicht binden: Timer beenden, alte Antworten entmächtigen,
-   akzeptierten Monsterstand erhalten und fehlende Reads bei Rückkehr starten.
-   Quellen-/Vorlagen-/Generatorreads nur aus ihrem sichtbaren Owner auslösen.
-   Abnahme: Wechsel während Debounce, Query und Detailread; weder unsichtbare
-   Folgequery noch Auswahleffekt, unveränderte Encounterentwürfe und Filterscope.
+1. Quellen-/Vorlagen-/Generatorreads in `activateCatalog`, `openCatalog` und
+   `activateGeneration` nur aus ihrem sichtbaren Owner auslösen und deren laufende
+   Antworten bei Inhaltswechsel passend entmächtigen. Encounterentwürfe und deren
+   Speicheraufträge bleiben erhalten. Monsterquery-/Detailwechsel sind umgesetzt;
+   das ist noch keine vollständige Sichtbarkeitsbindung aller Katalogprovider.
 2. In beiden Providern akzeptierte Treffer während eines ausdrücklich angeforderten
    Refresh sichtbar erhalten, dabei ausstehenden Filterstand und aktuelle Treffer
    unterscheiden und Fehler ohne falsche Erfolgsmeldung zeigen. Auswahl/Scroll bei
