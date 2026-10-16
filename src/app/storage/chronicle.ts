@@ -114,13 +114,14 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
     const worldEntries:ChronicleEntry[]=[];let worldTruncated=false;
     for(const row of sourceRows(db,cam,'world_history',undefined,page?.before?.recordedAt)){
       const f=payload(row),facts=f.facts??{},sceneId=row.scene_id as string|null,scene=sceneId?scenes.get(sceneId)??null:null,locationId=facts.locationId??facts.after?.position?.locationId??facts.preview?.request?.destinationLocationId??sceneRows.find((r:any)=>r.id===sceneId)?.location_id??null;
-      const title=text(f.text,'Weltereignis'),party=facts.kind==='party-membership'||facts.kind==='party-move',travel=!party&&/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title),manualCategory=facts.kind==='live-moment'&&['combat','narrative','reward','travel','party','world'].includes(facts.category)?facts.category as ChronicleCategory:null;
+      const title=text(f.text,'Weltereignis'),party=facts.kind==='party-membership'||facts.kind==='party-move'||facts.kind==='party-roster',travel=!party&&/^(Reise|Gruppe|Ort besucht|Ort verlassen)/.test(title),manualCategory=facts.kind==='live-moment'&&['combat','narrative','reward','travel','party','world'].includes(facts.category)?facts.category as ChronicleCategory:null;
       if(facts.kind==='live-moment'&&!manualCategory)throw new Error('Chronikquelle hat einen ungültigen Bereich.');
       const sessionMarker=facts.kind==='session-marker'&&['start','end'].includes(facts.marker)?facts.marker as 'start'|'end':undefined;
       if(facts.kind==='session-marker'&&!sessionMarker)throw new Error('Chronikquelle hat eine ungültige Spielabend-Markierung.');
       let summary=facts.kind==='live-moment'||sessionMarker?text(facts.summary):'';
       if(facts.kind==='visit-outcome')summary=text(facts.outcome)+' · Weltzeit '+formatInstant(text(facts.sceneInstantMs,'0'));
       else if(facts.kind==='party-membership')summary=facts.active?'Aktiviert'+(sceneName(facts.toSceneId,scenes)?' in '+sceneName(facts.toSceneId,scenes):''):'Deaktiviert'+(sceneName(facts.fromSceneId,scenes)?' aus '+sceneName(facts.fromSceneId,scenes):'');
+      else if(facts.kind==='party-roster')summary='Szenenroster gemeinsam geändert';
       else if(facts.kind==='party-move')summary=(sceneName(facts.fromSceneId,scenes)??'Unbekannte Gruppe')+' → '+(sceneName(facts.toSceneId,scenes)??'Unbekannte Gruppe')+(facts.createdScene?' · neue Gruppe':'');
       const followUp=facts.kind==='live-moment'&&['quest','rumor'].includes(facts.followUpKind)&&typeof facts.followUpId==='string'&&facts.followUpId?{kind:facts.followUpKind as 'quest'|'rumor',id:facts.followUpId}:undefined;
       const id='world:'+row.id;
