@@ -190,28 +190,18 @@ prüfen Fehler/Retry, unveränderte SQLitefakten und alte Fehler nach neuerem
 Erfolg. Bestehende Wiedergabe-, Camp- und Wetterprüfungen bleiben angrenzende
 Teilbelege; daraus folgt keine vollständige Session-Shell-Abnahme.
 
-## Auswertung an den angefragten Reiseauftrag binden
+## Auswertung bleibt bei der Anfrage
 
-Die Konsole vergleicht den zurückgegebenen `TravelRequest` mit ihrem expliziten
-Auftrag, bevor Dauer, Route oder Startautorität übernommen werden. Gruppe,
-Karte, Ziel/Ortsbindung, geordnete Wegpunkte, GM-Faktor, manuelles Tempo,
-Enddauer und Restreisebasis dürfen nicht aus einer anderen Auswertung stammen.
-Nur bei ausdrücklich gewähltem Partytempo darf der Provider das effektive
-Tempo einsetzen; die Konsole berechnet es nicht nochmals. Der bestehende
-kanonische JSONvergleich ignoriert die Reihenfolge von Objektschlüsseln und
-bewahrt die Reihenfolge der Stationen. Alte Request-/Ownergrenzen gelten weiter.
+Gruppe, Karte, Ziel/Ortsbindung, geordnete Wegpunkte, GM-Faktor, manuelles Tempo,
+Enddauer und Restreisebasis der Antwort müssen zur ausdrücklichen Anfrage passen.
+Nur beim gewählten Partytempo darf der Provider das effektive Tempo einsetzen.
+Die Konsole berechnet keine Bewegungsregeln nach. Fremde Antworten zeigen einen
+lokalen Fehler, keine Auswertung und keine Startautorität; erneutes Auswerten
+bleibt möglich. Die Storeprüfung der Auswertung ersetzt diese Anfragebindung nicht.
 
-Eine fremde, aber für sich gültige Auswertung konnte zuvor eine Reise für deren
-Auftrag starten: Die Storeprüfung bestätigt ihre Echtheit und Aktualität,
-ersetzt aber nicht die Bindung an die sichtbare Anfrage. Jetzt bleibt der
-Fehler am Reisetransport, die Auswertung leer und ihre Übernahme gesperrt.
-Erneutes Auswerten mit passender Antwort funktioniert. Store-/DOMgegenproben
-liefern echte Auswertungen für eine andere Gruppe, ein anderes Ziel,
-Wegpunkte, Faktor, Enddauer und Tempo; kein Journeycommand wird gesendet.
-Automatisch bestimmtes Tempo und anders geordnete Antwortschlüssel bleiben
-gültig. Native Bedienung prüft Fremdgruppe/Ziel/Faktor und anschließenden Retry;
-nach erneutem Öffnen bleiben beide Reisen, Positionen, Uhren und die Karte
-unverändert. Keine zusätzliche Providerregistrierung oder Schemaänderung.
+`desktop-travel-target-dom.test.mjs` prüft echte abweichende Auswertungen ohne
+Journeycommand sowie gültiges automatisches Tempo und anders geordnete
+Antwortschlüssel. Bestehende Request-/Ownergrenzen bleiben erhalten.
 
 ## Getrennte Live-Mitte und Reisekonsole (0.141)
 
