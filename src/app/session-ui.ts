@@ -307,12 +307,12 @@ async function selectRun(){
   const selected=unwrap(await window.campaign.sessionRun(owner.token,id));
   if(!ownsPreview(owner)||request!==previewRequest)return;
   run=selected;
-  if(selected.origin){
-   const saved=selected.origin.request;
-   for(const key of Object.keys(compositionPreferences) as CompositionPreference[])get<HTMLSelectElement>('session-'+key).value=saved.encounter[key];
-   get<HTMLInputElement>('session-loot-compensate').checked=!!(saved.compensateLoot||saved.compensateMagic);
-   get<HTMLInputElement>('session-magic-compensate').checked=!!saved.compensateMagic;
-   magicPick.restore(saved.magicPool,selected.lootGuidance?.magic?.pool??[]);
+  if(selected.origin)for(const key of Object.keys(compositionPreferences) as CompositionPreference[])get<HTMLSelectElement>('session-'+key).value=selected.origin.request.encounter[key];
+  if(selected.origin||selected.lootGuidance){
+   const saved=selected.origin?.request,magic=selected.lootGuidance?.magic;
+   get<HTMLInputElement>('session-loot-compensate').checked=saved?!!(saved.compensateLoot||saved.compensateMagic):true;
+   get<HTMLInputElement>('session-magic-compensate').checked=saved?!!saved.compensateMagic:!!magic;
+   magicPick.restore(saved?saved.magicPool:magic?.pool?.map(({definitionId,revision})=>({definitionId,revision})),magic?.pool??[]);
   }
   renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
