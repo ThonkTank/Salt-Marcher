@@ -1,7 +1,30 @@
 import {dailyXp,levelXp,xpLevel,xpShare,restFrame,type Progress} from './progression';
 import {assessEncounter} from './encounter-contracts';
-import type {DayRow,DayCalculation,DayPacing,DayRestFrame,DayAdvancement,DayLevelMark} from './adventuring-day-contracts';
+import type {DayRow,DayCalculation,DayPacing,DayRestFrame,DayAdvancement,DayLevelMark,DayRestStop} from './adventuring-day-contracts';
 function checkedDayXp(n:number){if(!Number.isSafeInteger(n)||n<0||n>1000000000000)throw new Error('XP benötigen eine ganze Zahl von 0 bis 1 Billion.');return n;}
+
+/** First crossings within a repeated encounter row, using the same Party rest frame.
+ * Count transitions rather than expanding every member for every repetition. */
+export function projectDayRestStops(party:Progress[],loadShare:number,count:number):DayRestStop[]{
+ const deltas=new Map<number,{short:number;long:number}>();
+ const add=(after:number,short:number,long:number)=>{
+  if(after>count||!Number.isFinite(after))return;
+  const old=deltas.get(after)??{short:0,long:0};old.short+=short;old.long+=long;deltas.set(after,old);
+ };
+ for(const p of party){
+  const f=restFrame(p);if(!f)continue;
+  const at=(mark:number)=>f.consumed>=mark?0:loadShare>0?Math.ceil((mark-f.consumed)/loadShare):Infinity;
+  const long=at(f.budget),short=f.sections>1?at(f.nextRest):Infinity;
+  if(short<long){add(short,1,0);if(short<=count)add(long,-1,0);}
+  add(long,0,1);
+ }
+ let shortDue=0,longDue=0;const out:DayRestStop[]=[];
+ for(const [after,delta]of [...deltas].sort((a,b)=>a[0]-b[0])){
+  shortDue+=delta.short;longDue+=delta.long;
+  if(delta.short||delta.long)out.push({after,shortDue,longDue});
+ }
+ return out;
+}
 
 /** Current party facts plus hypothetical load, never rewards, levels, rests or time writes. */
 export function projectDayPacing(party:(Progress&{name:string})[],loadXp?:number,projected?:(Progress&{name:string})[]):DayPacing {

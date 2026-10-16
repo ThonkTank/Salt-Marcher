@@ -104,3 +104,50 @@ test('a level target only replaces local reward input and stale target controls 
  await new Promise(r=>setTimeout(r,160));await until(()=>x.el('day-summary').textContent.includes('Level vorher'));
  assert.equal(target.isConnected,false);target.onclick();assert.equal(x.el('day-reward-xp').value,'777');assert.ok(x.store.db.serialize().equals(before));
 });
+
+test('repeated encounters expose exact rest crossings and splitting keeps every fight, XP and persisted fact',t=>{
+ const x=fixture(t);x.add('Ada',0);x.add('Borin',0);
+ const plan=x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Wachpatrouille',notes:'Unveränderte Vorlage',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:1,grouped:false}],sources:[],catalogHash:''}});
+ const row=(count,restBefore)=>({id:plan.id,revision:plan.revision,count,...(restBefore?{restBefore}:{})});
+ const read=encounters=>x.store.adventuringDay(x.w.token,{source:'active',rows:[],totalXp:0,encounters});
+ const before=x.store.db.serialize(),whole=read([row(12)]);
+ assert.equal(whole.itinerary.stages[0].loadShare,38);
+ assert.deepEqual(whole.itinerary.stages[0].restStops,[{after:3,shortDue:2,longDue:0},{after:8,shortDue:0,longDue:2}]);
+ const split=read([row(3),row(5,'short'),row(4,'long')]);
+ assert.equal(split.itinerary.totalLoadXp,whole.itinerary.totalLoadXp);assert.equal(split.itinerary.totalRewardXp,whole.itinerary.totalRewardXp);
+ assert.deepEqual(split.itinerary.plannedRests,{short:1,long:1});assert.equal(split.pacing.members[0].after.consumed,152);
+ assert.deepEqual(split.itinerary.stages[1].restStops,[{after:3,shortDue:2,longDue:0},{after:5,shortDue:0,longDue:2}]);
+ assert.deepEqual(split.itinerary.stages[2].restStops,[{after:3,shortDue:2,longDue:0}]);
+ assert.ok(x.store.db.serialize().equals(before),'calculation cannot book suggested rests or alter the template');
+});
+
+test('rest crossings preserve early, already due, zero-load and unknown Party frames',()=>{
+ const {projectDayRestStops,projectDayPacing}=require('../'+dir+'/model.cjs');
+ const p=(id,xp,rest)=>({characterId:id,name:id,xp,revision:0,health:null,rest:{known:true,longXp:0,shortXp:0,baseline:0,sections:0,...rest}});
+ const party=[p('early',1000,{longXp:340,shortXp:100,baseline:240,sections:1}),p('overdue',0,{longXp:350,shortXp:350}),p('unknown',0,{known:false})];
+ assert.deepEqual(projectDayRestStops(party,380,3),[{after:0,shortDue:0,longDue:1},{after:1,shortDue:1,longDue:1},{after:3,shortDue:0,longDue:2}]);
+ assert.deepEqual(projectDayRestStops(party,0,99),[{after:0,shortDue:0,longDue:1}]);
+ for(const stop of projectDayRestStops(party,380,3)){
+  const pacing=projectDayPacing(party,stop.after*380*party.length);
+  assert.equal(stop.shortDue,pacing.members.filter(m=>m.after?.due==='short').length);
+  assert.equal(stop.longDue,pacing.members.filter(m=>m.after?.due==='long').length);
+ }
+});
+
+test('rest-stop action splits a repeated row, persists the plan and rejects stale result actions',async t=>{
+ const x=await uiFixture(t),plan=x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Wache',notes:'',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:1,grouped:false}],sources:[],catalogHash:''}});
+ const saved=new Map();window.localStorage={getItem:key=>saved.get(key)??null,setItem:(key,value)=>saved.set(key,value),removeItem:key=>saved.delete(key)};
+ x.ui.activateDayCalculator(x.w);x.el('day-trigger').onclick();await until(()=>x.el('day-summary').children.length>0);
+ window.campaign.encounterPlans=async()=>({ok:true,value:x.store.encounterPlans(x.w.token,'')});
+ x.el('day-use-encounters').checked=true;x.el('day-use-encounters').onchange();await tick();x.el('day-plan-matches').querySelector('button').onclick();
+ const count=x.el('day-plan-selected').querySelector('input');count.value='12';count.oninput();await new Promise(r=>setTimeout(r,160));await until(()=>x.el('day-plan-result').querySelector('.day-rest-stops button'));
+ const before=x.store.db.serialize(),stale=x.el('day-plan-result').querySelector('button');assert.match(x.el('day-plan-result').textContent,/erste nach Begegnung 3 von 12/);
+ stale.onclick();assert.deepEqual([...x.el('day-plan-selected').querySelectorAll('input')].map(e=>e.value),['3','9']);
+ assert.equal(x.el('day-plan-selected').lastElementChild.querySelector('select').value,'short');assert.match(x.el('day-plan-edit-status').textContent,/geteilt.*keine Rast gebucht/);
+ stale.onclick();assert.equal(x.el('day-plan-selected').children.length,2);
+ await new Promise(r=>setTimeout(r,160));await until(()=>x.el('day-plan-result').querySelectorAll('.day-rest-stops').length===2);
+ assert.equal(x.requests.at(-1).encounters[1].restBefore,'short');assert.equal(x.requests.at(-1).encounters[0].id,plan.id);
+ const persisted=JSON.parse([...saved.values()][0]);assert.deepEqual(persisted.itinerary.selected.map(p=>[p.count,p.restBefore]),[['3',undefined],['9','short']]);
+ assert.ok(x.store.db.serialize().equals(before));
+ const closed=x.el('day-plan-result').querySelectorAll('.day-rest-stops')[1].querySelector('button');x.el('day-close').onclick();closed.onclick();assert.equal(x.el('day-plan-selected').children.length,2);
+});

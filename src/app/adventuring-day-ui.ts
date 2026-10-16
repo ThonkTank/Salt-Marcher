@@ -137,7 +137,8 @@ function draw(value: DayView) {
         : "Ø Level " + number(snapshot.averageLevel))
     : "Party öffnen";
   if (!opened()) return;
-  renderDayItinerary(value.itinerary);
+  const lease=generation,token=workspace?.token,current=()=>workspace?.token===token&&generation===lease&&opened();
+  renderDayItinerary(value.itinerary,current);
   renderDayPacing(el('day-pacing'),value.pacing,source==='active'&&mode==='progress');
   el("day-status").textContent = value.problem ?? (source === "active" ? snapshot.reason : "");
   if (source === "active") {
@@ -178,7 +179,6 @@ function draw(value: DayView) {
       party.append(p);
     }
   }
-  const lease=generation,token=workspace?.token,current=()=>workspace?.token===token&&generation===lease&&opened();
   renderDayLevels(el('day-levels'),value.advancement,{progress:mode==='progress',itinerary:!!value.itinerary,current,choose:pool=>{
    if(!current()||dayItineraryRequest()!==undefined)return;
    mode='progress';el<HTMLInputElement>('day-separate-reward').checked=true;el<HTMLInputElement>('day-reward-xp').value=String(pool);state();edited();el<HTMLInputElement>('day-reward-xp').focus();
