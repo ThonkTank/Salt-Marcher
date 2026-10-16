@@ -52,7 +52,7 @@ test('readonly room jobs replace predecessors and reject abandoned work',async t
  const f=fixture(t,Array.from({length:100},(_,i)=>room(i+1))),w=f.store.activateShell(f.cam.id),source=f.store.roomReadSource(w.token),service=new RoomDirectoryService(path.resolve('.build/room-reads-worker.cjs'));t.after(()=>service.close());
  const one=service.read(source,{text:'PRIVATE'}).then(()=>false,()=>true),two=service.read(source,{text:'',limit:40});assert.equal(await one,true);const page=await two;assert.equal(page.items.length,40);assert.equal(page.next.after.number,'40');
  await service.read(source,{text:'PRIVATE\r\n100'}).then(p=>assert.equal(p.items[0].number,'100'));
- service.close();await assert.rejects(service.read(source,{text:''}),/abgebrochen/);
+ await service.close();await assert.rejects(service.read(source,{text:''}),/abgebrochen/);
 });
 test('drawing projections omit all keys, archived room prose and element notes; exact selection and tools retain them',t=>{
  const f=fixture(t),w=f.store.activateShell(f.cam.id),send=action=>f.store.executeDrawing({commandId:randomUUID(),token:w.token,campaignId:f.cam.id,action});
@@ -83,4 +83,10 @@ for(const field of ['secret','id','scopeId','kind','revision'])test('map project
  const f=fixture(t),w=f.store.activateShell(f.cam.id);f.store.executeDrawing({commandId:randomUUID(),token:w.token,campaignId:f.cam.id,action:{kind:'key-batch',rooms:[{id:'room-00001',expectedRevision:0,keyRevision:null}],patch:{gmNotes:{mode:'replace',text:'key'}}}});
  const row=f.store.db.prepare('SELECT * FROM dungeon_key_content WHERE campaign_id=? AND id=?').get(f.cam.id,'room-00001'),key=JSON.parse(row.payload);key[field]=field==='secret'?0:field==='revision'?'0':'different';const payload=JSON.stringify(key);f.store.db.prepare('UPDATE dungeon_key_content SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),f.cam.id,row.id);
  assert.throws(()=>f.store.drawing(w.token),/Key/);assert.throws(()=>f.store.drawingMap(w.token),/Key/);assert.equal(f.store.db.prepare('SELECT payload FROM dungeon_key_content WHERE campaign_id=? AND id=?').get(f.cam.id,row.id).payload,payload);
+});
+
+test('reader cancellation joins its worker before a disposable source can be removed',async t=>{
+ const f=fixture(t),w=f.store.activateShell(f.cam.id),source=f.store.roomReadSource(w.token),service=new RoomDirectoryService(path.resolve('.build/room-reads-worker.cjs'));t.after(()=>service.close());
+ const read=service.read(source,{text:'PRIVATE'}).catch(e=>e);await new Promise(resolve=>setImmediate(resolve));
+ const worker=service.job?.worker;assert(worker,'the source reader must have started');await service.cancelAndWait();assert.equal(worker.threadId,-1,'snapshot cleanup must wait for actual worker exit');assert.match((await read).message,/abgebrochen/);
 });

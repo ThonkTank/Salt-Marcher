@@ -310,7 +310,7 @@ else {
     handle('campaign:discard-group-draft',(token:string,id:string,writeId:string)=>store.discardGroupDraft(token,id,writeId));
     handle('campaign:prepared-group',(token:string,id:string)=>store.preparedGroup(token,id));
     handle('graph:view',(token:string,scopeId:string)=>store.graph(token,scopeId));
-    handle('graph:execute',(c:import('../src/app/graph-contracts').GraphCommand)=>store.executeGraph(c));
+    handle('graph:execute',async(c:import('../src/app/graph-contracts').GraphCommand)=>{if(['restore','accept'].includes(c.action?.kind))await Promise.all([roomDirectory.cancelAndWait(),atlasRoomDirectory.cancelAndWait()]);return store.executeGraph(c);});
     handle('drawing:path-preview',(token:string,p:import('../src/app/path-contracts').DungeonPath)=>store.previewPath(token,p));
     handle('drawing:map',(token:string)=>store.drawingMap(token));
     handle('drawing:element',(token:string,id:string)=>store.drawingElement(token,id));
@@ -352,7 +352,7 @@ else {
     handle('atlas:commit',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlasCommit(c));
     handle('atlas:render-view',(token:string)=>store.atlasRenderView(token));
     handle('atlas:view',(token:string)=>store.campaignAtlas(token));
-    handle('atlas:execute',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.executeAtlas(c));
+    handle('atlas:execute',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{if(c.action?.kind==='graph-accept')await Promise.all([roomDirectory.cancelAndWait(),atlasRoomDirectory.cancelAndWait()]);return store.executeAtlas(c);});
     handle('city:list',(token:string)=>store.cities(token));
     handle('city:view',(token:string,id:string)=>store.city(token,id));
     handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>store.executeCity(c));
@@ -427,7 +427,7 @@ else {
     });
     handle('campaign:backup-status', () => backupError);
     handle('campaign:tutorial', (state?: 'shown' | 'finished' | 'skipped') => store.tutorial(state));
-    ipcMain.on('campaign:close-ready', event => { if (event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && event.senderFrame.url === origin) { closeAllowed = true; win.close(); } });
+    ipcMain.on('campaign:close-ready', event => { if (event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && event.senderFrame.url === origin) { void Promise.all([roomDirectory.close(),atlasRoomDirectory.close()]).then(()=>{closeAllowed = true;win.close();}); } });
     win.on('close', event => { if (!closeAllowed) { event.preventDefault(); win.webContents.send('campaign:close'); } });
     const timer = setInterval(async () => {
       if (backupRunning) return;

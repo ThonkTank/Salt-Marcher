@@ -7,7 +7,8 @@ export class RoomDirectoryService {
   private exit:Promise<unknown>=Promise.resolve();private generation=0;private closed=false;
   constructor(private readonly workerFile=join(__dirname,'room-directory-worker.cjs')){}
   cancel(){this.generation++;const job=this.job;this.job=null;if(job){job.reject(new Error('Raumsuche abgebrochen.'));void job.worker.terminate();}}
-  close(){this.closed=true;this.cancel();}
+  async cancelAndWait(){this.cancel();await this.exit;}
+  async close(){this.closed=true;await this.cancelAndWait();}
   async read(source:{filename:string;campaignId:string;token:string;fence:string},query:RoomDirectoryQuery):Promise<RoomDirectoryPage>{
     this.cancel();const generation=this.generation;await this.exit;
     if(this.closed||generation!==this.generation)throw new Error('Raumsuche abgebrochen.');
