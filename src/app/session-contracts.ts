@@ -5,7 +5,7 @@ import type {EncounterParty,EncounterPlan,EncounterAssessment} from './encounter
 import type {ItemInput,ProgressGuard} from './progression';
 import type {GenerationRequest} from './generation-contracts';
 import type {ManualPlan} from '../features/planner/manual-planner';
-export interface SessionProfile {planId:string;revision:number;party:EncounterParty[];adventureDayFraction:string;seed:string}
+export interface SessionProfile {planId:string;revision:number;party:EncounterParty[];adventureDayFraction:string;seed:string;encounterCount?:number|null}
 export interface VisitDetail {visitId:string;revision:number;readAloud:string;noteIds:string[];groupIds:string[];reward:{id:string;poolXp:number;items:ItemInput[];placedTreasureId:string|null;awarded:boolean}|null}
 export interface WorldActor {defeated?:boolean;disposition?:number;role?:import('./npc-contracts').NpcRole;id:string;name:string;creatureId:string;revision:number;hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean;unavailable:boolean;entryId:string}
 export interface PreparedGroup {id:string;revision:number;title:string;notes:string;sourceEncounterId:string;sourceRevision:number;locationId:string|null;plan:EncounterPlan;actors:WorldActor[]}

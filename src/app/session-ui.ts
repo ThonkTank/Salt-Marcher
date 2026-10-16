@@ -106,7 +106,7 @@ async function acceptSessionResult(action:SessionAction,result:SessionView,gen:n
  if(gen===generation)render();
  if(workspace?.token===token&&plan?.id===ownerPlan)tell('Spielabend-Inhalte gespeichert.');
 }
-async function execute(action:SessionAction){
+async function execute(action:SessionAction,propagateError=false){
  if(!workspace||pending)return false;
  const owner=workspace,token=owner.token,gen=generation,ownerPlan=action.kind==='profile'?action.profile.planId:action.planId;
  const editing=action.kind==='profile'?{token,generation:gen,planId:ownerPlan}:null;profileWriting=editing;
@@ -122,6 +122,7 @@ async function execute(action:SessionAction){
    return true;
   }catch(error){
    if(gen===generation){if(committed)render();tell((committed?'Gespeichert; Ansicht konnte nicht aktualisiert werden: ':'')+(error as Error).message,true);}
+   if(propagateError&&!committed)throw error;
    return committed;
   }finally{if(profileWriting===editing)profileWriting=null;pending=null;lock(!view);}
  })();
@@ -132,7 +133,7 @@ function lock(on:boolean){
  on=on||!!workspace&&hasPendingCommit(workspace.campaign.id);
  get<HTMLButtonElement>('plan-replace').disabled=on||!workspace||!plan;
  for(const id of ['session-panel','visit-preparation','plan-replacement-dialog'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
-  const liveProfile=profileWriting?.token===workspace?.token&&profileWriting?.generation===generation&&profileWriting?.planId===plan?.id&&c instanceof HTMLInputElement&&c.type!=='checkbox'&&!!c.closest('#session-profile-form');
+  const liveProfile=profileWriting?.token===workspace?.token&&profileWriting?.generation===generation&&profileWriting?.planId===plan?.id&&c instanceof HTMLInputElement&&c.type!=='checkbox'&&(!!c.closest('#session-profile-form')||c.id==='session-scene-count');
   if(on&&liveProfile)continue;
   if(on){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
   else if(lockedControls.has(c)){c.disabled=lockedControls.get(c)!;lockedControls.delete(c);}
@@ -158,7 +159,7 @@ export async function flushSession():Promise<boolean>{
 }
 function scheduleSession(message:string){inputChanged();if(timer)clearTimeout(timer);timer=setTimeout(()=>{void flushSession();},700);tell(message);}
 function scheduleVisit(){visitDirty=true;scheduleSession('Besuchseingabe offen.');}
-function render(){if(!view||!profileDraft)return;get<HTMLInputElement>('session-fraction').value=profileDraft.adventureDayFraction;get<HTMLInputElement>('session-seed').value=profileDraft.seed;const members=get('session-party');members.replaceChildren();for(const c of roster){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=profileDraft.party.some(p=>p.id===c.characterId);box.onchange=()=>{if(!profileDraft)return;profileDraft.party=box.checked?[...profileDraft.party,{id:c.characterId,name:c.name,level:c.xp===null?null:xpLevel(c.xp).level,count:1}]:profileDraft.party.filter(p=>p.id!==c.characterId);profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();};label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?' · heute aktiv':' · inaktiv')));members.append(label);}renderParty();
+function render(){if(!view||!profileDraft)return;get<HTMLInputElement>('session-fraction').value=profileDraft.adventureDayFraction;get<HTMLInputElement>('session-seed').value=profileDraft.seed;get<HTMLInputElement>('session-scene-count').value=profileDraft.encounterCount==null?'':String(profileDraft.encounterCount);const members=get('session-party');members.replaceChildren();for(const c of roster){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=profileDraft.party.some(p=>p.id===c.characterId);box.onchange=()=>{if(!profileDraft)return;profileDraft.party=box.checked?[...profileDraft.party,{id:c.characterId,name:c.name,level:c.xp===null?null:xpLevel(c.xp).level,count:1}]:profileDraft.party.filter(p=>p.id!==c.characterId);profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();};label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?' · heute aktiv':' · inaktiv')));members.append(label);}renderParty();
  const locations=get('session-locations'),notes=get('session-notes');const chosenLocations=new Set([...locations.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value)),chosenNotes=new Set([...notes.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value));locations.replaceChildren();notes.replaceChildren();for(const row of sources?.locations.filter(l=>!l.trashed)??[])checkbox(locations,row.document.id,row.document.name,chosenLocations.has(row.document.id));for(const row of sources?.notes.filter(n=>!n.trashed)??[])checkbox(notes,row.note.id,row.note.title,chosenNotes.has(row.note.id));
  if(visitDraft){get<HTMLTextAreaElement>('visit-read-aloud').value=visitDraft.readAloud;const select=get<HTMLSelectElement>('visit-encounter'),old=select.value;select.replaceChildren();option(select,'','Encounter-Vorlage auswählen');for(const e of view.encounters)option(select,e.id,e.name);select.value=old;get<HTMLInputElement>('visit-has-reward').checked=!!visitDraft.reward;get('visit-reward-fields').hidden=!visitDraft.reward;get<HTMLInputElement>('visit-reward-xp').value=String(visitDraft.reward?.poolXp??0);renderRewardItems();const refs=get('visit-note-refs');refs.replaceChildren();for(const row of sources?.notes.filter(n=>!n.trashed)??[]){const box=checkbox(refs,row.note.id,row.note.title,visitDraft.noteIds.includes(row.note.id));box.onchange=()=>{if(!visitDraft)return;visitDraft.noteIds=box.checked?[...visitDraft.noteIds,box.value]:visitDraft.noteIds.filter(id=>id!==box.value);scheduleVisit();};}renderGroups();}
  renderRun();lock(!!pending);
@@ -232,15 +233,15 @@ async function acceptSelectedProposals(source:SessionRun,picks:SessionProposal[]
  const owner=previewOwner(),request=previewRequest;if(!owner||run!==source||!sameSessionReviewBasis(reviewed,sessionReviewBasis()))return false;
  try{
   if(!await flushSession()||!ownsPreview(owner)||request!==previewRequest||run!==source)return false;
-  if(!sameSessionReviewBasis(reviewed,sessionReviewBasis())){tell('Planstand nach dem Speichern geändert. Auswahl erneut prüfen.',true);return false;}
+  if(!sameSessionReviewBasis(reviewed,sessionReviewBasis()))throw new Error('Planstand nach dem Speichern geändert. Auswahl erneut prüfen.');
   const action:SessionAction={kind:'accept-proposals',planId:reviewed.planId,expectedPlanRevision:reviewed.planRevision,runId:source.id,proposals:picks.map(p=>({index:p.index,expectedRevision:p.revision??1}))};
-  if(!await execute(action))return false;
+  if(!await execute(action,true))return false;
   if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
   const accepted=unwrap(await window.campaign.sessionRun(owner.token,source.id));
   if(!ownsPreview(owner)||request!==previewRequest||run!==source)return true;
   run=accepted;renderRun();
   tell(picks.length+' Szenen in die Timeline übernommen. Die Spielabendmappe ist bereit.');return true;
- }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);return false;}
+ }catch(error){if(ownsPreview(owner)&&request===previewRequest){tell((error as Error).message,true);throw error;}return false;}
 }
 async function regenerateProposal(source:SessionRun,index:number){
  const owner=previewOwner();if(!owner||run!==source)return;
@@ -389,7 +390,7 @@ initProposalEditor();inputChanged=edited;tell=status;requiredPick=requiredNpcPic
  get<HTMLDialogElement>('plan-replacement-dialog').addEventListener('cancel',()=>{replacement=null;replacementRequest++;});
  get('plan-replacement-form').onsubmit=e=>{e.preventDefault();report(async()=>{const preview=replacement;if(!preview||!ownsPreview(preview.owner)||!preview.target.replacementBasis)return;const id=value('plan-replacement-source');if(id&&!preview.source?.replacementBasis)return;await execute({kind:'replace-plan',planId:preview.owner.planId,expectedBasis:preview.target.replacementBasis,name:value('plan-replacement-name'),sourcePlanId:id||null,expectedSourceBasis:preview.source?.replacementBasis??null,copyParty:get<HTMLInputElement>('plan-replacement-party').checked});});};
 
- for(const id of ['session-fraction','session-seed'])get(id).oninput=()=>{if(profileDraft){profileDraft.adventureDayFraction=value('session-fraction');profileDraft.seed=value('session-seed');profileDirty=true;scheduleSession('Planungseingabe offen.');budget();}};get('session-scene-count').oninput=budget;get('session-profile-form').onsubmit=event=>{event.preventDefault();void flushSession();};get('session-free-party').onclick=()=>{if(profileDraft){profileDraft.party.push({id:crypto.randomUUID(),name:'Geplante Figuren',level:null,count:1});profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();}};
+ for(const id of ['session-fraction','session-seed'])get(id).oninput=()=>{if(profileDraft){profileDraft.adventureDayFraction=value('session-fraction');profileDraft.seed=value('session-seed');profileDirty=true;scheduleSession('Planungseingabe offen.');budget();}};get('session-scene-count').oninput=()=>{if(profileDraft){profileDraft.encounterCount=value('session-scene-count').trim()?Number(value('session-scene-count')):null;profileDirty=true;scheduleSession('Planungseingabe offen.');budget();}};get('session-profile-form').onsubmit=event=>{event.preventDefault();void flushSession();};get('session-free-party').onclick=()=>{if(profileDraft){profileDraft.party.push({id:crypto.randomUUID(),name:'Geplante Figuren',level:null,count:1});profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();}};
  get('visit-read-aloud').oninput=()=>{if(visitDraft){visitDraft.readAloud=value('visit-read-aloud');scheduleVisit();}};
  get('visit-attach').onclick=()=>{void attachEncounter();};
  get('visit-has-reward').oninput=()=>{if(!visitDraft)return;if(get<HTMLInputElement>('visit-has-reward').checked)visitDraft.reward??={id:crypto.randomUUID(),poolXp:0,items:[],placedTreasureId:null,awarded:false};else visitDraft.reward=null;get('visit-reward-fields').hidden=!visitDraft.reward;scheduleVisit();};

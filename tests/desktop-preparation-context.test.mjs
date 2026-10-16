@@ -1,6 +1,7 @@
 import {test} from 'node:test';
+import {setTimeout as delay} from 'node:timers/promises';
 import assert from 'node:assert/strict';
-import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {mkdtempSync,readFileSync,rmSync,mkdirSync,copyFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
@@ -8,6 +9,7 @@ import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
 const base='.build/realist-preparation',require=createRequire(import.meta.url);
+mkdirSync(base+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',base+'/catalog/srd-5.1.generated.json');
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({stdin:{contents:"export * from './src/app/preparation';export {initCommitControls,checkPendingCommit} from './src/app/commit-confirmation';export {WorldLinksWorkbench} from './src/app/world-links-ui';",resolveDir:process.cwd(),sourcefile:'preparation-context-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const settle=async()=>{for(let i=0;i<15;i++)await new Promise(r=>setImmediate(r));};
@@ -256,6 +258,25 @@ test('saving a renamed plan immediately updates the selected plan label',async t
  const saved=x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value);
  assert.equal(saved.name,'Nacht an der Schleuse');
  assert.equal([...x.el('plans').options].find(o=>o.value===saved.id).textContent,saved.name);
+});
+
+test('a full generated evening can be batch accepted through preparation with the real store',async t=>{
+ const x=await fixture(t);for(const method of ['generateSession','sessionRun'])x.window.campaign[method]=async(...args)=>{try{return{ok:true,value:x.store[method](...args)};}catch(e){return{ok:false,error:e.message};}};
+ await x.activate();x.el('plan-create').click();await until(()=>!!x.el('plans').value);await settle();
+ for(const level of ['3','4']){x.el('session-free-party').click();const rows=x.el('session-party-levels').querySelectorAll('.session-party-row'),inputs=rows[rows.length-1].querySelectorAll('input');inputs[0].value=level;inputs[0].oninput();inputs[1].value='2';inputs[1].oninput();}
+ x.el('session-fraction').value='0.6';x.el('session-fraction').oninput();x.el('session-seed').value='179974';x.el('session-seed').oninput();x.el('session-scene-count').value='3';x.el('session-scene-count').oninput();assert.equal(await x.ui.flushPreparation(),true);
+ x.el('session-generate-form').onsubmit({preventDefault(){}});await settle();assert.equal(x.el('session-preview').querySelectorAll('[data-proposal-index]').length,3,JSON.stringify(x.messages.slice(-4))+' '+x.el('session-generation-feedback').textContent);
+ x.el('session-select-visible').click();x.el('session-review-selection').click();x.el('session-selection-confirm').click();for(const deadline=Date.now()+2000;Date.now()<deadline&&x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value).scenes.length!==3;)await delay(5);await settle();
+ assert.equal(x.store.preparation(x.workspace.token).plans.find(p=>p.id===x.el('plans').value).scenes.length,3,JSON.stringify(x.messages.slice(-4))+' '+x.el('session-selection-dialog').textContent);
+});
+
+test('encounter count belongs to its plan, survives reopening and clears back to automatic',async t=>{
+ const x=await fixture(t);await x.activate();x.el('plan-create').click();await until(()=>!!x.el('plans').value);await settle();const first=x.el('plans').value;
+ x.el('session-scene-count').value='3';x.el('session-scene-count').oninput();assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.store.session(x.workspace.token,first).profile.encounterCount,3);
+ x.el('plan-create').click();await until(()=>x.el('plans').value!==first);await settle();assert.equal(x.el('session-scene-count').value,'');x.el('session-scene-count').value='7';x.el('session-scene-count').oninput();assert.equal(await x.ui.flushPreparation(),true);
+ x.store.selectPreparation(x.workspace.token,{noteId:null,planId:first,sceneId:null});await x.activate();await settle();assert.equal(x.el('session-scene-count').value,'3');
+ x.el('session-scene-count').value='';x.el('session-scene-count').oninput();assert.equal(await x.ui.flushPreparation(),true);assert.equal(x.store.session(x.workspace.token,first).profile.encounterCount,null);await x.activate();await settle();assert.equal(x.el('session-scene-count').value,'');
+ for(const bad of [0,11,1.5]){const profile=x.store.session(x.workspace.token,first).profile;assert.throws(()=>x.store.executeSession({commandId:randomUUID(),campaignId:x.campaign.id,token:x.workspace.token,action:{kind:'profile',profile:{...profile,encounterCount:bad},expectedRevision:profile.revision}}),/Begegnungszahl/);assert.equal(x.store.session(x.workspace.token,first).profile.revision,profile.revision);}
 });
 
 async function manualReward(t){
