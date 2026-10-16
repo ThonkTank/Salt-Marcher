@@ -72,6 +72,7 @@ test("setting XP requires an explicit number; blank input never becomes a zero-X
   get("shortcut").onclick();
   await tick();
   get("active").querySelector(".party-level-meter").onclick();
+  assert.equal(get("xp-amount").value, "", "opening must not offer an implicit zero overwrite");
   get("xp-mode").value = "set";
   get("xp-amount").value = "";
   get("xp-amount").oninput();
