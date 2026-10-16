@@ -46,7 +46,9 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
    for(const a of g.actors)noteIds.add(a.id);
    for(const c of g.plan.sources){
     if(!g.plan.entries.some(e=>e.creatureId===c.id))continue;
-    const text=[`${c.size} ${c.type} · HG ${c.challengeRating} · ${c.xp} XP`, `RK ${c.ac} · HP ${c.hp} (${c.hitDice}) · Tempo ${c.speed}`,Object.entries(c.abilities).map(([k,v])=>k.toUpperCase()+' '+v).join(' · '),...[[ 'Rettungswürfe',c.savingThrows],['Fertigkeiten',c.skills],['Sinne',c.senses],['Sprachen',c.languages],['Empfindlichkeiten',c.damageVulnerabilities],['Resistenzen',c.damageResistances],['Immunitäten',c.damageImmunities],['Zustandsimmunitäten',c.conditionImmunities]].filter(([,v])=>v).map(([k,v])=>k+': '+v),...c.traits.map(a=>'Merkmal: '+a.name+'\n'+a.description),...c.actions.map(a=>'Aktion: '+a.name+'\n'+a.description),...c.legendaryActions.map(a=>'Legendäre Aktion: '+a.name+'\n'+a.description),c.details,'Quelle: '+c.sourceLabel+' · '+c.sourceVersion+'\n'+SRD_5_1_NOTICE].filter(Boolean).join('\n\n');
+    const normalized=(text:string)=>text.trim().replace(/\s+/g,' ');
+    const details=[...c.traits,...c.actions,...c.legendaryActions].some(a=>normalized(a.description)===normalized(c.details))?'':c.details;
+    const text=[`${c.size} ${c.type} · HG ${c.challengeRating} · ${c.xp} XP`, `RK ${c.ac} · HP ${c.hp} (${c.hitDice}) · Tempo ${c.speed}`,Object.entries(c.abilities).map(([k,v])=>k.toUpperCase()+' '+v).join(' · '),...[[ 'Rettungswürfe',c.savingThrows],['Fertigkeiten',c.skills],['Sinne',c.senses],['Sprachen',c.languages],['Empfindlichkeiten',c.damageVulnerabilities],['Resistenzen',c.damageResistances],['Immunitäten',c.damageImmunities],['Zustandsimmunitäten',c.conditionImmunities]].filter(([,v])=>v).map(([k,v])=>k+': '+v),...c.traits.map(a=>'Merkmal: '+a.name+'\n'+a.description),...c.actions.map(a=>'Aktion: '+a.name+'\n'+a.description),...c.legendaryActions.map(a=>'Legendäre Aktion: '+a.name+'\n'+a.description),details,'Quelle: '+c.sourceLabel+' · '+c.sourceVersion+'\n'+SRD_5_1_NOTICE].filter(Boolean).join('\n\n');
     blocks.push({heading:'Statblock: '+c.name,text,kind:'encounter'});
    }
   }
