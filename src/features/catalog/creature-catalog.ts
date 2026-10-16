@@ -1,6 +1,13 @@
 import assetIdentity from "./catalog-asset.json";
 
 export const SRD_5_1_ARTIFACT_SHA256 = assetIdentity.artifactSha256;
+// Local errata are separate from the byte-identical, pinned source artifact.
+export const SRD_5_1_XP_CORRECTIONS = deepFreeze([
+  {id:'brass-dragon-wyrmling',cr:1,from:100,to:200,source:'https://www.dndbeyond.com/monsters/16814-brass-dragon-wyrmling'},
+  {id:'deep-gnome-svirfneblin',cr:0.5,from:50,to:100,source:'https://www.dndbeyond.com/monsters/17211-deep-gnome-svirfneblin'},
+  {id:'dretch',cr:0.25,from:25,to:50,source:'https://www.dndbeyond.com/monsters/16846-dretch'},
+  {id:'riding-horse',cr:0.25,from:25,to:50,source:'https://www.dndbeyond.com/monsters/16997-riding-horse'},
+]);
 export const SRD_5_1_NOTICE = "This work includes material taken from the System Reference Document 5.1 by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document and licensed under CC BY 4.0 at https://creativecommons.org/licenses/by/4.0/. The catalog was normalized by 5e-bits/5e-database v5.10.0, enriched with biome assignments and stable IDs by SaltMarcher, and copied byte-for-byte into this plugin.";
 
 const PINNED_MANIFEST = Object.freeze({
@@ -278,14 +285,19 @@ export class CreatureCatalog {
   constructor(value: unknown) {
     const parsed = parseCreatureCatalog(value);
     this.manifest = deepFreeze(parsed.manifest);
-    this.creatures = deepFreeze(parsed.creatures.map((creature) => ({
+    this.creatures = deepFreeze(parsed.creatures.map((creature) => {
+      const correction = SRD_5_1_XP_CORRECTIONS.find(c=>c.id===creature.id);
+      if(correction && (creature.cr!==correction.cr || creature.xp!==correction.from))
+        throw new Error('Katalogkorrektur passt nicht mehr zur gepinnten Quelle: '+creature.id);
+      return {
       ...creature,
+      xp:correction?.to??creature.xp,
       sourceId: "srd-5.1",
       sourceLabel: parsed.manifest.sourceDocument,
-      sourceVersion: parsed.manifest.catalogVersion,
+      sourceVersion: parsed.manifest.catalogVersion+(correction?'+xp-errata.1':''),
       rulesVersion: "2014" as const,
       legacy: true,
-    })));
+    };}));
     this.byId = new Map(this.creatures.map((creature) => [creature.id, creature]));
   }
 
