@@ -9,10 +9,11 @@ const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediat
 async function until(fn){for(let i=0;i<100&&!fn();i++)await tick();assert.ok(fn());}
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
 const page=(name,offset=0,total=100)=>({rows:[{id:name,name,challengeRating:'1',type:'Humanoid',size:'Medium',ac:12,hp:10,xp:200}],offset,total,limit:25});
-async function fixture(t,metadataFailure=false){
- const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout};Object.assign(globalThis,{window,document});const timers=new Map();let timer=0;globalThis.setTimeout=(fn,delay)=>{timers.set(++timer,{fn,delay});return timer;};globalThis.clearTimeout=id=>timers.delete(id);t.after(()=>Object.assign(globalThis,previous));
+async function fixture(t,metadataFailure=false,overrides={}){
+ const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout,matchMedia:globalThis.matchMedia};Object.assign(globalThis,{window,document});window.matchMedia=()=>({matches:false});const timers=new Map();let timer=0;globalThis.setTimeout=(fn,delay)=>{timers.set(++timer,{fn,delay});return timer;};globalThis.clearTimeout=id=>timers.delete(id);t.after(()=>Object.assign(globalThis,previous));
  const el=id=>document.getElementById(id),ok=value=>({ok:true,value}),reads=[],messages=[],liveAdds=[];
  window.campaign={creatureInfo:async()=>metadataFailure?{ok:false,error:'Catalog index unavailable'}:ok({notice:'Offlinequelle',hash:'pinned',types:[],sizes:[],habitats:[],alignments:[],subtypes:[]}),creatures:query=>{const d=deferred();reads.push({...d,query});return d.promise;},encounterPlans:async()=>ok([]),encounterTables:async()=>ok([]),lootTables:async()=>ok([]),generatorRegistry:async()=>ok({revision:1,presets:[]}),generationRuns:async()=>ok([]),generationSources:async()=>ok({sources:[],factions:[],locations:[]}),npcs:async()=>ok({rows:[],next:null,total:0})};
+ Object.assign(window.campaign,overrides);
  el('catalog-form').reset=()=>{for(const input of el('catalog-form').querySelectorAll('input'))input.value='';for(const select of el('catalog-form').querySelectorAll('select'))select.value=select.options[0]?.value??'';};
  delete require.cache[require.resolve('../.build/catalog-query-context.cjs')];const ui=require('../.build/catalog-query-context.cjs');ui.initCatalog((...args)=>messages.push(args),async()=>{},async(...args)=>{liveAdds.push(args);});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:select.options[0]?.getAttribute('value')??''});for(const dialog of document.querySelectorAll('dialog')){dialog.close=()=>{dialog.open=false;};dialog.showModal=()=>{dialog.open=true;};}const w={token:'one',campaign:{id:'camp'}};ui.activateCatalog(w);const opened=ui.openCatalog();await until(()=>metadataFailure?messages.length>0:reads.length===1);
  const resolve=async(index,name,offset=0,total=100)=>{reads[index].resolve(ok(page(name,offset,total)));await tick();await tick();};
@@ -36,8 +37,9 @@ test('activation invalidates old rows and late campaign responses',async t=>{
  const x=await fixture(t);await x.resolve(0,'Old campaign');x.ui.activateCatalog({...x.w,token:'two',campaign:{id:'other'}});assert.equal(x.el('catalog-rows').querySelectorAll('button').length,0);const next=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Current');await next;assert.match(x.el('catalog-rows').textContent,/Current/);
 });
 
-test('index failure is local to the catalog and keeps browsing actions disabled',async t=>{
- const x=await fixture(t,true);await x.opened;assert.match(x.el('catalog-page').textContent,/Catalog index unavailable/);assert.equal(x.el('catalog-page').getAttribute('role'),'alert');assert.equal(x.el('catalog-next').disabled,true);assert.equal(x.reads.length,0);
+test('metadata failure stays local while healthy creature results and explicit details remain usable',async t=>{
+ const x=await fixture(t,true);await x.resolve(0,'Guard');await x.opened;assert.match(x.el('catalog-credit').textContent,/Catalog index unavailable/);assert.equal(x.el('catalog-credit').getAttribute('role'),'alert');assert.match(x.el('catalog-rows').textContent,/Guard/);window.campaign.creature=async()=>({ok:true,value:detail('Guard')});x.el('catalog-rows').querySelector('button').click();await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Guard');
+ window.campaign.creatureInfo=async()=>({ok:true,value:{notice:'Recovered source credit',hash:'pinned',types:['Humanoid'],sizes:[],habitats:[],alignments:[],subtypes:[]}});const reopened=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Guard');await reopened;assert.equal(x.el('catalog-credit').textContent,'Recovered source credit');assert.notEqual(x.el('catalog-credit').getAttribute('role'),'alert');assert.equal(x.el('catalog-type').querySelectorAll('option').length,2);
 });
 test('an old campaign query cannot overwrite a completed new campaign query',async t=>{
  const x=await fixture(t);x.ui.activateCatalog({...x.w,token:'two',campaign:{id:'other'}});const next=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Current');await next;await x.resolve(0,'Old');await x.opened;assert.match(x.el('catalog-rows').textContent,/Current/);assert.doesNotMatch(x.el('catalog-rows').textContent,/Old/);
@@ -129,4 +131,19 @@ test('a narrow catalog reveals pending detail and returns to the unchanged query
  const held=deferred();window.campaign.creature=()=>held.promise;x.el('catalog-search').value='Goblin';x.el('catalog-rows').querySelector('button').click();await tick();
  assert.deepEqual(jumps,['detail']);assert.match(x.el('catalog-detail').textContent,/geladen/);
  held.resolve({ok:true,value:detail('Goblin')});await tick();await tick();x.el('catalog-results-return').click();assert.deepEqual(jumps,['detail','results']);assert.equal(x.el('catalog-search').value,'Goblin');assert.equal(x.reads.length,1);
+});
+
+test('pending metadata does not block queries or restart newer typed results when it completes',async t=>{
+ const held=deferred(),x=await fixture(t,false,{creatureInfo:()=>held.promise});await x.resolve(0,'Initial');x.type('Wolf');await x.debounce();await x.resolve(1,'Wolf');held.resolve({ok:true,value:{notice:'Offline source',hash:'pinned',types:[],sizes:[],habitats:[],alignments:[],subtypes:[]}});await x.opened;assert.equal(x.reads.length,2);assert.match(x.el('catalog-rows').textContent,/Wolf/);assert.equal(x.el('catalog-search').value,'Wolf');
+});
+test('an explicit source opens without waiting for metadata, query, plan list or generation readers',async t=>{
+ const held=deferred(),x=await fixture(t,true);await x.resolve(0,'Guard');await x.opened;const requests=[];window.campaign.creature=async id=>{requests.push(id);return{ok:true,value:detail(id)};};for(const name of ['creatureInfo','encounterPlans','generatorRegistry'])window.campaign[name]=()=>held.promise;
+ const opened=x.ui.openCatalogReference({kind:'creature',id:'Wolf'});await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Wolf');await opened;assert.deepEqual(requests,['Wolf']);assert.deepEqual(x.liveAdds,[]);assert.equal(x.el('encounter-entries').children.length,0);
+});
+
+test('old metadata failure cannot replace the new campaign source credit or results',async t=>{
+ const held=deferred(),x=await fixture(t,false,{creatureInfo:()=>held.promise});await x.resolve(0,'Old');x.ui.activateCatalog({...x.w,token:'two',campaign:{id:'other'}});window.campaign.creatureInfo=async()=>({ok:true,value:{notice:'Current credit',hash:'pinned',types:[],sizes:[],habitats:[],alignments:[],subtypes:[]}});const opened=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Current');await opened;held.resolve({ok:false,error:'Old metadata error'});await x.opened;assert.equal(x.el('catalog-credit').textContent,'Current credit');assert.match(x.el('catalog-rows').textContent,/Current/);assert.deepEqual(x.messages,[]);
+});
+test('explicit saved encounter source opens while the browsing query and registry remain pending',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Guard');await x.opened;window.campaign.generatorRegistry=()=>deferred().promise;window.campaign.encounterPlan=async(token,id)=>({ok:true,value:{id,revision:1,name:'Viewed source',notes:'  Unchanged author prose\r\n',party:[],entries:[],sources:[],catalogHash:'pinned'}});const opened=x.ui.openCatalogReference({kind:'encounter',id:'source'});await until(()=>x.el('encounter-name').value==='Viewed source');await opened;assert.equal(x.el('encounter-notes').value,'  Unchanged author prose\r\n');assert.deepEqual(x.liveAdds,[]);
 });

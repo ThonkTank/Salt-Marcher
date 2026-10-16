@@ -21,14 +21,20 @@ Filtereingabe entzieht jeder älteren Queryantwort sofort ihre Autorität,
 leert alte Ergebnisaktionen und zeigt den lokalen Suchzustand. Erst nach200ms
 startet die neue Anfrage ab Seite1. Submit, Reset, Sortieren und Paging
 beenden einen noch ausstehenden Debouncetimer; eine spätere Antwort ersetzt
-keine jüngere Query oder Kampagne. Reset leert Katalogfilter und sortiert nach
-Name; die Encountereinstellungen bleiben beim vorhandenen Generierungsowner.
+keine jüngere Query oder Kampagne. Reset leert Katalogfilter und erhält die
+gewählte Sortierung; die Encountereinstellungen bleiben beim vorhandenen Generierungsowner.
 
 Die Ergebnisfläche unterscheidet „noch nicht geladen“, Suche, leeres Ergebnis
 und lokalen Fehler. Während Suche/Fehler sind beide Pagingaktionen gesperrt.
 Ein Suchfehler zeigt weder alte Treffer noch einen falschen Erfolg; die Filter
 erhalten ihre Werte, Submit wiederholt ausdrücklich dieselbe Suche.
-Metadatenfehler blockieren keine anderen Arbeitsbereiche. Eine verspätete
+Quellen-/Filtermetadaten, Trefferliste, gespeicherte Vorlagen und Generator
+werden unabhängig gelesen. Metadatenfehler erscheinen bei Quellen und Lizenz,
+ohne gesunde Treffer oder Details zu leeren. Erneutes Öffnen wiederholt fehlende
+Metadaten. Eine ausdrückliche Quellenöffnung aus Schnellsuche oder Verweisen
+liest die gewählte Kreatur/Vorlage direkt; sie wartet weder auf Metadaten noch
+auf Treffer-, Vorlagen- oder Generatorlisten. Deren spätere Antwort ändert die
+angesehene Quelle nicht. Kampagnen- und Requestgrenzen gelten weiterhin. Eine verspätete
 Detailantwort darf den Queryfehler nicht als „keine Kreaturen“ überschreiben.
 Bereits lesbare Kreaturdetails bleiben bei Suchfehlern eigenständige Referenzinformationen.
 Eine neue Kreaturauswahl leert dagegen den bisherigen Statblock und sperrt
@@ -46,7 +52,10 @@ Fehler/Recovery, Reset/Sort ohne Folgeanfrage, Kampagnenwechsel und Indexfehler.
 Detailfälle prüfen zusätzlich fehlende/ausgefallene Quellen, falsche Identität,
 Retry und gesperrte Übergaben während Laden/Fehler.
 `desktop-generation-context.test.mjs` prüft zusätzlich Filterweitergabe und
-Invalidierung alter Generierungsvorschläge. Das sind Controller-/DOMbelege;
+Invalidierung alter Generierungsvorschläge. Verzögerte Quellen werden einzeln
+geprüft; derselbe Lesefluss ist in der nativen Desktop-App mit echtem Korpus
+und vier gleichzeitig ausstehenden Nebenquellen geprüft. Das sind begrenzte
+Controller-/DOM- und native Lesebelege;
 native Tastatur/Fokus, Langlisten und fachliche Generierung benötigen ihre
 eigenen Nachweise.
 
@@ -54,8 +63,8 @@ eigenen Nachweise.
 
 1. **Angezeigter Filterstand und gemeinsame Menge.** In `catalog-ui.query`,
    den sichtbaren Controls und der bestehenden Generierungsbridge die gleiche
-   vollständige Filtermenge verwenden. Mehrfachauswahl und einzeln entfernbare
-   Chips fehlen im Desktop noch; gewählte Werte beim Suchen erhalten,
+   vollständige Filtermenge verwenden. Einzeln entfernbare Chips und sichtbare Headersortierung sind vorhanden;
+   Mehrfachauswahl fehlt im Desktop noch. Gewählte Werte beim Suchen erhalten,
    sichtbare Labels ohne Groß-/Kleinschreibung und Diakritika auffindbar machen.
    HGgrenzen sinnvoll begrenzen und den vollen Standardbereich nicht als
    zusätzlichen Filter veröffentlichen. Abnahme: mehrere Typen/Biome,
