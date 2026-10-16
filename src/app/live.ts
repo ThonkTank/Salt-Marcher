@@ -26,7 +26,7 @@ import {cuePlayer,cuePlayerImage} from './player-ui';
 import {renderLiveNpcChoices} from './live-player-cues';
 import {findLiveKnowledge} from './live-knowledge';
 import {partyHealthFacts,partyProgressFacts,passivePerceptionResult} from './live-party-reference';
-import {liveMomentSavedMessage,canClearSavedLiveMoment,emptyLiveMomentDraft,LiveMomentDraftBook,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
+import {liveMomentSavedMessage,canClearSavedLiveMoment,emptyLiveMomentDraft,liveMomentDraftValue,sameLiveMomentDraft,type LiveMomentCategory,type LiveMomentDraft} from './live-moment-drafts';
 import type {NarrativeView} from './narrative-contracts';
 import type {ChronicleView} from './chronicle-contracts';
 import {handoffVisitSeed,liveActionUpdatesRecap,liveSessionRecap,latestCompletedSessionHandoff,sessionCloseHandoffSuggestion} from './live-session-recap';
@@ -79,7 +79,8 @@ let selected: string | null = null, characterDraft: Character | null = null, sce
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
 let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
 let requestIsTextSave = false;
-const liveMomentDrafts=new LiveMomentDraftBook();
+type MomentWork={w:Workspace;sceneId:string;text:LiveMomentDraft;basis:LiveMomentDraft|null;dirty:boolean;error:string;readError:string;publishing?:boolean;saving?:Promise<boolean>};
+const momentWorks=new Map<string,MomentWork>();let momentOwner:MomentWork|null=null;
 let narrativeGeneration=0,narrativeCache=new Map<string,NarrativeView>(),narrativeProblems=new Map<string,string>(),narrativeLoading=new Set<string>();
 const intentBlocked = () => !!request && !requestIsTextSave;
 let adoption: Extract<LiveAction, { kind: 'apply-visit' }> | null = null;
@@ -126,7 +127,7 @@ export function activateLive(workspace: Workspace) {
   newCharacterBasis=null;get('character-result').textContent='';
   adoption = null; moveBasis = null;preparedNotesSceneId=null;preparedNoteIds.clear();
   narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear();
-  liveMomentDrafts.reset();writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent='';
+  momentWorks.clear();momentOwner=null;writeLiveMomentDraft(emptyLiveMomentDraft());get('live-moment-result').textContent='';
   get('live-session-result').textContent='';
   for (const id of ['adoption-dialog', 'move-dialog', 'archive-dialog', 'character-dialog']) if (get<HTMLDialogElement>(id).open) get<HTMLDialogElement>(id).close();
 }
@@ -247,6 +248,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
   return request;
 }
 export async function flushLive(): Promise<boolean> {
+  captureMomentDraft();for(const work of momentWorks.values())if(!await saveMomentWork(work))return false;
   const recap=context&&recapDrafts.get(context.campaign.id);if(context&&recap&&!await saveRecap(context,recap))return false;
   if(!await flushSceneDesk())return false;
   if(!(await flushProgress())||!(await flushCombat())||!(await flushChase()))return false;
@@ -494,7 +496,41 @@ function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'
 }
 function currentLiveMomentDraft():LiveMomentDraft{return{category:value('live-moment-category') as LiveMomentCategory,title:value('live-moment-title'),summary:value('live-moment-summary'),followUp:value('live-moment-follow-up') as LiveMomentDraft['followUp']};}
 function writeLiveMomentDraft(draft:LiveMomentDraft){get<HTMLSelectElement>('live-moment-category').value=draft.category;get<HTMLInputElement>('live-moment-title').value=draft.title;get<HTMLTextAreaElement>('live-moment-summary').value=draft.summary;get<HTMLSelectElement>('live-moment-follow-up').value=draft.followUp;}
-function renderLiveMomentDraft(){const next=liveMomentDrafts.switchTo(data?.scene?.id??null,currentLiveMomentDraft());if(next.changed){writeLiveMomentDraft(next.draft);get('live-moment-result').textContent='';}}
+function showMomentDraftState(){
+ const work=momentOwner,active=work&&liveMomentDraftValue(work.text),error=work?.error||work?.readError;
+ get('live-moment-draft-status').textContent=error||(!work?'':work.dirty?'Momententwurf wird gesichert…':active?'Momententwurf gesichert · noch nicht in der Chronik.':'Eingaben werden als Entwurf gesichert. Erst „Moment festhalten“ bestätigt das Ereignis.');
+ get('live-moment-retry').hidden=!error;get('live-moment-retry').textContent=work?.readError?'Momententwurf erneut laden':'Eigene Eingabe erneut sichern…';
+ get('live-moment-open').textContent=active?'Momententwurf öffnen…':'Moment festhalten…';
+ for(const field of get('live-moment-form').querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement|HTMLButtonElement>('input,select,textarea,button'))field.disabled=field.id!=='live-moment-retry'&&!!work?.readError;
+}
+function captureMomentDraft(){
+ const work=momentOwner;if(!work||work.readError)return;
+ const text=currentLiveMomentDraft();if(!equal(text,work.text)){work.text=text;work.dirty=!sameLiveMomentDraft(liveMomentDraftValue(text),work.basis);if(!work.dirty)work.error='';showMomentDraftState();}
+}
+async function saveMomentWork(work:MomentWork):Promise<boolean>{
+ if(work.saving)return work.saving;if(!work.dirty)return true;if(work.readError)return false;
+ const task=(async()=>{while(work.dirty){const text=liveMomentDraftValue(work.text);
+  try{unwrap(await window.campaign.keepLiveMomentDraft(work.w.token,work.sceneId,text,work.basis));}
+  catch(error){try{const saved=unwrap(await window.campaign.liveScene(work.w.token,work.sceneId));if(saved.momentDraftError||!sameLiveMomentDraft(saved.momentDraft??null,text))throw error;}catch{work.error='Momententwurf nicht gesichert: '+(error as Error).message;if(momentOwner===work)showMomentDraftState();tell(work.error,true);return false;}}
+  work.basis=text;work.error='';work.dirty=!sameLiveMomentDraft(liveMomentDraftValue(work.text),text);if(momentOwner===work)showMomentDraftState();
+ }return true;})();work.saving=task;try{return await task;}finally{if(work.saving===task)work.saving=undefined;}
+}
+async function retryMomentDraft(){
+ const work=momentOwner;if(!work)return;captureMomentDraft();const text={...work.text};
+ try{if(work.saving)await work.saving;const scene=unwrap(await window.campaign.liveScene(work.w.token,work.sceneId));if(momentOwner!==work||!equal(text,work.text))return;if(scene.momentDraftError)throw new Error(scene.momentDraftError);const saved=scene.momentDraft??null;
+  if(work.readError){work.text=saved??emptyLiveMomentDraft();work.basis=saved;work.readError='';work.error='';work.dirty=false;writeLiveMomentDraft(work.text);showMomentDraftState();return;}
+  if(!sameLiveMomentDraft(saved,work.basis)&&!sameLiveMomentDraft(saved,liveMomentDraftValue(text))&&!window.confirm('Ein anderer Momententwurf ist gesichert:\n'+(saved?.title??'')+'\n'+(saved?.summary??'')+'\n\nDurch deine weiterhin sichtbare Eingabe ersetzen?'))return;
+  work.basis=saved;work.dirty=true;await saveMomentWork(work);
+ }catch(error){work.error='Momententwurf nicht gesichert: '+(error as Error).message;if(momentOwner===work)showMomentDraftState();}
+}
+function renderLiveMomentDraft(){
+ const scene=data?.scene;if(momentOwner?.sceneId===scene?.id&&momentOwner?.w.token===context?.token)return;
+ captureMomentDraft();if(momentOwner?.dirty)void saveMomentWork(momentOwner);
+ momentOwner=null;
+ if(scene&&context){let work=momentWorks.get(scene.id);if(!work){work={w:context,sceneId:scene.id,text:scene.momentDraft??emptyLiveMomentDraft(),basis:scene.momentDraft??null,dirty:false,error:'',readError:scene.momentDraftError??''};momentWorks.set(scene.id,work);}momentOwner=work;}
+ writeLiveMomentDraft(momentOwner?.text??emptyLiveMomentDraft());get('live-moment-result').textContent='';showMomentDraftState();
+ if(momentOwner&&liveMomentDraftValue(momentOwner.text))get<HTMLDetailsElement>('live-moment-panel').open=true;
+}
 function renderLiveSession(){
   const recap=liveSessionRecap(sessionChronicle?.entries??[],sessionChronicle?.latestSessionMarker);sessionResumeButton.hidden=recap.open||!recap.marker;sessionResumeButton.disabled=!!sessionChronicleError||intentBlocked();const status=get('live-session-status'),list=get('live-session-events');list.replaceChildren();
   get<HTMLButtonElement>('live-session-start').hidden=recap.open||!!recap.marker;get<HTMLButtonElement>('live-session-end').hidden=!recap.open;get<HTMLButtonElement>('live-session-start').disabled=!!sessionChronicleError||intentBlocked();get<HTMLButtonElement>('live-session-end').disabled=!!sessionChronicleError||intentBlocked()||!!recapReadError();get('live-session-summary-label').hidden=!recap.open;get('live-session-handoff-label').hidden=!recap.open;
@@ -767,23 +803,27 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
   get('running-player-blank').onclick=()=>{void cuePlayer('blank',null);};
   get('live-knowledge-search').oninput=renderLiveKnowledge;
   get('live-passive-form').onsubmit=event=>{event.preventDefault();renderPassivePerception();};
+  get('live-moment-open').onclick=()=>{const panel=get<HTMLDetailsElement>('live-moment-panel');panel.open=true;panel.scrollIntoView?.({block:'center'});get<HTMLInputElement>('live-moment-title').focus({preventScroll:true});};
+  get('live-moment-retry').onclick=()=>void retryMomentDraft();
+  get('live-moment-form').addEventListener('input',()=>{captureMomentDraft();if(momentOwner&&!momentOwner.publishing)void saveMomentWork(momentOwner);});
   get('live-moment-form').onsubmit=event=>{
     event.preventDefault();const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,draft=currentLiveMomentDraft(),{category,title,summary,followUp}=draft,scene=data?.scene,plan=scene?.adoption?.planId||value('adoption-plan')||sources?.selection.planId||null,narrativeFollowUp=followUp==='quest'||followUp==='rumor'?followUp:null;
     const current=()=>context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focusRevision;
-    if(!token||!sceneId||liveMomentDrafts.currentSceneId!==sceneId)return;
+    if(!token||!sceneId||momentOwner?.sceneId!==sceneId||momentOwner.readError||momentOwner.publishing)return;
+    const publishingWork=momentOwner;publishingWork.publishing=true;
     void(async()=>{try{
       if(!await flushLive()||!current())return;
-      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,followUp:narrativeFollowUp?{kind:narrativeFollowUp,id:crypto.randomUUID()}:null});if(!ack)return;liveMomentDrafts.saved(sceneId,draft);if(!current())return;
+      const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,draft,followUp:narrativeFollowUp?{kind:narrativeFollowUp,id:crypto.randomUUID()}:null});if(!ack)return;const work=momentWorks.get(sceneId);if(work&&sameLiveMomentDraft(work.basis,draft)&&!ack.scene?.momentDraft)work.basis=null;if(!current())return;
       let refreshProblem=false;if(narrativeFollowUp){try{const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(!current())return;refreshProblem=true;}}
-      const unchanged=canClearSavedLiveMoment(sceneId,liveMomentDrafts.currentSceneId,draft,currentLiveMomentDraft());
-      if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());if(followUp!=='deadline'&&followUp!=='visit')get<HTMLInputElement>('live-moment-title').focus();}
+      const unchanged=canClearSavedLiveMoment(sceneId,momentOwner?.sceneId??null,draft,currentLiveMomentDraft());
+      if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());captureMomentDraft();showMomentDraftState();if(followUp!=='deadline'&&followUp!=='visit')get<HTMLInputElement>('live-moment-title').focus();}
       if((followUp==='deadline'||followUp==='visit')&&scene&&current())try{
         const location=scene.locationId?{id:scene.locationId,title:sources?.locations.find(row=>row.document.id===scene.locationId)?.document.name??'Aktueller Gruppenort'}:null;
         if(followUp==='deadline')await openMomentDeadline({title,summary,location},current);
         else await openMomentVisit(plan,{title,notes:summary,locationId:scene.locationId},current);
       }catch{refreshProblem=true;}
       if(current())get('live-moment-result').textContent=liveMomentSavedMessage(followUp,unchanged,refreshProblem);
-    }catch(error){if(current())tell((error as Error).message,true);}})();
+    }catch(error){if(current())tell((error as Error).message,true);}finally{publishingWork.publishing=false;if(publishingWork.dirty&&!publishingWork.error)void saveMomentWork(publishingWork);}})();
   };
   get('live-session-start').onclick=()=>void startLiveSession();
   get('live-session-end').onclick=()=>void loadSessionCloseReview();
@@ -907,7 +947,7 @@ function livePacketSource():LivePacketSource|null{
  return {sceneId:s.id,token:w.token,planId:p,visitId:s.adoption?.planId===p?s.adoption.visitId:null,key:JSON.stringify([w.token,s.id,p,focus,s.membershipRevision,s.revision,s.adoption?.id]),current,flush:flushLive,openVisit:async id=>{if(current())await previewPlannedVisit(p,id);},readAloud:async(text,title,active=()=>true)=>{const before=sceneDraft?.readAloud;if(!current()||!active()||!await flushLive()||!current()||!active())return;if(sceneDraft?.readAloud!==before){tell('Neuerer Szenentext bleibt erhalten. Vorlesetext erneut wählen.',true);return;}useKnowledgeReadAloud(text,title);await flushLive();},openReference:async(ref,active=()=>true)=>{const valid=()=>current()&&active();if(!valid()||!await flushLive()||!valid())return;if(ref.kind==='location')await openLocationNotebook(ref.id,valid);else await openKnowledgeNote(ref.id,valid);},prepareEncounter:async(groupId,visitId,groupRevision,active=()=>true)=>{const valid=()=>current()&&active();if(!valid()||!await flushLive()||!valid())return;if(data?.scene?.adoption?.planId!==p||data.scene.adoption.visitId!==visitId)throw new Error('Übernimm diesen Besuch zuerst, damit Ort und vorbereitete Gruppe zum laufenden Szenenstand gehören.');const preparation=unwrap(await window.campaign.scenePreparation(token,sceneId));if(!valid())return;const group=preparation.groups.find(row=>row.id===groupId&&row.revision===groupRevision);if(!group)throw new Error('Vorbereitete Gruppe ist an diesem Szenenort nicht verfügbar. Besuch oder Ortsstand prüfen.');await prepareWorldGroup(group,undefined,valid);},openReward:async(visitId,active=()=>true)=>{const valid=()=>current()&&active();if(valid())await openPreparedReward(p,visitId,valid);},captureMoment:async(category,title,summary,active=()=>true)=>{if(!current()||!active())return;const draft=currentLiveMomentDraft(),text=[draft.summary,summary].filter(Boolean).join('\n\n');
   if(text.length>10000)throw new Error('Mappenabschnitt passt nicht in die 10.000 Zeichen des Chronikmoments. Die bisherige Eingabe bleibt unverändert. Kürze sie oder übernimm einen Ausschnitt von Hand.');
   const hasDraft=!!(draft.title||draft.summary||draft.category!=='world'||draft.followUp);
-  writeLiveMomentDraft({...draft,category:hasDraft?draft.category:category,title:draft.title||title,summary:text});get('live-party-panel').hidden=false;get<HTMLButtonElement>('session-packet-party-toggle').setAttribute('aria-pressed','true');get('live-moment-result').textContent='Mappenabschnitt vorgemerkt. Ergänze den tatsächlichen Ausgang und speichere ihn dann als Chronikmoment.';get<HTMLDetailsElement>('live-moment-panel').open=true;get('live-moment-panel').scrollIntoView({block:'start'});get<HTMLInputElement>('live-moment-title').focus({preventScroll:true});}};
+  writeLiveMomentDraft({...draft,category:hasDraft?draft.category:category,title:draft.title||title,summary:text});captureMomentDraft();if(momentOwner)void saveMomentWork(momentOwner);get('live-party-panel').hidden=false;get<HTMLButtonElement>('session-packet-party-toggle').setAttribute('aria-pressed','true');get('live-moment-result').textContent='Mappenabschnitt vorgemerkt. Ergänze den tatsächlichen Ausgang und speichere ihn dann als Chronikmoment.';get<HTMLDetailsElement>('live-moment-panel').open=true;get('live-moment-panel').scrollIntoView({block:'start'});get<HTMLInputElement>('live-moment-title').focus({preventScroll:true});}};
 
 }
 function syncLivePacketContext(){syncLiveSessionPacket(livePacketSource());}

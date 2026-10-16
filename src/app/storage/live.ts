@@ -1,3 +1,4 @@
+import {readLiveMomentDraft,clearSubmittedMomentDraft} from './live-moment-drafts';
 import {readSessionBoundary} from './chronicle';
 import {readWorldCalendar} from './world';
 import {readClockEvent} from './time-plan';
@@ -19,6 +20,7 @@ export function installLiveSchema(db: any) {
     CREATE TABLE IF NOT EXISTS campaign_time(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id), epoch_id TEXT NOT NULL, instant_ms TEXT NOT NULL) STRICT;
     CREATE UNIQUE INDEX IF NOT EXISTS campaign_time_epoch ON campaign_time(campaign_id,epoch_id);
     CREATE TABLE IF NOT EXISTS live_scene(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, revision INTEGER NOT NULL, title TEXT NOT NULL, notes TEXT NOT NULL, location_id TEXT, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,location_id) REFERENCES location(campaign_id,id)) STRICT;
+    CREATE TABLE IF NOT EXISTS live_moment_draft(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,scene_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
     CREATE TABLE IF NOT EXISTS scene_clock(campaign_id TEXT NOT NULL, scene_id TEXT NOT NULL, revision INTEGER NOT NULL, epoch_id TEXT NOT NULL, instant_ms TEXT NOT NULL, PRIMARY KEY(campaign_id,scene_id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id), FOREIGN KEY(campaign_id,epoch_id) REFERENCES campaign_time(campaign_id,epoch_id)) STRICT;
     CREATE TABLE IF NOT EXISTS live_state(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id), primary_id TEXT NOT NULL, focus_id TEXT NOT NULL, focus_revision INTEGER NOT NULL, FOREIGN KEY(campaign_id,primary_id) REFERENCES live_scene(campaign_id,id), FOREIGN KEY(campaign_id,focus_id) REFERENCES live_scene(campaign_id,id)) STRICT;
     CREATE TABLE IF NOT EXISTS roster_member(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, ordinal INTEGER NOT NULL, active INTEGER NOT NULL CHECK(active IN(0,1)), membership_revision INTEGER NOT NULL, scene_id TEXT, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
@@ -74,7 +76,8 @@ export function readLiveScene(db: any, campaignId: string, id: string): LiveScen
   const life = db.prepare('SELECT * FROM scene_lifecycle WHERE campaign_id=? AND id=?').get(campaignId, id);
   if (!life || !Number.isSafeInteger(life.membership_revision) || life.membership_revision < 0) throw new Error('Scenestatus fehlt oder ist beschädigt.');
   const source = db.prepare('SELECT id,plan_id AS planId,plan_revision AS planRevision,visit_id AS visitId,title,notes,location_id AS locationId FROM scene_adoption WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1').get(campaignId, id);
-  return { id: row.id, revision: row.revision, title: row.title, notes: row.notes, readAloud:sceneReadAloud(db,campaignId,id), locationId: row.location_id, membershipRevision: life.membership_revision, retired: !!life.retired, clock: clock(db, campaignId, id),
+  let moment:{}={};try{const draft=readLiveMomentDraft(db,campaignId,id);if(draft)moment={momentDraft:draft};}catch(error){moment={momentDraftError:(error as Error).message};}
+  return { ...moment,id: row.id, revision: row.revision, title: row.title, notes: row.notes, readAloud:sceneReadAloud(db,campaignId,id), locationId: row.location_id, membershipRevision: life.membership_revision, retired: !!life.retired, clock: clock(db, campaignId, id),
     members: db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1 ORDER BY ordinal,id').all(campaignId, id).map((r: any) => r.id), adoption: source ? {...source,outcome:readVisitOutcome(db,campaignId,source.id)} : null };
 }
 export function readLive(db: any, campaignId: string): LiveView {
@@ -348,6 +351,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       targetId=before.id;revision=before.revision;scene=before;
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND scene_id=? AND active=1 ORDER BY ordinal,id').all(campaignId,targetId).map((row:any)=>row.id);
       recordPartyHistory(db,campaignId,targetId,action.title.trim(),{kind:'live-moment',category:action.category,summary:action.summary,characterIds,locationId:before.locationId,instantMs:before.clock.instantMs,followUpKind:action.followUp?.kind??null,followUpId:action.followUp?.id??null});
+      if(action.draft){clearSubmittedMomentDraft(db,campaignId,targetId,action.draft);scene=readLiveScene(db,campaignId,targetId);}
     } else if(action.kind==='session-marker'){
       const boundary=readSessionBoundary(db,campaignId),open=boundary?.body.facts.marker==='start';
       if((action.marker==='start')===open)throw new Error(open?'Ein Spielabend läuft bereits. Rückblick aktualisieren.':'Kein laufender Spielabend. Rückblick aktualisieren.');

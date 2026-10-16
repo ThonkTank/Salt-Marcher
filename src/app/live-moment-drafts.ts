@@ -1,6 +1,13 @@
 export type LiveMomentCategory='combat'|'narrative'|'reward'|'travel'|'party'|'world';
 export interface LiveMomentDraft {category:LiveMomentCategory;title:string;summary:string;followUp:''|'quest'|'rumor'|'deadline'|'visit'}
 
+export function checkedLiveMomentDraft(d:LiveMomentDraft):LiveMomentDraft{
+  if(!d||Object.getPrototypeOf(d)!==Object.prototype||Reflect.ownKeys(d).some(k=>typeof k!=='string'||!['category','title','summary','followUp'].includes(k)||!('value' in Object.getOwnPropertyDescriptor(d,k)!))||!['combat','narrative','reward','travel','party','world'].includes(d.category)||typeof d.title!=='string'||d.title.length>1000||typeof d.summary!=='string'||d.summary.length>10000||!['','quest','rumor','deadline','visit'].includes(d.followUp))throw new Error('Momententwurf ist ungültig. Gespeicherte Eingaben bleiben erhalten.');
+  return {category:d.category,title:d.title,summary:d.summary,followUp:d.followUp};
+}
+export const sameLiveMomentDraft=(a:LiveMomentDraft|null,b:LiveMomentDraft|null)=>a===null?b===null:!!b&&a.category===b.category&&a.title===b.title&&a.summary===b.summary&&a.followUp===b.followUp;
+export const liveMomentDraftValue=(d:LiveMomentDraft):LiveMomentDraft|null=>d.title||d.summary||d.category!=='world'||d.followUp?checkedLiveMomentDraft(d):null;
+
 export const emptyLiveMomentDraft=():LiveMomentDraft=>({category:'world',title:'',summary:'',followUp:''});
 export const canClearSavedLiveMoment=(sceneId:string,currentSceneId:string|null,saved:LiveMomentDraft,current:LiveMomentDraft)=>sceneId===currentSceneId&&saved.category===current.category&&saved.title===current.title&&saved.summary===current.summary&&saved.followUp===current.followUp;
 export function liveMomentSavedMessage(followUp:LiveMomentDraft['followUp'],cleared:boolean,refreshProblem=false){
@@ -9,20 +16,4 @@ export function liveMomentSavedMessage(followUp:LiveMomentDraft['followUp'],clea
   if(!cleared)message+=' Neuere Eingabe bleibt offen.';
   if(refreshProblem)message+=followUp==='quest'||followUp==='rumor'?' Wissensbinder bei Bedarf aktualisieren.':' Folgevorbereitung konnte nicht geöffnet werden.';
   return message;
-}
-
-export class LiveMomentDraftBook {
-  private drafts=new Map<string,LiveMomentDraft>();
-  currentSceneId:string|null=null;
-  reset(){this.drafts.clear();this.currentSceneId=null;}
-  switchTo(sceneId:string|null,current:LiveMomentDraft){
-    if(sceneId===this.currentSceneId)return{changed:false,draft:structuredClone(current)};
-    if(this.currentSceneId){
-      if(current.title||current.summary||current.category!=='world'||current.followUp)this.drafts.set(this.currentSceneId,structuredClone(current));
-      else this.drafts.delete(this.currentSceneId);
-    }
-    this.currentSceneId=sceneId;
-    return{changed:true,draft:sceneId?structuredClone(this.drafts.get(sceneId)??emptyLiveMomentDraft()):emptyLiveMomentDraft()};
-  }
-  saved(sceneId:string,submitted?:LiveMomentDraft){const cached=this.drafts.get(sceneId);if(!submitted||cached&&JSON.stringify(cached)===JSON.stringify(submitted))this.drafts.delete(sceneId);}
 }

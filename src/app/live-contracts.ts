@@ -1,3 +1,4 @@
+import {checkedLiveMomentDraft,type LiveMomentDraft} from './live-moment-drafts';
 import type {VisitOutcome,VisitOutcomeStatus} from './visit-outcome-contracts';
 import type { Result } from './contracts';
 export interface CharacterProfile {
@@ -9,6 +10,7 @@ export interface Character {
   archived?:boolean; active: boolean; membershipRevision: number; sceneId: string | null;
 }
 export interface LiveScene {
+  momentDraft?:LiveMomentDraft|null; momentDraftError?:string;
   id: string; revision: number; title: string; notes: string; readAloud?:string; locationId: string | null;
   membershipRevision: number; retired: boolean;
   clock: { epochId: string; instantMs: string; revision: number };
@@ -47,7 +49,7 @@ export type LiveAction =
   | { kind: 'focus'; sceneId: string; expectedRevision: number }
   | { kind: 'move'; sceneId: string; expectedRosterRevision: number; expectedFocusRevision: number; expectedClockRevision: number; expectedSceneMembershipRevision: number; memberIds: string[];
       target: { kind: 'new'; title: string; expectedContentRevision: number } | { kind: 'existing'; sceneId: string; expectedClockRevision: number; expectedMembershipRevision: number } }
-  | { kind: 'live-moment'; sceneId: string; expectedRevision: number; category: 'combat'|'narrative'|'reward'|'travel'|'party'|'world'; title: string; summary: string; followUp?:{kind:'quest'|'rumor';id:string}|null }
+  | { kind: 'live-moment'; sceneId: string; expectedRevision: number; category: 'combat'|'narrative'|'reward'|'travel'|'party'|'world'; title: string; summary: string; draft?:LiveMomentDraft; followUp?:{kind:'quest'|'rumor';id:string}|null }
   | { kind: 'session-marker'; sceneId: string; expectedRevision: number; marker: 'start'|'end'; summary: string; handoff?:string }
   | { kind: 'advance-clock'; sceneId: string; expectedRevision: number; amount: number; unit: TimeUnit; calendarVersion: 'relative-v1'; reason: string }
   | {kind:'advance-clock';sceneId:string;expectedRevision:number;calendarVersion:'campaign-calendar-v1';calendar:{revision:number;daySeconds:number};toInstantMs:string;expectedFocusRevision:number;eventTarget?:import('./time-plan-contracts').ClockEventTarget;reason:string};
@@ -72,6 +74,7 @@ export function formatInstant(instantMs: string, daySeconds=86400): string {
   return 'Tag ' + (seconds / BigInt(daySeconds)) + ' · ' + pad(seconds % BigInt(daySeconds) / 3600n) + ':' + pad(seconds / 60n % 60n) + ':' + pad(seconds % 60n);
 }
 export interface LiveAPI {
+  keepLiveMomentDraft(token:string,sceneId:string,draft:LiveMomentDraft|null,expected:LiveMomentDraft|null):Promise<Result<void>>;
   keepSessionRecapDraft(token:string,draft:SessionRecapDraft,expected:SessionRecapDraft|null):Promise<Result<void>>;
   archivedRoster(token:string,after:string|null,search:string):Promise<Result<{items:Character[];next:string|null;total:number}>>;
   live(token: string): Promise<Result<LiveView>>;
@@ -108,6 +111,7 @@ export function validateLiveCommand(command: LiveCommand) {
   }
   if ('locationId' in action && action.locationId !== null && (typeof action.locationId !== 'string' || !action.locationId || action.locationId.length > 1000)) throw new Error('Ungültiger Szenenort.');
   if(action.kind==='live-moment'&&(!['combat','narrative','reward','travel','party','world'].includes(action.category)||typeof action.title!=='string'||!action.title.trim()||action.title.length>1000||typeof action.summary!=='string'||action.summary.length>10000))throw new Error('Chronikeintrag benötigt einen Titel und höchstens 10.000 Zeichen Notiz.');
+  if(action.kind==='live-moment'&&action.draft!==undefined){const d=checkedLiveMomentDraft(action.draft);if(d.title!==action.title||d.summary!==action.summary||d.category!==action.category)throw new Error('Momententwurf passt nicht zum Chronikereignis.');}
   if(action.kind==='live-moment'&&action.followUp!==undefined&&action.followUp!==null&&(!['quest','rumor'].includes(action.followUp.kind)||typeof action.followUp.id!=='string'||!action.followUp.id||action.followUp.id.length>1000))throw new Error('Ungültige Folgespur.');
   if(action.kind==='session-marker'&&(!['start','end'].includes(action.marker)||typeof action.summary!=='string'||action.summary.length>10000||action.handoff!==undefined&&(typeof action.handoff!=='string'||action.handoff.length>10000)))throw new Error('Spielabend-Markierung benötigt gültige Rückblick- und Übergabetexte mit höchstens 10.000 Zeichen.');
 }

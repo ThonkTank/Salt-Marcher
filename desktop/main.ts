@@ -370,6 +370,7 @@ else {
     handle('campaign:live', (token: string) => store.live(token));
     handle('campaign:live-scene', (token: string, id: string) => store.liveScene(token, id));
     handle('campaign:live-archives', (token: string, after: string | null) => store.liveArchives(token, after));
+    handle('campaign:keep-live-moment-draft',(token:string,id:string,draft:any,expected:any)=>store.keepLiveMomentDraft(token,id,draft,expected));
     handle('campaign:keep-session-recap-draft',(token:string,draft:any,expected:any)=>store.keepSessionRecapDraft(token,draft,expected));
     handle('campaign:execute-live', (command: LiveCommand) => store.executeLive(command));
     handle('campaign:live-status', (command: LiveCommand, token: string) => store.liveStatus(command, token));
