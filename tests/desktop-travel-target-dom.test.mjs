@@ -265,8 +265,21 @@ test('Reise opens the one Hex console without changing the scene center; explici
   assert.equal(x.get('live-travel-navigation').contains(x.get('travel-place-cursor')),true);
   assert.equal(x.get('live-travel-navigation').contains(x.get('world-zoom-in')),true);
   assert.equal(x.get('live-center-scene').hidden,false);assert.equal(x.get('live-center-map').hidden,true);assert.equal(x.get('live-travel-host').contains(x.get('world-map-select')),true);assert.equal(x.get('live-center-map').contains(map),true);assert.equal(x.get('live-travel-host').contains(map),false);
-  x.get('live-travel-map-open').click();assert.equal(x.get('live-center-scene').hidden,true);assert.equal(x.get('live-center-map').hidden,false);x.get('live-center-scene-tab').click();assert.equal(x.get('live-center-scene').hidden,false);x.get('travel-mode-route').click();assert.equal(x.get('live-center-map').hidden,false);
+  const focusOptions=[];map.focus=options=>focusOptions.push(options);x.get('live-travel-map-open').click();assert.deepEqual(focusOptions,[{preventScroll:true}],'keyboard focus must not scroll the center tabs behind the sticky group header');assert.equal(x.get('live-center-scene').hidden,true);assert.equal(x.get('live-center-map').hidden,false);x.get('live-center-scene-tab').click();assert.equal(x.get('live-center-scene').hidden,false);x.get('travel-mode-route').click();assert.equal(x.get('live-center-map').hidden,false);
   x.ui.setWorldSurface('world');assert.equal(x.get('live-travel-weather').open,true);assert.equal(x.get('live-center-tools').contains(x.get('live-travel-toggle')),true);assert.equal(x.get('world-travel-owner').contains(map),true);assert.equal(x.get('world-travel-owner').contains(x.get('world-map-select')),true);x.ui.setWorldSurface('live');assert.equal(x.document.querySelectorAll('#world-map').length,1);assert.equal(x.document.querySelectorAll('#journey-play').length,1);assert.ok(x.store.db.serialize().equals(before));
+ }finally{await x.ui.stopWorldPlayback();x.cleanup();}
+});
+test('the shared travel map stays visible outside the Atlas inspector and returns to its hidden inspector projection',async()=>{
+ const x=await liveContextFixture();try{
+  const map=x.get('world-map'),before=x.store.db.serialize(),inspector=x.document.createElement('aside');inspector.id='atlas-panel';x.document.body.append(inspector);inspector.append(x.get('world'));
+  // Match the shipped hide rules against the actual docked DOM. This guards
+  // selector scope; native UI verification still supplies the layout evidence.
+  const css=readFileSync('src/app/app.css','utf8').replace(/\/\*[\s\S]*?\*\//g,'');
+  const hideSelectors=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([,selector,declarations])=>/(?:^|;)\s*display\s*:\s*none\s*!important\s*(?:;|$)/.test(declarations)).map(([,selector])=>selector.trim());
+  const hiddenByStyle=()=>hideSelectors.filter(selector=>map.matches(selector));
+  x.get('live-travel-map-open').click();assert.equal(x.get('live-center-map').hidden,false);assert.ok(map.querySelector('polygon'));assert.deepEqual(hiddenByStyle(),[],'Atlas-only canvas suppression must not hide the live travel map');
+  x.ui.setWorldSurface('atlas');assert.equal(inspector.contains(map),true);assert.ok(hiddenByStyle().length,'the Atlas inspector still suppresses its redundant canvas');
+  x.ui.setWorldSurface('live');x.get('live-center-map-tab').click();assert.equal(x.get('live-center-map').contains(map),true);assert.deepEqual(hiddenByStyle(),[]);assert.equal(x.document.querySelectorAll('#world-map').length,1);assert.ok(x.store.db.serialize().equals(before));
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
 test('live keyboard waypoints evaluate inline and start with the preselected presentation speed',async()=>{
