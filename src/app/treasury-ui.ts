@@ -436,6 +436,7 @@ async function history(more: boolean) {
 }
 async function findCatalog() {
   const current = editorOwner();
+  el('treasury-catalog-results').textContent='Gegenstände werden gesucht…';
   const q = {
     search: value("treasury-catalog-search"),
     category: "",
@@ -447,10 +448,18 @@ async function findCatalog() {
     after: 0,
     includeTrashed: false,
   };
-  const response = await window.campaign.itemDefinitions(q);
+  let response;
+  try{response=await window.campaign.itemDefinitions(q);}
+  catch(error){
+    if(!current()||q.search!==value('treasury-catalog-search'))return;
+    el('treasury-catalog-results').textContent='Suche fehlgeschlagen. Bitte erneut suchen.';
+    throw error;
+  }
   if (!current() || q.search !== value("treasury-catalog-search")) return;
+  if(!response.ok)el('treasury-catalog-results').textContent='Suche fehlgeschlagen: '+response.error;
   const p = unwrap(response);
   el("treasury-catalog-results").replaceChildren();
+  if(!p.items.length)el('treasury-catalog-results').textContent='Keine passenden Gegenstände gefunden.';
   for (const d of p.items) {
     const b = document.createElement("button");
     b.type = "button";
@@ -537,6 +546,7 @@ export function initTreasury(
     e.preventDefault();
     run(findCatalog);
   };
+  el('treasury-catalog-search').oninput=()=>{el('treasury-catalog-results').textContent='Suche mit Enter oder „Suchen“ starten.';};
   el("treasury-move-form").onsubmit = (e) => {
     e.preventDefault();
     run(async () => {

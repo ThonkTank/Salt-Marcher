@@ -88,3 +88,14 @@ test('catalog preparation retains quantities, title and definition identities wh
  assert.equal(saved.title,'Zollkiste');assert.deepEqual(saved.items.map(i=>[i.quantity,i.reference.definitionId,i.reference.revision]),[['20','gp',1],['3','potion',2]]);
  assert.equal(x.commands.length,0,'catalog preparation does not silently commit or allocate');
 });
+
+test('changed catalog queries remove old choices and show pending, empty and failed searches',async t=>{
+ const x=await fixture(t),input=x.el('treasury-catalog-search'),form=x.el('treasury-catalog-form'),results=x.el('treasury-catalog-results');
+ window.campaign.itemDefinitions=async()=>({ok:true,value:{items:[{id:'gold',revision:1,name:'Goldmünze',category:'coins',unitCopper:'100'}]}});
+ input.value='Gold';form.onsubmit({preventDefault(){}});await until(()=>!!results.querySelector('button'));
+ input.value='Potion';input.oninput();assert.equal(results.querySelector('button'),null);
+ const gate=deferred();window.campaign.itemDefinitions=()=>gate.promise;form.onsubmit({preventDefault(){}});assert.match(results.textContent,/gesucht/);
+ input.value='keine';input.oninput();gate.resolve({ok:true,value:{items:[{id:'old',name:'Alter Treffer'}]}});await tick();assert.equal(results.querySelector('button'),null);
+ window.campaign.itemDefinitions=async()=>({ok:true,value:{items:[]}});form.onsubmit({preventDefault(){}});await until(()=>results.textContent.includes('Keine passenden'));
+ window.campaign.itemDefinitions=async()=>({ok:false,error:'Katalog nicht lesbar'});form.onsubmit({preventDefault(){}});await until(()=>results.textContent.includes('Katalog nicht lesbar'));assert.equal(results.querySelector('button'),null);
+});
