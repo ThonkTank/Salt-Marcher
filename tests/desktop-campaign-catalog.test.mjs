@@ -12,19 +12,19 @@ buildSync({entryPoints:['src/app/campaign-screen-ui.ts'],outfile:'.build/campaig
 test('campaign screen waits for explicit selection and keeps pending creation single until workspace retry',async t=>{
  const {parseHTML}=await import('linkedom'),{readFileSync}=await import('node:fs'),{window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document};Object.assign(globalThis,{window,document});const memory=new Map();window.localStorage={getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
  for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}const calls=[];let release,entries=0;window.campaign={campaignOverview:async()=>({ok:true,value:[{id:'active',name:'Bekannt',revision:0,trashed:false,trashRevision:0,rooms:0,locations:0,characters:0,maps:0,audio:0,lastOpenedAt:null,createdAt:null}]}),list:async()=>({ok:true,value:{activeId:'active',campaigns:[{id:'active',name:'Bekannt',revision:0}]}}),campaignCatalog:c=>{calls.push(c);return new Promise(r=>release=r);},campaignCatalogOutcome:async()=>({ok:true,value:null})};
- const req=createRequire(import.meta.url);delete req.cache[req.resolve('../.build/campaign-screen-ui.cjs')];const ui=req('../.build/campaign-screen-ui.cjs');t.after(()=>Object.assign(globalThis,previous));ui.initCampaignScreen({before:async()=>true,changed:async()=>{},settingsEditorAvailable:()=>false,enter:async()=>++entries>1});await ui.openCampaignScreen(true);assert.equal(calls.length,0);assert.equal(entries,0);assert.match(document.getElementById('campaign-screen-list').textContent,/nicht bekannt/);
+ const req=createRequire(import.meta.url);delete req.cache[req.resolve('../.build/campaign-screen-ui.cjs')];const ui=req('../.build/campaign-screen-ui.cjs');t.after(()=>Object.assign(globalThis,previous));ui.initCampaignScreen({before:async()=>true,changed:async()=>{},enter:async()=>++entries>1});await ui.openCampaignScreen(true);assert.equal(calls.length,0);assert.equal(entries,0);assert.match(document.getElementById('campaign-screen-list').textContent,/nicht bekannt/);
  document.getElementById('campaign-screen-create').onclick();document.getElementById('campaign-identity-name').value='  Neue Kampagne  ';const submit=document.getElementById('campaign-identity-form').onsubmit;submit({preventDefault(){}});submit({preventDefault(){}});assert.equal(calls.length,1);assert.equal(calls[0].name,'Neue Kampagne');assert.equal(document.getElementById('campaign-identity-name').disabled,true);document.getElementById('campaign-identity-dialog').oncancel({preventDefault(){}});assert.equal(document.getElementById('campaign-identity-dialog').open,true);
  release({ok:true,value:{commandId:calls[0].commandId,kind:'create',campaignId:'new',name:'Neue Kampagne',lastOpenedAt:'2026-10-15T12:00:00.000Z',createdAt:'2026-10-15T12:00:00.000Z'}});for(let i=0;i<10;i++)await new Promise(r=>setImmediate(r));assert.equal(entries,1);assert.equal(document.getElementById('campaign-load-retry').hidden,false);document.getElementById('campaign-load-retry').onclick();for(let i=0;i<10;i++)await new Promise(r=>setImmediate(r));assert.equal(entries,2);assert.equal(calls.length,1);assert.equal(document.body.classList.contains('campaign-screen-open'),false);assert.equal(memory.size,0);
 });
 
-async function screenStorageFixture(t){
+async function screenStorageFixture(t,hooks={}){
  const x=fixture(t),{parseHTML}=await import('linkedom'),{readFileSync}=await import('node:fs'),{window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document},memory=new Map(),calls=[];Object.assign(globalThis,{window,document});t.after(()=>Object.assign(globalThis,previous));let rejectWrite=false,rejectRemove=false;
  window.localStorage={getItem:k=>memory.get(k)??null,setItem:(k,v)=>{if(rejectWrite)throw Object.assign(new Error('Speicherquote erreicht'),{name:'QuotaExceededError'});memory.set(k,v);},removeItem:k=>{if(rejectRemove)throw new Error('Vermerk kann nicht entfernt werden');memory.delete(k);}};
  for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  window.campaign={campaignOverview:async()=>response(()=>x.store.campaignOverview()),list:async()=>response(()=>x.store.list()),campaignCatalog:async c=>{calls.push(c);return response(()=>x.store.campaignCatalog(c));},campaignCatalogOutcome:async c=>response(()=>x.store.campaignCatalogOutcome(c))};
  const req=createRequire(import.meta.url);let entries=0;
- function init(){delete req.cache[req.resolve('../.build/campaign-screen-ui.cjs')];const ui=req('../.build/campaign-screen-ui.cjs');ui.initCampaignScreen({before:async()=>true,changed:async()=>{},settingsEditorAvailable:()=>false,enter:async r=>{x.store.campaignCatalogWorkspace(r.commandId);entries++;return true;}});return ui;}
+ function init(){delete req.cache[req.resolve('../.build/campaign-screen-ui.cjs')];const ui=req('../.build/campaign-screen-ui.cjs');ui.initCampaignScreen({before:hooks.before??(async()=>true),changed:hooks.changed??(async()=>{}),enter:async r=>{x.store.campaignCatalogWorkspace(r.commandId);entries++;return hooks.enter?hooks.enter(r):true;}});return ui;}
  const ui=init();await ui.openCampaignScreen(true);const tick=async()=>{for(let i=0;i<20;i++)await new Promise(r=>setImmediate(r));};
  return{...x,window,document,memory,calls,init,ui,tick,get entries(){return entries;},rejectWrite:v=>rejectWrite=v,rejectRemove:v=>rejectRemove=v,newCampaign(name){document.getElementById('campaign-screen-create').onclick();document.getElementById('campaign-identity-name').value=name;document.getElementById('campaign-identity-form').onsubmit({preventDefault(){}});}};
 }
@@ -77,4 +77,30 @@ test('a campaign prepared only with world knowledge shows its retained content b
  assert.equal(x.row(w.campaign.id).notes,1,'archived authored data still belongs to the campaign');
  x.execute({kind:'trash',id:w.campaign.id,expectedRevision:0,trashed:true});await x.ui.openCampaignScreen();assert.match(x.document.getElementById('campaign-trash-list').textContent,/Wissensrunde.*1 Wissenseintrag/);
  x.execute({kind:'trash',id:w.campaign.id,expectedRevision:1,trashed:false});assert.equal(x.row(w.campaign.id).notes,1);
+});
+
+for(const recovery of [false,true])test(`accepted campaign ${recovery?'receipt recovery':'creation'} stays exclusive through shell and workspace loading`,async t=>{
+ let releaseShell,releaseWorkspace;
+ const x=await screenStorageFixture(t,{changed:()=>new Promise(r=>releaseShell=r),enter:()=>new Promise(r=>releaseWorkspace=r)}),get=id=>x.document.getElementById(id);let ui=x.ui;
+ if(recovery){const command={commandId:randomUUID(),kind:'create',name:'Einmal'};x.store.campaignCatalog(command);x.memory.set('campaign-catalog-pending',JSON.stringify(command));ui=x.init();get('campaign-screen').querySelector('[data-catalog-check]').onclick();}
+ else x.newCampaign('Einmal');
+ await x.tick();const bytes=x.store.db.serialize(),commits=x.calls.length;
+ assert.equal(get('campaign-identity-dialog').open,false,'confirmed identity editor closes even while the remaining transition is busy');
+ assert.match(get('campaign-screen-status').textContent,/Öffnung bestätigt.*wird geladen/);
+ assert.equal(await ui.openCampaignScreen(),false,'campaign navigation cannot reopen the catalog while the confirmed shell is still loading');
+ get('campaign-screen-create').onclick();assert.equal(get('campaign-identity-dialog').open,false);assert.equal(get('campaign-screen-create').disabled,true);
+ releaseShell();await x.tick();assert.equal(x.entries,1);
+ assert.equal(await ui.openCampaignScreen(),false,'accepted workspace loading retains the same lock');
+ assert.equal(get('campaign-load-retry').disabled,true);get('campaign-load-retry').onclick();await x.tick();assert.equal(x.entries,1);
+ releaseWorkspace(false);await x.tick();assert.equal(get('campaign-load-retry').disabled,false);assert.match(get('campaign-screen-status').textContent,/Öffnung bestätigt/);
+ get('campaign-load-retry').onclick();await x.tick();assert.equal(x.entries,2);assert.equal(await ui.openCampaignScreen(),false);
+ releaseWorkspace(true);await x.tick();assert.equal(get('campaign-screen').hidden,true);assert.equal(x.calls.length,commits);assert.equal(x.store.list().campaigns.length,1);assert.ok(x.store.db.serialize().equals(bytes),'loading and retry cannot replay creation or update usage');
+});
+test('navigation waiting for draft flush cannot overtake a campaign command that started meanwhile',async t=>{
+ let releaseBefore,releaseWorkspace;
+ const x=await screenStorageFixture(t,{before:()=>new Promise(r=>releaseBefore=r),enter:()=>new Promise(r=>releaseWorkspace=r)});
+ const navigation=x.ui.openCampaignScreen();x.newCampaign('Neue Runde');await x.tick();assert.equal(x.entries,1);
+ releaseBefore(true);assert.equal(await navigation,false,'recheck busy after the asynchronous draft flush');
+ assert.equal(x.document.getElementById('campaign-screen-create').disabled,true);
+ releaseWorkspace(true);await x.tick();assert.equal(x.calls.length,1);assert.equal(x.document.getElementById('campaign-screen').hidden,true);
 });

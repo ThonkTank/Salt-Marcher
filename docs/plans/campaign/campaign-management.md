@@ -26,7 +26,9 @@ sperrt das Laden eines alten Belegs. Offene Graphvorschauen bleiben geschützt.
 
 Namens-, Papierkorb- und Löschdialoge schließen über X oder Escape, verwerfen
 Namensentwürfe und ignorieren den Hintergrund. Ausstehende Aufträge sperren
-Wiederholung und Dismissal. Unbekannte Ergebnisse werden gelesen; der Statusknopf
+Wiederholung und Dismissal bis einschließlich Aktualisierung und Arbeitsflächenladen.
+Auch eine schon wartende Entwurfssicherung darf diese Sperre nicht umgehen.
+Unbekannte Ergebnisse werden gelesen; der Statusknopf
 wiederholt keine Mutation. Wiederherstellen bleibt im Papierkorb und aktiviert
 nichts. Aktives Trash setzt den Zeiger atomar leer. Endgültige Löschung verlangt
 exakten Namen und aktuelle Papierkorbrevision; Restbereinigung von Recoverydateien
