@@ -645,3 +645,4 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 
 /* Let the complete moment editor scroll into view rather than pinning its tall parent. */
 .live-desk-writing:has(#live-moment-panel[open]){position:static!important}
+.composition-preferences{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem}.encounter-composition{margin:.75rem 0;min-width:0}.encounter-composition table{width:100%;border-collapse:collapse;margin:.6rem 0}.encounter-composition caption{text-align:left;font-weight:600}.encounter-composition th,.encounter-composition td{text-align:left;padding:.4rem;border-bottom:1px solid var(--line)}.encounter-composition p{overflow-wrap:anywhere}.composition-diagnostics{padding-left:1.25rem}
