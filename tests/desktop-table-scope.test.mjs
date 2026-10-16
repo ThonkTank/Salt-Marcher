@@ -19,3 +19,34 @@ test('installation edits retain their owner, shared revision and idempotent rece
  const x=fixture(t);x.activate(0);const first=x.tables().find(t=>t.id===x.table.id);x.activate(1);const update=x.command({kind:'table-save',table:{...first,name:'Gemeinsamer neuer Name'},expectedRevision:first.revision});x.store.executeGeneration(update);const saved=x.store.db.serialize();x.store.executeGeneration(update);assert.ok(x.store.db.serialize().equals(saved));x.activate(0);const before=x.store.db.serialize();assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',table:first,expectedRevision:first.revision})),/geändert/);assert.ok(x.store.db.serialize().equals(before));
  const fresh=new CampaignStore(x.file);try{for(const cam of x.campaigns){const w=fresh.activate(cam.id),table=fresh.encounterTables(w.token,true).find(t=>t.id===x.table.id);assert.equal(table.scope,'installation');assert.equal(table.revision,2);assert.equal(table.name,'Gemeinsamer neuer Name');assert.equal(table.description,x.table.description);assert.equal(fresh.generationSources(w.token).sources.length,2);}}finally{fresh.close();}
 });
+
+test('editing a campaign table prunes only its own stock even when another campaign source is damaged',t=>{
+ const x=fixture(t);x.activate(0);
+ const table={...x.table,id:randomUUID(),scope:'campaign',entries:[{creatureId:'goblin',weight:'1'},{creatureId:'guard',weight:'2'}]};
+ x.store.executeGeneration(x.command({kind:'table-save',table,expectedRevision:null}));
+ const original=x.sources().sources.find(s=>s.kind==='faction');
+ const source={...original,tableIds:[table.id],stock:[{creatureId:'goblin',limit:3},{creatureId:'guard',limit:7}]};
+ x.store.executeGeneration(x.command({kind:'source-save',source,expectedRevision:source.revision}));
+ x.store.db.prepare("UPDATE world_source SET checksum='damaged' WHERE campaign_id=? AND kind='faction'").run(x.campaigns[1].id);
+ const foreign=()=>x.store.db.prepare('SELECT * FROM world_source WHERE campaign_id=? ORDER BY kind,id').all(x.campaigns[1].id),beforeForeign=foreign();
+ const current=x.tables().find(t=>t.id===table.id),edit=x.command({kind:'table-save',table:{...current,name:'Eigene Wachen',entries:[{creatureId:'guard',weight:'2'}]},expectedRevision:current.revision});
+ x.store.executeGeneration(edit);
+ const saved=x.tables().find(t=>t.id===table.id),pruned=x.sources().sources.find(s=>s.kind==='faction');
+ assert.equal(saved.revision,2);assert.equal(saved.description,x.table.description);assert.deepEqual(pruned.stock,[{creatureId:'guard',limit:7}]);assert.equal(pruned.revision,source.revision+2);assert.deepEqual(foreign(),beforeForeign);
+ const after=x.store.db.serialize();x.store.executeGeneration(edit);assert.ok(x.store.db.serialize().equals(after));
+ assert.throws(()=>x.store.executeGeneration(x.command({kind:'source-save',source:{...source,revision:source.revision+1},expectedRevision:source.revision+1})),/geändert/);assert.ok(x.store.db.serialize().equals(after));
+ const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.campaigns[0].id);assert.equal(fresh.encounterTables(w.token,true).find(t=>t.id===table.id).name,'Eigene Wachen');assert.deepEqual(fresh.generationSources(w.token).sources.find(s=>s.kind==='faction').stock,[{creatureId:'guard',limit:7}]);}finally{fresh.close();}
+});
+
+test('editing shared table membership still prunes dependent factions in every campaign atomically',t=>{
+ const x=fixture(t);x.activate(0);const table=x.tables().find(t=>t.id===x.table.id),edit=x.command({kind:'table-save',table:{...table,entries:[{creatureId:'guard',weight:'1'}]},expectedRevision:table.revision});
+ x.store.executeGeneration(edit);const after=x.store.db.serialize();x.store.executeGeneration(edit);assert.ok(x.store.db.serialize().equals(after));
+ for(let i=0;i<2;i++){x.activate(i);const source=x.sources().sources.find(s=>s.kind==='faction');assert.deepEqual(source.tableIds,[table.id]);assert.deepEqual(source.stock,[]);assert.equal(source.revision,2);assert.equal(x.sources().sources.find(s=>s.kind==='location').revision,1);}
+});
+
+test('a damaged source in the shared table owner domain aborts the entire table and stock edit',t=>{
+ const x=fixture(t);x.activate(0);const table=x.tables().find(t=>t.id===x.table.id);
+ x.store.db.prepare("UPDATE world_source SET checksum='damaged' WHERE campaign_id=? AND kind='faction'").run(x.campaigns[1].id);const before=x.store.db.serialize();
+ assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',table:{...table,entries:[{creatureId:'guard',weight:'1'}]},expectedRevision:table.revision})),/beschädigt/);assert.ok(x.store.db.serialize().equals(before));
+ assert.deepEqual(x.sources().sources.find(s=>s.kind==='faction').stock,[{creatureId:'goblin',limit:3}]);assert.equal(x.tables().find(t=>t.id===table.id).revision,1);
+});
