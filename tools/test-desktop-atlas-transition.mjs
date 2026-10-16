@@ -1,0 +1,38 @@
+import {createRequire} from 'node:module';
+import {mkdtemp,mkdir,writeFile,readFile,stat} from 'node:fs/promises';
+import {spawn} from 'node:child_process';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import {randomUUID} from 'node:crypto';
+const source=process.cwd(),require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');
+const output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/atlas-transition-native');await mkdir(output,{recursive:true});
+require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/transition-native-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore}=require(source+'/.build/transition-native-store.cjs'),{PNG}=require('pngjs'),profile=await mkdtemp('/tmp/atlas-transition-ui-'),file=profile+'/workbench.sqlite';
+const seed=new CampaignStore(file),campaign=seed.create('Waldwelt'),w=seed.activate(campaign.id),put=seed.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+seed.db.transaction(()=>{for(let i=0;i<100000;i++){const x=i%316*5000,y=Math.floor(i/316)*5000,r={id:randomUUID(),revision:1,kind:'patch',name:'Wald',points:[],polygons:[{outer:[{x,y},{x:x+5000,y},{x:x+5000,y:y+5000},{x,y:y+5000}],holes:[]}],resolution:4828.032,width:0,values:{terrain:'forest'}};put.run(campaign.id,r.id,1,x,x+5000,y,y+5000,JSON.stringify(r));}})();seed.tutorial('skipped');seed.close();
+const bus=profile+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,bus,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});
+for(let i=0;i<100;i++){if(await stat(bus).then(()=>true).catch(()=>false))break;await new Promise(r=>setTimeout(r,20));}
+let app,closed=true;const errors=[],launches=[],results={profile,sourceRevision:process.env.SOURCE_REVISION??'working-tree'};
+async function launch(){app=await _electron.launch({executablePath:source+'/node_modules/electron/dist/electron',args:[source+'/.build/desktop/main.cjs','--data-dir',profile,'--ozone-platform=x11'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus},timeout:30000});closed=false;launches.push(app.process().pid);const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true',null,{timeout:30000});if(await page.locator('#tutorial-dialog').isVisible())await page.locator('#tutorial-skip').click();await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.locator('#atlas-tab').click();await page.locator('#atlas-overview').click();await page.locator('[data-landscape-raster]').waitFor({timeout:30000});return page;}
+async function pixels(page){await page.locator('[data-landscape-raster]').evaluate(async el=>{const image=new Image();image.src=el.getAttribute('href');await image.decode();});const data=await page.locator('[data-landscape-raster]').getAttribute('href'),png=PNG.sync.read(Buffer.from(data.split(',')[1],'base64'));let forest=0,water=0;for(let i=0;i<png.data.length;i+=4){if(png.data[i]===102&&png.data[i+1]===139&&png.data[i+2]===105&&png.data[i+3])forest++;if(png.data[i]===127&&png.data[i+1]===168&&png.data[i+2]===189&&png.data[i+3])water++;}return{forest,water,width:png.width,height:png.height};}
+async function visiblePixels(page){
+ await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ const png=PNG.sync.read(await page.locator('#campaign-map').screenshot());let forest=0,water=0;
+ for(let i=0;i<png.data.length;i+=4){const [r,g,b]=png.data.subarray(i,i+3);if(Math.abs(r-102)<3&&Math.abs(g-139)<3&&Math.abs(b-105)<3)forest++;if(Math.abs(r-127)<3&&Math.abs(g-168)<3&&Math.abs(b-189)<3)water++;}
+ return{forest,water};
+}
+async function close(){const exit=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});closed=true;}
+try{
+ let page=await launch();results.before=await pixels(page);assert(results.before.forest>100);assert.equal(results.before.water,0);results.visibleBefore=await visiblePixels(page);assert(results.visibleBefore.forest>100,'Forest must be visible in the actual map');await writeFile(path.join(output,'raster-before.png'),Buffer.from((await page.locator('[data-landscape-raster]').getAttribute('href')).split(',')[1],'base64'));await page.screenshot({path:path.join(output,'world-before.png')});
+ await app.evaluate(({ipcMain})=>{ipcMain.removeHandler('atlas:execute');ipcMain.handle('atlas:execute',()=>{throw new Error('Full atlas endpoint must not be used for terrain commit.');});});
+ await page.locator('[data-family="terrain"]').click();await page.locator('#land-tool').selectOption('paint');await page.locator('#land-radius').fill('200000');await page.locator('#atlas-terrain').selectOption('water');await page.locator('#atlas-hex-level').selectOption('0');
+ const box=await page.locator('#campaign-map').boundingBox();await page.mouse.click(box.x+box.width*.52,box.y+box.height*.52);await page.locator('#land-finish').click();
+ await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert',null,{timeout:30000});
+ for(let i=0;i<200;i++){if((await pixels(page)).water>0)break;await page.waitForTimeout(100);}results.after=await pixels(page);assert(results.after.water>0);results.visibleAfter=await visiblePixels(page);assert(results.visibleAfter.water>0,'Water must be visible in the actual map');await page.screenshot({path:path.join(output,'world-after.png')});
+ results.nativeMetrics=await app.evaluate(({app})=>app.getAppMetrics().map(m=>({type:m.type,memory:m.memory})));await close();
+ const checkpoint=new CampaignStore(file),next=checkpoint.activate(campaign.id);assert.equal(checkpoint.atlasOverview(next.token).counts.landscape,100001);assert.equal(checkpoint.db.prepare('SELECT count(*) n FROM atlas_receipt').get().n,1);checkpoint.close();
+ page=await launch();assert((await pixels(page)).water>0);await page.locator('#atlas-undo').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Gespeichert');
+ for(let i=0;i<100;i++){if((await pixels(page)).water===0)break;await page.waitForTimeout(100);}results.undo=await pixels(page);assert.equal(results.undo.water,0);assert(results.undo.forest>100);results.visibleUndo=await visiblePixels(page);assert(results.visibleUndo.forest>100);assert.equal(results.visibleUndo.water,0);await page.screenshot({path:path.join(output,'world-undo.png')});await close();
+ assert.deepEqual(errors,[]);await writeFile(path.join(output,'native.json'),JSON.stringify({results,launches,errors,normalExit:true},null,2));console.log(JSON.stringify({before:results.before,after:results.after,undo:results.undo,normalExit:true}));
+}catch(e){if(app&&!closed){try{await(await app.firstWindow()).screenshot({path:path.join(output,'failure.png')});}catch{}}await writeFile(path.join(output,'failure.json'),JSON.stringify({error:e.stack,results,launches,errors},null,2));throw e;
+}finally{if(app&&!closed)await app.close().catch(()=>{});proxy.kill();}

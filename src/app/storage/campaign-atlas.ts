@@ -407,6 +407,7 @@ export function executeAtlasWrite(
   c: AtlasCommand,
   apply: () => unknown,
   after?: () => void,
+  validatePositions = true,
 ): unknown {
   captureSetup(db);
   return db
@@ -431,7 +432,7 @@ export function executeAtlasWrite(
         try {
           result = apply();
           after?.();
-          checkPositions(db, c.campaignId);
+          if (validatePositions) checkPositions(db, c.campaignId);
         } finally {
           db.prepare("DELETE FROM atlas_capture").run();
         }

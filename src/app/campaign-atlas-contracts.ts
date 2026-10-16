@@ -81,7 +81,32 @@ export interface AtlasCommand {
   campaignId: string;
   action: AtlasAction;
 }
+/** Small GM-only reads. These DTOs never contain room prose or complete cities. */
+export interface AtlasOverview {
+  campaignId: string; token: string; revision: number; canUndo: boolean; canRedo: boolean;
+  counts: {rooms: number; cities: number; landscape: number};
+  landscapeBounds: import('./atlas-landscape').LandscapeBox | null;
+}
+export interface AtlasObjectQuery {
+  kind: 'room' | 'city'; text: string; limit: number;
+  cursor?: {revision: number; after: string; kind: 'room' | 'city'; text: string};
+}
+export interface AtlasObjectPage {
+  campaignId: string; token: string; revision: number;
+  items: {id: string; name: string; revision: number; scopeId?: string; floorId?: string; number?: string}[];
+  next: AtlasObjectQuery['cursor'] | null;
+}
+export interface AtlasCommitAck {
+  campaignId: string; commandId: string; revision: number;
+  canUndo: boolean; canRedo: boolean;
+}
 export interface AtlasAPI {
+  landscapeRaster(token:string,box:import('./atlas-landscape').LandscapeBox,width:number,height:number,consumer?:'view'|'export'):Promise<Result<import('./landscape-raster').LandscapeRaster>>;
+  atlasOverview(token: string): Promise<Result<AtlasOverview>>;
+  atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;
+  atlasRoom(token: string, id: string): Promise<Result<import('./contracts').Room>>;
+  executeAtlasCommit(command: AtlasCommand): Promise<Result<AtlasCommitAck>>;
+
   landscapeFind(
     token: string,
     text: string,
@@ -90,6 +115,7 @@ export interface AtlasAPI {
     token: string,
     box: import("./atlas-landscape").LandscapeBox,
     metersPerPixel?:number,
+    includePatches?:boolean,
   ): Promise<Result<import("./atlas-landscape").LandscapeRegion>>;
   referenceImage(
     token: string,

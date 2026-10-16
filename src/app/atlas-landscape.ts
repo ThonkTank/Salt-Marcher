@@ -153,33 +153,24 @@ export function effectiveLandscape(
   return out;
 }
 export function bounds(record: LandscapeRecord): LandscapeBox {
-  const pts = [...record.points, ...record.polygons.flatMap((p) => p.outer)];
-  if (!pts.length) throw new Error("Geometrie fehlt.");
-  if (record.kind === "reference") {
-    const p = record.points[0]!,
-      w = record.width,
-      h = (w * (record.imageHeight ?? 1)) / (record.imageWidth ?? 1),
-      a = record.angle ?? 0;
-    pts.push(
-      ...[
-        { x: w, y: 0 },
-        { x: w, y: h },
-        { x: 0, y: h },
-      ].map((v) => ({
-        x: p.x + v.x * Math.cos(a) - v.y * Math.sin(a),
-        y: p.y + v.x * Math.sin(a) + v.y * Math.cos(a),
-      })),
-    );
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  const include=(p:Point)=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);};
+  for(const p of record.points)include(p);
+  for(const polygon of record.polygons)for(const p of polygon.outer)include(p);
+  if(minX===Infinity)throw new Error("Geometrie fehlt.");
+  if(record.kind==='reference'){
+    const p=record.points[0]!,w=record.width,h=w*(record.imageHeight??1)/(record.imageWidth??1),a=record.angle??0;
+    for(const v of [{x:w,y:0},{x:w,y:h},{x:0,y:h}])include({x:p.x+v.x*Math.cos(a)-v.y*Math.sin(a),y:p.y+v.x*Math.sin(a)+v.y*Math.cos(a)});
   }
   const pad =
       record.kind === "river" || record.kind === "road" ? record.width / 2 : 0,
-    x = Math.min(...pts.map((p) => p.x)) - pad,
-    y = Math.min(...pts.map((p) => p.y)) - pad;
+    x = minX - pad,
+    y = minY - pad;
   return {
     x,
     y,
-    width: Math.max(...pts.map((p) => p.x)) - x + pad,
-    height: Math.max(...pts.map((p) => p.y)) - y + pad,
+    width: maxX - x + pad,
+    height: maxY - y + pad,
   };
 }
 export function earthView(

@@ -277,3 +277,107 @@ stehen unverändert in `acceptance.json`, `docs/reference/` und dem Gitstand
 `116c16af48b6a073216685c8d8e2cc74fada82c3:ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md`.
 Sie belegen ihre damaligen Grenzen; sie verpflichten den Neuaufbau nicht auf
 die damaligen internen Schnittstellen.
+
+
+## Umstellung auf das vorläufige Atlaszielsystem
+
+Beauftragte Ausführung vom 16.10.2026. Ausgang des neuen SaltMarcher-Zweigs ist
+`c25f958727fd38df32d98d78674c36d83e124130`; vor jeder Lieferung den tatsächlichen
+Integrationsstand prüfen. Repositoryübernahme und Nutzdatenmigration sind
+verschiedene Vorgänge. Die alte SaltMarcher-DB niemals als Workbench-DB öffnen.
+`CampaignWorkbench`, `.kwcampaign`, `.kwmusic` und gebundene Originalformate
+bleiben kompatibel. Prozessnotizen und lokale Messpfade gehören nicht ins Repo.
+
+### Lieferstand und Reihenfolge
+
+| Schritt | Konkreter Anschluss / Nutzerwirkung | Direkte Abnahme und aktueller Stand |
+| --- | --- | --- |
+| 0 Ausgangsbasis | Bestehende Writer/History/Volumes/Gebäude/Reise/Player prüfen statt neu bauen. Gleiche kleine Kampagne, Großwelt, dichte/komplexe Region, 5000 Gebäude, 100000 Dungeonzellen, große Bildvorlage/Export als Vergleichsdaten. | Code-/Messbasis vorhanden; bisherige Großwald-/4000-Raumproben sind isolierte Diagnosen, keine 16-GiB-/Gesamtfreigabe. Neue Produktmessung offen. |
+| 1 Gezielte Reads | `campaign-atlas-contracts`, Store, Preload/Main, Workbench: Übersicht, räumliche Seite, Objektdetail und Commitbeleg trennen. Keine vollständigen Räume/Städte für eine kleine Ansicht; begrenzte Antworten mit ausdrücklicher Fortsetzung/Zusammenfassung. | Erster Anschluss implementiert: getrennte Übersicht/Roomdetail, revisionsgebundene Metadatenseiten für Raum-/Stadtsuche und kompakter Landschaftscommit. 4000-Raum-Probe ohne Vollansichten und mit unveränderter Prosa. Initialer Atlas, räumliche Stadt-/Raumseiten und andere Autorenpfade verwenden weiterhin Vollansichten; Schritt bleibt offen. |
+| 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Landschaft und Nichtflächen laufen am Writer mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
+| 3 Übersicht/Frame | Effektive grobe/feine Eigenschaften vor Aggregation bestimmen. Vereinfachte Flächen/Symbole/Kacheln schützen Landschaft beim Herauszoomen. Render/Hit publizieren denselben revisionsgebundenen Frame. | Landschaftsflächen werden in einem separaten Lese-Worker zu begrenzten, revisionsgebundenen Rasterbildern aggregiert; grobe Vorgaben und feine Übersteuerungen bleiben geordnet, Löcher erhalten. Native Linux-Probe: 100000 Flächen, sichtbar Wald → Wasser malen → Save → Neustart → Undo, tatsächliche Bildschirmfarben. Noch keine persistente Kachelpyramide, vollständige Frame-/Hit-Umstellung oder Latenzfreigabe; B01/B04 offen. |
+| 4 Raumfachmodelle | Vorhandene Volumes/Lifecycle weiterverwenden. Gebäude außen/innen aus einem Zustand; echte Paths/Passages getrennt von dekorativen Linien. Reine Zeichnung nur ausdrücklich mit Preview umwandeln. | Grundlagen vorhanden, vollständiger Anschluss offen. 3-m-Wand x1,1 =3,3 m; 1,524-m-Dungeonzellen bleiben exakt; gestapelte Räume, Split/Merge, Anker/Prosa und gemeinsame Kamera/History. |
+| 5 Medien/Jobs | Hashreferenz von Bildtransport trennen, Auflösungsstufen/Kacheln, Bytecaches und Worker einführen. Aktive Drafts/Undo separat budgetieren. Nur Writer nimmt revisionsgebundene Ergebnisse an. | Rasterjobs sind pro Verbraucher abbrechbar und warten auf den Vorgängeraustritt; PNG-Cache 64 MiB, Bild bis 1024×1024, Aktivierung/Revision vor und nach dem Worker geprüft. 64/128/256-Vergleich, Vorlagenauflösungen, GPU-/Draftbudgets, Export und Assetdatei/BLOB-Entscheidung bleiben offen. |
+| 6 Verbraucher | Exakte Queries für Reise/Sicht; betroffene Routen/Perception invalidieren, Actorpreflight und gemeinsame Zeit erhalten. Gefilterte Playerprojektion/Assets, bereichsgebundener Export und vollständiger Transfer. | Physische Landschaftsänderungen pausieren aktive/pausierte Welt- und Lokalreisen atomar, ohne Position/Zeit zu ändern. Gegenprobe mit aktiver Reise; dekorative Änderungen brauchen keinen Geometrievollread. Konservative Kampagneninvalidierung, übrige Verbraucherumstellung und volle kausale Abnahme bleiben offen. Renderbilder liefern niemals Spielregeln. |
+| 7 Migration/Ablösung | Je Paket versionierte, in Kopie geprüfte Migration plus DB-/Medienbackup. Alte Adapter nach Verbraucherumstellung entfernen; keine permanente zweite Schreibautorität. | Offen. IDs, Textbytes, Links, Einheiten, Assets, Runtime und alte History vergleichen. Historische Commands/Receipts nicht wieder ausführen/umschreiben; keine pauschale Historylöschung. Bei Downgrade neuere Formate erklärt ablehnen. |
+
+Schritt 1 begrenzt zunächst Reads ohne Schemawechsel. Schritt 2 liefert die
+räumliche Grundlage; Schritt 3 verwendet sie. Schritt 4 nutzt bestehende
+Fachmodelle, schließt deren tatsächliche Lücken. Schritt 5 kann nach den
+Leseverträgen unabhängig fortschreiten. Schritt 6 bindet die Verbraucher an.
+Jeder persistente Teil liefert sofort Migration/Recovery/Undo; Schritt 7 sammelt
+nicht nachträglich vorher ungeschützte Schemaänderungen ein.
+
+### Zielverträge
+
+- Übersicht enthält Campaign-/Atlasidentität, belegte Ausdehnung, Revision und
+  Historyzustand, keine vollständigen CityViews/Workspaces/DungeonViews.
+- Bereichsanfrage bindet Aktivierung, Ausschnitt, Maßstab, Höhenschnitt und
+  Basisrevision. Antwort benennt Vollständigkeit, Fortsetzung oder abgeleitete
+  Zusammenfassung. Veraltete Antwort überschreibt keinen neueren Frame.
+- Objektdetail liest exakt ausgewählte IDs mit geschützter Prosa und Revision.
+- Autorenbefehl behält bestehende Command-ID/Fingerprint/Expected-Revision und
+  Writergrenze. Ack bestätigt Dauerhaftigkeit und nennt betroffene IDs/Bereiche;
+  eine anschließende fehlgeschlagene Ansicht darf diesen Ack nicht als
+  unbekannten Commit umdeuten. Retry verwendet dieselbe Kennung.
+- Ein Darstellungsplan ist rebuildbar, nicht editierbare zweite Welt. Genaue
+  Auswahl, Reise, Sicht und Exportgrundlage bleiben an kanonischen Daten.
+- Öffentliche Ausgabe und passive Liveanzeige besitzen eigene Datenfreigabe;
+  keine geheimen Rohdaten in gemeinsamem ungefiltertem DTO/Assetcache.
+
+### Beobachtung und Entscheidung
+
+Das einzige Alternativenregister steht in
+[ARCHITECTURE B01–B11](ARCHITECTURE.md#vorläufiges-atlasziel-und-überprüfbare-alternativen-16102026).
+Zu jedem entschiedenen Punkt dort aktuelle Richtung, verworfene Alternative,
+Messfall/Revision und verbleibende Unsicherheit nachführen. Gleich geeignete
+Varianten nach geringstem Gesamtaufwand wählen. B01 zuerst begrenztes SVG gegen
+Canvas2D, bei verfehlten Zielen vorhandenes Pixi/WebGL; keine Vorentscheidung
+aufgrund reiner Bildrate. B02 Indexpräzision/Updatekosten, B04 Landschaftserhalt,
+B06 Backup-/Assetclosure und B09 alte History sind ebenso Entscheidungskriterien.
+
+### Aktueller Implementationsschnitt und nächste Fortsetzung
+
+`tests/desktop-atlas-transition.test.mjs` prüft die neuen Verträge, Indexpflege,
+Prosaerhalt, aktive Reise, Adressgrenzen, Rastersemantik und 100000 Flächen im
+nativen SQLite-Worker. `tools/test-desktop-atlas-transition.mjs` prüft über die
+bestehende UI-Sitzung den sichtbaren Desktopweg samt normalem Prozessende und
+Neustart. Ein abgeschalteter alter Vollatlas-Schreibendpoint belegt dabei den
+kompakten Geländeschreibweg. Rohbild- und tatsächliche Bildschirm-Pixel werden
+getrennt geprüft: Eine erste Probe hatte gültige PNGs, aber durch CSP blockierte
+Bilder und durfte deshalb nicht als sichtbarer Erfolg gelten. Die Bildregel
+erlaubt jetzt lokale eingebettete Bilder, ohne Skript- oder Netzrechte zu öffnen.
+
+Die Landschaftsanzeige aggregiert bei jedem Maßstab, damit dichtes kleinteiliges
+Gelände auch zwischen Welt- und Detailansicht erhalten bleibt. Der Worker liest
+überlappende Autorenflächen streaming und unveränderlich; SQL-Sortierung und
+Neuberechnung pro kaltem Ausschnitt sind noch kein zeitlich begrenzter
+Kachellookup. Alte Welt-/Reiseinspektoren bleiben vollständig lesend: Ein bloß
+abgeschnittener Landschaftsbestand würde außerhalb des Ausschnitts falsche
+Geländevorgaben suggerieren. Deren Umstellung braucht zuerst ausdrückliche
+Abdeckungs-/Unbekannt-Semantik und exakte Punkt-/Routenqueries.
+
+Nächster zusammenhängender Anschluss ist Schritt 1: initiale Welt-/City-/Room-
+Metadaten von tatsächlicher Geometrie und Prosa trennen; räumliche Seiten mit
+Bytegrenze und Fortsetzung/Sammeldarstellung liefern; Detail- und Reiseverbraucher
+an gezielte Queries anschließen. Danach Cache-/Indexvergleich und Adresscodec
+an echter Kamera/History/Transfer qualifizieren, bevor eine persistente
+Formatmigration vorgenommen wird. Weder die API-Vorbereitung noch der einzelne
+Linux-Großwaldweg schließen die sieben Schritte oder die Produktabnahme ab.
+
+### Abschlussnachweise
+
+Die Größen-/Latenzziele im vorigen Abschnitt bleiben verbindlich, insbesondere
+Atlas p95 33 ms/Preview100 ms und Dungeon 2 s/16 ms/50 ms/Commit500 ms/Player100 ms.
+Referenzgerät mit 16 GiB, CPU/GPU/SSD, Auflösung/Skalierung und kalten/warmen
+Zustand dokumentieren. Ein Limit auf dem größeren Entwicklungsrechner ist nur
+Vorversuch. Separate Linux-/Windows-/macOS-, Tastatur-/200%- und physische
+Bediennachweise bleiben offen, solange sie nicht tatsächlich vorliegen.
+
+Zusammenhängend: Region gestalten → grobe Vorgabe ändern → feine Ausnahme
+kontrollieren → Ortstext → Stadt/Haus → Volume/Room-Key → Reise/Sicht → Undo/Redo
+→ Autosave → vollständiger Neustart → dieselben Inhalte und Spielzustände.
+Dazu: Abbruch in Read/Preview/Commit/Migration, volle Datenträger, Cachelöschen,
+negative/große Koordinaten, kalter unabhängiger Import, Player-DTO/IPC/Assets/
+DOM/Fehler/Logs und Grafikverlust. Fachbelege, lokale Tests, native Bedienung,
+Hardware-/OSqualifikation und Nutzerabnahme bleiben getrennte Aussagen.

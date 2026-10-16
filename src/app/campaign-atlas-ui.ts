@@ -21,6 +21,7 @@ import {
 } from "./campaign-atlas-model";
 import {
   writeAtlas,
+  writeAtlasCommit,
   pendingAtlasWrite,
   recoverAtlasWrite,
 } from "./campaign-atlas-author";
@@ -559,12 +560,15 @@ export class CampaignAtlasWorkbench {
       if (a.kind === "city" || a.kind === "world" || a.kind === "drawing")
         a.command.commandId = commandId;
       if (a.kind === "room-edit") a.edit.commandId = commandId;
-      const r = await writeAtlas({
-        commandId,
-        token: w.token,
-        campaignId: w.campaign.id,
-        action: a,
-      });
+      const command={commandId,token:w.token,campaignId:w.campaign.id,action:a};
+      const r = a.kind.startsWith('landscape-') && this.data
+        ? await (async()=>{
+          const ack=await writeAtlasCommit(command);
+          if(!ack.ok)return ack;
+          this.playback.stop();this.localPreview=null;
+          return {ok:true as const,value:{atlas:{...this.data!,revision:ack.value.revision,canUndo:ack.value.canUndo,canRedo:ack.value.canRedo},result:null}};
+        })()
+        : await writeAtlas(command);
       if (this.owner !== w) return null;
       if (!r.ok) throw new Error(r.error);
       this.data = r.value.atlas;
@@ -693,9 +697,9 @@ export class CampaignAtlasWorkbench {
       n.hidden = false;
     }
     this.root.dataset.family = f;
-    if (f === "terrain") await openWorld();
     if (f === "city" && this.cityId) await openCityReference(this.cityId);
     if (f === "travel") {
+      await this.refresh();
       await openWorld();
       await openDungeon();
     }
@@ -818,26 +822,19 @@ export class CampaignAtlasWorkbench {
     };
     const token=this.owner!.token;
     void window.campaign.landscapeFind(token,text).then(r=>{if(!r.ok)throw new Error(r.error);if(this.owner?.token!==token||get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')!==text)return;for(const record of r.value)add(record.name||record.kind,()=>{if(record.locationId)void this.navigateLocation(record.locationId);else{this.focus(record.points[0]!,15000);void this.setFamily('terrain',false).then(()=>this.landscape.select(record));}});}).catch(e=>this.error(e));
-    for (const c of this.data.cities) {
-      if (c.header.name.toLocaleLowerCase("de").includes(text))
-        add(c.header.name, () => void this.navigate("city", c.header.id));
-      for (const u of c.units)
-        if (
-          u.kind === "building" &&
-          u.name.toLocaleLowerCase("de").includes(text)
-        )
-          add(
-            c.header.name + " · " + u.name,
-            () => void this.navigate("city", c.header.id, u.id),
-          );
-    }
+    const current=()=>this.owner?.token===token&&get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')===text;
+    const more=(title:string,load:()=>Promise<void>)=>{const b=document.createElement('button');b.textContent=title;b.onclick=()=>{b.remove();void load().catch(e=>{if(current())this.error(e);});};root.append(b);};
+    const page=async(kind:'room'|'city',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
+      const result=await window.campaign.atlasObjects(token,{kind,text,limit:40,cursor});if(!current())return;if(!result.ok)throw new Error(result.error);
+      for(const item of result.value.items)add(kind==='room'?item.number+' · '+item.name:item.name,()=>void this.navigate(kind,item.id));
+      if(result.value.next)more(kind==='room'?'Weitere Räume':'Weitere Städte',()=>page(kind,result.value.next!));
+    };
+    const buildings=async(offset=0)=>{const result=await window.campaign.cityBuildings(token,{text,offset});if(!current())return;if(!result.ok)throw new Error(result.error);for(const item of result.value.items)add(item.cityTitle+' · '+item.title,()=>void this.navigate('city',item.cityId,item.unitId));if(result.value.next!==null)more('Weitere Häuser',()=>buildings(result.value.next!));};
+    for(const task of [page('room'),page('city'),buildings()])void task.catch(e=>{if(current())this.error(e);});
     for (const scope of this.data.scopes)
-      if (scope.name.toLocaleLowerCase("de").includes(text))
-        add(scope.name, () => this.chooseScope(scope.id));
-    for (const r of this.data.workspace.rooms)
-      if ((r.name + " " + r.number).toLocaleLowerCase("de").includes(text))
-        add(r.number + " · " + r.name, () => void this.navigate("room", r.id));
+      if(scope.name.toLocaleLowerCase('de').includes(text))add(scope.name,()=>this.chooseScope(scope.id));
   }
+
   private async createCity() {
     const r = await this.write({
       kind: "city-create",
