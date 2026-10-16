@@ -231,6 +231,8 @@ die vollständige Quellgruppe mit unveränderten Fakten und Variantenangaben.
 
 `item-reference-ui.ts` zeigt Originalbeschreibung und Eigenschaften, Preis,
 Gewicht, Rüstung/Schaden sowie verfügbare weitere Quellenangaben und Attribution.
+Rüstungs-Stärkevoraussetzungen stehen unter „Stärke“ neben der getrennten
+Rüstungsklasse; ihre originalen Quellenwerte bleiben erhalten.
 Es gibt keine Erzeugungs-, Editier-, Lösch-, Vergabe- oder Inventaraktion.
 Loading, leere Treffer, ungültige Filter, fehlender Import, inkompatibles Schema
 und unerwarteter Lesefehler bleiben unterscheidbar. Neue Eingaben räumen alte

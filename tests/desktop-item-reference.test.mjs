@@ -84,3 +84,10 @@ test('sortable headers retain both directions and visible state without a second
  const count=queries.length;x.catalog.show(false);x.catalog.show(true);await tick();assert.equal(queries.length,count);assert.equal(header('name').textContent,'Name ↓');
  x.el('item-reference-form').querySelector('button[type="button"]').click();await until(()=>queries.length===count+1&&settled());assert.equal(queries.at(-1).direction,'desc');assert.equal(queries.at(-1).sort,'name');assert.equal(queries.at(-1).minimumCopper,'');assert.equal(queries.at(-1).maximumCopper,'');assert.equal(header('name').textContent,'Name ↓');
 });
+
+
+test('heavy armor strength prerequisites are labeled separately from armor class with exact source values',async t=>{
+ const x=fixture(t),transcript=JSON.parse(readFileSync('src/features/catalog/data/items-srd51-transcript.json'));x.catalog.show(true);await until(()=>x.el('item-reference-rows').children.length===50);
+ const armors=transcript.records.filter(r=>r.armor?.strengthRequirementText);assert.ok(armors.some(r=>r.name==='Plate Armor'));
+ for(const item of armors){x.el('item-reference-name').value=item.name;x.el('item-reference-form').onsubmit({preventDefault(){}});const row=()=>[...x.el('item-reference-rows').querySelectorAll('button')].find(b=>b.textContent===item.name);await until(()=>!!row());row().click();const facts=[...x.el('item-reference-detail').querySelectorAll('dl dt')].map(n=>[n.textContent,n.nextElementSibling.textContent]);assert.ok(facts.some(([k,v])=>k==='Stärke'&&v===item.armor.strengthRequirementText),item.name+' must identify its strength prerequisite');assert.ok(facts.some(([k,v])=>k==='Rüstungsklasse'&&v===item.armor.armorClassText));}
+});
