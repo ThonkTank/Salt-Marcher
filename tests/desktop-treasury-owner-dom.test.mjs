@@ -69,3 +69,10 @@ test('an expired previous-treasure timer cannot save input in the newly created 
  const x=await fixture(t);x.edit('Alpha raw');const old=x.timers.at(-1).fn;x.el('treasury-new').click();await until(()=>x.el('treasury-title').value==='Neuer Schatz');x.edit('New raw');const n=x.writes.length;
  old();await tick();assert.equal(x.writes.length,n);assert.equal(await x.ui.flushTreasury(),true);assert.equal(x.writes.at(-1).d.treasureId,'new-1');assert.equal(x.writes.at(-1).d.title,'New raw');
 });
+
+test('a create waiting behind a draft save does not revoke an already started apply',async t=>{
+ const x=await fixture(t),ack=deferred();x.edit('Applied Alpha');const keep=x.holdKeep();
+ window.campaign.executeProgress=async command=>{x.commands.push(command);await ack.promise;return{ok:true,value:{characters:[],notices:[],treasureId:'a',ledgerIds:[]}};};
+ x.el('treasury-apply').click();await until(()=>x.writes.length===1);x.el('treasury-new').click();keep.resolve();await until(()=>x.commands.length===1);await tick();
+ assert.equal(x.commands[0].action.kind,'treasure-edit');ack.resolve();await until(()=>x.messages.some(m=>m.text.startsWith('Schatzänderung gespeichert')));assert.equal(x.commands.length,1);
+});

@@ -499,7 +499,7 @@ export function initTreasury(
   el("treasury-new").onclick = () =>
     run(async () => {
       const current = editorOwner();
-      if (!(await flushTreasury()) || !current()) return;
+      if (!(await flushTreasury()) || !current() || pending || !w || hasPendingCommit(w.campaign.id)) return;
       editing++; // Revoke reads and timers belonging to the previous treasure editor.
       await execute({
         kind: "treasure-create",

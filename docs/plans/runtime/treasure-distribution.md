@@ -66,7 +66,9 @@ als Arbeitsstand erhalten; sie werden dadurch nicht zu bestätigten Schatzmengen
 Scheitert das Sichern, bleibt der bisherige Editor offen und es entsteht kein
 neuer Schatz. Weitere Eingaben während des wartenden Keeps werden noch vor dem
 Wechsel gesichert. Der vorhandene Pendingguard verhindert doppelte Anlagen bei
-schnell wiederholtem Klick. Kampagnen-/Editorwechsel widerrufen den alten Auftrag.
+schnell wiederholtem Klick. Nach dem Entwurfsdrain wird er erneut geprüft, bevor
+die Editorgeneration wechselt: Ein inzwischen gestarteter Applycommand behält
+seine Autorität und wird nicht durch den wartenden Create widerrufen. Kampagnen-/Editorwechsel widerrufen den alten Auftrag.
 
 Vor dem Create wird die bisherige Editorgeneration widerrufen; das entwertet
 ältere Schatz-Auswahlreads und verzögerte Debouncecallbacks. Sie dürfen
@@ -79,9 +81,9 @@ Draftformat, keine Migration und kein zweiter Schatzwriter.
 `desktop-treasury-owner-dom.test.mjs` deckt Create vor Debounce, Keepfehler,
 neuere Eingaben während Keep, Doppelklick, Kampagnenwechsel und späte Auswahl ab.
 Die Zuordnungsprobe bestätigt zusätzlich den bereits vorhandenen Flushschutz,
-ohne dafür eine weitere Produktabstraktion einzuführen. Die native Storeprobe
-muss unvollständige Mengen, unveränderte Allocations/Ledger, blockierten Create
-bei Savefehler und Wiederaufnahme prüfen. Diese Grenze betrifft Schatzentwürfe;
+ohne dafür eine weitere Produktabstraktion einzuführen. Die native Probe mit tatsächlichem SQLite-Savefehler prüft unvollständige Mengen,
+unveränderte Allocations/Ledger, blockierten Create und Wiederaufnahme im Editor
+sowie einem frisch geöffneten Store. Diese Grenze betrifft Schatzentwürfe;
 die unbestätigten Mengen des separaten Verteilungsdialogs brauchen weiterhin
 den unten benannten dauerhaften Workingdraftanschluss.
 
