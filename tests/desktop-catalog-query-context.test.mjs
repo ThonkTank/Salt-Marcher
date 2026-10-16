@@ -168,3 +168,33 @@ test('a creature clicked from the encounter roster reveals its detail on a wide 
  held.resolve({ok:true,value:detail('Guard')});await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Guard');x.el('catalog-plan-open').click();
  assert.deepEqual(jumps,['detail','plan']);assert.equal(x.el('encounter-notes').value,'Kornsäcke retten; Flucht vor Feuer.');assert.equal(x.el('encounter-entries').textContent,before);assert.equal(x.el('encounter-entries').querySelector('input[type="number"]').value,'3');
 });
+
+test('changing section cancels monster debounce and late query success or failure until return',async t=>{
+ const x=await fixture(t,false,{itemReferenceCatalog:async()=>({ok:false,error:'No items in fixture'})});
+ x.type('Dragon');x.el('catalog-items-tab').click();await x.debounce();assert.equal(x.reads.length,1);
+ assert.equal(x.el('catalog-table').getAttribute('aria-busy'),'false');await x.resolve(0,'Late Goblin');assert.equal(x.el('catalog-rows').children.length,0);
+ x.el('catalog-monsters-tab').click();assert.equal(x.reads.length,2);assert.equal(x.reads[1].query.text,'Dragon');
+ x.el('catalog-monsters-tab').click();assert.equal(x.reads.length,2);
+ x.el('catalog-items-tab').click();x.reads[1].reject(new Error('Invisible failure'));await tick();await tick();assert.equal(x.messages.filter(m=>m[1]).length,0);
+ x.el('catalog-monsters-tab').click();assert.equal(x.reads.length,3);await x.resolve(2,'Dragon');assert.match(x.el('catalog-rows').textContent,/Dragon/);
+});
+test('section return preserves accepted monster page, sort and selected detail without reloading',async t=>{
+ let detailReads=0;const x=await fixture(t,false,{itemReferenceCatalog:async()=>({ok:false,error:'No items in fixture'}),creature:async id=>{detailReads++;return{ok:true,value:detail(id)};}});
+ await x.resolve(0,'Guard');x.el('catalog-table').querySelector('[data-sort="xp"]').click();await x.resolve(1,'Sorted Guard');x.el('catalog-next').click();await x.resolve(2,'Second Guard',25);
+ const row=x.el('catalog-rows').querySelector('button');row.click();await tick();await tick();const html=x.el('catalog-detail').innerHTML;
+ x.el('catalog-items-tab').click();row.onclick();await tick();assert.equal(detailReads,1);x.el('catalog-monsters-tab').click();await tick();
+ assert.equal(x.reads.length,3);assert.equal(x.reads[2].query.offset,25);assert.equal(x.reads[2].query.sort,'xp');assert.equal(x.el('catalog-detail').innerHTML,html);assert.equal(row.isConnected,true);assert.equal(row.getAttribute('aria-pressed'),'true');
+});
+test('hidden pending statblock loses authority and busy state; explicit selection recovers',async t=>{
+ const pending=[];const x=await fixture(t,false,{itemReferenceCatalog:async()=>({ok:false,error:'No items in fixture'}),creature:id=>{const d=deferred();pending.push({...d,id});return d.promise;}});
+ await x.resolve(0,'Guard');const row=x.el('catalog-rows').querySelector('button');row.click();x.el('catalog-items-tab').click();assert.equal(x.el('catalog-detail').getAttribute('aria-busy'),'false');
+ pending[0].resolve({ok:true,value:detail('Guard')});await tick();await tick();assert.equal(Boolean(x.el('catalog-detail').querySelector('h3')),false);assert.equal(x.el('catalog-live-add').disabled,true);
+ x.el('catalog-monsters-tab').click();row.click();assert.equal(pending.length,2);pending[1].reject(new Error('Invisible statblock failure'));x.el('catalog-items-tab').click();await tick();await tick();assert.equal(x.messages.filter(m=>m[1]).length,0);
+ x.el('catalog-monsters-tab').click();row.click();pending[2].resolve({ok:true,value:detail('Guard')});await tick();await tick();assert.equal(x.el('catalog-detail').querySelector('h3')?.textContent,'Guard');assert.equal(x.el('catalog-live-add').disabled,false);
+});
+
+test('switching sections keeps a visible monster error until explicit retry',async t=>{
+ const x=await fixture(t,false,{itemReferenceCatalog:async()=>({ok:false,error:'No items in fixture'})});x.reads[0].resolve({ok:false,error:'Broken catalog'});await tick();await tick();
+ x.el('catalog-items-tab').click();x.el('catalog-monsters-tab').click();await tick();assert.equal(x.reads.length,1);assert.match(x.el('catalog-page').textContent,/Broken catalog/);
+ x.el('catalog-form').onsubmit({preventDefault(){}});assert.equal(x.reads.length,2);await x.resolve(1,'Recovered');assert.match(x.el('catalog-rows').textContent,/Recovered/);
+});
