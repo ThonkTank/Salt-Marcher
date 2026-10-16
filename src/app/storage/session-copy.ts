@@ -1,3 +1,4 @@
+import {copyVisitPlanning} from '../session-day';
 import {randomUUID} from 'node:crypto';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
 import type {SessionAction,PlanPublisher,PreparedGroup} from '../session-contracts';
@@ -22,7 +23,7 @@ export function copySessionVisits(db:any,cam:string,a:Extract<SessionAction,{kin
   const groupIds=old.groupIds.map(id=>{const original=originals.get(id);if(!original)throw new Error('Vorbereitete Gruppe fehlt.');if(original.acceptedId)return original.acceptedId;if(copiedGroups.has(id))return copiedGroups.get(id)!;const g:PreparedGroup=newGroup(db,cam,original.group.plan,target.id,scene.id);g.title=original.group.title;g.notes=original.group.notes;saveGroup(db,cam,g,target.id,scene.id);copiedGroups.set(id,g.id);return g.id;});
   const reward=old.reward?structuredClone(old.reward):null;
   if(reward&&!reward.awarded&&!reward.placedTreasureId)reward.id=randomUUID();
-  saveDetail(db,cam,target.id,{...structuredClone(old),visitId:scene.id,revision:0,groupIds,reward});
+  const copied=structuredClone(old);delete copied.restAfter;saveDetail(db,cam,target.id,{...copied,...copyVisitPlanning(old,a.visitIds,scenes.map(s=>s.id)),visitId:scene.id,revision:0,groupIds,reward});
  }
  if(newPlan&&a.copyParty){const p={...structuredClone(contents.profile),planId:target.id,revision:1},payload=JSON.stringify(p);db.prepare('INSERT INTO session_profile VALUES(?,?,?,?,?)').run(cam,target.id,1,payload,createHash('sha256').update(payload).digest('hex'));}
 }
