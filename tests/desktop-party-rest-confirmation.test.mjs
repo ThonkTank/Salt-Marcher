@@ -125,9 +125,9 @@ test('compact Party details and installation quick fields only change presentati
  const x=fixture(t);await x.openParty();const bytes=x.digest(),card=()=>x.get('active').querySelector('.party-card');
  assert.equal(card().querySelector('.party-card-details').hidden,true);
  assert.match(x.get('rest-average').textContent,/Rast Ø/);assert.match(x.get('rest-average').firstChild.title,/1 von 1/);
- card().querySelector('.party-member-toggle').onclick();assert.equal(card().querySelector('.party-card-details').hidden,false);assert.equal(card().querySelector('.party-quick-facts').hidden,true);
+ card().querySelector('.party-member-toggle').onclick();assert.equal(card().querySelector('.party-card-details').hidden,false);assert.equal(card().querySelector('.party-quick-facts'),null,'collapsed members have only their name and meters');
  const languages=x.get('quick-fields').querySelector('input[value=languages]');languages.checked=true;languages.onchange();
  assert.equal(card().querySelector('.party-card-details').hidden,false);assert.match(x.dom.window.localStorage.getItem('party-quick-fields-v1'),/languages/);
- card().querySelector('.party-member-toggle').onclick();assert.match(card().querySelector('.party-quick-facts').textContent,/Sprachen offen/);
+ assert.match(card().querySelector('.party-card-details').textContent,/Sprachenoffen/);card().querySelector('.party-member-toggle').onclick();assert.equal(card().querySelector('.party-card-details').hidden,true);
  assert.equal(x.digest(),bytes);assert.equal(x.commits.length,0);
 });

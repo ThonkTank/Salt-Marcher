@@ -807,9 +807,44 @@ atomaren Rollback im Maskenabgleich. Ein nativer Ablauf übernimmt die Auswahl,
 teilt eine namenlose Szene ab, führt sie über das bestehende Ziel wieder
 zusammen und liest den Zustand nach vollständigem Neustart.
 
-Offen bleiben Party-Undo/Redo einschließlich100-Schritt-History, persönliche
-Loot-/Katalogübergaben, vollständige Fenstermigration und OS-/200%-Abnahme.
+Offen bleiben Party-Undo/Redo einschließlich100-Schritt-History, vollständige
+Fenstermigration und OS-/200%-Abnahme. Persönliche Loot-/Rosterübergaben sind
+im folgenden Abschnitt angeschlossen.
 Der strenge aktuelle Livereader akzeptiert weiterhin keine beschädigte aktive
 Zuordnung ohne Szene; die historische „Ohne Szene“-Recovery benötigt einen
 eigenen, ausdrücklich begrenzten Migrationsanschluss. Die Chronik dieses Commands
 ist kein Ersatz für die noch fehlende kausale Party-Undo-History.
+
+
+### Persönliche Beute direkt im Partyfenster
+
+Die aktuelle [Partyfenster-Anforderung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/9de85c1a/docs/party/requirements/requirements-party-window.md)
+ersetzt ausdrücklich das historische Dropdown. Aufgeklappte Figurendetails
+zeigen die ausgewählten Schnellwerte sowie „Beute und Verlauf“ und den Sprung
+zum identitätsgebundenen Charakter-Roster. Die kompakte erste Zeile bleibt bei
+Name, XP und Rast; eine zweite Schnellwertezeile entfällt.
+
+Die persönliche Beute ist innerhalb desselben Fensters durchsuchbar, nach
+Erhalten/Verkauft/Weitergegeben filterbar und paginiert. Herkunft, unbekannte
+Werte, gekaufte oder übernommene Einträge und der kumulative erhaltene Wert
+bleiben unterscheidbar. Mengenberichtigungen verlangen eine ausdrücklich
+eingetragene nichtnegative Gesamtmenge und einen Grund; verkaufte Einträge
+behalten ihren tatsächlichen Gesamtpreis. Der vorhandene Progress-Writer
+schreibt Revision, Receipt und nachvollziehbare Vorher-/Nachher-Historie.
+Es gibt weder ein zweites Ledger noch einen neuen Speichertyp.
+
+Die Party bindet Lesen und Schreiben an Kampagnentoken, Figuren-ID und
+Fenstergeneration. Ein frischer Detailread prüft die gewählte Ledgerrevision,
+ohne eine Auswahl im versteckten Live-Beuteregister vorauszusetzen. Abgelaufene
+Antworten dürfen keine andere Figur oder geschlossenes Fenster überschreiben.
+Bei unbestätigter Buchung bleiben Eingaben erhalten; „Buchungsstatus prüfen“
+nutzt die vorhandene Receipt-Recovery direkt im Fenster. Es gibt keinen automatischen Neuversuch.
+
+Gezielte Panel-, Party- und Ledger-Verhaltenstests prüfen Suche/Paging,
+gleichnamige Figuren, Berichtigung, gespeicherte Verkaufspreise, stale Reads
+und geschlossene Auswahl. Ein nativer Electron-Ablauf öffnet die Beute vom
+Atlas, berichtigt7 auf3, liest den Verlauf, öffnet die zweite gleichnamige
+Figur und prüft den gespeicherten Stand nach regulärem Neustart. Roster,
+Szenenuhr, XP und Rast bleiben dabei unverändert; die Ansicht scrollt bei
+240×160px ohne horizontales Überlaufen. Dies belegt diesen Anschluss, keine
+vollständige OS-, 200%- oder kausale Party-Undo-Abnahme.

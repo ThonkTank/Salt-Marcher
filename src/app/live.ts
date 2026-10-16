@@ -911,12 +911,12 @@ export async function runPartyLive(token:string,action:LiveAction,stillCurrent:(
  if(ack.character&&characterDraft?.id===ack.character.id){characterDraft=structuredClone(ack.character);renderCharacter();}
  return ack;
 }
-export async function runPartyProgress(token:string,action:import('./progression').ProgressAction){
- if(context?.token!==token||!await flushLive())throw new Error('Offene Eingaben zuerst speichern oder den Buchungsstatus klären.');
+export async function runPartyProgress(token:string,action:import('./progression').ProgressAction,stillCurrent:()=>boolean=()=>true){
+ if(!stillCurrent()||context?.token!==token||!await flushLive())throw new Error('Offene Eingaben zuerst speichern oder den Buchungsstatus klären.');
  if(!data)await openLive();
- if(context?.token!==token||!data)throw new Error('Party nicht verfügbar.');
+ if(!stillCurrent()||context?.token!==token||!data)throw new Error('Party nicht verfügbar oder Auswahl inzwischen geschlossen.');
  progressionContext(context,data,selected);
- if(!await executePartyProgress(action))throw new Error('Buchung nicht bestätigt. Statusmeldung und Buchungsbeleg prüfen; Eingabe bleibt erhalten.');
+ if(!await executePartyProgress(action,stillCurrent))throw new Error('Buchung nicht bestätigt. Statusmeldung und Buchungsbeleg prüfen; Eingabe bleibt erhalten.');
 }
 
 async function previewPlannedVisit(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){

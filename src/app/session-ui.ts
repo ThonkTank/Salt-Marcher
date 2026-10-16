@@ -40,6 +40,13 @@ type StoryAward={owner:PreviewOwner;visitId:string;revision:number;rewardId:stri
 let storyRequest=0,storyAward:StoryAward|null=null;
 function previewOwner():PreviewOwner|null{return workspace&&plan?{token:workspace.token,planId:plan.id}:null;}
 function ownsPreview(owner:PreviewOwner){return workspace?.token===owner.token&&plan?.id===owner.planId;}
+/** Text already owned by the displayed plan; no extra catalog or session read. */
+export function sessionVisitReadAlouds(token:string|undefined,planId:string|undefined):ReadonlyMap<string,string>{
+ if(!token||!planId||workspace?.token!==token||plan?.id!==planId||view?.profile.planId!==planId)return new Map();
+ const texts=new Map(view.visits.map(v=>[v.visitId,v.readAloud]));
+ if(visitDraft)texts.set(visitDraft.visitId,visitDraft.readAloud);
+ return texts;
+}
 export function sessionContext(next:WorkspaceGeometry|null,current:ManualPlan|null,selected:string|null,data:Preparation|null){
  const planChanged=current?.revision!==plan?.revision;
  const parentChanged=next?.token!==workspace?.token||current?.id!==plan?.id;
@@ -306,7 +313,15 @@ async function selectRun(){
  try{
   const selected=unwrap(await window.campaign.sessionRun(owner.token,id));
   if(!ownsPreview(owner)||request!==previewRequest)return;
-  run=selected;if(selected.origin)for(const key of Object.keys(compositionPreferences) as CompositionPreference[])get<HTMLSelectElement>('session-'+key).value=selected.origin.request.encounter[key];renderRun();
+  run=selected;
+  if(selected.origin)for(const key of Object.keys(compositionPreferences) as CompositionPreference[])get<HTMLSelectElement>('session-'+key).value=selected.origin.request.encounter[key];
+  if(selected.origin||selected.lootGuidance){
+   const saved=selected.origin?.request,magic=selected.lootGuidance?.magic;
+   get<HTMLInputElement>('session-loot-compensate').checked=saved?!!(saved.compensateLoot||saved.compensateMagic):true;
+   get<HTMLInputElement>('session-magic-compensate').checked=saved?!!saved.compensateMagic:!!magic;
+   magicPick.restore(saved?saved.magicPool:magic?.pool?.map(({definitionId,revision})=>({definitionId,revision})),magic?.pool??[]);
+  }
+  renderRun();
  }catch(error){if(ownsPreview(owner)&&request===previewRequest)tell((error as Error).message,true);}
 }
 async function generatePreview(){

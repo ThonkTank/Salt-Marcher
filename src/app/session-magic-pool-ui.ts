@@ -23,7 +23,8 @@ export function magicPoolPicker(
     get("rarity").append(o);
   }
   function render() {
-    const root = get("selected");
+    const scope = contextVersion,
+      root = get("selected");
     root.replaceChildren();
     const summary = document.createElement("p");
     summary.textContent = picked.size + " Gegenstände gewählt";
@@ -33,6 +34,7 @@ export function magicPoolPicker(
       b.type = "button";
       b.textContent = d.name + " entfernen";
       b.onclick = () => {
+        if (scope !== contextVersion) return;
         picked.delete(id);
         render();
         const box = get("results").querySelector<HTMLInputElement>(
@@ -143,6 +145,25 @@ export function magicPoolPicker(
       void search();
     }
   };
+  function context(owner: string | null) {
+    token = owner;
+    contextVersion++;
+    request++;
+    get<HTMLButtonElement>("find").disabled = get<HTMLButtonElement>(
+      "next",
+    ).disabled = !owner;
+    picked.clear();
+    signature = "";
+    next = null;
+    mode.checked = false;
+    get<HTMLInputElement>("search").value = "";
+    get<HTMLSelectElement>("rarity").value = "";
+    get("results").replaceChildren();
+    get("status").textContent =
+      "Suche Gegenstände und wähle sie für diesen Spielabend.";
+    get("next").hidden = true;
+    render();
+  }
   render();
   return {
     selection: (): SessionGenerationRequest["magicPool"] =>
@@ -155,23 +176,22 @@ export function magicPoolPicker(
     disable: () => {
       mode.checked = false;
     },
-    context: (owner: string | null) => {
-      token = owner;
-      contextVersion++;
-      request++;
-      get<HTMLButtonElement>("find").disabled = get<HTMLButtonElement>(
-        "next",
-      ).disabled = !owner;
-      picked.clear();
-      signature = "";
-      next = null;
-      mode.checked = false;
-      get<HTMLInputElement>("search").value = "";
-      get<HTMLSelectElement>("rarity").value = "";
-      get("results").replaceChildren();
-      get("status").textContent =
-        "Suche Gegenstände und wähle sie für diesen Spielabend.";
-      get("next").hidden = true;
+    context,
+    restore: (
+      selection: SessionGenerationRequest["magicPool"],
+      names: readonly { definitionId: string; revision: number; name: string }[],
+    ) => {
+      context(token);
+      for (const item of selection ?? []) {
+        const name = names.find(
+          d => d.definitionId === item.definitionId && d.revision === item.revision,
+        )?.name;
+        picked.set(item.definitionId, {
+          ...item,
+          name: name ?? "Gespeicherter Gegenstand",
+        });
+      }
+      mode.checked = selection !== undefined;
       render();
     },
   };

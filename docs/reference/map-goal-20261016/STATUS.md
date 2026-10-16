@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `3b891b0cbf7ca7e668014e9fe63c23dee7fc91b9`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues only through the 90-minute heartbeat; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `881a56d5da421d4aa89ce50fdd53b35cbe8ef86b`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues only through the 90-minute heartbeat; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -19,9 +19,12 @@ The same complete task must be performed in an available comparator. Earlier Dun
 - Lost World responses remain recoverable; verified read-only reconciliation settles only the matching nested Atlas command.
 - Main's live-map fixes keep its canvas visible outside the Atlas inspector, retain scene tabs during map focus and bind Dungeon preview replies to the requested scene/destination. Replacing a preview notifies the Atlas immediately.
 - Main now docks the same Atlas canvas, camera controls and local travel console into live play. The canonical Dungeon travel controls now remain in that console beside the live scene, including pose, current room text, pace, perception and decisions. Own interior drawing controls stay in place. Main's exposure guard avoids loading complete Dungeon context while this console is hidden. Named destination IDs remain attached when Atlas route selection appends waypoints; returning restores the original control nodes.
+- Main's Hex preview redraw notifications are preserved: accepting or invalidating a route evaluation updates the shared Atlas without reloading its context or writing travel.
 - Main's on-demand room reads are preserved. Map and drawing projections retain geometry rather than complete room prose; selected room text and drawing-element notes load through exact readers. The paged directory searches complete Markdown in its canonical worker. Places, public frames, door/wall rendering, draft guards and camera behavior remain connected to this boundary. The QA host also compiles the canonical room-directory worker.
 
 ## Technical evidence
+
+The following exact-head CI on `b0846cb65` (run `38978380905`) failed one case: the house-placement fixture attempted to redefine the non-configurable `value` accessor on an existing select moved into the Atlas by the new Dungeon console. Its 3,715 passed cases and one optional skip do not make that candidate qualified. The same case failed locally before repair and passes after retaining the existing fixture accessor; placement/camera/undo/redo assertions are unchanged. The new successor is qualified separately.
 
 The preserved `f87ef98cc` candidate passed exact-head CI run `38973164668`: 3,712 passed, zero failed, one optional skip. Its immutable local reference is `archive/atlas-qualified-f87ef98c-20261017`. This does not qualify the later Dungeon-console integration.
 
@@ -34,6 +37,8 @@ After the live-map Main synchronization all 68 affected Dungeon/travel checks an
 After integrating the shared live Atlas, all 116 affected city/Atlas/travel/portal cases passed, followed by the new full-controller interior portal case (one passed). The merged route case confirms waypoint accumulation and canonical destination identity in the actual preview request. The interior case uses the prepared house, Drawing controller and SQLite, then preserves the exact canvas/camera/selection through live mounting and return without author writes. Both type checks, repository check, desktop build and QA host build passed with normal exits. These are technical checks; actual UI acceptance remains open.
 
 The Dungeon-console integration passed 34 affected Dungeon/travel/portal cases and 12 retained location/interior/navigation/public-output cases, all with normal exits. Both type checks, repository check, desktop build and QA browser build passed. No unchanged full local suite was repeated. The actual rebuilt browser startup shows the five preserved synthetic campaigns; no UI workflow completion is inferred.
+
+After repairing the select fixture and synchronizing Main, the complete 55-case city/Atlas DOM file and four affected canonical-location/Hex-preview integration cases pass with normal exits. This includes the previously omitted placement case, preserving camera and undo/redo assertions. Both type checks, repository check, desktop build and QA build pass. The complete local suite was not duplicated; required exact-head CI owns full qualification.
 
 The new integrated search case edits prose without changing section IDs, finds a prose-only term through the real directory worker and navigates to that room while the map retains no room sections. The 4,000-room boundary case also checks an explicit group preview and rejects an invalid group-view flag. Response-loss, stale navigation, public labels and remembered raster output remain covered. DOM/controller, storage and worker checks do not constitute actual UI acceptance.
 

@@ -589,3 +589,31 @@ test('lazy activation defers the directory until its first ordinary opening',asy
  await x.ui.ensurePreparation(x.workspace);assert.equal(reads,1);assert.equal(x.el('preparation').inert,false);
  await x.ui.ensurePreparation(x.workspace);assert.equal(reads,1);
 });
+
+test('adding a scene waits for its inspector before focusing and selecting its placeholder',async t=>{
+ const x=await fixture(t);await x.activate();x.el('plan-create').click();await until(()=>!x.el('plan-controls').hidden);
+ const input=x.el('scene-title'),calls=[];input.focus=()=>calls.push({visible:!x.el('scene-editor').hidden,value:input.value});input.select=()=>calls.push('select');
+ x.el('scene-add').click();await until(()=>calls.length===2);
+ assert.deepEqual(calls,[{visible:true,value:'Neue Szene'},'select']);
+ input.value='Ankunft an der Zollbrücke';input.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
+ assert.equal(x.store.preparation(x.workspace.token).plans[0].scenes[0].title,'Ankunft an der Zollbrücke');
+});
+
+test('scene search finds saved and draft read-aloud without borrowing another plan text',async t=>{
+ const x=await fixture(t);await x.activate();const first=await x.ui.prepareNextVisit(null,{title:'Hinterhalt',notes:'GM privat',locationId:null});
+ x.el('visit-read-aloud').value='Zwischen den Bohlen glänzt ein Messer.';x.el('visit-read-aloud').oninput();assert.equal(await x.ui.flushPreparation(),true);
+ await x.ui.prepareNextVisit(first.planId,{title:'Weidenhain',notes:'Wer verlor das Messer?',locationId:null});
+ const search=text=>{x.el('scene-search').value=text;x.el('scene-search').dispatchEvent(new x.window.Event('input'));};search('Messer');assert.equal(x.el('scene-list').children.length,2);
+ [...x.el('scene-list').querySelectorAll('button')].find(b=>b.textContent.includes('Hinterhalt')).click();await settle();assert.equal(x.el('visit-read-aloud').value,'Zwischen den Bohlen glänzt ein Messer.');
+ x.el('visit-read-aloud').value='Eine Kupfermünze liegt hier.';x.el('visit-read-aloud').oninput();search('Kupfermünze');assert.equal(x.el('scene-list').children.length,1);assert.match(x.el('scene-list').textContent,/Hinterhalt/);
+ assert.equal(await x.ui.flushPreparation(),true);await x.ui.prepareNextVisit(null,{title:'Anderer Abend',notes:'',locationId:null,newPlan:true});search('Kupfermünze');assert.equal(x.el('scene-list').children.length,0);
+});
+
+test('scene text search scans loaded visit identities once and blank queries skip that scan',async t=>{
+ const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Langer Spielabend',scenes:Array.from({length:100},(_,i)=>({id:randomUUID(),title:'Szene '+i,notes:'',locationId:null}))};
+ x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));const source=x.store.session(x.workspace.token,plan.id),detail={...source.visits[99],readAloud:'Ein Messer liegt unter der Weide.'};
+ x.store.executeSession({commandId:randomUUID(),campaignId:x.campaign.id,token:x.workspace.token,action:{kind:'visit',planId:plan.id,detail,expectedRevision:detail.revision}});
+ const read=x.window.campaign.session;let identities=0;x.window.campaign.session=async(...args)=>{const result=await read(...args);if(result.ok)for(const visit of result.value.visits){const id=visit.visitId;Object.defineProperty(visit,'visitId',{enumerable:true,get:()=>{identities++;return id;}});}return result;};await x.activate();
+ const search=text=>{x.el('scene-search').value=text;x.el('scene-search').dispatchEvent(new x.window.Event('input'));};identities=0;search('Messer');assert.equal(x.el('scene-list').children.length,1);assert.match(x.el('scene-list').textContent,/Szene 99/);assert.ok(identities<=plan.scenes.length+2,'search work must remain linear in loaded visits');
+ identities=0;search('');assert.equal(x.el('scene-list').children.length,100);assert.equal(identities,0);
+});
