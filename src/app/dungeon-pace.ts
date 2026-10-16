@@ -1,8 +1,9 @@
 import type {DungeonMovement} from './volume-contracts';
-export interface DungeonPaceSettings {sceneId:string;revision:number;movement:DungeonMovement;groupMetersPerMinute:number|null;members:{characterId:string;excluded:boolean;metersPerMinute:number|null}[]}
+export interface DungeonPaceSettings {explorationRoundSeconds?:number;sceneId:string;revision:number;movement:DungeonMovement;groupMetersPerMinute:number|null;members:{characterId:string;excluded:boolean;metersPerMinute:number|null}[]}
 export interface DungeonPace {profile:'dnd5e-2014-dungeon-pace-v1';metersPerMinute:number|null;reason:string;members:{characterId:string;name:string;feet:number|null;metersPerMinute:number|null;excluded:boolean;overridden:boolean}[];limitingIds:string[]}
 export function checkedDungeonPace(s:DungeonPaceSettings){
  const rate=(n:number|null)=>n===null||Number.isFinite(n)&&n>=0&&n<=1000;
+ if(s?.explorationRoundSeconds!==undefined&&(!Number.isSafeInteger(s.explorationRoundSeconds)||s.explorationRoundSeconds<1))throw new Error('Erkundungsrunde benötigt positive ganze Sekunden.');
  if(!s||!Number.isSafeInteger(s.revision)||s.revision<0||typeof s.sceneId!=='string'||!['walk','crawl','climb','swim','fly'].includes(s.movement)||!rate(s.groupMetersPerMinute)||!Array.isArray(s.members)||s.members.length>10000||new Set(s.members.map(m=>m.characterId)).size!==s.members.length||s.members.some(m=>!m||typeof m.characterId!=='string'||!m.characterId||typeof m.excluded!=='boolean'||!rate(m.metersPerMinute)))throw new Error('Reisetempo benötigt gültige Vorgaben von 0–1000 m/min. Leere Felder verwenden das Profil.');
  return s;
 }
