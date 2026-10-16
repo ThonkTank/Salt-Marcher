@@ -1,6 +1,6 @@
 import {ItemReferenceCatalog} from './item-reference-ui';
 import {encounterEntryLabel} from './encounter-contracts';
-import type { Workspace, Result } from './contracts';
+import type { WorkspaceGeometry, Result } from './contracts';
 import type { Creature, CreatureCatalogQuery } from '../features/catalog/creature-catalog';
 import {renderCreatureDetail} from './creature-detail-ui';
 export {renderCreatureDetail} from './creature-detail-ui';
@@ -17,7 +17,7 @@ function catalogContentView(content:'monster'|'items'){
   if(get('catalog-detail').getAttribute('aria-busy')==='true')renderCreatureSelection();
  }
  catalogContent=content;get('catalog-monsters').hidden=content!=='monster';itemReference?.show(content==='items');for(const [id,on]of [['catalog-monsters-tab',content==='monster'],['catalog-items-tab',content==='items']] as const){get(id).setAttribute('aria-selected',String(on));get(id).tabIndex=on?0:-1;}}
-let workspace:Workspace|null=null,info:CatalogInfo|null=null,page:CreaturePage|null=null,creature:Creature|null=null,plan:EncounterPlan|null=null;
+let workspace:WorkspaceGeometry|null=null,info:CatalogInfo|null=null,page:CreaturePage|null=null,creature:Creature|null=null,plan:EncounterPlan|null=null;
 let generation=0,searchRequest=0,listRequest=0,planRequest=0,creatureRequest=0,partyRequest=0,editVersion=0,offset=0,sort:CreatureCatalogQuery['sort']='name',blocked=false,dirty=false;
 const owned=(token:string|undefined,g:number)=>generation===g&&workspace?.token===token;
 let saving:Promise<boolean>|null=null,timer:ReturnType<typeof setTimeout>|null=null,searchTimer:ReturnType<typeof setTimeout>|null=null;
@@ -61,7 +61,7 @@ function renderCatalogControls(){
  }
 }
 function adoptPlan(next:EncounterPlan,invalidateRequests=true){clearSaveTimer();saving=null;if(invalidateRequests)planRequest++;partyRequest++;editVersion++;plan=next;dirty=next.revision===0;blocked=false;get<HTMLDetailsElement>('encounter-library').open=false;get<HTMLDetailsElement>('encounter-party-details').open=next.party.length===0;renderPlan();}
-export function activateCatalog(next:Workspace){
+export function activateCatalog(next:WorkspaceGeometry){
  clearSaveTimer();clearSearchTimer();saving=null;itemReference?.activate();
  workspace=next;startingPlan=false;generation++;searchRequest++;clearResults('Katalog noch nicht geladen.');listRequest++;planRequest++;creatureRequest++;partyRequest++;
  plan=null;creature=null;reading=null;readingHistory=[];readingPosition=-1;dirty=false;blocked=false;get('catalog-add-result').hidden=true;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;

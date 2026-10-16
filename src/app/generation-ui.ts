@@ -2,7 +2,7 @@ import {renderEncounterComposition} from './encounter-composition-ui';
 import {requiredNpcPicker} from './required-npc-picker';
 import {encounterEntryLabel} from './encounter-contracts';
 import {initWorldSourceUI,setWorldSources,worldSourceFilters,worldSourceOpen,openWorldSourceReference} from './world-source-ui';
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {Creature,CreatureCatalogQuery} from '../features/catalog/creature-catalog';
 import type {CatalogInfo,EncounterPlan} from './encounter-contracts';
 import {currentGenerationLoot,weightShares,integerWeights,type EncounterTable,type LootTable,type GeneratorRegistry,type GenerationCommand,type GenerationRun,type GenerationRequest} from './generation-contracts';
@@ -10,7 +10,7 @@ const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T, 
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 interface Bridge{plan():Promise<EncounterPlan|null>;creature():Creature|null;filters():CreatureCatalogQuery;info():CatalogInfo|null;accept(plan:EncounterPlan):Promise<void>;beginTableLookup?():()=>void}
 let requiredPick:ReturnType<typeof requiredNpcPicker>;
-let workspace:Workspace|null=null,tables:EncounterTable[]=[],lootTables:LootTable[]=[],registry:GeneratorRegistry|null=null,run:GenerationRun|null=null;
+let workspace:WorkspaceGeometry|null=null,tables:EncounterTable[]=[],lootTables:LootTable[]=[],registry:GeneratorRegistry|null=null,run:GenerationRun|null=null;
 let previewRequest=0,refreshRequest=0,tableRequest=0;
 const owned=(token:string,g:number)=>workspace?.token===token&&generation===g;
 const lockedControls=new Map<HTMLInputElement|HTMLButtonElement|HTMLSelectElement,boolean>();
@@ -29,7 +29,7 @@ function resumeWrite(){const retry=retryWrite;retryWrite=null;get('generation-wr
 let pending:Promise<boolean>|null=null,tell:(text:string,error?:boolean)=>void,bridge:Bridge,discard:()=>void;
 let tableCreated:((table:EncounterTable)=>void)|null=null;
 let catalogParent:Node|null=null,catalogNext:Node|null=null,restoreTableLookup:(()=>void)|null=null;const names=new Map<string,string>();
-export function activateGeneration(next:Workspace){
+export function activateGeneration(next:WorkspaceGeometry){
  resumeWrite();lock(false);pending=null;workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
  defaultOverrides.clear();tables=[];lootTables=[];registry=null;run=null;tableCreated=null;tableDraft=null;lootDraft=null;previewDirty=false;planningBasis=null;fillBasis=null;

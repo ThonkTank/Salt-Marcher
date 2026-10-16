@@ -1,10 +1,10 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {LiveScene} from './live-contracts';
 import type {NpcDossier,NpcCastQuery} from './npc-cast-contracts';
 import {dailyTime} from './npc-daily-plan';
 import {loadCreatureDetail} from './creature-detail-ui';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;},button=(text:string,fn:()=>void)=>{const n=node('button',text);n.type='button';n.onclick=fn;return n;},unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-type Context={workspace:Workspace;scene:LiveScene};
+type Context={workspace:WorkspaceGeometry;scene:LiveScene};
 export class NpcCastBinder {
  private dialog=node('dialog');private search=node('input');private scope=node('select');private status=node('p');private heading=node('h2','NSCs am Spieltisch');private caption=node('p');private list=node('div');private document=node('section');private owner:Context|null=null;private offset=0;private selected:string|null=null;private history:string[]=[];private request=0;private detailRequest=0;private busy:object|null=null;private prev=button('Vorige 50',()=>{this.offset=Math.max(0,this.offset-50);void this.read();});private next=button('Nächste 50',()=>{this.offset+=50;void this.read();});private timer:ReturnType<typeof setTimeout>|null=null;
  constructor(private tell:(s:string,error?:boolean)=>void,private context:()=>Context|null,private flush:()=>Promise<boolean>,private readAloud:(text:string,title:string,sceneId:string,stillCurrent:()=>boolean)=>Promise<void>,private encounter:(id:string,stillCurrent:()=>boolean)=>Promise<void>,private edit:(id:string,contact:{date:string;sceneTitle:string}|undefined,stillCurrent:()=>boolean)=>Promise<void>,private openNote:(id:string,stillCurrent:()=>boolean)=>Promise<void>,private openGroup:(id:string,stillCurrent:()=>boolean)=>Promise<void>,private openAutonomy:(id:string,stillCurrent:()=>boolean)=>Promise<void>,private places:(id:string,stillCurrent:()=>boolean)=>Promise<void>=async()=>{},private openLocation:(id:string,stillCurrent:()=>boolean)=>Promise<void>=async()=>{}){

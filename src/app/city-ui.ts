@@ -1,5 +1,5 @@
 import {atlasCityWrite} from './campaign-atlas-author';
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {CityView,CityUnit,CityPoint,CityCommand,CityOverview,CityPreview,CityRecipe,CityHousehold,CityJob,CityPersonMove} from './city-contracts';
 import type {NpcPage} from './npc-contracts';
 import {CityActivityBinder} from './city-activity-ui';
@@ -7,7 +7,7 @@ import {chooseCityBuilding,confirmCityLifeMove} from './city-building-picker';
 import {citySvg,generateCity,posed,roadPoints} from './city-model';
 const el=<T extends Element = HTMLElement>(id:string)=>document.getElementById(id) as unknown as T,field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-let workspace:Workspace|null=null,view:CityView|null=null,overview:CityOverview|null=null,selected:string|null=null,path:CityPoint[]=[],preview:CityPreview|null=null,pending:Promise<boolean>|null=null,dirty=false,timer:ReturnType<typeof setTimeout>|null=null,tell:(s:string,error?:boolean)=>void,openRelationships:(id:string)=>Promise<void>|void=()=>{};
+let workspace:WorkspaceGeometry|null=null,view:CityView|null=null,overview:CityOverview|null=null,selected:string|null=null,path:CityPoint[]=[],preview:CityPreview|null=null,pending:Promise<boolean>|null=null,dirty=false,timer:ReturnType<typeof setTimeout>|null=null,tell:(s:string,error?:boolean)=>void,openRelationships:(id:string)=>Promise<void>|void=()=>{};
 let activity:CityActivityBinder|null=null;
 let epoch=0,readRequest=0,selectionRequest=0,creating=false;
 let generationJob:{token:string;epoch:number;cityId:string;cancelled:boolean}|null=null;
@@ -22,7 +22,7 @@ function cancelGeneration(){if(generationJob)generationJob.cancelled=true;genera
 function opts(id:string,rows:{id:string;name:string}[],selectedId:string|null){const s=el<HTMLSelectElement>(id);s.replaceChildren();for(const row of rows){const o=document.createElement('option');o.value=row.id;o.textContent=row.name;s.append(o);}if(selectedId&&rows.some(r=>r.id===selectedId))s.value=selectedId;}
 function factionName(id:string){return overview?.factions.find(row=>row.id===id)?.name??view?.factions.find(row=>row.id===id)?.name??null;}
 function factionOptions(id:string,selectedId:string|null,emptyLabel:string,includeReferenced=true){const select=el<HTMLSelectElement>(id),rows=[...(overview?.factions??[])],referenced=includeReferenced&&selectedId?view?.factions.find(row=>row.id===selectedId):null;if(referenced&&!rows.some(row=>row.id===referenced.id))rows.push({id:referenced.id,name:referenced.name+' (archiviert)'});select.replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent=emptyLabel;select.append(empty);for(const row of rows){const option=document.createElement('option');option.value=row.id;option.textContent=row.name;select.append(option);}select.value=selectedId&&rows.some(row=>row.id===selectedId)?selectedId:'';}
-export function activateCity(w:Workspace){cancelGeneration();clearTimer();if(peopleTimer)clearTimeout(peopleTimer);workspace=w;epoch++;creating=false;readRequest++;selectionRequest++;peopleRequest++;pending=null;view=null;overview=null;selected=null;people=null;knownPeople=new Map();dirty=false;path=[];preview=null;el<HTMLDialogElement>('city-new-dialog').close();render();}
+export function activateCity(w:WorkspaceGeometry){cancelGeneration();clearTimer();if(peopleTimer)clearTimeout(peopleTimer);workspace=w;epoch++;creating=false;readRequest++;selectionRequest++;peopleRequest++;pending=null;view=null;overview=null;selected=null;people=null;knownPeople=new Map();dirty=false;path=[];preview=null;el<HTMLDialogElement>('city-new-dialog').close();render();}
 async function readSelectedCity(id:string,token:string,g:number,request:number){
  try{const response=await window.campaign.city(token,id);if(!owned(token,g)||request!==readRequest)return;
   if(dirty){el<HTMLSelectElement>('city-select').value=view?.header.id??'';tell('Neue Eingabe bleibt offen. Stadt bei Bedarf erneut wählen.',true);return;}

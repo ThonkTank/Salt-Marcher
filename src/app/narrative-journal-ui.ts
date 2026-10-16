@@ -1,12 +1,12 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {NarrativeJournalEntry,NarrativeJournalQuery} from './narrative-journal-contracts';
 import {showNarrative,flushNarrative,captureNarrativeOwner} from './narrative-ui';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
-let workspace:Workspace|null=null,entries:NarrativeJournalEntry[]=[],selected:string|null=null,next:string|null=null,request=0,detailRequest=0,queryTimer:ReturnType<typeof setTimeout>|null=null;
+let workspace:WorkspaceGeometry|null=null,entries:NarrativeJournalEntry[]=[],selected:string|null=null,next:string|null=null,request=0,detailRequest=0,queryTimer:ReturnType<typeof setTimeout>|null=null;
 let epoch=0,listVersion=0,openRequest=0,closing:Promise<boolean>|null=null;
 const journalDialog=()=>el<HTMLDialogElement>('narrative-journal');
-const owns=(w:Workspace,n:number)=>workspace?.token===w.token&&epoch===n;
+const owns=(w:WorkspaceGeometry,n:number)=>workspace?.token===w.token&&epoch===n;
 function cancelQuery(){if(queryTimer)clearTimeout(queryTimer);queryTimer=null;}
 function clearIndex(){entries=[];next=null;listVersion++;el('journal-list').replaceChildren();el('journal-counts').textContent='';el('journal-list-status').textContent='';el('journal-more').hidden=true;}
 let resumeOwner:(()=>Promise<void>)|null=null;
@@ -58,7 +58,7 @@ function closeJournal():Promise<boolean>{
  }catch(e){if(owns(w,closingEpoch))tell((e as Error).message,true);return false;}})();
  closing=task;void task.finally(()=>{if(closing===task)closing=null;});return task;
 }
-export function activateNarrativeJournal(w:Workspace){
+export function activateNarrativeJournal(w:WorkspaceGeometry){
  workspace=w;epoch++;openRequest++;request++;detailRequest++;closing=null;resumeOwner=null;cancelQuery();clearIndex();clearDetail();
  if(journalDialog().open){journalDialog().close();void showNarrative(null,null,true,ownerDrain,tell,el('journal-narrative-editor'));}
 }

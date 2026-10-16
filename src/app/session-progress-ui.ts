@@ -1,10 +1,10 @@
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {LiveView} from './live-contracts';
 import type {Preparation} from './preparation-contracts';
 import {visitOutcomeLabel,type SessionProgress,type VisitOutcomeStatus} from './visit-outcome-contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 let locked=false,saving=false;
-let workspace:Workspace|null=null,live:LiveView|null=null,sources:Preparation|null=null,view:SessionProgress|null=null,request=0,key='',planId='';
+let workspace:WorkspaceGeometry|null=null,live:LiveView|null=null,sources:Preparation|null=null,view:SessionProgress|null=null,request=0,key='',planId='';
 const drafts=new Map<string,{status:VisitOutcomeStatus;text:string}>();
 let navigate:(planId:string,visitId:string)=>Promise<void>,save:(sceneId:string,adoptionId:string,status:VisitOutcomeStatus,text:string)=>Promise<boolean>,tell:(s:string,e?:boolean)=>void;
 const draftKey=()=>workspace&&live?.scene?.adoption?workspace.token+':'+live.scene.id+':'+live.scene.adoption.id:null;
@@ -31,7 +31,7 @@ function renderOutcome(){
  el<HTMLSelectElement>('live-visit-outcome-status').value=d?.status??saved?.status??'completed';el<HTMLTextAreaElement>('live-visit-outcome-text').value=d?.text??saved?.text??'';
  updateOutcomeActions();
 }
-export function sessionNavigatorContext(w:Workspace|null,l:LiveView|null,p:Preparation|null,active:boolean){
+export function sessionNavigatorContext(w:WorkspaceGeometry|null,l:LiveView|null,p:Preparation|null,active:boolean){
  if(w?.token!==workspace?.token)drafts.clear();workspace=w;live=l;sources=p;
  const next=JSON.stringify([w?.token,l?.focusId,l?.scene?.adoption?.id]);const changed=next!==key;key=next;
  const picker=el<HTMLSelectElement>('live-session-plan');picker.replaceChildren();for(const p of sources?.plans??[]){const o=document.createElement('option');o.value=p.id;o.textContent=p.name||'Unbenannter Plan';picker.append(o);}

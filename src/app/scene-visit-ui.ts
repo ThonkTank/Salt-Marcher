@@ -1,10 +1,10 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {LiveScene} from './live-contracts';
 import type {SceneVisit,SceneVisitPage} from './scene-visit-contracts';
 import {visitOutcomeLabel} from './visit-outcome-contracts';
 import {renderCreatureDetail} from './creature-detail-ui';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;},button=(text:string,fn:()=>void)=>{const n=node('button',text);n.type='button';n.onclick=fn;return n;},unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-type Context={workspace:Workspace;scene:LiveScene};
+type Context={workspace:WorkspaceGeometry;scene:LiveScene};
 export class SceneVisitBinder {
  private dialog=node('dialog');private list=node('div');private document=node('div');private search=node('input');private caption=node('p');private status=node('p');private prev=button('Neuere Besuche',()=>{if(this.cursorStack.length){this.cursor=this.cursorStack.pop()!;void this.load();}});private next=button('Ältere Besuche',()=>{if(this.page?.next){this.cursorStack.push(this.cursor);this.cursor=this.page.next;void this.load();}});private refresh=button('Aktualisieren',()=>{this.cursor=null;this.cursorStack=[];void this.load();});private owner:Context|null=null;private page:SceneVisitPage|null=null;private selected:SceneVisit|null=null;private request=0;private detailRequest=0;private cursor:string|null=null;private cursorStack:(string|null)[]=[];
  constructor(private tell:(text:string,error?:boolean)=>void,private context:()=>Context|null,private flush:()=>Promise<boolean>,private readAloud:(text:string,title:string,sceneId:string)=>Promise<void>,private openNote:(id:string)=>Promise<void>){

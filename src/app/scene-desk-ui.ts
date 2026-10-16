@@ -1,7 +1,7 @@
 import {ScenePlaceBinder} from './scene-place-binder';
 import {campaignLocalId} from '../features/campaign/campaign-contracts';
 import { worldNoteDocument } from "../features/world/world-notes";
-import type { Workspace, Result } from "./contracts";
+import type { WorkspaceGeometry, Result } from "./contracts";
 import type { DeskRef, DeskContent, SceneDesk, SceneCreationInput, SceneCreationDraft } from "./scene-desk-contracts";
 import type {
   PreparationDraft,
@@ -19,7 +19,7 @@ const unwrap = <T>(r: Result<T>) => {
   if (!r.ok) throw new Error(r.error);
   return r.value;
 };
-let w: Workspace | null = null,
+let w: WorkspaceGeometry | null = null,
   scene: LiveScene | null = null,
   desk: SceneDesk | null = null,
   content: DeskContent | null = null,
@@ -84,7 +84,7 @@ export function initSceneDesk(
     void reloadContent().catch((e) => tell(e.message, true));
 }
 export function sceneDeskContext(
-  workspace: Workspace | null,
+  workspace: WorkspaceGeometry | null,
   current: LiveScene | null,
 ) {
   w = workspace;

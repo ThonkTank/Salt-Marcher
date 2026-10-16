@@ -103,21 +103,16 @@ export async function atlasDrawingWrite(
     : result;
 }
 export async function atlasRoomWrite(edit: Edit): Promise<Result<RoomCommit>> {
-  const result = await wrap(edit, { kind: "room-edit", edit });
-  if (!result.ok) return result;
-  const w = result.value.atlas.workspace,
-    r = w.rooms.find((r) => r.id === edit.roomId);
-  return r
-    ? {
-        ok: true,
-        value: {
-          room: r,
-          token: w.token,
-          canUndo: result.value.atlas.canUndo,
-          canRedo: result.value.atlas.canRedo,
-        },
-      }
-    : { ok: false, error: "Raum nach Änderung nicht verfügbar." };
+  if(pending.has(edit.token))return{ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
+  try{
+    const result=await window.campaign.atlasRoomCommit(edit);
+    if(result.ok)document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:edit.token,campaignId:edit.campaignId,revision:result.value.atlasRevision}}));
+    return result;
+  }catch(e){
+    pending.set(edit.token,{commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,action:{kind:'room-edit',edit:structuredClone(edit)}});
+    document.dispatchEvent(new Event('atlas-write-state'));
+    return{ok:false,error:'Ausgang des Atlasauftrags unbekannt. Dieselbe Kennung bleibt für Speicherstand klären erhalten. '+(e as Error).message};
+  }
 }
 // World editors retain their field versions and reconcile lost replies read-only.
 export function settleAtlasWorldWrite(c: WorldCommand) {

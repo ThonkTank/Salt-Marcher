@@ -293,7 +293,7 @@ bleiben kompatibel. Prozessnotizen und lokale Messpfade gehören nicht ins Repo.
 | Schritt | Konkreter Anschluss / Nutzerwirkung | Direkte Abnahme und aktueller Stand |
 | --- | --- | --- |
 | 0 Ausgangsbasis | Bestehende Writer/History/Volumes/Gebäude/Reise/Player prüfen statt neu bauen. Gleiche kleine Kampagne, Großwelt, dichte/komplexe Region, 5000 Gebäude, 100000 Dungeonzellen, große Bildvorlage/Export als Vergleichsdaten. | Code-/Messbasis vorhanden; bisherige Großwald-/4000-Raumproben sind isolierte Diagnosen, keine 16-GiB-/Gesamtfreigabe. Nativer Großwald-Teilweg belegt; 16-GiB-, Stadt-/Dungeon- und Medienprofile weiter offen. |
-| 1 Gezielte Reads | `campaign-atlas-contracts`, Store, Preload/Main, Workbench: Übersicht, räumliche Seite, Objektdetail und Commitbeleg trennen. Keine vollständigen Räume/Städte für eine kleine Ansicht; begrenzte Antworten mit ausdrücklicher Fortsetzung/Zusammenfassung. | Erster Anschluss implementiert: getrennte Übersicht/Roomdetail, revisionsgebundene Metadatenseiten für Raum-/Stadt-/Landschaftssuche und kompakter Landschaftscommit. 4000-Raum-Probe ohne Vollansichten und mit unveränderter Prosa. Initialer Atlas, räumliche Stadt-/Raumseiten und andere Autorenpfade verwenden weiterhin Vollansichten; Schritt bleibt offen. |
+| 1 Gezielte Reads | `campaign-atlas-contracts`, Store, Preload/Main, Workbench: Übersicht, räumliche Seite, Objektdetail und Commitbeleg trennen. Keine vollständigen Räume/Städte für eine kleine Ansicht; begrenzte Antworten mit ausdrücklicher Fortsetzung/Zusammenfassung. | Erster Anschluss implementiert: getrennte Übersicht/Roomdetail, revisionsgebundene Metadatenseiten für Raum-/Stadt-/Landschaftssuche und kompakter Landschaftscommit. 4000-Raum-Probe ohne Vollansichten und mit unveränderter Prosa. Kampagnenaktivierung und Atlas öffnen nun über Shell und Geometrieprojektionen; der Raumeditor liest den gewählten vollständigen Raum und dessen Arbeitsentwurf gezielt. Raumtextänderungen antworten mit genau diesem Raum. Räumliche Stadt-/Raumseiten und andere Autorenpfade verwenden weiterhin vollständige Geometrie beziehungsweise Vollansichten; Schritt bleibt offen. |
 | 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Landschaft und Nichtflächen laufen am Writer mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen; fehlgeschlagener Indexaufbau rollt vollständig zurück und fällt auf kanonische Btree-Reads zurück, ohne andere Kampagnen zu sperren. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
 | 3 Übersicht/Frame | Effektive grobe/feine Eigenschaften vor Aggregation bestimmen. Vereinfachte Flächen/Symbole/Kacheln schützen Landschaft beim Herauszoomen. Render/Hit publizieren denselben revisionsgebundenen Frame. | Landschaftsflächen werden in einem separaten Lese-Worker zu begrenzten, revisionsgebundenen Rasterbildern aggregiert; grobe Vorgaben und feine Übersteuerungen bleiben geordnet, Löcher erhalten. Native Linux-Probe: 100000 Flächen, sichtbar Wald → Wasser malen → Save → Neustart → Undo, tatsächliche Bildschirmfarben. Noch keine persistente Kachelpyramide, vollständige Frame-/Hit-Umstellung oder Latenzfreigabe; B01/B04 offen. |
 | 4 Raumfachmodelle | Vorhandene Volumes/Lifecycle weiterverwenden. Gebäude außen/innen aus einem Zustand; echte Paths/Passages getrennt von dekorativen Linien. Reine Zeichnung nur ausdrücklich mit Preview umwandeln. | Grundlagen vorhanden, vollständiger Anschluss offen. 3-m-Wand x1,1 =3,3 m; 1,524-m-Dungeonzellen bleiben exakt; gestapelte Räume, Split/Merge, Anker/Prosa und gemeinsame Kamera/History. |
@@ -390,8 +390,68 @@ und ein exakter Objektread ersetzen den bisherigen Vollgeometriesuchread. Der
 Ortsinspektor nutzt den vorhandenen gezielten `deskContent`-Read, statt sämtliche
 Wissensinhalte zu laden.
 
-Nächster zusammenhängender Anschluss ist Schritt 1: initiale Welt-/City-/Room-
-Metadaten von tatsächlicher Geometrie und Prosa trennen; räumliche Seiten mit
+Der zweite Leseschnitt trennt `WorkspaceShell`, `WorkspaceGeometry`,
+`RoomSummary` und vollständigen `Room`. Aktivierung und Atlasdarstellung lesen
+keine vollständigen Raumtextarrays. Konturen werden geprüft, ohne die
+Markdownabschnitte als JavaScript-Objekte aufzubauen; der Reader hält jeweils
+nur einen Quellpayload für dessen Prüfsumme. Das ist noch kein von der
+Textmenge unabhängiger Plattenread. Unverfügbare Geometrie wird gemeldet; ein
+beschädigter ausgewählter Raum bleibt gesperrt, andere Räume erreichbar.
+
+Die sichtbare Atlassuche und das Raumverzeichnis durchsuchen weiterhin auch
+Markdown. Readonly-Worker liefern standardmäßig 40 Metadaten pro Seite in
+natürlicher Nummernsortierung; Fortsetzungen binden Filter, Aktivierung und
+einen opaken Änderungsstand. Je Suchoberfläche läuft höchstens ein ersetzbarer
+Job, der Nachfolger wartet auf dessen tatsächliches Ende. Geänderte Suchstände
+werden ausdrücklich neu gestartet, nicht mit älteren Seiten vermischt. Das
+Verzeichnis bleibt unter den Fachdetails erreichbar. Detailantworten und
+schreibende Befehle akzeptieren weiterhin bestehende lange IDs.
+
+Zeichenansichten erhalten Geometrie ohne gesamte Keys, archivierte Raumtexte
+oder sämtliche Elementnotizen. Ein gewähltes Element wird vollständig
+nachgelesen; die Key-Werkzeuge behalten ihre vollständigen Autorenansichten.
+Vorbereitung wird bei Aktivierung zurückgesetzt und erst bei tatsächlichem
+Bedarf geladen; die Liveansicht darf ihre benötigten Wissensquellen weiterhin
+lesen. Aktiver Raum, bestätigter Detailstand und Arbeitsentwurf sind getrennt;
+Kampagnen-/Raumwechsel verwerfen keine ungültigen oder unbestätigten Entwürfe.
+Die Geschosssynchronisierung erhält einen schon auf diesem Geschoss gewählten
+Raum. Kompakte Raumcommits behalten die bisherigen Atlas-/Raumreceipts und
+Undoabläufe; eine nachgelagerte Ansichtsfehlermeldung macht einen bestätigten
+Commit nicht wieder unbekannt. Es gibt dafür keine Daten-/Archivmigration.
+
+Unter Beobachtung: Der Volltextscan bleibt linear zur Textmenge. Ein
+abgeleiteter Volltextindex ist die Alternative, falls das Suchziel verfehlt
+wird; Suchbedeutung und Wiederaufbau gehören in den Vergleich. Geometrie und
+Text bleiben vorerst im gemeinsamen kanonischen Payload. Eine persistente
+Trennung ist erst mit nachgewiesenem Lese-/Speichervorteil und überprüfter
+Migration gerechtfertigt. Die Metadatenseiten sind nach Anzahl begrenzt, noch
+nicht nach Bytes; große Einzelobjekte, Geometrie, weitere Autorenantworten und
+explizit geöffnete Key-Werkzeuge benötigen weiterhin die eigenen Budgets.
+
+Die isolierte Vergleichsprobe mit 4000 identischen Raumkonturen und 4/40 KiB
+Markdown je Raum verwendet jeweils drei frische Node-Prozesse und die
+unveränderte Ausgangsversion als Gegenprobe. Die JSON-Größe der initialen
+DTO-Folge sinkt von 52,46/494,83 MB auf 2,514/2,551 MB; der Median des maximalen
+Prozess-RSS von 366/1886 MiB auf 123/125 MiB. Lese- plus JSON-Serialisierungszeit:
+Median 2,32/12,60 s vorher, 0,89/3,42 s danach. Das sind weder die exakten
+Electron-Transportbytes noch der gesamte App-/GPU-Speicher oder eine
+p95-Qualifikation. Der Textfaktor zehn bleibt im übertragenen Datenvolumen
+nur als ein ausgewähltes Raumdetail sichtbar, kostet aber weiterhin Quell-I/O
+und Prüfsummenzeit. Diese verbleibende Skalierung rechtfertigt den nächsten
+räumlich begrenzten Read-Anschluss und den Vergleich kompakter abgeleiteter
+Geometrie mit einer persistenten Text-/Geometrietrennung.
+
+`tests/desktop-room-reads.test.mjs` und
+`tests/desktop-room-directory-dom.test.mjs` prüfen unter anderem mehrere
+Scopes, verborgene Geschosse, beschädigte Einzelräume, Textsuche,
+Fortsetzungsinvalidierung, Graphschatten, Sicht-/NPC-Projektion und verworfene
+alte Rasterfehler. `tools/test-desktop-room-reads.mjs` ist die reproduzierbare
+native Probe für sichtbare Markdownsuche, Seiten bis zum letzten langen ID,
+Textcommit, ungültigen Entwurf und Fresh. Die Proben ergänzen die bestehenden
+Key-/Speicher-/Atlasprüfungen; sie schließen keine Gesamtfreigabe ein.
+
+Nächster zusammenhängender Anschluss bleibt Schritt 1: Welt-/City-Metadaten
+und räumliche Geometrie begrenzen; räumliche Seiten mit
 Bytegrenze und Fortsetzung/Sammeldarstellung liefern; Detail- und Reiseverbraucher
 an gezielte Queries anschließen. Danach Cache-/Indexvergleich und Adresscodec
 an echter Kamera/History/Transfer qualifizieren, bevor eine persistente

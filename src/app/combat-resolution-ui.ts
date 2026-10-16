@@ -1,4 +1,4 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {LiveScene} from './live-contracts';
 import type {CombatState,CombatResolution} from './combat-contracts';
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
@@ -12,7 +12,7 @@ export class CombatResolutionPanel {
  constructor(private root:HTMLElement,private distribute:(id:string,sceneId:string,current:()=>boolean)=>Promise<void>,private closeStale:()=>void){
   root.className='combat-resolution';const title=node('h3','Nachbereitung'),scope=node('p','Zugehörige Schätze aus diesem Kampf, dieser Gruppe und ihrem aktuellen Ort. Andere Funde sind über die Schatzverwaltung erreichbar.');scope.className='caption';this.status.setAttribute('role','status');this.summary.id='combat-resolution-summary';this.rows.id='combat-resolution-treasures';this.status.id='combat-resolution-status';this.more.type=this.refreshButton.type='button';this.more.id='combat-resolution-more';this.refreshButton.id='combat-resolution-refresh';this.more.onclick=()=>void this.read(true);this.refreshButton.onclick=()=>void this.refresh();const tools=node('div');tools.className='toolbar';tools.append(this.refreshButton,this.more);root.append(title,this.summary,scope,this.rows,this.status,tools);root.hidden=true;
  }
- context(workspace:Workspace|null,scene:LiveScene|null,combat:CombatState|null){
+ context(workspace:WorkspaceGeometry|null,scene:LiveScene|null,combat:CombatState|null){
   const next=workspace&&scene&&combat?.phase==='finished'&&combat.sceneId===scene.id?{token:workspace.token,sceneId:scene.id,combatId:combat.id,combatRevision:combat.revision,sceneRevision:scene.revision}:null;
   if(JSON.stringify(next)===JSON.stringify(this.owner))return;
   this.generation++;this.reading++;this.owner=next;this.result=null;this.busy=false;this.root.hidden=!next;this.rows.replaceChildren();this.summary.textContent='';this.status.textContent='';this.closeStale();if(next)void this.read();

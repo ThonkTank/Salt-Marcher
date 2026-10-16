@@ -1,7 +1,7 @@
 import {renderShopRestockTables} from './shop-restock-ui';
 import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type {ProgressAck} from './progression';
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {ItemDefinition,ItemQuery,ShopSummary,ShopView,Shop,ItemShopAction,ItemShopAck} from './items-contracts';
 import type {Preparation} from './preparation-contracts';
 import {formatInstant,type LiveView} from './live-contracts';
@@ -11,7 +11,7 @@ const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const value=(id:string)=>el<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 const amount=(s:string)=>(BigInt(s)/100n).toString()+'.'+(BigInt(s)%100n).toString().padStart(2,'0');
-let workspace:Workspace|null=null,definition:ItemDefinition|null=null,shop:ShopView|null=null,sources:Preparation|null=null,progress:ProgressView|null=null,ledger:LedgerItem[]=[];
+let workspace:WorkspaceGeometry|null=null,definition:ItemDefinition|null=null,shop:ShopView|null=null,sources:Preparation|null=null,progress:ProgressView|null=null,ledger:LedgerItem[]=[];
 let shopClock:{sceneId:string;expectedRevision:number;instantMs:string;title:string}|null=null;
 let dirtyDefinition=false,dirtyShop=false,pending:Promise<boolean>|null=null,offset=0,next:number|null=null;
 let tell:(text:string,error?:boolean)=>void,enter:(shopId?:string)=>Promise<void>;
@@ -95,7 +95,7 @@ function performTrade(action:()=>Promise<void>){
  if(tradePending)return tradePending;const token=workspace?.token,g=epoch;tradeConfirmed=false;
  const task=Promise.resolve().then(async()=>{if(!owned(token,g))return false;await action();return owned(token,g);}).catch(error=>{if(owned(token,g))tell((tradeConfirmed?'Buchung bestätigt; Anzeige konnte nicht aktualisiert werden: ':'')+error.message,true);return tradeConfirmed&&owned(token,g);}).finally(()=>{if(tradePending===task)tradePending=null;});tradePending=task;lockShopContext();void task.finally(lockShopContext);return task;
 }
-export function activateItems(w:Workspace){clearSearchTimer();workspace=w;contextReady=false;contextLoading=false;contextError='';requestedDefinition=null;definitionLoading=false;definitionError='';requestedShop=null;shopLoading=false;shopError='';sellerLoading=false;sellerError='';loadedSeller=null;epoch++;openRequest++;searchRequest++;definitionRequest++;shopsRequest++;shopRequest++;sellerRequest++;clockRequest++;pending=null;tradePending=null;tradeConfirmed=false;lastDefinitionSave=null;shopClock=null;definition=null;shop=null;sources=null;progress=null;ledger=[];dirtyDefinition=false;dirtyShop=false;offset=0;clearItemResults('');el('shops-list').replaceChildren();el('shop-stock').replaceChildren();el('shop-sale-problems').textContent='';el('shop-sale-problem-details').hidden=true;el('shop-sale-problem-list').textContent='';for(const id of ['item-recipient','shop-buyer','shop-seller','shop-sale-item'])el(id).replaceChildren();renderDefinition();renderShop();renderItemContext();updateCommitControls();}
+export function activateItems(w:WorkspaceGeometry){clearSearchTimer();workspace=w;contextReady=false;contextLoading=false;contextError='';requestedDefinition=null;definitionLoading=false;definitionError='';requestedShop=null;shopLoading=false;shopError='';sellerLoading=false;sellerError='';loadedSeller=null;epoch++;openRequest++;searchRequest++;definitionRequest++;shopsRequest++;shopRequest++;sellerRequest++;clockRequest++;pending=null;tradePending=null;tradeConfirmed=false;lastDefinitionSave=null;shopClock=null;definition=null;shop=null;sources=null;progress=null;ledger=[];dirtyDefinition=false;dirtyShop=false;offset=0;clearItemResults('');el('shops-list').replaceChildren();el('shop-stock').replaceChildren();el('shop-sale-problems').textContent='';el('shop-sale-problem-details').hidden=true;el('shop-sale-problem-list').textContent='';for(const id of ['item-recipient','shop-buyer','shop-seller','shop-sale-item'])el(id).replaceChildren();renderDefinition();renderShop();renderItemContext();updateCommitControls();}
 function renderItemContext(){
  const status=el('item-context-status');status.hidden=!contextLoading&&!contextError;status.setAttribute('role',contextError?'alert':'status');status.textContent=contextError?('Vergabe und Shops nicht verfügbar: '+contextError+' Die Gegenstandssuche bleibt nutzbar.'):(contextLoading?'Vergabe und Shops werden geladen. Die Gegenstandssuche bleibt nutzbar.':'');
  el('item-context-retry').hidden=!contextError;el<HTMLButtonElement>('item-context-retry').disabled=contextLoading;

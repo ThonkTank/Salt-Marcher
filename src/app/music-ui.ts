@@ -1,4 +1,4 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
 import type {AudioAsset,AudioPage,AudioQuery,MusicView,MusicAction,MusicSceneSettings,MusicSubject,MoodAxis} from './music-contracts';
 import {LocalAudioPlayer} from './music-player';
@@ -12,16 +12,16 @@ export async function runLiveMusic(token:string,build:(value:MusicView)=>MusicAc
  const owner=workspace;if(!owner||owner.token!==token||!await flushMusic()||!current(owner))return false;
  await refreshMusic();if(!current(owner)||!view)return false;return !!await change(build(view),false,owner);
 }
-let workspace:Workspace|null=null,view:MusicView|null=null,sources:Preparation|null=null,page:AudioPage={items:[],next:null,problems:[]},selected:AudioAsset|null=null,sceneDraft:MusicSceneSettings|null=null,subjectDraft:MusicSubject|null=null,axisDraft:MoodAxis[]=[];
+let workspace:WorkspaceGeometry|null=null,view:MusicView|null=null,sources:Preparation|null=null,page:AudioPage={items:[],next:null,problems:[]},selected:AudioAsset|null=null,sceneDraft:MusicSceneSettings|null=null,subjectDraft:MusicSubject|null=null,axisDraft:MoodAxis[]=[];
 let assetDirty=false,sceneDirty=false,subjectDirty=false,axesDirty=false,pending:Promise<boolean>|null=null,timer:ReturnType<typeof setTimeout>|null=null,request=0,libraryRequest=0,openRequest=0,subjectRequest=0,assetRequest=0,axisRevision=0,transferBusy=false;
 let combatSources:{id:string;name:string}[]=[];
 let tell:(text:string,error?:boolean)=>void,open:()=>Promise<void>,player:LocalAudioPlayer,duration=0;
 let songAuthorized=false,ambienceAuthorized=false,stopRevision=-1,songRevision=-1,ambienceRevision=-1;const authorizedLayers=new Set<string>(),layerRevisions=new Map<string,number>();
 let refreshPending:{token:string;task:Promise<void>}|null=null;
 function option(s:HTMLSelectElement,id:string,name:string){const o=document.createElement('option');o.value=id;o.textContent=name;s.append(o);}
-function button(label:string,fn:(owner:Workspace)=>Promise<unknown>|void){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>run(fn);return b;}
-function current(owner:Workspace){return workspace===owner&&workspace.token===owner.token;}
-function run(fn:(owner:Workspace)=>Promise<unknown>|void){const owner=workspace;if(!owner)return;void Promise.resolve().then(()=>{if(!current(owner))return;return fn(owner);}).catch(e=>{if(current(owner))tell(e.message,true);});}
+function button(label:string,fn:(owner:WorkspaceGeometry)=>Promise<unknown>|void){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>run(fn);return b;}
+function current(owner:WorkspaceGeometry){return workspace===owner&&workspace.token===owner.token;}
+function run(fn:(owner:WorkspaceGeometry)=>Promise<unknown>|void){const owner=workspace;if(!owner)return;void Promise.resolve().then(()=>{if(!current(owner))return;return fn(owner);}).catch(e=>{if(current(owner))tell(e.message,true);});}
 function resetOutputAuthority(){for(const listener of musicListeners)listener(null);songAuthorized=false;ambienceAuthorized=false;authorizedLayers.clear();layerRevisions.clear();stopRevision=songRevision=ambienceRevision=-1;}
 function grantOutput(action:MusicAction,revision:number){
  if(action.kind==='transport'&&action.operation==='stop'){
@@ -70,7 +70,7 @@ export async function refreshMusic(){
  refreshPending=operation;await operation.task;if(refreshPending===operation)refreshPending=null;
 }
 export function deactivateMusic(){resetOutputAuthority();workspace=null;view=null;request++;player.reset();el('music-mini').hidden=true;}
-export function activateMusic(w:Workspace){
+export function activateMusic(w:WorkspaceGeometry){
  request++;openRequest++;subjectRequest++;assetRequest++;refreshPending=null;if(timer)clearTimeout(timer);timer=null;pending=null;
  libraryRequest++;resetOutputAuthority();workspace={...w};view=null;sources=null;selected=null;sceneDraft=null;subjectDraft=null;axisDraft=[];axisRevision=0;page={items:[],next:null,problems:[]};
  assetDirty=sceneDirty=subjectDirty=axesDirty=false;player.reset();
@@ -135,7 +135,7 @@ export async function openMusic(){
 }
 
 async function search(more=false){const number=++libraryRequest,token=workspace?.token,query:AudioQuery={search:value('audio-search'),kind:value('audio-filter-kind') as AudioQuery['kind'],includeTrashed:el<HTMLInputElement>('audio-show-trash').checked,after:more?page.next:null},result=unwrap(await window.campaign.audioAssets(query));if(workspace?.token!==token||number!==libraryRequest)return;page=more?{items:[...page.items,...result.items],next:result.next,problems:[...page.problems,...result.problems]}:result;renderLibrary();}
-async function selectAsset(owner:Workspace,id:string){
+async function selectAsset(owner:WorkspaceGeometry,id:string){
  const number=++assetRequest,response=await window.campaign.audioAsset(id);
  if(!current(owner)||number!==assetRequest)return;
  selected=unwrap(response);renderAsset();

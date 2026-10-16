@@ -1,13 +1,13 @@
 import {openMaskHistory,closeMaskHistory} from './mask-history-ui';
 import {ChaseDraftCache} from './chase-draft-cache';
 import {chaseDraftFields,type ChaseWorkingDraft} from './chase-draft-contracts';
-import type {Workspace} from './contracts';
+import type {WorkspaceGeometry} from './contracts';
 import type {Character,LiveScene} from './live-contracts';
 import {chaseActionControls,checkedChaseView,type ChaseCommand,type ChaseView} from './chase-contracts';
 import {hasPendingCommit,onCommitResolved,onCommitState,writeConfirmed,type CommitResolution} from './commit-confirmation';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const val=(id:string)=>el<HTMLInputElement>(id).value;
-let w:Workspace|null=null,scene:LiveScene|null=null,roster:Character[]=[],rosterBasis='',view:ChaseView|null=null,tell:(s:string,e?:boolean)=>void,busy=false,afterFinished:(()=>Promise<void>)|undefined;
+let w:WorkspaceGeometry|null=null,scene:LiveScene|null=null,roster:Character[]=[],rosterBasis='',view:ChaseView|null=null,tell:(s:string,e?:boolean)=>void,busy=false,afterFinished:(()=>Promise<void>)|undefined;
 let nonce=0,requestedId:string|undefined,loading=false,loadError='',rendered='';
 type Draft={fields:Record<string,string>;rows:Record<string,{distance?:string;exhaustion?:string}>};
 // Unconfirmed rounds remain explicit proposals, separate from the durable round counter.
@@ -44,7 +44,7 @@ export function initChase(status:typeof tell,refreshRecap?:()=>Promise<void>){
  el('chase-round').onclick=()=>void command({kind:'round',changes:[...el('chase-people').querySelectorAll<HTMLElement>('[data-id]')].map(row=>({participantId:row.dataset.id!,distance:Number((row.querySelector('[data-distance]') as HTMLInputElement).value),exhaustion:Number((row.querySelector('[data-exhaustion]') as HTMLInputElement).value)})),complication:val('chase-complication')});
  el('chase-finish').onclick=()=>void command({kind:'finish',outcome:val('chase-outcome')});
 }
-export function chaseContext(next:Workspace|null,current:LiveScene|null,characters:Character[]=[]){
+export function chaseContext(next:WorkspaceGeometry|null,current:LiveScene|null,characters:Character[]=[]){
  const workspaceChanged=next?.token!==w?.token,changed=workspaceChanged||current?.id!==scene?.id,nextBasis=JSON.stringify(characters.filter(c=>c.active&&c.sceneId===current?.id).map(c=>[c.id,c.membershipRevision])),partyChanged=nextBasis!==rosterBasis;
  if(workspaceChanged){if(w)cache.release(w.campaign.id);drafts.clear();}w=next;scene=current;roster=characters;rosterBasis=nextBasis;el('chase-panel').hidden=!current;
  if(changed){closeMaskHistory();nonce++;requestedId=undefined;loading=false;loadError='';rendered='';clearWorkInput();el<HTMLInputElement>('chase-title').value='Verfolgungsjagd';el<HTMLInputElement>('chase-goal').value='';view=null;draw();if(current)void load();}

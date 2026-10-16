@@ -1,5 +1,5 @@
 import {finishDraftCommit} from './finish-draft-ui';
-import type { Workspace } from "./contracts";
+import type { WorkspaceGeometry } from "./contracts";
 import type { WorldNoteV1 } from "../features/world/world-notes";
 import type { NarrativeView, NarrativeDraft } from "./narrative-contracts";
 import type { ProgressView, ProgressAction } from "./progression";
@@ -50,7 +50,7 @@ export async function flushNarrative() {
   return true;
 }
 export async function showNarrative(
-  w: Workspace | null,
+  w: WorkspaceGeometry | null,
   note: WorldNoteV1 | null,
   trashed: boolean,
   drain: () => Promise<boolean>,

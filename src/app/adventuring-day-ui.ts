@@ -1,6 +1,6 @@
 import {renderDayLevels} from './adventuring-day-levels-ui';
 import {bindAnchoredPopup} from './anchored-popup';
-import type { Workspace } from "./contracts";
+import type { WorkspaceGeometry } from "./contracts";
 import type { DayView } from "./adventuring-day-contracts";
 import { onProgressChanged } from "./progression-ui";
 import {renderDayPacing} from './adventuring-day-pacing-ui';
@@ -11,7 +11,7 @@ const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const number = (n: number) =>
   n.toLocaleString("de-DE", { maximumFractionDigits: 2 });
-let workspace: Workspace | null = null,
+let workspace: WorkspaceGeometry | null = null,
   source: "active" | "custom" = "active",
   mode: "budget" | "progress" = "budget",
   rows: { level: string; count: string }[] = [],
@@ -315,7 +315,7 @@ function schedule() {
     void refresh();
   }, 120);
 }
-export function activateDayCalculator(next: Workspace | null) {
+export function activateDayCalculator(next: WorkspaceGeometry | null) {
   workspace = next;
   generation++;
   if (timer) clearTimeout(timer);

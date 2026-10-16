@@ -1,3 +1,5 @@
+import {workspaceGeometryOnly as geometryOnly} from './atlas-render-view';
+import {RoomDirectoryView} from './room-directory-ui';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
 import {CampaignAtlasWorkbench} from './campaign-atlas-ui';
 import {atlasRoomWrite,atlasHistoryWrite} from './campaign-atlas-author';
@@ -44,7 +46,7 @@ import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
 import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPlayback} from './world-ui';
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
-import { validateRoom, type Room, type Workspace, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
+import { validateRoom, type Room, type RoomGeometry, type WorkspaceGeometry, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,prepareNextVisit,showDayPreparation } from './preparation';
 import {setNoteRoomNavigation} from './preparation';
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openPlannedVisitReview,prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
@@ -54,7 +56,7 @@ import {suspendChronicle,initChronicle,activateChronicle,openChronicle} from './
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
 const setWorkspaceAvailable = (available: boolean) => document.body.classList.toggle('has-workspace', available);
-let workspace: Workspace | null = null;
+let workspace: WorkspaceGeometry | null = null;
 let activeTab: WorkspaceTab = 'atlas';
 let campaignAtlas:CampaignAtlasWorkbench|null=null;
 const workspacePositions = new WorkspacePositions();
@@ -75,6 +77,7 @@ function rememberView() {
   rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: activeTab, scrollY: window.scrollY, liveNotesTop, liveCombat});
 }
 let draft: Room | null = null;
+let confirmedRoom:Room|null=null;let roomLoad=0;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let pending: Promise<boolean> | null = null;
 let composing = false;
@@ -125,7 +128,7 @@ initQuickReference(status,leaveWorkspace,async action=>{
  if(action.kind==='creature'&&action.content.creature)await addLiveCreature(action.content.creature.id,action.count!,action.grouped!);
 });
 initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
-el('catalog-day-plan').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;showTab('preparation');showDayPreparation();})().catch(error=>status(error.message,true));};
+el('catalog-day-plan').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;await reopenView('preparation');showDayPreparation();})().catch(error=>status(error.message,true));};
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
 setNpcNavigation(async(id,contact,current)=>{if(!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,contact,current);},async(id,current)=>{if(!await leaveWorkspace()||!current())return;showTab('autonomy');await openAutonomy(id);},navigateNpcPlaces);
 initGroups(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('groups');await openGroups(id);await openNpcs(false);},async(id,sourceCurrent=()=>true)=>{const owner=workspace,current=()=>workspace===owner&&sourceCurrent();if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openNpcProfile(id,undefined,current);});
@@ -133,14 +136,14 @@ setGroupNavigation(async(id,current=()=>true)=>{if(!await leaveWorkspace()||!cur
 initTreasury(status,async()=>{await refreshProgress();await refreshScenePreparation();},async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
 initItems(status,async id=>{if(!(await leaveWorkspace()))return;showTab('items');await openItems(id);});
 const dungeonCanvas=new PassiveMapCanvas(el<SVGSVGElement & HTMLElement>('map'),{initial:{x:0,y:0,width:24,height:18},locked:()=>!!pointer,changed:()=>draw()});
-initDrawing(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();},draw);
-initVolume(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
-initTriggers(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDungeonContent()&&await flushGraph()&&await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
-initDungeonContent(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushGraph()&&await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},refreshOpenGraph);
-initGraph(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},()=>showTab('atlas'),selectRoom);
-initKeys(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();},selectRoom,{open:openPreparedNote,flush:flushPreparation,map:async id=>{await selectRoom(id);showTab('atlas');}});
+initDrawing(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();},draw);
+initVolume(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();draw();});
+initTriggers(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushDungeonContent()&&await flushGraph()&&await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();draw();});
+initDungeonContent(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushGraph()&&await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();draw();},refreshOpenGraph);
+initGraph(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushKeys()&&await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();draw();},()=>showTab('atlas'),selectRoom);
+initKeys(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushPaths()&&await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();draw();},selectRoom,{open:openPreparedNote,flush:flushPreparation,map:async id=>{await selectRoom(id);showTab('atlas');}});
 setNoteRoomNavigation((id,current,restore)=>openRoomKey(id,current,()=>{if(current()){showTab('preparation');restore();}}));
-initPaths(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();draw();});
+initPaths(status,()=>workspace,()=>draft,async()=>{if(activating||activationFailed||roomDraftLoading)return false;return await flushVolume()&&await flushDrawing()&&await flushAutonomy()&&await flushCity()&&await flushMusic()&&await flushWorld()&&await flushItems()&&await flushCatalog()&&await flushLive()&&await leavePreparation()&&await flush();},async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();draw();});
 initDungeon(status,id=>{void(async()=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await openExistingCombat(id);})().catch(error=>status(error.message,true));});
 const dungeonBinder=new DungeonBinder(()=>workspace,leaveWorkspace,status,async(id,action)=>{const token=workspace?.token;if(!token||!await leaveWorkspace()||workspace?.token!==token)return;if(action==='target'){showTab('atlas');await campaignAtlas?.navigate('room',id);await selectDungeonRoom(id);}else{showTab('atlas');await campaignAtlas?.navigate('room',id);if(action==='edit'&&workspace?.token===token&&workspace.selectedId===id)el('key-open').click();}},(id,target,current,returned,left)=>openRoomKey(id,current,returned,target,'Zurück zum Binder',left));
 initAutonomy(status);
@@ -153,7 +156,7 @@ initLive(status, async id => {
 },async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id,current);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current);},async(seed,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;await campaignAgenda.openMomentDraft({name:seed.title,notes:seed.summary},seed.location??undefined,current);},async(planId,seed,current=()=>true,openPacket=false)=>{if(!current()||!(await leaveWorkspace())||!current())return false;showTab('preparation');const prepared=await prepareNextVisit(planId,seed,current);if(!prepared)return false;if(openPacket&&current())return openPreparationSessionPacket(prepared.visitId);return current();});
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
-campaignAtlas=new CampaignAtlasWorkbench({selectRoom,roomDraft:()=>draft,flush:leaveWorkspace,updated:async next=>{workspace=next;await setDraft();renderList();updateHistory();await reloadDrawing();},status});
+campaignAtlas=new CampaignAtlasWorkbench({selectRoom,roomDraft:()=>draft,flush:leaveWorkspace,updated:async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();},status});
 for(const id of ['world','city','dungeon'])el(id+'-tab').hidden=true;
 el('atlas-tab').textContent='Atlas';
 function showTab(selected: WorkspaceTab, restored?: number) {
@@ -175,7 +178,7 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
   const owner = workspace, intent = activationIntent, scrollY = showTab(tab, restored), request = viewRequest;
   switch (tab) {
     case 'live': await openLive(); break;
-    case 'atlas': await campaignAtlas?.open();await reloadDrawing(); break;
+    case 'atlas': await campaignAtlas?.open();break;
     case 'groups': await openGroups(); await openNpcs(); break;
     case 'treasury': await openTreasury(); break;
     case 'chronicle': await openChronicle(); break;
@@ -186,8 +189,7 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
     case 'city': await openCity(); break;
     case 'autonomy': await openAutonomy(); break;
     case 'dungeon': await openDungeon(); break;
-    // activatePreparation already loaded this workspace.
-    case 'preparation': break;
+    case 'preparation': if(owner)await activatePreparation(owner);break;
   }
   window.requestAnimationFrame(() => {
     if (workspace !== owner || activationIntent !== intent || viewRequest !== request || activationFailed) return;
@@ -198,7 +200,7 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
   });
 }
 initPlayerUI(status,()=>workspace,leaveWorkspace);
-async function refreshCampaignShell(){const list=await refreshCampaigns();if(!list)return null;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();activateDayCalculator(null);activatePartyTopbar(null);campaignAtlas?.hide();document.querySelector('main')!.inert=true;}else if(workspace){const current=list.campaigns.find(c=>c.id===workspace!.campaign.id);if(current)workspace.campaign=current;}
+async function refreshCampaignShell(){const list=await refreshCampaigns();if(!list)return null;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;confirmedRoom=null;roomLoad++;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();activateDayCalculator(null);activatePartyTopbar(null);campaignAtlas?.hide();document.querySelector('main')!.inert=true;}else if(workspace){const current=list.campaigns.find(c=>c.id===workspace!.campaign.id);if(current)workspace.campaign=current;}
  el('campaign-header-name').textContent=workspace?.campaign.name??'Kampagnen';return list;}
 initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{await refreshCampaignShell();if(id){await activate(id);if(!activationFailed){await reopenView('live');hideCampaignScreen();}}});
 void initTutorial();
@@ -232,7 +234,7 @@ async function leaveWorkspace() {
   } catch (error) { status('Entwurf konnte nicht gesichert werden: ' + (error as Error).message, true); return false; }
 }
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
-const selected = () => workspace?.rooms.find(room => room.id === workspace?.selectedId);
+const selected = () => confirmedRoom?.id===workspace?.selectedId?confirmedRoom:undefined;
 const roomContextCurrent = (token: string) => workspace?.token === token && !activationJob && !activating && !activationFailed;
 const same = (a: Room, b: Room) => JSON.stringify([a.name, a.polygons, a.sections]) === JSON.stringify([b.name, b.polygons, b.sections]);
 function cancelTimer() { if (timer) clearTimeout(timer); timer = null; }
@@ -263,17 +265,19 @@ async function flush(): Promise<boolean> {
     expectedRevision: after.revision, name: after.name, polygons: after.polygons, sections: after.sections };
   status('Wird gespeichert…');
   pending = (async () => {
+    let acknowledged=false;
     try {
-      const next = unwrap(await atlasRoomWrite(request));
+      const next = unwrap(await atlasRoomWrite(request));acknowledged=true;
       if (workspace?.token !== token) return false;
-      workspace = { ...workspace, rooms: workspace.rooms.map(room => room.id === next.room.id ? next.room : room), canUndo: next.canUndo, canRedo: next.canRedo, selectedId: after.id };
+      confirmedRoom=next.room;
+      workspace = geometryOnly({ ...workspace, rooms: workspace.rooms.map(room => room.id === next.room.id ? next.room : room), canUndo: next.canUndo, canRedo: next.canRedo, selectedId: after.id });
       if (draft?.id === after.id) draft.revision = next.room.revision;
       hasRetainedDraft = false;
       // A confirmed edit updates the scene without moving the user's camera.
-      renderList(); updateHistory(); draw();
+      renderList(true); updateHistory(); draw();
       status(draft && !same(after, draft) ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.');
       return true;
-    } catch (error) { writeBlocked = true; failedEdit = request; el('error-actions').hidden = false; status((error as Error).message + ' Entwurf bleibt offen; Schreiben gesperrt bis zur Aufklärung.', true); return false; }
+    } catch (error) { if(acknowledged){status('Änderung gespeichert. Ansicht konnte nicht aktualisiert werden: '+(error as Error).message,true);return true;}writeBlocked = true; failedEdit = request; el('error-actions').hidden = false; status((error as Error).message + ' Entwurf bleibt offen; Schreiben gesperrt bis zur Aufklärung.', true); return false; }
     finally { pending = null; }
   })();
   const okay = await pending;
@@ -313,8 +317,16 @@ function roomEditable(editable: boolean) {
   for (const input of el('keys').querySelectorAll<HTMLTextAreaElement>('textarea')) input.disabled = !editable;
 }
 async function setDraft() {
-  const room = selected(); draft = room ? structuredClone(room) : null;
-  const token = workspace?.token;
+  const token=workspace?.token,id=workspace?.selectedId,request=++roomLoad;
+  const current=()=>workspace?.token===token&&workspace?.selectedId===id&&request===roomLoad;
+  confirmedRoom=null;draft=null;roomDraftReadFailed=false;writeBlocked=false;failedEdit=null;hasRetainedDraft=false;el('error-actions').hidden=true;
+  el('keys').replaceChildren();el<HTMLInputElement>('room-name').value='';el('empty').textContent='Lege einen Raum an oder übernimm eine Dungeondatei.';
+  el('editor').hidden=true;el('empty').hidden=false;roomEditable(false);
+  if(!token||!id){roomDraftLoading=false;draw();return;}
+  roomDraftLoading=true;updateHistory();status('Raum wird geladen.');
+  let room:Room;
+  try{room=unwrap(await api.atlasRoom(token,id));if(!current())return;confirmedRoom=room;draft=structuredClone(room);}
+  catch(error){if(current()){roomDraftLoading=false;roomDraftReadFailed=true;writeBlocked=true;status('Raum konnte nicht geladen werden. Originaldaten bleiben erhalten: '+(error as Error).message,true);el('empty').textContent='Raum nicht verfügbar. Anderen Raum wählen oder erneut öffnen.';updateHistory();}return;}
   writeBlocked = false; failedEdit = null; roomDraftReadFailed = false; el('error-actions').hidden = true;
   hasRetainedDraft = false;
   el('editor').hidden = !room; el('empty').hidden = !!room;
@@ -329,7 +341,7 @@ async function setDraft() {
     roomDraftLoading = true; roomEditable(false); updateHistory(); status('Arbeitsentwurf wird geprüft und geladen.');
     try {
       const retained = unwrap(await api.roomDraft(token, room.id));
-      if (!retained || workspace?.token !== token || workspace.selectedId !== room.id) return;
+      if (!retained || !current()) return;
       draft = structuredClone(retained.room); hasRetainedDraft = true;
       renderRoomInputs(draft, token);
       el<HTMLTextAreaElement>('points').value = retained.points; el('points').dataset.changed = String(retained.pointsChanged);
@@ -337,11 +349,11 @@ async function setDraft() {
       el('error-actions').hidden = !writeBlocked;
       draw(); status('Arbeitsentwurf wiederaufgenommen. Die Änderung ist noch nicht als Autorenstand gespeichert.', true);
     } catch (error) {
-      if (workspace?.token !== token || workspace.selectedId !== room.id) return;
+      if (!current()) return;
       roomDraftReadFailed = true; writeBlocked = true;
       status('Arbeitsentwurf konnte nicht gelesen werden. Originalbytes bleiben erhalten; dieser Raum bleibt schreibgeschützt: ' + (error as Error).message, true);
     } finally {
-      if (workspace?.token === token && workspace.selectedId === room.id) {
+      if (current()) {
         roomDraftLoading = false; roomEditable(!roomDraftReadFailed); updateHistory();
       }
     }
@@ -354,15 +366,10 @@ function updateHistory() {
   el<HTMLButtonElement>('add-room').disabled = !workspace;
   el<HTMLButtonElement>('rename-campaign').disabled = !workspace;
 }
-function renderList() {
-  const needle = el<HTMLInputElement>('search').value.toLocaleLowerCase(); el('rooms').replaceChildren();
-  const matches = workspace?.rooms.filter(r => `${r.number} ${r.name} ${r.sections.map(s => s.markdown ?? '').join('\n')}`.toLocaleLowerCase().includes(needle)) ?? [];
-  for (const room of matches) {
-    const button = document.createElement('button'); button.textContent = `${room.number}. ${room.name}`; button.setAttribute('aria-pressed', String(room.id === workspace?.selectedId));
-    button.onclick = () => { void campaignAtlas?.navigate('room',room.id); }; el('rooms').append(button);
-  }
-  if (workspace && !matches.length) { const hint = document.createElement('p'); hint.textContent = needle ? 'Keine Räume gefunden.' : 'Noch keine Räume. Raum anlegen oder Dungeon übernehmen.'; el('rooms').append(hint); }
-  for (const problem of workspace?.problems ?? []) { const hint = document.createElement('p'); hint.setAttribute('role', 'alert'); hint.textContent = `Raum ${problem.number} gesperrt: ${problem.message}`; el('rooms').append(hint); }
+const roomDirectory=new RoomDirectoryView(el('rooms'),id=>{void campaignAtlas?.navigate('room',id);});
+function renderList(refresh=false) {
+  roomDirectory.context(workspace?.token??null,el<HTMLInputElement>('search').value,workspace?.selectedId??null,workspace?.problems??[]);
+  if(refresh)roomDirectory.refresh();
 }
 async function selectRoom(id: string) {
   if (!(await flushDrawing())) return;
@@ -384,7 +391,7 @@ function svgElement(name: string, attributes: Record<string, string>) {
 function draw(){document.dispatchEvent(new Event('atlas-draft'));const visible=workspace?.rooms.some(r=>JSON.stringify([r.scopeId,r.floorId])===el<HTMLSelectElement>('floors').value);dungeonCanvas.render(drawScene,visible?'':'Noch keine Geometrie in dieser Ansicht. Raum anlegen oder eine andere Ebene wählen.');}
 function drawScene(map:SVGGElement) {
   syncGraphBanner(workspace);
-  const visible:Room[]=[];
+  const visible:RoomGeometry[]=[];
   for (const saved of workspace?.rooms ?? []) {
     const room = draft?.id === saved.id ? draft : saved;
     if (JSON.stringify([room.scopeId, room.floorId]) !== el<HTMLSelectElement>('floors').value) continue;
@@ -433,13 +440,15 @@ el('map').addEventListener('pointerup', event => { if (pointer?.id !== event.poi
 el('map').addEventListener('pointercancel', () => { if (pointer && draft) draft.polygons = pointer.before; pointer = null; updatePoints(); draw(); schedule(); });
 el('floors').addEventListener('change', () => { void (async () => {
   if (!workspace || !(await flush())) return;
-  const key = el<HTMLSelectElement>('floors').value, room = workspace.rooms.find(r => JSON.stringify([r.scopeId, r.floorId]) === key);
+  const key = el<HTMLSelectElement>('floors').value;
+  if(workspace.rooms.some(r=>r.id===workspace!.selectedId&&JSON.stringify([r.scopeId,r.floorId])===key)){draw();return;}
+  const room = workspace.rooms.find(r => JSON.stringify([r.scopeId, r.floorId]) === key);
   if (room) await selectRoom(room.id); else { draft = null; el('editor').hidden = true; el('empty').hidden = false; draw(); }
 })(); });
 el('fit').onclick = () => { fit(); draw(); };
 el('fit-all').onclick = () => { fit(true); draw(); };
 el('map-zoom-in').onclick=()=>dungeonCanvas.zoom(1/1.2);el('map-zoom-out').onclick=()=>dungeonCanvas.zoom(1.2);
-el('search').addEventListener('input', renderList);
+el('search').addEventListener('input',()=>renderList());
 el('room-name').addEventListener('input', () => { if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed) return; if (draft) draft.name = el<HTMLInputElement>('room-name').value; schedule(); });
 el('room-name').addEventListener('blur', () => { void flush(); });
 el('points').addEventListener('input', () => { if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed) return; el('points').dataset.changed = 'true'; schedule(); });
@@ -457,7 +466,7 @@ el('reconcile').onclick = () => { void (async () => {
     if (result.targetChanged || result.outcome === 'conflict') {
       status(result.outcome === 'applied' ? 'Speicherung bestätigt, aber der aktuelle Raumstand ist verändert oder nicht verlässlich lesbar. Entwurf bleibt offen. Übertrage den Text vor dem Verwerfen.' : 'Konflikt bestätigt. Entwurf bleibt offen. Übertrage den Text vor dem Verwerfen.', true); return;
     }
-    workspace = { ...result.workspace, selectedId: edit.roomId };
+    workspace = geometryOnly({ ...result.workspace, selectedId: edit.roomId });
     if (draft) draft.revision = selected()!.revision;
     writeBlocked = false; failedEdit = null; el('error-actions').hidden = true; updateHistory(); renderList();
     status(result.outcome === 'applied' ? 'Speicherung bestätigt. Weitere Eingaben bleiben offen.' : 'Diese Änderung wurde nicht gespeichert. Eingabe abschließen, um sie erneut zu übernehmen.');
@@ -476,7 +485,7 @@ el('discard').onclick = () => { void (async () => {
       if (!owns()) return;
       unwrap(cleared);
     }
-    workspace = current; writeBlocked = false; failedEdit = null; el('error-actions').hidden = true;
+    workspace = geometryOnly(current); writeBlocked = false; failedEdit = null; el('error-actions').hidden = true;
     await setDraft();
     if (!roomContextCurrent(token)) return;
     renderList(); updateHistory(); status('Aktueller gespeicherter Stand geöffnet. Entwurf verworfen.');
@@ -511,11 +520,13 @@ async function drainActivation(): Promise<void> {
     while (queuedActivation !== null) {
       const {id,entryCommandId} = queuedActivation; queuedActivation = null;
       try {
-        const next = unwrap(entryCommandId?await api.campaignCatalogWorkspace(entryCommandId):await api.activate(id));
+        const shell = unwrap(entryCommandId?await api.campaignCatalogShell(entryCommandId):await api.activateShell(id));
+        if(queuedActivation!==null)continue;
+        const next=unwrap(await api.workspaceGeometry(shell.token));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
-        workspace = next; el('campaign-header-name').textContent=next.campaign.name;setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
-        campaignAtlas?.activate(next);activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);worldLinks.contextChanged();locationNotebook.contextChanged();locationReturn.hidden=true;el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next); activateSoundboard(next);activateMusic(next);
-        await activatePreparation(next);
+        workspace = geometryOnly(next); el('campaign-header-name').textContent=next.campaign.name;setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
+        campaignAtlas?.activate(next);activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);worldLinks.contextChanged();locationNotebook.contextChanged();locationReturn.hidden=true;el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next,false); activateSoundboard(next);activateMusic(next);
+        await activatePreparation(next,false);
         if (queuedActivation !== null) continue;
         el('map-title').textContent = next.campaign.name; el<HTMLInputElement>('search').value = '';
         await setDraft();
@@ -589,9 +600,9 @@ el('add-room').onclick = () => { void (async () => {
   try {
     const response = await atlasDefaultRoomWrite(token,workspace!.campaign.id);
     if (!roomContextCurrent(token)) return;
-    workspace = unwrap(response); await reloadDrawing(); await setDraft();
+    workspace = geometryOnly(unwrap(response)); await reloadDrawing(); await setDraft();
     if (!roomContextCurrent(token)) return;
-    renderList(); updateHistory(); status('Raum angelegt und gespeichert.');
+    renderList(true); updateHistory(); status('Raum angelegt und gespeichert.');
   } catch (error) { if (roomContextCurrent(token)) status((error as Error).message, true); }
 })(); };
 async function history(direction: 'undo' | 'redo') {
@@ -601,9 +612,9 @@ async function history(direction: 'undo' | 'redo') {
   try {
     const response = await atlasHistoryWrite(token,workspace!.campaign.id,direction);
     if (!roomContextCurrent(token)) return;
-    workspace = unwrap(response); await reloadDrawing(); await setDraft();
+    workspace = geometryOnly(unwrap(response)); await reloadDrawing(); await setDraft();
     if (!roomContextCurrent(token)) return;
-    renderList(); updateHistory(); status('Gespeichert.');
+    renderList(true); updateHistory(); status('Gespeichert.');
   } catch (error) { if (roomContextCurrent(token)) status((error as Error).message, true); }
 }
 el('undo').onclick = () => { void history('undo'); }; el('redo').onclick = () => { void history('redo'); };

@@ -4,7 +4,7 @@ import type {DungeonVolume,VolumeColumn} from './volume-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
 type ContentAnchor={point:{x:number;y:number};zOffsetMeters:number;volumeId:string;roomId:string};
 
-export function dungeonContentAnchors(g:DungeonGeometry,elements:readonly DrawingElement[]){
+export function dungeonContentAnchors(g:{drawing:Pick<DungeonGeometry['drawing'],'volumes'>},elements:readonly DrawingElement[]){
  const volumes=new Map((g.drawing.volumes??[]).map(v=>[v.id,v])),groups=new Map<string,{volume:DungeonVolume;elements:DrawingElement[]}>();
  const resolved=new Map<string,ContentAnchor>();
  for(const e of elements){
@@ -31,4 +31,4 @@ export function dungeonContentAnchors(g:DungeonGeometry,elements:readonly Drawin
  return resolved;
 }
 
-export function dungeonContentAnchor(g:DungeonGeometry,e:DrawingElement){return dungeonContentAnchors(g,[e]).get(e.id)??null;}
+export function dungeonContentAnchor(g:{drawing:Pick<DungeonGeometry['drawing'],'volumes'>},e:DrawingElement){return dungeonContentAnchors(g,[e]).get(e.id)??null;}

@@ -7,7 +7,7 @@ import {chooseTextReference} from './text-reference-picker';
 import {rawTextOffset} from './text-references';
 import {preserveLiteralEdit} from './literal-text-edit';
 import {showNarrative,flushNarrative,prepareNarrativeLocation} from './narrative-ui';
-import type { Workspace, Result } from './contracts';
+import type { WorkspaceGeometry, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
 import { newLocation } from '../features/location/location-schema';
 import type { ManualPlan } from '../features/planner/manual-planner';
@@ -24,7 +24,8 @@ export function showDayPreparation(){
  get(planDraft?'session-fraction':'plan-create').focus();
 }
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
-let context: Workspace | null = null;
+let context: WorkspaceGeometry | null = null;
+let preparationLoaded=false;
 let data: Preparation = { notes: [], plans: [], locations: [], maps: [], problems: [], selection: { noteId: null, planId: null, sceneId: null } };
 // Keep the validated campaign directory while Core returns only search matches.
 // Rows share their existing text objects; each keystroke does not reload all prose.
@@ -32,7 +33,7 @@ const campaignNotes = new Map<string, Preparation['notes'][number]>();
 let noteSearchLoad = 0;
 let noteSearchError: {query: string; message: string} | null = null;
 function usePreparation(next: Preparation, filtered = false) {
-  data = next;
+  data = next;preparationLoaded=true;get('preparation').inert=false;
   if (!filtered) { campaignNotes.clear(); noteSearchLoad++; noteSearchError = null; }
   for (const row of next.notes) campaignNotes.set(row.note.id, row);
 }
@@ -126,7 +127,9 @@ export async function leavePreparation(): Promise<boolean> {
   try { await retainOpenDrafts(); tell('Offene Vorbereitung als Arbeitsentwurf gesichert.'); return true; }
   catch (error) { tell('Vorbereitung kann noch nicht verlassen werden: ' + (error as Error).message, true); return false; }
 }
-export async function activatePreparation(workspace: Workspace) {
+export async function activatePreparation(workspace: WorkspaceGeometry,load=true) {
+  if(load&&context?.token===workspace.token&&preparationLoaded)return;
+  preparationLoaded=false;
   noteThread?.reset();
   roomUses?.reset();
   const request = ++preparationLoad;sceneSearchPlan=null;get<HTMLInputElement>('scene-search').value='';
@@ -135,10 +138,12 @@ export async function activatePreparation(workspace: Workspace) {
   retained.clear(); draftProblems.clear();
   composing = false; if (timer) clearTimeout(timer); timer = null;
   get('preparation-reconcile').hidden = true; get('preparation-refresh').hidden = true; syncSaveControl();
+  data={notes:[],plans:[],locations:[],maps:[],problems:[],selection:{noteId:null,planId:null,sceneId:null}};selectedNote=null;selectedPlan=null;selectedScene=null;selectedLocation=null;
+  if(!load){get('preparation').inert=true;return;}
   try {
     const response = await window.campaign.preparation(workspace.token, '');
     if (request !== preparationLoad || context?.token !== workspace.token) return;
-    usePreparation(unwrap(response));
+    usePreparation(unwrap(response));preparationLoaded=true;
     selectedNote = data.notes.some(row => row.note.id === data.selection.noteId && !row.trashed) ? data.selection.noteId : data.notes.find(row => !row.trashed)?.note.id ?? null;
     selectedPlan = data.plans.some(plan => plan.id === data.selection.planId) ? data.selection.planId : data.plans[0]?.id ?? null;
     selectedScene = data.selection.sceneId;
@@ -607,6 +612,7 @@ export async function openPreparedNote(id:string,stillCurrent=()=>true) {
 }
 export async function prepareNoteLocation(id:string,locationId:string){const token=context?.token;await openPreparedNote(id);if(!token||context?.token!==token||selectedNote!==id)throw new Error('Auftrag für Ortsbindung nicht verfügbar.');await prepareNarrativeLocation(token,id,locationId);tell('Zielort in den narrativen Angaben vorbelegt. Speichern bestätigt die Ortsbindung.');}
 export async function openPreparedLocation(id: string,stillCurrent=()=>true) {
+  if(context&&!preparationLoaded){const owner=context;await activatePreparation(owner);if(context?.token!==owner.token||!stillCurrent())return;}
   const token=context?.token,request=preparationLoad;
   if (!token||!(await flushPreparation())||context?.token!==token||preparationLoad!==request||!stillCurrent()) return;
   const row = data.locations.find(row => row.document.id === id);

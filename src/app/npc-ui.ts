@@ -1,4 +1,4 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {NpcDraft,NpcView,NpcCommand,NpcQuery} from './npc-contracts';
 import {drawNpcDailyPlan} from './npc-daily-plan-ui';
 import {rawDailyPlan,parseDailyPlan,rawDailyOverrides,parseDailyOverrides} from './npc-daily-plan';
@@ -6,7 +6,7 @@ const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const val=(id:string)=>el<HTMLInputElement>('npc-'+id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 const names=['name','creature','faction','location','modifier','lifecycle','ancestry','gender','ageYears','dailyPlan','dailyOverrides','appearance','behavior','history','contact','readAloud','gmNotes','hp','maxHp','tempHp','conditions'] as const;
-let workspace:Workspace|null=null,draft:NpcDraft|null=null,writeId:string|null=null,generation=0,search=0,version=0,saved=0,offset=0,total=0;
+let workspace:WorkspaceGeometry|null=null,draft:NpcDraft|null=null,writeId:string|null=null,generation=0,search=0,version=0,saved=0,offset=0,total=0;
 let listLoading=false,listError:string|null=null,listKey:string|null=null,listTarget=0,listChanged=false,listComposing=false,listTimer:ReturnType<typeof setTimeout>|null=null;
 let recordRequest=0,recordLoading=false,recordError:string|null=null,requestedNpc:{id:string;fresh:boolean;label:string}|null=null;
 let pending:Promise<boolean>|null=null,keeping:Promise<boolean>|null=null,timer:ReturnType<typeof setTimeout>|null=null;
@@ -32,7 +32,7 @@ const run=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
 function capture(){if(!draft||recordError||pending||draft.pendingCommand)return;for(const id of names){const value=val(id),previous=draft.fields[id]??'';if(value!==previous.replace(/\r\n?/g,'\n'))draft.fields[id]=value;}draft.concentrating=el<HTMLInputElement>('npc-concentrating').checked;version++;el('npc-save-status').textContent='Eingabe offen.';if(timer)clearTimeout(timer);const g=generation,d=draft;timer=setTimeout(()=>{if(g===generation&&draft===d)run(keep);},500);}
 async function keep():Promise<boolean>{if(timer)clearTimeout(timer);timer=null;if(keeping){if(!await keeping)return false;return keep();}if(!workspace||!draft||draft.pendingCommand||saved===version)return true;const w=workspace,g=generation,n=version,d={...structuredClone(draft),writeId:crypto.randomUUID()},expected=writeId;const task=Promise.resolve().then(async()=>{try{unwrap(await window.campaign.keepNpcDraft(w.token,d,expected));if(workspace?.token!==w.token||g!==generation)return true;writeId=d.writeId;draft!.writeId=d.writeId;saved=n;el('npc-save-status').textContent='Entwurf gesichert · noch nicht übernommen.';return true;}catch(e){if(workspace?.token===w.token&&g===generation)tell((e as Error).message,true);return false;}finally{if(keeping===task)keeping=null;}});keeping=task;return task;}
 export async function flushNpcs(){if(pending&&!await pending)return false;if(!await keep())return false;return saved===version||await keep();}
-export function activateNpcs(w:Workspace){workspace=w;generation++;search++;if(listTimer)clearTimeout(listTimer);listTimer=null;listLoading=false;listError=null;listKey=null;listChanged=false;listComposing=false;offset=total=0;el<HTMLInputElement>('npc-search').value='';el<HTMLSelectElement>('npc-filter-life').value='all';el<HTMLSelectElement>('npc-filter-faction').value='';el<HTMLSelectElement>('npc-filter-location').value='';recordRequest++;recordLoading=false;recordError=null;requestedNpc=null;draft=null;writeId=null;version=saved=0;pending=null;keeping=null;if(timer)clearTimeout(timer);timer=null;el('npc-editor').hidden=true;el('npc-list').replaceChildren();el('npc-drafts').replaceChildren();lock();}
+export function activateNpcs(w:WorkspaceGeometry){workspace=w;generation++;search++;if(listTimer)clearTimeout(listTimer);listTimer=null;listLoading=false;listError=null;listKey=null;listChanged=false;listComposing=false;offset=total=0;el<HTMLInputElement>('npc-search').value='';el<HTMLSelectElement>('npc-filter-life').value='all';el<HTMLSelectElement>('npc-filter-faction').value='';el<HTMLSelectElement>('npc-filter-location').value='';recordRequest++;recordLoading=false;recordError=null;requestedNpc=null;draft=null;writeId=null;version=saved=0;pending=null;keeping=null;if(timer)clearTimeout(timer);timer=null;el('npc-editor').hidden=true;el('npc-list').replaceChildren();el('npc-drafts').replaceChildren();lock();}
 function query():Omit<NpcQuery,'offset'>{return{text:el<HTMLInputElement>('npc-search').value,lifecycle:el<HTMLSelectElement>('npc-filter-life').value as NpcQuery['lifecycle'],factionId:el<HTMLSelectElement>('npc-filter-faction').value||null,locationId:el<HTMLSelectElement>('npc-filter-location').value||null};}
 const queryKey=()=>JSON.stringify(query());
 function invalidateList(){
@@ -106,7 +106,7 @@ async function apply(){if(!workspace||!draft||draft.pendingCommand||pending||rec
   }finally{if(workspace?.token===w.token&&g===generation){if(pending===task)pending=null;lock();}}
  });pending=task;lock();return task;
 }
-async function finish(c:NpcCommand,w:Workspace,g:number):Promise<boolean>{
+async function finish(c:NpcCommand,w:WorkspaceGeometry,g:number):Promise<boolean>{
  if(workspace?.token!==w.token||g!==generation)return false;
  const result=unwrap(await window.campaign.reconcileNpc(c,w.token));
  if(workspace?.token!==w.token||g!==generation)return false;

@@ -11,7 +11,7 @@ import {finishDraftCommit,flushFinishDraft} from './finish-draft-ui';
 import {CombatDraftCache,combatDraftKey} from './combat-draft-cache';
 import {fighterDraftBasisMatches,fighterDraftFields,type FighterWorkingDraft,type NotesWorkingDraft,type CombatWorkingDraft} from './combat-draft-contracts';
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
-import type { Workspace, Result } from './contracts';
+import type { WorkspaceGeometry, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
 import { combatConditions,combatOrder, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
@@ -32,7 +32,7 @@ const conditionParts=(text:string)=>text.split(/\s*[,;\n]\s*/).map(part=>part.tr
 export function hasCombatCondition(text:string,label:string,source:string){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]);return conditionParts(text).some(part=>aliases.has(part.toLocaleLowerCase()));}
 export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
 const groupPicker=new CombatGroupPicker();
-let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
+let workspace: WorkspaceGeometry | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 const expandedMobs=new Set<string>();
 let resolution:CombatResolutionPanel|null=null;
 let hitPanel:CombatHitPanel|null=null;
@@ -105,7 +105,7 @@ async function refreshPartyCandidates(){
  catch(error){if(gen===generation&&request===candidateRequest)tell('Party-Auswahl konnte nicht aktualisiert werden: '+(error as Error).message,true);}
  finally{if(gen===generation&&request===candidateRequest){candidateLoading=false;lock();}}
 }
-export function combatContext(next: Workspace | null, current: LiveScene | null, rosterRevision?:number) {
+export function combatContext(next: WorkspaceGeometry | null, current: LiveScene | null, rosterRevision?:number) {
   const changed = next?.token !== workspace?.token || current?.id !== scene?.id;
   const basis=JSON.stringify([next?.token,current?.id,current?.membershipRevision,rosterRevision]),partyChanged=basis!==partyContext;partyContext=basis;
   if(changed&&workspace)draftCache.release(workspace.campaign.id);

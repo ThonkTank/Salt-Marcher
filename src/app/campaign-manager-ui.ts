@@ -1,8 +1,8 @@
-import type {Workspace,Result} from './contracts';
+import type {WorkspaceGeometry,Result} from './contracts';
 import type {CampaignTransferPreview,CampaignOverview,ConflictChoice} from './campaign-contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-let context:()=>Workspace|null,before:()=>Promise<boolean>,changed:(id?:string)=>Promise<void>,tell:(text:string,error?:boolean)=>void;
+let context:()=>WorkspaceGeometry|null,before:()=>Promise<boolean>,changed:(id?:string)=>Promise<void>,tell:(text:string,error?:boolean)=>void;
 let campaigns:CampaignOverview[]=[],preview:CampaignTransferPreview|null=null,eraseBasis:CampaignOverview|null=null,busy=false,accepting=false,generation=0,listRequest=0,transferRequest=0;
 const pendingKey='campaign-pending-transfer';
 let pendingTicket:string|null=null;

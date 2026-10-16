@@ -1,11 +1,11 @@
 import {atlasDrawingWrite} from './campaign-atlas-author';
-import type {Workspace,Room} from './contracts';
+import type {WorkspaceGeometry,Room} from './contracts';
 import type {DrawingView,DrawingAction} from './drawing-contracts';
 import type {DungeonPath,PathPreview,ConnectionForm,PassageSide,DungeonPassage} from './path-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
-let workspace:()=>Workspace|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:Workspace)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
+let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
 let data:DrawingView|null=null,draft:DungeonPath|null=null,sourceDraft:DungeonPath|null=null,sourceRevision:number|null=null,preview:PathPreview|null=null;
 let generation=0,readRequest=0,editIntent=0,pending:Promise<boolean>|null=null,writing=false;
 let locations:{id:string;name:string}[]=[];
