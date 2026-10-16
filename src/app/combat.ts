@@ -62,7 +62,7 @@ let editorLoading=false,notesLoading=false,editorRequest=0,draftPageRequest=0,dr
 function keepFighterDraft(){
  const p=view?.combat?.participants.find(p=>p.id===selected),key=fighterKey();if(!p||!key||!view?.combat||!workspace||editorLoading||draftCache.readFailures.has(key))return;
  const old=fighterDrafts.get(key),d:FighterDraft={version:1,kind:'fighter',writeId:crypto.randomUUID(),combatId:view.combat.id,sceneId:view.combat.sceneId,targetId:p.id,basis:structuredClone(old?.basis??p),revision:old?.revision??view.combat.revision,values:Object.fromEntries([...fighterFields,'fighter-group-name'].map(id=>[id,value(id)])) as FighterDraft['values'],concentrating:get<HTMLInputElement>('fighter-concentration').checked,counted:get<HTMLInputElement>('fighter-counted').checked};
- void draftCache.put(workspace.token,workspace.campaign.id,d);get('fighter-draft-status').textContent='Eingabe offen – mit „Werte übernehmen“ bestätigen.';
+ void draftCache.put(workspace.token,workspace.campaign.id,d);get('fighter-draft-status').textContent='Eingabe offen – mit „Werte übernehmen“ bestätigen.';lockConditionShortcuts();
 }
 function keepNotesDraft(){
  if(!workspace||!view?.combat||notesLoading)return;const key=notesKey()!;if(draftCache.readFailures.has(key))return;
@@ -280,6 +280,11 @@ async function searchReinforcements(){
  }catch(error){if(g===generation&&request===reinforcementRequest&&view?.combat?.id===id&&load===loadNumber)get('combat-creature-status').textContent='Suche fehlgeschlagen: '+(error as Error).message;}
  finally{if(g===generation&&request===reinforcementRequest){reinforcementBusy=false;if(load!==loadNumber)get('combat-creature-status').textContent='Kampfstand geändert. Bei Bedarf erneut suchen.';renderReinforcements();lock();}}
 }
+function lockConditionShortcuts(){
+ const key=fighterKey(),draftOpen=!!key&&!!fighterDrafts.get(key);
+ get('fighter-condition-draft-hint').hidden=!draftOpen;
+ for(const button of get('fighter-condition-shortcuts').querySelectorAll<HTMLButtonElement>('button'))button.disabled=blocked()||editorLoading||!!key&&draftCache.readFailures.has(key)||draftOpen||button.dataset.statblockDisabled==='true';
+}
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
@@ -288,7 +293,8 @@ function lock() {
   const status=get('combat-load-status'),title=knownRecent.find(c=>c.id===requestedCombatId)?.title;status.hidden=!loadPending&&!loadError;status.setAttribute('role',loadError?'alert':'status');status.textContent=loadError?'Begegnung konnte nicht geladen werden: '+loadError+' Erneut laden oder eine andere Begegnung wählen.':loadPending?(title?'„'+title+'“ wird geladen…':'Begegnung wird geladen…'):'';get('combat-panel').setAttribute('aria-busy',String(loadPending));
   if(candidateLoading)for(const c of get('combat-party-form').querySelectorAll<HTMLButtonElement|HTMLSelectElement|HTMLInputElement>('select,button,input'))c.disabled=true;
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
-  if(editorLoading||!!fighterKey()&&draftCache.readFailures.has(fighterKey()!))for(const c of get('combat-participant').querySelectorAll<HTMLInputElement|HTMLButtonElement>('#combat-participant-form input,#combat-participant-form button,#fighter-condition-shortcuts button'))c.disabled=true;
+  if(editorLoading||!!fighterKey()&&draftCache.readFailures.has(fighterKey()!))for(const c of get('combat-participant').querySelectorAll<HTMLInputElement|HTMLButtonElement>('#combat-participant-form input,#combat-participant-form button'))c.disabled=true;
+  lockConditionShortcuts();
   if(notesLoading||!!notesKey()&&draftCache.readFailures.has(notesKey()!))for(const c of get('combat-notes-form').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLTextAreaElement>('input,button,textarea'))c.disabled=true;
   const unknown = view?.combat?.participants.find(p => p.id === selected)?.healthKnown === false;
   for (const id of ['fighter-damage','fighter-heal']) get<HTMLButtonElement>(id).disabled = blocked() || unknown;

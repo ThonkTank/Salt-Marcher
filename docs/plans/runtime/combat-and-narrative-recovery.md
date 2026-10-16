@@ -18,6 +18,11 @@ Ein ausdrücklicher Kampfcommand bestätigt Fachwerte, Receipt und Verbrauch nur
 der passenden Entwurfs-ID gemeinsam. Ein Receipt-Replay verbraucht keine spätere
 Eingabe. Entfernte Teilnehmer und beendete Kämpfe behalten kopierbare Entwürfe.
 
+Zustandskürzel ändern den Zustand direkt. Bei offenen
+Werteingaben bleiben sie gesperrt, bis diese ausdrücklich übernommen oder
+verworfen wurden; ein Zustandsklick bestätigt keine nebenbei bearbeiteten HP
+oder Initiative. Rohe Entwürfe bleiben auch über einen Neustart erhalten.
+
 Narrative Quest-/Gerüchtbelohnungen teilen Worldnotiz, Roster, XP und Loot.
 Ein Bytehash allein beweist keine gültige Zuordnung: Drei Gegenproben mit neu
 berechnetem Hash und falscher Notiz-ID, Revision oder Belohnungs-ID wurden vor

@@ -98,6 +98,27 @@ test('condition shortcuts wait for the selected working draft and stay blocked o
  assert.ok(buttons().every(b=>b.disabled));x.el('combat-participant-form').onsubmit({preventDefault(){}});assert.equal(x.writes.length,0);
 });
 
+test('condition shortcuts cannot adopt unrelated raw values and resume after explicit discard or adoption',async t=>{
+ const x=await uiFixture(t),oldEvent=globalThis.Event;globalThis.Event=window.Event;t.after(()=>{globalThis.Event=oldEvent;});
+ const actor=x.combat.participants[0],form=x.el('combat-participant-form');form.requestSubmit=()=>form.onsubmit({preventDefault(){}});
+ x.el('combat-rows').querySelector('button').onclick();await until(()=>!x.el('fighter-hp').disabled);
+ const buttons=()=>[...x.el('fighter-condition-shortcuts').querySelectorAll('button')];
+ const input=(id,raw)=>{x.el(id).value=raw;x.el(id).dispatchEvent(new window.Event('input',{bubbles:true}));};
+ input('fighter-hp','1');input('fighter-initiative','14');
+ assert.ok(buttons().every(b=>b.disabled));assert.equal(x.el('fighter-condition-draft-hint').hidden,false);assert.equal(x.writes.length,0);
+ assert.equal(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants[0].hp,7);
+ const draft=x.store.combatDraft(x.w.token,x.combat.id,'fighter',actor.id);await until(()=>x.store.combatDraft(x.w.token,x.combat.id,'fighter',actor.id)?.values['fighter-initiative']==='14');
+ assert.equal(draft.values['fighter-hp'],'1');
+ x.el('fighter-reload').onclick();await until(()=>x.el('fighter-hp').value==='7'&&buttons().every(b=>!b.disabled));
+ assert.equal(x.el('fighter-condition-draft-hint').hidden,true);
+ buttons().find(b=>b.textContent==='Liegend').onclick();await until(()=>x.writes.length===1&&x.el('fighter-draft-status').textContent==='');
+ let saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;assert.equal(saved.participants[0].conditions,'Liegend');assert.equal(saved.participants[0].hp,7);assert.equal(saved.participants[0].initiative,9);
+ x.el('combat-undo').onclick();await until(()=>x.writes.length===2&&!x.el('combat-undo').disabled);assert.equal(x.el('fighter-conditions').value,'');
+ input('fighter-initiative','-');assert.ok(buttons().every(b=>b.disabled));assert.equal(x.writes.length,2);
+ input('fighter-initiative','14');form.requestSubmit();await until(()=>x.writes.length===3&&x.el('fighter-draft-status').textContent==='');
+ assert.ok(buttons().every(b=>!b.disabled));assert.equal(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants[0].initiative,14);
+});
+
 
 test('HP cells reuse the target editor and Enter applies one damage command to that individual',async t=>{
  const x=await uiFixture(t),target=x.combat.participants[1],amount=x.el('fighter-amount');let focused=false;
