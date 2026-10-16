@@ -642,3 +642,6 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #combat-area-amount{max-width:none;width:100%}
 
 .creature-abilities{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.3rem;border-block:1px solid var(--line);padding:.65rem 0;margin:.8rem 0;text-align:center}.creature-abilities dt{font-weight:700}.creature-abilities dd{margin:.25rem 0 0;white-space:nowrap}.creature-abilities dd span{display:block;color:#305e88;font-weight:600}.creature-statblock h4{border-bottom:1px solid var(--line);padding-bottom:.3rem;margin:1.1rem 0 .6rem}.creature-statblock p{margin:.6rem 0;line-height:1.55}
+
+/* Let the complete moment editor scroll into view rather than pinning its tall parent. */
+.live-desk-writing:has(#live-moment-panel[open]){position:static!important}
