@@ -62,7 +62,7 @@ else {
       if(url.pathname.startsWith('/player/art/')&&url.host==='app'){try{const id=decodeURIComponent(url.pathname.split('/').at(-1)!),frame=store.currentPlayerFrame();if(frame.mode!=='image'||frame.imageId!==id)return new Response('Image unavailable',{status:404});return net.fetch(pathToFileURL(store.playerImageFile(id)).href);}catch{return new Response('Image unavailable',{status:404});}}
       const name = url.pathname.slice(1);
 
-      if (url.host !== 'app' || !['index.html', 'renderer.js', 'app.css','player.css'].includes(name)) return new Response('Not found', { status: 404 });
+      if (url.host !== 'app' || !['index.html', 'renderer.js', 'preset-settings.js','preset-settings.css','app.css','player.css'].includes(name)) return new Response('Not found', { status: 404 });
       return net.fetch(pathToFileURL(path.join(root, name)).href);
     });
     win = new BrowserWindow({ width: 1280, height: 880, minWidth: 640, minHeight: 480, title: 'Kampagnenwerkstatt', backgroundColor: '#edf1f6',
@@ -160,6 +160,9 @@ else {
     handle('campaign:generation-sources', (token:string)=>store.generationSources(token));
     handle('campaign:encounter-tables', (token: string, trashed: boolean) => store.encounterTables(token,trashed));
     handle('campaign:loot-tables', (token: string, trashed: boolean) => store.lootTables(token,trashed));
+    handle('campaign:preset-registry',(campaignId:string|null)=>store.presetRegistry(campaignId));
+    handle('campaign:preset-command',(command:import('../src/app/generation-contracts').PresetCommand)=>store.presetCommand(command));
+    handle('campaign:preset-outcome',(command:import('../src/app/generation-contracts').PresetCommand)=>store.presetOutcome(command));
     handle('campaign:generator-registry', (token: string) => store.generatorRegistry(token));
     handle('campaign:execute-generation', (command: GenerationCommand) => store.executeGeneration(command));
     handle('campaign:generate-encounters', (token: string, request: GenerationRequest) => store.generateEncounters(token,request));

@@ -1,7 +1,10 @@
+import {bindAnchoredPopup} from './anchored-popup';
 import type {CampaignCatalogCommand,CampaignCatalogReceipt,CampaignOverview} from './campaign-contracts';
 import type {Result} from './contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const unwrap=<T>(r:Result<T>)=>{if(!r.ok)throw new Error(r.error);return r.value;};
+let applicationPopup:ReturnType<typeof bindAnchoredPopup>|null=null;
+const closeApplicationMenu=()=>{if(el('application-trigger').getAttribute('aria-expanded')==='true')applicationPopup?.close();};
 const pendingKey='campaign-catalog-pending';
 let before:()=>Promise<boolean>,enter:(receipt:CampaignCatalogReceipt)=>Promise<boolean>,changed:()=>Promise<void>;
 let campaigns:CampaignOverview[]=[],activeId:string|null=null,busy=false,pending:CampaignCatalogCommand|null=null,editing:CampaignOverview|null=null,erasing:CampaignOverview|null=null,entry:CampaignCatalogReceipt|null=null,request=0;
@@ -37,8 +40,9 @@ async function execute(c:CampaignCatalogCommand){if(busy||pending)return;busy=tr
 }
 async function check(){if(!pending||busy)return;busy=true;lock();try{const r=unwrap(await window.campaign.campaignCatalogOutcome(pending));clearPending();busy=false;if(r)await apply(r);else message('Keine Änderung gebucht. Eingaben bleiben für einen neuen Versuch erhalten.');}catch(e){message((e as Error).message);}finally{busy=false;lock();}}
 export function hideCampaignScreen(){document.body.classList.remove('campaign-screen-open');el('campaign-screen').hidden=true;}
-export async function openCampaignScreen(initial=false){if(busy)return false;if(!initial&&!await before())return false;document.body.classList.add('campaign-screen-open');el('campaign-screen').hidden=false;el<HTMLDetailsElement>('application-menu').open=false;message('Kampagnen werden geladen…');try{await refresh();message(pending?'Ein Kampagnenauftrag wartet auf Statusprüfung.':'Kampagne wählen, um den Spieltisch zu öffnen.');}catch(e){message((e as Error).message);}return true;}
-export function initCampaignScreen(options:{before:typeof before;enter:typeof enter;changed:typeof changed;settingsEditorAvailable:()=>boolean}){
+export async function openCampaignScreen(initial=false){if(busy)return false;if(!initial&&!await before())return false;document.body.classList.add('campaign-screen-open');el('campaign-screen').hidden=false;closeApplicationMenu();message('Kampagnen werden geladen…');try{await refresh();message(pending?'Ein Kampagnenauftrag wartet auf Statusprüfung.':'Kampagne wählen, um den Spieltisch zu öffnen.');}catch(e){message((e as Error).message);}return true;}
+export function initCampaignScreen(options:{before:typeof before;enter:typeof enter;changed:typeof changed}){
+ applicationPopup=bindAnchoredPopup(el<HTMLButtonElement>('application-trigger'),el('application-popup'),176);el('application-trigger').onclick=()=>applicationPopup!.toggle();
  before=options.before;enter=options.enter;changed=options.changed;
  try{pending=JSON.parse(window.localStorage.getItem(pendingKey)??'null');}catch{message('Gespeicherter Kampagnenauftrag ist nicht lesbar.');}
  el('campaign-screen-open').onclick=()=>void openCampaignScreen();el('campaign-header-name').onclick=()=>void openCampaignScreen();el('campaign-screen-create').onclick=()=>edit(null);el('campaign-screen-refresh').onclick=()=>void refresh().catch(e=>message(e.message));el('campaign-trash-open').onclick=()=>dialog('campaign-trash-dialog').showModal();el('campaign-trash-close').onclick=()=>{if(!busy&&!pending)dialog('campaign-trash-dialog').close();};el('campaign-identity-close').onclick=closeIdentity;el('campaign-delete-close').onclick=()=>{if(!busy&&!pending){erasing=null;dialog('campaign-delete-dialog').close();}};
@@ -49,11 +53,7 @@ export function initCampaignScreen(options:{before:typeof before;enter:typeof en
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-catalog-check]'))b.onclick=()=>void check();
  el('campaign-load-retry').onclick=()=>{if(busy||pending)return;busy=true;lock();void load().finally(()=>{busy=false;lock();});};
  el('campaign-screen-packages').onclick=()=>el('campaign-manager').click();
- let settingsRequest=0;
- const closeSettings=()=>{settingsRequest++;dialog('campaign-settings-dialog').close();};
- el('campaign-settings-close').onclick=closeSettings;dialog('campaign-settings-dialog').oncancel=e=>{e.preventDefault();closeSettings();};
- el('campaign-settings-edit').onclick=()=>{closeSettings();el('generator-settings').click();};
- el('application-settings').onclick=()=>{el<HTMLDetailsElement>('application-menu').open=false;const n=++settingsRequest;el('campaign-settings-presets').textContent='Generatorregeln werden geladen…';el<HTMLButtonElement>('campaign-settings-edit').disabled=!options.settingsEditorAvailable();dialog('campaign-settings-dialog').showModal();void window.campaign.campaignInstallationSettings().then(result=>{if(n!==settingsRequest)return;const {registry}=unwrap(result),root=el('campaign-settings-presets');root.replaceChildren();const heading=document.createElement('p');heading.textContent='Installationsrevision '+registry.revision+' · wirksames Preset: '+(registry.presets.find(p=>p.id===registry.effectiveId)?.name??registry.effectiveId);root.append(heading);for(const p of registry.presets){const line=document.createElement('p');line.textContent=p.name+' · Revision '+p.revision+(p.system?' · geschütztes Systempreset':'');root.append(line);}}).catch(e=>{if(n===settingsRequest)el('campaign-settings-presets').textContent=e.message;});};
+ el('application-settings').onclick=()=>{closeApplicationMenu();void import('./preset-settings-ui').then(ui=>ui.openPresetSettings(null)).catch(e=>message(e.message));};
  el('new-campaign').onclick=()=>void openCampaignScreen().then(ok=>{if(ok)edit(null);});el('rename-campaign').onclick=()=>void openCampaignScreen().then(ok=>{if(ok)edit(campaigns.find(c=>c.id===activeId)??null);});
  lock();
 }

@@ -23,6 +23,9 @@ export interface GenerationAPI {
  generationSources(token:string):Promise<Result<WorldSources>>;
  encounterTables(token:string,includeTrashed:boolean):Promise<Result<EncounterTable[]>>;
  lootTables(token:string,includeTrashed:boolean):Promise<Result<LootTable[]>>;
+ presetRegistry(campaignId:string|null):Promise<Result<GeneratorRegistry>>;
+ presetCommand(command:PresetCommand):Promise<Result<PresetReceipt>>;
+ presetOutcome(command:PresetCommand):Promise<Result<PresetReceipt|null>>;
  generatorRegistry(token:string):Promise<Result<GeneratorRegistry>>;
  executeGeneration(command:GenerationCommand):Promise<Result<{tables:EncounterTable[];lootTables:LootTable[];registry:GeneratorRegistry}>>;
  generateEncounters(token:string,request:GenerationRequest):Promise<Result<GenerationRun>>;
@@ -37,3 +40,7 @@ export function exactWeight(value:string):string{
 export function integerWeights(values:readonly string[]):bigint[]{const checked=values.map(exactWeight),scale=Math.max(0,...checked.map(v=>v.split('.')[1]?.length??0));return checked.map(v=>{const[whole,part='']=v.split('.');return BigInt(whole!)*10n**BigInt(scale)+BigInt(part.padEnd(scale,'0')||'0');});}
 export function weightShares(values:readonly string[]):string[]{const weights=integerWeights(values),sum=weights.reduce((a,b)=>a+b,0n);if(!sum)return weights.map(()=>'0,00 %');const floors=weights.map(w=>Number(w*10000n/sum));let remaining=10000-floors.reduce((a,b)=>a+b,0);const order=weights.map((w,i)=>({i,remainder:w*10000n%sum})).sort((a,b)=>a.remainder===b.remainder?a.i-b.i:a.remainder>b.remainder?-1:1);for(const e of order){if(!remaining--)break;floors[e.i]=floors[e.i]!+1;}return floors.map(v=>Math.floor(v/100)+','+String(v%100).padStart(2,'0')+' %');}
 export function currentGenerationLoot(refs:GenerationRun['lootTables'],tables:LootTable[]):LootTable|null{if(refs?.length!==1)return null;const ref=refs[0]!;return tables.find(table=>table.id===ref.id&&table.revision===ref.revision&&!table.trashed)??null;}
+
+export type PresetAction=Extract<GenerationCommand['action'],{kind:'preset-save'|'preset-assign'|'preset-delete'}>;
+export interface PresetCommand {commandId:string;campaignId:string|null;action:PresetAction}
+export interface PresetReceipt {commandId:string;kind:PresetAction['kind'];registry:GeneratorRegistry;preset:GeneratorPreset|null;deletedId:string|null;affectedCampaignIds:string[];campaignId:string|null}
