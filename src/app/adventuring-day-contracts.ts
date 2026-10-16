@@ -15,4 +15,7 @@ export interface DayPacing {
  untilShort:number|null;untilLong:number|null;
  members:{id:string;name:string;before:DayRestFrame|null;after:DayRestFrame|null;reason:string|null}[];
 }
-export interface DayView {snapshot:DaySnapshot;calculation:DayCalculation|null;problem:string|null;pacing?:DayPacing;itinerary?:DayItinerary}
+export interface DayView {advancement?:DayAdvancement;snapshot:DaySnapshot;calculation:DayCalculation|null;problem:string|null;pacing?:DayPacing;itinerary?:DayItinerary}
+
+export interface DayLevelMark {level:number;groupXp:number;shareXp:number;missingGroupXp:number;members:{name:string;count:number}[];stage:number|null}
+export interface DayAdvancement {reached:DayLevelMark[];next:DayLevelMark[];atMaximum:number}
