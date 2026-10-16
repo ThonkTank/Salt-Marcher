@@ -1,6 +1,8 @@
+import {editTextareaText} from './key-reading-model';
 import {workspaceGeometryOnly as geometryOnly} from './atlas-render-view';
 import {RoomDirectoryView} from './room-directory-ui';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
+import {setLiveAtlasSurface} from './live-hex-surface';
 import {CampaignAtlasWorkbench} from './campaign-atlas-ui';
 import {atlasRoomWrite,atlasHistoryWrite} from './campaign-atlas-author';
 import {initCampaignScreen,openCampaignScreen,hideCampaignScreen} from './campaign-screen-ui';
@@ -178,11 +180,12 @@ campaignAtlas=new CampaignAtlasWorkbench({selectRoom,roomDraft:()=>draft,flush:l
  const token=workspace?.token;if(!token||!current()||!await leaveWorkspace()||!current())return;showTab('preparation');await openPreparedLocation(id,current);if(!current())return;
  setLocationReturn(token,id,'',{title:'Zur Karte: Atlas',open:async owns=>{if(!owns()||!current()||!await leaveWorkspace()||!owns()||!current())return;showTab('atlas');await back();if(owns())locationReturn.hidden=true;}});
 }});
+setLiveAtlasSurface(campaignAtlas.liveSurface());
+
 for(const id of ['world','city','dungeon'])el(id+'-tab').hidden=true;
 el('atlas-tab').textContent='Atlas';
 function showTab(selected: WorkspaceTab, restored?: number) {
   const atlasSurface=['atlas','world','city','dungeon'].includes(selected);if(atlasSurface)selected='atlas';
-  if(campaignAtlas){if(atlasSurface)void campaignAtlas.open();else campaignAtlas.hide();}
 
   if(selected!=='chronicle')suspendChronicle();
   if (workspace) workspacePositions.capture(workspace.campaign.id, window.scrollY);
@@ -190,6 +193,7 @@ function showTab(selected: WorkspaceTab, restored?: number) {
   viewRequest++; activeTab = selected;
   if (workspace) rememberWorkspaceView(viewStorage, workspace.campaign.id, {tab: selected, scrollY: 0});
   setWorldSurface(selected);setSessionPacketSurface(selected);
+  if(campaignAtlas){if(atlasSurface)void campaignAtlas.open();else if(selected!=='live'||!campaignAtlas.liveDocked)campaignAtlas.hide();}
   for (const id of workspaceTabs) { el(id).hidden = atlasSurface?true:id !== selected; el(id + '-tab').setAttribute('aria-pressed', String(id === selected)); }
   syncWorkspaceNavigation();
   window.scrollTo(0, 0);
@@ -325,8 +329,7 @@ function renderRoomInputs(room: Room, token: string | undefined) {
     const input = document.createElement('textarea'); input.id = `key-${index}`; label.htmlFor = input.id; input.rows = 8; input.value = section.markdown!;
     input.addEventListener('input', () => {
       if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed || workspace?.token !== token || draft?.id !== room.id) return;
-      // HTML textareas normalize CRLF; an untouched value must preserve imported bytes.
-      draft!.sections[index]!.markdown = input.value === section.markdown!.replace(/\r\n?/g, '\n') ? section.markdown : input.value;
+      draft!.sections[index]!.markdown = editTextareaText(draft!.sections[index]!.markdown!,input.value);
       schedule();
     });
     input.addEventListener('blur', () => { if (!composing && workspace?.token === token && draft?.id === room.id) void flush(); });
@@ -399,8 +402,7 @@ function updateHistory() {
 }
 const roomDirectory=new RoomDirectoryView(el('rooms'),id=>{void campaignAtlas?.navigate('room',id);});
 function renderList(refresh=false) {
-  roomDirectory.context(workspace?.token??null,el<HTMLInputElement>('search').value,workspace?.selectedId??null,workspace?.problems??[]);
-  if(refresh)roomDirectory.refresh();
+  roomDirectory.context(workspace?.token??null,el<HTMLInputElement>('search').value,workspace?.selectedId??null,workspace?.problems??[],refresh);
 }
 async function selectRoom(id: string) {
   if (!(await flushDrawing())) return;

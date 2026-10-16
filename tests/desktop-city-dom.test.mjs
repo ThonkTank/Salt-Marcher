@@ -404,6 +404,22 @@ test('house interior reopens through the same visible action without creating a 
  }finally{await s.close();}
 });
 
+test('a prepared house interior shares its actual camera and selection through the live portal and return',async()=>{
+ const x=await setup(),s=await interiorSurface(x),get=id=>x.document.getElementById(id);
+ try{
+  const frame=s.atlas.frame(s.atlas.scopeId);await s.rectangle('Prepared tavern',{x:frame.x-3,y:frame.y-3},{x:frame.x+3,y:frame.y+3});
+  const room=x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.name==='Prepared tavern');await s.atlas.navigate('room',room.id);
+  const view=()=>[s.svg.getAttribute('viewBox'),s.svg.dataset.atlasOriginX,s.svg.dataset.atlasOriginY],before=view(),root=get('campaign-atlas'),home=root.parentNode,db=x.store.db.serialize();
+  const map=x.document.createElement('section'),navigation=x.document.createElement('aside'),console=x.document.createElement('aside');x.document.body.append(map,navigation,console);
+  const portal=s.atlas.liveSurface();portal.mount(map,navigation,console);portal.show(true);await settle();await settle();
+  assert.equal(map.contains(s.svg),true);assert.equal(x.document.querySelectorAll('#campaign-map').length,1);assert.deepEqual(view(),before);assert.equal(s.atlas.selection.id,room.id);
+  assert.equal(navigation.contains(get('atlas-to-party')),true);assert.equal(console.contains(get('atlas-save-status')),true);
+  portal.show(false);assert.equal(root.hidden,true);portal.show(true);await settle();await settle();assert.deepEqual(view(),before);
+  portal.unmount();await s.atlas.open();assert.equal(root.parentNode,home);assert.equal(root.contains(get('atlas-to-party')),true);assert.equal(root.contains(get('atlas-save-status')),true);
+  await s.atlas.navigate('room',room.id);assert.equal(s.atlas.scopeId,room.scopeId);assert.equal(s.atlas.selection.id,room.id);assert.ok(x.store.db.serialize().equals(db));
+ }finally{await s.close();}
+});
+
 test('Atlas search navigation retains an unfinished room instead of silently discarding it',async()=>{
  const x=await setup(),s=await interiorSurface(x);
  try{

@@ -13,7 +13,7 @@ import {fighterDraftBasisMatches,fighterDraftFields,type FighterWorkingDraft,typ
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { WorkspaceGeometry, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
-import { combatConditions,combatOrder, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
+import { combatConditions,combatOrder,combatStartIssue, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
 import { renderCreatureDetail } from './creature-detail-ui';
 import type { EncounterPlan } from './encounter-contracts';
@@ -317,6 +317,7 @@ function lock() {
   const fighter=view?.combat?.participants.find(p=>p.id===selected),deathControls=deathSaveControls(fighter?.death),deathUnavailable=blocked()||!fighter?.characterId||fighter.healthKnown===false||fighter.hp!==0;
   const concentrationPending=!!view?.combat?.participants.some(p=>p.concentrationChecks?.length);
   for(const id of ['combat-start','combat-next','combat-finish'])get<HTMLButtonElement>(id).disabled=blocked()||concentrationPending;
+  if(view?.combat?.phase==='preparing'&&combatStartIssue(view.combat))get<HTMLButtonElement>('combat-start').disabled=true;
   get<HTMLButtonElement>('fighter-remove').disabled=blocked()||!fighter||!!fighter.concentrationChecks?.length;
   get<HTMLButtonElement>('fighter-visibility').disabled=blocked()||!fighter||!!fighter.characterId;
   get<HTMLInputElement>('fighter-concentration').disabled=blocked()||!!fighter?.concentrationChecks?.length;
@@ -348,7 +349,10 @@ function render() {
   get('combat-shared-notice').textContent=combat?.sharedNotice??'';
   get('combat-workspace').hidden = !combat;
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
-  get('combat-assessment').textContent = view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '';
+  const startIssue=combat?.phase==='preparing'?combatStartIssue(combat):null;
+  get('combat-assessment').textContent = startIssue??(view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '');
+  const additions=get<HTMLDetailsElement>('combat-add-details');additions.querySelector('summary')!.textContent=combat?.phase==='preparing'?'Gegner vorbereiten':'Verstärkung hinzufügen';
+  if(additions.dataset.combatId!==combat?.id){additions.dataset.combatId=combat?.id??'';additions.open=!!startIssue;}
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
   const recent=[...(view?.recent??knownRecent)];if(combat&&!recent.some(item=>item.id===combat.id))recent.unshift({id:combat.id,title:combat.title,phase:combat.phase});

@@ -85,6 +85,20 @@ async function targetFixture(){
 test('returning from a named destination restores the hex actually selected on the map',async()=>{
  const x=await targetFixture();try{await x.select('world-destination',x.locationId);assert.equal(x.document.getElementById('travel-q').value,'3');await x.select('world-destination','');assert.equal(x.document.getElementById('travel-q').value,'1');assert.equal(x.document.getElementById('travel-r').value,'0');}finally{x.cleanup();}
 });
+test('shared Atlas selection appends route stops and retains the exact named destination',async()=>{
+ const x=await targetFixture();try{
+  x.document.getElementById('travel-route-clear').click();x.document.getElementById('travel-mode-route').click();
+  const before=x.store.db.serialize();
+  x.ui.atlasWorldTarget({q:1,r:0});x.ui.atlasWorldTarget({q:3,r:0},x.locationId);
+  assert.equal(x.document.getElementById('travel-waypoints').value,'1,0');
+  assert.equal(x.document.getElementById('travel-q').value,'3');assert.equal(x.document.getElementById('world-destination').value,x.locationId);
+  assert.equal(x.document.getElementById('travel-mode-route').getAttribute('aria-pressed'),'true');
+  let request;const read=x.window.campaign.previewTravel;x.window.campaign.previewTravel=async(token,q)=>{request=structuredClone(q);return read(token,q);};
+  x.preview();await until(()=>!!request);
+  assert.deepEqual(request.waypoints,[{q:1,r:0}]);assert.equal(request.destinationLocationId,x.locationId);
+  assert.ok(x.store.db.serialize().equals(before));assert.equal(x.sent.length,0);
+ }finally{x.cleanup();}
+});
 test('a manually edited coordinate releases a named place binding and previews the requested hex',async()=>{
  const x=await targetFixture();try{await x.select('world-destination',x.locationId);x.enter('travel-q','2');assert.equal(x.document.getElementById('world-destination').value,'');
  let requested;const real=x.window.campaign.previewTravel;x.window.campaign.previewTravel=async(token,request)=>{requested=structuredClone(request);return real(token,request);};

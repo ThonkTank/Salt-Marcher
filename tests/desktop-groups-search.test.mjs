@@ -56,3 +56,13 @@ test('group pages follow their displayed names across page boundaries and reject
  const first=x.store.preparedGroups(x.w.token,'Hafen',null);assert.throws(()=>x.store.preparedGroups(x.w.token,'Wald',first.next),/Suchseite veraltet/);
  }finally{x.cleanup();}
 });
+
+
+test('returning after a new location refreshes the current group location choices without reselecting or losing input',async()=>{
+ const x=await fixture();try{
+  x.input('groups-notes','  Unfertige Hinterhalt-Notiz\r\n');await x.ui.flushGroups();const before=x.store.db.serialize(),views=x.views.length,title=x.el('groups-title').value,notes=x.el('groups-notes'),placeId=randomUUID();
+  window.campaign.ledgerParties=async()=>({ok:true,value:[{id:placeId,name:'Zollbrücke',kind:'location'}]});
+  await x.ui.openGroups();assert.ok([...x.el('groups-place').children].some(option=>option.value===placeId&&option.textContent==='Zollbrücke'),'new places must be immediately available in the preserved group editor');
+  assert.equal(x.el('groups-place').value,'');assert.equal(x.el('groups-notes'),notes);assert.equal(notes.value,'  Unfertige Hinterhalt-Notiz\r\n');assert.equal(x.el('groups-title').value,title);assert.equal(x.views.length,views);assert.ok(x.store.db.serialize().equals(before));
+ }finally{x.cleanup();}
+});

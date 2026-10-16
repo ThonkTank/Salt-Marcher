@@ -410,16 +410,44 @@ zweier Scenes auf derselben Rootkarte. Die übrigen Bedienassertions bleiben erh
 kein Fall wird übersprungen. Das ist keine Mehrkartenfreigabe oder vollständige
 Abnahme der neuen Workbench.
 
-Die durchgehende Live-/Atlas-Komposition bleibt gesondert zu qualifizieren:
-`live-hex-surface` dockt weiterhin die Hexkonsole, die neue Workbench besitzt auch
-lokale Fußwege und Eingangskontext. Nächste Lieferung: denselben bestätigten
-Fokus, aktive lokale/Hex-/Dungeonreise, Unklarheitszustand und gemeinsamen
-Canvas beim Wechsel Leiten → Erkunden → Leiten bedienen; die Shell delegiert an
-den tatsächlich zuständigen Writer. Keine zweite Position oder unabhängige
-Route. Abnahme: lokaler Schritt, Weltgrenze und Eingang jeweils mit Fokuswechsel,
-Neustart und unveränderten Ziel-/Zeitfakten; reine Konsolenwahl erhält den
-Center-Tab. Eine zusätzliche Konsole oder grüne Storefälle allein erfüllen das
-ursprüngliche Reise-Szenarioziel nicht.
+## Dieselbe Atlasfläche im Live-Spiel
+
+Live zeigt beim ausdrücklichen Öffnen des Kartentabs dieselbe
+`CampaignAtlasWorkbench` mit demselben SVG, derselben Kamera und demselben
+Renderprovider wie die Atlasbearbeitung. `LiveAtlasPortal` verschiebt die
+bestehenden DOM-Knoten und echten Kameracontrols; es kopiert weder Karte noch
+Position noch Reise. Beim Wechsel zurück stehen diese Knoten wieder an ihrem
+vorherigen Platz. Kamera und Ansichtshistorie bleiben erhalten. Die alte
+Hexcanvas-Projektion bleibt für isolierte Fachfälle bestehen, ist in der
+zusammengesetzten Produktoberfläche verborgen. Städte, Landschaft und Dungeons
+werden über den gemeinsamen Atlasprovider dargestellt.
+
+Reise allein erhält die Szenenmitte; Karte öffnen, Kartentab und bewusste
+Routenaktionen wählen die Karte. Weltreise bleibt bei der bestehenden Hexkonsole
+im Referenzbereich. Echte Atlas-Kameracontrols werden ebenfalls dort bedient.
+Lokale Wege und Innenräume verwenden unter dem gleichnamigen aufklappbaren
+Bereich die vorhandene Atlas-Reisekonsole und deren lokale/Dungeonwriter.
+Geordnete Wegpunktwahl auf dem gemeinsamen Canvas erhält ausdrücklich gewählten
+Wegpunktmodus. Keyboardplatzierung und Koordinatenfelder bleiben erreichbar.
+
+Runtimeereignisse entwerten bei sichtbarer Livekarte offene Atlasreads und lokale
+Vorschauen sofort vor dem verzögerten Refresh. Weltvorschauen werden nur für
+passende Scene-/Map-IDs gezeichnet. Nur aktive, pausierte und unterbrochene
+Weltreisen sowie aktive/pausierte lokale Wege zeigen Routengeometrie. Bei einer
+Weltreise beginnt die Restlinie am letzten bestätigten Hex. Ankunft und Abbruch
+behalten Laufstand und Fakten, aber keine aktive Linie. Ein bestätigter lokaler
+Reiseauftrag aktualisiert anschließend den bestehenden Worldprovider; ein
+Lesefehler macht den bereits bestätigten Auftrag nicht ungeschehen.
+
+Controller-/DOMprüfungen verwenden echte Storeprojektionen; der Portaltest prüft
+Identität, Kamera, echte Controlhandler und wiederholte Rückkehr. Native Belege
+prüfen die tatsächliche gemeinsame Fläche, geordnete
+Wegpunkte, Auswertung, Start/Pause/Fortsetzung, Ankunft/Abbruch und vollständigen
+Neustart. Der ergänzte lokale Schritt prüft dieselbe Position/Uhr nach einer
+Weltreise. Store-, Native-, vollständige CI- und Mainnachweise bleiben getrennte
+Behauptungen. Vollständige Indoor-/Eingangs-/Fokuswechsel-, physische
+200%-/OS-/Großroutenabnahme sowie eine weiter vereinfachte kontextübergreifende
+Konsole bleiben offen; zusätzliche versteckte Runtimestores sind kein Lösungsweg.
 
 ## Nächste ausführbare Lieferungen
 
