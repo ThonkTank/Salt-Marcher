@@ -76,3 +76,31 @@ test('a planned long rest can establish a hypothetical unknown rest frame withou
  const read=restBefore=>x.store.adventuringDay(x.w.token,{source:'active',rows:[],totalXp:0,encounters:[{id:plan.id,revision:plan.revision,count:1,restBefore}]});
  assert.equal(read('short').pacing.members[0].after,null);const v=read('long');assert.equal(v.pacing.known,0);assert.equal(v.pacing.projectedKnown,1);assert.equal(v.pacing.members[0].before,null);assert.equal(v.pacing.members[0].after.consumed,75);assert.equal(v.snapshot.available,false);assert.ok(x.store.db.serialize().equals(before));
 });
+
+
+test('level milestones use actual active XP, equal round-up and exact minimum group pools without writing',t=>{
+ const x=fixture(t);x.add('Ada',299);x.add('Borin',850);x.add('Cara',355000);x.add('Reserve',0,false);
+ const before=x.store.db.serialize(),v=x.read('active',222,1),a=v.advancement;
+ assert.deepEqual(a.reached.map(m=>[m.level,m.groupXp,m.members.map(p=>p.name)]),[[2,1,['Ada']]]);assert.equal(a.atMaximum,1);
+ assert.deepEqual(a.next.map(m=>[m.level,m.groupXp,m.shareXp,m.missingGroupXp]),[[3,148,50,147],[3,1801,601,1800]]);
+ const target=x.read('active',222,148);assert.equal(target.calculation.projections.find(p=>p.name==='Borin').afterLevel,3);assert.equal(x.read('active',222,147).calculation.projections.find(p=>p.name==='Borin').afterLevel,2);
+ assert.deepEqual(target.calculation.milestones,v.calculation.milestones);assert.equal(target.calculation.totalXp,222);assert.ok(x.store.db.serialize().equals(before));
+});
+test('custom level groups aggregate level marks and list every crossed level in reward order',t=>{
+ const x=fixture(t),v=x.store.adventuringDay(x.w.token,{source:'custom',rows:[{level:1,count:3}],totalXp:0,rewardXp:8100});
+ assert.deepEqual(v.advancement.reached.map(m=>[m.level,m.groupXp,m.members.reduce((n,p)=>n+p.count,0)]),[[2,898,3],[3,2698,3],[4,8098,3]]);
+ assert.equal(v.advancement.next[0].level,5);assert.equal(v.advancement.next[0].groupXp,19498);assert.equal(v.calculation.completedDays,0);
+});
+test('encounter level marks name the first completed plan row that reaches them',t=>{
+ const x=fixture(t);x.add('Ada',299);x.add('Borin',0);
+ const plan=x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Patrouille',notes:'',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:1,grouped:false}],sources:[],catalogHash:''}});
+ const v=x.store.adventuringDay(x.w.token,{source:'active',rows:[],totalXp:0,encounters:[{id:plan.id,revision:plan.revision,count:1},{id:plan.id,revision:plan.revision,count:12}]});
+ assert.equal(v.advancement.reached.find(m=>m.members.some(p=>p.name==='Ada')).stage,1);assert.equal(v.advancement.reached.find(m=>m.members.some(p=>p.name==='Borin')).stage,2);
+});
+test('a level target only replaces local reward input and stale target controls have no authority',async t=>{
+ const x=await uiFixture(t),before=x.store.db.serialize();x.el('day-mode-progress').onclick();x.input('day-total-xp','125');await new Promise(r=>setTimeout(r,160));await until(()=>x.el('day-levels').querySelector('button'));
+ const target=x.el('day-levels').querySelector('button'),pool=x.el('day-levels').querySelector('li').dataset.groupXp;target.onclick();assert.equal(x.el('day-total-xp').value,'125');assert.equal(x.el('day-separate-reward').checked,true);assert.equal(x.el('day-reward-xp').value,pool);
+ x.input('day-reward-xp','777');assert.equal(target.isConnected,true);target.onclick();assert.equal(x.el('day-reward-xp').value,'777','pending old results cannot overwrite a newer draft');
+ await new Promise(r=>setTimeout(r,160));await until(()=>x.el('day-summary').textContent.includes('Level vorher'));
+ assert.equal(target.isConnected,false);target.onclick();assert.equal(x.el('day-reward-xp').value,'777');assert.ok(x.store.db.serialize().equals(before));
+});

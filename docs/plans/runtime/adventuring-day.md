@@ -301,3 +301,32 @@ Rasten oder Journalereignisse werden geschrieben; kein neues Speicherschema.
 Grenzen: Pausen gelten derzeit für die gesamte Rechnerparty; Dauer,
 Teilnehmerauswahl, Reisekosten und Übernahme in einen dauerhaft gespeicherten
 Sessionablauf sind nicht Bestandteil dieses lokalen Rechners.
+
+
+## Levelmarken und Zielverdienst (0.144)
+
+Im bestehenden Day-Popover zeigt „Levelentwicklung planen“ die nächsten
+Levelmarken jeder Rechnerfigur. Die aktive Party nutzt ihre bestätigten XP,
+eigene Levelgruppen starten am Levelminimum. Figuren aus anderen aktiven
+Scenes bleiben einbezogen; Figuren auf Level 20 werden ausdrücklich gezählt.
+Die Partyprojektion liefert den kleinsten Gruppenverdienst, der nach der
+bestehenden Aufrundung der XP-Anteile die jeweilige Marke erreicht.
+
+„Verdienst bis Level … einsetzen“ schaltet auf die Fortschrittsvorschau und
+übernimmt ausschließlich diesen Gruppenverdienst als getrennte lokale
+Planungseingabe. Belastung, Levelgruppen und gespeicherte Party bleiben erhalten.
+Die Fortschrittsansicht listet alle erreichten Levelmarken mit dem jeweiligen
+Gruppenverdienst, persönlichen Anteil und den betroffenen Figuren. Lange Listen
+lassen sich in Schritten von 20 vollständig nachladen.
+
+Bei eingeschaltetem Encounter-Tagesplan bleiben dessen XP maßgeblich; die
+Zielknöpfe sind deaktiviert. Erreichte Levelmarken nennen die erste abgeschlossene
+Planzeile, nach der sie erreicht sind. Wiederholungen innerhalb einer Planzeile
+werden nicht einzeln aufgeschlüsselt. Veraltete Ergebnisaktionen werden bei
+Eingabeänderung, Workspacewechsel oder Schließen verworfen.
+
+Keine XP-, Rast-, Zeit- oder Rosterbuchung; kein neues Speicherschema.
+Hypothetische Levelwechsel verändern weiterhin nicht die festen Startbudgets
+der Tages- und Rastvorschau. Hostprüfung umfasst Zielübernahme, eigene Gruppen,
+mehrere Levelwechsel, Encounterplan, Escape/Fokusrückkehr und Neustart mit
+unveränderten Partyfacts. Breite Plattform-, Zoom- und Großpartyabnahme bleibt offen.

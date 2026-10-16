@@ -73,3 +73,17 @@ test('an existing encounter table keeps its scope while every new draft can expl
 test('editing only table metadata preserves description bytes normalized by the browser control',async t=>{
  const description=' Originalprosa\r\nZweite Zeile\r\n',x=await fixture(t,'encounter',()=>{},description);x.el('table-description').value=description.replaceAll('\r\n','\n');x.el('table-name').value='Neuer Name';x.el('table-name').oninput();x.el('table-habitats').value='Forest';x.el('table-habitats').oninput();x.el('table-time').value='night';x.el('table-time').oninput();await x.save();assert.equal(x.read().name,'Neuer Name');assert.equal(x.read().description,description);assert.deepEqual(x.read().habitats,['Forest']);assert.equal(x.read().time,'night');
 });
+
+for(const transport of [false,true])test(`a confirmed encounter table save survives a later world-source ${transport?'transport':'storage'} read failure`,async t=>{
+ const x=await fixture(t,'encounter'),readSources=window.campaign.generationSources,execute=window.campaign.executeGeneration,calls=[];
+ window.campaign.executeGeneration=async c=>{calls.push(structuredClone(c));return execute(c);};
+ window.campaign.generationSources=async()=>{if(transport)throw new Error('World sources unavailable');return{ok:false,error:'World sources unavailable'};};
+ x.el('table-name').value='Bestätigte Wachen';x.el('table-name').oninput();await x.save();
+ assert.equal(x.read().revision,2);assert.equal(x.read().name,'Bestätigte Wachen');assert.equal(x.el('table-manager').open,false);assert.equal(calls.length,1);assert.equal(x.el('encounter-table-list').value,x.read().id);
+ assert.ok(x.messages.some(m=>m[0].includes('bestätigt')&&m[0].includes('World sources unavailable')));assert.equal(x.el('generation-source-status').hidden,false);assert.match(x.el('generation-source-status').textContent,/bestätigt.*World sources unavailable/);
+ window.campaign.generationSources=readSources;await x.ui.refreshGeneration();assert.equal(x.el('generation-source-status').hidden,true);x.el('encounter-table-open').click();await settle();assert.equal(x.el('table-name').value,'Bestätigte Wachen');x.el('table-name').value='Weiter bearbeitet';x.el('table-name').oninput();await x.save();assert.equal(x.read().revision,3);assert.equal(calls.length,2);assert.equal(calls[1].action.expectedRevision,2);assert.equal(x.read().description,'Rohtext');
+});
+
+test('an unconfirmed table save keeps the draft open and reports the write failure',async t=>{
+ const x=await fixture(t,'encounter');window.campaign.executeGeneration=async()=>({ok:false,error:'Write rejected'});x.el('table-name').value='Noch offen';x.el('table-name').oninput();await x.save();assert.equal(x.read().revision,1);assert.equal(x.el('table-manager').open,true);assert.equal(x.el('table-name').value,'Noch offen');assert.ok(x.messages.some(m=>m[0]==='Write rejected'));assert.ok(!x.messages.some(m=>m[0].includes('bestätigt')));
+});

@@ -1,7 +1,7 @@
 import {readProgressCharacter} from './progression';
 import {readCharacter} from './live';
 import {dailyXp,xpLevel,restFrame} from '../progression';
-import {calculateDay,projectDayPacing} from '../adventuring-day-model';
+import {calculateDay,projectDayPacing,projectDayAdvancement} from '../adventuring-day-model';
 import type {DayRequest,DayView,DaySnapshot} from '../adventuring-day-contracts';
 import {readDayItinerary} from './day-itinerary';
 
@@ -23,6 +23,6 @@ export function readDay(db:any,cam:string,request:DayRequest):DayView{
  if(request.source==='active'&&!levelsKnown)return{snapshot,pacing,itinerary,calculation:null,problem:'Für die aktive Party fehlen Level. XP im Roster ergänzen oder eigene Rechnerzeilen verwenden.'};
  const calculation=calculateDay(basis as {level:number;count:number}[],totalXp,rewardXp);
  if(request.source==='active')calculation.projections=members.map(c=>{const afterXp=c.xp!+calculation.shareXp;return{name:c.name,count:1,beforeXp:c.xp!,afterXp,beforeLevel:c.level!,afterLevel:xpLevel(afterXp).level};});
- return{snapshot,pacing,itinerary,calculation,problem:null};
+ return{snapshot,pacing,itinerary,calculation,advancement:projectDayAdvancement(calculation,itinerary?.stages),problem:null};
  }catch(error){return{snapshot,pacing,calculation:null,problem:(error as Error).message};}
 }

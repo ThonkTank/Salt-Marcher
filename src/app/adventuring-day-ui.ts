@@ -1,3 +1,4 @@
+import {renderDayLevels} from './adventuring-day-levels-ui';
 import {bindAnchoredPopup} from './anchored-popup';
 import type { Workspace } from "./contracts";
 import type { DayView } from "./adventuring-day-contracts";
@@ -173,6 +174,11 @@ function draw(value: DayView) {
       party.append(p);
     }
   }
+  const lease=generation,token=workspace?.token,current=()=>workspace?.token===token&&generation===lease&&opened();
+  renderDayLevels(el('day-levels'),value.advancement,{progress:mode==='progress',itinerary:!!value.itinerary,current,choose:pool=>{
+   if(!current()||dayItineraryRequest()!==undefined)return;
+   mode='progress';el<HTMLInputElement>('day-separate-reward').checked=true;el<HTMLInputElement>('day-reward-xp').value=String(pool);state();edited();el<HTMLInputElement>('day-reward-xp').focus();
+  }});
   const c = value.calculation;
   if (!c) return;
   const heading=document.createElement('h3');heading.textContent='Tagesmodell ab langer Rast';summary.append(heading);
@@ -285,7 +291,7 @@ async function refresh() {
     el('day-trigger').setAttribute('aria-busy','false');
     el('day-popover').setAttribute('aria-busy','false');
     if (opened()) {
-      for (const id of ["day-summary","day-timeline","day-current","day-pacing"]) el(id).replaceChildren();
+      for (const id of ["day-summary","day-timeline","day-current","day-pacing","day-levels"]) el(id).replaceChildren();
       el("day-status").textContent = (error as Error).message;
     }
   }
@@ -329,6 +335,7 @@ export function activateDayCalculator(next: Workspace | null) {
   el("day-trigger").textContent = "Rastbudget";
   el('day-trigger').setAttribute('aria-busy','false');
   el('day-popover').setAttribute('aria-busy','false');
+  el('day-levels').replaceChildren();el('day-levels').hidden=true;
   el('day-pacing').replaceChildren();
   for(const id of ['day-summary','day-timeline','day-current'])el(id).replaceChildren();
   el("party-shortcut").textContent = "Party öffnen";

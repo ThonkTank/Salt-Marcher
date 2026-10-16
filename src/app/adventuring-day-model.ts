@@ -1,6 +1,6 @@
 import {dailyXp,levelXp,xpLevel,xpShare,restFrame,type Progress} from './progression';
 import {assessEncounter} from './encounter-contracts';
-import type {DayRow,DayCalculation,DayPacing,DayRestFrame} from './adventuring-day-contracts';
+import type {DayRow,DayCalculation,DayPacing,DayRestFrame,DayAdvancement,DayLevelMark} from './adventuring-day-contracts';
 function checkedDayXp(n:number){if(!Number.isSafeInteger(n)||n<0||n>1000000000000)throw new Error('XP benötigen eine ganze Zahl von 0 bis 1 Billion.');return n;}
 
 /** Current party facts plus hypothetical load, never rewards, levels, rests or time writes. */
@@ -39,4 +39,17 @@ export function calculateDay(rows:DayRow[],totalXp:number,rewardXp=totalXp):DayC
  if(days>shown)timeline.push({label:'Weitere '+(days-shown)+' volle Tage · '+(days-shown)*2+' kurze und '+(days-shown)+' lange Rasten',xp:days*dailyBudget});
  if(remainder){for(const [i,mark]of milestones.entries())if(i<2&&mark<=remainder)timeline.push({label:'Tag '+(days+1)+' · kurze Rast '+(i+1),xp:days*dailyBudget+mark});timeline.push({label:'Tag '+(days+1)+' · bisher '+remainder+' / '+dailyBudget+' XP',xp:totalXp});}
  return{partySize,dailyBudget,totalXp,rewardXp,shareXp:share.share,totalAwardXp:share.total,milestones,thresholds:assessEncounter(rows.map((r,i)=>({id:String(i),name:'',...r})),[]).thresholds,completedDays:days,dayProgress:dailyBudget?remainder/dailyBudget:0,shortRests:days*2+(remainder>=milestones[0]&&dailyBudget?1:0)+(remainder>=milestones[1]&&dailyBudget?1:0),longRests:days,timeline,projections:rows.map(r=>{const beforeXp=levelXp[r.level-1]!,afterXp=beforeXp+share.share;return{name:'Level '+r.level,count:r.count,beforeXp,afterXp,beforeLevel:r.level,afterLevel:xpLevel(afterXp).level};})};
+}
+
+/** Minimum group pools under the same equal, rounded-up distribution as xpShare. */
+export function projectDayAdvancement(c:DayCalculation,stages?:{cumulativeRewardXp:number}[]):DayAdvancement{
+ const reached=new Map<string,DayLevelMark>(),next=new Map<string,DayLevelMark>();let atMaximum=0;
+ const add=(marks:Map<string,DayLevelMark>,p:DayCalculation['projections'][number],level:number)=>{
+  const gap=levelXp[level-1]!-p.beforeXp,groupXp=(gap-1)*c.partySize+1,key=level+':'+groupXp;
+  let mark=marks.get(key);if(!mark){const stage=stages?.findIndex(s=>s.cumulativeRewardXp>=groupXp)??-1;mark={level,groupXp,shareXp:gap,missingGroupXp:Math.max(0,groupXp-c.rewardXp),members:[],stage:stage<0?null:stage+1};marks.set(key,mark);}
+  mark.members.push({name:p.name,count:p.count});
+ };
+ for(const p of c.projections){for(let level=p.beforeLevel+1;level<=p.afterLevel;level++)add(reached,p,level);if(p.afterLevel===20)atMaximum+=p.count;else add(next,p,p.afterLevel+1);}
+ const ordered=(marks:Map<string,DayLevelMark>)=>[...marks.values()].sort((a,b)=>a.groupXp-b.groupXp||a.level-b.level);
+ return{reached:ordered(reached),next:ordered(next),atMaximum};
 }
