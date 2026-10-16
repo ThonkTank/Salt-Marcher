@@ -367,6 +367,25 @@ werden nie still entfernt, ersetzt oder einer anderen Scene zugeordnet.
   lässt die unabhängige leere Kopie sichtbar bestehen oder wird ausdrücklich
   verworfen, niemals still befüllt.
 
+### Ortswissen direkt am Szenentisch (0.145)
+
+„Am Ort“ liest NSCs, Aufträge/Gerüchte und verknüpfte Fraktionen aus denselben
+bestätigten Ortsbindungen wie die Ortsmappe. Jede Kategorie lädt ihre weiteren
+40er-Seiten ausdrücklich nach; ein Fehler erlaubt den erneuten Abruf dieser
+Kategorie und blockiert weder andere Kategorien noch den Notizeditor.
+Öffnen verwendet den vorhandenen Szenentisch-Editor einschließlich narrativer
+Angaben und gesicherter Rohtexte. Anheften ist eine ausdrückliche vorhandene
+Sceneaktion. Ein Orts-/Scene-/Campaignwechsel verwirft alte Antworten und
+Ergebnisaktionen; angeheftete Inhalte bleiben an ihrer Scene. Aktualisieren
+liest inzwischen geänderte Bindungen. Es entsteht weder eine zweite Ortsbindung
+noch eine Kopie, kein Encounterstart und keine Belohnung beim Lesen.
+
+NSC-eigene Shops am bestätigten Sceneort werden auch ohne vorbereitete
+Figurengruppe eingeblendet. Der bestehende Shopreader und Handelswriter bleiben
+zuständig. Ortswechsel entfernen ortsfremde Shops aus dieser Projektion.
+Automatische Entfernung bereits übernommener älterer Gruppeninhalte sowie
+allgemeine Pin-/Begleitersemantik bleiben eigenständige Runtimearbeit.
+
 ## Runtime-Masken
 
 Encounter, Chase und spätere Masken überlagern die kontinuierlich bestehende
