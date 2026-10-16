@@ -50,12 +50,43 @@ Das ist ein Storebeleg, keine native Gesamtqualifikation.
    Besondere Flug-, Kletter- und Schwimmprofile der Figuren sind weiterhin offen;
    dafür gibt der GM ein effektives Tempo vor. Explizite Path-Zeitfaktoren und
    Gesamtdauer bleiben zusätzliche sichtbare GM-Vorgaben.
-2. **Explorationsrunden.** 1/5/10/15/30 Minuten und eigene Dauer als sichtbaren
-   Laufstand liefern; gegenwärtiges `maxSteps` begrenzt Wegpunkte, keine Runden.
-   `executeDungeon(step)` muss Abschnitt/Restdauer und die bestehenden Scenezeit-/
-   Autonomy-Entscheidungsgrenzen gemeinsam behandeln. Keine Zeitkategorien für
-   freie Tischhandlungen. Abnahme: Teilabschnitt, GM-Pause, geänderter Roundwert,
-   Trigger/Catch-up, Retry und Neustart ohne Doppelzeit oder übersprungene Grenze.
+2. **Explorationsrunden geliefert (0.150).** Die vorhandenen revisionierten
+   Reisevorgaben speichern optional `explorationRoundSeconds`; ohne Eintrag sind
+   sichtbar10Minuten wirksam.1/5/10/15/30Minuten und eigene positive ganze Sekunden
+   sind wählbar. Einstellungen bleiben Laufstand der Scene, keine Dungeonwahrheit.
+   `round` benutzt aktuelle Einstellungsrevision und Fokus sowie die bisherigen
+   Positions-/Clock-/Membership-/Geometrieguards. Ein Aufruf bucht höchstens die
+   Rundendauer, endet aber bei Ankunft oder einem GM-Hinweis früher. Es wird keine
+   freie Tischhandlung klassifiziert oder automatisch bepreist.
+
+   Lange Rasterabschnitte speichern `segmentElapsedSeconds` am bestehenden
+   Journey. Der Marker bleibt bis zum Erreichen der nächsten Zelle am letzten
+   bestätigten Rasterpunkt; die UI benennt den Zwischenfortschritt. Zeit läuft
+   über den vorhandenen Scenecommand einschließlich seiner Worldfolgen. Ein
+   späterer Runden- oder Rasterpunktschritt bucht ausschließlich Restsekunden.
+   Teilfortschritt bleibt bei Pause, Restart und unabhängiger Campaignkopie
+   erhalten. Neue Rundendauer verändert keine eingefrorene Segmentdauer.
+
+   Ein bestehender Präsentationstimer führt bestätigte Runden ohne weitere
+   Einzelbestätigung aus.1× entspricht nominal einer Echtsekunde pro Runde;
+   1/2/5/10× verändert nur diese Präsentation. Der Timer hält höchstens einen
+   ursprünglichen Command offen und holt keine verstrichene Hintergrundzeit nach.
+   Revision dient im Timer als monotone Rundenkennung, weil eine Runde mehrere
+   Rasterpunkte oder nur einen Teilabschnitt umfassen kann. Ziel, Inhalte,
+   Wahrnehmung und bestehende Reise-/Autonomypausen beenden die Fortsetzung;
+   neuere gespeicherte Pausen bleiben auch beim Teilabschnitt erhalten.
+   Navigation, Fenster-/Fokusverlust, neue Reisedaten und Neustart stoppen die
+   lokale Wiedergabe. Danach ausdrücklich starten. Pause/Beenden wartet einen
+   bereits gestarteten Command ab und verwendet dessen bestätigte Revision.
+
+   Geprüft: exakte Teil-/Restzeit, ursprünglicher Receiptreplay, neue Rundendauer,
+   Pause/Fresh/Kopie, Inhaltsunterbrechung und vorhandener serialisierter Timer.
+   Native Runde, fortlaufende2×-Wiedergabe, Pause ohne Hintergrundbuchung,
+   Neustart mit Teilfortschritt, eigene17Sekunden und Rasterpunktabschluss
+   verwenden denselben Writer. Vollständige Trigger-/Autonomy-Catch-up-Grenzen,
+   sehr große Routen, unbekannte UI-Antwortausgänge und physische Hostvarianten
+   bleiben unabhängig zu qualifizieren. Keine zusätzliche Zellinterpolation
+   oder erfundene Position zwischen authored Geometriegrenzen.
 3. **Gemeinsamer Steuerungskontext.** Positions-/Heading-/Raumtexte, Ziel, aktive
    Checks, Spuren/Verfolgung und NPC-Pendinggrenzen im vorhandenen Reisebereich
    erreichbar halten. Gruppenbildung/-teilung bleibt beim Live-/Rosterowner,
