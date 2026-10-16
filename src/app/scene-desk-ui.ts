@@ -1,10 +1,11 @@
 import {campaignLocalId} from '../features/campaign/campaign-contracts';
 import { worldNoteDocument } from "../features/world/world-notes";
 import type { Workspace, Result } from "./contracts";
-import type { DeskRef, DeskContent, SceneDesk } from "./scene-desk-contracts";
+import type { DeskRef, DeskContent, SceneDesk, SceneCreationInput, SceneCreationDraft } from "./scene-desk-contracts";
 import type {
   PreparationDraft,
   PreparationEdit,
+  PreparationCommand,
 } from "./preparation-contracts";
 import type { LiveScene } from "./live-contracts";
 import { newLocation } from "../features/location/location-schema";
@@ -58,6 +59,11 @@ export function initSceneDesk(
   creature = add;
   if (initialized) return;
   initialized = true;
+  el('desk-create-check').onclick=()=>void checkCreation();
+  el('desk-create-reload').onclick=()=>{if(!creationBusy&&!creationRead)void loadCreation();};
+  el('desk-create-edit').onclick=()=>{if(creationBusy||!creation||el('desk-create-edit').hidden)return;creation.command=null;creationVersion++;void keepCreation();el('desk-create-edit').hidden=true;el('desk-create-status').textContent='Eingabe prüfen · noch nicht angelegt.';creationControls();};
+  el('desk-create-form').addEventListener('input',()=>{if(creationBusy||creationRead||creation?.command)return;creation={input:creationInput(),command:null,writeId:crypto.randomUUID()};creationVersion++;if(creationTimer)clearTimeout(creationTimer);creationTimer=setTimeout(()=>{creationTimer=null;void keepCreation();},250);creationControls();el('desk-create-status').textContent='Eingabe wird gesichert…';});
+  el('desk-new-kind').addEventListener('change',creationControls);
   el("desk-search-form").onsubmit = (e) => {
     e.preventDefault();
     void search(false);
@@ -88,6 +94,7 @@ export function sceneDeskContext(
     return;
   }
   key = changed;
+  const creationLoad=loadCreation(),creationOwner=creationEpoch;
   editorEpoch++;version=0;savedVersion=0;saving=null;applying=null;
   request++;
   invalidateSearch();
@@ -102,7 +109,7 @@ export function sceneDeskContext(
   el("desk-results").replaceChildren();
   el("desk-pins").replaceChildren();
   el("desk-search-status").textContent = "";
-  if (workspace && current) void refresh();
+  if (workspace && current) void creationLoad.then(()=>{if(creationOwner===creationEpoch)void refresh();});
 }
 export async function refreshSceneDeskPins(id:string){if(scene?.id===id)await refresh(false);}
 async function refresh(openInitial=true) {
@@ -429,6 +436,7 @@ let applying:Promise<boolean>|null=null;
 export async function flushSceneDesk(narrative=true):Promise<boolean>{
   const current=editorOwner();
   if(applying){const ok=await applying;return ok&&current()?flushSceneDesk(narrative):false;}
+  if(!await keepCreation()||!current())return false;
   if(narrative&&!(await flushNarrative())||!current())return false;
   if(timer)clearTimeout(timer);
   if(!await keep()||!current())return false;
@@ -507,90 +515,71 @@ async function reloadContent(){
   dirty=false;draft=null;
   await open(c.ref);
 }
-async function create() {
-  if(!w||!scene)return;
-  const current=editorOwner(),token=w.token,id=scene.id,campaignId=w.campaign.id,locationId=scene.locationId,members=[...scene.members],
-    kind = el<HTMLSelectElement>("desk-new-kind").value,
-    name = el<HTMLInputElement>("desk-new-title").value,
-    notes = el<HTMLTextAreaElement>("desk-new-notes").value,
-    newId = crypto.randomUUID();
-  if(!await flushSceneDesk()||!current())return;
-  if (!name.trim()) throw new Error("Titel oder Name fehlt.");
-  let ref: DeskRef;
-  if (kind === "location") {
-    let document = newLocation(newId, name, "poi", [
-      crypto.randomUUID(),
-      crypto.randomUUID(),
-    ]);
-    document = {
-      ...document,
-      sections: document.sections.map((s, i) =>
-        i === 0 ? { ...s, markdown: notes } : s,
-      ),
-    };
-    unwrap(
-      await window.campaign.changePreparation({
-        commandId: crypto.randomUUID(),
-        campaignId,
-        token,
-        change: { kind: "location", expectedRevision: null, document },
-      }),
-    );
-    ref = { kind: "location", id: newId };
-  } else {
-    const note = {
-      version: 1 as const,
-      id: campaignLocalId(newId),
-      revision: 1,
-      kind: kind as "npc",
-      title: name,
-      readAloud: "",
-      gmNotes: notes,
-      relations: [],
-      creatureId: null,
-      deleted: false,
-    };
-    unwrap(
-      await window.campaign.changePreparation({
-        commandId: crypto.randomUUID(),
-        campaignId,
-        token,
-        change: {
-          kind: "note",
-          expectedRevision: null,
-          note: worldNoteDocument(note),
-        },
-      }),
-    );
-    if(!current())return;
-    if (kind === "quest" || kind === "rumor")
-      unwrap(
-        await window.campaign.executeProgress({
-          commandId: crypto.randomUUID(),
-          campaignId,
-          token,
-          action: {
-            kind: "narrative-state",
-            expectedRevision: 0,
-            expectedNoteRevision: 1,
-            state: {
-              noteId: newId,
-              revision: 0,
-              status: "open",
-              locationId,
-              contributors: kind === "quest" ? members : [],
-              poolXp: 0,
-              items: [],
-              awardId: null,
-            },
-          },
-        }),
-      );
-    ref = { kind: "note", id: newId };
-  }
-  if(!current()||!owns(token,id))return;
-  if(el<HTMLInputElement>("desk-new-title").value===name)el<HTMLInputElement>("desk-new-title").value="";
-  if(el<HTMLTextAreaElement>("desk-new-notes").value===notes)el<HTMLTextAreaElement>("desk-new-notes").value="";
-  await pin(ref, true);
-  tell("Kampagneninhalt angelegt und an diese Szene geheftet.");
+
+let creation:SceneCreationDraft|null=null,creationBusy=false,creationRead=false,creationEpoch=0,creationStored:string|null=null,creationVersion=0,creationSaved=0;
+let creationSaving:Promise<boolean>|null=null,creationTimer:ReturnType<typeof setTimeout>|null=null;
+function creationInput():SceneCreationInput{return{kind:el<HTMLSelectElement>('desk-new-kind').value as SceneCreationInput['kind'],name:el<HTMLInputElement>('desk-new-title').value,notes:el<HTMLTextAreaElement>('desk-new-notes').value,pin:el<HTMLInputElement>('desk-new-pin').checked,contributors:el<HTMLInputElement>('desk-new-contributors').checked};}
+function creationControls(){
+ const pending=!!creation?.command;
+ for(const id of ['desk-new-kind','desk-new-title','desk-new-notes','desk-new-pin','desk-new-contributors','desk-create-submit'])el<HTMLInputElement>(id).disabled=pending||creationBusy||creationRead;
+ el<HTMLButtonElement>('desk-create-reload').disabled=creationBusy||creationRead;
+ el('desk-create-check').hidden=!pending;el<HTMLButtonElement>('desk-create-check').disabled=creationBusy||creationRead;
+ el('desk-new-contributors-label').hidden=el<HTMLSelectElement>('desk-new-kind').value!=='quest';
+}
+function drawCreation(){
+ const input=creation?.input??{kind:'npc',name:'',notes:'',pin:true,contributors:false};
+ el<HTMLSelectElement>('desk-new-kind').value=input.kind;el<HTMLInputElement>('desk-new-title').value=input.name;el<HTMLTextAreaElement>('desk-new-notes').value=input.notes;el<HTMLInputElement>('desk-new-pin').checked=input.pin;el<HTMLInputElement>('desk-new-contributors').checked=input.contributors;
+ creationControls();
+}
+async function loadCreation(){
+ const epoch=++creationEpoch,owner=w,source=scene;creationBusy=false;creation=null;creationRead=!!owner&&!!source;creationStored=null;creationVersion=creationSaved=0;creationSaving=null;el('desk-create-reload').hidden=true;
+ if(creationTimer)clearTimeout(creationTimer);creationTimer=null;el('desk-create-edit').hidden=true;drawCreation();el('desk-create-status').textContent=creationRead?'Schnellanlage-Eingabe wird gelesen…':'';
+ if(!owner||!source)return;
+ try{const d=unwrap(await window.campaign.sceneCreationDraft(owner.token,source.id));if(epoch!==creationEpoch)return;creation=d;creationStored=d?.writeId??null;drawCreation();el('desk-create-status').textContent=d?.command?'Ausgang offen · Originalauftrag prüfen.':d?'Eingabe wieder geöffnet · noch nicht angelegt.':'';}
+ catch(e){if(epoch===creationEpoch){el('desk-create-reload').hidden=false;el('desk-create-status').textContent='Schnellanlage nicht lesbar. '+(e as Error).message;tell(el('desk-create-status').textContent!,true);}}
+ finally{if(epoch===creationEpoch){creationRead=false;creationControls();}}
+}
+async function keepCreation():Promise<boolean>{
+ if(creationTimer)clearTimeout(creationTimer);creationTimer=null;
+ if(creationRead)return false;if(!w||!scene||creationVersion===creationSaved)return true;
+ const epoch=creationEpoch;
+ if(creationSaving){if(!await creationSaving||epoch!==creationEpoch)return false;return keepCreation();}
+ const owner=w,source=scene,version=creationVersion,value=creation?{...structuredClone(creation),writeId:crypto.randomUUID()}:null,expected=creationStored;
+ const task=Promise.resolve().then(async()=>{try{unwrap(await window.campaign.keepSceneCreationDraft(owner.token,source.id,value,expected));if(epoch!==creationEpoch)return false;creationStored=value?.writeId??null;if(creation)creation.writeId=value!.writeId;creationSaved=version;if(!creation?.command)el('desk-create-status').textContent='Eingabe gesichert · noch nicht angelegt.';return true;}catch(e){if(epoch===creationEpoch){el('desk-create-reload').hidden=false;el('desk-create-status').textContent='Eingabe nicht gesichert. '+(e as Error).message;tell(el('desk-create-status').textContent!,true);}return false;}});creationSaving=task;
+ try{return await task;}finally{if(creationSaving===task)creationSaving=null;}
+}
+async function finishCreation(command:PreparationCommand,input:SceneCreationInput,epoch:number){
+ if(epoch!==creationEpoch||!w||!scene)return;
+ unwrap(await window.campaign.keepSceneCreationDraft(w.token,scene.id,null,creationStored));if(epoch!==creationEpoch)return;
+ creation=null;creationStored=null;creationSaved=++creationVersion;
+ if(el<HTMLInputElement>('desk-new-title').value===input.name)el<HTMLInputElement>('desk-new-title').value='';if(el<HTMLTextAreaElement>('desk-new-notes').value===input.notes)el<HTMLTextAreaElement>('desk-new-notes').value='';el<HTMLInputElement>('desk-new-pin').checked=true;el<HTMLInputElement>('desk-new-contributors').checked=false;
+ const message=input.pin?'Kampagneninhalt angelegt und an diese Szene geheftet.':'Kampagneninhalt angelegt · ohne Szenenbindung.';
+ el('desk-create-status').textContent=message;el('desk-create-edit').hidden=true;tell(message);creationControls();
+ await refresh(false);if(epoch!==creationEpoch)return;
+ await open(command.change.kind==='location'?{kind:'location',id:command.change.document.id}:{kind:'note',id:(command.change as Extract<PreparationEdit,{kind:'note'}>).note.id});
+}
+async function checkCreation(){
+ const owner=creation,command=owner?.command,epoch=creationEpoch,token=w?.token;if(!command||!owner||!token||creationBusy)return;creationBusy=true;creationControls();
+ try{const r=unwrap(await window.campaign.reconcilePreparationContent(command,token));if(epoch!==creationEpoch)return;
+  if(r.outcome==='applied')await finishCreation(command,owner.input,epoch);
+  else if(r.outcome==='not-applied'){el('desk-create-status').textContent='Originalauftrag wurde nicht ausgeführt. Eingabe weiterbearbeiten und bewusst erneut anlegen.';el('desk-create-edit').hidden=false;}
+  else el('desk-create-status').textContent='Identität inzwischen verändert. Der Originalauftrag bleibt gesichert; Inhalt über die Suche prüfen.';
+ }catch(e){if(epoch===creationEpoch)el('desk-create-status').textContent='Auftrag noch nicht prüfbar. '+(e as Error).message;}
+ finally{if(epoch===creationEpoch){creationBusy=false;creationControls();}}
+}
+async function create(){
+ if(!w||!scene||creationBusy||creationRead||creation?.command)return;
+ const epoch=creationEpoch,owner=w,input=creationInput();if(!input.name.trim())throw new Error('Titel oder Name fehlt.');
+ creation={input,command:null,writeId:crypto.randomUUID()};creationVersion++;creationBusy=true;creationControls();
+ try{
+  if(!await flushSceneDesk()||epoch!==creationEpoch||!desk||!scene)return;
+  const source=scene,newId=crypto.randomUUID();let change:PreparationEdit;
+  if(input.kind==='location'){const base=newLocation(newId,input.name,'poi',[crypto.randomUUID(),crypto.randomUUID()]);change={kind:'location',expectedRevision:null,document:{...base,sections:base.sections.map((s,i)=>i===0?{...s,markdown:input.notes}:s)}};}
+  else change={kind:'note',expectedRevision:null,note:worldNoteDocument({version:1,id:campaignLocalId(newId),revision:1,kind:input.kind,title:input.name,readAloud:'',gmNotes:input.notes,relations:[],creatureId:null,deleted:false})};
+  const command:PreparationCommand={commandId:crypto.randomUUID(),token:owner.token,campaignId:owner.campaign.id,change,sceneCreation:{sceneId:source.id,expectedSceneRevision:source.revision,expectedMembershipRevision:source.membershipRevision,expectedDeskRevision:desk.revision,pin:input.pin,contributors:input.kind==='quest'&&input.contributors?[...source.members]:[]}};
+  creation={input,command,writeId:crypto.randomUUID()};creationVersion++;
+  if(!await keepCreation()||epoch!==creationEpoch)return;
+  el('desk-create-status').textContent='Inhalt wird angelegt…';unwrap(await window.campaign.changePreparationContent(command));if(epoch===creationEpoch)await finishCreation(command,input,epoch);
+ }catch(e){if(epoch===creationEpoch){el('desk-create-status').textContent=creation?.command?'Ausgang prüfen · keine erneute Anlage senden. '+(e as Error).message:'Anlage nicht abgeschlossen. '+(e as Error).message;tell(el('desk-create-status').textContent!,true);}}
+ finally{if(epoch===creationEpoch){creationBusy=false;creationControls();}}
 }

@@ -34,7 +34,11 @@ export interface SceneDesk {
   pins: DeskEntry[];
   place: DeskEntry | null;
 }
+export interface SceneCreationInput {kind:'npc'|'faction'|'quest'|'rumor'|'location';name:string;notes:string;pin:boolean;contributors:boolean}
+export interface SceneCreationDraft {writeId:string;input:SceneCreationInput;command:PreparationCommand|null}
 export interface SceneDeskAPI {
+  sceneCreationDraft(token:string,sceneId:string):Promise<Result<SceneCreationDraft|null>>;
+  keepSceneCreationDraft(token:string,sceneId:string,draft:SceneCreationDraft|null,expected:string|null):Promise<Result<void>>;
   sceneDesk(token: string, sceneId: string): Promise<Result<SceneDesk>>;
   searchDesk(
     token: string,

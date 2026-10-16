@@ -1,3 +1,5 @@
+import type { PreparationCommand } from '../preparation-contracts';
+import {saveNarrative,validateNarrativeState} from './narrative';
 import {documentReferences} from '../text-references';
 import {searchTextReferences,referenceEntry} from './text-references';
 import { createHash } from "node:crypto";
@@ -6,6 +8,7 @@ import type {
   DeskEntry,
   DeskContent,
   SceneDesk,
+  SceneCreationDraft,
 } from "../scene-desk-contracts";
 import { readLiveScene } from "./live";
 import { worldNoteDocument } from "../../features/world/world-notes";
@@ -15,7 +18,8 @@ import { readItemDefinition, readItemDefinitions } from "./item-definitions";
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 export function installSceneDesk(db: any) {
   db.exec(
-    `CREATE TABLE IF NOT EXISTS scene_desk(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,scene_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;`,
+    `CREATE TABLE IF NOT EXISTS scene_creation_draft(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,scene_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
+CREATE TABLE IF NOT EXISTS scene_desk(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,scene_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;`,
   );
 }
 function decoded(r: any) {
@@ -137,6 +141,7 @@ export function validateSceneDesk(db: any) {
     throw new Error("Szenentischspeicher fehlt.");
   }
   for(const row of db.prepare('SELECT * FROM scene_desk').iterate())checkedState(row);
+  if(db.prepare("SELECT 1 FROM sqlite_schema WHERE name='scene_creation_draft'").get())for(const row of db.prepare('SELECT * FROM scene_creation_draft').iterate())checkedCreationDraft(decoded(row),row.campaign_id,row.scene_id);
 }
 export function readSceneDesk(
   db: any,
@@ -282,3 +287,37 @@ export function searchDesk(
     next: rows.length > 40 ? offset + 40 : null,
   };
 }
+
+/** Runs inside the existing preparation transaction and receipt. */
+export function applySceneCreation(db:any,cam:string,command:PreparationCommand){
+ const c=command.sceneCreation;if(c===undefined)return;
+ const change=command.change;
+ if(!c||typeof c.sceneId!=='string'||!c.sceneId||!Number.isSafeInteger(c.expectedSceneRevision)||c.expectedSceneRevision<0||!Number.isSafeInteger(c.expectedMembershipRevision)||c.expectedMembershipRevision<0||!Number.isSafeInteger(c.expectedDeskRevision)||c.expectedDeskRevision<0||typeof c.pin!=='boolean'||!Array.isArray(c.contributors)||c.contributors.some(id=>typeof id!=='string'||!id)||new Set(c.contributors).size!==c.contributors.length||command.draftWriteId!==undefined||!['note','location'].includes(change.kind)||change.expectedRevision!==null)throw new Error('Szenenanlage benötigt einen neuen Inhalt und einen gültigen Szenenkontext.');
+ const scene=readLiveScene(db,cam,c.sceneId);
+ if(scene.retired||scene.revision!==c.expectedSceneRevision||scene.membershipRevision!==c.expectedMembershipRevision||c.contributors.some(id=>!scene.members.includes(id)))throw new Error('Gruppe inzwischen geändert. Eingabe prüfen und erneut anlegen.');
+ if(change.kind==='note'){
+  if(!['npc','faction','quest','rumor'].includes(change.note.kind))throw new Error('Diese Inhaltsart wird außerhalb der Szene angelegt.');
+  if(change.note.kind!=='quest'&&c.contributors.length)throw new Error('Mitwirkende gehören zu einer Quest.');
+  if(change.note.kind==='quest'||change.note.kind==='rumor'){
+   const state={noteId:change.note.id,revision:1,status:'open' as const,locationId:c.pin?scene.locationId:null,contributors:c.contributors,poolXp:0,items:[],awardId:null};
+   validateNarrativeState(db,cam,state);saveNarrative(db,cam,state);
+  }
+ }else if(c.contributors.length)throw new Error('Mitwirkende gehören zu einer Quest.');
+ if(c.pin)pinSceneDesk(db,cam,c.sceneId,c.expectedDeskRevision,{kind:change.kind==='note'?'note':'location',id:change.kind==='note'?change.note.id:change.kind==='location'?change.document.id:''},true);
+}
+
+function checkedCreationDraft(d:SceneCreationDraft,cam:string,sceneId:string){
+ const i=d?.input,c=d?.command;
+ if(!d||typeof d.writeId!=='string'||!d.writeId||!i||!['npc','faction','quest','rumor','location'].includes(i.kind)||typeof i.name!=='string'||i.name.length>1000||typeof i.notes!=='string'||i.notes.length>2000000||typeof i.pin!=='boolean'||typeof i.contributors!=='boolean'||c!==null&&(!c||c.campaignId!==cam||c.sceneCreation?.sceneId!==sceneId||typeof c.commandId!=='string'||!c.commandId||!['note','location'].includes(c.change?.kind)||c.change.expectedRevision!==null))throw new Error('Schnellanlage-Eingabe beschädigt oder falsch zugeordnet.');
+ return d;
+}
+export function readSceneCreationDraft(db:any,cam:string,sceneId:string):SceneCreationDraft|null{
+ readLiveScene(db,cam,sceneId);const row=db.prepare('SELECT * FROM scene_creation_draft WHERE campaign_id=? AND scene_id=?').get(cam,sceneId);return row?checkedCreationDraft(decoded(row),cam,sceneId):null;
+}
+export function keepSceneCreationDraft(db:any,cam:string,sceneId:string,draft:SceneCreationDraft|null,expected:string|null){return db.transaction(()=>{
+ const scene=readLiveScene(db,cam,sceneId),old=readSceneCreationDraft(db,cam,sceneId);
+ if(!draft&&!old)return;
+ if(scene.retired||(old?.writeId??null)!==expected)throw new Error('Schnellanlage-Eingabe inzwischen verändert. Eigene Eingabe bleibt offen.');
+ if(draft){checkedCreationDraft(draft,cam,sceneId);const payload=JSON.stringify(draft);db.prepare('INSERT INTO scene_creation_draft VALUES(?,?,?,?) ON CONFLICT(campaign_id,scene_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(cam,sceneId,payload,hash(payload));}
+ else db.prepare('DELETE FROM scene_creation_draft WHERE campaign_id=? AND scene_id=?').run(cam,sceneId);
+ }).immediate();}

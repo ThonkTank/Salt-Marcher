@@ -12,6 +12,8 @@ async function until(check){for(let i=0;i<80&&!check();i++)await tick();assert.o
 function fixture(t){
  const {window}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={};
  for(const key of ['window','document','setTimeout','clearTimeout'])previous[key]=globalThis[key];
+ for(const select of window.document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.querySelector('option')?.value??'',writable:true,configurable:true});
+ const storage=new Map();
  const timers=new Map();let timerId=0;
  globalThis.window=window;globalThis.document=window.document;globalThis.setTimeout=fn=>{timers.set(++timerId,fn);return timerId;};globalThis.clearTimeout=id=>timers.delete(id);
  const ids={alpha:randomUUID(),beta:randomUUID()},notes=new Map(Object.entries(ids).map(([key,id])=>[id,{version:1,id,revision:1,kind:'npc',title:key,readAloud:'Original public',gmNotes:key+' GM',relations:[],creatureId:null,deleted:false}])),writes=[],changes=[],errors=[];
@@ -19,19 +21,23 @@ function fixture(t){
  window.campaign={
   sceneDesk:async(token,id)=>ok({sceneId:id,revision:0,place:null,pins:[{ref:{kind:'note',id:ids[token]},title:token,label:'NPC'}]}),
   deskContent:async(_token,ref)=>{const note=structuredClone(notes.get(ref.id));return ok({ref,title:note.title,label:'NPC',revision:note.revision,note});},
+  sceneCreationDraft:async(token,id)=>ok(structuredClone(storage.get(token+':'+id)??null)),
+  keepSceneCreationDraft:async(token,id,d,expected)=>{const key=token+':'+id;assert.equal(storage.get(key)?.writeId??null,expected);if(d)storage.set(key,structuredClone(d));else storage.delete(key);return ok();},
   preparationDraft:async()=>ok(null),
   keepDeskDraft:async(token,d,expected)=>{writes.push({token,d:structuredClone(d),expected});if(holding){const p=holding;holding=null;return p.promise;}return ok();},
   changePreparation:async c=>{changes.push(structuredClone(c));const note=notes.get(c.change.note.id);if(note){note.revision++;Object.assign(note,c.change.note,{revision:note.revision});}else notes.set(c.change.note.id,structuredClone(c.change.note));return ok();},
+  changePreparationContent:async c=>{await window.campaign.changePreparation(c);const result=await window.campaign.deskContent(c.token,{kind:'note',id:c.change.note.id});return result;},
+  reconcilePreparationContent:async()=>ok({outcome:'not-applied',targetChanged:false}),
   discardPreparationDraft:async()=>ok(),
   pinSceneDesk:async(_token,id,_revision,ref)=>ok({sceneId:id,revision:1,place:null,pins:[{ref,title:notes.get(ref.id)?.title??"Created",label:"NPC"}]}),
  };
  const file=require.resolve('../.build/desk-owner-dom.cjs');delete require.cache[file];const ui=require(file);
  ui.initSceneDesk((text,error)=>errors.push({text,error}),async()=>{},async()=>{});
- const activate=token=>ui.sceneDeskContext({token,campaign:{id:token}},{id:'scene-'+token,locationId:null,members:[]});
+ const activate=token=>ui.sceneDeskContext({token,campaign:{id:token}},{id:'scene-'+token,revision:1,membershipRevision:1,locationId:null,members:[]});
  const title=()=>window.document.querySelector('#desk-fields input');
  const edit=text=>{const input=title();input.value=text;input.oninput();};
  t.after(()=>{ui.sceneDeskContext(null,null);for(const [key,value]of Object.entries(previous))globalThis[key]=value;});
- return{ui,ids,writes,changes,errors,timers,activate,title,edit,hold:()=>{const p=deferred();holding=p;return p;},el:id=>window.document.getElementById(id)};
+ return{ui,ids,writes,changes,errors,timers,storage,activate,title,edit,hold:()=>{const p=deferred();holding=p;return p;},el:id=>window.document.getElementById(id)};
 }
 
 test('late desk save cannot block or adopt the new campaign editor',async t=>{
@@ -71,7 +77,7 @@ test('creation cannot move to another campaign during its prerequisite save',asy
  const x=fixture(t);x.activate('alpha');await until(()=>x.title()?.value==='alpha');x.edit('Alpha edit');
  Object.defineProperty(x.el('desk-new-kind'),'value',{value:'npc',writable:true});x.el('desk-new-title').value='Alpha creation';const pending=x.hold();
  x.el('desk-create-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1);x.activate('beta');await until(()=>x.title()?.value==='beta');pending.resolve(ok());await tick();await tick();
- assert.equal(x.changes.length,0);assert.equal(x.el('desk-new-title').value,'Alpha creation');
+ assert.equal(x.changes.length,0);assert.equal(x.el('desk-new-title').value,'');x.activate('alpha');await until(()=>x.el('desk-new-title').value==='Alpha creation');
 });
 
 test('a foreign revision read after confirmed saving does not become the next write basis',async t=>{
@@ -92,4 +98,25 @@ test('a pinned NPC is readable before editing and the original fields still save
  assert.equal(editing.open,false);assert.equal(preview.hidden,false);assert.match(preview.textContent,/Original public.*alpha GM/);assert.equal(x.writes.length,0);assert.equal(x.changes.length,0);
  editing.open=true;editing.ontoggle();assert.equal(preview.hidden,true);x.edit('Nera');const notes=x.el('desk-fields').querySelectorAll('textarea')[1];notes.value='Hat den Zöllner übergesetzt';notes.oninput();editing.open=false;editing.ontoggle();
  assert.match(preview.textContent,/Hat den Zöllner übergesetzt/);assert.match(preview.textContent,/noch nicht übernommen/);assert.equal(await x.ui.flushSceneDesk(),true);assert.equal(x.changes.length,1);assert.equal(x.changes[0].change.note.title,'Nera');assert.equal(x.changes[0].change.note.gmNotes,'Hat den Zöllner übergesetzt');
+});
+
+
+test('quick creation defaults to pinning, opt-out survives context return and contributors require explicit choice',async t=>{
+ const x=fixture(t);x.activate('alpha');await until(()=>x.title()?.value==='alpha');
+ assert.equal(x.el('desk-new-pin').checked,true);
+ x.el('desk-new-pin').checked=false;x.el('desk-new-title').value='Loose lead';x.el('desk-new-notes').value='  Verbatim\r\n';x.el('desk-create-form').dispatchEvent(new window.Event('input'));
+ assert.equal(await x.ui.flushSceneDesk(),true);x.activate('beta');await until(()=>x.title()?.value==='beta');assert.equal(x.el('desk-new-title').value,'');
+ x.activate('alpha');await until(()=>x.title()?.value==='alpha');assert.equal(x.el('desk-new-title').value,'Loose lead');assert.equal(x.el('desk-new-pin').checked,false);
+ x.el('desk-create-form').onsubmit({preventDefault(){}});await until(()=>x.changes.length===1);
+ assert.equal(x.changes[0].sceneCreation.pin,false);assert.deepEqual(x.changes[0].sceneCreation.contributors,[]);assert.equal(x.changes[0].change.note.gmNotes,'  Verbatim\r\n');
+});
+
+test('lost quick creation reply keeps exact command, checks receipt and does not send another creation',async t=>{
+ const x=fixture(t);x.activate('alpha');await until(()=>x.title()?.value==='alpha');x.el('desk-new-title').value='Nera';let sent=0,checked;
+ const original=window.campaign.changePreparationContent;window.campaign.changePreparationContent=async c=>{sent++;await original(c);throw Error('Reply lost');};
+ x.el('desk-create-form').onsubmit({preventDefault(){}});await until(()=>x.el('desk-create-status').textContent.includes('Ausgang prüfen'));assert.equal(x.el('desk-create-submit').disabled,true);
+ const saved=[...x.storage.values()][0];assert.equal(saved.command.change.note.title,'Nera');
+ x.activate('beta');await until(()=>x.title()?.value==='beta');x.activate('alpha');await until(()=>x.title()?.value==='alpha');assert.equal(x.el('desk-create-check').hidden,false);
+ window.campaign.reconcilePreparationContent=async(c,token)=>{checked=c;assert.equal(token,'alpha');return ok({outcome:'applied',targetChanged:false});};x.el('desk-create-check').onclick();await until(()=>x.el('desk-create-status').textContent.includes('angelegt und'));
+ assert.deepEqual(checked,saved.command);assert.equal(sent,1);assert.equal(x.el('desk-new-title').value,'');assert.equal(x.el('desk-create-check').hidden,true);
 });

@@ -46,3 +46,29 @@ test('pins reopen and copy independently while archived content remains readable
 test('unavailable pins retain their identity and can be removed without blocking backup',async t=>{
  const x=fixture(t),ref={kind:'creature',id:'unavailable-source-id'};payload(x,[ref]);const desk=x.store.sceneDesk(x.w.token,x.scene.id);assert.equal(desk.pins[0].unavailable,true);assert.deepEqual(desk.pins[0].ref,ref);await x.store.backup(path.join(x.root,'unavailable-safe.sqlite'));assert.equal(x.store.pinSceneDesk(x.w.token,x.scene.id,desk.revision,ref,false).pins.length,0);
 });
+
+function creation(x,kind='quest',pin=true){const scene=x.store.liveScene(x.w.token,x.scene.id);return{commandId:randomUUID(),token:x.w.token,campaignId:x.cam.id,change:{kind:'note',expectedRevision:null,note:{...x.note,id:randomUUID(),kind,title:'Spur',gmNotes:'  Unverändert\r\n'}},sceneCreation:{sceneId:scene.id,expectedSceneRevision:scene.revision,expectedMembershipRevision:scene.membershipRevision,expectedDeskRevision:x.store.sceneDesk(x.w.token,scene.id).revision,pin,contributors:[]}};}
+test('quick scene creation commits note, open narrative and default pin under one replayable receipt',t=>{
+ const x=fixture(t),c=creation(x),id=c.change.note.id;x.store.changePreparationContent(c);
+ assert.equal(x.store.narrative(x.w.token,id).state.status,'open');assert.equal(x.store.narrative(x.w.token,id).state.revision,1);assert.deepEqual(x.store.narrative(x.w.token,id).state.contributors,[]);
+ assert.equal(x.store.sceneDesk(x.w.token,x.scene.id).pins.filter(p=>p.ref.id===id).length,1);assert.equal(x.store.reconcilePreparationContent(c,x.w.token).outcome,'applied');x.store.changePreparationContent(c);
+ assert.equal(x.store.sceneDesk(x.w.token,x.scene.id).pins.filter(p=>p.ref.id===id).length,1);assert.equal(x.store.deskContent(x.w.token,{kind:'note',id}).note.gmNotes,'  Unverändert\r\n');
+ assert.throws(()=>x.store.changePreparationContent({...c,sceneCreation:{...c.sceneCreation,pin:false}}),/anders/);
+});
+test('scene attachment opt-out creates independent name-only content without changing pins',t=>{
+ const x=fixture(t),before=x.store.sceneDesk(x.w.token,x.scene.id),c=creation(x,'rumor',false);c.change.note.gmNotes='';x.store.changePreparationContent(c);
+ assert.deepEqual(x.store.sceneDesk(x.w.token,x.scene.id),before);assert.equal(x.store.narrative(x.w.token,c.change.note.id).state.locationId,null);
+});
+test('stale scene or pin context rolls back the whole quick creation and its receipt',t=>{
+ const x=fixture(t);for(const field of ['expectedSceneRevision','expectedMembershipRevision','expectedDeskRevision']){const c=creation(x);c.sceneCreation[field]++;assert.throws(()=>x.store.changePreparationContent(c));assert.equal(x.store.db.prepare('SELECT 1 FROM world_note WHERE id=?').get(c.change.note.id),undefined);assert.equal(x.store.db.prepare('SELECT 1 FROM narrative_state WHERE note_id=?').get(c.change.note.id),undefined);assert.equal(x.store.db.prepare('SELECT 1 FROM receipt WHERE command_id=?').get(c.commandId),undefined);}
+});
+
+test('quick creation working draft and pending receipt survive independent transfer and erase with the campaign',async t=>{
+ const x=fixture(t),c=creation(x),draft={writeId:randomUUID(),input:{kind:'quest',name:c.change.note.title,notes:c.change.note.gmNotes,pin:true,contributors:false},command:c};
+ x.store.keepSceneCreationDraft(x.w.token,x.scene.id,draft,null);x.store.changePreparationContent(c);
+ const snapshot=path.join(x.root,'working.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const target=new CampaignStore(path.join(x.root,'working-copy.sqlite'));
+ try{const copied=target.acceptCampaignSnapshot(snapshot,'Copy',{}),w=target.activate(copied.id),scene=target.live(w.token).scene,d=target.sceneCreationDraft(w.token,scene.id);assert(d);assert.notEqual(d.command.commandId,c.commandId);assert.equal(d.command.campaignId,copied.id);assert.equal(d.command.sceneCreation.sceneId,scene.id);assert.equal(d.input.notes,draft.input.notes);assert.equal(target.reconcilePreparationContent(d.command,w.token).outcome,'applied');target.keepSceneCreationDraft(w.token,scene.id,null,d.writeId);assert.equal(target.sceneCreationDraft(w.token,scene.id),null);}
+ finally{target.close();}
+ const before=x.store.sceneCreationDraft(x.w.token,x.scene.id);assert.equal(before.command.commandId,c.commandId);
+ const revision=x.store.db.prepare('SELECT revision FROM campaign_lifecycle WHERE campaign_id=?').get(x.cam.id).revision;x.store.trashCampaign({commandId:randomUUID(),id:x.cam.id,expectedRevision:revision,trashed:true});x.store.eraseCampaign({commandId:randomUUID(),id:x.cam.id,expectedRevision:revision+1,confirmName:x.cam.name});assert.equal(x.store.db.prepare('SELECT COUNT(*) n FROM scene_creation_draft WHERE campaign_id=?').get(x.cam.id).n,0);
+});
