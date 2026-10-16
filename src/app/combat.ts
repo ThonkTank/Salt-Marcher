@@ -1,3 +1,4 @@
+import {combatMobs,combatMobRow} from './combat-mob-ui';
 import {CombatGroupPicker,sceneGroupDragType,sceneGroupTray} from './combat-group-ui';
 import {CombatInitiativePanel} from './combat-initiative-ui';
 import {CombatHitPanel} from './combat-hit-ui';
@@ -32,6 +33,7 @@ export function hasCombatCondition(text:string,label:string,source:string){const
 export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
 const groupPicker=new CombatGroupPicker();
 let workspace: Workspace | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
+const expandedMobs=new Set<string>();
 let resolution:CombatResolutionPanel|null=null;
 let hitPanel:CombatHitPanel|null=null;
 let areaPanel:CombatAreaPanel|null=null;
@@ -51,7 +53,7 @@ let pendingSave:PendingSave|null=null,savePending=false;
 export function pendingRollStillValid(pending:{combatId:string;attackerId:string}|null,combat:CombatView['combat']){return !!pending&&!!combat&&editableCombat(combat)&&pending.combatId===combat.id&&combat.participants.some(participant=>participant.id===pending.attackerId);}
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
-function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){groupPicker.reset();reinforcementRequest++;reinforcementBusy=false;reinforcementResults=[];get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
+function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){expandedMobs.clear();groupPicker.reset();reinforcementRequest++;reinforcementBusy=false;reinforcementResults=[];get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
@@ -109,7 +111,7 @@ export function combatContext(next: Workspace | null, current: LiveScene | null,
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
   get('combat-panel').hidden = !current;
-  if (changed) { groupPicker.reset();const tray=get<HTMLDetailsElement>('combat-scene-groups');if(tray){tray.open=false;get('combat-scene-group-cards').replaceChildren();}closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
+  if (changed) { expandedMobs.clear();groupPicker.reset();const tray=get<HTMLDetailsElement>('combat-scene-groups');if(tray){tray.open=false;get('combat-scene-group-cards').replaceChildren();}closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
   else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
   resolution?.context(workspace,scene,view?.combat??null);
 }
@@ -361,12 +363,20 @@ function render() {
   resolution?.context(workspace,scene,combat??null);
   get('combat-final-notes').hidden = !terminal; get('combat-final-notes').textContent = combat?.notes ?? '';
   const body = get('combat-rows'); body.replaceChildren();
-  for (const p of combat ? combatOrder(combat) : []) {
-    const tr = document.createElement('tr'); tr.dataset.participantId = p.id;
+  const mobs=combat?combatMobs(combat):[],drawn=new Set<string>(),ownerToken=workspace?.token,ownerGeneration=generation;
+  const mobByMember=new Map(mobs.flatMap(mob=>mob.members.map(actor=>[actor.id,mob] as const)));
+  const current=()=>workspace?.token===ownerToken&&generation===ownerGeneration&&view?.combat?.id===combat?.id&&view?.combat?.revision===combat?.revision&&!blocked();
+  const openHealth=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;const target=get<HTMLInputElement>('fighter-amount');if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'center'});}})();};
+  const order=combat?combatOrder(combat):[],turnIndex=combat?.phase==='running'?order.findIndex(p=>p.id===combat.turnId):-1;
+  for (const p of order) {
+    const mob=mobByMember.get(p.id);
+    if(mob&&!drawn.has(mob.id)){drawn.add(mob.id);body.append(combatMobRow(mob,combat!,{expanded:expandedMobs.has(mob.id),selected,current,choose:id=>{void chooseFighter(id);},health:openHealth,initiative:id=>{void initiativePanel?.open(id);},toggle:()=>{if(expandedMobs.has(mob.id))expandedMobs.delete(mob.id);else expandedMobs.add(mob.id);render();[...get('combat-rows').querySelectorAll<HTMLElement>('[data-mob-id]')].find(row=>row.dataset.mobId===mob.id)?.querySelector<HTMLButtonElement>('.combat-mob-toggle')?.focus({preventScroll:true});}}));}
+
+    const tr = document.createElement('tr'); tr.dataset.participantId = p.id;tr.hidden=!!mob&&!expandedMobs.has(mob.id);if(mob)tr.dataset.mobMember=mob.id;if(turnIndex>=0&&order.indexOf(p)<turnIndex)tr.classList.add('completed-turn');
     if (p.id === combat!.turnId && combat!.phase === 'running') tr.classList.add('current-turn');
     const name = document.createElement('td'), choose = document.createElement('button');
     choose.textContent = p.name;choose.title=p.name; choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
-    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; tag.title=tag.textContent??'';tag.textContent=p.characterId?'Party':combat!.participants.filter(other=>other.groupId===p.groupId).length>1?'gemeinsam':'einzeln';if(p.groupName)tag.textContent=p.groupName;tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); if(!p.characterId&&p.role)tag.textContent={friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]+' · '+tag.textContent;name.append(tag); tr.append(name);
+    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; tag.title=tag.textContent??'';tag.textContent=p.characterId?'Party':combat!.participants.filter(other=>other.groupId===p.groupId).length>1?'gemeinsam':'einzeln';if(p.groupName)tag.textContent=p.groupName;tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); if(!p.characterId&&p.role)tag.textContent={friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]+' · '+tag.textContent;if(turnIndex>=0&&order.indexOf(p)<turnIndex)tag.textContent+=' · Zug beendet';name.append(tag); tr.append(name);
     const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
     for (const [index,text] of [String(p.initiative), String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:'',p.timedEffects?.map(effect=>effect.name+' '+effect.remaining+'R').join(', ')].filter(Boolean).join(' · ') || '—'].entries()) {
       const td = document.createElement('td');
@@ -389,7 +399,7 @@ function render() {
   renderPartyCandidates();renderEditor();renderAttackEffect();renderSaveEffect();renderDamageEffect();renderConcentrationEffect();lock();
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
 }
-function renderSelection() { for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
+function renderSelection() { for(const button of get('combat-rows').querySelectorAll<HTMLButtonElement>('.combat-mob-card button[aria-pressed]'))button.setAttribute('aria-pressed',String(button.dataset.mobFrontId===selected));for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr[data-participant-id]')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
 export const deferLegendaryCost=(kind:CreatureRollPreset['kind'])=>kind==='attack'||kind==='save'||kind==='check';
 function legendaryControl(source:Creature,p:Combatant,action:CreatureAction){if(!isLegendaryAction(source,action))return null;const points=p.legendaryActions,cost=legendaryActionCost(action),combat=view?.combat,running=combat?.phase==='running',ownTurn=running&&combat.turnId===p.id,used=running&&points?.lastUsedRound===combat.round&&points.lastUsedTurnId===combat.turnId;return{disabled:blocked()||!running||ownTurn||used||!points||points.remaining<cost,note:!running?'Ab Kampfbeginn verfügbar':!points?'Ab dem nächsten eigenen Zug verfügbar':ownTurn?'Nicht im eigenen Zug':used?'In diesem Zug bereits eingesetzt':points.remaining+' / '+points.maximum+' Punkte · kostet '+cost};}
 async function spendLegendary(source:Creature,p:Combatant,action:CreatureAction){return !isLegendaryAction(source,action)||await execute({kind:'legendary-action',participantId:p.id,actionId:action.id,cost:legendaryActionCost(action)});}
