@@ -6,7 +6,7 @@ export type Terrain='plains'|'forest'|'hills'|'mountains'|'water'|'marsh'|'deser
 export type Climate='temperate'|'cold'|'arid'|'tropical';
 export interface Hex {q:number;r:number}
 export interface AtlasCell extends Hex {access?:HexAccess;level:number;terrain:Terrain;elevationM:number;climate:Climate|null;road:boolean;river:boolean;label:string;faction:string;interrupt:string}
-export interface AtlasMap {id:string;revision:number;name:string;hexMeters:number;climate:Climate;seed:string;cells:AtlasCell[]}
+export interface AtlasMap {id:string;revision:number;name:string;hexMeters:number;climate:Climate;seed:string;metricVersion?:number;landscape?:import("./atlas-landscape").LandscapeRecord[];cells:AtlasCell[]}
 export interface MarkerPresentation {title:string;symbol:string;size:number;labelPosition:'above'|'below'|'right'|'hidden';curve:number}
 export interface AtlasPlace extends Hex {mapId:string;locationId:string;revision:number;name:string;trashed:boolean;presentation?:MarkerPresentation;presentationRevision?:number}
 export interface FantasyCalendar {revision:number;name:string;startYear:number;daySeconds:number;months:{name:string;days:number}[];weekdays:string[]}

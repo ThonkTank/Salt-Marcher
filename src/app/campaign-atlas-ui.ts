@@ -1,3 +1,6 @@
+import {atlasRegionSVG} from "./atlas-region-export";
+import {LandscapeWorkbench} from "./atlas-landscape-ui";
+import {earthView} from "./atlas-landscape";
 import { appendRoomNumber } from "./room-number-label";
 import { atlasPNG, publicAtlasSVG } from "./campaign-atlas-export";
 import { journeyPlayback } from "./journey-playback";
@@ -27,7 +30,7 @@ import type {
   AtlasBinding,
 } from "./campaign-atlas-contracts";
 import type { Workspace, Point, Room } from "./contracts";
-import { terrainColors, terrainNames, cellAt } from "./world-model";
+import { terrainNames, cellAt } from "./world-model";
 import { citySvg, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
 import { roomPath, elementSvg } from "./drawing-model";
@@ -68,6 +71,7 @@ export class CampaignAtlasWorkbench {
   readonly root = document.createElement("section");
   private svg: SVGSVGElement;
   private camera: PassiveMapCanvas;
+  private landscape: LandscapeWorkbench;
   private data: CampaignAtlas | null = null;
   private owner: Workspace | null = null;
   private request = 0;
@@ -142,14 +146,14 @@ export class CampaignAtlasWorkbench {
       .map(([id, title]) => `<option value="${id}">${title}</option>`)
       .join(
         "",
-      )}</select></label><label>Hexstufe<select id="atlas-hex-level">${Array.from({ length: 13 }, (_, i) => `<option value="${i}">${i === 0 ? "Lokale Hexes" : "Stufe " + i}</option>`).join("")}</select></label><label>Name<input id="atlas-new-name" value="Neue Stadt"></label><div id="atlas-create-tools"><button id="atlas-create-city">Stadt hier anlegen</button><button id="atlas-create-dungeon">Dungeon hier anlegen</button></div><button id="atlas-building-interior" hidden>Innenraumhülle anlegen</button><label id="atlas-floor-field">Geschoss<select id="atlas-floor"></select></label><label><input id="atlas-roofs" type="checkbox" checked> Dächer anzeigen</label><label><input id="atlas-slice-enabled" type="checkbox"> Höhenschnitt</label><label>Höhe in m<input id="atlas-slice" type="number" step="any" value="0"></label><button id="atlas-room-draw">Raumrechteck zeichnen</button><button id="atlas-draft-cancel" hidden>Zug verwerfen</button></section><section id="atlas-context-fields"><label><input id="atlas-perception" type="checkbox"> Wissen und Sicht der Gruppe</label><button id="atlas-connect-entrance" hidden>Eingang verbinden</button><div id="atlas-local-console" hidden><h3>Reise der Fokusgruppe</h3><p id="atlas-local-status" role="status"></p><button id="atlas-local-refresh" hidden>Reisekontext erneut laden</button><div class="toolbar"><button id="atlas-local-preview">Weg prüfen</button><button id="atlas-local-start" disabled>Reise starten</button><button id="atlas-local-step">Ein Schritt</button><button id="atlas-local-round">Eine Runde</button><button id="atlas-local-play">Wiedergabe starten</button><button id="atlas-local-pause">Pause</button><button id="atlas-local-end">Beenden</button></div><label id="atlas-entrance-field" hidden>Eingang<select id="atlas-entrance-choice"></select></label><button id="atlas-local-entrance" hidden>Durch Eingang</button><details><summary>Gruppe platzieren</summary><p>Versetzt die Fokusgruppe ohne Reisezeit an den zuletzt gewählten Punkt.</p><button id="atlas-local-place">Hier platzieren</button></details></div></section><details id="atlas-placement" hidden><summary>Räumliche Einordnung</summary><label>X in m<input id="atlas-binding-x" type="number" step="any"></label><label>Y in m<input id="atlas-binding-y" type="number" step="any"></label><label>Drehung in Grad<input id="atlas-binding-angle" type="number" step="any"></label><button id="atlas-binding-save">Einordnung übernehmen</button></details><details><summary>Atlas ausgeben</summary><label>Inhalt<select id="atlas-export-audience"><option value="gm">GM-Ansicht</option><option value="public">Wissen der Fokusgruppe</option></select></label><button id="atlas-export-png">Ausschnitt als PNG</button></details><details id="atlas-advanced"><summary>Fachwerkzeuge und Details</summary><div id="atlas-advanced-fields"></div></details></aside></div>`;
+      )}</select></label><label>Hexstufe<select id="atlas-hex-level">${Array.from({ length: 9 }, (_, i) => `<option value="${i}">${(3*3**i).toLocaleString("de-DE")} Meilen Kante zu Kante</option>`).join("")}</select></label><label>Name<input id="atlas-new-name" value="Neue Stadt"></label><div id="atlas-create-tools"><button id="atlas-create-city">Stadt hier anlegen</button><button id="atlas-create-dungeon">Dungeon hier anlegen</button></div><button id="atlas-building-interior" hidden>Innenraumhülle anlegen</button><label id="atlas-floor-field">Geschoss<select id="atlas-floor"></select></label><label><input id="atlas-roofs" type="checkbox" checked> Dächer anzeigen</label><label><input id="atlas-slice-enabled" type="checkbox"> Höhenschnitt</label><label>Höhe in m<input id="atlas-slice" type="number" step="any" value="0"></label><button id="atlas-room-draw">Raumrechteck zeichnen</button><button id="atlas-draft-cancel" hidden>Zug verwerfen</button></section><section id="atlas-context-fields"><label><input id="atlas-perception" type="checkbox"> Wissen und Sicht der Gruppe</label><button id="atlas-connect-entrance" hidden>Eingang verbinden</button><div id="atlas-local-console" hidden><h3>Reise der Fokusgruppe</h3><p id="atlas-local-status" role="status"></p><button id="atlas-local-refresh" hidden>Reisekontext erneut laden</button><div class="toolbar"><button id="atlas-local-preview">Weg prüfen</button><button id="atlas-local-start" disabled>Reise starten</button><button id="atlas-local-step">Ein Schritt</button><button id="atlas-local-round">Eine Runde</button><button id="atlas-local-play">Wiedergabe starten</button><button id="atlas-local-pause">Pause</button><button id="atlas-local-end">Beenden</button></div><label id="atlas-entrance-field" hidden>Eingang<select id="atlas-entrance-choice"></select></label><button id="atlas-local-entrance" hidden>Durch Eingang</button><details><summary>Gruppe platzieren</summary><p>Versetzt die Fokusgruppe ohne Reisezeit an den zuletzt gewählten Punkt.</p><button id="atlas-local-place">Hier platzieren</button></details></div></section><details id="atlas-placement" hidden><summary>Räumliche Einordnung</summary><label>X in m<input id="atlas-binding-x" type="number" step="any"></label><label>Y in m<input id="atlas-binding-y" type="number" step="any"></label><label>Drehung in Grad<input id="atlas-binding-angle" type="number" step="any"></label><button id="atlas-binding-save">Einordnung übernehmen</button></details><details><summary>Atlas ausgeben</summary><label>Inhalt<select id="atlas-export-audience"><option value="gm">GM-Ansicht</option><option value="public">Wissen der Fokusgruppe</option></select></label><label>Format<select id="atlas-export-format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select></label><label>Längste Bildkante in Pixel<input id="atlas-export-size" type="number" min="256" max="8192" value="2048"></label><label><input id="atlas-export-grid" type="checkbox"> Hexraster ausgeben</label><label><input id="atlas-export-reference" type="checkbox"> Vorlage im GM-Bild ausgeben</label><p>Ohne gewählten Ausgaberahmen wird die aktuelle Ansicht verwendet.</p><button id="atlas-export-png">Bild ausgeben</button></details><details id="atlas-advanced"><summary>Fachwerkzeuge und Details</summary><div id="atlas-advanced-fields"></div></details></aside></div>`;
     document.getElementById("workspace-navigation")!.after(this.root);
     this.svg = this.root.querySelector("svg")!;
     this.camera = new PassiveMapCanvas(this.svg, {
       relative: true,
       initial: { x: -15000, y: -10000, width: 30000, height: 20000 },
       minWidth: 0.1,
-      maxWidth: 1e16,
+      maxWidth: () => earthView(this.svg.clientWidth / Math.max(1,this.svg.clientHeight)).width,
       pan: (e) =>
         e.button === 1 ||
         (e.button === 0 &&
@@ -171,6 +175,9 @@ export class CampaignAtlasWorkbench {
         this.render();
       },
     });
+    this.landscape=new LandscapeWorkbench(this.svg,{box:()=>this.camera.view,redraw:()=>this.scheduleRender(),write:a=>this.write(a),error:e=>this.error(e),data:()=>this.data});
+    this.root.querySelectorAll<HTMLInputElement>('#atlas-hex-level,#atlas-terrain').forEach(n=>n.addEventListener('change',()=>{if(n.id==='atlas-hex-level')get<HTMLInputElement>('land-auto-level').checked=false;this.render();}));
+    new ResizeObserver(()=>{const b=this.camera.view,aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight);if(aspect>0)this.camera.set({...b,height:b.width/aspect},true);}).observe(this.svg);
     const names: Record<Family, string> = {
       navigation: "Navigation",
       terrain: "Landschaft",
@@ -269,6 +276,8 @@ export class CampaignAtlasWorkbench {
             this.data = r.value.atlas;
             await this.opts.updated(r.value.atlas.workspace);
             this.cancel();
+            this.landscape.recovered();
+            this.landscape.recovered();
           }
           get("atlas-save-status").textContent = "Speicherstand geklärt";
         } catch (e) {
@@ -437,6 +446,7 @@ export class CampaignAtlasWorkbench {
     this.entranceDraft = null;
     this.bindingDirty = false;
     this.owner = w;
+    this.landscape.context(w.token);
     this.data = null;
     this.request++;
     this.selection = null;
@@ -522,6 +532,7 @@ export class CampaignAtlasWorkbench {
     )
       return false;
     if (
+      this.landscape.hasDraft() ||
       this.bindingDirty ||
       this.draft.length ||
       this.paintDraft ||
@@ -644,6 +655,7 @@ export class CampaignAtlasWorkbench {
   private async setFamily(f: Family, flush = true) {
     if (flush && !(await this.opts.flush())) return;
     this.family = f;
+    this.landscape.setActive(f==="terrain");
     for (const b of get("atlas-families").querySelectorAll<HTMLButtonElement>(
       "button",
     ))
@@ -659,7 +671,7 @@ export class CampaignAtlasWorkbench {
           : f === "travel"
             ? ["dungeon", "world"]
             : f === "terrain"
-              ? ["world"]
+              ? []
               : [];
     for (const [id, saved] of this.adopted) {
       saved.node.hidden = true;
@@ -705,6 +717,7 @@ export class CampaignAtlasWorkbench {
       select.dispatchEvent(new Event("change"));
     }
   }
+  async navigateLocation(id:string,sectionId?:string){await this.refresh();await this.setFamily('terrain',false);const p=await this.landscape.openLocation(id,sectionId);if(p)this.focus(p,15000);}
   async navigate(kind: "city" | "room", id: string, unitId?: string) {
     await this.refresh();
     if (!this.data) return;
@@ -769,29 +782,7 @@ export class CampaignAtlasWorkbench {
     );
   }
   private overview() {
-    if (!this.data) return;
-    const points = this.data.terrain.cells.map((c) =>
-      atlasHexPoint(c.q, c.r, this.data!.terrain.hexMeters * 2 ** c.level),
-    );
-    for (const b of this.data.bindings) points.push(atlasFrame(this.data, b));
-    if (!points.length) {
-      this.focus({ x: 0, y: 0 }, 30000);
-      return;
-    }
-    const xs = points.map((p) => p.x),
-      ys = points.map((p) => p.y),
-      x = (Math.max(...xs) + Math.min(...xs)) / 2,
-      y = (Math.max(...ys) + Math.min(...ys)) / 2;
-    this.focus(
-      { x, y },
-      Math.max(
-        1000,
-        Math.max(...xs) - Math.min(...xs),
-        Math.max(...ys) - Math.min(...ys),
-      ) *
-        1.5 +
-        this.data.terrain.hexMeters * 2,
-    );
+    const b=this.camera.view;this.camera.set(earthView(this.svg.clientWidth/Math.max(1,this.svg.clientHeight),{x:b.x+b.width/2,y:b.y+b.height/2}),true);
   }
   private toParty() {
     const p = this.data?.geometry.position;
@@ -825,6 +816,8 @@ export class CampaignAtlasWorkbench {
       };
       root.append(b);
     };
+    const token=this.owner!.token;
+    void window.campaign.landscapeFind(token,text).then(r=>{if(!r.ok)throw new Error(r.error);if(this.owner?.token!==token||get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')!==text)return;for(const record of r.value)add(record.name||record.kind,()=>{if(record.locationId)void this.navigateLocation(record.locationId);else{this.focus(record.points[0]!,15000);void this.setFamily('terrain',false).then(()=>this.landscape.select(record));}});}).catch(e=>this.error(e));
     for (const c of this.data.cities) {
       if (c.header.name.toLocaleLowerCase("de").includes(text))
         add(c.header.name, () => void this.navigate("city", c.header.id));
@@ -901,32 +894,7 @@ export class CampaignAtlasWorkbench {
       this.render();
     }
   }
-  private async paint(p: Point) {
-    if (!this.data || !this.owner) return;
-    const level = Number(get<HTMLSelectElement>("atlas-hex-level").value),
-      h = atlasHexAt(p, this.data.terrain.hexMeters * 2 ** level),
-      cell = {
-        ...cellAt(this.data.terrain, h, level),
-        ...h,
-        level,
-        terrain: get<HTMLSelectElement>("atlas-terrain")
-          .value as import("./world-contracts").Terrain,
-      };
-    await this.write({
-      kind: "world",
-      command: {
-        commandId: crypto.randomUUID(),
-        token: this.owner.token,
-        campaignId: this.owner.campaign.id,
-        action: {
-          kind: "cell",
-          mapId: this.data.terrain.id,
-          expectedRevision: this.data.terrain.revision,
-          cell,
-        },
-      },
-    });
-  }
+
   private async click(e: MouseEvent) {
     if (this.ignoreClick) {
       this.ignoreClick = false;
@@ -942,10 +910,7 @@ export class CampaignAtlasWorkbench {
       kind = target?.dataset.kind,
       id = target?.dataset.id;
     try {
-      if (this.family === "terrain") {
-        await this.paint(p);
-        return;
-      }
+      if (this.family === "terrain") return;
       if (
         this.entranceDraft !== null &&
         this.scopeId &&
@@ -1133,7 +1098,7 @@ export class CampaignAtlasWorkbench {
     const d = this.paintDraft;
     if (!d) return;
     const level = Number(get<HTMLSelectElement>("atlas-hex-level").value),
-      h = atlasHexAt(p, d.map.hexMeters * 2 ** level),
+      h = atlasHexAt(p, d.map.hexMeters * 3 ** level),
       key = level + ":" + h.q + "," + h.r;
     if (d.cells.has(key)) return;
     d.cells.set(key, {
@@ -1147,16 +1112,8 @@ export class CampaignAtlasWorkbench {
   }
   private down(e: PointerEvent) {
     if (e.button !== 0 || e.altKey || this.busy) return;
-    if (this.family === "terrain" && this.data) {
-      this.paintDraft = {
-        id: e.pointerId,
-        map: structuredClone(this.data.terrain),
-        cells: new Map(),
-      };
-      this.paintPoint(this.point(e));
-      this.svg.setPointerCapture(e.pointerId);
-      return;
-    }
+    if (this.family === "terrain" && this.data) return;
+
     if (
       (this.family === "interior" || this.family === "decoration") &&
       this.scopeId &&
@@ -1704,6 +1661,7 @@ export class CampaignAtlasWorkbench {
       floor.value = old;
     this.camera.render((root) => {
       this.drawTerrain(root, box, mpp);
+      this.landscape.draw(root,box,mpp);
       for (const citySaved of data.cities) {
         const binding = data.bindings.find(
           (b) => b.kind === "city" && b.ownerId === citySaved.header.id,
@@ -1977,8 +1935,15 @@ export class CampaignAtlasWorkbench {
       const audience = get<HTMLSelectElement>("atlas-export-audience").value as
           | "gm"
           | "public",
-        box = this.camera.view;
-      let svg = this.svg;
+        box = this.landscape.exportBox??this.camera.view;
+      const snapshot=this.data;
+      const format=get<HTMLSelectElement>("atlas-export-format").value as 'png'|'jpeg',size=Number(get<HTMLInputElement>("atlas-export-size").value);
+      if(!Number.isInteger(size)||size<256||size>8192)throw new Error("Ausgabegröße zwischen 256 und 8192 Pixel wählen.");
+      const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
+      const region=await window.campaign.landscapeRegion(owner.token,box,box.width/width);if(!region.ok)throw new Error(region.error);if(this.owner!==owner)return;if(region.value.revision!==snapshot.revision)throw new Error("Atlas wurde während der Ausgabe geändert. Erneut ausgeben.");
+      const assets=new Map(this.landscape.assets);
+      if(get<HTMLInputElement>("atlas-export-reference").checked)for(const r of region.value.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAsset(owner.token,r.assetId);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
+      let svg=atlasRegionSVG(snapshot,region.value.records,box,width,assets,{grid:get<HTMLInputElement>("atlas-export-grid").checked,level:Number(get<HTMLSelectElement>("atlas-hex-level").value),references:get<HTMLInputElement>("atlas-export-reference").checked,floorId:this.floorId,roofs:get<HTMLInputElement>("atlas-roofs").checked});
       if (audience === "public") {
         if (this.data.geometry.position && this.data.perception)
           svg = publicAtlasSVG(this.data, box);
@@ -1986,31 +1951,21 @@ export class CampaignAtlasWorkbench {
           const frame = await window.campaign.playerView(owner.token);
           if (!frame.ok) throw new Error(frame.error);
           if (this.owner !== owner) return;
-          svg = publicAtlasSVG(this.data, box, frame.value.frame);
+          svg = publicAtlasSVG(snapshot, box, frame.value.frame,region.value.records);
         }
       }
-      const width = Math.max(
-          1,
-          Math.min(4096, Math.round(this.svg.clientWidth * 2)),
-        ),
-        height = Math.max(
-          1,
-          Math.min(
-            4096,
-            Math.round((width * this.svg.clientHeight) / this.svg.clientWidth),
-          ),
-        ),
-        bytes = await atlasPNG(svg, width, height);
+      const bytes = await atlasPNG(svg, width, height,format);
       if (this.owner !== owner) return;
       const r = await window.campaign.exportAtlasPNG(
         owner.token,
         bytes,
         audience,
+        format,
       );
       if (!r.ok) throw new Error(r.error);
       if (!r.value.cancelled) {
-        this.opts.status("Atlas-PNG gespeichert.");
-        get("atlas-save-status").textContent = "Atlas-PNG gespeichert";
+        this.opts.status("Atlas-"+format.toUpperCase()+" gespeichert.");
+        get("atlas-save-status").textContent = "Atlas-"+format.toUpperCase()+" gespeichert";
       }
     } catch (e) {
       if (this.owner === owner) this.error(e);
@@ -2050,72 +2005,7 @@ export class CampaignAtlasWorkbench {
     t.textContent = text;
     root.append(t);
   }
-  private drawTerrain(root: SVGElement, box: CanvasBox, mpp: number) {
-    const source = this.data!.terrain,
-      map = this.paintDraft
-        ? {
-            ...source,
-            cells: [
-              ...source.cells.filter(
-                (c) =>
-                  !this.paintDraft!.cells.has(c.level + ":" + c.q + "," + c.r),
-              ),
-              ...this.paintDraft.cells.values(),
-            ],
-          }
-        : source,
-      level = Math.max(
-        0,
-        Math.min(
-          12,
-          Math.floor(Math.log2(Math.max(1, box.width / map.hexMeters / 20))),
-        ),
-      ),
-      size = map.hexMeters * 2 ** level,
-      center = atlasHexAt(
-        { x: box.x + box.width / 2, y: box.y + box.height / 2 },
-        size,
-      ),
-      radius = Math.min(
-        35,
-        Math.ceil(Math.max(box.width, box.height) / size) + 2,
-      );
-    root.append(
-      shape("rect", {
-        x: 0,
-        y: 0,
-        width: box.width,
-        height: box.height,
-        fill: "#d5dbc8",
-      }),
-    );
-    for (let q = center.q - radius; q <= center.q + radius; q++)
-      for (let r = center.r - radius; r <= center.r + radius; r++) {
-        const h = { q, r },
-          cell = cellAt(map, h, level),
-          p = atlasHexPoint(q, r, size);
-        if (!this.visible(p, size, box)) continue;
-        const pts = Array.from({ length: 6 }, (_, i) => {
-          const a = ((30 + i * 60) * Math.PI) / 180;
-          return (
-            p.x -
-            box.x +
-            (Math.cos(a) * size) / Math.sqrt(3) +
-            "," +
-            (p.y - box.y + (Math.sin(a) * size) / Math.sqrt(3))
-          );
-        });
-        const poly = shape("polygon", {
-          points: pts.join(" "),
-          fill: terrainColors[cell.terrain],
-          stroke: "#ffffff55",
-          "stroke-width": Math.min(mpp, size / 200),
-        });
-        poly.dataset.hex = q + "," + r;
-        root.append(poly);
-        if (cell.label && size / mpp > 45) this.label(root, cell.label, p, mpp);
-      }
-  }
+  private drawTerrain(root:SVGElement,box:CanvasBox,_mpp:number){root.append(shape("rect",{width:box.width,height:box.height,fill:"#b8c896"}));}
   private drawInterior(
     root: SVGElement,
     b: AtlasBinding,

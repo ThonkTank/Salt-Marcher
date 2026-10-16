@@ -9,6 +9,7 @@ import type { Creature } from "../features/catalog/creature-catalog";
 import type { ItemDefinition } from "./items-contracts";
 import type { EncounterPlan } from "./encounter-contracts";
 export type DeskRef = {
+  sectionId?:string;
   kind: "note" | "location" | "creature" | "item" | "encounter";
   id: string;
 };

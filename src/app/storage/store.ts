@@ -1,3 +1,5 @@
+import {atlasPartyPoint} from '../atlas-runtime-model';
+import {installLandscape,landscapeRegion,executeLandscape} from './atlas-landscape';
 import {installAtlasTravel,atlasEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
 import {atlasHexAt,atlasFrame,localToAtlas} from '../campaign-atlas-model';
 import {newLocation} from '../../features/location/location-schema';
@@ -146,7 +148,7 @@ export class CampaignStore {
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
     if(schema===44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
-    if (schema > 45) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 46) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     this.extensionRegistry=new ExtensionRegistry(this.db);
     const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
     if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) { this.db.close(); throw new Error('SQLite-Wartungsstand zu alt.'); }
@@ -217,7 +219,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);this.db.pragma('user_version=45');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);this.db.pragma('user_version=46');
 
     }).immediate();
   }
@@ -230,7 +232,7 @@ export class CampaignStore {
     }
     for(const table of ['world_journey','dungeon_journey','atlas_local_journey'])for(const row of this.db.prepare('SELECT * FROM '+table+' WHERE campaign_id=?').all(cam)){
       const j=JSON.parse(row.payload);if(j.status!=='active')continue;
-      const stale=table==='world_journey'?j.environmentBasis!==travelEnvironmentBasis(this.db,cam,j.sceneId,j.mapId,this.world(token),j.usePartyPace):table==='dungeon_journey'?j.basis!==dungeonGeometryBasis(geometry,j.request.destination.scopeId):j.basis!==atlasLocalGeometryBasis(a);
+      const stale=table==='world_journey'?j.environmentBasis!==travelEnvironmentBasis(this.db,cam,j.sceneId,j.mapId,readWorld(this.db,cam,false),j.usePartyPace):table==='dungeon_journey'?j.basis!==dungeonGeometryBasis(geometry,j.request.destination.scopeId):j.basis!==atlasLocalGeometryBasis(a);
       if(!stale)continue;j.status='paused';j.reason='Atlasgeometrie geändert. Reise vor Fortsetzung neu planen.';j.revision++;const payload=json(j);
       this.db.prepare('UPDATE '+table+' SET '+(table==='world_journey'?"status='paused',":'')+(table!=='atlas_local_journey'?'revision=?,':'')+'payload=?,checksum=? WHERE campaign_id=? AND '+(table==='atlas_local_journey'?'scene_id':'id')+'=?').run(...(table!=='atlas_local_journey'?[j.revision]:[]),payload,hash(payload),cam,table==='atlas_local_journey'?j.sceneId:j.id);
     }
@@ -254,17 +256,22 @@ export class CampaignStore {
       this.executeDrawing({commandId:c.commandId+':anchor:'+original.id,token:c.token,campaignId:c.campaignId,action:{kind:'element',expectedRevision:current.revision,element:{...current,roomId:before.id,anchor:original.anchor,points:[{x:a.x+(b.x-a.x)*original.anchor!.t,y:a.y+(b.y-a.y)*original.anchor!.t}]}}});
     }
   }
-  previewAtlasTravel(token:string,destination:import('../contracts').Point){return previewAtlasLocal(this.campaignAtlas(token),destination);}
+  private travelAtlas(token:string){const a=this.campaignAtlas(token),p=atlasPartyPoint(a)??{x:0,y:0};a.terrain.landscape=landscapeRegion(this.db,a.campaignId,{x:p.x-6000,y:p.y-6000,width:12000,height:12000});return a;}
+  previewAtlasTravel(token:string,destination:import('../contracts').Point){return previewAtlasLocal(this.travelAtlas(token),destination);}
   executeAtlasTravel(c:import('../atlas-travel-contracts').AtlasTravelCommand){this.guard(c.token,c.campaignId);executeAtlasTravel(this.db,c,{
-    read:()=>this.campaignAtlas(c.token),
+    read:()=>this.travelAtlas(c.token),
     advance:(seconds,revision)=>{this.executeLive({commandId:c.commandId+':clock',token:c.token,campaignId:c.campaignId,action:{kind:'advance-clock',sceneId:c.sceneId,expectedRevision:revision,amount:seconds,unit:'seconds',calendarVersion:'relative-v1',reason:'Bestätigte lokale Atlasbewegung'}});},
     location:id=>{const s=this.liveScene(c.token,c.sceneId);if(s.locationId!==id)this.executeLive({commandId:c.commandId+':location',token:c.token,campaignId:c.campaignId,action:{kind:'scene-content',sceneId:c.sceneId,expectedRevision:s.revision,title:s.title,notes:s.notes,readAloud:s.readAloud??'',locationId:id}});},
     crossing:(from,to)=>{const g=dungeonGeometry(this.db,c.campaignId),scene=this.liveScene(c.token,c.sceneId);createTriggerEvents(this.db,c.campaignId,g,{id:'atlas:'+c.commandId,nextIndex:1,request:{sceneId:c.sceneId}},from,to,scene.clock.instantMs);},
     dungeon:pose=>{const d=this.dungeon(c.token);this.executeDungeon({commandId:c.commandId+':dungeon',token:c.token,campaignId:c.campaignId,action:{kind:'place',sceneId:c.sceneId,expectedPositionRevision:d.positionRevision,pose}});}
    });return this.campaignAtlas(c.token);}
+  landscapeFind(token:string,text:string){const cam=this.guard(token);if(typeof text!=='string'||text.length>200)throw new Error('Suchtext prüfen.');return this.db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')!='patch' AND (instr(lower(json_extract(payload,'$.name')),lower(?))>0 OR json_extract(payload,'$.locationId')=?) LIMIT 100").all(cam,text,text).map((r:any)=>JSON.parse(r.payload)) as import('../atlas-landscape').LandscapeRecord[];}
+  landscapeRegion(token:string,box:import('../atlas-landscape').LandscapeBox,metersPerPixel=0){const cam=this.guard(token);return {revision:atlasRoot(this.db,cam).revision,records:landscapeRegion(this.db,cam,box,metersPerPixel)};}
+  registerReference(token:string,mime:string,bytes:Buffer){const cam=this.guard(token),id=hash(bytes);this.db.prepare('INSERT OR IGNORE INTO atlas_reference_asset VALUES(?,?,?,?)').run(cam,id,mime,bytes);return id;}
+  referenceAsset(token:string,id:string){const r=this.db.prepare('SELECT * FROM atlas_reference_asset WHERE campaign_id=? AND id=?').get(this.guard(token),id);if(!r)throw new Error('Referenzbild fehlt.');return 'data:'+r.mime+';base64,'+r.bytes.toString('base64');}
   campaignAtlas(token:string):CampaignAtlas{
     const cam=this.guard(token);return this.db.transaction(()=>{
-      const root=atlasRoot(this.db,cam),world=this.world(token),terrain=world.maps.find((m:import('../world-contracts').AtlasMap)=>m.id===root.map_id);
+      const root=atlasRoot(this.db,cam),terrain=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload);
       if(!terrain)throw new Error('Kampagnenatlas fehlt.');
       const geometry=this.dungeon(token),scene=geometry.sceneId?this.sceneWorld(token,geometry.sceneId):null;
       const perception=geometry.position&&geometry.sceneId?dungeonDisplay(this.db,cam,geometry.sceneId,playerSettings(this.db,cam),playerObservers(this.db,cam).list):null;
@@ -276,6 +283,13 @@ export class CampaignStore {
     const nested=(v:{token:string;campaignId:string;commandId:string})=>{if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId)throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');};
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
+      if(a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
+        if(a.kind==='landscape-place')this.commitPreparation({commandId:c.commandId+':key',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:a.expectedLocationRevision}});
+        executeLandscape(this.db,cam,a);
+        if(a.kind==='landscape-place'){const root=atlasRoot(this.db,cam),m=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),old=this.db.prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?').get(cam,a.document.id);this.executeWorld({commandId:c.commandId+':place',token:c.token,campaignId:cam,action:{kind:'place',mapId:m.id,locationId:a.document.id,expectedRevision:old?.revision??null,hex:atlasHexAt(a.record.points[0]!,m.hexMeters)}});}
+
+        const row=this.db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,atlasRoot(this.db,cam).map_id),m=JSON.parse(row.payload);m.revision++;const payload=json(m);this.db.prepare("UPDATE world_record SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND kind='map' AND id=?").run(m.revision,payload,hash(payload),cam,m.id);return;
+      }
       if(a.kind==='room-default')return this.addRoom(c.token,true);
       if(a.kind==='drawing-import'){
         const doc=JSON.parse(a.source),ids=new Map<string,string>();
@@ -899,7 +913,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
@@ -930,6 +944,7 @@ export class CampaignStore {
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
       if([33,34,35,36,37,38,39,40,41,42,43].includes(c.schema)){installChaseSchema(source);installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=44');}
 
+      if(c.schema===45){source.transaction(()=>{installLandscape(source);source.pragma('user_version=46');})();}
       installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
@@ -973,7 +988,7 @@ export class CampaignStore {
     if(locations.size){const active=autonomyView(this.db,cam).actors.filter(a=>a.enabled&&!a.paused&&a.locationId!==null&&locations.has(a.locationId)).map(a=>a.id);if(active.length)catchUpAutonomy(this.db,cam,active,12,{epochId:after.clock.epochId,instantMs:after.clock.instantMs});}
     const spatialScenes=this.db.prepare("SELECT scene_id FROM scene_position WHERE campaign_id=? AND json_extract(payload,'$.dungeon.roomId') IS NOT NULL").all(cam);if(spatialScenes.length){const geometry=dungeonGeometry(this.db,cam);for(const row of spatialScenes)evaluateDungeonSenses(this.db,cam,row.scene_id,geometry);}
   }
-  executeWorld(command:WorldCommand){if(command.action.kind==='map'){const root=this.db.prepare('SELECT map_id FROM campaign_atlas WHERE campaign_id=?').get(command.campaignId);if(root&&command.action.map.id!==root.map_id)throw new Error('Pro Kampagne gibt es genau einen Atlas.');}return this.db.transaction(()=>{
+  executeWorld(command:WorldCommand){if(command.action.kind==='map'){const root=this.db.prepare('SELECT map_id FROM campaign_atlas WHERE campaign_id=?').get(command.campaignId);if(root&&command.action.map.id!==root.map_id)throw new Error('Pro Kampagne gibt es genau einen Atlas.');if(root&&command.action.map.hexMeters!==4828.032)throw new Error('Die kleinste Hexgröße ist 3 Meilen Kante zu Kante.');}return this.db.transaction(()=>{
     const ack=executeWorld(this.db,command,()=>{this.guard(command.token,command.campaignId);},{
       capture:()=>captureAutonomyBasis(this.db,command.campaignId),
       confirm:(commandId,before,after,basis)=>this.consumeSceneTime(command.campaignId,commandId,before.scene,after.scene,basis),

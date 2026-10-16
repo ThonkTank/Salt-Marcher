@@ -35,6 +35,7 @@ export interface CampaignAtlas {
   canRedo: boolean;
 }
 export type AtlasAction =
+  | import("./atlas-landscape").LandscapeAction
   | {
       kind: "drawing-import";
       name: string;
@@ -81,10 +82,26 @@ export interface AtlasCommand {
   action: AtlasAction;
 }
 export interface AtlasAPI {
+  landscapeFind(
+    token: string,
+    text: string,
+  ): Promise<Result<import("./atlas-landscape").LandscapeRecord[]>>;
+  landscapeRegion(
+    token: string,
+    box: import("./atlas-landscape").LandscapeBox,
+    metersPerPixel?:number,
+  ): Promise<Result<import("./atlas-landscape").LandscapeRegion>>;
+  referenceImage(
+    token: string,
+  ): Promise<
+    Result<{ id: string; data: string; width: number; height: number } | null>
+  >;
+  referenceAsset(token: string, id: string): Promise<Result<string>>;
   exportAtlasPNG(
     token: string,
     bytes: number[],
     audience: "gm" | "public",
+    format?: "png" | "jpeg",
   ): Promise<Result<{ cancelled: boolean }>>;
   importAtlas(command: {
     commandId: string;

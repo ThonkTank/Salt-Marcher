@@ -2,6 +2,8 @@
 
 ## Atlas auf einen Blick
 
+**Desktop 0.157:** Regionswerkzeuge für freie Küsten, Flüsse/Wege, Orts-Keys, kalibrierte Bildvorlagen, Messung und saubere PNG-/JPEG-Ausgabe bis 8192 Pixel sind im gemeinsamen Atlas ergänzt. Kleinste Hexgröße: 3 Meilen Kante zu Kante; weiteste Ansicht: erdgroß. Bedienweg und Grenzen stehen unter [Eine Region vorbereiten](docs/ATLAS.md#eine-region-vorbereiten-0157). Die folgende ältere Bestandstabelle bleibt eine historische Einordnung.
+
 **Aktueller Desktopumbau:** Pro Kampagne genau eine gemeinsame Karte mit räumlichen Stadt-/Gebäudebindungen und einer Autorhistorie. Bedienung, Nachweisgrenzen und offene Fachumfänge stehen in [ATLAS.md](docs/ATLAS.md). Obsidian wird nicht weiterentwickelt. Die folgende Übersicht hält den älteren Integrationsstand fest und ist keine Freigabe des Desktopumbaus.
 
 **Ziel:** Welt → Region → Stadt → Haus → Dungeonraum durch Zoom erreichen und direkt bearbeiten; eine Kamera, eine Undo/Redo-Folge und gemeinsame haltbare Daten.
@@ -404,7 +406,7 @@ Innenstand, nicht zwei unabhängig bearbeitete Konturen.
 
 ### Hex-Stufen und Landschaft
 
-3, 9, 27, … Meilen Mittelpunktabstand, Ursprung/Ausrichtung gemeinsam.
+3, 9, 27, … Meilen zwischen gegenüberliegenden Kanten, Ursprung/Ausrichtung gemeinsam. Bei regelmäßigen Nachbarhexes entspricht dies ihrem Mittelpunktabstand. Kleinste Stufe: 3 Meilen; weiteste Kameraansicht: erdgroße Referenzfläche von etwa 40.000 × 20.000 km, ohne feste Weltgrenze.
 Alle Stufen sind bearbeitbar, gröbere Vorgaben werden pro Eigenschaft durch
 ausdrückliche feinere Werte überschrieben. Reguläre Hexes verschiedener Stufen
 verschachteln sich nicht exakt: Flächenüberschneidung statt fester Kindliste.
