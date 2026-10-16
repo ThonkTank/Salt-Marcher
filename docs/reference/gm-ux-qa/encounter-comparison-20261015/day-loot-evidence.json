@@ -1,0 +1,102 @@
+{
+  "round": 9,
+  "status": "progress; complete paired GUI case and joint day generator remain open",
+  "nativeBaseline": {
+    "basis": "346443195622ad30262841044bb38551d231ea6a",
+    "version": "0.156.0",
+    "party": "Alba,Bram,Cora,Dain;6500XP/level5 each",
+    "displayedPlan": [
+      2350,
+      2350,
+      3700
+    ],
+    "warning": "Uses historical riding-horse XP25. Displayed8400 is not current corrected rule truth; equivalent corrected composition is8500.",
+    "loots": "Three manually authored Potion-of-healing funds, associated by title only; no integrated loot generation"
+  },
+  "treasuryFix": {
+    "basis": "c70c9eceb413ac43452deeed5e1fcd602f65c64a",
+    "version": "0.158.0",
+    "checks": "39/39; desktop typecheck/build exit0",
+    "native": "One search then newA1/newB1/existingA2, actualrestart A2/B1; original3treasures unchanged"
+  },
+  "xpFix": {
+    "basis": "fdddea7c7322dd8f85223a857d2d16b64f1523a8",
+    "version": "0.159.0",
+    "corrected": {
+      "brassDragonWyrmling": 200,
+      "deepGnome": 100,
+      "dretch": 50,
+      "ridingHorse": 50
+    },
+    "checks": "8 XP/fill +72 catalog/generation +25 catalog core allpass; desktoptypecheck/build exit0",
+    "native": "All4 corrected XP values observed; newplan400base/800adjusted for4lvl5party; saved/re-found/reopened after real apprestart",
+    "artifact": "Original source bytes unchanged; localerrata and effectiveidentity tracked; existing snapshots not rewritten"
+  },
+  "comparison": {
+    "sheet": "Own native workbook copy; four validated boolean controls enabled by connector; output3encounters+assignedloot; reread stable",
+    "gui": "Browser requires Google sign-in; no completed Google Sheets GUI workflow claimed",
+    "originalSheet": "No writes",
+    "privateSheetEvidence": "Kept only outside Git at encounter-run-09/sheet-functional-result.json",
+    "round8": "Runner comparison and original browser-state restoration remainopen"
+  },
+  "exit": "Baseline3apps,treasury2apps,XP2apps all normalclose receipts0; all3ownhelper jobs NORMAL_JOB_EXIT exit0",
+  "publication": "Local commits retained pending authorized SaltMarcher migration; no push to old target",
+  "screenshots": [
+    {
+      "file": "day-loot-before-party.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-before/runs/day-loot-before/frames/000255.png"
+    },
+    {
+      "file": "day-loot-before-plan-reopen.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-before/runs/day-loot-before/frames/000827.png"
+    },
+    {
+      "file": "day-loot-before-loot-reopen.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-before/runs/day-loot-before/frames/000798.png"
+    },
+    {
+      "file": "day-loot-before-inert-result.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-before/runs/day-loot-before/frames/000729.png"
+    },
+    {
+      "file": "day-loot-after-new-a.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-after/runs/treasure-switch-after/frames/000042.png"
+    },
+    {
+      "file": "day-loot-after-new-b.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-after/runs/treasure-switch-after/frames/000062.png"
+    },
+    {
+      "file": "day-loot-after-existing.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-after/runs/treasure-switch-after/frames/000073.png"
+    },
+    {
+      "file": "day-loot-after-reopen.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-after/runs/treasure-switch-after/frames/000084.png"
+    },
+    {
+      "file": "day-loot-xp-horse.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-xp/runs/catalog-xp-after/frames/000020.png"
+    },
+    {
+      "file": "day-loot-xp-dretch.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-xp/runs/catalog-xp-after/frames/000041.png"
+    },
+    {
+      "file": "day-loot-xp-gnome.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-xp/runs/catalog-xp-after/frames/000060.png"
+    },
+    {
+      "file": "day-loot-xp-brass.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-xp/runs/catalog-xp-after/frames/000079.png"
+    },
+    {
+      "file": "day-loot-xp-plan.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-xp/runs/catalog-xp-after/frames/000099.png"
+    },
+    {
+      "file": "day-loot-xp-reopen.png",
+      "source": "/home/aaron/Documents/Codex/2026-10-12-arbeite-als-unabh-ngige-gm-ux/qa-program/runtime/infrastructure/owned-ui/sessions/encounter-09-xp/runs/catalog-xp-after/frames/000131.png"
+    }
+  ]
+}
