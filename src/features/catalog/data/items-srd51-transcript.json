@@ -3627,6 +3627,42 @@
           "srd51:magic-item:magic-items-a-z:70"
         ]
       }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:160",
+      "name": "Ring of Protection",
+      "category": "magic-item",
+      "subcategory": "ring",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Ring, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:160"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "You gain a +1 bonus to AC and saving throws while wearing this ring.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:160"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          237
+        ],
+        "printedPages": [
+          237
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:160"
+        ]
+      }
     }
   ]
 }

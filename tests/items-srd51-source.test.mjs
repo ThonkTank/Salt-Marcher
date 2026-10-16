@@ -82,8 +82,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 290);
-  assert.equal(result.validation.recordCount, 289);
+  assert.equal(result.validation.occurrenceCount, 291);
+  assert.equal(result.validation.recordCount, 290);
   assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
   assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
   assert.equal(result.magicItemAzApparatusOfTheCrab.leverRows, 10);
