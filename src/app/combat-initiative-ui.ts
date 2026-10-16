@@ -1,4 +1,5 @@
 import type {CombatAction,CombatState} from './combat-contracts';
+import {combatStartIssue} from './combat-contracts';
 import type {InitiativeWorkingDraft} from './combat-draft-contracts';
 import {CombatDraftCache} from './combat-draft-cache';
 import {initiativeBasis,initiativeBasisMatches,initiativeGroups,initiativeNumber,rolledMonsterInitiatives} from './combat-initiative';
@@ -62,10 +63,12 @@ export class CombatInitiativePanel {
   for(const input of this.inputs.values())input.disabled=unavailable||stale;
   for(const id of ['initiative-save','initiative-start','initiative-roll','initiative-mode'])this.el<HTMLInputElement>(id).disabled=unavailable||stale||!this.inputs.size;
   this.el('initiative-start').hidden=this.combat?.phase!=='preparing';this.el<HTMLButtonElement>('initiative-roll-undo').disabled=unavailable||stale||!this.undoRoll;
+  const startIssue=this.combat?.phase==='preparing'?combatStartIssue(this.combat):null;
+  if(startIssue)this.el<HTMLButtonElement>('initiative-start').disabled=true;
   this.el<HTMLButtonElement>('initiative-reload').hidden=!stale&&!this.loading;this.el<HTMLButtonElement>('initiative-reload').disabled=this.blocked||this.saving;
   this.el('initiative-preserved').hidden=!stale;this.el<HTMLTextAreaElement>('initiative-preserved').value=this.draft?.values.map((v,i)=>(this.combat?.participants.find(p=>p.id===v.participantId)?.name??'Ehemaliger Teilnehmer '+(i+1))+': '+v.raw).join('\n')??'';
   if(stale)this.el('initiative-status').textContent='Initiative oder Teilnehmer inzwischen geändert. Deine Eingabe bleibt erhalten. Vor dem Übernehmen den aktuellen Stand abgleichen.';
-  else if(!this.loading)this.el('initiative-status').textContent=this.message??(this.draft?'Eingabe wird als Entwurf gesichert. Erst Übernehmen ändert den Kampf.':'Werte eintragen oder nur die Monster würfeln. Spielerwerte bleiben beim Würfeln erhalten.');
+  else if(!this.loading)this.el('initiative-status').textContent=this.message??startIssue??(this.draft?'Eingabe wird als Entwurf gesichert. Erst Übernehmen ändert den Kampf.':'Werte eintragen oder nur die Monster würfeln. Spielerwerte bleiben beim Würfeln erhalten.');
  }
  private roll(){
   if(!this.combat||this.blocked||this.loading||this.saving||this.stale())return;

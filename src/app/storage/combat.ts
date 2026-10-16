@@ -7,7 +7,7 @@ import {publishCombatHealth,syncOpenMaskHealth} from './mask-health';
 import {consumeFinishDraft} from './finish-drafts';
 import {readCombatDraft} from './combat-drafts';
 import { randomUUID, randomInt, createHash } from 'node:crypto';
-import { checkedCombat, combatOrder, concentrationDc, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
+import { checkedCombat, combatOrder, combatStartIssue, concentrationDc, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
 import { readLiveScene, readLive } from './live';
 import { readProgressCharacter, finishCombatRewards, latestCombatStatuses, detachCombatHealth, resumeCombatHealth, lastCombatPartyParticipant, event } from './progression';
 import {applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../progression';
@@ -103,7 +103,8 @@ function assessment(db: any, cam: string, state: CombatState) {
   return assessEncounter(state.partyBasis??combatParty(db,cam,state),state.participants.filter(p=>!p.characterId).map(p=>({xp:p.xp,count:1,countForMultiplier:p.countForMultiplier})));
 }
 function startCombat(db:any,cam:string,state:CombatState){
-          if (state.phase !== 'preparing' || !state.participants.length) throw new Error('Füge Teilnehmer hinzu, bevor du den Kampf beginnst.');
+          if (state.phase !== 'preparing') throw new Error('Nur eine vorbereitete Begegnung kann begonnen werden.');
+          const issue=combatStartIssue(state);if(issue)throw new Error(issue);
           if(state.participants.some(p=>p.concentrationChecks?.length))throw new Error('Offene Konzentrationsprüfung zuerst klären.');
           state.partyBasis=combatParty(db,cam,state); state.assessment=assessment(db,cam,state); state.phase = 'running'; state.round = 1; state.turnId = combatOrder(state)[0]!.id;for(const actor of state.participants)resetLegendary(state,actor);tickEffects(state.participants.find(actor=>actor.id===state.turnId)!,'start');
 }
