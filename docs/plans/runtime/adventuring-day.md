@@ -1,6 +1,6 @@
 # Adventuring Day: Partyvorschau und bestätigte Rastfakten
 
-Stand: 15.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
+Stand: 16.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
 und den [Gesamtumfang](../../SCOPE.md). Der Rechner ist ein Party-/Live-Werkzeug;
 der Atlas ist weder sein Owner noch eine Voraussetzung.
 
@@ -133,7 +133,27 @@ Figuren angezeigt. Dazwischen werden keine Rasten oder Levelwechsel angenommen.
 Bei eigenen Zeilen bleiben aktuelle Party-Raststände unabhängig. Etappen und
 XP→Tage verwenden die verteilten Summen; die ursprünglichen Summen stehen daneben.
 Manuelle XP-Eingaben werden vor Planmodus bewahrt und beim Ausschalten wieder
-hergestellt. Suchantworten sind an Workspace/Antwortgeneration gebunden. Die Rechnereingaben bleiben ein lokaler Entwurf auf diesem Gerät, getrennt je Kampagne.
+hergestellt. Suchantworten und auswählbare Treffer sind an Workspace/Antwortgeneration gebunden.
+Schon die Änderung des Suchtexts entzieht alte Treffer während der Entprellzeit;
+auch „Vorlagen aktualisieren“ räumt sie vor dem Read ab. Ladezustand und Fehler
+bleiben sichtbar; erst eine aktuelle erfolgreiche Antwort bietet neue Auswahl.
+Ausgewählte Planzeilen, rohe Anzahlen, Reihenfolge und Revisionen bleiben bei
+Suche oder Lesefehler erhalten. Ein bewusstes erfolgreiches Aktualisieren ersetzt
+die Revisionen. Verspätete Antworten und abgelöste Auswahlhandler können keine
+Planzeile ergänzen. Das ändert weder IPC noch Entwurfsformat oder Datenbank.
+
+Gezielter Beleg am 16.10.: DOM-Gegenproben scheitern vor der Korrektur an
+weiter auswählbaren Alttreffern. Danach sind neue Suche, fehlgeschlagenes
+Aktualisieren mit Wiederholung, verspätete Antworten und Kampagnenwechsel geprüft.
+Nativ mit echter IPC/Store-Anbindung: gehaltene Suchantwort, Lesefehler, erneute
+Suche, Hinzufügen, explizites Aktualisieren, Popupwiederöffnung und Escape mit
+Fokus am Trigger; bestehende Anzahl und Vorlagenrevisionen bleiben erhalten.
+Datenbankbytes während dieser Planungsaktionen unverändert, normaler App-Exit,
+keine Rendererfehler und bestätigte XP nach erneutem Storeöffnen erhalten.
+Diese Teilprüfung ersetzt keine Großparty-, 200-%- oder vollständige
+Host-/Produktabnahme.
+
+Die Rechnereingaben bleiben ein lokaler Entwurf auf diesem Gerät, getrennt je Kampagne.
 Eigene Levelgruppen, manuelle XP und der geordnete Encounterplan einschließlich
 Vorlagenrevisionen und Rasten werden nach Aktivierung oder Neustart wieder aufgenommen.
 Ergebnisse werden neu gelesen und berechnet; eine Quelländerung benötigt weiterhin
@@ -170,8 +190,9 @@ benutzbar. Leere Gesamt-/Verdienst-XP werden als ungültige numerische Eingabe
 weitergereicht und durch denselben Partyrechner erklärt; `Number('')` darf sie
 nicht zu einem gültigen Nullergebnis machen. Ausdrückliche Eingabe `0` ist gültig.
 
-Eigene Zeilen und Rohwerte bleiben während dieses Rechnerkontexts transient.
-Schließen/Öffnen bewahrt sie; Kampagnenreaktivierung setzt den Kontext zurück.
+Eigene Zeilen und Rohwerte werden im lokalen Kampagnenentwurf bewahrt (siehe
+Tagesplan oben). Schließen/Öffnen und Kampagnenreaktivierung nehmen diese Eingaben
+wieder auf; Berechnungsergebnisse und die aktive Partybasis werden neu gelesen.
 Antwortgeneration und Workspace-Token verhindern, dass ältere Reads nach
 Reaktivierung eine neuere Partybasis überschreiben. Diese Vorschau erteilt
 keine Autorität für einen späteren XP-/Rastcommand.
@@ -271,7 +292,8 @@ native Popover-, IPC-, Tastatur-, Monitor-, Last- und Produktabnahmen bleiben of
    weiterhin jede aktive Figur. Große Party-/Rosterbestände und häufige
    Fortschrittsänderungen messen; danach eine gemeinsame begrenzte Partyprojektion
    verwenden, falls die Messung es erfordert. Kein separater persistierter
-   Rechnerzustand und kein paralleles XP-/Rastmodell.
+   Rechenergebniszustand und kein paralleles XP-/Rastmodell; der lokale
+   Eingabeentwurf bleibt davon getrennt.
 
 
 ## Geplante Rasten zwischen Begegnungen (0.135)
