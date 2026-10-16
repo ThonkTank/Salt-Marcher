@@ -38,7 +38,7 @@ test('actual catalog input and reset notify the generator about their shared fil
 });
 
 test('an out-of-band proposal states requested target and actual deviation before its deliberate acceptance',async t=>{
- const x=await fixture(t);x.el('generation-difficulty').value='medium';x.setGenerate(async request=>{const run=x.run(request),p=run.plans[0];p.assessment={baseXp:300,adjustedXp:600,difficulty:'deadly'};p.composition={metrics:{adjustedXp:600,xpDelta:350}};return{ok:true,value:run};});
+ const x=await fixture(t);x.el('generation-difficulty').value='medium';x.setGenerate(async request=>{const run=x.run(request),p=run.plans[0];p.assessment={baseXp:300,adjustedXp:600,difficulty:'deadly'};p.composition={blocks:[{role:'standard',challengeRating:'1',quantity:2,statblockSlots:1}],metrics:{adjustedXp:600,xpDelta:350,monsterCount:2,statblockCount:1,initiativeSlots:2,effectiveMonsterCount:2,xpMultiplier:1.5},diagnostics:[],candidateCount:1,fitCandidateCount:0};return{ok:true,value:run};});
  await x.make();const card=x.el('generation-preview').querySelector('article');assert.match(card.textContent,/Angefragt: Mittel.*Ziel 250 angepasste XP/);assert.match(card.textContent,/140 % über dem XP-Ziel/);assert.match(x.choice().textContent,/Abweichenden Vorschlag/);
 });
 
