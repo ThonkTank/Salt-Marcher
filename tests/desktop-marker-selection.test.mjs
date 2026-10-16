@@ -42,6 +42,7 @@ test('a late old save reply cannot replace a newly read marker snapshot after re
 });
 for(const phase of ['before','after'])test(`reply loss ${phase} commit retains marker input until read-only recovery, then permits the next write`,async t=>{
  const x=await fixture(t);x.lose(phase);x.input('size','1.8');x.choose(x.ids[1]);await until(()=>x.messages.some(s=>s.includes('Auftrag prüfen')));assert.equal(x.get('anchor-location').value,x.ids[0]);assert.equal(x.get('marker-size').value,'1.8');assert.equal(x.sent.length,1);
+ const notices=[...x.messages];x.get('marker-title').onblur();await tick();await tick();assert.deepEqual(x.messages,notices,'Another blur must keep the recovery feedback stable until its button can receive the click');assert.equal(x.sent.length,1);
  const bytes=x.store.db.serialize();assert.equal(await x.ui.reconcileWorldWrite(),true);assert.equal(x.sent.length,1);assert.ok(x.store.db.serialize().equals(bytes));
  if(phase==='before'){assert.equal(x.presentation(x.ids[0]).size,1);assert.equal(x.get('marker-size').value,'1.8');x.flush();await until(()=>x.presentation(x.ids[0]).size===1.8);}
  const count=x.sent.length;x.choose(x.ids[1]);await until(()=>x.get('marker-title').value==='Marker B');assert.equal(x.get('marker-fields').disabled,false);x.input('title','Neue unabhängige Änderung');x.get('marker-title').onblur();await until(()=>x.presentation(x.ids[1]).title==='Neue unabhängige Änderung');assert.equal(x.sent.length,count+1);assert.equal(x.presentation(x.ids[0]).size,1.8);
