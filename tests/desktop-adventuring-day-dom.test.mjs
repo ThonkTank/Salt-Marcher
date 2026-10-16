@@ -237,7 +237,7 @@ test('mixed-level planning stays independent of live Party warnings and survives
  assert.match(x.get('source').textContent,/Eigene Planung/);assert.equal(x.get('status').textContent,'');assert.equal(x.get('pacing').hidden,true);assert.equal(x.get('current-details').hidden,true);
  assert.match(x.get('summary').textContent,/4 Figuren.*5.800 XP Tagesbudget/);assert.match(x.get('summary').textContent,/1.934.*3.867.*5.800/);
  assert.equal(x.get('rows').querySelector('input').closest('label').textContent,'Level');
- const children=[...x.get('popover').children];assert.ok(children.indexOf(x.get('rows'))<children.indexOf(x.get('results')));
+ const children=[...x.get('popover').querySelectorAll('*')];assert.ok(children.indexOf(x.get('rows'))<children.indexOf(x.get('results')));
  x.get('mode-progress').onclick();x.input(x.get('total-xp'),'5800');x.get('separate-reward').checked=true;x.input(x.get('separate-reward'),'on');x.input(x.get('reward-xp'),'4000');await settled();
  assert.match(x.get('summary').textContent,/1 volle Tage.*2 kurze \/ 1 lange/);assert.match(x.get('summary').textContent,/1.000 XP je Figur/);
  x.get('close').onclick();x.get('trigger').onclick();await tick();assert.equal(x.get('total-xp').value,'5800');assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['3','2','4','2']);
@@ -273,4 +273,15 @@ test('custom comparison rows remain campaign-local and reset returns to a fresh 
  assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['1','1']);
  x.ui.activateDayCalculator({token:'back',campaign:{id:'campaign-a'}});await x.open();custom.onclick();await settled();assert.equal(x.get('rows').querySelector('input').value,'4');
  x.get('draft-reset').onclick();await tick();custom.onclick();await settled();assert.deepEqual([...x.get('rows').querySelectorAll('input')].map(e=>e.value),['1','1']);
+});
+
+// The primary answer precedes reference tables while all figures remain available.
+test('progress answer comes before rest thresholds and scrolling number fields preserves typed values',async t=>{
+ const x=fixture(t);await x.open();x.get('mode-progress').onclick();x.input(x.get('total-xp'),'300');await settled();
+ const summary=x.get('summary'),progress=x.get('progress-summary');
+ assert.match(progress.textContent,/1 volle Tage/);
+ const elements=[...summary.querySelectorAll('*')];assert.ok(elements.indexOf(progress)<elements.indexOf(summary.querySelector('table')));
+ const field=x.get('total-xp');let blurred=0;Object.defineProperty(document,'activeElement',{configurable:true,value:field});field.blur=()=>{blurred++;};
+ const wheel=new window.Event('wheel',{bubbles:true,cancelable:true});field.dispatchEvent(wheel);
+ assert.equal(blurred,1);assert.equal(field.value,'300');assert.equal(wheel.defaultPrevented,false,'native scrolling remains available');
 });

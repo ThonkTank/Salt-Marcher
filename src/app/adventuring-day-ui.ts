@@ -194,13 +194,15 @@ function draw(value: DayView) {
     number(c.dailyBudget) +
     " XP Tagesbudget";
   summary.append(facts);
+  const budgetTables = document.createElement("div");
+  summary.append(budgetTables);
   table(
-    summary,
+    budgetTables,
     ["Kurze Rast 1", "Kurze Rast 2", "Lange Rast"],
     [c.milestones.map(number)],
   );
   table(
-    summary,
+    budgetTables,
     ["Leicht", "Mittel", "Schwer", "Tödlich"],
     [c.thresholds.map(number)],
   );
@@ -216,7 +218,7 @@ function draw(value: DayView) {
       " kurze / " +
       number(c.longRests) +
       " lange Rasten";
-    summary.append(progress);
+    summary.insertBefore(progress,budgetTables);
     const xp = document.createElement("p");
     xp.textContent =
       "Verdienst: " +
@@ -224,7 +226,7 @@ function draw(value: DayView) {
       " XP je Figur · insgesamt " +
       number(c.totalAwardXp) +
       " XP nach aufgerundeter Verteilung";
-    summary.append(xp);
+    summary.insertBefore(xp,budgetTables);
     table(
       summary,
       [
@@ -351,8 +353,13 @@ export function activateDayCalculator(next: WorkspaceGeometry | null) {
 export function initDayCalculator(status: typeof tell, openParty: () => void,openEncounters:()=>void=()=>{}) {
   initDayItinerary(()=>{state();edited();});
   tell = status;
-  const popup=bindAnchoredPopup(el<HTMLButtonElement>('day-trigger'),el('day-popover'),760);
+  const popup=bindAnchoredPopup(el<HTMLButtonElement>('day-trigger'),el('day-popover'),1080);
   el('day-trigger').onclick=()=>{if(popup.toggle()){refreshDayItineraryChoices();void refresh();}};
+  // Scrolling toward the answer must not step the number being edited.
+  el('day-popover').addEventListener('wheel',event=>{
+    const field=(event.target as Element).closest<HTMLInputElement>('input[type=number]');
+    if(field&&field===document.activeElement)field.blur();
+  },{capture:true,passive:true});
   el('day-close').onclick=popup.close;
   el('day-plan-open-encounters').onclick=()=>{popup.close();openEncounters();};
   el("day-party-open").onclick = () => {
