@@ -1,3 +1,4 @@
+import {editTextareaText} from './key-reading-model';
 import {workspaceGeometryOnly as geometryOnly} from './atlas-render-view';
 import {RoomDirectoryView} from './room-directory-ui';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
@@ -307,8 +308,7 @@ function renderRoomInputs(room: Room, token: string | undefined) {
     const input = document.createElement('textarea'); input.id = `key-${index}`; label.htmlFor = input.id; input.rows = 8; input.value = section.markdown!;
     input.addEventListener('input', () => {
       if (roomDraftLoading || roomDraftReadFailed || activationJob || activating || activationFailed || workspace?.token !== token || draft?.id !== room.id) return;
-      // HTML textareas normalize CRLF; an untouched value must preserve imported bytes.
-      draft!.sections[index]!.markdown = input.value === section.markdown!.replace(/\r\n?/g, '\n') ? section.markdown : input.value;
+      draft!.sections[index]!.markdown = editTextareaText(draft!.sections[index]!.markdown!,input.value);
       schedule();
     });
     input.addEventListener('blur', () => { if (!composing && workspace?.token === token && draft?.id === room.id) void flush(); });
@@ -371,8 +371,7 @@ function updateHistory() {
 }
 const roomDirectory=new RoomDirectoryView(el('rooms'),id=>{void campaignAtlas?.navigate('room',id);});
 function renderList(refresh=false) {
-  roomDirectory.context(workspace?.token??null,el<HTMLInputElement>('search').value,workspace?.selectedId??null,workspace?.problems??[]);
-  if(refresh)roomDirectory.refresh();
+  roomDirectory.context(workspace?.token??null,el<HTMLInputElement>('search').value,workspace?.selectedId??null,workspace?.problems??[],refresh);
 }
 async function selectRoom(id: string) {
   if (!(await flushDrawing())) return;
