@@ -66,5 +66,6 @@ export interface AtlasTravelAPI {
   ): Promise<Result<AtlasLocalPreview>>;
   executeAtlasTravel(
     command: AtlasTravelCommand,
+    groupView?: boolean,
   ): Promise<Result<CampaignAtlas>>;
 }

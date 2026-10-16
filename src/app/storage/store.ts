@@ -1,7 +1,7 @@
 import {atlasPartyPoint} from '../atlas-runtime-model';
 import {installLandscape,landscapeRegion,executeLandscape} from './atlas-landscape';
 import {installAtlasTravel,atlasEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
-import {atlasHexAt,atlasFrame,localToAtlas} from '../campaign-atlas-model';
+import {atlasHexPoint,atlasHexAt,atlasFrame,localToAtlas} from '../campaign-atlas-model';
 import {newLocation} from '../../features/location/location-schema';
 import {installCampaignAtlas,createCampaignAtlas,atlasRoot,atlasBindings,atlasHistoryState,bindAtlas,executeAtlasWrite,validateCampaignAtlases} from './campaign-atlas';
 import type {AtlasCommand,CampaignAtlas} from '../campaign-atlas-contracts';
@@ -69,7 +69,7 @@ import type {DrawingCommand} from '../drawing-contracts';
 import {installNpcWorldSchema} from './npc-world';
 import {installAutonomySchema,autonomyView,autonomyDecision,executeAutonomy,captureAutonomyBasis,recordAutonomyTime,catchUpAutonomy,validateAutonomy} from './autonomy';
 import type {AutonomyCommand} from '../autonomy-contracts';
-import {installPlayerSchema,playerObservers,playerSettings,playerView,projectPlayer,executePlayer,savePlayerAsset,playerAssets,playerMediaFiles,setPlayerWindow,validatePlayer} from './player';
+import {installPlayerSchema,playerObservers,playerSettings,playerView,projectPlayer,projectAtlasGroup,executePlayer,savePlayerAsset,playerAssets,playerMediaFiles,setPlayerWindow,validatePlayer} from './player';
 import type {PlayerCommand,PlayerAsset,PlayerFrame} from '../player-contracts';
 import {installCitySchema,cityOverview,readCity,executeCity,validateCities,readCityBuildingChoices} from './city';
 import type {CityCommand} from '../city-contracts';
@@ -258,24 +258,27 @@ export class CampaignStore {
   }
   private travelAtlas(token:string){const a=this.campaignAtlas(token),p=atlasPartyPoint(a)??{x:0,y:0};a.terrain.landscape=landscapeRegion(this.db,a.campaignId,{x:p.x-6000,y:p.y-6000,width:12000,height:12000});return a;}
   previewAtlasTravel(token:string,destination:import('../contracts').Point){return previewAtlasLocal(this.travelAtlas(token),destination);}
-  executeAtlasTravel(c:import('../atlas-travel-contracts').AtlasTravelCommand){this.guard(c.token,c.campaignId);executeAtlasTravel(this.db,c,{
+  executeAtlasTravel(c:import('../atlas-travel-contracts').AtlasTravelCommand,groupView=false){this.guard(c.token,c.campaignId);if(typeof groupView!=='boolean')throw new Error('Gruppensicht prüfen.');executeAtlasTravel(this.db,c,{
     read:()=>this.travelAtlas(c.token),
     advance:(seconds,revision)=>{this.executeLive({commandId:c.commandId+':clock',token:c.token,campaignId:c.campaignId,action:{kind:'advance-clock',sceneId:c.sceneId,expectedRevision:revision,amount:seconds,unit:'seconds',calendarVersion:'relative-v1',reason:'Bestätigte lokale Atlasbewegung'}});},
     location:id=>{const s=this.liveScene(c.token,c.sceneId);if(s.locationId!==id)this.executeLive({commandId:c.commandId+':location',token:c.token,campaignId:c.campaignId,action:{kind:'scene-content',sceneId:c.sceneId,expectedRevision:s.revision,title:s.title,notes:s.notes,readAloud:s.readAloud??'',locationId:id}});},
     crossing:(from,to)=>{const g=dungeonGeometry(this.db,c.campaignId),scene=this.liveScene(c.token,c.sceneId);createTriggerEvents(this.db,c.campaignId,g,{id:'atlas:'+c.commandId,nextIndex:1,request:{sceneId:c.sceneId}},from,to,scene.clock.instantMs);},
     dungeon:pose=>{const d=this.dungeon(c.token);this.executeDungeon({commandId:c.commandId+':dungeon',token:c.token,campaignId:c.campaignId,action:{kind:'place',sceneId:c.sceneId,expectedPositionRevision:d.positionRevision,pose}});}
-   });return this.campaignAtlas(c.token);}
+   });return this.campaignAtlas(c.token,groupView);}
   landscapeFind(token:string,text:string){const cam=this.guard(token);if(typeof text!=='string'||text.length>200)throw new Error('Suchtext prüfen.');return this.db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')!='patch' AND (instr(lower(json_extract(payload,'$.name')),lower(?))>0 OR json_extract(payload,'$.locationId')=?) LIMIT 100").all(cam,text,text).map((r:any)=>JSON.parse(r.payload)) as import('../atlas-landscape').LandscapeRecord[];}
   landscapeRegion(token:string,box:import('../atlas-landscape').LandscapeBox,metersPerPixel=0){const cam=this.guard(token);return {revision:atlasRoot(this.db,cam).revision,records:landscapeRegion(this.db,cam,box,metersPerPixel)};}
   registerReference(token:string,mime:string,bytes:Buffer){const cam=this.guard(token),id=hash(bytes);this.db.prepare('INSERT OR IGNORE INTO atlas_reference_asset VALUES(?,?,?,?)').run(cam,id,mime,bytes);return id;}
   referenceAsset(token:string,id:string){const r=this.db.prepare('SELECT * FROM atlas_reference_asset WHERE campaign_id=? AND id=?').get(this.guard(token),id);if(!r)throw new Error('Referenzbild fehlt.');return 'data:'+r.mime+';base64,'+r.bytes.toString('base64');}
-  campaignAtlas(token:string):CampaignAtlas{
+  campaignAtlas(token:string,groupView=false):CampaignAtlas{
+    if(typeof groupView!=='boolean')throw new Error('Gruppensicht prüfen.');
     const cam=this.guard(token);return this.db.transaction(()=>{
       const root=atlasRoot(this.db,cam),terrain=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload);
       if(!terrain)throw new Error('Kampagnenatlas fehlt.');
       const geometry=this.dungeon(token),scene=geometry.sceneId?this.sceneWorld(token,geometry.sceneId):null;
       const perception=geometry.position&&geometry.sceneId?dungeonDisplay(this.db,cam,geometry.sceneId,playerSettings(this.db,cam),playerObservers(this.db,cam).list):null;
-      return{scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain,bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id)),geometry,workspace:this.workspace(),scene,...atlasHistoryState(this.db,cam)};
+      const bindings=atlasBindings(this.db,cam),cities=this.cities(token).cities.map(h=>this.city(token,h.id));
+      const places=readWorld(this.db,cam,false).places.filter(p=>p.mapId===terrain.id).map(p=>{const b=bindings.find(b=>b.kind==='location'&&b.ownerId===p.locationId)??bindings.find(b=>b.kind==='city'&&cities.some(c=>c.header.id===b.ownerId&&c.header.locationId===p.locationId));return {...p,point:b?{x:b.x,y:b.y}:atlasHexPoint(p.q,p.r,terrain.hexMeters)};});
+      return{...(groupView?{publicFrame:projectAtlasGroup(this.db,cam)}:{}),places,scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain,bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id)),geometry,workspace:this.workspace(),scene,...atlasHistoryState(this.db,cam)};
     })();
   }
   executeAtlas(c:AtlasCommand){
@@ -335,7 +338,18 @@ export class CampaignStore {
         }return result;
       }
       if(a.kind==='entrance'){putAtlasEntrance(this.db,this.campaignAtlas(c.token),a.entrance);return;}
-      if(a.kind==='bind'){bindAtlas(this.db,cam,a.binding,a.expectedRevision);return;}
+      if(a.kind==='bind'){
+        bindAtlas(this.db,cam,a.binding,a.expectedRevision);
+        if(a.binding.kind==='location'){const atlas=this.campaignAtlas(c.token),place=atlas.places.find(p=>p.locationId===a.binding.ownerId);if(!place||place.trashed)throw new Error('Ortsmarker fehlt.');this.executeWorld({commandId:c.commandId+':anchor',token:c.token,campaignId:cam,action:{kind:'place',mapId:atlas.terrain.id,locationId:place.locationId,expectedRevision:place.revision,hex:atlasHexAt({x:a.binding.x,y:a.binding.y},atlas.terrain.hexMeters)}});}
+        return;
+      }
+      if(a.kind==='location-create'){
+        const root=this.campaignAtlas(c.token);if(a.mapId!==root.terrain.id||a.expectedMapRevision!==root.terrain.revision)throw new Error('Karte wurde inzwischen geändert. Ziel prüfen und erneut anlegen.');
+        if(!Number.isFinite(a.point.x)||!Number.isFinite(a.point.y))throw new Error('Endlichen Kartenpunkt wählen.');
+        const id=a.document.id;this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:null}});
+        this.executeWorld({commandId:c.commandId+':anchor',token:c.token,campaignId:cam,action:{kind:'place',locationId:id,mapId:root.terrain.id,expectedRevision:null,hex:atlasHexAt(a.point,root.terrain.hexMeters)}});
+        bindAtlas(this.db,cam,{id:randomUUID(),kind:'location',ownerId:id,parent:'world',parentId:null,x:a.point.x,y:a.point.y,angle:0,revision:0},null);return{id};
+      }
       if(a.kind==='city-create'){
         const id=randomUUID(),locationId=randomUUID();this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:newLocation(locationId,a.name,'city',[randomUUID(),randomUUID()]),expectedRevision:null}});
         this.executeCity({commandId:c.commandId+':city',token:c.token,campaignId:cam,cityId:id,expectedRevision:0,action:{kind:'create',header:{id,locationId,revision:1,name:a.name,width:a.width,height:a.height,paper:'#e9dfc8',roof:'#9c604c'}}});
@@ -865,7 +879,7 @@ export class CampaignStore {
   city(token:string,id:string){return readCity(this.db,this.guard(token),id);}
   cityActivities(token:string,q:import('../city-activity-contracts').CityActivityQuery):import('../city-activity-contracts').CityActivityPage{const cam=this.guard(token);return this.db.transaction(()=>readCityActivities(this.db,cam,q))();}
   cityBuildings(token:string,query:import('../city-contracts').CityBuildingQuery){const c=this.guard(token);return this.db.transaction(()=>readCityBuildingChoices(this.db,c,query))();}
-  executeCity(command:CityCommand){return executeCity(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
+  executeCity(command:CityCommand){return executeCity(this.db,command,()=>{this.guard(command.token,command.campaignId);},document=>{this.commitPreparation({commandId:command.commandId+'|city-location',campaignId:command.campaignId,token:command.token,change:{kind:'location',document,expectedRevision:null}});});}
   campaignInstallationSettings(){const id=this.list().activeId;return{registry:readGeneratorRegistry(this.db,id??''),activeId:id};}
   campaignCatalogOutcome(command:CampaignCatalogCommand){return catalogOutcome(this.db,command);}
   campaignCatalog(command:CampaignCatalogCommand):CampaignCatalogReceipt{
@@ -893,6 +907,7 @@ export class CampaignStore {
     if(!['open','create'].includes(receipt.kind)||this.list().activeId!==receipt.campaignId||!this.list().campaigns.some(c=>c.id===receipt.campaignId))throw new Error('Die aktive Kampagne wurde inzwischen gewechselt. Kampagne ausdrücklich neu öffnen.');
     this.chronicleRead?.close();this.chronicleRead=null;this.active={campaignId:receipt.campaignId,token:randomUUID()};return this.workspace();
   }
+
   campaignOverview(){return this.db.transaction(()=>campaignOverview(this.db))();}
   campaignFence(id:string,revision:number){const r=this.db.prepare('SELECT revision,trashed FROM campaign_lifecycle WHERE campaign_id=?').get(id);if(!r||r.trashed||r.revision!==revision)throw new Error('Quellkampagne wurde gelöscht oder ihr Lebenszyklus geändert.');}
   async campaignSnapshot(token:string,filename:string){
@@ -992,7 +1007,7 @@ export class CampaignStore {
     const ack=executeWorld(this.db,command,()=>{this.guard(command.token,command.campaignId);},{
       capture:()=>captureAutonomyBasis(this.db,command.campaignId),
       confirm:(commandId,before,after,basis)=>this.consumeSceneTime(command.campaignId,commandId,before.scene,after.scene,basis),
-    });
+    },document=>{this.commitPreparation({commandId:command.commandId+'|atlas-location',campaignId:command.campaignId,token:command.token,change:{kind:'location',document,expectedRevision:null}});});
     this.updateMusic(command.campaignId);return ack;
   }).immediate();}
   itemDefinitions(query:ItemQuery){return readItemDefinitions(this.db,query);}
