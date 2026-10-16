@@ -179,13 +179,43 @@
     ]
   },
   "competitor": {
-    "case_executed": false,
-    "status": "browser interaction access blocked",
-    "products": [
-      "Improved Initiative",
-      "DM Screen"
-    ],
-    "pending": "same critical Bite, zero-HP followup, heal/undo/reload"
+    "case_executed": true,
+    "name": "DM Screen",
+    "url": "https://dmscreen.app/",
+    "public_ui_date": "2026-10-16",
+    "version": "not exposed in used UI",
+    "rules": "2014",
+    "own_campaign": "UX02 Schwarzer Drache",
+    "starting_health": {
+      "hp": 20,
+      "maxHp": 40,
+      "tempHp": 5,
+      "concentrating": true
+    },
+    "first_hit": {
+      "entered_total": 38,
+      "hp": 0,
+      "tempHp": 0,
+      "concentrating": false,
+      "failures": 0
+    },
+    "second_hit": {
+      "intended_total": 22,
+      "damage_control_at_zero": "Kill",
+      "method": "manually choose second failure circle",
+      "failures": 2
+    },
+    "undo_second_failures": 0,
+    "heal_hp": 7,
+    "healing_clears_failures_verified_by_new_zero_hp_event": true,
+    "undo_heal_hp": 0,
+    "undo_heal_failures": 2,
+    "reload_hp": 0,
+    "reload_failures": 2,
+    "reload_undo_enabled": false,
+    "reference_max_hp_display": 88,
+    "combat_max_hp_display": 40,
+    "screenshot_source": "Original JPEG bytes from current task screenshot tool outputs; unedited"
   },
   "results": {
     "first_hit": {
@@ -233,6 +263,104 @@
     "critical-hit-after.png": "e5af32b295c76f04a682ce20c5f5002dc6328a9dccd28a21ee0fc406a48bffc6",
     "critical-zero-after.png": "9d875a79097c97d6b064b4737e5eba73dd079fa3d404a5e0424ddaedd60cf148",
     "critical-undo-after.png": "449a4746cf5a009cc987a20a600a5f60644c9ae8a59c0ba6c76c75e744117d53",
-    "critical-reopen-after.png": "0daa3256a42c919f0d212ab6f60a377194f42ee4395c52fead032f919e1b73a4"
+    "critical-reopen-after.png": "0daa3256a42c919f0d212ab6f60a377194f42ee4395c52fead032f919e1b73a4",
+    "critical-integrated-hit.png": "4504c583d090324a524ede5d6d81da29a7e44197b8f274ede3080e4bbd9fe019",
+    "critical-integrated-reopen.png": "68c55e8258c21dbef11e4e7eae2d8aebdf94899deb69e73c092420a1f27a8d06",
+    "critical-integrated-party.png": "e51565ba7df752b46748efdd59ad51f03db427324660b59826f8e6611cf8c1fb",
+    "critical-integrated-undo.png": "e90626ad299fbd15e161e76f05b6e45b527a1e7ca1a533db25ca8f5d1a4516b2",
+    "critical-dmscreen-undo-heal.jpg": "8217de8472eb876f56e167cf825617aeb3b297a2a55632be09e21c3631525377",
+    "critical-dmscreen-reopen.jpg": "a9d9d3942e2b9bf7128f3c75fe394911593ddd7af22b7ed1025ae27f4fc8621e"
+  },
+  "integrated": {
+    "version": "0.150.0",
+    "commit": "38ce5c54cda94d9c981acdaafe254218e260e58a",
+    "session": "encounter-03-integrated-1016",
+    "run": "critical-integrated",
+    "identity": [
+      {
+        "attempt_id": "critical-integrated-0150-01",
+        "product_files": {
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs": {
+            "sha256": "cec323add7dd2719805f87ef9bd075fee07dbe69e7e5d5c027dcfb4c2d9274fb",
+            "bytes": 2564694
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/renderer.js": {
+            "sha256": "e4a54d2704b2e21203aa27f1148066df0d509f239ccbb1c7b58c52c763eaf205",
+            "bytes": 2520614
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/index.html": {
+            "sha256": "bf8f6657517f7ad1295d315a7bbf55b38fea7e4a5499d442617a7f75da14e3bc",
+            "bytes": 173838
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/app.css": {
+            "sha256": "47dfccd29b0973e574011575bce9582f5562b5fa0424777106598ee71265b157",
+            "bytes": 107292
+          }
+        }
+      },
+      {
+        "attempt_id": "critical-integrated-0150-reopen",
+        "product_files": {
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/main.cjs": {
+            "sha256": "cec323add7dd2719805f87ef9bd075fee07dbe69e7e5d5c027dcfb4c2d9274fb",
+            "bytes": 2564694
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/renderer.js": {
+            "sha256": "e4a54d2704b2e21203aa27f1148066df0d509f239ccbb1c7b58c52c763eaf205",
+            "bytes": 2520614
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/index.html": {
+            "sha256": "bf8f6657517f7ad1295d315a7bbf55b38fea7e4a5499d442617a7f75da14e3bc",
+            "bytes": 173838
+          },
+          "/home/aaron/Documents/Codex/2026-10-15-sieh-dir-das-dungeon-tool-projekt/kampagnenwerkstatt/.build/desktop/ui/app.css": {
+            "sha256": "47dfccd29b0973e574011575bce9582f5562b5fa0424777106598ee71265b157",
+            "bytes": 107292
+          }
+        }
+      }
+    ],
+    "product_closes": [
+      {
+        "exit_code": 0,
+        "product_descendants_remaining": [],
+        "ok": true
+      },
+      {
+        "exit_code": 0,
+        "product_descendants_remaining": [],
+        "ok": true
+      }
+    ],
+    "helper_exit_code": 0,
+    "tests": {
+      "hit_reinforcement_legendary": 22,
+      "area": 6,
+      "fail": 0
+    },
+    "desktop_and_app_typecheck": "passed",
+    "fresh_party_hp": "0/40",
+    "fresh_party_failures": 2,
+    "fresh_combat_hp": "0/40",
+    "fresh_combat_failures": 2,
+    "one_undo_after_reopen_failures": 0
+  },
+  "browser_access_repair": {
+    "status": "restored",
+    "probe": "local HTTP test page with capture listeners and JS tick counter",
+    "before": "no pointer or key events; programmatic text input and JS ticks worked",
+    "action": "SIGTERM only verified GPU child PID 3591 of existing ChatGPT app PID 3547; app main left alive",
+    "after": "trusted pointerdown/mousedown/pointerup/mouseup/click; counter 0 to 1; competitor controls operated",
+    "manual_countercheck_required": false,
+    "improved_initiative_characters_switch": "succeeded after repair, existing combatants unchanged"
+  },
+  "final_integration": {
+    "commit": "f5004f6a",
+    "version": "0.151.0",
+    "changes_since_native": "journey resume map binding and day rest planning; combat source unchanged",
+    "desktop_and_app_typecheck": "passed",
+    "day_calculator_and_hit_tests": 31,
+    "fail": 0,
+    "travel_context_tests": 50
   }
 }
