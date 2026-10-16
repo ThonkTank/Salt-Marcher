@@ -230,6 +230,34 @@ späte Reads, Kontextwechsel und ausstehender Flush. Native Bedienung wird am
 aktuellen Paket separat geprüft.
 
 Die volle originale Encounter-Selection mit Mehrgruppenstart, durchgehender
-Sourcegruppen-Provenienz/Reconciliation, Mobkarten und vorgeschaltetem
+Sourcegruppen-Provenienz/Reconciliation und vorgeschaltetem
 Resolution-Schritt vor dem XP-Command bleibt gesonderter Umfang. Dieser Anschluss
 schließt die Treasuryübergabe nach dem bestehenden atomaren Abschluss ab.
+
+## Kompakte Mobübersicht
+
+Bestätigte `partitionKind=mob`-Initiativeplätze erscheinen als eine kompakte
+Karte mit der Anzahl von Mitgliedern über 0 HP, vorderem lebendem Mitglied,
+individuellen HP/temporären HP, RK, Initiative und dessen Zuständen. Getrennte
+Trupp-IDs bleiben getrennt, auch bei identischem Statblock. Alte unmarkierte
+Gruppen und Einzelpartitionen werden nicht aus einer neuen Größenschwelle
+umgedeutet. „Mitglieder zeigen“ öffnet alle individuellen Zeilen einschließlich
+der Mitglieder mit 0 HP. Schaden und Heilung öffnen den bestehenden Editor für
+die ausgewählte Identität; es gibt keinen zweiten Mob-HP-Pool und keinen
+Schadensüberlauf auf weitere Mitglieder.
+
+Das vordere Mitglied rückt beim Verlust seiner letzten HP weiter; Undo stellt
+die ursprünglichen Werte und damit auch die Vorderposition wieder her. Der
+aktive Teilnehmer kann davon abweichen und bleibt ausdrücklich erreichbar.
+Jeder Teilnehmer behält seinen bisherigen Zug. Bereits beendete Züge sind
+markiert, die Karte zeigt ihren Fortschritt in der aktuellen Runde. Neue
+Verstärkung bleibt an die bestätigte Partition gebunden. Die aufgeklappte
+Ansicht ist nur lokaler Anzeigezustand; HP, Zustände, Runde und Zug kommen
+nach Neustart erneut aus dem gespeicherten Kampf und seinen kanonischen
+Szenenmitgliedern. Alte Kartenaktionen verlieren bei Kontext-/Revisionswechsel
+ihre Berechtigung.
+
+Die Store-/DOMfälle in `tests/desktop-combat-mob.test.mjs` prüfen Frontwechsel,
+individuelle Werte, Undo/Reopen, getrennte Partitionen, Verstärkung, Zugfortschritt
+und veraltete Kartenaufrufe. Die vollständige ursprüngliche Encounter-Selection
+und sämtliche Reconciliation-/Resolutionvorgaben bleiben eigenständiger Umfang.
