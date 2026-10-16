@@ -99,3 +99,29 @@ test('changed catalog queries remove old choices and show pending, empty and fai
  window.campaign.itemDefinitions=async()=>({ok:true,value:{items:[]}});form.onsubmit({preventDefault(){}});await until(()=>results.textContent.includes('Keine passenden'));
  window.campaign.itemDefinitions=async()=>({ok:false,error:'Katalog nicht lesbar'});form.onsubmit({preventDefault(){}});await until(()=>results.textContent.includes('Katalog nicht lesbar'));assert.equal(results.querySelector('button'),null);
 });
+
+test('visible catalog choices work in a newly created treasure without repeating the search',async t=>{
+ const x=await fixture(t);let searches=0;
+ window.campaign.itemDefinitions=async()=>{searches++;return{ok:true,value:{items:[{id:'potion',revision:2,name:'Potion of healing',category:'magic',unitCopper:'5000'}]}};};
+ x.el('treasury-catalog-search').value='Potion';x.el('treasury-catalog-form').onsubmit({preventDefault(){}});
+ await until(()=>!!x.el('treasury-catalog-results').querySelector('button'));
+ const old=x.el('treasury-catalog-results').querySelector('button');
+ x.el('treasury-new').click();await until(()=>x.el('treasury-title').value==='Neuer Schatz');
+ const visible=x.el('treasury-catalog-results').querySelector('button');assert.ok(visible);assert.notEqual(visible,old);
+ old.click();assert.equal(x.el('treasury-rows').querySelectorAll('input').length,0,'a detached previous-editor choice stays revoked');
+ visible.click();assert.equal(await x.ui.flushTreasury(),true);
+ assert.equal(searches,1);assert.equal(x.writes.at(-1).d.treasureId,'new-1');
+ assert.deepEqual(x.writes.at(-1).d.items.map(i=>[i.quantity,i.reference.definitionId,i.reference.revision]),[['1','potion',2]]);
+ assert.equal(x.commands.length,1,'adding remains a draft until explicitly applied');
+});
+
+test('switching existing treasures rebinds visible catalog choices but changing campaigns clears them',async t=>{
+ const x=await fixture(t);
+ window.campaign.itemDefinitions=async()=>({ok:true,value:{items:[{id:'gold',revision:1,name:'Goldmünze',category:'coins',unitCopper:'100'}]}});
+ x.el('treasury-catalog-search').value='Gold';x.el('treasury-catalog-form').onsubmit({preventDefault(){}});
+ await until(()=>!!x.el('treasury-catalog-results').querySelector('button'));
+ await x.ui.openTreasury('b');const choice=x.el('treasury-catalog-results').querySelector('button');choice.click();
+ assert.equal(await x.ui.flushTreasury(),true);assert.equal(x.writes.at(-1).d.treasureId,'b');assert.equal(x.writes.at(-1).d.items[0].reference.definitionId,'gold');
+ await x.switchTo();assert.equal(x.el('treasury-catalog-results').querySelector('button'),null);
+ const count=x.el('treasury-rows').querySelectorAll('input').length;choice.click();assert.equal(x.el('treasury-rows').querySelectorAll('input').length,count);
+});
