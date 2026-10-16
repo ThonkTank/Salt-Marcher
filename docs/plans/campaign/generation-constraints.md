@@ -65,6 +65,18 @@ Geltungsbereichs vor dem Write ab. Das vorhandene Formular zeigt die gewählte
 Quelle weiter an, sperrt sie bei gespeicherten Tabellen und verweist für einen
 anderen Geltungsbereich auf eine neue Tabelle. Die normale Bearbeitung verändert
 Name, Beschreibung, Einträge und Bedingungen unter derselben ID/Revision.
+Beim Speichern einer kampagneneigenen Tabelle prüft und beschneidet
+`pruneWorldStock` ausschließlich Fraktionsquellen desselben geprüften Owners.
+Die Einschränkung erfolgt in der Query vor dem Decodieren, über den bestehenden
+Campaign-/Kind-Schlüssel. Eine beschädigte Quelle einer unabhängigen Kampagne
+kann diesen lokalen Save weder blockieren noch wird sie dabei geändert. Für
+Installationstabellen bleiben sämtliche Kampagnen im Prüfbereich; betroffene
+Bestände und Revisionen ändern sich zusammen mit der Tabelle atomar. Ein
+beschädigter Record in diesem gemeinsamen Prüfbereich bricht den gesamten
+Write einschließlich schon bearbeiteter Bestände und Receipt ab. Reparatur,
+globaler Backup und vollständige Löschung bleiben eigene Aufgaben, kein stilles
+Überspringen beschädigter gemeinsamer Daten. Keine Migration oder neuer Cache.
+
 Jeder Input übernimmt ausschließlich sein bearbeitetes Feld. Ein Name-/Filter-
 oder Gewichtsedit liest unberührte Beschreibung nicht neu aus dem Browsertextarea;
 so bleiben deren originale Zeilenumbrüche und Autorenbytes erhalten. Tatsächliche
@@ -83,20 +95,30 @@ kampagnenlokaler Lootbindungen; sie ersetzt keine bestehende globale Identität.
 
 `desktop-table-scope.test.mjs` prüft beide unzulässigen Richtungen mit echten
 SQLitezuständen, darunter Quellen zweier Kampagnen, Fraktionsbestände,
-vollständiger Rollback, Shared-Revision, Receiptreplay und Fresh.
+vollständiger Rollback, Shared-Revision, Receiptreplay und Fresh. Die neue
+Gegenprobe belegt den zuvor durch B blockierten lokalen A-Save; weitere Fälle
+prüfen echte Bestandsbereinigung beider Campaigns einer Shared-Tabelle und
+Rollback bei beschädigter gemeinsamer Quelle. Entfernte Kreaturen fallen aus
+dem Fraktionsbestand, der Source-Editor muss die erhöhte Revision neu laden.
 `desktop-table-weights.test.mjs` prüft den gesperrten vorhandenen und frei
 wählbaren neuen Scope sowie das erneute Öffnen nach einem Installation-Save.
-Native Dialogbedienung, vollständiger Quellenlebenszyklus und Generatorabnahme
-bleiben getrennte Belege.
+Nativer Teilbeleg am 16.10.: lokalen Tabellenname ändern und Kreatur entfernen,
+Save über echte IPC trotz beschädigter B-Fraktionsquelle, erwartete A-Bestandskürzung,
+Originalprosa/Foreignrecords unverändert, erneutes Öffnen und Profilneustart;
+zwei normale Exits ohne Rendererfehler. Die Queryplanprüfung bestätigt die Suche
+über den vorhandenen Campaign-/Kind-Index; daraus folgt keine allgemeine
+Latenz- oder Großbestandsabnahme. Vollständige Dialog-/Quellenlebenszyklus- und
+Generatorabnahme bleiben getrennt.
 
 ### Weitere ausführbare Tabellenabschlüsse
 
-- **Ein gemeinsamer Manager einschließlich Fraktionsnesting.** Bestehenden
-  `generation-ui.openTable` und Katalogslot nutzen. Fraktionseditor muss seinen
-  unveränderten Draft und Fokus behalten; eine neu gespeicherte Tabellen-ID
-  ausdrücklich dorthin zurückgeben. Titelclose, Escape und Abbrechen benutzen
-  denselben Discardpfad. Native Abnahme: nur oberste Bestätigung interaktiv,
-  Cancel zurück zum unveränderten Manager, anschließend zurück zur Fraktion;
+- **Gemeinsamen Manager einschließlich Fraktionsnesting am Host abschließen.**
+  `generation-ui.openTable` mit Katalogslot ist bereits der direkte und genestete
+  Tabelleneditor; keinen zweiten Manager bauen. Die bestehende DOMprüfung
+  erhält den Fraktionsentwurf und übernimmt erst eine bestätigte neue Tabellen-ID.
+  Titelclose, Escape und Abbrechen benutzen denselben Discardpfad. Verbleibende
+  native Abnahme: nur oberste Bestätigung interaktiv, Cancel zurück zum
+  unveränderten Manager, anschließend mit erhaltenem Fokus zur Fraktion;
   ausstehender Save darf weder doppelt starten noch geschlossen werden.
 - **Trash von endgültiger Löschung unterscheiden.** Das vorhandene
   `table-trash` erhält Identitäten/Verknüpfungen für Restore. Es erfüllt die

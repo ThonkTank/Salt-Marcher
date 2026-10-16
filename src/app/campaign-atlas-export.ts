@@ -1,3 +1,5 @@
+import {drawLandscape,landscapeNode} from "./atlas-landscape-view";
+import {hexPolygon,type LandscapeRecord} from "./atlas-landscape";
 import type { CampaignAtlas } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
 import type { PlayerFrame } from "./player-contracts";
@@ -14,6 +16,7 @@ export function publicAtlasSVG(
   a: CampaignAtlas,
   box: CanvasBox,
   frame?: PlayerFrame,
+  landscape:LandscapeRecord[]=[],
 ): SVGSVGElement {
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
@@ -113,6 +116,7 @@ export function publicAtlasSVG(
           cell.label,
         );
     }
+    const defs=landscapeNode('defs'),clip=landscapeNode('clipPath',{id:'known-landscape'});for(const c of map.cells){const p=hexPolygon(c.q,c.r,map.hexMeters);clip.append(landscapeNode('path',{d:roomPath([{outer:p.outer.map(v=>({x:v.x-box.x,y:v.y-box.y})),holes:[]}])}));}defs.append(clip);svg.append(defs);const known=landscapeNode('g',{'clip-path':'url(#known-landscape)'});drawLandscape(known,landscape.filter(r=>r.kind==='patch'||r.kind==='river'||r.kind==='road'),box,box.width/2000,new Map(),false);svg.append(known);
     const p = atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
     add("circle", {
       cx: p.x - box.x,
@@ -130,6 +134,7 @@ export async function atlasPNG(
   svg: SVGSVGElement,
   width: number,
   height: number,
+  format:"png"|"jpeg"="png",
 ): Promise<number[]> {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("xmlns", ns);
@@ -154,7 +159,8 @@ export async function atlasPNG(
           b
             ? resolve(b)
             : reject(new Error("PNG konnte nicht erzeugt werden.")),
-        "image/png",
+        "image/"+format,
+        .94,
       ),
     );
     return [...new Uint8Array(await blob.arrayBuffer())];

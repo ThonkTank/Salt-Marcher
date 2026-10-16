@@ -53,7 +53,19 @@ export function saveWorldSource(db:any,cam:string,input:WorldSource,expected:num
  const name=(s.kind==='faction'?view.factions:view.locations).find(x=>x.id===s.id)!.name,payload=JSON.stringify({text:(s.kind==='faction'?'Fraktionsquelle und Bestand aktualisiert: ':'Ortsquellen aktualisiert: ')+name,recordedAt:new Date().toISOString(),facts:{before:old??null,after:s}});db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(cam,randomUUID(),null,payload,hash(payload));
 }
 /** Table membership owns eligible stock; prune removed entries in the same transaction. */
-export function pruneWorldStock(db:any,table:EncounterTable){const allowed=new Set(table.entries.map(e=>e.creatureId));for(const row of db.prepare("SELECT * FROM world_source WHERE kind='faction'").all()){const s=sourceRow(row);if(!s.tableIds.includes(table.id))continue;const stock=s.stock.filter(e=>allowed.has(e.creatureId));if(stock.length!==s.stock.length)put(db,row.campaign_id,{...s,revision:s.revision+1,stock});}}
+export function pruneWorldStock(db:any,cam:string,table:EncounterTable){
+ const allowed=new Set(table.entries.map(e=>e.creatureId));
+ // The table owner is already checked by table-save. Decode only that domain;
+ // installation tables still require all dependent campaigns in the transaction.
+ const rows=table.scope==='installation'
+  ?db.prepare("SELECT * FROM world_source WHERE kind='faction'").all()
+  :db.prepare("SELECT * FROM world_source WHERE campaign_id=? AND kind='faction'").all(cam);
+ for(const row of rows){
+  const s=sourceRow(row);if(!s.tableIds.includes(table.id))continue;
+  const stock=s.stock.filter(e=>allowed.has(e.creatureId));
+  if(stock.length!==s.stock.length)put(db,row.campaign_id,{...s,revision:s.revision+1,stock});
+ }
+}
 export function resolveWorldSources(db:any,cam:string,r:Pick<GenerationRequest,'factionIds'|'locationId'|'tableIds'>,tables:EncounterTable[]){
  const factionIds=r.factionIds??[],locationId=r.locationId??null;
  if(!Array.isArray(factionIds)||factionIds.length>1000||new Set(factionIds).size!==factionIds.length||locationId!==null&&typeof locationId!=='string')throw new Error('Ungültige Weltfilter.');
