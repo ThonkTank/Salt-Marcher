@@ -36,6 +36,9 @@ veränderte Auswahl öffnet keine Mappe aus einem älteren Auftrag.
 - Eingaben bleiben an Campaign, Plan, Besuch und ursprüngliche Revision
   gebunden. Aktualisieren übernimmt keine offene Eingabe. Veraltete Antworten
   dürfen fremde Texte, Auswahl oder einen neueren Stand nicht verändern.
+- Ein leerer XP-Pool einer manuellen Belohnung bleibt eine offene Eingabe.
+  Speichern und Verlassen warten auf eine Zahl oder das Entfernen der Belohnung;
+  ausdrücklich eingegebene `0` ist gültig und wird nicht aus Leere abgeleitet.
 - Ersetzen prüft Ziel- und Vorlagenbasis gemeinsam in einer Transaktion.
   Reihenfolge, Ortsverweise, Prosa und Wissensbezüge werden übernommen;
   „Timeline leeren“ entfernt die Besuche ohne neue Party oder neuen Plannamen.

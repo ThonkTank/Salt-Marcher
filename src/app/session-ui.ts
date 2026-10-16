@@ -151,7 +151,7 @@ export async function flushSession():Promise<boolean>{
  if(pending){if(!await pending)return false;return flushSession();}
  if(workspace&&hasPendingCommit(workspace.campaign.id)){tell('Buchungsantwort fehlt. Zuerst den Status prüfen.',true);return false;}
  if(profileDirty&&profileDraft){if(!await execute({kind:'profile',profile:structuredClone(profileDraft),expectedRevision:profileDraft.revision}))return false;return flushSession();}
- if(visitDirty&&visitDraft&&plan){if(!await execute({kind:'visit',planId:plan.id,detail:structuredClone(visitDraft),expectedRevision:visitDraft.revision}))return false;return flushSession();}
+ if(visitDirty&&visitDraft&&plan){if(visitDraft.reward&&!value('visit-reward-xp').trim()){tell('Story-XP fehlen. Eine Zahl eintragen, auch 0 ist möglich. Die bisherige Belohnung bleibt gespeichert.',true);return false;}if(!await execute({kind:'visit',planId:plan.id,detail:structuredClone(visitDraft),expectedRevision:visitDraft.revision}))return false;return flushSession();}
  const group=groupDrafts.values().next().value;
  if(group&&plan){if(!await execute({kind:'group-content',planId:plan.id,groupId:group.id,expectedRevision:group.revision,title:group.title,notes:group.notes}))return false;return flushSession();}
  return true;
