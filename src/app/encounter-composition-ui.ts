@@ -18,7 +18,7 @@ export function renderEncounterComposition(root:HTMLElement,composition:Encounte
  if(!composition){line('Für diese ältere Vorschau sind keine strukturierten Kompositionsdaten gespeichert. Gegner und Quellen bleiben verfügbar.');root.append(details);return;}
  const m=composition.metrics,target=m.adjustedXp-m.xpDelta;
  line(m.monsterCount+' Kreaturen · '+m.statblockCount+' Statblocks · '+m.initiativeSlots+' Initiativeplätze.');
- line(m.effectiveMonsterCount+' für den XP-Multiplikator gezählte Kreaturen · Multiplikator ×'+m.xpMultiplier+'.');
+ line('Gewichtete Gegnerzahl für den XP-Multiplikator: '+m.effectiveMonsterCount.toLocaleString('de-DE',{maximumFractionDigits:2})+' · Multiplikator ×'+m.xpMultiplier.toLocaleString('de-DE')+'.');
  line('XP-Ziel '+target+' · Ergebnis '+m.adjustedXp+' · Abweichung '+(m.xpDelta>=0?'+':'')+m.xpDelta+' XP'+(target>0?' ('+Math.round(m.xpDelta/target*100)+' %)':'')+'.');
  line(composition.fitCandidateCount+' von '+composition.candidateCount+' untersuchten Kompositionen liegen im ±5%-XP-Zielband.');
  if(fixed)line('Die CR-Blöcke beschreiben die Ergänzung. Die Kennzahlen berücksichtigen feste Gegner und Ergänzung gemeinsam.');
