@@ -1,3 +1,4 @@
+import {canonicalJson} from './generation/canonical-json';
 import {installHexPartyDrag} from './hex-party-drag';
 import {liveHexSurface} from './live-hex-surface';
 import {markerSymbols,defaultMarkerPresentation} from './atlas-marker';
@@ -10,7 +11,7 @@ import {agendaCountdown} from './agenda-model';
 import type {Workspace,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
 import type {LiveView} from './live-contracts';
-import type {WorldView,SceneWorld,AtlasMap,AtlasCell,Hex,WorldAction,WorldCommand,WorldAck,WorldReconciliation,TravelPreview,CalendarEvent,WeatherPhenomenon,Weather,Climate,Terrain,MarkerPresentation} from './world-contracts';
+import type {WorldView,SceneWorld,AtlasMap,AtlasCell,Hex,WorldAction,WorldCommand,WorldAck,WorldReconciliation,TravelRequest,TravelPreview,CalendarEvent,WeatherPhenomenon,Weather,Climate,Terrain,MarkerPresentation} from './world-contracts';
 import {hexKey,hexPoint,pointHex,hexDistance,cellAt,authoredCellAt,terrainNames,terrainColors,terrainFactor,climateNames,weatherEffects} from './world-model';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>el<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
@@ -295,8 +296,12 @@ async function makeTravelPreview(continueJourney=false){
   if((liveTravelOpen&&liveSurface&&!await before())||!await flushWorld()||!ownsTravel(owner)||request!==travelRequest||frame?.scene.id!==owner.sceneId||mapDraft?.id!==owner.mapId)return;
   const j=continueJourney?frame.journey:null;if(continueJourney&&(!j||!['active','paused','interrupted'].includes(j.status)))throw new Error('Kein offener Restweg.');
   const stops=j?null:readRouteInputs();if(!j&&!stops)return;
-  const result=unwrap(await window.campaign.previewTravel(owner.token,{sceneId:owner.sceneId,mapId:owner.mapId,destination:j?j.route.at(-1)!:stops!.at(-1)!,destinationLocationId:j?j.destinationLocationId:value('world-destination')||null,waypoints:j?[]:stops!.slice(0,-1),paceKmh:number('travel-pace'),...(el<HTMLInputElement>('travel-party-pace').checked?{usePartyPace:true}:{}),factor:number('travel-factor'),finalSeconds:value('travel-final-hours')?Math.ceil(number('travel-final-hours')*3600):null,...(j?{continuation:{journeyId:j.id,expectedRevision:j.revision}}:{})}));
+  const requested:TravelRequest={sceneId:owner.sceneId,mapId:owner.mapId,destination:j?j.route.at(-1)!:stops!.at(-1)!,destinationLocationId:j?j.destinationLocationId:value('world-destination')||null,waypoints:j?[]:stops!.slice(0,-1),paceKmh:number('travel-pace'),...(el<HTMLInputElement>('travel-party-pace').checked?{usePartyPace:true}:{}),factor:number('travel-factor'),finalSeconds:value('travel-final-hours')?Math.ceil(number('travel-final-hours')*3600):null,...(j?{continuation:{journeyId:j.id,expectedRevision:j.revision}}:{})};
+  const result=unwrap(await window.campaign.previewTravel(owner.token,requested));
   if(!ownsTravel(owner)||request!==travelRequest)return;
+  // Automatic pace is resolved by the provider; every other requested value must match.
+  const echoed=requested.usePartyPace?{...result.request,paceKmh:requested.paceKmh}:result.request;
+  if(canonicalJson(echoed)!==canonicalJson(requested))throw new Error('Auswertung gehört nicht zur angefragten Reise. Erneut auswerten.');
   if(result.request.usePartyPace)el<HTMLInputElement>('travel-pace').value=String(result.request.paceKmh);
   preview=result;renderTravelEvaluation(el('travel-evaluation'),result);el('travel-preview-summary').textContent=(result.distanceMeters/1000).toFixed(2)+' km · '+(result.durationSeconds/3600).toFixed(2)+' Stunden · '+(result.route.length-1)+' Abschnitte · Ankunft: '+result.arrival;
   const warnings=el('travel-preview-warnings');warnings.replaceChildren();for(const warning of result.warnings){const p=document.createElement('p');p.textContent=warning;warnings.append(p);}
