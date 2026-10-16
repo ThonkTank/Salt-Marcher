@@ -31,7 +31,7 @@ export type WorldAction=
  |{kind:'weather-override';sceneId:string;expectedClockRevision:number;expectedOverrideRevision:number|null;weather:Weather|null}
  |{kind:'notice-dismiss';sceneId:string;id:string}
  |{kind:'reveal';sceneId:string;mapId:string;hex:Hex;expectedMembershipRevision:number}
- |{kind:'place-scene';sceneId:string;position:Omit<ScenePosition,'revision'>;expectedSceneRevision:number;expectedPositionRevision:number}
+ |{kind:'place-scene';placementBasis?:{mapRevision:number;membershipRevision:number;requireAuthored:boolean};sceneId:string;position:Omit<ScenePosition,'revision'>;expectedSceneRevision:number;expectedPositionRevision:number}
  |{kind:'journey';preview:TravelPreview;presentationSpeed?:1|2|5|10}
  |{kind:'journey-step';id:string;expectedRevision:number;maxSteps:number}
  |{kind:'journey-state';id:string;expectedRevision:number;state:'active'|'paused'|'ended'};
