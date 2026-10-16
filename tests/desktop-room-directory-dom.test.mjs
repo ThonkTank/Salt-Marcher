@@ -22,6 +22,14 @@ test('page continuation is explicit; invalidated cursor gives one manual refresh
 test('a new Markdown query replaces the previous request without bringing text into list entries',async()=>{
  const x=setup();x.view.context('A','GM Geheimtext',null);x.view.context('A','andere Spur',null);assert.equal(x.calls[0].q.text,'GM Geheimtext');response(x.calls[1],[entry('81')]);await turn();response(x.calls[0],[entry('wrong')]);await turn();assert.match(x.root.textContent,/81/);assert(!x.root.textContent.includes('wrong'));assert(!x.root.textContent.includes('Geheimtext'));
 });
+test('selection redraw retains search completeness and unreadable-text feedback',async()=>{
+ const x=setup();x.view.context('A','Spur',null);
+ x.calls[0].resolve({ok:true,value:{token:'A',campaignId:'c',items:[entry('1')],total:81,unreadable:2,next:null}});await turn();
+ x.view.context('A','Spur','1');
+ assert.match(x.root.textContent,/1 von 81 Räumen angezeigt/);
+ assert.match(x.root.textContent,/2 Raumtexte konnten nicht durchsucht werden/);
+ assert.equal(x.calls.length,1);assert.equal(x.root.querySelector('button').getAttribute('aria-pressed'),'true');
+});
 
 buildSync({entryPoints:['src/app/atlas-landscape-ui.ts'],outfile:'.build/room-landscape-dom.cjs',bundle:true,platform:'node',format:'cjs'});
 const {LandscapeWorkbench}=require('../.build/room-landscape-dom.cjs');
