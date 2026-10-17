@@ -54,3 +54,12 @@ test('history search remains available after a selected combat cannot be read',a
 
 test('a packet encounter invalidated before loading issues no read or command',async()=>{const x=await fixture();try{const count=x.reads.length;await x.ui.prepareWorldGroup({id:'group',title:'Angezeigte Gruppe',revision:1},undefined,()=>false);assert.equal(x.reads.length,count);assert.equal(x.writes.length,0);}finally{x.cleanup();}});
 test('a packet encounter invalidated during loading never sends a create command',async()=>{const x=await fixture();try{let active=true;x.hold();const pending=x.ui.prepareWorldGroup({id:'group',title:'Angezeigte Gruppe',revision:1},undefined,()=>active);await until(()=>x.waiting.length===1);active=false;x.release();await pending;assert.equal(x.writes.length,0);}finally{x.cleanup();}});
+
+test('refreshing Combat cannot enable an empty Scene-group selection through its generic control lock',async()=>{
+ const x=await fixture();try{
+  for(const key of ['live','progress','scenePreparation','groupView'])window.campaign[key]=async(...args)=>({ok:true,value:x.store[key](...args)});
+  x.el('combat-creation').open=true;x.el('combat-selection-refresh').click();await until(()=>x.el('combat-selection-status').textContent==='');
+  assert.equal(x.el('combat-selection-prepare').disabled,true);x.el('combat-refresh').onclick();await until(()=>!x.el('combat-refresh').disabled);
+  assert.equal(x.el('combat-selection-prepare').disabled,true);assert.equal(x.writes.length,0);
+ }finally{x.cleanup();}
+});

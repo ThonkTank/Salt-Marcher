@@ -62,6 +62,10 @@ Der native Prüfweg `node tools/test-desktop-moment-follow-up.mjs --out=<Ordner>
 reguläres Beenden sowie frisches
 Wiederfinden und Weiterbearbeiten mit isolierten Daten durch. Die
 Gegenstückprüfung derselben Aufgabe und menschliche Abnahme bleiben eigene Belege.
+Die [tatsächlich ausgeführte Obsidian-Gegenprobe vom 17. Oktober](../../reference/gm-ux-qa/moment-follow-up-20261017/README.md)
+führt denselben Fall einschließlich frischem Wiederfinden, Weiterbearbeiten und
+Lesen am nächsten Abend aus. Sie belegt die Originalverknüpfung in beiden
+Produkten; menschliche Abnahme und ein allgemeines Überlegenheitsurteil bleiben offen.
 
 ## Belege und offene Grenzen
 

@@ -23,6 +23,7 @@ export interface CombatState {
   id: string; sceneId: string; revision: number; title: string;
   phase: 'preparing' | 'running' | 'finished' | 'retired'; round: number; turnId: string | null;
   sharedNotice?:string;
+  sceneGroups?:{id:string;revision:number;name:string}[];
   participants: Combatant[]; notes: string; outcome: string; rewards?: CombatReward; sources?: Creature[]; sourceSerials?: Record<string,number>; assessment?: EncounterAssessment; partyBasis?: EncounterParty[]; generatorPreset?: {id:string;revision:number;hash:string;mobThreshold:number}; planOrigin?: { id: string; revision: number; name: string };
 }
 export interface CombatLossBasis {participantId:string;actorId:string;noteRevision:number;recordRevision:number;actorRevision:number}
@@ -35,7 +36,7 @@ export interface CombatView {
 }
 export type CombatAction =
   | {kind:'confirm-npc-losses';losses:CombatLossBasis[]}
-  | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
+  | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; sceneSelection?:import('./scene-encounter-selection').SceneEncounterBasis; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
   | {kind:'add-prepared-group';preparedGroupId:string;expectedPreparedRevision:number;expectedRosterBasis:string;worldActorIds:string[];initiative:number}
   | {kind:'add-world-actor';actorId:string;expectedActorRevision:number;expectedRecordRevision:number}
   | {kind:'add-party';characterId:string;expectedMembershipRevision:number;expectedProgressRevision:number;initiative?:number}
@@ -81,6 +82,7 @@ export function checkedCombat(state: CombatState): CombatState {
   if (typeof state.title !== 'string' || state.title.length > 1000 || typeof state.notes !== 'string' || state.notes.length > 2000000 || typeof state.outcome !== 'string' || state.outcome.length > 10000 || !Array.isArray(state.participants) || state.participants.length > 1000) throw new Error('Ungültige Kampfinhalte.');
   if(state.phase==='retired'&&(!!state.outcome||state.rewards!==undefined))throw new Error('Archivierter Kampf darf kein abgeleitetes Ergebnis besitzen.');
   if(state.worldLosses!==undefined&&(!Array.isArray(state.worldLosses)||state.worldLosses.length>1000||state.worldLosses.length!==new Set(state.worldLosses.map(l=>l?.actorId)).size||state.worldLosses.some(l=>!l||typeof l.actorId!=='string'||!l.actorId||typeof l.name!=='string'||!l.name.trim()||!Number.isSafeInteger(l.recordRevision)||l.recordRevision<1||!state.participants.some(p=>p.worldActorId===l.actorId))))throw new Error('Bestätigte NPC-Verluste sind ungültig.');
+  if(state.sceneGroups!==undefined&&(!Array.isArray(state.sceneGroups)||!state.sceneGroups.length||state.sceneGroups.length>1000||new Set(state.sceneGroups.map(g=>g.id)).size!==state.sceneGroups.length||state.sceneGroups.some(g=>!g||typeof g.id!=='string'||!g.id||!Number.isSafeInteger(g.revision)||g.revision<1||typeof g.name!=='string'||g.name.length>1000)))throw new Error('Szenengruppenherkunft ungültig.');
   const ids = new Set<string>(), characterIds=new Set<string>(),initiatives = new Map<string, number>(), groupNames = new Map<string,string>();
   for (const p of state.participants) {
     checkedCombatant(p);if(ids.has(p.id))throw new Error('Doppelter Initiativeeintrag.');ids.add(p.id);

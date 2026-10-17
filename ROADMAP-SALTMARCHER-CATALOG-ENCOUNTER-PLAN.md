@@ -1031,3 +1031,41 @@ allen sieben Providern.
 Eine Itemfreigabe schließt weder die fünf anderen Provider noch CE-02, CE-01-
 Physikeingabe, Screenreader oder weitere Plattformen. Diese Gates bleiben
 ausdrücklich offen.
+
+## Laufzeit: gemeinsame Auswahl vorhandener Szenengruppen
+
+Die [gebundene Encounter-Anforderung](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encounter/requirements/requirements-encounter.md)
+ist für den Laufzeitweg maßgeblich. Die Begegnungsvorbereitung zeigt die aktive,
+der fokussierten Szene zugewiesene Party und die vorhandenen Gruppen am Szenenort
+oder übernommenen Besuch. Häkchen berechnen unmittelbar Gegnerzahl, Basis-XP,
+Monsterzahlmultiplikator, angepasste XP, vier Party-Schwellen und die semantische
+Schwierigkeit. Fehlende Level bleiben unbekannt. Bewertung und Auswahl schreiben
+weder Gruppen noch Kampfstand. Leere oder nicht verfügbare Gruppen bleiben mit
+Grund gesperrt; ohne zugewiesene Party oder Gegner gibt es keine Übernahme.
+
+„Auswahl in Initiative übernehmen“ übergibt alle ausgewählten Gruppen gemeinsam
+an den vorhandenen Combat-Writer. Fokus-/Roster-/Szenenmitgliedschaft, Party-XP
+und vollständige Gruppen-/NPC-Basis werden vor Mutation geprüft. Fremde oder
+veraltete Auswahlen erzeugen keinen Teilkampf. Die vorhandenen Weltfiguren werden
+mit ihren aktuellen HP und Zuständen verknüpft; die bestehende Presetregel
+bestimmt Mob-/Individualpartitionen. Gruppen-IDs, Revisionen und Namen bleiben
+als Herkunft im bestehenden Kampf-Record erhalten. Es entsteht keine neue Gruppe,
+Vorlage, parallele Roster oder Tabelle. Die bisherigen Receipts schützen Replay.
+Die frühere leere Anlageform wird in diesem primären Laufzeitweg nicht mehr
+angeboten; gespeicherte Altstände bleiben lesbar.
+
+Gezielte Store-/DOMfälle prüfen zwei Gruppen, inaktive PCs außerhalb der Basis,
+sofortige Bewertung ohne Schreibwirkung, stale Gruppen/XP, fremde und leere
+Auswahl, Replay und Fresh. Der native Electron-Ablauf wählt beide Gruppen,
+übernimmt sie, trägt Initiative ein, beginnt den Kampf, wechselt den Zug und
+verursacht Schaden. Der Welt-NPC besitzt danach dieselben HP; nach regulärem
+Neustart bleiben Quellen, Teilnehmer, Runde und Zug erhalten. XP, Rastbudgets,
+Partyzuordnung und Szenenuhr werden durch diesen Ablauf nicht verändert.
+
+Dieser Anschluss erledigt nicht die gesamte Encounter-Abnahme: Der globale
+Encounter/Reise-Wähler, die vollständige Umstellung bisheriger Direktwege aus
+Vorlage/Katalog/Generator und sofortiger Abgleich sämtlicher Gruppenstruktur-
+änderungen bleiben offen. Die bestehende Health-/Membership-Reconciliation und
+Verstärkung werden weiterverwendet; ihre Grenzen werden dadurch nicht erweitert.
+Native Belege dieses Ablaufs ersetzen keine OS-, Accessibility- oder vollständige
+ursprüngliche Runtime-Abnahme.
