@@ -93,7 +93,8 @@ let activationIntent = 0, campaignListRequest = 0;
 let pointer: { index: number; id: number; before: Room['polygons'] } | null = null;
 let importPreview: ImportPreview | null = null;
 let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
-const status = (text: string, error = false) => { el('status').textContent = text; el('status').dataset.error = String(error); };
+let statusEpoch=0;
+const status = (text: string, error = false) => { statusEpoch++; el('status').textContent = text; el('status').dataset.error = String(error); };
 initExtensions(status);
 initChronicle(status,async(id,token)=>{if(!(await leaveWorkspace())||workspace?.token!==token)return;showTab('preparation');await openPreparedNote(id);});
 initPreparation((text,error)=>{status(text,error);setKeyReferenceStatus(text,error);}, async scopeId => {
@@ -376,10 +377,11 @@ async function setDraft(focusCamera=true) {
   renderRoomInputs(room, token);
   updatePoints(); draw();
   if (room && token) {
-    roomDraftLoading = true; roomEditable(false); updateHistory(); status('Arbeitsentwurf wird geprüft und geladen.');
+    roomDraftLoading = true; roomEditable(false); updateHistory(); status('Arbeitsentwurf wird geprüft und geladen.');const loadingStatus=statusEpoch;
     try {
       const retained = unwrap(await api.roomDraft(token, room.id));
-      if (!retained || !current()) return;
+      if (!current()) return;
+      if (!retained) { if(statusEpoch===loadingStatus)status('Raum geladen.'); return; }
       draft = structuredClone(retained.room); hasRetainedDraft = true;
       renderRoomInputs(draft, token);
       el<HTMLTextAreaElement>('points').value = retained.points; el('points').dataset.changed = String(retained.pointsChanged);

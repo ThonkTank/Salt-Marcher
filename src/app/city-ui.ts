@@ -311,10 +311,10 @@ export function initCity(status:typeof tell,relationships:(id:string)=>Promise<v
   const recipe:CityRecipe={...readInfill(),districtId:value('city-district')};
   if(!await flushCity()||!owned(w.token,g)||view?.header.id!==source.header.id)return;
   if(!view.demographics)throw new Error('Für Bebauung zuerst Stadtwerkzeuge und Bewohner laden.');
-  const basis=view as CityView,job={token:w.token,epoch:g,cityId:basis.header.id,cancelled:false};preview=null;generationJob=job;el<HTMLButtonElement>('city-generate').disabled=true;
+  const basis=view as CityView,job={token:w.token,epoch:g,cityId:basis.header.id,cancelled:false};preview=null;generationJob=job;render();el('city-preview-summary').textContent=recipe.lanes?'Nebenstraßen und Häuser werden vorbereitet…':'Häuser werden vorbereitet…';el('city-preview').scrollIntoView?.({block:'nearest'});
   const active=()=>generationJob===job&&!job.cancelled&&owned(job.token,job.epoch)&&view?.header.id===job.cityId;
   try{const result=await generateCity(basis,recipe,()=>!active(),n=>{if(active())el('city-preview-summary').textContent=n+' Häuser in Vorbereitung…';});
-   if(!active())return;if(view!.header.revision!==result.baseRevision)throw new Error('Stadt verändert. Neue Vorschau erzeugen.');preview=result;render();if(preview.buildings.length||preview.streets?.length)focusCityPreview();if(!preview.buildings.length&&!preview.streets?.length)tell('Keine Häuser passen zu diesen Vorgaben. Fläche, Straßenabstand oder Hausgröße anpassen.',true);
+   if(!active())return;if(view!.header.revision!==result.baseRevision)throw new Error('Stadt verändert. Neue Vorschau erzeugen.');preview=result;render();el('city-preview').scrollIntoView?.({block:'nearest'});if(preview.buildings.length||preview.streets?.length)focusCityPreview();if(!preview.buildings.length&&!preview.streets?.length)tell('Keine Häuser passen zu diesen Vorgaben. Fläche, Straßenabstand oder Hausgröße anpassen.',true);
   }catch(error){if(active())tell((error as Error).message,true);}finally{if(generationJob===job){generationJob=null;el('city-preview').hidden=!preview;el<HTMLButtonElement>('city-generate').disabled=false;}}
  });
  for(const id of ['city-seed','city-density','city-size','city-reach','city-use','city-lanes','city-district'])el(id).onchange=()=>{cancelGeneration();if(id==='city-district')syncInfill();else rememberInfill();if(preview){preview=null;render();}};

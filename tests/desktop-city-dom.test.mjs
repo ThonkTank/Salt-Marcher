@@ -103,7 +103,7 @@ test('the latest selected city wins over an older same-campaign response',async(
  }finally{if(release)release();await x.cleanup();}
 });
 test('cancelling generation cannot publish its late result',async()=>{
- const x=await setup();try{x.click('city-generate');await until(()=>[...x.timers.values()].some(job=>job.ms===0));x.click('city-cancel-preview');await x.drain();assert.equal(x.document.getElementById('city-preview-actions').hidden,true);assert.equal(x.writes.length,0);}finally{await x.cleanup();}
+ const x=await setup();try{x.click('city-generate');await until(()=>[...x.timers.values()].some(job=>job.ms===0));assert.equal(x.document.getElementById('city-preview').hidden,false,'cancellation must be visible while the proposal is still computing');x.click('city-cancel-preview');await x.drain();assert.equal(x.document.getElementById('city-preview-actions').hidden,true);assert.equal(x.writes.length,0);}finally{await x.cleanup();}
 });
 test('generation from Alpha cannot leave its preview or error in Beta',async()=>{
  const x=await setup();try{x.click('city-generate');await until(()=>[...x.timers.values()].some(job=>job.ms===0));await x.activate('Beta');await x.drain();assert.equal(x.document.getElementById('city-title').textContent,'Beta one');assert.equal(x.document.getElementById('city-preview-actions').hidden,true);assert.equal(x.messages.filter(m=>m.error).length,0,JSON.stringify(x.messages));}finally{await x.cleanup();}

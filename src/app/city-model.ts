@@ -16,6 +16,13 @@ function seedNumber(s:string){let v=2166136261;for(const c of s)v=Math.imul(v^c.
 export function checkedCityInfill(r:CityInfillRecipe){
  if(!r||(r.lanes!==undefined&&typeof r.lanes!=='boolean')||typeof r.seed!=='string'||!r.seed.trim()||r.seed.length>1000||typeof r.use!=='string'||r.use.length>1000||!Number.isFinite(r.density)||r.density<.05||r.density>1||!Number.isFinite(r.size)||r.size<3||r.size>80||!Number.isFinite(r.reach)||r.reach<10||r.reach>500)throw new Error('Seed, Dichte, Hausgröße und Straßenabstand prüfen.');
 }
+function cityYield(cancel:()=>boolean,progress:()=>void=()=>{}){
+ let last=performance.now();
+ return async(force=false)=>{
+  if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');
+  if(force||performance.now()-last>=12){progress();await new Promise<void>(resolve=>setTimeout(resolve,0));last=performance.now();if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');}
+ };
+}
 // A proposed street network is ordinary editable city geometry after acceptance.
 // Existing roads, including accepted generated lanes, are never rewritten by infill.
 type StreetSegment={a:P;b:P;width:number};
@@ -23,8 +30,9 @@ const streetOrder=(a:StreetSegment,b:StreetSegment)=>Math.hypot(b.b.x-b.a.x,b.b.
 async function sideStreets(view:CityView,r:CityRecipe,points:P[],cancel:()=>boolean):Promise<CityUnit[]>{
  if(!r.lanes||view.units.some(u=>u.kind==='road'&&u.districtId===r.districtId&&u.recipe?.algorithm==='district-lanes-v1'))return[];
  const sources=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));}).sort(streetOrder);
- const proposed:CityUnit[]=[];
+ const proposed:CityUnit[]=[],cooperate=cityYield(cancel);
  for(const source of sources){
+  await cooperate();
   const next=await streetGrid({...view,units:[...view.units,...proposed]},r,points,source,cancel);proposed.push(...next);
   if(proposed.filter(u=>u.kind==='road').length>2500)throw new Error('Zu viele Nebenstraßen. Teile das Viertel in kleinere Flächen.');
  }
@@ -42,7 +50,7 @@ async function streetGrid(view:CityView,r:CityRecipe,points:P[],source:StreetSeg
  const blocked=view.units.filter(u=>['plaza','water'].includes(u.kind)||(u.kind==='building'&&(u.protected||u.districtId!==r.districtId))).map(u=>u.kind==='building'?posed(u):u.outline??[]);
  const walls=view.units.filter(u=>u.kind==='wall').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));});
  const districtEdges=edges(points),nodes=new Map<string,CityUnit>(),network:CityUnit[]=[],existingIds=new Set(view.units.map(u=>u.id));
- const prefix=view.header.id+':lanes:'+r.districtId+':'+seedNumber(r.seed)+':';let attempts=0;
+ const prefix=view.header.id+':lanes:'+r.districtId+':'+seedNumber(r.seed)+':',cooperate=cityYield(cancel);let attempts=0;
  const allowed=(a:P,b:P)=>{
   // Sample the full corridor, including boundaries of concave districts.
   if([a,b,{x:(a.x+b.x)/2,y:(a.y+b.y)/2}].some(p=>!inside(p,points)))return false;
@@ -55,7 +63,7 @@ async function streetGrid(view:CityView,r:CityRecipe,points:P[],source:StreetSeg
   return !roads.some(s=>{const sx=s.b.x-s.a.x,sy=s.b.y-s.a.y,sl=Math.hypot(sx,sy);return sl>0&&Math.abs(dx*sy-dy*sx)/(len*sl)<.2&&Math.min(distance(a,s.a,s.b).distance,distance(b,s.a,s.b).distance)<width/2+s.width/2+r.size;});
  };
  const add=async(a:P,b:P)=>{
-  if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');if(++attempts%100===0)await new Promise<void>(resolve=>setTimeout(resolve,0));
+  await cooperate(++attempts%100===0);
   if(!allowed(a,b))return false;
   const key=(p:P)=>p.x+','+p.y,ak=key(a),bk=key(b),id=prefix+'road:'+ak+':'+bk;if([id,prefix+'node:'+ak,prefix+'node:'+bk].some(id=>existingIds.has(id)))return false;
   for(const [k,p] of [[ak,a],[bk,b]] as const)if(!nodes.has(k))nodes.set(k,{id:prefix+'node:'+k,kind:'node',name:'',protected:false,point:p,districtId:r.districtId});
@@ -92,9 +100,9 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
  const keys=(b:ReturnType<typeof bounds>)=>{const a:string[]=[];for(let x=Math.floor(b.minX/cell);x<=Math.floor(b.maxX/cell);x++)for(let y=Math.floor(b.minY/cell);y<=Math.floor(b.maxY/cell);y++)a.push(x+':'+y);return a;};
  const index=(b:ReturnType<typeof bounds>)=>{for(const k of keys(b)){const v=bins.get(k)??[];v.push(b);bins.set(k,v);}};for(const u of obstacles)index(bounds(posed(u)));
  const obstacleIds=new Set(obstacles.map(u=>u.id)),districtEdges=edges(points);
- const buildings:CityUnit[]=[];let attempts=0;
+ const buildings:CityUnit[]=[],cooperate=cityYield(cancel,()=>progress(buildings.length));let attempts=0;
  const add=async(p:P,w:number,h:number,angle:number)=>{
-  if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');attempts++;if(attempts%200===0){progress(buildings.length);await new Promise<void>(resolve=>setTimeout(resolve,0));}
+  await cooperate(++attempts%200===0);
   if(!inside(p,points))return;
   const u:CityUnit={id:view.header.id+':building:frontage-v2:'+r.districtId+':'+seedNumber(r.seed)+':'+attempts,kind:'building',name:'',protected:false,position:p,angle,outline:[{x:-w/2,y:-h/2},{x:w/2,y:-h/2},{x:w/2,y:h/2},{x:-w/2,y:h/2}],use:r.use,notes:'',districtId:r.districtId,ownerId:null,recipe:{seed:r.seed,algorithm:'street-frontage-v2'},rooms:[],interior:false};
   if(obstacleIds.has(u.id))return;const corners=posed(u);if(corners.some(a=>!inside(a,points))||edges(corners).some(([a,b])=>districtEdges.some(([c,d])=>crosses(a,b,c,d))))return;
@@ -117,7 +125,7 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
   }
  }
  for(let y=minY+step/2;y<maxY;y+=step)for(let x=minX+step/2;x<maxX;x+=step){
-  if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');if(random()>r.density*.2)continue;
+  await cooperate();if(random()>r.density*.2)continue;
   const p={x:x+(random()-.5)*step*.4,y:y+(random()-.5)*step*.4};let nearest={distance:Infinity,angle:0};for(const road of roads){const d=distance(p,road.a,road.b);if(d.distance<nearest.distance)nearest=d;}if(nearest.distance>r.reach)continue;
   await add(p,r.size*(.7+random()*.5),r.size*(.7+random()*.7),nearest.angle);
  }
