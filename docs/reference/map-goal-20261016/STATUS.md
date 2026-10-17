@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `53c75af70`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `b02e8d801`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -24,6 +24,8 @@ The same complete task must be performed in an available comparator. Earlier Dun
 
 ## Technical evidence
 
+Candidate `c8194665c` passed exact-head CI `38988804897`: 3,742 passed, zero failed, one optional skip. Its archive is `archive/atlas-qualified-c8194665-20261017`. The subsequent live-map/status patch passed 57 affected travel/shared-Atlas checks and three focused export/public checks, plus both type checks, repository check and desktop build. Its successor requires its own exact-head CI.
+
 The following exact-head CI on `b0846cb65` (run `38978380905`) failed one case: the house-placement fixture attempted to redefine the non-configurable `value` accessor on an existing select moved into the Atlas by the new Dungeon console. Its 3,715 passed cases and one optional skip do not make that candidate qualified. The same case failed locally before repair and passes after retaining the existing fixture accessor; placement/camera/undo/redo assertions are unchanged. The new successor is qualified separately.
 
 The preserved `f87ef98cc` candidate passed exact-head CI run `38973164668`: 3,712 passed, zero failed, one optional skip. Its immutable local reference is `archive/atlas-qualified-f87ef98c-20261017`. This does not qualify the later Dungeon-console integration.
@@ -46,4 +48,4 @@ The new integrated search case edits prose without changing section IDs, finds a
 
 The global browser input blocker is repaired. A native Electron confirmation from another comparator page had intercepted input outside the individual tab DOM/AX views; cancellation restored real trusted clicks. The actual tavern interior task now reaches two rooms, a bound door, house return, fresh-host reopening and a PNG export. Dungeon Scrawl was actually used to draw and export the same two-room floorplan. The observed false room count/opening action and broken GM export labels were corrected and visibly rechecked. [Workflow, limits and before/after artifacts](INPUT-REPAIR-20261017.md).
 
-Editable save/fresh reopen in Dungeon Scrawl, the complete region/city counterpart, actual live party travel and fresh public/player handout checks remain open. The isolated native package at `727ce64b` is an older technical preview. Packaging, native UI qualification, comparison and owner acceptance remain separate claims. The draft is not promoted to Main on technical tests alone; promotion requires linear integration and its exact-SHA CI.
+Live party travel through the prepared door, a fresh public PNG, fresh-host party/knowledge persistence, and actual separate browser player-display daylight/darkness/blanking checks now pass. [Live continuation and scope](LIVE-RESUME-20261017.md). Editable save/fresh reopen in Dungeon Scrawl, the complete region/city/live counterpart, darkvision, and native packaged player-window behavior remain open. The isolated native package at `727ce64b` is an older technical preview. Packaging, native UI qualification, comparison and owner acceptance remain separate claims. The draft is not promoted to Main on technical tests alone; promotion requires linear integration and its exact-SHA CI.
