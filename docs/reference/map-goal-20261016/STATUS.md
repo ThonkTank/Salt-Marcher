@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `9b2fc0bdf`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `c6c180ad1`, version 0.160.0. The owned map/Atlas changes are transferred from the preserved historical `qa/atlas-navigation-20261016` branch into a linear candidate based on that Main. The transfer preserves the complete source tree; exact commit and tree evidence are recorded in the heartbeat checkpoint. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 

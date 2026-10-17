@@ -29,7 +29,7 @@ Ein erneut globaler nativer Dialog von improvedinitiative.app fing die Klicks ab
 
 ## Technische Nachprüfung
 
-Der erste vollständige 75-Fall-Stadt-/Atlas-Nachlauf meldete drei Fehler in den Abbruchfällen. Die neue kleine Vorschau blieb unter der bisherigen periodischen Unterbrechungsgrenze und konnte sich abschließen, bevor Abbruch/Kampagnenwechsel griffen. Ein früher asynchroner Unterbrechungspunkt erhält diese Eigentümerschaft auch für kleine Vorschauen; die bisherigen Abbruchassertionen bleiben unverändert. Der finale betroffene Generierungs-/Rezept-/Navigationsnachlauf und die Generator-/Main-Raumtextfälle werden separat protokolliert. Exakte Prozessausgänge und die eigene Kandidaten-CI stehen im Checkpoint.
+Der erste vollständige 75-Fall-Stadt-/Atlas-Nachlauf meldete drei Fehler in den Abbruchfällen. Die neue kleine Vorschau blieb unter der bisherigen periodischen Unterbrechungsgrenze und konnte sich abschließen, bevor Abbruch/Kampagnenwechsel griffen. Ein früher asynchroner Unterbrechungspunkt erhält diese Eigentümerschaft auch für kleine Vorschauen; die bisherigen Abbruchassertionen bleiben unverändert. Der finale betroffene Generierungs-/Rezept-/Navigationsnachlauf besteht 18/18 Fälle, die Generatorprüfung 7/7 und der Main-Raumtextfall 1/1. Weitere 166 Tests für die eingebundenen Main-Kontextänderungen bestehen. Typprüfungen, Desktop-Build und Repository-Prüfung enden erfolgreich. Der anschließend eingegangene Main-Stand c6c180ad1 wird mit seinem Binder-Nachlauf separat protokolliert. Exakte Prozessausgänge, lineare Übertragung und die eigene Kandidaten-CI stehen im Checkpoint.
 
 ## Grenzen
 
