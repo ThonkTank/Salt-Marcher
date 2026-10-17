@@ -138,6 +138,25 @@ test('HP cells reuse the target editor and Enter applies one damage command to t
  amount.value='0';enter();await tick();assert.equal(x.writes.length,2);
 });
 
+test('roster condition entry opens the individual shortcuts without a write and changes only that troop member',async t=>{
+ const x=await uiFixture(t),target=x.combat.participants[1],root=x.el('fighter-condition-shortcuts'),scrolls=[];
+ root.scrollIntoView=options=>scrolls.push(options.block);
+ const entry=x.el('combat-rows').querySelectorAll('.combat-conditions')[1];assert.ok(entry,'condition entry available in each roster row');
+ entry.onclick();await until(()=>scrolls.length===1);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);assert.deepEqual(scrolls,['center']);
+ const oldEvent=globalThis.Event;globalThis.Event=window.Event;t.after(()=>{globalThis.Event=oldEvent;});
+ const form=x.el('combat-participant-form');form.requestSubmit=()=>form.onsubmit({preventDefault(){}});
+ [...root.querySelectorAll('button')].find(b=>b.textContent==='Festgesetzt').onclick();await until(()=>x.writes.length===1&&!x.el('fighter-hp').disabled);
+ const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;
+ assert.deepEqual(saved.participants.map(p=>p.conditions),['','Festgesetzt','']);assert.deepEqual(saved.participants.map(p=>p.hp),[7,7,7]);assert.equal(saved.turnId,x.combat.turnId);assert.ok(saved.participants.every(p=>p.groupId===x.group));
+});
+
+test('a delayed roster condition entry cannot scroll into another scene or issue a write',async t=>{
+ const x=await uiFixture(t),root=x.el('fighter-condition-shortcuts'),scrolls=[];root.scrollIntoView=()=>scrolls.push(true);
+ let resolve;window.campaign.combatDraft=()=>new Promise(r=>{resolve=r;});
+ const entry=x.el('combat-rows').querySelector('.combat-conditions');assert.ok(entry);entry.onclick();await until(()=>!!resolve);
+ x.ui.combatContext(null,null);resolve({ok:true,value:null});await tick();await tick();assert.deepEqual(scrolls,[]);assert.equal(x.writes.length,0);assert.equal(x.el('combat-panel').hidden,true);
+});
+
 test('an HP lookup that completes after a target switch cannot steal the new editor focus',async t=>{
  const x=await uiFixture(t),amount=x.el('fighter-amount'),replies=[];let focused=0;
  let scrolled=0;amount.scrollIntoView=()=>scrolled++;amount.focus=()=>focused++;amount.select=()=>{};
