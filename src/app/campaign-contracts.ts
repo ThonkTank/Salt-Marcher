@@ -13,8 +13,6 @@ export interface CampaignManagementAPI {
  campaignCatalogWorkspace(commandId:string):Promise<Result<import('./contracts').Workspace>>;
 
  campaignOverview():Promise<Result<CampaignOverview[]>>;
- trashCampaign(command:{commandId:string;id:string;expectedRevision:number;trashed:boolean}):Promise<Result<void>>;
- eraseCampaign(command:{commandId:string;id:string;expectedRevision:number;confirmName:string}):Promise<Result<void>>;
  exportCampaign(token:string):Promise<Result<{cancelled:boolean}>>;
  prepareCampaignImport():Promise<Result<CampaignTransferPreview|null>>;
  prepareCampaignCopy(token:string):Promise<Result<CampaignTransferPreview>>;

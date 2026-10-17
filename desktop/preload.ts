@@ -6,8 +6,6 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   executeExtension:(command:import('../src/app/extension-contracts').ExtensionCommand)=>ipcRenderer.invoke('extensions:execute',command),
   extensionOutcome:(command:import('../src/app/extension-contracts').ExtensionCommand)=>ipcRenderer.invoke('extensions:outcome',command),
   campaignOverview:()=>ipcRenderer.invoke('campaign:overview'),
-  trashCampaign:(command:unknown)=>ipcRenderer.invoke('campaign:trash',command),
-  eraseCampaign:(command:unknown)=>ipcRenderer.invoke('campaign:erase',command),
   exportCampaign:(token:string)=>ipcRenderer.invoke('campaign:export',token),
   prepareCampaignImport:()=>ipcRenderer.invoke('campaign:import-preview'),
   prepareCampaignCopy:(token:string)=>ipcRenderer.invoke('campaign:copy-preview',token),
