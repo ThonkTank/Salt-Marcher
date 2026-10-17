@@ -647,7 +647,7 @@ export function initWorld(status:typeof tell,flushLive:typeof before,reloadLive:
  el('live-open-world').onclick=()=>run(enter);
  el('weather-override-form').oninput=()=>{weatherDirty=true;weatherEdits++;try{weatherBasis??=weatherOwner();}catch(error){tell((error as Error).message,true);}};
  el('weather-override-form').onsubmit=e=>{e.preventDefault();try{const kind=value('weather-override-kind') as Weather['kind'],intensity=number('weather-override-intensity')/100,effects=weatherEffects(kind,intensity,number('weather-override-temperature'));effects.travelFactor=number('weather-override-factor');effects.combatNote=value('weather-override-notes');const weather:Weather={kind,label:el<HTMLSelectElement>('weather-override-kind').selectedOptions[0]!.textContent!,intensity,windKmh:0,effects,source:'GM-Override'};run(()=>submitWeather(weather));}catch(error){tell((error as Error).message,true);}};
- travelSurface=liveHexSurface();
+ travelSurface=liveHexSurface(async()=>{const token=workspace?.token;try{if(!liveTravelOpen)await toggleLiveTravel();}catch(error){if(workspace?.token===token)tell((error as Error).message,true);}});
  el('weather-release').onclick=()=>run(()=>submitWeather(null));el('weather-discard-input').onclick=()=>run(discardWeatherInput);
 }
 

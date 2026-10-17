@@ -283,6 +283,22 @@ test('Reise opens the one Hex console without changing the scene center; explici
   x.ui.setWorldSurface('world');assert.equal(x.get('live-travel-weather').open,true);assert.equal(x.get('live-center-tools').contains(x.get('live-travel-toggle')),true);assert.equal(x.get('world-travel-owner').contains(map),true);assert.equal(x.get('world-travel-owner').contains(x.get('world-map-select')),true);x.ui.setWorldSurface('live');assert.equal(x.document.querySelectorAll('#world-map').length,1);assert.equal(x.document.querySelectorAll('#journey-play').length,1);assert.ok(x.store.db.serialize().equals(before));
  }finally{await x.ui.stopWorldPlayback();x.cleanup();}
 });
+test('the cold live map tab opens travel directly and preserves newer scene intent while its flush waits',async()=>{
+ const x=await travelFixture(),get=id=>x.document.getElementById(id);try{
+  x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);
+  const before=x.store.db.serialize();assert.equal(get('live-travel-host').hidden,true);assert.equal(get('live-center-map-tab').disabled,false);
+  x.holdBefore();get('live-center-map-tab').click();await until(x.hasBefore);assert.equal(get('live-center-map-tab').disabled,true);get('live-center-scene-tab').click();x.releaseBefore();
+  await until(()=>!get('live-travel-host').hidden&&!get('live-travel-toggle').disabled);await tick();await tick();
+  assert.equal(get('live-center-scene').hidden,false);assert.equal(get('live-center-map').hidden,true);
+  get('live-travel-toggle').click();await until(()=>get('live-travel-host').hidden);
+  get('live-center-map-tab').click();await until(()=>!get('live-center-map').hidden&&!get('live-travel-toggle').disabled);await tick();await tick();
+  assert.equal(get('live-center-map').contains(get('world-map')),true);assert.equal(x.document.querySelectorAll('#world-map').length,1);assert.ok(x.store.db.serialize().equals(before));
+  get('live-travel-toggle').click();await until(()=>get('live-travel-host').hidden);x.holdBefore();get('live-center-map-tab').click();await until(x.hasBefore);
+  const other=x.store.create('Andere Kampagne'),next=x.store.activate(other.id),snapshot=x.store.db.serialize();x.ui.activateWorld(next);x.releaseBefore();await tick();await tick();await tick();
+  assert.equal(get('live-center-map').hidden,true);assert.equal(get('live-travel-host').hidden,true);assert.ok(x.store.db.serialize().equals(snapshot));
+ }finally{await x.ui.stopWorldPlayback();x.cleanup();}
+});
+
 test('the shared travel map stays visible outside the Atlas inspector and returns to its hidden inspector projection',async()=>{
  const x=await liveContextFixture();try{
   const map=x.get('world-map'),before=x.store.db.serialize(),inspector=x.document.createElement('aside');inspector.id='atlas-panel';x.document.body.append(inspector);inspector.append(x.get('world'));

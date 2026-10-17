@@ -386,6 +386,16 @@ async function interiorSurface(x){
  return {...surface,tool,point,workspace:()=>workspace,async activate(name){await x.activate(name);workspace=x.current();selected=null;await x.ui.activateDrawing(workspace);surface.atlas.activate(workspace);},async rectangle(name,a,b,target){tool('room-rectangle');x.enter('drawing-room-name',name);point('pointerdown',a,typeof target==='string'?surface.svg.querySelector(target):target);point('pointermove',b);point('pointerup',b);await until(()=>x.store.campaignAtlas(x.current().token).workspace.rooms.some(r=>r.name===name)).catch(error=>{error.message+=' '+JSON.stringify(x.messages);throw error;});await x.drain();await settle();}};
 }
 
+test('invalid Atlas image size clears its error when the export is retried and cancelled',async()=>{
+ const x=await setup(),s=await placeSurface(x),get=id=>x.document.getElementById(id);let release;
+ try{
+  const before=x.store.db.serialize();get('atlas-export-size').value='128';x.click('atlas-export-png');await until(()=>get('atlas-save-status').dataset.error==='true');assert.match(get('atlas-save-status').textContent,/256 und 8192/);
+  x.window.campaign.landscapeRegion=()=>new Promise(resolve=>release=resolve);x.window.campaign.cancelLandscapeRaster=async()=>({ok:true,value:undefined});
+  get('atlas-export-size').value='2048';x.click('atlas-export-png');await until(()=>!!release);assert.equal(get('atlas-save-status').dataset.error,'false');assert.match(get('atlas-save-status').textContent,/vorbereitet/);
+  x.click('atlas-export-cancel');release({ok:false,error:'Cancelled'});await until(()=>!get('atlas-export-png').disabled);assert.equal(get('atlas-save-status').textContent,'Ausgabe abgebrochen');assert.equal(get('atlas-save-status').dataset.error,'false');assert.ok(x.store.db.serialize().equals(before));
+ }finally{await s.close();}
+});
+
 test('house interior reopens through the same visible action without creating a second scope',async()=>{
  const x=await setup(),s=await interiorSurface(x);
  try{

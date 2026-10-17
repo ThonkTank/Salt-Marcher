@@ -309,7 +309,7 @@ export class CampaignAtlasWorkbench {
             this.cancel();
             this.landscape.recovered();
           }
-          get("atlas-save-status").textContent = "Speicherstand geklärt";
+          this.status("Speicherstand geklärt");
         } catch (e) {
           if (this.owner === owner) this.error(e);
         } finally {
@@ -466,10 +466,12 @@ export class CampaignAtlasWorkbench {
       }, 100);
     });
   }
+  private status(text:string,error=false){
+    const target=get('atlas-save-status');target.textContent=text;target.dataset.error=String(error);
+  }
   private error(e: unknown) {
     const text = (e as Error).message;
-    get("atlas-save-status").textContent = text;
-    get("atlas-save-status").dataset.error = "true";
+    this.status(text,true);
     this.opts.status(text, true);
   }
   private scheduleRender() {
@@ -552,7 +554,7 @@ export class CampaignAtlasWorkbench {
     const w = this.owner,
       request = ++this.request;
     if (!w) return;
-    const retry = this.travelReadState === "failed";
+    const retry = this.travelReadState === "failed",previousSceneId=this.data?.geometry.sceneId;
     this.travelReadState = "loading";
     this.previewRequest++;
     this.localPreview = null;
@@ -565,9 +567,9 @@ export class CampaignAtlasWorkbench {
       if (!r.ok) throw new Error(r.error);
       this.data = r.value;
       this.travelReadState = "ready";
+      if(previousSceneId!==r.value.geometry.sceneId&&!pendingAtlasWrite(w.token)&&!this.pendingTravel)this.status('');
       if (retry) {
-        get("atlas-save-status").textContent = "Reisekontext aktualisiert";
-        get("atlas-save-status").dataset.error = "false";
+        this.status("Reisekontext aktualisiert");
         this.opts.status("Reisekontext aktualisiert");
       }
       this.render();
@@ -622,7 +624,7 @@ export class CampaignAtlasWorkbench {
     const w = this.owner;
     if (!w || this.busy) return null;
     this.busy = true;
-    get("atlas-save-status").textContent = "Wird gespeichert…";
+    this.status("Wird gespeichert…");
     try {
       const commandId = crypto.randomUUID(),
         a = structuredClone(action);
@@ -642,8 +644,7 @@ export class CampaignAtlasWorkbench {
       if (!r.ok) throw new Error(r.error);
       this.data = r.value.atlas;
       if (applyWorkspace) await this.opts.updated(r.value.atlas.workspace);
-      get("atlas-save-status").textContent = "Gespeichert";
-      get("atlas-save-status").dataset.error = "false";
+      this.status("Gespeichert");
       this.render();
       return r.value;
     } catch (e) {
@@ -1602,7 +1603,7 @@ export class CampaignAtlasWorkbench {
       if (!r.ok) throw new Error(r.error);
       this.data = r.value;
       this.localPreview = null;
-      get("atlas-save-status").textContent = "Reisestand gespeichert";
+      this.status("Reisestand gespeichert");
       this.render();
       try{await openDungeon();await refreshWorldAfterAtlasTravel(w.token,sceneId);}catch(error){if(this.owner===w)this.opts.status('Reisestand gespeichert. Weltkontext erneut laden: '+(error as Error).message,true);}
       return true;
@@ -2112,7 +2113,7 @@ export class CampaignAtlasWorkbench {
     const owner = this.owner;
     this.exporting = true;this.exportCancelled=false;get("atlas-export-cancel").hidden=false;
     get<HTMLButtonElement>("atlas-export-png").disabled = true;
-    get("atlas-save-status").textContent = "PNG wird vorbereitet…";
+    this.status("PNG wird vorbereitet…");
     try {
       if (!(await this.opts.flush()) || this.owner !== owner) return;
       const audience = get<HTMLSelectElement>("atlas-export-audience").value as
@@ -2138,7 +2139,7 @@ export class CampaignAtlasWorkbench {
           if(!region.ok)throw new Error(region.error);
           if(region.value.revision!==publicSnapshot.value.revision)throw new Error("Atlas wurde während der Ausgabe geändert. Erneut ausgeben.");
           records=region.value.records;
-          rasters=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,(part,w,h)=>window.campaign.landscapeRaster(owner.token,part,w,h,'export'),()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Bild wird vorbereitet: ${done}/${total}`;});
+          rasters=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,(part,w,h)=>window.campaign.landscapeRaster(owner.token,part,w,h,'export'),()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{this.status(`Bild wird vorbereitet: ${done}/${total}`);});
         }
         svg=publicAtlasSVG(publicSnapshot.value,box,frame,records,box.width/width,rasters);
       } else {
@@ -2146,7 +2147,7 @@ export class CampaignAtlasWorkbench {
         if(!region.ok)throw new Error(region.error);
         if(this.owner!==owner)return;
         if(region.value.revision!==snapshot.revision)throw new Error("Atlas wurde während der Ausgabe geändert. Erneut ausgeben.");
-        const rasters=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,(part,w,h)=>window.campaign.landscapeRaster(owner.token,part,w,h,'export'),()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Bild wird vorbereitet: ${done}/${total}`;});
+        const rasters=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,(part,w,h)=>window.campaign.landscapeRaster(owner.token,part,w,h,'export'),()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{this.status(`Bild wird vorbereitet: ${done}/${total}`);});
         const assets=new Map(this.landscape.assets);
         if(get<HTMLInputElement>("atlas-export-reference").checked)for(const r of region.value.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAsset(owner.token,r.assetId);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
         svg=atlasRegionSVG(snapshot,region.value.records,box,width,assets,{rasters,grid:get<HTMLInputElement>("atlas-export-grid").checked,level:Number(get<HTMLSelectElement>("atlas-hex-level").value),references:get<HTMLInputElement>("atlas-export-reference").checked,floorId:this.floorId,roofs:get<HTMLInputElement>("atlas-roofs").checked,scopeId:["interior","decoration"].includes(this.family)?this.scopeId:null,labelUnitsPerPixel:box.width/Math.max(1,this.svg.clientWidth)});
@@ -2162,12 +2163,12 @@ export class CampaignAtlasWorkbench {
       if (!r.ok) throw new Error(r.error);
       if (!r.value.cancelled) {
         this.opts.status("Atlas-"+format.toUpperCase()+" gespeichert.");
-        get("atlas-save-status").textContent = "Atlas-"+format.toUpperCase()+" gespeichert";
+        this.status("Atlas-"+format.toUpperCase()+" gespeichert");
       }
     } catch (e) {
       if (this.owner === owner && !this.exportCancelled) this.error(e);
     } finally {
-      if(this.exportCancelled&&this.owner===owner)get("atlas-save-status").textContent="Ausgabe abgebrochen";
+      if(this.exportCancelled&&this.owner===owner)this.status("Ausgabe abgebrochen");
       get("atlas-export-cancel").hidden=true;
       this.exporting = false;
       get<HTMLButtonElement>("atlas-export-png").disabled = false;
