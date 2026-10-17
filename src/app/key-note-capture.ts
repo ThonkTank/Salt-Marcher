@@ -22,13 +22,13 @@ export class KeyNoteCapture {
  constructor(private options:Options){
   this.dialog.id='key-note-capture-dialog';this.dialog.setAttribute('aria-labelledby','key-note-capture-heading');this.heading.id='key-note-capture-heading';
   this.kind.id='key-note-kind';this.title.id='key-note-title';this.gm.id='key-note-gm';this.title.required=true;this.title.maxLength=1000;this.gm.rows=7;this.gm.maxLength=2_000_000;
-  for(const [id,label]of [['rumor','Gerücht'],['npc','NSC'],['faction','Fraktion'],['quest','Quest']]){const option=node('option',label);option.value=id!;this.kind.append(option);}
+  for(const [id,label]of [['note','Notiz'],['rumor','Gerücht'],['npc','NSC'],['faction','Fraktion'],['quest','Quest']]){const option=node('option',label);option.value=id!;this.kind.append(option);}
   const rule=node('option','Regel (vorhanden)');rule.value='rule';rule.disabled=true;this.kind.append(rule);
   this.submit.id='key-note-submit';this.check.id='key-note-status-check';this.cancel.id='key-note-cancel';this.submit.type='submit';this.check.type=this.cancel.type='button';
   this.status.id='key-note-capture-status';this.status.setAttribute('role','status');
   this.form.append(this.heading,this.help);for(const [label,field]of [['Art',this.kind],['Name oder Titel',this.title],['Notizen für die Spielleitung',this.gm]] as const){const l=field===this.gm?this.gmLabel:node('label',label);l.htmlFor=field.id;this.form.append(l,field);}
   this.existing.id='key-note-existing';this.choiceStatus.id='key-note-choices-status';this.choiceStatus.setAttribute('role','status');this.newNote.type='button';this.newNote.id='key-note-new';this.gmLabel.htmlFor=this.gm.id;this.uses.id='key-note-selected-uses';this.title.after(this.choiceStatus,this.existing,this.uses,this.newNote);
-  this.title.oninput=()=>{if(this.command||this.pending)return;this.chosen=null;this.explicitNew='';void this.lookup();};this.gm.oninput=()=>this.controls();this.newNote.onclick=()=>{if(this.pending||this.command)return;this.chosen=null;this.uses.textContent='';if(this.kind.value==='rule')this.kind.value='rumor';this.explicitNew=normalizedNoteTitle(this.title.value);this.status.textContent='Eigenständige neue Notiz gewählt. Vorhandene Notizen bleiben getrennt.';this.controls();this.title.focus();};
+  this.title.oninput=()=>{if(this.command||this.pending)return;this.chosen=null;this.explicitNew='';void this.lookup();};this.gm.oninput=()=>this.controls();this.newNote.onclick=()=>{if(this.pending||this.command)return;this.chosen=null;this.uses.textContent='';if(this.kind.value==='rule')this.kind.value='note';this.explicitNew=normalizedNoteTitle(this.title.value);this.status.textContent='Eigenständige neue Notiz gewählt. Vorhandene Notizen bleiben getrennt.';this.controls();this.title.focus();};
   const actions=node('div');actions.className='actions';actions.append(this.cancel,this.check,this.submit);this.form.append(this.status,actions);this.dialog.append(this.form);document.body.append(this.dialog);
   this.form.onsubmit=event=>{event.preventDefault();if(!this.composing)void this.save();};this.check.onclick=()=>void this.reconcile();this.cancel.onclick=()=>this.close();
   this.dialog.addEventListener('cancel',event=>{event.preventDefault();this.close();});
@@ -76,7 +76,7 @@ export class KeyNoteCapture {
   if(this.active)return;const epoch=++this.epoch;
   const source=await this.options.prepare();if(epoch!==this.epoch||!source?.current())return;
   this.source=source;this.chosen=null;this.explicitNew='';this.lookupQuery='';this.lookupPending=null;this.choices={entries:[],more:false};this.command=null;this.pending=false;this.applied=false;this.composing=false;this.conflict=false;
-  this.title.value=selection.trim().split('\n')[0]?.slice(0,100)??'';this.gm.value=selection;this.kind.value='rumor';this.status.textContent='';
+  this.title.value=selection.trim().split('\n')[0]?.slice(0,100)??'';this.gm.value=selection;this.kind.value='note';this.status.textContent='';
   this.help.textContent=source.title+' · '+(selection?'Markierten GM-Text übernommen. Der Raumtext bleibt erhalten.':'Neue Notiz direkt mit diesem Raum verknüpfen.');
   this.controls();this.dialog.showModal();this.title.focus();this.title.select();void this.lookup();
  }
