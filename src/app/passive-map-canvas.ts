@@ -76,6 +76,7 @@ export class PassiveMapCanvas {
  cancel(){const drag=this.drag;this.drag=null;if(drag?.moved)this.remember(drag.box);if(drag&&this.root.hasPointerCapture(drag.id))this.root.releasePointerCapture(drag.id);}
  /** Build off-screen, then publish one shared root for drawing and native hit-testing. */
  render(draw:(scene:SVGGElement)=>void,emptyText=''){
+  if(this.root.dataset.sharedAtlas==='true'){this.root.replaceChildren();this.scene=null;return;}
   this.renderScene=draw;this.emptyText=emptyText;if(this.rendering||this.failed)return;
   this.rendering=true;
   try{
@@ -88,5 +89,5 @@ export class PassiveMapCanvas {
   }finally{this.rendering=false;this.refreshControls();}
  }
  /** Passive DOM hit: coordinate/ref/command conversion belongs to the adopter. */
- hit(clientX:number,clientY:number):Element|null{if(this.failed||!this.scene)return null;const hit=this.root.ownerDocument.elementFromPoint(clientX,clientY);return hit&&this.scene.contains(hit)?hit:null;}
+ hit(clientX:number,clientY:number):Element|null{if(this.root.dataset.sharedAtlas==='true'||this.failed||!this.scene)return null;const hit=this.root.ownerDocument.elementFromPoint(clientX,clientY);return hit&&this.scene.contains(hit)?hit:null;}
 }

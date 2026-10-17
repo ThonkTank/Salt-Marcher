@@ -1,6 +1,6 @@
 # Gemeinsamer Atlas: räumlicher und technischer Anschluss
 
-Stand: 11.10.2026. Normative Grundlage ist [ARCHITECTURE](ARCHITECTURE.md),
+Stand: 17.10.2026. Normative Grundlage ist [ARCHITECTURE](ARCHITECTURE.md),
 der vollständige Nutzen steht im [Atlasplan](ROADMAP-HEX-ATLAS.md).
 Diese Datei besitzt Maßstab, Geometrie, räumliche Abfragen und Atlascommands.
 Speicherung/Host/Extensions werden nicht nochmals hier spezifiziert.
@@ -42,14 +42,16 @@ sind lesende Darstellungen dieser Fakten. Empty/Placeholder legt keine Karte an.
 Die Desktopkorrektur in `world-ui.ts`/`hex-map-gestures.ts` verhindert automatische
 Worldwrites durch Kameraereignisse und erhält einen unterbrochenen Strich als
 lokalen Entwurf. [Verhalten und begrenzte Belege](docs/plans/maps/hex-editing.md)
-sind von einer vollständigen gemeinsamen Canvasimplementation getrennt. Desktop
-verwendet `PassiveMapCanvas` gemeinsam für World-/Drawing-SVG und eine weitere
-SVGfläche im Volume-UI; der bestehende
-Hostadapter in `features/atlas` kombiniert Pixi-Renderer, RelativeFrame und
-SpatialCanvas. Diese Wege sind keine gegenseitigen Plattformnachweise und
-begründen keine neue parallele Autoren-/Kamerawahrheit.
+sind lokale Teilbelege. Der gemeinsame Desktopatlas verwendet inzwischen
+`AtlasCanvas` mit Canvas2D; die ursprünglichen World-/Drawing-/Stadt-/Dungeonhosts
+bauen dort keine SVG-Geometrie mehr. `PassiveMapCanvas` bleibt für isolierte
+ältere Adopter erhalten, ebenso die eigene SVGfläche im Volume-UI. Der
+historische Hostadapter in `features/atlas` kombiniert Pixi-Renderer,
+RelativeFrame und SpatialCanvas. Diese Wege sind keine gegenseitigen
+Plattformnachweise und begründen keine neue parallele Autoren-/Kamerawahrheit.
+Der umgesetzte Desktopstand mit Grenzen steht unter „Canvas2D als Atlasdarstellung“.
 
-Nächste ausführbare Anschlüsse in dieser Reihenfolge:
+Für verbleibende Adopter und deren Qualifikation gelten diese Anschlüsse in Reihenfolge:
 
 1. **Passive Eingaben in allen aktuellen Adoptern.** Die vorhandenen
    `drawing-ui.ts`-/`renderer.ts`-Handler gegen mittlere Taste, ausgewählte
@@ -613,7 +615,11 @@ Lieferstufen noch die Produktabnahme ab. Stiländerungen sind zurückgestellt.
 
 Der gemeinsame Atlas (`campaign-atlas-ui.ts`, `atlas-canvas.ts`,
 `atlas-canvas-scene.ts`) zeichnet jetzt auf eine echte Canvas2D-Fläche. Kein
-Kartenobjekt erzeugt ein verbundenes SVG-/DOM-Element. Die passive Kamera
+Kartenobjekt erzeugt ein verbundenes SVG-/DOM-Element. Die alten Kartenhosts
+für Raum-, Stadt-, Hex- und Dungeonwerkzeuge sind im gemeinsamen Workbench
+ausdrücklich abgelöst und bleiben leer, auch beim Laden von Werkzeugen oder
+am Live-Tisch. Fachfelder, Status und Exportgeneratoren bleiben davon getrennt;
+ein per CSS verborgenes SVG wäre weiterhin ein unnötiger zweiter Zeichenweg. Die passive Kamera
 behält Ankerzoom, Pointercapture, Ansichtshistorie und Kontextcache; Landschaft,
 Stadt, Innenräume, Griffe, Reise und Marker benutzen dieselbe relative Szene.
 Die Szenenkommandos werden je fachlicher Änderung kompiliert; Pan und Zoom
@@ -631,8 +637,15 @@ des logischen Punkt-Pickradius bleiben damit auswählbar. Rasterpixel und
 Darstellungskonturen werden nicht zur Schreibautorität. Hover-Namen von Markern/Zeichenobjekten stammen ebenfalls aus denselben Pfaden,
 auch ohne Autoren-Auswahl; sie werden bei Gesten/Framewechsel/Fehlern entfernt.
 CSS-Ränder, Kameraskalierung und Bitmap-DPI
-sind getrennt. Während ein neuer Bildframe vorbereitet wird, sind Autorenhits
-gesperrt. Nur der neueste vollständige Frame wird veröffentlicht; genau eine
+sind getrennt. Autorenhits und Hover verlangen nicht nur die neueste Szene,
+sondern auch deren erfolgreich auf die sichtbare Fläche kopierten Frame mit
+aktueller Kamera und aktuellen CSS-Innenmaßen. Kameraänderungen sperren
+Treffer bis zum nächsten Paint; ein Größenwechsel ist schon vor dem
+ResizeObserver-Aufruf gesperrt. Eine verborgen kompilierte Szene erhält beim
+Wiederanzeigen keine Treffer durch zufällig wieder passende alte Bitmapmaße.
+Ein ausstehender Frame gilt für linkes Navigationsziehen nicht als leere
+Kartenfläche; ausdrückliches Mitteltasten-/Alt-Navigieren bleibt möglich.
+Nur der neueste vollständige Frame wird veröffentlicht; genau eine
 Bilddecodierung mit einem ersetzbaren Nachfolger verhindert Decoder-Fan-out.
 Verlust/Fehler der Zeichenfläche entfernt Treffer und bietet Wiederholung,
 ohne gespeicherte Daten, Kamera oder Listener zu verdoppeln.
