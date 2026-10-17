@@ -1,3 +1,4 @@
+import {AtlasPaint,paintFactory,type PaintTarget} from './atlas-canvas-scene';
 import type {CityPoint,CityUnit,CityCommand} from './city-contracts';
 import {roadPoints} from './city-model';
 
@@ -48,19 +49,20 @@ export class CityShape {
 }
 
 /** Handles work with pointer dragging, click then target, and keyboard selection. */
-export function cityShapeHandles(root:SVGGElement,editor:CityShape,mpp:number){
+export function cityShapeHandles(root:PaintTarget,editor:CityShape,mpp:number){
  const s=editor.state;if(!s)return;const line=['road','wall'].includes(s.owner.unit.kind);
  for(let i=0;i<s.points.length;i++){
   const p=s.points[i]!;
   const handle=(point:CityPoint,label:string,midpoint:boolean)=>{
-   const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
-   c.setAttribute('cx',String(point.x));c.setAttribute('cy',String(point.y));c.setAttribute('r',String(mpp*(midpoint?4:7)));c.setAttribute('fill',midpoint?'#fff':s.chosen===i?'#c65d28':'#176c74');c.setAttribute('stroke','#fff');c.setAttribute('stroke-width',String(mpp*1.5));c.setAttribute('role','button');c.setAttribute('aria-label',label);c.setAttribute('tabindex',editor.locked?'-1':'0');c.style.cursor=midpoint?'copy':'move';c.dataset.cityShapeHandle=String(i);if(midpoint)c.dataset.cityShapeInsert='true';
+   const c=paintFactory(root)('circle');
+   c.setAttribute('cx',String(point.x));c.setAttribute('cy',String(point.y));c.setAttribute('r',String(mpp*(midpoint?4:7)));c.setAttribute('fill',midpoint?'#fff':s.chosen===i?'#c65d28':'#176c74');c.setAttribute('stroke','#fff');c.setAttribute('stroke-width',String(mpp*1.5));c.setAttribute('role','button');c.setAttribute('aria-label',label);c.setAttribute('tabindex',editor.locked?'-1':'0');if(!(root instanceof AtlasPaint))c.style.cursor=midpoint?'copy':'move';c.dataset.cityShapeHandle=String(i);if(midpoint)c.dataset.cityShapeInsert='true';
    const choose=()=>midpoint?editor.insert(i):editor.choose(i);
-   c.addEventListener('click',e=>{e.stopPropagation();choose();});
-   c.addEventListener('keydown',e=>{const k=e as KeyboardEvent;if(k.key==='Enter'||k.key===' '){k.preventDefault();k.stopPropagation();choose();}});
-   c.addEventListener('pointerdown',e=>{
+   if(root instanceof AtlasPaint){root.append(c);return;}
+   c.addEventListener('click',(e:MouseEvent)=>{e.stopPropagation();choose();});
+   c.addEventListener('keydown',(e:KeyboardEvent)=>{const k=e as KeyboardEvent;if(k.key==='Enter'||k.key===' '){k.preventDefault();k.stopPropagation();choose();}});
+   c.addEventListener('pointerdown',(e:PointerEvent)=>{
     if(e.button!==0||editor.locked)return;e.stopPropagation();e.preventDefault();
-    const svg=root.ownerSVGElement,matrix=root.getScreenCTM()?.inverse();if(!svg||!matrix)return;
+    const svg=root.ownerSVGElement,matrix=(root as SVGGElement).getScreenCTM()?.inverse();if(!svg||!matrix)return;
     choose();svg.setPointerCapture(e.pointerId);
     const move=(event:PointerEvent)=>{if(event.pointerId!==e.pointerId)return;if(editor.state!==s){end(event);return;}event.stopPropagation();const pt=svg.createSVGPoint();pt.x=event.clientX;pt.y=event.clientY;const at=pt.matrixTransform(matrix);editor.point(at);};
     const end=(event:PointerEvent)=>{if(event.pointerId!==e.pointerId)return;svg.removeEventListener('pointermove',move);svg.removeEventListener('pointerup',end);svg.removeEventListener('pointercancel',end);if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);};

@@ -1,3 +1,4 @@
+import type {PaintTarget} from './atlas-canvas-scene';
 import type {AtlasRenderView} from './campaign-atlas-contracts';
 import {PassiveMapCanvas} from './passive-map-canvas';
 import {CityPlacement} from './city-placement';
@@ -214,7 +215,7 @@ function focusCityHouse(shared=false){
 function placementControls(){
  const state=placement?.state,active=!!state||!!shapeEdit?.active,house=unit()?.kind==='building';
  el('city-shape-open').hidden=!unit()||!editableCityShape(unit()!)||active;el<HTMLButtonElement>('city-shape-open').disabled=!!shapeEdit?.opening||!!preview||!!generationJob;el('city-shape').hidden=!shapeEdit?.active;
- if(shapeEdit?.state){el('city-shape-status').textContent=shapeEdit.state.message;for(const id of ['city-shape-cancel','city-shape-remove'])el<HTMLButtonElement>(id).disabled=shapeEdit.locked;el<HTMLButtonElement>('city-shape-accept').disabled=shapeEdit.state.busy;el('city-shape-accept').textContent=shapeEdit.state.attempt?'Ergebnis prüfen':'Form übernehmen';}
+ if(shapeEdit?.state){const points=el<HTMLSelectElement>('city-shape-point');points.replaceChildren(...shapeEdit.state.points.map((_,i)=>new Option('Eckpunkt '+(i+1),String(i))));points.value=String(shapeEdit.state.chosen);points.disabled=shapeEdit.locked;el<HTMLButtonElement>('city-shape-insert').disabled=shapeEdit.locked||(['road','wall'].includes(shapeEdit.state.owner.unit.kind)&&shapeEdit.state.chosen===shapeEdit.state.points.length-1);el('city-shape-status').textContent=shapeEdit.state.message;for(const id of ['city-shape-cancel','city-shape-remove'])el<HTMLButtonElement>(id).disabled=shapeEdit.locked;el<HTMLButtonElement>('city-shape-accept').disabled=shapeEdit.state.busy;el('city-shape-accept').textContent=shapeEdit.state.attempt?'Ergebnis prüfen':'Form übernehmen';}
  el('city-placement').hidden=!state;el('city-find').hidden=active;el('city-unit-type').hidden=house||active;el('city-place-open').parentElement!.hidden=!house||active;el('city-place-open').hidden=!house||active;el('city-place-focus').hidden=!house;
  el<HTMLButtonElement>('city-place-open').disabled=!!placement?.opening||!!preview||!!generationJob;el('city-unit-form').setAttribute('aria-disabled',String(active));el('city-unit-form').hidden=!!shapeEdit?.active;
  el<HTMLFieldSetElement>('city-unit-fields').disabled=active;
@@ -297,6 +298,7 @@ export function initCity(status:typeof tell,relationships:(id:string)=>Promise<v
  el('city-placement-left').onclick=()=>placement!.turn(-90);el('city-placement-right').onclick=()=>placement!.turn(90);el('city-placement-angle').oninput=()=>placement!.angle(Number(value('city-placement-angle')));
  el('city-placement-accept').onclick=()=>run(()=>placement!.accept());el('city-placement-cancel').onclick=()=>placement!.cancel();
  shapeEdit=new CityShape({current:()=>{const u=unit();return workspace&&view&&u?{token:workspace.token,cityId:view.header.id,revision:view.header.revision,unit:u,units:view.units}:null;},drain:flushCity,send:change,rejected:error=>error instanceof CityCommandRejected,changed:render});
+ el('city-shape-point').onchange=()=>shapeEdit?.choose(Number(value('city-shape-point')));el('city-shape-insert').onclick=()=>{if(shapeEdit?.state)shapeEdit.insert(shapeEdit.state.chosen);};
  el('city-shape-open').onclick=()=>run(()=>shapeEdit!.begin());el('city-shape-accept').onclick=()=>run(()=>shapeEdit!.accept());el('city-shape-cancel').onclick=()=>shapeEdit!.cancel();el('city-shape-remove').onclick=()=>shapeEdit!.remove();
  activity=new CityActivityBinder(()=>{const u=unit();return workspace&&view?{workspace,cityId:view.header.id,revision:view.header.revision,unit:u?.kind==='building'?{id:u.id,name:u.name}:null}:null;},async(site,current)=>{if(!await flushCity()||!current())return;await openCityReference(site.cityId,site.unitId);},profile,location);
  for(const panel of ['draw','infill','selection','life'] as const)el('city-panel-'+panel).onclick=()=>{if(shapeEdit?.active){tell('Stadtform zuerst übernehmen oder verwerfen.',true);return;}if(placement?.active){tell('Hausplatzierung zuerst übernehmen oder verwerfen.',true);return;}if(path.length){tell('Begonnenen Stadtzug zuerst abschließen oder verwerfen.',true);return;}if(panel!=='draw')field('city-tool').value='select';showPanel(panel);if(panel==='infill'||panel==='life')run(()=>prepareCityTools(panel,panelIntent));};showPanel('draw');el('city-place-search').oninput=namedPlaces;el('city-location').onchange=createFields;el('city-new-open').onclick=()=>{createFields();el<HTMLDialogElement>('city-new-dialog').showModal();};el('city-new-cancel').onclick=()=>el<HTMLDialogElement>('city-new-dialog').close();
@@ -332,4 +334,6 @@ export function initCity(status:typeof tell,relationships:(id:string)=>Promise<v
  for(const format of ['svg','json'] as const)el('city-export-'+format).onclick=()=>run(async()=>{if(!workspace||!view||!(await flushCity()))return;unwrap(await window.campaign.exportCity(workspace.token,view.header.id,format));tell('Stadtplan exportiert.');});
 }
 
-export function atlasCityShapeHandles(root:SVGGElement,mpp:number){if(shapeEdit?.active)cityShapeHandles(root,shapeEdit,mpp);}
+export function atlasCityShapeHandles(root:PaintTarget,mpp:number){if(shapeEdit?.active)cityShapeHandles(root,shapeEdit,mpp);}
+
+export function atlasCityChooseShapeHandle(index:number,insert=false){if(!shapeEdit?.active||!Number.isInteger(index))return;insert?shapeEdit.insert(index):shapeEdit.choose(index);}

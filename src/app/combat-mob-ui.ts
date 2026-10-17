@@ -93,86 +93,89 @@ export function combatMobRow(
   };
   heading.append(title, toggle);
   card.append(heading);
-  const front = node("div"),
-    choose = node("button", mob.front.name),
-    hp = node(
-      "button",
-      mob.front.hp +
-        " / " +
-        mob.front.maxHp +
-        " HP" +
-        (mob.front.tempHp ? " + " + mob.front.tempHp + " temporär" : ""),
-    ),
-    initiative = node("button", "Initiative " + mob.front.initiative);
-  front.className = "toolbar";
-  choose.type = hp.type = initiative.type = "button";
-  choose.dataset.mobFrontId = mob.front.id;
-  choose.setAttribute(
-    "aria-pressed",
-    String(options.selected === mob.front.id),
-  );
-  choose.onclick = () => {
-    if (options.current()) options.choose(mob.front.id);
-  };
-  hp.className = "combat-mob-health";
-  hp.setAttribute("aria-label", mob.front.name + " · Schaden oder Heilung");
-  hp.dataset.combatReadonly = initiative.dataset.combatReadonly = String(
-    !["preparing", "running"].includes(combat.phase),
-  );
-  hp.onclick = () => {
-    if (options.current()) options.health(mob.front.id);
-  };
-  initiative.onclick = () => {
-    if (options.current()) options.initiative(mob.front.id);
-  };
-  front.append(
-    node(
-      "span",
-      mob.living ? "Vorne:" : "Kein Mitglied über 0 HP · Einzelwerte:",
-    ),
-    choose,
-    hp,
-    node("span", "RK " + mob.front.armorClass),
-    initiative,
-  );
-  card.append(front);
-  const status = [
-    mob.front.conditions,
-    mob.front.concentrating ? "Konzentration" : "",
-    ...(mob.front.timedEffects?.map(
-      (effect) => effect.name + " · " + effect.remaining + " Runden",
-    ) ?? []),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  card.append(
-    node(
-      "p",
-      (mob.front.hiddenFromPlayers ? "Auf Spieleranzeige verborgen · " : "") +
-        "Vorderes Mitglied: " +
-        (status || "Keine Zustände") +
-        ".",
-    ),
-  );
-  if (
-    new Set(
-      mob.members.map((actor) =>
-        JSON.stringify([
-          actor.conditions,
-          actor.concentrating,
-          actor.armorClass,
-          actor.hiddenFromPlayers,
-          actor.role,
-        ]),
+  // Expanded rows already expose every member's HP, initiative and conditions.
+  if (!options.expanded) {
+    const front = node("div"),
+      choose = node("button", mob.front.name),
+      hp = node(
+        "button",
+        mob.front.hp +
+          " / " +
+          mob.front.maxHp +
+          " HP" +
+          (mob.front.tempHp ? " + " + mob.front.tempHp + " temporär" : ""),
       ),
-    ).size > 1
-  )
+      initiative = node("button", "Initiative " + mob.front.initiative);
+    front.className = "toolbar";
+    choose.type = hp.type = initiative.type = "button";
+    choose.dataset.mobFrontId = mob.front.id;
+    choose.setAttribute(
+      "aria-pressed",
+      String(options.selected === mob.front.id),
+    );
+    choose.onclick = () => {
+      if (options.current()) options.choose(mob.front.id);
+    };
+    hp.className = "combat-mob-health";
+    hp.setAttribute("aria-label", mob.front.name + " · Schaden oder Heilung");
+    hp.dataset.combatReadonly = initiative.dataset.combatReadonly = String(
+      !["preparing", "running"].includes(combat.phase),
+    );
+    hp.onclick = () => {
+      if (options.current()) options.health(mob.front.id);
+    };
+    initiative.onclick = () => {
+      if (options.current()) options.initiative(mob.front.id);
+    };
+    front.append(
+      node(
+        "span",
+        mob.living ? "Vorne:" : "Kein Mitglied über 0 HP · Einzelwerte:",
+      ),
+      choose,
+      hp,
+      node("span", "RK " + mob.front.armorClass),
+      initiative,
+    );
+    card.append(front);
+    const status = [
+      mob.front.conditions,
+      mob.front.concentrating ? "Konzentration" : "",
+      ...(mob.front.timedEffects?.map(
+        (effect) => effect.name + " · " + effect.remaining + " Runden",
+      ) ?? []),
+    ]
+      .filter(Boolean)
+      .join(" · ");
     card.append(
       node(
         "p",
-        "Mitglieder haben unterschiedliche Werte, Zustände oder Sichtbarkeit. Einzelheiten unter „Mitglieder zeigen“.",
+        (mob.front.hiddenFromPlayers ? "Auf Spieleranzeige verborgen · " : "") +
+          "Vorderes Mitglied: " +
+          (status || "Keine Zustände") +
+          ".",
       ),
     );
+    if (
+      new Set(
+        mob.members.map((actor) =>
+          JSON.stringify([
+            actor.conditions,
+            actor.concentrating,
+            actor.armorClass,
+            actor.hiddenFromPlayers,
+            actor.role,
+          ]),
+        ),
+      ).size > 1
+    )
+      card.append(
+        node(
+          "p",
+          "Mitglieder haben unterschiedliche Werte, Zustände oder Sichtbarkeit. Einzelheiten unter „Mitglieder zeigen“.",
+        ),
+      );
+  }
   card.append(
     node(
       "p",
@@ -187,7 +190,7 @@ export function combatMobRow(
           : "Abgeschlossener Stand · individuelle HP und Zustände bleiben erhalten.",
     ),
   );
-  if (mob.active && mob.active.id !== mob.front.id) {
+  if (!options.expanded && mob.active && mob.active.id !== mob.front.id) {
     const active = node(
       "button",
       "Aktiven Teilnehmer öffnen: " + mob.active.name,

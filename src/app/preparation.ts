@@ -105,6 +105,7 @@ let planningRenderedLoad=-1,planningOpening:{load:number;task:Promise<void>}|nul
 let hasOpenInput = false, preparationInputVersion = 0;
 let failedCommand: PreparationCommand | null = null;
 let tell: (text: string, error?: boolean) => void;
+let inspectNote: ((id:string,current:()=>boolean)=>Promise<void>) | undefined;
 function syncSaveControl() { get('preparation-apply').hidden = !hasOpenInput || blocked; }
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 let locationNotebookOpen:(id:string)=>Promise<void>=async()=>{};
@@ -488,7 +489,8 @@ async function insertNoteTextReference(){
  }catch(error){if(current())tell((error as Error).message,true);}
  finally{if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
 }
-export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>) {
+export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>, inspect?: (id:string,current:()=>boolean)=>Promise<void>) {
+  inspectNote=inspect;
   const mergeButton=document.createElement('button');mergeButton.id='note-merge-open';mergeButton.type='button';mergeButton.textContent='NSC-Notizen zusammenführen…';get('note-remove').before(mergeButton);
   noteMerge=new NoteMergeUI(mergeButton,get('preparation'),{
     api:window.campaign,storage:window.localStorage,tell:status,
@@ -914,14 +916,22 @@ function renderRelations() {
   if([...select.options].some(option=>option.value===previousTarget))select.value=previousTarget;
   get('relation-create').hidden = !row || row.trashed || !select.options.length;
   if (!row) return; const token=context?.token,request=preparationLoad,current=()=>context?.token===token&&request===preparationLoad&&selectedNote===row.note.id;
+  const reading = (item:HTMLElement,id:string,label:string,available:boolean) => {
+    // Embedded map editors already have their own contextual reader. The
+    // ordinary editor can use the shared reference reader without navigating.
+    if(!inspectNote||noteThread?.editorId===row.note.id)return;
+    const read=document.createElement('button');read.type='button';read.textContent='Ansehen…';read.setAttribute('aria-label','Ansehen: '+label);read.disabled=!available;
+    read.onclick=()=>{if(!read.isConnected||read.disabled||!current())return;void inspectNote!(id,current).catch(e=>{if(current())tell(e.message,true);});};item.append(read);
+  };
   const navigate = (id: string) => { void (async () => { if(!current())return;if(noteThread?.editorId===row.note.id){await noteThread.followNote(id);return;}if(!await flushPreparation()||!current())return; selectedNote = id; showLocations(false); await renderNotes(); if (context?.token === token) revealNote(id); })(); };
   for (const relation of (noteDraft?.id===row.note.id?noteDraft:row.note).relations) {
     const target = noteRow(relation.targetId), item = document.createElement('div'), button = document.createElement('button');
     button.textContent = `${relation.label}: ${target?.note.title ?? 'Ziel nicht verfügbar'}${target?.trashed ? ' (Papierkorb)' : ''}`; button.disabled = !target; button.onclick = () => {if(button.isConnected)navigate(relation.targetId);}; item.append(button);
+    reading(item,relation.targetId,button.textContent,!!target);
     if (!row.trashed) { const remove = document.createElement('button'); remove.textContent = 'Beziehung lösen'; remove.onclick=()=>{if(current()&&remove.isConnected&&noteDraft)void changeNoteRelations(noteDraft.relations.filter(r=>r.targetId!==relation.targetId||r.label!==relation.label));}; item.append(remove); }
     get('note-relations').append(item);
   }
-  for (const source of campaignNotes.values()) { if (!source.note.relations.some(relation => relation.targetId === selectedNote)) continue; const button = document.createElement('button'); button.textContent = `Verweis von ${source.note.title}${source.trashed ? ' (Papierkorb)' : ''}`; button.onclick = () => {if(button.isConnected)navigate(source.note.id);}; get('note-incoming').append(button); }
+  for (const source of campaignNotes.values()) { if (!source.note.relations.some(relation => relation.targetId === selectedNote)) continue; const item=document.createElement('div'),button = document.createElement('button'); button.textContent = `Verweis von ${source.note.title}${source.trashed ? ' (Papierkorb)' : ''}`; button.onclick = () => {if(button.isConnected)navigate(source.note.id);};item.append(button);reading(item,source.note.id,button.textContent,true);get('note-incoming').append(item); }
 }
 function initLocationActions() {
   for (const [id, show] of [['knowledge-tab', false], ['locations-tab', true]] as const) get(id).onclick = () => {

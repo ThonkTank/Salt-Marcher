@@ -23,6 +23,28 @@ test('opening an unavailable note reports failure without claiming the previous 
  const title=x.el('note-title').value;assert.equal(await x.ui.openPreparedNote('missing-note'),false);assert.equal(x.el('note-title').value,title);assert.equal(x.writes.length,0);
 });
 
+async function sourceReader(t){
+ const x=await fixture(t,true);x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:{...x.original,relations:[{targetId:x.ids.ada,label:'Quelle'}]}}));await x.activate();await x.ui.openPreparedNote(x.ids.borin);return x;
+}
+test('relationship inspection reads the canonical source while keeping the current editor, query and literal input',async t=>{
+ const x=await sourceReader(t),area=x.el('note-gm'),raw='  Weiterarbeiten\r\nQuelle prüfen  ';
+ x.el('world-search').value='Borin';area.value=raw;area.dispatchEvent(new x.window.Event('input'));area.setSelectionRange(3,7);
+ x.el('note-relations').querySelector('[aria-label="Ansehen: Quelle: Ada"]').click();await until(()=>x.el('quick-document').querySelector('h2')?.textContent==='Ada');
+ assert.equal(x.el('quick-reference').open,true);assert.equal(x.el('note-title').value,'Borin');assert.equal(x.el('world-search').value,'Borin');assert.equal(area.value,raw);assert.equal(area.selectionStart,3);assert.equal(area.selectionEnd,7);assert.match(x.el('quick-document').textContent,/GM privat/);
+ x.el('quick-close').click();assert.equal(x.el('quick-reference').open,false);assert.equal(x.el('note-title').value,'Borin');assert.equal(x.writes.length,1);assert.equal(x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note.gmNotes,raw);
+});
+test('incoming references inspect their original and detached relation controls cannot act on a new selection',async t=>{
+ const x=await sourceReader(t),old=x.el('note-relations').querySelector('[aria-label^="Ansehen:"]');await x.ui.openPreparedNote(x.ids.ada);old.onclick();await settle();assert.equal(x.el('quick-reference').open,false);
+ x.el('note-incoming').querySelector('[aria-label="Ansehen: Verweis von Borin"]').click();await until(()=>x.el('quick-document').querySelector('h2')?.textContent==='Borin');assert.equal(x.el('note-title').value,'Ada');assert.equal(x.writes.length,0);
+});
+test('cancelled or superseded source reads cannot publish private text into a later reference context',async t=>{
+ const x=await sourceReader(t),read=x.window.campaign.deskContent;let release;x.window.campaign.deskContent=async(...args)=>{const result=await read(...args);return new Promise(r=>release=()=>r(result));};
+ x.el('note-relations').querySelector('[aria-label^="Ansehen:"]').click();await until(()=>!!release);x.el('quick-close').click();release();await settle();assert.doesNotMatch(x.el('quick-document').textContent,/GM privat/);assert.equal(x.el('note-title').value,'Borin');assert.equal(x.writes.length,0);
+});
+test('source inspection shows read failures without navigating to or editing the source',async t=>{
+ const x=await sourceReader(t);x.window.campaign.deskContent=async()=>({ok:false,error:'Quelle derzeit nicht lesbar'});x.el('note-relations').querySelector('[aria-label^="Ansehen:"]').click();await until(()=>x.el('quick-document').textContent.includes('Quelle derzeit nicht lesbar'));assert.equal(x.el('note-title').value,'Borin');assert.equal(x.writes.length,0);assert.doesNotMatch(x.el('quick-document').textContent,/GM privat/);
+});
+
 async function selectExcerpt(x,field='gmNotes'){
  await x.activate();await x.ui.openPreparedNote(x.ids.borin);const area=x.el(field==='gmNotes'?'note-gm':'note-read-aloud');area.dispatchEvent(new x.window.Event('focus'));area.setSelectionRange(0,field==='gmNotes'?9:2);x.el('note-excerpt').click();await until(()=>x.el('note-excerpt-dialog').open);return area;
 }
@@ -68,11 +90,11 @@ for(const race of [false,true])test('capture respects a target draft even if it 
 const base='.build/realist-preparation',require=createRequire(import.meta.url);
 mkdirSync(base+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',base+'/catalog/srd-5.1.generated.json');
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-buildSync({stdin:{contents:"export * from './src/app/preparation';export {linkVisitNoteThread} from './src/app/session-ui';export {initCommitControls,checkPendingCommit} from './src/app/commit-confirmation';export {WorldLinksWorkbench} from './src/app/world-links-ui';",resolveDir:process.cwd(),sourcefile:'preparation-context-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:"export * from './src/app/preparation';export {linkVisitNoteThread} from './src/app/session-ui';export {initCommitControls,checkPendingCommit} from './src/app/commit-confirmation';export {WorldLinksWorkbench} from './src/app/world-links-ui';export {initQuickReference,activateQuickReference,openQuickReference} from './src/app/quick-reference-ui';",resolveDir:process.cwd(),sourcefile:'preparation-context-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const nativeTimeout=globalThis.setTimeout;
 const settle=async()=>{for(let i=0;i<15;i++)await new Promise(r=>setImmediate(r));};
 const until=async check=>{const deadline=Date.now()+5000;while(Date.now()<deadline){if(check())return;await delay(10);}assert.ok(check(),'expected preparation state');};
-async function fixture(t){
+async function fixture(t,inspect=false){
  const root=mkdtempSync(path.join(tmpdir(),'preparation-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'db.sqlite')),campaign=store.create('Quellen'),workspace=store.activate(campaign.id);
  const command=change=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,change}),ids={ada:randomUUID(),borin:randomUUID()};
  for(const [id,title]of [[ids.ada,'Ada'],[ids.borin,'Borin']])store.changePreparation(command({kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title,readAloud:'  Original\r\n',gmNotes:'GM privat',relations:[],creatureId:null,deleted:false}}));
@@ -87,11 +109,13 @@ async function fixture(t){
  const storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)};
  window.campaign={};for(const method of ['narrative','ledgerParties','keepNarrativeDraft','discardNarrativeDraft','executeProgress','commitStatus','preparation','preparationDraft','keepPreparationDrafts','keepDeskDraft','discardPreparationDraft','selectPreparation','reconcilePreparation','reconcilePreparationContent','worldLinks','deskContent','searchDesk','noteThread','checkNoteThread','noteRoomUses','keyNoteChoices','worldRelationPairDraft','keepWorldRelationPairDraft','discardWorldRelationPairDraft','reconcileWorldRelationPair','executeWorldRelationPair','worldRelationPairHistory','executeWorldRelationPairHistory','reconcileWorldRelationPairHistory','live','session','executeSession','encounterPlans','progress','encounterTables','sessionRuns','generationSources','npcs','generatorRegistry'])window.campaign[method]=async(...args)=>wrap(()=>store[method](...args));
  window.campaign.changePreparation=async c=>{writes.push(c);return wrap(()=>store.changePreparation(c));};window.campaign.changePreparationContent=async c=>{writes.push(c);return wrap(()=>store.changePreparationContent(c));};
- const file=require.resolve('../'+base+'/ui.cjs');delete require.cache[file];const ui=require(file);ui.initPreparation((text,error)=>messages.push({text,error}),async()=>{});
+ const file=require.resolve('../'+base+'/ui.cjs');delete require.cache[file];const ui=require(file);ui.initPreparation((text,error)=>messages.push({text,error}),async()=>{},undefined,inspect?(id,current)=>ui.openQuickReference({kind:'note',id},current):undefined);
+ if(inspect){const query=document.querySelector.bind(document);document.querySelector=s=>s==='dialog:modal:not(#quick-reference)'?[...document.querySelectorAll('dialog')].find(d=>d.open&&d.id!=='quick-reference')??null:query(s);const host=document.createElement('button');host.id='narrative-journal-open';document.body.append(host);ui.initQuickReference((text,error)=>messages.push({text,error}),()=>ui.flushPreparation(),async()=>{});}
  let owner=workspace;ui.initCommitControls(()=>owner,(text,error)=>messages.push({text,error}));const graph=new ui.WorldLinksWorkbench(()=>owner,()=>ui.leavePreparation(),text=>messages.push({text}),async(ref,current)=>ui.openPreparedNote(ref.id,current));
  for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
+ if(inspect)ui.activateQuickReference(workspace);
  const el=id=>document.getElementById(id),draft=(failed=false)=>{const note={...original,readAloud:'  Geretteter Text\r\n**Wortlaut**  ',gmNotes:'  Eigene Planung\r\n',relations:[{targetId:ids.ada,label:'  vertraut  '}]},writeId='world-links-'+randomUUID(),change={kind:'note',expectedRevision:original.revision,note},c={...command(change),draftWriteId:writeId};return{version:1,writeId,change,failedCommand:failed?c:null};};
- t.after(async()=>{graph.reset();await settle();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});
+ t.after(async()=>{if(inspect)ui.activateQuickReference(workspace);graph.reset();await settle();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});
  return{store,workspace,campaign,ids,original,command,ui,graph,el,window,messages,writes,draft,setOwner:w=>owner=w,activate:()=>ui.activatePreparation(workspace)};
 }
 test('a legacy relationship draft resumes in the graph and publishes exactly once',async t=>{

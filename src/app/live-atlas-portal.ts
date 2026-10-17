@@ -1,5 +1,5 @@
 import type { LiveAtlasSurface } from "./live-hex-surface";
-/** Move the one Atlas view and its real camera controls; never copy its model or SVG. */
+/** Move the one Atlas view and its real camera controls; never copy its model or renderer. */
 export class LiveAtlasPortal implements LiveAtlasSurface {
   private homes: { node: HTMLElement; marker: Comment }[] = [];
   private extras: HTMLElement[] = [];
@@ -8,7 +8,7 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
   }
   constructor(
     private root: HTMLElement,
-    private canvas: SVGSVGElement,
+    private canvas: HTMLElement|SVGSVGElement,
     private visibility: (visible: boolean) => void,
     private zoom: (factor: number) => void,
     private context: (mounted:boolean)=>void = ()=>{},

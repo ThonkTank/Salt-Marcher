@@ -50,7 +50,7 @@ einfachere behalten; fehlende Nachweise als offen führen.
 
 | ID | Arbeitsrichtung | Weiter betrachtete Alternative / Wechselnachweis |
 | --- | --- | --- |
-| B01 | Begrenzte, gezielt aktualisierte SVGdarstellung | Canvas2D, danach vorhandenes Pixi/WebGL; gleiche Szene, Gesten, Hit, Texte, Export und Grafikfehler. Native2D erst bei belegtem Plattformhindernis. |
+| B01 | Atlas: Canvas2D mit wiederverwendbaren Path2D-Kommandos und Raster-/Bildlayern | Pixi/WebGL bei belegten Zeichen-/Kompositionsgrenzen; OffscreenCanvas-Worker bei belegter UI-Blockade. SVG bleibt Ausgabeformat und vorläufiger Host der älteren Einzelansichten. Native2D erst bei belegtem Plattformhindernis. |
 | B02 | SQLite-Rtree als Kandidatenindex | Bestehender Btree, Suchraster/Quadtree, BVH für genaue Tests; Grenzen, Dichte, lange Geometrie und Änderungskosten messen. Exakte Geometrie bleibt getrennt. |
 | B03 | Exakte 1000-m-Bereichsadresse plus lokaler Offset, versionierter Codec | Andere Bereichsgröße/lokales Festkomma nur mit Präzisions- und Transfernachweis; kein vorzeitiges globales Double. |
 | B04 | Wirksame Landschaft vor maßstabsabhängiger Zusammenfassung bestimmen | Raster-/Vektorkacheln, vereinfachte Konturen und Kombination; Landschaftserhalt, Ränder und lokale Invalidierung entscheiden. |
@@ -68,8 +68,8 @@ Autorenreads. Raum-/Stadtansichten wechseln oberhalb des Vektor-/Bytebudgets
 auf eine vollständige Rasterdarstellung; Auswahl bleibt an die kanonische
 Geometrie gebunden. Der Geometriecache zählt serialisierte Nutzdaten und
 begrenzt Ansicht und Export gemeinsam auf 64 MiB. Die exakten Regelreader und
-expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist nun in denselben quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht und paginierter exakter Auswahl. Kleine Kameraverschiebungen transformieren die bestehende SVG-Szene innerhalb einer geladenen Abdeckung; eine Workerqueue erhält den TEMP-Index. Kalte Projektionskosten und tatsächlicher App-/GPU-Speicher bleiben Mess- und Umstellungsaufgaben; daraus folgt noch keine Entscheidung gegen persistente
-abgeleitete Geometrie, Canvas2D oder einen anderen Cacheumfang. Details und
+expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist nun in denselben quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden die bestehenden Canvas-Zeichenkommandos innerhalb einer geladenen Abdeckung; eine Workerqueue erhält den TEMP-Index. Kalte Projektionskosten und tatsächlicher App-/GPU-Speicher bleiben Mess- und Umstellungsaufgaben; daraus folgt noch keine Entscheidung gegen persistente
+abgeleitete Geometrie, GPU-Komposition oder einen anderen Cacheumfang. Details und
 Abnahmegrenzen hält der oben verlinkte Runtimeplan.
 
 Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
@@ -96,7 +96,7 @@ die noch erforderlichen Implementationsbeweise.
 | Fachmodule | Werttypen, Invarianten, reine Berechnungen, Commandplanung | Kein Electron/Obsidian, SQL, Dateisystem, DOM oder Netz; reproduzierbare Resultate auf identischen Inputs |
 | Anwendung | Aktivierung, Zugriffsprüfung, Command, betroffene Records, Konflikt/Cancel, Projektionen | Eine Änderung kann mehrere Fachmodule betreffen, besitzt aber eine gemeinsame Commitentscheidung |
 | Lokaler Schreibdienst | SQLite, Validierung an der Schreibgrenze, Revisionen, Receipts, Assets, Recovery und Migration | Ausschließlich dieser Dienst schreibt Produktdaten; UI und Extensions erhalten keine DB-Verbindung |
-| GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text, gemeinsame Kamera/Werkzeuge, begrenzte SVG-/Rasterdarstellung (Renderervergleich B01 offen) | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
+| GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text, gemeinsame Kamera/Werkzeuge, begrenzte Canvas2D-/Rasterdarstellung (GPU-/Workervergleich B01 offen) | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
 | Hintergrundjobs | Abbrechbare Geometrie, Generatoren, Suche/Export, Medienprüfung | Unveränderlicher Input, gebundene Basisrevision und Aktivierung; Resultate erhalten keine eigene Schreibberechtigung |
 | Passive Anzeige / Extensions | Redigierte Anzeige bzw. ausdrücklich erlaubte Fähigkeiten | Getrennte Prozesse und enge DTOs; keine versteckten GM-Daten oder ungeprüften privilegierten Aufrufe |
 

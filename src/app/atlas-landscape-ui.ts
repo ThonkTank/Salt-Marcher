@@ -1,3 +1,4 @@
+import {paintFactory,type PaintTarget} from './atlas-canvas-scene';
 import { pendingAtlasWrite } from "./campaign-atlas-author";
 import polygonClipping from "polygon-clipping";
 import type { AtlasRenderView, AtlasAction } from "./campaign-atlas-contracts";
@@ -16,7 +17,6 @@ import {
   drawLandscape,
   drawLandscapeGrid,
   drawScale,
-  landscapeNode,
 } from "./atlas-landscape-view";
 import {
   newLocation,
@@ -97,9 +97,11 @@ export class LandscapeWorkbench {
   } | null = null;
   private lastPoint: Point = { x: 0, y: 0 };
   constructor(
-    private svg: SVGSVGElement,
+    private svg: HTMLCanvasElement,
     private host: {
       box: () => LandscapeBox;
+      hit?:(e:MouseEvent,selector:string)=>{dataset:Record<string,string>}|null;
+      point?:(e:MouseEvent)=>Point;
       refresh?:()=>Promise<unknown>;
       choose?: (point:Point)=>Promise<void>;
       current?:()=>boolean;
@@ -161,17 +163,13 @@ export class LandscapeWorkbench {
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
           this.tool === "select" && !this.host.choose &&
-          !(e.target as Element).closest(
-            "[data-landscape-id],[data-land-vertex]",
-          )
+          !this.hit(e, "[data-landscape-id],[data-land-vertex]")
         )
           return;
         e.stopImmediatePropagation();
         e.preventDefault();
         this.lastPoint = this.point(e);
-        const handle = (e.target as Element).closest<SVGElement>(
-          "[data-land-vertex]",
-        );
+        const handle = this.hit(e, "[data-land-vertex]");
         if (handle && this.selected) {
           if (this.selected.kind === "reference" && this.selected.locked)
             return;
@@ -186,7 +184,7 @@ export class LandscapeWorkbench {
           const r = this.records.find(
             (r) =>
               r.id ===
-              (e.target as Element).closest<SVGElement>("[data-landscape-id]")
+              this.hit(e, "[data-landscape-id]")
                 ?.dataset.landscapeId,
           );
           if (r) void this.select(r);
@@ -267,9 +265,7 @@ export class LandscapeWorkbench {
         if (!this.active || this.saving || e.altKey) return;
         if (this.tool === "select") {
           if (
-            (e.target as Element).closest(
-              "[data-landscape-id],[data-land-vertex]",
-            )
+            this.hit(e, "[data-landscape-id],[data-land-vertex]")
           )
             e.stopImmediatePropagation();
           return;
@@ -315,10 +311,12 @@ export class LandscapeWorkbench {
       }
     });
   }
+  private hit(e:MouseEvent,selector:string){return this.host.hit?this.host.hit(e,selector):(e.target as Element).closest<SVGElement>(selector);}
   private point(e: MouseEvent) {
+    if(this.host.point)return this.host.point(e);
     const b = this.host.box(),
       p = new DOMPoint(e.clientX, e.clientY).matrixTransform(
-        this.svg.getScreenCTM()!.inverse(),
+        (this.svg as unknown as SVGSVGElement).getScreenCTM()!.inverse(),
       );
     return { x: p.x + b.x, y: p.y + b.y };
   }
@@ -497,8 +495,8 @@ export class LandscapeWorkbench {
     if(token!==this.token||generation!==this.selectionRequest||frame!==this.host.data()?.region?.fence)return;
     if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.select(response.value);
   }
-  draw(root: SVGElement, box: LandscapeBox, mpp: number,locationMarkers?:ReadonlySet<string>) {
-
+  draw(root: PaintTarget, box: LandscapeBox, mpp: number,locationMarkers?:ReadonlySet<string>) {
+    const landscapeNode=paintFactory(root);
     const records = this.selected
       ? [...this.records.filter(r=>r.id!==this.selected!.id),this.selected]
       : this.records;

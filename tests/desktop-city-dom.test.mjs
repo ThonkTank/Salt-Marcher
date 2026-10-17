@@ -6,10 +6,10 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync,build} from 'esbuild';
 import {parseHTML,DOMParser} from 'linkedom';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/city-dom-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-buildSync({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG} from './src/app/campaign-atlas-export'; export {atlasRegionSVG} from './src/app/atlas-region-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs'});
+await build({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG} from './src/app/campaign-atlas-export'; export {atlasRegionSVG} from './src/app/atlas-region-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'controller-paint-fixture',setup(b){b.onResolve({filter:/^\.\/atlas-canvas$/},()=>({path:path.resolve('tests/atlas-controller-canvas-fixture.ts')}));}}]});
 for(const [name,entry] of [['service','desktop/room-directory.ts'],['worker','desktop/room-directory-worker.ts']])buildSync({entryPoints:[entry],outfile:'.build/city-dom-directory-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['src/app/landscape-raster.ts'],outfile:'.build/city-dom-raster.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/city-dom-store.cjs'),tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -577,7 +577,7 @@ test('drawing a second house room from a selected corner does not move the first
   const f=s.atlas.frame(s.atlas.scopeId),at=(a,b)=>({x:f.x+a,y:f.y+b});
   await s.rectangle('Taproom',at(-4,-4),at(0,4));
   const first=x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.name==='Taproom');
-  s.tool('select');await s.point('click',at(-2,0),s.svg.querySelector('[data-kind="room"][data-id="'+first.id+'"]'));await settle();
+  s.tool('select');const painted=s.svg.querySelector('[data-kind="room"][data-id="'+first.id+'"]');await s.point('pointerdown',at(-2,0),painted);await s.point('pointerup',at(-2,0),painted);await s.point('click',at(-2,0),painted);await settle();
   const handle=s.svg.querySelector('[data-atlas-vertex][data-id="'+first.id+'"]');assert.ok(handle);
   const vertex=first.polygons[0].outer[0];
   await s.rectangle('Store',at(vertex.x,vertex.y),at(vertex.x-3,vertex.y+3),'[data-atlas-vertex][data-id="'+first.id+'"]');
@@ -1033,4 +1033,24 @@ test('canonical vector intent selects the visible house while an unlabelled over
   await until(()=>surface.atlas.selection?.id===id);assert.equal(dialog.open,false);assert.equal(reads,1,'direct vector intent is still checked by the canonical candidate reader');
   await surface.point(1060,2060);await until(()=>dialog.open);const buttons=[...dialog.querySelectorAll('button')];assert(buttons.some(b=>b.textContent==='Stadtelement: District'));const house=buttons.find(b=>b.textContent==='Haus: House one');assert(house);house.click();await until(()=>!dialog.open&&surface.atlas.selection?.id===id);assert.ok(x.store.db.serialize().equals(before));
  }finally{await surface.close();}
+});
+
+test('retained Atlas shape handles route pointer drags through the city frame without writing before acceptance',async()=>{
+ const x=await setup(),w=x.current();
+ x.store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0},expectedRevision:null}});
+ const s=await placeSurface(x);
+ try{
+  const road=x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.kind==='road');
+  await s.atlas.navigate('city',x.cityIds.one,road.id);await settle();
+  x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());await settle();
+  const handle=s.svg.querySelector('[data-city-shape-insert]');assert.ok(handle);
+  let pointer=null;s.svg.setPointerCapture=id=>pointer=id;s.svg.hasPointerCapture=id=>pointer===id;s.svg.releasePointerCapture=()=>pointer=null;
+  const event=(kind,target,point)=>{const e=new x.window.Event(kind,{bubbles:true});Object.assign(e,{button:0,pointerId:77,clientX:point.x-Number(s.svg.dataset.atlasOriginX),clientY:point.y-Number(s.svg.dataset.atlasOriginY)});target.dispatchEvent(e);};
+  const frame={x:1000,y:2000},before=x.store.db.serialize();
+  event('pointerdown',handle,{x:frame.x+120,y:frame.y+130});await settle();assert.equal(pointer,77);
+  event('pointermove',s.svg,{x:frame.x+120,y:frame.y+145});await settle();
+  event('pointerup',s.svg,{x:frame.x+120,y:frame.y+145});await settle();
+  assert.equal(pointer,null);assert.deepEqual(x.ui.atlasCityState().view.units.find(u=>u.id===road.id).via,[{x:120,y:145}]);assert.ok(x.store.db.serialize().equals(before));
+  x.click('city-shape-cancel');await settle();assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.ui.atlasCityState().view.units.find(u=>u.id===road.id).via,[]);
+ }finally{await s.close();}
 });
