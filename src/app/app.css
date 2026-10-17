@@ -778,3 +778,10 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 .combat-selection-group span { flex:1; min-width:0; }
 #combat-selection-meter { width:100%; height:1rem; }
 #combat-selection-result { font-weight:600; }
+
+/* Pair each imported fact with its value without separating the lookup controls. */
+#item-reference-detail dl{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);column-gap:.8rem;row-gap:.4rem}
+#item-reference-detail dl dd{margin:0}
+#item-reference-inspector{scroll-margin-top:var(--workspace-content-offset)}
+#item-reference-results-return{display:none}
+@media(max-width:1100px){#item-reference-results-return{display:inline-block;margin-bottom:.6rem}}

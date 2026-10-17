@@ -91,3 +91,14 @@ test('heavy armor strength prerequisites are labeled separately from armor class
  const armors=transcript.records.filter(r=>r.armor?.strengthRequirementText);assert.ok(armors.some(r=>r.name==='Plate Armor'));
  for(const item of armors){x.el('item-reference-name').value=item.name;x.el('item-reference-form').onsubmit({preventDefault(){}});const row=()=>[...x.el('item-reference-rows').querySelectorAll('button')].find(b=>b.textContent===item.name);await until(()=>!!row());row().click();const facts=[...x.el('item-reference-detail').querySelectorAll('dl dt')].map(n=>[n.textContent,n.nextElementSibling.textContent]);assert.ok(facts.some(([k,v])=>k==='Stärke'&&v===item.armor.strengthRequirementText),item.name+' must identify its strength prerequisite');assert.ok(facts.some(([k,v])=>k==='Rüstungsklasse'&&v===item.armor.armorClassText));}
 });
+
+
+test('narrow item reading returns to the selected result without searching or losing filters',async t=>{
+ const x=fixture(t);let calls=0;x.window.campaign.itemReferenceCatalog=async q=>{calls++;return{ok:true,value:read(q)};};x.window.matchMedia=()=>({matches:true});
+ x.el('item-reference-name').value='armor';x.el('item-reference-maximum').value='10';x.catalog.show(true);await until(()=>x.el('item-reference-rows').children.length===3);
+ const inspector=x.el('item-reference-inspector'),detail=x.el('item-reference-detail'),row=[...x.el('item-reference-rows').querySelectorAll('button')].find(b=>b.textContent==='Padded Armor'),moves=[];
+ inspector.scrollIntoView=options=>moves.push(['inspector',options]);detail.focus=options=>moves.push(['detail-focus',options]);row.scrollIntoView=options=>moves.push(['result',options]);row.focus=options=>moves.push(['result-focus',options]);
+ row.click();assert.deepEqual(moves,[['inspector',{block:'start'}],['detail-focus',{preventScroll:true}]]);assert.equal(row.getAttribute('aria-pressed'),'true');assert.match(detail.textContent,/Disadvantage/);
+ x.el('item-reference-results-return').click();assert.deepEqual(moves.slice(-2),[['result',{block:'center'}],['result-focus',{preventScroll:true}]]);assert.equal(calls,1);assert.equal(x.el('item-reference-name').value,'armor');assert.equal(x.el('item-reference-maximum').value,'10');assert.equal(row.isConnected,true);assert.match(detail.textContent,/Disadvantage/);assert.equal(detail.querySelectorAll('button,input,textarea').length,0);
+ x.catalog.show(false);const before=moves.length;x.el('item-reference-results-return').click();assert.equal(moves.length,before,'hidden item tab cannot move another surface');
+});
