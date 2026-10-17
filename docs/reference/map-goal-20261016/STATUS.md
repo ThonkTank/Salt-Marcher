@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `137a18fa8`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `08a62f3d4`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -63,3 +63,5 @@ Viertel behalten jetzt ihre eigene Bauweise (Seed, Dichte, Hausgröße, Straßen
 Die frühe Stadtsuche öffnet jetzt auch bei einer kalten, begrenzten Kartenansicht den kanonischen Stadttreffer. Ein gleichnamiger gecachter Ortsmarker verdrängt ihn nicht mehr; spätere Suchantworten füllen eine getroffene Auswahl nicht erneut auf. Tatsächlicher Nachlauf ohne vorgeschaltete Ladepause sowie Ortsmappe → öffentlicher Vorlesetext → Live und Hextml-Projektimport/GM-Notiz erneut durchgeführt. [Suchnachlauf](SEARCH-20261017.md).
 
 Straßen und Viertel lassen sich jetzt direkt mit Griffen und Vorschau umformen. Tatsächlicher Nachlauf: Knick und Viertelgrenze bearbeiten, verwerfen/übernehmen, Rückgängig/Wiederholen, neu bebauen, Taverne/Innenraum/Live wiederverwenden. Endstand 104 Häuser; Watabous organische Blockqualität bleibt unerreicht. [Formbearbeitung und Vergleich](SHAPE-20261017.md).
+
+Die Bebauung bildet jetzt zuerst Straßenfronten und ergänzt freie Flächen, statt Häuser hauptsächlich auf einem verstreuten Raster zu verteilen. Tatsächliche Neubebauung beider Viertel, frischer Host, erhaltene Taverne/Innenräume und Live-Rückkehr ergeben 115 Häuser; der Rückweg zur Stadt leert den alten Hausinspektor. [Straßenfronten und Nachlauf](FRONTAGES-20261017.md).

@@ -951,3 +951,9 @@ test('drawing a closed wall welds its new endpoints and shape editing moves that
   const saved=x.store.city(x.current().token,x.cityIds.one),node=saved.units.find(u=>u.id===wall.nodeIds[0]);assert.deepEqual(node.point,{x:18,y:22});assert.equal(saved.units.find(u=>u.id===wall.id).nodeIds[0],saved.units.find(u=>u.id===wall.id).nodeIds[1]);
  }finally{await x.cleanup();}
 });
+
+test('city-level navigation clears the prior house inspector after draining its bounded draft',async()=>{
+ const x=await setup();
+ try{await x.ui.openCityReference(x.cityIds.one,x.unitIds.one,true,true);x.enter('city-unit-notes','Contact comes at dusk');let reads=0;const read=x.window.campaign.city;x.window.campaign.city=async(...args)=>{reads++;return read(...args);};await x.ui.openCityReference(x.cityIds.one,undefined,true);assert.equal(x.document.getElementById('city-inspector').hidden,true);assert.equal(x.document.getElementById('city-panel-draw').getAttribute('aria-pressed'),'true');assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one).notes,'Contact comes at dusk');assert.equal(reads,0,'returning to the already open city does not load its complete document');
+ }finally{await x.cleanup();}
+});
