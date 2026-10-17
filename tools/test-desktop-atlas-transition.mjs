@@ -16,11 +16,14 @@ for(let i=0;i<100;i++){if(await stat(bus).then(()=>true).catch(()=>false))break;
 let app,closed=true;const errors=[],launches=[],results={profile,sourceRevision:(process.env.SOURCE_REVISION??execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim())+(execFileSync('git',['status','--porcelain','--untracked-files=no'],{encoding:'utf8'}).trim()?'+dirty':'')};
 async function launch(){app=await _electron.launch({executablePath:source+'/node_modules/electron/dist/electron',args:[source+'/.build/desktop/main.cjs','--data-dir',profile,'--ozone-platform=x11'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus},timeout:60000});closed=false;launches.push(app.process().pid);const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true',null,{timeout:30000});if(await page.locator('#tutorial-dialog').isVisible())await page.locator('#tutorial-skip').click();await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.locator('#atlas-tab').click();await page.locator('#atlas-overview').click();await atlasCanvasReady(page);return page;}
 async function canvasPNG(page){await atlasCanvasReady(page);return Buffer.from((await page.locator('#campaign-map').evaluate(canvas=>canvas.toDataURL())).split(',')[1],'base64');}
-async function pixels(page){const png=PNG.sync.read(await canvasPNG(page));let forest=0,water=0;for(let i=0;i<png.data.length;i+=4){if(png.data[i]===102&&png.data[i+1]===139&&png.data[i+2]===105&&png.data[i+3])forest++;if(png.data[i]===127&&png.data[i+1]===168&&png.data[i+2]===189&&png.data[i+3])water++;}return{forest,water,width:png.width,height:png.height};}
+// At world scale a small patch may be entirely edge pixels after Canvas resampling.
+// This fixture has only paper/forest/water: require the water-directed color change, then its removal on Undo.
+const waterPixel=(r,g,b)=>r<176&&g<196&&b>158;
+async function pixels(page){const png=PNG.sync.read(await canvasPNG(page));let forest=0,water=0;for(let i=0;i<png.data.length;i+=4){if(png.data[i]===102&&png.data[i+1]===139&&png.data[i+2]===105&&png.data[i+3])forest++;if(waterPixel(png.data[i],png.data[i+1],png.data[i+2])&&png.data[i+3])water++;}return{forest,water,width:png.width,height:png.height};}
 async function visiblePixels(page){
  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
  const png=PNG.sync.read(await page.locator('#campaign-map').screenshot());let forest=0,water=0;
- for(let i=0;i<png.data.length;i+=4){const [r,g,b]=png.data.subarray(i,i+3);if(Math.abs(r-102)<3&&Math.abs(g-139)<3&&Math.abs(b-105)<3)forest++;if(Math.abs(r-127)<3&&Math.abs(g-168)<3&&Math.abs(b-189)<3)water++;}
+ for(let i=0;i<png.data.length;i+=4){const [r,g,b]=png.data.subarray(i,i+3);if(Math.abs(r-102)<3&&Math.abs(g-139)<3&&Math.abs(b-105)<3)forest++;if(waterPixel(r,g,b))water++;}
  return{forest,water};
 }
 async function close(){const exit=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});closed=true;}
