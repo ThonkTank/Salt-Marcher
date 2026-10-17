@@ -633,3 +633,10 @@ test('scene text search scans loaded visit identities once and blank queries ski
  const search=text=>{x.el('scene-search').value=text;x.el('scene-search').dispatchEvent(new x.window.Event('input'));};identities=0;search('Messer');assert.equal(x.el('scene-list').children.length,1);assert.match(x.el('scene-list').textContent,/Szene 99/);assert.ok(identities<=plan.scenes.length+2,'search work must remain linear in loaded visits');
  identities=0;search('');assert.equal(x.el('scene-list').children.length,100);assert.equal(identities,0);
 });
+
+test('a room return restores its source knowledge view after visiting a linked plan',async t=>{
+ const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Nachtwache',scenes:[]};x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));
+ x.window.campaign.noteRoomUses=async()=>({ok:true,value:{entries:[{id:'room',title:'Wachstube',number:'2',place:'Tor',excerpt:'Nera',unavailable:false}],next:null}});
+ let returned,current;x.ui.setNoteRoomNavigation(async(id,valid,restore)=>{current=valid;returned=restore;return true;});await x.activate();await x.ui.openPreparedNote(x.ids.borin);await until(()=>x.el('note-room-uses-list').querySelector('button'));x.el('note-room-uses-list').querySelector('button').click();await until(()=>returned);
+ await x.ui.openPreparedNote(x.ids.borin);await x.ui.openPreparedPlan(plan.id);assert.equal(x.el('preparation-planning-workspace').hidden,false);assert.equal(current(),true);returned();await settle();assert.equal(x.el('preparation-knowledge-workspace').hidden,false);assert.equal(x.el('note-title').value,'Borin');
+});
