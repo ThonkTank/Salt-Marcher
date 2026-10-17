@@ -132,14 +132,17 @@ export function publicAtlasPaint(
     );
   return scene;
 }
-/** Raster export executes the same Canvas commands as the on-screen Atlas. */
+/** A scene is drawn directly; GM scenes stream through one reusable tile surface. */
 export async function atlasImage(
-  scene: AtlasPaint,
+  source:
+    | AtlasPaint
+    | AsyncIterable<import("./atlas-landscape-export").AtlasExportTile>,
   width: number,
   height: number,
   box: CanvasBox,
   format: "png" | "jpeg" = "png",
-): Promise<number[]> {
+  current: () => boolean = () => true,
+): Promise<Uint8Array> {
   if (
     !Number.isInteger(width) ||
     !Number.isInteger(height) ||
@@ -147,34 +150,37 @@ export async function atlasImage(
     height < 1 ||
     width > 8192 ||
     height > 8192 ||
-    width * height > 8192 * 8192 ||
     !Number.isFinite(box.width) ||
     !Number.isFinite(box.height) ||
     box.width <= 0 ||
     box.height <= 0
   )
     throw Error("Ungültige Bildgröße.");
-  const compiled = new AtlasCanvasScene(scene),
-    canvas = document.createElement("canvas");
-  const images = new Map<string, CanvasImageSource>();
+  const checkCurrent = () => {
+    if (!current()) throw Error("Atlas-Ausgabe abgebrochen.");
+  };
+  checkCurrent();
+  const canvas = document.createElement("canvas");
+  let tileCanvas: HTMLCanvasElement | undefined;
   try {
-    // Export tiles arrive at their output resolution. No SVG serialization or second rasterization.
-    for (const source of compiled.images) {
-      const image = new Image();
-      image.src = source;
-      await image.decode();
-      images.set(source, image);
-    }
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw Error("Bildausgabe nicht verfügbar.");
-    compiled.draw(
-      ctx,
-      new DOMMatrix([width / box.width, 0, 0, height / box.height, 0, 0]),
-      images,
-      { x: 0, y: 0 },
-    );
+    if (source instanceof AtlasPaint)
+      await drawScene(canvas, source, box, checkCurrent);
+    else {
+      tileCanvas = document.createElement("canvas");
+      for await (const tile of source) {
+        checkCurrent();
+        tileCanvas.width = tile.width;
+        tileCanvas.height = tile.height;
+        await drawScene(tileCanvas, tile.scene, tile.box, checkCurrent);
+        checkCurrent();
+        ctx.drawImage(tileCanvas, tile.x, tile.y);
+      }
+    }
+    checkCurrent();
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
         (b) =>
@@ -183,10 +189,56 @@ export async function atlasImage(
         0.94,
       ),
     );
-    return [...new Uint8Array(await blob.arrayBuffer())];
+    checkCurrent();
+    // Match the IPC/file limit before reading the encoded bytes.
+    if (blob.size > 64 * 1024 * 1024)
+      throw Error(
+        "Atlas-Bild ist größer als 64 MiB. Kleinere Ausgabegröße wählen.",
+      );
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    canvas.width = canvas.height = 0;
+    if (tileCanvas) tileCanvas.width = tileCanvas.height = 0;
+  }
+}
+
+async function drawScene(
+  canvas: HTMLCanvasElement,
+  scene: AtlasPaint,
+  box: CanvasBox,
+  checkCurrent: () => void,
+) {
+  const compiled = new AtlasCanvasScene(scene),
+    images = new Map<string, CanvasImageSource>();
+  try {
+    for (const source of compiled.images) {
+      checkCurrent();
+      const image = new Image();
+      image.src = source;
+      await image.decode();
+      checkCurrent();
+      images.set(source, image);
+    }
+    checkCurrent();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw Error("Bildausgabe nicht verfügbar.");
+    ctx.resetTransform();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    compiled.draw(
+      ctx,
+      new DOMMatrix([
+        canvas.width / box.width,
+        0,
+        0,
+        canvas.height / box.height,
+        0,
+        0,
+      ]),
+      images,
+      { x: 0, y: 0 },
+    );
   } finally {
     compiled.dispose();
-    canvas.width = canvas.height = 0;
     images.clear();
   }
 }

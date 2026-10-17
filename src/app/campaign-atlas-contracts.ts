@@ -134,7 +134,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   referenceAssetPreview(token:string,id:string,size:number):Promise<Result<string>>;
   exportAtlasPNG(
     token: string,
-    bytes: number[],
+    bytes: Uint8Array,
     audience: "gm" | "public",
     format?: "png" | "jpeg",
     sourceFence?:string,
