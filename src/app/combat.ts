@@ -58,7 +58,7 @@ export function pendingRollStillValid(pending:{combatId:string;attackerId:string
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
 function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){expandedMobs.clear();groupPicker.reset();reinforcementRequest++;reinforcementBusy=false;reinforcementResults=[];get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
-let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='';
+let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='',preparationContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
 const draftCache=new CombatDraftCache((cam,message)=>{if(workspace?.campaign.id===cam)tell(message,true);});
@@ -112,9 +112,10 @@ async function refreshPartyCandidates(){
 export function combatContext(next: WorkspaceGeometry | null, current: LiveScene | null, rosterRevision?:number) {
   const changed = next?.token !== workspace?.token || current?.id !== scene?.id;
   const basis=JSON.stringify([next?.token,current?.id,current?.membershipRevision,rosterRevision]),partyChanged=basis!==partyContext;partyContext=basis;
+  const preparationBasis=JSON.stringify([basis,current?.locationId??null,current?.adoption?.id??null]),preparationChanged=preparationBasis!==preparationContext;preparationContext=preparationBasis;
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
-  if(changed||partyChanged){selectionPanel?.reset();if(next&&current&&get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();}
+  if(changed||preparationChanged){selectionPanel?.reset();if(next&&current&&get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();}
   get('combat-panel').hidden = !current;
   if (changed) { expandedMobs.clear();groupPicker.reset();const tray=get<HTMLDetailsElement>('combat-scene-groups');if(tray){tray.open=false;get('combat-scene-group-cards').replaceChildren();}closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
   else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
@@ -169,8 +170,8 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
 }
 function preparationOwner(){
   if(!workspace||!scene)return null;
-  const token=workspace.token,id=scene.id,revision=scene.membershipRevision,gen=generation;
-  return {sceneId:id,revision,current:()=>workspace?.token===token&&scene?.id===id&&scene.membershipRevision===revision&&generation===gen};
+  const token=workspace.token,id=scene.id,revision=scene.membershipRevision,preparation=preparationContext,gen=generation;
+  return {sceneId:id,revision,current:()=>workspace?.token===token&&scene?.id===id&&scene.membershipRevision===revision&&preparationContext===preparation&&generation===gen};
 }
 export async function prepareWorldGroup(group:PreparedGroup,worldActorIds?:string[],stillCurrent:()=>boolean=()=>true){
   const {id,title,revision}=group;
