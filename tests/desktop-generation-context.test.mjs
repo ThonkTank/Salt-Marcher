@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
-buildSync({stdin:{contents:"export * from './src/app/generation-ui'; export {initCatalog,activateCatalog} from './src/app/catalog-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/generation-context-ui.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:"export * from './src/app/generation-ui'; export {initCatalog,activateCatalog,openCatalogReference} from './src/app/catalog-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/generation-context-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),settle=async()=>{for(let i=0;i<15;i++)await new Promise(r=>setImmediate(r));};
 async function fixture(t){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document};Object.assign(globalThis,{window,document});t.after(()=>Object.assign(globalThis,previous));
@@ -36,6 +36,19 @@ test('actual catalog input and reset notify the generator about their shared fil
  const x=await fixture(t);x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await settle();
  x.el('catalog-form').reset=()=>{for(const c of x.el('catalog-form').querySelectorAll('input'))c.value='';x.el('catalog-direction').value='asc';};
  x.el('catalog-search').value='Dragon';x.el('catalog-search').oninput();assert.match(x.el('generation-catalog-summary').textContent,/Name: Dragon/);x.el('generation-clear-catalog').click();assert.match(x.el('generation-catalog-summary').textContent,/Keine zusätzlichen/);await new Promise(r=>setTimeout(r,250));
+});
+
+test('actual catalog HG clamping reaches generation without changing its tuning or the loaded plan',async t=>{
+ const x=await fixture(t),plan={...structuredClone(x.plan),sources:[],catalogHash:'pinned',notes:'  Original planning prose\r\n'};window.campaign.encounterPlan=async()=>({ok:true,value:structuredClone(plan)});window.campaign.creatureInfo=async()=>({ok:true,value:{types:[],sizes:[],habitats:[],alignments:[],subtypes:[],notice:'Offline',hash:'pinned'}});x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await x.ui.openCatalogReference({kind:'encounter',id:plan.id});
+ x.el('generation-difficulty').value='hard';x.el('generation-seed').value='retained seed';x.el('catalog-search').value='Dragon';x.el('catalog-type').value='Dragon';x.el('catalog-cr-min').value='8';x.el('catalog-cr-max').value='2';x.el('catalog-cr-min').oninput();x.el('catalog-cr-min').onchange();await x.make();assert.equal(x.calls.length,1);assert.equal(x.calls[0].filters.crMin,8);assert.equal(x.calls[0].filters.crMax,8);assert.equal(x.calls[0].filters.text,'Dragon');assert.deepEqual(x.calls[0].filters.types,['Dragon']);assert.equal(x.calls[0].difficulty,'hard');assert.equal(x.calls[0].seed,'retained seed');assert.deepEqual(x.calls[0].party,plan.party);assert.equal(x.el('encounter-notes').value,plan.notes);assert.equal(x.el('encounter-name').value,plan.name);
+ x.el('catalog-cr-max').value='0';x.el('catalog-cr-max').oninput();x.el('catalog-cr-max').onchange();await x.make();assert.equal(x.calls.length,2);assert.equal(x.calls[1].filters.crMin,undefined);assert.equal(x.calls[1].filters.crMax,0);assert.equal(x.calls[1].difficulty,'hard');assert.equal(x.calls[1].seed,'retained seed');await new Promise(r=>setTimeout(r,250));
+});
+test('an unreadable native numeric catalog filter blocks generation instead of widening its pool',async t=>{
+ const x=await fixture(t),plan={...structuredClone(x.plan),sources:[],catalogHash:'pinned'};window.campaign.encounterPlan=async()=>({ok:true,value:structuredClone(plan)});window.campaign.creatureInfo=async()=>({ok:true,value:{types:[],sizes:[],habitats:[],alignments:[],subtypes:[],notice:'Offline',hash:'pinned'}});x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await x.ui.openCatalogReference({kind:'encounter',id:plan.id});
+ const input=x.el('catalog-cr-min');let bad=true;Object.defineProperty(input,'validity',{get:()=>({badInput:bad})});input.value='';assert.doesNotThrow(()=>input.oninput());await x.make();assert.equal(x.calls.length,0);assert.match(x.el('generation-feedback').textContent,/HG von.*Zahl/);bad=false;input.value='0.25';input.oninput();await x.make();assert.equal(x.calls.length,1);assert.equal(x.calls[0].filters.crMin,0.25);assert.equal(x.el('encounter-name').value,plan.name);await new Promise(r=>setTimeout(r,250));
+});
+test('a valid pending proposal cannot become actionable after its native filter becomes unreadable',async t=>{
+ const x=await fixture(t);let fail=false;x.setFilters({crMin:1});x.ui.initGeneration(()=>{},{plan:async()=>x.plan,creature:()=>null,filters:()=>{if(fail)throw Error('HG von: Eine gültige nichtnegative Zahl eingeben.');return{crMin:1};},info:()=>null,accept:async()=>{}});let release;x.setGenerate(request=>new Promise(resolve=>release=()=>resolve({ok:true,value:x.run(request)})));await x.make();assert.equal(x.calls.length,1);fail=true;assert.doesNotThrow(()=>x.ui.generationCatalogFiltersChanged());release();await settle();assert.equal(x.choice().disabled,true);assert.match(x.el('generation-preview').textContent,/Einstellungen geändert/);assert.match(x.el('generation-catalog-summary').textContent,/HG von.*Zahl/);assert.equal(x.calls[0].filters.crMin,1);
 });
 
 test('an out-of-band proposal states requested target and actual deviation before its deliberate acceptance',async t=>{
