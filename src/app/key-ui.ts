@@ -3,6 +3,7 @@ import {editTextareaText,type KeyPassageTarget} from './key-reading-model';
 import {KeyNoteCapture} from './key-note-capture';
 import {RoomKeySearchIndex,type KeySearchHit} from './key-search';
 import {KeyNoteContext} from './key-note-context';
+import {KeyPlanContext,type KeyPlanReturn} from './key-plan-context';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import {initKeyCopy,invalidateKeyCopy,syncKeyCopyControl} from './key-copy-ui';
@@ -12,6 +13,14 @@ const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,fi
 let readVersion=0,editVersion=0,composing=false;
 let searchIndex:RoomKeySearchIndex|null=null,searchData:DrawingView|null=null,searchReferences:typeof references|null=null;
 let noteContext:KeyNoteContext|null=null;
+let planContext:KeyPlanContext|null=null;
+interface KeyNavigation {
+ open:(id:string,current:()=>boolean)=>Promise<boolean>;
+ flush:()=>Promise<boolean>;
+ map?:(id:string)=>Promise<void>;
+ plan?:(id:string,current:()=>boolean)=>Promise<boolean>;
+ showKeyWorkspace?:()=>void;
+}
 let legacyDraft=new Map<string,string>();
 let noteCapture:KeyNoteCapture|null=null,captureButton:HTMLButtonElement|null=null;
 let keyReturn:(()=>void)|null=null,keyLeave:(()=>void)|null=null;
@@ -160,6 +169,9 @@ function drawReferences(){
     if(!open.isConnected||!owns(o)||draft?.id!==id||!await flushKeys()||!owns(o)||draft?.id!==id)return;
     await noteContext!.open(ref.id,label,()=>owns(o)&&draft?.id===id);
    })().catch(reportFailure);};line.append(open);
+  }else if(planContext&&ref.kind==='plan'){
+   const open=document.createElement('button');open.type='button';open.textContent=label;open.className='key-plan-link';
+   open.onclick=()=>{if(open.isConnected&&el<HTMLDialogElement>('key-dialog').open)void planContext!.open(ref.id);};line.append(open);
   }else line.append(document.createTextNode(label));
   line.append(document.createTextNode(' '));remove.type='button';remove.textContent='Entfernen';remove.onclick=()=>{draft!.references=draft!.references.filter(r=>r!==ref);drawReferences();};line.append(remove);list.append(line);
  }
@@ -221,8 +233,29 @@ function focusPassage(target:KeyPassageTarget,focus=true){
  if(!focus)return;area.setSelectionRange(start,end);area.focus({preventScroll:true});area.scrollIntoView({block:'center'});scrollTextareaToOffset(area,start);
 }
 
-export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected,drain:typeof before,changed:typeof publish,go:typeof navigate,notes?:{open:(id:string,current:()=>boolean)=>Promise<boolean>;flush:()=>Promise<boolean>;map?:(id:string)=>Promise<void>}){
+async function preparePlanReturn():Promise<KeyPlanReturn|null>{
+ const o=owner(),id=draft?.id,intent=++transition,current=()=>owns(o)&&transition===intent&&draft?.id===id;
+ if(!id||draft?.kind!=='room'||!el<HTMLDialogElement>('key-dialog').open||!await flushKeys()||!current()||!await before()||!current())return null;
+ const dialog=el<HTMLDialogElement>('key-dialog'),area=el<HTMLTextAreaElement>('key-gm-notes'),label=field('key-name').value;
+ const saved={scopeId,query:field('key-search').value,level:select('key-filter-level').value,group:select('key-filter-group').value,filter:select('key-filter').value,picked:[...picked],page:listPage,scroll:dialog.scrollTop,start:area.selectionStart,end:area.selectionEnd,textScroll:area.scrollTop,closeLabel:el('key-close').textContent,returned:keyReturn,left:keyLeave};
+ return{label,current,leave:()=>{keyReturn=null;keyLeave=null;dialog.close();},restore:async()=>{
+  if(!current()||!await flushKeys()||!current()||!await before()||!current()||!await refresh()||!current())return false;
+  if(!keyRooms().some(room=>room.id===id))throw new Error('Der ursprüngliche Raum ist nicht mehr verfügbar.');
+  scopeId=saved.scopeId;openRoom(id);
+  optionList('key-filter-level',records().filter(r=>r.kind==='level'&&r.scopeId===scopeId),saved.level,'Alle Level');
+  optionList('key-filter-group',records().filter(r=>r.kind==='group'&&r.scopeId===scopeId),saved.group,'Alle Gruppen');
+  field('key-search').value=saved.query;select('key-filter').value=saved.filter;picked.clear();for(const id of saved.picked)if(keyRooms().some(room=>room.id===id))picked.add(id);listPage=saved.page;drawList();
+  keyReturn=saved.returned;keyLeave=saved.left;el('key-close').textContent=saved.closeLabel;
+  if(!dialog.open)dialog.showModal();dialog.scrollTop=saved.scroll;area.focus({preventScroll:true});area.setSelectionRange(saved.start,saved.end);area.scrollIntoView({block:'center'});area.scrollTop=saved.textScroll;return true;
+ }};
+}
+
+export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected,drain:typeof before,changed:typeof publish,go:typeof navigate,notes?:KeyNavigation){
  tell=status;workspace=w;selected=r;before=drain;publish=changed;navigate=go;
+ if(notes?.plan){
+  const button=document.createElement('button');button.id='key-plan-return';button.type='button';el('preparation').prepend(button);
+  planContext=new KeyPlanContext(button,{prepare:preparePlanReturn,open:notes.plan,showKey:()=>notes.showKeyWorkspace?.(),tell:status});
+ }
  el('key-dialog').addEventListener('compositionstart',()=>{composing=true;if(timer)clearTimeout(timer);timer=null;},true);
  el('key-dialog').addEventListener('compositionend',()=>{composing=false;if(draft&&dirty()&&!blocked)schedule();},true);
  if(notes){
@@ -290,7 +323,7 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
  el('key-select-visible').onclick=()=>{for(const room of matchedRooms)picked.add(room.id);for(const input of el('key-room-list').querySelectorAll<HTMLInputElement>('input')){input.checked=true;if(input.dataset.roomId)picked.add(input.dataset.roomId);}updateSelectionCount();};
  el('key-select-none').onclick=()=>{picked.clear();drawList();};
  el('key-batch-apply').onclick=applyBatch;}
-export function activateKeys(){composing=false;noteCapture?.reset();searchIndex=null;searchData=null;searchReferences=null;noteContext?.reset();invalidateKeyCopy();generation++;transition++;readVersion++;editVersion++;pending=null;roomId=null;scopeId='';preparedBatch=null;if(timer)clearTimeout(timer);timer=null;blocked=false;editorLocked=false;draft=null;legacyDraft.clear();data=null;geometry=null;acknowledged=null;baseSignature='';baseRoomRevision=null;baseKeyRevision=null;matchedRooms=[];listPage=0;picked.clear();el<HTMLDialogElement>('key-dialog').close();}
+export function activateKeys(){composing=false;noteCapture?.reset();planContext?.reset();searchIndex=null;searchData=null;searchReferences=null;noteContext?.reset();invalidateKeyCopy();generation++;transition++;readVersion++;editVersion++;pending=null;roomId=null;scopeId='';preparedBatch=null;if(timer)clearTimeout(timer);timer=null;blocked=false;editorLocked=false;draft=null;legacyDraft.clear();data=null;geometry=null;acknowledged=null;baseSignature='';baseRoomRevision=null;baseKeyRevision=null;matchedRooms=[];listPage=0;picked.clear();el<HTMLDialogElement>('key-dialog').close();}
 export function setKeyReferenceStatus(text:string,error=false){noteContext?.setStatus(text,error);}
 export async function flushKeys():Promise<boolean>{
  if(composing){tell('Texteingabe zuerst abschließen.',true);return false;}
