@@ -494,6 +494,9 @@ async function applyContent():Promise<boolean>{
       dirty = false;
       draft = null;
       drawEditor();
+      // Status writes must refer to the note version now shown by the desk.
+      // showNarrative retains older drafts for explicit review.
+      await drawNarrative();
     } else if (draft) {
       draft.change.expectedRevision = fresh.revision;
       if (draft.change.kind === "note")

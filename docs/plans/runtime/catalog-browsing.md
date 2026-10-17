@@ -282,16 +282,31 @@ unterbrochene Suche startet bei Rückkehr einmal mit den aktuellen Filtern. Ein
 unterbrochener Statblock zeigt wieder die Auswahlaufforderung und wird ausdrücklich
 neu gewählt. Sichtbare Suchfehler bleiben bis zum Suchen-Retry stehen.
 `desktop-catalog-query-context.test.mjs` prüft diese Wechsel einschließlich später
-Erfolge und Fehler. Quellen-, Vorlagen- und Generatorreads sind davon getrennte
-Owner und bleiben im folgenden Anschluss offen.
+Erfolge und Fehler. Quellenmetadaten und Filteroptionen folgen beim Inhaltswechsel der Monsterauswahl.
+Ein laufender Read wird dort geteilt; Ausblenden oder Campaignwechsel entzieht
+auch Erfolg und Fehler die Autorität. Ein vor dem Dispatch erfolgter Wechsel
+verhindert den Read ganz. Bei Rückkehr werden fehlende Metadaten unabhängig von
+der erhaltenen Trefferseite neu gelesen, ohne deren DOMzeilen zu ersetzen.
+Bereits vollständig geladene lokale Quellenmetadaten bleiben im vorhandenen
+Cache. Ein synchroner Bridgefehler gibt den ausdrücklichen Retry wieder frei.
+Die DOMgegenfälle prüfen versteckten Erfolg/Fehler, doppeltes Öffnen, Retry
+und den gemeinsamen Monsterbrowser im Tabellenmanager;
+ein bereits gestarteter IPCread wird nicht nachträglich als physisch abgebrochen
+behauptet. Eine native Linuxprobe mit echtem SRDKorpus verzögert den Metadaten-IPC
+und liefert getrennt kontrollierten Erfolg oder Fehler nach dem Wechsel zu Items.
+Sie prüft die unveränderten Itemdetails, genau einen Read bei Rückkehr, dieselben
+Monsterzeilen, unveränderte Kampagnenrevision und zwei normale Appaustritte.
+Das qualifiziert weder den vollständigen Katalog noch alle Plattformen/200%.
+Vorlagen- und Generatorreads bleiben getrennte offene Owner.
 
 Die nächsten Anschlüsse aus derselben Quelle bleiben ausdrücklich offen:
 
-1. Quellen-/Vorlagen-/Generatorreads in `activateCatalog`, `openCatalog` und
+1. Vorlagen-/Generatorreads in `activateCatalog`, `openCatalog` und
    `activateGeneration` nur aus ihrem sichtbaren Owner auslösen und deren laufende
    Antworten bei Inhaltswechsel passend entmächtigen. Encounterentwürfe und deren
-   Speicheraufträge bleiben erhalten. Monsterquery-/Detailwechsel sind umgesetzt;
-   das ist noch keine vollständige Sichtbarkeitsbindung aller Katalogprovider.
+   Speicheraufträge bleiben erhalten. Monsterquery, Detail und Quellenmetadaten
+   sind sichtbar gebunden; das ist noch keine vollständige Sichtbarkeitsbindung
+   aller Katalogprovider.
 2. In beiden Providern akzeptierte Treffer während eines ausdrücklich angeforderten
    Refresh sichtbar erhalten, dabei ausstehenden Filterstand und aktuelle Treffer
    unterscheiden und Fehler ohne falsche Erfolgsmeldung zeigen. Auswahl/Scroll bei
