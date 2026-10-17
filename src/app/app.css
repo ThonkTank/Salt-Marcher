@@ -851,7 +851,7 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 .combat-npc-loss-list article { padding: .5rem; border-bottom: 1px solid var(--border); }
 
 /* The Live desk presents the same Atlas node and camera as campaign editing. */
-#live-center-map #campaign-atlas[data-live-surface=true]{height:100%;padding:0;overflow:hidden}
+#live-center-map{display:flex;flex-direction:column}#live-atlas-map-actions{flex:none;flex-wrap:wrap;gap:.35rem;margin:0 0 .4rem}#live-atlas-map-actions #live-atlas-zoom{display:contents}#live-center-map #campaign-atlas[data-live-surface=true]{flex:1;min-height:0;height:auto;padding:0;overflow:hidden}
 #campaign-atlas[data-live-surface=true]>.atlas-command-bar,#campaign-atlas[data-live-surface=true]>#atlas-search-results,#campaign-atlas[data-live-surface=true] #atlas-panel{display:none!important}
 #campaign-atlas[data-live-surface=true] .atlas-layout{display:block;height:100%}
 #campaign-atlas[data-live-surface=true] .atlas-stage{position:relative;height:100%;min-height:0}

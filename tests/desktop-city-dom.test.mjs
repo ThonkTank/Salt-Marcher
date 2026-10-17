@@ -483,7 +483,7 @@ test('a prepared house interior shares its actual camera and selection through t
   const map=x.document.createElement('section'),navigation=x.document.createElement('aside'),console=x.document.createElement('aside');x.document.body.append(map,navigation,console);
   const portal=s.atlas.liveSurface();portal.mount(map,navigation,console);portal.show(true);await settle();await settle();
   assert.equal(map.contains(s.svg),true);assert.equal(x.document.querySelectorAll('#campaign-map').length,1);assert.deepEqual(view(),before);assert.equal(s.atlas.selection.id,room.id);
-  assert.equal(navigation.contains(get('atlas-to-party')),true);assert.equal(console.contains(get('atlas-save-status')),true);
+  assert.equal(map.contains(get('atlas-to-party')),true);assert.equal(navigation.contains(get('atlas-to-party')),false);assert.equal(get('live-atlas-map-actions').contains(get('atlas-to-party')),true);assert.equal(get('live-atlas-map-actions').contains(get('live-atlas-zoom')),true);assert.equal(x.document.querySelectorAll('#atlas-to-party').length,1);assert.equal(console.contains(get('atlas-save-status')),true);
   portal.show(false);assert.equal(root.hidden,true);portal.show(true);await settle();await settle();assert.deepEqual(view(),before);
   portal.unmount();await s.atlas.open();assert.equal(root.parentNode,home);assert.equal(root.contains(get('atlas-to-party')),true);assert.equal(root.contains(get('atlas-save-status')),true);
   await s.atlas.navigate('room',room.id);assert.equal(s.atlas.scopeId,room.scopeId);assert.equal(s.atlas.selection.id,room.id);assert.ok(x.store.db.serialize().equals(db));
@@ -970,4 +970,50 @@ test('side-street proposal is discarded without writes and accepted atomically w
   x.click('city-redo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.filter(u=>u.kind==='road').length===roads.length);await x.activate('Alpha');assert.equal(get('city-lanes').checked,true);
   get('city-density').value='.3';get('city-density').onchange();x.click('city-generate');await settle();await x.drain();assert.match(get('city-preview-summary').textContent,/0 neue Nebenstraßen/);x.click('city-preview-accept');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===district.id).infill.density===.3);assert.deepEqual(x.store.city(x.current().token,x.cityIds.one).units.filter(u=>u.kind==='road'),roads);
  }finally{await x.cleanup();}
+});
+
+test('interior action waits for the matching house navigation to finish and cannot be overwritten by its late refresh',async()=>{
+ const x=await setup(),s=await interiorSurface(x);let release;try{
+  const scope=s.atlas.scopeId,before=x.store.campaignAtlas(x.current().token).scopes.length;
+  x.click('atlas-interior-house');await until(()=>s.atlas.family==='city');await settle();
+  const refresh=s.atlas.refresh.bind(s.atlas);let hold=true;s.atlas.refresh=async()=>{const result=await refresh();if(hold){hold=false;await new Promise(resolve=>{release=resolve;});}return result;};
+  const moving=s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);await until(()=>!!release);assert.equal(x.document.getElementById('atlas-building-interior').disabled,true);
+  x.click('city-interior');await settle();assert.equal(s.atlas.family,'city');release();await moving;await until(()=>s.atlas.family==='interior');assert.equal(s.atlas.scopeId,scope);assert.equal(x.store.campaignAtlas(x.current().token).scopes.length,before);assert.equal(x.document.getElementById('atlas-building-interior').disabled,false);
+ }finally{release?.();await s.close();}
+});
+
+test('a queued interior action cannot follow an older house after a newer house search',async()=>{
+ const x=await setup(),s=await interiorSurface(x);let release;try{
+  x.click('atlas-interior-house');await until(()=>s.atlas.family==='city');await settle();const before=x.store.campaignAtlas(x.current().token).scopes.length;
+  const refresh=s.atlas.refresh.bind(s.atlas);let hold=true;s.atlas.refresh=async()=>{const result=await refresh();if(hold){hold=false;await new Promise(resolve=>{release=resolve;});}return result;};
+  const old=s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);await until(()=>!!release);x.click('city-interior');await settle();await s.atlas.navigate('city',x.cityIds.two,x.unitIds.two);release();await old;await settle();
+  assert.equal(s.atlas.family,'city');assert.equal(s.atlas.selection.id,x.unitIds.two);assert.equal(x.store.campaignAtlas(x.current().token).scopes.length,before);assert.equal(x.document.getElementById('city-unit-name').value,'House two');
+ }finally{release?.();await s.close();}
+});
+
+test('cold party focus waits for the canonical position and reaches the same interior from an unloaded viewport',async()=>{
+ const x=await setup(),s=await interiorSurface(x);let release;try{
+  const frame=s.atlas.frame(s.atlas.scopeId);await s.rectangle('Party room',{x:frame.x-3,y:frame.y-3},{x:frame.x+3,y:frame.y+3});
+  const room=x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.name==='Party room'),command=action=>({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action});
+  const pc=x.store.executeLive(command({kind:'create-character',profile:{name:'Iri',speedFeet:30}})).character,live=x.store.live(x.current().token);
+  x.store.executeLive(command({kind:'membership',characterId:pc.id,expectedRevision:pc.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:null,expectedFocusRevision:live.focusRevision}));
+  const scene=x.store.executeLive(command({kind:'initialize',expectedRosterRevision:x.store.live(x.current().token).rosterRevision})).scene;
+  x.store.executeDungeon(command({kind:'place',sceneId:scene.id,expectedPositionRevision:0,pose:{scopeId:room.scopeId,floorId:room.floorId,roomId:room.id,x:1,y:-1,z:0}}));
+  const read=x.window.campaign.atlasRegion;let hold=true;x.window.campaign.atlasRegion=async(...args)=>{const value=await read(...args);if(hold){hold=false;return new Promise(resolve=>{release=()=>resolve(value);});}return value;};
+  s.atlas.camera.set({x:100000,y:100000,width:5000,height:5000},false);s.atlas.activate(x.current());const before={...s.atlas.camera.view},opening=s.atlas.open();await until(()=>!!release);
+  assert.equal(x.document.getElementById('atlas-to-party').disabled,true);x.click('atlas-to-party');assert.deepEqual(s.atlas.camera.view,before);release();await opening;assert.equal(x.document.getElementById('atlas-to-party').disabled,false);
+  const db=x.store.db.serialize();x.click('atlas-to-party');const box=s.atlas.camera.view;assert(Math.abs(box.x+box.width/2-(frame.x+1))<1e-6);assert(Math.abs(box.y+box.height/2-(frame.y-1))<1e-6);assert.equal(s.atlas.scopeId,room.scopeId);assert.ok(x.store.db.serialize().equals(db));
+ }finally{release?.();await s.close();}
+});
+
+test('infill settings wait for the exact house city basis rather than accepting input that its late read would overwrite',async()=>{
+ const x=await setup();let release;try{
+  await x.ui.openCityReference(x.cityIds.two,x.unitIds.two,true,true);const read=x.window.campaign.city;
+  x.window.campaign.city=async(...args)=>{const value=await read(...args);return new Promise(resolve=>{release=()=>resolve(value);});};
+  x.click('city-panel-infill');await until(()=>!!release);
+  for(const id of ['city-lanes','city-density','city-seed','city-size','city-reach','city-use','city-district','city-generate'])assert.equal(x.document.getElementById(id).disabled,true,id+' stays unavailable until its source is loaded');
+  release();await until(()=>!x.document.getElementById('city-generate').disabled);
+  for(const id of ['city-lanes','city-density','city-seed','city-size','city-reach','city-use','city-district'])assert.equal(x.document.getElementById(id).disabled,false);
+  assert.equal(x.ui.atlasCityState().view.header.id,x.cityIds.two);assert.equal(x.writes.length,0);
+ }finally{release?.();await x.cleanup();}
 });

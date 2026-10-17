@@ -25,11 +25,11 @@ function cityYield(cancel:()=>boolean,progress:()=>void=()=>{}){
 }
 // A proposed street network is ordinary editable city geometry after acceptance.
 // Existing roads, including accepted generated lanes, are never rewritten by infill.
-type StreetSegment={a:P;b:P;width:number};
+type StreetSegment={a:P;b:P;width:number;aId?:string;bId?:string};
 const streetOrder=(a:StreetSegment,b:StreetSegment)=>Math.hypot(b.b.x-b.a.x,b.b.y-b.a.y)-Math.hypot(a.b.x-a.a.x,a.b.y-a.a.y)||a.a.x-b.a.x||a.a.y-b.a.y||a.b.x-b.b.x||a.b.y-b.b.y||a.width-b.width;
 async function sideStreets(view:CityView,r:CityRecipe,points:P[],cancel:()=>boolean):Promise<CityUnit[]>{
  if(!r.lanes||view.units.some(u=>u.kind==='road'&&u.districtId===r.districtId&&u.recipe?.algorithm==='district-lanes-v1'))return[];
- const sources=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));}).sort(streetOrder);
+ const sources=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6,aId:i===0?u.nodeIds?.[0]:undefined,bId:i===p.length-2?u.nodeIds?.at(-1):undefined}));}).sort(streetOrder);
  const proposed:CityUnit[]=[],cooperate=cityYield(cancel);
  for(const source of sources){
   await cooperate();
@@ -39,7 +39,7 @@ async function sideStreets(view:CityView,r:CityRecipe,points:P[],cancel:()=>bool
  return proposed;
 }
 async function streetGrid(view:CityView,r:CityRecipe,points:P[],source:StreetSegment,cancel:()=>boolean):Promise<CityUnit[]>{
- const roads=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6,generated:u.recipe?.algorithm==='district-lanes-v1'}));});
+ const roads=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6,aId:i===0?u.nodeIds?.[0]:undefined,bId:i===p.length-2?u.nodeIds?.at(-1):undefined}));});
  const bounds={minX:Math.min(...points.map(p=>p.x)),maxX:Math.max(...points.map(p=>p.x)),minY:Math.min(...points.map(p=>p.y)),maxY:Math.max(...points.map(p=>p.y))};
  if(!segmentRange(source.a,source.b,bounds.minX,bounds.maxX,bounds.minY,bounds.maxY))return[];
  const length=Math.hypot(source.b.x-source.a.x,source.b.y-source.a.y);if(length<r.size*2)return[];
@@ -48,41 +48,66 @@ async function streetGrid(view:CityView,r:CityRecipe,points:P[],source:StreetSeg
  const projected=points.map(local),minX=Math.min(...projected.map(p=>p.x)),maxX=Math.max(...projected.map(p=>p.x)),minY=Math.min(...projected.map(p=>p.y)),maxY=Math.max(...projected.map(p=>p.y));
  const width=Math.max(3,Math.min(5,r.size*.35)),gap=width/2+1.2,block=r.size*5+width;
  const blocked=view.units.filter(u=>['plaza','water'].includes(u.kind)||(u.kind==='building'&&(u.protected||u.districtId!==r.districtId))).map(u=>u.kind==='building'?posed(u):u.outline??[]);
- const walls=view.units.filter(u=>u.kind==='wall').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));});
- const districtEdges=edges(points),nodes=new Map<string,CityUnit>(),network:CityUnit[]=[],existingIds=new Set(view.units.map(u=>u.id));
+ const walls=view.units.filter(u=>u.kind==='wall').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6,aId:i===0?u.nodeIds?.[0]:undefined,bId:i===p.length-2?u.nodeIds?.at(-1):undefined}));});
+ const districtEdges=edges(points),nodes=new Map<string,CityUnit>(),network:CityUnit[]=[],plannedSegments:StreetSegment[]=[],existingIds=new Set(view.units.map(u=>u.id));
+ const key=(p:P)=>Math.round(p.x*1e6)/1e6+','+Math.round(p.y*1e6)/1e6;
+ const referenced=new Set(view.units.filter(u=>u.kind==='road').flatMap(u=>u.nodeIds??[]));
+ const existingNodes=view.units.filter(u=>u.kind==='node'&&referenced.has(u.id)&&u.point&&inside(u.point,points));
+ const known=new Map(existingNodes.map(u=>[key(u.point!),u]));
+ const nearWard=(p:P)=>inside(p,points)||districtEdges.some(([a,b])=>distance(p,a,b).distance<=source.width/2);
+ const roots=[...(source.aId&&nearWard(source.a)?[{x:0,id:source.aId,point:source.a}]:[]),...(source.bId&&nearWard(source.b)?[{x:length,id:source.bId,point:source.b}]:[])];
+ if(!roots.length)return[];
+ for(const root of roots){const node=view.units.find(u=>u.id===root.id);if(node)known.set(key(root.point),node);}
+ const positions=new Map<string,P>(),point=(x:number,row:number)=>{
+  const k=x+':'+row,old=positions.get(k);if(old)return old;
+  const raw=world(x,row*block);let p=raw,best=Math.min(10,block*.15);
+  for(const u of existingNodes){const d=Math.hypot(u.point!.x-raw.x,u.point!.y-raw.y);if(d<best){best=d;p=u.point!;}}
+  positions.set(k,p);return p;
+ };
  const prefix=view.header.id+':lanes:'+r.districtId+':'+seedNumber(r.seed)+':',cooperate=cityYield(cancel);let attempts=0;
  const allowed=(a:P,b:P)=>{
-  // Sample the full corridor, including boundaries of concave districts.
-  if([a,b,{x:(a.x+b.x)/2,y:(a.y+b.y)/2}].some(p=>!inside(p,points)))return false;
-  if(districtEdges.some(([c,d])=>crosses(a,b,c,d)||Math.min(distance(a,c,d).distance,distance(b,c,d).distance)<gap))return false;
+  const entry=(p:P)=>!inside(p,points)&&roots.some(r=>key(r.point)===key(p))&&nearWard(p),aEntry=entry(a),bEntry=entry(b);
+  if((!inside(a,points)&&!aEntry)||(!inside(b,points)&&!bEntry)||!inside({x:(a.x+b.x)/2,y:(a.y+b.y)/2},points))return false;
+  if(districtEdges.filter(([c,d])=>crosses(a,b,c,d)).length>(aEntry||bEntry?1:0))return false;
   if(blocked.some(poly=>polygonNearSegment(poly,a,b,gap)))return false;
-  if(roads.some(s=>s.generated&&crosses(a,b,s.a,s.b)))return false;
   if(walls.some(w=>crosses(a,b,w.a,w.b)||Math.min(distance(a,w.a,w.b).distance,distance(b,w.a,w.b).distance,distance(w.a,a,b).distance,distance(w.b,a,b).distance)<width/2+w.width/2+1.2))return false;
-  // Crossing another road is a junction. Closely parallel duplicates are omitted.
-  const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);
-  return !roads.some(s=>{const sx=s.b.x-s.a.x,sy=s.b.y-s.a.y,sl=Math.hypot(sx,sy);return sl>0&&Math.abs(dx*sy-dy*sx)/(len*sl)<.2&&Math.min(distance(a,s.a,s.b).distance,distance(b,s.a,s.b).distance)<width/2+s.width/2+r.size;});
+  const aId=(known.get(key(a))??nodes.get(key(a)))?.id,bId=(known.get(key(b))??nodes.get(key(b)))?.id;
+  return ![...roads,...plannedSegments].some(s=>{
+   if(crosses(a,b,s.a,s.b))return true;
+   const clearance=width/2+s.width/2+1.2,near=Math.min(distance(a,s.a,s.b).distance,distance(b,s.a,s.b).distance,distance(s.a,a,b).distance,distance(s.b,a,b).distance)<clearance;
+   if(!near)return false;
+   const shared=[aId,bId].some(id=>id&&(id===s.aId||id===s.bId));
+   if(!shared)return true;
+   // A common endpoint permits a junction, but not an overlapping duplicate ray.
+   return Math.min(distance({x:(a.x+b.x)/2,y:(a.y+b.y)/2},s.a,s.b).distance,distance({x:(s.a.x+s.b.x)/2,y:(s.a.y+s.b.y)/2},a,b).distance)<clearance;
+  });
  };
  const add=async(a:P,b:P)=>{
-  await cooperate(++attempts%100===0);
-  if(!allowed(a,b))return false;
-  const key=(p:P)=>p.x+','+p.y,ak=key(a),bk=key(b),id=prefix+'road:'+ak+':'+bk;if([id,prefix+'node:'+ak,prefix+'node:'+bk].some(id=>existingIds.has(id)))return false;
-  for(const [k,p] of [[ak,a],[bk,b]] as const)if(!nodes.has(k))nodes.set(k,{id:prefix+'node:'+k,kind:'node',name:'',protected:false,point:p,districtId:r.districtId});
-  network.push({id,kind:'road',name:'Nebenstraße',protected:false,nodeIds:[nodes.get(ak)!.id,nodes.get(bk)!.id],via:[],width,districtId:r.districtId,recipe:{seed:r.seed,algorithm:'district-lanes-v1'}});
+  await cooperate(++attempts%100===0);if(Math.hypot(a.x-b.x,a.y-b.y)<width)return false;
+  const ak=key(a),bk=key(b),aId=known.get(ak)?.id,bId=known.get(bk)?.id;
+  if(aId&&bId&&view.units.some(u=>u.kind==='road'&&u.nodeIds?.includes(aId)&&u.nodeIds.includes(bId)))return true;
+  const id=prefix+'road:'+[ak,bk].sort().join(':');if(network.some(u=>u.id===id))return true;if(existingIds.has(id)||!allowed(a,b))return false;
+  for(const [k,p] of [[ak,a],[bk,b]] as const)if(!known.has(k)&&!nodes.has(k)){const id=prefix+'node:'+k;if(existingIds.has(id))return false;nodes.set(k,{id,kind:'node',name:'',protected:false,point:p,districtId:r.districtId});}
+  network.push({id,kind:'road',name:'Nebenstraße',protected:false,nodeIds:[(known.get(ak)??nodes.get(ak))!.id,(known.get(bk)??nodes.get(bk))!.id],via:[],width,districtId:r.districtId,recipe:{seed:r.seed,algorithm:'district-lanes-v1'}});
+  plannedSegments.push({a,b,width,aId:(known.get(ak)??nodes.get(ak))!.id,bId:(known.get(bk)??nodes.get(bk))!.id});
   if(network.length>2500)throw new Error('Zu viele Nebenstraßen. Teile das Viertel in kleinere Flächen.');return true;
  };
- // Columns attach to the existing main road. Lateral links join only reached columns,
- // producing connected blocks rather than isolated rear houses or detached streets.
- const columns:{x:number;reached:Set<number>}[]=[];
- const phase=(seedNumber(r.seed+'lanes')%1000)/1000;
- for(let x=Math.max(0,minX)+block*(.35+phase*.3);x<Math.min(length,maxX);x+=block*(1+(Math.sin(x*.017+phase)*.12))){
-  const origin=world(x,0);if(!inside(origin,points))continue;const reached=new Set([0]);
-  for(const side of [-1,1]){let previous=origin;for(let row=1;row*block<=Math.min(r.reach*2,side<0?-minY:maxY);row++){
-   const next=world(x,side*row*block);if(!await add(previous,next))break;reached.add(side*row);previous=next;
-  }}
-  if(reached.size>1)columns.push({x,reached});
+ // Begin at real existing endpoint nodes. Each new row is reached through the
+ // previous row, then grows sideways. No road merely crosses a primary road.
+ const phase=(seedNumber(r.seed+'lanes')%1000)/1000,xs=roots.map(r=>r.x);
+ for(let x=Math.max(0,minX)+block*(.35+phase*.3);x<Math.min(length,maxX);x+=block*(1+Math.sin(x*.017+phase)*.12))xs.push(x);
+ xs.sort((a,b)=>a-b);const rootColumns=new Set(roots.map(root=>xs.indexOf(root.x)));
+ for(const side of [-1,1]){
+  let previous=rootColumns;
+  for(let n=1;n*block<=Math.min(r.reach*2,side<0?-minY:maxY);n++){
+   const row=side*n,reached=new Set<number>();
+   for(const col of previous){if(await add(point(xs[col]!,side*(n-1)),point(xs[col]!,row)))reached.add(col);else if(n===1){for(const next of [col+1,col-1])if(next>=0&&next<xs.length&&Math.abs(xs[next]!-xs[col]!)<block*1.5&&await add(point(xs[col]!,0),point(xs[next]!,row))){reached.add(next);break;}}}
+   const queue=[...reached];for(let i=0;i<queue.length;i++)for(const col of [queue[i]!-1,queue[i]!+1])if(col>=0&&col<xs.length&&!reached.has(col)&&Math.abs(xs[col]!-xs[queue[i]!]!)<block*1.5){if(await add(point(xs[queue[i]!]!,row),point(xs[col]!,row))){reached.add(col);queue.push(col);}}
+   if(!reached.size)break;previous=reached;
+  }
  }
- for(let i=1;i<columns.length;i++){const a=columns[i-1]!,b=columns[i]!;if(b.x-a.x>block*1.5)continue;for(const row of a.reached)if(row&&b.reached.has(row))await add(world(a.x,row*block),world(b.x,row*block));}
- return[...nodes.values(),...network];
+ const used=new Set(network.flatMap(u=>u.nodeIds??[]));
+ return[...[...nodes.values()].filter(u=>used.has(u.id)),...network];
 }
 export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean,progress:(n:number)=>void):Promise<CityPreview>{
  checkedCityInfill(r);
@@ -91,7 +116,7 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
  const points=district.outline,minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x)),minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y)),step=r.size*1.55;
  if((maxX-minX)*(maxY-minY)/(step*step)>150000)throw new Error('Fläche für diese Hausgröße zu groß. Teile sie in kleinere Viertel.');
  const streets=await sideStreets(view,r,district.outline,cancel),streetUnits=[...view.units,...streets];
- const roads=streetUnits.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,streetUnits);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));}).sort(streetOrder);if(!roads.length)throw new Error('Lege zuerst eine Straße an.');
+ const roads=streetUnits.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,streetUnits);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6,aId:i===0?u.nodeIds?.[0]:undefined,bId:i===p.length-2?u.nodeIds?.at(-1):undefined}));}).sort(streetOrder);if(!roads.length)throw new Error('Lege zuerst eine Straße an.');
  const replacement=view.units.filter(u=>u.kind==='building'&&u.districtId===r.districtId&&!u.protected),replaceIds=replacement.map(u=>u.id),replaceSet=new Set(replaceIds),obstacles=view.units.filter(u=>u.kind==='building'&&!replaceSet.has(u.id)),excluded=view.units.filter(u=>['water','plaza'].includes(u.kind));
  let state=seedNumber(r.seed)||1;const random=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return(state>>>0)/4294967296;};
  // Frontages get first claim on space. Rear infill only fills remaining lots.

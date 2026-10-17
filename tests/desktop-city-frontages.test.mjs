@@ -32,8 +32,8 @@ test('the low end of the density control permits sparse settlement instead of a 
 test('optional side streets connect free blocks to the existing road and are deterministic proposals',async()=>{
  const v=fixture(),before=JSON.stringify(v),r={...recipe,lanes:true},a=await generate(v,r),b=await generate(v,r);assert.equal(JSON.stringify(v),before);assert.deepEqual(a,b);
  const streets=a.streets.filter(u=>u.kind==='road'),nodes=new Map(a.streets.filter(u=>u.kind==='node').map(u=>[u.id,u.point]));assert(streets.length>6);assert(a.buildings.length>(await generate(v)).buildings.length);assert(!a.replaceIds.includes('road'));assert(!a.replaceIds.includes('inn'));
- const connected=new Set([...nodes].filter(([,p])=>Math.abs(p.y-100)<1e-5).map(([id])=>id));assert(connected.size>1);let changed=true;while(changed){changed=false;for(const u of streets)if(u.nodeIds.some(id=>connected.has(id)))for(const id of u.nodeIds)if(!connected.has(id)){connected.add(id);changed=true;}}
- assert.equal(connected.size,nodes.size);for(const p of nodes.values())assert(inside(p,v.units[3].outline));assert(streets.length>=nodes.size,'lateral links form actual cycles, not only detached branches');
+ const connected=new Set(v.units.filter(u=>u.kind==='road').flatMap(u=>u.nodeIds));assert(connected.size>1);let changed=true;while(changed){changed=false;for(const u of streets)if(u.nodeIds.some(id=>connected.has(id)))for(const id of u.nodeIds)if(!connected.has(id)){connected.add(id);changed=true;}}
+ assert([...nodes.keys()].every(id=>connected.has(id)),'all streets must join existing road node identities, not only cross their line');for(const p of nodes.values())assert(inside(p,v.units[3].outline));assert(streets.length>=nodes.size,'lateral links form actual cycles, not only detached branches');
 });
 test('side streets avoid protected houses, narrow water, plazas and walls without changing existing roads',async()=>{
  const v=fixture();v.units.push({id:'water',kind:'water',outline:square(75,0,2,220)},{id:'plaza',kind:'plaza',outline:square(200,125,30,30)},{id:'wall-a',kind:'node',point:{x:5,y:180}},{id:'wall-b',kind:'node',point:{x:295,y:180}},{id:'wall',kind:'wall',nodeIds:['wall-a','wall-b'],via:[],width:4});
@@ -57,4 +57,7 @@ test('street planning serves both halves of a district attached to separate exis
 test('side-street settings are validated and planning remains cancellable before publication',async()=>{
  await assert.rejects(generate(fixture(),{...recipe,lanes:'yes'}),/Seed, Dichte/);
  let stop=false;const v=fixture();v.units[3].outline=square(0,0,1500,1500);v.units[0].point={x:10,y:750};v.units[1].point={x:1490,y:750};const pending=generate(v,{...recipe,size:3,reach:500,lanes:true},()=>stop);const timer=setTimeout(()=>stop=true,0);try{await assert.rejects(pending,/abgebrochen/);}finally{clearTimeout(timer);}
+});
+test('a road crossing a ward without an attachable endpoint stays intact rather than receiving a detached network',async()=>{
+ const v=fixture();v.units[0].point={x:-100000,y:100};v.units[1].point={x:100000,y:100};const before=JSON.stringify(v),a=await generate(v,{...recipe,lanes:true});assert.equal(JSON.stringify(v),before);assert.equal(a.streets,undefined);assert(a.buildings.length>0);assert(a.attempts<1000);
 });

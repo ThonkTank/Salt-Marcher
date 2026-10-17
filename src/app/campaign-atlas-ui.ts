@@ -112,6 +112,7 @@ export class CampaignAtlasWorkbench {
   private floorId = "ground";
   private floorRequest=0;
   private navigationRequest = 0;
+  private navigationJob:{settled:Promise<boolean>}|null=null;
   private groupView=false;
   private groupViewRequest=0;
   private lastPoint: Point = { x: 0, y: 0 };
@@ -390,7 +391,7 @@ export class CampaignAtlasWorkbench {
     get('atlas-place-edit').onclick=()=>void this.openPlace(true);
     get("atlas-create-city").onclick = () => void this.createCity();
     get("atlas-create-dungeon").onclick = () => void this.createDungeon();
-    get("atlas-building-interior").onclick = () => void this.createInterior();
+    get("atlas-building-interior").onclick = () => void this.createInterior().catch(e=>this.error(e));
     get("atlas-interior-house").onclick = () => void (async () => {
       const owner=this.owner,scope=this.scopeId;
       if(!await this.opts.flush()||this.owner!==owner||this.scopeId!==scope)return;
@@ -507,7 +508,7 @@ export class CampaignAtlasWorkbench {
   }
   hide() {
     this.request++;
-    this.navigationRequest++;
+    this.navigationRequest++;this.navigationJob=null;
     this.groupViewRequest++;
     if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}this.loadedRegionQuery=null;
     if(this.owner)void window.campaign.cancelAtlasRegion(this.owner.token);
@@ -517,7 +518,7 @@ export class CampaignAtlasWorkbench {
     this.root.hidden = true;
   }
   activate(w: WorkspaceGeometry) {
-    this.navigationRequest++;
+    this.navigationRequest++;this.navigationJob=null;
     this.groupViewRequest++;
     this.placeRequest++;this.locationComposer.contextChanged();
     this.travelReadState = "loading";this.loadedRegionQuery=null;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
@@ -876,6 +877,8 @@ export class CampaignAtlasWorkbench {
   }
   async navigateLocation(id:string,sectionId?:string){await this.refresh();await this.setFamily('terrain',false);const p=await this.landscape.openLocation(id,sectionId);if(p)this.focus(p,15000);}
   async navigate(kind:"city"|"room",id:string,unitId?:string){
+    let finish!:(ready:boolean)=>void;const job={settled:new Promise<boolean>(resolve=>{finish=resolve;})};this.navigationJob=job;let ready=false;this.render();
+    try{
     const current=await this.navigationGuard();if(!current?.())return;const owner=this.owner!;
     this.request++;
     const request=++this.searchRequest,result=await window.campaign.atlasObjectFocus(owner.token,unitId?'building':kind,unitId??id);
@@ -888,9 +891,10 @@ export class CampaignAtlasWorkbench {
       this.selection={kind:'room',id};this.scopeId=target.scopeId!;this.floorId=target.floorId!;
       await this.opts.selectRoom(id);if(!current()||this.owner!==owner)return;await this.setFamily('interior',false);this.syncDrawingFloor();
     }
-    if(this.owner!==owner||request!==this.searchRequest)return;
+    if(!current()||this.owner!==owner||request!==this.searchRequest)return;
     this.focus(target.point,Math.max(kind==='city'&&!unitId?60:30,target.box.width*1.4,target.box.height*1.4));
-    await this.refresh();
+    ready=!!(await this.refresh());
+    }finally{finish(ready);if(this.navigationJob===job){this.navigationJob=null;this.render();}}
   }
   private async navigateScope(id:string){
     const current=await this.navigationGuard();if(!current?.())return;const owner=this.owner!;
@@ -924,6 +928,7 @@ export class CampaignAtlasWorkbench {
     const b=this.camera.view;this.camera.set(earthView(this.svg.clientWidth/Math.max(1,this.svg.clientHeight),{x:b.x+b.width/2,y:b.y+b.height/2}),true);
   }
   private toParty() {
+    if(!this.data||this.travelReadState!=='ready'||this.navigationJob||this.busy)return;
     const p = this.data?.geometry.position;
     if (p) {
       this.scopeId = p.scopeId;
@@ -1039,6 +1044,9 @@ export class CampaignAtlasWorkbench {
   }
   private async createInterior() {
     if (this.selection?.kind !== "building") return;
+    const startOwner=this.owner,startBuilding=this.selection.id,intent=this.navigationRequest,pending=this.navigationJob;
+    if(pending&&!await pending.settled)return;
+    if(this.owner!==startOwner||this.selection?.id!==startBuilding||this.navigationRequest!==intent||this.root.hidden)return;
     const existingId=regionValue(this.data?.region?.interiors,this.selection.id),existing=this.data?.bindings.find(b=>b.kind==='dungeon'&&b.parent==='building'&&b.parentId===this.selection?.id)??(existingId?{ownerId:existingId}:null);
     if(existing){const owner=this.owner,buildingId=this.selection.id;if(!await this.opts.flush()||this.owner!==owner||this.selection?.id!==buildingId)return;}
     const r = existing ? null : await this.write(
@@ -1722,6 +1730,7 @@ export class CampaignAtlasWorkbench {
   private render() {
     const data = this.data;
     if(this.root.hidden)return;
+    get<HTMLButtonElement>('atlas-to-party').disabled=this.busy||!!this.navigationJob||this.travelReadState!=='ready'||!data||(!data.geometry.position&&!data.scene);
     if(!data){if(this.groupView)this.camera.render(root=>{root.append(shape('rect',{width:this.camera.view.width,height:this.camera.view.height,fill:'#20282a'}));});return;}
     if(!this.groupView)updateCityInteriors(data);
     get("atlas-recover").hidden =
@@ -1771,7 +1780,7 @@ export class CampaignAtlasWorkbench {
     const house=data.cities.flatMap(c=>c.units).find(u=>u.id===houseBinding?.parentId);
     get('atlas-interior-context').hidden=!house||!['interior','decoration'].includes(this.family);
     get('atlas-interior-house-name').textContent=house?'Innenraum · '+house.name:'';
-    get<HTMLButtonElement>("atlas-building-interior").disabled=atlasCityPlacementActive();
+    get<HTMLButtonElement>("atlas-building-interior").disabled=!!this.navigationJob||atlasCityPlacementActive();
     const place=this.selection?.kind==='place'?data.places.find(p=>p.locationId===this.selection!.id&&!p.trashed):null;
     get('atlas-hint').hidden=!!place||['interior','decoration'].includes(this.family);
     get('atlas-place-actions').hidden=!place;get('atlas-place-summary').textContent=place?'Beschreibung und SL-Notizen liegen in derselben Ortsmappe.':'';

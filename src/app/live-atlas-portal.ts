@@ -21,6 +21,10 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
       this.homes.push({ node, marker });
       to.append(node);
     };
+    const actions=document.createElement("div");
+    actions.id="live-atlas-map-actions";actions.className="toolbar";
+    actions.setAttribute("role","group");actions.setAttribute("aria-label","Live-Kartenansicht");
+    map.append(actions);this.extras.push(actions);
     move(this.root, map);
     this.root.dataset.liveSurface = "true";
     const controls = this.root.querySelector<HTMLElement>(
@@ -29,7 +33,7 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
     if (controls) move(controls, navigation);
     for (const id of ["atlas-to-party", "atlas-overview"]) {
       const button = document.getElementById(id);
-      if (button) move(button, navigation);
+      if (button) move(button, actions);
     }
     const zoom = document.createElement("div");
     zoom.className = "toolbar";
@@ -44,8 +48,7 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
       b.onclick = () => this.zoom(factor);
       zoom.append(b);
     }
-    navigation.append(zoom);
-    this.extras.push(zoom);
+    actions.append(zoom);
     const local = document.getElementById("atlas-local-console");
     if (local) {
       const details = document.createElement("details"),
