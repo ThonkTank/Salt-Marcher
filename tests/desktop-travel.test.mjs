@@ -224,3 +224,75 @@ test('presentation speed is pinned at acceptance and never scales checkpoint tim
   x.world(x.step(j,1).action);j=x.state().journey;assert.equal(x.state().scene.clock.instantMs,'3000');x.world(x.step(j,12).action);assert.equal(x.state().scene.clock.instantMs,'9000');assert.equal(x.state().journey.status,'arrived');
  }finally{x.cleanup();}
 });
+
+
+test('world travel cannot supersede an active or paused local route, even with an older valid preview',()=>{
+ const x=setup();try{
+  const pc=x.store.live(x.workspace.token).roster[0];x.live({kind:'profile',characterId:pc.id,expectedRevision:pc.profileRevision,profile:{...pc.profile,speedFeet:30}});
+  const old=x.preview(),local=x.store.previewAtlasTravel(x.workspace.token,{x:20,y:0});
+  const run=action=>x.store.executeAtlasTravel({...x.command(action),sceneId:x.scene.id});
+  let j=run({kind:'start',preview:local}).localJourney;
+  for(const status of ['active','paused']){
+   if(status==='paused')j=run({kind:'pause',id:j.id,expectedRevision:j.revision}).localJourney;
+   const before=x.store.db.serialize();
+   assert.throws(()=>x.preview(),/Lokale Reise.*beenden/);
+   assert.throws(()=>x.world({kind:'journey',preview:old}),/Lokale Reise.*beenden/);
+   assert.ok(x.store.db.serialize().equals(before));
+  }
+  run({kind:'end',id:j.id,expectedRevision:j.revision});
+  const accepted=x.world({kind:'journey',preview:old}).scene.journey;
+  assert.equal(accepted.status,'active');assert.equal(x.state().scene.clock.instantMs,'0');
+ }finally{x.cleanup();}
+});
+
+for(const terminal of ['end','round'])test(`a ${terminal==='end'?'cancelled':'completed'} local route cannot be resurrected while a world journey owns the group`,()=>{
+ const x=setup();try{
+  const pc=x.store.live(x.workspace.token).roster[0];x.live({kind:'profile',characterId:pc.id,expectedRevision:pc.profileRevision,profile:{...pc.profile,speedFeet:30}});
+  const run=action=>x.store.executeAtlasTravel({...x.command(action),sceneId:x.scene.id}),p=x.store.previewAtlasTravel(x.workspace.token,{x:20,y:0});
+  let j=run({kind:'start',preview:p}).localJourney;
+  j=run({kind:terminal,id:j.id,expectedRevision:j.revision}).localJourney;
+  assert.equal(j.status,terminal==='end'?'ended':'arrived');
+  x.world({kind:'journey',preview:x.preview()});
+  const before=x.store.db.serialize();
+  assert.throws(()=>run({kind:'resume',id:j.id,expectedRevision:j.revision}),/abgeschlossen|beendet|Weltreise/);
+  assert.ok(x.store.db.serialize().equals(before));
+ }finally{x.cleanup();}
+});
+
+
+test('legacy overlapping trips remain readable and recover through an explicit end without losing receipts',()=>{
+ const x=setup();try{
+  const pc=x.store.live(x.workspace.token).roster[0];x.live({kind:'profile',characterId:pc.id,expectedRevision:pc.profileRevision,profile:{...pc.profile,speedFeet:30}});
+  const run=action=>x.store.executeAtlasTravel({...x.command(action),sceneId:x.scene.id});
+  const local=run({kind:'start',preview:x.store.previewAtlasTravel(x.workspace.token,{x:20,y:0})}).localJourney;
+  const row=x.store.db.prepare('SELECT payload,checksum FROM atlas_local_journey WHERE campaign_id=? AND scene_id=?').get(x.campaign.id,x.scene.id);
+  run({kind:'end',id:local.id,expectedRevision:local.revision});
+  const start=x.command({kind:'journey',preview:x.preview()}),ack=x.store.executeWorld(start);
+  // Reproduce a valid overlapping saved state accepted by the previous writer.
+  x.store.db.prepare('UPDATE atlas_local_journey SET payload=?,checksum=? WHERE campaign_id=? AND scene_id=?').run(row.payload,row.checksum,x.campaign.id,x.scene.id);
+  x.reopen();
+  let world=x.state().journey,before=x.store.db.serialize();
+  assert.throws(()=>x.store.executeWorld(x.step(world)),/Lokale Reise/);
+  assert.throws(()=>run({kind:'resume',id:local.id,expectedRevision:local.revision}),/Weltreise/);
+  assert.deepEqual(x.store.executeWorld({...start,token:x.workspace.token}),ack,'a confirmed original command keeps its original receipt');
+  assert.ok(x.store.db.serialize().equals(before));
+  world=x.world({kind:'journey-state',id:world.id,expectedRevision:world.revision,state:'paused'}).scene.journey;
+  before=x.store.db.serialize();assert.throws(()=>x.world({kind:'journey-state',id:world.id,expectedRevision:world.revision,state:'active'}),/Lokale Reise/);assert.ok(x.store.db.serialize().equals(before));
+  const ended=run({kind:'end',id:local.id,expectedRevision:local.revision});assert.equal(ended.localJourney.status,'ended');
+  world=x.world({kind:'journey-state',id:world.id,expectedRevision:world.revision,state:'active'}).scene.journey;
+  const moved=x.store.executeWorld(x.step(world)).scene;assert.equal(moved.journey.nextIndex,2);assert.equal(moved.scene.clock.instantMs,String(world.segmentSeconds[0]*1000));
+ }finally{x.cleanup();}
+});
+
+test('a local journey in one split group does not block another group world journey',()=>{
+ const x=setup();try{
+  const a=x.store.live(x.workspace.token).roster[0];x.live({kind:'profile',characterId:a.id,expectedRevision:a.profileRevision,profile:{...a.profile,speedFeet:30}});
+  const b=x.live({kind:'create-character',profile:{name:'Nachhut',speedFeet:20}}).character;let live=x.store.live(x.workspace.token);
+  x.live({kind:'membership',characterId:b.id,expectedRevision:b.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision});
+  live=x.store.live(x.workspace.token);const scene=x.state().scene,other=x.live({kind:'move',sceneId:scene.id,memberIds:[b.id],expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,expectedSceneMembershipRevision:scene.membershipRevision,expectedClockRevision:scene.clock.revision,target:{kind:'new',title:'Nachhut',expectedContentRevision:scene.revision}}).session.createdScene;
+  const local=x.store.executeAtlasTravel({...x.command({kind:'start',preview:x.store.previewAtlasTravel(x.workspace.token,{x:20,y:0})}),sceneId:scene.id}).localJourney,before=x.state();
+  x.request={...x.request,sceneId:other.id};const world=x.world({kind:'journey',preview:x.preview()}).scene.journey,moved=x.store.executeWorld(x.step(world)).scene;
+  assert.equal(moved.scene.id,other.id);assert.deepEqual(moved.journey.actorIds,[b.id]);assert.equal(moved.journey.nextIndex,2);
+  assert.deepEqual(x.state(),before);assert.deepEqual(x.store.campaignAtlas(x.workspace.token).localJourney,local);
+ }finally{x.cleanup();}
+});

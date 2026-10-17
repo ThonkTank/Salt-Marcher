@@ -1,4 +1,5 @@
 import {landscapeRegion} from './atlas-landscape';
+import {atlasLocalJourney} from './atlas-travel';
 import {checkedHexAccess,checkedTravelSupplies,hexAccessProblem} from '../hex-access';
 import {checkedMarkerPresentation,defaultMarkerPresentation} from '../atlas-marker';
 import {agendaOccurrence} from '../agenda-model';
@@ -67,10 +68,16 @@ export function travelEnvironmentBasis(db:any,cam:string,sceneId:string,mapId:st
  const pace=usePartyPace?partyTravelPace(readRoster(db,cam).filter(c=>c.active&&c.sceneId===sceneId)):null;
  return hash(canonicalJson({...(pace?{partyPace:pace.basis}:{}),model:'hex-travel-v1/seasonal-fields-v1',calendarRevision:w.calendar.revision,overrideRevision:override?.revision??null,phenomena:w.phenomena.filter(p=>p.mapId===mapId).map(p=>({id:p.id,revision:p.revision})).sort((a,b)=>a.id.localeCompare(b.id))}));
 }
+function hexTravelContext(db:any,cam:string,sceneId:string,p:ScenePosition){
+ if(p.dungeon)throw new Error('Dungeon zuerst über einen verbundenen Eingang verlassen.');
+ const local=atlasLocalJourney(db,cam,sceneId);
+ if(local&&['active','paused'].includes(local.status))throw new Error('Lokale Reise zuerst abschließen oder beenden.');
+}
 export function previewTravel(db:any,cam:string,r:TravelRequest):TravelPreview{
  const supplies=checkedTravelSupplies(r.supplies);
  const s=readLiveScene(db,cam,r.sceneId),p=position(db,cam,r.sceneId),w=readWorld(db,cam,false),m=w.maps.find(m=>m.id===r.mapId);
  if(!m||p.mapId!==m.id||s.retired||!s.members.length)throw new Error('Platziere die aktive Gruppe zuerst auf dieser Karte.');
+ hexTravelContext(db,cam,s.id,p);
  const stops=[p,...r.waypoints,r.destination].map(h=>hexPoint(h,m.hexMeters)),minX=Math.min(...stops.map(p=>p.x))-m.hexMeters*10,minY=Math.min(...stops.map(p=>p.y))-m.hexMeters*10;m.landscape=landscapeRegion(db,cam,{x:minX,y:minY,width:Math.max(...stops.map(p=>p.x))-minX+m.hexMeters*10,height:Math.max(...stops.map(p=>p.y))-minY+m.hexMeters*10});
  if(r.usePartyPace!==undefined&&typeof r.usePartyPace!=='boolean')throw new Error('Tempoquelle ist ungültig.');
  const partyPace=r.usePartyPace?partyTravelPace(readRoster(db,cam).filter(c=>c.active&&c.sceneId===s.id)):null;
@@ -131,6 +138,7 @@ export function reconcileWorld(db: any, c: WorldCommand) {
 }
 function journeyBasis(db:any,cam:string,j:Journey){
  const scene=readLiveScene(db,cam,j.sceneId),p=position(db,cam,j.sceneId),w=readWorld(db,cam,false);
+ hexTravelContext(db,cam,j.sceneId,p);
  if(scene.membershipRevision!==j.membershipRevision||json(scene.members)!==json(j.actorIds))throw new Error('Reisegruppe geändert. Route für die neue Gruppe planen.');
  if(scene.clock.revision!==j.clockRevision||p.revision!==j.positionRevision||p.mapId!==j.mapId||hexKey(p)!==hexKey(j.route[j.nextIndex-1]!))throw new Error('Zeit oder Position außerhalb der Reise geändert. Route neu planen.');
  if(map(db,cam,j.mapId).revision!==j.mapRevision||travelEnvironmentBasis(db,cam,j.sceneId,j.mapId,w,j.usePartyPace)!==j.environmentBasis)throw new Error('Reisebasis aus Karte, Kalender, Wetter oder Gruppentempo geändert. Route neu planen.');

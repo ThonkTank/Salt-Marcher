@@ -590,6 +590,30 @@ test('lazy activation defers the directory until its first ordinary opening',asy
  await x.ui.ensurePreparation(x.workspace);assert.equal(reads,1);
 });
 
+test('a room note opened before Preparation still exposes the existing plan without losing the note draft',async t=>{
+ const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Nachtwache',scenes:[{id:randomUUID(),title:'Torhalle',notes:'Eigener Ablauf',locationId:null}]};
+ x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));
+ await x.ui.activatePreparation(x.workspace,false);await x.ui.openPreparedNote(x.ids.borin);
+ const editor=x.el('note-gm');editor.value='  Noch nicht bestätigt\r\n';editor.dispatchEvent(new x.window.Event('input'));
+ const read=x.window.campaign.preparation;let reads=0;x.window.campaign.preparation=async(...a)=>{reads++;return read(...a);};
+ await x.ui.ensurePreparation(x.workspace);
+ assert.equal(x.el('plans').value,plan.id);assert.equal(x.el('scene-title').value,'Torhalle');assert.equal(x.el('plan-controls').hidden,false);
+ assert.equal(x.el('note-gm'),editor);assert.equal(editor.value,'  Noch nicht bestätigt\r\n');assert.equal(x.writes.length,0);assert.equal(reads,0);
+});
+
+test('switching straight from the first linked note to planning initializes its plan controls',async t=>{
+ const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Zweiter Einstieg',scenes:[{id:randomUUID(),title:'Wachstube',notes:'',locationId:null}]};
+ x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));await x.ui.activatePreparation(x.workspace,false);await x.ui.openPreparedNote(x.ids.ada);
+ x.el('preparation-planning').click();await until(()=>x.el('plans').value===plan.id);
+ assert.equal(x.el('scene-title').value,'Wachstube');assert.equal(x.el('preparation-planning-workspace').hidden,false);assert.equal(x.writes.length,0);
+});
+
+test('following a plan reference opens its identity and reports a missing plan without creating a replacement',async t=>{
+ const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Raumfolge',scenes:[]};x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));
+ await x.ui.activatePreparation(x.workspace,false);await x.ui.openPreparedNote(x.ids.borin);assert.equal(await x.ui.openPreparedPlan(plan.id),true);assert.equal(x.el('plans').value,plan.id);assert.equal(x.el('plan-controls').hidden,false);assert.equal(x.el('scene-editor').hidden,true);
+ await assert.rejects(x.ui.openPreparedPlan(randomUUID()),/Spielabendplan ist nicht verfügbar/);assert.equal(x.store.preparation(x.workspace.token).plans.length,1);assert.equal(x.writes.length,0);
+});
+
 test('adding a scene waits for its inspector before focusing and selecting its placeholder',async t=>{
  const x=await fixture(t);await x.activate();x.el('plan-create').click();await until(()=>!x.el('plan-controls').hidden);
  const input=x.el('scene-title'),calls=[];input.focus=()=>calls.push({visible:!x.el('scene-editor').hidden,value:input.value});input.select=()=>calls.push('select');
