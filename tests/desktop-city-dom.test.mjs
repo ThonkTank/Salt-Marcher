@@ -36,6 +36,8 @@ async function setup(){
  }
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
  document.getElementById('city-inspector').scrollIntoView=()=>{};
+ // Native option.value falls back to text when no value attribute is supplied.
+ for(const option of document.querySelectorAll('#city-use option'))if(!option.hasAttribute('value'))option.value=option.textContent;
  for(const select of document.querySelectorAll('select')){select.add=o=>select.append(o);let chosen='';Object.defineProperty(select,'value',{get(){const options=[...select.querySelectorAll('option')];return options.find(o=>o.value===chosen)?.value??options[0]?.value??'';},set(v){chosen=String(v);}});}
  for(const dialog of document.querySelectorAll('dialog')){dialog.open=false;dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  const saved=Object.fromEntries(['window','document','DOMParser','Event','CustomEvent','Option','ResizeObserver','setTimeout','clearTimeout'].map(k=>[k,globalThis[k]])),timers=new Map();let timer=0;
@@ -819,4 +821,52 @@ test('party marker over a house lets city inspection pass through and is draggab
   const click=new x.window.Event('click',{bubbles:true});Object.assign(click,{button:0,clientX:100,clientY:100});s.svg.querySelector('[data-kind="building"][data-id="'+x.unitIds.one+'"]').dispatchEvent(click);await until(()=>s.atlas.selection?.id===x.unitIds.one);assert.equal(x.document.getElementById('city-unit-name').value,'House one');assert.ok(x.store.db.serialize().equals(before));
   s.atlas.family='travel';s.atlas.render();const travelMarker=s.svg.querySelector('[data-kind="party"]');assert.equal(travelMarker.getAttribute('pointer-events'),'auto');const travelDown=new x.window.Event('pointerdown',{bubbles:true});Object.assign(travelDown,{button:0,pointerId:100,clientX:100,clientY:100});s.svg.setPointerCapture=()=>{};travelMarker.dispatchEvent(travelDown);assert.equal(s.atlas.partyDrag?.id,100);s.atlas.cancel();
  }finally{await s.close();}
+});
+
+test('district infill keeps independent drafts and saves the accepted recipe with its houses across fresh activation and undo',async()=>{
+ const x=await setup();try{
+  const get=id=>x.document.getElementById(id),before=x.store.city(x.current().token,x.cityIds.one),first=before.units.find(u=>u.kind==='district');
+  const second={...first,id:randomUUID(),name:'South market',outline:first.outline.map(p=>({x:p.x+270,y:p.y}))};
+  x.store.executeCity({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,cityId:before.header.id,expectedRevision:before.header.revision,action:{kind:'change',upsert:[second],remove:[],label:'Second district'}});
+  await x.choose('one');
+  const set=(id,value)=>{get(id).value=value;get(id).onchange();};
+  const accept=async()=>{const rev=x.store.city(x.current().token,x.cityIds.one).header.revision;x.click('city-generate');await settle();await x.drain();assert.equal(get('city-preview-actions').hidden,false);x.click('city-preview-accept');await until(()=>x.store.city(x.current().token,x.cityIds.one).header.revision>rev);};
+  set('city-district',first.id);set('city-density','0.65');set('city-seed','North');set('city-size','9');set('city-reach','80');set('city-use','Handel');await accept();
+  const north={seed:'North',density:.65,size:9,reach:80,use:'Handel'},accepted=x.store.city(x.current().token,x.cityIds.one);
+  assert.deepEqual(accepted.units.find(u=>u.id===first.id).infill,north);
+  set('city-district',second.id);assert.equal(get('city-density').value,'0.5','new district uses baseline, not the previous district');
+  set('city-density','0.3');set('city-seed','South');set('city-use','Werkstatt');
+  set('city-district',first.id);assert.equal(get('city-density').value,'0.65');assert.equal(get('city-use').value,'Handel');
+  set('city-district',second.id);assert.equal(get('city-density').value,'0.3');assert.equal(get('city-seed').value,'South');
+  x.click('city-generate');await settle();await x.drain();x.click('city-cancel-preview');assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===second.id).infill,undefined,'discard does not persist a recipe');
+  await accept();const south=x.store.city(x.current().token,x.cityIds.one);assert.equal(south.units.find(u=>u.id===second.id).infill.density,.3);
+  x.click('city-undo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===second.id).infill===undefined);assert.deepEqual(x.store.city(x.current().token,x.cityIds.one).units,accepted.units,'one undo removes recipe and buildings together');
+  x.click('city-redo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===second.id).infill?.density===.3);
+  await x.activate('Alpha');set('city-district',first.id);assert.equal(get('city-density').value,'0.65');assert.equal(get('city-size').value,'9');assert.equal(get('city-use').value,'Handel');
+  set('city-district',second.id);assert.equal(get('city-density').value,'0.3');assert.equal(get('city-seed').value,'South');assert.equal(get('city-use').value,'Werkstatt');
+  await x.activate('Beta');assert.equal(get('city-density').value,'0.5','another campaign does not inherit recipes or drafts');
+ }finally{await x.cleanup();}
+});
+
+test('stored district recipes reject invalid parameters and cannot be attached to a building',async()=>{
+ const x=await setup();try{
+  const before=x.store.city(x.current().token,x.cityIds.one),district=before.units.find(u=>u.kind==='district'),house=before.units.find(u=>u.kind==='building'),valid={seed:'Market',density:.5,size:12,reach:65,use:'Wohnhaus'};
+  const write=unit=>x.store.executeCity({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,cityId:before.header.id,expectedRevision:before.header.revision,action:{kind:'change',upsert:[unit],remove:[],label:'Invalid recipe'}});
+  for(const infill of [{...valid,density:2},{...valid,size:0},{...valid,reach:Infinity},{...valid,seed:''},{...valid,use:null}])assert.throws(()=>write({...district,infill}),/Seed, Dichte/);
+  assert.throws(()=>write({...house,infill:valid}),/Viertelfläche/);
+  assert.deepEqual(x.store.city(x.current().token,x.cityIds.one),before);
+ }finally{await x.cleanup();}
+});
+
+test('late infill acceptance preserves a newer recipe draft while storing only the accepted proposal',async()=>{
+ const x=await setup();let release;try{
+  const get=id=>x.document.getElementById(id);get('city-density').value='0.65';get('city-density').onchange();
+  x.click('city-generate');await settle();await x.drain();
+  const send=x.window.campaign.executeCity;x.window.campaign.executeCity=async command=>{const result=await send(command);return new Promise(resolve=>{release=()=>resolve(result);});};
+  x.click('city-preview-accept');await until(()=>!!release);
+  get('city-density').value='0.2';get('city-density').onchange();release();
+  await until(()=>get('city-preview').hidden);assert.equal(get('city-density').value,'0.2','later input remains available for the next proposal');
+  assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.kind==='district').infill.density,.65);
+  await x.activate('Alpha');assert.equal(get('city-density').value,'0.65','fresh activation reads the actually accepted recipe');
+ }finally{release?.();await x.cleanup();}
 });

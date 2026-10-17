@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `347ddd528`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `2248252d1`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -57,3 +57,5 @@ The bounded region integration retains precise place markers, exact house room c
 Nach gezielter Hausauswahl lädt „Bebauen“ wieder die bestehende Viertel-/Straßengrundlage derselben Stadt. Die fertige Vorschau zeigt das ganze Viertel. Der tatsächliche Ablauf erreicht 99 Häuser bei erhaltener Taverne, Hausnotiz, Zwei-Raum-Innenraum und 21s Gruppenzeit. Ein Watabou-Durchlauf mit benanntem Ort, lokalem Geometriewurf und SVG-Ausgabe wurde tatsächlich durchgeführt; die grafischen und fachlichen Grenzen bleiben offen. [Bebauungsnachtest](INFILL-20261017.md).
 
 Der Gruppenmarker über einem Haus blockiert dessen Bearbeitungsklick nicht mehr; Gruppenverschiebung bleibt auf „Erkunden“ begrenzt. Die passive Ereignisdiagnose, Korrektur und tatsächliche Wiederholung sind im Bebauungsnachtest festgehalten.
+
+Viertel behalten jetzt ihre eigene Bauweise (Seed, Dichte, Hausgröße, Straßenabstand und Nutzung). Übernahme speichert Rezept und Häuser atomar; Wechsel, frisches Öffnen und Rücknahme behalten getrennte Einstellungen. Der tatsächliche Stadt-/Innenraum-/Live-Nachlauf erreicht drei Straßen, zwei abgegrenzte Viertel, 117 Häuser und die erhaltene Taverne. [Viertelbauweise und Watabou-Nachlauf](DISTRICTS-20261017.md).
