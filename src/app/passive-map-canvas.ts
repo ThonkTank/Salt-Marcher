@@ -10,6 +10,7 @@ export class PassiveMapCanvas {
  private suppressClick=false;private readonly panel:HTMLDivElement;private readonly note:HTMLSpanElement;
  private readonly controls:HTMLDivElement;private readonly back:HTMLButtonElement;private readonly forward:HTMLButtonElement;private readonly resetButton:HTMLButtonElement;
  private past:CanvasBox[]=[];private future:CanvasBox[]=[];private views=new Map<string,SavedView>();private wheelAt=0;
+ private sceneOrigin={x:0,y:0};
  private restored=false;private scene:SVGGElement|null=null;
  constructor(readonly root:SVGSVGElement,private options:{relative?:boolean;initial:CanvasBox;minWidth?:number;maxWidth?:number|(()=>number);pan?:(event:PointerEvent)=>boolean;prepareCamera?:()=>void;locked?:()=>boolean;changed?:(box:CanvasBox,reason:CameraReason)=>void}){
   this.box={...options.initial};this.initial={...options.initial};this.apply();
@@ -46,7 +47,7 @@ export class PassiveMapCanvas {
  get view(){return{...this.box};}
  get panning(){return!!this.drag;}
  get contextRestored(){return this.restored;}
- private apply(){this.root.setAttribute('viewBox',`${this.options.relative?0:this.box.x} ${this.options.relative?0:this.box.y} ${this.box.width} ${this.box.height}`);}
+ private apply(){this.root.setAttribute('viewBox',`${this.options.relative?0:this.box.x} ${this.options.relative?0:this.box.y} ${this.box.width} ${this.box.height}`);if(this.options.relative&&this.scene){this.scene.setAttribute('transform',`translate(${this.sceneOrigin.x-this.box.x} ${this.sceneOrigin.y-this.box.y})`);for(const hud of this.scene.querySelectorAll('[data-canvas-hud]'))hud.setAttribute('transform',`translate(${this.box.x-this.sceneOrigin.x} ${this.box.y-this.sceneOrigin.y})`);}}
  private refreshControls(){this.back.disabled=!this.past.length;this.forward.disabled=!this.future.length;this.resetButton.disabled=same(this.box,this.initial);}
  private remember(box:CanvasBox){if(same(box,this.box))return;if(!this.past.length||!same(this.past.at(-1)!,box))this.past.push({...box});if(this.past.length>32)this.past.shift();this.future=[];this.refreshControls();}
  set(box:CanvasBox,notify=false,reason:CameraReason='set',coalesce=false){
@@ -78,7 +79,7 @@ export class PassiveMapCanvas {
   this.renderScene=draw;this.emptyText=emptyText;if(this.rendering||this.failed)return;
   this.rendering=true;
   try{
-   const scene=this.root.ownerDocument.createElementNS('http://www.w3.org/2000/svg','g');scene.dataset.mapScene='true';draw(scene);this.root.replaceChildren(scene);this.scene=scene;
+   const scene=this.root.ownerDocument.createElementNS('http://www.w3.org/2000/svg','g');scene.dataset.mapScene='true';draw(scene);this.root.replaceChildren(scene);this.scene=scene;this.sceneOrigin={x:this.box.x,y:this.box.y};this.apply();
    this.root.style.visibility='';this.root.removeAttribute('aria-disabled');this.root.dataset.canvasState=emptyText?'empty':'loaded';
    this.panel.hidden=!emptyText;this.panel.setAttribute('role','status');this.note.textContent=emptyText;this.panel.querySelector('button')!.hidden=true;
   }catch(error){

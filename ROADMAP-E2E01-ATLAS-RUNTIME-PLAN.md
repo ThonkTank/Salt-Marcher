@@ -293,7 +293,7 @@ bleiben kompatibel. Prozessnotizen und lokale Messpfade gehören nicht ins Repo.
 | Schritt | Konkreter Anschluss / Nutzerwirkung | Direkte Abnahme und aktueller Stand |
 | --- | --- | --- |
 | 0 Ausgangsbasis | Bestehende Writer/History/Volumes/Gebäude/Reise/Player prüfen statt neu bauen. Gleiche kleine Kampagne, Großwelt, dichte/komplexe Region, 5000 Gebäude, 100000 Dungeonzellen, große Bildvorlage/Export als Vergleichsdaten. | Code-/Messbasis vorhanden; bisherige Großwald-/4000-Raumproben sind isolierte Diagnosen, keine 16-GiB-/Gesamtfreigabe. Nativer Großwald-Teilweg belegt; 16-GiB-, Stadt-/Dungeon- und Medienprofile weiter offen. |
-| 1 Gezielte Reads | `campaign-atlas-contracts`, Store, Preload/Main, Workbench: Übersicht, räumliche Seite, Objektdetail und Commitbeleg trennen. Keine vollständigen Räume/Städte für eine kleine Ansicht; begrenzte Antworten mit ausdrücklicher Fortsetzung/Zusammenfassung. | Erster Anschluss implementiert: getrennte Übersicht/Roomdetail, revisionsgebundene Metadatenseiten für Raum-/Stadt-/Landschaftssuche und kompakter Landschaftscommit. 4000-Raum-Probe ohne Vollansichten und mit unveränderter Prosa. Kampagnenaktivierung und Atlas öffnen nun über Shell und Geometrieprojektionen; der Raumeditor liest den gewählten vollständigen Raum und dessen Arbeitsentwurf gezielt. Raumtextänderungen antworten mit genau diesem Raum. Räumliche Stadt-/Raumreads sind nun bereichs- und bytebegrenzt, genaue Autorenleser getrennt; Legacy-Fachvollreader und Landschaftsvektoren bleiben gesonderte offene Anschlüsse. |
+| 1 Gezielte Reads | `campaign-atlas-contracts`, Store, Preload/Main, Workbench: Übersicht, räumliche Seite, Objektdetail und Commitbeleg trennen. Keine vollständigen Räume/Städte für eine kleine Ansicht; begrenzte Antworten mit ausdrücklicher Fortsetzung/Zusammenfassung. | Erster Anschluss implementiert: getrennte Übersicht/Roomdetail, revisionsgebundene Metadatenseiten für Raum-/Stadt-/Landschaftssuche und kompakter Landschaftscommit. 4000-Raum-Probe ohne Vollansichten und mit unveränderter Prosa. Kampagnenaktivierung und Atlas öffnen nun über Shell und Geometrieprojektionen; der Raumeditor liest den gewählten vollständigen Raum und dessen Arbeitsentwurf gezielt. Raumtextänderungen antworten mit genau diesem Raum. Räumliche Stadt-/Raumreads sind nun bereichs- und bytebegrenzt, genaue Autorenleser getrennt; Legacy-Fachvollreader bleiben gesonderte offene Anschlüsse. Landschaft, Geometrie und genaue paginierte Auswahl verwenden jetzt denselben quellengebundenen Bereichsframe. |
 | 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Landschaft und Nichtflächen laufen am Writer mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen; fehlgeschlagener Indexaufbau rollt vollständig zurück und fällt auf kanonische Btree-Reads zurück, ohne andere Kampagnen zu sperren. Raum-/Stadtprojektionen verwenden ebenfalls einen TEMP-Rtree mit atomarem Scanfallback; aktualisierte Konturen erhalten ihre kanonische Überlappungsreihenfolge. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
 | 3 Übersicht/Frame | Effektive grobe/feine Eigenschaften vor Aggregation bestimmen. Vereinfachte Flächen/Symbole/Kacheln schützen Landschaft beim Herauszoomen. Render/Hit publizieren denselben revisionsgebundenen Frame. | Landschaftsflächen werden in einem separaten Lese-Worker zu begrenzten, revisionsgebundenen Rasterbildern aggregiert; grobe Vorgaben und feine Übersteuerungen bleiben geordnet, Löcher erhalten. Native Linux-Probe: 100000 Flächen, sichtbar Wald → Wasser malen → Save → Neustart → Undo, tatsächliche Bildschirmfarben. Dichte Raum-/Stadtansichten verwenden nun Raster plus quellengebundenen genauen Hit; Elternframes werden unabhängig gelöst. Noch keine persistente Kachelpyramide oder Latenzfreigabe; B01/B04 offen. |
 | 4 Raumfachmodelle | Vorhandene Volumes/Lifecycle weiterverwenden. Gebäude außen/innen aus einem Zustand; echte Paths/Passages getrennt von dekorativen Linien. Reine Zeichnung nur ausdrücklich mit Preview umwandeln. | Grundlagen vorhanden, vollständiger Anschluss offen. 3-m-Wand x1,1 =3,3 m; 1,524-m-Dungeonzellen bleiben exakt; gestapelte Räume, Split/Merge, Anker/Prosa und gemeinsame Kamera/History. |
@@ -493,7 +493,7 @@ Raster und Vektor verwenden dieselbe Ebenenfolge: Stadtpapier unter Dungeons,
 Straßen unter Gebäudedächern. Überlappende Gegenproben prüfen die tatsächlichen
 PNG-Pixel; reine Objektzählung hätte den verdeckten Dungeon nicht bemerkt.
 Der serialisierte Geometriecache hat zusammen 64 MiB Nutzdatenbudget, geteilt
-in 32 MiB Ansicht und 32 MiB Ausgabe. Das ist keine Obergrenze des tatsächlichen
+in 24 MiB Ansicht und 24 MiB Ausgabe sowie je 8 MiB Landschaftskacheln in beiden Bereichsworkern. Das ist keine Obergrenze des tatsächlichen
 Electron-/SQLite-/GPU-Speichers. Aktive Autorenentwürfe, exakte Fachleser und
 der vorhandene Landschaftsbildcache sind getrennte Klassen.
 
@@ -513,7 +513,7 @@ meldet den gespeicherten Stand und bietet Nachlesen an; ein unbekannter
 Transportausgang behält dagegen den ursprünglichen Befehl mit seiner Kennung.
 Eine Kamera-/Liveumschaltung verändert weder Partyposition noch Weltzeit.
 GM-Ausgaben lesen ihren eigenen Ausgabebereich und erzeugen sequenzielle
-Geometriekacheln bis 512² neben den Landschaftskacheln. Unterschiedliche
+gemeinsame Landschafts-/Geometriekacheln bis 512². Jede Kachel prüft denselben Source-Fence; ein abschließender Read verwirft eine zwischenzeitlich geänderte Quelle. Unterschiedliche
 Revisionen, Abbruch und überschrittenes Bildbudget liefern keine Datei. Die
 öffentliche Ausgabe bleibt an die exakte Sicht-/Erinnerungsprojektion gebunden.
 
@@ -534,8 +534,7 @@ TEMP-Neuaufbau gegen eine persistente, quellgebundene abgeleitete Geometrie ist
 der nächste Messvergleich; keine Text-/Historymigration ohne Übertragungs- und
 Wiederaufnahmebeleg. Zuvor die Kaltphasen Storekonstruktor, Quellprüfsummen,
 SQL-Statementvorbereitung, TEMP-Aufbau und Serialisierung getrennt messen. In
-`storage/atlas-region.ts` wiederverwendete Statements und seitenweise Projektion
-gegen den jetzigen per-ID-Read vergleichen; am Konstruktor-/RSS-Höchststand
+`storage/atlas-region.ts` verwendet jetzt vorbereitete Statements und 128er Quellbatches statt per-ID-Reads. Die Batches beenden ihren SELECT vor TEMP-Schreibvorgängen; fehlerhaftes JSON wird je Quelle isoliert. Den Nutzen gegen den alten per-ID-Read messen; am Konstruktor-/RSS-Höchststand
 lässt sich der Nutzen einer Datenformatänderung noch nicht ablesen. Ein EXPLAIN-Gegenfall begründet die Rtree-zuerst-Abfrage:
 ein regulärer Join wählte den Geometrietypindex und besuchte alle Raumzeilen.
 
@@ -557,35 +556,46 @@ Readzeit, OS-Cache, Systemlast, Electron und GPU sind unterschiedliche Größen.
 Der Messhelfer speichert Commit, Dirty-Status und Bundlehash; diese lokale
 Messung ist kein Hardware- oder Latenzfreigabebeleg.
 
-Landschaftsflächen bleiben im vorhandenen Rasterweg. Der ältere separate
-Vektorread für Wege, Flüsse, Orte und Referenzen hat nun ebenfalls eine
-2-MiB-Transportgrenze und liest streaming. Bei Überschreitung schlägt er
-sichtbar fehl; er gibt keinen abgeschnittenen scheinbar vollständigen Bestand
-zurück. Eine dichte Sammeldarstellung samt gezieltem Landschaftshit ist dort
-noch offen. Referenzbild-/Assetbudgets, genaue Regel-/Perceptionleser,
-explizite Vollwerkzeuge und Metadatenseiten mit sehr großen Einzelobjekten
-sind durch den Geometriecache nicht automatisch qualifiziert.
+Landschaftsflächen, Wege, Flüsse, Orte und Referenzen werden nun im selben
+readonly Bereichsworker und Source-Fence gelesen. Bis500 Nichtflächen und
+höchstens512 KiB dünne Darstellungskonturen bleiben Vektoren; fachliche Values
+werden nicht übertragen. Bei höherer Dichte wird der ganze Ausschnitt als
+höchstensvier weltorientierte Rasterkacheln dargestellt (maximal256² je Kachel,
+kleinere Auflösung bei knappem Transportbudget). Die Antwort meldet Modus,
+Objektzahl, Referenzzahl und lokalen Fehlerzustand. Landschaftsfehler entfernen
+keine intakte Raum-/Stadtgeometrie. Die alte gesonderte `landscapeRegion`-API
+bleibt für ausdrücklich vollständige Werkzeuge und Altfälle erhalten; die
+Workbench zeichnet keine Reads aus `draw()` nach.
 
-Nächster Anschluss: kalte Projektionskosten und Landschaftsvektoren mit
-vollständiger Auswahlsemantik untersuchen, anschließend Cache-/Index- und
-Rendereralternativen B01/B02/B04/B05 an gleichen vollständigen Aufgaben
-vergleichen. Den Adresscodec an Kamera/History/Transfer qualifizieren, bevor
-eine persistente Formatmigration vorgenommen wird. Die begrenzten Reads
-schließen die sieben Schritte oder die Produktabnahme nicht ab.
+Klickauswahl liefert bis40 genaue Kandidaten je Seite und die Gesamtzahl;
+Überlappungen werden ausdrücklich ausgewählt. Die Quellbindung wird vor und
+nach dem Read geprüft. Vor Bearbeitung liest `atlasLandscapeObject` den ganzen
+kanonischen Datensatz, einschließlich unbekannter Values. Pixel und dünne
+Konturen werden nie zu Autoren-Upserts. Verdeckte Referenzen sind weder
+gezeichnet noch in dieser Auswahl enthalten. Mehr als16 sichtbare Referenzen
+werden als Umrisse zusammengefasst und ausdrücklich gemeldet. Referenzbilder
+verwenden Ableitungen bis2048 Pixel/256 KiB PNG; der Originalimport antwortet
+nur mit ID und Maßen. Originalbytes bleiben unverändert. Der Main-Vorschaucache
+hat8 MiB; der vollständige native Bilddecode und dessen RSS sind weiterhin zu
+qualifizieren. Die GM-Ausgabe verwendet dieselbe ausdrücklich aggregierte
+Landschaftsdarstellung; sie ersetzt keine Original-/Transferausgabe.
 
-### Abschlussnachweise
+Kameraereignisse erhalten die veröffentlichte SVG-Szenenwurzel und verändern
+nur ViewBox und relative Translation. Kleine Verschiebungen innerhalb des
+zweifach gepufferten Ladebereichs starten keinen neuen Bereichsread. Zoom,
+Filter- oder Quellenänderung benötigen einen neuen Frame; bis dahin sind
+Autorenaktionen mit veralteter Geometrie gesperrt. Der Worker behält seine
+TEMP-Projektion bei Kamerabewegung: eine aktive Arbeit und ein ersetzbarer
+Nachfolger, statt Abbruch und Neuaufbau pro Ereignis. Landschaftskacheln werden
+bei lokalen Moves/Deletes anhand alter und neuer Grenzen invalidiert; externe
+Änderung/Journalüberlauf/Quellwechsel verwerfen die Ableitung. Keine neue
+persistente Kachel- oder Geometriewahrheit.
 
-Die Größen-/Latenzziele im vorigen Abschnitt bleiben verbindlich, insbesondere
-Atlas p95 33 ms/Preview100 ms und Dungeon 2 s/16 ms/50 ms/Commit500 ms/Player100 ms.
-Referenzgerät mit 16 GiB, CPU/GPU/SSD, Auflösung/Skalierung und kalten/warmen
-Zustand dokumentieren. Ein Limit auf dem größeren Entwicklungsrechner ist nur
-Vorversuch. Separate Linux-/Windows-/macOS-, Tastatur-/200%- und physische
-Bediennachweise bleiben offen, solange sie nicht tatsächlich vorliegen.
-
-Zusammenhängend: Region gestalten → grobe Vorgabe ändern → feine Ausnahme
-kontrollieren → Ortstext → Stadt/Haus → Volume/Room-Key → Reise/Sicht → Undo/Redo
-→ Autosave → vollständiger Neustart → dieselben Inhalte und Spielzustände.
-Dazu: Abbruch in Read/Preview/Commit/Migration, volle Datenträger, Cachelöschen,
-negative/große Koordinaten, kalter unabhängiger Import, Player-DTO/IPC/Assets/
-DOM/Fehler/Logs und Grafikverlust. Fachbelege, lokale Tests, native Bedienung,
-Hardware-/OSqualifikation und Nutzerabnahme bleiben getrennte Aussagen.
+Nächste Abnahmen: kalte Projektionskosten, Same-Task-Latenz/RSS,
+Referenzdecode unter Last und dichte Ausgabe messen; 100000-Flächen-/große
+Stadt-/lange Einzelkonturaufgaben nativ wiederholen. B01/B02/B04/B05 behalten
+ihre Alternativen (persistente abgeleitete Projektion/Kachelpyramide, anderer
+Index, GPU-Renderer), bis diese Messungen einen Wechsel begründen. Der
+Adresscodec benötigt Kamera-/History-/Transferqualifikation vor einer
+persistenten Formatmigration. Diese Änderungen schließen weder die sieben
+Lieferstufen noch die Produktabnahme ab. Stiländerungen sind zurückgestellt.
