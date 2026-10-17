@@ -20,7 +20,7 @@ import {LocationNotebook} from './location-notebook-ui';
 import {WorldLinksWorkbench} from './world-links-ui';
 import {CampaignAgenda} from './agenda-ui';
 import {initSoundboard,activateSoundboard} from './live-soundboard-ui';
-import {initQuickReference,activateQuickReference,openQuickReference} from './quick-reference-ui';
+import {initQuickReference,activateQuickReference,inspectQuickReference} from './quick-reference-ui';
 import {initNarrativeJournal,activateNarrativeJournal} from './narrative-journal-ui';
 import {closeSessionPacket,openPreparationSessionPacket,setSessionPacketSurface} from './session-packet-ui';
 import {initPartyTopbar,activatePartyTopbar} from './party-topbar-ui';
@@ -107,7 +107,7 @@ initPreparation((text,error)=>{status(text,error);setKeyReferenceStatus(text,err
 }, async (planId, visitId, sourceCurrent=()=>true) => {
   const owner=workspace;if(!owner||!sourceCurrent()||!(await leaveWorkspace())||workspace!==owner||!sourceCurrent())return;
   closeSessionPacket();showTab('live');await openPlannedVisitReview(planId,visitId,()=>workspace===owner);
-}, async(id,current)=>{await openQuickReference({kind:'note',id},current);});
+}, async(id,current)=>{const editor=el('note-editor'),mount=editor.parentElement,parent=editor.closest<HTMLDialogElement>('dialog');await inspectQuickReference({kind:'note',id},()=>current()&&editor.parentElement===mount,parent);});
 setTreasureNavigation(async id=>{if(!await leaveWorkspace())return;showTab('treasury');await openTreasury(id);});
 initDayCalculator(status,()=>el<HTMLButtonElement>('party-shortcut').click(),()=>el<HTMLButtonElement>('catalog-tab').click());
 initPartyTopbar(()=>el<HTMLButtonElement>('live-tab').click());
