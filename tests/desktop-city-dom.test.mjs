@@ -424,7 +424,8 @@ test('invalid Atlas image size clears its error when the export is retried and c
  const x=await setup(),s=await placeSurface(x),get=id=>x.document.getElementById(id);let release;
  try{
   const before=x.store.db.serialize();get('atlas-export-size').value='128';x.click('atlas-export-png');await until(()=>get('atlas-save-status').dataset.error==='true');assert.match(get('atlas-save-status').textContent,/256 und 8192/);
-  x.window.campaign.landscapeRegion=()=>new Promise(resolve=>release=resolve);x.window.campaign.cancelLandscapeRaster=async()=>({ok:true,value:undefined});
+  const readRegion=x.window.campaign.atlasRegion;
+  x.window.campaign.atlasRegion=(token,query,consumer)=>consumer==='export'?new Promise(resolve=>release=resolve):readRegion(token,query,consumer);
   get('atlas-export-size').value='2048';x.click('atlas-export-png');await until(()=>!!release);assert.equal(get('atlas-save-status').dataset.error,'false');assert.match(get('atlas-save-status').textContent,/vorbereitet/);
   x.click('atlas-export-cancel');release({ok:false,error:'Cancelled'});await until(()=>!get('atlas-export-png').disabled);assert.equal(get('atlas-save-status').textContent,'Ausgabe abgebrochen');assert.equal(get('atlas-save-status').dataset.error,'false');assert.ok(x.store.db.serialize().equals(before));
  }finally{await s.close();}
