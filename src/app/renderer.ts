@@ -1,4 +1,5 @@
 import {editTextareaText} from './key-reading-model';
+import {initNumberInputScroll} from './number-input-scroll';
 import {workspaceGeometryOnly as geometryOnly} from './atlas-render-view';
 import {RoomDirectoryView} from './room-directory-ui';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
@@ -57,6 +58,7 @@ import { initCatalog, activateCatalog, openCatalog, openCreatureCatalog, openCat
 import {suspendChronicle,initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
+initNumberInputScroll(document);
 const setWorkspaceAvailable = (available: boolean) => document.body.classList.toggle('has-workspace', available);
 let workspace: WorkspaceGeometry | null = null;
 let activeTab: WorkspaceTab = 'atlas';

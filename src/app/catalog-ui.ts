@@ -201,10 +201,15 @@ async function newPlan(copy=false,initial?:{creature:Creature;count:number;group
  if(initial){next.name=initial.creature.name+' – Begegnung';next.entries.push({id:crypto.randomUUID(),creatureId:initial.creature.id,count:initial.count,grouped:initial.grouped});next.sources.push(initial.creature);}
  adoptPlan(next);if(!initial)get('encounter-name').focus();await save();
 }
+async function readCurrentParty(){
+ const w=workspace,g=generation;if(!w)return null;
+ const data=unwrap(await window.campaign.progress(w.token));if(!owned(w.token,g))return null;
+ return data.characters.filter(c=>c.active).map(c=>({id:crypto.randomUUID(),name:c.name,level:c.xp===null?null:xpLevel(c.xp).level,count:1}));
+}
 async function currentParty(){
  const w=workspace,source=plan,g=generation,request=++partyRequest;if(!w||!source)return;const party=JSON.stringify(source.party);
- try{const response=await window.campaign.progress(w.token);if(!owned(w.token,g)||plan!==source||request!==partyRequest)return;if(JSON.stringify(source.party)!==party){tell('Neue Partyeingabe bleibt offen. Aktuelle Party bei Bedarf erneut übernehmen.',true);return;}
-  const data=unwrap(response);source.party=data.characters.filter(c=>c.active).map(c=>({id:crypto.randomUUID(),name:c.name,level:c.xp===null?null:xpLevel(c.xp).level,count:1}));renderPlan();schedule();if(source.party.length)get<HTMLDetailsElement>('encounter-party-details').open=false;
+ try{const next=await readCurrentParty();if(!next||!owned(w.token,g)||plan!==source||request!==partyRequest)return;if(JSON.stringify(source.party)!==party){tell('Neue Partyeingabe bleibt offen. Aktuelle Party bei Bedarf erneut übernehmen.',true);return;}
+  source.party=next;renderPlan();schedule();if(source.party.length)get<HTMLDetailsElement>('encounter-party-details').open=false;
  }catch(error){if(owned(w.token,g)&&plan===source&&request===partyRequest)tell((error as Error).message,true);}
 }
 
@@ -219,7 +224,7 @@ export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAd
  const showMonsters=()=>{catalogContentView('monster');if(!page&&get('catalog-table').getAttribute('aria-busy')!=='true'&&get('catalog-page').getAttribute('role')!=='alert')void search();};
  get('catalog-monsters-tab').onclick=showMonsters;get('catalog-items-tab').onclick=()=>catalogContentView('items');
  get('catalog-content-strip').onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const target=get<HTMLButtonElement>(e.key==='Home'?'catalog-monsters-tab':e.key==='End'?'catalog-items-tab':catalogContent==='monster'?'catalog-items-tab':'catalog-monsters-tab');target.click();target.focus();};
- initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
+ initGeneration(status,{currentParty:readCurrentParty,plan:async()=>{if(!await flushPlan())throw new Error('Offene Encounter-Eingabe zuerst speichern oder wiederherstellen.');return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
  get('catalog-form').onsubmit=event=>{event.preventDefault();const active=document.activeElement;if(active?.id==='catalog-cr-min'||active?.id==='catalog-cr-max')commitChallengeRange(get<HTMLInputElement>(active.id));offset=0;void search();};
  for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')){c.oninput=()=>{renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};if(c.id==='catalog-cr-min'||c.id==='catalog-cr-max')c.onchange=()=>commitChallengeRange(c);}
  get('catalog-reset').onclick=()=>{const direction=value('catalog-direction');get<HTMLFormElement>('catalog-form').reset();get<HTMLInputElement>('catalog-direction').value=direction;offset=0;if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{const next=button.dataset.sort as CreatureCatalogQuery['sort'];get<HTMLInputElement>('catalog-direction').value=sort===next&&value('catalog-direction')==='asc'?'desc':'asc';sort=next;offset=0;void search();};
