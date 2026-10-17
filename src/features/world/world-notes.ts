@@ -9,7 +9,7 @@ import {
   type CampaignNamespace,
 } from "../campaign/campaign-contracts";
 
-export type WorldNoteKind = "npc" | "faction" | "quest" | "rumor" | "rule";
+export type WorldNoteKind = "note" | "npc" | "faction" | "quest" | "rumor" | "rule";
 export type WorldFamilyRelationKind = "parent" | "child" | "sibling" | "partner";
 export const worldFamilyRelationKinds: readonly WorldFamilyRelationKind[] =
   Object.freeze(["parent", "child", "sibling", "partner"]);
@@ -58,7 +58,7 @@ function nonblank(value: string, label: string): string {
   return value;
 }
 function draft(value: WorldNoteDraft): WorldNoteDraft {
-  if (!["npc", "faction", "quest", "rumor", "rule"].includes(value.kind))
+  if (!["note", "npc", "faction", "quest", "rumor", "rule"].includes(value.kind))
     throw new Error("Unbekannter World-Eintrag.");
   nonblank(value.title, "Titel");
   if (typeof value.readAloud !== "string" || typeof value.gmNotes !== "string")

@@ -58,6 +58,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
       ref,
       title: note.title,
       label: {
+        note: "Notiz",
         npc: "NPC",
         faction: "Fraktion",
         quest: "Quest",
@@ -311,6 +312,7 @@ export function searchDesk(
         label:
           (
             {
+              note: "Notiz",
               npc: "NPC",
               faction: "Fraktion",
               quest: "Quest",
