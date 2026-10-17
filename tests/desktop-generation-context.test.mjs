@@ -89,7 +89,7 @@ test('effective preset defaults reach requests while explicit choices survive re
  x.ui.activateGeneration({...x.w,token:'new',campaign:{id:'other'}});await settle();assert.equal(x.el('generation-difficulty').value,'medium');assert.doesNotMatch(x.el('generation-defaults-source').textContent,/Eigene Auswahl/);
 });
 test('planning prerequisites and the actual party are visible before generation',async t=>{
- const x=await fixture(t);x.ui.generationPlanningChanged(null);assert.match(x.el('generation-party-context').textContent,/zuerst.*Vorlage/);
+ const x=await fixture(t);x.ui.generationPlanningChanged(null);assert.match(x.el('generation-party-context').textContent,/aktive Kampagnenparty.*Erzeugen.*optional/);
  x.ui.generationPlanningChanged([]);assert.match(x.el('generation-party-context').textContent,/leer/);
  x.ui.generationPlanningChanged([{name:'Reisende',level:3,count:4}]);assert.match(x.el('generation-party-context').textContent,/4 × Level 3/);
  x.ui.generationPlanningChanged([{name:'Reisende',level:null,count:4}]);assert.match(x.el('generation-party-context').textContent,/Level fehlen/);
@@ -106,4 +106,40 @@ test('using the overview table explicitly replaces only generator table sources 
  await x.make();assert.deepEqual(x.calls[1].tableIds,['night']);assert.equal(x.calls[1].filters.text,'Wolf');assert.equal(x.calls[1].time,'night');
  x.tables[1].trashed=true;await x.ui.refreshGeneration();x.el('encounter-table-list').value='night';x.el('encounter-table-list').oninput();assert.equal(x.el('encounter-table-use').disabled,true);
  x.el('encounter-table-use').onclick();assert.equal(x.calls.length,2);assert.equal(x.el('generation-tables').querySelector('input').checked,false);
+});
+
+test('native catalog generation uses active character levels without saving an empty planning template',async t=>{
+ const x=await fixture(t);let writes=0;
+ window.campaign.progress=async()=>({ok:true,value:{characters:[{id:'ada',name:'Ada',active:true,xp:300},{id:'away',name:'Borin',active:false,xp:900}]}});
+ window.campaign.encounterCommand=async()=>{writes++;throw Error('No empty-template write expected');};
+ x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await settle();
+ assert.match(x.el('generation-party-context').textContent,/Aktive Kampagnenparty: 1 × Level 2/);
+ await x.make();assert.equal(x.calls.length,1);assert.deepEqual(x.calls[0].party.map(({name,level,count})=>({name,level,count})),[{name:'Ada',level:2,count:1}]);assert.equal(writes,0);assert.equal(x.el('encounter-editor').hidden,true);assert.equal(x.choice().disabled,false);
+ window.campaign.progress=async()=>({ok:true,value:{characters:[{id:'ada',name:'Ada',active:true,xp:900}]}});await x.make();assert.equal(x.calls[1].party[0].level,3);assert.match(x.el('generation-party-context').textContent,/Aktive Kampagnenparty: 1 × Level 3/);
+});
+
+test('an explicit planning party stays authoritative even when empty; current-party reads cannot outlive the workspace',async t=>{
+ const x=await fixture(t);let plan=structuredClone(x.plan),release;
+ x.ui.initGeneration(()=>{},{plan:async()=>plan,currentParty:()=>new Promise(resolve=>{release=resolve;}),creature:()=>null,filters:()=>({}),info:()=>null,accept:async()=>{}});
+ await x.make();assert.equal(x.calls.length,1);assert.deepEqual(x.calls[0].party,plan.party);
+ plan={...plan,party:[]};await x.make();assert.equal(x.calls.length,1);assert.match(x.el('generation-feedback').textContent,/Planungsparty ist leer/);
+ plan=null;await x.make();const oldRelease=release;x.ui.activateGeneration({token:'other',campaign:{id:'other'}});oldRelease([{id:'late',name:'Late',level:20,count:1}]);await settle();assert.equal(x.calls.length,1);
+});
+
+test('a failed current-party read never generates using previously cached participants',async t=>{
+ const x=await fixture(t);let failed=false;
+ x.ui.initGeneration(()=>{},{plan:async()=>null,currentParty:async()=>{if(failed)throw Error('Party nicht lesbar');return[{id:'ada',name:'Ada',level:2,count:1}];},creature:()=>null,filters:()=>({}),info:()=>null,accept:async()=>{}});
+ await x.make();assert.equal(x.calls.length,1);failed=true;await x.make();assert.equal(x.calls.length,1);assert.match(x.el('generation-feedback').textContent,/Party nicht lesbar/);
+});
+
+test('failed planning save cannot silently fall back to campaign participants',async t=>{
+ const x=await fixture(t),plan={...structuredClone(x.plan),sources:[],catalogHash:'pinned'};
+ window.campaign.encounterPlan=async()=>({ok:true,value:structuredClone(plan)});
+ window.campaign.creatureInfo=async()=>({ok:true,value:{types:[],sizes:[],habitats:[],alignments:[],subtypes:[],notice:'Offline',hash:'pinned'}});
+ window.campaign.progress=async()=>({ok:true,value:{characters:[{name:'Other',active:true,xp:300}]}});
+ window.campaign.saveEncounterPlan=async()=>({ok:false,error:'Revision conflict'});
+ x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await x.ui.openCatalogReference({kind:'encounter',id:plan.id});
+ x.el('encounter-name').value='Unsaved patrol';x.el('encounter-name').oninput();await x.make();
+ assert.equal(x.calls.length,0);assert.match(x.el('generation-feedback').textContent,/Offene Encounter-Eingabe/);
+ assert.equal(x.el('encounter-name').value,'Unsaved patrol');
 });
