@@ -147,6 +147,12 @@ function obstacles(a: CampaignAtlas, start: Point, end: Point) {
   }
   return out;
 }
+function localTravelContext(a: CampaignAtlas) {
+  if (a.geometry.position)
+    throw new Error("Dungeon zuerst über einen verbundenen Eingang verlassen.");
+  if (a.scene?.journey && ["active", "paused", "interrupted"].includes(a.scene.journey.status))
+    throw new Error("Laufende Weltreise zuerst abschließen oder beenden.");
+}
 export function previewAtlasLocal(
   a: CampaignAtlas,
   end: Point,
@@ -159,13 +165,7 @@ export function previewAtlasLocal(
     throw new Error("Offenen Fallenhinweis zuerst klären.");
   if (!a.scene || !a.geometry.sceneId)
     throw new Error("Eine Gruppe fokussieren.");
-  if (a.geometry.position)
-    throw new Error("Dungeon zuerst über einen verbundenen Eingang verlassen.");
-  if (
-    a.scene.journey &&
-    ["active", "paused", "interrupted"].includes(a.scene.journey.status)
-  )
-    throw new Error("Laufende Weltreise zuerst abschließen oder beenden.");
+  localTravelContext(a);
   if (!end || ![end.x, end.y].every(Number.isFinite))
     throw new Error("Gültiges Reiseziel wählen.");
   const start = atlasPartyPoint(a)!;
@@ -411,6 +411,9 @@ export function executeAtlasTravel(
         if (!j || j.id !== op.id || j.revision !== op.expectedRevision)
           throw new Error("Reise inzwischen geändert.");
         if (["pause", "resume", "end"].includes(op.kind)) {
+          if (!["active", "paused"].includes(j.status))
+            throw new Error("Lokale Reise bereits abgeschlossen oder beendet.");
+          if (op.kind === "resume") localTravelContext(a);
           j = {
             ...j,
             revision: j.revision + 1,
