@@ -587,3 +587,8 @@ test('a delayed reward navigation cannot follow the former adoption in the same 
 test('a confirmed scene switch returns the viewport to the new group context',async t=>{
  const x=await setup(t),other=await x.focusOther();let shown=null;x.el('live-workspace').scrollIntoView=()=>{shown=x.el('scene-focus').value;};x.el('scene-focus').value=x.scene.id;x.el('scene-focus').onchange();await settle();assert.equal(shown,x.scene.id);x.el('scene-focus').value=other;x.el('scene-focus').onchange();await settle();assert.equal(shown,other);assert.equal(x.el('running-title').value,'Andere Gruppe');
 });
+
+test('switching a group from the visible combat keeps the matching combat in view',async t=>{
+ const x=await setup(t),other=await x.focusOther();let shown=null;Object.defineProperty(x.window,'innerHeight',{value:900,configurable:true});x.el('combat-panel').hidden=false;x.el('combat-panel').getBoundingClientRect=()=>({top:100,bottom:1100});x.el('combat-panel').scrollIntoView=()=>{shown=x.el('scene-focus').value;};x.el('live-workspace').scrollIntoView=()=>assert.fail('must not send a combat task back to scene notes');
+ x.el('scene-focus').value=x.scene.id;x.el('scene-focus').onchange();await settle();assert.equal(shown,x.scene.id);assert.notEqual(shown,other);
+});
