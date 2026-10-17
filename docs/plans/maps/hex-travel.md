@@ -477,8 +477,13 @@ Echte Storefälle prüfen Innenraum mit regulärem Eingang, aktive/pausierte lok
 Reise, veraltete Weltvorschau, terminales lokales Fortsetzen sowie einen gültigen
 Altbestand mit überlappenden Reisen nach Fresh: Ablehnung ohne DBänderung,
 Originalreceipt und ausdrückliche Erholung bis zum nächsten gemeinsamen
-Positions-/Zeitcheckpoint. Die vollständige Indoor-/Plattform- und
-Langroutenqualifikation bleibt eigenständig offen.
+Positions-/Zeitcheckpoint. Eine native Linuxprobe bedient dieselbe Livekonsole:
+Innenraumvorschau abweisen, echten Eingang verlassen, Weltreise bis zum
+Checkpoint; in einer zweiten Kampagne lokale Reise als Sperre sehen,
+ausdrücklich beenden und Weltreise annehmen/pausieren. Fresh-Reads nach vier
+normalen App-Exits bestätigen die Position-/Zeitfakten und erhaltene Raumprosa.
+Die vollständige Indoor-/Plattform- und Langroutenqualifikation bleibt
+eigenständig offen.
 
 ## Nächste ausführbare Lieferungen
 
