@@ -75,13 +75,13 @@
           "pid": 2227030,
           "exitCode": 0,
           "normalRequested": false,
-          "productDescendantsRemaining": null
+          "productDescendantsRemaining": []
         },
         {
           "pid": 2244826,
           "exitCode": 0,
           "normalRequested": false,
-          "productDescendantsRemaining": null
+          "productDescendantsRemaining": []
         }
       ],
       "ownedEnvironmentNormal": true,
@@ -95,13 +95,13 @@
           "pid": 2273267,
           "exitCode": 0,
           "normalRequested": false,
-          "productDescendantsRemaining": null
+          "productDescendantsRemaining": []
         },
         {
           "pid": 2288663,
           "exitCode": 0,
           "normalRequested": false,
-          "productDescendantsRemaining": null
+          "productDescendantsRemaining": []
         }
       ],
       "ownedEnvironmentNormal": true,
