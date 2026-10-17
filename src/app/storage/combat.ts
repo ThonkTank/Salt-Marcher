@@ -1,3 +1,4 @@
+import {sceneEncounterParty,sceneGroupMembers,assessSceneGroups} from '../scene-encounter-selection';
 import {areaTargetDamage} from '../area-damage';
 import {confirmCombatNpcLosses} from './combat-world-losses';
 import {isDamageType,adjustedHitDamage} from '../damage-adjustment';
@@ -206,6 +207,20 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
       }
       if(a.preparedGroupId){const group=readPreparedGroup(db,cam,a.preparedGroupId),selectedActors=a.worldActorIds?group.actors.filter(actor=>a.worldActorIds!.includes(actor.id)):group.actors;if(a.worldActorIds&&(!a.worldActorIds.length||new Set(a.worldActorIds).size!==a.worldActorIds.length||a.worldActorIds.some(id=>!group.actors.some(actor=>actor.id===id))))throw new Error('Ausgewählte NPCs gehören nicht zur vorbereiteten Gruppe.');if(group.revision!==a.expectedPreparedRevision||group.locationId&&group.locationId!==scene.locationId||!selectedActors.length||selectedActors.some(actor=>actor.hp>0&&(actor.unavailable||actor.defeated))||!selectedActors.some(actor=>actor.hp>0))throw new Error('Vorbereitete Gruppe geändert, nicht am aktuellen Ort oder ein NPC nicht verfügbar.');const registry=readGeneratorRegistry(db,cam),preset=registry.presets.find(p=>p.id===registry.effectiveId)!;state.generatorPreset={id:preset.id,revision:preset.revision,hash:preset.hash,mobThreshold:preset.config.combat.mobThreshold};state.sources=group.plan.sources;state.title=a.title||group.title;state.notes=group.notes;state.planOrigin={id:group.id,revision:group.revision,name:group.title};
         for(const entry of group.plan.entries){const actors=selectedActors.filter(actor=>actor.entryId===entry.id&&actor.hp>0&&!actor.defeated),mob=preset.config.combat.mobThreshold>0&&actors.filter(actor=>actor.hp>0).length>=preset.config.combat.mobThreshold,shared=randomUUID();for(const actor of actors){addNamedActor(db,cam,state,actor.id,scene.locationId,entry.id,mob?shared:undefined,group.plan.sources.find(c=>c.id===entry.creatureId));if(entry.groupName?.trim())state.participants.at(-1)!.groupName=entry.groupName.trim();}}
+      }
+      if(a.sceneSelection){
+        const basis=a.sceneSelection,live=readLive(db,cam);
+        if(a.planId||generated||a.preparedGroupId||!a.includeParty||live.focusId!==scene.id||live.focusRevision!==basis.expectedFocusRevision||live.rosterRevision!==basis.expectedRosterRevision)throw new Error('Fokussierte Szene oder Party geändert. Auswahl neu lesen.');
+        if(!Array.isArray(basis.groups)||!basis.groups.length||basis.groups.length>1000||new Set(basis.groups.map(g=>g.id)).size!==basis.groups.length)throw new Error('Eindeutige Szenengruppen auswählen.');
+        const currentParty=sceneEncounterParty(live,[...progress.values()],scene.id);
+        if(currentParty.basis!==basis.partyBasis)throw new Error('Party oder XP seit Bewertung geändert. Auswahl neu lesen.');
+        const available=new Set(scenePreparation(db,cam,scene.id).groups.map(g=>g.id));
+        const groups=basis.groups.map(b=>{if(!available.has(b.id))throw new Error('Gruppe gehört nicht zum fokussierten Szenenort oder Besuch.');const g=groupView(db,cam,b.id);if(g.revision!==b.revision||groupCombatBasis(g)!==b.basis)throw new Error('Szenengruppe seit Bewertung geändert. Auswahl neu lesen.');return g;});
+        const evaluation=assessSceneGroups(currentParty.party,groups,scene.locationId);if(evaluation.issue)throw new Error(evaluation.issue);
+        state.sceneGroups=groups.map(g=>({id:g.id,revision:g.revision,name:g.title}));
+        state.title=a.title||groups.map(g=>g.title).join(' + ').slice(0,1000);
+        state.notes=groups.map(g=>g.title+'\n'+g.notes).join('\n\n');
+        for(const group of groups)reinforcePreparedGroup(db,cam,state,{kind:'add-prepared-group',preparedGroupId:group.id,expectedPreparedRevision:group.revision,expectedRosterBasis:groupCombatBasis(group),worldActorIds:sceneGroupMembers(group).map(a=>a.id),initiative:0});
       }
       checkedCombat(state);
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),0)+1 n FROM combat WHERE campaign_id=?').get(cam).n;
