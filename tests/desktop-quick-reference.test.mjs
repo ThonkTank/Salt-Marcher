@@ -80,3 +80,15 @@ test('quick results expose the matching private note excerpt as literal text bef
  assert.equal(x.el('quick-results').querySelector('img'),null);assert.equal(x.reads.length,0);
  x.el('quick-results').querySelector('button').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');assert.ok(x.el('quick-document').textContent.includes(text));
 });
+
+for(const initial of [true,false])test(`refresh retries the selected failed reference ${initial?'without prior history':'after following an inline link'}`,async t=>{
+ const x=await fixture(t),beta=x.store.preparation(x.w.token).notes.find(r=>r.note.title==='Beta').note;
+ if(!initial){x.note.gmNotes='[Zum Ziel](dungeon-ref:note/'+beta.id+')';x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:x.note}));x.el('quick-results').querySelector('[data-ref-id="'+x.note.id+'"]').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');}
+ const row=x.store.db.prepare('SELECT payload,checksum FROM world_note WHERE campaign_id=? AND id=?').get(x.w.campaign.id,beta.id);
+ x.store.db.prepare('UPDATE world_note SET checksum=? WHERE campaign_id=? AND id=?').run('controlled-read-fault',x.w.campaign.id,beta.id);
+ if(initial)x.el('quick-results').querySelector('[data-ref-id="'+beta.id+'"]').click();else x.el('quick-document').querySelector('.text-reference-inline').click();await tick();assert.match(x.el('quick-document').textContent,/Inhalt fehlt oder ist beschädigt/);assert.doesNotMatch(x.el('quick-document').textContent,/Inhalt wird gelesen/);
+ x.store.db.prepare('UPDATE world_note SET checksum=? WHERE campaign_id=? AND id=?').run(row.checksum,x.w.campaign.id,beta.id);const bytes=x.store.db.serialize();
+ x.el('quick-refresh').click();await tick();assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');assert.equal(x.reads.at(-1)[1].id,beta.id);
+ if(!initial){x.el('quick-back').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');x.el('quick-forward').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');}
+ assert.ok(x.store.db.serialize().equals(bytes),'reference recovery and history navigation remain read-only');
+});
