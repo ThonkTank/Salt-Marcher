@@ -162,3 +162,33 @@ test('uncommitted restoration returns to trash without activating or implicitly 
 for(const missing of [false,true])test(`an uncommitted rename cannot become creation when its target is ${missing?'missing':'trashed'}`,async t=>{
  const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id);x.newCampaign('Alte Identität');await x.tick();const id=x.store.list().activeId,command={commandId:randomUUID(),kind:'rename',id,expectedRevision:x.row(id).revision,name:'Aufbewahrter Namensentwurf'};x.execute({kind:'trash',id,expectedRevision:0,trashed:true});if(missing)x.execute({kind:'erase',id,expectedRevision:1,confirmName:'Alte Identität'});x.memory.set('campaign-catalog-pending',JSON.stringify(command));const ui=x.init();await ui.openCampaignScreen(true);const bytes=x.store.db.serialize(),writes=x.calls.length;get('campaign-screen').querySelector('[data-catalog-check]').onclick();await x.tick();assert.match(get('campaign-screen-status').textContent,/Aufbewahrter Namensentwurf/);assert.equal(get('campaign-identity-dialog').open,false);assert.equal(x.calls.length,writes);assert.ok(x.store.db.serialize().equals(bytes));if(!missing)assert.equal(get('campaign-trash-dialog').open,true);
 });
+
+test('campaign finding narrows names without changing usage, handles accents and preserves duplicate identities',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id);
+ const a=x.execute({kind:'create',name:'Moorfähre – Freitag'}),b=x.execute({kind:'create',name:'Moorfähre – Freitag'}),other=x.execute({kind:'create',name:'Moorfähre – Sonntag'});
+ await x.ui.openCampaignScreen();const bytes=x.store.db.serialize(),search=get('campaign-screen-search');search.value='FREITAG moorfahre';search.oninput();
+ assert.equal(get('campaign-screen-list').children.length,2);assert.match(get('campaign-screen-count').textContent,/2 von 3/);assert.match(get('campaign-screen-list').textContent,new RegExp(a.campaignId));assert.match(get('campaign-screen-list').textContent,new RegExp(b.campaignId));assert.ok(x.store.db.serialize().equals(bytes));
+ search.value=a.campaignId;search.oninput();const card=get('campaign-screen-list').querySelector('article');assert.equal(card.dataset.campaignId,a.campaignId);card.querySelectorAll('button')[1].onclick();assert.match(get('campaign-identity-context').textContent,new RegExp(a.campaignId));assert.equal(get('campaign-identity-context').hidden,false);get('campaign-identity-close').onclick();
+ search.value='Unbekannt';search.oninput();assert.equal(get('campaign-screen-list').querySelectorAll('button').length,0);assert.match(get('campaign-screen-list').textContent,/Suche/);assert.match(get('campaign-screen-count').textContent,/0 von 3/);
+ search.value='Freitag';search.oninput();await x.ui.openCampaignScreen();assert.equal(search.value,'');assert.equal(get('campaign-screen-list').children.length,3);assert.equal(x.store.list().activeId,other.campaignId);
+});
+
+test('trash search and restore keep the active identity and refresh counts without losing the query',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),a=x.execute({kind:'create',name:'Freitag'}),b=x.execute({kind:'create',name:'Sonntag'});
+ x.execute({kind:'trash',id:a.campaignId,expectedRevision:0,trashed:true});await x.ui.openCampaignScreen();
+ const search=get('campaign-trash-search');search.value='freitag';search.oninput();assert.match(get('campaign-trash-count').textContent,/1 von 1/);get('campaign-trash-list').querySelector('button').onclick();await x.tick();
+ assert.equal(search.value,'freitag');assert.match(get('campaign-trash-count').textContent,/0 von 0/);assert.match(get('campaign-trash-open').textContent,/\(0\)/);assert.equal(x.store.list().activeId,b.campaignId);assert.equal(x.row(a.campaignId).trashed,false);
+});
+
+test('search cannot revive campaign actions after a failed catalog refresh',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id);x.execute({kind:'create',name:'Freitag'});await x.ui.openCampaignScreen();
+ x.window.campaign.campaignOverview=async()=>({ok:false,error:'Aktueller Katalog nicht lesbar'});await x.ui.openCampaignScreen();const search=get('campaign-screen-search');search.value='Freitag';search.oninput();assert.equal(get('campaign-screen-list').querySelectorAll('button').length,0);assert.match(get('campaign-screen-list').textContent,/nicht geladen/);
+});
+
+test('find shortcut selects the visible campaign search and leaves other modals alone',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),focused=[];
+ for(const id of ['campaign-screen-search','campaign-trash-search']){get(id).focus=()=>focused.push(id);get(id).select=()=>focused.push('selected');}
+ const find=()=>{const event=new x.window.Event('keydown',{cancelable:true});Object.assign(event,{ctrlKey:true,key:'f'});x.document.dispatchEvent(event);return event.defaultPrevented;};
+ assert.equal(find(),true);assert.deepEqual(focused,['campaign-screen-search','selected']);focused.length=0;get('campaign-trash-dialog').open=true;assert.equal(find(),true);assert.deepEqual(focused,['campaign-trash-search','selected']);
+ get('campaign-trash-dialog').open=false;get('campaign-identity-dialog').open=true;assert.equal(find(),false);get('campaign-identity-dialog').open=false;x.ui.hideCampaignScreen();assert.equal(find(),false);
+});
