@@ -47,7 +47,7 @@ test('foreign campaign, expired owner and mismatched room identity are rejected'
 test('a checksummed room payload cannot override its stored revision or identity',t=>{
  const x=fixture(t),c=x.capture(),row=x.store.db.prepare('SELECT * FROM room WHERE id=?').get(x.room.id),payload=JSON.stringify({...JSON.parse(row.payload),revision:row.revision+1});x.store.db.prepare('UPDATE room SET payload=?,checksum=? WHERE id=?').run(payload,createHash('sha256').update(payload).digest('hex'),row.id);const before=x.store.db.serialize();assert.throws(()=>x.store.captureKeyNote(c),/Zuordnung|zuordnung/);assert.deepEqual(x.store.db.serialize(),before);
 });
-for(const kind of ['npc','faction','quest','rumor'])test(`captured ${kind} uses the ordinary typed note and reference paths`,t=>{
+for(const kind of ['note','npc','faction','quest','rumor'])test(`captured ${kind} uses the ordinary typed note and reference paths`,t=>{
  const x=fixture(t),c=x.capture();c.note.kind=kind;x.store.captureKeyNote(c);const note=x.store.preparation(x.w.token).notes.find(r=>r.note.id===c.note.id).note;assert.equal(note.kind,kind);assert.equal(x.store.noteRoomUses(x.w.token,c.note.id).entries.length,1);assert(x.store.drawing(x.w.token).keyContent[0].references.some(r=>r.id===c.note.id&&r.kind===kind));
 });
 test('backup and reopen retain the ordinary note, source bytes and exactly one reference',async t=>{
