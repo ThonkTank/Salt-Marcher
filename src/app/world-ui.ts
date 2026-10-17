@@ -38,7 +38,7 @@ function journeyBasisChanged(){const j=frame?.journey;return !!j&&!!frame&&(fram
 function showsJourneyMap(){const j=frame?.journey;return !!j&&mapDraft?.id===j.mapId&&value('world-map-select')===j.mapId;}
 function playbackFrame(){
  const j=frame?.journey;
- if(!workspace||!j||j.status!=='active'||!showsJourneyMap()||frame?.scene.id!==value('world-scene')||document.visibilityState==='hidden'||(worldSurface!=='world'&&!(liveSurface&&liveTravelOpen))||document.querySelector('dialog[open]')||journeyBasisChanged()||weatherDirty||weatherBusy||pending||uncertain||checkingWorldWrite||worldWrites.size||dirtyMap||dirtyCell||dirtyCalendar||dirtyPhenomenon)return null;
+ if(!workspace||!j||j.status!=='active'||!showsJourneyMap()||frame?.scene.id!==value('world-scene')||document.visibilityState==='hidden'||(worldSurface!=='world'&&worldSurface!=='atlas'&&!(liveSurface&&liveTravelOpen))||document.querySelector('dialog[open]')||journeyBasisChanged()||weatherDirty||weatherBusy||pending||uncertain||checkingWorldWrite||worldWrites.size||dirtyMap||dirtyCell||dirtyCalendar||dirtyPhenomenon)return null;
  return{key:workspace.token+':'+j.sceneId+':'+j.mapId+':'+j.id,revision:j.revision,nextIndex:j.nextIndex,seconds:j.segmentSeconds[j.nextIndex-1]!};
 }
 function renderPlayback(){
@@ -302,7 +302,7 @@ async function placePartyAt(h:Hex,requireAuthored=false,key=placementKey()){
 }
 async function placeRouteCursor(){const p=hexPoint(routeCursor,3**level);try{await placePartyAt(pointHex(p.x,p.y));}catch(error){el('travel-placement-status').textContent=(error as Error).message;el('travel-placement-status').dataset.error='true';throw error;}}
 
-async function makeTravelPreview(continueJourney=false){
+async function makeTravelPreview(continueJourney=false,atlas=false){
  const owner=travelOwner();if(!owner)return;playback.stop();await playback.settled();if(!ownsTravel(owner))return;clearTravelPreview();const request=travelRequest;
  try{
   if((liveTravelOpen&&liveSurface&&!await before())||!await flushWorld()||!ownsTravel(owner)||request!==travelRequest||frame?.scene.id!==owner.sceneId||mapDraft?.id!==owner.mapId)return;
@@ -317,7 +317,7 @@ async function makeTravelPreview(continueJourney=false){
   if(result.request.usePartyPace)el<HTMLInputElement>('travel-pace').value=String(result.request.paceKmh);
   preview=result;document.dispatchEvent(new Event('atlas-draft'));renderTravelEvaluation(el('travel-evaluation'),result);el('travel-preview-summary').textContent=(result.distanceMeters/1000).toFixed(2)+' km · '+(result.durationSeconds/3600).toFixed(2)+' Stunden · '+(result.route.length-1)+' Abschnitte · Ankunft: '+result.arrival;
   const warnings=el('travel-preview-warnings');warnings.replaceChildren();for(const warning of result.warnings){const p=document.createElement('p');p.textContent=warning;warnings.append(p);}
-  renderTravelBriefing(el('travel-preview-itinerary'),result);el<HTMLButtonElement>('travel-preview-accept').textContent=result.continuation?'Restreise starten':'Reise starten';renderMap();el<HTMLButtonElement>('travel-preview-accept').disabled=false;if(liveSurface&&liveTravelOpen){el<HTMLDetailsElement>('travel-advanced').open=false;const root=el('travel-console-warnings');root.replaceChildren();for(const text of result.warnings){const p=document.createElement('p');p.textContent=text;root.append(p);}renderJourney();revealTravelInRail(el('travel-evaluation'));}else el<HTMLDialogElement>('travel-preview-dialog').showModal();
+  renderTravelBriefing(el('travel-preview-itinerary'),result);el<HTMLButtonElement>('travel-preview-accept').textContent=result.continuation?'Restreise starten':'Reise starten';renderMap();el<HTMLButtonElement>('travel-preview-accept').disabled=false;if(!atlas&&liveSurface&&liveTravelOpen){el<HTMLDetailsElement>('travel-advanced').open=false;const root=el('travel-console-warnings');root.replaceChildren();for(const text of result.warnings){const p=document.createElement('p');p.textContent=text;root.append(p);}renderJourney();revealTravelInRail(el('travel-evaluation'));}else if(!atlas)el<HTMLDialogElement>('travel-preview-dialog').showModal();
   tell('Route und Reisezeit ausgewertet.');
  }catch(error){if(ownsTravel(owner)&&request===travelRequest)travelFailure(error);}
 }
@@ -326,14 +326,14 @@ function revealTravelInRail(target:HTMLElement){
  const rail=target.closest<HTMLElement>('.live-desk-reference');
  if(rail?.getBoundingClientRect&&target.getBoundingClientRect)rail.scrollTop+=target.getBoundingClientRect().top-rail.getBoundingClientRect().top;
 }
-async function acceptTravelPreview(){
+async function acceptTravelPreview(atlas=false){
  const owner=travelOwner(),source=preview;if(!owner||!source)return;
  const current=()=>ownsTravel(owner)&&preview===source;
  travelFeedback();
  try{
   if(!await flushWorld()||!current())return;
   await raw({kind:'journey',preview:source,presentationSpeed:playback.speed},current);
-  if(!current())return;resetRouteDraft();routeMode='target';await reloadScene();renderMap();renderJourney();renderRouteDraft();await after();if(ownsTravel(owner)){if(liveSurface&&liveTravelOpen)revealTravelInRail(el('world-journey-console'));else el('world-journey-console').scrollIntoView({block:'start'});playback.play();}
+  if(!current())return;resetRouteDraft();routeMode='target';await reloadScene();renderMap();renderJourney();renderRouteDraft();await after();if(ownsTravel(owner)){if(!atlas){if(liveSurface&&liveTravelOpen)revealTravelInRail(el('world-journey-console'));else el('world-journey-console').scrollIntoView({block:'start'});}playback.play();}
  }catch(error){if(current())travelFailure(error);}
 }
 async function changeJourney(action:Extract<WorldAction,{kind:'journey-step'|'journey-state'}>){
@@ -621,5 +621,7 @@ export async function saveAgendaEvent(event:CalendarEvent,expectedRevision:numbe
 async function renderLiveAgenda(token:string,sceneId:string,request:number){const root=document.getElementById('live-agenda-upcoming');if(!root)return;root.replaceChildren();try{const result=unwrap(await window.campaign.agenda(token,{sceneId,search:'',location:'current',horizonDays:1,includePast:false,after:null}));if(workspace?.token!==token||request!==liveRequest)return;for(const item of result.items.slice(0,3)){const p=document.createElement('p'),delta=String(BigInt(item.state==='active'?item.endMs:item.startMs)-BigInt(result.scene?.instantMs??'0'));p.textContent=item.event.name+' · '+(item.state==='active'?'jetzt aktiv, noch ':'in ')+agendaCountdown(result.calendar,delta);root.append(p);}if(!result.items.length){const p=document.createElement('p');p.className='caption';p.textContent='Keine Kalenderereignisse am Gruppenort im nächsten Tag.';root.append(p);}}catch(e){if(workspace?.token===token&&request===liveRequest)root.textContent='Agenda nicht verfügbar: '+(e as Error).message;}}
 
 export function atlasWorldTarget(h:Hex){if(!mapDraft)return;level=0;if(routeMode!=='route')routeMode='target';chooseRouteHex(h);}
+export async function previewAtlasWorldTravel(){await makeTravelPreview(false,true);}
+export async function startAtlasWorldTravel(){await acceptTravelPreview(true);}
 export function atlasWorldTravelState(){return{preview,frame,token:workspace?.token??null};}
 export async function refreshWorldAfterAtlasTravel(token:string,sceneId:string){if(workspace?.token!==token||liveSurface&&liveTravelOpen&&liveFocusId!==sceneId)return;await openWorld();}

@@ -152,28 +152,29 @@ test('reevaluating an existing local preview disables its old start until the ne
 const tick=()=>new Promise(setImmediate);
 async function until(check){for(let i=0;i<100&&!check();i++)await tick();assert.ok(check(),'Expected travel state did not arrive');}
 test('Atlas long-distance preview exposes duration and starts the same world journey; a changed target revokes it',async t=>{
- const x=fixture(t),statuses=[],response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
+ const x=fixture(t),response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  Object.assign(x.window.campaign,{
   world:async token=>response(()=>x.store.world(token)),preparation:async token=>response(()=>x.store.preparation(token)),live:async token=>response(()=>x.store.live(token)),sceneWorld:async(token,id)=>response(()=>x.store.sceneWorld(token,id)),previewTravel:async(token,request)=>response(()=>x.store.previewTravel(token,request)),
   executeWorld:async c=>{x.sent.push(c);return response(()=>x.store.executeWorld(c));}
  });
  const map=x.store.world(x.w.token).maps[0];x.store.executeWorld(x.command({kind:'place-scene',sceneId:x.a.id,position:{mapId:map.id,q:0,r:0,locationId:null},expectedSceneRevision:x.a.revision,expectedPositionRevision:0}));x.ui.data={...x.store.atlasRenderView(x.w.token),region:{coverage:{mode:'detail',unreadable:0}}};
- worldUI.initWorld(s=>statuses.push(s),async()=>true,async()=>{},async()=>{});
+ worldUI.initWorld(()=>{},async()=>true,async()=>{},async()=>{});
  for(const select of x.document.querySelectorAll('select'))if(!Object.getOwnPropertyDescriptor(select,'value')?.writable)Object.defineProperty(select,'value',{value:'',writable:true});
- for(const d of x.document.querySelectorAll('dialog')){d.showModal=()=>{d.open=true;};d.close=()=>{d.open=false;};}
+ for(const d of x.document.querySelectorAll('dialog')){d.open=false;d.showModal=()=>{d.open=true;};d.close=()=>{d.open=false;};}
  worldUI.activateWorld(x.w);await worldUI.openWorld();
- x.document.getElementById('world-travel-form').requestSubmit=function(){this.onsubmit({preventDefault(){}});};
+ x.document.getElementById('world-journey-console').scrollIntoView=()=>{throw new Error('Hidden world transport must not steal the Atlas viewport');};
  try {
  const field=(id,value)=>{const e=x.document.getElementById(id);e.value=value;e.dispatchEvent(new x.window.Event('input',{bubbles:true}));};
  field('travel-pace','4.8');field('travel-factor','1');field('travel-final-hours','');
  x.ui.lastPoint={x:20000,y:0};worldUI.atlasWorldTarget({q:4,r:0});
  const before=x.store.db.serialize();await x.ui.travelControl('preview');await until(()=>worldUI.atlasWorldTravelState().preview);x.ui.renderTravel();
+ assert.equal(x.document.getElementById('travel-preview-dialog').open,false,'Atlas evaluation must stay in its visible console');
  assert.equal(x.get('start').disabled,false);assert.match(x.get('status').textContent,/km.*h.*Ankunft/);
  const owner=x.ui.owner;x.ui.owner={...owner,token:'other-campaign'};x.ui.renderTravel();assert.equal(x.get('start').disabled,true);x.ui.owner=owner;
  const sceneId=x.ui.data.geometry.sceneId;x.ui.data.geometry.sceneId='other-scene';x.ui.renderTravel();assert.equal(x.get('start').disabled,true);x.ui.data.geometry.sceneId=sceneId;x.ui.renderTravel();assert.ok(x.store.db.serialize().equals(before));
  worldUI.atlasWorldTarget({q:3,r:0});x.ui.renderTravel();assert.equal(x.get('start').disabled,true);
  await x.ui.travelControl('preview');await until(()=>worldUI.atlasWorldTravelState().preview);x.ui.renderTravel();
- await x.ui.travelControl('start');await until(()=>x.sent.some(c=>c.action.kind==='journey'));await worldUI.stopWorldPlayback();
+ await x.ui.travelControl('start');await until(()=>x.sent.some(c=>c.action.kind==='journey'));assert.match(x.document.getElementById('journey-playback-status').textContent,/Wiedergabe 1/);await worldUI.stopWorldPlayback();
  const starts=x.sent.filter(c=>c.action.kind==='journey');assert.equal(starts.length,1);assert.deepEqual(starts[0].action.preview.request.destination,{q:3,r:0});assert.equal(starts[0].action.preview.request.sceneId,x.a.id);
  const scene=x.store.sceneWorld(x.w.token,x.a.id);assert.ok(scene.journey);assert.equal(scene.journey.route.at(-1).q,3);
  } finally {await worldUI.stopWorldPlayback();}

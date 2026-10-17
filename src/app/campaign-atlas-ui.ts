@@ -16,7 +16,7 @@ import type {
   AtlasLocalPreview,
   AtlasTravelAction,
 } from "./atlas-travel-contracts";
-import { openWorld, atlasWorldTarget, atlasWorldTravelState,refreshWorldAfterAtlasTravel } from "./world-ui";
+import { openWorld, atlasWorldTarget, atlasWorldTravelState,previewAtlasWorldTravel,startAtlasWorldTravel,refreshWorldAfterAtlasTravel } from "./world-ui";
 import { PassiveMapCanvas, type CanvasBox } from "./passive-map-canvas";
 import {
   atlasFrame,
@@ -1569,7 +1569,7 @@ export class CampaignAtlasWorkbench {
             5000
         ) {
           this.localPreview = null;
-          get<HTMLFormElement>("world-travel-form").requestSubmit();
+          await previewAtlasWorldTravel();
           this.renderTravel();
           return;
         }
@@ -1598,7 +1598,7 @@ export class CampaignAtlasWorkbench {
         if (this.localPreview)
           await this.travel({ kind: "start", preview: this.localPreview });
         else if (a.geometry.position) get("dungeon-confirm").click();
-        else if (this.worldPreview()) get("travel-preview-accept").click();
+        else if (this.worldPreview()) await startAtlasWorldTravel();
         return;
       }
       const j = a.localJourney;
