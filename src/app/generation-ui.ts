@@ -8,7 +8,7 @@ import type {CatalogInfo,EncounterPlan} from './encounter-contracts';
 import {currentGenerationLoot,weightShares,integerWeights,type EncounterTable,type LootTable,type GeneratorRegistry,type GenerationCommand,type GenerationRun,type GenerationRequest} from './generation-contracts';
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T, value=(id:string)=>get<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-interface Bridge{plan():Promise<EncounterPlan|null>;creature():Creature|null;filters():CreatureCatalogQuery;info():CatalogInfo|null;accept(plan:EncounterPlan):Promise<void>;beginTableLookup?():()=>void}
+interface Bridge{currentParty?():Promise<EncounterPlan['party']|null>;plan():Promise<EncounterPlan|null>;creature():Creature|null;filters():CreatureCatalogQuery;info():CatalogInfo|null;accept(plan:EncounterPlan):Promise<void>;beginTableLookup?():()=>void}
 let requiredPick:ReturnType<typeof requiredNpcPicker>;
 let workspace:WorkspaceGeometry|null=null,tables:EncounterTable[]=[],lootTables:LootTable[]=[],registry:GeneratorRegistry|null=null,run:GenerationRun|null=null;
 let previewRequest=0,refreshRequest=0,tableRequest=0;
@@ -16,6 +16,7 @@ const owned=(token:string,g:number)=>workspace?.token===token&&generation===g;
 const lockedControls=new Map<HTMLInputElement|HTMLButtonElement|HTMLSelectElement,boolean>();
 let tableDraft:EncounterTable|null=null,lootDraft:LootTable|null=null,tableBaseline='',lootBaseline='',generation=0,previewDirty=false;
 let planningBasis:string|null=null,fillBasis:string|null=null;
+let liveParty:EncounterPlan['party']|null=null,usesPlanningParty=false;
 const defaultKeys=['difficulty','amount','balance','diversity'] as const;
 const defaultOverrides=new Set<string>();
 function applyPresetDefaults(){
@@ -32,7 +33,7 @@ let catalogParent:Node|null=null,catalogNext:Node|null=null,restoreTableLookup:(
 export function activateGeneration(next:WorkspaceGeometry){
  resumeWrite();lock(false);pending=null;workspace=next;requiredPick.context(next.token,true);generation++;previewRequest++;refreshRequest++;tableRequest++;
  setWorldSources({sources:[],factions:[],locations:[]},[],true);
- defaultOverrides.clear();tables=[];lootTables=[];registry=null;run=null;tableCreated=null;tableDraft=null;lootDraft=null;previewDirty=false;planningBasis=null;fillBasis=null;
+ defaultOverrides.clear();tables=[];lootTables=[];registry=null;run=null;tableCreated=null;tableDraft=null;lootDraft=null;previewDirty=false;planningBasis=null;fillBasis=null;liveParty=null;usesPlanningParty=false;
  for(const id of ['table-manager','loot-table-manager','preset-manager','generation-discard'])if(get<HTMLDialogElement>(id).open)get<HTMLDialogElement>(id).close();
  generationPlanningChanged(null);get('generation-defaults-source').textContent='';restoreCatalog();sourceRefreshNotice();get('generation-workspace').hidden=false;get('generation-feedback').textContent='';renderPreview();void refreshGeneration();
 }
@@ -50,6 +51,7 @@ export async function refreshGeneration(){
  try{const results=await Promise.all([window.campaign.encounterTables(w.token,true),window.campaign.lootTables(w.token,true),window.campaign.generatorRegistry(w.token),window.campaign.generationRuns(w.token),window.campaign.generationSources(w.token)]);
   if(!owned(w.token,g)||request!==refreshRequest)return;
   const nextTables=unwrap(results[0]),nextLootTables=unwrap(results[1]),nextRegistry=unwrap(results[2]),history=unwrap(results[3]);
+  if(!usesPlanningParty&&bridge.currentParty){const party=await bridge.currentParty();if(!owned(w.token,g)||request!==refreshRequest)return;if(!usesPlanningParty){liveParty=party;generationPlanningChanged(null);}}
   setWorldSources(unwrap(results[4]),nextTables);sourceRefreshNotice();tables=nextTables;lootTables=nextLootTables;registry=nextRegistry;renderOverview();const runs=get<HTMLSelectElement>('generation-history'),selected=runs.value;runs.replaceChildren();option(runs,'','Frühere Vorschau auswählen');for(const r of history)option(runs,r.id,r.title+' · '+r.count+' · Seed '+r.seed);if(history.some(r=>r.id===selected))runs.value=selected;
  }catch(error){if(owned(w.token,g)&&request===refreshRequest){sourceRefreshNotice('Tabellen und Weltquellen konnten nicht aktualisiert werden: '+(error as Error).message);tell((error as Error).message,true);}}
 }
@@ -100,7 +102,12 @@ export function catalogFilterSummary(query:CreatureCatalogQuery):string[]{
 }
 function renderCatalogContext(){const summary=get('generation-catalog-summary');try{const filters=catalogFilterSummary(bridge.filters());summary.textContent=filters.length?'Aktive Katalogfilter: '+filters.join(' · '):'Keine zusätzlichen Katalogfilter.';summary.removeAttribute('role');get('generation-clear-catalog').hidden=!filters.length;}catch(error){summary.textContent=(error as Error).message;summary.setAttribute('role','alert');get('generation-clear-catalog').hidden=false;}}
 const partyBasis=(party:EncounterPlan['party']|null)=>JSON.stringify(party?.map(p=>[p.name,p.level,p.count])??null);
-export function generationPlanningChanged(party:EncounterPlan['party']|null,plan?:EncounterPlan|null){const next=partyBasis(party),base=plan?JSON.stringify([plan.id,plan.revision,plan.name,plan.notes,plan.entries]):null,changed=fillBasis!==base;fillBasis=base;const partyChanged=planningBasis!==next;planningBasis=next;get('generation-party-context').textContent=party===null?'Für Vorschläge zuerst eine Vorlage mit Planungsparty öffnen.':!party.length?'Planungsparty ist leer. Figuren und Level über „Zur Planungsparty“ eintragen.':party.some(p=>p.level===null)?'Planungsparty: '+party.reduce((n,p)=>n+p.count,0)+' Figuren · Level fehlen.':'Planungsparty: '+party.map(p=>p.count+' × Level '+p.level).join(' · ');if(!partyChanged&&!changed)return;get('generation-feedback').textContent='';if(run&&(partyBasis(run.request.party)!==next||get<HTMLInputElement>('generation-fill').checked&&changed)){previewDirty=true;renderPreview();}}
+export function generationPlanningChanged(party:EncounterPlan['party']|null,plan?:EncounterPlan|null){
+ usesPlanningParty=party!==null;const effective=party??liveParty,next=partyBasis(effective),base=plan?JSON.stringify([plan.id,plan.revision,plan.name,plan.notes,plan.entries]):null,changed=fillBasis!==base;fillBasis=base;const partyChanged=planningBasis!==next;planningBasis=next;
+ const label=usesPlanningParty?'Planungsparty':'Aktive Kampagnenparty';
+ get('generation-party-context').textContent=effective===null?'Die aktive Kampagnenparty wird beim Erzeugen gelesen. Eine abweichende Planungsparty ist optional.':!effective.length?label+' ist leer. Figuren über „Party und Leiten“ aktivieren oder eine Planungsparty eintragen.':effective.some(p=>p.level===null)?label+': '+effective.reduce((n,p)=>n+p.count,0)+' Figuren · Level fehlen.':label+': '+effective.map(p=>p.count+' × Level '+p.level).join(' · ');
+ if(!partyChanged&&!changed)return;get('generation-feedback').textContent='';if(run&&(partyBasis(run.request.party)!==next||get<HTMLInputElement>('generation-fill').checked&&changed)){previewDirty=true;renderPreview();}
+}
 
 export function generationCatalogFiltersChanged(){renderCatalogContext();if(!pending)get('generation-feedback').textContent='';if(run){previewDirty=true;renderPreview();}}
 function generationNotice(text:string,error=false){const node=get('generation-feedback');node.textContent=text;node.classList.toggle('generation-warning',error);tell(text,error);}
@@ -154,7 +161,7 @@ function generate(){
  const w=workspace,g=generation;if(!w||pending)return;let filters:CreatureCatalogQuery;try{filters=structuredClone(bridge.filters());}catch(error){generationNotice((error as Error).message,true);return;}generationNotice('Vorschläge werden berechnet …');const requestId=++previewRequest,fields=generationFields();
  const filling=get<HTMLInputElement>('generation-fill').checked;
  const request:GenerationRequest={requiredNpcIds:requiredPick.ids(),includeNpcs:get<HTMLInputElement>('generation-npc-mixed').checked,npcOnly:get<HTMLInputElement>('generation-npc-only').checked,...worldSourceFilters(),seed:value('generation-seed'),title:value('generation-title'),count:Number(value('generation-count')),xpCeiling:value('generation-xp-ceiling')?Number(value('generation-xp-ceiling')):null,tableIds:[...get('generation-tables').querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value),filters,habitat:value('generation-habitat'),time:value('generation-time') as GenerationRequest['time'],party:[],difficulty:value('generation-difficulty') as GenerationRequest['difficulty'],amount:value('generation-amount') as GenerationRequest['amount'],balance:value('generation-balance') as GenerationRequest['balance'],diversity:value('generation-diversity') as GenerationRequest['diversity']};
- void operation(async()=>{const plan=await bridge.plan();if(!owned(w.token,g)||requestId!==previewRequest)return false;if(!plan){generationNotice('Es fehlt eine Encounter-Vorlage mit Planungsparty. Öffne „Zur Planungsparty“ und lege eine Vorlage an.',true);return false;}request.party=structuredClone(plan.party);if(filling){if(!plan.entries.length){generationNotice('Zum Auffüllen zuerst Gegner in der aktuellen Vorlage ergänzen.',true);return false;}request.fillPlan={id:plan.id,revision:plan.revision};}const response=await window.campaign.generateEncounters(w.token,request);if(!owned(w.token,g)||requestId!==previewRequest)return false;run=unwrap(response);previewDirty=fields!==generationFields();renderPreview();await refreshGeneration();if(!owned(w.token,g)||requestId!==previewRequest)return false;generationNotice('Encounter-Vorschau erzeugt. Noch keine Vorlage oder Kampf übernommen.');return true;},generationNotice);
+ void operation(async()=>{const plan=await bridge.plan();if(!owned(w.token,g)||requestId!==previewRequest)return false;const party=plan?.party??await bridge.currentParty?.();if(!owned(w.token,g)||requestId!==previewRequest)return false;if(!party){generationNotice('Es fehlt eine Encounter-Vorlage mit Planungsparty. Öffne „Zur Planungsparty“ und lege eine Vorlage an.',true);return false;}if(!plan){liveParty=party;generationPlanningChanged(null);}else generationPlanningChanged(plan.party,plan);if(!party.length){generationNotice((plan?'Planungsparty':'Aktive Kampagnenparty')+' ist leer. Figuren und Level eintragen, bevor du Vorschläge erzeugst.',true);return false;}request.party=structuredClone(party);if(filling){if(!plan?.entries.length){generationNotice('Zum Auffüllen zuerst Gegner in der aktuellen Vorlage ergänzen.',true);return false;}request.fillPlan={id:plan.id,revision:plan.revision};}const response=await window.campaign.generateEncounters(w.token,request);if(!owned(w.token,g)||requestId!==previewRequest)return false;run=unwrap(response);previewDirty=fields!==generationFields();renderPreview();await refreshGeneration();if(!owned(w.token,g)||requestId!==previewRequest)return false;generationNotice('Encounter-Vorschau erzeugt. Noch keine Vorlage oder Kampf übernommen.');return true;},generationNotice);
 }
 async function loadHistory(){
  const w=workspace,g=generation;if(!w||pending)return;const id=value('generation-history'),request=++previewRequest;
