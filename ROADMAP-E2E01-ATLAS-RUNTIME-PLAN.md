@@ -588,8 +588,8 @@ hat8 MiB, ebenso der flüchtige Vorschaucache im Renderer (kleine Vorschauen bis
 qualifizieren. Die GM-Ausgabe verwendet dieselbe ausdrücklich aggregierte
 Landschaftsdarstellung; sie ersetzt keine Original-/Transferausgabe.
 
-Kameraereignisse erhalten die veröffentlichte SVG-Szenenwurzel und verändern
-nur ViewBox und relative Translation. Kleine Verschiebungen innerhalb des
+Kameraereignisse erhalten die veröffentlichte Canvas-Szene samt Path2D-Kommandos
+und verändern nur die relative Kameratransformation. Kleine Verschiebungen innerhalb des
 zweifach gepufferten Ladebereichs starten keinen neuen Bereichsread. Zoom,
 Filter- oder Quellenänderung benötigen einen neuen Frame; bis dahin sind
 Autorenaktionen mit veralteter Geometrie gesperrt. Der Worker behält seine
@@ -607,3 +607,55 @@ Index, GPU-Renderer), bis diese Messungen einen Wechsel begründen. Der
 Adresscodec benötigt Kamera-/History-/Transferqualifikation vor einer
 persistenten Formatmigration. Diese Änderungen schließen weder die sieben
 Lieferstufen noch die Produktabnahme ab. Stiländerungen sind zurückgestellt.
+
+
+### Canvas2D als Atlasdarstellung
+
+Der gemeinsame Atlas (`campaign-atlas-ui.ts`, `atlas-canvas.ts`,
+`atlas-canvas-scene.ts`) zeichnet jetzt auf eine echte Canvas2D-Fläche. Kein
+Kartenobjekt erzeugt ein verbundenes SVG-/DOM-Element. Die passive Kamera
+behält Ankerzoom, Pointercapture, Ansichtshistorie und Kontextcache; Landschaft,
+Stadt, Innenräume, Griffe, Reise und Marker benutzen dieselbe relative Szene.
+Die Szenenkommandos werden je fachlicher Änderung kompiliert; Pan und Zoom
+verwenden vorhandene Path2D-Geometrie und decodierte Bilder erneut. Culling
+verwendet die geladene Abdeckung, damit kleine Pans bereits geladene Häuser
+und Räume am bisherigen Bildschirmrand nicht verlieren.
+
+Native `isPointInPath`/`isPointInStroke` verwenden dieselben Pfade, Füllregeln,
+Linienmaße und inversen Gruppentransformationen wie die Zeichnung. Sie liefern
+nur passive semantische Griffe/Marker an den Anwender. Die vollständige
+Objektauswahl bleibt die quellengebundene paginierte Main-Abfrage; Rasterpixel
+werden nicht zur Schreibautorität. CSS-Ränder, Kameraskalierung und Bitmap-DPI
+sind getrennt. Während ein neuer Bildframe vorbereitet wird, sind Autorenhits
+gesperrt. Nur der neueste vollständige Frame wird veröffentlicht; genau eine
+Bilddecodierung mit einem ersetzbaren Nachfolger verhindert Decoder-Fan-out.
+Verlust/Fehler der Zeichenfläche entfernt Treffer und bietet Wiederholung,
+ohne gespeicherte Daten, Kamera oder Listener zu verdoppeln.
+
+Die sichtbare Fläche und der atomare Zeichenpuffer haben jeweils höchstens
+4.194.304 Pixel, höchstens4096 Pixel je Achse und maximal2x Geräteauflösung.
+Eine Sichtmaske verwendet höchstens einen weiteren solchen
+Puffer pro Szene; dieser und die Maskenpfade werden bei Pan wiederverwendet
+und beim Szenenwechsel freigegeben; sie wird durch `destination-out` aus bekannten/sichtbaren Bereichen
+gebildet. Decodierte Bilder sind flüchtige ImageBitmaps: höchstens32 pro Szene,
+maximal512 Pixel je Achse, damit höchstens32 MiB pro Szene. Während des
+atomaren Framewechsels kann zusätzlich die vorherige Szene gehalten werden;
+alte Bitmaps werden geschlossen. Diese Zahlen begrenzen die eigenen Puffer,
+sind keine Zusage über Chromium-/GPU-/Gesamt-RSS. Originalmedien und Exporte
+werden dadurch nicht umgerechnet oder überschrieben.
+
+Weiter beobachten: tatsächliche Zeichenlatenz und Prozess-/GPU-Speicher bei
+langen Konturen, vielen Texten/Lichtern, sehr großen Monitoren und 200%.
+512-Pixel-Vorschauen und das Pixelbudget sind veränderbare Darstellungsgrenzen;
+bei unzureichender Detailqualität gezieltere Bildkacheln/LOD vergleichen.
+Pixi/WebGL bleibt eine Alternative für GPU-Batching/Layerkomposition;
+OffscreenCanvas für nachgewiesene Zeichenarbeit auf dem UI-Thread. Kein
+vorsorglicher Shader-/Workerunterbau. Bestehende Stadt-/Objektglyphgeneratoren
+werden teilweise noch aus intern erzeugtem SVG-Markup in passive Kommandos
+übersetzt; das SVG wird weder eingebunden noch als Screenshot gerastert.
+Direkte gemeinsame Geometrieemission ist als Folgevereinfachung zu prüfen,
+bevor weitere Glyphfamilien hinzukommen. Ältere isolierte Karten behalten
+vorläufig ihren SVG-Host; eine gemeinsame Kamerabasis erst im nächsten echten
+Anschluss konsolidieren. SVG-/PNG-/JPEG-Ausgaben und die öffentliche Whitelist
+bleiben eigenständige, getestete Ausgabewege. Keine Datenformatmigration,
+kein Stilwechsel und keine vollständige Phase1-/Phase2-Produktabnahme.

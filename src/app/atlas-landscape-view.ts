@@ -1,3 +1,4 @@
+import {paintFactory,type PaintTarget} from './atlas-canvas-scene';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { formatDistance, hexPolygon, hexSize } from "./atlas-landscape";
 import { roomPath } from "./drawing-model";
@@ -14,7 +15,7 @@ export function landscapeNode(
   return n;
 }
 export function drawLandscape(
-  root: SVGElement,
+  root: PaintTarget,
   records: LandscapeRecord[],
   b: LandscapeBox,
   mpp: number,
@@ -22,6 +23,7 @@ export function drawLandscape(
   references = true,
   raster?: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[],
 ) {
+  const landscapeNode=paintFactory(root);
   let rasterDrawn=false;
   const drawRaster=()=>{
     if(!raster||rasterDrawn)return;rasterDrawn=true;
@@ -116,11 +118,12 @@ export function drawLandscape(
   drawRaster();
 }
 export function drawLandscapeGrid(
-  root: SVGElement,
+  root: PaintTarget,
   b: LandscapeBox,
   level: number,
   mpp: number,
 ) {
+  const landscapeNode=paintFactory(root);
   const size = hexSize(level),
     r = Math.ceil(Math.max(b.width, b.height) / size) + 2;
   if (r > 45) return;
@@ -144,7 +147,8 @@ export function drawLandscapeGrid(
         }),
       );
 }
-export function drawScale(root: SVGElement, b: LandscapeBox, mpp: number) {
+export function drawScale(root: PaintTarget, b: LandscapeBox, mpp: number) {
+  const landscapeNode=paintFactory(root);
   const raw = mpp * 120,
     pow = 10 ** Math.floor(Math.log10(raw)),
     n = [1, 2, 5, 10].find((n) => n * pow >= raw)!,
