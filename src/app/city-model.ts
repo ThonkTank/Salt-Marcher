@@ -14,16 +14,77 @@ function segmentRange(a:P,b:P,minX:number,maxX:number,minY:number,maxY:number):[
 }
 function seedNumber(s:string){let v=2166136261;for(const c of s)v=Math.imul(v^c.charCodeAt(0),16777619);return v>>>0;}
 export function checkedCityInfill(r:CityInfillRecipe){
- if(!r||typeof r.seed!=='string'||!r.seed.trim()||r.seed.length>1000||typeof r.use!=='string'||r.use.length>1000||!Number.isFinite(r.density)||r.density<.05||r.density>1||!Number.isFinite(r.size)||r.size<3||r.size>80||!Number.isFinite(r.reach)||r.reach<10||r.reach>500)throw new Error('Seed, Dichte, Hausgröße und Straßenabstand prüfen.');
+ if(!r||(r.lanes!==undefined&&typeof r.lanes!=='boolean')||typeof r.seed!=='string'||!r.seed.trim()||r.seed.length>1000||typeof r.use!=='string'||r.use.length>1000||!Number.isFinite(r.density)||r.density<.05||r.density>1||!Number.isFinite(r.size)||r.size<3||r.size>80||!Number.isFinite(r.reach)||r.reach<10||r.reach>500)throw new Error('Seed, Dichte, Hausgröße und Straßenabstand prüfen.');
+}
+// A proposed street network is ordinary editable city geometry after acceptance.
+// Existing roads, including accepted generated lanes, are never rewritten by infill.
+type StreetSegment={a:P;b:P;width:number};
+const streetOrder=(a:StreetSegment,b:StreetSegment)=>Math.hypot(b.b.x-b.a.x,b.b.y-b.a.y)-Math.hypot(a.b.x-a.a.x,a.b.y-a.a.y)||a.a.x-b.a.x||a.a.y-b.a.y||a.b.x-b.b.x||a.b.y-b.b.y||a.width-b.width;
+async function sideStreets(view:CityView,r:CityRecipe,points:P[],cancel:()=>boolean):Promise<CityUnit[]>{
+ if(!r.lanes||view.units.some(u=>u.kind==='road'&&u.districtId===r.districtId&&u.recipe?.algorithm==='district-lanes-v1'))return[];
+ const sources=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));}).sort(streetOrder);
+ const proposed:CityUnit[]=[];
+ for(const source of sources){
+  const next=await streetGrid({...view,units:[...view.units,...proposed]},r,points,source,cancel);proposed.push(...next);
+  if(proposed.filter(u=>u.kind==='road').length>2500)throw new Error('Zu viele Nebenstraßen. Teile das Viertel in kleinere Flächen.');
+ }
+ return proposed;
+}
+async function streetGrid(view:CityView,r:CityRecipe,points:P[],source:StreetSegment,cancel:()=>boolean):Promise<CityUnit[]>{
+ const roads=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6,generated:u.recipe?.algorithm==='district-lanes-v1'}));});
+ const bounds={minX:Math.min(...points.map(p=>p.x)),maxX:Math.max(...points.map(p=>p.x)),minY:Math.min(...points.map(p=>p.y)),maxY:Math.max(...points.map(p=>p.y))};
+ if(!segmentRange(source.a,source.b,bounds.minX,bounds.maxX,bounds.minY,bounds.maxY))return[];
+ const length=Math.hypot(source.b.x-source.a.x,source.b.y-source.a.y);if(length<r.size*2)return[];
+ const ux=(source.b.x-source.a.x)/length,uy=(source.b.y-source.a.y)/length,local=(p:P)=>({x:(p.x-source.a.x)*ux+(p.y-source.a.y)*uy,y:-(p.x-source.a.x)*uy+(p.y-source.a.y)*ux});
+ const world=(x:number,y:number):P=>({x:Math.round((source.a.x+x*ux-y*uy)*1e6)/1e6,y:Math.round((source.a.y+x*uy+y*ux)*1e6)/1e6});
+ const projected=points.map(local),minX=Math.min(...projected.map(p=>p.x)),maxX=Math.max(...projected.map(p=>p.x)),minY=Math.min(...projected.map(p=>p.y)),maxY=Math.max(...projected.map(p=>p.y));
+ const width=Math.max(3,Math.min(5,r.size*.35)),gap=width/2+1.2,block=r.size*5+width;
+ const blocked=view.units.filter(u=>['plaza','water'].includes(u.kind)||(u.kind==='building'&&(u.protected||u.districtId!==r.districtId))).map(u=>u.kind==='building'?posed(u):u.outline??[]);
+ const walls=view.units.filter(u=>u.kind==='wall').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));});
+ const districtEdges=edges(points),nodes=new Map<string,CityUnit>(),network:CityUnit[]=[],existingIds=new Set(view.units.map(u=>u.id));
+ const prefix=view.header.id+':lanes:'+r.districtId+':'+seedNumber(r.seed)+':';let attempts=0;
+ const allowed=(a:P,b:P)=>{
+  // Sample the full corridor, including boundaries of concave districts.
+  if([a,b,{x:(a.x+b.x)/2,y:(a.y+b.y)/2}].some(p=>!inside(p,points)))return false;
+  if(districtEdges.some(([c,d])=>crosses(a,b,c,d)||Math.min(distance(a,c,d).distance,distance(b,c,d).distance)<gap))return false;
+  if(blocked.some(poly=>polygonNearSegment(poly,a,b,gap)))return false;
+  if(roads.some(s=>s.generated&&crosses(a,b,s.a,s.b)))return false;
+  if(walls.some(w=>crosses(a,b,w.a,w.b)||Math.min(distance(a,w.a,w.b).distance,distance(b,w.a,w.b).distance,distance(w.a,a,b).distance,distance(w.b,a,b).distance)<width/2+w.width/2+1.2))return false;
+  // Crossing another road is a junction. Closely parallel duplicates are omitted.
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);
+  return !roads.some(s=>{const sx=s.b.x-s.a.x,sy=s.b.y-s.a.y,sl=Math.hypot(sx,sy);return sl>0&&Math.abs(dx*sy-dy*sx)/(len*sl)<.2&&Math.min(distance(a,s.a,s.b).distance,distance(b,s.a,s.b).distance)<width/2+s.width/2+r.size;});
+ };
+ const add=async(a:P,b:P)=>{
+  if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');if(++attempts%100===0)await new Promise<void>(resolve=>setTimeout(resolve,0));
+  if(!allowed(a,b))return false;
+  const key=(p:P)=>p.x+','+p.y,ak=key(a),bk=key(b),id=prefix+'road:'+ak+':'+bk;if([id,prefix+'node:'+ak,prefix+'node:'+bk].some(id=>existingIds.has(id)))return false;
+  for(const [k,p] of [[ak,a],[bk,b]] as const)if(!nodes.has(k))nodes.set(k,{id:prefix+'node:'+k,kind:'node',name:'',protected:false,point:p,districtId:r.districtId});
+  network.push({id,kind:'road',name:'Nebenstraße',protected:false,nodeIds:[nodes.get(ak)!.id,nodes.get(bk)!.id],via:[],width,districtId:r.districtId,recipe:{seed:r.seed,algorithm:'district-lanes-v1'}});
+  if(network.length>2500)throw new Error('Zu viele Nebenstraßen. Teile das Viertel in kleinere Flächen.');return true;
+ };
+ // Columns attach to the existing main road. Lateral links join only reached columns,
+ // producing connected blocks rather than isolated rear houses or detached streets.
+ const columns:{x:number;reached:Set<number>}[]=[];
+ const phase=(seedNumber(r.seed+'lanes')%1000)/1000;
+ for(let x=Math.max(0,minX)+block*(.35+phase*.3);x<Math.min(length,maxX);x+=block*(1+(Math.sin(x*.017+phase)*.12))){
+  const origin=world(x,0);if(!inside(origin,points))continue;const reached=new Set([0]);
+  for(const side of [-1,1]){let previous=origin;for(let row=1;row*block<=Math.min(r.reach*2,side<0?-minY:maxY);row++){
+   const next=world(x,side*row*block);if(!await add(previous,next))break;reached.add(side*row);previous=next;
+  }}
+  if(reached.size>1)columns.push({x,reached});
+ }
+ for(let i=1;i<columns.length;i++){const a=columns[i-1]!,b=columns[i]!;if(b.x-a.x>block*1.5)continue;for(const row of a.reached)if(row&&b.reached.has(row))await add(world(a.x,row*block),world(b.x,row*block));}
+ return[...nodes.values(),...network];
 }
 export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean,progress:(n:number)=>void):Promise<CityPreview>{
  checkedCityInfill(r);
  await new Promise<void>(resolve=>setTimeout(resolve,0));if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');
  const district=view.units.find(u=>u.id===r.districtId&&u.kind==='district');if(!district?.outline)throw new Error('Wähle ein Viertel als Bebauungsfläche.');
- const roads=view.units.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,view.units);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));});if(!roads.length)throw new Error('Lege zuerst eine Straße an.');
- const replacement=view.units.filter(u=>u.kind==='building'&&u.districtId===r.districtId&&!u.protected),replaceIds=replacement.map(u=>u.id),replaceSet=new Set(replaceIds),obstacles=view.units.filter(u=>u.kind==='building'&&!replaceSet.has(u.id)),excluded=view.units.filter(u=>['water','plaza'].includes(u.kind));
  const points=district.outline,minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x)),minY=Math.min(...points.map(p=>p.y)),maxY=Math.max(...points.map(p=>p.y)),step=r.size*1.55;
  if((maxX-minX)*(maxY-minY)/(step*step)>150000)throw new Error('Fläche für diese Hausgröße zu groß. Teile sie in kleinere Viertel.');
+ const streets=await sideStreets(view,r,district.outline,cancel),streetUnits=[...view.units,...streets];
+ const roads=streetUnits.filter(u=>u.kind==='road').flatMap(u=>{const p=roadPoints(u,streetUnits);return p.slice(1).map((b,i)=>({a:p[i]!,b,width:u.width??6}));}).sort(streetOrder);if(!roads.length)throw new Error('Lege zuerst eine Straße an.');
+ const replacement=view.units.filter(u=>u.kind==='building'&&u.districtId===r.districtId&&!u.protected),replaceIds=replacement.map(u=>u.id),replaceSet=new Set(replaceIds),obstacles=view.units.filter(u=>u.kind==='building'&&!replaceSet.has(u.id)),excluded=view.units.filter(u=>['water','plaza'].includes(u.kind));
  let state=seedNumber(r.seed)||1;const random=()=>{state^=state<<13;state^=state>>>17;state^=state<<5;return(state>>>0)/4294967296;};
  // Frontages get first claim on space. Rear infill only fills remaining lots.
  const gap=1.2,cell=Math.max(8,r.size*3),bins=new Map<string,{minX:number;minY:number;maxX:number;maxY:number;poly:P[]}[]>();
@@ -42,7 +103,7 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
   const b=bounds(corners),seen=new Set<object>();for(const k of keys(b))for(const a of bins.get(k)??[]){if(seen.has(a))continue;seen.add(a);if(a.minX<b.maxX&&a.maxX>b.minX&&a.minY<b.maxY&&a.maxY>b.minY&&polygonsNear(corners,a.poly,gap))return;}
   index(b);buildings.push(u);if(buildings.length>=5000)throw new Error('Mehr als 5.000 Häuser in einer Vorschau. Teile das Viertel auf.');
  };
- for(const road of [...roads].sort((a,b)=>Math.hypot(b.b.x-b.a.x,b.b.y-b.a.y)-Math.hypot(a.b.x-a.a.x,a.b.y-a.a.y))){
+ for(const road of roads){
   const dx=road.b.x-road.a.x,dy=road.b.y-road.a.y,length=Math.hypot(dx,dy);if(length<r.size)continue;
   const range=segmentRange(road.a,road.b,minX-r.reach,maxX+r.reach,minY-r.reach,maxY+r.reach);if(!range)continue;
   const ux=dx/length,uy=dy/length,angle=Math.atan2(dy,dx);
@@ -60,7 +121,7 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
   const p={x:x+(random()-.5)*step*.4,y:y+(random()-.5)*step*.4};let nearest={distance:Infinity,angle:0};for(const road of roads){const d=distance(p,road.a,road.b);if(d.distance<nearest.distance)nearest=d;}if(nearest.distance>r.reach)continue;
   await add(p,r.size*(.7+random()*.5),r.size*(.7+random()*.7),nearest.angle);
  }
- return{cityId:view.header.id,baseRevision:view.header.revision,recipe:{...r},buildings,replaceIds,attempts};
+ return{cityId:view.header.id,baseRevision:view.header.revision,recipe:{...r},buildings,...(streets.length?{streets}:{}),replaceIds,attempts};
 }
 const escaped=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 export function citySvg(v:import("./atlas-region-contracts").CityGeometry){const pts=(p:P[])=>p.map(a=>a.x+','+a.y).join(' '),h=v.header;let out=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${h.width} ${h.height}" width="${h.width}" height="${h.height}"><title>${escaped(h.name)}</title><rect width="100%" height="100%" fill="${escaped(h.paper)}"/>`;

@@ -17,7 +17,7 @@ export interface CityBuildingQuery {text:string;offset:number;excludeUnitId?:str
 export interface CityBuildingChoice {cityId:string;unitId:string;title:string;cityTitle:string}
 export interface CityBuildingChoices {items:CityBuildingChoice[];next:number|null}
 export interface CityCommand {commandId:string;token:string;campaignId:string;cityId:string;expectedRevision:number;action:{kind:'create';header:CityHeader;location?:LocationDocument}|{kind:'change';upsert:CityUnit[];remove:string[];header?:CityHeader;label:string;bindingMoves?:CityPersonMove[];lifeMoves?:CityLifeMove[]}|{kind:'undo'|'redo'}}
-export interface CityInfillRecipe {seed:string;density:number;size:number;reach:number;use:string}
+export interface CityInfillRecipe {seed:string;density:number;size:number;reach:number;use:string;lanes?:boolean}
 export interface CityRecipe extends CityInfillRecipe {districtId:string}
-export interface CityPreview {cityId:string;baseRevision:number;recipe:CityRecipe;buildings:CityUnit[];replaceIds:string[];attempts:number}
+export interface CityPreview {cityId:string;baseRevision:number;recipe:CityRecipe;buildings:CityUnit[];streets?:CityUnit[];replaceIds:string[];attempts:number}
 export interface CityAPI extends importCityActivityAPI {cityBuildings(token:string,query:CityBuildingQuery):Promise<Result<CityBuildingChoices>>;cities(token:string):Promise<Result<CityOverview>>;city(token:string,id:string):Promise<Result<CityView>>;executeCity(command:CityCommand):Promise<Result<CityView>>;exportCity(token:string,id:string,format:'svg'|'json'):Promise<Result<{cancelled:boolean}>>}

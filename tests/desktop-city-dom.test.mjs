@@ -957,3 +957,17 @@ test('city-level navigation clears the prior house inspector after draining its 
  try{await x.ui.openCityReference(x.cityIds.one,x.unitIds.one,true,true);x.enter('city-unit-notes','Contact comes at dusk');let reads=0;const read=x.window.campaign.city;x.window.campaign.city=async(...args)=>{reads++;return read(...args);};await x.ui.openCityReference(x.cityIds.one,undefined,true);assert.equal(x.document.getElementById('city-inspector').hidden,true);assert.equal(x.document.getElementById('city-panel-draw').getAttribute('aria-pressed'),'true');assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one).notes,'Contact comes at dusk');assert.equal(reads,0,'returning to the already open city does not load its complete document');
  }finally{await x.cleanup();}
 });
+
+test('side-street proposal is discarded without writes and accepted atomically with houses and the district recipe',async()=>{
+ const x=await setup();try{
+  const get=id=>x.document.getElementById(id),before=x.store.city(x.current().token,x.cityIds.one),house=before.units.find(u=>u.id===x.unitIds.one),district=before.units.find(u=>u.kind==='district');
+  get('city-lanes').checked=true;get('city-lanes').onchange();x.click('city-generate');await settle();await x.drain();assert.match(get('city-preview-summary').textContent,/neue Nebenstraßen/);
+  assert(x.ui.atlasCityState().view.units.filter(u=>u.kind==='road').length>1,'same shared Atlas projection includes proposed roads');assert.deepEqual(x.store.city(x.current().token,x.cityIds.one),before);
+  x.click('city-cancel-preview');assert.deepEqual(x.store.city(x.current().token,x.cityIds.one),before);
+  x.click('city-generate');await settle();await x.drain();x.click('city-preview-accept');await until(()=>x.store.city(x.current().token,x.cityIds.one).header.revision>before.header.revision);
+  const accepted=x.store.city(x.current().token,x.cityIds.one),roads=accepted.units.filter(u=>u.kind==='road');assert(roads.length>1);assert.deepEqual(accepted.units.find(u=>u.id===house.id),house);assert.equal(accepted.units.find(u=>u.id===district.id).infill.lanes,true);
+  x.click('city-undo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.filter(u=>u.kind==='road').length===1);assert.deepEqual(x.store.city(x.current().token,x.cityIds.one).units,before.units);
+  x.click('city-redo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.filter(u=>u.kind==='road').length===roads.length);await x.activate('Alpha');assert.equal(get('city-lanes').checked,true);
+  get('city-density').value='.3';get('city-density').onchange();x.click('city-generate');await settle();await x.drain();assert.match(get('city-preview-summary').textContent,/0 neue Nebenstraßen/);x.click('city-preview-accept');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===district.id).infill.density===.3);assert.deepEqual(x.store.city(x.current().token,x.cityIds.one).units.filter(u=>u.kind==='road'),roads);
+ }finally{await x.cleanup();}
+});

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 buildSync({entryPoints:['src/app/city-model.ts'],outfile:'.build/city-frontages.cjs',bundle:true,platform:'node',format:'cjs'});
-const {generateCity,posed,inside}=createRequire(import.meta.url)('../.build/city-frontages.cjs');
+const {generateCity,posed,inside,roadPoints}=createRequire(import.meta.url)('../.build/city-frontages.cjs');
 const square=(x,y,w,h)=>[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}];
 function fixture(){return {header:{id:'city',revision:2,width:300,height:220},units:[{id:'a',kind:'node',point:{x:10,y:100}},{id:'b',kind:'node',point:{x:290,y:100}},{id:'road',kind:'road',nodeIds:['a','b'],width:8,via:[]},{id:'district',kind:'district',outline:square(0,0,300,220)},{id:'inn',kind:'building',protected:true,districtId:'district',position:{x:150,y:87},angle:.2,outline:square(-6,-5,12,10),notes:'Keep the inn',rooms:[{id:'original-room'}]}],demographics:{},factions:[]};}
 const recipe={districtId:'district',seed:'Market',density:.75,size:10,reach:70,use:'home'},generate=(v,r=recipe,cancel=()=>false,progress=()=>{})=>generateCity(v,r,cancel,progress);
@@ -28,4 +28,33 @@ test('even a small frontage proposal can be cancelled before it starts publishin
 });
 test('the low end of the density control permits sparse settlement instead of a dense frontage floor',async()=>{
  const low=await generate(fixture(),{...recipe,density:.05}),high=await generate(fixture(),{...recipe,density:1});assert(low.buildings.length>0);assert(low.buildings.length<high.buildings.length*.25);
+});
+test('optional side streets connect free blocks to the existing road and are deterministic proposals',async()=>{
+ const v=fixture(),before=JSON.stringify(v),r={...recipe,lanes:true},a=await generate(v,r),b=await generate(v,r);assert.equal(JSON.stringify(v),before);assert.deepEqual(a,b);
+ const streets=a.streets.filter(u=>u.kind==='road'),nodes=new Map(a.streets.filter(u=>u.kind==='node').map(u=>[u.id,u.point]));assert(streets.length>6);assert(a.buildings.length>(await generate(v)).buildings.length);assert(!a.replaceIds.includes('road'));assert(!a.replaceIds.includes('inn'));
+ const connected=new Set([...nodes].filter(([,p])=>Math.abs(p.y-100)<1e-5).map(([id])=>id));assert(connected.size>1);let changed=true;while(changed){changed=false;for(const u of streets)if(u.nodeIds.some(id=>connected.has(id)))for(const id of u.nodeIds)if(!connected.has(id)){connected.add(id);changed=true;}}
+ assert.equal(connected.size,nodes.size);for(const p of nodes.values())assert(inside(p,v.units[3].outline));assert(streets.length>=nodes.size,'lateral links form actual cycles, not only detached branches');
+});
+test('side streets avoid protected houses, narrow water, plazas and walls without changing existing roads',async()=>{
+ const v=fixture();v.units.push({id:'water',kind:'water',outline:square(75,0,2,220)},{id:'plaza',kind:'plaza',outline:square(200,125,30,30)},{id:'wall-a',kind:'node',point:{x:5,y:180}},{id:'wall-b',kind:'node',point:{x:295,y:180}},{id:'wall',kind:'wall',nodeIds:['wall-a','wall-b'],via:[],width:4});
+ const a=await generate(v,{...recipe,lanes:true}),all=[...v.units,...a.streets];for(const street of a.streets.filter(u=>u.kind==='road')){const [p,q]=roadPoints(street,all);for(let t=0;t<=1;t+=.02){const at={x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t};assert(!inside(at,posed(v.units[4])));assert(!inside(at,v.units[5].outline));assert(!inside(at,v.units[6].outline));assert(at.y<177);}}
+ assert.equal(a.streets.some(u=>u.id==='road'),false);
+});
+test('accepted side streets remain individually editable and are not duplicated by later density changes',async()=>{
+ const v=fixture(),a=await generate(v,{...recipe,lanes:true});const accepted={...v,units:[...v.units,...a.streets,...a.buildings]};const road=a.streets.find(u=>u.kind==='road');road.name='Glockengasse';road.protected=true;
+ const again=await generate({...accepted,units:[...accepted.units].reverse()},{...recipe,lanes:true});assert.deepEqual(again.buildings,a.buildings,'canonical road order survives acceptance and database ordering');
+ const before=JSON.stringify(accepted),next=await generate(accepted,{...recipe,lanes:true,density:.3});assert.equal(JSON.stringify(accepted),before);assert.equal(next.streets,undefined);assert(!next.replaceIds.includes(road.id));assert(next.replaceIds.includes(a.buildings[0].id));
+});
+test('multiple source roads do not lay crossing grids on top of earlier proposed blocks',async()=>{
+ const v=fixture();v.units.push({id:'north',kind:'node',point:{x:150,y:10}},{id:'south',kind:'node',point:{x:180,y:210}},{id:'cross-road',kind:'road',nodeIds:['north','south'],width:6,via:[]});
+ const a=await generate(v,{...recipe,lanes:true}),all=[...v.units,...a.streets],roads=a.streets.filter(u=>u.kind==='road').map(u=>roadPoints(u,all));
+ const turn=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);for(let i=0;i<roads.length;i++)for(let j=i+1;j<roads.length;j++){const [a,b]=roads[i],[c,d]=roads[j];assert(!(turn(a,b,c)*turn(a,b,d)<-1e-9&&turn(c,d,a)*turn(c,d,b)<-1e-9),'new streets must share a junction rather than cross at separate nodes');}
+});
+test('street planning serves both halves of a district attached to separate existing road segments',async()=>{
+ const v=fixture();v.header.width=600;v.units[1].point={x:300,y:100};v.units[3].outline=square(0,0,600,220);v.units.push({id:'east',kind:'node',point:{x:590,y:110}},{id:'east-road',kind:'road',nodeIds:['b','east'],width:8,via:[]});
+ const a=await generate(v,{...recipe,lanes:true}),nodes=a.streets.filter(u=>u.kind==='node');assert(nodes.some(u=>u.point.x>400));assert(nodes.some(u=>u.point.x<200));
+});
+test('side-street settings are validated and planning remains cancellable before publication',async()=>{
+ await assert.rejects(generate(fixture(),{...recipe,lanes:'yes'}),/Seed, Dichte/);
+ let stop=false;const v=fixture();v.units[3].outline=square(0,0,1500,1500);v.units[0].point={x:10,y:750};v.units[1].point={x:1490,y:750};const pending=generate(v,{...recipe,size:3,reach:500,lanes:true},()=>stop);const timer=setTimeout(()=>stop=true,0);try{await assert.rejects(pending,/abgebrochen/);}finally{clearTimeout(timer);}
 });
