@@ -1,4 +1,5 @@
 import {atlasPlacesRegion} from './world';
+import {noteMergeWork} from './note-merge';
 import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
 import {readAtlasScene} from './world';
 import {atlasReadChanges} from './atlas-read-journal';
@@ -106,7 +107,7 @@ import { mkdirSync, mkdtempSync, copyFileSync, openSync, closeSync, fsyncSync, r
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
 import { validateRoom, validateRoomDraftContent, type Campaign, type CampaignRename, type Edit, type Room, type RoomCommit, type WorkingRoomDraft, type Workspace } from '../contracts';
-import { validatePreparation, checkedPreparationDraft, preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationCommand, type PreparationSelection, type Note } from '../preparation-contracts';
+import { validatePreparation, checkedPreparationDraft, preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationCommand, type PreparationChange, type PreparationSelection, type Note } from '../preparation-contracts';
 import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
@@ -894,6 +895,13 @@ export class CampaignStore {
       return readNoteRoomUses(this.db,cam,note,offset);
     })();
   }
+  noteMergePreview(token:string,sourceId:string,targetId:string){
+    const cam=this.guard(token);return this.db.transaction(()=>{
+      const preview=noteMergeWork(this.db,cam,sourceId,targetId).preview;
+      if(this.graphShadow)preview.blockers.push('Die offene Dungeonvorschau zuerst abschließen.');
+      return preview;
+    })();
+  }
   preparation(token: string, search = ''): Preparation {
     if (typeof search !== 'string' || search.length > 1000) throw new Error('Ungültige Suchanfrage.');
     return this.db.transaction(() => {
@@ -1308,7 +1316,20 @@ export class CampaignStore {
       const prior = this.db.prepare('SELECT fingerprint,campaign_id FROM receipt WHERE command_id=?').get(command.commandId);
       if (prior) { if (prior.campaign_id !== campaignId || !matchesReceipt(prior, command)) throw new Error('Änderungskennung bereits anders verwendet.'); return; }
       let targetId: string, revision: number;
-      if (change.kind === 'note') {
+      if(change.kind==='note-merge'){
+        if(this.graphShadow)throw new Error('Die offene Dungeonvorschau zuerst abschließen.');
+        const work=noteMergeWork(this.db,campaignId,change.id,change.targetId),p=work.preview;
+        if(work.source.revision!==change.expectedRevision||work.target.revision!==change.expectedTargetRevision||p.basis!==change.basis)throw new Error('Zusammenführungskonflikt: Originale oder Verweise wurden geändert. Vorschau erneut prüfen.');
+        if(p.blockers.length)throw new Error(p.blockers.join(' '));
+        let index=0;const nested=(next:PreparationChange)=>this.commitPreparation({commandId:command.commandId+'|merge:'+index++,campaignId,token:command.token,change:next});
+        nested({kind:'note',expectedRevision:work.target.revision,note:{...work.target,readAloud:work.remap(change.readAloud),gmNotes:work.remap(change.gmNotes),relations:work.targetRelations}});
+        for(const note of work.notes)nested({kind:'note',expectedRevision:note.revision,note});
+        for(const location of work.locations)nested({kind:'location',...location});
+        for(const {key,refs} of work.keys)executeDrawing(this.db,{commandId:command.commandId+'|merge:key:'+key.id,campaignId,token:command.token,action:{kind:'key-content',expectedRevision:key.revision,content:{...key,references:refs}}},()=>{this.guard(command.token,campaignId);});
+        for(const v of work.visits)this.executeSession({commandId:command.commandId+'|merge:visit:'+v.detail.visitId,campaignId,token:command.token,action:{kind:'visit',planId:v.planId,expectedRevision:v.detail.revision,detail:{...v.detail,noteIds:[...new Set(v.detail.noteIds.map(id=>id===change.id?change.targetId:id))]}}});
+        nested({kind:'note-trash',id:change.id,expectedRevision:work.source.revision,trashed:true});
+        targetId=change.id;revision=work.source.revision+1;
+      } else if (change.kind === 'note') {
         targetId = change.note.id;
         const old = this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision || old.trashed) throw new Error('Notizkonflikt: Der gespeicherte Stand hat sich geändert.');
@@ -1409,12 +1430,18 @@ export class CampaignStore {
       const table = change.kind === 'plan' ? 'plan' : change.kind === 'location' || change.kind === 'location-trash' ? 'location' : 'world_note';
       const current = this.db.prepare(`SELECT revision FROM ${table} WHERE campaign_id=? AND id=?`).get(campaignId, targetId);
       const expected = change.expectedRevision;
-      const unchanged = expected === null ? !current : current?.revision === expected;
+      let unchanged = expected === null ? !current : current?.revision === expected;
+      let mergeTargetChanged=false;
+      if(change.kind==='note-merge'){
+        const target=this.db.prepare('SELECT revision FROM world_note WHERE campaign_id=? AND id=?').get(campaignId,change.targetId);
+        mergeTargetChanged=target?.revision!==change.expectedTargetRevision+(prior?1:0);
+        if(!prior){try{unchanged=unchanged&&!mergeTargetChanged&&noteMergeWork(this.db,campaignId,change.id,change.targetId).preview.basis===change.basis;}catch{unchanged=false;}}
+      }
       const data = this.preparation(token);
       const readable = table === 'plan' ? data.plans.some(plan => plan.id === targetId) :
         table === 'location' ? data.locations.some(row => row.document.id === targetId) : data.notes.some(row => row.note.id === targetId);
       return { outcome: prior ? 'applied' : unchanged ? 'not-applied' : 'conflict',
-        targetChanged: (prior ? current?.revision !== prior.revision : !unchanged) || !!current && !readable, data };
+        targetChanged: mergeTargetChanged || (prior ? current?.revision !== prior.revision : !unchanged) || !!current && !readable, data };
     })();
   }
   keepRoomDraft(token: string, roomId: string, draft: WorkingRoomDraft | null) {

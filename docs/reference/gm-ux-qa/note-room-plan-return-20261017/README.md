@@ -32,7 +32,7 @@ der wiederherstellbaren Ablage und frischer Weiterbearbeitung des Originals.
 Die beiden ursprünglichen Wissensquellen und die ursprünglichen CRLF-Raumabschnitte
 blieben exakt. Beide Räume und beide Besuche verweisen auf dieselbe Nera-ID.
 
-## Tatsächliche Obsidian-Gegenprobe und offener größerer Bedarf
+## Tatsächliche Obsidian-Gegenprobe und daraus folgender Bedarf
 
 Obsidian 1.14.4 bietet „Merge entire file with…“ im Dateimenü. Im isolierten
 Test-Vault wurden das vorhandene Ziel, „Merge“ und anschließend „Just once“
@@ -43,12 +43,10 @@ redaktionell bereinigt. Die beiden Planeinbettungen zeigten nach frischer
 Weiterbearbeitung die Ergänzung desselben Originals. Normales Zurück führte
 vom Plan über den Raum zur Notiz.
 
-Das vermeidet das einzelne Umstellen mehrerer Verweise. **Dieser größere
-Zusammenführungsbedarf ist in SaltMarcher noch offen.** Die Rückwegkorrektur
-allein löst ihn nicht. Als nächster Schritt muss eine ausdrückliche
-Zusammenführungsansicht das verbleibende Original, den übernommenen Text und
-betroffene Verweise prüfbar machen; Identitäten und bestehende weitergehende
-NSC-Bindungen sind dabei zu erhalten. Der vorliegende Eingriff beansprucht keine
+Das vermeidet das einzelne Umstellen mehrerer Verweise. Die Rückwegkorrektur
+allein löste diesen größeren Zusammenführungsbedarf nicht. Die nachfolgende
+[ausdrückliche Notiz-Zusammenführung](../npc-note-merge-20261017/README.md) behandelt
+und prüft ihn separat. Der hier dokumentierte Rückweg-Eingriff beansprucht keine
 automatische Notiz-, Figuren- oder Familienzusammenführung.
 
 ## Getrennte Nachweise

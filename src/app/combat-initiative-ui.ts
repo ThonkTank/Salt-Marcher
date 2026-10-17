@@ -65,7 +65,7 @@ export class CombatInitiativePanel {
   this.el('initiative-start').hidden=this.combat?.phase!=='preparing';this.el<HTMLButtonElement>('initiative-roll-undo').disabled=unavailable||stale||!this.undoRoll;
   const startIssue=this.combat?.phase==='preparing'?combatStartIssue(this.combat):null;
   if(startIssue)this.el<HTMLButtonElement>('initiative-start').disabled=true;
-  this.el<HTMLButtonElement>('initiative-reload').hidden=!stale&&!this.loading;this.el<HTMLButtonElement>('initiative-reload').disabled=this.blocked||this.saving;
+  this.el<HTMLButtonElement>('initiative-reload').hidden=!stale&&!this.loading;this.el<HTMLButtonElement>('initiative-reload').disabled=this.blocked||this.saving;this.el('initiative-reload').textContent=this.loading?'Initiative erneut laden':'Entwurf verwerfen und neu laden';
   this.el('initiative-preserved').hidden=!stale;this.el<HTMLTextAreaElement>('initiative-preserved').value=this.draft?.values.map((v,i)=>(this.combat?.participants.find(p=>p.id===v.participantId)?.name??'Ehemaliger Teilnehmer '+(i+1))+': '+v.raw).join('\n')??'';
   if(stale)this.el('initiative-status').textContent='Initiative oder Teilnehmer inzwischen geändert. Deine Eingabe bleibt erhalten. Vor dem Übernehmen den aktuellen Stand abgleichen.';
   else if(!this.loading)this.el('initiative-status').textContent=this.message??startIssue??(this.draft?'Eingabe wird als Entwurf gesichert. Erst Übernehmen ändert den Kampf.':'Werte eintragen oder nur die Monster würfeln. Spielerwerte bleiben beim Würfeln erhalten.');
@@ -86,6 +86,6 @@ export class CombatInitiativePanel {
   finally{this.saving=false;this.controls();}
  }
  private async close(){if(!this.owner||await this.cache.flush(this.owner.campaignId))this.hide();else this.el('initiative-status').textContent='Entwurf noch nicht gesichert. Bitte Sicherung erneut versuchen.';}
- private async reload(){if(!this.combat||!this.owner)return;try{await this.cache.discard(this.owner.token,this.owner.campaignId,this.combat.id,'initiative',this.combat.id);await this.open();}catch(e){this.report((e as Error).message,true);}}
+ private async reload(){if(!this.combat||!this.owner)return;try{if(!this.loading)await this.cache.discard(this.owner.token,this.owner.campaignId,this.combat.id,'initiative',this.combat.id);await this.open();}catch(e){this.report((e as Error).message,true);}}
  accepted(d:InitiativeWorkingDraft){if(this.draft?.writeId===d.writeId&&this.combat?.id===d.combatId)this.hide();}
 }

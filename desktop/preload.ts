@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   roomDraft: (token: string, roomId: string) => ipcRenderer.invoke('campaign:room-draft', token, roomId),
   keepRoomDraft: (token: string, roomId: string, draft: unknown) => ipcRenderer.invoke('campaign:keep-room-draft', token, roomId, draft),
   preparation: (token: string, search: string) => ipcRenderer.invoke('campaign:preparation', token, search),
+  noteMergePreview:(token:string,sourceId:string,targetId:string)=>ipcRenderer.invoke('campaign:note-merge-preview',token,sourceId,targetId),
   noteRoomUses: (token:string,id:string,offset:number) => ipcRenderer.invoke('campaign:note-room-uses',token,id,offset),
   noteThread:(token:string,id:string,offset:number,active:boolean,history=false)=>ipcRenderer.invoke('campaign:note-thread',token,id,offset,active,history),
   checkNoteThread:(token:string,s:import('../src/app/note-thread-contracts').NoteThreadSelection)=>ipcRenderer.invoke('campaign:check-note-thread',token,s),
