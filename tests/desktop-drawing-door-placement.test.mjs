@@ -21,3 +21,17 @@ test('wall projection remains on a diagonal and clamps a door away from the corn
  assert.equal(placed.anchor.edge,0);assert.ok(placed.point.x>.7&&placed.point.y>.7);assert.equal(placed.point.x,placed.point.y);
  assert.equal(doorPlacement({x:0,y:0},[],U,null),null);
 });
+
+test('a shared wall binds the unique room across it despite small drawing gaps and opposite winding',()=>{
+ const left=room('left',0,0,5,10),right=room('right',5.004,0,5,10);right.polygons[0].outer.reverse();
+ const placed=doorPlacement({x:5,y:5},[left,right],1.524,'left');
+ assert.equal(placed.roomId,'left');assert.equal(placed.targetRoomId,'right');
+ assert.equal(doorPlacement({x:0,y:5},[left,right],1.524,'left').targetRoomId,null);
+});
+test('a selected unrelated room, overlapping candidates and nearby exterior walls cannot invent portal links',()=>{
+ const left=room('left',0,0,5,10),right=room('right',5,0,5,10),far=room('far',20,0,5,10);
+ assert.equal(doorPlacement({x:5,y:5},[left,right,far],1.524,'far').targetRoomId,'right');
+ assert.equal(doorPlacement({x:5,y:5},[left,right,room('duplicate',5,0,5,10)],1.524,'left').targetRoomId,null);
+ assert.equal(doorPlacement({x:5,y:5},[left,room('overlap',4,0,5,10)],1.524,'left').targetRoomId,null);
+ assert.equal(doorPlacement({x:5,y:5},[left,room('gap',5.2,0,5,10)],1.524,'left').targetRoomId,null);
+});

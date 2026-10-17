@@ -386,6 +386,19 @@ async function interiorSurface(x){
  return {...surface,tool,point,workspace:()=>workspace,async activate(name){await x.activate(name);workspace=x.current();selected=null;await x.ui.activateDrawing(workspace);surface.atlas.activate(workspace);},async rectangle(name,a,b,target){tool('room-rectangle');x.enter('drawing-room-name',name);point('pointerdown',a,typeof target==='string'?surface.svg.querySelector(target):target);point('pointermove',b);point('pointerup',b);await until(()=>x.store.campaignAtlas(x.current().token).workspace.rooms.some(r=>r.name===name)).catch(error=>{error.message+=' '+JSON.stringify(x.messages);throw error;});await x.drain();await settle();}};
 }
 
+test('a door drawn on the shared room wall saves both portal bindings and survives reopening',async()=>{
+ const x=await setup(),s=await interiorSurface(x);try{
+  const f=s.atlas.frame(s.atlas.scopeId);
+  await s.rectangle('Left room',{x:f.x-6,y:f.y-4},{x:f.x,y:f.y+4});
+  await s.rectangle('Right room',{x:f.x,y:f.y-4},{x:f.x+6,y:f.y+4});
+  s.tool('door');await x.ui.atlasDrawingPoint({x:0,y:0});x.click('drawing-finish');
+  await until(()=>s.atlas.data.geometry.drawing.elements.some(e=>e.kind==='door'));await x.drain();
+  const element=s.atlas.data.geometry.drawing.elements.find(e=>e.kind==='door'),rooms=s.atlas.data.workspace.rooms;
+  assert.equal(rooms.find(r=>r.id===element.roomId).name,'Left room');assert.equal(rooms.find(r=>r.id===element.targetRoomId).name,'Right room');
+  await s.atlas.refresh();assert.equal(s.atlas.data.geometry.drawing.elements.find(e=>e.id===element.id).targetRoomId,element.targetRoomId);
+ }finally{await s.close();}
+});
+
 test('invalid Atlas image size clears its error when the export is retried and cancelled',async()=>{
  const x=await setup(),s=await placeSurface(x),get=id=>x.document.getElementById(id);let release;
  try{
@@ -569,6 +582,11 @@ test('rotated house room labels remain on the screen axes at projected room posi
   const cityExport=x.ui.atlasRegionSVG(atlas,[],box,2048,new Map(),{...options,scopeId:null,roofs:true});
   const caption=cityExport.querySelector('[data-city-unit="'+u.id+'"]').querySelector('text');assert.equal(caption.textContent,u.name);assert.ok(Number(caption.getAttribute('font-size'))<=12*options.labelUnitsPerPixel);
   assert.equal(cityExport.querySelector('[data-atlas-room-labels="'+room.scopeId+'"]'),null);
+  x.document.getElementById('atlas-roofs').checked=true;x.click('atlas-interior-house');await until(()=>s.atlas.family==='city');await settle();
+  assert.equal(!!s.svg.querySelector('[data-atlas-room-labels="'+room.scopeId+'"]'),false);
+  const house=s.svg.querySelector('[data-city-unit="'+u.id+'"]');assert.equal(house.querySelector('text').textContent,u.name);assert.notEqual(house.querySelector('polygon').getAttribute('fill'),'none');
+  x.click('atlas-building-interior');await until(()=>s.atlas.family==='interior');await settle();
+  assert.ok(s.svg.querySelector('[data-atlas-room-labels="'+room.scopeId+'"]'));assert.equal(s.svg.querySelector('[data-city-unit="'+u.id+'"]').querySelector('text').getAttribute('visibility'),'hidden');assert.equal(x.document.getElementById('atlas-roofs').checked,true);
 
  }finally{await s.close();}
 });

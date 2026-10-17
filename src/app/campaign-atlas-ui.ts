@@ -1068,7 +1068,6 @@ export class CampaignAtlasWorkbench {
     if (r || existing) {
       this.scopeId = existing?.ownerId ?? (r!.result as { id: string }).id;
       this.floorId = "ground";
-      get<HTMLInputElement>("atlas-roofs").checked = false;
       const f = this.frame(this.scopeId);
       this.focus(f, 30);
       await this.setFamily("interior", false);
@@ -1967,9 +1966,7 @@ export class CampaignAtlasWorkbench {
             );
           if (
             interior &&
-            (!get<HTMLInputElement>("atlas-roofs").checked ||
-              mpp <= 0.4 ||
-              interior.ownerId === this.scopeId)
+            this.interiorVisible(interior,mpp)
           ) {
             for (const p of c.querySelectorAll("polygon")) {
               p.setAttribute("fill", "none");
@@ -2206,6 +2203,11 @@ export class CampaignAtlasWorkbench {
     root.append(t);
   }
   private drawTerrain(root:SVGElement,box:CanvasBox,_mpp:number){root.append(shape("rect",{width:box.width,height:box.height,fill:"#b8c896"}));}
+  private interiorVisible(binding:AtlasBinding,mpp:number){
+    if(binding.parent!=="building"||!get<HTMLInputElement>("atlas-roofs").checked)return true;
+    if(binding.ownerId===this.scopeId&&["interior","decoration","travel"].includes(this.family))return true;
+    return this.family!=="city"&&mpp<=.4;
+  }
   private drawInterior(
     root: SVGElement,
     b: AtlasBinding,
@@ -2219,13 +2221,7 @@ export class CampaignAtlasWorkbench {
         b.parent === "building"
           ? data.cities.flatMap((c) => c.units).find((u) => u.id === b.parentId)
           : null;
-    if (
-      building &&
-      get<HTMLInputElement>("atlas-roofs").checked &&
-      mpp > 0.4 &&
-      b.ownerId !== this.scopeId
-    )
-      return;
+    if (building && !this.interiorVisible(b,mpp)) return;
     const floor = b.ownerId === this.scopeId ? this.floorId : "ground",
       shown = rooms.filter((r) => r.floorId === floor);
     if (b.parent === "world" && (shown.length || b.ownerId !== "local")) {

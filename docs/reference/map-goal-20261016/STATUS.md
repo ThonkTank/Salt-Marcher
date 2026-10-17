@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `b02e8d801`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `b857b0ba8`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -49,3 +49,5 @@ The new integrated search case edits prose without changing section IDs, finds a
 The global browser input blocker is repaired. A native Electron confirmation from another comparator page had intercepted input outside the individual tab DOM/AX views; cancellation restored real trusted clicks. The actual tavern interior task now reaches two rooms, a bound door, house return, fresh-host reopening and a PNG export. Dungeon Scrawl was actually used to draw and export the same two-room floorplan. The observed false room count/opening action and broken GM export labels were corrected and visibly rechecked. [Workflow, limits and before/after artifacts](INPUT-REPAIR-20261017.md).
 
 Live party travel through the prepared door, a fresh public PNG, fresh-host party/knowledge persistence, and actual separate browser player-display daylight/darkness/blanking checks now pass. [Live continuation and scope](LIVE-RESUME-20261017.md). Editable save/fresh reopen in Dungeon Scrawl, the complete region/city/live counterpart, darkvision, and native packaged player-window behavior remain open. The isolated native package at `727ce64b` is an older technical preview. Packaging, native UI qualification, comparison and owner acceptance remain separate claims. The draft is not promoted to Main on technical tests alone; promotion requires linear integration and its exact-SHA CI.
+
+Die beobachtete manuelle zweite Türbindung, der nach Rücknahme fehlgeschlagene Elementzugriff und die überlagerte Hausrückkehr sind jetzt umgesetzt und tatsächlich nachgeprüft. [Tür-/Rückweg-Nachtest](DOOR-RETURN-20261017.md).

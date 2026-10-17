@@ -122,3 +122,16 @@ test('Escape while the first Atlas point waits for a flush leaves no delayed poi
   assert.deepEqual(x.sent,[]);assert.deepEqual(x.ui.atlasDrawingDraft().path,[]);
  }finally{await x.cleanup();}
 });
+
+test('undoing creation clears a clean deleted element selection instead of reading a missing element',async()=>{
+ const x=await fixture();try{
+  const w=x.current(),old=x.store.drawing(w.token).elements.find(e=>e.id===x.elements.Alpha.id);
+  const addition={...old,id:randomUUID(),revision:1,name:'Undo door'};
+  const command={commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'element',element:addition,expectedRevision:null}};x.store.executeAtlas({...command,action:{kind:'drawing',command}});
+  x.elements.Alpha=addition;await x.ui.reloadDrawing();await x.select('Alpha','Undo door');
+  x.store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'undo'}});
+  const read=x.window.campaign.drawingElement;let missingRead=false;x.window.campaign.drawingElement=async(token,id)=>{if(id===addition.id)missingRead=true;return read(token,id);};
+  await x.ui.reloadDrawing();assert.equal(missingRead,false);assert.equal(x.document.getElementById('drawing-element-form').hasAttribute('hidden'),true);assert.equal(await x.ui.flushDrawing(),true);
+  assert.ok(x.store.drawing(w.token).elements.some(e=>e.id===old.id));
+ }finally{await x.cleanup();}
+});
