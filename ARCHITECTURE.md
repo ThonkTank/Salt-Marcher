@@ -62,6 +62,18 @@ einfachere behalten; fehlende Nachweise als offen führen.
 | B10 | Lokale/regionale Navigation mit gemeinsamen Übergängen und Zeit | Navmesh/hierarchischer Graph/Kostenfelder nach echten Aufgaben; keine vorsorgliche Dauersimulation. |
 | B11 | Electron/TypeScript/SQLite | Andere WebView/native2D erst bei belegtem unerfüllbarem Speicher-/Grafik-/OS-/Installationsziel. |
 
+Der erste räumliche Anschluss verwendet TEMP-SQLite/Rtree im readonly Worker,
+inkrementelle, transaktionale Quellinvalidierung und getrennte genaue
+Autorenreads. Raum-/Stadtansichten wechseln oberhalb des Vektor-/Bytebudgets
+auf eine vollständige Rasterdarstellung; Auswahl bleibt an die kanonische
+Geometrie gebunden. Der Geometriecache zählt serialisierte Nutzdaten und
+begrenzt Ansicht und Export gemeinsam auf 64 MiB. Die exakten Regelreader und
+expliziten Vollwerkzeuge sind hiervon getrennt. Kalter Projektionsaufbau,
+Landschaftsvektoren und tatsächlicher App-/GPU-Speicher bleiben Mess- und
+Umstellungsaufgaben; daraus folgt noch keine Entscheidung gegen persistente
+abgeleitete Geometrie, Canvas2D oder einen anderen Cacheumfang. Details und
+Abnahmegrenzen hält der oben verlinkte Runtimeplan.
+
 Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
 Darstellungsgeometrie und vollständigen ausgewählten Autoreninhalt. Diese
 Projektionen sind keine zweite Schreibautorität. Die aktuelle Volltextsuche

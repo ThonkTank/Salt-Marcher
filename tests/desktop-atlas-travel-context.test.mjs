@@ -15,15 +15,16 @@ function fixture(t) {
     const character = store.executeLive(command({ kind: 'create-character', profile: { name: 'Ada', speedFeet: 30 } })).character, live = store.live(w.token);
     store.executeLive(command({ kind: 'membership', characterId: character.id, expectedRevision: character.membershipRevision, expectedRosterRevision: live.rosterRevision, active: true, targetSceneId: a.id, expectedFocusRevision: live.focusRevision }));
     const beforeGlobals = { window: globalThis.window, document: globalThis.document };
-    const { window, document } = parseHTML('<html><body><div id="atlas-advanced-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join('') + '</body></html>');
+    const { window, document } = parseHTML('<html><body><div id="atlas-advanced-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join('') + '</body></html>');
     Object.assign(globalThis, { window, document });
     for (const select of document.querySelectorAll('select'))
         Object.defineProperty(select, 'value', { value: '', writable: true });
     const sent = [];
-    window.campaign = { atlasRenderView: async () => ({ ok: true, value: store.atlasRenderView(w.token) }), previewAtlasTravel: async (token, end) => ({ ok: true, value: store.previewAtlasTravel(token, end) }), executeAtlasTravel: async (c) => { sent.push(c); return { ok: true, value: store.executeAtlasTravel(c) }; } };
+    const snapshot=()=>({...store.atlasRenderView(w.token),region:{coverage:{mode:'detail',unreadable:0}}});
+    window.campaign = { cancelAtlasRegion:async()=>({ok:true,value:null}),atlasRegion: async () => ({ ok: true, value: snapshot() }), previewAtlasTravel: async (token, end) => ({ ok: true, value: store.previewAtlasTravel(token, end) }), executeAtlasTravelCommit: async (c) => { sent.push(c); return { ok: true, value: store.executeAtlasTravelCommit(c) }; } };
     // Exercise the production controller/render methods with real SQLite snapshots.
     // Whole-workbench mounting and click wiring are covered by the native probe.
-    const ui = Object.assign(Object.create(CampaignAtlasWorkbench.prototype), { owner: w, data: store.atlasRenderView(w.token), root: { hidden: false }, request: 0, previewRequest: 0, busy: false, pendingTravel: null, localPreview: null, lastPoint: { x: 20, y: 0 }, entranceId: null, travelReadState: 'ready', family: 'travel', playback: { running: false, stop() { }, async settled() { } }, opts: { status() { } } });
+    const ui = Object.assign(Object.create(CampaignAtlasWorkbench.prototype), { owner: w, data: snapshot(), root: document.createElement('section'),svg:document.createElement('svg'),regionQuery:()=>({box:{x:0,y:0,width:100,height:100},width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true}), request: 0, previewRequest: 0, busy: false, pendingTravel: null, localPreview: null, lastPoint: { x: 20, y: 0 }, entranceId: null, travelReadState: 'ready', family: 'travel', playback: { running: false, stop() { }, async settled() { } }, opts: { status() { } } });
     ui.render = () => ui.renderTravel();
     ui.render();
     t.after(() => { Object.assign(globalThis, beforeGlobals); store.close(); rmSync(dir, { recursive: true, force: true }); });
@@ -34,7 +35,7 @@ test('pending and failed Atlas context reads revoke previews and block travel; r
     await x.ui.travelControl('preview');
     assert.equal(x.get('start').disabled, false);
     let release;
-    window.campaign.atlasRenderView = () => new Promise(r => release = r);
+    window.campaign.atlasRegion = () => new Promise(r => release = r);
     const before = x.store.db.serialize(), read = x.ui.refresh();
     assert.equal(x.get('start').disabled, true);
     assert.equal(x.get('place').disabled, true);
@@ -48,7 +49,7 @@ test('pending and failed Atlas context reads revoke previews and block travel; r
     assert.equal(x.get('place').disabled, true);
     assert.equal(x.get('refresh').hidden, false);
     assert.match(x.get('status').textContent, /nicht verfügbar/);
-    window.campaign.atlasRenderView = async () => ({ ok: true, value: x.store.atlasRenderView(x.w.token) });
+    window.campaign.atlasRegion = async () => ({ ok: true, value: {...x.store.atlasRenderView(x.w.token),region:{coverage:{mode:'detail',unreadable:0}}} });
     await x.ui.refresh();
     assert.equal(x.get('place').disabled, false);
     assert.equal(document.getElementById('atlas-advanced-fields').inert, false);
@@ -71,8 +72,8 @@ test('late local preview cannot reappear after a confirmed focus refresh', async
     const scene = x.store.liveScene(x.w.token, x.a.id);
     const b = x.store.executeLive(x.command({ kind: 'move', sceneId: x.a.id, expectedRosterRevision: live.rosterRevision, expectedFocusRevision: live.focusRevision, expectedClockRevision: scene.clock.revision, expectedSceneMembershipRevision: scene.membershipRevision, memberIds: [pc.id], target: { kind: 'new', title: 'Nachhut', expectedContentRevision: scene.revision } })).session.createdScene;
     x.store.executeLive(x.command({ kind: 'focus', sceneId: b.id, expectedRevision: x.store.live(x.w.token).focusRevision }));
-    const other = x.store.atlasRenderView(x.w.token), afterFocus = x.store.db.serialize();
-    window.campaign.atlasRenderView = async () => ({ ok: true, value: other });
+    const other = {...x.store.atlasRenderView(x.w.token),region:{coverage:{mode:'detail',unreadable:0}}}, afterFocus = x.store.db.serialize();
+    window.campaign.atlasRegion = async () => ({ ok: true, value: other });
     await x.ui.refresh();
     release({ ok: true, value: preview });
     await old;
@@ -84,9 +85,9 @@ test('late local preview cannot reappear after a confirmed focus refresh', async
 test('obsolete context failure cannot lock a newer confirmed context', async (t) => {
     const x = fixture(t);
     let release;
-    window.campaign.atlasRenderView = () => new Promise(r => release = r);
+    window.campaign.atlasRegion = () => new Promise(r => release = r);
     const old = x.ui.refresh();
-    window.campaign.atlasRenderView = async () => ({ ok: true, value: x.store.atlasRenderView(x.w.token) });
+    window.campaign.atlasRegion = async () => ({ ok: true, value: {...x.store.atlasRenderView(x.w.token),region:{coverage:{mode:'detail',unreadable:0}}} });
     await x.ui.refresh();
     release({ ok: false, error: 'Veralteter Fehler' });
     await old;
@@ -97,7 +98,7 @@ test('an absent focused scene disables the whole Atlas travel console without cr
     const x = fixture(t), empty = structuredClone(x.ui.data), before = x.store.db.serialize();
     empty.scene = null;
     empty.geometry.sceneId = null;
-    window.campaign.atlasRenderView = async () => ({ ok: true, value: empty });
+    window.campaign.atlasRegion = async () => ({ ok: true, value: empty });
     await x.ui.refresh();
     for (const k of ['preview', 'place', 'start', 'step', 'round', 'play', 'pause', 'end', 'entrance'])
         assert.equal(x.get(k).disabled, true, k);

@@ -8,6 +8,7 @@ await mkdir('.build/desktop/catalog', { recursive: true });
 await copyFile('src/features/catalog/data/srd-5.1.generated.json','.build/desktop/catalog/srd-5.1.generated.json');
 await copyFile('src/features/catalog/SRD-5.1-ATTRIBUTION.md','.build/desktop/catalog/SRD-5.1-ATTRIBUTION.md');
 await copyFile('src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md','.build/desktop/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md');
+await build({entryPoints:['desktop/atlas-region-worker.ts'],outfile:'.build/desktop/atlas-region-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({entryPoints:['desktop/room-directory-worker.ts'],outfile:'.build/desktop/room-directory-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({entryPoints:['desktop/atlas-raster-worker.ts'],outfile:'.build/desktop/atlas-raster-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({ entryPoints: ['desktop/main.ts'], outfile: '.build/desktop/main.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['electron', 'better-sqlite3'], define: { __APP_VERSION__: JSON.stringify(applicationVersion) } });
