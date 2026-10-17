@@ -583,3 +583,7 @@ test('a delayed reward navigation cannot follow the former adoption in the same 
  x.el('live-visit-reward').click();await settle();const next=await adoptRewardVisit(x);release();await settle();assert.deepEqual(x.rewardOpens,[]);
  x.rewardDelay=null;x.el('live-visit-reward').click();await settle();assert.deepEqual(x.rewardOpens,[[next.planId,next.visitId]]);
 });
+
+test('a confirmed scene switch returns the viewport to the new group context',async t=>{
+ const x=await setup(t),other=await x.focusOther();let shown=null;x.el('live-workspace').scrollIntoView=()=>{shown=x.el('scene-focus').value;};x.el('scene-focus').value=x.scene.id;x.el('scene-focus').onchange();await settle();assert.equal(shown,x.scene.id);x.el('scene-focus').value=other;x.el('scene-focus').onchange();await settle();assert.equal(shown,other);assert.equal(x.el('running-title').value,'Andere Gruppe');
+});
