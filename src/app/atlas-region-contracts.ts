@@ -12,7 +12,7 @@ export type CityUnitGeometry=Pick<CityUnit,'id'|'kind'|'name'|'protected'|'point
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
- slice:number|null;roofs:boolean;perception?:boolean;revision?:number;
+ slice:number|null;roofs:boolean;perception?:boolean;revision?:number;fence?:string;
 }
 export interface AtlasRegionGeometry {
  campaignId:string;token:string;revision:number;fence:string;box:LandscapeBox;slice:number|null;scopeId:string|null;floorId:string;
@@ -29,8 +29,10 @@ export interface AtlasObjectFocus {
  kind:'room'|'city'|'building'|'element'|'scope'|'city-unit';id:string;cityId?:string;scopeId?:string;floorId?:string;
  point:Point;box:LandscapeBox;revision:number;interiorScopeId?:string;
 }
+export interface AtlasRegionCursor {epoch:string;sequence:number;shadow?:{epoch:string;sequence:number}}
 export interface AtlasRegionSource {
  filename:string;campaignId:string;token:string;fence:string;revision:number;epoch:string;sequence:number;
+ shadow?:{filename:string;scopeId:string;epoch:string;sequence:number};
  reset:boolean;changes:{table:string;id:string}[];
 }
 export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
@@ -43,7 +45,7 @@ export interface AtlasRegionAPI {
 }
 export const emptyDrawing=():DrawingMapView=>({elements:[],styles:[],hiddenRooms:[],hiddenFloors:[],features:[]});
 export function validateRegion(q:AtlasRegionQuery){
- if(!q||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0))throw new Error('Kartenausschnitt prüfen.');
+ if(!q||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0)||q.fence!==undefined&&(typeof q.fence!=='string'||!q.fence))throw new Error('Kartenausschnitt prüfen.');
 }
 
 /** Structured-clone turns null-prototype records into ordinary objects. */

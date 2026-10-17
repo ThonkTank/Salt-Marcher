@@ -473,7 +473,14 @@ Projektion, bewegte Straßenknoten ihre abhängigen Straßen und Raumänderungen
 verankerte Elemente. Journalüberlauf, externe SQLite-Änderung, anderer
 Graphschatten oder Aktivierung führen zum Neuaufbau. Rücknahme/Rollback
 benutzen dieselbe kanonische History; weder Projektion noch Index gelangen in
-Archive. Quelle, Aktivierung, Revision, Ausschnitt, Geschoss, Höhenschnitt und
+Archive. Die geschützte Graphkopie enthält absichtlich nur einen Dungeon.
+Der Bereichsworker öffnet deshalb die bestätigte Datenbank readonly und legt
+TEMP-Views darüber, die ausschließlich diesen Scope aus einer ebenfalls readonly
+angehängten Vorschau ersetzen. Beide Änderungsjournale und Dateibindungen
+gehören zum Source-Fence. Stadt-/Weltkontext und andere Dungeons bleiben aus
+der bestätigten Quelle verfügbar. Vor Übernahme/Verwerfen werden beide
+Bereichsworker beendet und gejoint, bevor die Vorschau entfernt wird.
+Quelle, Aktivierung, Revision, Ausschnitt, Geschoss, Höhenschnitt und
 Dachfilter binden Read und Hit. Veraltete Ergebnisse dürfen keine neue Auswahl
 oder Autorenmutation begründen.
 
@@ -522,6 +529,24 @@ TEMP-Neuaufbau gegen eine persistente, quellgebundene abgeleitete Geometrie ist
 der nächste Messvergleich; keine Text-/Historymigration ohne Übertragungs- und
 Wiederaufnahmebeleg. Ein EXPLAIN-Gegenfall begründet die Rtree-zuerst-Abfrage:
 ein regulärer Join wählte den Geometrietypindex und besuchte alle Raumzeilen.
+
+Auch die Standardsuche nach dem ersten Raum war bei fehlender expliziter
+Auswahl pro Frame linear. Die Shell merkt sich nur dessen ID je DB/Kampagne
+und Änderungsstand; lokale Änderungen und externes `data_version` verwerfen
+sie. Explizite Nutzerauswahl hat Vorrang, es wird kein Dokument dafür verändert.
+
+Eine lokale Vergleichsprobe mit 4000 beziehungsweise 12000 Räumen und 5000
+Gebäuden (je 4 KiB Autorenprosa, 30 warme Reads desselben kleinen Ausschnitts)
+liefert nach dieser Korrektur 4,7 KiB Bereichsantwort gegenüber 23,3/26,6 MB
+Vollansicht. Warmer Median: 7,6/6,5 ms statt 1072/1426 ms, p95 10,6/9,4 ms
+statt 1917/2002 ms. Der Preis bleibt der kalte TEMP-Aufbau: 8,9/14,1 s statt
+2,6/1,8 s für den direkten Vollread in diesem Durchlauf. Maximum-RSS des
+Node-/SQLite-Prozesses: rund 258 statt 452 MiB bei 4000 Räumen, bei 12000
+Räumen in beiden Wegen rund 586 MiB. Das große Speicherziel ist damit nicht
+belegt. Prozessstart/Schemaarbeit gehen in den RSS-Höchststand ein; kalte
+Readzeit, OS-Cache, Systemlast, Electron und GPU sind unterschiedliche Größen.
+Der Messhelfer speichert Commit, Dirty-Status und Bundlehash; diese lokale
+Messung ist kein Hardware- oder Latenzfreigabebeleg.
 
 Landschaftsflächen bleiben im vorhandenen Rasterweg. Der ältere separate
 Vektorread für Wege, Flüsse, Orte und Referenzen hat nun ebenfalls eine

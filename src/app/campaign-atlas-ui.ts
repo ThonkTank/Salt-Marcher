@@ -2012,7 +2012,7 @@ export class CampaignAtlasWorkbench {
         const rasters=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,(part,w,h)=>window.campaign.landscapeRaster(owner.token,part,w,h,'export'),()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Bild wird vorbereitet: ${done}/${total}`;});
         let encoded=rasters.reduce((n,r)=>n+r.data.length*2,0);
         const geometryTiles=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,async(part,w,h)=>{
-          const response=await window.campaign.atlasRegion(owner.token,{...exportQuery,box:part,width:w,height:h,revision:snapshot.revision},'export');if(!response.ok)return response;
+          const response=await window.campaign.atlasRegion(owner.token,{...exportQuery,box:part,width:w,height:h,revision:snapshot.revision,fence:snapshot.region!.fence},'export');if(!response.ok)return response;
           const tile=response.value;if(tile.revision!==snapshot.revision)throw new Error('Atlas wurde während der Ausgabe geändert. Erneut ausgeben.');
           const svg=atlasRegionSVG(tile,[],part,w,new Map(),{grid:false,level:0,references:false,floorId:this.floorId,roofs:exportQuery.roofs,geometryOnly:true});
           const png=await atlasPNG(svg,w,h);let binary='';for(let i=0;i<png.length;i+=32768)binary+=String.fromCharCode(...png.slice(i,i+32768));const data='data:image/png;base64,'+btoa(binary);encoded+=data.length*2;

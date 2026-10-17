@@ -8,16 +8,16 @@ export class AtlasRegionService {
  private generation=0;private closed=false;private source:AtlasRegionSource|null=null;
  private cache=new Map<string,{json:string;bytes:number}>();private cacheBytes=0;
  constructor(private workerFile=join(__dirname,'atlas-region-worker.cjs'),private cacheLimit=REGION_CACHE_BYTES){}
- get cursor(){return this.source?{epoch:this.source.epoch,sequence:this.source.sequence}:undefined;}
+ get cursor(){return this.source?{epoch:this.source.epoch,sequence:this.source.sequence,...(this.source.shadow?{shadow:{epoch:this.source.shadow.epoch,sequence:this.source.shadow.sequence}}:{})}:undefined;}
  cancel(){this.generation++;const worker=this.worker;this.worker=null;this.identity='';this.source=null;this.pending?.reject(new Error('Kartenausschnitt abgebrochen.'));this.pending=null;if(worker)void worker.terminate();}
  async cancelAndWait(){this.cancel();await this.exit;}
  async close(){this.closed=true;await this.cancelAndWait();this.cache.clear();this.cacheBytes=0;}
  private async run(source:AtlasRegionSource,job:object){
-  const identity=JSON.stringify([source.filename,source.campaignId,source.token,source.epoch]);
+  const identity=JSON.stringify([source.filename,source.campaignId,source.token,source.epoch,source.shadow?.filename,source.shadow?.scopeId,source.shadow?.epoch]);
   if(this.pending||this.identity!==identity)this.cancel();const generation=this.generation;await this.exitIfStopped();
   if(this.closed||generation!==this.generation)throw new Error('Kartenausschnitt abgebrochen.');
   if(!this.worker){
-   const worker=new Worker(this.workerFile,{workerData:{filename:source.filename}});this.worker=worker;this.identity=identity;
+   const worker=new Worker(this.workerFile,{workerData:{filename:source.filename,shadow:source.shadow}});this.worker=worker;this.identity=identity;
    this.exit=new Promise(resolve=>worker.once('exit',resolve));
    worker.on('message',result=>{if(this.worker!==worker)return;const pending=this.pending;this.pending=null;if(result.error)pending?.reject(new Error(result.error));else pending?.resolve(result.value);});
    const fail=(e:Error)=>{if(this.worker!==worker)return;this.pending?.reject(e);this.pending=null;this.worker=null;this.source=null;this.identity='';};

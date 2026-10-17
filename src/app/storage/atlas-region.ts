@@ -31,8 +31,15 @@ const pause=()=>new Promise<void>(resolve=>setImmediate(resolve));
 /** Rebuildable TEMP projections on a readonly source connection. No author data is written. */
 export class AtlasRegionReader {
  private readFaults=0;private countFaults=true;private ready=false;private indexed=true;private campaign='';private count=0;
- constructor(private db:any){
+ constructor(private db:any,shadow?:{filename:string;scopeId:string}){
+  if(!db.readonly)throw new Error('Atlasprojektion benötigt eine readonly Datenbank.');
   db.pragma('cache_size = -8192');db.pragma('temp_store = FILE');db.pragma('temp.cache_size = -8192');
+  if(shadow){
+   db.prepare('ATTACH DATABASE ? AS graph_preview').run(shadow.filename);
+   const scope="'"+shadow.scopeId.replaceAll("'","''")+"'";
+   // Scope-only overlays preserve canonical City/world tables and other Dungeons.
+   for(const table of ['room','drawing_element','drawing_profile','drawing_hidden','drawing_floor','dungeon_volume','dungeon_key_content'])db.exec(`CREATE TEMP VIEW ${table} AS SELECT rowid AS rowid,* FROM main.${table} WHERE scope_id<>${scope} UNION ALL SELECT (SELECT coalesce(max(rowid),0) FROM main.${table})+rowid AS rowid,* FROM graph_preview.${table}`);
+  }
   db.exec(`CREATE TEMP TABLE region_shape(key TEXT PRIMARY KEY,kind TEXT NOT NULL,owner TEXT NOT NULL,scope TEXT NOT NULL,floor TEXT NOT NULL,source_order INTEGER NOT NULL,min_x REAL,max_x REAL,min_y REAL,max_y REAL,payload TEXT NOT NULL);
    CREATE INDEX temp.region_shape_owner ON region_shape(kind,owner,scope,floor);
    CREATE TEMP TABLE region_problem(key TEXT PRIMARY KEY,id TEXT NOT NULL);
@@ -149,7 +156,7 @@ export class AtlasRegionReader {
   }
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery):AtlasRegionGeometry{
-  this.readFaults=0;this.countFaults=true;validateRegion(q);if(q.revision!==undefined&&q.revision!==source.revision)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
+  this.readFaults=0;this.countFaults=true;validateRegion(q);if(q.revision!==undefined&&q.revision!==source.revision||q.fence!==undefined&&q.fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   const result:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box:{...q.box},slice:q.slice,scopeId:q.scopeId,floorId:q.floorId,rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.db.prepare('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
   let used=bytes(result),dense=false;const cities=new Map<string,AtlasRegionGeometry['cities'][number]>();
   const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader)=>{

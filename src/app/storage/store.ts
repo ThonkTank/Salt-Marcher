@@ -149,6 +149,7 @@ function snapshotDigest(filename:string){const fd=openSnapshot(filename,'r'),has
 export class CampaignStore {
   private chronicleRead:ChronicleReadSession|null=null;
   private db: any;
+  private shellFirstRoom=new WeakMap<object,{campaignId:string;stamp:string;id:string|null}>();
   private graphShadow:GraphShadow|null=null;
   private graphRouting=false;
   private withGraph<T>(fn:()=>T):T {const original=this.db;if(!this.graphShadow)return fn();this.db=this.graphShadow.db;this.graphRouting=true;try{return fn();}finally{this.db=original;this.graphRouting=false;}}
@@ -337,10 +338,12 @@ export class CampaignStore {
     const root=atlasRoot(this.db,c.campaignId);
     return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...atlasHistoryState(this.db,c.campaignId)};
   }
-  atlasRegionSource(token:string,cursor?:{epoch:string;sequence:number}):AtlasRegionSource {
-    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.atlasRegionSource(token,cursor));
-    const campaignId=this.guard(token),changes=atlasReadChanges(this.db,campaignId,cursor),source=this.roomReadSource(token);
-    return{...source,...changes,fence:hash(JSON.stringify([source.fence,changes.epoch,changes.sequence])),revision:atlasRoot(this.db,campaignId).revision};
+  atlasRegionSource(token:string,cursor?:import('../atlas-region-contracts').AtlasRegionCursor):AtlasRegionSource {
+    const campaignId=this.guard(token),changes=atlasReadChanges(this.db,campaignId,cursor),preview=this.graphShadow;
+    const shadowChanges=preview?atlasReadChanges(preview.db,campaignId,cursor?.shadow):undefined;
+    const shadow=preview&&shadowChanges?{filename:preview.db.name,scopeId:preview.scopeId,epoch:shadowChanges.epoch,sequence:shadowChanges.sequence}:undefined;
+    const fingerprint=[this.db.name,this.db.prepare('SELECT total_changes() n').get().n,changes.epoch,changes.sequence,shadow,preview?.db.prepare('SELECT total_changes() n').get().n,preview?.state()];
+    return{filename:this.db.name,campaignId,token,...changes,shadow,reset:changes.reset||!!shadowChanges?.reset,changes:[...changes.changes,...(shadowChanges?.changes??[])],fence:hash(JSON.stringify(fingerprint)),revision:atlasRoot(this.db,campaignId).revision};
   }
   atlasCitySite(token:string,cityId:string,id?:string):import('../atlas-region-contracts').AtlasCitySite{return this.db.transaction(()=>{
     const cam=this.guard(token),site=id?readCitySite(this.db,cam,cityId,id):{header:readCityHeader(this.db,cam,cityId),unit:null};
@@ -643,7 +646,12 @@ export class CampaignStore {
     return this.db.transaction(()=>{
       const campaign=this.db.prepare('SELECT * FROM campaign WHERE id=?').get(campaignId);
       const valid=this.db.prepare(`SELECT r.id FROM room r WHERE ${visibleRoomWhere} AND r.id=?`).get(campaignId,campaign.selected_id);
-      let first=valid;if(!first)for(const row of this.db.prepare(`SELECT r.id,r.number FROM room r WHERE ${visibleRoomWhere}`).iterate(campaignId))if(!first||roomOrder(row,first)<0)first=row;
+      let first=valid;
+      if(!first){
+        const stamp=JSON.stringify([this.db.prepare('SELECT total_changes() n').get().n,this.db.pragma('data_version',{simple:true})]),cached=this.shellFirstRoom.get(this.db);
+        if(cached?.campaignId===campaignId&&cached.stamp===stamp)first=cached.id?{id:cached.id}:null;
+        else{for(const row of this.db.prepare(`SELECT r.id,r.number FROM room r WHERE ${visibleRoomWhere}`).iterate(campaignId))if(!first||roomOrder(row,first)<0)first=row;this.shellFirstRoom.set(this.db,{campaignId,stamp,id:first?.id??null});}
+      }
       return{graphPreview:this.graphShadow?.state(),campaign:{id:campaign.id,name:campaign.name,revision:campaign.revision},token,selectedId:first?.id??null,
         canUndo:!!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId,campaign.cursor),
         canRedo:!!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId,campaign.cursor+1)};
