@@ -68,9 +68,24 @@ Autorenreads. Raum-/Stadtansichten wechseln oberhalb des Vektor-/Bytebudgets
 auf eine vollständige Rasterdarstellung; Auswahl bleibt an die kanonische
 Geometrie gebunden. Der Geometriecache zählt serialisierte Nutzdaten und
 begrenzt Ansicht und Export gemeinsam auf 64 MiB. Die exakten Regelreader und
-expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist nun in denselben quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden die bestehenden Canvas-Zeichenkommandos innerhalb einer geladenen Abdeckung; eine Workerqueue erhält den TEMP-Index. Der lokale native Vergleich senkt Landschaftsöffnung auf etwa1,34–1,89s für100000Flächen plus1200Objekte bei100/200%; Zoom verfehlt das16-ms-Ziel teilweise weiter. B02 nutzt schmale128erPayloadseiten und verwirft nur nachweislich wirkungslose Raster-Samples; ein8/16/32-MiB-Cacheexperiment begründet keine Budgeterhöhung. Tatsächlicher Langzeit-App-/GPU-Speicher und physische16-GiB-Qualifikation bleiben Messaufgaben; daraus folgt noch keine Entscheidung gegen persistente
-abgeleitete Geometrie, GPU-Komposition oder einen anderen Cacheumfang. Details und
-Abnahmegrenzen hält der oben verlinkte Runtimeplan.
+expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist in denselben
+quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht
+und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden vorhandene
+Canvas-Zeichenkommandos innerhalb geladener Abdeckung; eine Workerqueue erhält
+den TEMP-Index. Kameraaufträge halten zusammenhängende Radfolgen auf der alten
+transformierten Szene und lesen erst nach 120 ms Ruhezeit den nötigen neuen Frame.
+Veraltete Autorenhits bleiben bis dahin gesperrt.
+
+Der lokale native Vergleich senkt Landschaftsöffnung mit 100000 Flächen plus
+1200 Objekten bei 100/200% von etwa 3,62–3,69 s auf 1,45–1,52 s einschließlich
+sichtbarem Ausschnitt. Input-CPU für Zoom sinkt auf etwa 3–6 ms p95; das ist
+keine Compositor-/GPUzeit. B02 nutzt schmale 128er-Payloadseiten und verwirft
+nur nachweislich wirkungslose Raster-Samples. Ein 8/16/32-MiB-Cacheexperiment
+begründet keine Budgeterhöhung. Je 20 geschlossene Zoomzyklen auf vier Beständen
+halten lokale JS-/Prozess-/Bildspeicher stabil; längere Autorensitzungen und
+physische 16-GiB-Qualifikation bleiben offen. Daraus folgt noch keine Entscheidung
+gegen persistente abgeleitete Geometrie, GPU-Komposition oder einen anderen
+Cacheumfang. Details und Abnahmegrenzen hält der oben verlinkte Runtimeplan.
 
 Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
 Darstellungsgeometrie und vollständigen ausgewählten Autoreninhalt. Diese

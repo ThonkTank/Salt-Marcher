@@ -294,7 +294,7 @@ bleiben kompatibel. Prozessnotizen und lokale Messpfade gehören nicht ins Repo.
 
 | Schritt | Konkreter Anschluss / Nutzerwirkung | Direkte Abnahme und aktueller Stand |
 | --- | --- | --- |
-| 0 Ausgangsbasis | Bestehende Writer/History/Volumes/Gebäude/Reise/Player prüfen statt neu bauen. Gleiche kleine Kampagne, Großwelt, dichte/komplexe Region, 5000 Gebäude, 100000 Dungeonzellen, große Bildvorlage/Export als Vergleichsdaten. | Code-/Messbasis vorhanden; bisherige Großwald-/4000-Raumproben sind isolierte Diagnosen, keine 16-GiB-/Gesamtfreigabe. Nativer Großwald-Teilweg belegt; 16-GiB-, Stadt-/Dungeon- und Medienprofile weiter offen. |
+| 0 Ausgangsbasis | Bestehende Writer/History/Volumes/Gebäude/Reise/Player prüfen statt neu bauen. Gleiche kleine Kampagne, Großwelt, dichte/komplexe Region, 5000 Gebäude, 100000 Dungeonzellen, große Bildvorlage/Export als Vergleichsdaten. | Code-/Messbasis vorhanden; bisherige Großwald-/4000-Raumproben sind isolierte Diagnosen, keine 16-GiB-/Gesamtfreigabe. Nativer Vergleich kleiner Karte,100000 Terrainflächen plus1200 Objekte,5000 Gebäude und100000 Volumenzellen bei100/200% liegt vor; physische16-GiB-, vollständige Bearbeitungs- und Medienqualifikation bleiben offen. |
 | 1 Gezielte Reads | `campaign-atlas-contracts`, Store, Preload/Main, Workbench: Übersicht, räumliche Seite, Objektdetail und Commitbeleg trennen. Keine vollständigen Räume/Städte für eine kleine Ansicht; begrenzte Antworten mit ausdrücklicher Fortsetzung/Zusammenfassung. | Erster Anschluss implementiert: getrennte Übersicht/Roomdetail, revisionsgebundene Metadatenseiten für Raum-/Stadt-/Landschaftssuche und kompakter Landschaftscommit. 4000-Raum-Probe ohne Vollansichten und mit unveränderter Prosa. Kampagnenaktivierung und Atlas öffnen nun über Shell und Geometrieprojektionen; der Raumeditor liest den gewählten vollständigen Raum und dessen Arbeitsentwurf gezielt. Raumtextänderungen antworten mit genau diesem Raum. Räumliche Stadt-/Raumreads sind nun bereichs- und bytebegrenzt, genaue Autorenleser getrennt; Legacy-Fachvollreader bleiben gesonderte offene Anschlüsse. Landschaft, Geometrie und genaue paginierte Auswahl verwenden jetzt denselben quellengebundenen Bereichsframe. |
 | 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Legacy-Landschaftsreads werden erst beim ersten benötigten Read aufgebaut; der gemeinsame Worker indiziert nur Nichtflächen und verwendet für Terrain kanonische Bounds-Btrees mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen; fehlgeschlagener Indexaufbau rollt vollständig zurück und fällt auf kanonische Btree-Reads zurück, ohne andere Kampagnen zu sperren. Raum-/Stadtprojektionen verwenden ebenfalls einen TEMP-Rtree mit atomarem Scanfallback; aktualisierte Konturen erhalten ihre kanonische Überlappungsreihenfolge. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
 | 3 Übersicht/Frame | Effektive grobe/feine Eigenschaften vor Aggregation bestimmen. Vereinfachte Flächen/Symbole/Kacheln schützen Landschaft beim Herauszoomen. Render/Hit publizieren denselben revisionsgebundenen Frame. | Landschaftsflächen werden in einem separaten Lese-Worker zu begrenzten, revisionsgebundenen Rasterbildern aggregiert; grobe Vorgaben und feine Übersteuerungen bleiben geordnet, Löcher erhalten. Native Linux-Probe: 100000 Flächen, sichtbar Wald → Wasser malen → Save → Neustart → Undo, tatsächliche Bildschirmfarben. Dichte Raum-/Stadtansichten verwenden nun Raster plus quellengebundenen genauen Hit; Elternframes werden unabhängig gelöst. Noch keine persistente Kachelpyramide oder Latenzfreigabe; B01/B04 offen. |
@@ -688,8 +688,8 @@ kein Stilwechsel und keine vollständige Phase1-/Phase2-Produktabnahme.
 ### Abschlussprüfung des Renderingpakets: Funktion und Geschwindigkeit
 
 Das beauftragte Paket „vollständig anzeigen, präzise bedienen, flüssig
-navigieren“ ist funktional angeschlossen; seine vollständige Leistungs- und
-Hardwareabnahme bleibt offen. Der spätere ausdrückliche Canvas2D-Auftrag ersetzt
+navigieren“ ist funktional angeschlossen. Lokale native Funktions- und CPU-/
+Speicherbelege ersetzen seine vollständige Hardware-/Präsentationsabnahme nicht. Der spätere ausdrückliche Canvas2D-Auftrag ersetzt
 seine ursprüngliche SVG-Arbeitsrichtung. Er ersetzt keine der fachlichen
 Anforderungen oder Messziele. Keine persistente Geometrieprojektion,
 Text-/Geometrietrennung oder Koordinatenmigration in diesem Paket.
@@ -727,8 +727,12 @@ Reproduzierbarer nativer Vergleich: `tools/measure-atlas-runtime.mjs` über
 vergleicht eine eingefrorene Runtime. Vier Bestände: kleine Kontrollkarte,
 100000 Terrainflächen plus 1200 Wege/Flüsse/Orte, 5000 Gebäude mit Prosa und
 100000 echte Volumenzellen. Jeweils frische Electronprozesse bei 100% und 200%,
-kalte Atlasöffnung, warme Wiederöffnung, native Pan-/Hover-/Vorschau-/Zoomfolgen,
-Workeraktivität, Szenenidentität und Prozess-/JS-/Bitmap-Speicher. OS-Dateicache
+kalte Atlasöffnung einschließlich Scrollen zum tatsächlich sichtbaren Ausschnitt,
+warme Wiederöffnung, native Pan-/Hover-/Vorschau-/Zoomfolgen,
+Workeraktivität, Szenenidentität und Prozess-/JS-/Bitmap-Speicher. Eingaben
+müssen die sichtbare Canvasfläche treffen; ein Pan muss die Kamera nachweislich
+bewegen. Eine frühe Messfassung konnte bei200% einen unterhalb des Fensters
+bereiten Canvas zählen; deren Öffnungszeit ist keine Sichtbarkeitsabnahme. OS-Dateicache
 ist nicht kontrolliert: „kalt“ bezeichnet hier den frischen Prozess/Projektionscache.
 Der ergänzende Volumenschnitt wird eigens ausgewiesen; die erste Dungeonöffnung
 allein zeigt noch keinen geprüften Höhenschnitt. Ein eigener nativer Nachlauf
@@ -736,27 +740,40 @@ mit aktiviertem Schnitt und bestätigten 100000 Zellen liegt bei beiden
 Skalierungen unter 2 s; er ersetzt keine gesamte Bearbeitungs-/Historyabnahme.
 
 Die lokale Vergleichsserie vom 17.10.2026 ergibt für die Landschaft etwa
-3,38–3,44 s → 1,34–1,89 s bis zum nutzbaren Ausschnitt und
-2,85–2,91 s → 1,17–1,39 s bei warmer Wiederöffnung. Kleine Karte, Stadt und
-Dungeon-Grundriss öffnen danach in etwa 0,50–1,45 s. Appbereitschaft wird
+3,62–3,69 s → 1,45–1,52 s bis zum nutzbaren Ausschnitt und
+2,82–2,87 s → 1,08–1,16 s bei warmer Wiederöffnung. Kleine Karte, Stadt und
+Dungeon-Grundriss öffnen danach in etwa 0,57–1,53 s. Appbereitschaft wird
 separat erfasst und nicht aus der gesamten Startzeit herausgerechnet.
 Die gemessene Renderer-CPU für Pan/Hover bleibt unter 16 ms p95,
-Vorschauen in dieser Serie unter 14 ms p95. Zoom erreicht bei Landschaft/Dungeon weiter rund
-16–20 ms p95 und verfehlt damit das 16-ms-Ziel in Teilen. Diese CPUwerte
+Vorschauen in der abschließenden Serie unter13ms p95. Zoom erreichte vor
+der nachfolgenden Korrektur bei Landschaft/Dungeon rund16–23ms p95. Das Profil zeigte
+mehrfache Reads/Renderaufbauten innerhalb einer Radfolge. Kameraaufträge
+verwenden nun120ms Ruhezeit und erhalten bis zur Antwort die schon transformierte
+Szene; Quellen-/Filteränderungen behalten ihren eigenen Ladeweg. Veraltete
+Autorenhits bleiben gesperrt. Der unmittelbare Nachlauf senkt Zoom auf etwa4–6ms
+p95; die abschließende Serie mit veränderten Endmaßstäben bestätigt
+3,2–5,9ms p95 für Zoom. Das Nachladen nach einer solchen Folge dauert
+32–481ms; seine gesamte CPUarbeit über diesen Zeitraum wird separat erfasst
+und ist keine einzelne Framezeit. Diese CPUwerte
 umfassen zwei Animationsframes nach echter Eingabe; sie beweisen weder
 Compositorpräsentation noch GPUlaufzeit. Platzhalter gelten nicht als nutzbar:
-vollständige Quellenabdeckung und tatsächliche Zeichenkommandos werden geprüft.
+vollständige Quellenabdeckung, tatsächliche Zeichenkommandos und sichtbarer
+Viewport werden geprüft. Fensterbilder stammen aus Electron `capturePage`;
+Playwrights Ausschnitt kann bei nativer200%-Skalierung die falsche Bildfläche erfassen.
 
 Offener Abschluss, ohne Umfangsverkleinerung:
 
-1. Zoomarbeit nach Pipelineanteilen profilieren: erforderlichen Framewechsel,
-   DOM-/Panelarbeit, Kompilierung, Zeichnen, Copy und Compositor getrennt prüfen.
-   Erst bei belegtem Zeichenengpass B01 OffscreenCanvas/Pixi vergleichen;
-   langsamere SQL-/Projektionsarbeit wird dadurch nicht beseitigt.
-2. Längere identische Navigationsfolgen mit eingeschwungenen Caches, JS-GC und
-   Gesamt-RSS/GPU beobachten. Drei kurze Zyklen mit begrenzten eigenen Bitmaps
-   und maximal einem aktiven Workerauftrag beweisen kein fehlendes langfristiges
-   Speicherwachstum. Cachegrößen nicht vorsorglich erhöhen.
+1. Tatsächliche Compositorpräsentation neben CPU messen. B01 OffscreenCanvas/
+   Pixi erst bei belegtem Zeichenengpass vergleichen; SQL-/Projektionsarbeit
+   wird dadurch nicht beseitigt. Einzelne lange Konturen und Medien separat
+   belasten, statt deren Kosten aus der Rechteck-/Kachelszene abzuleiten.
+2. Längerfristigen Einsatz mit Autorenänderungen, Undo und Medienwechseln
+   beobachten. Je20 geschlossene Zoomzyklen auf allen vier Beständen bei100/200%
+   hielten JS nach separater GC, Prozess-RSS und dekodierte Bilder stabil;
+   kein Worker hatte mehr als einen aktiven Auftrag. Das ist eine begrenzte
+   Navigationsprobe, kein unbegrenzter Leakbeweis.
+   `ATLAS_CYCLES`/`ATLAS_COLLECT_GC` wiederholen diesen Messfall; Post-GC und
+   normale Speichernutzung nicht gleichsetzen. Cachegrößen nicht vorsorglich erhöhen.
 3. Physische 16-GiB-Qualifikation, tatsächliche Präsentationslatenz und noch
    fehlende kombinierte Medien-/Einzelkontur-/Graph-/Public-Ausgabebelastungen
    getrennt abschließen. Bestehende funktionale Native- und Regressionstests

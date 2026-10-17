@@ -1,5 +1,6 @@
 // Native same-task Atlas benchmark. Run through tools/ui-session.py after build:desktop.
 // ATLAS_BASELINE_FIXTURES copies authored fixtures; ATLAS_RUNTIME_DIR freezes a baseline runtime.
+// ATLAS_CYCLES controls repeated navigation; ATLAS_COLLECT_GC records separate post-GC memory.
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,writeFile,readFile,stat,cp,symlink} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
@@ -8,6 +9,7 @@ import {performance} from 'node:perf_hooks';
 import path from 'node:path';
 import {totalmem,cpus,release} from 'node:os';
 import assert from 'node:assert/strict';
+const cycles=Number(process.env.ATLAS_CYCLES??3);assert(Number.isInteger(cycles)&&cycles>=1&&cycles<=120);
 const root=process.cwd(),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/atlas-runtime-evidence');await mkdir(out,{recursive:true});
 const require=createRequire(root+'/package.json'),{_electron}=require('playwright-core');
 require('esbuild').buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {volumeRow} from './src/app/storage/volume';",resolveDir:root},outfile:root+'/.build/atlas-plan-bench-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
@@ -16,7 +18,8 @@ const runtime=await mkdtemp(out+'/runtime-');await cp(process.env.ATLAS_RUNTIME_
 const bus=(await mkdtemp('/tmp/atlas-plan-bus-'))+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,bus,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});
 for(let i=0;i<100;i++){if(await stat(bus).then(()=>true).catch(()=>false))break;await new Promise(r=>setTimeout(r,20));}
 const fixtures=process.env.ATLAS_BASELINE_FIXTURES?JSON.parse(await readFile(process.env.ATLAS_BASELINE_FIXTURES,'utf8')):null;
-const result={host:{memoryBytes:totalmem(),cpu:cpus()[0]?.model,os:release(),node:process.version},runtimeSource:process.env.ATLAS_RUNTIME_REVISION??execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),method:'Fresh Electron processes; warm OS cache not controlled. Identical fixture copies when ATLAS_BASELINE_FIXTURES is supplied. Frame CPU uses whole-renderer CDP TaskDuration across real native input and two animation frames; frame delivery and GPU execution are not inferred from handler time. Physical 16-GiB qualification is separate.',commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),rendererHash:createHash('sha256').update(await readFile(runtime+'/ui/renderer.js')).digest('hex'),cases:[]};let app;
+const runtimeHashes=Object.fromEntries(await Promise.all(['main.cjs','preload.cjs','atlas-region-worker.cjs','atlas-raster-worker.cjs','ui/renderer.js'].map(async file=>[file,createHash('sha256').update(await readFile(runtime+'/'+file)).digest('hex')])));
+const result={runtimeHashes,cycles,collectGc:!!process.env.ATLAS_COLLECT_GC,host:{memoryBytes:totalmem(),cpu:cpus()[0]?.model,os:release(),node:process.version},runtimeSource:process.env.ATLAS_RUNTIME_REVISION??execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checkoutDirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),method:'Fresh Electron processes; warm OS cache not controlled. Identical fixture copies when ATLAS_BASELINE_FIXTURES is supplied. Frame CPU uses whole-renderer CDP TaskDuration across real native input and two animation frames; frame delivery and GPU execution are not inferred from handler time. Mixed zoom sequences settle at changed scales as well as returning to the original scale; settling interval CPU is reported separately from per-input samples. Physical 16-GiB qualification is separate.',commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),rendererHash:createHash('sha256').update(await readFile(runtime+'/ui/renderer.js')).digest('hex'),cases:[]};let app;
 try{for(const kind of (process.env.ATLAS_CASES??'small,landscape,city,dungeon').split(',')){
  const profile=await mkdtemp(out+'/'+kind+'-');let campaign;
  if(fixtures){const original=fixtures.cases.find(c=>c.kind===kind);assert(original,'Missing baseline fixture '+kind);const db=new (require('better-sqlite3'))(original.profile+'/workbench.sqlite',{readonly:true});await db.backup(profile+'/workbench.sqlite');campaign=db.prepare('SELECT id,name FROM campaign').get();db.close();}
@@ -43,32 +46,40 @@ try{for(const kind of (process.env.ATLAS_CASES??'small,landscape,city,dungeon').
   const opened=performance.now();await page.locator('#campaign-screen-list article').filter({hasText:'Atlas '+kind}).getByRole('button',{name:/^(Öffnen|Fortsetzen)$/}).click();
   await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
   if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
+  await page.locator('#campaign-map').scrollIntoViewIfNeeded();
   await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.regionState==='ready'&&document.querySelector('#campaign-map').dataset.canvasState==='loaded'&&Number(document.querySelector('#campaign-map').dataset.paintCommands)>0,null,{timeout:120000});
-  rec.openToUsableMs=performance.now()-opened;rec.startToUsableMs=performance.now()-started;rec.canvas=await page.locator('#campaign-map').evaluate(c=>({...c.dataset}));rec.initialWorkerFrame=await app.evaluate(()=>globalThis.__atlasWorkerMetrics.last);assert(rec.initialWorkerFrame?.coverage.complete&&rec.initialWorkerFrame?.landscape.complete,'Usable content requires complete source coverage');if(kind==='landscape')assert(rec.initialWorkerFrame.tiles>0&&rec.initialWorkerFrame.landscape.objects===1200);else assert(rec.initialWorkerFrame.coverage.objects>0);rec.nativeMetrics=await app.evaluate(({app})=>app.getAppMetrics());await page.screenshot({path:out+'/'+kind+'-'+zoom+'.png'});
+  await page.locator('#campaign-map').evaluate(c=>{const b=c.getBoundingClientRect();window.scrollBy(0,b.top+b.height/2-innerHeight*.6);});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  rec.initialViewport=await page.locator('#campaign-map').evaluate(c=>{const b=c.getBoundingClientRect();return{visibleWidth:Math.max(0,Math.min(innerWidth,b.right)-Math.max(0,b.left)),visibleHeight:Math.max(0,Math.min(innerHeight,b.bottom)-Math.max(0,b.top))};});assert(rec.initialViewport.visibleWidth>=32&&rec.initialViewport.visibleHeight>=32,'The usable map must be visible inside the window');
+  rec.openToUsableMs=performance.now()-opened;rec.startToUsableMs=performance.now()-started;rec.canvas=await page.locator('#campaign-map').evaluate(c=>({...c.dataset}));rec.initialWorkerFrame=await app.evaluate(()=>globalThis.__atlasWorkerMetrics.last);assert(rec.initialWorkerFrame?.coverage.complete&&rec.initialWorkerFrame?.landscape.complete,'Usable content requires complete source coverage');if(kind==='landscape')assert(rec.initialWorkerFrame.tiles>0&&rec.initialWorkerFrame.landscape.objects===1200);else assert(rec.initialWorkerFrame.coverage.objects>0);rec.nativeMetrics=await app.evaluate(({app})=>app.getAppMetrics());await writeFile(out+'/'+kind+'-'+zoom+'.png',Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').webContents.capturePage()).toPNG().toString('base64')),'base64'));
 
   const settled=async()=>page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.regionState==='ready'&&document.querySelector('#campaign-map').dataset.canvasState==='loaded',null,{timeout:120000});
   const frames=()=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const metrics=async()=>Object.fromEntries((await session.send('Performance.getMetrics')).metrics.map(m=>[m.name,m.value]));
   const samples={pan:[],hover:[],preview:[],zoom:[]};
   const sample=async(type,action)=>{const before=await metrics(),t=performance.now();await action();await frames();const after=await metrics();samples[type].push({rendererTaskMs:(after.TaskDuration-before.TaskDuration)*1000,scriptMs:(after.ScriptDuration-before.ScriptDuration)*1000,layoutMs:(after.LayoutDuration-before.LayoutDuration)*1000,sampleWallMs:performance.now()-t});};
-  const center=async()=>page.evaluate(()=>{const c=document.querySelector('#campaign-map'),r=c.getBoundingClientRect(),p={x:r.x+r.width/2,y:r.y+r.height/2};window.scrollBy(0,p.y-innerHeight*.6);const b=c.getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2};});
-  await frames();let p=await center();await frames();const beforePan=await app.evaluate(()=>globalThis.__atlasWorkerMetrics),scene=await page.locator('#campaign-map').getAttribute('data-scene-version');
+  const center=async()=>page.evaluate(()=>{const c=document.querySelector('#campaign-map'),r=c.getBoundingClientRect(),p={x:r.x+r.width/2,y:r.y+r.height/2};window.scrollBy(0,p.y-innerHeight*.6);const b=c.getBoundingClientRect();const at={x:b.x+b.width/2,y:b.y+b.height/2};if(document.elementFromPoint(at.x,at.y)!==c)throw Error('Native input must target the visible map');return at;});
+  await frames();let p=await center();await frames();const beforePan=await app.evaluate(()=>globalThis.__atlasWorkerMetrics),scene=await page.locator('#campaign-map').getAttribute('data-scene-version'),beforePanView=await page.locator('#campaign-map').getAttribute('data-atlas-view');
   await page.mouse.move(p.x,p.y);await page.mouse.down({button:'middle'});
   for(let i=0;i<30;i++)await sample('pan',()=>page.mouse.move(p.x+Math.sin(i/4)*10,p.y+Math.cos(i/5)*8));await page.mouse.up({button:'middle'});await settled();
+  assert.notEqual(await page.locator('#campaign-map').getAttribute('data-atlas-view'),beforePanView,'Native pan must actually move the camera');
   rec.bufferedPanRetainedScene=scene===await page.locator('#campaign-map').getAttribute('data-scene-version');assert(rec.bufferedPanRetainedScene);const afterPan=await app.evaluate(()=>globalThis.__atlasWorkerMetrics);assert.equal(afterPan.jobs,beforePan.jobs,'Buffered camera frames must not read SQLite');
+  const beforeHover=await app.evaluate(()=>globalThis.__atlasWorkerMetrics.jobs);
   for(let i=0;i<30;i++)await sample('hover',()=>page.mouse.move(p.x+Math.sin(i)*12,p.y+Math.cos(i)*8));
+  assert.equal(await app.evaluate(()=>globalThis.__atlasWorkerMetrics.jobs),beforeHover,'Hover must not read SQLite');
   await page.locator('#atlas-families [data-family=terrain]').click();await page.locator('#land-tool').selectOption('paint');await page.locator('#land-radius').fill('5');await settled();p=await center();await page.mouse.move(p.x,p.y);await page.mouse.down();
   for(let i=0;i<20;i++)await sample('preview',()=>page.mouse.move(p.x+i*.6,p.y+Math.sin(i/3)*3));await page.mouse.up();await page.locator('#land-cancel').click();await settled();
-  const memory=[];const snapshot=async()=>{memory.push({renderer:await metrics(),native:await app.evaluate(({app})=>app.getAppMetrics()),canvas:await page.locator('#campaign-map').evaluate(c=>({...c.dataset})),workers:await app.evaluate(()=>globalThis.__atlasWorkerMetrics)});};
+  const memory=[];const snapshot=async()=>{if(process.env.ATLAS_COLLECT_GC)await session.send('HeapProfiler.collectGarbage');memory.push({postGc:!!process.env.ATLAS_COLLECT_GC,renderer:await metrics(),native:await app.evaluate(({app})=>app.getAppMetrics()),canvas:await page.locator('#campaign-map').evaluate(c=>({...c.dataset})),workers:await app.evaluate(()=>globalThis.__atlasWorkerMetrics)});};
   await snapshot();
-  for(let cycle=0;cycle<3;cycle++){
+  for(let cycle=0;cycle<cycles;cycle++){
    p=await center();await page.mouse.move(p.x,p.y);const began=performance.now();
-   for(let i=0;i<10;i++)await sample('zoom',()=>page.mouse.wheel(0,i<5?-100:100));await settled();await frames();
-   memory.push({cycle,settleMs:performance.now()-began});await snapshot();
+   const steps=cycle%3===2?10:9,direction=cycle%3===1?-1:1;
+   for(let i=0;i<steps;i++)await sample('zoom',()=>page.mouse.wheel(0,(i<5?-100:100)*direction));const settling=await metrics(),settleStart=performance.now();await settled();await frames();const settledMetrics=await metrics();
+   memory.push({cycle,sequenceMs:performance.now()-began,settleMs:performance.now()-settleStart,settleRendererTaskMs:(settledMetrics.TaskDuration-settling.TaskDuration)*1000});await snapshot();
   }
   if(kind==='dungeon'){
    await page.locator('#atlas-search').fill('Messraum');await page.locator('#atlas-search-results button').filter({hasText:'Messraum'}).click();await page.locator('#atlas-search').fill('');await settled();
-   const sliceStarted=performance.now();await page.locator('#atlas-slice-enabled').check();await settled();await frames();rec.volumeSliceMs=performance.now()-sliceStarted;rec.volumeFrame=await app.evaluate(()=>globalThis.__atlasWorkerMetrics.last);assert.equal(rec.volumeFrame.query.scopeId,'local');assert.equal(rec.volumeFrame.query.slice,0);assert(rec.volumeFrame.coverage.complete&&rec.volumeFrame.coverage.objects>0);await page.screenshot({path:out+'/volume-slice-'+zoom+'.png'});
+   const sliceStarted=performance.now();await page.locator('#atlas-slice-enabled').check();await settled();await frames();rec.volumeSliceMs=performance.now()-sliceStarted;rec.volumeFrame=await app.evaluate(()=>globalThis.__atlasWorkerMetrics.last);assert.equal(rec.volumeFrame.query.scopeId,'local');assert.equal(rec.volumeFrame.query.slice,0);assert(rec.volumeFrame.coverage.complete&&rec.volumeFrame.coverage.objects>0);await writeFile(out+'/volume-slice-'+zoom+'.png',Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').webContents.capturePage()).toPNG().toString('base64')),'base64'));
    await page.locator('#atlas-slice-enabled').uncheck();await settled();
   }
   if(!await page.locator('#catalog-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#catalog-tab').click();await page.waitForFunction(()=>document.querySelector('#campaign-atlas').hidden);await page.waitForTimeout(250);

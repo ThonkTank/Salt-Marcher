@@ -186,7 +186,7 @@ export class CampaignAtlasWorkbench {
         this.brushId !== null,
       changed: () => {
         this.remember();this.svg.dataset.atlasOriginX=String(this.camera.view.x);this.svg.dataset.atlasOriginY=String(this.camera.view.y);
-        this.scheduleRegion();
+        this.scheduleRegion(true);
       },
     });
     get("atlas-export-cancel").onclick=()=>{this.exportCancelled=true;if(this.owner){void window.campaign.cancelLandscapeRaster(this.owner.token,'export');void window.campaign.cancelAtlasRegion(this.owner.token,'export');}};
@@ -446,12 +446,13 @@ export class CampaignAtlasWorkbench {
     const box=this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
     return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(get<HTMLInputElement>('atlas-slice').value):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,perception:get<HTMLInputElement>('atlas-perception').checked};
   }
-  private scheduleRegion(){
+  private scheduleRegion(camera=false){
     if(this.root.hidden||!this.owner)return;
     if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
     if(this.geometryCurrent()){this.root.dataset.regionState='ready';this.svg.setAttribute('aria-busy','false');return;}
     this.request++;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
-    this.regionTimer=setTimeout(()=>{this.regionTimer=null;void this.refresh();},60);
+    // Keep a wheel burst on the retained scene; rebuild only after input settles.
+    this.regionTimer=setTimeout(()=>{this.regionTimer=null;void this.refresh(camera);},camera?120:60);
   }
   private geometryCurrent(){
     const old=this.loadedRegionQuery,q=this.regionQuery();if(!old)return false;
@@ -535,7 +536,7 @@ export class CampaignAtlasWorkbench {
     this.opening={owner,task};
     try{await task;}finally{if(this.opening?.task===task)this.opening=null;}
   }
-  async refresh() {
+  async refresh(keepScene=false) {
     if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
     const w = this.owner,
       request = ++this.request;
@@ -545,7 +546,7 @@ export class CampaignAtlasWorkbench {
     this.previewRequest++;
     this.localPreview = null;
     this.playback.stop();
-    this.render();
+    if(!keepScene)this.render();
     this.renderTravel();
     try {
       const query=this.regionQuery(true);
