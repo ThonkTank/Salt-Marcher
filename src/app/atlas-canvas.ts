@@ -37,6 +37,8 @@ export class AtlasCanvas {
   private wheelAt = 0;
   private sceneOrigin = { x: 0, y: 0 };
   private sceneVersion = 0;
+  private tooltipPoint: { clientX: number; clientY: number } | null = null;
+  private tooltipAnimation = 0;
   private publishedGeneration = 0;
   private compiled: AtlasCanvasScene | null = null;
   private generation = 0;
@@ -139,6 +141,8 @@ export class AtlasCanvas {
           return;
         }
         this.suppressClick = false;
+        this.tooltipPoint = null;
+        root.title = "";
         if (
           this.drag ||
           this.options.locked?.() ||
@@ -246,6 +250,31 @@ export class AtlasCanvas {
       },
       { capture: true, passive: false },
     );
+    root.addEventListener("pointermove", (e) => {
+      this.tooltipPoint = { clientX: e.clientX, clientY: e.clientY };
+      if (!this.tooltipAnimation)
+        this.tooltipAnimation = requestAnimationFrame(() => {
+          this.tooltipAnimation = 0;
+          let title = "";
+          if (
+            this.tooltipPoint &&
+            this.ready &&
+            !this.drag &&
+            !this.options.locked?.()
+          ) {
+            const p = this.point(this.tooltipPoint);
+            title = this.compiled!.tooltip(this.ctx, {
+              x: p.x - this.sceneOrigin.x,
+              y: p.y - this.sceneOrigin.y,
+            });
+          }
+          if (root.title !== title) root.title = title;
+        });
+    });
+    root.addEventListener("pointerleave", () => {
+      this.tooltipPoint = null;
+      root.title = "";
+    });
     if (!this.ctx) this.fail(Error("Canvas2D ist nicht verfügbar."));
   }
   private screenStart(drag: NonNullable<AtlasCanvas["drag"]>) {
@@ -434,6 +463,7 @@ export class AtlasCanvas {
   context(key: string, initial: CanvasBox, restore = true) {
     if (key === this.contextKey) return false;
     this.cancel();
+    this.root.title = "";
     this.generation++;
     this.pending = null;
     this.compiled?.dispose();
@@ -540,6 +570,7 @@ export class AtlasCanvas {
     this.renderScene = draw;
     this.emptyText = emptyText;
     if (this.failed || this.lost) return;
+    this.root.title = "";
     const generation = ++this.generation;
     this.root.dataset.canvasState = "loading";
     try {
@@ -607,6 +638,7 @@ export class AtlasCanvas {
       }
   }
   private fail(error: unknown) {
+    this.root.title = "";
     this.generation++;
     this.pending = null;
     this.compiled?.dispose();

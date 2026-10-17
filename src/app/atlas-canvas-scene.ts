@@ -98,6 +98,7 @@ type Command = {
   node: AtlasPaint;
   matrix: DOMMatrix;
   path?: Path2D;
+  hitPath?: Path2D;
   fill: string;
   stroke: string;
   width: number;
@@ -105,6 +106,7 @@ type Command = {
   rule: CanvasFillRule;
   pointer: boolean;
   hud: boolean;
+  title: string;
   dash: number[];
   font: string;
   anchor: CanvasTextAlign;
@@ -229,6 +231,8 @@ export class AtlasCanvasScene {
       if (node.attrs.visibility === "hidden" || node.attrs.display === "none")
         return;
       const inherited = { ...style };
+      const title = node.children.find((child) => child.tagName === "title");
+      if (title) inherited.tooltip = title.textContent;
       for (const key of [
         "fill",
         "stroke",
@@ -248,7 +252,7 @@ export class AtlasCanvasScene {
       matrix = matrix.multiply(transform(node.attrs.transform));
       alpha *= number(node, "opacity", 1);
       pointer = pointer && node.attrs["pointer-events"] !== "none";
-      hud = hud || node.dataset.canvasHud!==undefined;
+      hud = hud || node.dataset.canvasHud !== undefined;
       if (
         node.tagName === "defs" ||
         node.tagName === "mask" ||
@@ -272,6 +276,7 @@ export class AtlasCanvasScene {
           rule: inherited["fill-rule"] === "evenodd" ? "evenodd" : "nonzero",
           pointer,
           hud,
+          title: inherited.tooltip ?? "",
           cap: (inherited["stroke-linecap"] ?? "butt") as CanvasLineCap,
           join: (inherited["stroke-linejoin"] ?? "miter") as CanvasLineJoin,
           dash:
@@ -361,6 +366,17 @@ export class AtlasCanvasScene {
         ctx.textBaseline = command.baseline;
         const x = number(n, "x"),
           y = number(n, "y");
+        if (command.pointer && !command.hitPath) {
+          const m = ctx.measureText(n.textContent),
+            path = new Path2D();
+          path.rect(
+            x - m.actualBoundingBoxLeft,
+            y - m.actualBoundingBoxAscent,
+            m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
+            m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+          );
+          command.hitPath = path;
+        }
         if (command.stroke !== "none") ctx.strokeText(n.textContent, x, y);
         if (command.fill !== "none") ctx.fillText(n.textContent, x, y);
       } else if (n.tagName === "image") {
@@ -382,25 +398,37 @@ export class AtlasCanvasScene {
     p: { x: number; y: number },
     selector: string,
   ): AtlasPaint | null {
+    return (
+      this.commandAt(ctx, p, (c) => !!c.node.closest(selector))?.node.closest(
+        selector,
+      ) ?? null
+    );
+  }
+  tooltip(ctx: CanvasRenderingContext2D, p: { x: number; y: number }) {
+    return this.commandAt(ctx, p, () => true)?.title ?? "";
+  }
+  private commandAt(
+    ctx: CanvasRenderingContext2D,
+    p: { x: number; y: number },
+    accept: (command: Command) => boolean,
+  ) {
     ctx.save();
     ctx.resetTransform();
     try {
       for (let i = this.commands.length - 1; i >= 0; i--) {
         const c = this.commands[i]!;
-        if(!c.pointer||!c.path)continue;
-        const target = c.node.closest(selector);
-        if(!target)continue;
+        const path = c.hitPath ?? c.path;
+        if (!c.pointer || !path || !accept(c)) continue;
         const at = new DOMPoint(p.x, p.y).matrixTransform(c.matrix.inverse());
         ctx.lineWidth = c.width;
         ctx.lineCap = c.cap;
         ctx.lineJoin = c.join;
         ctx.setLineDash(c.dash);
         if (
-          (c.fill !== "none" &&
-            ctx.isPointInPath(c.path, at.x, at.y, c.rule)) ||
-          (c.stroke !== "none" && ctx.isPointInStroke(c.path, at.x, at.y))
+          (c.fill !== "none" && ctx.isPointInPath(path, at.x, at.y, c.rule)) ||
+          (c.stroke !== "none" && ctx.isPointInStroke(path, at.x, at.y))
         )
-          return target;
+          return c;
       }
       return null;
     } finally {

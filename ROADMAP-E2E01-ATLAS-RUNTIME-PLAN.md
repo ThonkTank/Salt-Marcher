@@ -625,7 +625,9 @@ Native `isPointInPath`/`isPointInStroke` verwenden dieselben Pfade, Füllregeln,
 Linienmaße und inversen Gruppentransformationen wie die Zeichnung. Sie liefern
 nur passive semantische Griffe/Marker an den Anwender. Die vollständige
 Objektauswahl bleibt die quellengebundene paginierte Main-Abfrage; Rasterpixel
-werden nicht zur Schreibautorität. CSS-Ränder, Kameraskalierung und Bitmap-DPI
+werden nicht zur Schreibautorität. Hover-Namen von Markern/Zeichenobjekten stammen ebenfalls aus denselben Pfaden,
+auch ohne Autoren-Auswahl; sie werden bei Gesten/Framewechsel/Fehlern entfernt.
+CSS-Ränder, Kameraskalierung und Bitmap-DPI
 sind getrennt. Während ein neuer Bildframe vorbereitet wird, sind Autorenhits
 gesperrt. Nur der neueste vollständige Frame wird veröffentlicht; genau eine
 Bilddecodierung mit einem ersetzbaren Nachfolger verhindert Decoder-Fan-out.

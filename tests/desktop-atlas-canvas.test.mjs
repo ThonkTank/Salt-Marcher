@@ -393,3 +393,26 @@ test("switching map context revokes old commands and decoded media before new so
   assert(f.closed.includes("a"));
   assert.equal(f.root.dataset.canvasState, "empty");
 });
+
+test("marker titles survive outside semantic selection and the surface clears hover on a new gesture", async (t) => {
+  const f = fixture(t),
+    marker = atlasPaint("circle", { r: 3, fill: "red" });
+  marker.append(atlasPaint("title", {}, "Isobel · bekannt und sichtbar"));
+  f.canvas.render((root) => root.append(marker));
+  await settle();
+  assert.equal(
+    f.canvas.compiled.tooltip(f.ctx, { x: 0, y: 0 }),
+    "Isobel · bekannt und sichtbar",
+  );
+  assert.equal(
+    f.canvas.hitAt({ clientX: 11, clientY: 21 }),
+    null,
+    "a tooltip does not invent an author selection",
+  );
+  f.pointer("pointermove", 11, 21, 0);
+  f.flush();
+  assert.equal(f.root.title, "Isobel · bekannt und sichtbar");
+  f.pointer("pointerdown", 11, 21, 1);
+  assert.equal(f.root.title, "");
+  f.pointer("pointerup", 11, 21, 1);
+});
