@@ -1850,7 +1850,9 @@ export class CampaignAtlasWorkbench {
           city =
             preview?.token === this.owner?.token && preview?.view.header.id === citySaved.header.id &&
             preview.view.header.revision >= citySaved.header.revision
-              ? preview.view
+              ? preview.partial
+                ? {...citySaved,header:preview.view.header,units:[...new Map([...citySaved.units,...preview.view.units].map(u=>[u.id,u])).values()]}
+                : preview.view
               : citySaved,
           f = atlasFrame(data, binding),
           g = shape("g", { transform: frameTransform(this.relative(f)) });

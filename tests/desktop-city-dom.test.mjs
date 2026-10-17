@@ -456,7 +456,10 @@ test('house inspector counts canonical rooms and opens the same interior after r
   await returnHome();
   assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one).rooms.length,0);
   const before=x.store.db.serialize();x.click('city-interior');await until(()=>s.atlas.family==='interior');await settle();assert.equal(s.atlas.scopeId,scope);assert.ok(x.store.db.serialize().equals(before));
+  const originalCity=x.store.city(x.current().token,x.cityIds.one),neighbor={...structuredClone(originalCity.units.find(u=>u.id===x.unitIds.one)),id:randomUUID(),name:'Neighbor remains on map',position:{x:35,y:20}};
+  x.store.executeCity({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,cityId:x.cityIds.one,expectedRevision:originalCity.header.revision,action:{kind:'change',upsert:[neighbor],remove:[],label:'Nearby house'}});
   await s.activate('Alpha');await s.atlas.open();await s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);await settle();
+  s.atlas.focus(s.atlas.frame(scope),250);await s.atlas.refresh();s.atlas.render();assert.ok(s.svg.querySelector('[data-kind="building"][data-id="'+neighbor.id+'"]'),'selected-site metadata must not replace other visible buildings');assert.match(get('city-count').textContent,/Ausgewähltes Stadtelement/);
   assert.equal(get('city-interior-status').textContent,'Innenraum angelegt · 2 Räume');
   x.click('city-interior');await until(()=>s.atlas.family==='interior');assert.equal(s.atlas.scopeId,scope);
   await returnHome();

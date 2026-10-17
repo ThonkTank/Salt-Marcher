@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `b857b0ba8`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `2b8bfd52f`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -51,3 +51,5 @@ The global browser input blocker is repaired. A native Electron confirmation fro
 Live party travel through the prepared door, a fresh public PNG, fresh-host party/knowledge persistence, and actual separate browser player-display daylight/darkness/blanking checks now pass. [Live continuation and scope](LIVE-RESUME-20261017.md). Editable save/fresh reopen in Dungeon Scrawl, the complete region/city/live counterpart, darkvision, and native packaged player-window behavior remain open. The isolated native package at `727ce64b` is an older technical preview. Packaging, native UI qualification, comparison and owner acceptance remain separate claims. The draft is not promoted to Main on technical tests alone; promotion requires linear integration and its exact-SHA CI.
 
 Die beobachtete manuelle zweite Türbindung, der nach Rücknahme fehlgeschlagene Elementzugriff und die überlagerte Hausrückkehr sind jetzt umgesetzt und tatsächlich nachgeprüft. [Tür-/Rückweg-Nachtest](DOOR-RETURN-20261017.md).
+
+The bounded region integration retains precise place markers, exact house room counts, navigation guards and public projection. Actual regional search → location book → description-only live reuse passed; Hextml now has a real project export and independent fresh-file import, including recovered secret notes. The selected-house overlay no longer replaces neighboring city geometry. [Regional follow-up and remaining limits](REGIONAL-20261017.md).
