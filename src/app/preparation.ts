@@ -47,6 +47,7 @@ let pending: Promise<boolean> | null = null;
 const changesPending = new Set<Promise<void>>();
 let composing = false, blocked = false;
 let preparationLoad = 0, sceneSearchPlan:string|null=null;
+let planningRenderedLoad=-1,planningOpening:{load:number;task:Promise<void>}|null=null;
 let hasOpenInput = false, preparationInputVersion = 0;
 let failedCommand: PreparationCommand | null = null;
 let tell: (text: string, error?: boolean) => void;
@@ -129,11 +130,21 @@ export async function leavePreparation(): Promise<boolean> {
 }
 /** Opening preserves this editor; explicit activation renews its generation. */
 export async function ensurePreparation(workspace:WorkspaceGeometry) {
-  if(context?.token===workspace.token&&preparationLoaded)return;
+  if(context?.token===workspace.token&&preparationLoaded){await ensurePlanningView();return;}
   await activatePreparation(workspace);
+}
+/** A linked note can load the directory before the planning controls ever mount. */
+async function ensurePlanningView(){
+  if(!context||!preparationLoaded||planningRenderedLoad===preparationLoad)return;
+  const load=preparationLoad;if(planningOpening?.load===load)return planningOpening.task;
+  if(!data.plans.some(p=>p.id===selectedPlan))selectedPlan=data.plans.find(p=>p.id===data.selection.planId)?.id??data.plans[0]?.id??null;
+  if(selectedScene===null)selectedScene=data.selection.sceneId;
+  const task=renderPlans();planningOpening={load,task};
+  try{await task;}finally{if(planningOpening?.task===task)planningOpening=null;}
 }
 export async function activatePreparation(workspace: WorkspaceGeometry,load=true) {
   preparationLoaded=false;
+  planningRenderedLoad=-1;planningOpening=null;
   noteThread?.reset();
   roomUses?.reset();
   const request = ++preparationLoad;sceneSearchPlan=null;get<HTMLInputElement>('scene-search').value='';
@@ -378,6 +389,8 @@ async function renderPlans() {
   if (scene) { get<HTMLInputElement>('scene-title').value = scene.title; get<HTMLTextAreaElement>('scene-notes').value = scene.notes; }
   renderSceneLocation();
   await sessionContext(context,planDraft,selectedScene,data);
+  if(context?.token!==token||request!==preparationLoad||selectedPlan!==target)return;
+  planningRenderedLoad=request;
   renderSceneList();
   void checkpoint();
 }
@@ -417,7 +430,7 @@ async function insertNoteTextReference(){
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>) {
   const uses=get('note-room-uses');if(uses)roomUses=new NoteRoomUses(uses,(token,id,offset)=>window.campaign.noteRoomUses(token,id,offset),(id,current,restore)=>roomKeyOpen(id,current,restore));
   tell = (text,error)=>{status(text,error);noteThread?.feedback(text,error);packetNoteFeedback(text,error);};
-  for(const [id,plan] of [['preparation-knowledge',false],['preparation-planning',true]] as const)get(id).onclick=()=>{void(async()=>{const owner=context;if(await leavePreparation()&&context===owner)showPreparationArea(plan);})().catch(error=>tell(error.message,true));};
+  for(const [id,plan] of [['preparation-knowledge',false],['preparation-planning',true]] as const)get(id).onclick=()=>{void(async()=>{const owner=context;if(!await leavePreparation()||context!==owner)return;if(plan)await ensurePlanningView();if(context===owner)showPreparationArea(plan);})().catch(error=>tell(error.message,true));};
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}
   initSession(status,()=>flushPreparation(true),async (id,planId)=>{
     if(!context)return;const token=context.token,request=preparationLoad,query=value('world-search'),current=()=>context?.token===token&&request===preparationLoad;
@@ -630,6 +643,19 @@ export async function openPreparedVisit(planId:string,visitId:string,current:()=
   if(!token||!valid()||!await flushPreparation()||!valid())return;const next=unwrap(await window.campaign.preparation(token,''));if(!valid())return;
   const plan=next.plans.find(row=>row.id===planId);if(!plan){tell('Spielabendplan ist nicht verfügbar.',true);return;}if(!plan.scenes.some(scene=>scene.id===visitId)){tell('Vorbereiteter Besuch ist nicht verfügbar.',true);return;}
   usePreparation(next);get<HTMLInputElement>('world-search').value='';selectedPlan=planId;selectedScene=visitId;planDraft=null;showPreparationArea(true);showLocations(false);await renderPlans();if(valid()){get('scene-editor').scrollIntoView({block:'start'});get<HTMLInputElement>('scene-title').focus({preventScroll:true});}
+}
+
+/** Follow a plan identity without guessing a visit from a room's title. */
+export async function openPreparedPlan(planId:string,current:()=>boolean=()=>true):Promise<boolean>{
+  const owner=context,token=owner?.token,epoch=preparationLoad,valid=()=>current()&&context===owner&&context?.token===token&&preparationLoad===epoch;
+  if(!token||!valid()||!await leavePreparation()||!valid())return false;
+  const next=unwrap(await window.campaign.preparation(token,''));if(!valid())return false;
+  const plan=next.plans.find(row=>row.id===planId);if(!plan)throw new Error('Spielabendplan ist nicht verfügbar. Die Verknüpfung bleibt erhalten.');
+  const previous=selectedPlan;usePreparation(next);selectedPlan=planId;
+  if(previous!==planId||!plan.scenes.some(scene=>scene.id===selectedScene))selectedScene=plan.scenes[0]?.id??null;
+  planDraft=null;showPreparationArea(true);showLocations(false);await renderPlans();
+  if(!valid())return false;
+  const target=get<HTMLInputElement>(selectedScene?'scene-title':'plan-name');target.scrollIntoView({block:'center'});target.focus({preventScroll:true});return true;
 }
 
 export async function prepareNextVisit(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean;newPlanName?:string;noteThread?:import('./note-thread-contracts').NoteThreadSelection},stillCurrent:()=>boolean=()=>true):Promise<{planId:string;visitId:string}|undefined>{
