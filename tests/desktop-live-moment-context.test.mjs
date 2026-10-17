@@ -510,3 +510,37 @@ test('moment draft follows its scene through independent campaign copy without c
 test('corrupt moment draft stays explicit and cannot be replaced while its scene remains readable',async t=>{
  const x=await setup(t),draft={category:'world',title:'Original',summary:'Erhalten',followUp:''};x.store.keepLiveMomentDraft(x.w.token,x.scene.id,draft,null);x.store.db.prepare("UPDATE live_moment_draft SET checksum='broken' WHERE campaign_id=? AND scene_id=?").run(x.w.campaign.id,x.scene.id);const scene=x.store.live(x.w.token).scene;assert.match(scene.momentDraftError,/beschädigt/);assert.throws(()=>x.store.keepLiveMomentDraft(x.w.token,x.scene.id,null,draft),/beschädigt/);x.ui.activateLive(x.w);await x.ui.openLive();assert.equal(x.el('live-moment-title').disabled,true);assert.equal(x.el('live-moment-retry').disabled,false);assert.match(x.el('live-moment-draft-status').textContent,/beschädigt/);
 });
+
+test('the first prepared visit initializes a usable focused group and opens its adoption review',async t=>{
+ const x=await setup(t,false,false),planId=randomUUID(),visitId=randomUUID();
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'First evening',scenes:[{id:visitId,title:'Spuren am Mühlbach',notes:'Futter ermöglicht einen friedlichen Weg.',locationId:null}]}}});
+ assert.equal(x.store.live(x.w.token).scene,null);
+ const opened=await x.ui.openPlannedVisitReview(planId,visitId);await settle();
+ const live=x.store.live(x.w.token);
+ assert.equal(opened,true,JSON.stringify(x.messages));
+ assert.equal(x.el('scene-focus').value,live.focusId);
+ assert.equal(x.el('scene-focus').options.length,1);
+ assert.equal(x.el('adoption-dialog').open,true);
+ assert.match(x.el('adoption-content').textContent,/Spuren am Mühlbach/);
+ assert.equal(x.commands.filter(c=>c.action.kind==='initialize').length,1);
+ assert.equal(x.commands.filter(c=>c.action.kind==='apply-visit').length,0);
+ x.el('adoption-confirm').click();await settle();
+ const adopted=x.store.live(x.w.token);
+ assert.equal(adopted.scene.adoption.visitId,visitId);
+ assert.equal(adopted.scene.title,'Spuren am Mühlbach');
+ assert.equal(x.el('scene-focus').value,adopted.focusId);
+ assert.deepEqual(adopted.scene.clock,live.scene.clock);
+ assert.deepEqual(adopted.scene.members,live.scene.members);
+ assert.equal(x.commands.filter(c=>c.action.kind==='initialize').length,1);
+});
+
+test('first visit review waits for the new scene draft read across real asynchronous boundaries',async t=>{
+ const x=await setup(t,false,false),planId=randomUUID(),visitId=randomUUID();
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Opening',scenes:[{id:visitId,title:'Am Steg',notes:'Fischerin suchen',locationId:null}]}}});
+ const original=x.window.campaign.sceneCreationDraft;let release,reads=0,finished=false;
+ const held=new Promise(r=>release=r);t.after(()=>release());
+ x.window.campaign.sceneCreationDraft=async(...args)=>{reads++;await held;return original(...args);};
+ const opening=x.ui.openPlannedVisitReview(planId,visitId).then(result=>{finished=true;return result;});
+ await settle();assert.equal(reads,1);assert.equal(finished,false,'loading an unrelated quick-entry draft must not discard the handoff');
+ release();assert.equal(await opening,true);assert.equal(x.el('adoption-dialog').open,true);assert.match(x.el('adoption-content').textContent,/Am Steg/);
+});
