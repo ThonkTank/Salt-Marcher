@@ -1,70 +1,81 @@
-/** Retained paint commands, not browser elements. Canonical objects stay in the source frame. */
+/** Local drawing data shared by the Canvas screen and raster exports. */
+export type Affine = [number, number, number, number, number, number];
+export type PaintKind =
+  | "group"
+  | "path"
+  | "rect"
+  | "circle"
+  | "ellipse"
+  | "line"
+  | "polygon"
+  | "polyline"
+  | "text"
+  | "image";
+export interface PaintStyle {
+  fill?: string | null;
+  stroke?: string | null;
+  lineWidth?: number;
+  fillRule?: CanvasFillRule;
+  lineCap?: CanvasLineCap;
+  lineJoin?: CanvasLineJoin;
+  lineDash?: number[];
+  fontSize?: number;
+  fontFamily?: string;
+  fontWeight?: string | number;
+  textAlign?: CanvasTextAlign;
+  textBaseline?: CanvasTextBaseline;
+  fillOpacity?: number;
+  strokeOpacity?: number;
+}
+export interface PaintOptions {
+  x?: number;
+  y?: number;
+  x2?: number;
+  y2?: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  radiusX?: number;
+  radiusY?: number;
+  path?: string;
+  points?: { x: number; y: number }[];
+  source?: string;
+  matrix?: Affine;
+  opacity?: number;
+  pointer?: boolean;
+  hidden?: boolean;
+  hud?: boolean;
+  maskCuts?: { path: string; alpha: number }[];
+  size?: { width: number; height: number };
+  style?: PaintStyle;
+  data?: Record<string, string>;
+  title?: string;
+}
 export class AtlasPaint {
   readonly children: AtlasPaint[] = [];
-  readonly dataset: Record<string, string> = {};
-  parent: AtlasPaint | null = null;
-  textContent = "";
-  readonly attrs: Record<string, string> = {};
+  readonly style: PaintStyle;
+  readonly data: Record<string, string>;
+  title: string;
   constructor(
-    readonly tagName: string,
-    attrs: Record<string, string | number> = {},
+    readonly kind: PaintKind,
+    readonly geometry: PaintOptions = {},
+    public text = "",
   ) {
-    for (const [key, value] of Object.entries(attrs))
-      this.setAttribute(key, String(value));
-  }
-  setAttribute(key: string, value: string) {
-    this.attrs[key] = value;
-    if (key.startsWith("data-"))
-      this.dataset[
-        key.slice(5).replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
-      ] = value;
-  }
-  getAttribute(key: string) {
-    return this.attrs[key] ?? null;
+    this.style = geometry.style ?? {};
+    this.data = geometry.data ?? {};
+    this.title = geometry.title ?? "";
   }
   append(...nodes: AtlasPaint[]) {
-    for (const node of nodes) {
-      node.parent = this;
-      this.children.push(node);
-    }
-  }
-  closest(selector: string): AtlasPaint | null {
-    for (let n: AtlasPaint | null = this; n; n = n.parent)
-      if (
-        selector.split(",").some((s) => {
-          const m = s.trim().match(/^\[data-([\w-]+)\]$/);
-          return (
-            !!m &&
-            n!.dataset[
-              m[1]!.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
-            ] !== undefined
-          );
-        })
-      )
-        return n;
-    return null;
+    this.children.push(...nodes);
   }
 }
-
 export const atlasPaint = (
-  tag: string,
-  attrs: Record<string, string | number> = {},
-  text?: string,
-) => {
-  const node = new AtlasPaint(tag, attrs);
-  if (text) node.textContent = text;
-  return node;
-};
-const escapeXML = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
-/** Serialize the same geometry for vector exports and legacy SVG hosts. */
-export function paintMarkup(node: AtlasPaint): string {
-  const attrs = Object.entries(node.attrs).map(([k,v]) => ` ${k}="${escapeXML(v)}"`).join("");
-  return `<${node.tagName}${attrs}>${escapeXML(node.textContent)}${node.children.map(paintMarkup).join("")}</${node.tagName}>`;
-}
-export function paintElement(node: AtlasPaint, doc: Document): SVGElement {
-  const element = doc.createElementNS("http://www.w3.org/2000/svg", node.tagName);
-  for (const [k,v] of Object.entries(node.attrs)) element.setAttribute(k,v);
-  element.textContent = node.textContent;
-  for (const child of node.children) element.append(paintElement(child,doc));
-  return element;
+  kind: PaintKind,
+  options: PaintOptions = {},
+  text = "",
+) => new AtlasPaint(kind, options, text);
+export function rotation(angle: number, x = 0, y = 0): Affine {
+  const c = Math.cos(angle),
+    s = Math.sin(angle);
+  return [c, s, -s, c, x - x * c + y * s, y - x * s - y * c];
 }

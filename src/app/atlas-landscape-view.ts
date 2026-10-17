@@ -1,21 +1,10 @@
-import {paintFactory,type PaintTarget} from './atlas-canvas-scene';
+import {AtlasPaint,atlasPaint} from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { formatDistance, hexPolygon, hexSize } from "./atlas-landscape";
 import { roomPath } from "./drawing-model";
 import { terrainColors } from "./world-model";
-const ns = "http://www.w3.org/2000/svg";
-export function landscapeNode(
-  tag: string,
-  attrs: Record<string, string | number> = {},
-  text?: string,
-) {
-  const n = document.createElementNS(ns, tag);
-  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
-  if (text) n.textContent = text;
-  return n;
-}
 export function drawLandscape(
-  root: PaintTarget,
+  root: AtlasPaint,
   records: LandscapeRecord[],
   b: LandscapeBox,
   mpp: number,
@@ -23,11 +12,11 @@ export function drawLandscape(
   references = true,
   raster?: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[],
 ) {
-  const landscapeNode=paintFactory(root);
+  const landscapeNode=atlasPaint;
   let rasterDrawn=false;
   const drawRaster=()=>{
     if(!raster||rasterDrawn)return;rasterDrawn=true;
-    for(const tile of Array.isArray(raster)?raster:[raster])root.append(landscapeNode('image',{href:tile.data,x:0,y:0,width:tile.width,height:tile.height,transform:`translate(${tile.box.x-b.x} ${tile.box.y-b.y}) scale(${tile.box.width/tile.width} ${tile.box.height/tile.height})`,'pointer-events':'none','data-landscape-raster':'true'}));
+    for(const tile of Array.isArray(raster)?raster:[raster])root.append(landscapeNode("image", {source: tile.data, x:tile.box.x-b.x,y:tile.box.y-b.y,width:tile.box.width,height:tile.box.height, pointer: false, data: {landscapeRaster: String('true')}}));
   };
   for (const r of [...records].sort(
     (a, b) =>
@@ -37,93 +26,50 @@ export function drawLandscape(
       (a.order ?? 0) - (b.order ?? 0),
   )) {
     if(r.kind!=="reference")drawRaster();
-    const g = landscapeNode("g", { "data-landscape-id": r.id });
+    const g = landscapeNode("group", {data: {landscapeId: String(r.id)}});
     root.append(g);
     if (r.kind === "reference") {
       if (references && r.visible !== false && assets.has(r.assetId!))
         g.append(
-          landscapeNode("image", {
-            href: assets.get(r.assetId!)!,
-            x: 0,
-            y: 0,
-            width: r.width,
-            height: (r.width * (r.imageHeight ?? 1)) / (r.imageWidth ?? 1),
-            opacity: r.opacity ?? 0.4,
-            transform: `translate(${r.points[0]!.x - b.x} ${r.points[0]!.y - b.y}) rotate(${((r.angle ?? 0) * 180) / Math.PI})`,
-            "pointer-events": "none",
-          }),
+          landscapeNode("image", {source: assets.get(r.assetId!)!, x: 0, y: 0, width: r.width, height: (r.width * (r.imageHeight ?? 1)) / (r.imageWidth ?? 1), opacity: r.opacity ?? 0.4, matrix:[Math.cos(r.angle??0),Math.sin(r.angle??0),-Math.sin(r.angle??0),Math.cos(r.angle??0),r.points[0]!.x-b.x,r.points[0]!.y-b.y], pointer: false}),
         );
     } else if (r.kind === "patch") {
       if (r.values.terrain && !raster)
         g.append(
-          landscapeNode("path", {
-            d: roomPath(
+          landscapeNode("path", {path: roomPath(
               r.polygons.map((p) => ({
                 outer: p.outer.map((v) => ({ x: v.x - b.x, y: v.y - b.y })),
                 holes: p.holes.map((h) =>
                   h.map((v) => ({ x: v.x - b.x, y: v.y - b.y })),
                 ),
               })),
-            ),
-            fill: terrainColors[r.values.terrain]!,
-            "fill-rule": "evenodd",
-            "pointer-events": "none",
-          }),
+            ), pointer: false, style: {fill: terrainColors[r.values.terrain]!, fillRule: "evenodd"}}),
         );
     } else if (r.kind === "road" || r.kind === "river")
       g.append(
-        landscapeNode("polyline", {
-          points: r.points.map((p) => `${p.x - b.x},${p.y - b.y}`).join(" "),
-          fill: "none",
-          stroke: r.kind === "river" ? "#629ebc" : "#a37e51",
-          "stroke-width": Math.max(r.width, mpp * 2),
-          "stroke-linejoin": "round",
-          "stroke-linecap": "round",
-          "stroke-dasharray":
-            r.kind === "road" && r.style === "path"
-              ? `${mpp * 5} ${mpp * 3}`
-              : "none",
-        }),
+        landscapeNode("polyline", {points: r.points.map(p=>({x:p.x-b.x,y:p.y-b.y})), style: {fill: null, stroke: r.kind === "river" ? "#629ebc" : "#a37e51", lineWidth: Math.max(r.width, mpp * 2), lineJoin: "round", lineCap: "round", lineDash: r.kind === "road" && r.style === "path"
+              ? [mpp*5,mpp*3]
+              : []}}),
       );
     else if (r.kind === "place") {
       const p = r.points[0]!;
       g.append(
-        landscapeNode("circle", {
-          cx: p.x - b.x,
-          cy: p.y - b.y,
-          r: mpp * 5,
-          fill: "#5b4338",
-          stroke: "#f5efdb",
-          "stroke-width": mpp * 1.5,
-        }),
+        landscapeNode("circle", {x: p.x - b.x, y: p.y - b.y, radius: mpp * 5, style: {fill: "#5b4338", stroke: "#f5efdb", lineWidth: mpp * 1.5}}),
       );
       g.append(
-        landscapeNode(
-          "text",
-          {
-            x: p.x - b.x,
-            y: p.y - b.y - mpp * 10,
-            "font-size": mpp * 13,
-            "text-anchor": "middle",
-            "paint-order": "stroke",
-            stroke: "#f4efdf",
-            "stroke-width": mpp * 3,
-            fill: "#263e32",
-          },
-          r.name,
-        ),
+        landscapeNode("text", {x: p.x - b.x, y: p.y - b.y - mpp * 10, style: {fontSize: mpp * 13, textAlign: 'center', stroke: "#f4efdf", lineWidth: mpp * 3, fill: "#263e32"}}, r.name),
       );
     }
   }
   drawRaster();
 }
 export function drawLandscapeGrid(
-  root: PaintTarget,
+  root: AtlasPaint,
   b: LandscapeBox,
   level: number,
   mpp: number,
 ) {
-  const landscapeNode=paintFactory(root);
+  const landscapeNode=atlasPaint;
   const size = hexSize(level),
     r = Math.ceil(Math.max(b.width, b.height) / size) + 2;
   if (r > 45) return;
@@ -132,46 +78,22 @@ export function drawLandscapeGrid(
   for (let q = cq - r; q <= cq + r; q++)
     for (let y = cr - r; y <= cr + r; y++)
       root.append(
-        landscapeNode("path", {
-          d: roomPath(
+        landscapeNode("path", {path: roomPath(
             [hexPolygon(q, y, size)].map((p) => ({
               outer: p.outer.map((v) => ({ x: v.x - b.x, y: v.y - b.y })),
               holes: [],
             })),
-          ),
-          fill: "none",
-          stroke: "#36564444",
-          "stroke-width": mpp * 0.7,
-          "pointer-events": "none",
-          "data-landscape-grid": "true",
-        }),
+          ), pointer: false, style: {fill: null, stroke: "#36564444", lineWidth: mpp * 0.7}, data: {landscapeGrid: String("true")}}),
       );
 }
-export function drawScale(root: PaintTarget, b: LandscapeBox, mpp: number) {
-  const landscapeNode=paintFactory(root);
+export function drawScale(root: AtlasPaint, b: LandscapeBox, mpp: number) {
+  const landscapeNode=atlasPaint;
   const raw = mpp * 120,
     pow = 10 ** Math.floor(Math.log10(raw)),
     n = [1, 2, 5, 10].find((n) => n * pow >= raw)!,
     len = n * pow;
   root.append(
-    landscapeNode("path", {
-      d: `M ${mpp * 20} ${b.height - mpp * 35} v ${mpp * 5} h ${len} v ${-mpp * 5}`,
-      fill: "none",
-      stroke: "#23382d",
-      "stroke-width": mpp * 2,
-      "pointer-events": "none",
-      "data-editor-only": "true",
-    }),
-    landscapeNode(
-      "text",
-      {
-        x: mpp * 20,
-        y: b.height - mpp * 42,
-        "font-size": mpp * 11,
-        fill: "#23382d",
-        "data-editor-only": "true",
-      },
-      formatDistance(len),
-    ),
+    landscapeNode("path", {path: `M ${mpp * 20} ${b.height - mpp * 35} v ${mpp * 5} h ${len} v ${-mpp * 5}`, pointer: false, style: {fill: null, stroke: "#23382d", lineWidth: mpp * 2}, data: {editorOnly: String("true")}}),
+    landscapeNode("text", {x: mpp * 20, y: b.height - mpp * 42, style: {fontSize: mpp * 11, fill: "#23382d"}, data: {editorOnly: String("true")}}, formatDistance(len)),
   );
 }
