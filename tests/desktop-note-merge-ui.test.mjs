@@ -42,3 +42,7 @@ test('composition and persistence failure prevent sending while preserving the l
 test('a late merge preview cannot populate or persist another campaign',async t=>{
  const x=fixture(t),u=x.mount();await u.open();u.target.value=x.target.id;u.target.onchange=()=>{};let release;x.api.noteMergePreview=()=>new Promise(r=>release=()=>r({ok:true,value:x.preview}));const draft=JSON.parse(x.map.get('note-merge:campaign'));draft.targetId=x.target.id;x.map.set('note-merge:campaign',JSON.stringify(draft));u.activate('campaign');const opening=u.open();await settle();assert(release);u.activate('other');release();await opening;assert.equal(x.map.has('note-merge:other'),false);assert.equal(u.confirm.disabled,true);assert.equal(x.writes.length,0);
 });
+
+test('a malformed pending-command marker cannot be treated as a clean resumable draft',t=>{
+ const x=fixture(t);x.map.set('note-merge:campaign',JSON.stringify({version:1,sourceId:'source',targetId:'target',readAloud:'',gmNotes:'erhalten',edited:true,command:0}));const u=x.mount();assert(u.hasPending());assert.equal(x.writes.length,0);assert(x.map.get('note-merge:campaign').includes('erhalten'));
+});

@@ -72,7 +72,7 @@ export class NoteMergeUI {
     if(campaignId)try{
       const raw=this.options.storage.getItem(this.key());if(raw){const d=JSON.parse(raw) as Draft;
         if(d.version!==1||typeof d.sourceId!=='string'||!d.sourceId||typeof d.targetId!=='string'||[d.readAloud,d.gmNotes].some(s=>typeof s!=='string'||s.length>2_000_000)||typeof d.edited!=='boolean'||!Object.hasOwn(d,'command'))throw Error('Gesicherte Zusammenführung ist nicht lesbar. Originalvermerk bleibt erhalten.');
-        if(d.command){if(typeof d.command.commandId!=='string'||!d.command.commandId||typeof d.command.token!=='string'||!d.command.token||d.command.campaignId!==campaignId||d.command.change.kind!=='note-merge'||d.command.change.id!==d.sourceId||d.command.change.targetId!==d.targetId)throw Error('Gesicherter Auftrag gehört nicht zu dieser Zusammenführung.');checkedNoteMerge(d.command.change);}
+        if(d.command!==null){if(!d.command||typeof d.command!=='object'||typeof d.command.commandId!=='string'||!d.command.commandId||typeof d.command.token!=='string'||!d.command.token||d.command.campaignId!==campaignId||d.command.change.kind!=='note-merge'||d.command.change.id!==d.sourceId||d.command.change.targetId!==d.targetId)throw Error('Gesicherter Auftrag gehört nicht zu dieser Zusammenführung.');checkedNoteMerge(d.command.change);}
         this.draft=d;
       }
     }catch(e){this.loadError=true;try{this.raw.value=this.options.storage.getItem(this.key())??'';}catch{}this.options.tell((e as Error).message,true);}
