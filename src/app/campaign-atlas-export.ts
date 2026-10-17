@@ -9,7 +9,6 @@ import {
   atlasHexPoint,
   localToAtlas,
 } from "./campaign-atlas-model";
-import { roomPath } from "./drawing-model";
 import { terrainColors } from "./world-model";
 /** Public output uses only the public projection, never hidden GM nodes. */
 export function publicAtlasPaint(
@@ -45,8 +44,8 @@ export function publicAtlasPaint(
       [a.perception.visible, "#ded7bd"],
     ] as const)
       if (polys.length)
-        add("path", {
-          path: roomPath(polys),
+        add("polygons", {
+          polygons: polys,
           matrix: matrix,
           style: { fill: fill, fillRule: "evenodd" },
         });
