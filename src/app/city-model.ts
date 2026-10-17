@@ -51,7 +51,7 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
    while(along<range[1]*length){
     const w=r.size*(.75+random()*.5),h=r.size*(.8+random()*.65),offset=road.width/2+h/2+gap+.1,center=along+w/2;
     if(center<range[1]*length&&offset<=r.reach)await add({x:road.a.x+ux*center-uy*offset*side,y:road.a.y+uy*center+ux*offset*side},w,h,angle);
-    along+=w+r.size*(.15+1.6*(1-r.density))*(.85+random()*.3);
+    along+=(w+r.size*(.15+1.6*(1-r.density))*(.85+random()*.3))*Math.max(1,.4/r.density);
    }
   }
  }

@@ -18,6 +18,7 @@ Beim tatsächlichen Rückweg vom Haus/Innenraum über Live zur Stadtsuche blieb 
 
 - Gleiche Straßen und Viertel wie zuvor. Marktviertel: 80 Vorschläge; Verwerfen und Wiederholung ergeben wieder 80. Übernahme ersetzt 86 ungeschützte Häuser.
 - Südmarkt: 34 Vorschläge statt 17 bisheriger Häuser bei gespeicherter Dichte 0.4. Übernahme ergibt insgesamt 115 Häuser, drei Straßen, zwei Viertel und eine geschützte Taverne.
+- Untere Dichte tatsächlich geprüft: 0.05 ergibt zehn Vorschläge; nach Verwerfen und Rückkehr zu 0.65 wieder 80. Beide Vorschauen verworfen, gespeicherter Plan bleibt bei 115 Häusern.
 - Nach echtem QA-Host-Neustart: 115 Häuser sowie Vierteldichten 0.65/0.4 erneut gelesen. Tavernen-Notiz unverändert; Schankraum und Lagerraum wieder geöffnet.
 - Live-Karte: Mira bleibt im Lagerraum bei Tag 0, 00:00:21. Der öffentliche Kapellentext bleibt erhalten. Rückkehr zur Stadt zeigt 115 geladene Gebäude, ausgeblendeten Hausinspektor und aktive Stadtwerkzeuge.
 - Kanonischer Renderer/Preload/Main/SQLite/Worker im isolierten Browser-Host; kein Nachweis eines gepackten nativen Fensters.

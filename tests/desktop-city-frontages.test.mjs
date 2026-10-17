@@ -26,3 +26,6 @@ test('angled frontage lots fit beside one another without their bounding boxes f
 test('even a small frontage proposal can be cancelled before it starts publishing work',async()=>{
  let cancelled=false;const pending=generate(fixture(),recipe,()=>cancelled);cancelled=true;await assert.rejects(pending,/abgebrochen/);
 });
+test('the low end of the density control permits sparse settlement instead of a dense frontage floor',async()=>{
+ const low=await generate(fixture(),{...recipe,density:.05}),high=await generate(fixture(),{...recipe,density:1});assert(low.buildings.length>0);assert(low.buildings.length<high.buildings.length*.25);
+});
