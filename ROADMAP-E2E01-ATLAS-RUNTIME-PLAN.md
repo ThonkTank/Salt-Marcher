@@ -624,8 +624,11 @@ und Räume am bisherigen Bildschirmrand nicht verlieren.
 Native `isPointInPath`/`isPointInStroke` verwenden dieselben Pfade, Füllregeln,
 Linienmaße und inversen Gruppentransformationen wie die Zeichnung. Sie liefern
 nur passive semantische Griffe/Marker an den Anwender. Die vollständige
-Objektauswahl bleibt die quellengebundene paginierte Main-Abfrage; Rasterpixel
-werden nicht zur Schreibautorität. Hover-Namen von Markern/Zeichenobjekten stammen ebenfalls aus denselben Pfaden,
+Objektauswahl in Aggregaten bleibt die quellengebundene paginierte Main-Abfrage.
+Ein direkt getroffener Zeichnungsglyph öffnet wie zuvor dessen stabile ID über
+Main-Fokus und vollständigen Autorenread; auch Text-/Objektränder außerhalb
+des logischen Punkt-Pickradius bleiben damit auswählbar. Rasterpixel und
+Darstellungskonturen werden nicht zur Schreibautorität. Hover-Namen von Markern/Zeichenobjekten stammen ebenfalls aus denselben Pfaden,
 auch ohne Autoren-Auswahl; sie werden bei Gesten/Framewechsel/Fehlern entfernt.
 CSS-Ränder, Kameraskalierung und Bitmap-DPI
 sind getrennt. Während ein neuer Bildframe vorbereitet wird, sind Autorenhits

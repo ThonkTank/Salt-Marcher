@@ -977,7 +977,7 @@ export class CampaignAtlasWorkbench {
     try {
       if (this.family === "terrain") return;
       const selecting=this.root.dataset.roomDraw!=='true'&&this.entranceDraft===null&&(this.family==='navigation'||this.family==='interior'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='decoration'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='city'&&get<HTMLSelectElement>('city-tool').value==='select');
-      if(selecting&&this.geometryCurrent()){await this.chooseAt(p);return;}
+      if(selecting&&this.geometryCurrent()){if(kind==='element'&&id){await this.navigateElement(id);return;}await this.chooseAt(p);return;}
       if(!target&&this.data?.region?.raster&&this.owner&&this.loadedRegionQuery){
         if(!this.geometryCurrent()){this.opts.status('Kartenausschnitt wird geladen.');return;}
         const owner=this.owner,r=await window.campaign.atlasRegionHit(owner.token,this.loadedRegionQuery,p,this.data.region.fence);
