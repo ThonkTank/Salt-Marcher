@@ -1,0 +1,909 @@
+{
+  "source": "b5992cdc9187c136e1a1b45fc68d3f963d95ada7 (SVG generators before direct paint)",
+  "rooms": [
+    {
+      "id": "room",
+      "scopeId": "local",
+      "floorId": "ground",
+      "polygons": [
+        {
+          "outer": [
+            {
+              "x": 2,
+              "y": 2
+            },
+            {
+              "x": 18,
+              "y": 2
+            },
+            {
+              "x": 18,
+              "y": 18
+            },
+            {
+              "x": 2,
+              "y": 18
+            }
+          ],
+          "holes": []
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "name": "wall",
+      "element": {
+        "id": "wall",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "wall",
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 14
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": true,
+        "blocksSound": true,
+        "passable": false,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"wall\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polyline points=\"8,8 14,8 11,14\" fill=\"none\" stroke=\"#508040\" stroke-width=\"4\" stroke-linecap=\"round\"/></g>"
+    },
+    {
+      "name": "path",
+      "element": {
+        "id": "path",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "path",
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 14
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"path\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polyline points=\"8,8 14,8 11,14\" fill=\"none\" stroke=\"#508040\" stroke-width=\"4\" stroke-linecap=\"round\"/></g>"
+    },
+    {
+      "name": "door",
+      "element": {
+        "id": "door",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "door",
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 14
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": true,
+        "blocksSound": true,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"door\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polyline points=\"8,8 14,8 11,14\" fill=\"none\" stroke=\"#508040\" stroke-width=\"0.22\" stroke-linecap=\"round\"/><circle cx=\"11\" cy=\"8\" r=\"0.15\" fill=\"#508040\"/></g>"
+    },
+    {
+      "name": "stairs",
+      "element": {
+        "id": "stairs",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "stairs",
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 14
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"stairs\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polyline points=\"8,8 14,8 11,14\" fill=\"none\" stroke=\"#508040\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-dasharray=\"0.3 0.25\"/></g>"
+    },
+    {
+      "name": "terrain",
+      "element": {
+        "id": "terrain",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "terrain",
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 14
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"terrain\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polygon points=\"8,8 14,8 11,14\" fill=\"#508040\" opacity=\"0.55\" stroke=\"#508040\" stroke-width=\"0.06\"/></g>"
+    },
+    {
+      "name": "water",
+      "element": {
+        "id": "water",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "water",
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 14
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"water\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polygon points=\"8,8 14,8 11,14\" fill=\"#508040\" opacity=\"0.55\" stroke=\"#508040\" stroke-width=\"0.06\"/></g>"
+    },
+    {
+      "name": "roof",
+      "element": {
+        "id": "roof",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "roof",
+        "points": [
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 14
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"roof\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polygon points=\"8,8 14,8 11,14\" fill=\"#508040\" opacity=\"0.55\" stroke=\"#508040\" stroke-width=\"0.06\"/></g>"
+    },
+    {
+      "name": "light",
+      "element": {
+        "id": "light",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "light",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"light\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polygon points=\"6,10 6.008564307045586,9.738387483079428 6.034220554504758,9.477895231119794 6.076858878387078,9.219638711935486 6.136296694843727,8.964723819589915 6.212279482019578,8.714242138787354 6.304481869954853,8.46926627053964 6.412509033869247,8.230845239123994 6.535898384862245,8 6.674121550789819,7.777719067921591 6.82658663883506,7.5649542839651165 6.9926407700840905,7.362616739599725 7.17157287525381,7.17157287525381 7.362616739599725,6.9926407700840905 7.564954283965117,6.826586638835059 7.777719067921592,6.674121550789819 7.999999999999999,6.535898384862246 8.230845239123996,6.412509033869247 8.469266270539642,6.304481869954853 8.714242138787354,6.212279482019577 8.964723819589917,6.136296694843727 9.219638711935488,6.076858878387078 9.477895231119794,6.034220554504758 9.738387483079428,6.008564307045586 10,6 10.261612516920573,6.008564307045586 10.522104768880206,6.034220554504758 10.780361288064514,6.076858878387078 11.035276180410083,6.136296694843727 11.285757861212646,6.212279482019577 11.530733729460358,6.304481869954853 11.769154760876004,6.412509033869247 12,6.535898384862245 12.222280932078409,6.674121550789819 12.435045716034884,6.82658663883506 12.637383260400275,6.9926407700840905 12.82842712474619,7.17157287525381 13.00735922991591,7.362616739599725 13.17341336116494,7.5649542839651165 13.325878449210181,7.777719067921591 13.464101615137755,8 13.587490966130753,8.230845239123996 13.695518130045148,8.469266270539642 13.787720517980423,8.714242138787354 13.863703305156273,8.964723819589917 13.923141121612922,9.219638711935486 13.965779445495242,9.477895231119794 13.991435692954415,9.738387483079428 14,10 13.991435692954415,10.261612516920572 13.965779445495242,10.522104768880208 13.923141121612922,10.780361288064514 13.863703305156273,11.035276180410081 13.787720517980423,11.285757861212646 13.695518130045148,11.530733729460358 13.587490966130753,11.769154760876004 13.464101615137753,12 13.325878449210181,12.222280932078409 13.173413361164942,12.435045716034882 13.00735922991591,12.637383260400275 12.82842712474619,12.82842712474619 12.637383260400275,13.00735922991591 12.435045716034884,13.17341336116494 12.222280932078409,13.325878449210181 12.000000000000002,13.464101615137753 11.769154760876004,13.587490966130753 11.53073372946036,13.695518130045146 11.285757861212646,13.787720517980421 11.035276180410083,13.863703305156273 10.780361288064514,13.923141121612922 10.522104768880206,13.965779445495242 10.26161251692057,13.991435692954415 10,14 9.73838748307943,13.991435692954415 9.477895231119794,13.965779445495242 9.219638711935486,13.923141121612922 8.964723819589919,13.863703305156275 8.714242138787354,13.787720517980423 8.46926627053964,13.695518130045146 8.230845239123996,13.587490966130753 7.999999999999999,13.464101615137753 7.777719067921592,13.325878449210181 7.564954283965117,13.17341336116494 7.362616739599723,13.007359229915908 7.17157287525381,12.82842712474619 6.992640770084092,12.637383260400277 6.82658663883506,12.435045716034884 6.674121550789819,12.222280932078409 6.5358983848622465,12.000000000000002 6.412509033869247,11.769154760876006 6.304481869954854,11.530733729460362 6.212279482019578,11.285757861212646 6.136296694843727,11.035276180410083 6.076858878387078,10.780361288064514 6.034220554504758,10.522104768880206 6.008564307045586,10.26161251692057\" fill=\"#508040\" opacity=\"0.22\"/><circle cx=\"10\" cy=\"10\" r=\"0.18\" fill=\"#508040\"/></g>"
+    },
+    {
+      "name": "text",
+      "element": {
+        "id": "text",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "text",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"text\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><text x=\"10\" y=\"10\" font-size=\"3\" fill=\"#508040\" transform=\"rotate(30 10 10)\">Name &lt;&amp;&gt; &quot; &apos;</text></g>"
+    },
+    {
+      "name": "feature",
+      "element": {
+        "id": "feature",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "feature",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"feature\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><circle cx=\"10\" cy=\"10\" r=\"1.524\" fill=\"none\" stroke=\"#508040\" stroke-width=\"0.06\" stroke-dasharray=\"0.2 0.15\"/><path d=\"M10,9.6 L10.4,10.3 L9.6,10.3 Z\" fill=\"#508040\"/></g>"
+    },
+    {
+      "name": "object",
+      "element": {
+        "id": "object",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "object",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "chest",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"object\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><g transform=\"rotate(30 10 10)\"><rect x=\"8\" y=\"8.5\" width=\"4\" height=\"3\" rx=\"0.08\" fill=\"#508040\" stroke=\"#362f28\" stroke-width=\"0.06\"/><path d=\"M8,10 H12\" stroke=\"#362f28\" stroke-width=\"0.05\"/></g></g>"
+    },
+    {
+      "name": "bed",
+      "element": {
+        "id": "bed",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "object",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "bed",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"bed\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><g transform=\"rotate(30 10 10)\"><rect x=\"8\" y=\"8.5\" width=\"4\" height=\"3\" rx=\"0.08\" fill=\"#508040\" stroke=\"#362f28\" stroke-width=\"0.06\"/><path d=\"M8,10 H12\" stroke=\"#362f28\" stroke-width=\"0.05\"/><rect x=\"8.1\" y=\"8.6\" width=\"3.8\" height=\"0.6000000000000001\" fill=\"#ded1b1\"/></g></g>"
+    },
+    {
+      "name": "barrel",
+      "element": {
+        "id": "barrel",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "object",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "barrel",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"barrel\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><ellipse cx=\"10\" cy=\"10\" rx=\"2\" ry=\"1.5\" fill=\"#508040\" stroke=\"#362f28\" stroke-width=\"0.06\"/></g>"
+    },
+    {
+      "name": "pillar",
+      "element": {
+        "id": "pillar",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "object",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "pillar",
+        "blocksSight": false,
+        "blocksSound": false,
+        "passable": true,
+        "state": "closed",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": null,
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"pillar\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><ellipse cx=\"10\" cy=\"10\" rx=\"2\" ry=\"1.5\" fill=\"#508040\" stroke=\"#362f28\" stroke-width=\"0.06\"/></g>"
+    },
+    {
+      "name": "door-open",
+      "element": {
+        "id": "open",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "door",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": true,
+        "blocksSound": true,
+        "passable": true,
+        "state": "open",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": {
+          "roomId": "room",
+          "polygon": 0,
+          "edge": 0,
+          "t": 0.5
+        },
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"open\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polyline points=\"8,2 12,2\" fill=\"none\" stroke=\"#9da684\" stroke-width=\"0.22\" stroke-linecap=\"round\"/><circle cx=\"10\" cy=\"2\" r=\"0.15\" fill=\"#508040\"/></g>"
+    },
+    {
+      "name": "door-locked",
+      "element": {
+        "id": "locked",
+        "revision": 1,
+        "scopeId": "local",
+        "floorId": "ground",
+        "roomId": "room",
+        "kind": "door",
+        "points": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "name": "Name <&> \" '",
+        "notes": "",
+        "secret": false,
+        "color": "#508040",
+        "width": 4,
+        "height": 3,
+        "angle": 30,
+        "variant": "",
+        "blocksSight": true,
+        "blocksSound": true,
+        "passable": true,
+        "state": "locked",
+        "targetRoomId": null,
+        "targetFloorId": null,
+        "anchor": {
+          "roomId": "room",
+          "polygon": 0,
+          "edge": 0,
+          "t": 0.5
+        },
+        "feature": "trap",
+        "maxCharges": 1,
+        "resetSeconds": 0,
+        "resetMode": "empty",
+        "triggerRadius": 1.524,
+        "triggerHeight": 3.048,
+        "assetId": null,
+        "archived": false
+      },
+      "svg": "<g data-drawing-id=\"locked\"><title>Name &lt;&amp;&gt; &quot; &apos;</title><polyline points=\"8,2 12,2\" fill=\"none\" stroke=\"#508040\" stroke-width=\"0.22\" stroke-linecap=\"round\"/><circle cx=\"10\" cy=\"2\" r=\"0.15\" fill=\"#c35848\"/></g>"
+    }
+  ],
+  "city": {
+    "header": {
+      "id": "city",
+      "name": "City <&> \" '",
+      "width": 100,
+      "height": 80,
+      "paper": "#ebe1c8",
+      "roof": "#7c5643"
+    },
+    "units": [
+      {
+        "id": "district",
+        "kind": "district",
+        "name": "district <&>",
+        "outline": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 18,
+            "y": 0
+          },
+          {
+            "x": 18,
+            "y": 18
+          }
+        ]
+      },
+      {
+        "id": "water",
+        "kind": "water",
+        "name": "water <&>",
+        "outline": [
+          {
+            "x": 20,
+            "y": 0
+          },
+          {
+            "x": 38,
+            "y": 0
+          },
+          {
+            "x": 38,
+            "y": 18
+          }
+        ]
+      },
+      {
+        "id": "plaza",
+        "kind": "plaza",
+        "name": "plaza <&>",
+        "outline": [
+          {
+            "x": 40,
+            "y": 0
+          },
+          {
+            "x": 58,
+            "y": 0
+          },
+          {
+            "x": 58,
+            "y": 18
+          }
+        ]
+      },
+      {
+        "id": "node-a",
+        "kind": "node",
+        "position": {
+          "x": 2,
+          "y": 30
+        }
+      },
+      {
+        "id": "node-b",
+        "kind": "node",
+        "position": {
+          "x": 70,
+          "y": 30
+        }
+      },
+      {
+        "id": "road",
+        "kind": "road",
+        "nodes": [
+          "node-a",
+          "node-b"
+        ],
+        "width": 3,
+        "outline": [
+          {
+            "x": 2,
+            "y": 25
+          },
+          {
+            "x": 70,
+            "y": 25
+          }
+        ]
+      },
+      {
+        "id": "wall",
+        "kind": "wall",
+        "nodes": [
+          "node-a",
+          "node-b"
+        ],
+        "width": 3,
+        "outline": [
+          {
+            "x": 2,
+            "y": 25
+          },
+          {
+            "x": 70,
+            "y": 25
+          }
+        ]
+      },
+      {
+        "id": "building",
+        "kind": "building",
+        "name": "House <&>",
+        "position": {
+          "x": 30,
+          "y": 45
+        },
+        "angle": 0.3,
+        "outline": [
+          {
+            "x": -6,
+            "y": -4
+          },
+          {
+            "x": 6,
+            "y": -4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": -6,
+            "y": 4
+          }
+        ]
+      }
+    ]
+  },
+  "citySvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 80\" width=\"100\" height=\"80\"><title>City &lt;&amp;&gt; &quot; &apos;</title><rect width=\"100%\" height=\"100%\" fill=\"#ebe1c8\"/><polygon points=\"0,0 18,0 18,18\" fill=\"#e0d2b9\" stroke=\"#a69071\" stroke-width=\"0.7\"/><text x=\"0\" y=\"0\" font-size=\"8\" fill=\"#52452e\">district &lt;&amp;&gt;</text><polygon points=\"20,0 38,0 38,18\" fill=\"#8eafb9\" stroke=\"#a69071\" stroke-width=\"0.7\"/><text x=\"20\" y=\"0\" font-size=\"8\" fill=\"#52452e\">water &lt;&amp;&gt;</text><polygon points=\"40,0 58,0 58,18\" fill=\"#d9c6a4\" stroke=\"#a69071\" stroke-width=\"0.7\"/><text x=\"40\" y=\"0\" font-size=\"8\" fill=\"#52452e\">plaza &lt;&amp;&gt;</text><polyline points=\"2,25 70,25\" fill=\"none\" stroke=\"#c1ae8b\" stroke-width=\"3\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><polyline points=\"2,25 70,25\" fill=\"none\" stroke=\"#625e52\" stroke-width=\"3\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/><g data-city-unit=\"building\"><polygon points=\"25.45006189189172,39.40553280352954 36.914099761399,42.95177528346561 34.54993810810828,50.59446719647046 23.085900238601006,47.04822471653439\" fill=\"#7c5643\" stroke=\"#624337\" stroke-width=\"0.8\"/><text x=\"30\" y=\"45\" font-size=\"6\" text-anchor=\"middle\" fill=\"#352822\">House &lt;&amp;&gt;</text></g></svg>"
+}

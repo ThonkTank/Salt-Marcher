@@ -192,3 +192,9 @@ test('a visible drawing glyph selects its exact source ID even beyond the canoni
  const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({dataset:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async()=>chosen.push('point-radius')});
  await ui.click({button:0,altKey:false});assert.deepEqual(chosen,['glyph'],'visual glyph hit must keep the existing exact-ID navigation/read path');
 });
+
+test('a press rejected during saving cannot become a selection after saving completes',async()=>{
+ const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{busy:true,family:'navigation',root:{dataset:{}},entranceDraft:null,camera:{ready:true,hitAt:()=>null},geometryCurrent:()=>true,point:()=>({x:0,y:0}),chooseAt:async()=>chosen.push('unexpected')});
+ ui.down({button:0,altKey:false});ui.busy=false;await ui.click({button:0,altKey:false});
+ assert.deepEqual(chosen,[],'release belongs to the rejected press, even if its write has finished');
+});
