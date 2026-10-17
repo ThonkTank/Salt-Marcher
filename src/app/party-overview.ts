@@ -21,6 +21,18 @@ export function characterRestHint(p:Progress|undefined){
  return'Tagesbelastung '+p.rest.longXp+' / '+f.budget+' XP; kurze Rast '+p.rest.shortXp+' XP; '+f.sections+' verbleibende Rastabschnitte.'+(f.overdue?' Lange Rast fällig.':' Nächste Rastmarke bei '+Math.ceil(f.nextRest)+' XP Tagesbelastung.');
 }
 
+/** Shortest unambiguous prefixes of stable IDs; independent of display order. */
+export function partyIdentityPrefixes(ids:readonly string[]){
+ const sorted=[...ids].sort(),widths=new Map(ids.map(id=>[id,8]));
+ // A sorted ID shares its longest prefix with one of its two neighbours.
+ for(let i=1;i<sorted.length;i++){
+  const a=sorted[i-1]!,b=sorted[i]!;let shared=0;
+  while(shared<a.length&&shared<b.length&&a[shared]===b[shared])shared++;
+  widths.set(a,Math.max(widths.get(a)!,shared+1));widths.set(b,Math.max(widths.get(b)!,shared+1));
+ }
+ return new Map(ids.map(id=>[id,id.slice(0,widths.get(id))]));
+}
+
 /** Place and present membership describe a destination without renaming stored scenes. */
 export function partySceneLabels(view:import('./live-contracts').LiveView){
  const labels=view.scenes.map(scene=>({id:scene.id,label:(scene.locationTitle||'Ohne Ort')+' · '+(view.roster.filter(c=>c.active&&c.sceneId===scene.id).map(c=>c.profile.name).join(', ')||'Keine Figuren')}));
@@ -28,10 +40,9 @@ export function partySceneLabels(view:import('./live-contracts').LiveView){
  for(const scene of labels){const key=scene.label.normalize('NFC'),group=groups.get(key)??[];group.push(scene);groups.set(key,group);}
  const result=new Map<string,string>(labels.map(scene=>[scene.id,scene.label]));
  for(const group of groups.values()){
-  // Adjacent sorted IDs determine the longest shared prefix without pairwise scans.
-  const ids=group.map(scene=>scene.id).sort();let width=8;
-  for(let i=1;i<ids.length;i++){const a=ids[i-1]!,b=ids[i]!;let shared=0;while(shared<a.length&&shared<b.length&&a[shared]===b[shared])shared++;width=Math.max(width,shared+1);}
-  for(const scene of group)result.set(scene.id,scene.label+(group.length>1?' · '+scene.id.slice(0,width):''));
+  if(group.length<2)continue;
+  const prefixes=partyIdentityPrefixes(group.map(scene=>scene.id));
+  for(const scene of group)result.set(scene.id,scene.label+' · '+prefixes.get(scene.id));
  }
  return result;
 }

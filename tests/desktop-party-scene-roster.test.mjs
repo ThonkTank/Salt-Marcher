@@ -278,3 +278,14 @@ test('canonically equivalent visible place and member names also receive distinc
  const a='scene-a111',b='scene-b222',view={scenes:[{id:a,title:'Titel A',locationTitle:'Café'},{id:b,title:'Titel B',locationTitle:'Cafe\u0301'}],roster:[{active:true,sceneId:a,profile:{name:'Íri'}},{active:true,sceneId:b,profile:{name:'I\u0301ri'}}]},before=JSON.stringify(view),labels=partySceneLabels(view);
  assert.notEqual(labels.get(a).normalize('NFC'),labels.get(b).normalize('NFC'));assert(labels.get(a).endsWith('scene-a1'));assert(labels.get(b).endsWith('scene-b2'));assert.equal(JSON.stringify(view),before);
 });
+
+test('roster namesakes with colliding ID prefixes remain visibly distinct and keep their identity through filtering',async t=>{
+ const previous=globalThis.document;globalThis.document=parseHTML('<html><body><section></section></body></html>').document;t.after(()=>globalThis.document=previous);
+ const ids=['12345678-aaaa-4000-8000-11111111111a','12345678-aaaa-4000-8000-11111111111b','87654321-aaaa-4000-8000-111111111111'],view={roster:ids.map(id=>({id,profile:{name:'Iri',playerName:'Gleicher Spieler'},active:false,sceneId:null})),rosterRevision:1,focusId:'scene-a',focusRevision:1,scene:{id:'scene-a',membershipRevision:1,members:[]}},before=structuredClone(view),root=document.querySelector('section');
+ let saved;const panel=new PartyRosterPanel(root,async action=>{saved=action;},async()=>{},()=>{});panel.open(view,()=>true);
+ const labels=()=>new Map([...root.querySelectorAll('.party-membership-row')].map(row=>[row.dataset.characterId,row.textContent])),all=labels(),short=id=>all.get(id).split(' · ').at(-1);
+ assert.equal(new Set(all.values()).size,3,'visible labels must distinguish the actual selectable characters');
+ assert.equal(short(ids[0]),ids[0]);assert.equal(short(ids[1]),ids[1]);assert.equal(short(ids[2]),ids[2].slice(0,8),'unrelated IDs stay compact');
+ const search=root.querySelector('input[type=search]');search.value=ids[1];search.oninput();assert.equal(labels().get(ids[1]),all.get(ids[1]),'filter must not change the displayed identity');const box=root.querySelector('input[type=checkbox]');box.checked=true;box.onchange();search.value='Gleicher Spieler';search.oninput();assert.deepEqual(labels(),all);assert.match(root.querySelector('#party-membership-count').textContent,/1 ausgewählt/);root.querySelector('#party-membership-apply').onclick();await new Promise(r=>setImmediate(r));assert.deepEqual(saved.memberIds,[ids[1]]);assert.deepEqual(view,before);
+ panel.open({...view,roster:[...view.roster].reverse()},()=>true);assert.deepEqual(labels(),new Map([...all].reverse()),'source order may change; prefixes must not');
+});
