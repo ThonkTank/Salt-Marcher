@@ -13,11 +13,13 @@ const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.val
 let itemReference:ItemReferenceCatalog|null=null,catalogContent:'monster'|'items'='monster';
 function catalogContentView(content:'monster'|'items'){
  if(content==='items'){
-  clearSearchTimer();searchRequest++;creatureRequest++;get('catalog-table').setAttribute('aria-busy','false');
+  clearSearchTimer();suspendCatalogInfo();searchRequest++;creatureRequest++;get('catalog-table').setAttribute('aria-busy','false');
   if(get('catalog-detail').getAttribute('aria-busy')==='true')renderCreatureSelection();
  }
- catalogContent=content;get('catalog-monsters').hidden=content!=='monster';itemReference?.show(content==='items');for(const [id,on]of [['catalog-monsters-tab',content==='monster'],['catalog-items-tab',content==='items']] as const){get(id).setAttribute('aria-selected',String(on));get(id).tabIndex=on?0:-1;}}
+ catalogContent=content;get('catalog-monsters').hidden=content!=='monster';itemReference?.show(content==='items');for(const [id,on]of [['catalog-monsters-tab',content==='monster'],['catalog-items-tab',content==='items']] as const){get(id).setAttribute('aria-selected',String(on));get(id).tabIndex=on?0:-1;}if(content==='monster')void refreshCatalogInfo();}
 let workspace:WorkspaceGeometry|null=null,info:CatalogInfo|null=null,page:CreaturePage|null=null,creature:Creature|null=null,plan:EncounterPlan|null=null;
+let infoRequest=0,infoPending:Promise<void>|null=null;
+function suspendCatalogInfo(){infoRequest++;infoPending=null;}
 let generation=0,searchRequest=0,listRequest=0,planRequest=0,creatureRequest=0,partyRequest=0,editVersion=0,offset=0,sort:CreatureCatalogQuery['sort']='name',blocked=false,dirty=false;
 const owned=(token:string|undefined,g:number)=>generation===g&&workspace?.token===token;
 let saving:Promise<boolean>|null=null,timer:ReturnType<typeof setTimeout>|null=null,searchTimer:ReturnType<typeof setTimeout>|null=null;
@@ -62,15 +64,22 @@ function renderCatalogControls(){
 }
 function adoptPlan(next:EncounterPlan,invalidateRequests=true){clearSaveTimer();saving=null;if(invalidateRequests)planRequest++;partyRequest++;editVersion++;plan=next;dirty=next.revision===0;blocked=false;get<HTMLDetailsElement>('encounter-library').open=false;get<HTMLDetailsElement>('encounter-party-details').open=next.party.length===0;renderPlan();}
 export function activateCatalog(next:WorkspaceGeometry){
- clearSaveTimer();clearSearchTimer();saving=null;itemReference?.activate();
+ clearSaveTimer();clearSearchTimer();suspendCatalogInfo();saving=null;itemReference?.activate();
  workspace=next;startingPlan=false;generation++;searchRequest++;clearResults('Katalog noch nicht geladen.');listRequest++;planRequest++;creatureRequest++;partyRequest++;
  plan=null;creature=null;reading=null;readingHistory=[];readingPosition=-1;dirty=false;blocked=false;get('catalog-add-result').hidden=true;get<HTMLDetailsElement>('encounter-library').open=true;editVersion++;get('encounter-editor').hidden=true;
  activateGeneration(next);renderCreatureSelection();void refreshPlans();
 }
 async function refreshCatalogInfo(){
- if(info)return;const token=workspace?.token,g=generation,credit=get('catalog-credit');credit.textContent='Quellen- und Filterangaben werden geladen …';credit.setAttribute('role','status');
- try{const response=await window.campaign.creatureInfo();if(!owned(token,g)||info)return;info=unwrap(response);credit.textContent=info.notice;credit.removeAttribute('role');for(const [id,list]of [['catalog-type',info.types],['catalog-size',info.sizes],['catalog-habitat',info.habitats],['catalog-alignment',info.alignments],['catalog-subtype',info.subtypes]] as const)for(const v of list)option(get<HTMLSelectElement>(id),v,v);}
- catch(error){if(owned(token,g)&&!info){credit.textContent='Quellen- und Filterangaben nicht verfügbar: '+(error as Error).message;credit.setAttribute('role','alert');tell((error as Error).message,true);}}
+ if(!workspace||catalogContent!=='monster'||info)return;if(infoPending)return infoPending;
+ const token=workspace.token,g=generation,request=++infoRequest,credit=get('catalog-credit');
+ const current=()=>owned(token,g)&&catalogContent==='monster'&&request===infoRequest;
+ credit.textContent='Quellen- und Filterangaben werden geladen …';credit.setAttribute('role','status');
+ // Defer dispatch until the shared promise exists, including synchronous bridge failures.
+ infoPending=Promise.resolve().then(async()=>{
+  try{if(!current())return;const response=await window.campaign.creatureInfo();if(!current()||info)return;info=unwrap(response);credit.textContent=info.notice;credit.removeAttribute('role');for(const [id,list]of [['catalog-type',info.types],['catalog-size',info.sizes],['catalog-habitat',info.habitats],['catalog-alignment',info.alignments],['catalog-subtype',info.subtypes]] as const)for(const v of list)option(get<HTMLSelectElement>(id),v,v);}
+  catch(error){if(current()&&!info){credit.textContent='Quellen- und Filterangaben nicht verfügbar: '+(error as Error).message;credit.setAttribute('role','alert');tell((error as Error).message,true);}}
+  finally{if(request===infoRequest)infoPending=null;}
+ });return infoPending;
 }
 export async function openCatalog(){itemReference?.show(catalogContent==='items');await Promise.all([refreshCatalogInfo(),catalogContent==='monster'?search():Promise.resolve(),refreshPlans(),refreshGeneration()]);}
 export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){if(!stillCurrent())return;catalogContentView('monster');void openCatalog();if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}

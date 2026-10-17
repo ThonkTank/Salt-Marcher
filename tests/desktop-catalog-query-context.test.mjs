@@ -232,3 +232,27 @@ test('saved encounter statblocks stay frozen through current catalog lookup and 
 test('opening a saved statblock invalidates a pending catalog reply and never fabricates a missing snapshot',async t=>{
  const x=await detailFixture(t),held=deferred();window.campaign.creature=()=>held.promise;await x.choose('Wolf');const plan={id:'saved',revision:2,name:'Alte Spur',notes:'',party:[],entries:[{id:'entry',creatureId:'Guard',count:1,grouped:false}],sources:[],catalogHash:'missing'};window.campaign.encounterPlan=async()=>({ok:true,value:plan});await x.ui.openCatalogReference({kind:'encounter',id:'saved'});x.el('encounter-entries').querySelector('button').click();assert.match(x.el('catalog-detail').textContent,/Gespeicherter Statblock nicht verfügbar/);held.resolve({ok:true,value:detail('Wolf')});await tick();await tick();assert.match(x.el('catalog-detail').textContent,/Gespeicherter Statblock nicht verfügbar/);assert.equal(x.el('catalog-live-add').disabled,true);
 });
+
+for(const failed of [false,true])test(`hidden monster metadata ${failed?'failure':'success'} has no authority and returning retries without discarding accepted rows`,async t=>{
+ const requests=[],catalogInfo=notice=>({notice,hash:'pinned',types:['Humanoid'],sizes:[],habitats:[],alignments:[],subtypes:[]});
+ const x=await fixture(t,false,{creatureInfo:()=>{const d=deferred();requests.push(d);return d.promise;},itemReferenceCatalog:async()=>({ok:true,value:{status:'ready',message:'Local items',license:'CC BY 4.0',rows:[],categories:[],subcategories:[],rarities:[],total:0,offset:0,limit:50}})});
+ await x.resolve(0,'Guard');const row=x.el('catalog-rows').querySelector('button');x.el('catalog-items-tab').click();await tick();
+ requests[0].resolve(failed?{ok:false,error:'Invisible metadata failure'}:{ok:true,value:catalogInfo('Invisible metadata success')});await x.opened;
+ assert.equal(x.messages.filter(m=>m[1]).length,0);assert.doesNotMatch(x.el('catalog-credit').textContent,/Invisible metadata/);assert.equal(x.el('catalog-type').querySelectorAll('option').length,1);assert.equal(x.el('item-reference-status').getAttribute('role'),'status');
+ await x.ui.openCatalog();assert.equal(requests.length,1,'opening the Item section must not read Monster metadata');
+ x.el('catalog-monsters-tab').click();await until(()=>requests.length===2);x.el('catalog-monsters-tab').click();await tick();assert.equal(requests.length,2,'the visible request is shared');assert.equal(x.reads.length,1);assert.equal(x.el('catalog-rows').querySelector('button'),row);
+ requests[1].resolve({ok:true,value:catalogInfo('Current metadata')});await until(()=>x.el('catalog-credit').textContent==='Current metadata');assert.equal(x.el('catalog-type').querySelectorAll('option').length,2);assert.equal(x.el('catalog-rows').querySelector('button'),row);
+});
+test('parallel monster metadata openings share one request and one set of options',async t=>{
+ const held=deferred();let calls=0;const x=await fixture(t,false,{creatureInfo:()=>{calls++;return held.promise;}});await x.resolve(0,'Guard');const second=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Guard');assert.equal(calls,1);
+ held.resolve({ok:true,value:{notice:'Shared metadata',hash:'pinned',types:['Humanoid'],sizes:[],habitats:[],alignments:[],subtypes:[]}});await Promise.all([x.opened,second]);assert.equal(x.el('catalog-type').querySelectorAll('option').length,2);
+});
+test('a synchronous monster metadata failure releases the visible retry',async t=>{
+ const x=await fixture(t,true,{creatureInfo:()=>{throw new Error('Synchronous metadata failure');}});await x.resolve(0,'Guard');await x.opened;assert.match(x.el('catalog-credit').textContent,/Synchronous metadata failure/);
+ window.campaign.creatureInfo=()=>({ok:true,value:{notice:'Retried metadata',hash:'pinned',types:[],sizes:[],habitats:[],alignments:[],subtypes:[]}});const retry=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Guard');await retry;assert.equal(x.el('catalog-credit').textContent,'Retried metadata');
+});
+test('the shared Monster browser in a table lookup also resumes missing metadata from Items',async t=>{
+ const requests=[],x=await fixture(t,false,{creatureInfo:()=>{const d=deferred();requests.push(d);return d.promise;},itemReferenceCatalog:async()=>({ok:false,error:'No items in fixture'})});await x.resolve(0,'Guard');x.el('catalog-items-tab').click();requests[0].resolve({ok:false,error:'Hidden metadata failure'});await x.opened;
+ x.el('encounter-table-new').click();await until(()=>x.el('table-manager').open);await until(()=>requests.length===2);assert.equal(x.el('catalog-browser').parentElement.id,'table-catalog-slot');assert.equal(x.el('catalog-monsters-tab').getAttribute('aria-selected'),'true');
+ requests[1].resolve({ok:true,value:{notice:'Table lookup metadata',hash:'pinned',types:['Humanoid'],sizes:[],habitats:[],alignments:[],subtypes:[]}});await until(()=>x.el('catalog-type').querySelectorAll('option').length===2);x.el('table-close').click();await until(()=>!x.el('table-manager').open);await x.resolve(1,'Guard');assert.equal(x.el('catalog-credit').textContent,'Table lookup metadata');
+});
