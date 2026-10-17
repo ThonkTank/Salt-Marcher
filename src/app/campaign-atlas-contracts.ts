@@ -137,6 +137,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
     bytes: number[],
     audience: "gm" | "public",
     format?: "png" | "jpeg",
+    sourceFence?:string,
   ): Promise<Result<{ cancelled: boolean }>>;
   importAtlas(command: {
     commandId: string;

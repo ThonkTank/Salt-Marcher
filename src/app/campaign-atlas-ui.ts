@@ -2020,7 +2020,6 @@ export class CampaignAtlasWorkbench {
           return{ok:true,value:{campaignId:snapshot.campaignId,revision:snapshot.revision,box:part,width:w,height:h,data}};
         },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Atlas wird ausgegeben: ${done}/${total}`;},512);
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')get('atlas-save-status').textContent='Dichte Landschaft als Übersicht; Vorlagen als Umrisse.';
-        const end=await window.campaign.atlasRegion(owner.token,{...exportQuery,width:1,height:1,fence:snapshot.region!.fence},'export');if(!end.ok)throw new Error(end.error);
         svg=atlasRegionSVG(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:this.floorId,roofs:exportQuery.roofs});
 
       }
@@ -2031,6 +2030,7 @@ export class CampaignAtlasWorkbench {
         bytes,
         audience,
         format,
+        snapshot.region!.fence,
       );
       if (!r.ok) throw new Error(r.error);
       if (!r.value.cancelled) {

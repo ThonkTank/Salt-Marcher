@@ -513,7 +513,7 @@ meldet den gespeicherten Stand und bietet Nachlesen an; ein unbekannter
 Transportausgang behält dagegen den ursprünglichen Befehl mit seiner Kennung.
 Eine Kamera-/Liveumschaltung verändert weder Partyposition noch Weltzeit.
 GM-Ausgaben lesen ihren eigenen Ausgabebereich und erzeugen sequenzielle
-gemeinsame Landschafts-/Geometriekacheln bis 512². Jede Kachel prüft denselben Source-Fence; ein abschließender Read verwirft eine zwischenzeitlich geänderte Quelle. Unterschiedliche
+gemeinsame Landschafts-/Geometriekacheln bis 512². Jede Kachel prüft denselben Source-Fence; der Main-Prozess prüft den Source-Fence vor und nach dem Dateidialog direkt an der Quelle. Dafür wird weder eine zusätzliche Übersicht gerastert noch eine Vollansicht geladen; eine zwischenzeitlich geänderte Quelle wird vor dem Schreiben verworfen. Unterschiedliche
 Revisionen, Abbruch und überschrittenes Bildbudget liefern keine Datei. Die
 öffentliche Ausgabe bleibt an die exakte Sicht-/Erinnerungsprojektion gebunden.
 
