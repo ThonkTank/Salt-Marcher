@@ -46,7 +46,7 @@ export type RoomGeometry = Omit<Room, 'sections'>;
 export type RoomSummary = Omit<RoomGeometry, 'polygons'>;
 export interface Campaign { id: string; name: string; revision: number }
 export interface CampaignRename { commandId: string; token: string; campaignId: string; expectedRevision: number; name: string }
-export interface WorkspaceState<R extends RoomGeometry> {graphPreview?:GraphPreviewState;
+export interface WorkspaceState<R extends RoomGeometry> {geometryCoverage?:'selected';graphPreview?:GraphPreviewState;
   campaign: Campaign; token: string; rooms: R[]; selectedId: string | null;
   canUndo: boolean; canRedo: boolean;
   problems: { id: string; number: string; message: string }[];
@@ -78,7 +78,7 @@ export interface DesktopAPI extends importAtlasAPI,importAtlasTravelAPI,ItemRefe
   renameCampaign(command: CampaignRename): Promise<Result<Campaign>>;
   activateShell(id:string):Promise<Result<WorkspaceShell>>;
   campaignCatalogShell(commandId:string):Promise<Result<WorkspaceShell>>;
-  workspaceGeometry(token:string):Promise<Result<WorkspaceGeometry>>;
+  workspaceInitial(token:string):Promise<Result<WorkspaceGeometry>>;workspaceGeometry(token:string):Promise<Result<WorkspaceGeometry>>;
   roomDirectory(token:string,query:RoomDirectoryQuery,consumer?:'atlas'|'directory'):Promise<Result<RoomDirectoryPage>>;
   cancelRoomDirectory(token:string,consumer?:'atlas'|'directory'):Promise<Result<void>>;
   activate(id: string): Promise<Result<Workspace>>;

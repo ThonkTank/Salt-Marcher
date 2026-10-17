@@ -1,3 +1,4 @@
+import {REGION_REPLY_BYTES} from '../atlas-region-contracts';
 import { createHash, randomUUID } from "node:crypto";
 import polygonClipping from "polygon-clipping";
 import type { Polygon } from "../contracts";
@@ -184,21 +185,18 @@ export function landscapeRegion(
     "SELECT a.payload,a.min_x,a.max_x,a.min_y,a.max_y,l.payload location_payload,l.trashed FROM " +
     (indexed ? areaTable+" s CROSS JOIN main.atlas_landscape a ON a.rowid=s.id" : "atlas_landscape a") +
     " LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=?" + (includePatches ? "" : " AND json_extract(a.payload,'$.kind')!='patch'");
-  const rows = box
-    ? db
-        .prepare(
-          select +
-            ` AND ${indexed ? 's' : 'a'}.max_x>=? AND ${indexed ? 's' : 'a'}.min_x<=? AND ${indexed ? 's' : 'a'}.max_y>=? AND ${indexed ? 's' : 'a'}.min_y<=? AND ((a.max_x=a.min_x AND a.max_y=a.min_y) OR a.max_x-a.min_x>=? OR a.max_y-a.min_y>=?) ORDER BY a.rowid`,
-        )
-        .all(cam, box.x, box.x + box.width, box.y, box.y + box.height,metersPerPixel/2,metersPerPixel/2)
-    : db.prepare(select + " ORDER BY a.rowid").all(cam);
-  return rows
-    .filter((r: any) => !r.trashed && (!box || r.max_x>=box.x && r.min_x<=box.x+box.width && r.max_y>=box.y && r.min_y<=box.y+box.height))
-    .map((r: any) => {
-      const record = JSON.parse(r.payload);
-      if (r.location_payload) record.name = JSON.parse(r.location_payload).name;
-      return record;
-    });
+  const statement=db.prepare(select+(box
+    ? ` AND ${indexed ? 's' : 'a'}.max_x>=? AND ${indexed ? 's' : 'a'}.min_x<=? AND ${indexed ? 's' : 'a'}.max_y>=? AND ${indexed ? 's' : 'a'}.min_y<=? AND ((a.max_x=a.min_x AND a.max_y=a.min_y) OR a.max_x-a.min_x>=? OR a.max_y-a.min_y>=?) ORDER BY a.rowid`
+    : " ORDER BY a.rowid"));
+  const parameters=box?[cam,box.x,box.x+box.width,box.y,box.y+box.height,metersPerPixel/2,metersPerPixel/2]:[cam];
+  const records:LandscapeRecord[]=[];let used=2;
+  for(const r of statement.iterate(...parameters) as Iterable<any>){
+    if(r.trashed||box&&!(r.max_x>=box.x&&r.min_x<=box.x+box.width&&r.max_y>=box.y&&r.min_y<=box.y+box.height))continue;
+    const record=JSON.parse(r.payload);if(r.location_payload)record.name=JSON.parse(r.location_payload).name;
+    if(!includePatches){used+=Buffer.byteLength(JSON.stringify(record))+1;if(used>REGION_REPLY_BYTES)throw new Error('Landschaftsobjekte überschreiten das Darstellungsbudget. Weiter hineinzoomen.');}
+    records.push(record);
+  }
+  return records;
 }
 export function putLandscape(
   db: any,

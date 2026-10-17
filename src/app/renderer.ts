@@ -328,7 +328,7 @@ async function setDraft() {
   if(!token||!id){roomDraftLoading=false;draw();return;}
   roomDraftLoading=true;updateHistory();status('Raum wird geladen.');
   let room:Room;
-  try{room=unwrap(await api.atlasRoom(token,id));if(!current())return;confirmedRoom=room;draft=structuredClone(room);}
+  try{room=unwrap(await api.atlasRoom(token,id));if(!current())return;confirmedRoom=room;draft=structuredClone(room);const {sections:unused,...shape}=room;workspace!.rooms=workspace!.geometryCoverage==='selected'?[shape]:[...workspace!.rooms.filter(r=>r.id!==room.id),shape];}
   catch(error){if(current()){roomDraftLoading=false;roomDraftReadFailed=true;writeBlocked=true;status('Raum konnte nicht geladen werden. Originaldaten bleiben erhalten: '+(error as Error).message,true);el('empty').textContent='Raum nicht verfügbar. Anderen Raum wählen oder erneut öffnen.';updateHistory();}return;}
   writeBlocked = false; failedEdit = null; roomDraftReadFailed = false; el('error-actions').hidden = true;
   hasRetainedDraft = false;
@@ -524,7 +524,7 @@ async function drainActivation(): Promise<void> {
       try {
         const shell = unwrap(entryCommandId?await api.campaignCatalogShell(entryCommandId):await api.activateShell(id));
         if(queuedActivation!==null)continue;
-        const next=unwrap(await api.workspaceGeometry(shell.token));
+        const next=unwrap(await api.workspaceInitial(shell.token));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
         workspace = geometryOnly(next); el('campaign-header-name').textContent=next.campaign.name;setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
         campaignAtlas?.activate(next);activateLive(next);activateDayCalculator(next);activatePartyTopbar(next);activateNarrativeJournal(next);activateQuickReference(next);worldLinks.contextChanged();locationNotebook.contextChanged();locationReturn.hidden=true;el<HTMLButtonElement>('narrative-journal-open').disabled=false; activateChronicle(next); activateCatalog(next); activateItems(next);activateTreasury(next);activateGroups(next);activateNpcs(next); activateWorld(next); activateCity(next); activateAutonomy(next); activateDungeon(next); dungeonBinder.reset(); campaignAgenda.reset(); activateVolume(); activatePaths();activateKeys();activateGraph();activateDungeonContent();activateTriggers(); void activateDrawing(next,false); activateSoundboard(next);activateMusic(next);

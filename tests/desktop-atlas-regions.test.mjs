@@ -1,0 +1,115 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {buildSync} from 'esbuild';
+import {createRequire} from 'node:module';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {createHash,randomUUID} from 'node:crypto';
+const require=createRequire(import.meta.url),Database=require('better-sqlite3');
+for(const [name,file] of [['store','src/app/storage/store.ts'],['reader','src/app/storage/atlas-region.ts'],['drawing-model','src/app/drawing-model.ts'],['service','desktop/atlas-region.ts'],['worker','desktop/atlas-region-worker.ts']])buildSync({entryPoints:[file],outfile:'.build/atlas-region-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore}=require('../.build/atlas-region-store.cjs'),{AtlasRegionReader}=require('../.build/atlas-region-reader.cjs'),{AtlasRegionService}=require('../.build/atlas-region-service.cjs');
+const hash=s=>createHash('sha256').update(s).digest('hex');
+const room=i=>({id:'r'+i,scopeId:'local',floorId:'ground',number:String(i),name:'Raum '+i,revision:0,polygons:[{outer:[{x:i*5,y:0},{x:i*5+3,y:0},{x:i*5+3,y:3},{x:i*5,y:3}],holes:[]}],sections:[{id:randomUUID(),kind:'markdown',markdown:'PRIVATE-TEXT\r\n'+'x'.repeat(4096)}]});
+const query=(box={x:0,y:-2,width:30,height:10})=>({box,width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true});
+function fixture(t,n=100){const dir=mkdtempSync(tmpdir()+'/atlas-regions-'),store=new CampaignStore(dir+'/campaign.sqlite'),campaign=store.create('Regionen',Array.from({length:n},(_,i)=>room(i))),shell=store.activateShell(campaign.id),db=new Database(store.filename,{readonly:true}),reader=new AtlasRegionReader(db);let source; t.after(()=>{db.close();store.close();rmSync(dir,{recursive:true,force:true});});return{store,db,reader,shell,campaign,async read(q=query()){const next=store.atlasRegionSource(shell.token,source&&{epoch:source.epoch,sequence:source.sequence});await reader.sync(next);source=next;return reader.read(next,q);},get source(){return source;}};}
+function put(store,table,cam,id,payload,city){const value=JSON.stringify(payload);if(table==='city_unit')store.db.prepare('INSERT INTO city_unit VALUES(?,?,?,?,?,?)').run(cam,city,id,payload.kind,value,hash(value));}
+test('4000 rooms: opening reads one selected room; region excludes offscreen prose and geometry',async t=>{
+ const f=fixture(t,4000),initial=f.store.workspaceInitial(f.shell.token);assert.equal(initial.rooms.length,1);assert(!JSON.stringify(initial).includes('PRIVATE-TEXT'));
+ f.store.workspaceGeometry=f.store.campaignAtlas=f.store.cities=f.store.city=()=>{throw new Error('full read forbidden');};
+ const r=await f.read();assert(r.rooms.length>0&&r.rooms.length<10);assert.equal(r.coverage.index,'rtree');assert(!JSON.stringify(r).includes('PRIVATE-TEXT'));assert(Buffer.byteLength(JSON.stringify(r))<2*1024*1024);
+ const view=f.store.atlasRegionView(f.shell.token,r);assert.equal(view.workspace.rooms.length,r.rooms.length);assert(!JSON.stringify(view).includes('PRIVATE-TEXT'));
+ const q=query({x:19000,y:-2,width:30,height:10}),away=await f.read(q);assert(away.rooms.every(r=>r.polygons[0].outer[0].x>=18995));
+ const focus=f.reader.focus(f.source,'room','r3999');assert.equal(focus.id,'r3999');assert(focus.point.x>19990);
+});
+test('incremental projections follow exact edits, rollback, hidden rooms, undo and fresh rebuild',async t=>{
+ const f=fixture(t);let r=await f.read();assert(r.rooms.some(r=>r.id==='r0'));
+ const before=f.store.atlasRoom(f.shell.token,'r0');const polygons=before.polygons.map(p=>({...p,outer:p.outer.map(p=>({x:p.x+1000,y:p.y}))}));
+ f.store.atlasRoomCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,roomId:before.id,expectedRevision:before.revision,name:before.name,polygons,sections:before.sections});
+ r=await f.read();assert(!r.rooms.some(r=>r.id==='r0'));
+ f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'undo'}});
+ r=await f.read();assert(r.rooms.some(r=>r.id==='r0'));
+ const sequence=f.source.sequence;assert.throws(()=>f.store.db.transaction(()=>{f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?').run('rollback',f.campaign.id,'r0');throw new Error('rollback');})());assert.equal(f.store.atlasRegionSource(f.shell.token,{epoch:f.source.epoch,sequence}).sequence,sequence);
+ f.store.db.prepare("INSERT INTO drawing_hidden VALUES(?,?,'local','room',1,1)").run(f.campaign.id,'r0');r=await f.read();assert(!r.rooms.some(r=>r.id==='r0'));assert.throws(()=>f.reader.focus(f.source,'room','r0'),/archiviert/);
+ const external=new Database(f.store.filename);external.prepare('UPDATE room SET payload=? WHERE campaign_id=? AND id=?').run('{broken',f.campaign.id,'r2');external.close();r=await f.read();assert.equal(r.coverage.unreadable,1);assert(!r.rooms.some(r=>r.id==='r2'));assert.equal(f.store.db.prepare('SELECT payload FROM room WHERE campaign_id=? AND id=?').get(f.campaign.id,'r2').payload,'{broken');
+});
+test('rotated city with 5000 buildings: resolved roads, targeted author details and embedded dungeon frames',async t=>{
+ const f=fixture(t,1),cam=f.campaign.id,token=f.shell.token;
+ const created=f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:cam,action:{kind:'city-create',name:'Stadt',x:10000,y:20000,width:1000,height:1000}}),city=created.result.id;
+ f.store.db.prepare("UPDATE atlas_binding SET angle=? WHERE campaign_id=? AND kind='city' AND owner_id=?").run(Math.PI/2,cam,city);
+ f.store.db.transaction(()=>{for(let i=0;i<5000;i++)put(f.store,'city_unit',cam,'b'+i,{id:'b'+i,kind:'building',name:'Haus '+i,protected:true,position:{x:i%100*9+10,y:Math.floor(i/100)*9+10},outline:[{x:-2,y:-2},{x:2,y:-2},{x:2,y:2},{x:-2,y:2}],angle:0,notes:'PRIVATE-HOUSE'+'x'.repeat(4096),residentIds:[],workerIds:[],households:[],jobs:[]},city);
+  for(const [id,point]of [['n1',{x:5,y:5}],['n2',{x:900,y:900}]])put(f.store,'city_unit',cam,id,{id,kind:'node',name:'',protected:true,point},city);
+  put(f.store,'city_unit',cam,'road',{id:'road',kind:'road',name:'Lange Straße',protected:true,nodeIds:['n1','n2'],via:[],width:3},city);
+ })();
+ const r=await f.read(query({x:9960,y:20000,width:40,height:40}));assert.equal(r.cities.length,1);assert(r.cities[0].units.length<30);assert(!JSON.stringify(r).includes('PRIVATE-HOUSE'));const road=r.cities[0].units.find(u=>u.id==='road');assert.equal(road.outline.length,2);assert(!('nodeIds' in road));
+ const focus=f.reader.focus(f.source,'building','b4999');assert.equal(focus.cityId,city);const site=f.store.atlasCitySite(token,city,'b4999');assert(site.unit.notes.startsWith('PRIVATE-HOUSE'));assert.equal(site.related.length,0);
+ const made=f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:cam,action:{kind:'dungeon-create',name:'Keller',x:0,y:0,buildingId:'b4999'}});assert(made.result.id);
+ const around=await f.read({...query({x:focus.point.x-10,y:focus.point.y-10,width:20,height:20}),scopeId:made.result.id});const binding=around.bindings.find(b=>b.ownerId===made.result.id);
+ assert(binding,'The selected empty interior retains its exact parent transform');assert.equal(around.frames[binding.id].x,focus.point.x);assert.equal(around.frames[binding.id].y,focus.point.y);
+ // Focus remains independent of loaded city records.
+ const far=f.reader.focus(f.source,'building','b4999');assert.equal(far.point.x,focus.point.x);assert.equal(far.point.y,focus.point.y);
+ f.store.db.prepare('UPDATE city_unit SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(JSON.stringify({...site.unit,position:{x:50,y:60}}),hash(JSON.stringify({...site.unit,position:{x:50,y:60}})),cam,'b4999');await f.read();assert.notDeepEqual(f.reader.focus(f.source,'building','b4999').point,focus.point);
+});
+test('dense region is a bounded raster; exact hit honors holes and source fence',async t=>{
+ const f=fixture(t,5000),q=query({x:-2,y:-2,width:25010,height:10}),r=await f.read(q);
+ assert.equal(r.coverage.mode,'raster');assert(r.raster.data.startsWith('data:image/png;base64,'));assert.equal(r.rooms.length,0);assert(r.bindings.some(b=>b.ownerId==='local'),'selected author frame survives raster mode');assert(Buffer.byteLength(JSON.stringify(r))<=2*1024*1024);
+ const hit=f.reader.hit(f.source,q,{x:501,y:1});assert.equal(hit.id,'r100');
+ const old=r;f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?').run('changed',f.campaign.id,'r1');assert.throws(()=>f.store.atlasRegionView(f.shell.token,old),/inzwischen/);
+ const p=f.store.atlasRoom(f.shell.token,'r0'),payload=JSON.stringify({polygons:[{outer:p.polygons[0].outer,holes:[[{x:.5,y:.5},{x:2.5,y:.5},{x:2.5,y:2.5},{x:.5,y:2.5}]]}],sections:p.sections});f.store.db.prepare('UPDATE room SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),f.campaign.id,'r0');await f.read();assert.equal(f.reader.hit(f.source,query(),{x:1,y:1}),null);
+});
+test('worker lifecycle, warm index reuse, cancellation and invalid requests',async t=>{
+ const f=fixture(t),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
+ let source=f.store.atlasRegionSource(f.shell.token,service.cursor),r=await service.read(source,query());assert.equal(r.token,f.shell.token);
+ source=f.store.atlasRegionSource(f.shell.token,service.cursor);assert.equal(source.reset,false);assert.deepEqual(source.changes,[]);
+ const focus=await service.focus(source,'room','r99');assert.equal(focus.id,'r99');
+ const cancelled=service.read(source,query({x:30,y:0,width:30,height:10}));service.cancel();await assert.rejects(cancelled,/abgebrochen/);await service.cancelAndWait();
+ source=f.store.atlasRegionSource(f.shell.token,service.cursor);r=await service.read(source,query());assert(r.rooms.length);
+ await assert.rejects(service.read(source,{...query(),width:0}),/prüfen/);await service.close();await assert.rejects(service.read(source,query()),/abgebrochen/);
+});
+test('Rtree unavailable falls back atomically; slices retain upper volume contours',async t=>{
+ const f=fixture(t,3),db=new Database(f.store.filename,{readonly:true}),exec=db.exec.bind(db);t.after(()=>db.close());db.exec=sql=>{if(sql.includes('CREATE VIRTUAL TABLE temp.region_index'))throw new Error('rtree unavailable');return exec(sql);};
+ const scan=new AtlasRegionReader(db);await f.read();await scan.sync({...f.source,reset:true});assert.equal(scan.read(f.source,query()).coverage.index,'scan');assert.deepEqual(scan.read(f.source,query()).rooms.map(r=>r.id),(await f.read()).rooms.map(r=>r.id));
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'volume-initialize',roomId:'r0',expectedRoomRevision:0,expectedVolumeRevision:null,heightSteps:4}});
+ const high=await f.read({...query(),slice:4.5});assert(high.rooms.some(r=>r.id==='r0'),'a volume above the fallback ceiling is not discarded');const outside=await f.read({...query(),slice:7});assert(!outside.rooms.some(r=>r.id==='r0'));
+});
+test('external source writes cannot hit an older cached region; journal overflow rebuilds',async t=>{
+ const f=fixture(t,5),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
+ let source=f.store.atlasRegionSource(f.shell.token,service.cursor);await service.read(source,query());const fence=source.fence;
+ const external=new Database(f.store.filename);external.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?').run('Extern aktualisiert',f.campaign.id,'r0');external.close();source=f.store.atlasRegionSource(f.shell.token,service.cursor);assert.notEqual(source.fence,fence);assert.equal(source.reset,true);assert.equal((await service.read(source,query())).rooms.find(r=>r.id==='r0').name,'Extern aktualisiert');
+ const cursor=service.cursor;f.store.db.transaction(()=>{const update=f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?');for(let i=0;i<10010;i++)update.run('Stand '+i,f.campaign.id,'r0');})();source=f.store.atlasRegionSource(f.shell.token,cursor);assert.equal(source.reset,true);assert.deepEqual(source.changes,[]);assert.equal((await service.read(source,query())).rooms.find(r=>r.id==='r0').name,'Stand 10009');
+});
+test('bad city headers are explicit incomplete coverage, not a fabricated empty city',async t=>{
+ const f=fixture(t,1),ack=f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'city-create',name:'Defekt',x:0,y:0,width:500,height:500}});await f.read();const id=ack.result.id,row=f.store.db.prepare('SELECT payload FROM city_document WHERE campaign_id=? AND id=?').get(f.campaign.id,id),broken=JSON.stringify({...JSON.parse(row.payload),id:'wrong-identity'});f.store.db.prepare('UPDATE city_document SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(broken,hash(broken),f.campaign.id,id);
+ const r=await f.read();assert.equal(r.coverage.complete,false);assert.equal(r.coverage.unreadable,1);assert.equal(r.cities.length,0);assert(r.rooms.some(r=>r.id==='r0'));assert.equal(f.store.db.prepare('SELECT payload FROM city_document WHERE campaign_id=? AND id=?').get(f.campaign.id,id).payload,broken);
+});
+test('text-only edits retain source overlap order and exact hit target',async t=>{
+ const f=fixture(t,2),a=f.store.atlasRoom(f.shell.token,'r0'),b=f.store.atlasRoom(f.shell.token,'r1'),payload=JSON.stringify({polygons:a.polygons,sections:b.sections});f.store.db.prepare('UPDATE room SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),f.campaign.id,b.id);
+ const before=await f.read(),hit=f.reader.hit(f.source,query(),{x:1,y:1});f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?').run('Textänderung',f.campaign.id,'r0');const after=await f.read();assert.deepEqual(after.rooms.map(r=>r.id),before.rooms.map(r=>r.id));assert.equal(f.reader.hit(f.source,query(),{x:1,y:1}).id,hit.id);
+});
+test('compact travel receipt is idempotent and does not build a post-write full display',t=>{
+ const f=fixture(t,1),command=action=>({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action}),scene=f.store.executeLive(command({kind:'initialize',expectedRosterRevision:f.store.live(f.shell.token).rosterRevision})).scene;
+ const character=f.store.executeLive(command({kind:'create-character',profile:{name:'Ada',speedFeet:30}})).character,live=f.store.live(f.shell.token);f.store.executeLive(command({kind:'membership',characterId:character.id,expectedRevision:character.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision}));
+ const preview=f.store.previewAtlasTravel(f.shell.token,{x:20,y:0}),c={...command({kind:'place',point:{x:20,y:0},expectedPositionRevision:preview.positionRevision,expectedMembershipRevision:preview.membershipRevision}),sceneId:scene.id};let reads=0;const exact=f.store.campaignAtlas.bind(f.store);f.store.campaignAtlas=(...args)=>{reads++;return exact(...args);};const ack=f.store.executeAtlasTravelCommit(c);assert.deepEqual(ack,{campaignId:c.campaignId,commandId:c.commandId,sceneId:c.sceneId});assert.equal(reads,1,'only the canonical rule read runs, with no full post-write display');const after=f.store.sceneWorld(f.shell.token,scene.id);assert.deepEqual(f.store.executeAtlasTravelCommit(c),ack);assert.deepEqual(f.store.sceneWorld(f.shell.token,scene.id).position,after.position);assert.equal(f.store.sceneWorld(f.shell.token,scene.id).scene.clock.instantMs,after.scene.clock.instantMs);
+});
+buildSync({entryPoints:['src/app/campaign-atlas-author.ts'],outfile:'.build/atlas-region-author.cjs',bundle:true,platform:'node',format:'cjs'});
+test('unknown compact write recovers exactly the same command and clears pending after receipt',async t=>{
+ const {parseHTML}=await import('linkedom'),{window,document}=parseHTML('<html></html>'),before={window:globalThis.window,document:globalThis.document,Event:globalThis.Event,CustomEvent:globalThis.CustomEvent};Object.assign(globalThis,{window,document,Event:window.Event,CustomEvent:window.CustomEvent});t.after(()=>Object.assign(globalThis,before));const author=require('../.build/atlas-region-author.cjs'),sent=[],c={commandId:randomUUID(),campaignId:'campaign',token:randomUUID(),action:{kind:'undo'}};window.campaign={executeAtlasCommit:async command=>{sent.push(structuredClone(command));if(sent.length===1)throw new Error('transport lost');return{ok:true,value:{campaignId:c.campaignId,commandId:c.commandId,revision:1,canUndo:false,canRedo:true}};}};
+ assert.equal((await author.writeAtlasCommit(c)).ok,false);assert.deepEqual(author.pendingAtlasWrite(c.token),c);assert.equal((await author.recoverAtlasCommit(c.token)).ok,true);assert.deepEqual(sent,[c,c]);assert.equal(author.pendingAtlasWrite(c.token),null);
+});
+test('external binding IDs are own keys and derived secret styles retain absent author revision',async t=>{
+ const f=fixture(t,1);f.store.db.prepare("UPDATE atlas_binding SET id='__proto__' WHERE campaign_id=? AND kind='dungeon'").run(f.campaign.id);const region=await f.read();assert(Object.hasOwn(region.frames,'__proto__'));assert.equal(region.frames.__proto__.x,0);
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'key-batch',rooms:[{id:'r0',expectedRevision:0,keyRevision:null}],patch:{secret:true}}});const secretRegion=await f.read();assert.equal(secretRegion.drawing.styles.find(s=>s.id==='r0').secret,true);const drawing=f.store.drawingMap(f.shell.token,'r0');assert.equal(drawing.coverage,'selected');assert.equal(drawing.styles[0].secret,true);assert.equal(drawing.styles[0].authorRevision,null);assert.equal(f.store.db.prepare('SELECT count(*) n FROM drawing_profile WHERE campaign_id=?').get(f.campaign.id).n,0);
+});
+test('content anchors resolve from the canonical volume and refresh after a room move',async t=>{
+ const f=fixture(t,1),command=action=>({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action});f.store.executeDrawing(command({kind:'volume-initialize',roomId:'r0',expectedRoomRevision:0,expectedVolumeRevision:null,heightSteps:2}));const volume=f.store.drawing(f.shell.token).volumes[0],{newElement}=require('../.build/atlas-region-drawing-model.cjs'),element={...newElement('feature','local','ground','r0',[{x:9000,y:9000}]),content:{reference:null,publicText:'PRIVATE-CONTENT',categories:[],tags:[],trapXp:null,anchor:{volumeId:volume.id,x:0,y:0,z:0}}};f.store.executeDrawing(command({kind:'element',element,expectedRevision:null}));let region=await f.read(),projected=region.drawing.elements.find(e=>e.id===element.id),canonical=f.store.drawingMap(f.shell.token).elements.find(e=>e.id===element.id);assert.deepEqual(projected.points,canonical.points);assert.equal(projected.zOffsetMeters,canonical.zOffsetMeters);assert(!JSON.stringify(region).includes('PRIVATE-CONTENT'));
+ const room=f.store.atlasRoom(f.shell.token,'r0');const move=command({kind:'shape',roomId:'r0',expectedRevision:room.revision,polygons:room.polygons.map(p=>({...p,outer:p.outer.map(v=>({x:v.x+3.048,y:v.y}))})),transform:{dx:3.048,dy:0,scale:1,angle:0,origin:{x:0,y:0}}});f.store.executeAtlasCommit({...move,action:{kind:'drawing',command:move}});
+ region=await f.read();projected=region.drawing.elements.find(e=>e.id===element.id);canonical=f.store.drawingMap(f.shell.token).elements.find(e=>e.id===element.id);assert.deepEqual(projected.points,canonical.points);
+});
+test('a displayed source fence rejects stale geometry writes but permits exact receipt recovery',async t=>{
+ const f=fixture(t,1),region=await f.read(),command={commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,sourceFence:region.fence,action:{kind:'city-create',name:'Neu',x:30,y:30,width:100,height:100}},before=f.store.atlasOverview(f.shell.token).counts.cities;
+ f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?').run('Neuer Quellstand',f.campaign.id,'r0');assert.throws(()=>f.store.executeAtlasCommit(command),/inzwischen geändert/);assert.equal(f.store.atlasOverview(f.shell.token).counts.cities,before);
+ const fresh={...command,sourceFence:(await f.read()).fence},ack=f.store.executeAtlasCommit(fresh);assert.equal(ack.commandId,fresh.commandId);assert.equal(f.store.executeAtlasCommit(fresh).revision,ack.revision);assert.equal(f.store.atlasOverview(f.shell.token).counts.cities,before+1);
+});
+test('older landscape vector display fails explicitly at its byte budget; exact reader preserves all source points',t=>{
+ const f=fixture(t,1),record={id:randomUUID(),revision:0,kind:'road',name:'Dichter Verlauf',points:Array.from({length:130000},(_,i)=>({x:i%100,y:Math.floor(i/100)})),polygons:[],resolution:1,width:1,values:{}},payload=JSON.stringify(record);f.store.db.prepare('INSERT INTO atlas_landscape(campaign_id,id,revision,payload,min_x,max_x,min_y,max_y) VALUES(?,?,?,?,?,?,?,?)').run(f.campaign.id,record.id,0,payload,0,100,0,1400);
+ assert.throws(()=>f.store.landscapeRegion(f.shell.token,{x:0,y:0,width:200,height:1500},0,false),/Darstellungsbudget/);assert.equal(f.store.landscapeRegion(f.shell.token,{x:0,y:0,width:200,height:1500}).records[0].points.length,record.points.length);assert.equal(f.store.db.prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? AND id=?').get(f.campaign.id,record.id).payload,payload);
+});
