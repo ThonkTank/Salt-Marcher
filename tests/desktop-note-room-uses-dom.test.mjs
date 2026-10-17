@@ -50,3 +50,6 @@ test('changing away and back to a note revokes an older room return even when it
 test('explicit reset revokes an open room navigation after a source refresh',async t=>{
  const x=fixture(t);x.ui.show('a','nera',()=>true);await tick();x.host.querySelector('#note-room-uses-list button').click();await tick();const [,current]=x.opens[0];x.ui.show('a','nera',()=>true);x.ui.reset();assert.equal(current(),false);
 });
+test('returning to the original editor preserves its viewport when delayed room backlinks arrive',async t=>{
+ const late=deferred();let count=0;const x=fixture(t,()=>++count===1?Promise.resolve(page()):late.promise),scrolled=[];x.host.ownerDocument.defaultView.HTMLElement.prototype.scrollIntoView=function(){scrolled.push(this);};x.ui.show('a','nera',()=>true);await tick();x.host.querySelector('#note-room-uses-list button').click();await tick();const before=x.focused();x.opens[0][2](true);late.resolve(page([{...entry(),excerpt:'Neuer Raumtext'}]));await tick();assert.match(x.host.textContent,/Neuer Raumtext/);assert.equal(x.focused(),before);assert.deepEqual(scrolled,[]);
+});
