@@ -879,9 +879,9 @@ test('cold viewport marker cannot displace the canonical city search target whil
   s.atlas.data.cities=[];s.atlas.data.places=[{locationId:city.header.locationId,name:city.header.name,point:{x:0,y:0},trashed:false}];
   const query=x.window.campaign.atlasObjects;x.window.campaign.atlasObjects=async(token,q)=>{const r=await query(token,q);if(q.kind==='city')return new Promise(resolve=>{release=()=>resolve(r);});return r;};
   x.enter('atlas-search',city.header.name);await until(()=>!!release);
-  assert.equal([...x.document.querySelectorAll('#atlas-search-results button')].filter(b=>b.textContent===city.header.name).length,0,'do not expose a wrong early marker target');
+  await settle();assert.equal(x.document.querySelectorAll('#atlas-search-results button').length,0,'marker and house replies must not appear ahead of the pending city');
   release();await until(()=>[...x.document.querySelectorAll('#atlas-search-results button')].some(b=>b.textContent===city.header.name));
-  const found=[...x.document.querySelectorAll('#atlas-search-results button')].filter(b=>b.textContent===city.header.name);assert.equal(found.length,1);
+  const found=[...x.document.querySelectorAll('#atlas-search-results button')].filter(b=>b.textContent===city.header.name);assert.equal(found.length,1);assert.equal(x.document.querySelector('#atlas-search-results button').textContent,city.header.name,'city stays first even when its houses replied earlier');
   found[0].click();await until(()=>s.atlas.family==='city'&&x.document.getElementById('atlas-selection-title').textContent===city.header.name);
   assert.equal(s.atlas.cityId,city.header.id);assert.equal(x.document.getElementById('city-panel-infill').hidden,false);assert.equal(x.writes.length,0);
  }finally{release?.();await s.close();}
@@ -906,4 +906,12 @@ test('a genuine city search focus failure is shown without an unhandled rejectio
   await until(()=>x.document.getElementById('atlas-save-status').textContent.includes('nicht im Atlas verortet'));
   assert.equal(s.atlas.family,'navigation');assert.equal(x.writes.length,0);
  }finally{await s.close();}
+});
+
+test('leaving the Atlas does not report its deliberately cancelled background read in the new workspace',async()=>{
+ const x=await setup(),s=await placeSurface(x);let release;try{
+  const previous=x.messages.length;x.window.campaign.atlasRegion=()=>new Promise(resolve=>{release=resolve;});
+  const pending=s.atlas.refresh();await until(()=>!!release);s.atlas.hide();release({ok:false,error:'Kartenausschnitt abgebrochen.'});await pending;
+  assert.equal(s.atlas.root.hidden,true);assert.equal(x.messages.slice(previous).filter(m=>m.error).length,0);assert.doesNotMatch(x.document.getElementById('atlas-save-status').textContent,/abgebrochen/);
+ }finally{release?.({ok:false,error:'cancelled'});await s.close();}
 });
