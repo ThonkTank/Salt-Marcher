@@ -111,3 +111,28 @@ test('the packet button starts at the current preparation visit while explicit o
 for(const fail of [false,true])test(`an old preparation visit packet ${fail?'error':'answer'} cannot appear after selection moves inside the same plan`,async t=>{
  const x=uiSetup(t),reply=deferred();x.setOwner({token:'token',planId:'plan',visitId:'first'});x.window.campaign.sessionPacket=()=>reply.promise;x.el('open').click();await wait();x.setOwner({token:'token',planId:'plan',visitId:'second'});reply.resolve(fail?{ok:false,error:'Alter Lesefehler'}:{ok:true,value:packet()});await wait();assert.equal(x.el('content').textContent,'');assert.equal(x.el('visits').textContent,'');assert.equal(x.el('export').disabled,true);assert.deepEqual(x.messages,[]);
 });
+
+
+test('packet omits empty optional location sections, preserves the place and warns only when unavailable',t=>{
+ const x=storeSetup(t),location={kind:'location',version:1,id:randomUUID(),name:'Weidenhain',type:'poi',sections:[{id:randomUUID(),title:'Beschreibung',markdown:''},{id:randomUUID(),title:'Notizen',markdown:' \r\n\t '},{id:randomUUID(),title:'Spuren',markdown:'  Messer\r\n**Blaues Band**  '}],detailMaps:[],keyLinks:[]};
+ x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:location}});
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:1,plan:{version:1,id:x.id,revision:1,name:'Abend',scenes:[{id:x.visitId,title:'Rückzug',notes:'Verhandeln oder rasten.',locationId:location.id}]}}});
+ const before=x.store.db.serialize(),p=x.store.sessionPacket(x.w.token,x.id),v=p.visits[0];
+ assert.equal(v.location,'Weidenhain');assert.equal(v.locationId,location.id);assert.deepEqual(p.warnings,[]);
+ assert.deepEqual(v.blocks.map(b=>[b.heading,b.text]),[['GM-Notizen','Verhandeln oder rasten.'],['Weidenhain · Spuren','  Messer\r\n**Blaues Band**  ']]);
+ const markdown=require('../'+base+'/ui.cjs').sessionPacketMarkdown(p);
+ assert.match(markdown,/\*\*Ort:\*\* Weidenhain/);assert.doesNotMatch(markdown,/### Weidenhain · (Beschreibung|Notizen)|Keine Notizen/);assert.ok(markdown.includes(location.sections[2].markdown));
+ assert.equal(x.store.db.serialize().equals(before),true);
+ x.store.close();x.store=new CampaignStore(x.file);const w=x.store.activate(x.campaign.id);assert.deepEqual(x.store.sessionPacket(w.token,x.id),p);
+ x.store.db.prepare('UPDATE location SET trashed=1 WHERE campaign_id=? AND id=?').run(x.campaign.id,location.id);
+ const unavailable=x.store.sessionPacket(w.token,x.id);assert.match(unavailable.warnings.join(' '),/fehlt oder liegt im Papierkorb/);assert.equal(unavailable.visits[0].location,'Nicht verfügbarer Ort');assert.notEqual(unavailable.basis,p.basis);
+});
+test('a place without authored sections remains accessible in the live packet and old controls are revoked',async t=>{
+ const x=uiSetup(t),actions=[],p=packet();p.visits[0].locationId='weidenhain';p.visits[0].blocks=[];
+ x.window.campaign.sessionPacket=async()=>({ok:true,value:p});x.ui.setSessionPacketSurface('live');
+ const source={sceneId:'scene',token:'token',planId:'plan',visitId:'first',key:'one',current:()=>true,flush:async()=>true,openVisit:async()=>{},openReference:async ref=>actions.push(ref)};
+ await x.ui.openLiveSessionPacket(source);
+ assert.match(x.el('content').textContent,/Tor/);assert.equal(x.el('content').querySelectorAll('.packet-block').length,0);
+ const button=x.el('content').querySelector('.packet-location-action');assert.ok(button);button.click();await wait();assert.deepEqual(actions,[{kind:'location',id:'weidenhain'}]);
+ x.el('next').click();button.onclick();await wait();assert.equal(actions.length,1);
+});
