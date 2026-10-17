@@ -16,6 +16,7 @@ async function fixture(t){
  const root=mkdtempSync(path.join(tmpdir(),'quick-reference-')),store=new CampaignStore(path.join(root,'store.sqlite')),cam=store.create('References'),w=store.activate(cam.id),note={version:1,id:randomUUID(),revision:1,kind:'quest',title:'Alpha',readAloud:'  Public prose\r\n',gmNotes:'Private prose',relations:[],creatureId:null,deleted:false};
  const command=change=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,change});store.changePreparation(command({kind:'note',expectedRevision:null,note}));store.changePreparation(command({kind:'note',expectedRevision:null,note:{...note,id:randomUUID(),title:'Beta'}}));store.executeLive({commandId:randomUUID(),campaignId:cam.id,token:w.token,action:{kind:'initialize',expectedRosterRevision:0}});
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={window:globalThis.window,document:globalThis.document,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout};Object.assign(globalThis,{window,document});
+ window.HTMLInputElement.prototype.select=function(){this.selectionStart=0;this.selectionEnd=this.value.length;};
  const timers=new Map();let timerId=0;globalThis.setTimeout=fn=>{timers.set(++timerId,fn);return timerId;};globalThis.clearTimeout=id=>timers.delete(id);
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this._value??this.options[0]?.value??'';},set(v){this._value=String(v);}});
  const query=document.querySelector.bind(document);document.querySelector=selector=>selector==='dialog:modal:not(#quick-reference)'?[...document.querySelectorAll('dialog')].find(d=>d.open&&d.id!=='quick-reference')??null:query(selector);
@@ -91,4 +92,10 @@ for(const initial of [true,false])test(`refresh retries the selected failed refe
  x.el('quick-refresh').click();await tick();assert.equal(x.el('quick-document').querySelector('h2')?.textContent,'Beta');assert.equal(x.reads.at(-1)[1].id,beta.id);
  if(!initial){x.el('quick-back').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');x.el('quick-forward').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');}
  assert.ok(x.store.db.serialize().equals(bytes),'reference recovery and history navigation remain read-only');
+});
+
+test('direct source inspection starts with its reading document and searches other catalogs only on request',async t=>{
+ const x=await fixture(t);x.el('quick-close').click();const search=x.window.campaign.searchDesk,calls=[];x.window.campaign.searchDesk=async(...args)=>{calls.push(args);return search(...args);};
+ await x.ui.openQuickReference({kind:'note',id:x.note.id});await tick();assert.equal(x.dialog.classList.contains('quick-reading'),true);assert.equal(x.el('quick-show-search').hidden,false);assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');assert.equal(calls.length,0);
+ x.el('quick-show-search').click();await tick();assert.equal(x.dialog.classList.contains('quick-reading'),false);assert.ok(calls.length);assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');x.el('quick-close').click();await x.ui.openQuickReference();assert.equal(x.dialog.classList.contains('quick-reading'),false);
 });
