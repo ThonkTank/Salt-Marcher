@@ -7,9 +7,6 @@ import { encounterXpMultiplier } from '../encounter-contracts';
 import { compareText, type EncounterEntropy } from './deterministic-order.js'
 import { encounterCandidateStream } from './entropy-streams.js'
 import {
-  quantityMultiplier
-} from './xp-multipliers'
-import {
   type GeneratorPresetConfigV3,
   type ScaledRange
 } from './config'
@@ -35,8 +32,6 @@ export type Block = Readonly<{
   role: EncounterRole
   cr: ChallengeRating
   quantity: number
-  rawXp: number
-  adjustedXp: number
   availableStatblocks: number | null
 }>
 
@@ -121,26 +116,17 @@ export function buildSelectionIndex(
   partyLevel: number,
   config: GeneratorPresetConfigV3
 ): SelectionIndex {
-  const crById = new Map(
-    catalog.challengeRatings
-      .filter((entry) => entry.active)
-      .map((entry) => [entry.id, entry])
-  )
-  const bands = catalog.challengeRatings
-    .filter((entry) => entry.active)
-    .flatMap((cr) => {
-      const crIndex = generatorChallengeRatings.indexOf(
-        cr.label as (typeof generatorChallengeRatings)[number]
-      )
-      if (crIndex < 0) return []
-      const cell = roleAt(config.composition.roleMatrix, partyLevel, crIndex)
-      return cell === 'none' ? [] : [{ role: titleRole(cell), crId: cr.id }]
-    })
   const blocksByRole = new Map<EncounterRole, Block[]>()
-  for (const band of bands) {
-    const cr = crById.get(band.crId)
-    if (!cr) continue
-    const range = config.composition.roleQuantities[lowerRole(band.role)]
+  for (const cr of catalog.challengeRatings) {
+    if (!cr.active) continue
+    const crIndex = generatorChallengeRatings.indexOf(
+      cr.label as (typeof generatorChallengeRatings)[number]
+    )
+    if (crIndex < 0) continue
+    const role = roleAt(config.composition.roleMatrix, partyLevel, crIndex)
+    if (role === 'none') continue
+    const range = config.composition.roleQuantities[role]
+    const encounterRole = titleRole(role)
     for (
       let quantity = Math.max(1, range.min);
       quantity <= range.max;
@@ -152,28 +138,20 @@ export function buildSelectionIndex(
           : cr.availableQuantity
       if (availableQuantity !== null && quantity > availableQuantity) continue
       const block: Block = {
-        id: `${band.role}_CR${cr.label.replace('/', '_')}_Nr${quantity}`,
-        role: band.role,
+        id: `${encounterRole}_CR${cr.label.replace('/', '_')}_Nr${quantity}`,
+        role: encounterRole,
         cr,
         quantity,
-        rawXp: cr.xp * quantity,
-        adjustedXp: Math.round(cr.xp * quantity * quantityMultiplier(quantity)),
         availableStatblocks: cr.availableStatblocks
       }
-      const current = blocksByRole.get(band.role) ?? []
+      const current = blocksByRole.get(encounterRole) ?? []
       current.push(block)
-      blocksByRole.set(band.role, current)
+      blocksByRole.set(encounterRole, current)
     }
   }
-  return new Map(
-    [...blocksByRole].map(([role, blocks]) => [
-      role,
-      [...blocks].sort(
-        (left, right) =>
-          left.adjustedXp - right.adjustedXp || compareText(left.id, right.id)
-      )
-    ])
-  )
+  // Ranking is exhaustive and uses named entropy plus a stable ID for ties.
+  // Index order is not a second ranking policy.
+  return blocksByRole
 }
 
 export function selectEncounter(
