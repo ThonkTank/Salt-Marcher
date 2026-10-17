@@ -161,7 +161,7 @@ test('Atlas long-distance preview exposes duration and starts the same world jou
  worldUI.initWorld(()=>{},async()=>true,async()=>{},async()=>{});
  for(const select of x.document.querySelectorAll('select'))if(!Object.getOwnPropertyDescriptor(select,'value')?.writable)Object.defineProperty(select,'value',{value:'',writable:true});
  for(const d of x.document.querySelectorAll('dialog')){d.open=false;d.showModal=()=>{d.open=true;};d.close=()=>{d.open=false;};}
- worldUI.activateWorld(x.w);await worldUI.openWorld();
+ worldUI.activateWorld(x.w);await worldUI.openWorld();worldUI.setWorldSurface('atlas');
  x.document.getElementById('world-journey-console').scrollIntoView=()=>{throw new Error('Hidden world transport must not steal the Atlas viewport');};
  try {
  const field=(id,value)=>{const e=x.document.getElementById(id);e.value=value;e.dispatchEvent(new x.window.Event('input',{bubbles:true}));};
