@@ -48,12 +48,13 @@ async function refresh(){
 }
 const duplicate=(c:CampaignOverview)=>campaigns.some(other=>other.id!==c.id&&searchable(other.name)===searchable(c.name));
 const searchable=(text:string)=>text.normalize('NFKD').replace(/\p{M}/gu,'').toLocaleLowerCase('de');
+function deleteLabel(c:CampaignOverview){el('campaign-delete-label').textContent=c.name;el('campaign-delete-context').hidden=!duplicate(c);el('campaign-delete-context').textContent='Kennung: '+c.id;}
 function draw(){
  const root=el('campaign-screen-list'),trash=el('campaign-trash-list');root.replaceChildren();trash.replaceChildren();
  const queries={available:searchable(el<HTMLInputElement>('campaign-screen-search').value).trim().split(/\s+/).filter(Boolean),trash:searchable(el<HTMLInputElement>('campaign-trash-search').value).trim().split(/\s+/).filter(Boolean)};
  const totals={available:0,trash:0},shown={available:0,trash:0};
  for(const c of campaigns){const list=c.trashed?'trash':'available';totals[list]++;if(!queries[list].every(term=>searchable(c.name+' '+c.id).includes(term)))continue;shown[list]++;const card=document.createElement('article'),h=document.createElement('h3'),facts=document.createElement('p'),time=document.createElement('p'),actions=document.createElement('div');card.className='campaign-card';card.dataset.campaignId=c.id;h.textContent=c.name+(c.id===activeId?' · aktiv':'');facts.textContent=c.rooms+(c.rooms===1?' Raum':' Räume')+' · '+c.locations+(c.locations===1?' Ort':' Orte')+' · '+c.characters+(c.characters===1?' Charakter':' Charaktere');if(c.notes){facts.append(' · '+c.notes+(c.notes===1?' Wissenseintrag':' Wissenseinträge'));facts.title='Wissenseinträge umfassen NSCs, Fraktionen, Quests und weitere Notizen einschließlich Papierkorbeinträgen.';}if(c.maps)facts.append(' · '+c.maps+(c.maps===1?' Karte':' Karten'));time.className='caption';time.textContent='Zuletzt geöffnet: '+date(c.lastOpenedAt)+' · Angelegt: '+date(c.createdAt);actions.className='toolbar';
-  if(c.trashed)actions.append(button('Wiederherstellen',()=>void execute({commandId:crypto.randomUUID(),kind:'trash',id:c.id,expectedRevision:c.trashRevision,trashed:false})),button('Dauerhaft löschen…',()=>{if(blocked())return;erasing=c;el('campaign-delete-label').textContent=c.name+(duplicate(c)?' · Kennung: '+c.id:'');el<HTMLInputElement>('campaign-delete-name').value='';dialog('campaign-delete-dialog').showModal();el('campaign-delete-name').focus();}));
+  if(c.trashed)actions.append(button('Wiederherstellen',()=>void execute({commandId:crypto.randomUUID(),kind:'trash',id:c.id,expectedRevision:c.trashRevision,trashed:false})),button('Dauerhaft löschen…',()=>{if(blocked())return;erasing=c;deleteLabel(c);el<HTMLInputElement>('campaign-delete-name').value='';dialog('campaign-delete-dialog').showModal();el('campaign-delete-name').focus();}));
   else actions.append(button(c.id===activeId?'Fortsetzen':'Öffnen',()=>void execute({commandId:crypto.randomUUID(),kind:'open',id:c.id})),button('Bearbeiten…',()=>edit(c)));
   card.append(h,facts,time);if(duplicate(c)){const identity=document.createElement('p');identity.className='caption';identity.textContent='Kennung: '+c.id;card.append(identity);}card.append(actions);(c.trashed?trash:root).append(card);
  }
@@ -88,7 +89,7 @@ function resumeUncommitted(command:CampaignCatalogCommand){
  else if(command.kind==='trash'&&command.trashed&&!row.trashed)edit(row);
  else if(row.trashed){
   if(!dialog('campaign-trash-dialog').open)dialog('campaign-trash-dialog').showModal();
-  if(command.kind==='erase'){erasing=row;el('campaign-delete-label').textContent=row.name+(duplicate(row)?' · Kennung: '+row.id:'');el<HTMLInputElement>('campaign-delete-name').value=command.confirmName;dialog('campaign-delete-dialog').showModal();el('campaign-delete-name').focus();}
+  if(command.kind==='erase'){erasing=row;deleteLabel(row);el<HTMLInputElement>('campaign-delete-name').value=command.confirmName;dialog('campaign-delete-dialog').showModal();el('campaign-delete-name').focus();}
  }else{message('Keine Änderung gebucht. Kampagnenstatus inzwischen geändert. Aktuellen Eintrag erneut wählen.');return;}
  message('Keine Änderung gebucht. Eingaben wiederhergestellt; aktuellen Kampagnenstand prüfen und erneut ausdrücklich bestätigen.');lock();
 }
