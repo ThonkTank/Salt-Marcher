@@ -116,9 +116,10 @@ export class AtlasRegionReader {
   if(u.kind!=='building'||!u.position||!parent)throw new Error('Elterngebäude fehlt.');const f=this.frame(this.binding(parent)),p=at(u.position,f),pose={...p,angle:f.angle+(u.angle??0)},offset=at(b,pose);return{...offset,angle:pose.angle+b.angle};
  }
  private roomVisible(id:string,scope:string,floor:string){return!this.db.prepare("SELECT 1 FROM drawing_hidden WHERE campaign_id=? AND hidden=1 AND (kind='room' AND id=? OR kind='floor' AND scope_id=? AND id=?)").get(this.campaign,id,scope,floor);}
+ // Match citySvg's surface/road/roof order; exact hits use the same painter order.
  private candidates(kind:string,owner:string,scope:string,floor:string,box:Box){
   const from=this.indexed?'temp.region_index i CROSS JOIN temp.region_shape s ON s.rowid=i.id':'temp.region_shape s',alias=this.indexed?'i':'s';
-  return this.db.prepare(`SELECT s.* FROM ${from} WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND ${alias}.max_x>=? AND ${alias}.min_x<=? AND ${alias}.max_y>=? AND ${alias}.min_y<=? ORDER BY s.source_order,s.key`).iterate(kind,owner,scope,floor,box.x,box.x+box.width,box.y,box.y+box.height);
+  return this.db.prepare(`SELECT s.* FROM ${from} WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND ${alias}.max_x>=? AND ${alias}.min_x<=? AND ${alias}.max_y>=? AND ${alias}.min_y<=? ORDER BY CASE WHEN s.kind='unit' THEN CASE json_extract(s.payload,'$.value.kind') WHEN 'building' THEN 2 WHEN 'road' THEN 1 WHEN 'wall' THEN 1 ELSE 0 END ELSE 0 END,s.source_order,s.key`).iterate(kind,owner,scope,floor,box.x,box.x+box.width,box.y,box.y+box.height);
  }
  private roomShape(row:any,q:AtlasRegionQuery):Shape|null{
   const s=JSON.parse(row.payload) as Shape,r=s.value as RoomGeometry;if(!this.roomVisible(r.id,r.scopeId,r.floorId))return null;s.style=roomMapStyle(this.db,this.campaign,r.id);
@@ -132,7 +133,8 @@ export class AtlasRegionReader {
  }
  private visit(q:AtlasRegionQuery,emit:(shape:Shape,frame:Frame,kind:string,binding:AtlasBinding,header?:CityHeader)=>void,metadata?:(b:AtlasBinding,f:Frame,h?:CityHeader)=>void){
   const mpp=q.box.width/q.width;
-  for(const row of this.db.prepare('SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY rowid').iterate(this.campaign)){
+  // Workbench vectors paint all Cities first, then Dungeon contours.
+  for(const row of this.db.prepare("SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY CASE kind WHEN 'city' THEN 0 ELSE 1 END,rowid").iterate(this.campaign)){
    const b=this.binding(row);let f:Frame;try{f=this.frame(b);}catch{if(this.countFaults)this.readFaults++;continue;}
    const local=bounds(corners(q.box).map(p=>inverse(p,f)));
    if(b.kind==='city'){

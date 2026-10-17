@@ -489,6 +489,9 @@ Geometrieantwort, 1500 Vektorobjekte und maximal 16 MiB kodierter aktiver
 Darstellungskontext. Dichtere Raum-/Stadtansichten werden vollständig als
 höchstens 512² großes Bild repräsentiert; genaue Auswahl liest die Quelle,
 niemals die Pixelkontur. Die UI meldet Rastermodus und beschädigte Einträge.
+Raster und Vektor verwenden dieselbe Ebenenfolge: Stadtpapier unter Dungeons,
+Straßen unter Gebäudedächern. Überlappende Gegenproben prüfen die tatsächlichen
+PNG-Pixel; reine Objektzählung hätte den verdeckten Dungeon nicht bemerkt.
 Der serialisierte Geometriecache hat zusammen 64 MiB Nutzdatenbudget, geteilt
 in 32 MiB Ansicht und 32 MiB Ausgabe. Das ist keine Obergrenze des tatsächlichen
 Electron-/SQLite-/GPU-Speichers. Aktive Autorenentwürfe, exakte Fachleser und
@@ -527,7 +530,11 @@ vergleicht frische Node-Prozesse und 30 warme Reads; das ist weder ein kalter
 Betriebssystemcache noch Electron-/GPU- oder physische 16-GiB-Qualifikation.
 TEMP-Neuaufbau gegen eine persistente, quellgebundene abgeleitete Geometrie ist
 der nächste Messvergleich; keine Text-/Historymigration ohne Übertragungs- und
-Wiederaufnahmebeleg. Ein EXPLAIN-Gegenfall begründet die Rtree-zuerst-Abfrage:
+Wiederaufnahmebeleg. Zuvor die Kaltphasen Storekonstruktor, Quellprüfsummen,
+SQL-Statementvorbereitung, TEMP-Aufbau und Serialisierung getrennt messen. In
+`storage/atlas-region.ts` wiederverwendete Statements und seitenweise Projektion
+gegen den jetzigen per-ID-Read vergleichen; am Konstruktor-/RSS-Höchststand
+lässt sich der Nutzen einer Datenformatänderung noch nicht ablesen. Ein EXPLAIN-Gegenfall begründet die Rtree-zuerst-Abfrage:
 ein regulärer Join wählte den Geometrietypindex und besuchte alle Raumzeilen.
 
 Auch die Standardsuche nach dem ersten Raum war bei fehlender expliziter
