@@ -726,6 +726,35 @@ Die Prüfung hat zusätzliche Lücken geschlossen:
   den unoptimierten Stream geprüft; fehlende SQLite-Math nutzt den Fallback.
   Lokale Invalidierung alter/neuer Grenzen und bestehende Budgets bleiben erhalten.
 
+Die erneute Gegenprüfung vom 17.10.2026 schließt drei weitere Übergangslücken:
+
+- Die Innenraum-Autorenebene wird nach dem Detail- oder Rasterhintergrund
+  genau einmal gezeichnet. Offene Kontur-/Objektzüge bleiben beim Wechsel in
+  dichte Darstellung sichtbar. Auswahlkontur und Griffe verwenden das bereits
+  geladene vollständige Autorenobjekt, auch wenn die Bereichsantwort keine
+  Einzelräume enthält. Zeichnen liest nichts nach; der bestehende Shapecommand
+  behält Originalrevision und Quellenprüfung. Ladezustände sperren Griffe;
+  Geschoss und Höhenschnitt werden berücksichtigt. In der Wissensansicht der
+  Gruppe werden keine GM-Autorenkonturen darübergelegt.
+- Objektfokus passt beide Ausdehnungen in das tatsächliche Seitenverhältnis
+  ein. Breite Räume, hohe Elemente und der schmale/weite Viewport bei200%
+  dürfen keine Objektteile allein durch die Fokusberechnung abschneiden.
+- Eine bereits geprüfte lokale Reisevorschau bleibt nach einem reinen
+  Kamera-Read erhalten, sofern dieselbe Quellenkennung bestätigt wird.
+  Während des Reads und bei Fehlern bleibt Reisebeginn gesperrt; ein anderer
+  Quellenstand verwirft die Vorschau weiterhin.
+
+`tools/test-desktop-atlas-author-overlay.mjs` prüft den nativen Autorenablauf
+mit1600 Räumen bei100% und200%: ausgewählten Originalraum lesen, drei Punkte
+zeichnen, in die dichte Rasteransicht zoomen, tatsächliche Canvas-Zeichenaufrufe
+und Fensterbild prüfen, verwerfen, einen Originalgriff verschieben, speichern,
+Undo/Redo und Neustart. Die alte eingefrorene Runtime verliert im gleichen
+Ablauf die Entwurfszeichenaufrufe. Die Regressionstests prüfen zusätzlich
+negative/gedrehte Einordnung, falsches Geschoss, Schnitt, Wissen und Ladezustand.
+Das ergänzt die Funktionsabnahme; physische16GiB und Präsentationslatenz bleiben
+weiterhin gesondert offen. Extrem kleine Objekte benötigen für unterscheidbare
+Einzelgriffe weiterhin einen geeigneten Zoom; Raster selbst sperrt diese nicht.
+
 Reproduzierbarer nativer Vergleich: `tools/measure-atlas-runtime.mjs` über
 `tools/ui-session.py` nach `build:desktop`. Derselbe Fixturebestand kann mit
 `ATLAS_BASELINE_FIXTURES` in eigene Profile kopiert werden; `ATLAS_RUNTIME_DIR`

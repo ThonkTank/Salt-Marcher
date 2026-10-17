@@ -541,6 +541,7 @@ export class CampaignAtlasWorkbench {
     const w = this.owner,
       request = ++this.request;
     if (!w) return;
+    const cameraPreview=keepScene?this.localPreview:null,previewFence=this.data?.region?.fence;
     const retry = this.travelReadState === "failed";get("atlas-region-retry").hidden=true;if(!this.data)get("atlas-save-status").textContent="Kartenausschnitt wird geladen…";
     this.hitVersion++;this.hitDialog.close();this.travelReadState = "loading";this.loadedRegionQuery=null;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
     this.previewRequest++;
@@ -563,6 +564,9 @@ export class CampaignAtlasWorkbench {
         get("atlas-save-status").dataset.error = "false";
         this.opts.status("Reisekontext aktualisiert");
       }
+      // Camera reads do not change the intended route. Restore it only after
+      // confirming exactly the same source; pending/failed reads stay locked.
+      if(cameraPreview&&previewFence&&r.value.region.fence===previewFence)this.localPreview=cameraPreview;
       this.render();return true;
     } catch (e) {
       if (this.owner === w && request === this.request) {
@@ -788,14 +792,14 @@ export class CampaignAtlasWorkbench {
       await this.opts.selectRoom(id);if(this.owner!==owner)return;await this.setFamily('interior',false);this.syncDrawingFloor();
     }
     if(this.owner!==owner||request!==this.searchRequest)return;
-    this.focus(target.point,Math.max(kind==='city'&&!unitId?60:30,target.box.width*1.4,target.box.height*1.4));
+    this.focus(target.point,Math.max(kind==='city'&&!unitId?60:30,target.box.width*1.4),Math.max(kind==='city'&&!unitId?60:30,target.box.height*1.4));
     await this.refresh();
   }
   private async navigateScope(id:string){
     const owner=this.owner;if(!owner||!await this.opts.flush())return;
     const r=await window.campaign.atlasObjectFocus(owner.token,'scope',id);if(this.owner!==owner)return;if(!r.ok)throw new Error(r.error);
     this.scopeId=id;this.floorId=r.value.floorId!;this.selection={kind:'scope',id};await this.setFamily('interior',false);this.syncDrawingFloor();
-    this.focus(r.value.point,Math.max(50,r.value.box.width*1.4,r.value.box.height*1.4));await this.refresh();
+    this.focus(r.value.point,Math.max(50,r.value.box.width*1.4),Math.max(50,r.value.box.height*1.4));await this.refresh();
   }
   private async navigateElement(id:string){
     const owner=this.owner;if(!owner||!await this.opts.flush())return;
@@ -804,10 +808,11 @@ export class CampaignAtlasWorkbench {
     const exact=await window.campaign.drawingElement(owner.token,id);if(this.owner!==owner)return;if(!exact.ok)throw new Error(exact.error);
     if(exact.value.roomId)await this.opts.selectRoom(exact.value.roomId);if(this.owner!==owner)return;
     await this.setFamily('decoration',false);this.syncDrawingFloor();await selectElement(id);
-    this.focus(r.value.point,Math.max(30,r.value.box.width*2,r.value.box.height*2));await this.refresh();
+    this.focus(r.value.point,Math.max(30,r.value.box.width*2),Math.max(30,r.value.box.height*2));await this.refresh();
   }
-  private focus(p: Point, width: number) {
-    const ratio = this.svg.clientHeight / Math.max(1, this.svg.clientWidth);
+  private focus(p: Point, width: number, height=width) {
+    const ratio = Math.max(1,this.svg.clientHeight) / Math.max(1, this.svg.clientWidth);
+    width=Math.max(width,height/ratio);
     this.camera.set(
       {
         x: p.x - width / 2,
@@ -1879,6 +1884,7 @@ export class CampaignAtlasWorkbench {
         );
       }
       if(data.region?.raster){const r=data.region.raster;const image=shape("image", {x: r.box.x-box.x, y: r.box.y-box.y, width: r.box.width, height: r.box.height, source: r.data});image.geometry.pointer=false;root.append(image);for(const b of data.bindings.filter(b=>b.kind==='dungeon')){const floor=data.geometry.position?.scopeId===b.ownerId?data.geometry.position.floorId:b.ownerId===this.scopeId?this.floorId:'ground',g=shape("group", {matrix: frameMatrix(this.relative(atlasFrame(data,b)))});this.drawInteriorRuntime(g,b,floor,mpp,[]);root.append(g);}}
+      this.drawInteriorAuthor(root,mpp);
       const travel = atlasWorldTravelState(),
         route = atlasWorldRoute(data,travel.preview);
       if (route.length)
@@ -2117,23 +2123,6 @@ export class CampaignAtlasWorkbench {
           },
           mpp,
         );
-      if (
-        this.selection?.kind === "room" &&
-        this.selection.id === room.id &&
-        this.family === "interior" &&
-        this.geometryCurrent() && !data.region?.raster && !slice
-      )
-        room.polygons.forEach((poly, pi) =>
-          poly.outer.forEach((p, vi) => {
-            const h = shape("circle", {x: p.x, y: p.y, radius: Math.max(0.05, mpp * 4), style: {fill: "white", stroke: "#244f87", lineWidth: mpp}});
-            h.data.atlasObject = "true";
-            h.data.kind = "vertex";
-            h.data.id = room.id;
-            h.data.atlasVertex = String(vi);
-            h.data.polygon = String(pi);
-            g.append(h);
-          }),
-        );
     }
     for (const e of data.geometry.drawing.elements.filter(
       (e) => e.scopeId === b.ownerId && e.floorId === floor && !e.archived,
@@ -2142,19 +2131,49 @@ export class CampaignAtlasWorkbench {
       node.data.atlasObject='true';node.data.kind='element';node.data.id=e.id;
       g.append(node);
     }
-    if (
-      b.ownerId === this.scopeId &&
-      (this.family === "interior" || this.family === "decoration")
-    ) {
-      drawingOverlay(g,true);
-      const draft = atlasDrawingDraft();
-      if (draft.polygons)
-        g.append(
-          shape("path", {path: roomPath(draft.polygons), style: {fill: "#d98f5555", stroke: "#b85c23", lineWidth: 0.1}}),
-        );
-    }
     this.drawInteriorRuntime(g,b,floor,mpp,shown);
     root.append(g);
+  }
+  /** Exact author data and open drafts outlive the background's detail/raster choice. */
+  private drawInteriorAuthor(root: AtlasPaint, mpp: number) {
+    const data = this.data;
+    if (!data || !this.scopeId || !['interior', 'decoration'].includes(this.family) ||
+      get<HTMLInputElement>('atlas-perception').checked) return;
+    const binding = data.bindings.find(b => b.kind === 'dungeon' && b.ownerId === this.scopeId);
+    if (!binding) return;
+    const g = shape('group', {
+      matrix: frameMatrix(this.relative(atlasFrame(data, binding))),
+      data: {editorOnly: 'true'},
+    });
+    const original = this.opts.roomDraft();
+    if (this.family === 'interior' && this.selection?.kind === 'room' &&
+      original?.id === this.selection.id && original.scopeId === this.scopeId &&
+      original.floorId === this.floorId && !get<HTMLInputElement>('atlas-slice-enabled').checked) {
+      const room = this.vertexDrag?.room.id === original.id ? structuredClone(this.vertexDrag.room) : original;
+      if (this.vertexDrag?.room.id === room.id)
+        room.polygons[this.vertexDrag.polygon]!.outer[this.vertexDrag.vertex] = {...this.vertexDrag.point};
+      if (data.region?.raster) g.append(shape('path', {
+        path: roomPath(room.polygons), pointer: false,
+        style: {fill: null, stroke: '#b85525', lineWidth: Math.max(.07, mpp * 2)},
+      }));
+      // Stale backgrounds may stay visible; their author handles must not remain actionable.
+      if (this.geometryCurrent()) room.polygons.forEach((poly, pi) => poly.outer.forEach((p, vi) => {
+        g.append(shape('circle', {
+          x: p.x, y: p.y, radius: Math.max(.05, mpp * 4),
+          style: {fill: 'white', stroke: '#244f87', lineWidth: mpp},
+          data: {atlasObject: 'true', kind: 'vertex', id: room.id, atlasVertex: String(vi), polygon: String(pi)},
+        }));
+      }));
+    }
+    const draft = atlasDrawingDraft();
+    if (draft.floor.scopeId === this.scopeId && draft.floor.floorId === this.floorId) {
+      drawingOverlay(g, true);
+      if (draft.polygons) g.append(shape('path', {
+        path: roomPath(draft.polygons),
+        style: {fill: '#d98f5555', stroke: '#b85c23', lineWidth: .1},
+      }));
+    }
+    if (g.children.length) root.append(g);
   }
   private drawInteriorRuntime(g:AtlasPaint,b:AtlasBinding,floor:string,mpp:number,shown:import('./contracts').RoomGeometry[]){
     const data=this.data!;
