@@ -230,3 +230,20 @@ test('initiative read retry restores an unseen saved draft without discarding it
  await until(()=>x.el('initiative-rows').querySelector('input')&&!x.el('initiative-save').disabled);assert.equal(x.el('initiative-rows').querySelector('input').value,' +17 ');assert.equal(discards,0);assert.deepEqual(x.store.combatDraft(x.w.token,c.id,'initiative',c.id),d);assert(x.store.db.serialize().equals(bytes));assert.equal(x.writes.length,0);
  x.execute({kind:'edit',participantId:c.participants[0].id,changes:{initiative:11}});await x.ui.openExistingCombat(c.id);await until(()=>!x.el('initiative-reload').hidden&&x.el('initiative-save').disabled);assert.match(x.el('initiative-preserved').value,/ \+17 /);x.el('initiative-reload').onclick();await until(()=>x.el('initiative-rows').querySelector('input')?.value==='11'&&!x.el('initiative-save').disabled);assert.equal(discards,1);assert.equal(x.store.combatDraft(x.w.token,c.id,'initiative',c.id),null);assert.equal(x.writes.length,0);
 });
+
+
+test('expanded troop keeps individual controls without repeating the front member summary',async t=>{
+ const x=await uiFixture(t),before=structuredClone(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat);
+ const card=()=>x.el('combat-rows').querySelector('.combat-mob-card');
+ assert.ok(card().querySelector('.combat-mob-health'));
+ card().querySelector('.combat-mob-toggle').onclick();
+ assert.equal(card().querySelector('.combat-mob-health'),null,'Expanded members already expose their own HP controls');
+ assert.doesNotMatch(card().textContent,/Vorderes Mitglied/);
+ assert.match(card().textContent,/0 \/ 3 Züge/);
+ const members=[...x.el('combat-rows').querySelectorAll('tr[data-participant-id]')];
+ assert.equal(members.length,3);assert.ok(members.every(row=>!row.hidden));
+ for(const member of members){assert.ok(member.querySelector('.combat-health'));assert.ok(member.querySelector('.combat-conditions'));}
+ assert.equal(x.writes.length,0);assert.deepEqual(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat,before);
+ card().querySelector('.combat-mob-toggle').onclick();assert.ok(card().querySelector('.combat-mob-health'));
+ assert.ok([...x.el('combat-rows').querySelectorAll('tr[data-participant-id]')].every(row=>row.hidden));
+});
