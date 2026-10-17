@@ -3,14 +3,21 @@
 Originalquelle: Salt-Marcher `9de85c1a26f526acbc1af332ac5962e185c0aab2`,
 `docs/maps/requirements/requirements-maps-canvas.md`.
 
-Dungeonzeichnung und Hexatlas benutzen denselben SVG-Hostmechanismus mit
-passiver Kamera, mittlerem Ziehen und mausverankertem Zoom. Beide zeichnen in
-eine neue, zunächst unverbundene SVG-Gruppe. Erst ein vollständiger Durchlauf
-ersetzt die gemeinsame sichtbare Szenenwurzel; native DOM-Treffer stammen aus
-exakt dieser Szene. Der passive Hit-Helfer liefert nur deren DOM-Elemente.
-Raum-, Hex-, Orts-, Token- und Reisebedeutung bleibt beim jeweiligen Anwender.
-Dungeon-Drawing-Overlays und Hexbeschriftungen/Marker/Reiserouten bleiben Teil
-derselben Wurzel. Der SVG-Host und seine Capture-Listener bleiben stabil. Im relativen Atlasmodus bleibt auch die veröffentlichte Szenenwurzel bei Kamerabewegung bestehen: eine gemeinsame Translation bewegt Darstellung und DOM-Hits, die Maßstabsanzeige bleibt am Bildschirm verankert. Ein neuer Bereichsframe ersetzt die Szene atomar. Kleine Pans innerhalb der geladenen Abdeckung benötigen keinen Read; Zoom und veränderte Filter verlangen einen neuen Frame vor geometrischen Autorenaktionen.
+Der gemeinsame Kampagnenatlas verwendet `AtlasCanvas` (Canvas2D) mit einer
+passiven relativen Kamera und kompilierten Path2D-/Bildkommandos. Darstellung
+und passive Griff-/Markertreffer stammen aus derselben veröffentlichten Szene;
+Objektauswahl fragt weiterhin genaue quellengebundene Kandidaten im Main ab.
+Kleine Pans zeichnen vorhandene Kommandos mit geänderter Kamera, ohne neue
+Kartenobjekte oder Reads. Bildframes werden vollständig vorbereitet und nur
+als jüngste gültige Szene veröffentlicht. Zeichen-/Initialisierungsfehler
+entfernen Treffer und bieten ein neues Initialisieren mit derselben Kamera.
+Bilddecodierungen und Zeichenpuffer sind begrenzt; Details und verbleibende
+Alternativen stehen im [Atlas-Runtimeplan](../../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md).
+
+Die älteren isolierten Dungeon-/Hexansichten behalten `PassiveMapCanvas` mit
+SVG-Gruppen und DOM-Treffern. Sie teilen keine zweite Autorenwahrheit mit dem
+Atlas. Die Kamerasemantik bleibt gleich; die Implementierungen sind derzeit
+getrennt und bei der nächsten tatsächlichen Adoptermigration zu konsolidieren.
 
 Die gemeinsame Kameraleiste bietet vorige/nächste Ansicht und Zurücksetzen.
 Ein Ziehen ist ein Verlaufsschritt; unmittelbar aufeinanderfolgende
@@ -34,9 +41,9 @@ Leere Szenen zeigen einen fachneutralen Status; sie benötigen keine erfundene
 Domänengeometrie. Zeichenfehler entfernen alte/teilweise Treffer und bieten
 explizites Neuzeichnen. Ein Retry erzeugt eine frische Szenenwurzel ohne neue
 Capture-Listener und ohne Änderung der Kamera oder persistierter Kartenfakten.
-SVG benötigt unter der bestehenden CSP kein dynamisches Code-Evaluieren.
+Canvas2D und der verbleibende SVG-Host benötigen unter der bestehenden CSP kein dynamisches Code-Evaluieren.
 
 Der Ansichtscache ist flüchtig und wird nicht mit Kampagnen gespeichert.
-Dies ist kein GPU-/Tilecache oder Rendererwechsel. Geräteübergreifende
+Der Ansichtscache ist kein GPU-/Tilecache; der Canvas2D-Rendererwechsel ist oben getrennt beschrieben. Geräteübergreifende
 Kamerasynchronisation, weitere Kartenanwender und vollständige Plattform- und
 Ausfallqualifikation bleiben eigene Folgearbeit.

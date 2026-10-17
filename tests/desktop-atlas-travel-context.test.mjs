@@ -180,3 +180,15 @@ test('Atlas long-distance preview exposes duration and starts the same world jou
  const scene=x.store.sceneWorld(x.w.token,x.a.id);assert.ok(scene.journey);assert.equal(scene.journey.route.at(-1).q,3);
  } finally {await worldUI.stopWorldPlayback();}
 });
+
+test('a delayed click after a geometry drag stays suppressed until the next actual pointer press',async()=>{
+ const ui=Object.create(CampaignAtlasWorkbench.prototype);ui.suppressClick();await new Promise(resolve=>setTimeout(resolve,10));
+ assert.equal(ui.ignoreClick,true,'native drag completion can deliver its click after a zero-delay timer');
+ await ui.click({});assert.equal(ui.ignoreClick,false,'the generated click is consumed before any selection/read');
+ ui.suppressClick();ui.down({button:1});assert.equal(ui.ignoreClick,false,'a new pointer press starts an independent gesture even if no click followed the drag');
+});
+
+test('a visible drawing glyph selects its exact source ID even beyond the canonical point-pick radius',async()=>{
+ const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({dataset:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async()=>chosen.push('point-radius')});
+ await ui.click({button:0,altKey:false});assert.deepEqual(chosen,['glyph'],'visual glyph hit must keep the existing exact-ID navigation/read path');
+});
