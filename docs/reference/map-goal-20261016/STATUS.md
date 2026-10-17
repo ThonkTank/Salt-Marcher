@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `78d1f2fd7`, version 0.160.0, on the fresh linear branch `qa/atlas-blocks-20261017`. The owned Map/Atlas implementation is transferred from preserved qualified snapshots; retired Hex paint state stays removed and Main's opening-wave selection remains intact. The continuous Goal stays paused. Work continues through the heartbeat; owner acceptance is still required.
+Source includes SaltMarcher Main `fc1d0fb96`, version 0.160.0, on the fresh Main-based branch `qa/atlas-blocks-20261017`. The owned Map/Atlas implementation is transferred from preserved qualified snapshots; retired Hex paint state stays removed and Main's opening-wave selection, localized excerpt actions and single campaign catalog remain intact. Ordinary Main updates are merged into this topic; Main promotion must use squash to retain linear history. The continuous Goal stays paused. Work continues through the heartbeat; owner acceptance is still required.
 
 The [connected-block and live-map follow-up](BLOCKS-LIVE-20261017.md) adds explicit side-street proposals, real shared endpoint identities, atomic street/house acceptance and stable regeneration. It also makes cancellation/decisions visible, settles completed room-draft loading feedback, guards house-to-interior navigation and places live camera actions directly beside the map.
 
