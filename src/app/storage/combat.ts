@@ -1,4 +1,4 @@
-import {sceneEncounterParty,sceneGroupMembers,assessSceneGroups} from '../scene-encounter-selection';
+import {sceneEncounterParty,selectedSceneGroup,sceneGroupMembers,assessSceneGroups} from '../scene-encounter-selection';
 import {areaTargetDamage} from '../area-damage';
 import {confirmCombatNpcLosses} from './combat-world-losses';
 import {isDamageType,adjustedHitDamage} from '../damage-adjustment';
@@ -216,11 +216,12 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
         if(currentParty.basis!==basis.partyBasis)throw new Error('Party oder XP seit Bewertung geändert. Auswahl neu lesen.');
         const available=new Set(scenePreparation(db,cam,scene.id).groups.map(g=>g.id));
         const groups=basis.groups.map(b=>{if(!available.has(b.id))throw new Error('Gruppe gehört nicht zum fokussierten Szenenort oder Besuch.');const g=groupView(db,cam,b.id);if(g.revision!==b.revision||groupCombatBasis(g)!==b.basis)throw new Error('Szenengruppe seit Bewertung geändert. Auswahl neu lesen.');return g;});
-        const evaluation=assessSceneGroups(currentParty.party,groups,scene.locationId);if(evaluation.issue)throw new Error(evaluation.issue);
+        const chosen=groups.map((g,i)=>selectedSceneGroup(g,basis.groups[i]!.worldActorIds));
+        const evaluation=assessSceneGroups(currentParty.party,chosen,scene.locationId);if(evaluation.issue)throw new Error(evaluation.issue);
         state.sceneGroups=groups.map(g=>({id:g.id,revision:g.revision,name:g.title}));
         state.title=a.title||groups.map(g=>g.title).join(' + ').slice(0,1000);
         state.notes=groups.map(g=>g.title+'\n'+g.notes).join('\n\n');
-        for(const group of groups)reinforcePreparedGroup(db,cam,state,{kind:'add-prepared-group',preparedGroupId:group.id,expectedPreparedRevision:group.revision,expectedRosterBasis:groupCombatBasis(group),worldActorIds:sceneGroupMembers(group).map(a=>a.id),initiative:0});
+        for(const [i,group] of groups.entries())reinforcePreparedGroup(db,cam,state,{kind:'add-prepared-group',preparedGroupId:group.id,expectedPreparedRevision:group.revision,expectedRosterBasis:groupCombatBasis(group),worldActorIds:sceneGroupMembers(chosen[i]!).map(a=>a.id),initiative:0});
       }
       checkedCombat(state);
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),0)+1 n FROM combat WHERE campaign_id=?').get(cam).n;

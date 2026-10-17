@@ -3,7 +3,7 @@ import type {Progress} from './progression';
 import {xpLevel} from './progression';
 import {assessEncounter,type EncounterParty} from './encounter-contracts';
 import type {GroupView} from './groups-contracts';
-export interface SceneGroupBasis {id:string;revision:number;basis:string}
+export interface SceneGroupBasis {id:string;revision:number;basis:string;worldActorIds?:string[]}
 export interface SceneEncounterBasis {expectedFocusRevision:number|null;expectedRosterRevision:number;partyBasis:string;groups:SceneGroupBasis[]}
 export function sceneEncounterParty(live:LiveView,progress:readonly Pick<Progress,'characterId'|'xp'|'revision'>[],sceneId:string){
  const rows=live.roster.filter(c=>c.active&&!c.archived&&c.sceneId===sceneId),states=new Map(progress.map(p=>[p.characterId,p]));
@@ -11,6 +11,13 @@ export function sceneEncounterParty(live:LiveView,progress:readonly Pick<Progres
  return {party,basis:JSON.stringify(rows.map(c=>[c.id,c.membershipRevision,states.get(c.id)?.revision??null,states.get(c.id)?.xp??null]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))))};
 }
 export function sceneGroupMembers(group:GroupView){return group.actors.filter(a=>a.hp>0&&!a.defeated&&a.role!=='neutral');}
+/** Keep the full group basis for concurrency; the chosen actors alone enter this wave. */
+export function selectedSceneGroup(group:GroupView,worldActorIds?:readonly string[]):GroupView{
+ if(worldActorIds===undefined)return group;
+ const eligible=new Set(sceneGroupMembers(group).map(a=>a.id));
+ if(!Array.isArray(worldActorIds)||!worldActorIds.length||worldActorIds.length>200||new Set(worldActorIds).size!==worldActorIds.length||worldActorIds.some(id=>!eligible.has(id)))throw Error('Wähle eindeutige kampffähige Figuren dieser Szenengruppe.');
+ return {...group,actors:group.actors.filter(a=>worldActorIds.includes(a.id))};
+}
 export function sceneGroupIssue(group:GroupView,locationId:string|null):string|null{
  const members=sceneGroupMembers(group);
  if(group.locationId&&group.locationId!==locationId)return 'Gruppe ist an einem anderen Ort.';

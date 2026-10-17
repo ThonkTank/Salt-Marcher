@@ -79,12 +79,12 @@ test('adopting a visit in the same Scene automatically refreshes available encou
   const live=x.store.live(x.w.token);x.ui.combatContext(x.w,live.scene,live.rosterRevision);await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
   for(const key of ['live','progress','scenePreparation','groupView'])window.campaign[key]=async(...args)=>({ok:true,value:x.store[key](...args)});
   x.el('combat-creation').open=true;x.el('combat-selection-refresh').click();await until(()=>x.el('combat-selection-status').textContent==='');
-  assert.equal(x.el('combat-selection-groups').querySelectorAll('input').length,0);
+  assert.equal(x.el('combat-selection-groups').querySelectorAll(':scope > article > label > input').length,0);
   const before=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat,adopted=adoptEncounterVisit(x);
   assert.equal(adopted.id,live.scene.id);assert.equal(adopted.membershipRevision,live.scene.membershipRevision);
   x.ui.combatContext(x.w,adopted,live.rosterRevision);
   await until(()=>x.el('combat-selection-groups').textContent.includes('Vorbereiteter Hinterhalt'));
-  assert.equal(x.el('combat-selection-groups').querySelectorAll('input').length,1);
+  assert.equal(x.el('combat-selection-groups').querySelectorAll(':scope > article > label > input').length,1);
   assert.equal(x.el('combat-selection-prepare').disabled,true);
   assert.deepEqual(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat,before);assert.equal(x.el('combat-title').textContent,'Keller');assert.equal(x.writes.length,0);
  }finally{x.cleanup();}
