@@ -7,8 +7,9 @@ import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
-buildSync({entryPoints:{ui:'src/app/dungeon-binder-ui.ts',store:'src/app/storage/store.ts'},outdir:'.build/binder-context',outExtension:{'.js':'.cjs'},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+buildSync({entryPoints:{ui:'src/app/dungeon-binder-ui.ts',store:'src/app/storage/store.ts',drawing:'src/app/drawing-model.ts'},outdir:'.build/binder-context',outExtension:{'.js':'.cjs'},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{DungeonBinder}=require('../.build/binder-context/ui.cjs'),{CampaignStore}=require('../.build/binder-context/store.cjs');
+const {newElement}=require('../.build/binder-context/drawing.cjs');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 async function until(check){for(let i=0;i<30;i++){if(check())return;await tick();}throw Error('condition not reached');}
 function fixture(t){
@@ -21,7 +22,7 @@ function fixture(t){
  let flush=async()=>true,navigate=async(id,action)=>calls.push([id,action]),edit=async()=>false;const binder=new DungeonBinder(()=>workspace,()=>flush(),(s,error)=>messages.push({s,error}),(id,action)=>navigate(id,action),(...args)=>edit(...args));
  const dialog=document.getElementById('dungeon-binder');dialog.showModal=()=>dialog.setAttribute('open','');dialog.close=()=>dialog.removeAttribute('open');Object.defineProperty(dialog,'open',{get(){return this.hasAttribute('open');}});
  const el=id=>document.getElementById(id),open=()=>el('dungeon-binder-open').onclick(),choose=id=>el('dungeon-binder-list').querySelector('[data-room-id="'+id+'"]').onclick(),mapButton=()=>[...el('dungeon-binder-document').querySelectorAll('button')].find(b=>b.textContent==='Auf der Karte öffnen');
- t.after(()=>{binder.reset();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});return{binder,view,rooms,w,el,open,choose,mapButton,calls,messages,reads,setFlush:f=>flush=f,setNavigate:f=>navigate=f,setEdit:f=>edit=f,setWorkspace:v=>workspace=v,loaded:()=>!!el('dungeon-binder-list').firstChild};
+ t.after(()=>{binder.reset();Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});return{binder,store,campaign,view,rooms,w,el,open,choose,mapButton,calls,messages,reads,setFlush:f=>flush=f,setNavigate:f=>navigate=f,setEdit:f=>edit=f,setWorkspace:v=>workspace=v,loaded:()=>!!el('dungeon-binder-list').firstChild};
 }
 test('reset invalidates an open intent already waiting for the workspace flush',async t=>{
  const x=fixture(t);let release;x.setFlush(()=>new Promise(r=>release=r));x.open();await until(()=>!!release);x.binder.reset();x.setFlush(async()=>true);x.open();await until(x.loaded);x.choose(x.rooms[1].id);const text=x.el('dungeon-binder-document').textContent;release(true);await tick();await tick();assert.equal(x.reads.length,1);assert.equal(x.el('dungeon-binder-document').textContent,text);
@@ -65,4 +66,39 @@ test('a late return callback cannot replace a newer room or campaign',async t=>{
 });
 test('a detached passage edit cannot reopen the editor after the reader is replaced',async t=>{
  const x=fixture(t);let calls=0;x.setEdit(async()=>{calls++;return true;});x.open();await until(x.loaded);x.el('dungeon-binder-search').value='Originaltext';x.choose(x.rooms[0].id);const old=x.el('key-document-edit');x.choose(x.rooms[0].id);old.onclick();await tick();assert.equal(calls,0);
+});
+
+function leveledRooms(x){
+ const command=action=>x.store.executeDrawing({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action});
+ const levels=['Oberburg','Katakomben'].map((name,i)=>({id:randomUUID(),revision:0,scopeId:'local',kind:'level',name,levelId:null,groupId:null,zSteps:i?[ -2,-1 ]:[0,1],attributes:{},blocks:[],tags:[],secret:false,status:'',references:[]}));
+ for(const [i,level] of levels.entries()){
+  command({kind:'key-content',content:level,expectedRevision:null});
+  command({kind:'key-batch',rooms:[{id:x.rooms[i].id,expectedRevision:0,keyRevision:null}],patch:{name:{mode:'replace',text:'Wachraum'},number:'1',levelId:level.id}});
+ }
+ Object.assign(x.view,x.store.dungeon(x.w.token));return{levels,command};
+}
+test('the GM binder distinguishes identical room numbers and names by conceptual Level on one physical floor',async t=>{
+ const x=fixture(t);leveledRooms(x);const before=x.store.db.serialize();x.open();await until(x.loaded);
+ const rows=x.el('dungeon-binder-list');assert.match(rows.textContent,/Oberburg · 1\. Wachraum/);assert.match(rows.textContent,/Katakomben · 1\. Wachraum/);
+ x.choose(x.rooms[1].id);assert.equal(x.el('dungeon-binder-document').querySelector('h3').textContent,'Katakomben · 1. Wachraum');
+ x.mapButton().onclick();await tick();assert.deepEqual(x.calls,[[x.rooms[1].id,'map']]);assert.ok(x.store.db.serialize().equals(before));
+});
+test('binder search resolves a conceptual Level and complete Level-number reference and follows a canonical rename',async t=>{
+ const x=fixture(t),{levels,command}=leveledRooms(x);x.open();await until(x.loaded);
+ const search=async text=>{x.el('dungeon-binder-search').value=text;x.el('dungeon-binder-search').oninput();await new Promise(r=>setTimeout(r,180));return [...x.el('dungeon-binder-list').querySelectorAll('[data-room-id]')].map(n=>n.dataset.roomId);};
+ assert.deepEqual(await search('katakomben'),[x.rooms[1].id]);assert.deepEqual(await search('Oberburg · 1'),[x.rooms[0].id]);
+ command({kind:'key-content',content:{...levels[1],name:'Tiefes Gewölbe'},expectedRevision:0});Object.assign(x.view,x.store.dungeon(x.w.token));x.binder.reset();x.open();await until(x.loaded);
+ assert.deepEqual(await search('katakomben'),[]);assert.deepEqual(await search('Tiefes Gewölbe · 1'),[x.rooms[1].id]);
+});
+test('rooms without a conceptual Level keep their existing binder label and searchable number',async t=>{
+ const x=fixture(t);x.open();await until(x.loaded);x.choose(x.rooms[0].id);assert.equal(x.el('dungeon-binder-document').querySelector('h3').textContent,'1. Nordtor');
+ x.el('dungeon-binder-search').value='1. Nordtor';x.el('dungeon-binder-search').oninput();await new Promise(r=>setTimeout(r,180));assert.deepEqual([...x.el('dungeon-binder-list').querySelectorAll('[data-room-id]')].map(n=>n.dataset.roomId),[x.rooms[0].id]);
+});
+
+test('a cross-Level exit names its target and opens the matching stable room identity',async t=>{
+ const x=fixture(t),{command}=leveledRooms(x),door=newElement('door','local','ground',x.rooms[0].id,[{x:4,y:2}]);
+ door.targetRoomId=x.rooms[1].id;door.name='Treppe zur Unterwelt';command({kind:'element',element:door,expectedRevision:null});Object.assign(x.view,x.store.dungeon(x.w.token));const before=x.store.db.serialize();
+ x.open();await until(x.loaded);x.choose(x.rooms[0].id);
+ const next=[...x.el('dungeon-binder-document').querySelectorAll('button')].find(b=>b.textContent==='Weiterlesen: Katakomben · 1. Wachraum');assert.ok(next);next.onclick();
+ assert.equal(x.el('dungeon-binder-document').querySelector('h3').textContent,'Katakomben · 1. Wachraum');assert.equal(x.el('dungeon-binder-list').querySelector('[aria-pressed="true"]').dataset.roomId,x.rooms[1].id);assert.ok(x.store.db.serialize().equals(before));
 });
