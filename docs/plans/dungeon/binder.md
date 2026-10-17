@@ -33,6 +33,26 @@ Reset/Wiederöffnung, entfernte Raum-/Kartenbuttons, Aktualisierung und alte
 Featuredetails und verspätete Navigationsfehler; aktuelle Navigation bleibt nutzbar. Das sind lokale Teilbelege,
 keine vollständige native Binder- oder Dungeonabnahme.
 
+## Levelübergreifende Raumreferenzen
+
+Der GM-Binder verwendet konzeptionelles Level + Anzeigezahl + Raumname für
+Liste, Dokumentüberschrift und Weiterlesen-Verweise. Die Level-ID stammt aus
+dem kanonischen Room-Key; das physische Geschoss (`floorId`) bleibt ein eigener
+Filter und ersetzt dieses Level nicht. Räume ohne Level behalten Zahl und Name.
+Die Suche erfasst dieselbe zusammengesetzte Referenz, damit etwa
+`Katakomben · 1` den richtigen Raum findet, auch wenn ein anderes Level ebenfalls
+Raum 1 besitzt. Eine Levelumbenennung wirkt beim nächsten Read ohne Änderung an
+Raum-IDs, Nummern oder Autorenprosa. Diese GM-Bezeichnungen werden nicht als
+öffentlicher Raumtext veröffentlicht; Playerlabels und Exportfreigaben behalten
+ihren eigenen Sichtbarkeitsvertrag.
+
+Der Anschluss liegt lokal in `DungeonBinderIndex.label`/`matches`; vorhandene
+Binderaktionen verwenden weiterhin stabile Raum-IDs. Keine neue Persistenz,
+Migration oder zweite Levelwahrheit. Der direkte Nachweis umfasst gleichnamige
+Räume mit gleicher Nummer auf demselben physischen Geschoss, Levelsuche,
+zusammengesetzte Referenzen, Umbenennung und Räume ohne Level. Die nachfolgend
+offene begrenzte Storeabfrage muss genau diese Suchsemantik erhalten.
+
 ## Nächste konkrete Lieferung
 
 1. `DungeonBinderIndex` und `CampaignStore.dungeon` lesen derzeit das ganze
