@@ -274,7 +274,7 @@ function runReadFailure(owner:PreviewOwner,id:string,request:number,message:stri
  if(!ownsPreview(owner)||request!==previewRequest)return;
  run=null;renderRun();const root=get('session-preview'),status=document.createElement('p'),retry=document.createElement('button');
  status.setAttribute('role','alert');status.textContent=message;retry.type='button';retry.textContent='Vorschau erneut laden';
- retry.onclick=()=>{if(!ownsPreview(owner)||request!==previewRequest)return;get<HTMLSelectElement>('session-history').value=id;void selectRun();};root.append(status,retry);tell(message,true);
+ retry.onclick=()=>{if(!ownsPreview(owner)||request!==previewRequest)return;void selectRun(id);};root.append(status,retry);tell(message,true);
 }
 async function refreshConfirmedRun(source:SessionRun,owner:PreviewOwner,request:number){
  const current=()=>ownsPreview(owner)&&request===previewRequest&&run===source;
@@ -314,8 +314,8 @@ async function regenerateProposal(source:SessionRun,index:number){
 }
 async function regenerateReward(source:SessionRun,index:number){const owner=previewOwner();if(!owner||run!==source)return;const request=++previewRequest;try{const next=unwrap(await window.campaign.regenerateSessionReward(owner.token,source.id,index,value('session-seed')+'|reward|'+crypto.randomUUID()));if(!ownsPreview(owner)||request!==previewRequest||run!==source)return;run=next;renderRun();}catch(e){if(ownsPreview(owner))tell((e as Error).message,true);}}
 async function rejectProposal(source:SessionRun,index:number){const owner=previewOwner(),p=source.proposals[index];if(!owner||run!==source||!p)return;const request=previewRequest;if(await execute({kind:'reject-proposal',planId:owner.planId,runId:source.id,index,expectedRevision:p.revision??1,rejected:!p.rejected})&&ownsPreview(owner)&&request===previewRequest&&run===source)await refreshConfirmedRun(source,owner,request);}
-async function selectRun(){
- const owner=previewOwner(),id=value('session-history'),request=++previewRequest;
+async function selectRun(id=value('session-history')){
+ const owner=previewOwner(),request=++previewRequest;
  run=null;renderRun();if(!owner||!id)return;
  try{
   const selected=unwrap(await window.campaign.sessionRun(owner.token,id));
