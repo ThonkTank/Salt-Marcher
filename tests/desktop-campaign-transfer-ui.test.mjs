@@ -8,16 +8,16 @@ import {parseHTML} from 'linkedom';
 buildSync({entryPoints:['src/app/campaign-manager-ui.ts'],outfile:'.build/campaign-transfer-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url);
 const tick=async()=>{for(let i=0;i<10;i++)await new Promise(resolve=>setImmediate(resolve));};
-function fixture(t){
+function fixture(t,{unreadable=false}={}){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document},memory=new Map(),messages=[],changes=[],calls=[];
  Object.assign(globalThis,{window,document});t.after(()=>Object.assign(globalThis,previous));
  for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
- window.localStorage={getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
+ let reads=0;window.localStorage={getItem:k=>{reads++;if(unreadable)throw Error('Auftragsvermerk nicht lesbar');return memory.get(k)??null;},setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
  const preview={ticket:'copy-ticket',name:'Original',copy:true,bytes:100,applicationVersion:'test',audioFiles:0,counts:[],conflicts:[],problems:[]};
  window.campaign={campaignOverview:async()=>{throw Error('Katalog nicht lesbar');},prepareCampaignCopy:async token=>{calls.push(['copy',token]);return{ok:true,value:preview};},cancelCampaignTransfer:async ticket=>{calls.push(['cancel',ticket]);return{ok:true};},onCampaignTransfer:()=>{}};
  delete require.cache[require.resolve('../.build/campaign-transfer-ui.cjs')];const ui=require('../.build/campaign-transfer-ui.cjs');
  ui.initCampaignManager((...a)=>messages.push(a),()=>({token:'source-token'}),async()=>true,async id=>changes.push(id));
- return{window,document,memory,messages,changes,calls,get:id=>document.getElementById(id)};
+ return{window,document,memory,messages,changes,calls,readable:()=>{unreadable=false;},reads:()=>reads,get:id=>document.getElementById(id)};
 }
 test('transfer opens and cancels its own copy preview even when the campaign catalog is unavailable',async t=>{
  const x=fixture(t);x.get('campaign-manager').onclick();await tick();assert.equal(x.get('campaign-manager-dialog').open,true);assert.deepEqual(x.messages,[]);
@@ -31,4 +31,12 @@ test('an uncertain copy outcome is reconciled once without selecting a campaign 
  x.get('campaign-manager').onclick();x.get('campaign-copy').onclick();await tick();x.get('campaign-transfer-form').onsubmit({preventDefault(){}});await tick();
  assert.equal(accepts,1);assert.equal(x.get('campaign-copy').disabled,true);assert.equal(x.get('campaign-transfer-check').hidden,false);assert.equal(x.memory.get('campaign-pending-transfer'),'copy-ticket');assert.deepEqual(x.changes,[]);
  x.get('campaign-transfer-check').onclick();await tick();assert.equal(accepts,1);assert.equal(checks,2);assert.deepEqual(x.changes,[undefined]);assert.equal(x.memory.size,0);assert.equal(x.get('campaign-transfer-dialog').open,false);assert.equal(x.get('campaign-copy').disabled,false);assert.match(x.messages.at(-1)[0],/Übernahme bestätigt: Kopie/);
+});
+
+test('unavailable transfer recovery cannot interrupt startup and reopening retries only its read',async t=>{
+ const x=fixture(t,{unreadable:true});x.memory.set('campaign-pending-transfer','retained-ticket');assert.equal(x.reads(),0,'optional recovery is not a startup dependency');
+ x.get('campaign-manager').onclick();await tick();assert.equal(x.get('campaign-manager-dialog').open,undefined);assert.match(x.messages.at(-1)[0],/Auftragsvermerk nicht lesbar/);assert.equal(x.memory.get('campaign-pending-transfer'),'retained-ticket');assert.deepEqual(x.calls,[]);assert.deepEqual(x.changes,[]);
+ x.readable();x.get('campaign-manager').onclick();await tick();assert.equal(x.get('campaign-manager-dialog').open,true);assert.equal(x.get('campaign-copy').disabled,true);assert.equal(x.get('campaign-transfer-check').hidden,false);assert.equal(x.memory.get('campaign-pending-transfer'),'retained-ticket');assert.deepEqual(x.calls,[]);assert.deepEqual(x.changes,[]);
+ let checks=0;x.window.campaign.campaignTransferStatus=async ticket=>{assert.equal(ticket,'retained-ticket');checks++;return{ok:true,value:{state:'not-applied'}};};
+ x.get('campaign-transfer-check').onclick();await tick();assert.equal(checks,1);assert.equal(x.get('campaign-copy').disabled,false);assert.equal(x.memory.size,0);assert.deepEqual(x.calls,[]);assert.deepEqual(x.changes,[]);
 });
