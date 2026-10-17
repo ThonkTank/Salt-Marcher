@@ -63,3 +63,39 @@ test('refreshing Combat cannot enable an empty Scene-group selection through its
   assert.equal(x.el('combat-selection-prepare').disabled,true);assert.equal(x.writes.length,0);
  }finally{x.cleanup();}
 });
+
+function adoptEncounterVisit(x){
+ const command=action=>({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,action}),planId=randomUUID(),visitId=randomUUID();
+ x.store.changePreparation({...command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Abend am Tor',scenes:[{id:visitId,title:'Hinterhalt',notes:'',locationId:null}]}}});
+ const encounter=x.store.saveEncounterPlan({...command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Vorbereiteter Hinterhalt',notes:'',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:2,grouped:true}],sources:[],catalogHash:''}});
+ const attached=x.store.executeSession(command({kind:'attach',planId,visitId,expectedVisitRevision:0,encounterId:encounter.id,expectedEncounterRevision:encounter.revision}));
+ const live=x.store.live(x.w.token);
+ return x.store.executeLive(command({kind:'apply-visit',sceneId:live.scene.id,expectedRevision:live.scene.revision,planId,visitId,expectedPlanRevision:1,expectedVisitRevision:attached.visits[0].revision})).scene;
+}
+
+test('adopting a visit in the same Scene automatically refreshes available encounter groups without replacing the active combat',async()=>{
+ const x=await fixture();try{
+  await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
+  const live=x.store.live(x.w.token);x.ui.combatContext(x.w,live.scene,live.rosterRevision);await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
+  for(const key of ['live','progress','scenePreparation','groupView'])window.campaign[key]=async(...args)=>({ok:true,value:x.store[key](...args)});
+  x.el('combat-creation').open=true;x.el('combat-selection-refresh').click();await until(()=>x.el('combat-selection-status').textContent==='');
+  assert.equal(x.el('combat-selection-groups').querySelectorAll('input').length,0);
+  const before=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat,adopted=adoptEncounterVisit(x);
+  assert.equal(adopted.id,live.scene.id);assert.equal(adopted.membershipRevision,live.scene.membershipRevision);
+  x.ui.combatContext(x.w,adopted,live.rosterRevision);
+  await until(()=>x.el('combat-selection-groups').textContent.includes('Vorbereiteter Hinterhalt'));
+  assert.equal(x.el('combat-selection-groups').querySelectorAll('input').length,1);
+  assert.equal(x.el('combat-selection-prepare').disabled,true);
+  assert.deepEqual(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat,before);assert.equal(x.el('combat-title').textContent,'Keller');assert.equal(x.writes.length,0);
+ }finally{x.cleanup();}
+});
+
+test('an encounter handoff read begun before a new visit cannot create a combat in that visit',async()=>{
+ const x=await fixture();try{
+  await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
+  const live=x.store.live(x.w.token);x.ui.combatContext(x.w,live.scene,live.rosterRevision);await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
+  x.hold();const handoff=x.ui.prepareWorldGroup({id:'old-group',title:'Alte Besuchsgruppe',revision:1});await until(()=>x.waiting.length===1);
+  const adopted=adoptEncounterVisit(x);x.ui.combatContext(x.w,adopted,live.rosterRevision);x.release();await handoff;
+  assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.title,'Keller');
+ }finally{x.cleanup();}
+});
