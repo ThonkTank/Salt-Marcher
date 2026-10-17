@@ -934,3 +934,6 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 /* Keep search results still when the asynchronous scale read arrives. */
 #atlas-scale{flex:0 0 8.5rem;min-height:1.5em;white-space:nowrap;font-variant-numeric:tabular-nums}
 #note-excerpt-dialog{width:min(680px,calc(100vw - 2rem));max-height:90vh;overflow:auto}#note-excerpt-form{display:grid;gap:.6rem}#note-excerpt-form h2,#note-excerpt-form p{margin:.2rem 0}#note-excerpt-choices{max-height:14rem;overflow:auto}#note-excerpt-choices button{white-space:normal;text-align:left}#note-excerpt-existing-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:16rem;overflow:auto}#note-excerpt-form .actions{flex-wrap:wrap}
+
+/* Fit the GM map below its actual controls and above the persistent audio bar. */
+#live-center-map{height:var(--live-map-height,calc(100dvh - var(--workspace-header-height,80px) - var(--live-focus-height,105px) - 6rem));min-height:220px}

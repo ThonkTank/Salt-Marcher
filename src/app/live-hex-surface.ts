@@ -27,7 +27,22 @@ export function liveHexSurface(openMap?:()=>Promise<void>){
  const navigation=document.createElement('details'),navigationTitle=document.createElement('summary');navigation.id='live-travel-navigation';navigationTitle.textContent='Kartenansicht und Gruppe platzieren';navigation.append(navigationTitle);host.append(navigation);
  const nodes=[get('world-map-select').closest<HTMLElement>('.world-map-selection')!,get('world-current'),get('world-map-modes'),travel];
  const homes=[...nodes,...camera,canvas].map(node=>{const marker=document.createComment('hex surface home');node.before(marker);return{node,marker};});
- function paint(){scene.hidden=docked&&center==='map';map.hidden=!docked||center!=='map';sceneTab.setAttribute('aria-selected',String(!scene.hidden));mapTab.setAttribute('aria-selected',String(!map.hidden));mapTab.disabled=!docked&&(!openMap||opening);open.hidden=!docked||center==='map';writing.classList.toggle('live-map-center-open',!map.hidden);shared?.show(!map.hidden);}
+ function fitMap(){
+  if(map.hidden||typeof map.getBoundingClientRect!=='function')return;
+  const top=map.getBoundingClientRect().top,mini=document.getElementById('music-mini'),bottom=mini?.getBoundingClientRect?.().top;
+  if(!Number.isFinite(top)||!window.innerHeight)return;
+  const edge=bottom&&bottom>top?Math.min(window.innerHeight,bottom):window.innerHeight;
+  map.style.setProperty('--live-map-height',Math.max(220,edge-top-8)+'px');
+ }
+ let fitQueued=false;
+ function scheduleFit(){
+  if(fitQueued)return;fitQueued=true;
+  const run=()=>{fitQueued=false;if(!map.hidden)fitMap();};
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);else run();
+ }
+ window.addEventListener('resize',()=>scheduleFit());
+ window.addEventListener('scroll',()=>scheduleFit(),{passive:true});
+ function paint(){scene.hidden=docked&&center==='map';map.hidden=!docked||center!=='map';sceneTab.setAttribute('aria-selected',String(!scene.hidden));mapTab.setAttribute('aria-selected',String(!map.hidden));mapTab.disabled=!docked&&(!openMap||opening);open.hidden=!docked||center==='map';writing.classList.toggle('live-map-center-open',!map.hidden);shared?.show(!map.hidden);if(!map.hidden)scheduleFit();}
  function show(next:'scene'|'map'){
   if(next==='map'&&!docked&&!openMap)return;center=next;paint();
   if(next==='map'&&!docked&&openMap&&!opening){opening=true;paint();void openMap().finally(()=>{opening=false;paint();});}

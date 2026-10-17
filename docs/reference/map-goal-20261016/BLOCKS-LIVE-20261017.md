@@ -58,3 +58,8 @@ Die historischen DOM-Controllertests verwenden einen ausdrücklich benannten Tes
 ### Sichtausschnitte in Canvas
 
 Bei der Integration fiel auf, dass das öffentliche Landschafts-SVG aktuelle Bilder per `clip-path` auf tatsächlich sichtbare Hexe begrenzt, während Canvas bisher nur die Vektorgeometrie übernahm. Canvas kompiliert nun diese Ausschnitte einschließlich Gruppen-Transformationen und erzwingt sie sowohl beim Zeichnen als auch für Treffer und Tooltips. Fehlende Definitionen oder unbekannte Ausschnitteinheiten erzeugen einen expliziten Fehler statt ungeclipptem Inhalt. Der neue Regressionstest unterscheidet einen sichtbaren Punkt von einem verdeckten Punkt im selben aktuellen Landschaftsobjekt und prüft den tatsächlichen Canvas-Clip-Aufruf. Die bestehenden zehn Renderer-/Decode-/Kontextfälle bleiben erhalten. Diese technischen Belege ersetzen keine native Spielerabnahme oder vollständige Sicht-/Dunkelsichtprüfung.
+
+
+### Live-Kartenhöhe
+
+Der tatsächliche Canvas-Gegenlauf zeigte den Gruppeninnenraum unter der festen Audiobar abgeschnitten. Die Live-Fläche bemisst ihre Höhe nun nach ihrer tatsächlichen Position und der Audiobar, aktualisiert nach Layout/Scroll/Resize und erhält dabei das Kartenzentrum. Die Bearbeitung behält ihre bisherige Kamera. Tatsächliche Gegenprobe: Kartenunterkante825.5px, Audiobar833.5px; beide vorbereiteten Räume und der Gruppentoken sind sichtbar. Gruppenstandort und00:00:21 bleiben unverändert. Die Seite wird dafür nicht zwangsweise gescrollt. Die ersten vier Tests scheiterten vor dem UI-Aufbau mit SQLite-IOERR im temporären Dateisystem; mit eigenem TMPDIR im Workspace bestehen dieselben vier Reise-/Intentfälle normal.

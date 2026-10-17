@@ -209,7 +209,7 @@ export class CampaignAtlasWorkbench {
     this.landscape=new LandscapeWorkbench(this.svg,{hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),box:()=>this.camera.view,redraw:()=>this.scheduleRender(),write:a=>this.write(a),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready});
     this.hitDialog.id='atlas-hit-candidates';this.hitDialog.addEventListener('close',()=>this.hitVersion++);this.root.append(this.hitDialog);
     this.root.querySelectorAll<HTMLInputElement>('#atlas-hex-level,#atlas-terrain').forEach(n=>n.addEventListener('change',()=>{if(n.id==='atlas-hex-level')get<HTMLInputElement>('land-auto-level').checked=false;this.render();}));
-    new ResizeObserver(()=>{const b=this.camera.view,aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight);if(aspect>0)this.camera.set({...b,height:b.width/aspect},true);}).observe(this.svg);
+    new ResizeObserver(()=>{const b=this.camera.view,aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight);if(aspect>0){const height=b.width/aspect;this.camera.set({...b,y:this.liveDocked?b.y+(b.height-height)/2:b.y,height},true);}}).observe(this.svg);
     const lead=document.createElement('button');
     lead.id='atlas-lead';lead.type='button';lead.textContent='Atlas leiten';
     lead.onclick=()=>void this.opts.leadAtlas?.().catch(error=>this.error(error));
