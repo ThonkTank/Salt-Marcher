@@ -190,3 +190,16 @@ test('sample-grid rejection is pixel-identical to the full source stream across 
  f.store.db.transaction(()=>{for(let i=0;i<2000;i++){const x=rand()*64-32,y=rand()*64-32,size=i%3===0?.01:rand()*2+.001;landscape(f,{id:'sample'+i,revision:0,kind:'patch',name:'sample',points:[],polygons:[{outer:[{x,y},{x:x+size,y},{x:x+size,y:y+size},{x,y:y+size}],holes:i%5===0?[[{x:x+size*.2,y:y+size*.2},{x:x+size*.8,y:y+size*.2},{x:x+size*.8,y:y+size*.8},{x:x+size*.2,y:y+size*.8}]]:[]}],resolution:i%3+1,width:0,values:{terrain:i%2?'water':'forest'}});}})();
  const q=query({x:-17,y:-11,width:32,height:24}),r=await f.read(q),db=new Database(f.store.filename,{readonly:true});t.after(()=>db.close());const unfiltered=new AtlasRegionReader(db);unfiltered.landscape.sampleMath=false;await unfiltered.sync(f.source);const expected=unfiltered.read(f.source,q);assert.deepEqual(r.landscape.tiles,expected.landscape.tiles);assert.deepEqual(r.landscape.coverage,expected.landscape.coverage);
 });
+
+test('camera successors cannot replace queued object selection; both lanes remain bounded and cancellable',async t=>{
+ const f=fixture(t,5),source=f.store.atlasRegionSource(f.shell.token);
+ for(const kind of ['focus','hit','candidates']){
+  const service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
+  const first=service.read(source,query()),selection=kind==='focus'?service.focus(source,'room','r0'):kind==='hit'?service.hit(source,query(),{x:1,y:1}):service.candidates(source,query(),{x:1,y:1});
+  const cameras=Array.from({length:20},(_,i)=>service.read(source,query({x:i/10,y:-2,width:30,height:10})));
+  const [initial,selected,...frames]=await Promise.allSettled([first,selection,...cameras]);
+  assert.equal(initial.status,'fulfilled');assert.equal(selected.status,'fulfilled',kind+' must survive background camera requests');
+  assert.equal(kind==='candidates'?selected.value.items[0].id:selected.value.id,'r0');assert.equal(frames.at(-1).status,'fulfilled');assert.equal(frames.filter(r=>r.status==='fulfilled').length,1);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.queued,false);
+  const pending=Promise.allSettled([service.read(source,query({x:50,y:50,width:30,height:10})),service.focus(source,'room','r0'),service.read(source,query({x:60,y:50,width:30,height:10}))]);await service.cancelAndWait();assert((await pending).every(r=>r.status==='rejected'&&/abgebrochen/.test(r.reason.message)));await service.close();
+ }
+});
