@@ -1,6 +1,6 @@
 # Bindende Weltvorgaben für Encounter und Spielabend
 
-Stand: 16.10.2026. Fachumfang: [Encounterplan](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
+Stand: 17.10.2026. Fachumfang: [Encounterplan](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
 und [Spielabendplanung](manual-session-planner.md). Die gepinnten Program
 Capabilities, Revision `9de85c1a26f526acbc1af332ac5962e185c0aab2`, L143–156,
 verlangen jede ausgewählte Orts-/Fraktions-/NPC-/Itemvorgabe im vorgeschlagenen
@@ -109,6 +109,47 @@ zwei normale Exits ohne Rendererfehler. Die Queryplanprüfung bestätigt die Suc
 über den vorhandenen Campaign-/Kind-Index; daraus folgt keine allgemeine
 Latenz- oder Großbestandsabnahme. Vollständige Dialog-/Quellenlebenszyklus- und
 Generatorabnahme bleiben getrennt.
+
+### Gespeicherte Tabellen behalten dieselben Inhaltsregeln
+
+`storage/generation.checkTableContent` prüft Entwurf und gespeicherte Tabelle:
+nichtleerer Name, gültige Bedingungen, mindestens ein eindeutiger Kreatureintrag,
+exakte nichtnegative Gewichte mit wenigstens einem positiven Anteil und eine
+zum Owner passende optionale Loot-ID. Die Prüfung berechnet keine Encounter und
+ändert beim Lesen weder Gewichtsschreibweisen noch Autorenprosa. Bereits
+unterstützte Dezimalgewichte und Nullanteile innerhalb einer positiven Tabelle
+bleiben gültig; der offene Original-`1..10`-/TN-37-Abgleich unten wird damit
+nicht stillschweigend entschieden.
+
+Ein gültiger Hash beweist nur unveränderte Bytes, keinen gültigen Tabelleninhalt.
+Der vorhandene `decodeTable` weist deshalb auch korrekt gehashte, aber leere,
+doppelte oder anderweitig widersprüchliche Inhalte ab. Reads, reguläre
+Bearbeitung/Trash und der bereits vorhandene Backupdecoder verwenden dieselbe
+Regel. Eine ungültige Tabelle ersetzt keine bekannte gute Sicherungsdatei und
+wird nicht durch einen gewöhnlichen Save heimlich repariert. Die Originalzeile
+bleibt für eine gezielte Wiederherstellung erhalten; keine Migration oder neue
+Backuppipeline. Ein früher bestätigter Originalauftrag behält seinen damaligen
+Receipt; dieser historische Beleg repariert oder autorisiert keinen inzwischen
+beschädigten aktuellen Tabellenstand.
+
+Die Strukturprüfung liest keinen aktuellen Kreaturkatalog und keine fremde
+Lootquelle. Stabile, inzwischen nicht mehr installierte Kreatur-IDs bleiben als
+Referenzen lesbar; ihre tatsächliche Generierbarkeit wird weiterhin beim
+bestehenden Kandidaten-/Saveweg geprüft. Kampagnenlokale beschädigte Tabellen
+bleiben im eigenen Querybereich; sie sperren keine unabhängige Kampagne.
+Installationstabellen und globale Sicherungen behalten ihren gemeinsamen
+Prüfumfang und überspringen beschädigte Records nicht.
+
+`desktop-encounter-table-integrity.test.mjs` prüft acht fehlerhafte Inhalte,
+verweigerte Writes/Fresh, unveränderte Originalbytes und eine bereits gute
+Sicherungsdatei. Gegenkontrollen erhalten exakte Dezimalwerte, Nullanteile,
+fehlende Kreaturdefinitionen, Originalprosa, unabhängige lokale Tabellen samt
+scoped Export und die gemeinsame Prüfgrenze einer Installationstabelle. Eine
+native Linuxprobe speichert eine intakte lokale Tabelle trotz fremder lokaler
+Beschädigung, zeigt den Fehler samt erneutem Read in der betroffenen Kampagne
+und prüft exakte Gewichte/Prosa nach drei normalen App-Exits und Fresh.
+Diese Nachweise schließen weder endgültige Tabellenlöschung noch vollständige
+Dialog-, Generierungs- oder Plattformabnahme ab.
 
 ### Unbekannter Speicherausgang
 
