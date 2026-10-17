@@ -4,7 +4,7 @@ import type {AtlasRegionQuery} from './atlas-region-contracts';
 import {mountDungeonTravelConsole,dungeonTravelRoute} from './dungeon-travel-console';
 import {atlasGeometryOnly} from './atlas-render-view';
 import {LiveAtlasPortal} from './live-atlas-portal';
-import {landscapeExportTiles} from "./atlas-landscape-export";
+import {atlasExportTiles,type AtlasExportTile} from "./atlas-landscape-export";
 import {atlasRegionPaint} from "./atlas-region-export";
 import {LandscapeWorkbench} from "./atlas-landscape-ui";
 import {earthView} from "./atlas-landscape";
@@ -1933,18 +1933,17 @@ export class CampaignAtlasWorkbench {
       const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
       const snapshot=fresh.value;
       const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
-      let scene:AtlasPaint;
+      let source:AtlasPaint|AsyncIterable<AtlasExportTile>;
       if(audience==='public'){
-        if(snapshot.geometry.position&&snapshot.perception)scene=publicAtlasPaint(snapshot,box);
+        if(snapshot.geometry.position&&snapshot.perception)source=publicAtlasPaint(snapshot,box);
         else {
           const frame=await window.campaign.playerView(owner.token);
           if(!frame.ok)throw new Error(frame.error);
           if(this.owner!==owner||this.exportCancelled)return;
-          scene=publicAtlasPaint(snapshot,box,frame.value.frame);
+          source=publicAtlasPaint(snapshot,box,frame.value.frame);
         }
       } else {
-        let encoded=0;
-        const geometryTiles=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,async(part,w,h)=>{
+        source=atlasExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,async(part,w,h)=>{
           const response=await window.campaign.atlasRegion(owner.token,{...exportQuery,box:part,width:w,height:h,revision:snapshot.revision,fence:snapshot.region!.fence,references},'export');if(!response.ok)return response;
           const tile=response.value,layer=tile.region.landscape;
           if(tile.revision!==snapshot.revision||tile.region.fence!==snapshot.region!.fence)throw new Error('Atlas wurde während der Ausgabe geändert. Erneut ausgeben.');
@@ -1952,15 +1951,11 @@ export class CampaignAtlasWorkbench {
           const assets=new Map<string,string>();
           if(references)for(const r of layer.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAssetPreview(owner.token,r.assetId,2048);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
           const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
-          const png=await atlasImage(scene,w,h,part);let binary='';for(let i=0;i<png.length;i+=32768)binary+=String.fromCharCode(...png.slice(i,i+32768));const data='data:image/png;base64,'+btoa(binary);encoded+=data.length*2;
-          if(encoded>256*1024*1024)throw new Error('Atlas-Ausgabe benötigt zu viel Bildspeicher. Kleineren Ausschnitt wählen.');
-          return{ok:true,value:{campaignId:snapshot.campaignId,revision:snapshot.revision,box:part,width:w,height:h,data}};
-        },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Atlas wird ausgegeben: ${done}/${total}`;},512);
+          return{ok:true,value:{campaignId:tile.campaignId,revision:tile.revision,box:tile.region.box,width:w,height:h,scene}};
+        },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Atlas wird ausgegeben: ${done}/${total}`;});
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')get('atlas-save-status').textContent='Dichte Landschaft als Übersicht; Vorlagen als Umrisse.';
-        scene=atlasRegionPaint(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
-
       }
-      const bytes = await atlasImage(scene,width,height,box,format);
+      const bytes = await atlasImage(source,width,height,box,format,()=>this.owner===owner&&!this.exportCancelled);
       if (this.owner !== owner || this.exportCancelled) return;
       const r = await window.campaign.exportAtlasPNG(
         owner.token,

@@ -306,7 +306,7 @@ Ein Kamera-/Auswahl-/Werkzeugzustand führt alle Atlasdetails. Zoom ändert
 Darstellung und Abfragetiefe, keine Autorenwerte und keinen Pflichtmodus.
 Räumliche Abfragen liefern nur sichtbare/betroffene Records und abgeleitete
 Geometrie; Render/Hit/Export konsumieren denselben bestätigten Stand und
-dieselben Transformationen. Ein DrawPlan ist Cache, kein zweites Dokument. Numerische Geometrie und affine Matrizen gehen direkt an Canvas2D/Path2D; Atlas-Bildexporte zeichnen dieselben Kommandos zu PNG/JPEG ohne SVG-Zwischenbild. Die Anzeige zeichnet direkt auf ihre begrenzte Canvasfläche; eine Hilfsfläche wird nur für die notwendige Sichtmasken-Komposition angelegt.
+dieselben Transformationen. Ein DrawPlan ist Cache, kein zweites Dokument. Numerische Geometrie und affine Matrizen gehen direkt an Canvas2D/Path2D; Atlas-Bildexporte zeichnen dieselben Kommandos zu PNG/JPEG ohne SVG-Zwischenbild. GM-Ausgaben lesen eine bestätigte Szenenkachel nach der anderen, zeichnen sie über eine wiederverwendbare Kachelfläche direkt ins Zielbild und kodieren nur dieses einmal; keine PNG-/Base64-Zwischenbilder oder Sammlung aller Kacheln im Renderer. Kodierte Bildbytes gehen als Uint8Array über die vorhandene IPC-Grenze zum Datei-Writer. Die Anzeige zeichnet direkt auf ihre begrenzte Canvasfläche; eine Hilfsfläche wird nur für die notwendige Sichtmasken-Komposition angelegt.
 Keine JSONvollparses oder Traversierung aller Dungeons je Kamerabild.
 
 Native DOM-Controls tragen Text, Suche, Menüs/Dialoge und Inspector. Der Canvas

@@ -6,7 +6,7 @@ import { parseHTML } from "linkedom";
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';",
+      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-canvas-test.cjs",
@@ -14,7 +14,7 @@ buildSync({
   platform: "node",
   format: "cjs",
 });
-const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage } = createRequire(
+const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, atlasExportTiles, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -496,4 +496,57 @@ test('drawing failure clears incomplete pixels and revokes hits before retry',as
  assert.equal(f.root.dataset.canvasState,'unavailable');assert(f.calls.some(c=>c[0]==='clearRect'));
  f.ctx.fill=fill;f.document.querySelector('.map-canvas-state button').click();await settle();
  assert.equal(f.canvas.ready,true);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,'room');
+});
+
+
+test('tiled export reuses one tile canvas, composites exact pixel rectangles and encodes only the result',async t=>{
+ const f=fixture(t),created=[],copies=[],encoded=[],create=f.document.createElement.bind(f.document);
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){created.push(n);n.toBlob=(done,type)=>{encoded.push({canvas:n,type});done(new Blob([type]));};}return n;};
+ f.ctx.drawImage=(image,x,y)=>copies.push({image,x,y,width:image.width,height:image.height});
+ global.Image=class{constructor(){throw Error('Renderer tiles must never be encoded and decoded as images');}};
+ const box={x:20,y:-40,width:2050,height:1026},calls=[];
+ const read=async(part,width,height)=>{calls.push(part);return{ok:true,value:{campaignId:'c',revision:7,box:part,width,height,scene:atlasPaint('rect',{width:part.width,height:part.height,style:{fill:'red'}})}};};
+ for(const format of ['png','jpeg']){
+  copies.length=0;encoded.length=0;created.length=0;
+  const bytes=await atlasImage(atlasExportTiles(box,1025,513,'c',7,read,()=>true),1025,513,box,format);
+  assert(bytes instanceof Uint8Array);assert.equal(Buffer.from(bytes).toString(),'image/'+format);assert.equal(created.length,2);assert.equal(encoded.length,1);assert.equal(encoded[0].canvas,created[0]);
+  assert.deepEqual(copies.map(c=>[c.x,c.y,c.width,c.height]),[[0,0,512,512],[512,0,512,512],[1024,0,1,512],[0,512,512,1],[512,512,512,1],[1024,512,1,1]]);
+  assert(copies.every(c=>c.image===created[1]));assert(created.every(c=>c.width===0&&c.height===0));
+ }
+});
+
+test('export cancellation during image decode or encoding discards pixels, releases surfaces and reads no successor',async t=>{
+ const f=fixture(t),created=[],create=f.document.createElement.bind(f.document);let encodes=0,running=true,reads=0;
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){created.push(n);n.toBlob=done=>{encodes++;running=false;done(new Blob(['png']));};}return n;};
+ const box={x:0,y:0,width:1024,height:512};
+ const read=async(part,width,height)=>{reads++;return{ok:true,value:{campaignId:'c',revision:7,box:part,width,height,scene:atlasPaint('image',{width:part.width,height:part.height,source:'wait:cancel'})}};};
+ const pending=atlasImage(atlasExportTiles(box,1024,512,'c',7,read,()=>running),1024,512,box,'png',()=>running);
+ await settle();running=false;f.releases.get('wait:cancel')();await assert.rejects(pending,/abgebrochen/);assert.equal(reads,1);assert.equal(encodes,0);assert(created.every(c=>c.width===0&&c.height===0));
+ running=true;await assert.rejects(atlasImage(atlasPaint('rect',{width:1,height:1}),1,1,box,'png',()=>running),/abgebrochen/);assert.equal(encodes,1);assert(created.every(c=>c.width===0&&c.height===0));
+});
+
+test('oversized encoded output is rejected before reading or sending bytes',async t=>{
+ const f=fixture(t),create=f.document.createElement.bind(f.document);let expanded=false;
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done({size:64*1024*1024+1,arrayBuffer(){expanded=true;throw Error('Must not expand oversized output');}});return n;};
+ await assert.rejects(atlasImage(atlasPaint('rect',{width:1,height:1}),1,1,{x:0,y:0,width:1,height:1}),/64 MiB/);assert.equal(expanded,false);
+});
+
+
+test('one GM export freezes floor, grid, scale, reference, box, size and format before asynchronous reads',async t=>{
+ const f=fixture(t),controls=f.document.createElement('div');
+ controls.innerHTML='<input id="atlas-export-size" value="1025"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><p id="atlas-save-status"></p>';
+ f.document.body.append(controls);f.document.querySelector('#atlas-export-grid').checked=true;f.document.querySelector('#atlas-export-reference').checked=false;
+ const box={x:0,y:0,width:1025,height:2},created=[],copies=[],queries=[],errors=[],encodings=[],create=f.document.createElement.bind(f.document);let strokes=0,saved=0;
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){
+  created.push(n);const ctx=new Proxy({canvas:n,stroke(){strokes++;},drawImage(){copies.push(strokes);strokes=0;}},{get(o,k){return k in o?o[k]:()=>{};}});
+  n.getContext=()=>ctx;n.toBlob=(done,type)=>{encodings.push({width:n.width,height:n.height,type});done(new Blob(['png']));};
+ }return n;};
+ const frame=q=>({campaignId:'c',revision:7,region:{box:q.box,fence:'f',scopeId:null,floorId:q.floorId,landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}});
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:{},owner:{token:'t'},exporting:false,floorId:'ground',landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ f.window.campaign={atlasRegion:async(token,q)=>{
+  queries.push(q);
+  if(queries.length===1){f.document.querySelector('#atlas-export-grid').checked=false;f.document.querySelector('#atlas-hex-level').value='10';f.document.querySelector('#atlas-export-reference').checked=true;f.document.querySelector('#atlas-export-size').value='2048';f.document.querySelector('#atlas-export-format').value='jpeg';ui.floorId='upper';box.x=20000;}
+  return{ok:true,value:frame(q)};
+ },exportAtlasPNG:async(token,bytes,audience,format,fence)=>{assert(bytes instanceof Uint8Array);assert.equal(format,'png');assert.equal(fence,'f');saved++;return{ok:true,value:{cancelled:false}};}};
+ await ui.exportPNG();assert.deepEqual(errors,[]);assert.equal(saved,1);assert.equal(queries.length,4);assert(queries.slice(1).every(q=>q.references===false));assert.deepEqual(encodings,[{width:1025,height:2,type:'image/png'}]);assert.equal(copies.length,3);assert(copies.every(n=>n>0),'All tiles use the originally selected grid/level');assert(queries.every(q=>q.floorId==='ground'));assert.deepEqual(queries.slice(1).map(q=>q.box.x),[0,512,1024]);assert.equal(f.document.querySelector('#atlas-save-status').textContent,'Atlas-PNG gespeichert');assert(created.every(c=>c.width===0&&c.height===0));
 });
