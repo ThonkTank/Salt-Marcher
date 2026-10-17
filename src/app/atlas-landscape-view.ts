@@ -22,6 +22,7 @@ export function drawLandscape(
   assets: Map<string, string>,
   references = true,
   raster?: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[],
+  unavailableAssets?: ReadonlySet<string>,
 ) {
   const landscapeNode=paintFactory(root);
   let rasterDrawn=false;
@@ -51,8 +52,14 @@ export function drawLandscape(
             opacity: r.opacity ?? 0.4,
             transform: `translate(${r.points[0]!.x - b.x} ${r.points[0]!.y - b.y}) rotate(${((r.angle ?? 0) * 180) / Math.PI})`,
             "pointer-events": "none",
+            "data-optional-reference": r.id,
           }),
         );
+      else if(references&&r.visible!==false){
+        const state=unavailableAssets?.has(r.assetId!)?'unavailable':'loading';
+        const outline=landscapeNode('rect',{x:0,y:0,width:r.width,height:r.width*(r.imageHeight??1)/(r.imageWidth??1),transform:`translate(${r.points[0]!.x-b.x} ${r.points[0]!.y-b.y}) rotate(${((r.angle??0)*180)/Math.PI})`,fill:'none',stroke:'#75604e','stroke-width':mpp,'data-reference-state':state,'data-reference-id':r.id});
+        outline.append(landscapeNode('title',{},`${r.name||'Bildvorlage'} · ${state==='loading'?'wird geladen':'nicht verfügbar'}`));g.append(outline);
+      }
     } else if (r.kind === "patch") {
       if (r.values.terrain && !raster)
         g.append(

@@ -14,3 +14,15 @@ test('reference import refreshes the source frame before starting calibration on
 });
 
 test('an unavailable frame image keeps the layer usable and exposes a working local retry',async t=>{const f=fixture(t);f.set([ref('a')]);let failed=true;f.window.campaign={referenceAssetPreview:async()=>failed?{ok:false,error:'unavailable'}:{ok:true,value:'image:a'}};await f.ui.load();assert.equal(f.ui.records.length,1);assert.equal(f.document.querySelector('#land-reload').hidden,false);failed=false;f.host.refresh=()=>f.ui.load(undefined,true);f.document.querySelector('#land-reload').click();await new Promise(r=>setImmediate(r));assert.equal(f.ui.assets.get('a'),'image:a');assert.equal(f.document.querySelector('#land-reload').hidden,true);assert.equal(f.errors.length,0);});
+
+test('a rejected reference preview leaves a local outline and does not stop other references or retry',async t=>{
+ const f=fixture(t);let broken=true;const requests=[];
+ f.window.campaign={referenceAssetPreview:async(token,id)=>{requests.push(id);if(id==='bad'&&broken)throw Error('controlled preview transport failure');return{ok:true,value:'image:'+id};}};
+ f.set([ref('bad'),ref('good')]);await f.ui.load();assert.deepEqual(requests,['bad','good']);assert(f.ui.assets.has('good'));assert.equal(f.ui.assets.has('bad'),false);assert.match(f.document.querySelector('#land-status').textContent,/nicht verfügbar/);
+ f.ui.draw(f.document.querySelector('svg'),{x:0,y:0,width:10,height:10},.1);assert.equal(f.document.querySelector('[data-reference-state="unavailable"]')?.getAttribute('data-reference-id'),'bad');
+ broken=false;await f.ui.load(undefined,true);assert(f.ui.assets.has('bad'));assert.equal(f.errors.length,0);
+});
+
+test('reference previews reuse the same source but cannot survive a new source fence under the same asset ID',async t=>{
+ const f=fixture(t);let calls=0;f.window.campaign={referenceAssetPreview:async()=>({ok:true,value:'preview:'+ ++calls})};f.set([ref('same')]);await f.ui.load();assert.equal(f.ui.assets.get('same'),'preview:1');f.set([ref('same')]);await f.ui.load();assert.equal(calls,1);f.host.data().region.fence='new-source';await f.ui.load();assert.equal(calls,2);assert.equal(f.ui.assets.get('same'),'preview:2');
+});

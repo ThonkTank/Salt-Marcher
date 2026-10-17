@@ -70,6 +70,8 @@ function strokePolygon(points: Point[], radius: number): Polygon[] {
 export class LandscapeWorkbench {
   readonly panel = document.createElement("section");
   readonly assets = new Map<string, string>();
+  private unavailableAssets=new Set<string>();
+  private assetFence='';
   records: LandscapeRecord[] = [];
   private raster: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[] | undefined;
   exportBox: LandscapeBox | null = null;
@@ -373,7 +375,7 @@ export class LandscapeWorkbench {
     this.cancel();
     this.records = [];
     this.raster = undefined;this.minimumRevision=0;
-    this.assets.clear();
+    this.assets.clear();this.unavailableAssets.clear();this.assetFence='';
     this.key = "";
     this.request++;
     this.exportBox = null;
@@ -405,6 +407,11 @@ export class LandscapeWorkbench {
     const layer=data.region?.landscape;
     if(layer){
       const frameKey=JSON.stringify([token,data.region!.fence]);
+      if(this.assetFence!==data.region!.fence){
+        const calibration=this.calibration?.record.assetId,preview=calibration?this.assets.get(calibration):undefined;
+        this.assets.clear();this.unavailableAssets.clear();if(calibration&&preview)this.assets.set(calibration,preview);
+        this.assetFence=data.region!.fence;
+      }
       if(!force&&this.key===frameKey&&this.publishedLayer===layer)return;this.key=frameKey;this.publishedLayer=layer;
       this.request++;const generation=this.request;
       this.records=layer.records;this.raster=layer.tiles;html('land-reload').hidden=layer.state==='ready';
@@ -412,10 +419,12 @@ export class LandscapeWorkbench {
       this.objectOptions();this.host.redraw();
       const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));
       for(const id of this.assets.keys())if(!visibleAssets.has(id)&&id!==this.calibration?.record.assetId)this.assets.delete(id);
+      for(const id of this.unavailableAssets)if(!visibleAssets.has(id))this.unavailableAssets.delete(id);
       for(const r of this.records)if(r.assetId&&r.visible!==false&&!this.assets.has(r.assetId)){
-        const result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);
+        let result:import('./contracts').Result<string>;
+        try{result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);}catch(error){result={ok:false,error:(error as Error).message};}
         if(token!==this.token||generation!==this.request||this.host.data()?.region?.fence!==data.region?.fence)return;
-        if(result.ok)this.rememberAsset(r.assetId,result.value);else {html('land-reload').hidden=false;this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');}
+        if(result.ok){this.unavailableAssets.delete(r.assetId);this.rememberAsset(r.assetId,result.value);}else {this.unavailableAssets.add(r.assetId);html('land-reload').hidden=false;this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');}
         this.host.redraw();
       }
       return;
@@ -500,7 +509,7 @@ export class LandscapeWorkbench {
     const records = this.selected
       ? [...this.records.filter(r=>r.id!==this.selected!.id),this.selected]
       : this.records;
-    drawLandscape(root, records, box, mpp, this.assets,true,this.raster);
+    drawLandscape(root, records, box, mpp, this.assets,true,this.raster,this.unavailableAssets);
     const auto = html<HTMLInputElement>("land-auto-level").checked,
       level = auto
         ? Math.max(

@@ -9,7 +9,7 @@ import {roomGeometries,visibleRoomWhere,roomDirectoryQuery,roomOrder} from './ro
 import type {WorkspaceShell,WorkspaceGeometry,RoomDirectoryQuery} from '../contracts';
 import {keepLiveMomentDraft as keepMomentDraft,readLiveMomentDraft} from './live-moment-drafts';
 import {atlasPartyPoint} from '../atlas-runtime-model';
-import {installLandscape,installLandscapeIndex,landscapeRegion,executeLandscape} from './atlas-landscape';
+import {installLandscape,landscapeRegion,executeLandscape} from './atlas-landscape';
 import {rememberSourceUnlink,validateNoteSourceHistory} from './note-source-history';
 import {readNoteThread,checkNoteThread} from './note-thread';
 import {captureKeyNote,keyNoteCaptureStatus,readKeyNoteChoices,hasNoteTitle} from './key-note-capture';
@@ -239,7 +239,6 @@ export class CampaignStore {
       installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);this.db.pragma('user_version=46');
 
     }).immediate();
-    installLandscapeIndex(this.db);
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
   }
   private reconcileAtlasGeometry(token:string){

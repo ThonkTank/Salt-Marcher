@@ -956,10 +956,12 @@ export class CampaignAtlasWorkbench {
     const page=async(offset:number)=>{
       const reply=await window.campaign.atlasRegionCandidates(owner.token,query,point,fence,offset,layer);
       if(!valid())return;if(!reply.ok)throw new Error(reply.error);const result=reply.value;
-      if(result.total===1&&offset===0){await choose(result.items[0]!);return;}
-      if(!result.items.length){this.opts.status('Hier ist kein passendes Objekt.');return;}
+      const unavailable=[...new Set([...(result.unavailable??[]),...(layer!=='geometry'&&this.data?.region?.landscape?.state==='error'?['landscape' as const]:[])])],incomplete=!!unavailable.length;
+      if(result.total===1&&offset===0&&!incomplete){await choose(result.items[0]!);return;}
+      if(!result.items.length){this.opts.status(incomplete?'Auswahl unvollständig: Eine Kartenebene ist nicht verfügbar. Ansicht erneut laden.':'Hier ist kein passendes Objekt.',incomplete);return;}
       this.hitDialog.replaceChildren();const title=document.createElement('h2');title.textContent='Objekt an dieser Stelle auswählen';this.hitDialog.append(title);
       const count=document.createElement('p');count.textContent=result.total+' Treffer · '+(offset+1)+'–'+(offset+result.items.length);this.hitDialog.append(count);
+      if(incomplete){const warning=document.createElement('p');warning.setAttribute('role','alert');warning.textContent='Auswahl unvollständig: '+unavailable.map(layer=>layer==='landscape'?'Landschaft':'Raum-/Stadtgeometrie').join(', ')+' nicht verfügbar. Verfügbare Treffer können geöffnet werden; Ansicht erneut laden.';this.hitDialog.append(warning);}
       for(const hit of result.items){const button=document.createElement('button');button.type='button';button.textContent=({landscape:'Landschaft',room:'Raum',building:'Haus',element:'Objekt',scope:'Dungeon',city:'Stadt','city-unit':'Stadtelement'}[hit.kind])+': '+hit.name;button.onclick=()=>void choose(hit).catch(e=>this.error(e));this.hitDialog.append(button);}
       if(offset>0){const back=document.createElement('button');back.textContent='Vorige Treffer';back.onclick=()=>void page(Math.max(0,offset-40)).catch(e=>this.error(e));this.hitDialog.append(back);}
       if(result.next!==null){const next=document.createElement('button');next.textContent='Weitere Treffer';next.onclick=()=>void page(result.next!).catch(e=>this.error(e));this.hitDialog.append(next);}
@@ -1978,12 +1980,12 @@ export class CampaignAtlasWorkbench {
       const audience = get<HTMLSelectElement>("atlas-export-audience").value as
           | "gm"
           | "public",
-        box = this.landscape.exportBox??this.camera.view;
-      const exportQuery={...this.regionQuery(),box:{...box},perception:audience==='public'};
-      const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
-      const snapshot=fresh.value;
+        box = {...(this.landscape.exportBox??this.camera.view)};
+      const exportQuery={...this.regionQuery(),box:{...box},perception:audience==='public'},references=get<HTMLInputElement>('atlas-export-reference').checked,grid=get<HTMLInputElement>('atlas-export-grid').checked,level=Number(get<HTMLSelectElement>('atlas-hex-level').value);
       const format=get<HTMLSelectElement>("atlas-export-format").value as 'png'|'jpeg',size=Number(get<HTMLInputElement>("atlas-export-size").value);
       if(!Number.isInteger(size)||size<256||size>8192)throw new Error("Ausgabegröße zwischen 256 und 8192 Pixel wählen.");
+      const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
+      const snapshot=fresh.value;
       const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
       let svg:SVGSVGElement;
       if(audience==='public'){
@@ -1996,7 +1998,6 @@ export class CampaignAtlasWorkbench {
         }
       } else {
         let encoded=0;
-        const references=get<HTMLInputElement>("atlas-export-reference").checked;
         const geometryTiles=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,async(part,w,h)=>{
           const response=await window.campaign.atlasRegion(owner.token,{...exportQuery,box:part,width:w,height:h,revision:snapshot.revision,fence:snapshot.region!.fence,references},'export');if(!response.ok)return response;
           const tile=response.value,layer=tile.region.landscape;
@@ -2004,13 +2005,13 @@ export class CampaignAtlasWorkbench {
           if(!layer||layer.state!=='ready'||!layer.coverage.complete)throw new Error(layer?.error??'Landschaftsausgabe nicht vollständig. Erneut laden.');
           const assets=new Map<string,string>();
           if(references)for(const r of layer.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAssetPreview(owner.token,r.assetId,2048);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
-          const svg=atlasRegionSVG(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid:get<HTMLInputElement>("atlas-export-grid").checked,level:Number(get<HTMLSelectElement>("atlas-hex-level").value),references,floorId:this.floorId,roofs:exportQuery.roofs});
+          const svg=atlasRegionSVG(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
           const png=await atlasPNG(svg,w,h);let binary='';for(let i=0;i<png.length;i+=32768)binary+=String.fromCharCode(...png.slice(i,i+32768));const data='data:image/png;base64,'+btoa(binary);encoded+=data.length*2;
           if(encoded>256*1024*1024)throw new Error('Atlas-Ausgabe benötigt zu viel Bildspeicher. Kleineren Ausschnitt wählen.');
           return{ok:true,value:{campaignId:snapshot.campaignId,revision:snapshot.revision,box:part,width:w,height:h,data}};
         },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Atlas wird ausgegeben: ${done}/${total}`;},512);
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')get('atlas-save-status').textContent='Dichte Landschaft als Übersicht; Vorlagen als Umrisse.';
-        svg=atlasRegionSVG(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:this.floorId,roofs:exportQuery.roofs});
+        svg=atlasRegionSVG(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
 
       }
       const bytes = await atlasPNG(svg, width, height,format);

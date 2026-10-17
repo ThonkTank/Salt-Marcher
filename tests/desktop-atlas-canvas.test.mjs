@@ -396,6 +396,8 @@ test("switching map context revokes old commands and decoded media before new so
   assert.equal(f.canvas.hitAt({ clientX: 15, clientY: 25 }), null);
   assert(f.closed.includes("a"));
   assert.equal(f.root.dataset.canvasState, "empty");
+  assert.equal(f.root.dataset.decodedBytes, "0");
+  assert.equal(f.root.dataset.imageErrors, "0");
 });
 
 test("marker titles survive outside semantic selection and the surface clears hover on a new gesture", async (t) => {
@@ -457,4 +459,11 @@ test("a pending frame is not interpreted as empty space for left-drag navigation
   assert.equal(f.canvas.panning,false,"absence of a current hit does not prove empty space while a frame is pending");
   f.pointer("pointerdown",15,25,1);assert.equal(f.canvas.panning,true,"explicit middle-button navigation remains available");
   f.pointer("pointerup",15,25,1);f.flush();assert.equal(f.canvas.ready,true);
+});
+
+test('an unreadable optional reference stays local while required terrain and exact hits remain usable',async t=>{
+ const f=fixture(t);let broken=true;
+ const draw=root=>root.append(rect('room'),atlasPaint('image',{href:broken?'bad':'reference-ok',width:2,height:2,'data-optional-reference':'reference-id'}),atlasPaint('image',{href:'terrain',width:10,height:10}));
+ f.canvas.render(draw);await settle();assert.equal(f.canvas.ready,true);assert.equal(f.root.dataset.canvasState,'loaded');assert.equal(f.root.dataset.imageErrors,'1');assert.equal(f.canvas.hitAt({clientX:12,clientY:22})?.dataset.id,'room');assert.equal(f.document.querySelector('.map-canvas-state').hidden,false);assert.equal(f.document.querySelector('.map-canvas-state button').hidden,false);assert.match(f.document.querySelector('.map-canvas-state').textContent,/Bildvorlage/);
+ const view=f.canvas.view;broken=false;f.document.querySelector('.map-canvas-state button').click();await settle();assert.equal(f.canvas.ready,true);assert.equal(f.root.dataset.imageErrors,'0');assert.deepEqual(f.canvas.view,view);assert.equal(f.document.querySelector('.map-canvas-state').hidden,true);
 });
