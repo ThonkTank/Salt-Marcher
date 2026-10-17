@@ -41,7 +41,7 @@ import { terrainNames, cellAt } from "./world-model";
 import { citySvg, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
 import { roomPath, elementSvg, inside } from "./drawing-model";
-import { atlasCityPoint, atlasCityState, atlasCityPlacementActive, atlasCityPlacementKey, openCityReference } from "./city-ui";
+import { atlasCityPoint, atlasCityState, updateCityInteriors, atlasCityPlacementActive, atlasCityPlacementKey, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
   atlasDrawingRectangle,
@@ -450,6 +450,11 @@ export class CampaignAtlasWorkbench {
       if(this.root.hidden||detail.token!==this.owner?.token||!this.data)return;
       const city=this.data.cities.find(c=>c.header.id===detail.cityId),unit=city?.units.find(u=>u.id===detail.unitId),binding=this.data.bindings.find(b=>b.kind==='city'&&b.ownerId===detail.cityId);
       if(unit?.position&&binding){this.cityId=detail.cityId;this.selection={kind:'building',id:detail.unitId,cityId:detail.cityId};this.focus(localToAtlas(unit.position,atlasFrame(this.data,binding)),60);}
+    });
+    document.addEventListener('atlas-city-interior',e=>{
+      const detail=(e as CustomEvent<{token:string;cityId:string;unitId:string}>).detail;
+      if(this.root.hidden||this.groupView||detail.token!==this.owner?.token||this.family!=='city'||this.cityId!==detail.cityId||this.selection?.kind!=='building'||this.selection.id!==detail.unitId)return;
+      void this.createInterior().catch(e=>this.error(e));
     });
     document.addEventListener("atlas-runtime", () => {
       if (this.root.hidden) return;
@@ -1753,6 +1758,7 @@ export class CampaignAtlasWorkbench {
     const data = this.data;
     if(this.root.hidden)return;
     if(!data){if(this.groupView)this.camera.render(root=>{root.append(shape('rect',{width:this.camera.view.width,height:this.camera.view.height,fill:'#20282a'}));});return;}
+    if(!this.groupView)updateCityInteriors(data);
     get("atlas-recover").hidden =
       !this.pendingTravel &&
       (!this.owner || !pendingAtlasWrite(this.owner.token));
@@ -1794,7 +1800,7 @@ export class CampaignAtlasWorkbench {
     get("atlas-floor-field").hidden = this.groupView || !this.scopeId;
     for (const id of ["atlas-slice-enabled", "atlas-slice", "atlas-roofs"])
       get(id).closest<HTMLElement>("label")!.hidden = this.groupView || !this.scopeId;
-    get("atlas-building-interior").hidden = this.selection?.kind !== "building";
+    get("atlas-building-interior").hidden = this.selection?.kind !== "building" || this.family !== "city";
     get("atlas-building-interior").textContent=data.bindings.some(b=>b.kind==='dungeon'&&b.parentId===this.selection?.id)?'Innenraum öffnen':'Innenraum anlegen';
     const houseBinding=data.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===this.scopeId&&b.parent==='building');
     const house=data.cities.flatMap(c=>c.units).find(u=>u.id===houseBinding?.parentId);

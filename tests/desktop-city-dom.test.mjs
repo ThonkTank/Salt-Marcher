@@ -401,6 +401,27 @@ test('house interior reopens through the same visible action without creating a 
   x.click('atlas-building-interior');await until(()=>s.atlas.family==='interior');await settle();
   assert.equal(s.atlas.scopeId,first);assert.equal(x.store.campaignAtlas(x.current().token).scopes.length,before.scopes.length);
   assert.equal(x.document.getElementById('atlas-interior-context').hidden,false);
+  assert.equal(x.document.getElementById('atlas-building-interior').hidden,true);
+ }finally{await s.close();}
+});
+
+test('house inspector counts canonical rooms and opens the same interior after return and fresh activation',async()=>{
+ const x=await setup(),s=await interiorSurface(x),get=id=>x.document.getElementById(id);
+ try{
+  const scope=s.atlas.scopeId,frame=s.atlas.frame(scope);
+  await s.rectangle('Taproom',{x:frame.x-3,y:frame.y-3},{x:frame.x,y:frame.y+3});
+  await s.rectangle('Store',{x:frame.x,y:frame.y-3},{x:frame.x+3,y:frame.y+3});
+  const returnHome=async()=>{x.click('atlas-interior-house');await until(()=>s.atlas.family==='city');await settle();assert.equal(get('city-interior').textContent,'Innenraum öffnen');assert.equal(get('city-interior-status').textContent,'Innenraum angelegt · 2 Räume');};
+  await returnHome();
+  assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one).rooms.length,0);
+  const before=x.store.db.serialize();x.click('city-interior');await until(()=>s.atlas.family==='interior');await settle();assert.equal(s.atlas.scopeId,scope);assert.ok(x.store.db.serialize().equals(before));
+  await s.activate('Alpha');await s.atlas.open();await s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);await settle();
+  assert.equal(get('city-interior-status').textContent,'Innenraum angelegt · 2 Räume');
+  x.click('city-interior');await until(()=>s.atlas.family==='interior');assert.equal(s.atlas.scopeId,scope);
+  await returnHome();await s.atlas.navigate('city',x.cityIds.two,x.unitIds.two);await settle();
+  assert.equal(get('city-interior-status').textContent,'Innenraum noch nicht angelegt.');assert.equal(get('city-interior').textContent,'Innenraum anlegen');
+  x.click('city-interior');await until(()=>s.atlas.family==='interior');assert.notEqual(s.atlas.scopeId,scope);
+  x.click('atlas-interior-house');await until(()=>s.atlas.family==='city');await settle();assert.equal(get('city-interior-status').textContent,'Innenraum angelegt · 0 Räume');
  }finally{await s.close();}
 });
 
