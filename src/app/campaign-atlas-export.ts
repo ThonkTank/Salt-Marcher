@@ -1,35 +1,33 @@
+import { AtlasPaint, atlasPaint } from "./atlas-paint";
+import { AtlasCanvasScene } from "./atlas-canvas-scene";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
 import type { PlayerFrame } from "./player-contracts";
 import {
   atlasFrame,
+  frameMatrix,
   atlasHexPoint,
   localToAtlas,
 } from "./campaign-atlas-model";
 import { roomPath } from "./drawing-model";
 import { terrainColors } from "./world-model";
-const ns = "http://www.w3.org/2000/svg";
-/** Public output is built from the existing public projection, never by hiding GM nodes. */
-export function publicAtlasSVG(
+/** Public output uses only the public projection, never hidden GM nodes. */
+export function publicAtlasPaint(
   a: AtlasRenderView,
   box: CanvasBox,
   frame?: PlayerFrame,
-): SVGSVGElement {
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
-  svg.setAttribute("xmlns", ns);
-  const add = (
-    tag: string,
-    attrs: Record<string, string | number>,
-    text?: string,
-  ) => {
-    const n = document.createElementNS(ns, tag);
-    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
-    if (text) n.textContent = text;
-    svg.append(n);
-    return n;
+) {
+  const scene = atlasPaint("group");
+  const add = (...args: Parameters<typeof atlasPaint>) => {
+    const node = atlasPaint(...args);
+    scene.append(node);
+    return node;
   };
-  add("rect", { width: box.width, height: box.height, fill: "#20282a" });
+  add("rect", {
+    width: box.width,
+    height: box.height,
+    style: { fill: "#20282a" },
+  });
   if (a.geometry.position && a.perception) {
     const pose = a.geometry.position,
       b = a.bindings.find(
@@ -41,17 +39,16 @@ export function publicAtlasSVG(
         const n = localToAtlas(p, f);
         return { x: n.x - box.x, y: n.y - box.y };
       },
-      transform = `translate(${f.x - box.x} ${f.y - box.y}) rotate(${(f.angle * 180) / Math.PI})`;
+      matrix = frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y });
     for (const [polys, fill] of [
       [a.perception.known, "#7c7e74"],
       [a.perception.visible, "#ded7bd"],
     ] as const)
       if (polys.length)
         add("path", {
-          d: roomPath(polys),
-          transform,
-          fill,
-          "fill-rule": "evenodd",
+          path: roomPath(polys),
+          matrix: matrix,
+          style: { fill: fill, fillRule: "evenodd" },
         });
     for (const label of a.perception.labels) {
       const p = at(label.point);
@@ -59,9 +56,11 @@ export function publicAtlasSVG(
         "text",
         {
           ...p,
-          "font-size": box.width / 100,
-          "text-anchor": "middle",
-          fill: "#203532",
+          style: {
+            fontSize: box.width / 100,
+            textAlign: "center",
+            fill: "#203532",
+          },
         },
         label.text,
       );
@@ -69,20 +68,18 @@ export function publicAtlasSVG(
     for (const m of a.perception.markers) {
       const p = at(m.point);
       add("circle", {
-        cx: p.x,
-        cy: p.y,
-        r: box.width / 250,
-        fill: m.kind === "npc" ? "#8964a5" : "#39766a",
+        x: p.x,
+        y: p.y,
+        radius: box.width / 250,
+        style: { fill: m.kind === "npc" ? "#8964a5" : "#39766a" },
       });
     }
     const p = at(pose);
     add("circle", {
-      cx: p.x,
-      cy: p.y,
-      r: box.width / 180,
-      fill: "#244f87",
-      stroke: "white",
-      "stroke-width": box.width / 900,
+      x: p.x,
+      y: p.y,
+      radius: box.width / 180,
+      style: { fill: "#244f87", stroke: "white", lineWidth: box.width / 900 },
     });
   } else if (frame?.mode === "map" && frame.map) {
     const map = frame.map;
@@ -91,14 +88,19 @@ export function publicAtlasSVG(
         r = map.hexMeters / Math.sqrt(3),
         points = Array.from({ length: 6 }, (_, i) => {
           const angle = ((30 + i * 60) * Math.PI) / 180;
-          return `${p.x - box.x + Math.cos(angle) * r},${p.y - box.y + Math.sin(angle) * r}`;
-        }).join(" ");
+          return {
+            x: p.x - box.x + Math.cos(angle) * r,
+            y: p.y - box.y + Math.sin(angle) * r,
+          };
+        });
       add("polygon", {
-        points,
-        fill:
-          terrainColors[cell.terrain as keyof typeof terrainColors] ??
-          "#b8c896",
+        points: points,
         opacity: cell.visible ? 1 : 0.55,
+        style: {
+          fill:
+            terrainColors[cell.terrain as keyof typeof terrainColors] ??
+            "#b8c896",
+        },
       });
       if (cell.label)
         add(
@@ -106,9 +108,11 @@ export function publicAtlasSVG(
           {
             x: p.x - box.x,
             y: p.y - box.y,
-            "font-size": map.hexMeters / 15,
-            fill: "#203532",
-            "text-anchor": "middle",
+            style: {
+              fontSize: map.hexMeters / 15,
+              fill: "#203532",
+              textAlign: "center",
+            },
           },
           cell.label,
         );
@@ -117,52 +121,72 @@ export function publicAtlasSVG(
     // contours must not replace unseen terrain, even inside a known hex.
     const p = atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
     add("circle", {
-      cx: p.x - box.x,
-      cy: p.y - box.y,
-      r: box.width / 180,
-      fill: "#244f87",
+      x: p.x - box.x,
+      y: p.y - box.y,
+      radius: box.width / 180,
+      style: { fill: "#244f87" },
     });
   } else
     throw new Error(
       "Für den aktuellen Gruppenkontext ist keine öffentliche Kartenprojektion verfügbar.",
     );
-  return svg;
+  return scene;
 }
-export async function atlasPNG(
-  svg: SVGSVGElement,
+/** Raster export executes the same Canvas commands as the on-screen Atlas. */
+export async function atlasImage(
+  scene: AtlasPaint,
   width: number,
   height: number,
-  format:"png"|"jpeg"="png",
+  box: CanvasBox,
+  format: "png" | "jpeg" = "png",
 ): Promise<number[]> {
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute("xmlns", ns);
-  clone.setAttribute("width", String(width));
-  clone.setAttribute("height", String(height));
-  const url = URL.createObjectURL(
-    new Blob([new XMLSerializer().serializeToString(clone)], {
-      type: "image/svg+xml",
-    }),
-  );
+  if (
+    !Number.isInteger(width) ||
+    !Number.isInteger(height) ||
+    width < 1 ||
+    height < 1 ||
+    width > 8192 ||
+    height > 8192 ||
+    width * height > 8192 * 8192 ||
+    !Number.isFinite(box.width) ||
+    !Number.isFinite(box.height) ||
+    box.width <= 0 ||
+    box.height <= 0
+  )
+    throw Error("Ungültige Bildgröße.");
+  const compiled = new AtlasCanvasScene(scene),
+    canvas = document.createElement("canvas");
+  const images = new Map<string, CanvasImageSource>();
   try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    const canvas = document.createElement("canvas");
+    // Export tiles arrive at their output resolution. No SVG serialization or second rasterization.
+    for (const source of compiled.images) {
+      const image = new Image();
+      image.src = source;
+      await image.decode();
+      images.set(source, image);
+    }
     canvas.width = width;
     canvas.height = height;
-    canvas.getContext("2d")!.drawImage(image, 0, 0, width, height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw Error("Bildausgabe nicht verfügbar.");
+    compiled.draw(
+      ctx,
+      new DOMMatrix([width / box.width, 0, 0, height / box.height, 0, 0]),
+      images,
+      { x: 0, y: 0 },
+    );
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
         (b) =>
-          b
-            ? resolve(b)
-            : reject(new Error("PNG konnte nicht erzeugt werden.")),
-        "image/"+format,
-        .94,
+          b ? resolve(b) : reject(Error("Bild konnte nicht erzeugt werden.")),
+        "image/" + format,
+        0.94,
       ),
     );
     return [...new Uint8Array(await blob.arrayBuffer())];
   } finally {
-    URL.revokeObjectURL(url);
+    compiled.dispose();
+    canvas.width = canvas.height = 0;
+    images.clear();
   }
 }

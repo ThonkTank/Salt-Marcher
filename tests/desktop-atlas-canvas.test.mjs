@@ -6,7 +6,7 @@ import { parseHTML } from "linkedom";
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';",
+      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-canvas-test.cjs",
@@ -14,7 +14,7 @@ buildSync({
   platform: "node",
   format: "cjs",
 });
-const { AtlasCanvas, AtlasCanvasScene, atlasPaint } = createRequire(
+const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -229,35 +229,30 @@ function fixture(t, { available = true } = {}) {
   };
 }
 const rect = (id) => {
-  const n = atlasPaint("rect", { width: 10, height: 10, fill: "red" });
-  n.dataset.atlasObject = "true";
-  n.dataset.id = id;
+  const n = atlasPaint("rect", {width: 10, height: 10, style: {fill: "red"}});
+  n.data.atlasObject = "true";
+  n.data.id = id;
   return n;
 };
 test("retained commands inherit style and transforms, preserve painter order and explicit semantic ancestry", (t) => {
   fixture(t);
-  const root = atlasPaint("g", {
-      transform: "translate(20 30) rotate(90)",
-      stroke: "red",
-      "stroke-width": 3,
-      "stroke-linecap": "round",
-    }),
+  const root = atlasPaint("group", {matrix:[0,1,-1,0,20,30], style: {stroke: "red", lineWidth: 3, lineCap: "round"}}),
     a = rect("first"),
     b = rect("second");
   root.append(a, b);
   const scene = new AtlasCanvasScene(root);
   assert.deepEqual(
-    scene.commands.map((c) => c.node.dataset.id),
+    scene.commands.map((c) => c.node.data.id),
     ["first", "second"],
   );
   const c = scene.commands[0],
     p = new Point(1, 2).matrixTransform(c.matrix);
   assert(Math.abs(p.x - 18) < 1e-8);
   assert.equal(p.y, 31);
-  assert.equal(c.stroke, "red");
-  assert.equal(c.width, 3);
-  assert.equal(c.cap, "round");
-  assert.equal(b.closest("[data-atlas-object]").dataset.id, "second");
+  assert.equal(c.style.stroke, "red");
+  assert.equal(c.style.lineWidth, 3);
+  assert.equal(c.style.lineCap, "round");
+  assert.equal(scene.hit({save(){},restore(){},resetTransform(){},setLineDash(){},isPointInPath(){return true;}},{x:20,y:30},["atlasObject"]).data.id,"second");
 });
 test("Canvas publication has no per-object DOM and panning reuses paths and image buffers", async (t) => {
   const f = fixture(t);
@@ -271,7 +266,7 @@ test("Canvas publication has no per-object DOM and panning reuses paths and imag
   assert.equal(f.root.children.length, 0);
   assert.equal(f.root.dataset.renderer, "canvas2d");
   assert.equal(f.root.dataset.canvasState, "loaded");
-  assert.equal(f.canvas.hitAt({ clientX: 15, clientY: 25 }).dataset.id, "room");
+  assert.equal(f.canvas.hitAt({ clientX: 15, clientY: 25 }).data.id, "room");
   f.pointer("pointerdown", 100, 100);
   f.pointer("pointermove", 120, 130);
   f.pointer("pointerup", 120, 130);
@@ -300,7 +295,7 @@ test("world conversion includes CSS border and independent backing resolution; z
 test("one decoder and one replaceable successor discard superseded image frames and stale hits", async (t) => {
   const f = fixture(t),
     draw = (src) => (root) =>
-      root.append(atlasPaint("image", { href: src, width: 10, height: 10 }));
+      root.append(atlasPaint("image", {source: src, width: 10, height: 10}));
   f.canvas.render((root) => root.append(rect("old")));
   await settle();
   f.canvas.render(draw("wait:a"));
@@ -326,7 +321,7 @@ test("decoding failure revokes hits and retry keeps the same surface, camera and
   const draw = (root) => {
     root.append(rect("room"));
     if (bad)
-      root.append(atlasPaint("image", { href: "bad", width: 2, height: 2 }));
+      root.append(atlasPaint("image", {source: "bad", width: 2, height: 2}));
   };
   f.canvas.render(draw);
   await settle();
@@ -356,7 +351,7 @@ test("unavailable context shows recoverable initialization state instead of fail
 test("lost/restored context releases bitmaps and reuses the canonical scene builder", async (t) => {
   const f = fixture(t);
   f.canvas.render((root) =>
-    root.append(atlasPaint("image", { href: "image", width: 5, height: 5 })),
+    root.append(atlasPaint("image", {source: "image", width: 5, height: 5})),
   );
   await settle();
   f.root.dispatchEvent(new f.window.Event("contextlost", { cancelable: true }));
@@ -386,7 +381,7 @@ test("switching map context revokes old commands and decoded media before new so
   f.canvas.render((root) =>
     root.append(
       rect("room"),
-      atlasPaint("image", { href: "a", width: 2, height: 2 }),
+      atlasPaint("image", {source: "a", width: 2, height: 2}),
     ),
   );
   await settle();
@@ -400,8 +395,8 @@ test("switching map context revokes old commands and decoded media before new so
 
 test("marker titles survive outside semantic selection and the surface clears hover on a new gesture", async (t) => {
   const f = fixture(t),
-    marker = atlasPaint("circle", { r: 3, fill: "red" });
-  marker.append(atlasPaint("title", {}, "Isobel · bekannt und sichtbar"));
+    marker = atlasPaint("circle", {radius: 3, style: {fill: "red"}});
+  marker.title="Isobel · bekannt und sichtbar";
   f.canvas.render((root) => root.append(marker));
   await settle();
   assert.equal(
@@ -423,7 +418,7 @@ test("marker titles survive outside semantic selection and the surface clears ho
 
 
 test("camera changes revoke hits and hover until the matching bitmap is actually painted", async t => {
-  const f=fixture(t),marker=rect("room");marker.append(atlasPaint("title",{},"Room"));
+  const f=fixture(t),marker=rect("room");marker.title="Room";
   f.canvas.render(root=>root.append(marker));await settle();f.flush();
   f.pointer("pointermove",15,25,0);f.flush();assert.equal(f.root.title,"Room");
   const scene=f.canvas.compiled;
@@ -432,7 +427,7 @@ test("camera changes revoke hits and hover until the matching bitmap is actually
   assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
   assert.equal(f.root.title,"");assert.equal(f.root.dataset.canvasState,"loading");
   f.flush();assert.equal(f.canvas.ready,true);assert.equal(f.canvas.compiled,scene);
-  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).dataset.id,"room");
+  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,"room");
   f.canvas.zoom(.5);assert.equal(f.canvas.ready,false);f.flush();assert.equal(f.canvas.ready,true);
   f.canvas.previous();assert.equal(f.canvas.ready,false);f.flush();assert.equal(f.canvas.ready,true);
 });
@@ -447,7 +442,7 @@ test("a scene compiled while hidden is not ready after showing until that scene 
   assert.equal(f.canvas.ready,false);f.size(320,180);
   assert.equal(f.canvas.ready,false,"the previous bitmap may match the size, but belongs to an older scene");
   f.canvas.set(f.canvas.view);f.flush();assert.equal(f.canvas.ready,true);
-  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).dataset.id,"new");
+  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,"new");
 });
 
 test("a pending frame is not interpreted as empty space for left-drag navigation", async t => {
@@ -457,4 +452,39 @@ test("a pending frame is not interpreted as empty space for left-drag navigation
   assert.equal(f.canvas.panning,false,"absence of a current hit does not prove empty space while a frame is pending");
   f.pointer("pointerdown",15,25,1);assert.equal(f.canvas.panning,true,"explicit middle-button navigation remains available");
   f.pointer("pointerup",15,25,1);f.flush();assert.equal(f.canvas.ready,true);
+});
+
+test('hits resolve the nearest semantic owner without a DOM or selector parser',t=>{
+ const f=fixture(t),root=atlasPaint('group',{data:{atlasObject:'true',id:'outer'}}),inner=atlasPaint('group',{data:{atlasObject:'true',id:'inner'}});
+ inner.append(atlasPaint('rect',{width:5,height:5,style:{fill:'red'}}));root.append(inner);
+ const scene=new AtlasCanvasScene(root);
+ assert.equal(scene.hit(f.canvas.ctx,{x:1,y:1},['atlasObject']).data.id,'inner');
+ assert.equal(scene.hit(f.canvas.ctx,{x:1,y:1},['landVertex']),null);
+ assert.equal(root.attrs,undefined);assert.equal(root.closest,undefined);
+});
+
+test('PNG and JPEG exports execute native commands without SVG serialization, and release the surface',async t=>{
+ const f=fixture(t),created=[],create=f.document.createElement.bind(f.document);
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){created.push(n);n.toBlob=(done,type)=>done(new Blob([type]));}return n;};
+ f.document.createElementNS=()=>{throw Error('SVG must never be created for raster export');};
+ const box={x:100,y:200,width:20,height:10},scene=atlasPaint('group');scene.append(atlasPaint('rect',{width:20,height:10,style:{fill:'#123456'}}));
+ for(const format of ['png','jpeg']){
+  assert.equal(Buffer.from(await atlasImage(scene,200,100,box,format)).toString(),'image/'+format);
+  assert(f.calls.some(([name,m])=>name==='setTransform'&&m.a===10&&m.d===10));
+  assert.equal(created.at(-1).width,0);assert.equal(created.at(-1).height,0);
+ }
+ await assert.rejects(atlasImage(scene,8193,100,box),/Bildgröße/);
+ const bad=atlasPaint('image',{source:'bad',width:2,height:2});
+ const Original=global.Image;global.Image=class{async decode(){throw Error('decode failed');}};t.after(()=>global.Image=Original);
+ await assert.rejects(atlasImage(bad,100,100,box),/decode failed/);
+ assert.equal(created.at(-1).width,0);
+});
+
+test('drawing failure clears incomplete pixels and revokes hits before retry',async t=>{
+ const f=fixture(t),fill=f.ctx.fill;f.ctx.fill=()=>{throw Error('drawing failed');};
+ f.canvas.render(root=>root.append(rect('room')));await settle();
+ assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+ assert.equal(f.root.dataset.canvasState,'unavailable');assert(f.calls.some(c=>c[0]==='clearRect'));
+ f.ctx.fill=fill;f.document.querySelector('.map-canvas-state button').click();await settle();
+ assert.equal(f.canvas.ready,true);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,'room');
 });

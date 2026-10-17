@@ -1,234 +1,123 @@
-import {AtlasPaint, atlasPaint} from "./atlas-paint";
-export {AtlasPaint, atlasPaint} from "./atlas-paint";
-export type PaintTarget = SVGElement | AtlasPaint;
-/** Shared geometry generators can still emit vector exports without coupling the screen to SVG. */
-export function paintFactory(root: PaintTarget) {
-  return (
-    tag: string,
-    attrs: Record<string, string | number> = {},
-    text?: string,
-  ): any => {
-    if (root instanceof AtlasPaint) return atlasPaint(tag, attrs, text);
-    const node = root.ownerDocument.createElementNS(
-      "http://www.w3.org/2000/svg",
-      tag,
-    );
-    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
-    if (text) node.textContent = text;
-    return node;
-  };
+import { AtlasPaint, type PaintStyle } from "./atlas-paint";
+export { AtlasPaint, atlasPaint } from "./atlas-paint";
+export interface PaintHit {
+  data: Record<string, string>;
 }
-
 type Command = {
   node: AtlasPaint;
   matrix: DOMMatrix;
   path?: Path2D;
   hitPath?: Path2D;
-  fill: string;
-  stroke: string;
-  width: number;
+  style: PaintStyle;
   alpha: number;
-  rule: CanvasFillRule;
   pointer: boolean;
   hud: boolean;
   title: string;
-  dash: number[];
-  font: string;
-  anchor: CanvasTextAlign;
-  baseline: CanvasTextBaseline;
-  cap: CanvasLineCap;
-  join: CanvasLineJoin;
+  ancestry: PaintHit[];
+  cuts?: { path: Path2D; alpha: number }[];
 };
-const number = (n: AtlasPaint, key: string, fallback = 0) =>
-  Number(n.attrs[key] ?? fallback);
-function transform(value: string | undefined) {
-  const matrix = new DOMMatrix();
-  for (const m of (value ?? "").matchAll(
-    /(translate|scale|rotate|matrix)\s*\(([^)]*)\)/g,
-  )) {
-    const a = m[2]!
-      .trim()
-      .split(/[\s,]+/)
-      .map(Number);
-    if (!a.every(Number.isFinite))
-      throw Error("Ungültige Kartentransformation.");
-    if (m[1] === "translate") matrix.translateSelf(a[0] ?? 0, a[1] ?? 0);
-    if (m[1] === "scale") matrix.scaleSelf(a[0] ?? 1, a[1] ?? a[0] ?? 1);
-    if (m[1] === "rotate") {
-      matrix.translateSelf(a[1] ?? 0, a[2] ?? 0);
-      matrix.rotateSelf(a[0] ?? 0);
-      matrix.translateSelf(-(a[1] ?? 0), -(a[2] ?? 0));
-    }
-    if (m[1] === "matrix") matrix.multiplySelf(new DOMMatrix(a));
-  }
-  return matrix;
-}
 function pathFor(n: AtlasPaint) {
-  const p = new Path2D();
-  switch (n.tagName) {
+  const g = n.geometry,
+    p = new Path2D(),
+    x = g.x ?? 0,
+    y = g.y ?? 0;
+  switch (n.kind) {
     case "path":
-      return new Path2D(n.attrs.d ?? "");
-    case "rect": {
-      const x = number(n, "x"),
-        y = number(n, "y"),
-        w = number(n, "width"),
-        h = number(n, "height"),
-        r = number(n, "rx");
-      if (r) p.roundRect(x, y, w, h, r);
-      else p.rect(x, y, w, h);
+      return new Path2D(g.path ?? "");
+    case "rect":
+      if (g.radiusX) p.roundRect(x, y, g.width ?? 0, g.height ?? 0, g.radiusX);
+      else p.rect(x, y, g.width ?? 0, g.height ?? 0);
       break;
-    }
     case "circle":
-      p.arc(
-        number(n, "cx"),
-        number(n, "cy"),
-        Math.max(0, number(n, "r")),
-        0,
-        Math.PI * 2,
-      );
+      p.arc(x, y, Math.max(0, g.radius ?? 0), 0, 2 * Math.PI);
       break;
     case "ellipse":
       p.ellipse(
-        number(n, "cx"),
-        number(n, "cy"),
-        Math.max(0, number(n, "rx")),
-        Math.max(0, number(n, "ry")),
+        x,
+        y,
+        Math.max(0, g.radiusX ?? 0),
+        Math.max(0, g.radiusY ?? 0),
         0,
         0,
-        Math.PI * 2,
+        2 * Math.PI,
       );
       break;
     case "line":
-      p.moveTo(number(n, "x1"), number(n, "y1"));
-      p.lineTo(number(n, "x2"), number(n, "y2"));
+      p.moveTo(x, y);
+      p.lineTo(g.x2 ?? 0, g.y2 ?? 0);
       break;
     case "polygon":
-    case "polyline": {
-      const points = (n.attrs.points ?? "")
-        .trim()
-        .split(/[\s,]+/)
-        .map(Number);
-      if (points.length >= 2) {
-        p.moveTo(points[0]!, points[1]!);
-        for (let i = 2; i + 1 < points.length; i += 2)
-          p.lineTo(points[i]!, points[i + 1]!);
-        if (n.tagName === "polygon") p.closePath();
+    case "polyline":
+      if (g.points?.length) {
+        p.moveTo(g.points[0]!.x, g.points[0]!.y);
+        for (const a of g.points.slice(1)) p.lineTo(a.x, a.y);
+        if (n.kind === "polygon") p.closePath();
       }
       break;
-    }
     default:
       return undefined;
   }
   return p;
 }
 export class AtlasCanvasScene {
-  private masks = new Map<string, { path: Path2D; alpha: number }[]>();
   private maskSurface: HTMLCanvasElement | null = null;
-  dispose() {
-    if (this.maskSurface) this.maskSurface.width = this.maskSurface.height = 0;
-    this.maskSurface = null;
-  }
   readonly commands: Command[] = [];
   readonly images = new Set<string>();
   constructor(readonly root: AtlasPaint) {
-    const collect = (n: AtlasPaint) => {
-      if (n.tagName === "mask" && n.attrs.id)
-        this.masks.set(
-          n.attrs.id,
-          n.children
-            .filter((c) => c.tagName === "path")
-            .map((c) => ({
-              path: new Path2D(c.attrs.d ?? ""),
-              alpha: c.attrs.fill === "black" ? 1 : 0.6,
-            })),
-        );
-      for (const child of n.children) collect(child);
-    };
-    collect(root);
     const visit = (
       node: AtlasPaint,
       matrix: DOMMatrix,
-      style: Record<string, string>,
+      style: PaintStyle,
       alpha: number,
       pointer: boolean,
       hud: boolean,
+      title: string,
+      ancestry: PaintHit[],
     ) => {
-      if (node.attrs.visibility === "hidden" || node.attrs.display === "none")
-        return;
-      const inherited = { ...style };
-      const title = node.children.find((child) => child.tagName === "title");
-      if (title) inherited.tooltip = title.textContent;
-      for (const key of [
-        "fill",
-        "stroke",
-        "stroke-width",
-        "fill-rule",
-        "stroke-linecap",
-        "stroke-linejoin",
-        "stroke-dasharray",
-        "font-size",
-        "font-family",
-        "font-weight",
-        "text-anchor",
-        "dominant-baseline",
-        "paint-order",
-      ])
-        if (node.attrs[key] !== undefined) inherited[key] = node.attrs[key]!;
-      matrix = matrix.multiply(transform(node.attrs.transform));
-      alpha *= number(node, "opacity", 1);
-      pointer = pointer && node.attrs["pointer-events"] !== "none";
-      hud = hud || node.dataset.canvasHud !== undefined;
-      if (
-        node.tagName === "defs" ||
-        node.tagName === "mask" ||
-        node.tagName === "title"
-      )
-        return;
-      if (!["g", "svg"].includes(node.tagName)) {
-        const path = pathFor(node);
-        if (!path && !["text", "image"].includes(node.tagName))
-          throw Error("Nicht unterstütztes Kartenzeichen: " + node.tagName);
-        const stroke = inherited.stroke ?? "none",
-          fill = inherited.fill ?? "black";
+      const g = node.geometry;
+      if (g.hidden) return;
+      matrix = g.matrix ? matrix.multiply(new DOMMatrix(g.matrix)) : matrix;
+      style = { ...style, ...node.style };
+      alpha *= g.opacity ?? 1;
+      pointer = pointer && g.pointer !== false;
+      hud = hud || !!g.hud;
+      title = node.title || title;
+      ancestry = [node, ...ancestry];
+      if (node.kind !== "group") {
         this.commands.push({
           node,
           matrix,
-          path,
-          fill,
-          stroke,
-          width: Number(inherited["stroke-width"] ?? 1),
+          path: pathFor(node),
+          style,
           alpha,
-          rule: inherited["fill-rule"] === "evenodd" ? "evenodd" : "nonzero",
           pointer,
           hud,
-          title: inherited.tooltip ?? "",
-          cap: (inherited["stroke-linecap"] ?? "butt") as CanvasLineCap,
-          join: (inherited["stroke-linejoin"] ?? "miter") as CanvasLineJoin,
-          dash:
-            inherited["stroke-dasharray"] &&
-            inherited["stroke-dasharray"] !== "none"
-              ? inherited["stroke-dasharray"].split(/[ ,]+/).map(Number)
-              : [],
-          font: `${inherited["font-weight"] ?? "normal"} ${inherited["font-size"] ?? 16}px ${inherited["font-family"] ?? "sans-serif"}`,
-          anchor:
-            inherited["text-anchor"] === "middle"
-              ? "center"
-              : inherited["text-anchor"] === "end"
-                ? "right"
-                : "left",
-          baseline: ["central", "middle"].includes(
-            inherited["dominant-baseline"] ?? "",
-          )
-            ? "middle"
-            : "alphabetic",
+          title,
+          ancestry,
+          cuts: g.maskCuts?.map((c) => ({
+            path: new Path2D(c.path),
+            alpha: c.alpha,
+          })),
         });
-        if (node.tagName === "image" && node.attrs.href)
-          this.images.add(node.attrs.href);
+        if (node.kind === "image" && g.source) this.images.add(g.source);
       }
       for (const child of node.children)
-        visit(child, matrix, inherited, alpha, pointer, hud);
+        visit(child, matrix, style, alpha, pointer, hud, title, ancestry);
     };
-    visit(root, new DOMMatrix(), {}, 1, true, false);
+    visit(
+      root,
+      new DOMMatrix(),
+      { fill: "black", stroke: null, lineWidth: 1 },
+      1,
+      true,
+      false,
+      "",
+      [],
+    );
+  }
+  dispose() {
+    if (this.maskSurface) this.maskSurface.width = this.maskSurface.height = 0;
+    this.maskSurface = null;
   }
   draw(
     ctx: CanvasRenderingContext2D,
@@ -236,122 +125,131 @@ export class AtlasCanvasScene {
     images: Map<string, CanvasImageSource>,
     hudOffset: { x: number; y: number },
   ) {
-    for (const command of this.commands) {
-      const { node: n } = command;
-      let matrix = view.multiply(command.matrix);
-      if (command.hud)
-        matrix = DOMMatrix.fromMatrix(view)
-          .translate(hudOffset.x, hudOffset.y)
-          .multiply(command.matrix);
+    for (const c of this.commands) {
+      const n = c.node,
+        g = n.geometry,
+        s = c.style;
+      const matrix = (
+        c.hud
+          ? DOMMatrix.fromMatrix(view).translate(hudOffset.x, hudOffset.y)
+          : view
+      ).multiply(c.matrix);
       ctx.save();
-      ctx.setTransform(matrix);
-      ctx.globalAlpha = command.alpha;
-      ctx.fillStyle = command.fill === "none" ? "transparent" : command.fill;
-      ctx.strokeStyle =
-        command.stroke === "none" ? "transparent" : command.stroke;
-      ctx.lineWidth = command.width;
-      ctx.setLineDash(command.dash);
-      ctx.lineCap = command.cap;
-      ctx.lineJoin = command.join;
-      const mask = n.attrs.mask?.match(/^url\(#(.+)\)$/)?.[1];
-      if (mask) {
-        const definition = this.masks.get(mask);
-        if (!definition) throw Error("Sichtmaske fehlt.");
-        const layer = (this.maskSurface ??= document.createElement("canvas"));
-        if (layer.width !== ctx.canvas.width) layer.width = ctx.canvas.width;
-        if (layer.height !== ctx.canvas.height)
-          layer.height = ctx.canvas.height;
-        const fog = layer.getContext("2d")!;
-        fog.resetTransform();
-        fog.clearRect(0, 0, layer.width, layer.height);
-        fog.globalCompositeOperation = "source-over";
-        fog.globalAlpha = 1;
-        fog.setTransform(matrix);
-        fog.fillStyle = command.fill;
-        fog.fill(command.path!, command.rule);
-        fog.globalCompositeOperation = "destination-out";
-        for (const cut of definition) {
-          fog.globalAlpha = cut.alpha;
-          fog.fill(cut.path, "evenodd");
+      try {
+        ctx.setTransform(matrix);
+        ctx.globalAlpha = c.alpha;
+        ctx.fillStyle = s.fill ?? "transparent";
+        ctx.strokeStyle = s.stroke ?? "transparent";
+        this.strokeStyle(ctx, c);
+        if (c.cuts) {
+          const layer = (this.maskSurface ??= document.createElement("canvas"));
+          if (layer.width !== ctx.canvas.width) layer.width = ctx.canvas.width;
+          if (layer.height !== ctx.canvas.height)
+            layer.height = ctx.canvas.height;
+          const fog = layer.getContext("2d")!;
+          fog.resetTransform();
+          fog.clearRect(0, 0, layer.width, layer.height);
+          fog.globalCompositeOperation = "source-over";
+          fog.globalAlpha = 1;
+          fog.setTransform(matrix);
+          fog.fillStyle = s.fill ?? "transparent";
+          fog.fill(c.path!, s.fillRule ?? "nonzero");
+          fog.globalCompositeOperation = "destination-out";
+          for (const cut of c.cuts) {
+            fog.globalAlpha = cut.alpha;
+            fog.fill(cut.path, "evenodd");
+          }
+          ctx.resetTransform();
+          ctx.drawImage(layer, 0, 0);
+        } else if (c.path) {
+          if (s.fill) {
+            ctx.globalAlpha = c.alpha * (s.fillOpacity ?? 1);
+            ctx.fill(c.path, s.fillRule ?? "nonzero");
+          }
+          if (s.stroke) {
+            ctx.globalAlpha = c.alpha * (s.strokeOpacity ?? 1);
+            ctx.stroke(c.path);
+          }
+        } else if (n.kind === "text") {
+          ctx.font = `${s.fontWeight ?? "normal"} ${s.fontSize ?? 16}px ${s.fontFamily ?? "sans-serif"}`;
+          ctx.textAlign = s.textAlign ?? "left";
+          ctx.textBaseline = s.textBaseline ?? "alphabetic";
+          const x = g.x ?? 0,
+            y = g.y ?? 0;
+          if (c.pointer && !c.hitPath) {
+            const m = ctx.measureText(n.text),
+              p = new Path2D();
+            p.rect(
+              x - m.actualBoundingBoxLeft,
+              y - m.actualBoundingBoxAscent,
+              m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
+              m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+            );
+            c.hitPath = p;
+          }
+          if (s.stroke) {
+            ctx.globalAlpha = c.alpha * (s.strokeOpacity ?? 1);
+            ctx.strokeText(n.text, x, y);
+          }
+          if (s.fill) {
+            ctx.globalAlpha = c.alpha * (s.fillOpacity ?? 1);
+            ctx.fillText(n.text, x, y);
+          }
+        } else if (n.kind === "image") {
+          const image = images.get(g.source ?? "");
+          if (!image) throw Error("Kartenbild fehlt.");
+          ctx.drawImage(image, g.x ?? 0, g.y ?? 0, g.width ?? 0, g.height ?? 0);
         }
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(layer, 0, 0);
-      } else if (command.path) {
-        if (command.fill !== "none") {
-          ctx.globalAlpha = command.alpha * number(n, "fill-opacity", 1);
-          ctx.fill(command.path, command.rule);
-        }
-        if (command.stroke !== "none") {
-          ctx.globalAlpha = command.alpha * number(n, "stroke-opacity", 1);
-          ctx.stroke(command.path);
-        }
-      } else if (n.tagName === "text") {
-        ctx.font = command.font;
-        ctx.textAlign = command.anchor;
-        ctx.textBaseline = command.baseline;
-        const x = number(n, "x"),
-          y = number(n, "y");
-        if (command.pointer && !command.hitPath) {
-          const m = ctx.measureText(n.textContent),
-            path = new Path2D();
-          path.rect(
-            x - m.actualBoundingBoxLeft,
-            y - m.actualBoundingBoxAscent,
-            m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
-            m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
-          );
-          command.hitPath = path;
-        }
-        if (command.stroke !== "none") ctx.strokeText(n.textContent, x, y);
-        if (command.fill !== "none") ctx.fillText(n.textContent, x, y);
-      } else if (n.tagName === "image") {
-        const image = images.get(n.attrs.href ?? "");
-        if (!image) throw Error("Kartenbild fehlt.");
-        ctx.drawImage(
-          image,
-          number(n, "x"),
-          number(n, "y"),
-          number(n, "width"),
-          number(n, "height"),
-        );
+      } finally {
+        ctx.restore();
       }
-      ctx.restore();
     }
   }
   hit(
     ctx: CanvasRenderingContext2D,
     p: { x: number; y: number },
-    selector: string,
-  ): AtlasPaint | null {
+    keys: string[],
+  ): PaintHit | null {
+    const c = this.commandAt(ctx, p, (c) =>
+      c.ancestry.some((n) => keys.some((k) => n.data[k] !== undefined)),
+    );
     return (
-      this.commandAt(ctx, p, (c) => !!c.node.closest(selector))?.node.closest(
-        selector,
-      ) ?? null
+      c?.ancestry.find((n) => keys.some((k) => n.data[k] !== undefined)) ?? null
     );
   }
   tooltip(ctx: CanvasRenderingContext2D, p: { x: number; y: number }) {
     return this.commandAt(ctx, p, () => true)?.title ?? "";
   }
+  private strokeStyle(ctx: CanvasRenderingContext2D, c: Command) {
+    const s = c.style;
+    ctx.lineWidth = s.lineWidth ?? 1;
+    ctx.lineCap = s.lineCap ?? "butt";
+    ctx.lineJoin = s.lineJoin ?? "miter";
+    ctx.setLineDash(s.lineDash ?? []);
+  }
   private commandAt(
     ctx: CanvasRenderingContext2D,
     p: { x: number; y: number },
-    accept: (command: Command) => boolean,
+    accept: (c: Command) => boolean,
   ) {
     ctx.save();
     ctx.resetTransform();
     try {
       for (let i = this.commands.length - 1; i >= 0; i--) {
-        const c = this.commands[i]!;
-        const path = c.hitPath ?? c.path;
+        const c = this.commands[i]!,
+          path = c.hitPath ?? c.path;
         if (!c.pointer || !path || !accept(c)) continue;
         const at = new DOMPoint(p.x, p.y).matrixTransform(c.matrix.inverse());
-        ctx.lineWidth = c.width;
-        ctx.lineCap = c.cap;
-        ctx.lineJoin = c.join;
-        ctx.setLineDash(c.dash);
+        this.strokeStyle(ctx, c);
         if (
-          (c.fill !== "none" && ctx.isPointInPath(path, at.x, at.y, c.rule)) ||
-          (c.stroke !== "none" && ctx.isPointInStroke(path, at.x, at.y))
+          (c.style.fill &&
+            ctx.isPointInPath(
+              path,
+              at.x,
+              at.y,
+              c.style.fillRule ?? "nonzero",
+            )) ||
+          (c.style.stroke && ctx.isPointInStroke(path, at.x, at.y))
         )
           return c;
       }
