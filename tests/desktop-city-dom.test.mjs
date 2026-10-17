@@ -1060,3 +1060,38 @@ test('retained Atlas shape handles route pointer drags through the city frame wi
   x.click('city-shape-cancel');await settle();assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.ui.atlasCityState().view.units.find(u=>u.id===road.id).via,[]);
  }finally{await s.close();}
 });
+
+test('manual street junction previews and commits shared nodes with one undo and redo',async()=>{
+ const x=await setup();try{
+  const read=()=>x.store.city(x.current().token,x.cityIds.one),before=read().units;
+  const original=before.find(u=>u.kind==='road');x.document.getElementById('city-tool').value='road';
+  await x.ui.atlasCityPoint({x:80,y:70});await x.ui.atlasCityPoint({x:80,y:127});
+  assert.match(x.document.getElementById('city-path-hint').textContent,/Anschluss: Main street/);
+  assert.deepEqual(x.ui.atlasCityState().path.at(-1),{x:80,y:125});
+  assert.deepEqual(read().units,before,'preview must not persist');
+  x.click('city-finish');await until(()=>read().units.filter(u=>u.kind==='road').length===3);await settle();
+  const after=read().units,junction=after.find(u=>u.kind==='node'&&u.point.x===80&&u.point.y===125);
+  assert.equal(after.filter(u=>u.kind==='road'&&u.nodeIds.includes(junction.id)).length,3);
+  assert.equal(after.find(u=>u.id===original.id).name,original.name);
+  x.click('city-undo');await until(()=>read().units.filter(u=>u.kind==='road').length===1);await settle();
+  assert.deepEqual(read().units,before);
+  x.click('city-redo');await until(()=>read().units.filter(u=>u.kind==='road').length===3);await settle();
+  assert.deepEqual(read().units,after);
+ }finally{await x.cleanup();}
+});
+
+test('entering street drawing loads the full city before accepting junction points',async()=>{
+ const x=await setup();let release;try{
+  await x.ui.openCityReference(x.cityIds.one,undefined,true,true);
+  assert.equal(x.ui.atlasCityState().partial,true);
+  const read=x.window.campaign.city;x.window.campaign.city=async(...args)=>new Promise(resolve=>{release=async()=>resolve(await read(...args));});
+  x.click('city-panel-draw');await until(()=>!!release);
+  assert.equal(x.document.getElementById('city-tool').disabled,true);
+  x.document.getElementById('city-tool').value='road';await x.ui.atlasCityPoint({x:80,y:125});
+  assert.equal(x.ui.atlasCityState().path.length,0);
+  await release();await until(()=>!x.ui.atlasCityState().partial);
+  assert.equal(x.document.getElementById('city-tool').disabled,false);
+  await x.ui.atlasCityPoint({x:80,y:125});
+  assert.equal(x.ui.atlasCityState().junctions.length,1);
+ }finally{if(release)await release();await x.cleanup();}
+});

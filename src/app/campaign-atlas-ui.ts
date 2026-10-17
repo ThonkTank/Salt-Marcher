@@ -2076,6 +2076,9 @@ export class CampaignAtlasWorkbench {
               "stroke-width": 2 * mpp,
             }),
           );
+        if(preview?.view.header.id===city.header.id)for(const junction of preview.junctions){
+          g.append(shape('circle',{cx:junction.point.x,cy:junction.point.y,r:7*mpp,fill:'#e9fff4',stroke:'#176c74','stroke-width':2*mpp,'pointer-events':'none'}));
+        }
         if(preview&&preview.token===this.owner?.token&&preview.view.header.id===citySaved.header.id&&preview.placement){
           const origin=shape('polygon',{points:posed(preview.placement.original).map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:'#176c74','stroke-width':String(Math.max(.4,mpp*1.5)),'stroke-dasharray':`${mpp*5} ${mpp*4}`,'pointer-events':'none'});origin.dataset.cityPlacementOrigin=preview.placement.original.id;g.append(origin);
         }
