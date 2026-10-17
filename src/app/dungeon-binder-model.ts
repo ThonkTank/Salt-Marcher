@@ -21,8 +21,11 @@ export class DungeonBinderIndex {
  }
  blocks(room:Room){const key=this.keys.get(room.id);return key?expandedKeyBlocks(key,this.view.drawing.keyContent??[]):[];}
  searchBlocks(room:Room){return [...this.blocks(room),...(this.surfaces.get(room.id)??[]).flatMap(k=>expandedKeyBlocks(k,this.view.drawing.keyContent??[]))];}
- label(room:Room){return room.number+'. '+room.name;}
+ label(room:Room){
+  const key=this.keys.get(room.id),level=key?.kind==='room'&&key.levelId?this.keys.get(key.levelId):undefined;
+  return (level?.kind==='level'&&level.scopeId===room.scopeId?level.name+' · ':'')+room.number+'. '+room.name;
+ }
  floor(room:Room){return this.view.floors.find(f=>f.scopeId===room.scopeId&&f.id===room.floorId)?.name??this.view.drawing.hiddenFloors.find(f=>f.scopeId===room.scopeId&&f.id===room.floorId)?.name??'Ohne Geschoss';}
  scope(room:Room){return this.keys.get(room.scopeId)?.name??'Dungeon '+([...new Set(this.rooms.map(r=>r.scopeId))].indexOf(room.scopeId)+1);}
- matches(room:Room,q:string){if(!q)return true;const key=this.keys.get(room.id),strings=[room.number,room.name,this.scope(room),this.floor(room),key?.status,...(key?.tags??[]),...room.sections.map(s=>s.markdown??''),...this.searchBlocks(room).flatMap(b=>[b.text,b.revealedText,b.searchMethod,b.discoveryNotes]),...(key?keyAttributes(key,this.view.drawing.keyContent??[]).map(a=>a.key+' '+(a.value??'')):[]),...(key?.references.flatMap(r=>[r.label,r.kind])??[]),...(this.features.get(room.id)??[]).flatMap(f=>[f.name,f.notes,f.content?.publicText??'',f.content?.search?.notes??'',...(f.content?.tags??[])]),...(this.exits.get(room.id)??[]).flatMap(e=>[e.name,e.description])];return strings.some(s=>s?.toLocaleLowerCase().includes(q));}
+ matches(room:Room,q:string){if(!q)return true;const key=this.keys.get(room.id),strings=[room.number,room.name,this.label(room),this.scope(room),this.floor(room),key?.status,...(key?.tags??[]),...room.sections.map(s=>s.markdown??''),...this.searchBlocks(room).flatMap(b=>[b.text,b.revealedText,b.searchMethod,b.discoveryNotes]),...(key?keyAttributes(key,this.view.drawing.keyContent??[]).map(a=>a.key+' '+(a.value??'')):[]),...(key?.references.flatMap(r=>[r.label,r.kind])??[]),...(this.features.get(room.id)??[]).flatMap(f=>[f.name,f.notes,f.content?.publicText??'',f.content?.search?.notes??'',...(f.content?.tags??[])]),...(this.exits.get(room.id)??[]).flatMap(e=>[e.name,e.description])];return strings.some(s=>s?.toLocaleLowerCase().includes(q));}
 }
