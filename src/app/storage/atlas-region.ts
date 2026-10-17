@@ -19,7 +19,7 @@ const digest=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=(r:any)=>{if(!r||digest(r.payload)!==r.checksum)throw new Error('Kartendaten beschädigt. Originaldaten bleiben erhalten.');return JSON.parse(r.payload);};
 type Box={x:number;y:number;width:number;height:number};
 type Frame={x:number;y:number;angle:number};
-type Shape={value:any;polygons?:Polygon[];points?:Point[];stroke?:number};
+type Shape={value:any;style?:ReturnType<typeof roomMapStyle>;polygons?:Polygon[];points?:Point[];stroke?:number};
 const bounds=(points:Iterable<Point>,pad=0):Box=>{let x=Infinity,y=Infinity,xx=-Infinity,yy=-Infinity;for(const p of points){if(!Number.isFinite(p.x+p.y))throw new Error('Kontur prüfen.');x=Math.min(x,p.x);xx=Math.max(xx,p.x);y=Math.min(y,p.y);yy=Math.max(yy,p.y);}return{x:x-pad,y:y-pad,width:xx-x+pad*2,height:yy-y+pad*2};};
 const corners=(b:Box)=>[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}];
 const at=(p:Point,f:Frame):Point=>({x:f.x+p.x*Math.cos(f.angle)-p.y*Math.sin(f.angle),y:f.y+p.x*Math.sin(f.angle)+p.y*Math.cos(f.angle)});
@@ -114,19 +114,19 @@ export class AtlasRegionReader {
   return this.db.prepare(`SELECT s.* FROM ${from} WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND ${alias}.max_x>=? AND ${alias}.min_x<=? AND ${alias}.max_y>=? AND ${alias}.min_y<=? ORDER BY s.source_order,s.key`).iterate(kind,owner,scope,floor,box.x,box.x+box.width,box.y,box.y+box.height);
  }
  private roomShape(row:any,q:AtlasRegionQuery):Shape|null{
-  const s=JSON.parse(row.payload) as Shape,r=s.value as RoomGeometry;if(!this.roomVisible(r.id,r.scopeId,r.floorId))return null;
+  const s=JSON.parse(row.payload) as Shape,r=s.value as RoomGeometry;if(!this.roomVisible(r.id,r.scopeId,r.floorId))return null;s.style=roomMapStyle(this.db,this.campaign,r.id);
   if(q.slice!==null&&q.scopeId===r.scopeId){
    const elevation=this.db.prepare('SELECT source_elevation z FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').get(this.campaign,r.scopeId,r.floorId)?.z??0,v=this.db.prepare('SELECT payload,checksum FROM dungeon_volume WHERE campaign_id=? AND room_id=?').get(this.campaign,r.id);
    let polygons:Polygon[];
    if(v)polygons=volumeProjection(parse(v),(q.slice-elevation)/1.524);
-   else{const style=roomMapStyle(this.db,this.campaign,r.id),height=style?.ceilingMeters??3.048;polygons=q.slice>=elevation&&q.slice<elevation+height?r.polygons:[];}
+   else{const height=s.style?.ceilingMeters??3.048;polygons=q.slice>=elevation&&q.slice<elevation+height?r.polygons:[];}
    if(!polygons.length)return null;s.value={...r,polygons};s.polygons=polygons;
   }return s;
  }
  private visit(q:AtlasRegionQuery,emit:(shape:Shape,frame:Frame,kind:string,binding:AtlasBinding,header?:CityHeader)=>void,metadata?:(b:AtlasBinding,f:Frame,h?:CityHeader)=>void){
   const mpp=q.box.width/q.width;
   for(const row of this.db.prepare('SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY rowid').iterate(this.campaign)){
-   const b=this.binding(row);let f:Frame;try{f=this.frame(b);}catch{continue;}
+   const b=this.binding(row);let f:Frame;try{f=this.frame(b);}catch{if(this.countFaults)this.readFaults++;continue;}
    const local=bounds(corners(q.box).map(p=>inverse(p,f)));
    if(b.kind==='city'){
     let h:CityHeader;try{h=readCityHeader(this.db,this.campaign,b.ownerId);}catch{continue;}
@@ -165,7 +165,7 @@ export class AtlasRegionReader {
    if(dense)return;
    const cost=bytes(s.value);if(used+cost>REGION_REPLY_BYTES-32768){dense=true;return;}used+=cost;
    if(kind==='room'){
-    result.rooms.push(s.value);try{const style=roomMapStyle(this.db,this.campaign,s.value.id);if(style){used+=bytes(style);result.drawing.styles.push(style);}}catch{this.readFaults++;}
+    result.rooms.push(s.value);if(s.style){used+=bytes(s.style);result.drawing.styles.push(s.style);}
    }else if(kind==='unit'){cities.get(b.ownerId)?.units.push(s.value);if(s.value.kind==='building'){const child=this.db.prepare("SELECT owner_id FROM atlas_binding WHERE campaign_id=? AND parent='building' AND parent_id=?").get(this.campaign,s.value.id);if(child){result.interiors[s.value.id]=child.owner_id;used+=bytes([s.value.id,child.owner_id]);}}}
    else if(kind==='element')result.drawing.elements.push(s.value);
   },metadata);
@@ -179,7 +179,7 @@ export class AtlasRegionReader {
    this.visit(q,(s,f,kind,_b,h)=>{
     const polygons=s.polygons?.map(p=>({outer:p.outer.map(p=>at(p,f)),holes:p.holes.map(r=>r.map(p=>at(p,f)))}));
     let color=kind==='city-paper'?h!.paper:kind==='unit'?s.value.kind==='water'?'#8eafb9':s.value.kind==='building'?h!.roof:'#d9c6a4':kind==='room'?'#e2dac4':s.value.color??'#685b50';
-    if(kind==='room'){try{color=roomMapStyle(this.db,this.campaign,s.value.id)?.fill??color;}catch{color='#e2dac4';}}
+    if(kind==='room')color=s.style?.fill??color;
     if(polygons){image.paintPolygons(polygons,color);const pixel=q.box.width/width;for(const polygon of polygons){const extent=bounds(polygon.outer);if(extent.width<pixel||extent.height<pixel)image.paintLine([{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],pixel,color);}}
     else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:s.stroke??q.box.width/q.width*2,color);}
    });
