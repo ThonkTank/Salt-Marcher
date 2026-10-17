@@ -1089,7 +1089,7 @@ export class CampaignAtlasWorkbench {
     }
   }
 
-  private async chooseAt(point:Point,layer:'geometry'|'landscape'|'all'='all'){
+  private async chooseAt(point:Point,layer:'geometry'|'landscape'|'all'='all',preferred?:{kind:import('./atlas-region-contracts').AtlasHit['kind'];id:string}){
     const owner=this.owner,query=this.loadedRegionQuery,fence=this.data?.region?.fence,version=++this.hitVersion;
     if(!owner||!query||!fence||!this.geometryCurrent())return;
     const valid=()=>this.owner===owner&&this.data?.region?.fence===fence&&this.hitVersion===version&&this.geometryCurrent();
@@ -1103,6 +1103,8 @@ export class CampaignAtlasWorkbench {
     const page=async(offset:number)=>{
       const reply=await window.campaign.atlasRegionCandidates(owner.token,query,point,fence,offset,layer);
       if(!valid())return;if(!reply.ok)throw new Error(reply.error);const result=reply.value;
+      const direct=offset===0&&preferred?result.items.find(hit=>hit.kind===preferred.kind&&hit.id===preferred.id):undefined;
+      if(direct){await choose(direct);return;}
       if(result.total===1&&offset===0){await choose(result.items[0]!);return;}
       if(!result.items.length){this.opts.status('Hier ist kein passendes Objekt.');return;}
       this.hitDialog.replaceChildren();const title=document.createElement('h2');title.textContent='Objekt an dieser Stelle auswählen';this.hitDialog.append(title);
@@ -1131,9 +1133,12 @@ export class CampaignAtlasWorkbench {
       id = target?.dataset.id;
     try {
       if (this.family === "terrain") return;
-      if(!this.geometryCurrent()&&(this.root.dataset.roomDraw==='true'||this.entranceDraft!==null||this.family==='city'&&get<HTMLSelectElement>('city-tool').value!=='select'||['interior','decoration'].includes(this.family)&&get<HTMLSelectElement>('drawing-tool').value!=='select'))throw new Error('Kartengeometrie wird geladen. Zug anschließend beginnen.');
-      const selecting=this.root.dataset.roomDraw!=='true'&&this.entranceDraft===null&&(this.family==='navigation'||this.family==='interior'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='decoration'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='city'&&get<HTMLSelectElement>('city-tool').value==='select');
-      if(selecting&&this.geometryCurrent()){await this.chooseAt(p);return;}
+      if(!this.geometryCurrent()&&(this.root.dataset.roomDraw==='true'||this.entranceDraft!==null||this.family==='city'&&(atlasCityPlacementActive()||get<HTMLSelectElement>('city-tool').value!=='select')||['interior','decoration'].includes(this.family)&&get<HTMLSelectElement>('drawing-tool').value!=='select'))throw new Error('Kartengeometrie wird geladen. Zug anschließend beginnen.');
+      const selecting=this.root.dataset.roomDraw!=='true'&&this.entranceDraft===null&&(this.family==='navigation'||this.family==='interior'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='decoration'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='city'&&!atlasCityPlacementActive()&&get<HTMLSelectElement>('city-tool').value==='select');
+      if(selecting&&this.geometryCurrent()&&kind!=='place'){
+        const preferred=kind&&id&&['room','building','city-unit','element','scope','city'].includes(kind)?{kind:kind as import('./atlas-region-contracts').AtlasHit['kind'],id}:undefined;
+        await this.chooseAt(p,'all',preferred);return;
+      }
       if(!target&&this.data?.region?.raster&&this.owner&&this.loadedRegionQuery){
         if(!this.geometryCurrent()){this.opts.status('Kartenausschnitt wird geladen.');return;}
         const owner=this.owner,r=await window.campaign.atlasRegionHit(owner.token,this.loadedRegionQuery,p,this.data.region.fence);

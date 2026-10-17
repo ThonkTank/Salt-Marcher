@@ -11,6 +11,7 @@ export function atlasRegionBridge(store){
   atlasRegion:async(token,q)=>{try{const s=await source(token);return{ok:true,value:store.atlasRegionView(token,reader.read(s,q),q.perception===true)};}catch(error){return{ok:false,error:error.message};}},
   atlasObjectFocus:async(token,kind,id)=>{try{const s=await source(token);return{ok:true,value:reader.focus(s,kind,id)};}catch(error){return{ok:false,error:error.message};}},
   atlasRegionHit:async(token,q,p,fence)=>{try{const s=await source(token);if(s.fence!==fence)throw new Error('Atlas inzwischen geändert.');return{ok:true,value:reader.hit(s,q,p)};}catch(error){return{ok:false,error:error.message};}},
+  atlasRegionCandidates:async(token,q,p,fence,offset=0,layer='all')=>{try{const s=await source(token);if(s.fence!==fence)throw new Error('Atlas inzwischen geändert.');return{ok:true,value:reader.candidatesAt(s,q,p,offset,layer)};}catch(error){return{ok:false,error:error.message};}},
   cancelAtlasRegion:async()=>({ok:true,value:undefined}),
   atlasCitySite:async(token,id,unit)=>result(()=>store.atlasCitySite(token,id,unit)),
   workspaceInitial:async token=>result(()=>store.workspaceInitial(token)),
