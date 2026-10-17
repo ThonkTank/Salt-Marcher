@@ -97,6 +97,7 @@ export function paintFactory(root: PaintTarget) {
 type Command = {
   node: AtlasPaint;
   matrix: DOMMatrix;
+  clips: {path:Path2D;matrix:DOMMatrix;rule:CanvasFillRule}[];
   path?: Path2D;
   hitPath?: Path2D;
   fill: string;
@@ -197,6 +198,7 @@ function pathFor(n: AtlasPaint) {
   return p;
 }
 export class AtlasCanvasScene {
+  private clips = new Map<string,{path:Path2D;rule:CanvasFillRule}>();
   private masks = new Map<string, { path: Path2D; alpha: number }[]>();
   private maskSurface: HTMLCanvasElement | null = null;
   dispose() {
@@ -207,6 +209,19 @@ export class AtlasCanvasScene {
   readonly images = new Set<string>();
   constructor(readonly root: AtlasPaint) {
     const collect = (n: AtlasPaint) => {
+      if(n.tagName==='clipPath'&&n.attrs.id){
+        if(n.attrs.clipPathUnits&&n.attrs.clipPathUnits!=='userSpaceOnUse')throw Error('Sichtausschnitt verwendet unbekannte Einheiten.');
+        const path=new Path2D();
+        const append=(part:AtlasPaint,matrix:DOMMatrix)=>{
+          matrix=matrix.multiply(transform(part.attrs.transform));
+          const shape=pathFor(part);
+          if(shape)path.addPath(shape,matrix);
+          else if(!['clipPath','g'].includes(part.tagName))throw Error('Nicht unterstützter Sichtausschnitt.');
+          for(const child of part.children)append(child,matrix);
+        };
+        append(n,new DOMMatrix());
+        this.clips.set(n.attrs.id,{path,rule:n.attrs['clip-rule']==='evenodd'?'evenodd':'nonzero'});
+      }
       if (n.tagName === "mask" && n.attrs.id)
         this.masks.set(
           n.attrs.id,
@@ -227,6 +242,7 @@ export class AtlasCanvasScene {
       alpha: number,
       pointer: boolean,
       hud: boolean,
+      clips:Command['clips'],
     ) => {
       if (node.attrs.visibility === "hidden" || node.attrs.display === "none")
         return;
@@ -253,9 +269,14 @@ export class AtlasCanvasScene {
       alpha *= number(node, "opacity", 1);
       pointer = pointer && node.attrs["pointer-events"] !== "none";
       hud = hud || node.dataset.canvasHud !== undefined;
+      if(node.attrs['clip-path']&&node.attrs['clip-path']!=='none'){
+        const id=node.attrs['clip-path'].match(/^url\(#(.+)\)$/)?.[1],clip=id?this.clips.get(id):null;
+        if(!clip)throw Error('Sichtausschnitt fehlt.');
+        clips=[...clips,{...clip,matrix}];
+      }
       if (
         node.tagName === "defs" ||
-        node.tagName === "mask" ||
+        node.tagName === "mask" || node.tagName === "clipPath" ||
         node.tagName === "title"
       )
         return;
@@ -268,6 +289,7 @@ export class AtlasCanvasScene {
         this.commands.push({
           node,
           matrix,
+          clips,
           path,
           fill,
           stroke,
@@ -301,9 +323,9 @@ export class AtlasCanvasScene {
           this.images.add(node.attrs.href);
       }
       for (const child of node.children)
-        visit(child, matrix, inherited, alpha, pointer, hud);
+        visit(child, matrix, inherited, alpha, pointer, hud,clips);
     };
-    visit(root, new DOMMatrix(), {}, 1, true, false);
+    visit(root, new DOMMatrix(), {}, 1, true, false,[]);
   }
   draw(
     ctx: CanvasRenderingContext2D,
@@ -319,6 +341,7 @@ export class AtlasCanvasScene {
           .translate(hudOffset.x, hudOffset.y)
           .multiply(command.matrix);
       ctx.save();
+      for(const clip of command.clips){ctx.setTransform(view.multiply(clip.matrix));ctx.clip(clip.path,clip.rule);}
       ctx.setTransform(matrix);
       ctx.globalAlpha = command.alpha;
       ctx.fillStyle = command.fill === "none" ? "transparent" : command.fill;
@@ -419,6 +442,7 @@ export class AtlasCanvasScene {
         const c = this.commands[i]!;
         const path = c.hitPath ?? c.path;
         if (!c.pointer || !path || !accept(c)) continue;
+        if(c.clips.some(clip=>{const at=new DOMPoint(p.x,p.y).matrixTransform(clip.matrix.inverse());return !ctx.isPointInPath(clip.path,at.x,at.y,clip.rule);}))continue;
         const at = new DOMPoint(p.x, p.y).matrixTransform(c.matrix.inverse());
         ctx.lineWidth = c.width;
         ctx.lineCap = c.cap;

@@ -111,6 +111,7 @@ class Path {
   lineTo(...a) {
     this.commands.push(["line", ...a]);
   }
+  addPath(path,matrix){this.commands.push(["add",path,matrix]);}
   closePath() {}
 }
 const settle = () => new Promise((r) => setImmediate(r));
@@ -415,4 +416,23 @@ test("marker titles survive outside semantic selection and the surface clears ho
   f.pointer("pointerdown", 11, 21, 1);
   assert.equal(f.root.title, "");
   f.pointer("pointerup", 11, 21, 1);
+});
+
+
+test('visible-cell clips constrain painted output, semantic hits and tooltips through transformed groups',t=>{
+ const f=fixture(t),root=atlasPaint('g'),defs=atlasPaint('defs'),clip=atlasPaint('clipPath',{id:'visible-landscape'});
+ clip.append(atlasPaint('rect',{x:0,y:0,width:10,height:10}));defs.append(clip);root.append(defs);
+ const visible=atlasPaint('g',{'clip-path':'url(#visible-landscape)',transform:'translate(100 200)'}),paint=atlasPaint('rect',{x:0,y:0,width:20,height:20,fill:'green'});
+ paint.dataset.atlasObject='true';paint.dataset.id='current-landscape';paint.append(atlasPaint('title',{},'Current terrain'));visible.append(paint);root.append(visible);
+ const scene=new AtlasCanvasScene(root),cut=scene.commands[0].clips[0];
+ assert.equal(scene.commands.length,1);assert.equal(cut.path.commands[0][1].commands[0][0],'rect');
+ assert.equal(cut.matrix.e,100);assert.equal(cut.matrix.f,200);
+ f.ctx.isPointInPath=(path,x,y)=>path!==cut.path||x>=0&&x<10&&y>=0&&y<10;
+ assert.equal(scene.hit(f.ctx,{x:105,y:205},'[data-atlas-object]'),paint);
+ assert.equal(scene.hit(f.ctx,{x:115,y:205},'[data-atlas-object]'),null);
+ assert.equal(scene.tooltip(f.ctx,{x:115,y:205}),'');
+ scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});
+ assert.ok(f.calls.some(([name,path,rule])=>name==='clip'&&path===cut.path&&rule==='nonzero'));
+ const missing=atlasPaint('g',{'clip-path':'url(#missing)'});missing.append(paint);
+ assert.throws(()=>new AtlasCanvasScene(missing),/Sichtausschnitt fehlt/);
 });
