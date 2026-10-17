@@ -9,7 +9,11 @@ und passive Griff-/Markertreffer stammen aus derselben veröffentlichten Szene;
 Objektauswahl fragt weiterhin genaue quellengebundene Kandidaten im Main ab.
 Kleine Pans zeichnen vorhandene Kommandos mit geänderter Kamera, ohne neue
 Kartenobjekte oder Reads. Bildframes werden vollständig vorbereitet und nur
-als jüngste gültige Szene veröffentlicht. Zeichen-/Initialisierungsfehler
+als jüngste gültige Szene veröffentlicht. Treffer und Hover benötigen zusätzlich
+die erfolgreich gezeichnete Kombination aus Szene, Kamera und CSS-Innenmaßen.
+Zwischen Kamera-/Größenwechsel und Paint sowie beim Wiederanzeigen einer zuvor
+verborgen vorbereiteten Szene bleiben sie gesperrt. Fehlende aktuelle Treffer
+beweisen währenddessen keine leere Fläche für linkes Navigationsziehen. Zeichen-/Initialisierungsfehler
 entfernen Treffer und bieten ein neues Initialisieren mit derselben Kamera.
 Stadt- und Zeichensymbole entstehen direkt aus gemeinsamen Geometriegeneratoren;
 SVG-Serialisierung bleibt auf Ausgabe und ältere Hosts begrenzt. Abgewiesene

@@ -631,8 +631,15 @@ des logischen Punkt-Pickradius bleiben damit auswählbar. Rasterpixel und
 Darstellungskonturen werden nicht zur Schreibautorität. Hover-Namen von Markern/Zeichenobjekten stammen ebenfalls aus denselben Pfaden,
 auch ohne Autoren-Auswahl; sie werden bei Gesten/Framewechsel/Fehlern entfernt.
 CSS-Ränder, Kameraskalierung und Bitmap-DPI
-sind getrennt. Während ein neuer Bildframe vorbereitet wird, sind Autorenhits
-gesperrt. Nur der neueste vollständige Frame wird veröffentlicht; genau eine
+sind getrennt. Autorenhits und Hover verlangen nicht nur die neueste Szene,
+sondern auch deren erfolgreich auf die sichtbare Fläche kopierten Frame mit
+aktueller Kamera und aktuellen CSS-Innenmaßen. Kameraänderungen sperren
+Treffer bis zum nächsten Paint; ein Größenwechsel ist schon vor dem
+ResizeObserver-Aufruf gesperrt. Eine verborgen kompilierte Szene erhält beim
+Wiederanzeigen keine Treffer durch zufällig wieder passende alte Bitmapmaße.
+Ein ausstehender Frame gilt für linkes Navigationsziehen nicht als leere
+Kartenfläche; ausdrückliches Mitteltasten-/Alt-Navigieren bleibt möglich.
+Nur der neueste vollständige Frame wird veröffentlicht; genau eine
 Bilddecodierung mit einem ersetzbaren Nachfolger verhindert Decoder-Fan-out.
 Verlust/Fehler der Zeichenfläche entfernt Treffer und bietet Wiederholung,
 ohne gespeicherte Daten, Kamera oder Listener zu verdoppeln.
