@@ -618,6 +618,7 @@ export class CampaignStore {
         const old = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
         if (old) {
           const existing = this.decodePreparationDraft(old);
+          if(draft.change.kind==='note'&&draft.change.excerpt&&existing.writeId!==draft.writeId&&(!draft.failedCommand||existing.failedCommand?.commandId!==draft.failedCommand.commandId))throw new Error('Ein anderer Arbeitsentwurf dieses Originals bleibt erhalten.');
           if (existing.writeId === draft.writeId && json(existing) !== json(draft)) throw new Error('Entwurfskennung bereits anders verwendet.');
         }
         const payload = json(draft), checksum = hash(payload);
@@ -1321,6 +1322,7 @@ export class CampaignStore {
           const selected=sourceNote[source.field].slice(source.start,source.end),other=source.field==='gmNotes'?'readAloud':'gmNotes';
           if(source.end>sourceNote[source.field].length||!selected.trim())throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
           if(oldNote){
+            if(this.db.prepare("SELECT 1 FROM preparation_draft WHERE campaign_id=? AND kind='note' AND target_id=?").get(campaignId,oldNote.id))throw new Error('Dieses Original hat einen offenen Arbeitsentwurf. Erst im Originaleditor aufklären.');
             const expected=worldNoteDocument(appendNoteExcerpt(oldNote,sourceNote,source.field,selected));
             if(json(expected)!==json(change.note))throw new Error('Die Ergänzung stimmt nicht mit Original und markierter Quelle überein.');
           }else{

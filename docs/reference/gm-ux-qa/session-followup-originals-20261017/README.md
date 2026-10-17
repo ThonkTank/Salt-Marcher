@@ -50,6 +50,9 @@ Vorhandene Herkunftskanten werden wiederverwendet. Alte Raum-/Besuchsreferenzen
 bleiben an derselben Notizidentität. Ein gleicher Name erzeugt ohne ausdrückliche
 Wahl einer getrennten neuen Identität keine zweite Notiz; die Prüfung liegt
 auch am Writer, damit ein konkurrierendes neues Original berücksichtigt wird.
+Ein gesicherter Arbeitsentwurf des Ziels sperrt die Übernahme auch dann, wenn
+dieses Fenster ihn noch nicht geladen hat oder er erst nach der Auswahl eintrifft.
+Die Fehlersicherung darf diesen anderen Entwurf ebenfalls nicht ersetzen.
 
 Unklare Antworten verwenden den bestehenden Auftragsstatus. Eine bestehende
 Ergänzung wird samt vollständigem Auftrag gesichert und niemals als gewöhnlicher
