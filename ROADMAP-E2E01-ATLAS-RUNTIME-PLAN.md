@@ -576,7 +576,7 @@ gezeichnet noch in dieser Auswahl enthalten. Mehr als16 sichtbare Referenzen
 werden als Umrisse zusammengefasst und ausdrücklich gemeldet. Referenzbilder
 verwenden Ableitungen bis2048 Pixel/256 KiB PNG; der Originalimport antwortet
 nur mit ID und Maßen. Originalbytes bleiben unverändert. Der Main-Vorschaucache
-hat8 MiB; der vollständige native Bilddecode und dessen RSS sind weiterhin zu
+hat8 MiB, ebenso der flüchtige Vorschaucache im Renderer (kleine Vorschauen bis128 KiB PNG). Wiederholte Auswahl in dichten Referenzansichten kann ihn nicht unbegrenzt vergrößern; der vollständige native Bilddecode und dessen RSS sind weiterhin zu
 qualifizieren. Die GM-Ausgabe verwendet dieselbe ausdrücklich aggregierte
 Landschaftsdarstellung; sie ersetzt keine Original-/Transferausgabe.
 

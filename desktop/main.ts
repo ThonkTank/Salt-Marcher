@@ -347,9 +347,9 @@ else {
       if(cached){referencePreviewCache.delete(key);referencePreviewCache.set(key,cached);return cached;}
       const source=store.referenceAssetSource(token,id),image=nativeImage.createFromBuffer(source.bytes),dimensions=image.getSize();
       if(image.isEmpty()||dimensions.width<1||dimensions.height<1)throw new Error('Bildvorlage nicht lesbar. Original bleibt erhalten.');
-      let edge=Math.min(size,Math.max(dimensions.width,dimensions.height)),bytes:Buffer;
-      do{const factor=Math.min(1,edge/Math.max(dimensions.width,dimensions.height));bytes=image.resize({width:Math.max(1,Math.round(dimensions.width*factor)),height:Math.max(1,Math.round(dimensions.height*factor))}).toPNG();edge=Math.floor(edge/2);}while(bytes.length>256*1024&&edge>=32);
-      if(bytes.length>256*1024||store.atlasRegionSource(token).fence!==before.fence)throw new Error('Bildvorschau inzwischen geändert oder zu groß. Erneut laden.');
+      const byteLimit=(size<=1024?128:256)*1024;let edge=Math.min(size,Math.max(dimensions.width,dimensions.height)),bytes:Buffer;
+      do{const factor=Math.min(1,edge/Math.max(dimensions.width,dimensions.height));bytes=image.resize({width:Math.max(1,Math.round(dimensions.width*factor)),height:Math.max(1,Math.round(dimensions.height*factor))}).toPNG();edge=Math.floor(edge/2);}while(bytes.length>byteLimit&&edge>=32);
+      if(bytes.length>byteLimit||store.atlasRegionSource(token).fence!==before.fence)throw new Error('Bildvorschau inzwischen geändert oder zu groß. Erneut laden.');
       const data='data:image/png;base64,'+bytes.toString('base64');while(referencePreviewBytes+data.length*2>8*1024*1024&&referencePreviewCache.size){const [old,value]=referencePreviewCache.entries().next().value!;referencePreviewBytes-=value.length*2;referencePreviewCache.delete(old);}referencePreviewCache.set(key,data);referencePreviewBytes+=data.length*2;return data;
     });
     handle('atlas:reference-asset',(token:string,id:string)=>store.referenceAsset(token,id));

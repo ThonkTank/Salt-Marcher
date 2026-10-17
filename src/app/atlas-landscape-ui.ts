@@ -77,6 +77,7 @@ export class LandscapeWorkbench {
   private key = "";
   private publishedLayer: import("./atlas-region-contracts").AtlasLandscapeLayer|undefined;
   private request = 0;
+  private selectionRequest=0;
   private minimumRevision=0;
   private active = false;
   private tool: Tool = "select";
@@ -416,7 +417,7 @@ export class LandscapeWorkbench {
       for(const r of this.records)if(r.assetId&&r.visible!==false&&!this.assets.has(r.assetId)){
         const result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);
         if(token!==this.token||generation!==this.request||this.host.data()?.region?.fence!==data.region?.fence)return;
-        if(result.ok)this.assets.set(r.assetId,result.value);else this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');
+        if(result.ok)this.rememberAsset(r.assetId,result.value);else this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');
         this.host.redraw();
       }
       return;
@@ -475,19 +476,25 @@ export class LandscapeWorkbench {
       if (record.visible!==false&&record.assetId && !this.assets.has(record.assetId)) {
         const a = await window.campaign.referenceAsset(token, record.assetId);
         if (token !== this.token || n !== this.request) return;
-        if (a.ok) this.assets.set(record.assetId, a.value);
+        if (a.ok) this.rememberAsset(record.assetId, a.value);
       }
     this.host.redraw();
+  }
+  private rememberAsset(id:string,data:string){
+    const limit=8*1024*1024,size=data.length*2;if(size>limit){this.say('Bildvorschau zu groß. Original bleibt erhalten.');return;}
+    this.assets.delete(id);let bytes=[...this.assets.values()].reduce((n,v)=>n+v.length*2,0);
+    while(bytes+size>limit&&this.assets.size){const [key,value]=this.assets.entries().next().value!;this.assets.delete(key);bytes-=value.length*2;}
+    this.assets.set(id,data);
   }
   private objectOptions(){
     const select=html<HTMLSelectElement>('land-object');select.replaceChildren(new Option('Auf der Karte auswählen',''));
     for(const r of this.records)select.add(new Option(r.name||r.kind,r.id));select.value=this.selected?.id??'';
   }
   async selectId(id:string){
-    const token=this.token,frame=this.host.data()?.region?.fence,generation=++this.request;
+    const token=this.token,frame=this.host.data()?.region?.fence,generation=++this.selectionRequest;
     if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}
     const response=await window.campaign.atlasLandscapeObject(token,id);
-    if(token!==this.token||generation!==this.request||frame!==this.host.data()?.region?.fence)return;
+    if(token!==this.token||generation!==this.selectionRequest||frame!==this.host.data()?.region?.fence)return;
     if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.select(response.value);
   }
   draw(root: SVGElement, box: LandscapeBox, mpp: number) {
@@ -813,7 +820,7 @@ export class LandscapeWorkbench {
     }
     if(record.assetId&&!this.assets.has(record.assetId)){
       const image=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,record.assetId,1024):await window.campaign.referenceAsset(token,record.assetId);
-      if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.assets.set(record.assetId,image.value);else this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');
+      if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.rememberAsset(record.assetId,image.value);else this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');
     }
     this.inspector();
     this.host.redraw();
@@ -1030,7 +1037,7 @@ export class LandscapeWorkbench {
       b = this.host.box(),
       r = emptyRecord("reference");
     const preview=await window.campaign.referenceAssetPreview(token,a.id,1024);
-    if(token!==this.token)return;if(!preview.ok)throw new Error(preview.error);this.assets.set(a.id,preview.value);
+    if(token!==this.token)return;if(!preview.ok)throw new Error(preview.error);this.rememberAsset(a.id,preview.value);
     r.assetId = a.id;
     r.imageWidth = a.width;
     r.imageHeight = a.height;
