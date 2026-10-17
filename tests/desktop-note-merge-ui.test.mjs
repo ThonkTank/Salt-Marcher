@@ -29,7 +29,7 @@ test('lost acknowledgement is saved before send, restored with the identical com
 for(const outcome of ['not-applied','conflict'])test(outcome+' requires fresh originals and explicit confirmation before a new command',async t=>{
  const x=fixture(t),u=x.mount();await x.ready(u);x.input(u.privateText,'Mein erhaltener Text');x.api.changePreparation=async c=>{x.writes.push(c);return{ok:false,error:'Antwort ungeklärt'};};u.reviewed.checked=true;u.reviewed.onchange();await u.submit();const id=x.writes[0].commandId;x.api.reconcilePreparation=async()=>({ok:true,value:{outcome,data:x.data}});await u.checkPending();assert.equal(u.privateText.value,'Mein erhaltener Text');await u.submit();assert.equal(x.writes.length,1);await u.refreshPreview();assert(u.confirm.disabled);u.reviewed.checked=true;u.reviewed.onchange();await u.submit();assert.equal(x.writes.length,2);assert.notEqual(x.writes[1].commandId,id);
 });
-test('campaign activation revokes late preview and acknowledgement ownership',async t=>{
+test('campaign activation revokes a late acknowledgement owner',async t=>{
  const x=fixture(t),u=x.mount();await x.ready(u);let release;x.api.changePreparation=c=>{x.writes.push(c);return new Promise(r=>release=()=>r({ok:true,value:x.data}));};u.reviewed.checked=true;u.reviewed.onchange();const sending=u.submit();await settle();u.activate('other');release();await sending;assert.equal(x.done.length,0);assert(x.map.has('note-merge:campaign'));assert.equal(x.map.has('note-merge:other'),false);
 });
 test('unreadable original marker is kept verbatim until explicit recovery, never silently retried',async t=>{
@@ -37,4 +37,8 @@ test('unreadable original marker is kept verbatim until explicit recovery, never
 });
 test('composition and persistence failure prevent sending while preserving the local draft',async t=>{
  const x=fixture(t),u=x.mount();await x.ready(u);u.privateText.dispatchEvent(new x.window.Event('compositionstart'));x.input(u.privateText,'正在输入');u.reviewed.checked=true;u.reviewed.onchange();await u.submit();assert.equal(x.writes.length,0);u.privateText.dispatchEvent(new x.window.Event('compositionend'));assert.equal(u.reviewed.checked,false);u.reviewed.checked=true;u.reviewed.onchange();x.storage.setItem=()=>{throw Error('Speicher voll');};await u.submit();assert.equal(x.writes.length,0);assert.equal(u.privateText.value,'正在输入');assert(u.confirm.disabled);
+});
+
+test('a late merge preview cannot populate or persist another campaign',async t=>{
+ const x=fixture(t),u=x.mount();await u.open();u.target.value=x.target.id;u.target.onchange=()=>{};let release;x.api.noteMergePreview=()=>new Promise(r=>release=()=>r({ok:true,value:x.preview}));const draft=JSON.parse(x.map.get('note-merge:campaign'));draft.targetId=x.target.id;x.map.set('note-merge:campaign',JSON.stringify(draft));u.activate('campaign');const opening=u.open();await settle();assert(release);u.activate('other');release();await opening;assert.equal(x.map.has('note-merge:other'),false);assert.equal(u.confirm.disabled,true);assert.equal(x.writes.length,0);
 });
