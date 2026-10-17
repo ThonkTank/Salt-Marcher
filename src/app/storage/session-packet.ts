@@ -29,7 +29,7 @@ export function readSessionPacket(db:any,cam:string,planId:string):SessionPacket
   const row=db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(cam,id);
   if(!row||row.trashed){warnings.push('Ort '+id+' fehlt oder liegt im Papierkorb.');cache.set(key,[]);return [];}
   const l=checkedLocationDocument(payload(row));locations.set(id,l.name);
-  const blocks=l.sections.map(s=>({heading:l.name+' · '+s.title,text:s.markdown,kind:'reference' as const,action:{kind:'reference' as const,ref:{kind:'location' as const,id:l.id}}}));cache.set(key,blocks);return blocks;
+  const blocks=l.sections.filter(s=>s.markdown.trim()).map(s=>({heading:l.name+' · '+s.title,text:s.markdown,kind:'reference' as const,action:{kind:'reference' as const,ref:{kind:'location' as const,id:l.id}}}));cache.set(key,blocks);return blocks;
  };
  const progress=readSessionProgress(db,cam,planId);
  const visits=plan.scenes.map((v,index)=>{
