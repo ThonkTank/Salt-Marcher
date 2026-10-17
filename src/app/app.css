@@ -136,6 +136,7 @@ body{padding-bottom:var(--workspace-footer-height,58px)}#music{padding:1.5rem;ma
 
 #quick-reference{width:min(1320px,calc(100vw - 48px));max-width:min(1320px,calc(100vw - 48px));height:90vh;max-height:90vh;overflow:auto}#quick-reference[open]{display:flex;flex-direction:column}#quick-reference>.toolbar,#quick-reference>p{flex-shrink:0}
 .quick-columns{display:grid;grid-template-columns:minmax(240px,1fr) minmax(340px,2fr);gap:24px;align-items:stretch;flex:1;min-height:12rem}
+#quick-reference.quick-reading .quick-index,#quick-reference.quick-reading>p{display:none}#quick-reference.quick-reading .quick-columns{display:block;overflow:auto}#quick-reference.quick-reading #quick-document{overflow:visible}
 .quick-index{display:flex;flex-direction:column;min-height:0;background:#fff}.quick-index>form,.quick-index>p{flex-shrink:0}
 #quick-results{min-height:0;flex:1;overflow:auto;padding-right:8px}
 #quick-results section{display:grid;gap:5px;margin-bottom:18px}
