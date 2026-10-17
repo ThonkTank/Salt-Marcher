@@ -37,6 +37,12 @@ Sie ersetzen weder physische Eingabe noch den paketierten Electron-Host.
 
 Externe Bedienbelege und Datenvergleiche liegen im Chat-Arbeitsbereich unter
 `evidence/saltmarcher-blocks-20261017/junction-*` und `watabou-junction-*`.
+Die Rückkehr aus der Spielleitung öffnet das ausgewählte Stadtelement erneut
+mit seiner exakten ID, damit die aktive Aufgabe (Auswahl oder Bebauen) erhalten
+bleibt. Das erneute Öffnen des Stadtwurzelpunkts hatte die Aufgabe zuvor auf
+Zeichnen zurückgesetzt. Nicht initialisierte Legacy-Flächen werden bei ihrer
+Stilllegung übersprungen; die tatsächlich vorhandenen Flächen bleiben leer.
+
 Paketierter nativer Host, vollständige weitere Konkurrenzabläufe und Nutzerabnahme
 bleiben separat offen. Atlas-Bearbeitung und Atlas-Spielleitung sind absichtlich
 getrennt; gleichzeitige Reise- und Zeichenwerkzeuge werden nicht verlangt.

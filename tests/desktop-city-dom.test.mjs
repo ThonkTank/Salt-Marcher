@@ -1095,3 +1095,22 @@ test('entering street drawing loads the full city before accepting junction poin
   assert.equal(x.ui.atlasCityState().junctions.length,1);
  }finally{if(release)await release();await x.cleanup();}
 });
+
+test('returning from GM to a city retains its exact unit and current task panel',async()=>{
+ const x=await setup(),s=await placeSurface(x),get=id=>x.document.getElementById(id);
+ try{
+  x.store.executeAtlasCommit({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0},expectedRevision:null}});
+  await s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);
+  const map=x.document.createElement('section'),nav=x.document.createElement('aside'),console=x.document.createElement('aside');x.document.body.append(map,nav,console);
+  const portal=s.atlas.liveSurface(),before=x.store.db.serialize();
+  for(const panel of ['selection','infill']){
+   x.click('city-panel-'+panel);await settle();if(panel==='infill')await until(()=>!x.ui.atlasCityState().partial);
+   portal.mount(map,nav,console);portal.show(true);await settle();await settle();s.atlas.camera.zoom(0.5);
+   portal.unmount();await s.atlas.open();await settle();
+   assert.equal(s.atlas.selection.id,x.unitIds.one);assert.equal(get('city-unit-name').value,'House one');
+   assert.equal(get('city-panel-'+panel).getAttribute('aria-pressed'),'true');
+   assert.equal(get('city-'+panel+'-controls').hidden,false);
+  }
+  assert.ok(x.store.db.serialize().equals(before));
+ }finally{await s.close();}
+});

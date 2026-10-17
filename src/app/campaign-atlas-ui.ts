@@ -169,7 +169,7 @@ export class CampaignAtlasWorkbench {
     // These controls now use the shared Canvas surface, including at the Live desk.
     // Retire their old renderers explicitly; CSS hiding alone still builds SVG trees.
     for(const id of ['map','city-map','world-map','dungeon-map']){
-      const legacy=get(id);legacy.dataset.sharedAtlas='true';legacy.replaceChildren();
+      const legacy=document.getElementById(id);if(!legacy)continue;legacy.dataset.sharedAtlas='true';legacy.replaceChildren();
     }
     this.root.id = "campaign-atlas";
     this.root.hidden = true;
@@ -816,7 +816,7 @@ export class CampaignAtlasWorkbench {
     this.root.dataset.family = f;
     if(f==="city")get<HTMLDetailsElement>("atlas-advanced").open=true;
     if(f==='interior'||f==='decoration')await reloadDrawing();
-    if (f === "city" && this.cityId) await openCityReference(this.cityId,undefined,true);
+    if (f === "city" && this.cityId) await openCityReference(this.cityId,this.selection?.kind==='building'||this.selection?.kind==='city-unit'?this.selection.id:undefined,true);
     if (f === "travel") {
       await this.refresh();
       await openWorld();
