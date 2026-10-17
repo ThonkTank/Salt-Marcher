@@ -546,7 +546,12 @@ function drawCreation(){
  el<HTMLSelectElement>('desk-new-kind').value=input.kind;el<HTMLInputElement>('desk-new-title').value=input.name;el<HTMLTextAreaElement>('desk-new-notes').value=input.notes;el<HTMLInputElement>('desk-new-pin').checked=input.pin;el<HTMLInputElement>('desk-new-contributors').checked=input.contributors;
  creationControls();
 }
+let creationLoading:Promise<void>|null=null;
 async function loadCreation(){
+ const loading=readCreation();creationLoading=loading;
+ try{await loading;}finally{if(creationLoading===loading)creationLoading=null;}
+}
+async function readCreation(){
  const epoch=++creationEpoch,owner=w,source=scene;creationBusy=false;creation=null;creationRead=!!owner&&!!source;creationStored=null;creationVersion=creationSaved=0;creationSaving=null;el('desk-create-reload').hidden=true;
  if(creationTimer)clearTimeout(creationTimer);creationTimer=null;el('desk-create-edit').hidden=true;drawCreation();el('desk-create-status').textContent=creationRead?'Schnellanlage-Eingabe wird gelesen…':'';
  if(!owner||!source)return;
@@ -556,8 +561,12 @@ async function loadCreation(){
 }
 async function keepCreation():Promise<boolean>{
  if(creationTimer)clearTimeout(creationTimer);creationTimer=null;
- if(creationRead)return false;if(!w||!scene||creationVersion===creationSaved)return true;
  const epoch=creationEpoch;
+ if(creationRead){
+  const loading=creationLoading;if(!loading)return false;
+  await loading;if(epoch!==creationEpoch||creationRead)return false;
+ }
+ if(!w||!scene||creationVersion===creationSaved)return true;
  if(creationSaving){if(!await creationSaving||epoch!==creationEpoch)return false;return keepCreation();}
  const owner=w,source=scene,version=creationVersion,value=creation?{...structuredClone(creation),writeId:crypto.randomUUID()}:null,expected=creationStored;
  const task=Promise.resolve().then(async()=>{try{unwrap(await window.campaign.keepSceneCreationDraft(owner.token,source.id,value,expected));if(epoch!==creationEpoch)return false;creationStored=value?.writeId??null;if(creation)creation.writeId=value!.writeId;creationSaved=version;if(!creation?.command)el('desk-create-status').textContent='Eingabe gesichert · noch nicht angelegt.';return true;}catch(e){if(epoch===creationEpoch){el('desk-create-reload').hidden=false;el('desk-create-status').textContent='Eingabe nicht gesichert. '+(e as Error).message;tell(el('desk-create-status').textContent!,true);}return false;}});creationSaving=task;

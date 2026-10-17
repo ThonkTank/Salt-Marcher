@@ -167,7 +167,12 @@ async function ensureLiveRuntime() {
   const current=()=>context?.token===token&&(sceneId===null||data?.scene?.id===sceneId);
   if (!(await flushLive())||!current()) return false;
   if (!data) {await openLive();if(!current())return false;} if (!data) return false;
-  if (!data.scene) {if(!await execute({kind:'initialize',expectedRosterRevision:data.rosterRevision})||!current())return false;}
+  if (!data.scene) {
+    if(!await execute({kind:'initialize',expectedRosterRevision:data.rosterRevision})||!current())return false;
+    // Initialization receipts contain the scene, but not the complete group/focus
+    // projection. Read it before any follow-up intent uses that new runtime.
+    await openLive();if(!current())return false;
+  }
   resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();return !!data.scene;
 }
 export async function openLiveSoundboard(){
@@ -929,7 +934,7 @@ async function previewPlannedVisit(planId:string,visitId:string,stillCurrent:()=
     const root=get('adoption-content');root.replaceChildren();const title=document.createElement('h3'),facts=document.createElement('div'),impact=document.createElement('ul'),location=sources?.locations.find(l=>l.document.id===visit.locationId)?.document.name??(visit.locationId?'nicht verfügbar':'kein Ort'),groups=(prepared.groups??[]).filter(group=>detail?.groupIds.includes(group.id)),reward=detail?.reward;
     title.textContent=visit.title||'Unbenannter Besuch';facts.className='adoption-review-facts';facts.textContent='Plan: '+(plan.name||'Unbenannter Spielabend')+' · Ort: '+location;
     impact.className='adoption-review-list';for(const text of ['Scene-Titel, GM-Notizen und Ort ersetzen','Vorlesetext: '+(detail?.readAloud?'vorbereitet':'leer'),(detail?.noteIds.length??0)+' Wissensquelle'+((detail?.noteIds.length??0)===1?'':'n')+' gebunden',groups.length+' Begegnungsgruppe'+(groups.length===1?'':'n')+' vorbereitet',reward?(reward.poolXp+' XP · '+reward.items.length+' Beuteeinträge · '+(reward.awarded?'bereits vergeben':reward.placedTreasureId?'als Schatz platziert':'noch nicht vergeben')):'Keine Besuchsbelohnung vorbereitet']){const item=document.createElement('li');item.textContent=text;impact.append(item);}root.append(title,facts,impact);
-    const section=(heading:string,text:string,kind:'pre'|'blockquote'='pre',open=false)=>{const details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement(kind);details.open=open;summary.textContent=heading;body.textContent=text||'Kein Text vorbereitet.';details.append(summary,body);root.append(details);};section('Private GM-Notizen',visit.notes,'pre',true);section('Zum Vorlesen',detail?.readAloud??'','blockquote');if(groups.length)section('Vorbereitete Begegnungen',groups.map(group=>group.title+' · '+group.actors.length+' Figuren').join('\n'));
+    const section=(heading:string,text:string,kind:'pre'|'blockquote'='pre',open=false)=>{const details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement(kind);details.open=open;summary.textContent=heading;body.textContent=text||'Kein Text vorbereitet.';details.append(summary,body);root.append(details);};section('Private GM-Notizen',visit.notes,'pre',true);section('Zum Vorlesen',detail?.readAloud??'','blockquote');if(groups.length)section('Vorbereitete Begegnungen',groups.map(group=>group.title+' · '+(group.actors.length?group.actors.length+' Figuren':group.plan.entries.reduce((sum,entry)=>sum+entry.count,0)+' geplante Figuren')).join('\n'));
     get<HTMLDialogElement>('adoption-dialog').showModal();
     return true;
 }
