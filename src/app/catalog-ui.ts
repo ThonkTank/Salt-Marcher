@@ -91,6 +91,10 @@ function normalizeChallengeRange(changed:HTMLInputElement|HTMLSelectElement){
  if(!low.value||!high.value||!Number.isFinite(Number(low.value))||!Number.isFinite(Number(high.value))||Number(low.value)<=Number(high.value))return;
  (changed===low?high:low).value=changed.value;
 }
+function commitChallengeRange(changed:HTMLInputElement|HTMLSelectElement){
+ const before=[value('catalog-cr-min'),value('catalog-cr-max')].join('|');normalizeChallengeRange(changed);
+ if(before!==[value('catalog-cr-min'),value('catalog-cr-max')].join('|'))changed.oninput?.call(changed,new Event('input'));
+}
 function query():CreatureCatalogQuery{
  const q:CreatureCatalogQuery={text:value('catalog-search'),offset,limit:25,sort,direction:value('catalog-direction') as 'asc'|'desc'};
  const fields=q as Record<string,unknown>;
@@ -100,6 +104,7 @@ function query():CreatureCatalogQuery{
   if(input.validity?.badInput||input.value&&(!Number.isFinite(number)||number<0)){input.setAttribute('aria-invalid','true');throw new Error(label+': Eine gültige nichtnegative Zahl eingeben.');}
   input.removeAttribute('aria-invalid');if(input.value&&!(key==='crMin'&&number===0))fields[key]=number;
  }
+ if(q.crMin!==undefined&&q.crMax!==undefined&&q.crMin>q.crMax)throw new Error('HG-Bereich noch nicht bestätigt. Eingabe mit Tab oder Enter abschließen.');
  for(const [id,key]of [['catalog-type','types'],['catalog-subtype','subtypes'],['catalog-size','sizes'],['catalog-habitat','habitats'],['catalog-alignment','alignments']])if(value(id!))fields[key!]=[value(id!)];
  for(const [id,key]of [['catalog-movement','movement'],['catalog-senses','senses'],['catalog-vulnerabilities','vulnerabilities'],['catalog-resistances','resistances'],['catalog-immunities','immunities'],['catalog-condition-immunities','conditionImmunities']])if(value(id!))fields[key!]=value(id!);return q;
 }
@@ -214,8 +219,8 @@ export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAd
  get('catalog-monsters-tab').onclick=showMonsters;get('catalog-items-tab').onclick=()=>catalogContentView('items');
  get('catalog-content-strip').onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const target=get<HTMLButtonElement>(e.key==='Home'?'catalog-monsters-tab':e.key==='End'?'catalog-items-tab':catalogContent==='monster'?'catalog-items-tab':'catalog-monsters-tab');target.click();target.focus();};
  initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
- get('catalog-form').onsubmit=event=>{event.preventDefault();offset=0;void search();};
- for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{normalizeChallengeRange(c);renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
+ get('catalog-form').onsubmit=event=>{event.preventDefault();const active=document.activeElement;if(active?.id==='catalog-cr-min'||active?.id==='catalog-cr-max')commitChallengeRange(get<HTMLInputElement>(active.id));offset=0;void search();};
+ for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')){c.oninput=()=>{renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};if(c.id==='catalog-cr-min'||c.id==='catalog-cr-max')c.onchange=()=>commitChallengeRange(c);}
  get('catalog-reset').onclick=()=>{const direction=value('catalog-direction');get<HTMLFormElement>('catalog-form').reset();get<HTMLInputElement>('catalog-direction').value=direction;offset=0;if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{const next=button.dataset.sort as CreatureCatalogQuery['sort'];get<HTMLInputElement>('catalog-direction').value=sort===next&&value('catalog-direction')==='asc'?'desc':'asc';sort=next;offset=0;void search();};
  get('catalog-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});get<HTMLElement>(plan?'encounter-name':'encounter-new').focus({preventScroll:true});};
  const returnToResults=()=>{showMonsters();get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;

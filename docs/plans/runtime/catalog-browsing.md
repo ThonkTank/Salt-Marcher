@@ -56,9 +56,17 @@ Es gibt keine neue Persistenz oder Schemaänderung.
 
 ### Gültige HG-Bereiche und native Zahleneingaben
 
-Die zuletzt geänderte HG-Grenze bestimmt den Bereich: „von8“ oberhalb „bis5“
+Die zuletzt bestätigte HG-Grenze bestimmt den Bereich: „von8“ oberhalb „bis5“
 zieht die sichtbare Obergrenze auf8; „bis2“ unterhalb „von8“ zieht die
 Untergrenze auf2. Endliche negative HG-Eingaben werden auf0 begrenzt.
+Bestätigt wird die vollständige Zahl durch den nativen `change`-Abschluss
+(Fokuswechsel/Tab/Enter), nicht durch jedes Tastaturzeichen. Dadurch bleibt
+beim Tippen von12 die ursprüngliche Untergrenze8 erhalten; die Zwischenziffer1
+verschiebt sie nicht. Ein während der Bearbeitung widersprüchlicher Bereich
+zeigt lokal den Hinweis zum Eingabeabschluss und sendet keinen Such- oder
+Generierungsauftrag. Ein gültiger Bereich wird weiterhin nach200ms gesucht;
+sein späterer Fokuswechsel erzeugt keine zweite Anfrage. Ein ausdrücklicher
+Suchsubmit bestätigt auch das fokussierte HG-Feld.
 Bruchgrenzen wie0,125 bleiben exakt; keine Rundung auf ganze HG und kein
 zusätzlicher fester Höchstwert beschneiden den vorhandenen Providervertrag.
 Leere Obergrenze bedeutet weiterhin unbeschränkt. Mindest-HG0 verändert den
@@ -83,7 +91,8 @@ Die bisherigen Querytests deckten Requestreihenfolge und Chipentfernung ab,
 prüften aber weder überkreuzte Grenzen noch die native Unterscheidung zwischen
 leer und ungültig. Neue DOM-Gegenfälle prüfen beide Änderungsrichtungen,
 Brüche, negative Werte, HG0, dieselben Filter im tatsächlichen Generatoraufruf,
-Fehler/Recovery und eine spät eintreffende alte Vorschau. Diese Teilkorrektur
+Fehler/Recovery, mehrstellige Zahleneingabe ohne Änderung der Gegenbegrenzung
+und eine spät eintreffende alte Vorschau. Diese Teilkorrektur
 ersetzt nicht die noch offene Mehrfachauswahl, gemeinsame Biomidentität,
 gesamte Katalog-/Generierungs- oder Plattformabnahme.
 
