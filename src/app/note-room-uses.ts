@@ -3,11 +3,19 @@ import type {Result} from './contracts';
 
 export class NoteRoomUses {
  private generation=0;
+ private navigationGeneration=0;private source:string|null=null;
  constructor(private host:HTMLElement,private read:(token:string,id:string,offset:number)=>Promise<Result<NoteRoomUsesPage>>,
   private open:(id:string,current:()=>boolean,restore:()=>void)=>Promise<boolean>){ }
- reset(){this.generation++;this.host.replaceChildren();this.host.hidden=true;}
+ private clear(){this.generation++;this.host.replaceChildren();this.host.hidden=true;}
+ reset(){this.navigationGeneration++;this.source=null;this.clear();}
+ /** Repainting the same source must not revoke a room opened from that source. */
+ prepare(token:string|null,id:string|null){
+  const source=token&&id?JSON.stringify([token,id]):null;
+  if(source!==this.source){this.navigationGeneration++;this.source=source;}
+  this.clear();
+ }
  show(token:string,id:string,sourceCurrent:()=>boolean,focusId?:string,restoreThrough=0){
-  this.reset();const generation=this.generation,current=()=>generation===this.generation&&sourceCurrent();
+  this.prepare(token,id);const generation=this.generation,navigation=this.navigationGeneration,current=()=>generation===this.generation&&sourceCurrent(),navigationCurrent=()=>navigation===this.navigationGeneration&&sourceCurrent();
   this.host.hidden=false;
   const heading=document.createElement('h3');heading.textContent='Verwendet in Räumen';heading.tabIndex=-1;
   const help=document.createElement('p');help.className='muted';help.textContent='Gespeicherte Verknüpfungen im Raum-Key. Raum öffnen, bearbeiten und hierher zurückkehren.';
@@ -30,7 +38,7 @@ export class NoteRoomUses {
      const excerpt=document.createElement('span');excerpt.textContent=entry.excerpt||'Verknüpfung im Raum-Key';
      button.append(title,place,excerpt);
      button.onclick=()=>{if(entry.unavailable||!current()||!button.isConnected||pending)return;pending=true;button.disabled=true;
-      void this.open(entry.id,current,()=>{if(current())this.show(token,id,sourceCurrent,entry.id,maxLoadedOffset);})
+      void this.open(entry.id,navigationCurrent,()=>{if(navigationCurrent())this.show(token,id,sourceCurrent,entry.id,maxLoadedOffset);})
        .then(opened=>{if(!opened&&current())status.textContent='Raum noch nicht geöffnet. Offene Eingaben zuerst speichern oder prüfen.';})
        .catch(error=>{if(current())status.textContent='Raum konnte nicht geöffnet werden: '+(error as Error).message;})
        .finally(()=>{pending=false;if(current()&&button.isConnected)button.disabled=entry.unavailable;});
