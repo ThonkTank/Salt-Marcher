@@ -2141,8 +2141,8 @@ export class CampaignAtlasWorkbench {
       get<HTMLInputElement>('atlas-perception').checked) return;
     const binding = data.bindings.find(b => b.kind === 'dungeon' && b.ownerId === this.scopeId);
     if (!binding) return;
-    const g = shape('group', {
-      matrix: frameMatrix(this.relative(atlasFrame(data, binding))),
+    const frame = atlasFrame(data, binding), g = shape('group', {
+      matrix: frameMatrix(this.relative(frame)),
       data: {editorOnly: 'true'},
     });
     const original = this.opts.roomDraft();
@@ -2157,13 +2157,27 @@ export class CampaignAtlasWorkbench {
         style: {fill: null, stroke: '#b85525', lineWidth: Math.max(.07, mpp * 2)},
       }));
       // Stale backgrounds may stay visible; their author handles must not remain actionable.
-      if (this.geometryCurrent()) room.polygons.forEach((poly, pi) => poly.outer.forEach((p, vi) => {
-        g.append(shape('circle', {
-          x: p.x, y: p.y, radius: Math.max(.05, mpp * 4),
-          style: {fill: 'white', stroke: '#244f87', lineWidth: mpp},
-          data: {atlasObject: 'true', kind: 'vertex', id: room.id, atlasVertex: String(vi), polygon: String(pi)},
+      if (this.geometryCurrent()) {
+        const cover = data.region?.box ?? this.camera.view, cells = new Set<string>();
+        // A detailed original must not turn into thousands of overlapping handles.
+        // Each retained handle still addresses its exact original polygon/vertex.
+        let spacing = mpp * 8;
+        while ((Math.ceil(cover.width / spacing) + 2) * (Math.ceil(cover.height / spacing) + 2) > 1500) spacing *= 2;
+        room.polygons.forEach((poly, pi) => poly.outer.forEach((p, vi) => {
+          const at = localToAtlas(p, frame);
+          if (at.x < cover.x || at.y < cover.y || at.x > cover.x + cover.width || at.y > cover.y + cover.height) return;
+          const cell = Math.floor(at.x / spacing) + ':' + Math.floor(at.y / spacing);
+          if (cells.has(cell)) return;
+          cells.add(cell);
+          g.append(shape('circle', {
+            x: p.x, y: p.y, radius: mpp * 4,
+            style: {fill: 'white', stroke: '#244f87', lineWidth: mpp},
+            data: {atlasObject: 'true', kind: 'vertex', id: room.id, atlasVertex: String(vi), polygon: String(pi)},
+          }));
         }));
-      }));
+        const vertices = room.polygons.reduce((n, p) => n + p.outer.length, 0);
+        if (cells.size < vertices) g.title = `${cells.size} von ${vertices} Eckpunkten als Griffe. Für weitere Griffe näher heranzoomen oder verschieben.`;
+      }
     }
     const draft = atlasDrawingDraft();
     if (draft.floor.scopeId === this.scopeId && draft.floor.floorId === this.floorId) {

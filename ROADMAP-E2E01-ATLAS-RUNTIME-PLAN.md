@@ -732,7 +732,11 @@ Die erneute Gegenprüfung vom 17.10.2026 schließt drei weitere Übergangslücke
   genau einmal gezeichnet. Offene Kontur-/Objektzüge bleiben beim Wechsel in
   dichte Darstellung sichtbar. Auswahlkontur und Griffe verwenden das bereits
   geladene vollständige Autorenobjekt, auch wenn die Bereichsantwort keine
-  Einzelräume enthält. Zeichnen liest nichts nach; der bestehende Shapecommand
+  Einzelräume enthält. Griffe werden im geladenen Puffer räumlich gebündelt
+  und auf höchstens1500 begrenzt; jeder sichtbare Griff behält seinen exakten
+  Originalindex. Zoom legt weitere Griffe frei, der Tooltip benennt die
+  Darstellung. Ein10000-Punkte-Original prüft diese Grenze ohne Geometrieverlust.
+  Zeichnen liest nichts nach; der bestehende Shapecommand
   behält Originalrevision und Quellenprüfung. Ladezustände sperren Griffe;
   Geschoss und Höhenschnitt werden berücksichtigt. In der Wissensansicht der
   Gruppe werden keine GM-Autorenkonturen darübergelegt.
