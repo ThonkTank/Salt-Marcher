@@ -38,6 +38,7 @@ export class PassiveMapCanvas {
   },true);
   const finish=(e:PointerEvent)=>{if(this.drag?.id!==e.pointerId)return;const moved=this.drag.moved;this.cancel();if(moved||e.button===1){e.preventDefault();e.stopImmediatePropagation();}};
   root.addEventListener('pointerup',finish,true);root.addEventListener('pointercancel',finish,true);root.addEventListener('lostpointercapture',()=>this.cancel());
+  root.addEventListener('pointerleave',e=>{if(this.drag?.id===e.pointerId&&!root.hasPointerCapture(e.pointerId))this.cancel();});
   root.addEventListener('click',e=>{if(this.suppressClick||this.failed){this.suppressClick=false;e.preventDefault();e.stopImmediatePropagation();}},true);
   root.addEventListener('wheel',e=>{if(!e.deltaY)return;e.preventDefault();e.stopImmediatePropagation();if(this.failed||this.options.locked?.()||this.drag)return;const matrix=root.getScreenCTM?.();const p=matrix?new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse()):undefined;const burst=Date.now()-this.wheelAt<300;this.zoom(e.deltaY>0?1.2:1/1.2,p&&this.options.relative?{x:p.x+this.box.x,y:p.y+this.box.y}:p,burst);this.wheelAt=Date.now();},{capture:true,passive:false});
  }
