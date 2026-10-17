@@ -190,5 +190,6 @@ test('find shortcut selects the visible campaign search and leaves other modals 
  for(const id of ['campaign-screen-search','campaign-trash-search']){get(id).focus=()=>focused.push(id);get(id).select=()=>focused.push('selected');}
  const find=()=>{const event=new x.window.Event('keydown',{cancelable:true});Object.assign(event,{ctrlKey:true,key:'f'});x.document.dispatchEvent(event);return event.defaultPrevented;};
  assert.equal(find(),true);assert.deepEqual(focused,['campaign-screen-search','selected']);focused.length=0;get('campaign-trash-dialog').open=true;assert.equal(find(),true);assert.deepEqual(focused,['campaign-trash-search','selected']);
+ get('campaign-delete-dialog').open=true;assert.equal(find(),false,'delete confirmation above the trash modal keeps its keyboard context');get('campaign-delete-dialog').open=false;
  get('campaign-trash-dialog').open=false;get('campaign-identity-dialog').open=true;assert.equal(find(),false);get('campaign-identity-dialog').open=false;x.ui.hideCampaignScreen();assert.equal(find(),false);
 });
