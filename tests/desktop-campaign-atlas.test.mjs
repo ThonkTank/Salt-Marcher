@@ -365,7 +365,13 @@ test("city walking and explicit entrances use the same group clock and survive r
   });
   assert.equal(x.read().geometry.position.roomId, room.id);
   assert.equal(BigInt(x.read().scene.scene.clock.instantMs) - clock, 3000n);
-  const inside = x.read();
+  const inside = x.read(), bytes = x.store.db.serialize();
+  assert.throws(() => x.store.previewTravel(x.w.token, {
+    sceneId: scene.id, mapId: inside.terrain.id,
+    destination: { q: inside.scene.position.q + 1, r: inside.scene.position.r },
+    destinationLocationId: null, waypoints: [], paceKmh: 4, factor: 1, finalSeconds: null,
+  }), /Dungeon.*verlassen/);
+  assert.ok(x.store.db.serialize().equals(bytes), "an indoor hex preview cannot change position, time or journeys");
   travel({
     kind: "entrance",
     id: entry.id,

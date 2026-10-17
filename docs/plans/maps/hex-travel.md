@@ -1,6 +1,6 @@
 # Hexreise: Laufzustand, Kopien und verbleibende Nutzerfähigkeiten
 
-Stand: 16.10.2026. Quellen: [Hex Travel](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel.md)
+Stand: 17.10.2026. Quellen: [Hex Travel](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel.md)
 und [Hex Travel Console](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel-state.md).
 [Produktziele](../../PRODUCT.md), [Kartenbearbeitung](hex-editing.md),
 [Wetter](../runtime/weather.md), [Zeit und Restock](../runtime/shops-and-restock.md)
@@ -448,6 +448,37 @@ Weltreise. Store-, Native-, vollständige CI- und Mainnachweise bleiben getrennt
 Behauptungen. Vollständige Indoor-/Eingangs-/Fokuswechsel-, physische
 200%-/OS-/Großroutenabnahme sowie eine weiter vereinfachte kontextübergreifende
 Konsole bleiben offen; zusätzliche versteckte Runtimestores sind kein Lösungsweg.
+
+## Übergabe zwischen Innenraum, lokalem Weg und Hexreise
+
+Alle drei Reisewege schreiben dieselbe ScenePosition und Gruppenuhr. Eine
+Hexvorschau darf deshalb nicht an der erhaltenen übergeordneten Hexkoordinate
+einer noch im Dungeon befindlichen Gruppe beginnen: zuerst den verbundenen
+Eingang ausdrücklich verlassen. Eine aktive oder pausierte lokale Reise muss
+vor der Weltreise abgeschlossen oder ausdrücklich beendet werden. Das gilt
+auch beim Annehmen einer früher erstellten Weltvorschau; der lokale Start
+allein verändert noch keine Positions- oder Uhrrevision.
+
+`storage/world.hexTravelContext` prüft den vorhandenen Dungeonstand und den
+kanonischen `atlasLocalJourney`-Read bei Vorschau, Startneuberechnung,
+Fortsetzung und Checkpoint. Die Gegenrichtung verwendet in
+`storage/atlas-travel.localTravelContext` dieselben bisherigen Außenraum- und
+Weltreiseregeln nun auch beim lokalen Fortsetzen. Eine abgeschlossene oder
+beendete lokale Reise lässt sich nicht wieder aktivieren. Administrative
+Platzierung bleibt eine andere ausdrücklich zeitlose GM-Aktion.
+
+Bestehende überlappende Laufstände bleiben lesbar. Der GM kann den ungewollten
+Reiseweg ausdrücklich beenden und den anderen fortsetzen; die Prüfung beendet
+keine Reise heimlich und schreibt weder Zeit noch Position um. Originalreceipts
+bleiben auch bei später geändertem Reisekontext abrufbar. Keine Schemaänderung,
+Migration oder neue Positions-/Reisewahrheit.
+
+Echte Storefälle prüfen Innenraum mit regulärem Eingang, aktive/pausierte lokale
+Reise, veraltete Weltvorschau, terminales lokales Fortsetzen sowie einen gültigen
+Altbestand mit überlappenden Reisen nach Fresh: Ablehnung ohne DBänderung,
+Originalreceipt und ausdrückliche Erholung bis zum nächsten gemeinsamen
+Positions-/Zeitcheckpoint. Die vollständige Indoor-/Plattform- und
+Langroutenqualifikation bleibt eigenständig offen.
 
 ## Nächste ausführbare Lieferungen
 
