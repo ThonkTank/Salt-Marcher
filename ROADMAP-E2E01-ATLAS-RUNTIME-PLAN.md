@@ -543,7 +543,7 @@ Auswahl pro Frame linear. Die Shell merkt sich nur dessen ID je DB/Kampagne
 und Änderungsstand; lokale Änderungen und externes `data_version` verwerfen
 sie. Explizite Nutzerauswahl hat Vorrang, es wird kein Dokument dafür verändert.
 
-Eine lokale Vergleichsprobe mit 4000 beziehungsweise 12000 Räumen und 5000
+Eine frühere lokale Vergleichsprobe mit 4000 beziehungsweise 12000 Räumen und 5000
 Gebäuden (je 4 KiB Autorenprosa, 30 warme Reads desselben kleinen Ausschnitts)
 liefert nach dieser Korrektur 4,7 KiB Bereichsantwort gegenüber 23,3/26,6 MB
 Vollansicht. Warmer Median: 7,6/6,5 ms statt 1072/1426 ms, p95 10,6/9,4 ms
@@ -555,6 +555,14 @@ belegt. Prozessstart/Schemaarbeit gehen in den RSS-Höchststand ein; kalte
 Readzeit, OS-Cache, Systemlast, Electron und GPU sind unterschiedliche Größen.
 Der Messhelfer speichert Commit, Dirty-Status und Bundlehash; diese lokale
 Messung ist kein Hardware- oder Latenzfreigabebeleg.
+
+Nach vorbereiteten Statements und 128er Quellbatches ergab eine nachfolgende
+lokale Paarprobe mit4000 Räumen/5000 Gebäuden im selben Hostaufbau: Kaltaufbau
+6,88→1,89s, warme Reads p95 8,67→5,82ms (30 Reads). Maximum-RSS von Node/SQLite
+blieb bei rund255 MiB. Gemessen wurde ab dem Read nach Storekonstruktion in
+frischen Prozessen; OS-Cache, Systemlast und Electron/GPU sind keine isolierten
+Konstanten. Die vollständige Erstnutzung binnen2s und physische16-GiB-Abnahme
+sind damit weiterhin offen; eine Formatmigration ist daraus nicht begründet.
 
 Landschaftsflächen, Wege, Flüsse, Orte und Referenzen werden nun im selben
 readonly Bereichsworker und Source-Fence gelesen. Bis500 Nichtflächen und

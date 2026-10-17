@@ -24,7 +24,7 @@ function fixture(t) {
     window.campaign = { cancelAtlasRegion:async()=>({ok:true,value:null}),atlasRegion: async () => ({ ok: true, value: snapshot() }), previewAtlasTravel: async (token, end) => ({ ok: true, value: store.previewAtlasTravel(token, end) }), executeAtlasTravelCommit: async (c) => { sent.push(c); return { ok: true, value: store.executeAtlasTravelCommit(c) }; } };
     // Exercise the production controller/render methods with real SQLite snapshots.
     // Whole-workbench mounting and click wiring are covered by the native probe.
-    const ui = Object.assign(Object.create(CampaignAtlasWorkbench.prototype), { owner: w, data: snapshot(), root: document.createElement('section'),svg:document.createElement('svg'),regionQuery:()=>({box:{x:0,y:0,width:100,height:100},width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true}), request: 0, previewRequest: 0, busy: false, pendingTravel: null, localPreview: null, lastPoint: { x: 20, y: 0 }, entranceId: null, travelReadState: 'ready', family: 'travel', playback: { running: false, stop() { }, async settled() { } }, opts: { status() { } } });
+    const ui = Object.assign(Object.create(CampaignAtlasWorkbench.prototype), { owner: w, data: snapshot(), root: document.createElement('section'),svg:document.createElement('svg'),regionQuery:()=>({box:{x:0,y:0,width:100,height:100},width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true}), request: 0, hitVersion:0,hitDialog:{open:true,close(){this.open=false;}},landscape:{load:async()=>{}}, previewRequest: 0, busy: false, pendingTravel: null, localPreview: null, lastPoint: { x: 20, y: 0 }, entranceId: null, travelReadState: 'ready', family: 'travel', playback: { running: false, stop() { }, async settled() { } }, opts: { status() { } } });
     ui.render = () => ui.renderTravel();
     ui.render();
     t.after(() => { Object.assign(globalThis, beforeGlobals); store.close(); rmSync(dir, { recursive: true, force: true }); });
@@ -38,6 +38,7 @@ test('pending and failed Atlas context reads revoke previews and block travel; r
     window.campaign.atlasRegion = () => new Promise(r => release = r);
     const before = x.store.db.serialize(), read = x.ui.refresh();
     assert.equal(x.get('start').disabled, true);
+    assert.equal(x.ui.hitDialog.open,false,'pending source refresh closes the old exact-choice dialog');
     assert.equal(x.get('place').disabled, true);
     assert.equal(document.getElementById('atlas-advanced-fields').inert, true);
     assert.match(x.get('status').textContent, /geladen/);
