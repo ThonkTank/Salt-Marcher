@@ -78,8 +78,8 @@ async function reconcileAcceptance(){
 }
 async function checkAcceptance(){if(accepting||!pendingTicket)return;accepting=true;lock();try{await reconcileAcceptance();}finally{accepting=false;lock();}}
 
-export function initCampaignManager(status:typeof tell,getContext:typeof context,flush:typeof before,onChanged:typeof changed){tell=status;context=getContext;before=flush;changed=onChanged;el('campaign-manager').onclick=()=>{generation++;el<HTMLDialogElement>('campaign-manager-dialog').showModal();};
- pendingTicket=window.localStorage.getItem(pendingKey);lock();
+export function initCampaignManager(status:typeof tell,getContext:typeof context,flush:typeof before,onChanged:typeof changed){tell=status;context=getContext;before=flush;changed=onChanged;el('campaign-manager').onclick=()=>{generation++;run(()=>{pendingTicket=window.localStorage.getItem(pendingKey);lock();el<HTMLDialogElement>('campaign-manager-dialog').showModal();});};
+ lock();
  for(const id of ['campaign-transfer-check','campaign-transfer-check-preview'])el(id).onclick=()=>run(checkAcceptance);
  el('campaign-manager-close').onclick=()=>run(closeManager);
  el<HTMLDialogElement>('campaign-manager-dialog').oncancel=e=>{e.preventDefault();run(closeManager);};
