@@ -26,7 +26,7 @@ export function partySceneLabels(view:import('./live-contracts').LiveView){
  const labels=view.scenes.map(scene=>({id:scene.id,label:(scene.locationTitle||'Ohne Ort')+' · '+(view.roster.filter(c=>c.active&&c.sceneId===scene.id).map(c=>c.profile.name).join(', ')||'Keine Figuren')}));
  const groups=new Map<string,typeof labels>();
  for(const scene of labels){const key=scene.label.normalize('NFC'),group=groups.get(key)??[];group.push(scene);groups.set(key,group);}
- const result=new Map<string,string>();
+ const result=new Map<string,string>(labels.map(scene=>[scene.id,scene.label]));
  for(const group of groups.values()){
   // Adjacent sorted IDs determine the longest shared prefix without pairwise scans.
   const ids=group.map(scene=>scene.id).sort();let width=8;
