@@ -11,10 +11,10 @@ const require=createRequire(import.meta.url);
 for(const [entry,out]of [['src/app/storage/store.ts','combat-switch-store'],['src/app/combat.ts','combat-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let i=0;i<100;i++){if(check())return;await tick();}assert(check(),'Expected encounter state');}
-async function fixture(){
+async function fixture(withCombats=true){
  const root=mkdtempSync(path.join(tmpdir(),'combat-switch-')),{CampaignStore}=require('../.build/combat-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite'),campaign=store.create('Zwei Begegnungen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:0})).scene,combats=[];
- for(const [title,name,hp]of [['Torwache','Wache',10],['Keller','Wolf',8]]){let c=store.executeCombat({...command({kind:'create',sceneId:scene.id,title,includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;c=store.executeCombat({...command({kind:'add',name,count:1,grouped:false,maxHp:hp,armorClass:10,initiativeBonus:0}),combatId:c.id,expectedRevision:c.revision}).combat;combats.push(c);}
+ for(const [title,name,hp]of (withCombats?[['Torwache','Wache',10],['Keller','Wolf',8]]:[])){let c=store.executeCombat({...command({kind:'create',sceneId:scene.id,title,includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;c=store.executeCombat({...command({kind:'add',name,count:1,grouped:false,maxHp:hp,armorClass:10,initiativeBonus:0}),combatId:c.id,expectedRevision:c.revision}).combat;combats.push(c);}
  const [a,b]=combats,previous={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});
  const storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});
@@ -23,7 +23,7 @@ async function fixture(){
  window.campaign.combat=async(...args)=>{reads.push(args[2]);const r=fail?{ok:false,error:'Begegnung nicht lesbar'}:response(()=>store.combat(...args));fail=false;if(hold){hold=false;return new Promise(resolve=>waiting.push(()=>resolve(r)));}return r;};
  window.campaign.executeCombat=async c=>{writes.push(c);return response(()=>store.executeCombat(c));};
  delete require.cache[require.resolve('../.build/combat-switch-ui.cjs')];const ui=require('../.build/combat-switch-ui.cjs');ui.initCombat(text=>messages.push(text));ui.combatContext(w,scene);const el=id=>document.getElementById(id);
- await until(()=>el('combat-title').textContent==='Keller'&&!el('combat-notes').disabled);
+ await until(()=>el('combat-title').textContent===(withCombats?'Keller':'Begegnung führen')&&!el('combat-notes').disabled);
  const choose=id=>{el('combat-history').value=id;el('combat-history').onchange();},input=(id,text)=>{el(id).value=text;el(id).dispatchEvent(new window.Event('input'));},fighter=async()=>{el('combat-rows').querySelector('button').onclick();await until(()=>!el('combat-participant').hidden&&!el('fighter-hp').disabled);};
  return{store,w,ui,a,b,el,choose,input,fighter,reads,writes,messages,waiting,hold:()=>{hold=true;},fail:()=>{fail=true;},release:()=>waiting.shift()(),cleanup(){ui.combatContext(null,null);Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
 }
@@ -98,4 +98,17 @@ test('an encounter handoff read begun before a new visit cannot create a combat 
   const adopted=adoptEncounterVisit(x);x.ui.combatContext(x.w,adopted,live.rosterRevision);x.release();await handoff;
   assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.title,'Keller');
  }finally{x.cleanup();}
+});
+
+test('an empty encounter offers the existing creature catalog without creating an empty combat',async()=>{
+ const x=await fixture(false);try{let opened=0,current;x.ui.setCombatCatalogNavigation(async lease=>{opened++;current=lease;});
+  const button=x.el('combat-catalog-open');assert.equal(button.hidden,false);assert.equal(button.disabled,false);button.click();await until(()=>opened===1);assert.equal(current(),true);assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.store.live(x.w.token).scene.id).combat,null);
+  x.ui.combatContext(null,null);assert.equal(current(),false);
+ }finally{x.cleanup();}
+});
+test('a revoked scene cannot open the catalog after its draft flush',async()=>{
+ const x=await fixture(false);try{let opened=0;x.ui.setCombatCatalogNavigation(async()=>{opened++;});x.el('combat-catalog-open').click();x.ui.combatContext(null,null);await tick();await tick();assert.equal(opened,0);assert.equal(x.writes.length,0);}finally{x.cleanup();}
+});
+test('the spontaneous entry cannot append to an already editable encounter',async()=>{
+ const x=await fixture();try{let opened=0;x.ui.setCombatCatalogNavigation(async()=>{opened++;});assert.equal(x.el('combat-catalog-open').hidden,true);x.el('combat-catalog-open').click();await tick();assert.equal(opened,0);assert.equal(x.writes.length,0);}finally{x.cleanup();}
 });
