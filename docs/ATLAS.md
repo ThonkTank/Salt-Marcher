@@ -4,7 +4,9 @@ Die Desktopanwendung verwendet eine Kampagnenwelt. Hexgelände, Städte, Gebäud
 
 ## Vorbereiten
 
-1. Kampagne öffnen und **Atlas** wählen. Unter **Landschaft** die Hexstufe und das Terrain wählen; ein gedrückter Pinselzug ist eine gemeinsame Änderung.
+**Atlas bearbeiten** zeigt die Werkzeuge für Landschaft, Stadt, Innenräume und Ausstattung. **Atlas leiten** wechselt zur Karte in **Party und Leiten**. Dort stehen Reise und Ortswissen im Mittelpunkt; Bearbeitungswerkzeuge bleiben im Bearbeitungsbereich. **Atlas bearbeiten** an der Live-Karte führt zum zuvor gewählten Bearbeitungswerkzeug zurück. Beide Bereiche nutzen dieselben Atlasdaten und dieselbe Karte. Der Wechsel verändert weder Position noch Spielzeit.
+
+1. Kampagne öffnen und **Atlas bearbeiten** wählen. Unter **Landschaft** die Hexstufe und das Terrain wählen; ein gedrückter Pinselzug ist eine gemeinsame Änderung.
 2. Einen Punkt anklicken, Namen eingeben, **Stadt hier anlegen**. Die Stadt liegt jetzt an diesem Weltpunkt. Unter **Stadt** Straßen, Viertel und Plätze zeichnen, Bebauung vorschlagen und übernehmen. Häuser einzeln korrigieren.
 3. Ein Haus auswählen und **Innenraum anlegen**. Der Innenbereich ist zunächst leer. Raumrechteck oder freie Raumwerkzeuge verwenden. Gebäuderäume behalten ihre freien Metermaße. Gebäude bewegen/drehen oder skalieren führt gebundene Räume mit; Höhen bleiben erhalten. Geteilte Wandpunkte bleiben bei direkter Konturbearbeitung verbunden.
 4. **Geschoss**, **Dächer anzeigen** und **Höhenschnitt** verändern die Ansicht. Ein Geschosswechsel wartet, bis offene Bearbeitungen abgeschlossen sind; ein begonnenes Raumrechteck bleibt auf seinem ursprünglichen Geschoss. Die Fachwerkzeuge behalten Raumtexte, Keys, Türen, Ausstattung, Volumen, Graph und Passagen. **Ort finden** findet Stadt, Haus und Raum innerhalb derselben Karte.
@@ -18,7 +20,7 @@ Dungeondateien werden beim Import in eine offene Kampagne am zuletzt gewählten 
 
 ## Leiten
 
-Fokusgruppe unter Party und Leiten wählen. **Erkunden** verwendet ihre vorhandene Position, Mitgliedschaft, ihr Tempo und ihre Uhr. Ziel anklicken → **Weg prüfen** → **Reise starten** → Schritt/Runde/Wiedergabe. Ein lokaler Fußweg meidet Häuser, Wasser und Mauern; lange Strecken verwenden die vorhandene Weltreise. Die lokale Wegsuche ist eine abgeleitete Navigationshilfe und verändert keine Quellkonturen.
+Fokusgruppe unter **Party und Leiten** wählen und **Karte** öffnen; aus der Bearbeitung führt **Atlas leiten** direkt dorthin. Die Reisekonsole verwendet ihre vorhandene Position, Mitgliedschaft, ihr Tempo und ihre Uhr. Ziel anklicken → **Weg prüfen** → **Reise starten** → Schritt/Runde/Wiedergabe. Ein lokaler Fußweg meidet Häuser, Wasser und Mauern; lange Strecken verwenden die vorhandene Weltreise. Die lokale Wegsuche ist eine abgeleitete Navigationshilfe und verändert keine Quellkonturen.
 
 Raum auswählen → **Eingang verbinden** → zuerst Außenpunkt, dann Innenpunkt setzen. Am Eingang angekommen den angebotenen Eingang ausdrücklich betreten; mehrere nahe Eingänge stehen zur Auswahl. Auch das Verlassen ist ausdrücklich. Eingangskosten zählen zur selben Gruppenuhr. **Zur Gruppe** verändert nur den Ausschnitt. **Gruppe platzieren** beziehungsweise bestätigtes Tokenziehen ist ein GM-Eingriff ohne Reisezeit.
 

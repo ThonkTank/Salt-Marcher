@@ -20,7 +20,7 @@ const { LiveAtlasPortal, atlasWorldRoute } = createRequire(import.meta.url)(
 function dom(t) {
   const prior = { window: globalThis.window, document: globalThis.document },
     { window, document } = parseHTML(
-      '<html><body><main><p id="before">before</p><section id="campaign-atlas"><div id="bar"><button id="atlas-to-party">Gruppe</button><button id="atlas-overview">Welt</button></div><div id="stage"><div class="map-canvas-controls" data-canvas-for="campaign-map"><button id="history">Zurück</button></div><svg id="campaign-map" viewBox="100 200 300 400"></svg><p id="atlas-save-status">Gespeichert</p></div><aside><div id="atlas-local-console">Lokaler Laufstand</div></aside></section><p id="after">after</p><section id="map"></section><div id="navigation"></div><div id="console"></div></main></body></html>',
+      '<html><body><main><button id="atlas-tab">Atlas bearbeiten</button><p id="before">before</p><section id="campaign-atlas"><div id="bar"><button id="atlas-to-party">Gruppe</button><button id="atlas-overview">Welt</button></div><div id="stage"><div class="map-canvas-controls" data-canvas-for="campaign-map"><button id="history">Zurück</button></div><svg id="campaign-map" viewBox="100 200 300 400"></svg><p id="atlas-save-status">Gespeichert</p></div><aside><div id="atlas-local-console">Lokaler Laufstand</div></aside></section><p id="after">after</p><section id="map"></section><div id="navigation"></div><div id="console"></div></main></body></html>',
     );
   Object.assign(globalThis, { window, document });
   t.after(() => Object.assign(globalThis, prior));
@@ -35,7 +35,8 @@ test("Live moves the exact shared Atlas and camera controls, preserving listener
     parent = root.parentNode,
     local = id("atlas-local-console"),
     history = id("history");
-  let clicks = 0;
+  let clicks = 0, edits = 0;
+  id("atlas-tab").onclick = () => edits++;
   history.onclick = () => clicks++;
   const portal = new LiveAtlasPortal(
     root,
@@ -49,6 +50,7 @@ test("Live moves the exact shared Atlas and camera controls, preserving listener
     const actions = id("live-atlas-map-actions");
     assert.equal(id("map").firstElementChild, actions);
     assert.equal(actions.nextElementSibling, root);
+    id("live-atlas-edit").click();
     assert.equal(id("atlas-to-party").parentNode, actions);
     assert.equal(id("atlas-overview").parentNode, actions);
     assert.equal(document.querySelectorAll("#campaign-map").length, 1);
@@ -73,6 +75,7 @@ test("Live moves the exact shared Atlas and camera controls, preserving listener
     assert.equal(id("map").children.length, 0);
   }
   assert.equal(clicks, 2);
+  assert.equal(edits, 2);
   assert.deepEqual(zoom, [0.5, 0.5]);
   assert.deepEqual(calls, [true, false, false, true, false, false]);
 });

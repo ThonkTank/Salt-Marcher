@@ -47,7 +47,7 @@ import {initPlayerUI,deactivatePlayer} from './player-ui';
 import {initCity,activateCity,openCity,prepareCityPersonBinding,flushCity} from './city-ui';
 import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
-import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPlayback} from './world-ui';
+import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPlayback,openLiveAtlas} from './world-ui';
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
 import { validateRoom, type Room, type RoomGeometry, type WorkspaceGeometry, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, ensurePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,openPreparedPlan,prepareNextVisit,showDayPreparation } from './preparation';
@@ -184,14 +184,14 @@ initLive(status, async id => {
 },async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id,current);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current,'reward');},async(seed,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;await campaignAgenda.openMomentDraft({name:seed.title,notes:seed.summary},seed.location??undefined,current);},async(planId,seed,current=()=>true,openPacket=false)=>{if(!current()||!(await leaveWorkspace())||!current())return false;showTab('preparation');const prepared=await prepareNextVisit(planId,seed,current);if(!prepared)return false;if(openPacket&&current())return openPreparationSessionPacket(prepared.visitId);return current();});
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
-campaignAtlas=new CampaignAtlasWorkbench({selectRoom,roomDraft:()=>draft,flush:leaveWorkspace,updated:async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();},status,readLocation:async(id,current)=>{if(current())await locationNotebook.open(id,current);},editLocation:async(id,current,back)=>{
+campaignAtlas=new CampaignAtlasWorkbench({selectRoom,roomDraft:()=>draft,flush:leaveWorkspace,leadAtlas:async()=>{const owner=workspace;if(!owner||!await leaveWorkspace()||workspace!==owner)return;showTab('live');await openLive();if(workspace===owner&&activeTab==='live')await openLiveAtlas();},updated:async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();},status,readLocation:async(id,current)=>{if(current())await locationNotebook.open(id,current);},editLocation:async(id,current,back)=>{
  const token=workspace?.token;if(!token||!current()||!await leaveWorkspace()||!current())return;showTab('preparation');await openPreparedLocation(id,current);if(!current())return;
  setLocationReturn(token,id,'',{title:'Zur Karte: Atlas',open:async owns=>{if(!owns()||!current()||!await leaveWorkspace()||!owns()||!current())return;showTab('atlas');await back();if(owns())locationReturn.hidden=true;}});
 }});
 setLiveAtlasSurface(campaignAtlas.liveSurface());
 
 for(const id of ['world','city','dungeon'])el(id+'-tab').hidden=true;
-el('atlas-tab').textContent='Atlas';
+el('atlas-tab').textContent='Atlas bearbeiten';
 function showTab(selected: WorkspaceTab, restored?: number) {
   const atlasSurface=['atlas','world','city','dungeon'].includes(selected);if(atlasSurface)selected='atlas';
 

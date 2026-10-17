@@ -481,13 +481,15 @@ test('a prepared house interior shares its actual camera and selection through t
  try{
   const frame=s.atlas.frame(s.atlas.scopeId);await s.rectangle('Prepared tavern',{x:frame.x-3,y:frame.y-3},{x:frame.x+3,y:frame.y+3});
   const room=x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.name==='Prepared tavern');await s.atlas.navigate('room',room.id);
-  const view=()=>[s.svg.getAttribute('viewBox'),s.svg.dataset.atlasOriginX,s.svg.dataset.atlasOriginY],before=view(),root=get('campaign-atlas'),home=root.parentNode,db=x.store.db.serialize();
+  const view=()=>[s.svg.getAttribute('viewBox'),s.svg.dataset.atlasOriginX,s.svg.dataset.atlasOriginY],before=view(),editingFamily=s.atlas.family,root=get('campaign-atlas'),home=root.parentNode,db=x.store.db.serialize();
+  assert.equal(get('atlas-families').querySelector('[data-family=travel]'),null);
   const map=x.document.createElement('section'),navigation=x.document.createElement('aside'),console=x.document.createElement('aside');x.document.body.append(map,navigation,console);
   const portal=s.atlas.liveSurface();portal.mount(map,navigation,console);portal.show(true);await settle();await settle();
   assert.equal(map.contains(s.svg),true);assert.equal(x.document.querySelectorAll('#campaign-map').length,1);assert.deepEqual(view(),before);assert.equal(s.atlas.selection.id,room.id);
   assert.equal(map.contains(get('atlas-to-party')),true);assert.equal(navigation.contains(get('atlas-to-party')),false);assert.equal(get('live-atlas-map-actions').contains(get('atlas-to-party')),true);assert.equal(get('live-atlas-map-actions').contains(get('live-atlas-zoom')),true);assert.equal(x.document.querySelectorAll('#atlas-to-party').length,1);assert.equal(console.contains(get('atlas-save-status')),true);
   portal.show(false);assert.equal(root.hidden,true);portal.show(true);await settle();await settle();assert.deepEqual(view(),before);
-  portal.unmount();await s.atlas.open();assert.equal(root.parentNode,home);assert.equal(root.contains(get('atlas-to-party')),true);assert.equal(root.contains(get('atlas-save-status')),true);
+  s.atlas.camera.zoom(0.5);assert.notDeepEqual(view(),before);
+  portal.unmount();await s.atlas.open();assert.equal(s.atlas.family,editingFamily);assert.deepEqual(view(),before);assert.equal(s.atlas.selection.id,room.id);assert.equal(get('atlas-families').querySelector('[aria-pressed=true]').dataset.family,editingFamily);assert.equal(root.parentNode,home);assert.equal(root.contains(get('atlas-to-party')),true);assert.equal(root.contains(get('atlas-save-status')),true);
   await s.atlas.navigate('room',room.id);assert.equal(s.atlas.scopeId,room.scopeId);assert.equal(s.atlas.selection.id,room.id);assert.ok(x.store.db.serialize().equals(db));
  }finally{await s.close();}
 });

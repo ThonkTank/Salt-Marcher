@@ -98,6 +98,7 @@ export class CampaignAtlasWorkbench {
   private opening:{owner:WorkspaceGeometry;task:Promise<void>}|null=null;
   private livePortal:LiveAtlasPortal|null=null;
   private liveVisible=false;
+  private editingContext: {token:string;family:Exclude<Family,'travel'>;view:CanvasBox;selection:Selection;cityId:string|null;scopeId:string|null;floorId:string;groupView:boolean}|null=null;
   private busy = false;
   private exporting = false;
   private exportCancelled = false;
@@ -162,13 +163,14 @@ export class CampaignAtlasWorkbench {
       flush: () => Promise<boolean>;
       updated: (w: WorkspaceGeometry) => Promise<void>;
       status: (s: string, error?: boolean) => void;
+      leadAtlas?:()=>Promise<void>;
       readLocation?:(id:string,current:()=>boolean)=>Promise<void>;
       editLocation?:(id:string,current:()=>boolean,back:()=>Promise<void>)=>Promise<void>;
     },
   ) {
     this.root.id = "campaign-atlas";
     this.root.hidden = true;
-    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Ort, Stadt, Haus oder Raum"></label><span id="atlas-scale"></span><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><svg id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas"></svg><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-place-actions" hidden><p id="atlas-place-summary"></p><div class="toolbar"><button id="atlas-place-read">Ortsmappe öffnen</button><button id="atlas-place-edit">Ortstext bearbeiten…</button></div></section><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
+    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas bearbeiten</strong><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Ort, Stadt, Haus oder Raum"></label><span id="atlas-scale"></span><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><svg id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas"></svg><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-place-actions" hidden><p id="atlas-place-summary"></p><div class="toolbar"><button id="atlas-place-read">Ortsmappe öffnen</button><button id="atlas-place-edit">Ortstext bearbeiten…</button></div></section><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
       terrainNames,
     )
       .map(([id, title]) => `<option value="${id}">${title}</option>`)
@@ -211,13 +213,16 @@ export class CampaignAtlasWorkbench {
     this.hitDialog.id='atlas-hit-candidates';this.hitDialog.addEventListener('close',()=>this.hitVersion++);this.root.append(this.hitDialog);
     this.root.querySelectorAll<HTMLInputElement>('#atlas-hex-level,#atlas-terrain').forEach(n=>n.addEventListener('change',()=>{if(n.id==='atlas-hex-level')get<HTMLInputElement>('land-auto-level').checked=false;this.render();}));
     new ResizeObserver(()=>{const b=this.camera.view,aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight);if(aspect>0)this.camera.set({...b,height:b.width/aspect},true);}).observe(this.svg);
-    const names: Record<Family, string> = {
+    const lead=document.createElement('button');
+    lead.id='atlas-lead';lead.type='button';lead.textContent='Atlas leiten';
+    lead.onclick=()=>void this.opts.leadAtlas?.().catch(error=>this.error(error));
+    get('atlas-overview').before(lead);
+    const names: Partial<Record<Family, string>> = {
       navigation: "Navigation",
       terrain: "Landschaft",
       city: "Stadt",
       interior: "Innenräume",
       decoration: "Ausstattung",
-      travel: "Erkunden",
     };
     for (const [id, name] of Object.entries(names)) {
       const b = document.createElement("button");
@@ -518,7 +523,19 @@ export class CampaignAtlasWorkbench {
       if(!visible){this.hide();return;}
       this.family='travel';this.landscape.setActive(false);
       void this.open().catch(error=>this.error(error));
-    },factor=>this.camera.zoom(factor),mounted=>{if(mounted)void openDungeon().catch(error=>this.error(error));else stopDungeonPlayback();});
+    },factor=>this.camera.zoom(factor),mounted=>{
+      if(mounted){
+        if(this.owner&&this.family!=='travel')this.editingContext={token:this.owner.token,family:this.family,view:{...this.camera.view},selection:this.selection,cityId:this.cityId,scopeId:this.scopeId,floorId:this.floorId,groupView:this.groupView};
+        void openDungeon().catch(error=>this.error(error));
+      }else{
+        const editing=this.editingContext;this.editingContext=null;
+        if(editing&&editing.token===this.owner?.token){
+          this.family=editing.family;this.selection=editing.selection;this.cityId=editing.cityId;this.scopeId=editing.scopeId;this.floorId=editing.floorId;this.groupView=editing.groupView;
+          this.camera.set(editing.view,false);
+        }else this.family='navigation';
+        stopDungeonPlayback();
+      }
+    });
   }
   hide() {
     this.request++;

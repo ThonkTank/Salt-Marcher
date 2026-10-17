@@ -49,6 +49,10 @@ export class LiveAtlasPortal implements LiveAtlasSurface {
       zoom.append(b);
     }
     actions.append(zoom);
+    const edit=document.createElement('button');
+    edit.id='live-atlas-edit';edit.type='button';edit.textContent='Atlas bearbeiten';
+    edit.onclick=()=>document.getElementById('atlas-tab')?.click();
+    actions.append(edit);
     const local = document.getElementById("atlas-local-console");
     if (local) {
       const details = document.createElement("details"),

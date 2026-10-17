@@ -393,6 +393,9 @@ function followLiveGroup(result:SceneWorld){
  el('live-travel-empty').textContent=result.position.mapId&&!mapDraft?'Die Karte der Gruppe ist nicht verfügbar. Wähle bewusst eine andere Karte oder öffne den Atlas.':'Noch keine Hexkarte. Lege im Atlas eine Karte an und platziere die Gruppe.';el('live-travel-empty').hidden=!!mapDraft;el<HTMLButtonElement>('live-travel-retry').hidden=!(result.position.mapId&&!mapDraft);
  renderMapFields();renderMap();renderJourney();
 }
+export function openLiveAtlas(){
+ if(liveSurface)travelSurface?.show('map');
+}
 async function toggleLiveTravel(){
  if(liveTravelOpen){playback.stop();if(!await flushWorld())return;liveTravelOpen=false;travelOpenRequest++;worldRead++;travelSurface?.close();setWorldSurface(liveSurface?'live':'world');return;}
  const token=workspace?.token,sceneId=liveFocusId,request=++travelOpenRequest;
