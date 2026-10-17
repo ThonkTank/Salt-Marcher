@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,readFileSync,rmSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,copyFileSync,readFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
@@ -8,7 +8,7 @@ import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
 const base='.build/planner-live-moment',require=createRequire(import.meta.url);
-mkdirSync(base,{recursive:true});buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
+mkdirSync(base+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',base+'/catalog/srd-5.1.generated.json');buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
 async function setup(t,resume=true,initialize=true,recapRaw){
  const root=mkdtempSync(path.join(tmpdir(),'moment-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite')),campaign=store.create('Abend'),w=store.activate(campaign.id);
@@ -543,4 +543,18 @@ test('first visit review waits for the new scene draft read across real asynchro
  const opening=x.ui.openPlannedVisitReview(planId,visitId).then(result=>{finished=true;return result;});
  await settle();assert.equal(reads,1);assert.equal(finished,false,'loading an unrelated quick-entry draft must not discard the handoff');
  release();assert.equal(await opening,true);assert.equal(x.el('adoption-dialog').open,true);assert.match(x.el('adoption-content').textContent,/Am Steg/);
+});
+
+test('adoption review describes unmaterialized encounter slots as planned figures without creating actors',async t=>{
+ const x=await setup(t,false,false),planId=randomUUID(),visitId=randomUUID(),encounterId=randomUUID();
+ x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Guards',scenes:[{id:visitId,title:'Steg',notes:'Verhandeln möglich',locationId:null}]}}});
+ x.store.saveEncounterPlan({...x.command(null),expectedRevision:null,plan:{id:encounterId,revision:0,name:'Wachen',notes:'',party:[],entries:[{id:randomUUID(),creatureId:'guard',count:2,grouped:false}],sources:[],catalogHash:''}});
+ const attached=x.store.executeSession(x.command({kind:'attach',planId,visitId,expectedVisitRevision:0,encounterId,expectedEncounterRevision:1})),groupId=attached.visits[0].groupIds[0];
+ assert.equal(x.store.groupView(x.w.token,groupId).actors.length,0);
+ assert.equal(await x.ui.openPlannedVisitReview(planId,visitId),true);
+ assert.match(x.el('adoption-content').textContent,/2 geplante Figuren/);
+ assert.equal(x.store.groupView(x.w.token,groupId).actors.length,0,'review stays read-only');
+ x.el('adoption-confirm').click();await settle();
+ const live=x.store.live(x.w.token);
+ assert.equal(x.store.scenePreparation(x.w.token,live.scene.id).groups[0].actors.length,2);
 });
