@@ -40,6 +40,9 @@ function usePreparation(next: Preparation, filtered = false) {
 }
 const noteRow = (id: string | null) => id ? campaignNotes.get(id) : undefined;
 let noteDraft: Note | null = null, planDraft: ManualPlan | null = null;
+let excerptField:'readAloud'|'gmNotes'|null=null;
+let excerpt:{source:import('./preparation-contracts').NoteExcerptSource;text:string;token:string;load:number}|null=null;
+let excerptBusy=false;
 let selectedNote: string | null = null, selectedPlan: string | null = null, selectedScene: string | null = null;
 let selectedLocation: string | null = null, locationDraft: LocationRow | null = null;
 let openMap: (scopeId: string) => Promise<void>;
@@ -145,6 +148,7 @@ async function ensurePlanningView(){
   try{await task;}finally{if(planningOpening?.task===task)planningOpening=null;}
 }
 export async function activatePreparation(workspace: WorkspaceGeometry,load=true) {
+  excerpt=null;excerptField=null;get<HTMLDialogElement>('note-excerpt-dialog').close();
   noteMerge?.activate(workspace.campaign.id);
   preparationLoaded=false;
   planningRenderedLoad=-1;planningOpening=null;
@@ -338,13 +342,15 @@ async function renderNotes(initialLocationId?:string) {
   get('note-editor').hidden = !row; get('note-empty').hidden = !!row;
   renderNoteList();
   get<HTMLButtonElement>('note-text-reference').disabled=!row||row.trashed||blocked||draftProblems.has(draftKey('note', row.note.id));
+  get<HTMLButtonElement>('note-excerpt').disabled=!row||row.trashed||blocked||draftProblems.has(draftKey('note',row.note.id));
+  excerptField=null;get('note-excerpt-status').replaceChildren();
   if (!row) return;
   void checkpoint();
   const shown = noteDraft ?? row.note;
   get<HTMLInputElement>('note-title').value = shown.title;
   get<HTMLTextAreaElement>('note-read-aloud').value = shown.readAloud;
   get<HTMLTextAreaElement>('note-gm').value = shown.gmNotes;
-  get('note-kind').textContent = ({ npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht', rule: 'Regel' })[row.note.kind];
+  get('note-kind').textContent = ({ note: 'Notiz', npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht', rule: 'Regel' })[row.note.kind];
   for (const id of ['note-title', 'note-read-aloud', 'note-gm']) get<HTMLInputElement>(id).disabled = row.trashed || draftProblems.has(draftKey('note', row.note.id));
   const mergeButton=get('note-merge-open');if(mergeButton)mergeButton.hidden=row.trashed||row.note.kind!=='npc';
   get('note-remove').hidden = row.trashed; get('note-restore').hidden = !row.trashed;
@@ -494,6 +500,40 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
   get('world-new').onclick = () => { get<HTMLDialogElement>('world-dialog').showModal(); get('world-name').focus(); };
   get('world-cancel').onclick = () => get<HTMLDialogElement>('world-dialog').close();
+  for(const [id,field]of [['note-read-aloud','readAloud'],['note-gm','gmNotes']] as const)get(id).addEventListener('focus',()=>{excerptField=field;});
+  get('note-excerpt').onclick=()=>{void(async()=>{
+    const field=excerptField??'gmNotes',area=get<HTMLTextAreaElement>(field==='gmNotes'?'note-gm':'note-read-aloud'),before=noteDraft;
+    if(!before||blocked||excerptBusy)return;
+    const start=rawTextOffset(before[field],area.selectionStart),end=rawTextOffset(before[field],area.selectionEnd),text=before[field].slice(start,end);
+    if(!text.trim()){get('note-excerpt-status').textContent='Markiere zuerst den gewünschten Text unter „Zum Vorlesen“ oder „Notizen für die Spielleitung“.';area.focus();return;}
+    const token=context?.token,load=preparationLoad,edit=preparationInputVersion;
+    if(!await flushPreparation()||context?.token!==token||preparationLoad!==load||selectedNote!==before.id||preparationInputVersion!==edit)return;
+    const source=originalNote();if(!source||source[field].slice(start,end)!==text)return;
+    excerpt={source:{id:source.id,revision:source.revision,field,start,end},text,token:token!,load};
+    get('note-excerpt-origin').textContent='Quelle: '+source.title+' · '+(field==='gmNotes'?'privater GM-Text':'Text zum Vorlesen');
+    get<HTMLInputElement>('note-excerpt-title').value='';get<HTMLTextAreaElement>('note-excerpt-text').value=text;
+    get<HTMLDialogElement>('note-excerpt-dialog').showModal();get('note-excerpt-title').focus();
+  })();};
+  get('note-excerpt-cancel').onclick=()=>{if(!excerptBusy){get<HTMLDialogElement>('note-excerpt-dialog').close();excerpt=null;}};
+  get('note-excerpt-dialog').addEventListener('cancel',event=>{if(excerptBusy)event.preventDefault();else excerpt=null;});
+  get('note-excerpt-form').onsubmit=event=>{event.preventDefault();void(async()=>{
+    const input=excerpt;if(!input||excerptBusy||blocked||!value('note-excerpt-title').trim())return;
+    const current=()=>excerpt===input&&context?.token===input.token&&preparationLoad===input.load&&selectedNote===input.source.id;
+    if(!current())return;excerptBusy=true;get('note-excerpt-form').inert=true;
+    const note:Note={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,kind:value('note-excerpt-kind') as Note['kind'],title:value('note-excerpt-title'),readAloud:input.source.field==='readAloud'?input.text:'',gmNotes:input.source.field==='gmNotes'?input.text:'',relations:[{targetId:campaignLocalId(input.source.id),label:'Quelle'}],creatureId:null,deleted:false};
+    try{
+      const saved=await change({kind:'note',expectedRevision:null,note,excerpt:input.source},false,current);
+      if(!current())return;
+      // An unconfirmed request is resolved through the existing preparation
+      // controls, outside the modal. Never resend it automatically.
+      get<HTMLDialogElement>('note-excerpt-dialog').close();excerpt=null;
+      if(!saved)return;
+      noteDraft=structuredClone(originalNote()!);renderNoteList();renderRelations();
+      const status=get('note-excerpt-status');status.replaceChildren(document.createTextNode('„'+note.title+'“ angelegt · Herkunft und Auszug verknüpft. '));
+      const open=document.createElement('button');open.type='button';open.textContent='Neue Notiz öffnen';open.onclick=()=>{if(context?.token===input.token)void openPreparedNote(note.id);};status.append(open);
+      const area=get<HTMLTextAreaElement>(input.source.field==='gmNotes'?'note-gm':'note-read-aloud');area.focus();const end=noteDraft[input.source.field].slice(0,input.source.end).replace(/\r\n?/g,'\n').length;area.setSelectionRange(end,end);
+    }finally{excerptBusy=false;get('note-excerpt-form').inert=false;}
+  })();};
   get('world-form').onsubmit = event => { event.preventDefault(); void (async () => {
     const token = context?.token;
     if (!context || !(await flushPreparation()) || context?.token !== token) return;

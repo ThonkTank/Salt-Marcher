@@ -8,8 +8,10 @@ export interface NoteRow { note: Note; trashed: boolean; searchPreview?: NoteSea
 export interface LocationRow { document: LocationDocument; revision: number; trashed: boolean }
 export interface PreparationSelection { noteId: string | null; planId: string | null; sceneId: string | null; locationId?: string | null }
 export interface Preparation { notes: NoteRow[]; plans: ManualPlan[]; locations: LocationRow[]; maps: { id: string; name: string }[]; problems: string[]; selection: PreparationSelection }
+/** Exact source selection. The writer preserves its prose and publishes both links atomically. */
+export interface NoteExcerptSource { id: string; revision: number; field: 'readAloud' | 'gmNotes'; start: number; end: number }
 export type PreparationChange =
-  | { kind: 'note'; expectedRevision: number | null; note: Note }
+  | { kind: 'note'; expectedRevision: number | null; note: Note; excerpt?: NoteExcerptSource }
   | NoteMergeChange
   | { kind: 'note-trash'; id: string; expectedRevision: number; trashed: boolean }
   | { kind: 'location'; expectedRevision: number | null; document: LocationDocument }
@@ -78,6 +80,8 @@ export function validatePreparation(change: PreparationChange) {
     const note = worldNoteDocument(change.note);
     if (note.deleted) throw new Error('Notizen werden in den Papierkorb verschoben.');
     if ([note.title, note.readAloud, note.gmNotes].some(text => text.length > 2_000_000)) throw new Error('Ein Notizfeld ist für diesen Anschluss zu groß.');
+    const s=change.excerpt;
+    if(s!==undefined&&(change.expectedRevision!==null||!s||typeof s.id!=='string'||!s.id||s.id===note.id||!Number.isSafeInteger(s.revision)||s.revision<1||!['readAloud','gmNotes'].includes(s.field)||!Number.isSafeInteger(s.start)||!Number.isSafeInteger(s.end)||s.start<0||s.end<=s.start))throw new Error('Ungültiger Notizauszug.');
     return { ...change, note };
   }
   if (change.kind === 'plan') {

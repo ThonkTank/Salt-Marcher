@@ -22,6 +22,23 @@ test('opening an unavailable note reports failure without claiming the previous 
  const x=await fixture(t);await x.activate();assert.equal(await x.ui.openPreparedNote(x.ids.borin),true);
  const title=x.el('note-title').value;assert.equal(await x.ui.openPreparedNote('missing-note'),false);assert.equal(x.el('note-title').value,title);assert.equal(x.writes.length,0);
 });
+
+async function selectExcerpt(x,field='gmNotes'){
+ await x.activate();await x.ui.openPreparedNote(x.ids.borin);const area=x.el(field==='gmNotes'?'note-gm':'note-read-aloud');area.dispatchEvent(new x.window.Event('focus'));area.setSelectionRange(0,field==='gmNotes'?9:2);x.el('note-excerpt').click();await until(()=>x.el('note-excerpt-dialog').open);return area;
+}
+test('selected source text creates a typed original with both provenance links while keeping its source editor',async t=>{
+ const x=await fixture(t),area=await selectExcerpt(x);assert.equal(x.el('note-excerpt-text').value,'GM privat');x.el('note-excerpt-kind').value='faction';x.el('note-excerpt-title').value='Bruderschaft';x.el('note-excerpt-form').dispatchEvent(new x.window.Event('submit',{cancelable:true}));await until(()=>x.writes.length===1&&!x.el('note-excerpt-dialog').open);
+ const notes=x.store.preparation(x.workspace.token).notes,created=notes.find(r=>r.note.title==='Bruderschaft').note,source=notes.find(r=>r.note.id===x.ids.borin).note;assert.equal(created.kind,'faction');assert.equal(created.gmNotes,'GM privat');assert.equal(created.readAloud,'');assert.deepEqual(created.relations,[{targetId:x.ids.borin,label:'Quelle'}]);assert.deepEqual(source.relations,[{targetId:created.id,label:'Auszug'}]);assert.equal(source.gmNotes,x.original.gmNotes);assert.equal(x.el('note-title').value,'Borin');assert.equal(area.value,'GM privat');assert.match(x.el('note-excerpt-status').textContent,/Bruderschaft/);
+});
+test('empty selection and cancelled extraction create no notes or relations',async t=>{
+ const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);x.el('note-excerpt').click();await settle();assert.match(x.el('note-excerpt-status').textContent,/Markiere zuerst/);assert.equal(x.writes.length,0);const a=x.el('note-gm');a.setSelectionRange(0,9);a.dispatchEvent(new x.window.Event('focus'));x.el('note-excerpt').click();await until(()=>x.el('note-excerpt-dialog').open);x.el('note-excerpt-cancel').click();assert.equal(x.el('note-excerpt-dialog').open,false);assert.equal(x.writes.length,0);
+});
+test('double submit during an excerpt acknowledgement cannot create duplicates',async t=>{
+ const x=await fixture(t);await selectExcerpt(x);x.el('note-excerpt-title').value='Einmal';const save=x.window.campaign.changePreparation;let release;x.window.campaign.changePreparation=async c=>{const result=await save(c);return new Promise(r=>release=()=>r(result));};const form=x.el('note-excerpt-form');form.dispatchEvent(new x.window.Event('submit',{cancelable:true}));await until(()=>!!release);form.dispatchEvent(new x.window.Event('submit',{cancelable:true}));await settle();assert.equal(x.writes.length,1);release();await until(()=>!x.el('note-excerpt-dialog').open);assert.equal(x.store.preparation(x.workspace.token).notes.filter(r=>r.note.title==='Einmal').length,1);
+});
+test('lost excerpt acknowledgement exposes original-command reconciliation without a second write',async t=>{
+ const x=await fixture(t);await selectExcerpt(x);x.el('note-excerpt-title').value='Gerettet';const save=x.window.campaign.changePreparation;x.window.campaign.changePreparation=async c=>{await save(c);return{ok:false,error:'Antwort verloren'};};x.el('note-excerpt-form').dispatchEvent(new x.window.Event('submit',{cancelable:true}));await until(()=>!x.el('note-excerpt-dialog').open);assert.equal(x.writes.length,1);assert.equal(x.el('preparation-reconcile').hidden,false);x.el('preparation-reconcile').click();await until(()=>x.el('preparation-reconcile').hidden);assert.equal(x.writes.length,1);assert.equal(x.store.preparation(x.workspace.token).notes.filter(r=>r.note.title==='Gerettet').length,1);assert.equal(x.el('note-title').value,'Borin');
+});
 const base='.build/realist-preparation',require=createRequire(import.meta.url);
 mkdirSync(base+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',base+'/catalog/srd-5.1.generated.json');
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
@@ -559,7 +576,8 @@ async function packetOriginal(x){
  x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));const detail=x.store.session(x.workspace.token,plan.id).visits[1];x.store.executeSession({...x.command(null),action:{kind:'visit',planId:plan.id,expectedRevision:detail.revision,detail:{...detail,readAloud:'  Eigene Begrüßung\r\n',noteIds:[x.ids.ada,x.ids.borin]}}});
  const saved=x.store.session(x.workspace.token,plan.id);x.window.campaign.sessionPacket=async(...args)=>({ok:true,value:x.store.sessionPacket(...args)});await x.activate();await x.ui.openPreparedNote(x.ids.ada);await x.ui.openPreparedVisit(plan.id,plan.scenes[1].id);x.el('session-packet-open').click();await until(()=>x.el('session-packet-dialog').open&&x.el('session-packet-dialog').getAttribute('aria-busy')==='false');
  x.el('session-packet-search').value='Drei';x.el('session-packet-search').oninput();x.el('session-packet-content').scrollTop=343;x.el('session-packet-dialog').scrollTop=92;
- const block=[...x.el('session-packet-content').querySelectorAll('.packet-reference')].find(e=>e.querySelector('h4').textContent==='Borin · npc');
+ const block=[...x.el('session-packet-content').querySelectorAll('.packet-reference')].find(e=>e.querySelector('h4').textContent==='Borin · NSC');
+ assert.ok(block,'the displayed German note heading must identify the original editor action');
  return{raw,plan,saved,open:()=>block.querySelector('.packet-block-action').click()};
 }
 test('packet original editing retains the selected visit, query and reading position and restores its canonical owner',async t=>{

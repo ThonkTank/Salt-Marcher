@@ -1334,6 +1334,15 @@ export class CampaignStore {
         const old = this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision || old.trashed) throw new Error('Notizkonflikt: Der gespeicherte Stand hat sich geändert.');
         const oldNote = old ? this.decodeNote(old, 'Beschädigte Notiz darf nicht überschrieben werden.') : null;
+        const source=change.excerpt;
+        let sourceNote:Note|null=null;
+        if(source){
+          const row=this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId,source.id);
+          if(!row||row.trashed||row.revision!==source.revision)throw new Error('Auszugskonflikt: Die Quelle wurde geändert oder ist nicht verfügbar.');
+          sourceNote=this.decodeNote(row,'Beschädigte Quelle bleibt unverändert.');
+          const selected=sourceNote[source.field].slice(source.start,source.end),other=source.field==='gmNotes'?'readAloud':'gmNotes';
+          if(source.end>sourceNote[source.field].length||!selected.trim()||change.note[source.field]!==selected||change.note[other]!==''||change.note.relations.length!==1||change.note.relations[0]?.targetId!==source.id||change.note.relations[0]?.label!=='Quelle'||change.note.relations[0]?.familyKind!==undefined)throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
+        }
         if (oldNote && oldNote.kind !== change.note.kind) throw new Error('Die Notizart bleibt an ihrer Identität gebunden.');
         if(oldNote?.relations.some(relation=>relation.familyKind&&!change.note.relations.some(next=>next.targetId===relation.targetId&&next.label===relation.label&&next.familyKind===relation.familyKind)))throw new Error('Familienbeziehungen werden nur als vollständiges Paar geändert.');
         for (const relation of change.note.relations) {
@@ -1348,6 +1357,11 @@ export class CampaignStore {
         this.db.prepare('INSERT INTO world_note VALUES(?,?,?,0,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(campaignId, targetId, revision, payload, hash(payload));
         this.db.prepare('DELETE FROM note_search WHERE campaign_id=? AND note_id=?').run(campaignId, targetId);
         this.db.prepare('INSERT INTO note_search(campaign_id,note_id,title,body) VALUES(?,?,?,?)').run(campaignId, targetId, note.title, note.readAloud + '\n' + note.gmNotes);
+        if(sourceNote){
+          // Reuse the canonical writer inside this transaction: index, checksum,
+          // receipt and both directions either all publish or all roll back.
+          this.commitPreparation({commandId:command.commandId+'|excerpt-source',campaignId,token:command.token,change:{kind:'note',expectedRevision:sourceNote.revision,note:{...sourceNote,relations:[...sourceNote.relations,{targetId:note.id,label:'Auszug'}]}}});
+        }
         if(oldNote?.kind==='npc'&&oldNote.title!==note.title)syncOpenMaskHealth(this.db,campaignId,undefined,new Map([[targetId,{before:oldNote.title,after:note.title}]]));
       } else if (change.kind === 'note-trash') {
         targetId = change.id;

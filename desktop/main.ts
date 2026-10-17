@@ -98,7 +98,7 @@ else {
     function handle<T>(name: string, operation: (...args: any[]) => T | Promise<T>) {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
-        try { const value=await operation(...args);if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:trash','campaign:erase','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
+        try { const value=await operation(...args);if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
         catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.' }; }
       });
     }
@@ -273,8 +273,6 @@ else {
       }catch(error){await rm(ticket.dir,{recursive:true,force:true});throw error;}
     }
     handle('campaign:overview',()=>store.campaignOverview());
-    handle('campaign:trash',(command:Parameters<typeof store.trashCampaign>[0])=>{if(currentCampaignSource===command.id)campaignCancelled=true;store.trashCampaign(command);});
-    handle('campaign:erase',async(command:Parameters<typeof store.eraseCampaign>[0])=>{if(currentCampaignSource===command.id)campaignCancelled=true;for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===command.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}store.eraseCampaign(command);for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});store.finishCampaignErasure(command.id);});
     handle('campaign:export', (token:string)=>campaignJob(async()=>{const capture=await captureCampaign(token);try{const selection=await dialog.showSaveDialog(win,{title:'Kampagne vollständig exportieren',defaultPath:capture.manifest.name+'.kwcampaign',filters:[{name:'SaltMarcher Kampagne',extensions:['kwcampaign']}]});if(selection.canceled||!selection.filePath)return{cancelled:true};await exportCampaignArchive(selection.filePath,capture.manifest,capture.files,campaignHooks(capture.fence));return{cancelled:false};}finally{await rm(capture.dir,{recursive:true,force:true});}}));
     handle('campaign:copy-preview',(token:string)=>campaignJob(async()=>{const capture=await captureCampaign(token);return campaignPreview({dir:capture.dir,manifest:capture.manifest,copy:true,fence:capture.fence});}));
     handle('campaign:import-preview',()=>campaignJob(async()=>{const selection=await dialog.showOpenDialog(win,{title:'Kampagnenpaket auswählen',properties:['openFile'],filters:[{name:'SaltMarcher Kampagne',extensions:['kwcampaign']}]});if(selection.canceled)return null;const extracted=await extractCampaignArchive(selection.filePaths[0]!,campaignJobsRoot,campaignHooks(null));return campaignPreview({...extracted,copy:false,fence:null});}));

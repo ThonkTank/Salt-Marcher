@@ -16,6 +16,6 @@ export function validateKeyNoteCapture(c:KeyNoteCaptureCommand){
  const id=(v:unknown)=>typeof v==='string'&&!!v&&v.length<=1000;
  if(!c||!id(c.commandId)||!id(c.campaignId)||!id(c.token)||!c.room||!id(c.room.id)||!Number.isSafeInteger(c.room.expectedRevision)||c.room.expectedRevision<0||c.room.keyRevision!==null&&(!Number.isSafeInteger(c.room.keyRevision)||c.room.keyRevision<0))throw new Error('Raumstand für die neue Notiz prüfen.');
  if(c.reuseRevision!==undefined&&(!Number.isSafeInteger(c.reuseRevision)||c.reuseRevision<1)||c.allowSameTitle!==undefined&&typeof c.allowSameTitle!=='boolean')throw new Error('Notizstand prüfen.');
- if(!c.note||!['npc','faction','quest','rumor',...(c.reuseRevision!==undefined?['rule']:[])].includes(c.note.kind)||c.note.revision!==1||c.note.relations?.length!==0||c.note.creatureId!==null||c.reuseRevision!==undefined&&c.note.readAloud!=='')throw new Error('Neue Notiz prüfen.');
+ if(!c.note||!['npc','faction','quest','rumor',...(c.reuseRevision!==undefined?['note','rule']:[])].includes(c.note.kind)||c.note.revision!==1||c.note.relations?.length!==0||c.note.creatureId!==null||c.reuseRevision!==undefined&&c.note.readAloud!=='')throw new Error('Neue Notiz prüfen.');
  validatePreparation({kind:'note',expectedRevision:null,note:c.note});
 }

@@ -71,7 +71,7 @@ export async function readConfirmedWorldNotes(input: {
     throw new Error("World-Notes-Owner besitzt keinen bestätigten nativen Vertrag.");
   const seen = new Set<string>(), records: WorldNoteV1[] = [];
   for (const entry of owner.records) {
-    if (seen.has(entry.id) || !["world-npc", "world-faction", "world-quest", "world-rumor", "world-rule"].includes(entry.recordType) ||
+    if (seen.has(entry.id) || !["world-note", "world-npc", "world-faction", "world-quest", "world-rumor", "world-rule"].includes(entry.recordType) ||
         entry.media !== null) throw new Error("World-Notes-Inventory ist ungültig.");
     seen.add(entry.id);
     const kind = entry.recordType.slice("world-".length) as WorldNoteKind,
