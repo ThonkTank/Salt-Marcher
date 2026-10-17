@@ -25,6 +25,7 @@ export type WorldAction=
  |{kind:'calendar';calendar:FantasyCalendar;expectedRevision:number}
  |{kind:'map';map:AtlasMap;expectedRevision:number|null}
  |{kind:'cell';mapId:string;expectedRevision:number;cell:AtlasCell}
+ |{kind:'place-create';mapId:string;expectedMapRevision:number;document:import('../features/location/location-schema').LocationDocument;hex:Hex}
  |{kind:'place';mapId:string;locationId:string;expectedRevision:number|null;hex:Hex}
  |{kind:'place-presentation';locationId:string;expectedRevision:number|null;presentation:MarkerPresentation}
  |{kind:'calendar-event';event:CalendarEvent;expectedRevision:number|null;basis?:import('./agenda-contracts').AgendaBasis}

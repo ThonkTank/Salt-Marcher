@@ -457,14 +457,14 @@ export class LandscapeWorkbench {
       }
     this.host.redraw();
   }
-  draw(root: SVGElement, box: LandscapeBox, mpp: number) {
+  draw(root: SVGElement, box: LandscapeBox, mpp: number,locationMarkers?:ReadonlySet<string>) {
     void this.load().catch((e) => this.host.error(e));
     const records = this.selected
       ? this.records.map((r) =>
           r.id === this.selected!.id ? this.selected! : r,
         )
       : this.records;
-    drawLandscape(root, records, box, mpp, this.assets,true,this.raster);
+    drawLandscape(root, locationMarkers?records.filter(r=>r.kind!=='place'||!r.locationId||!locationMarkers.has(r.locationId)):records, box, mpp, this.assets,true,this.raster);
     const auto = html<HTMLInputElement>("land-auto-level").checked,
       level = auto
         ? Math.max(

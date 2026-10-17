@@ -18,6 +18,7 @@ test('activation and Atlas opening project 4000 rooms without decoding room pros
  const shell=f.store.activateShell(f.cam.id);assert(!('rooms' in shell));assert.equal(shell.selectedId,'room-00001');
  const w=f.store.workspaceGeometry(shell.token);assert.equal(w.rooms.length,4000);assert(!JSON.stringify(w).includes('PRIVATE'));assert(w.rooms.every(r=>!('sections' in r)));
  const atlas=f.store.atlasRenderView(shell.token);assert.equal(atlas.workspace.rooms.length,4000);assert(!JSON.stringify(atlas).includes('PRIVATE'));assert(!('keyContent' in atlas.geometry.drawing));
+ const group=f.store.atlasRenderView(shell.token,true);assert.equal(group.publicFrame.mode,'blank');assert(!JSON.stringify(group).includes('PRIVATE'));assert.throws(()=>f.store.atlasRenderView(shell.token,'invalid'),/Gruppensicht/);
 });
 test('directory preserves natural order, complete Markdown search, scopes, hidden floors and long IDs',t=>{
  const rooms=Array.from({length:83},(_,i)=>room(i+1));rooms[81].id='old-'+ 'x'.repeat(1500);rooms[81].scopeId='tower';rooms[81].floorId='up';rooms[82].floorId='up';const f=fixture(t,rooms),w=f.store.activateShell(f.cam.id);

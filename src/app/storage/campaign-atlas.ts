@@ -75,7 +75,7 @@ export function bindAtlas(
 ) {
   if (
     !b ||
-    !["city", "dungeon"].includes(b.kind) ||
+    !["city", "dungeon", "location"].includes(b.kind) ||
     !["world", "building"].includes(b.parent) ||
     !b.id ||
     !b.ownerId ||
@@ -83,15 +83,16 @@ export function bindAtlas(
   )
     throw new Error("Räumliche Einordnung prüfen.");
   const old = db
-    .prepare("SELECT revision FROM atlas_binding WHERE campaign_id=? AND id=?")
+    .prepare("SELECT revision,kind,owner_id FROM atlas_binding WHERE campaign_id=? AND id=?")
     .get(cam, b.id);
+  if(old&&(old.kind!==b.kind||old.owner_id!==b.ownerId))throw new Error("Räumliche Identität kann nicht ersetzt werden.");
   if ((old?.revision ?? null) !== expected)
     throw new Error("Räumliche Einordnung inzwischen geändert.");
   const owner = db
     .prepare(
       b.kind === "city"
         ? "SELECT id FROM city_document WHERE campaign_id=? AND id=?"
-        : "SELECT id FROM scope WHERE campaign_id=? AND id=?",
+        : b.kind==="location" ? "SELECT id FROM location WHERE campaign_id=? AND id=? AND trashed=0" : "SELECT id FROM scope WHERE campaign_id=? AND id=?",
     )
     .get(cam, b.ownerId);
   if (!owner) throw new Error("Räumliches Objekt fehlt.");
@@ -404,7 +405,7 @@ function checkPositions(db: any, cam: string) {
 }
 const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
-  'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
+  'location-create':true,'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
   'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
 export function executeAtlasWrite(
@@ -530,7 +531,7 @@ export function validateCampaignAtlases(db: any) {
     for (const b of atlasBindings(db, root.campaign_id)) {
       if (
         ![b.x, b.y, b.angle].every(Number.isFinite) ||
-        !["world", "building"].includes(b.parent)
+        !["world", "building"].includes(b.parent) || !["city","dungeon","location"].includes(b.kind) || (b.kind!=="dungeon"&&b.parent!=="world")
       )
         throw new Error("Atlasposition ungültig.");
       if (
@@ -538,7 +539,7 @@ export function validateCampaignAtlases(db: any) {
           .prepare(
             b.kind === "city"
               ? "SELECT 1 FROM city_document WHERE campaign_id=? AND id=?"
-              : "SELECT 1 FROM scope WHERE campaign_id=? AND id=?",
+              : b.kind==="location" ? "SELECT 1 FROM location WHERE campaign_id=? AND id=?" : "SELECT 1 FROM scope WHERE campaign_id=? AND id=?",
           )
           .get(root.campaign_id, b.ownerId)
       )

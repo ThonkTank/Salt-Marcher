@@ -11,7 +11,7 @@ import type { WorldCommand, AtlasMap, SceneWorld } from "./world-contracts";
 import type { DungeonView } from "./dungeon-contracts";
 export interface AtlasBinding {
   id: string;
-  kind: "city" | "dungeon";
+  kind: "city" | "dungeon" | "location";
   ownerId: string;
   parent: "world" | "building";
   parentId: string | null;
@@ -30,13 +30,16 @@ export interface CampaignAtlas<R extends RoomGeometry = Room,E extends DrawingEl
   terrain: AtlasMap;
   bindings: AtlasBinding[];
   cities: C[];
+  places: (import("./world-contracts").AtlasPlace & {point:import("./contracts").Point})[];
   geometry: DungeonView<R,E>;
   workspace: WorkspaceState<R>;
   scene: SceneWorld | null;
+  publicFrame?: import("./player-contracts").PlayerFrame;
   canUndo: boolean;
   canRedo: boolean;
 }
 export type AtlasAction =
+  | {kind:"location-create";mapId:string;expectedMapRevision:number;document:import("../features/location/location-schema").LocationDocument;point:import("./contracts").Point}
   | import("./atlas-landscape").LandscapeAction
   | {
       kind: "drawing-import";
@@ -96,7 +99,7 @@ export interface AtlasObjectQuery {
 }
 export interface AtlasObjectPage {
   campaignId: string; token: string; revision: number;
-  items: {id: string; name: string; revision: number; scopeId?: string; floorId?: string; number?: string}[];
+  items: {id: string; name: string; revision: number; locationId?:string; scopeId?: string; floorId?: string; number?: string}[];
   next: AtlasObjectQuery['cursor'] | null;
 }
 export interface AtlasCommitAck {
@@ -106,7 +109,7 @@ export interface AtlasCommitAck {
 export type AtlasRenderView = Omit<CampaignAtlas<RoomGeometry,DrawingElementGeometry,import("./atlas-region-contracts").CityGeometry>,'scene'|'terrain'> & {terrain:Omit<AtlasMap,'cells'|'landscape'>;scene:Pick<SceneWorld,'scene'|'position'|'journey'>|null;region?:Omit<import("./atlas-region-contracts").AtlasRegionGeometry,'rooms'|'floors'|'drawing'|'cities'|'bindings'|'scopes'>};
 export interface AtlasAPI extends importAtlasRegionAPI {
   atlasRoomCommit(edit:Edit):Promise<Result<import('./contracts').RoomCommit>>;
-  atlasRenderView(token:string):Promise<Result<AtlasRenderView>>;
+  atlasRenderView(token:string,groupView?:boolean):Promise<Result<AtlasRenderView>>;
   cancelLandscapeRaster(token:string,consumer:'view'|'export'):Promise<Result<void>>;
   landscapeRaster(token:string,box:import('./atlas-landscape').LandscapeBox,width:number,height:number,consumer?:'view'|'export'):Promise<Result<import('./landscape-raster').LandscapeRaster>>;
   atlasOverview(token: string): Promise<Result<AtlasOverview>>;
@@ -145,7 +148,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
     x: number;
     y: number;
   }): Promise<Result<{ atlas: CampaignAtlas; roomId: string | null }>>;
-  campaignAtlas(token: string): Promise<Result<CampaignAtlas>>;
+  campaignAtlas(token: string, groupView?: boolean): Promise<Result<CampaignAtlas>>;
   executeAtlas(
     command: AtlasCommand,
   ): Promise<Result<{ atlas: CampaignAtlas; result: unknown }>>;

@@ -1,12 +1,15 @@
+import {passageCenter} from './path-opening';
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room} from './contracts';
-import type {DrawingView,DrawingAction} from './drawing-contracts';
+import type {DrawingMapView,DrawingAction} from './drawing-contracts';
 import type {DungeonPath,PathPreview,ConnectionForm,PassageSide,DungeonPassage} from './path-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
+import {volumeProjection} from './volume-model';
+import {roomPath} from './drawing-model';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
 let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
-let data:DrawingView|null=null,draft:DungeonPath|null=null,sourceDraft:DungeonPath|null=null,sourceRevision:number|null=null,preview:PathPreview|null=null;
+let data:DrawingMapView|null=null,draft:DungeonPath|null=null,sourceDraft:DungeonPath|null=null,sourceRevision:number|null=null,preview:PathPreview|null=null;
 let generation=0,readRequest=0,editIntent=0,pending:Promise<boolean>|null=null,writing=false;
 let locations:{id:string;name:string}[]=[];
 const formIds=['path-name','path-notes','path-from','path-to','path-from-pin','path-to-pin','path-from-x','path-from-y','path-from-z','path-from-face','path-to-x','path-to-y','path-to-z','path-to-face','path-waypoints','path-forms','path-widths','path-heights','path-factors','path-medium'];
@@ -27,7 +30,7 @@ function run(fn:(o:Owner)=>Promise<boolean>){
 }
 function cancelRead(){generation++;readRequest++;pending=null;writing=false;}
 function choose(p:DungeonPath,revision:number|null){
- draft=structuredClone(p);sourceDraft=structuredClone(p);sourceRevision=revision;preview=null;editIntent++;drawForm();formBase=snapshot();
+ el('path-dialog-title').textContent=revision===null?'Räume mit einem Gang verbinden':'Gang bearbeiten';draft=structuredClone(p);sourceDraft=structuredClone(p);sourceRevision=revision;preview=null;editIntent++;drawForm();formBase=snapshot();
 }
 function options(id:string,selection:string){
  const s=el<HTMLSelectElement>(id);s.replaceChildren();
@@ -37,7 +40,8 @@ function options(id:string,selection:string){
 }
 function newPath(selectedId=selected()?.id){
  const rooms=workspace()?.rooms.filter(r=>data?.volumes?.some(v=>v.roomId===r.id))??[];
- const from=rooms.find(r=>r.id===selectedId)??rooms[0],to=rooms.find(r=>r.id!==from?.id&&r.scopeId===from?.scopeId);
+ const from=rooms.find(r=>r.id===selectedId)??rooms[0],to=rooms.find(r=>r.id!==from?.id&&r.scopeId===from?.scopeId&&r.floorId===from?.floorId);
+ el('path-feedback').textContent=rooms.length<2?'Zwei Räume mit Volumen benötigt. Räume direkt auf der Karte zeichnen; bei übernommenen Konturen zuerst unter 3D-Volumen ein Volumen anlegen.':'';
  choose({id:crypto.randomUUID(),revision:0,scopeId:from?.scopeId??'',name:'Neue Verbindung',notes:'',from:{roomId:from?.id??'',volumeId:null,pinned:false,local:null},to:{roomId:to?.id??'',volumeId:null,pinned:false,local:null},waypoints:[],segments:[{form:'corridor',widthSteps:1,heightSteps:2,factor:1}],medium:'air',mode:'path',roomId:null,volumeId:null,fromPassageId:crypto.randomUUID(),toPassageId:crypto.randomUUID(),basis:'',route:[]},null);
 }
 function drawForm(){
@@ -51,7 +55,7 @@ function drawForm(){
  for(const[id,values]of [['path-forms',draft.segments.map(s=>names[s.form])],['path-widths',draft.segments.map(s=>s.widthSteps)],['path-heights',draft.segments.map(s=>s.heightSteps)],['path-factors',draft.segments.map(s=>s.factor)]] as const)field(id).value=values.join(', ');
  field('path-medium').value=draft.medium;
  el<HTMLButtonElement>('path-preview').disabled=draft.mode==='area';el<HTMLButtonElement>('path-commit').disabled=!preview;
- el('path-preview-status').textContent=preview?'Vorschau '+preview.distanceMeters.toFixed(1)+' m · '+preview.volume.columns.length+' Säulen · noch nicht übernommen':'Endräume wählen und Verbindung vorschlagen lassen.';drawPreview();
+ el('path-preview-status').textContent=preview?'Vorschau '+preview.distanceMeters.toFixed(1)+' m · '+preview.volume.columns.length+' Bodenfelder · noch nicht übernommen':sourceRevision!==null?'Gespeicherter Gang. Änderungen zuerst vorschlagen lassen, dann übernehmen.':'Endräume wählen und Verbindung vorschlagen lassen.';drawPreview();
 }
 interface SideValues{description:string;seconds:string;kind:PassageSide['target']['kind'];targetId:string;passable:boolean;sight:boolean;light:boolean;sound:boolean}
 const sideValues=(side:PassageSide):SideValues=>({description:side.description,seconds:String(side.additionalSeconds),kind:side.target.kind,targetId:side.target.id??'',passable:side.passable,sight:side.sight,light:side.light,sound:side.sound});
@@ -66,7 +70,7 @@ function acknowledgePassage(a:Extract<DrawingAction,{kind:'passage'}>,submitted?
   else d.base=confirmed;
  }
 }
-async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
+async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingMapView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
  if(!await before()||!current(o))return false;
  const w=workspace();if(!w)return false;
  writing=true;++readRequest;
@@ -79,7 +83,7 @@ async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingView)=>vo
  if(!current(o))return false;
  invalidatePreview();confirmed?.(committedView);drawList();return true;
 }
-function perform(a:DrawingAction,message:string,after?:(view:DrawingView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
+function perform(a:DrawingAction,message:string,after?:(view:DrawingMapView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
  const captured=structuredClone(a),submitted=side?structuredClone(side):undefined;
  run(async o=>{if(!await command(captured,o,after,submitted))return false;tell(message);return true;});
 }
@@ -113,13 +117,33 @@ function collect():DungeonPath{
  const segments=Array.from({length:total},(_,i)=>({form:names[i]??names.at(-1)!,widthSteps:widths[i]??widths.at(-1)!,heightSteps:heights[i]??heights.at(-1)!,factor:factors[i]??factors.at(-1)!}));
  return{...draft,scopeId:volume.scopeId,name:value('path-name'),notes:value('path-notes'),from,to,waypoints,segments,medium:value('path-medium') as 'air'|'water'};
 }
-function drawPreview(){const svg=el<SVGSVGElement&HTMLElement>('path-map'),ns='http://www.w3.org/2000/svg';svg.replaceChildren();if(!preview)return;const points=preview.path.route.map(p=>({x:(p.x+.5)*U,y:(p.y+.5)*U,z:p.z*U})),all=[preview.fromWorld,...points,preview.toWorld],minX=Math.min(...all.map(p=>p.x))-U,minY=Math.min(...all.map(p=>p.y))-U,maxX=Math.max(...all.map(p=>p.x))+U,maxY=Math.max(...all.map(p=>p.y))+U;svg.setAttribute('viewBox',`${minX} ${minY} ${maxX-minX} ${maxY-minY}`);const line=document.createElementNS(ns,'polyline');line.setAttribute('points',all.map(p=>p.x+','+p.y).join(' '));line.setAttribute('fill','none');line.setAttribute('stroke','#b16d45');line.setAttribute('stroke-width','.2');svg.append(line);for(const p of all){const c=document.createElementNS(ns,'circle');c.setAttribute('cx',String(p.x));c.setAttribute('cy',String(p.y));c.setAttribute('r','.15');c.setAttribute('fill','#497c92');svg.append(c);}for(const [p,label]of [[preview.fromWorld,'A'],[preview.toWorld,'B']] as const){const t=document.createElementNS(ns,'text');t.setAttribute('x',String(p.x));t.setAttribute('y',String(p.y-.35));t.setAttribute('font-size','.6');t.textContent=label+' · '+p.z.toFixed(2)+' m';svg.append(t);}}
+function drawPreview(){
+ const svg=el<SVGSVGElement&HTMLElement>('path-map'),ns='http://www.w3.org/2000/svg';svg.replaceChildren();
+ const rooms=(workspace()?.rooms??[]).filter(r=>[value('path-from'),value('path-to')].includes(r.id));
+ const shownVolume=preview?.volume??data?.volumes?.find(v=>v.id===draft?.volumeId),polygons=shownVolume?volumeProjection(shownVolume):[];
+ const all=[...rooms.flatMap(r=>r.polygons.flatMap(p=>p.outer)),...polygons.flatMap(p=>p.outer)];if(!all.length)return;
+ let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const p of all){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
+ svg.setAttribute('viewBox',`${minX-U} ${minY-U} ${maxX-minX+2*U} ${maxY-minY+2*U}`);
+ const append=(tag:string,attributes:Record<string,string>,text?:string)=>{const node=document.createElementNS(ns,tag);for(const[key,value]of Object.entries(attributes))node.setAttribute(key,value);if(text)node.textContent=text;svg.append(node);return node;};
+ for(const r of rooms){
+  append('path',{d:roomPath(r.polygons),fill:'#d7e1e9',stroke:'#576c80','stroke-width':'.08','fill-rule':'evenodd','data-preview-room':r.id});
+  const points=r.polygons.flatMap(p=>p.outer),left=Math.min(...points.map(p=>p.x)),right=Math.max(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),bottom=Math.max(...points.map(p=>p.y)),caption=r.number+'. '+r.name,size=Math.min(.65,(right-left)*.85/Math.max(1,caption.length*.6),(bottom-top)*.3);
+  append('text',{x:String((left+right)/2),y:String((top+bottom)/2),'text-anchor':'middle','dominant-baseline':'central','font-size':String(size),fill:'#243449'},caption);
+ }
+ if(shownVolume)append('path',{d:roomPath(polygons),fill:preview?'#b9d9c1':'#e4e9ed',stroke:preview?'#367347':'#758594','stroke-width':'.1','fill-rule':'evenodd',[preview?'data-preview-volume':'data-saved-volume']:'true'});
+ if(!preview)return;
+ for(const[p,label]of [[passageCenter(preview.fromWorld,preview.path.from.local!.face,preview.path.segments[0]!.widthSteps),'A'],[passageCenter(preview.toWorld,preview.path.to.local!.face,preview.path.segments.at(-1)!.widthSteps),'B']] as const){
+  append('circle',{cx:String(p.x),cy:String(p.y),r:'.16',fill:'#234d74'});
+  append('text',{x:String(p.x),y:String(p.y-.4),'text-anchor':'middle','font-size':'.5',fill:'#234d74',stroke:'#fff','stroke-width':'.08','paint-order':'stroke'},label+' · '+p.z.toFixed(2)+' m');
+ }
+}
+
 function drawList(){
  if(!data)return;
  const list=el('path-list');list.replaceChildren();
  for(const p of data.paths??[]){
   const card=document.createElement('article'),title=document.createElement('h3'),open=document.createElement('button'),convert=document.createElement('button');
-  title.textContent=p.name+' · '+p.status;open.textContent='Pfad bearbeiten / neu vorschlagen';open.disabled=p.mode==='area';
+  const state:Record<string,string>={ready:'Aktuell',stale:'Umgebung geändert · bei Bedarf neu vorschlagen',blocked:'Blockiert'};title.textContent=p.name+' · '+(state[p.status]??p.status);open.textContent='Pfad bearbeiten / neu vorschlagen';open.disabled=p.mode==='area';
   open.onclick=()=>{if(writing||pathDirty()||preview){tell('Offene Pfadeingabe zuerst übernehmen oder verwerfen.',true);return;}cancelRead();choose(p,p.revision);};
   convert.textContent='In feste Area umwandeln';convert.disabled=p.mode==='area';
   convert.onclick=()=>{
@@ -168,17 +192,38 @@ function close(){
  if(writing||pathDirty()||preview||passageDrafts.size){tell('Offene Eingaben zuerst übernehmen oder verwerfen; laufende Speicherung abwarten.',true);return false;}
  cancelRead();draft=null;sourceDraft=null;formBase=null;preview=null;el<HTMLDialogElement>('path-dialog').close();return true;
 }
+function openPathEditor(pathId?:string){
+ if(pending)return;
+ if(pathDirty()||preview||passageDrafts.size){tell('Offene Eingaben zuerst übernehmen oder verwerfen.',true);return;}
+ const selectedId=selected()?.id,dialog=el<HTMLDialogElement>('path-dialog');el('path-feedback').textContent='';dialog.showModal();el('path-preview-status').textContent='Verbindungen werden geladen …';
+ run(async o=>{
+  if(!await before()||!current(o)||!await openPaths()||!current(o))return false;
+  if(pathId){const saved=data?.paths?.find(p=>p.id===pathId);if(!saved)throw new Error('Verbindung nicht mehr vorhanden. Karte aktualisieren.');choose(saved,saved.revision);el('path-feedback').textContent='Bestehender Gang: Änderungen behalten denselben Raum-Key.';}
+  else newPath(selectedId);
+  return true;
+ });
+}
+export function renderRoomPaths(view:DrawingMapView){
+ const panel=el('room-path-context');if(!panel)return;panel.replaceChildren();
+ const room=selected?.(),w=workspace?.(),paths=room?(view.paths??[]).filter(p=>p.roomId===room.id||p.from.roomId===room.id||p.to.roomId===room.id):[];
+ panel.hidden=!paths.length;if(!w||!room)return;
+ const heading=document.createElement('h3');heading.textContent=paths.some(p=>p.roomId===room.id)?'Gangverbindung':'Gänge dieses Raums';panel.append(heading);
+ const name=(id:string)=>w.rooms.find(r=>r.id===id)?.name??'Raum fehlt';
+ for(const path of paths){
+  const card=document.createElement('div'),label=document.createElement('p'),button=document.createElement('button');card.className='room-path-card';
+  const corridorName=path.roomId?name(path.roomId):path.name;label.textContent=(path.roomId===room.id?'':corridorName+' · ')+name(path.from.roomId)+' ↔ '+name(path.to.roomId);card.append(label);
+  if(path.mode==='area'){const note=document.createElement('p');note.className='caption';note.textContent='Feste Fläche · Geometrie über 3D-Volumen bearbeiten.';card.append(note);}
+  else{button.type='button';button.textContent='Gang bearbeiten';button.dataset.pathEdit=path.id;button.setAttribute('aria-label',corridorName+' bearbeiten');button.onclick=()=>openPathEditor(path.id);card.append(button);}
+  panel.append(card);
+ }
+}
 export function initPaths(status:typeof tell,w:typeof workspace,r:typeof selected,drain:typeof before,publish:typeof changed){
- tell=status;workspace=w;selected=r;before=drain;changed=publish;
+ tell=(message,error)=>{status(message,error);el('path-feedback').textContent=message;el('path-feedback').classList.toggle('error',!!error);};workspace=w;selected=r;before=drain;changed=publish;
  const dialog=el<HTMLDialogElement>('path-dialog');
  const edit=(event:Event)=>{if(formIds.includes((event.target as HTMLElement).id))invalidatePreview();};
  dialog.addEventListener('input',edit);dialog.addEventListener('change',edit);
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
- el('path-open').onclick=()=>{
-  if(pending)return;
-  const selectedId=selected()?.id;dialog.showModal();el('path-preview-status').textContent='Verbindungen werden geladen …';
-  run(async o=>{if(!await before()||!current(o)||!await openPaths()||!current(o))return false;newPath(selectedId);return true;});
- };
+ el('path-open').onclick=()=>openPathEditor();el('path-quick-open').onclick=()=>openPathEditor();
  el('path-close').onclick=()=>{close();};
  el('path-new').onclick=()=>{if(writing||pathDirty()||preview){tell('Offene Pfadeingabe zuerst übernehmen oder verwerfen.',true);return;}cancelRead();newPath();};
  el('path-discard').onclick=()=>{
