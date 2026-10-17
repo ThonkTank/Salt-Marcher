@@ -56,6 +56,19 @@ Keine gemessene Geschwindigkeitsrangliste oder menschliche Verständlichkeitsabn
   Drei Wissensquellen und ursprüngliche CRLF-Raumabschnitte exakt erhalten,
   genau eine Quest, Weltuhr unverändert. Reproduktion:
   `npm run build:desktop`, dann `node tools/test-desktop-connected-room-prep.mjs --out=/tmp/connected-room-check`.
+- Nach zwischenzeitlichen Main-Änderungen an der Spielabendmappe nochmals den
+  vollständigen Ablauf einschließlich Fresh auf gemeinsamem Stand
+  `bc0ba753ccc6c817287d8bd428591733a2668006` ausgeführt (Main
+  `97486946a9c5c54934669899f2fc414f0a0e3e8f` enthalten).
+  [Eigenes Resultat mit Artefakthashes](saltmarcher-current.json).
+  Die 200-%-Zusatzprobe traf auf einen Testhelfer-Race beim Wechsel ins kompakte
+  Navigationslayout. Nach dem regulären Exit wurde nur diese Zusatzprobe im
+  selben Profil fortgesetzt, ohne eine zweite Quest oder Sitzung zu erzeugen.
+  Helfercommit `981d95c31` ändert keinen Produktcode. Alle vier Prozesse regulär
+  Exit 0 ohne Signal und anschließend abwesend; Quellen/Raumabschnitte exakt,
+  Uhrenrevision und Zeitpunkt weiterhin null. Die ursprüngliche Epoche wurde im
+  ersten Fixture nicht separat exportiert; der frühere ed35602-Lauf prüfte den
+  vollständigen ursprünglichen Uhrenwert. Kein Produktfehler aus dem Testhelfer-Race.
 - Lokale betroffene Tests: 104 bestanden, keine Fehler/Skips.
   Die beiden neuen Initialisierungsregressionen scheiterten am Ausgangsstand und
   bestanden nachher. Typprüfung, Desktop-Typprüfung, Repository-Prüfung und
@@ -86,3 +99,5 @@ Keine gemessene Geschwindigkeitsrangliste oder menschliche Verständlichkeitsabn
 ![Obsidian: Raumlink öffnete nach Quellenlektüre den bestehenden Plan](obsidian-room-plan.png)
 
 ![Obsidian: dieselbe Originalquest nach frischer Ergänzung im Folgeabend](obsidian-fresh.png)
+
+![Gemeinsamer aktueller Stand: nativer Rückweg bei 200 Prozent](plan-return-current-200.png)
