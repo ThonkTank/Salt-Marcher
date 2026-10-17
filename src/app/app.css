@@ -937,3 +937,4 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 
 /* Fit the GM map below its actual controls and above the persistent audio bar. */
 #live-center-map{height:var(--live-map-height,calc(100dvh - var(--workspace-header-height,80px) - var(--live-focus-height,105px) - 6rem));min-height:220px}
+.campaign-search{display:flex;flex-wrap:wrap;align-items:end;gap:1rem;margin:1rem 0}.campaign-search label{flex:1;max-width:36rem}.campaign-search p{margin:.5rem 0}
