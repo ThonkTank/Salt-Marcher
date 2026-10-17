@@ -35,7 +35,7 @@ export interface AtlasRegionSource {
  shadow?:{filename:string;scopeId:string;epoch:string;sequence:number};
  reset:boolean;changes:{table:string;id:string}[];
 }
-export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
+export interface AtlasCitySite {interior?:{scopeId:string;roomCount:number};header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
 export interface AtlasRegionAPI {
  atlasRegion(token:string,query:AtlasRegionQuery,consumer?:'view'|'export'):Promise<import('./contracts').Result<AtlasRegionView>>;
  atlasObjectFocus(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string):Promise<import('./contracts').Result<AtlasObjectFocus>>;

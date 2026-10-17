@@ -12,7 +12,7 @@ export interface DrawingToolControls {
 }
 
 export function drawingToolControls(tool: string, hasRoom: boolean, append: boolean, pathPoints: number): DrawingToolControls {
-  const active = tool !== 'select';
+  const active = tool !== 'select' && tool !== 'pan';
   const roomTool = tool.startsWith('room-');
   const createsRoom = ['room-rectangle', 'room-polygon', 'room-cave'].includes(tool);
   const canAppend = createsRoom && hasRoom;
@@ -29,10 +29,12 @@ export function drawingToolControls(tool: string, hasRoom: boolean, append: bool
     light: tool === 'light',
     text: tool === 'text',
     actionEnabled: active && hasTarget && pathPoints >= minimumPoints,
-    instruction: tool === 'select'
+    instruction: tool === 'pan'
+      ? 'Karte ziehen · Mausrad oder +/− zum Zoomen.'
+      : tool === 'select'
       ? 'Raum oder Element auswählen; Raumecken lassen sich direkt ziehen.'
       : roomTool
-        ? 'Auf der Karte zeichnen, dann den Zug übernehmen.'
-        : 'Element auf der Karte platzieren oder zeichnen, dann den Zug übernehmen.',
+        ? tool === 'room-rectangle' ? 'Rechteck ziehen und loslassen. Alternativ zwei Ecken anklicken und mit Enter bestätigen.' : 'Auf der Karte zeichnen, dann mit Enter übernehmen. Escape verwirft.'
+        : tool === 'door' ? 'Wand anklicken, dann Enter. Die Tür richtet sich an der nächsten Raumwand aus.' : tool === 'path' ? 'Zeichenlinie: Punkte anklicken, dann Enter. Für einen begehbaren Gang das Werkzeug Gang verwenden.' : 'Element auf der Karte platzieren oder zeichnen, dann den Zug übernehmen.',
   };
 }
