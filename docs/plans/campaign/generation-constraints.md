@@ -128,7 +128,9 @@ Bearbeitung/Trash und der bereits vorhandene Backupdecoder verwenden dieselbe
 Regel. Eine ungültige Tabelle ersetzt keine bekannte gute Sicherungsdatei und
 wird nicht durch einen gewöhnlichen Save heimlich repariert. Die Originalzeile
 bleibt für eine gezielte Wiederherstellung erhalten; keine Migration oder neue
-Backuppipeline.
+Backuppipeline. Ein früher bestätigter Originalauftrag behält seinen damaligen
+Receipt; dieser historische Beleg repariert oder autorisiert keinen inzwischen
+beschädigten aktuellen Tabellenstand.
 
 Die Strukturprüfung liest keinen aktuellen Kreaturkatalog und keine fremde
 Lootquelle. Stabile, inzwischen nicht mehr installierte Kreatur-IDs bleiben als

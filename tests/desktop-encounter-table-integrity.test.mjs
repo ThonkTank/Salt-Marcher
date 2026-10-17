@@ -12,9 +12,9 @@ const {CampaignStore}=createRequire(import.meta.url)('../.build/encounter-table-
 function fixture(t,scope='campaign'){
  const dir=mkdtempSync(path.join(tmpdir(),'encounter-table-integrity-')),file=path.join(dir,'world.sqlite'),store=new CampaignStore(file),campaign=store.create('Quellen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const table={id:randomUUID(),revision:0,scope,name:'Wachen',description:'  Originalprosa\r\n\r\n',entries:[{creatureId:'guard',weight:'1'},{creatureId:'goblin',weight:'2'}],habitats:[],time:'any',lootTableId:null,trashed:false};
- store.executeGeneration(command({kind:'table-save',table,expectedRevision:null}));
+ const creation=command({kind:'table-save',table,expectedRevision:null}),ack=store.executeGeneration(creation);
  const read=()=>store.encounterTables(w.token,true).find(row=>row.id===table.id),original=read(),damage=edit=>{const changed=structuredClone(original);edit(changed);const payload=JSON.stringify(changed),checksum=createHash('sha256').update(payload).digest('hex');store.db.prepare('UPDATE encounter_table SET payload=?,checksum=? WHERE id=?').run(payload,checksum,table.id);return{payload,checksum};};
- t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});return{dir,file,store,campaign,w,command,table:original,read,damage};
+ t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});return{dir,file,store,campaign,w,command,creation,ack,table:original,read,damage};
 }
 const invalid=[
  ['empty entries',t=>t.entries=[]],
@@ -57,4 +57,9 @@ test('invalid installation-wide tables remain in every affected campaign read an
  assert.throws(()=>x.store.encounterTables(w.token,true),/Tabelle/);
  assert.throws(()=>x.store.executeGeneration({commandId:randomUUID(),token:w.token,campaignId:other.id,action:{kind:'table-save',table:{...x.table,id:randomUUID(),revision:0,scope:'campaign'},expectedRevision:null}}),/Tabelle/);
  assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.store.db.prepare('SELECT * FROM encounter_table WHERE id=?').get(x.table.id),original);
+});
+
+test('an original confirmed table receipt remains a historical fact when current table content is damaged',t=>{
+ const x=fixture(t);x.damage(t=>t.entries=[]);const before=x.store.db.serialize();
+ assert.deepEqual(x.store.executeGeneration(x.creation),x.ack);assert.ok(x.store.db.serialize().equals(before));assert.throws(x.read,/Tabelle/);
 });
