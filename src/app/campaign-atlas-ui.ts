@@ -5,11 +5,11 @@ import {mountDungeonTravelConsole,dungeonTravelRoute} from './dungeon-travel-con
 import {atlasGeometryOnly} from './atlas-render-view';
 import {LiveAtlasPortal} from './live-atlas-portal';
 import {landscapeExportTiles} from "./atlas-landscape-export";
-import {atlasRegionSVG} from "./atlas-region-export";
+import {atlasRegionPaint} from "./atlas-region-export";
 import {LandscapeWorkbench} from "./atlas-landscape-ui";
 import {earthView} from "./atlas-landscape";
 import { appendRoomNumber } from "./room-number-label";
-import { atlasPNG, publicAtlasSVG } from "./campaign-atlas-export";
+import { atlasImage, publicAtlasPaint } from "./campaign-atlas-export";
 import { journeyPlayback } from "./journey-playback";
 import { atlasPartyPoint,atlasWorldRoute } from "./atlas-runtime-model";
 import type {
@@ -24,7 +24,7 @@ import {
   atlasFrame,
   localToAtlas,
   atlasToLocal,
-  frameTransform,
+  frameMatrix,
   atlasHexPoint,
   atlasHexAt,
 } from "./campaign-atlas-model";
@@ -176,9 +176,9 @@ export class CampaignAtlasWorkbench {
         (e.button === 0 &&
           (e.altKey ||
             (this.family === "navigation" &&
-              (!this.camera.hitAt(e, "[data-atlas-object]") ||
-                this.camera.hitAt(e, "[data-atlas-object]")
-                  ?.dataset.kind === "city")))),
+              (!this.camera.hitAt(e, ["atlasObject"]) ||
+                this.camera.hitAt(e, ["atlasObject"])
+                  ?.data.kind === "city")))),
       locked: () =>
         !!this.drag ||
         !!this.vertexDrag ||
@@ -979,9 +979,9 @@ export class CampaignAtlasWorkbench {
     if(!this.camera.ready||!this.geometryCurrent()){this.opts.status('Kartenausschnitt wird vorbereitet.');return;}
     const p = this.point(e);
     this.lastPoint = p;
-    const target = this.camera.hitAt(e, "[data-atlas-object]"),
-      kind = target?.dataset.kind,
-      id = target?.dataset.id;
+    const target = this.camera.hitAt(e, ["atlasObject"]),
+      kind = target?.data.kind,
+      id = target?.data.id;
     try {
       if (this.family === "terrain") return;
       const selecting=this.root.dataset.roomDraw!=='true'&&this.entranceDraft===null&&(this.family==='navigation'||this.family==='interior'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='decoration'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='city'&&get<HTMLSelectElement>('city-tool').value==='select');
@@ -1131,7 +1131,7 @@ export class CampaignAtlasWorkbench {
         return;
       }
       if ((kind === "building" || kind === "city-unit") && id) {
-        const cityId = target!.dataset.cityId!;
+        const cityId = target!.data.cityId!;
         this.cityId = cityId;
         this.selection = { kind: kind as "building" | "city-unit", id, cityId };
         const binding = this.data?.bindings.find(
@@ -1196,8 +1196,8 @@ export class CampaignAtlasWorkbench {
       this.queueBrush(this.point(e));
       return;
     }
-    const hit = this.camera.hitAt(e, "[data-atlas-object]");
-    if (hit?.dataset.kind === "party") {
+    const hit = this.camera.hitAt(e, ["atlasObject"]);
+    if (hit?.data.kind === "party") {
       this.partyDrag = {
         id: e.pointerId,
         start: this.point(e),
@@ -1206,16 +1206,16 @@ export class CampaignAtlasWorkbench {
       this.svg.setPointerCapture(e.pointerId);
       return;
     }
-    const handle = this.camera.hitAt(e, "[data-atlas-vertex]");
+    const handle = this.camera.hitAt(e, ["atlasVertex"]);
     if (handle && this.data) {
       const selected=this.opts.roomDraft();
-      const room=selected?.id===handle.dataset.id?selected:null;
+      const room=selected?.id===handle.data.id?selected:null;
       if (room) {
         this.vertexDrag = {
           id: e.pointerId,
           room: structuredClone(room),
-          polygon: Number(handle.dataset.polygon),
-          vertex: Number(handle.dataset.atlasVertex),
+          polygon: Number(handle.data.polygon),
+          vertex: Number(handle.data.atlasVertex),
           point: atlasToLocal(this.point(e), this.frame(room.scopeId)),
         };
         this.svg.setPointerCapture(e.pointerId);
@@ -1223,16 +1223,16 @@ export class CampaignAtlasWorkbench {
         return;
       }
     }
-    const target = this.camera.hitAt(e, "[data-atlas-object]");
-    if (this.geometryCurrent() && this.family === "navigation" && target?.dataset.kind === "building") {
+    const target = this.camera.hitAt(e, ["atlasObject"]);
+    if (this.geometryCurrent() && this.family === "navigation" && target?.data.kind === "building") {
       this.drag = {
         id: e.pointerId,
         start: this.point(e),
         last: this.point(e),
         selection: {
           kind: "building",
-          id: target.dataset.id!,
-          cityId: target.dataset.cityId!,
+          id: target.data.id!,
+          cityId: target.data.cityId!,
         },
       };
       this.svg.setPointerCapture(e.pointerId);
@@ -1724,10 +1724,10 @@ export class CampaignAtlasWorkbench {
               ? preview.view
               : citySaved,
           f = atlasFrame(data, binding),
-          g = shape("g", { transform: frameTransform(this.relative(f)) });
-        g.dataset.atlasObject = "true";
-        g.dataset.kind = "city";
-        g.dataset.id = city.header.id;
+          g = shape("group", {matrix: frameMatrix(this.relative(f))});
+        g.data.atlasObject = "true";
+        g.data.kind = "city";
+        g.data.id = city.header.id;
         const center = localToAtlas(
           { x: city.header.width / 2, y: city.header.height / 2 },
           f,
@@ -1741,17 +1741,10 @@ export class CampaignAtlasWorkbench {
         )
           continue;
         if (mpp > city.header.width / 25) {
-          const marker = shape("circle", {
-            cx: center.x - box.x,
-            cy: center.y - box.y,
-            r: 6 * mpp,
-            fill: "#c58a58",
-            stroke: "#4f4230",
-            "stroke-width": mpp,
-          });
-          marker.dataset.atlasObject = "true";
-          marker.dataset.kind = "city";
-          marker.dataset.id = city.header.id;
+          const marker = shape("circle", {x: center.x - box.x, y: center.y - box.y, radius: 6 * mpp, style: {fill: "#c58a58", stroke: "#4f4230", lineWidth: mpp}});
+          marker.data.atlasObject = "true";
+          marker.data.kind = "city";
+          marker.data.id = city.header.id;
           root.append(marker);
           this.label(root, city.header.name, center, mpp);
           continue;
@@ -1820,7 +1813,7 @@ export class CampaignAtlasWorkbench {
         });
         const cityScene = cityPaint({ ...shownCity, units: visibleUnits });
         for (const c of cityScene.children) {
-          const uid = c.getAttribute("data-city-unit"),
+          const uid = c.data.cityUnit,
             interior = data.bindings.find(
               (b) => b.parent === "building" && b.parentId === uid,
             )??(uid&&regionValue(data.region?.interiors,uid)?{ownerId:regionValue(data.region?.interiors,uid)!}:null);
@@ -1830,31 +1823,22 @@ export class CampaignAtlasWorkbench {
               mpp <= 0.4 ||
               interior.ownerId === this.scopeId)
           ) {
-            for (const p of c.children.filter(child => child.tagName === "polygon")) {
-              p.setAttribute("fill", "none");
-              p.setAttribute("stroke", "#624337");
-              p.setAttribute("stroke-width", String(Math.max(0.15, mpp)));
+            for (const p of c.children.filter(child => child.kind === "polygon")) {
+              p.style.fill=null;
+              p.style.stroke="#624337";
+              p.style.lineWidth=Math.max(.15,mpp);
               if (
                 interior.ownerId === this.scopeId &&
                 this.floorId !== "ground"
               )
-                p.setAttribute("visibility", "hidden");
+                p.geometry.hidden=true;
             }
-          }
-          if (c.tagName === "rect") {
-            c.setAttribute("width", String(city.header.width));
-            c.setAttribute("height", String(city.header.height));
           }
           for (const text of [
             c,
-            ...c.children.filter(child => child.tagName === "text"),
-          ].filter((n) => n.tagName === "text"))
-            text.setAttribute(
-              "font-size",
-              String(
-                Math.min(Number(text.getAttribute("font-size")) || 6, 12 * mpp),
-              ),
-            );
+            ...c.children.filter(child => child.kind === "text"),
+          ].filter((n) => n.kind === "text"))
+            text.style.fontSize=Math.min(text.style.fontSize??6,12*mpp);
           g.append(c);
         }
         for (const u of visibleUnits
@@ -1871,25 +1855,17 @@ export class CampaignAtlasWorkbench {
                   ? roadPoints(u, shownCity.units)
                   : (u.outline ?? []),
             path = shape(line ? "polyline" : "polygon", {
-              points: points.map((p) => `${p.x},${p.y}`).join(" "),
-              fill: line ? "none" : "transparent",
-              stroke: this.selection?.id === u.id ? "#b85525" : "transparent",
-              "stroke-width": line ? Math.max(u.width ?? 6, mpp * 8) : 2 * mpp,
+              points,style:{fill:line?null:"transparent",stroke:this.selection?.id===u.id?"#b85525":"transparent",lineWidth:line?Math.max(u.width??6,mpp*8):2*mpp},
             });
-          path.dataset.atlasObject = "true";
-          path.dataset.kind = u.kind === "building" ? "building" : "city-unit";
-          path.dataset.id = u.id;
-          path.dataset.cityId = city.header.id;
+          path.data.atlasObject = "true";
+          path.data.kind = u.kind === "building" ? "building" : "city-unit";
+          path.data.id = u.id;
+          path.data.cityId = city.header.id;
           g.append(path);
         }
         if (preview?.view.header.id === city.header.id && preview.path.length)
           g.append(
-            shape("polyline", {
-              points: preview.path.map((p) => p.x + "," + p.y).join(" "),
-              fill: "none",
-              stroke: "#c65d28",
-              "stroke-width": 2 * mpp,
-            }),
+            shape("polyline", {points:preview.path, style: {fill: null, stroke: "#c65d28", lineWidth: 2 * mpp}}),
           );
         root.append(g);
       }
@@ -1899,30 +1875,19 @@ export class CampaignAtlasWorkbench {
         const f = this.frame(this.scopeId),
           p = localToAtlas(this.draft[0]!, f);
         root.append(
-          shape("circle", {
-            cx: p.x - box.x,
-            cy: p.y - box.y,
-            r: mpp * 4,
-            fill: "#c65d28",
-          }),
+          shape("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#c65d28"}}),
         );
       }
-      if(data.region?.raster){const r=data.region.raster;const image=shape('image',{x:r.box.x-box.x,y:r.box.y-box.y,width:r.box.width,height:r.box.height,href:r.data,preserveAspectRatio:'none'});image.setAttribute('pointer-events','none');root.append(image);for(const b of data.bindings.filter(b=>b.kind==='dungeon')){const floor=data.geometry.position?.scopeId===b.ownerId?data.geometry.position.floorId:b.ownerId===this.scopeId?this.floorId:'ground',g=shape('g',{transform:frameTransform(this.relative(atlasFrame(data,b)))});this.drawInteriorRuntime(g,b,floor,mpp,[]);root.append(g);}}
+      if(data.region?.raster){const r=data.region.raster;const image=shape("image", {x: r.box.x-box.x, y: r.box.y-box.y, width: r.box.width, height: r.box.height, source: r.data});image.geometry.pointer=false;root.append(image);for(const b of data.bindings.filter(b=>b.kind==='dungeon')){const floor=data.geometry.position?.scopeId===b.ownerId?data.geometry.position.floorId:b.ownerId===this.scopeId?this.floorId:'ground',g=shape("group", {matrix: frameMatrix(this.relative(atlasFrame(data,b)))});this.drawInteriorRuntime(g,b,floor,mpp,[]);root.append(g);}}
       const travel = atlasWorldTravelState(),
         route = atlasWorldRoute(data,travel.preview);
       if (route.length)
         root.append(
-          shape("polyline", {
-            points: route
+          shape("polyline", {points: route
               .map((p) => {
                 const h = atlasHexPoint(p.q, p.r, data.terrain.hexMeters);
-                return h.x - box.x + "," + (h.y - box.y);
-              })
-              .join(" "),
-            fill: "none",
-            stroke: "#be5939",
-            "stroke-width": mpp * 3,
-          }),
+                return {x:h.x-box.x,y:h.y-box.y};
+              }), style: {fill: null, stroke: "#be5939", lineWidth: mpp * 3}}),
         );
       for (const e of data.entrances) {
         const binding = data.bindings.find(
@@ -1933,39 +1898,19 @@ export class CampaignAtlasWorkbench {
           out = localToAtlas(e.outside, f),
           at = localToAtlas(e.inside, f);
         root.append(
-          shape("line", {
-            x1: out.x - box.x,
-            y1: out.y - box.y,
-            x2: at.x - box.x,
-            y2: at.y - box.y,
-            stroke: "#27635a",
-            "stroke-width": mpp * 2,
-          }),
+          shape("line", {x: out.x - box.x, y: out.y - box.y, x2: at.x - box.x, y2: at.y - box.y, style: {stroke: "#27635a", lineWidth: mpp * 2}}),
         );
-        const marker = shape("circle", {
-          cx: out.x - box.x,
-          cy: out.y - box.y,
-          r: mpp * 5,
-          fill: "#39766a",
-          stroke: "white",
-          "stroke-width": mpp,
-        });
-        marker.dataset.atlasObject = "true";
-        marker.dataset.kind = "entrance";
-        marker.dataset.id = e.id;
+        const marker = shape("circle", {x: out.x - box.x, y: out.y - box.y, radius: mpp * 5, style: {fill: "#39766a", stroke: "white", lineWidth: mpp}});
+        marker.data.atlasObject = "true";
+        marker.data.kind = "entrance";
+        marker.data.id = e.id;
         root.append(marker);
       }
       const localRoute = this.localPreview?.route ?? (data.localJourney&&['active','paused'].includes(data.localJourney.status)?data.localJourney.route:[]);
       if (localRoute?.length)
         root.append(
-          shape("polyline", {
-            points: localRoute
-              .map((p) => p.x - box.x + "," + (p.y - box.y))
-              .join(" "),
-            fill: "none",
-            stroke: "#b05d32",
-            "stroke-width": mpp * 2,
-          }),
+          shape("polyline", {points: localRoute
+              .map(p=>({x:p.x-box.x,y:p.y-box.y})), style: {fill: null, stroke: "#b05d32", lineWidth: mpp * 2}}),
         );
       this.drawParty(root, mpp);
     });
@@ -1988,14 +1933,14 @@ export class CampaignAtlasWorkbench {
       const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
       const snapshot=fresh.value;
       const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
-      let svg:SVGSVGElement;
+      let scene:AtlasPaint;
       if(audience==='public'){
-        if(snapshot.geometry.position&&snapshot.perception)svg=publicAtlasSVG(snapshot,box);
+        if(snapshot.geometry.position&&snapshot.perception)scene=publicAtlasPaint(snapshot,box);
         else {
           const frame=await window.campaign.playerView(owner.token);
           if(!frame.ok)throw new Error(frame.error);
           if(this.owner!==owner||this.exportCancelled)return;
-          svg=publicAtlasSVG(snapshot,box,frame.value.frame);
+          scene=publicAtlasPaint(snapshot,box,frame.value.frame);
         }
       } else {
         let encoded=0;
@@ -2006,16 +1951,16 @@ export class CampaignAtlasWorkbench {
           if(!layer||layer.state!=='ready'||!layer.coverage.complete)throw new Error(layer?.error??'Landschaftsausgabe nicht vollständig. Erneut laden.');
           const assets=new Map<string,string>();
           if(references)for(const r of layer.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAssetPreview(owner.token,r.assetId,2048);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
-          const svg=atlasRegionSVG(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
-          const png=await atlasPNG(svg,w,h);let binary='';for(let i=0;i<png.length;i+=32768)binary+=String.fromCharCode(...png.slice(i,i+32768));const data='data:image/png;base64,'+btoa(binary);encoded+=data.length*2;
+          const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
+          const png=await atlasImage(scene,w,h,part);let binary='';for(let i=0;i<png.length;i+=32768)binary+=String.fromCharCode(...png.slice(i,i+32768));const data='data:image/png;base64,'+btoa(binary);encoded+=data.length*2;
           if(encoded>256*1024*1024)throw new Error('Atlas-Ausgabe benötigt zu viel Bildspeicher. Kleineren Ausschnitt wählen.');
           return{ok:true,value:{campaignId:snapshot.campaignId,revision:snapshot.revision,box:part,width:w,height:h,data}};
         },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Atlas wird ausgegeben: ${done}/${total}`;},512);
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')get('atlas-save-status').textContent='Dichte Landschaft als Übersicht; Vorlagen als Umrisse.';
-        svg=atlasRegionSVG(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
+        scene=atlasRegionPaint(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
 
       }
-      const bytes = await atlasPNG(svg, width, height,format);
+      const bytes = await atlasImage(scene,width,height,box,format);
       if (this.owner !== owner || this.exportCancelled) return;
       const r = await window.campaign.exportAtlasPNG(
         owner.token,
@@ -2054,22 +1999,12 @@ export class CampaignAtlasWorkbench {
     );
   }
   private label(root: AtlasPaint, text: string, p: Point, mpp: number) {
-    if (root.dataset.mapScene) p = this.relativePoint(p);
-    const t = shape("text", {
-      x: p.x,
-      y: p.y - 8 * mpp,
-      "font-size": 12 * mpp,
-      "text-anchor": "middle",
-      "paint-order": "stroke",
-      stroke: "#f2eee3",
-      "stroke-width": 3 * mpp,
-      fill: "#283d3b",
-      "pointer-events": "none",
-    });
-    t.textContent = text;
+    if (root.data.mapScene) p = this.relativePoint(p);
+    const t = shape("text", {x: p.x, y: p.y - 8 * mpp, pointer: false, style: {fontSize: 12 * mpp, textAlign: 'center', stroke: "#f2eee3", lineWidth: 3 * mpp, fill: "#283d3b"}});
+    t.text = text;
     root.append(t);
   }
-  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect",{x:cover.x-box.x,y:cover.y-box.y,width:cover.width,height:cover.height,fill:"#b8c896"}));}
+  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#b8c896"}}));}
   private drawInterior(
     root: AtlasPaint,
     b: AtlasBinding,
@@ -2100,17 +2035,10 @@ export class CampaignAtlasWorkbench {
           : 0;
       if (!shown.length || mpp > Math.max(1, extent / 25)) {
         const extentBox=regionValue(data.region?.scopeBounds,b.ownerId),center=extentBox?localToAtlas({x:extentBox.x+extentBox.width/2,y:extentBox.y+extentBox.height/2},f):f;
-        const marker = shape("circle", {
-          cx: center.x - box.x,
-          cy: center.y - box.y,
-          r: mpp * 6,
-          fill: shown.length ? "#685b50" : "none",
-          stroke: "#685b50",
-          "stroke-width": mpp * 2,
-        });
-        marker.dataset.atlasObject = "true";
-        marker.dataset.kind = "scope";
-        marker.dataset.id = b.ownerId;
+        const marker = shape("circle", {x: center.x - box.x, y: center.y - box.y, radius: mpp * 6, style: {fill: shown.length ? "#685b50" : null, stroke: "#685b50", lineWidth: mpp * 2}});
+        marker.data.atlasObject = "true";
+        marker.data.kind = "scope";
+        marker.data.id = b.ownerId;
         root.append(marker);
         this.label(
           root,
@@ -2122,7 +2050,7 @@ export class CampaignAtlasWorkbench {
       }
     }
     if (!shown.length) return;
-    const g = shape("g", { transform: frameTransform(this.relative(f)) });
+    const g = shape("group", {matrix: frameMatrix(this.relative(f))});
     for (const saved of shown) {
       let room =
         this.opts.roomDraft()?.id === saved.id ? this.opts.roomDraft()! : saved;
@@ -2167,16 +2095,10 @@ export class CampaignAtlasWorkbench {
             : []
         : room.polygons;
       if (!polygons.length) continue;
-      const path = shape("path", {
-        d: roomPath(polygons),
-        fill: this.selection?.id === room.id ? "#e8d8ac" : "#e2dac4",
-        stroke: "#3d4b45",
-        "stroke-width": Math.max(0.07, Math.min(0.18, mpp)),
-        "fill-rule": "evenodd",
-      });
-      path.dataset.atlasObject = "true";
-      path.dataset.kind = "room";
-      path.dataset.id = room.id;
+      const path = shape("path", {path: roomPath(polygons), style: {fill: this.selection?.id === room.id ? "#e8d8ac" : "#e2dac4", stroke: "#3d4b45", lineWidth: Math.max(0.07, Math.min(0.18, mpp)), fillRule: "evenodd"}});
+      path.data.atlasObject = "true";
+      path.data.kind = "room";
+      path.data.id = room.id;
       g.append(path);
       appendRoomNumber(g, room, mpp);
       const vertices = room.polygons[0]!.outer;
@@ -2203,19 +2125,12 @@ export class CampaignAtlasWorkbench {
       )
         room.polygons.forEach((poly, pi) =>
           poly.outer.forEach((p, vi) => {
-            const h = shape("circle", {
-              cx: p.x,
-              cy: p.y,
-              r: Math.max(0.05, mpp * 4),
-              fill: "white",
-              stroke: "#244f87",
-              "stroke-width": mpp,
-            });
-            h.dataset.atlasObject = "true";
-            h.dataset.kind = "vertex";
-            h.dataset.id = room.id;
-            h.dataset.atlasVertex = String(vi);
-            h.dataset.polygon = String(pi);
+            const h = shape("circle", {x: p.x, y: p.y, radius: Math.max(0.05, mpp * 4), style: {fill: "white", stroke: "#244f87", lineWidth: mpp}});
+            h.data.atlasObject = "true";
+            h.data.kind = "vertex";
+            h.data.id = room.id;
+            h.data.atlasVertex = String(vi);
+            h.data.polygon = String(pi);
             g.append(h);
           }),
         );
@@ -2224,7 +2139,7 @@ export class CampaignAtlasWorkbench {
       (e) => e.scopeId === b.ownerId && e.floorId === floor && !e.archived,
     )) {
       const node = elementPaint(e, shown, data.geometry.drawing.elements);
-      node.dataset.atlasObject='true';node.dataset.kind='element';node.dataset.id=e.id;
+      node.data.atlasObject='true';node.data.kind='element';node.data.id=e.id;
       g.append(node);
     }
     if (
@@ -2235,12 +2150,7 @@ export class CampaignAtlasWorkbench {
       const draft = atlasDrawingDraft();
       if (draft.polygons)
         g.append(
-          shape("path", {
-            d: roomPath(draft.polygons),
-            fill: "#d98f5555",
-            stroke: "#b85c23",
-            "stroke-width": 0.1,
-          }),
+          shape("path", {path: roomPath(draft.polygons), style: {fill: "#d98f5555", stroke: "#b85c23", lineWidth: 0.1}}),
         );
     }
     this.drawInteriorRuntime(g,b,floor,mpp,shown);
@@ -2256,12 +2166,7 @@ export class CampaignAtlasWorkbench {
     );
     if (points.length)
       g.append(
-        shape("polyline", {
-          points: points.map((p) => p.x + "," + p.y).join(" "),
-          fill: "none",
-          stroke: "#b05c36",
-          "stroke-width": Math.max(0.15, mpp * 2),
-        }),
+        shape("polyline", {points, style: {fill: null, stroke: "#b05c36", lineWidth: Math.max(0.15, mpp * 2)}}),
       );
     const party = data.geometry.position,
       perception = data.perception,
@@ -2284,13 +2189,7 @@ export class CampaignAtlasWorkbench {
       )
         continue;
       g.append(
-        shape("path", {
-          d: `M${t.from.x},${t.from.y}L${t.to.x},${t.to.y}`,
-          fill: "none",
-          stroke: "#987cb0",
-          "stroke-width": Math.max(0.08, mpp),
-          "stroke-dasharray": `${mpp * 3} ${mpp * 3}`,
-        }),
+        shape("path", {path: `M${t.from.x},${t.from.y}L${t.to.x},${t.to.y}`, style: {fill: null, stroke: "#987cb0", lineWidth: Math.max(0.08, mpp), lineDash:[mpp*3,mpp*3]}}),
       );
     }
     for (const n of data.geometry.npcs.filter(
@@ -2305,18 +2204,9 @@ export class CampaignAtlasWorkbench {
           o.override !== "unknown",
       );
       if (masked && !observation) continue;
-      const dot = shape("circle", {
-        cx: n.pose!.x,
-        cy: n.pose!.y,
-        r: Math.max(0.15, mpp * 5),
-        fill: "#8964a5",
-        stroke: "#fff",
-        "stroke-width": mpp,
-      });
-      const title = shape("title");
-      title.textContent =
+      const dot = shape("circle", {x: n.pose!.x, y: n.pose!.y, radius: Math.max(0.15, mpp * 5), style: {fill: "#8964a5", stroke: "#fff", lineWidth: mpp}});
+      dot.title =
         n.name + (observation ? " · bekannt und sichtbar" : " · GM");
-      dot.append(title);
       g.append(dot);
       if (!masked) {
         const points = n.path.filter(
@@ -2324,12 +2214,7 @@ export class CampaignAtlasWorkbench {
         );
         if (points.length)
           g.append(
-            shape("polyline", {
-              points: points.map((p) => `${p.x},${p.y}`).join(" "),
-              fill: "none",
-              stroke: "#8964a5",
-              "stroke-width": mpp,
-            }),
+            shape("polyline", {points, style: {fill: null, stroke: "#8964a5", lineWidth: mpp}}),
           );
       }
     }
@@ -2344,48 +2229,10 @@ export class CampaignAtlasWorkbench {
         minY = Math.min(...points.map((p) => p.y)) - 1,
         width = Math.max(...points.map((p) => p.x)) - minX + 1,
         height = Math.max(...points.map((p) => p.y)) - minY + 1;
-      const mask = shape("mask", {
-        id: "atlas-sight-" + b.id,
-        maskUnits: "userSpaceOnUse",
-        x: minX,
-        y: minY,
-        width,
-        height,
-      });
-      mask.append(
-        shape("rect", { x: minX, y: minY, width, height, fill: "white" }),
-      );
-      if (perception.known.length)
-        mask.append(
-          shape("path", {
-            d: roomPath(perception.known),
-            fill: "#666",
-            "fill-rule": "evenodd",
-          }),
-        );
-      if (perception.visible.length)
-        mask.append(
-          shape("path", {
-            d: roomPath(perception.visible),
-            fill: "black",
-            "fill-rule": "evenodd",
-          }),
-        );
-      const defs = shape("defs");
-      defs.append(mask);
-      g.append(
-        defs,
-        shape("rect", {
-          x: minX,
-          y: minY,
-          width,
-          height,
-          fill: "#1e292b",
-          opacity: 0.9,
-          mask: `url(#atlas-sight-${b.id})`,
-          "pointer-events": "none",
-        }),
-      );
+      g.append(shape("rect",{x:minX,y:minY,width,height,opacity:.9,pointer:false,style:{fill:'#1e292b'},maskCuts:[
+        ...perception.known.length?[{path:roomPath(perception.known),alpha:.6}]:[],
+        ...perception.visible.length?[{path:roomPath(perception.visible),alpha:1}]:[],
+      ]}));
     }
 
   }
@@ -2393,16 +2240,9 @@ export class CampaignAtlasWorkbench {
     const d = this.data!,
       position = this.partyDrag?.last ?? atlasPartyPoint(d);
     if (!position) return;
-    const token = shape("circle", {
-      cx: position.x - this.camera.view.x,
-      cy: position.y - this.camera.view.y,
-      r: mpp * 7,
-      fill: "#244f87",
-      stroke: "white",
-      "stroke-width": mpp * 2,
-    });
-    token.dataset.atlasObject = "true";
-    token.dataset.kind = "party";
+    const token = shape("circle", {x: position.x - this.camera.view.x, y: position.y - this.camera.view.y, radius: mpp * 7, style: {fill: "#244f87", stroke: "white", lineWidth: mpp * 2}});
+    token.data.atlasObject = "true";
+    token.data.kind = "party";
     root.append(token);
     this.label(root, d.geometry.sceneTitle, position, mpp);
   }

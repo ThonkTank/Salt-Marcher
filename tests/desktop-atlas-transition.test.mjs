@@ -130,10 +130,10 @@ test('GM export tiles cover the requested pixels, reject mixed revisions and sto
 
 test('public export uses remembered public terrain, never current hidden GM geometry',async t=>{
  const {parseHTML}=await import('linkedom'),{document}=parseHTML('<html><body></body></html>'),previous=globalThis.document;globalThis.document=document;t.after(()=>{globalThis.document=previous;});
- const {publicAtlasSVG}=require('../.build/transition-public.cjs'),snapshot={geometry:{position:null},perception:null},box={x:-5000,y:-5000,width:10000,height:10000};
+ const {publicAtlasPaint}=require('../.build/transition-public.cjs'),snapshot={geometry:{position:null},perception:null},box={x:-5000,y:-5000,width:10000,height:10000};
  const frame={mode:'map',title:'',map:{hexMeters:4828.032,position:{q:0,r:0},cells:[{q:0,r:0,terrain:'forest',road:false,river:false,visible:false,label:'Bekannter Wald'}],markers:[]}};
  const secret={...patch(-1000,-1000,2000,2000,'water'),id:'secret-new-lake'};
- const svg=publicAtlasSVG(snapshot,box,frame,[secret]).outerHTML;assert(svg.includes('#668b69'));assert(!svg.includes('#7fa8bd'),'A new unseen lake must not overwrite remembered forest');assert(!svg.includes('secret-new-lake'));assert(!svg.includes('data-landscape-id'));
+ const svg=JSON.stringify(publicAtlasPaint(snapshot,box,frame));assert(svg.includes('#668b69'));assert(!svg.includes('#7fa8bd'),'A new unseen lake must not overwrite remembered forest');assert(!svg.includes('secret-new-lake'));assert(!svg.includes('landscapeId'));
 });
 
 test('unknown or incomplete author commands cannot receive a successful compact commit receipt',t=>{

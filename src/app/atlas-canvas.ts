@@ -54,7 +54,6 @@ export class AtlasCanvas {
     text: string;
   } | null = null;
   private draining = false;
-  private readonly bitmap = document.createElement("canvas");
   private ctx: CanvasRenderingContext2D;
   private lost = false;
   private restored = false;
@@ -393,9 +392,9 @@ export class AtlasCanvas {
       ),
       w = Math.max(1, Math.round(rect.width * ratio)),
       h = Math.max(1, Math.round(rect.height * ratio));
-    if (this.bitmap.width !== w) this.bitmap.width = w;
-    if (this.bitmap.height !== h) this.bitmap.height = h;
-    const ctx = this.bitmap.getContext("2d")!;
+    if(this.root.width!==w)this.root.width=w;
+    if(this.root.height!==h)this.root.height=h;
+    const ctx=this.ctx;
     ctx.resetTransform();
     ctx.clearRect(0, 0, w, h);
     const scale = Math.min(w / this.box.width, h / this.box.height),
@@ -413,12 +412,7 @@ export class AtlasCanvas {
       x: this.box.x - this.sceneOrigin.x,
       y: this.box.y - this.sceneOrigin.y,
     });
-    if (this.root.width !== w) this.root.width = w;
-    if (this.root.height !== h) this.root.height = h;
-    this.ctx.resetTransform();
-    this.ctx.clearRect(0, 0, w, h);
-    this.ctx.drawImage(this.bitmap, 0, 0);
-    // Only the completed visible copy may authorize hits for this scene/camera/size.
+    // Drawing is synchronous inside this animation frame. Authorize hits only after it completes.
     this.painted = { generation: this.publishedGeneration, cameraVersion: this.cameraVersion, ...rect };
     this.root.dataset.paintCommands = String(this.compiled.commands.length);
     this.root.dataset.decodedBytes = String(
@@ -596,8 +590,8 @@ export class AtlasCanvas {
     const generation = ++this.generation;
     this.root.dataset.canvasState = "loading";
     try {
-      const scene = new AtlasPaint("g");
-      scene.dataset.mapScene = "true";
+      const scene = new AtlasPaint("group");
+      scene.data.mapScene = "true";
       draw(scene);
       const compiled = new AtlasCanvasScene(scene);
       if (compiled.images.size > 32)
@@ -687,14 +681,14 @@ export class AtlasCanvas {
   }
   hitAt(
     e: { clientX: number; clientY: number },
-    selector = "[data-atlas-object]",
+    keys = ["atlasObject"],
   ) {
     if (!this.ready || !this.compiled) return null;
     const p = this.point(e);
     return this.compiled.hit(
       this.ctx,
       { x: p.x - this.sceneOrigin.x, y: p.y - this.sceneOrigin.y },
-      selector,
+      keys,
     );
   }
 }

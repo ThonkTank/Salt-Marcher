@@ -638,7 +638,7 @@ Darstellungskonturen werden nicht zur Schreibautorität. Hover-Namen von Markern
 auch ohne Autoren-Auswahl; sie werden bei Gesten/Framewechsel/Fehlern entfernt.
 CSS-Ränder, Kameraskalierung und Bitmap-DPI
 sind getrennt. Autorenhits und Hover verlangen nicht nur die neueste Szene,
-sondern auch deren erfolgreich auf die sichtbare Fläche kopierten Frame mit
+sondern auch deren erfolgreich auf die sichtbare Fläche gezeichneten Frame mit
 aktueller Kamera und aktuellen CSS-Innenmaßen. Kameraänderungen sperren
 Treffer bis zum nächsten Paint; ein Größenwechsel ist schon vor dem
 ResizeObserver-Aufruf gesperrt. Eine verborgen kompilierte Szene erhält beim
@@ -650,8 +650,11 @@ Bilddecodierung mit einem ersetzbaren Nachfolger verhindert Decoder-Fan-out.
 Verlust/Fehler der Zeichenfläche entfernt Treffer und bietet Wiederholung,
 ohne gespeicherte Daten, Kamera oder Listener zu verdoppeln.
 
-Die sichtbare Fläche und der atomare Zeichenpuffer haben jeweils höchstens
+Die sichtbare Zeichenfläche hat höchstens
 4.194.304 Pixel, höchstens4096 Pixel je Achse und maximal2x Geräteauflösung.
+Zeichnen erfolgt synchron in einem Animationsframe direkt in diese Fläche;
+bei einem Fehler wird das unvollständige Bild gelöscht und es werden keine
+Treffer freigegeben. Es gibt keinen zusätzlichen Vollbild-Kopierpuffer.
 Eine Sichtmaske verwendet höchstens einen weiteren solchen
 Puffer pro Szene; dieser und die Maskenpfade werden bei Pan wiederverwendet
 und beim Szenenwechsel freigegeben; sie wird durch `destination-out` aus bekannten/sichtbaren Bereichen
@@ -671,8 +674,9 @@ OffscreenCanvas für nachgewiesene Zeichenarbeit auf dem UI-Thread. Kein
 vorsorglicher Shader-/Workerunterbau. Stadt-/Objektglyphgeneratoren emittieren
 jetzt direkt passive Geometrie (`cityPaint`, `elementPaint`); auch ausgewählte
 Zeichenobjekte und Zeichenvorschauen benötigen keinen XML-Parser oder
-abgetrennte SVG-Knoten. Die bisherigen SVG-Ausgaben serialisieren dieselbe
-Geometrie; Attribute und Texte werden erst am Ausgaberand maskiert. Ein
+abgetrennte SVG-Knoten. PNG/JPEG-Ausgaben verwenden dieselben numerischen Canvas-Kommandos direkt.
+Historische SVG-Schnittstellen besitzen einen getrennten Serializer; Attribute
+und Texte werden erst an diesem Ausgaberand maskiert. Ein
 festgehaltener Vergleich mit den vorherigen Generatoren prüft alle vorhandenen
 Symbolfamilien, Türzustände, Objektvarianten und Stadtlayer. Native Atlasproben
 lesen die veröffentlichte Canvasfläche und Kamera statt entfernter SVG-Knoten.
