@@ -40,6 +40,8 @@ export class AtlasCanvas {
   private tooltipPoint: { clientX: number; clientY: number } | null = null;
   private tooltipAnimation = 0;
   private publishedGeneration = 0;
+  private cameraVersion = 0;
+  private painted: { generation: number; cameraVersion: number; width: number; height: number } | null = null;
   private compiled: AtlasCanvasScene | null = null;
   private generation = 0;
   private animation = 0;
@@ -146,6 +148,7 @@ export class AtlasCanvas {
         if (
           this.drag ||
           this.options.locked?.() ||
+          (!this.ready && e.button === 0 && !e.altKey) ||
           !(this.options.pan?.(e) ?? e.button === 1)
         )
           return;
@@ -285,7 +288,12 @@ export class AtlasCanvas {
       !!this.compiled &&
       !this.failed &&
       !this.lost &&
-      this.publishedGeneration === this.generation
+      this.publishedGeneration === this.generation &&
+      this.painted?.generation === this.publishedGeneration &&
+      this.painted.cameraVersion === this.cameraVersion &&
+      this.painted.width === this.root.clientWidth &&
+      this.painted.height === this.root.clientHeight &&
+      this.painted.width > 0 && this.painted.height > 0
     );
   }
   get view() {
@@ -317,6 +325,11 @@ export class AtlasCanvas {
     return { x: p.x + this.box.x, y: p.y + this.box.y };
   }
   private apply() {
+    this.cameraVersion++;
+    this.tooltipPoint = null;
+    this.root.title = "";
+    if (this.compiled && !this.failed && !this.lost)
+      this.root.dataset.canvasState = "loading";
     this.root.dataset.atlasView = JSON.stringify(this.box);
     if (!this.animation)
       this.animation = requestAnimationFrame(() => {
@@ -401,6 +414,8 @@ export class AtlasCanvas {
     this.ctx.resetTransform();
     this.ctx.clearRect(0, 0, w, h);
     this.ctx.drawImage(this.bitmap, 0, 0);
+    // Only the completed visible copy may authorize hits for this scene/camera/size.
+    this.painted = { generation: this.publishedGeneration, cameraVersion: this.cameraVersion, ...rect };
     this.root.dataset.paintCommands = String(this.compiled.commands.length);
     this.root.dataset.decodedBytes = String(
       [...this.decoded.values()].reduce(
@@ -468,6 +483,7 @@ export class AtlasCanvas {
     this.pending = null;
     this.compiled?.dispose();
     this.compiled = null;
+    this.painted = null;
     this.clearImages();
     this.ctx?.resetTransform();
     this.ctx?.clearRect(0, 0, this.root.width, this.root.height);
@@ -643,6 +659,7 @@ export class AtlasCanvas {
     this.pending = null;
     this.compiled?.dispose();
     this.compiled = null;
+    this.painted = null;
     this.failed = true;
     this.cancel();
     this.clearImages();

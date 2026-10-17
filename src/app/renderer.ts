@@ -41,7 +41,7 @@ import {initCommitControls} from './commit-confirmation';
 import {initVolume,activateVolume,flushVolume} from './volume-ui';
 import {DungeonBinder} from './dungeon-binder-ui';
 import {initDungeon,activateDungeon,openDungeon,flushDungeon,selectDungeonRoom} from './dungeon-ui';
-import {initDrawing,activateDrawing,reloadDrawing,drawingOverlay,roomDrawingStyle,roomDrawingWalls,flushDrawing} from './drawing-ui';
+import {initDrawing,activateDrawing,reloadDrawing,drawingOverlay,syncDrawingControls,roomDrawingStyle,roomDrawingWalls,flushDrawing} from './drawing-ui';
 import {initAutonomy,activateAutonomy,openAutonomy,flushAutonomy} from './autonomy-ui';
 import {initPlayerUI,deactivatePlayer} from './player-ui';
 import {initCity,activateCity,openCity,prepareCityPersonBinding,flushCity} from './city-ui';
@@ -430,9 +430,8 @@ const svgNS = 'http://www.w3.org/2000/svg';
 function svgElement(name: string, attributes: Record<string, string>) {
   const item = document.createElementNS(svgNS, name); Object.entries(attributes).forEach(([key, value]) => item.setAttribute(key, value)); return item;
 }
-function draw(){document.dispatchEvent(new Event('atlas-draft'));const visible=workspace?.rooms.some(r=>JSON.stringify([r.scopeId,r.floorId])===el<HTMLSelectElement>('floors').value);dungeonCanvas.render(drawScene,visible?'':'Noch keine Geometrie in dieser Ansicht. Raum anlegen oder eine andere Ebene wählen.');}
+function draw(){syncGraphBanner(workspace);syncDrawingControls();document.dispatchEvent(new Event('atlas-draft'));const visible=workspace?.rooms.some(r=>JSON.stringify([r.scopeId,r.floorId])===el<HTMLSelectElement>('floors').value);dungeonCanvas.render(drawScene,visible?'':'Noch keine Geometrie in dieser Ansicht. Raum anlegen oder eine andere Ebene wählen.');}
 function drawScene(map:SVGGElement) {
-  syncGraphBanner(workspace);
   const visible:RoomGeometry[]=[];
   for (const saved of workspace?.rooms ?? []) {
     const room = draft?.id === saved.id ? draft : saved;

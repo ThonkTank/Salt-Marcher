@@ -126,16 +126,19 @@ function fixture(t, { available = true } = {}) {
       "Image",
       "createImageBitmap",
       "requestAnimationFrame",
+      "devicePixelRatio",
     ].map((k) => [k, global[k]]),
   );
   t.after(() => Object.assign(global, prior));
   const { window, document } = parseHTML(
     '<html><body><canvas id="atlas"></canvas></body></html>',
   );
+  Object.defineProperty(window, "devicePixelRatio", {value:1, configurable:true, writable:true});
   const root = document.querySelector("canvas"),
     frames = [],
     calls = [],
     closed = [];
+  let width = 320, height = 180;
   let contextAvailable = available,
     decodes = 0,
     maxDecodes = 0;
@@ -147,16 +150,16 @@ function fixture(t, { available = true } = {}) {
   window.HTMLCanvasElement.prototype.getContext = () =>
     contextAvailable ? ctx : null;
   Object.defineProperties(root, {
-    clientWidth: { value: 320 },
-    clientHeight: { value: 180 },
+    clientWidth: { get: () => width },
+    clientHeight: { get: () => height },
     clientLeft: { value: 1 },
     clientTop: { value: 1 },
   });
   root.getBoundingClientRect = () => ({
     left: 10,
     top: 20,
-    width: 322,
-    height: 182,
+    width: width + 2,
+    height: height + 2,
   });
   let pointer;
   root.setPointerCapture = (id) => (pointer = id);
@@ -209,6 +212,7 @@ function fixture(t, { available = true } = {}) {
     releases,
     changes,
     frames,
+    size(w,h) { width=w; height=h; },
     available(v) {
       contextAvailable = v;
     },
@@ -435,4 +439,41 @@ test('visible-cell clips constrain painted output, semantic hits and tooltips th
  assert.ok(f.calls.some(([name,path,rule])=>name==='clip'&&path===cut.path&&rule==='nonzero'));
  const missing=atlasPaint('g',{'clip-path':'url(#missing)'});missing.append(paint);
  assert.throws(()=>new AtlasCanvasScene(missing),/Sichtausschnitt fehlt/);
+});
+
+test("camera changes revoke hits and hover until the matching bitmap is actually painted", async t => {
+  const f=fixture(t),marker=rect("room");marker.append(atlasPaint("title",{},"Room"));
+  f.canvas.render(root=>root.append(marker));await settle();f.flush();
+  f.pointer("pointermove",15,25,0);f.flush();assert.equal(f.root.title,"Room");
+  const scene=f.canvas.compiled;
+  f.canvas.pan(10,0);
+  assert.equal(f.canvas.ready,false,"new camera coordinates must not hit the old displayed bitmap");
+  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+  assert.equal(f.root.title,"");assert.equal(f.root.dataset.canvasState,"loading");
+  f.flush();assert.equal(f.canvas.ready,true);assert.equal(f.canvas.compiled,scene);
+  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).dataset.id,"room");
+  f.canvas.zoom(.5);assert.equal(f.canvas.ready,false);f.flush();assert.equal(f.canvas.ready,true);
+  f.canvas.previous();assert.equal(f.canvas.ready,false);f.flush();assert.equal(f.canvas.ready,true);
+});
+test("a resized surface cannot use old pixels with its new client-coordinate transform", async t => {
+  const f=fixture(t);f.canvas.render(root=>root.append(rect("room")));await settle();f.flush();
+  f.size(640,360);assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+  f.canvas.set(f.canvas.view);f.flush();assert.equal(f.canvas.ready,true);assert.equal(f.root.width,640);
+});
+test("a scene compiled while hidden is not ready after showing until that scene is painted", async t => {
+  const f=fixture(t);f.canvas.render(root=>root.append(rect("old")));await settle();f.flush();
+  f.size(0,0);f.canvas.render(root=>root.append(rect("new")));await settle();
+  assert.equal(f.canvas.ready,false);f.size(320,180);
+  assert.equal(f.canvas.ready,false,"the previous bitmap may match the size, but belongs to an older scene");
+  f.canvas.set(f.canvas.view);f.flush();assert.equal(f.canvas.ready,true);
+  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).dataset.id,"new");
+});
+
+test("a pending frame is not interpreted as empty space for left-drag navigation", async t => {
+  const f=fixture(t);f.canvas.options.pan=()=>true;
+  f.canvas.render(root=>root.append(rect("room")));await settle();f.flush();
+  f.canvas.pan(10,0);f.pointer("pointerdown",15,25,0);
+  assert.equal(f.canvas.panning,false,"absence of a current hit does not prove empty space while a frame is pending");
+  f.pointer("pointerdown",15,25,1);assert.equal(f.canvas.panning,true,"explicit middle-button navigation remains available");
+  f.pointer("pointerup",15,25,1);f.flush();assert.equal(f.canvas.ready,true);
 });
