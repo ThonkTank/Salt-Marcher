@@ -38,3 +38,15 @@ test('returning from a later page restores the loaded rooms and focuses that roo
 test('a blocked navigation explains the remaining open-input barrier and re-enables its link',async t=>{
  const x=fixture(t);x.setOpen(async()=>false);x.ui.show('a','nera',()=>true);await tick();const button=x.host.querySelector('#note-room-uses-list button');button.click();await tick();assert.match(x.host.textContent,/Offene Eingaben/);assert.equal(button.disabled,false);
 });
+
+test('refreshing the same source while its room is open preserves the navigation and return focus',async t=>{
+ const x=fixture(t);x.ui.show('a','nera',()=>true);await tick();x.host.querySelector('#note-room-uses-list button').click();await tick();
+ const [,current,restore]=x.opens[0];x.ui.show('a','nera',()=>true);await tick();assert.equal(current(),true);restore();await tick();assert.equal(x.focused(),x.host.querySelector('#note-room-uses-list button'));
+});
+test('changing away and back to a note revokes an older room return even when its title matches again',async t=>{
+ const x=fixture(t);x.ui.show('a','nera',()=>true);await tick();x.host.querySelector('#note-room-uses-list button').click();await tick();
+ const [,current,restore]=x.opens[0];x.ui.show('a','tarek',()=>true);x.ui.show('a','nera',()=>true);await tick();assert.equal(current(),false);const before=x.focused();restore();await tick();assert.equal(x.focused(),before);
+});
+test('explicit reset revokes an open room navigation after a source refresh',async t=>{
+ const x=fixture(t);x.ui.show('a','nera',()=>true);await tick();x.host.querySelector('#note-room-uses-list button').click();await tick();const [,current]=x.opens[0];x.ui.show('a','nera',()=>true);x.ui.reset();assert.equal(current(),false);
+});

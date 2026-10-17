@@ -34,6 +34,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Verknüpfte Raum- und GM-Notizen | [Direkter Vergleich mit Logseq: Notizen neben dem Raum-Key bearbeiten](reference/gm-ux-qa/key-note-context-20261015/README.md) |
 | Notizorganisation und Raum-Key-Suche | [Direkter Vergleich mit TiddlyWiki: Vorlagen und NSC-Verweise wiederfinden](reference/gm-ux-qa/key-lookup-20261015/README.md) |
 | Raum-Keys bis zum Folgeabend | [Tatsächlicher Obsidian-Vergleich: vorhandenen Plan öffnen und zum Raum zurückkehren](reference/gm-ux-qa/connected-room-prep-20261017/README.md) |
+| Ausgangsnotiz nach Raum- und Planbearbeitung | [Native Nachprüfung und Obsidian-Zusammenführungsvergleich](reference/gm-ux-qa/note-room-plan-return-20261017/README.md) |
 | Prüfung | [GM-Szenarien](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), [Campaign-B-Fixture](CONTRIBUTOR-FIXTURE-B.md), [Abnahmeregister](../acceptance.json), [portable Hostbelege](reference/) |
 
 Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
