@@ -180,3 +180,10 @@ test('Atlas long-distance preview exposes duration and starts the same world jou
  const scene=x.store.sceneWorld(x.w.token,x.a.id);assert.ok(scene.journey);assert.equal(scene.journey.route.at(-1).q,3);
  } finally {await worldUI.stopWorldPlayback();}
 });
+
+test('a delayed click after a geometry drag stays suppressed until the next actual pointer press',async()=>{
+ const ui=Object.create(CampaignAtlasWorkbench.prototype);ui.suppressClick();await new Promise(resolve=>setTimeout(resolve,10));
+ assert.equal(ui.ignoreClick,true,'native drag completion can deliver its click after a zero-delay timer');
+ await ui.click({});assert.equal(ui.ignoreClick,false,'the generated click is consumed before any selection/read');
+ ui.suppressClick();ui.down({button:1});assert.equal(ui.ignoreClick,false,'a new pointer press starts an independent gesture even if no click followed the drag');
+});

@@ -1154,9 +1154,6 @@ export class CampaignAtlasWorkbench {
   }
   private suppressClick() {
     this.ignoreClick = true;
-    setTimeout(() => {
-      this.ignoreClick = false;
-    }, 0);
   }
   private queueBrush(p: Point) {
     const scope = this.scopeId;
@@ -1170,6 +1167,7 @@ export class CampaignAtlasWorkbench {
       .catch((e) => this.error(e));
   }
   private down(e: PointerEvent) {
+    this.ignoreClick=false; // A real press starts a new gesture; delayed drag clicks are consumed by click().
     if (e.button !== 0 || e.altKey || this.busy || !this.geometryCurrent() || !this.camera.ready) return;
     if (this.family === "terrain" && this.data) return;
 
