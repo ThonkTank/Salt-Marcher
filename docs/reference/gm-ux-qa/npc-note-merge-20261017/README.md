@@ -32,7 +32,11 @@ Auftrag. Veränderte oder hinzugekommene Verweise erfordern eine neue Vorschau.
 Die bestehenden Writer ändern Notizen/Orte, Key-Inhalte samt History und
 Besuchsquellen innerhalb einer Transaktion. Ein später Fehler rollt alle
 Teile einschließlich Receipts zurück. Gesicherte unklare Aufträge werden
-abgefragt; sie werden nicht automatisch erneut gesendet.
+abgefragt; sie werden nicht automatisch erneut gesendet. Zu lange kombinierte
+Texte bleiben als bearbeitbarer Entwurf erhalten und werden vor dem Senden
+begrenzt. Scheitert die lokale Entwurfssicherung, bleibt die Eingabe offen;
+Schließen und Verlassen setzen erfolgreiche Sicherung oder ausdrückliches
+Verwerfen voraus.
 
 Der erste native Nachlauf fand nach erfolgreicher Umstellung einen weiteren
 Fehler: Ein später geladener Raumtreffer zog nach Raum → Plan → Notiz den
@@ -44,33 +48,43 @@ mit Seiten und Tastaturfokus bleibt verfügbar und ist weiter geprüft.
 ## Ergebnis und getrennte Nachweise
 
 - [Vollständiges natives Ergebnis](result.json), Produktquelle
-  `81d9a0f09318dd30f45e242c6ac589770ee4c804`, fünf Buildhashes;
-  Start am sauberen Arbeitsbaum, dieselben unveränderten Produktdateien bei der
-  Fortsetzung. Eine Bestätigung, automatische Wachstuben-/Besuchsumstellung,
-  redaktionelle Raumkorrektur, beide Besuche, sichtbare Rückkehr, reguläres
-  Schließen, Fresh und weitere Eingabe am selben Original bestanden.
-- Nach Fresh versuchte der Helfer am bereits letzten Besuch nochmals „Weiter“.
-  Dieser [Navigationsfehler des Helfers](failure.json) ist getrennt erhalten.
-  Die Aufgabe wurde im selben Profil fortgesetzt: beide bestehenden Besuche
-  ausdrücklich ausgewählt und die gespeicherte Ergänzung gelesen. Keine weitere
-  Zusammenführung und keine doppelte Textänderung. Drei normale Exits 0,
-  kein Signal, alle eigenen Hauptprozess-PIDs abwesend, keine UI-Fehler.
+  `6cbbb74d6847bb716874100e6146e9919e93c678` einschließlich des aktuellen
+  SaltMarcher-Main `3ad67c46a`; fünf Buildhashes, sauberer Arbeitsbaum.
+  Eine Bestätigung, automatische Wachstuben-/Besuchsumstellung, redaktionelle
+  Raumkorrektur, beide Besuche, sichtbare Rückkehr, reguläres Schließen,
+  Fresh und weitere Eingabe am selben Original bestanden. Beide Besuche zeigen
+  die Ergänzung. Zwei reguläre Exits 0 ohne Signal, PIDs abwesend, keine UI-Fehler.
 - Abschließend beide Raum- und Besuchsverweise mit derselben kanonischen ID
   geprüft. Alte Nera-Texte, Tarek, Hinweisquelle und ursprüngliche CRLF-Raumabschnitte
   exakt erhalten. Die Quelldaten wurden erst nach Schließen aller Writer geprüft.
+- Ein [früherer Zwischenlauf](intermediate-result.json) wurde nach einem
+  [Navigationsfehler des Helfers](failure.json) im selben Profil fortgesetzt:
+  Der Helfer hatte am bereits letzten Besuch nochmals „Weiter“ versucht.
+  Beide Besuche wurden anschließend ausdrücklich ausgewählt; keine wiederholte
+  Zusammenführung und keine doppelte Textänderung. Dieser Zwischenlauf hatte
+  drei normale Exits; er wird nicht mit dem abschließenden Zweistartlauf vermischt.
 - Lokal: 171 betroffene Speicher-/UI-/Vorbereitungs-/Notizkontexttests bestanden.
-  Danach je eine zusätzliche Export-/Import-, verspätete Vorschau- und beschädigte
-  Auftragsregression bestanden. Nach dem nativen Rückwegfund alle elf
-  Raumverweis-DOM-Tests bestanden, darunter die neue verspätete Fokusregression.
+  Zusätzliche Export-/Import-, verspätete Vorschau-, beschädigte Auftrags-,
+  Textlimit- und lokale Sicherungsfehlerfälle bestanden. Nach den letzten
+  Änderungen alle elf Merge-UI-Tests sowie alle elf Raumverweis-DOM-Tests grün.
   Beide Typprüfungen, Repository-Prüfung und Desktop-Build bestanden.
-  Transaktionsrollback, stale Vorschau, Replay/lost ack, Entwurfserhalt,
+- Ergänzend die drei weiteren betroffenen Preparation-Einstiege geprüft:
+  34 Textverweistests bestanden. In zwei älteren synthetischen Browserhosts
+  fehlte der nun benötigte lokale Speicher; dadurch scheiterten 14 von 22
+  Planungs-/Übergabeprüfungen an der aktiven Sicherheitssperre. Nur die beiden
+  Testhosts erhielten einen isolierten Browser-Speicher. Danach alle 22 grün;
+  der Produktpfad bei unlesbarem Speicher bleibt gesperrt und separat geprüft.
+- Transaktionsrollback, stale Vorschau, Replay/lost ack, Entwurfserhalt,
   Profil-/Familienblockade, unabhängiges Backup und Import sind technische Belege.
-- Reproduktion: `npm run build:desktop`, dann
+  Reproduktion: `npm run build:desktop`, dann
   `node tools/test-desktop-note-merge.mjs --out=/tmp/npc-merge-check`.
   Der Helfer wählt nach Fresh beide Besuche anhand ihrer bestehenden IDs.
-- Exakte Kandidaten-CI, SQUASH-Main-Integration und native Prüfung des tatsächlichen
-  Main werden separat im Chat-Checkpoint dokumentiert. Dieser Bericht ersetzt
-  weder menschliche Abnahme noch Paket-/Installationsabnahme.
+- Exakte Kandidaten-CI, geschützte SQUASH-Main-Integration und native Prüfung des
+  tatsächlichen Main werden separat im Chat-Checkpoint dokumentiert. Der
+  aktuelle Main wurde regulär in den schon veröffentlichten Topic-Zweig
+  aufgenommen; kein Force-Push und keine historische Dungeon-/Migrationsbasis.
+  Die anschließende Main-Integration erfolgt per SQUASH mit linearer Main-Historie.
+  Menschliche und Paket-/Installationsabnahme werden nicht beansprucht.
 
 ## Begrenzung
 
@@ -91,6 +105,7 @@ physische IME-Eingabe und menschliche Bedienpräferenzen sind nicht belegt.
 
 ![Nach Raum und Plan bleibt das Original sichtbar](canonical-note-after-room-plan-return.png)
 
-![Nach Fresh: Ergänzung im Torhallenbesuch](fresh-both-visits-Torhalle.png)
+![Nach Fresh: Ergänzung desselben Originals im vorhandenen Besuch](fresh-edited-original-in-plan.png)
 
-![Dieselbe Ergänzung im Wachstubenbesuch](fresh-both-visits-Wachstube.png)
+Die Bilder des erhaltenen Zwischenlaufs zeigen zusätzlich beide Planeinbettungen:
+[Torhalle](fresh-both-visits-Torhalle.png), [Wachstube](fresh-both-visits-Wachstube.png).
