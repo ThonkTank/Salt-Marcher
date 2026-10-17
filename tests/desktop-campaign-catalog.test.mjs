@@ -193,3 +193,9 @@ test('find shortcut selects the visible campaign search and leaves other modals 
  get('campaign-delete-dialog').open=true;assert.equal(find(),false,'delete confirmation above the trash modal keeps its keyboard context');get('campaign-delete-dialog').open=false;
  get('campaign-trash-dialog').open=false;get('campaign-identity-dialog').open=true;assert.equal(find(),false);get('campaign-identity-dialog').open=false;x.ui.hideCampaignScreen();assert.equal(find(),false);
 });
+
+
+test('duplicate deletion separates the exact display name from the identity context',async t=>{
+ const x=await screenStorageFixture(t),get=id=>x.document.getElementById(id),a=x.execute({kind:'create',name:'Freitag'});x.execute({kind:'create',name:'Freitag'});x.execute({kind:'trash',id:a.campaignId,expectedRevision:0,trashed:true});await x.ui.openCampaignScreen();
+ get('campaign-trash-list').querySelectorAll('button')[1].onclick();assert.equal(get('campaign-delete-label').textContent,'Freitag');assert.equal(get('campaign-delete-context').hidden,false);assert.equal(get('campaign-delete-context').textContent,'Kennung: '+a.campaignId);assert.equal(get('campaign-delete-name').value,'');
+});
