@@ -1,7 +1,6 @@
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { formatDistance, hexPolygon, hexSize } from "./atlas-landscape";
-import { roomPath } from "./drawing-model";
 import { terrainColors } from "./world-model";
 export function drawLandscape(
   root: AtlasPaint,
@@ -42,14 +41,13 @@ export function drawLandscape(
     } else if (r.kind === "patch") {
       if (r.values.terrain && !raster)
         g.append(
-          landscapeNode("path", {path: roomPath(
-              r.polygons.map((p) => ({
+          landscapeNode("polygons", {polygons: r.polygons.map((p) => ({
                 outer: p.outer.map((v) => ({ x: v.x - b.x, y: v.y - b.y })),
                 holes: p.holes.map((h) =>
                   h.map((v) => ({ x: v.x - b.x, y: v.y - b.y })),
                 ),
               })),
-            ), pointer: false, style: {fill: terrainColors[r.values.terrain]!, fillRule: "evenodd"}}),
+             pointer: false, style: {fill: terrainColors[r.values.terrain]!, fillRule: "evenodd"}}),
         );
     } else if (r.kind === "road" || r.kind === "river")
       g.append(
@@ -84,12 +82,7 @@ export function drawLandscapeGrid(
   for (let q = cq - r; q <= cq + r; q++)
     for (let y = cr - r; y <= cr + r; y++)
       root.append(
-        landscapeNode("path", {path: roomPath(
-            [hexPolygon(q, y, size)].map((p) => ({
-              outer: p.outer.map((v) => ({ x: v.x - b.x, y: v.y - b.y })),
-              holes: [],
-            })),
-          ), pointer: false, style: {fill: null, stroke: "#36564444", lineWidth: mpp * 0.7}, data: {landscapeGrid: String("true")}}),
+        landscapeNode("polygon", {points: hexPolygon(q, y, size).outer.map(v=>({x:v.x-b.x,y:v.y-b.y})), pointer: false, style: {fill: null, stroke: "#36564444", lineWidth: mpp * 0.7}, data: {landscapeGrid: String("true")}}),
       );
 }
 export function drawScale(root: AtlasPaint, b: LandscapeBox, mpp: number) {
@@ -99,7 +92,7 @@ export function drawScale(root: AtlasPaint, b: LandscapeBox, mpp: number) {
     n = [1, 2, 5, 10].find((n) => n * pow >= raw)!,
     len = n * pow;
   root.append(
-    landscapeNode("path", {path: `M ${mpp * 20} ${b.height - mpp * 35} v ${mpp * 5} h ${len} v ${-mpp * 5}`, pointer: false, style: {fill: null, stroke: "#23382d", lineWidth: mpp * 2}, data: {editorOnly: String("true")}}),
+    landscapeNode("polyline", {points:[{x:mpp*20,y:b.height-mpp*35},{x:mpp*20,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*35}], pointer: false, style: {fill: null, stroke: "#23382d", lineWidth: mpp * 2}, data: {editorOnly: String("true")}}),
     landscapeNode("text", {x: mpp * 20, y: b.height - mpp * 42, style: {fontSize: mpp * 11, fill: "#23382d"}, data: {editorOnly: String("true")}}, formatDistance(len)),
   );
 }

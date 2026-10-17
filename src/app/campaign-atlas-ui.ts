@@ -42,7 +42,7 @@ import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames } from "./world-model";
 import { cityPaint, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
-import { roomPath, elementPaint } from "./drawing-model";
+import { elementPaint } from "./drawing-model";
 import { atlasCityPoint, atlasCityState, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
@@ -2090,7 +2090,7 @@ export class CampaignAtlasWorkbench {
             : []
         : room.polygons;
       if (!polygons.length) continue;
-      const path = shape("path", {path: roomPath(polygons), style: {fill: this.selection?.id === room.id ? "#e8d8ac" : "#e2dac4", stroke: "#3d4b45", lineWidth: Math.max(0.07, Math.min(0.18, mpp)), fillRule: "evenodd"}});
+      const path = shape("polygons", {polygons, style: {fill: this.selection?.id === room.id ? "#e8d8ac" : "#e2dac4", stroke: "#3d4b45", lineWidth: Math.max(0.07, Math.min(0.18, mpp)), fillRule: "evenodd"}});
       path.data.atlasObject = "true";
       path.data.kind = "room";
       path.data.id = room.id;
@@ -2145,7 +2145,7 @@ export class CampaignAtlasWorkbench {
       const draft = atlasDrawingDraft();
       if (draft.polygons)
         g.append(
-          shape("path", {path: roomPath(draft.polygons), style: {fill: "#d98f5555", stroke: "#b85c23", lineWidth: 0.1}}),
+          shape("polygons", {polygons: draft.polygons, style: {fill: "#d98f5555", stroke: "#b85c23", lineWidth: 0.1}}),
         );
     }
     this.drawInteriorRuntime(g,b,floor,mpp,shown);
@@ -2184,7 +2184,7 @@ export class CampaignAtlasWorkbench {
       )
         continue;
       g.append(
-        shape("path", {path: `M${t.from.x},${t.from.y}L${t.to.x},${t.to.y}`, style: {fill: null, stroke: "#987cb0", lineWidth: Math.max(0.08, mpp), lineDash:[mpp*3,mpp*3]}}),
+        shape("line", {x:t.from.x,y:t.from.y,x2:t.to.x,y2:t.to.y, style: {fill: null, stroke: "#987cb0", lineWidth: Math.max(0.08, mpp), lineDash:[mpp*3,mpp*3]}}),
       );
     }
     for (const n of data.geometry.npcs.filter(
@@ -2225,8 +2225,8 @@ export class CampaignAtlasWorkbench {
         width = Math.max(...points.map((p) => p.x)) - minX + 1,
         height = Math.max(...points.map((p) => p.y)) - minY + 1;
       g.append(shape("rect",{x:minX,y:minY,width,height,opacity:.9,pointer:false,style:{fill:'#1e292b'},maskCuts:[
-        ...perception.known.length?[{path:roomPath(perception.known),alpha:.6}]:[],
-        ...perception.visible.length?[{path:roomPath(perception.visible),alpha:1}]:[],
+        ...perception.known.length?[{polygons:perception.known,alpha:.6}]:[],
+        ...perception.visible.length?[{polygons:perception.visible,alpha:1}]:[],
       ]}));
     }
 
