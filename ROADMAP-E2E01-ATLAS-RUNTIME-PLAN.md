@@ -499,7 +499,9 @@ der vorhandene Landschaftsbildcache sind getrennte Klassen.
 
 Einzelne Häuser laden ihren vollständigen kanonischen Datensatz vor einer
 Änderung. Die Projektion wird nicht zum Upsert umgedeutet; Notizen, Bewohner,
-Rezepte und fremde Erweiterungsfelder bleiben erhalten. Gesamte Stadtwerkzeuge
+Rezepte und fremde Erweiterungsfelder bleiben erhalten. Eine nicht auflösbare
+Fraktionsreferenz bleibt als ausdrückliche Auswahl sichtbar; eine unabhängige
+Namensänderung entfernt sie nicht. Gesamte Stadtwerkzeuge
 und Zeichenarchive werden ausdrücklich geladen. Gezielte Zeichendetails
 unterscheiden eine abgeleitete geheime Darstellung ohne Stilzeile von einer
 tatsächlichen Autorenrevision. Globale Suche und genaue Fokusqueries erreichen
