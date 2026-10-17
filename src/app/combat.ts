@@ -39,6 +39,8 @@ let resolution:CombatResolutionPanel|null=null;
 let selectionPanel:CombatSelectionPanel|null=null;
 let openNpcProfile:((id:string,current:()=>boolean)=>Promise<void>)|undefined;
 export function setCombatNpcNavigation(open:NonNullable<typeof openNpcProfile>){openNpcProfile=open;}
+let openCreatureCatalog:((current:()=>boolean)=>Promise<void>)|undefined;
+export function setCombatCatalogNavigation(open:NonNullable<typeof openCreatureCatalog>){openCreatureCatalog=open;}
 let hitPanel:CombatHitPanel|null=null;
 let areaPanel:CombatAreaPanel|null=null;
 let initiativePanel:CombatInitiativePanel|null=null;
@@ -352,6 +354,7 @@ function render() {
   renderReinforcements();
   get('combat-creation').hidden = false;
   get('combat-create-form').hidden=true;
+  get('combat-catalog-open').hidden=editableCombat(combat??null);
   get('combat-shared-notice').textContent=combat?.sharedNotice??'';
   get('combat-workspace').hidden = !combat;
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
@@ -460,7 +463,9 @@ async function recoveredCombat(event:CommitResolution){
 }
 export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   tell = status;afterSaved=refresh;
-  const selectionRoot=document.createElement('section');get('combat-creation').prepend(selectionRoot);
+  const catalogButton=document.createElement('button');catalogButton.type='button';catalogButton.id='combat-catalog-open';catalogButton.textContent='Spontane Gegner im Katalog auswählen…';
+  catalogButton.onclick=()=>void(async()=>{const owner=preparationOwner();if(!owner||editableCombat(view?.combat??null)||blocked()||!openCreatureCatalog||!await flushCombat()||!owner.current())return;await openCreatureCatalog(owner.current);})().catch(error=>tell(error.message,true));
+  const selectionRoot=document.createElement('section');get('combat-creation').querySelector('summary')!.after(catalogButton,selectionRoot);
   selectionPanel=new CombatSelectionPanel(selectionRoot,()=>{const owner=preparationOwner();return owner&&workspace&&scene?{workspace,scene,current:owner.current}:null;},(action,current)=>execute(action,undefined,current),blocked);
   get('combat-creation').addEventListener('toggle',()=>{if(get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();});
   const groupButton=document.createElement('button');groupButton.type='button';groupButton.id='combat-group-open';groupButton.textContent='Vorbereitete Monstergruppe hinzufügen…';groupButton.onclick=()=>void reinforceWorldGroup().catch(e=>tell(e.message,true));get('combat-reinforcement').prepend(groupButton,sceneGroupTray(()=>{const owner=preparationOwner();return owner&&workspace?{token:workspace.token,sceneId:owner.sceneId,current:owner.current}:null;},reinforceWorldGroup,status));

@@ -558,3 +558,7 @@ test('adoption review describes unmaterialized encounter slots as planned figure
  const live=x.store.live(x.w.token);
  assert.equal(x.store.scenePreparation(x.w.token,live.scene.id).groups[0].actors.length,2);
 });
+
+test('a confirmed scene switch returns the viewport to the new group context',async t=>{
+ const x=await setup(t),other=await x.focusOther();let shown=null;x.el('live-workspace').scrollIntoView=()=>{shown=x.el('scene-focus').value;};x.el('scene-focus').value=x.scene.id;x.el('scene-focus').onchange();await settle();assert.equal(shown,x.scene.id);x.el('scene-focus').value=other;x.el('scene-focus').onchange();await settle();assert.equal(shown,other);assert.equal(x.el('running-title').value,'Andere Gruppe');
+});

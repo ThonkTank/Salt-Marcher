@@ -82,6 +82,7 @@ async function refreshCatalogInfo(){
  });return infoPending;
 }
 export async function openCatalog(){itemReference?.show(catalogContent==='items');await Promise.all([refreshCatalogInfo(),catalogContent==='monster'?search():Promise.resolve(),refreshPlans(),refreshGeneration()]);}
+export async function openCreatureCatalog(current=()=>true){if(!current())return;catalogContentView('monster');await openCatalog();if(current()){get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});}}
 export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){if(!stillCurrent())return;catalogContentView('monster');void openCatalog();if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
 function query():CreatureCatalogQuery{

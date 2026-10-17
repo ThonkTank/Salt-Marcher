@@ -740,7 +740,7 @@ function renderGroups() {
 async function changeFocus(id: string,current:()=>boolean=()=>true) {
   const token = context?.token, revision = data?.focusRevision;
   if (!current()||revision === null || revision === undefined || !(await flushLive()) || context?.token !== token||!current()) { if(current())get<HTMLSelectElement>('scene-focus').value = data?.focusId ?? ''; return false; }
-  if (await execute({ kind: 'focus', sceneId: id, expectedRevision: revision })){renderScene();return true;}return false;
+  if (await execute({ kind: 'focus', sceneId: id, expectedRevision: revision })){renderScene();get('live-workspace').scrollIntoView?.({block:'start'});return true;}return false;
 }
 function renderTimePreview(){
  const scene=data?.scene,w=context,n=++timePreviewRequest;manualTimePreview=null;get<HTMLButtonElement>('time-advance').disabled=true;if(!scene||!w)return;const amount=value('time-amount'),unit=value('time-unit'),units:Record<string,'second'|'minute'|'hour'|'day'>={seconds:'second',minutes:'minute',hours:'hour',days:'day'};get('time-preview').textContent='Kalenderzeit wird berechnet…';
