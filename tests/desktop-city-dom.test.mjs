@@ -897,3 +897,13 @@ test('a chosen search result suppresses late sibling query results',async()=>{
   assert.equal(x.document.querySelectorAll('#atlas-search-results button').length,0);assert.equal(s.atlas.cityId,city.header.id);assert.equal(x.writes.length,0);
  }finally{release?.();await s.close();}
 });
+
+test('a genuine city search focus failure is shown without an unhandled rejection or author write',async()=>{
+ const x=await setup(),s=await placeSurface(x);try{
+  const city=x.store.city(x.current().token,x.cityIds.one);x.enter('atlas-search',city.header.name);
+  await until(()=>[...x.document.querySelectorAll('#atlas-search-results button')].some(b=>b.textContent===city.header.name));
+  [...x.document.querySelectorAll('#atlas-search-results button')].find(b=>b.textContent===city.header.name).click();
+  await until(()=>x.document.getElementById('atlas-save-status').textContent.includes('nicht im Atlas verortet'));
+  assert.equal(s.atlas.family,'navigation');assert.equal(x.writes.length,0);
+ }finally{await s.close();}
+});

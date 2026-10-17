@@ -153,3 +153,15 @@ test('selected drawing metadata keeps one element existence check across undo wi
  f.store.executeAtlasCommit({...command,action:{kind:'drawing',command}});const before=f.store.drawingMap(token,'r0',element.id);assert.equal(before.elements.length,1);assert.equal(before.elements[0].id,element.id);assert(!JSON.stringify(before).includes('PRIVATE-SELECTED-NOTE'));
  f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:f.campaign.id,action:{kind:'undo'}});assert.equal(f.store.drawingMap(token,'r0',element.id).elements.length,0);
 });
+
+test('independent viewport and selection readers keep a cold exact focus alive through a replaced viewport read',async t=>{
+ const f=fixture(t,300),viewport=new AtlasRegionService(require.resolve('../.build/atlas-region-worker.cjs'),0),selection=new AtlasRegionService(require.resolve('../.build/atlas-region-worker.cjs'),0);
+ t.after(async()=>{await Promise.all([viewport.close(),selection.close()]);});
+ const source=f.store.atlasRegionSource(f.shell.token);
+ const focus=selection.focus(source,'room','r299');
+ const first=viewport.read(source,query()).then(value=>({value}),error=>({error}));
+ const next=viewport.read(source,query({x:1450,y:-2,width:60,height:10}));
+ const [selected,region,old]=await Promise.all([focus,next,first]);
+ assert.equal(selected.id,'r299');assert.ok(selected.point.x>1490);assert.ok(region.rooms.some(room=>room.id==='r299'));assert.ok(old.error||old.value);
+ const nextFocus=selection.focus(f.store.atlasRegionSource(f.shell.token,selection.cursor),'room','r0');selection.cancel();await assert.rejects(nextFocus,/abgebrochen/);
+});

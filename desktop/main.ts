@@ -105,14 +105,14 @@ else {
     handle('campaign:installation-settings',()=>store.campaignInstallationSettings());
     handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')imports.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishCampaignFiles(c.id);}return result;});
     handle('campaign:catalog-outcome',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalogOutcome(c);if(result?.kind==='erase')await finishCampaignFiles(result.campaignId);return result;});
-    handle('campaign:catalog-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();return store.campaignCatalogWorkspace(id,true);});
-    handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();imports.clear();return store.activateShell(id);});
+    handle('campaign:catalog-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasSelectionRegions.cancel();atlasExportRegions.cancel();return store.campaignCatalogWorkspace(id,true);});
+    handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasSelectionRegions.cancel();atlasExportRegions.cancel();imports.clear();return store.activateShell(id);});
     handle('campaign:workspace-geometry',(token:string)=>store.workspaceGeometry(token));
-    const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,32*1024*1024),atlasExportRegions=new AtlasRegionService(undefined,32*1024*1024);
+    const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,32*1024*1024),atlasSelectionRegions=new AtlasRegionService(undefined,0),atlasExportRegions=new AtlasRegionService(undefined,32*1024*1024);
     let roomReadBarrier=0;
     async function afterRoomReaders<T>(operation:()=>T):Promise<T>{
       roomReadBarrier++;
-      try{await Promise.all([roomDirectory.cancelAndWait(),atlasRoomDirectory.cancelAndWait(),atlasRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);return operation();}
+      try{await Promise.all([roomDirectory.cancelAndWait(),atlasRoomDirectory.cancelAndWait(),atlasRegions.cancelAndWait(),atlasSelectionRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);return operation();}
       finally{roomReadBarrier--;}
     }
     handle('campaign:room-directory-cancel',(token:string,consumer:'atlas'|'directory'='directory')=>{store.roomReadSource(token);if(!['atlas','directory'].includes(consumer))throw new Error('Raumsuche prüfen.');(consumer==='atlas'?atlasRoomDirectory:roomDirectory).cancel();});
@@ -360,7 +360,7 @@ else {
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
     handle('atlas:commit',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>c.action?.kind==='graph-accept'?afterRoomReaders(()=>store.executeAtlasCommit(c)):store.executeAtlasCommit(c));
     handle('campaign:workspace-initial',(token:string)=>store.workspaceInitial(token));
-    handle('atlas:region-cancel',(token:string,consumer:'view'|'export'='view')=>{store.roomReadSource(token);if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');(consumer==='view'?atlasRegions:atlasExportRegions).cancel();});
+    handle('atlas:region-cancel',(token:string,consumer:'view'|'export'='view')=>{store.roomReadSource(token);if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');if(consumer==='view'){atlasRegions.cancel();atlasSelectionRegions.cancel();}else atlasExportRegions.cancel();});
     handle('atlas:geometry-region',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,consumer:'view'|'export'='view')=>{
       if(roomReadBarrier)throw new Error('Graphwechsel läuft. Ausschnitt danach aktualisieren.');validateRegion(query);
       if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');const reader=consumer==='view'?atlasRegions:atlasExportRegions;
@@ -369,13 +369,13 @@ else {
     });
     handle('atlas:focus',async(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string)=>{
       if(roomReadBarrier||!['room','city','building','element','scope'].includes(kind)||typeof id!=='string'||!id)throw new Error('Kartenauswahl prüfen.');
-      const source=store.atlasRegionSource(token,atlasRegions.cursor),value=await atlasRegions.focus(source,kind,id);
+      const source=store.atlasRegionSource(token,atlasSelectionRegions.cursor),value=await atlasSelectionRegions.focus(source,kind,id);
       if(store.atlasRegionSource(token).fence!==source.fence)throw new Error('Atlas inzwischen geändert. Auswahl erneut öffnen.');return value;
     });
     handle('atlas:region-hit',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,point:import('../src/app/contracts').Point,fence:string)=>{
-      if(roomReadBarrier)throw new Error('Graphwechsel läuft.');validateRegion(query);const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(roomReadBarrier)throw new Error('Graphwechsel läuft.');validateRegion(query);const source=store.atlasRegionSource(token,atlasSelectionRegions.cursor);
       if(source.fence!==fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
-      const value=await atlasRegions.hit(source,query,point);if(store.atlasRegionSource(token).fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');return value;
+      const value=await atlasSelectionRegions.hit(source,query,point);if(store.atlasRegionSource(token).fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
     handle('atlas:city-site',(token:string,cityId:string,id?:string)=>store.atlasCitySite(token,cityId,id));
     handle('atlas:render-view',(token:string,groupView=false)=>store.atlasRenderView(token,groupView));
@@ -455,7 +455,7 @@ else {
     });
     handle('campaign:backup-status', () => backupError);
     handle('campaign:tutorial', (state?: 'shown' | 'finished' | 'skipped') => store.tutorial(state));
-    ipcMain.on('campaign:close-ready', event => { if (event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && event.senderFrame.url === origin) { void Promise.all([roomDirectory.close(),atlasRoomDirectory.close(),atlasRegions.close(),atlasExportRegions.close()]).then(()=>{if(win.isDestroyed())return;closeAllowed = true;win.close();}); } });
+    ipcMain.on('campaign:close-ready', event => { if (event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && event.senderFrame.url === origin) { void Promise.all([roomDirectory.close(),atlasRoomDirectory.close(),atlasRegions.close(),atlasSelectionRegions.close(),atlasExportRegions.close()]).then(()=>{if(win.isDestroyed())return;closeAllowed = true;win.close();}); } });
     win.on('close', event => { if (!closeAllowed) { event.preventDefault(); win.webContents.send('campaign:close'); } });
     const timer = setInterval(async () => {
       if (backupRunning) return;
@@ -464,7 +464,7 @@ else {
       catch { backupError = 'Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.'; }
       finally { backupRunning = false; }
     }, 30000);
-    win.on('closed', () => { atlasRaster.close();roomDirectory.close();atlasRoomDirectory.close();void atlasRegions.close();void atlasExportRegions.close();clearInterval(timer);playerDisplay.shutdown(); });
+    win.on('closed', () => { atlasRaster.close();roomDirectory.close();atlasRoomDirectory.close();void atlasRegions.close();void atlasSelectionRegions.close();void atlasExportRegions.close();clearInterval(timer);playerDisplay.shutdown(); });
     await win.loadURL(origin);
     app.on('before-quit', event => { if (!closeAllowed && win && !win.isDestroyed()) { event.preventDefault(); win.close(); } });
   }).catch(error => { console.error(error);dialog.showErrorBox('SaltMarcher kann nicht starten', String(error)); app.exit(1); });
