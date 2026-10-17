@@ -73,6 +73,17 @@ Mappenaktionen und Besuchsfortschritt, jeweils ohne Fehler. Typprüfungen und
 beide Builds bestehen. Kein identischer lokaler Komplettlauf; die vollständige
 Qualifikation gehört der exakten Candidate-CI.
 
+Die erste Candidate-CI auf `7231ad845018689902b622aa0e466302eeda30ed`
+endete mit 3687 Tests, 3683 bestanden, drei Fehlern und einem übersprungenen
+Test. Alle drei Fehler stammten aus demselben Helfer: Er suchte nach der
+abschließenden Lokalisierung noch „Borin · npc“ statt „Borin · NSC“.
+Der frühere lokale Durchgang dieser Datei lag vor der Überschriftenänderung;
+die spätere gezielte Auswahl enthielt diese Datei nicht. Die drei Fehler wurden
+lokal reproduziert. Der Helfer erwartet jetzt die sichtbare deutsche Überschrift
+und meldet ein fehlendes Original ausdrücklich. Die gesamte betroffene
+Vorbereitungsdatei wird zusammen mit den Mappen- und Auszugstests erneut geprüft.
+Die geschützte Integration hat den fehlgeschlagenen Kandidaten nicht übernommen.
+
 Native Wiederholung: `tools/test-desktop-note-excerpts.mjs` führt die gesamte
 Aufgabe einschließlich normalem Fresh, vier Inhaltsabfragen/Ergänzungen,
 unverändertem CRLF-Rohtext, einer Abendübergabe, aktueller Leseansicht und Öffnen
