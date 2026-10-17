@@ -18,7 +18,7 @@ import type {
   AtlasLocalPreview,
   AtlasTravelAction,
 } from "./atlas-travel-contracts";
-import { openWorld, atlasWorldTarget, atlasWorldTravelState,refreshWorldAfterAtlasTravel } from "./world-ui";
+import { openWorld, atlasWorldTarget, atlasWorldTravelState,previewAtlasWorldTravel,startAtlasWorldTravel,refreshWorldAfterAtlasTravel } from "./world-ui";
 import { PassiveMapCanvas, type CanvasBox } from "./passive-map-canvas";
 import {
   atlasFrame,
@@ -1487,6 +1487,12 @@ export class CampaignAtlasWorkbench {
       });
     }
   }
+  private worldPreview() {
+    const state = atlasWorldTravelState(), p = state.preview, a = this.data;
+    return p && state.token === this.owner?.token && a?.scene && !a.geometry.position &&
+      p.request.sceneId === a.geometry.sceneId && p.request.mapId === a.terrain.id &&
+      !get<HTMLButtonElement>("travel-preview-accept").disabled ? p : null;
+  }
   private renderTravel() {
     const console=document.getElementById("atlas-local-console");if(console)console.dataset.dungeon=String(!!this.data?.geometry.position);
     const unavailable = this.travelReadState === "loading"
@@ -1507,7 +1513,10 @@ export class CampaignAtlasWorkbench {
       hp = this.data.scene?.journey;
     const worldLeg=!this.data.geometry.position&&hp&&['active','paused','interrupted'].includes(hp.status)&&!j?.status.match(/^(active|paused)$/);
     get('atlas-local-round').textContent=worldLeg?'Bis nächste Grenze':'Eine Runde';
-    const text = this.localPreview
+    const wp = this.worldPreview();
+    const text = wp
+      ? (wp.distanceMeters / 1000).toFixed(1) + " km · " + (wp.durationSeconds / 3600).toFixed(2) + " h · Ankunft " + wp.arrival + (wp.warnings.length ? " · " + wp.warnings.join(" · ") : "")
+      : this.localPreview
       ? this.localPreview.distanceMeters.toFixed(1) +
         " m · " +
         this.localPreview.seconds +
@@ -1528,7 +1537,7 @@ export class CampaignAtlasWorkbench {
             : "Ziel in der Karte wählen und Weg prüfen.";
     get("atlas-local-status").textContent = unavailable || text;
     get<HTMLButtonElement>("atlas-local-start").disabled =
-      locked || !(this.localPreview || (this.data.geometry.position && atlasDungeonState().preview));
+      locked || !(this.localPreview || wp || (this.data.geometry.position && atlasDungeonState().preview));
     get("atlas-local-play").textContent = this.playback?.running
       ? "Wiedergabe anhalten"
       : "Wiedergabe starten";
@@ -1671,7 +1680,9 @@ export class CampaignAtlasWorkbench {
           Math.hypot(start.x - this.lastPoint.x, start.y - this.lastPoint.y) >
             5000
         ) {
-          get<HTMLFormElement>("world-travel-form").requestSubmit();
+          this.localPreview = null;
+          await previewAtlasWorldTravel();
+          this.renderTravel();
           return;
         }
         this.localPreview = null;
@@ -1698,7 +1709,8 @@ export class CampaignAtlasWorkbench {
       if (kind === "start") {
         if (this.localPreview)
           await this.travel({ kind: "start", preview: this.localPreview });
-        else get("dungeon-confirm").click();
+        else if (a.geometry.position) get("dungeon-confirm").click();
+        else if (this.worldPreview()) await startAtlasWorldTravel();
         return;
       }
       const j = a.localJourney;

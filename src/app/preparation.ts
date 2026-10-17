@@ -324,10 +324,10 @@ function revealNote(id: string) {
 async function renderNotes(initialLocationId?:string) {
   noteEditorGeneration++;
   if(!noteThread?.ownsNote(selectedNote))noteThread?.reset();
-  roomUses?.reset();
 
   const row = noteRow(selectedNote); noteDraft = row && !row.trashed ? structuredClone(row.note) : null;
   const token = context?.token, target = selectedNote, request = preparationLoad;
+  roomUses?.prepare(token??null,target);
   const saved = row ? await loadedDraft('note', row.note.id) : null;
   if (context?.token !== token || request !== preparationLoad || selectedNote !== target) return;
   if (saved?.change.kind === 'note' && !row?.trashed) noteDraft = structuredClone(saved.change.note);
@@ -428,7 +428,7 @@ async function insertNoteTextReference(){
  finally{if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
 }
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>) {
-  const uses=get('note-room-uses');if(uses)roomUses=new NoteRoomUses(uses,(token,id,offset)=>window.campaign.noteRoomUses(token,id,offset),(id,current,restore)=>roomKeyOpen(id,current,restore));
+  const uses=get('note-room-uses');if(uses)roomUses=new NoteRoomUses(uses,(token,id,offset)=>window.campaign.noteRoomUses(token,id,offset),(id,current,restore)=>roomKeyOpen(id,current,()=>{showPreparationArea(false);showLocations(false);restore();if(selectedNote)revealNote(selectedNote);}));
   tell = (text,error)=>{status(text,error);noteThread?.feedback(text,error);packetNoteFeedback(text,error);};
   for(const [id,plan] of [['preparation-knowledge',false],['preparation-planning',true]] as const)get(id).onclick=()=>{void(async()=>{const owner=context;if(!await leavePreparation()||context!==owner)return;if(plan)await ensurePlanningView();if(context===owner)showPreparationArea(plan);})().catch(error=>tell(error.message,true));};
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}

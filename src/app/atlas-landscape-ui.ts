@@ -270,6 +270,16 @@ export class LandscapeWorkbench {
         e.stopImmediatePropagation();
         e.preventDefault();
         if (["paint", "hex", "reset"].includes(this.tool)) return;
+        if (this.tool === "place" && this.selected) {
+          if (this.dirty) {
+            this.say("Ortsänderungen zuerst abschließen oder verwerfen.");
+            return;
+          }
+          this.selected = null;
+          this.doc = null;
+          this.docRevision = null;
+          html("land-selection").replaceChildren();
+        }
         const p = this.point(e);
         this.lastPoint = p;
         if (this.calibration) {
@@ -280,6 +290,8 @@ export class LandscapeWorkbench {
               " von 2. Danach abschließen.",
           );
         } else this.points.push(p);
+        if (this.tool === "place")
+          this.say('Ortspunkt gesetzt. Mit „Zug abschließen“ anlegen.');
         this.host.redraw();
       },
       true,
