@@ -961,18 +961,22 @@ export class CampaignAtlasWorkbench {
       const b = document.createElement("button");
       b.textContent = name;
       b.onclick = () => {
+        this.searchRequest++;
         root.replaceChildren();
         fn();
       };
       root.append(b);
     };
-    for(const place of this.data?.places??[])if(!place.trashed&&!this.data?.cities.some(c=>c.header.locationId===place.locationId)&&place.name.toLocaleLowerCase("de").includes(text))add(place.name,()=>void this.navigatePlace(place.locationId),"location:"+place.locationId);
+    // A bounded/cold viewport may contain a city's place marker but not its city DTO.
+    // Let the global city page claim that location before adding marker fallbacks.
+    const cachedPlaces=(this.data?.places??[]).filter(place=>!place.trashed&&place.name.toLocaleLowerCase("de").includes(text));
     const token=this.owner!.token;
+    let cityPage:Promise<void>=Promise.resolve();
 
     const current=()=>request===this.searchRequest&&this.owner?.token===token&&get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')===text;
     const more=(title:string,load:()=>Promise<void>)=>{const b=document.createElement('button');b.textContent=title;b.onclick=()=>{b.remove();void load().catch(e=>{if(current())this.error(e);});};root.append(b);};
     const page=async(kind:'city'|'landscape'|'scope',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
-      const result=await window.campaign.atlasObjects(token,{kind,text,limit:40,cursor});if(!current())return;if(!result.ok)throw new Error(result.error);
+      const result=await window.campaign.atlasObjects(token,{kind,text,limit:40,cursor});if(kind==='landscape')await cityPage;if(!current())return;if(!result.ok)throw new Error(result.error);
       for(const item of result.value.items)add(item.name,()=>void (kind==='landscape'?this.navigateLandscape(item.id).catch(e=>this.error(e)):kind==='scope'?this.navigateScope(item.id).catch(e=>this.error(e)):this.navigate(kind,item.id)),item.locationId?'location:'+item.locationId:kind+':'+item.id);
       if(result.value.next)more(kind==='city'?'Weitere Städte':kind==='scope'?'Weitere Dungeons':'Weitere Landschaftsobjekte',()=>page(kind,result.value.next!));
     };
@@ -983,7 +987,9 @@ export class CampaignAtlasWorkbench {
       if(result.value.next)more('Weitere Räume',()=>rooms(result.value.next!));
     };
     const buildings=async(offset=0)=>{const result=await window.campaign.cityBuildings(token,{text,offset});if(!current())return;if(!result.ok)throw new Error(result.error);for(const item of result.value.items)add(item.cityTitle+' · '+item.title,()=>void this.navigate('city',item.cityId,item.unitId));if(result.value.next!==null)more('Weitere Häuser',()=>buildings(result.value.next!));};
-    for(const task of [rooms(),page('city'),page('landscape'),page('scope'),buildings()])void task.catch(e=>{if(current())this.error(e);});
+    cityPage=page('city').catch(e=>{if(current())this.error(e);});
+    void cityPage.then(()=>{if(!current())return;for(const place of cachedPlaces)add(place.name,()=>void this.navigatePlace(place.locationId),'location:'+place.locationId);});
+    for(const task of [rooms(),page('landscape'),page('scope'),buildings()])void task.catch(e=>{if(current())this.error(e);});
 
   }
 

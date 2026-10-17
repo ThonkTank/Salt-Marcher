@@ -870,3 +870,30 @@ test('late infill acceptance preserves a newer recipe draft while storing only t
   await x.activate('Alpha');assert.equal(get('city-density').value,'0.65','fresh activation reads the actually accepted recipe');
  }finally{release?.();await x.cleanup();}
 });
+
+test('cold viewport marker cannot displace the canonical city search target while the global city page loads',async()=>{
+ const x=await setup(),s=await placeSurface(x);let release;try{
+  const city=x.store.city(x.current().token,x.cityIds.one);
+  x.store.executeAtlas({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:city.header.id,parent:'world',parentId:null,x:0,y:0,angle:0,revision:0},expectedRevision:null}});
+  assert.equal(x.store.atlasObjects(x.current().token,{kind:'city',text:city.header.name,limit:40}).items[0].locationId,city.header.locationId);
+  s.atlas.data.cities=[];s.atlas.data.places=[{locationId:city.header.locationId,name:city.header.name,point:{x:0,y:0},trashed:false}];
+  const query=x.window.campaign.atlasObjects;x.window.campaign.atlasObjects=async(token,q)=>{const r=await query(token,q);if(q.kind==='city')return new Promise(resolve=>{release=()=>resolve(r);});return r;};
+  x.enter('atlas-search',city.header.name);await until(()=>!!release);
+  assert.equal([...x.document.querySelectorAll('#atlas-search-results button')].filter(b=>b.textContent===city.header.name).length,0,'do not expose a wrong early marker target');
+  release();await until(()=>[...x.document.querySelectorAll('#atlas-search-results button')].some(b=>b.textContent===city.header.name));
+  const found=[...x.document.querySelectorAll('#atlas-search-results button')].filter(b=>b.textContent===city.header.name);assert.equal(found.length,1);
+  found[0].click();await until(()=>s.atlas.family==='city'&&x.document.getElementById('atlas-selection-title').textContent===city.header.name);
+  assert.equal(s.atlas.cityId,city.header.id);assert.equal(x.document.getElementById('city-panel-infill').hidden,false);assert.equal(x.writes.length,0);
+ }finally{release?.();await s.close();}
+});
+
+test('a chosen search result suppresses late sibling query results',async()=>{
+ const x=await setup(),s=await placeSurface(x);let release;try{
+  const city=x.store.city(x.current().token,x.cityIds.one),query=x.window.campaign.atlasObjects;
+  x.store.executeAtlas({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:city.header.id,parent:'world',parentId:null,x:0,y:0,angle:0,revision:0},expectedRevision:null}});
+  x.window.campaign.atlasObjects=async(token,q)=>{const r=await query(token,q);if(q.kind==='landscape')return new Promise(resolve=>{release=()=>resolve({...r,value:{...r.value,items:[{id:'late-poi',name:city.header.name+' late marker',revision:1}],next:null}});});return r;};
+  x.enter('atlas-search',city.header.name);await until(()=>!!release&&[...x.document.querySelectorAll('#atlas-search-results button')].some(b=>b.textContent===city.header.name));
+  [...x.document.querySelectorAll('#atlas-search-results button')].find(b=>b.textContent===city.header.name).click();await until(()=>s.atlas.family==='city');release();await settle();await x.drain();
+  assert.equal(x.document.querySelectorAll('#atlas-search-results button').length,0);assert.equal(s.atlas.cityId,city.header.id);assert.equal(x.writes.length,0);
+ }finally{release?.();await s.close();}
+});
