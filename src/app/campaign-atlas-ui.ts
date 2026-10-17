@@ -453,6 +453,14 @@ export class CampaignAtlasWorkbench {
       const city=this.data.cities.find(c=>c.header.id===detail.cityId),unit=city?.units.find(u=>u.id===detail.unitId),binding=this.data.bindings.find(b=>b.kind==='city'&&b.ownerId===detail.cityId);
       if(unit?.position&&binding){this.cityId=detail.cityId;this.selection={kind:'building',id:detail.unitId,cityId:detail.cityId};this.focus(localToAtlas(unit.position,atlasFrame(this.data,binding)),60);}
     });
+    document.addEventListener('atlas-city-area-focus',e=>{
+      const detail=(e as CustomEvent<{token:string;cityId:string;box:CanvasBox}>).detail;
+      if(this.root.hidden||this.groupView||detail.token!==this.owner?.token||this.family!=='city'||this.cityId!==detail.cityId||!this.data)return;
+      const binding=this.data.bindings.find(b=>b.kind==='city'&&b.ownerId===detail.cityId);if(!binding)return;
+      const b=detail.box,f=atlasFrame(this.data,binding),points=[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x,y:b.y+b.height},{x:b.x+b.width,y:b.y+b.height}].map(p=>localToAtlas(p,f));
+      const x=Math.min(...points.map(p=>p.x)),y=Math.min(...points.map(p=>p.y)),width=Math.max(...points.map(p=>p.x))-x,height=Math.max(...points.map(p=>p.y))-y,ratio=this.svg.clientHeight/Math.max(1,this.svg.clientWidth);
+      this.focus({x:x+width/2,y:y+height/2},Math.max(30,width,height/Math.max(.01,ratio))*1.15);
+    });
     document.addEventListener('atlas-city-interior',e=>{
       const detail=(e as CustomEvent<{token:string;cityId:string;unitId:string}>).detail;
       if(this.root.hidden||this.groupView||detail.token!==this.owner?.token||this.family!=='city'||this.cityId!==detail.cityId||this.selection?.kind!=='building'||this.selection.id!==detail.unitId)return;

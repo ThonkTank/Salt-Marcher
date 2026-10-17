@@ -21,7 +21,8 @@ class CityCommandRejected extends Error {}
 let createAttempt:CityCommand|null=null;
 let drawingWrite:object|null=null;
 type CityPanel='draw'|'infill'|'selection'|'life';
-function showPanel(panel:CityPanel){const scroll=document.querySelector<HTMLElement>('.city-sidebar-scroll');if(scroll)scroll.scrollTop=0;for(const kind of ['draw','infill','selection','life'] as const){el('city-'+kind+'-controls').hidden=kind!==panel;el('city-panel-'+kind).setAttribute('aria-pressed',String(kind===panel));}el('city-tool').closest('.city-sidebar')?.setAttribute('data-panel',panel);}
+let panelIntent=0;
+function showPanel(panel:CityPanel){panelIntent++;for(const kind of ['draw','infill','selection','life'])el('city-'+kind+'-controls').setAttribute('aria-busy','false');const scroll=document.querySelector<HTMLElement>('.city-sidebar-scroll');if(scroll)scroll.scrollTop=0;for(const kind of ['draw','infill','selection','life'] as const){el('city-'+kind+'-controls').hidden=kind!==panel;el('city-panel-'+kind).setAttribute('aria-pressed',String(kind===panel));}el('city-tool').closest('.city-sidebar')?.setAttribute('data-panel',panel);}
 function createFields(){const isNew=value('city-location')==='new';el('city-new-location-field').hidden=!isNew;field('city-new-location-name').required=isNew;for(const input of el('city-new-form').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))input.disabled=!!createAttempt||creating;el<HTMLButtonElement>('city-create-submit').disabled=creating;el('city-create-submit').textContent=createAttempt?'Ergebnis prüfen':'Stadt anlegen';}
 let generationJob:{token:string;epoch:number;cityId:string;cancelled:boolean}|null=null;
 type PersonRow=NpcPage['rows'][number];type PersonInfo=Pick<PersonRow,'id'|'name'>&Partial<PersonRow>;
@@ -49,6 +50,28 @@ export async function openCity(){
   overview=unwrap(response);factionOptions('city-people-faction',value('city-people-faction')||null,'Alle Fraktionen',false);for(const p of overview.assignedPeople)knownPeople.set(p.id,p);opts('city-select',overview.cities,view?.header.id??null);if(!createAttempt){opts('city-location',[{id:'new',name:'Neuen Stadtort anlegen'},...overview.locations],value('city-location')||'new');createFields();}el('city-new-open').removeAttribute('disabled');el('city-empty').textContent='Lege einen Stadtplan mit einem neuen Stadtort an oder verwende einen vorhandenen Kampagnenort.';
   if(overview.cities.length)await readSelectedCity(value('city-select'),w.token,g,request);else{view=null;render();}
  }catch(error){if(owned(w.token,g)&&request===readRequest)tell((error as Error).message,true);}
+}
+/** Full authoring is requested by the city task; exact house inspection stays bounded. */
+async function prepareCityTools(panel:'infill'|'life',intent:number){
+ const w=workspace,g=epoch,cityId=view?.header.id;
+ if(!w||!cityId||view?.demographics!==null)return;
+ if(!await flushCity()||!owned(w.token,g)||panelIntent!==intent||view?.header.id!==cityId)return;
+ const source=view;if(source.demographics!==null)return;
+ const request=++readRequest,selection=selected;
+ const current=()=>owned(w.token,g)&&panelIntent===intent&&request===readRequest&&view===source;
+ el('city-'+panel+'-controls').setAttribute('aria-busy','true');
+ if(panel==='infill'){el('city-infill-hint').textContent='Vorhandene Straßen und Viertel werden geladen…';el<HTMLButtonElement>('city-generate').disabled=true;}
+ try{
+  const response=await window.campaign.city(w.token,source.header.id);if(!current())return;
+  if(dirty||placement?.active||path.length||preview||generationJob){tell('Neue Stadteingabe bleibt erhalten. Aufgabe bei Bedarf erneut wählen.',true);return;}
+  view=unwrap(response);selected=selection&&view.units.some(u=>u.id===selection)?selection:null;siteReadRequired=false;
+  factionOptions('city-people-faction',value('city-people-faction')||null,'Alle Fraktionen',false);render();
+ }catch(error){
+  if(current()){
+   if(panel==='infill')el('city-infill-hint').textContent='Bebauung konnte nicht geladen werden. „Bebauen“ erneut wählen.';
+   tell((error as Error).message,true);
+  }
+ }finally{if(owned(w.token,g)&&panelIntent===intent&&request===readRequest)el('city-'+panel+'-controls').setAttribute('aria-busy','false');}
 }
 async function readCitySite(id:string,unitId:string|undefined,token:string,g:number,request:number,preserveDraft=false){
  const response=await window.campaign.atlasCitySite(token,id,unitId);if(!owned(token,g)||request!==readRequest)return;
@@ -152,6 +175,14 @@ function renderCityMap(){
   if(staged){const origin=document.createElementNS('http://www.w3.org/2000/svg','polygon');origin.setAttribute('points',posed(staged.original).map(p=>p.x+','+p.y).join(' '));origin.setAttribute('fill','none');origin.setAttribute('stroke','#176c74');origin.setAttribute('stroke-width','1');origin.setAttribute('stroke-dasharray','2 2');origin.setAttribute('pointer-events','none');origin.dataset.cityPlacementOrigin=staged.original.id;scene.append(origin);}
  });
 }
+function focusCityPreview(){
+ const district=view?.units.find(u=>u.kind==='district'&&u.id===preview?.recipe.districtId),points=district?.outline;
+ if(!view||!cityCanvas||!points?.length)return;
+ const x=Math.min(...points.map(p=>p.x)),y=Math.min(...points.map(p=>p.y)),width=Math.max(...points.map(p=>p.x))-x,height=Math.max(...points.map(p=>p.y))-y;
+ const ratio=cityCanvas.view.height/cityCanvas.view.width,size=Math.max(30,width,height/ratio)*1.15;
+ cityCanvas.set({x:x+width/2-size/2,y:y+height/2-size*ratio/2,width:size,height:size*ratio},true);
+ document.dispatchEvent(new CustomEvent('atlas-city-area-focus',{detail:{token:workspace?.token,cityId:view.header.id,box:{x,y,width,height}}}));
+}
 function focusCityHouse(shared=false){
  const u=placement?.state?.draft??unit();if(!cityCanvas||!view||u?.kind!=='building')return;
  const width=Math.min(view.header.width,Math.max(60,(Math.max(...u.outline!.map(p=>p.x))-Math.min(...u.outline!.map(p=>p.x)))*8)),height=width*view.header.height/view.header.width;
@@ -241,7 +272,7 @@ export function initCity(status:typeof tell,relationships:(id:string)=>Promise<v
  el('city-placement-left').onclick=()=>placement!.turn(-90);el('city-placement-right').onclick=()=>placement!.turn(90);el('city-placement-angle').oninput=()=>placement!.angle(Number(value('city-placement-angle')));
  el('city-placement-accept').onclick=()=>run(()=>placement!.accept());el('city-placement-cancel').onclick=()=>placement!.cancel();
  activity=new CityActivityBinder(()=>{const u=unit();return workspace&&view?{workspace,cityId:view.header.id,revision:view.header.revision,unit:u?.kind==='building'?{id:u.id,name:u.name}:null}:null;},async(site,current)=>{if(!await flushCity()||!current())return;await openCityReference(site.cityId,site.unitId);},profile,location);
- for(const panel of ['draw','infill','selection','life'] as const)el('city-panel-'+panel).onclick=()=>{if(placement?.active){tell('Hausplatzierung zuerst übernehmen oder verwerfen.',true);return;}if(path.length){tell('Begonnenen Stadtzug zuerst abschließen oder verwerfen.',true);return;}if(panel!=='draw')field('city-tool').value='select';showPanel(panel);};showPanel('draw');el('city-place-search').oninput=namedPlaces;el('city-location').onchange=createFields;el('city-new-open').onclick=()=>{createFields();el<HTMLDialogElement>('city-new-dialog').showModal();};el('city-new-cancel').onclick=()=>el<HTMLDialogElement>('city-new-dialog').close();
+ for(const panel of ['draw','infill','selection','life'] as const)el('city-panel-'+panel).onclick=()=>{if(placement?.active){tell('Hausplatzierung zuerst übernehmen oder verwerfen.',true);return;}if(path.length){tell('Begonnenen Stadtzug zuerst abschließen oder verwerfen.',true);return;}if(panel!=='draw')field('city-tool').value='select';showPanel(panel);if(panel==='infill'||panel==='life')run(()=>prepareCityTools(panel,panelIntent));};showPanel('draw');el('city-place-search').oninput=namedPlaces;el('city-location').onchange=createFields;el('city-new-open').onclick=()=>{createFields();el<HTMLDialogElement>('city-new-dialog').showModal();};el('city-new-cancel').onclick=()=>el<HTMLDialogElement>('city-new-dialog').close();
  el<HTMLFormElement>('city-new-form').onsubmit=e=>{e.preventDefault();run(createCity);};
  el<HTMLSelectElement>('city-select').onchange=()=>run(async()=>{const w=workspace,g=epoch,target=value('city-select'),intent=++selectionRequest;el<HTMLSelectElement>('city-select').value=view?.header.id??'';if(!w||!await flushCity()||!owned(w.token,g)||intent!==selectionRequest)return;await readSelectedCity(target,w.token,g,++readRequest);});
  el('city-refresh').onclick=()=>run(async()=>{if(await flushCity())await openCity();});
@@ -257,7 +288,7 @@ export function initCity(status:typeof tell,relationships:(id:string)=>Promise<v
   const basis=view as CityView,job={token:w.token,epoch:g,cityId:basis.header.id,cancelled:false};preview=null;generationJob=job;el<HTMLButtonElement>('city-generate').disabled=true;
   const active=()=>generationJob===job&&!job.cancelled&&owned(job.token,job.epoch)&&view?.header.id===job.cityId;
   try{const result=await generateCity(basis,recipe,()=>!active(),n=>{if(active())el('city-preview-summary').textContent=n+' Häuser in Vorbereitung…';});
-   if(!active())return;if(view!.header.revision!==result.baseRevision)throw new Error('Stadt verändert. Neue Vorschau erzeugen.');preview=result;render();if(!preview.buildings.length)tell('Keine Häuser passen zu diesen Vorgaben. Fläche, Straßenabstand oder Hausgröße anpassen.',true);
+   if(!active())return;if(view!.header.revision!==result.baseRevision)throw new Error('Stadt verändert. Neue Vorschau erzeugen.');preview=result;render();if(preview.buildings.length)focusCityPreview();if(!preview.buildings.length)tell('Keine Häuser passen zu diesen Vorgaben. Fläche, Straßenabstand oder Hausgröße anpassen.',true);
   }catch(error){if(active())tell((error as Error).message,true);}finally{if(generationJob===job){generationJob=null;el('city-preview').hidden=!preview;el<HTMLButtonElement>('city-generate').disabled=false;}}
  });
  for(const id of ['city-seed','city-density','city-size','city-reach','city-use','city-district'])el(id).onchange=()=>{cancelGeneration();if(preview){preview=null;render();}};

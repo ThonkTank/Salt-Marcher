@@ -35,6 +35,7 @@ async function setup(){
   }
  }
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
+ document.getElementById('city-inspector').scrollIntoView=()=>{};
  for(const select of document.querySelectorAll('select')){select.add=o=>select.append(o);let chosen='';Object.defineProperty(select,'value',{get(){const options=[...select.querySelectorAll('option')];return options.find(o=>o.value===chosen)?.value??options[0]?.value??'';},set(v){chosen=String(v);}});}
  for(const dialog of document.querySelectorAll('dialog')){dialog.open=false;dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  const saved=Object.fromEntries(['window','document','DOMParser','Event','CustomEvent','Option','ResizeObserver','setTimeout','clearTimeout'].map(k=>[k,globalThis[k]])),timers=new Map();let timer=0;
@@ -752,4 +753,55 @@ test('public region export preserves unseen remembered terrain while drawing cur
   const allRemembered={...frame,map:{...frame.map,cells:frame.map.cells.map(cell=>({...cell,visible:false}))}},rememberedSVG=x.ui.publicAtlasSVG(a,box,allRemembered,records,box.width/800,[raster]);assert.equal(rememberedSVG.querySelectorAll('[data-landscape-raster]').length,0,'A current raster must not replace remembered terrain');assert.equal(rememberedSVG.querySelectorAll('[data-landscape-id]').length,0,'No current landscape layer may be drawn without current public visibility');
   assert.doesNotMatch(svg.textContent,/GM secret terrain|GM old forest/);assert.ok(x.store.db.serialize().equals(bytes));assert.equal(x.store.currentPlayerFrame().mode,'blank');
  }finally{await x.cleanup();}
+});
+
+test('infill from an exact house loads its own city and preserves selected house, camera and authored contents',async()=>{
+ const x=await setup(),s=await interiorSurface(x),get=id=>x.document.getElementById(id);
+ try{
+  await s.atlas.navigate('city',x.cityIds.two,x.unitIds.two);await settle();assert.equal(x.ui.atlasCityState().partial,true);
+  const camera=s.svg.getAttribute('viewBox'),origin=[s.svg.dataset.atlasOriginX,s.svg.dataset.atlasOriginY],first=x.store.city(x.current().token,x.cityIds.one),second=x.store.city(x.current().token,x.cityIds.two),house=second.units.find(u=>u.id===x.unitIds.two),writes=x.writes.length,reads=[],read=x.window.campaign.city;
+  x.window.campaign.city=async(t,id)=>{reads.push(id);return read(t,id);};
+  x.click('city-panel-infill');await until(()=>!get('city-generate').disabled);
+  assert.deepEqual(reads,[x.cityIds.two]);assert.equal(get('city-title').textContent,'Alpha two');assert.equal(get('city-unit-name').value,'House two');assert.equal(s.atlas.selection.id,x.unitIds.two);assert.equal(x.ui.atlasCityState().partial,false);
+  assert.equal(s.svg.getAttribute('viewBox'),camera);assert.deepEqual([s.svg.dataset.atlasOriginX,s.svg.dataset.atlasOriginY],origin);assert.equal(x.writes.length,writes);assert.equal(get('city-district').querySelectorAll('option').length,1);
+  x.click('city-generate');await settle();await x.drain();assert.equal(get('city-preview-actions').hidden,false);const box=s.atlas.camera.view;assert.ok(box.x<=3000&&box.y<=4000&&box.x+box.width>=3250&&box.y+box.height>=4250,'proposal must show its whole district');assert.equal(s.atlas.selection.id,x.unitIds.two);assert.equal(x.writes.length,writes);x.click('city-preview-accept');await until(()=>x.store.city(x.current().token,x.cityIds.two).header.revision>second.header.revision);
+  const after=x.store.city(x.current().token,x.cityIds.two);assert.ok(after.units.filter(u=>u.kind==='building').length>1);assert.deepEqual(after.units.find(u=>u.id===house.id),house);assert.deepEqual(x.store.city(x.current().token,x.cityIds.one),first);
+ }finally{await s.close();}
+});
+
+test('late infill basis cannot replace a newer exact house selection',async()=>{
+ const x=await setup();let release;
+ try{
+  await x.ui.openCityReference(x.cityIds.two,x.unitIds.two,true,true);const read=x.window.campaign.city;
+  x.window.campaign.city=async(t,id)=>{const r=await read(t,id);return id===x.cityIds.two?new Promise(resolve=>{release=()=>resolve(r);}):r;};
+  x.click('city-panel-infill');await until(()=>!!release);await x.ui.openCityReference(x.cityIds.one,x.unitIds.one,true,true);release();await settle();
+  assert.equal(x.document.getElementById('city-title').textContent,'Alpha one');assert.equal(x.document.getElementById('city-unit-name').value,'House one');assert.equal(x.ui.atlasCityState().partial,true);assert.equal(x.writes.length,0);
+ }finally{release?.();await x.cleanup();}
+});
+
+test('failed infill basis keeps the exact house and retries without author writes',async()=>{
+ const x=await setup(),get=id=>x.document.getElementById(id);
+ try{
+  await x.ui.openCityReference(x.cityIds.two,x.unitIds.two,true,true);const read=x.window.campaign.city,before=x.store.city(x.current().token,x.cityIds.two);let fail=true;
+  x.window.campaign.city=async(t,id)=>fail?{ok:false,error:'City basis unavailable'}:read(t,id);
+  x.click('city-panel-infill');await until(()=>x.messages.some(m=>m.error&&/City basis unavailable/.test(m.message)));assert.equal(get('city-unit-name').value,'House two');assert.equal(get('city-generate').disabled,true);assert.deepEqual(x.store.city(x.current().token,x.cityIds.two),before);
+  fail=false;x.click('city-panel-infill');await until(()=>!get('city-generate').disabled);assert.equal(x.ui.atlasCityState().partial,false);assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
+
+test('returning to house input cancels a waiting infill basis without replacing the new draft',async()=>{
+ const x=await setup();let release;
+ try{
+  await x.ui.openCityReference(x.cityIds.two,x.unitIds.two,true,true);const read=x.window.campaign.city;
+  x.window.campaign.city=async(t,id)=>{const r=await read(t,id);return new Promise(resolve=>{release=()=>resolve(r);});};
+  x.click('city-panel-infill');await until(()=>!!release);x.click('city-panel-selection');x.enter('city-unit-notes','Keep this new draft');release();await settle();
+  assert.equal(x.document.getElementById('city-unit-notes').value,'Keep this new draft');assert.equal(x.document.getElementById('city-selection-controls').hidden,false);assert.equal(x.ui.atlasCityState().partial,true);assert.equal(x.store.city(x.current().token,x.cityIds.two).units.find(u=>u.id===x.unitIds.two).notes,'Original');assert.equal(x.writes.length,0);
+ }finally{release?.();await x.cleanup();}
+});
+
+
+test('infill saves an edited exact house before loading its generation basis',async()=>{
+ const x=await setup();
+ try{await x.ui.openCityReference(x.cityIds.two,x.unitIds.two,true,true);const commands=[],send=x.window.campaign.executeAtlasCommit;x.window.campaign.executeAtlasCommit=async c=>{commands.push(c);return send(c);};x.enter('city-unit-notes','The innkeeper knows the crypt');x.click('city-panel-infill');await until(()=>!x.document.getElementById('city-generate').disabled);assert.equal(x.ui.atlasCityState().partial,false);assert.equal(x.store.city(x.current().token,x.cityIds.two).units.find(u=>u.id===x.unitIds.two).notes,'The innkeeper knows the crypt');assert.equal(x.document.getElementById('city-unit-notes').value,'The innkeeper knows the crypt');assert.equal(commands.filter(c=>c.action.kind==='city').length,1);}
+ finally{await x.cleanup();}
 });
