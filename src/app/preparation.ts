@@ -1,3 +1,4 @@
+import {NoteMergeUI} from './note-merge-ui';
 import {registerPreparationPacketEditor,packetNoteFeedback} from './session-packet-ui';
 import {NoteThreadDialog} from './note-thread-ui';
 import {detachNoteSource,restoreNoteSource} from './note-thread-edit';
@@ -56,6 +57,7 @@ const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b
 let locationNotebookOpen:(id:string)=>Promise<void>=async()=>{};
 let roomUses:NoteRoomUses|null=null;
 let noteThread:NoteThreadDialog|null=null;
+let noteMerge:NoteMergeUI|null=null;
 let roomKeyOpen:(id:string,current:()=>boolean,restore:()=>void)=>Promise<boolean>=async()=>false;
 export function setNoteRoomNavigation(open:typeof roomKeyOpen){roomKeyOpen=open;}
 export function setLocationNotebookNavigation(open:(id:string)=>Promise<void>){locationNotebookOpen=open;}
@@ -65,7 +67,7 @@ const originalLocation = () => data.locations.find(row => row.document.id === se
 const retained = new Map<string, PreparationDraft | null>(), draftProblems = new Map<string, string>();
 let draftLoads = 0;
 const draftKey = (kind: PreparationEdit['kind'], id: string) => `${kind}:${id}`;
-export const preparationHasDrafts = () => hasOpenInput || blocked || !!draftLoads || !!draftProblems.size;
+export const preparationHasDrafts = () => !!noteMerge?.hasPending() || hasOpenInput || blocked || !!draftLoads || !!draftProblems.size;
 async function loadedDraft(kind: PreparationEdit['kind'], id: string) {
   const key = draftKey(kind, id), token = context?.token, request = preparationLoad;
   if (retained.has(key) || !token) return retained.get(key) ?? null;
@@ -143,6 +145,7 @@ async function ensurePlanningView(){
   try{await task;}finally{if(planningOpening?.task===task)planningOpening=null;}
 }
 export async function activatePreparation(workspace: WorkspaceGeometry,load=true) {
+  noteMerge?.activate(workspace.campaign.id);
   preparationLoaded=false;
   planningRenderedLoad=-1;planningOpening=null;
   noteThread?.reset();
@@ -219,6 +222,7 @@ async function change(change: PreparationChange, redraw = true, stillCurrent:()=
   finally { changesPending.delete(completion); complete(); }
 }
 export async function flushPreparation(skipSession=false,skipNarrative=false): Promise<boolean> {
+  if(noteMerge?.hasPending())return false;
   if(!skipNarrative&&!await flushNarrative())return false;
   if(!skipSession&&!await flushSession())return false;
   if (timer) clearTimeout(timer); timer = null;
@@ -342,6 +346,7 @@ async function renderNotes(initialLocationId?:string) {
   get<HTMLTextAreaElement>('note-gm').value = shown.gmNotes;
   get('note-kind').textContent = ({ npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht', rule: 'Regel' })[row.note.kind];
   for (const id of ['note-title', 'note-read-aloud', 'note-gm']) get<HTMLInputElement>(id).disabled = row.trashed || draftProblems.has(draftKey('note', row.note.id));
+  const mergeButton=get('note-merge-open');if(mergeButton)mergeButton.hidden=row.trashed||row.note.kind!=='npc';
   get('note-remove').hidden = row.trashed; get('note-restore').hidden = !row.trashed;
   if(token&&target)roomUses?.show(token,target,()=>context?.token===token&&selectedNote===target&&request===preparationLoad);
   renderRelations();await showNarrative(context,row.note,row.trashed,()=>flushPreparation(true,true),tell,undefined,undefined,initialLocationId);
@@ -428,6 +433,23 @@ async function insertNoteTextReference(){
  finally{if(context===owner&&preparationLoad===run&&noteEditorGeneration===editor&&selectedNote===id)button.disabled=area.disabled||blocked;}
 }
 export function initPreparation(status: (text: string, error?: boolean) => void, navigateMap: (scopeId: string) => Promise<void>, offerVisit?: (planId: string, visitId: string, current?:()=>boolean) => Promise<void>) {
+  const mergeButton=document.createElement('button');mergeButton.id='note-merge-open';mergeButton.type='button';mergeButton.textContent='NSC-Notizen zusammenführen…';get('note-remove').before(mergeButton);
+  noteMerge=new NoteMergeUI(mergeButton,get('preparation'),{
+    api:window.campaign,storage:window.localStorage,tell:status,
+    prepare:async()=>{
+      const owner=context,run=preparationLoad;if(!owner)return null;
+      if(!noteMerge?.hasPending()&&!await flushPreparation())return null;
+      if(context!==owner||preparationLoad!==run)return null;
+      if(!preparationLoaded){const next=unwrap(await window.campaign.preparation(owner.token,''));if(context!==owner||preparationLoad!==run)return null;usePreparation(next);}
+      return {token:owner.token,campaignId:owner.campaign.id,sourceId:selectedNote,notes:[...campaignNotes.values()],current:()=>context===owner&&preparationLoad===run};
+    },
+    done:async(id,next,owner)=>{
+      if(!owner.current())return;
+      usePreparation(next);noteDraft=null;selectedNote=id;get<HTMLInputElement>('world-trash').checked=false;get<HTMLInputElement>('world-search').value='';
+      showPreparationArea(false);showLocations(false);await renderNotes();if(!owner.current())return;await renderPlans();
+      if(owner.current())revealNote(id);
+    }
+  });
   const uses=get('note-room-uses');if(uses)roomUses=new NoteRoomUses(uses,(token,id,offset)=>window.campaign.noteRoomUses(token,id,offset),(id,current,restore)=>roomKeyOpen(id,current,()=>{showPreparationArea(false);showLocations(false);restore();if(selectedNote)revealNote(selectedNote);}));
   tell = (text,error)=>{status(text,error);noteThread?.feedback(text,error);packetNoteFeedback(text,error);};
   for(const [id,plan] of [['preparation-knowledge',false],['preparation-planning',true]] as const)get(id).onclick=()=>{void(async()=>{const owner=context;if(!await leavePreparation()||context!==owner)return;if(plan)await ensurePlanningView();if(context===owner)showPreparationArea(plan);})().catch(error=>tell(error.message,true));};
