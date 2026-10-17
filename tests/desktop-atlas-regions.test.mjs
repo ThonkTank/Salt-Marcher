@@ -165,3 +165,40 @@ test('independent viewport and selection readers keep a cold exact focus alive t
  assert.equal(selected.id,'r299');assert.ok(selected.point.x>1490);assert.ok(region.rooms.some(room=>room.id==='r299'));assert.ok(old.error||old.value);
  const nextFocus=selection.focus(f.store.atlasRegionSource(f.shell.token,selection.cursor),'room','r0');selection.cancel();await assert.rejects(nextFocus,/abgebrochen/);
 });
+function landscape(f,r){const {points,polygons}=r,all=[...points,...polygons.flatMap(p=>[p.outer,...p.holes].flat())],pad=r.width/2;const x=Math.min(...all.map(p=>p.x))-pad,y=Math.min(...all.map(p=>p.y))-pad,xx=Math.max(...all.map(p=>p.x))+pad,yy=Math.max(...all.map(p=>p.y))+pad;f.store.db.prepare('INSERT OR REPLACE INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)').run(f.campaign.id,r.id,r.revision,x,xx,y,yy,JSON.stringify(r));}
+const road=(id,x=0)=>({id,revision:0,kind:'road',name:id,points:[{x,y:0},{x:x+10,y:0}],polygons:[],resolution:1,width:1,values:{description:'PRIVATE LANDSCAPE DETAILS'}});
+test('one source-bound frame preserves dense landscape and paginates exact overlapping choices without author details',async t=>{
+ const f=fixture(t,2);f.store.db.transaction(()=>{for(let i=0;i<601;i++)landscape(f,road('road'+i));})();
+ const q=query({x:-10,y:-10,width:40,height:40}),r=await f.read(q);assert.equal(r.landscape.state,'ready');assert.equal(r.landscape.coverage.mode,'raster');assert.equal(r.landscape.coverage.objects,601);assert(r.landscape.tiles.length>0&&r.landscape.tiles.length<=4);assert.equal(r.landscape.records.length,0);assert(Buffer.byteLength(JSON.stringify(r))<2*1024*1024);assert(!JSON.stringify(r).includes('PRIVATE LANDSCAPE'));
+ const ids=[];let offset=0;for(;;){const page=f.reader.candidatesAt(f.source,q,{x:1,y:0},offset,'landscape');assert.equal(page.total,601);assert.equal(page.fence,r.fence);assert(page.items.length<=40);ids.push(...page.items.map(h=>h.id));if(page.next===null)break;offset=page.next;}
+ assert.equal(new Set(ids).size,601);assert.equal(f.store.atlasLandscapeObject(f.shell.token,'road600').values.description,'PRIVATE LANDSCAPE DETAILS');
+ const first=f.reader.candidatesAt(f.source,q,{x:1,y:0},0,'all');assert(first.items.some(h=>h.kind==='room'));assert(first.items.some(h=>h.kind==='landscape'));assert.equal(first.total,602);
+ assert.throws(()=>f.reader.candidatesAt(f.source,{...q,fence:'old'},{x:1,y:0}),/inzwischen geändert/);
+});
+test('landscape cache invalidates both moved and removed bounds, while thin display cannot overwrite original values',async t=>{
+ const f=fixture(t,1),r=road('road');landscape(f,r);let view=await f.read();assert.equal(view.landscape.state,'ready');assert.deepEqual(view.landscape.records[0].values,{});
+ landscape(f,{...r,revision:1,points:r.points.map(p=>({...p,x:p.x+100}))});view=await f.read();assert.equal(view.landscape.records.length,0);
+ view=await f.read(query({x:90,y:-2,width:30,height:10}));assert.equal(view.landscape.records[0].id,r.id);assert.equal(f.store.atlasLandscapeObject(f.shell.token,r.id).values.description,r.values.description);
+ f.store.db.prepare('DELETE FROM atlas_landscape WHERE campaign_id=? AND id=?').run(f.campaign.id,r.id);view=await f.read(query({x:90,y:-2,width:30,height:10}));assert.equal(view.landscape.records.length,0);assert.equal(f.reader.candidatesAt(f.source,query({x:90,y:-2,width:30,height:10}),{x:101,y:0},0,'landscape').total,0);
+});
+test('broken landscape is a local layer error and never removes usable Room geometry',async t=>{
+ const f=fixture(t,1);landscape(f,road('bad'));f.store.db.prepare('UPDATE atlas_landscape SET payload=? WHERE id=?').run('{bad','bad');const r=await f.read();assert.equal(r.landscape.state,'error');assert.equal(r.landscape.coverage.complete,false);assert(r.rooms.some(r=>r.id==='r0'));assert.equal(f.store.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get('bad').payload,'{bad');
+});
+test('camera request burst retains one worker/index with one replaceable successor',async t=>{
+ const f=fixture(t,500),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());const source=f.store.atlasRegionSource(f.shell.token);
+ const calls=[];for(let i=0;i<20;i++)calls.push(service.read(source,query({x:i,y:-2,width:30,height:10})));const results=await Promise.allSettled(calls);assert.equal(results[0].status,'fulfilled');assert.equal(results.at(-1).status,'fulfilled');assert.equal(results.filter(r=>r.status==='fulfilled').length,2);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.active,false);assert.equal(service.diagnostics.queued,false);
+ const warm=await service.read(f.store.atlasRegionSource(f.shell.token,service.cursor),query({x:21,y:-2,width:30,height:10}));assert(warm.rooms.length);assert.equal(service.diagnostics.workerStarts,1);
+});
+
+test('terrain tile cache follows local move/delete and preserves coarse/fine holes in source order',async t=>{
+ const f=fixture(t,1),patch=(id,x,terrain,holes=[])=>({id,revision:0,kind:'patch',name:id,points:[],polygons:[{outer:[{x,y:0},{x:x+10,y:0},{x:x+10,y:10},{x,y:10}],holes}],resolution:id==='coarse'?10:1,width:0,values:{terrain}});
+ landscape(f,patch('coarse',0,'forest'));landscape(f,patch('fine',0,'water',[[{x:3,y:3},{x:7,y:3},{x:7,y:7},{x:3,y:7}]]));const q=query({x:-1,y:-1,width:12,height:12});let r=await f.read(q);assert.equal(r.landscape.state,'ready');const png=require('pngjs').PNG;
+ const pixel=(view,x,y)=>{const tile=view.landscape.tiles.find(t=>x>=t.box.x&&y>=t.box.y&&x<t.box.x+t.box.width&&y<t.box.y+t.box.height),image=png.sync.read(Buffer.from(tile.data.split(',')[1],'base64')),i=(Math.floor((y-tile.box.y)/tile.box.height*image.height)*image.width+Math.floor((x-tile.box.x)/tile.box.width*image.width))*4;return [...image.data.slice(i,i+4)];};
+ const forest=pixel(r,5,5),water=pixel(r,1,1);assert.notDeepEqual(forest,water);assert.equal(forest[3],255);assert.equal(water[3],255);
+ landscape(f,{...patch('fine',100,'water'),revision:1});r=await f.read(q);assert.deepEqual(pixel(r,1,1),forest);f.store.db.prepare('DELETE FROM atlas_landscape WHERE id=?').run('coarse');r=await f.read(q);assert.equal(r.landscape.tiles.length,0);
+});
+test('dense reference bounds remain selectable; hidden references and export omission remain explicit',async t=>{
+ const f=fixture(t,1);for(let i=0;i<18;i++)landscape(f,{...road('ref'+i),kind:'reference',points:[{x:0,y:0}],width:10,imageWidth:10,imageHeight:10,angle:Math.PI/2,visible:i!==17,assetId:'asset'+i});const q=query({x:-12,y:-2,width:24,height:15}),r=await f.read(q);assert.equal(r.landscape.coverage.references,17);assert.equal(r.landscape.coverage.mode,'raster');const hits=f.reader.candidatesAt(f.source,q,{x:-5,y:5},0,'landscape');assert.equal(hits.total,17);assert(!hits.items.some(h=>h.id==='ref17'));const exported=await f.read({...q,references:false});assert.equal(exported.landscape.coverage.references,0);assert.equal(exported.landscape.records.length,0);
+});
+
+test('dense roads do not demote a bounded image template to an outline',async t=>{const f=fixture(t,1);f.store.db.transaction(()=>{for(let i=0;i<501;i++)landscape(f,road('road'+i));landscape(f,{...road('template'),kind:'reference',assetId:'asset',imageWidth:10,imageHeight:10,points:[{x:0,y:0}],width:10});})();const r=await f.read(query({x:-2,y:-2,width:15,height:15}));assert.equal(r.landscape.coverage.mode,'raster');assert.equal(r.landscape.records.length,1);assert.equal(r.landscape.records[0].id,'template');assert.equal(r.landscape.records[0].assetId,'asset');assert(r.landscape.tiles.length>0);});

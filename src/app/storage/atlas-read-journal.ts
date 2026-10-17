@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 const journals=new WeakMap<object,{epoch:string;external:number}>();
-const tables=['room','city_document','city_unit','drawing_element','drawing_profile','drawing_hidden','drawing_floor','dungeon_volume','dungeon_key_content','atlas_binding','scope'];
+const tables=['atlas_landscape','atlas_reference_asset','location','room','city_document','city_unit','drawing_element','drawing_profile','drawing_hidden','drawing_floor','dungeon_volume','dungeon_key_content','atlas_binding','scope'];
 /** Bounded TEMP invalidation log: participates in the writer transaction, never in archives/history. */
 export function atlasReadJournal(db:any){
  let state=journals.get(db);const external=db.pragma('data_version',{simple:true});if(state){if(state.external!==external){state.epoch=randomUUID();state.external=external;}return state;}

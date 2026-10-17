@@ -10,7 +10,7 @@ ersetzt die gemeinsame sichtbare Szenenwurzel; native DOM-Treffer stammen aus
 exakt dieser Szene. Der passive Hit-Helfer liefert nur deren DOM-Elemente.
 Raum-, Hex-, Orts-, Token- und Reisebedeutung bleibt beim jeweiligen Anwender.
 Dungeon-Drawing-Overlays und Hexbeschriftungen/Marker/Reiserouten bleiben Teil
-derselben Wurzel. Der SVG-Host und seine Capture-Listener bleiben stabil.
+derselben Wurzel. Der SVG-Host und seine Capture-Listener bleiben stabil. Im relativen Atlasmodus bleibt auch die veröffentlichte Szenenwurzel bei Kamerabewegung bestehen: eine gemeinsame Translation bewegt Darstellung und DOM-Hits, die Maßstabsanzeige bleibt am Bildschirm verankert. Ein neuer Bereichsframe ersetzt die Szene atomar. Kleine Pans innerhalb der geladenen Abdeckung benötigen keinen Read; Zoom und veränderte Filter verlangen einen neuen Frame vor geometrischen Autorenaktionen.
 
 Die gemeinsame Kameraleiste bietet vorige/nächste Ansicht und Zurücksetzen.
 Ein Ziehen ist ein Verlaufsschritt; unmittelbar aufeinanderfolgende

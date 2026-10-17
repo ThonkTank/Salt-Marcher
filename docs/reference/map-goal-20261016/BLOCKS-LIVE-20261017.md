@@ -31,3 +31,5 @@ Die ursprüngliche Tavernen-Notiz und beide Raum-Payloads wurden zusätzlich byt
 ## Grenzen
 
 Der Browser-Host verwendet kanonischen Renderer, Preload, Main, SQLite und Worker mit isoliertem Transport und Dateidialog-Shims. Das ist keine gepackte native Spielerfenster-Freigabe. Die Live-Seite benötigt in dieser Fensterhöhe weiterhin Seiten-Scrollen, um alle Karten-/Reisebereiche gleichzeitig zu überblicken. Organische Parzellenformen, Straßenanschlüsse mitten auf bestehenden Zügen, vollständige gepaarte Vorbereitung/Leitung, Scrawl Save/Fresh und Dunkelsicht bleiben offen. Nutzerabnahme ist nicht erteilt; der kontinuierliche Goal-Lauf bleibt pausiert.
+
+Latest Main integration: `574f98bdc` retains one source-bound landscape/geometry frame, bounded previews and exact landscape selection. Own independent viewport/selection readers, guarded navigation, interior visibility and scope-specific exports are preserved. The full-CI-qualified predecessor `5f235472` is pushed as `archive/atlas-qualified-5f235472-20261017`; qualification of this later integration is recorded separately in the task checkpoint.

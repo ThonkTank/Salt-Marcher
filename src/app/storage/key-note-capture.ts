@@ -39,7 +39,7 @@ function reusable(db:any,c:KeyNoteCaptureCommand){
  const n=checkedNote(db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(c.campaignId,c.note.id));
  if(n.revision!==c.reuseRevision||n.kind!==c.note.kind||n.title!==c.note.title)throw new Error('Vorhandene Notiz wurde geändert. Auswahl neu prüfen.');return n;
 }
-function sameTitle(db:any,c:KeyNoteCaptureCommand){installTitles(db);return db.prepare(`SELECT 1 FROM world_note WHERE campaign_id=? AND trashed=0 AND ${titleExpression}=? LIMIT 1`).get(c.campaignId,normalizedNoteTitle(c.note.title));}
+export function hasNoteTitle(db:any,campaignId:string,title:string){installTitles(db);return !!db.prepare(`SELECT 1 FROM world_note WHERE campaign_id=? AND trashed=0 AND ${titleExpression}=? LIMIT 1`).get(campaignId,normalizedNoteTitle(title));}
 export function captureKeyNote(db:any,c:KeyNoteCaptureCommand,guard:()=>void,writeNote:(note:Note,expectedRevision:number|null)=>void){
  validateKeyNoteCapture(c);
  return db.transaction(()=>{
@@ -48,7 +48,7 @@ export function captureKeyNote(db:any,c:KeyNoteCaptureCommand,guard:()=>void,wri
   const source=currentRoom(db,c);
   if(source.room.revision!==c.room.expectedRevision||(source.key?.revision??null)!==c.room.keyRevision)throw new Error('Raum-Key wurde geändert. Notiz bleibt im Eingabefenster.');
   if(c.reuseRevision!==undefined){const n=reusable(db,c);if(c.note.gmNotes)writeNote({...n,gmNotes:n.gmNotes+(n.gmNotes?'\n\n':'')+c.note.gmNotes},n.revision);}
-  else{if(!c.allowSameTitle&&sameTitle(db,c))throw new Error('Eine Notiz mit diesem Namen existiert bereits. Vorhandene Notiz wählen oder ausdrücklich eine eigenständige neue Notiz anlegen.');writeNote(c.note,null);}
+  else{if(!c.allowSameTitle&&hasNoteTitle(db,c.campaignId,c.note.title))throw new Error('Eine Notiz mit diesem Namen existiert bereits. Vorhandene Notiz wählen oder ausdrücklich eine eigenständige neue Notiz anlegen.');writeNote(c.note,null);}
   const linked=source.key?.references.some(r=>r.id===c.note.id&&r.kind===c.note.kind);
   if(!linked)executeDrawing(db,{commandId:c.commandId+'|key',campaignId:c.campaignId,token:c.token,action:{kind:'key-batch',rooms:[c.room],patch:{references:[...(source.key?.references??[]),{kind:c.note.kind,id:c.note.id,label:c.note.title}]}}},guard);
   const revision=key(db,c)!.revision;

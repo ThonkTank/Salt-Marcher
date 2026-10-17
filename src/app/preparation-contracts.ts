@@ -9,7 +9,7 @@ export interface LocationRow { document: LocationDocument; revision: number; tra
 export interface PreparationSelection { noteId: string | null; planId: string | null; sceneId: string | null; locationId?: string | null }
 export interface Preparation { notes: NoteRow[]; plans: ManualPlan[]; locations: LocationRow[]; maps: { id: string; name: string }[]; problems: string[]; selection: PreparationSelection }
 /** Exact source selection. The writer preserves its prose and publishes both links atomically. */
-export interface NoteExcerptSource { id: string; revision: number; field: 'readAloud' | 'gmNotes'; start: number; end: number }
+export interface NoteExcerptSource { id: string; revision: number; field: 'readAloud' | 'gmNotes'; start: number; end: number; allowSameTitle?:boolean }
 export type PreparationChange =
   | { kind: 'note'; expectedRevision: number | null; note: Note; excerpt?: NoteExcerptSource }
   | NoteMergeChange
@@ -35,7 +35,7 @@ export function checkedPreparationDraft(value: PreparationDraft): PreparationDra
   draftFields(value, ['version', 'writeId', 'change', 'failedCommand']);
   if (!value || value.version !== 1 || typeof value.writeId !== 'string' || !value.writeId || !value.change || !['note', 'plan', 'location'].includes(value.change.kind) || !Number.isSafeInteger(value.change.expectedRevision) || value.change.expectedRevision! < 1 || !Object.hasOwn(value, 'failedCommand')) throw new Error('Ungültiger Vorbereitungsentwurf.');
   const change = value.change;
-  draftFields(change, ['kind', 'expectedRevision', change.kind === 'note' ? 'note' : change.kind === 'plan' ? 'plan' : 'document']);
+  draftFields(change, ['kind', 'expectedRevision', change.kind === 'note' ? 'note' : change.kind === 'plan' ? 'plan' : 'document'],change.kind==='note'?['excerpt']:[]);
   if (change.kind === 'note') {
     draftFields(change.note, ['version', 'id', 'revision', 'kind', 'title', 'readAloud', 'gmNotes', 'relations', 'creatureId', 'deleted']);
     if (!Array.isArray(change.note.relations)) throw new Error('Ungültige Entwurfsbeziehungen.');
@@ -43,6 +43,7 @@ export function checkedPreparationDraft(value: PreparationDraft): PreparationDra
     if (typeof change.note?.title !== 'string') throw new Error('Ungültiger Entwurfstitel.');
     worldNoteDocument({ ...change.note, title: 'Draftstruktur' });
     if (change.note.deleted || change.note.revision !== change.expectedRevision) throw new Error('Entwurfsbasis stimmt nicht.');
+    if(change.excerpt!==undefined)validatePreparation({...change,note:{...change.note,title:'Draftstruktur'}});
   } else if (change.kind === 'plan') {
     manualPlan(change.plan);
     if (change.plan.revision !== change.expectedRevision) throw new Error('Entwurfsbasis stimmt nicht.');
@@ -81,7 +82,7 @@ export function validatePreparation(change: PreparationChange) {
     if (note.deleted) throw new Error('Notizen werden in den Papierkorb verschoben.');
     if ([note.title, note.readAloud, note.gmNotes].some(text => text.length > 2_000_000)) throw new Error('Ein Notizfeld ist für diesen Anschluss zu groß.');
     const s=change.excerpt;
-    if(s!==undefined&&(change.expectedRevision!==null||!s||typeof s.id!=='string'||!s.id||s.id===note.id||!Number.isSafeInteger(s.revision)||s.revision<1||!['readAloud','gmNotes'].includes(s.field)||!Number.isSafeInteger(s.start)||!Number.isSafeInteger(s.end)||s.start<0||s.end<=s.start))throw new Error('Ungültiger Notizauszug.');
+    if(s!==undefined&&(!s||typeof s.id!=='string'||!s.id||s.id===note.id||!Number.isSafeInteger(s.revision)||s.revision<1||!['readAloud','gmNotes'].includes(s.field)||!Number.isSafeInteger(s.start)||!Number.isSafeInteger(s.end)||s.start<0||s.end<=s.start||s.allowSameTitle!==undefined&&typeof s.allowSameTitle!=='boolean'))throw new Error('Ungültiger Notizauszug.');
     return { ...change, note };
   }
   if (change.kind === 'plan') {
