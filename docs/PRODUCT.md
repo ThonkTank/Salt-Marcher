@@ -29,7 +29,7 @@ Quellen, Lieferphasen und verbleibende Zuordnungslücken stehen in [SCOPE.md](SC
 ## Verbindliche Qualitätsziele
 
 - Die Atlasentwicklung folgt [Make it Work → Make it Efficient → Make it Beautiful unter durchgehendem KISS](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel); dort stehen die einzige Gesamtpriorisierung und Werkzeugzuordnung.
-- Eine gemeinsame Atlasfläche mit einer Kamera, History und Savegrenze verbindet Hex, Orte, Städte und Dungeons. Navigation erfolgt durch Zoom statt erforderlicher Editorwechsel.
+- Eine gemeinsame Atlasfläche mit einer Kamera, History und Savegrenze verbindet Hex, Orte, Städte und Dungeons. Navigation zwischen Maßstäben erfolgt durch Zoom statt erforderlicher Editorwechsel. Atlas-Bearbeitung und Atlas-Spielleitung dürfen für Übersichtlichkeit getrennte Arbeitsbereiche haben; ihre gleichzeitige Verfügbarkeit ist nach ausdrücklicher Nutzervorgabe vom 17.10.2026 kein Abnahmekriterium.
 - Karten-, Raum- und Abschnittsidentitäten bleiben stabil. Markdown und geschützte Nutzertexte bleiben wortgetreu; fremde oder veraltete Schreibautorität wird gesperrt.
 - Lokale Offline-Nutzung, nachvollziehbare Quellen, portable Daten/Assets, automatische Speicherung ohne manuelle Savepflicht und konfliktgeschützte Persistenz gehören zum Produkt. Sinnvolle Laufzustände und bestätigte Fakten bleiben nach vollständigem Neustart erhalten.
 - Für alle Atlasvorbilder gilt [Ergebnisgleichwertigkeit](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel): dieselben fachlichen Ergebnisse erreichen, bearbeiten und speichern. Eigene Werkzeuge/Gesten sind zulässig; vollständiger Funktionsumfang bleibt erhalten. Gleiche Aufgaben und gezielt geklärte Originalwirkungen ersetzen den 1:1-Bediennachbau; Testzahlen beweisen keine Gleichwertigkeit.

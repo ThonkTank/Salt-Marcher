@@ -495,12 +495,12 @@ export class LandscapeWorkbench {
     if(token!==this.token||generation!==this.selectionRequest||frame!==this.host.data()?.region?.fence)return;
     if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.select(response.value);
   }
-  draw(root: PaintTarget, box: LandscapeBox, mpp: number) {
+  draw(root: PaintTarget, box: LandscapeBox, mpp: number,locationMarkers?:ReadonlySet<string>) {
     const landscapeNode=paintFactory(root);
     const records = this.selected
       ? [...this.records.filter(r=>r.id!==this.selected!.id),this.selected]
       : this.records;
-    drawLandscape(root, records, box, mpp, this.assets,true,this.raster);
+    drawLandscape(root, locationMarkers?records.filter(r=>r.kind!=='place'||!r.locationId||!locationMarkers.has(r.locationId)):records, box, mpp, this.assets,true,this.raster);
     const auto = html<HTMLInputElement>("land-auto-level").checked,
       level = auto
         ? Math.max(

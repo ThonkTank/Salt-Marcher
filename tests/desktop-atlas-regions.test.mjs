@@ -140,6 +140,31 @@ test('targeted City editing preserves an unavailable faction reference during an
  const ui=require('../.build/atlas-region-city-ui.cjs');ui.initCity(()=>{});ui.activateCity({campaign:{id:'campaign',name:'Kampagne',revision:0},token:'token',rooms:[],floors:[],selectedId:null,problems:[],canUndo:false,canRedo:false});await ui.openCityReference('city','house',true);assert.equal(document.getElementById('city-unit-faction').value,'unavailable-faction');const name=document.getElementById('city-unit-name');name.value='Neu';name.dispatchEvent(new window.Event('input',{bubbles:true}));assert.equal(await ui.flushCity(),true);assert.equal(sent.length,1);assert.equal(unit.name,'Neu');assert.equal(unit.factionId,'unavailable-faction');assert.equal(unit.districtId,'keep-district');assert.equal(unit.notes,'PRIVATE\r\nProsa');assert.deepEqual(unit.recipe,{seed:'keep'});assert.deepEqual(unit.externalExtension,{keep:true});
 });
 
+test('viewport marker reads preserve exact locations without loading notes or offscreen markers',async t=>{
+ const f=fixture(t,2),token=f.shell.token,map=f.store.world(token).maps[0],id=randomUUID();
+ f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:f.campaign.id,action:{kind:'location-create',mapId:map.id,expectedMapRevision:map.revision,point:{x:12.25,y:3.5},document:{kind:'location',version:1,id,name:'Bounded chapel',type:'poi',sections:[{id:randomUUID(),title:'Notizen',markdown:'SECRET-REGION-NOTE'}],detailMaps:[],keyLinks:[]}}});
+ f.store.world=f.store.preparation=f.store.campaignAtlas=()=>{throw new Error('full read forbidden');};
+ const a=f.store.atlasRegionView(token,await f.read());assert.equal(a.places.length,1);assert.equal(a.places[0].locationId,id);assert.deepEqual(a.places[0].point,{x:12.25,y:3.5});assert(!JSON.stringify(a).includes('SECRET-REGION-NOTE'));
+ const away=f.store.atlasRegionView(token,await f.read(query({x:5000,y:5000,width:100,height:100})));assert.equal(away.places.length,0);
+});
+test('selected drawing metadata keeps one element existence check across undo without returning its notes',t=>{
+ const f=fixture(t,1),token=f.shell.token,{newElement}=require('../.build/atlas-region-drawing-model.cjs'),element={...newElement('object','local','ground','r0',[{x:1,y:1}]),notes:'PRIVATE-SELECTED-NOTE'};
+ const command={commandId:randomUUID(),token,campaignId:f.campaign.id,action:{kind:'element',element,expectedRevision:null}};
+ f.store.executeAtlasCommit({...command,action:{kind:'drawing',command}});const before=f.store.drawingMap(token,'r0',element.id);assert.equal(before.elements.length,1);assert.equal(before.elements[0].id,element.id);assert(!JSON.stringify(before).includes('PRIVATE-SELECTED-NOTE'));
+ f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:f.campaign.id,action:{kind:'undo'}});assert.equal(f.store.drawingMap(token,'r0',element.id).elements.length,0);
+});
+
+test('independent viewport and selection readers keep a cold exact focus alive through a replaced viewport read',async t=>{
+ const f=fixture(t,300),viewport=new AtlasRegionService(require.resolve('../.build/atlas-region-worker.cjs'),0),selection=new AtlasRegionService(require.resolve('../.build/atlas-region-worker.cjs'),0);
+ t.after(async()=>{await Promise.all([viewport.close(),selection.close()]);});
+ const source=f.store.atlasRegionSource(f.shell.token);
+ const focus=selection.focus(source,'room','r299');
+ const first=viewport.read(source,query()).then(value=>({value}),error=>({error}));
+ const next=viewport.read(source,query({x:1450,y:-2,width:60,height:10}));
+ const [selected,region,old]=await Promise.all([focus,next,first]);
+ assert.equal(selected.id,'r299');assert.ok(selected.point.x>1490);assert.ok(region.rooms.some(room=>room.id==='r299'));assert.ok(old.error||old.value);
+ const nextFocus=selection.focus(f.store.atlasRegionSource(f.shell.token,selection.cursor),'room','r0');selection.cancel();await assert.rejects(nextFocus,/abgebrochen/);
+});
 function landscape(f,r){const {points,polygons}=r,all=[...points,...polygons.flatMap(p=>[p.outer,...p.holes].flat())],pad=r.width/2;const x=Math.min(...all.map(p=>p.x))-pad,y=Math.min(...all.map(p=>p.y))-pad,xx=Math.max(...all.map(p=>p.x))+pad,yy=Math.max(...all.map(p=>p.y))+pad;f.store.db.prepare('INSERT OR REPLACE INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)').run(f.campaign.id,r.id,r.revision,x,xx,y,yy,JSON.stringify(r));}
 const road=(id,x=0)=>({id,revision:0,kind:'road',name:id,points:[{x,y:0},{x:x+10,y:0}],polygons:[],resolution:1,width:1,values:{description:'PRIVATE LANDSCAPE DETAILS'}});
 test('one source-bound frame preserves dense landscape and paginates exact overlapping choices without author details',async t=>{

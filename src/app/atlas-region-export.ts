@@ -1,3 +1,4 @@
+import {appendAtlasRoomLabels} from './atlas-room-labels';
 import {regionValue} from './atlas-region-contracts';
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
@@ -6,7 +7,7 @@ import {
   drawLandscapeGrid,
   landscapeNode,
 } from "./atlas-landscape-view";
-import { atlasFrame, frameTransform } from "./campaign-atlas-model";
+import { atlasFrame, frameTransform, localToAtlas } from "./campaign-atlas-model";
 import { citySvg } from "./city-model";
 import { roomPath, elementSvg } from "./drawing-model";
 export function atlasRegionSVG(
@@ -21,14 +22,17 @@ export function atlasRegionSVG(
     references: boolean;
     floorId: string;
     roofs: boolean;
+    scopeId?:string|null; labelUnitsPerPixel?:number;
     rasters?: import("./landscape-raster").LandscapeRaster[];geometryOnly?:boolean;geometryTiles?:import("./landscape-raster").LandscapeRaster[];
   },
 ) {
   const svg = landscapeNode("svg", {
       xmlns: "http://www.w3.org/2000/svg",
+      "font-family":"Noto Sans, sans-serif",
       viewBox: `0 0 ${box.width} ${box.height}`,
     }) as SVGSVGElement,
-    mpp = box.width / width;
+    mpp = box.width / width,
+    labelMpp=options.labelUnitsPerPixel&&Number.isFinite(options.labelUnitsPerPixel)&&options.labelUnitsPerPixel>0?options.labelUnitsPerPixel:mpp;
   if(!options.geometryOnly)svg.append(
     landscapeNode("rect", {
       width: box.width,
@@ -63,18 +67,25 @@ export function atlasRegionSVG(
         citySvg(city),
         "image/svg+xml",
       );
-      for(const element of doc.querySelectorAll('[data-city-unit]')){const id=element.getAttribute('data-city-unit')!,interior=regionValue(data.region?.interiors,id);if(interior&&(!options.roofs||mpp<=.4||interior===data.region?.scopeId))for(const polygon of element.querySelectorAll('polygon')){polygon.setAttribute('fill','none');if(interior===data.region?.scopeId&&options.floorId!=='ground')polygon.setAttribute('visibility','hidden');}}
-      g.append(document.importNode(doc.documentElement, true));
+      for(const child of Array.from(doc.documentElement.children)){
+        const unitId=child.getAttribute('data-city-unit'),scope=unitId?regionValue(data.region?.interiors,unitId):undefined,interior=data.bindings.find(b=>b.kind==='dungeon'&&b.parent==='building'&&b.parentId===unitId)??(scope?{ownerId:scope}:null);
+        if(interior&&(!options.roofs||interior.ownerId===options.scopeId))for(const polygon of child.querySelectorAll('polygon'))polygon.setAttribute('fill','none');
+        if(interior?.ownerId===options.scopeId)for(const text of child.querySelectorAll('text'))text.remove();
+        if(child.tagName==='rect'){child.setAttribute('width',String(city.header.width));child.setAttribute('height',String(city.header.height));}
+        for(const text of [child,...Array.from(child.querySelectorAll('text'))].filter(n=>n.tagName==='text'))text.setAttribute('font-size',String(Math.min(Number(text.getAttribute('font-size'))||6,12*labelMpp)));
+        g.append(document.importNode(child,true));
+      }
     }
     svg.append(g);
   }
   for (const b of data.bindings.filter((b) => b.kind === "dungeon")) {
-    if (b.parent === "building" && options.roofs&&mpp>.4&&b.ownerId!==data.region?.scopeId) continue;
+    if (b.parent === "building" && options.roofs && b.ownerId!==options.scopeId) continue;
     const floor=data.region?b.ownerId===data.region.scopeId?data.region.floorId:'ground':options.floorId;
     const f = atlasFrame(data, b),
       g = landscapeNode("g", {
         transform: frameTransform({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
+    const labels=landscapeNode('g',{'data-atlas-room-labels':b.ownerId});
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
@@ -87,21 +98,7 @@ export function atlasRegionSVG(
           "fill-rule": "evenodd",
         }),
       );
-      if (room.polygons[0]?.outer[0]) {
-        const p = room.polygons[0].outer[0];
-        g.append(
-          landscapeNode(
-            "text",
-            {
-              x: p.x,
-              y: p.y,
-              "font-size": Math.max(0.3, mpp * 11),
-              fill: "#293d34",
-            },
-            [room.number, room.name].filter(Boolean).join(" · "),
-          ),
-        );
-      }
+      appendAtlasRoomLabels(labels,room,labelMpp,point=>{const at=localToAtlas(point,f);return {x:at.x-box.x,y:at.y-box.y};});
     }
     for (const e of data.geometry.drawing.elements.filter(
       (e) => e.scopeId === b.ownerId && e.floorId === floor,
@@ -114,7 +111,7 @@ export function atlasRegionSVG(
       );
       g.append(container);
     }
-    svg.append(g);
+    svg.append(g,labels);
   }
   return svg;
 }
