@@ -9,7 +9,7 @@ import {createRequire} from 'node:module';
 import {buildSync,build} from 'esbuild';
 import {parseHTML,DOMParser} from 'linkedom';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/city-dom-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-await build({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG} from './src/app/campaign-atlas-export'; export {atlasRegionSVG} from './src/app/atlas-region-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'controller-paint-fixture',setup(b){b.onResolve({filter:/^\.\/atlas-canvas$/},()=>({path:path.resolve('tests/atlas-controller-canvas-fixture.ts')}));}}]});
+await build({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG,publicAtlasPaint} from './src/app/campaign-atlas-export'; export {paintMarkup} from './src/app/atlas-paint'; export {atlasRegionSVG} from './src/app/atlas-region-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'controller-paint-fixture',setup(b){b.onResolve({filter:/^\.\/atlas-canvas$/},()=>({path:path.resolve('tests/atlas-controller-canvas-fixture.ts')}));}}]});
 for(const [name,entry] of [['service','desktop/room-directory.ts'],['worker','desktop/room-directory-worker.ts']])buildSync({entryPoints:[entry],outfile:'.build/city-dom-directory-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['src/app/landscape-raster.ts'],outfile:'.build/city-dom-raster.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/city-dom-store.cjs'),tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -749,6 +749,12 @@ test('public region export preserves unseen remembered terrain while drawing cur
   const remembered=frame.map.cells.find(c=>c.q===2&&c.r===0);assert.equal(remembered.visible,false);assert.equal(remembered.terrain,'forest');assert.equal(frame.map.cells.find(c=>c.q===0&&c.r===0).visible,true);
   const raster={campaignId:a.campaignId,revision:a.revision,box,width:1,height:1,data:'data:image/png;base64,'+require('pngjs').PNG.sync.write({width:1,height:1,data:Buffer.from([127,168,189,255])}).toString('base64')};
   const bytes=x.store.db.serialize(),records=x.store.landscapeRegion(x.current().token,box).records,svg=x.ui.publicAtlasSVG(a,box,frame,records,box.width/800,[raster]);
+  let retained;const currentDocument=globalThis.document,currentParser=globalThis.DOMParser;
+  try{globalThis.document=undefined;globalThis.DOMParser=undefined;retained=x.ui.publicAtlasPaint(a,box,frame,records,box.width/800,[raster]);}finally{globalThis.document=currentDocument;globalThis.DOMParser=currentParser;}
+  const retainedSVG=new DOMParser().parseFromString(x.ui.paintMarkup(retained),'image/svg+xml').documentElement;
+  const publicTree=n=>({tag:n.localName,attrs:[...n.attributes].map(a=>[a.name,a.value]).sort(([a],[b])=>a.localeCompare(b)),text:n.children.length?'':n.textContent,children:[...n.children].map(publicTree)});
+  assert.deepEqual(publicTree(retainedSVG),publicTree(svg),'Direct Canvas public projection must preserve the visible/remembered SVG policy without a DOM parser');
+
   const image=svg.querySelector('[data-landscape-raster]');assert.ok(image,'The bounded terrain raster remains available');assert.equal(image.parentElement.getAttribute('clip-path'),'url(#visible-landscape)','Current raster tiles must share the current-visibility clip with vector contours');
   mapEvidence(svg,'public-landscape-export.svg');
   const paths=[...svg.querySelectorAll('clipPath path')],polygons=paths.map(p=>{const values=p.getAttribute('d').match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number);return values.reduce((points,v,i)=>{if(i%2===0)points.push({x:v,y:values[i+1]});return points;},[]);});

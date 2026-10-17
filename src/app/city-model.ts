@@ -1,3 +1,4 @@
+import {atlasPaint,paintMarkup} from "./atlas-paint";
 import type {CityPoint as P,CityUnit,CityView,CityRecipe,CityPreview,CityInfillRecipe} from './city-contracts';
 export function inside(p:P,poly:P[]){let yes=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i]!,b=poly[j]!;if((a.y>p.y)!==(b.y>p.y)&&p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)yes=!yes;}return yes;}
 export function posed(u:CityUnit):P[]{const c=Math.cos(u.angle??0),s=Math.sin(u.angle??0),p=u.position??{x:0,y:0};return(u.outline??[]).map(a=>({x:p.x+a.x*c-a.y*s,y:p.y+a.x*s+a.y*c}));}
@@ -156,9 +157,15 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
  }
  return{cityId:view.header.id,baseRevision:view.header.revision,recipe:{...r},buildings,...(streets.length?{streets}:{}),replaceIds,attempts};
 }
-const escaped=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
-export function citySvg(v:import("./atlas-region-contracts").CityGeometry){const pts=(p:P[])=>p.map(a=>a.x+','+a.y).join(' '),h=v.header;let out=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${h.width} ${h.height}" width="${h.width}" height="${h.height}"><title>${escaped(h.name)}</title><rect width="100%" height="100%" fill="${escaped(h.paper)}"/>`;
- for(const u of v.units.filter(u=>['district','water','plaza'].includes(u.kind)))out+=`<polygon points="${pts(u.outline??[])}" fill="${u.kind==='water'?'#8eafb9':u.kind==='plaza'?'#d9c6a4':'#e0d2b9'}" stroke="#a69071" stroke-width="0.7"/><text x="${u.outline?.[0]?.x??0}" y="${u.outline?.[0]?.y??0}" font-size="8" fill="#52452e">${escaped(u.name)}</text>`;
- for(const u of v.units.filter(u=>u.kind==='road'||u.kind==='wall'))out+=`<polyline points="${pts(roadPoints(u,v.units))}" fill="none" stroke="${u.kind==='wall'?'#625e52':'#c1ae8b'}" stroke-width="${u.width??6}" stroke-linejoin="round" stroke-linecap="round"/>`;
- for(const u of v.units.filter(u=>u.kind==='building'))out+=`<g data-city-unit="${escaped(u.id)}"><polygon points="${pts(posed(u))}" fill="${escaped(h.roof)}" stroke="#624337" stroke-width="0.8"/>${u.name?`<text x="${u.position!.x}" y="${u.position!.y}" font-size="6" text-anchor="middle" fill="#352822">${escaped(u.name)}</text>`:''}</g>`;
- return out+'</svg>';}
+export function cityPaint(v:import("./atlas-region-contracts").CityGeometry){
+ const pts=(p:P[])=>p.map(a=>a.x+','+a.y).join(' '),h=v.header,root=atlasPaint('svg',{xmlns:'http://www.w3.org/2000/svg',viewBox:`0 0 ${h.width} ${h.height}`,width:h.width,height:h.height});
+ root.append(atlasPaint('title',{},h.name),atlasPaint('rect',{width:h.width,height:h.height,fill:h.paper}));
+ for(const u of v.units.filter(u=>['district','water','plaza'].includes(u.kind)))root.append(atlasPaint('polygon',{points:pts(u.outline??[]),fill:u.kind==='water'?'#8eafb9':u.kind==='plaza'?'#d9c6a4':'#e0d2b9',stroke:'#a69071','stroke-width':.7}),atlasPaint('text',{x:u.outline?.[0]?.x??0,y:u.outline?.[0]?.y??0,'font-size':8,fill:'#52452e'},u.name));
+ for(const u of v.units.filter(u=>u.kind==='road'||u.kind==='wall'))root.append(atlasPaint('polyline',{points:pts(roadPoints(u,v.units)),fill:'none',stroke:u.kind==='wall'?'#625e52':'#c1ae8b','stroke-width':u.width??6,'stroke-linejoin':'round','stroke-linecap':'round'}));
+ for(const u of v.units.filter(u=>u.kind==='building')){
+  const group=atlasPaint('g',{'data-city-unit':u.id});group.append(atlasPaint('polygon',{points:pts(posed(u)),fill:h.roof,stroke:'#624337','stroke-width':.8}));
+  if(u.name)group.append(atlasPaint('text',{x:u.position!.x,y:u.position!.y,'font-size':6,'text-anchor':'middle',fill:'#352822'},u.name));root.append(group);
+ }
+ return root;
+}
+export function citySvg(v:import("./atlas-region-contracts").CityGeometry){return paintMarkup(cityPaint(v));}

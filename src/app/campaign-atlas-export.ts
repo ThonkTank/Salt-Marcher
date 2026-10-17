@@ -1,4 +1,5 @@
-import {drawLandscape,landscapeNode} from "./atlas-landscape-view";
+import {AtlasPaint,atlasPaint,paintFactory,type PaintTarget} from "./atlas-canvas-scene";
+import {drawLandscape} from "./atlas-landscape-view";
 import {hexPolygon,type LandscapeRecord} from "./atlas-landscape";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
@@ -13,16 +14,20 @@ import { roomPath } from "./drawing-model";
 import { terrainColors } from "./world-model";
 const ns = "http://www.w3.org/2000/svg";
 /** Public output is built from the existing public projection, never by hiding GM nodes. */
-export function publicAtlasSVG(
+type PublicAtlasArgs=[a:AtlasRenderView,box:CanvasBox,frame?:PlayerFrame,landscape?:LandscapeRecord[],unitsPerPixel?:number,rasters?:import('./landscape-raster').LandscapeRaster[]];
+export function publicAtlasSVG(...args:PublicAtlasArgs):SVGSVGElement{return publicAtlasProjection(false,...args) as SVGSVGElement;}
+export function publicAtlasPaint(...args:PublicAtlasArgs):AtlasPaint{return publicAtlasProjection(true,...args) as AtlasPaint;}
+function publicAtlasProjection(
+  retained:boolean,
   a: AtlasRenderView,
   box: CanvasBox,
   frame?: PlayerFrame,
   landscape:LandscapeRecord[]=[],
   unitsPerPixel = box.width / 1000,
   rasters:import("./landscape-raster").LandscapeRaster[] = [],
-): SVGSVGElement {
+): PaintTarget {
   const mpp=Number.isFinite(unitsPerPixel)&&unitsPerPixel>0?unitsPerPixel:box.width/1000;
-  const svg = document.createElementNS(ns, "svg");
+  const svg=retained?atlasPaint("svg"):document.createElementNS(ns,"svg"),make=paintFactory(svg);
   svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
   svg.setAttribute("xmlns", ns);
   svg.setAttribute("font-family", "Noto Sans, sans-serif");
@@ -31,7 +36,7 @@ export function publicAtlasSVG(
     attrs: Record<string, string | number>,
     text?: string,
   ) => {
-    const n = document.createElementNS(ns, tag);
+    const n = make(tag);
     for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
     if (text) n.textContent = text;
     svg.append(n);
@@ -111,15 +116,15 @@ export function publicAtlasSVG(
     }
     const visibleCells=map.cells.filter(cell=>cell.visible);
     if((landscape.length||rasters.length)&&visibleCells.length){
-      const defs=landscapeNode('defs'),clip=landscapeNode('clipPath',{id:'visible-landscape'});
+      const defs=make('defs'),clip=make('clipPath',{id:'visible-landscape'});
       // Known but unseen cells retain their remembered facts. Current GM geometry
       // is only a raster layer over the publicly visible cells.
       for(const cell of visibleCells){
         const polygon=hexPolygon(cell.q,cell.r,map.hexMeters);
-        clip.append(landscapeNode('path',{d:roomPath([{outer:polygon.outer.map(p=>({x:p.x-box.x,y:p.y-box.y})),holes:[]}])}));
+        clip.append(make('path',{d:roomPath([{outer:polygon.outer.map(p=>({x:p.x-box.x,y:p.y-box.y})),holes:[]}])}));
       }
       defs.append(clip);svg.append(defs);
-      const visible=landscapeNode('g',{'clip-path':'url(#visible-landscape)'});
+      const visible=make('g',{'clip-path':'url(#visible-landscape)'});
       drawLandscape(visible,landscape.filter(r=>r.kind==='patch'||r.kind==='river'||r.kind==='road'),box,mpp,new Map(),false,rasters.length?rasters:undefined);
       svg.append(visible);
     }

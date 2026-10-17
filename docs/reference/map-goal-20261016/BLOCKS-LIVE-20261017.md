@@ -63,3 +63,8 @@ Bei der Integration fiel auf, dass das öffentliche Landschafts-SVG aktuelle Bil
 ### Live-Kartenhöhe
 
 Der tatsächliche Canvas-Gegenlauf zeigte den Gruppeninnenraum unter der festen Audiobar abgeschnitten. Die Live-Fläche bemisst ihre Höhe nun nach ihrer tatsächlichen Position und der Audiobar, aktualisiert nach Layout/Scroll/Resize und erhält dabei das Kartenzentrum. Die Bearbeitung behält ihre bisherige Kamera. Tatsächliche Gegenprobe: Kartenunterkante825.5px, Audiobar833.5px; beide vorbereiteten Räume und der Gruppentoken sind sichtbar. Gruppenstandort und00:00:21 bleiben unverändert. Die Seite wird dafür nicht zwangsweise gescrollt. Die ersten vier Tests scheiterten vor dem UI-Aufbau mit SQLite-IOERR im temporären Dateisystem; mit eigenem TMPDIR im Workspace bestehen dieselben vier Reise-/Intentfälle normal.
+
+
+### Direkte Zeichenbefehle aus aktuellem Main
+
+Main `bd88b480a`/`5b5a2027b` erzeugt Stadt- und Ausstattungsbefehle direkt. Eigene Bebauungsregeln, Wand-/Türsemantik, Formgriffe und Innenraumsicht bleiben erhalten. Auch die eigene Gruppenprojektion erzeugt nun direkt Paint-Befehle; Bild-/Vektorausgabe verwenden dieselbe Public-Policy mit einem anderen Zielfactory. Die bestehende Public-Regression prüft Gleichheit beider Projektionen bei sichtbarer und erinnerter Landschaft und ruft die Paint-Projektion ausdrücklich ohne `document` oder `DOMParser` auf. Canvas-Clips bleiben auch nach der Aufteilung von AtlasPaint erhalten. Main schützt außerdem einen während Laden/Speichern abgelehnten Pointerdruck vor seinem verspäteten Klick; dieser Schutz gilt neben den eigenen Platzierungs-/Formwegen.

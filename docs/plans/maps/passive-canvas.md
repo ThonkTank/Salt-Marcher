@@ -11,6 +11,10 @@ Kleine Pans zeichnen vorhandene Kommandos mit geänderter Kamera, ohne neue
 Kartenobjekte oder Reads. Bildframes werden vollständig vorbereitet und nur
 als jüngste gültige Szene veröffentlicht. Zeichen-/Initialisierungsfehler
 entfernen Treffer und bieten ein neues Initialisieren mit derselben Kamera.
+Stadt- und Zeichensymbole entstehen direkt aus gemeinsamen Geometriegeneratoren;
+SVG-Serialisierung bleibt auf Ausgabe und ältere Hosts begrenzt. Abgewiesene
+Pointergesten bleiben bis zu ihrem Klick unterdrückt, auch wenn Speichern oder
+Framevorbereitung zwischen Druck und Loslassen abschließen.
 Bilddecodierungen und Zeichenpuffer sind begrenzt; Details und verbleibende
 Alternativen stehen im [Atlas-Runtimeplan](../../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md).
 
