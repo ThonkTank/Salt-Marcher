@@ -134,6 +134,7 @@ else {
     handle('campaign:room-draft', (token: string, roomId: string) => store.roomDraft(token, roomId));
     handle('campaign:keep-room-draft', (token: string, roomId: string, draft: WorkingRoomDraft | null) => store.keepRoomDraft(token, roomId, draft));
     handle('campaign:preparation', (token: string, search: string) => store.preparation(token, search));
+    handle('campaign:note-merge-preview',(token:string,sourceId:string,targetId:string)=>store.noteMergePreview(token,sourceId,targetId));
     handle('campaign:note-room-uses', (token:string,id:string,offset:number) => store.noteRoomUses(token,id,offset));
     handle('campaign:note-thread',(token:string,id:string,offset:number,active:boolean,history=false)=>store.noteThread(token,id,offset,active,history));
     handle('campaign:check-note-thread',(token:string,s:import('../src/app/note-thread-contracts').NoteThreadSelection)=>store.checkNoteThread(token,s));

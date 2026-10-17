@@ -1,3 +1,4 @@
+import {checkedNoteMerge,type NoteMergeChange,type NoteMergePreview} from './note-merge-contracts';
 import { manualPlan, type ManualPlan } from '../features/planner/manual-planner';
 import { worldNoteDocument, type WorldNoteV1 } from '../features/world/world-notes';
 import { checkedLocationDocument, type LocationDocument } from '../features/location/location-schema';
@@ -9,6 +10,7 @@ export interface PreparationSelection { noteId: string | null; planId: string | 
 export interface Preparation { notes: NoteRow[]; plans: ManualPlan[]; locations: LocationRow[]; maps: { id: string; name: string }[]; problems: string[]; selection: PreparationSelection }
 export type PreparationChange =
   | { kind: 'note'; expectedRevision: number | null; note: Note }
+  | NoteMergeChange
   | { kind: 'note-trash'; id: string; expectedRevision: number; trashed: boolean }
   | { kind: 'location'; expectedRevision: number | null; document: LocationDocument }
   | { kind: 'location-trash'; id: string; expectedRevision: number; trashed: boolean }
@@ -24,7 +26,7 @@ export function preparationTarget(change: PreparationChange): { kind: 'note' | '
   if (change.kind === 'note') return { kind: 'note', id: change.note.id };
   if (change.kind === 'plan') return { kind: 'plan', id: change.plan.id };
   if (change.kind === 'location') return { kind: 'location', id: change.document.id };
-  return { kind: change.kind === 'note-trash' ? 'note' : 'location', id: change.id };
+  return { kind: change.kind === 'note-trash'||change.kind==='note-merge' ? 'note' : 'location', id: change.id };
 }
 /** Check structural identity while preserving unfinished text verbatim. */
 export function checkedPreparationDraft(value: PreparationDraft): PreparationDraft {
@@ -60,6 +62,7 @@ export function checkedPreparationDraft(value: PreparationDraft): PreparationDra
 }
 export interface NoteRoomUsesPage {entries:{id:string;title:string;number:string;place:string;excerpt:string;unavailable:boolean}[];next:number|null;notice?:string}
 export interface PreparationAPI {
+  noteMergePreview(token:string,sourceId:string,targetId:string):Promise<import('./contracts').Result<NoteMergePreview>>;
   noteRoomUses(token:string,noteId:string,offset:number):Promise<import('./contracts').Result<NoteRoomUsesPage>>;
   preparation(token: string, search: string): Promise<import('./contracts').Result<Preparation>>;
   changePreparation(command: PreparationCommand): Promise<import('./contracts').Result<Preparation>>;
@@ -70,6 +73,7 @@ export interface PreparationAPI {
   discardPreparationDraft(token: string, kind: PreparationEdit['kind'], id: string, writeId: string): Promise<import('./contracts').Result<void>>;
 }
 export function validatePreparation(change: PreparationChange) {
+  if(change.kind==='note-merge')return checkedNoteMerge(change);
   if (change.kind === 'note') {
     const note = worldNoteDocument(change.note);
     if (note.deleted) throw new Error('Notizen werden in den Papierkorb verschoben.');
