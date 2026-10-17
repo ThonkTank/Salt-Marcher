@@ -20,7 +20,7 @@ export class VisitNoteOrganizer {
   const changed=next?.key!==this.owner?.key;this.owner=next;
   if(changed){this.epoch++;this.searchRequest++;this.detailRequest++;if(this.timer)clearTimeout(this.timer);this.timer=null;this.search.value='';this.entries=[];this.next=null;this.loading=false;this.shown=null;this.known.clear();this.selectedPage=0;this.list.replaceChildren();this.selected.replaceChildren();this.counter.textContent='';this.detail.replaceChildren(node('p','Eine Notiz auswählen, um sie hier zu lesen.'));this.status.textContent='';}
   if(!next)return;
-  for(const row of next.notes)if(!this.known.get(row.note.id)?.revision||row.note.revision>this.known.get(row.note.id)!.revision!)this.known.set(row.note.id,{revision:row.note.revision,ref:{kind:'note',id:row.note.id},title:row.note.title,label:({npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht',rule:'Regelreferenz'})[row.note.kind],unavailable:row.trashed});
+  for(const row of next.notes)if(!this.known.get(row.note.id)?.revision||row.note.revision>this.known.get(row.note.id)!.revision!)this.known.set(row.note.id,{revision:row.note.revision,ref:{kind:'note',id:row.note.id},title:row.note.title,label:({note:'Notiz',npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht',rule:'Regelreferenz'})[row.note.kind],unavailable:row.trashed});
   this.drawSelected();this.sync();if(changed)void this.load(false);
  }
  lock(on:boolean){this.locked=on;this.sync();}
