@@ -2,21 +2,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSync } from 'esbuild';
 import { createRequire } from 'node:module';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { parseHTML } from 'linkedom';
-buildSync({ entryPoints: ['src/app/campaign-atlas-ui.ts'], outfile: '.build/atlas-context-ui.cjs', bundle: true, platform: 'node', format: 'cjs' });
+buildSync({ stdin: {contents: "export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export * from './src/app/world-ui';",resolveDir:process.cwd()}, outfile: '.build/atlas-context-ui.cjs', bundle: true, platform: 'node', format: 'cjs' });
 buildSync({ entryPoints: ['src/app/storage/store.ts'], outfile: '.build/atlas-context-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'] });
-const require = createRequire(import.meta.url), { CampaignAtlasWorkbench } = require('../.build/atlas-context-ui.cjs'), { CampaignStore } = require('../.build/atlas-context-store.cjs');
+const require = createRequire(import.meta.url), worldUI = require('../.build/atlas-context-ui.cjs'), { CampaignAtlasWorkbench } = worldUI, { CampaignStore } = require('../.build/atlas-context-store.cjs');
 function fixture(t) {
     const dir = mkdtempSync(tmpdir() + '/atlas-context-'), store = new CampaignStore(dir + '/world.sqlite'), campaign = store.create('Reise'), w = store.activate(campaign.id), command = action => ({ commandId: randomUUID(), campaignId: campaign.id, token: w.token, action });
     const a = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: store.live(w.token).rosterRevision })).scene;
     const character = store.executeLive(command({ kind: 'create-character', profile: { name: 'Ada', speedFeet: 30 } })).character, live = store.live(w.token);
     store.executeLive(command({ kind: 'membership', characterId: character.id, expectedRevision: character.membershipRevision, expectedRosterRevision: live.rosterRevision, active: true, targetSceneId: a.id, expectedFocusRevision: live.focusRevision }));
-    const beforeGlobals = { window: globalThis.window, document: globalThis.document };
-    const { window, document } = parseHTML('<html><body><div id="atlas-advanced-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join('') + '</body></html>');
-    Object.assign(globalThis, { window, document });
+    const beforeGlobals = { window: globalThis.window, document: globalThis.document, Event:globalThis.Event, CustomEvent:globalThis.CustomEvent };
+    const { window, document } = parseHTML(readFileSync('src/app/index.html','utf8')+'<div id="atlas-advanced-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join(''));
+    Object.assign(globalThis, { window, document, Event:window.Event, CustomEvent:window.CustomEvent });
     for (const select of document.querySelectorAll('select'))
         Object.defineProperty(select, 'value', { value: '', writable: true });
     const sent = [];
@@ -28,7 +28,7 @@ function fixture(t) {
     ui.render = () => ui.renderTravel();
     ui.render();
     t.after(() => { Object.assign(globalThis, beforeGlobals); store.close(); rmSync(dir, { recursive: true, force: true }); });
-    return { ui, store, w, a, command, sent, get: id => document.getElementById('atlas-local-' + id) };
+    return { ui, store, w, a, command, sent, document, window, get: id => document.getElementById('atlas-local-' + id) };
 }
 test('pending and failed Atlas context reads revoke previews and block travel; retry remains read-only', async (t) => {
     const x = fixture(t);
@@ -147,4 +147,34 @@ test('reevaluating an existing local preview disables its old start until the ne
     await read;
     assert.equal(x.get('start').disabled, false);
     assert.ok(x.store.db.serialize().equals(before));
+});
+
+const tick=()=>new Promise(setImmediate);
+async function until(check){for(let i=0;i<100&&!check();i++)await tick();assert.ok(check(),'Expected travel state did not arrive');}
+test('Atlas long-distance preview exposes duration and starts the same world journey; a changed target revokes it',async t=>{
+ const x=fixture(t),statuses=[],response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
+ Object.assign(x.window.campaign,{
+  world:async token=>response(()=>x.store.world(token)),preparation:async token=>response(()=>x.store.preparation(token)),live:async token=>response(()=>x.store.live(token)),sceneWorld:async(token,id)=>response(()=>x.store.sceneWorld(token,id)),previewTravel:async(token,request)=>response(()=>x.store.previewTravel(token,request)),
+  executeWorld:async c=>{x.sent.push(c);return response(()=>x.store.executeWorld(c));}
+ });
+ const map=x.store.world(x.w.token).maps[0];x.store.executeWorld(x.command({kind:'place-scene',sceneId:x.a.id,position:{mapId:map.id,q:0,r:0,locationId:null},expectedSceneRevision:x.a.revision,expectedPositionRevision:0}));x.ui.data={...x.store.atlasRenderView(x.w.token),region:{coverage:{mode:'detail',unreadable:0}}};
+ worldUI.initWorld(s=>statuses.push(s),async()=>true,async()=>{},async()=>{});
+ for(const select of x.document.querySelectorAll('select'))if(!Object.getOwnPropertyDescriptor(select,'value')?.writable)Object.defineProperty(select,'value',{value:'',writable:true});
+ for(const d of x.document.querySelectorAll('dialog')){d.showModal=()=>{d.open=true;};d.close=()=>{d.open=false;};}
+ worldUI.activateWorld(x.w);await worldUI.openWorld();
+ x.document.getElementById('world-travel-form').requestSubmit=function(){this.onsubmit({preventDefault(){}});};
+ try {
+ const field=(id,value)=>{const e=x.document.getElementById(id);e.value=value;e.dispatchEvent(new x.window.Event('input',{bubbles:true}));};
+ field('travel-pace','4.8');field('travel-factor','1');field('travel-final-hours','');
+ x.ui.lastPoint={x:20000,y:0};worldUI.atlasWorldTarget({q:4,r:0});
+ const before=x.store.db.serialize();await x.ui.travelControl('preview');await until(()=>worldUI.atlasWorldTravelState().preview);x.ui.renderTravel();
+ assert.equal(x.get('start').disabled,false);assert.match(x.get('status').textContent,/km.*h.*Ankunft/);
+ const owner=x.ui.owner;x.ui.owner={...owner,token:'other-campaign'};x.ui.renderTravel();assert.equal(x.get('start').disabled,true);x.ui.owner=owner;
+ const sceneId=x.ui.data.geometry.sceneId;x.ui.data.geometry.sceneId='other-scene';x.ui.renderTravel();assert.equal(x.get('start').disabled,true);x.ui.data.geometry.sceneId=sceneId;x.ui.renderTravel();assert.ok(x.store.db.serialize().equals(before));
+ worldUI.atlasWorldTarget({q:3,r:0});x.ui.renderTravel();assert.equal(x.get('start').disabled,true);
+ await x.ui.travelControl('preview');await until(()=>worldUI.atlasWorldTravelState().preview);x.ui.renderTravel();
+ await x.ui.travelControl('start');await until(()=>x.sent.some(c=>c.action.kind==='journey'));await worldUI.stopWorldPlayback();
+ const starts=x.sent.filter(c=>c.action.kind==='journey');assert.equal(starts.length,1);assert.deepEqual(starts[0].action.preview.request.destination,{q:3,r:0});assert.equal(starts[0].action.preview.request.sceneId,x.a.id);
+ const scene=x.store.sceneWorld(x.w.token,x.a.id);assert.ok(scene.journey);assert.equal(scene.journey.route.at(-1).q,3);
+ } finally {await worldUI.stopWorldPlayback();}
 });
