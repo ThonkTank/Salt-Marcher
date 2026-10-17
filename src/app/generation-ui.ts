@@ -190,7 +190,7 @@ export function initGeneration(status:typeof tell,callbacks:Bridge){
 tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required-npcs',tell);
  const recovery=document.createElement('div');recovery.id='generation-write-recovery';recovery.hidden=true;recovery.setAttribute('role','alert');recovery.innerHTML='<p>Speicherausgang unbekannt. Die ursprüngliche Änderung wird beim Klären bestätigt oder einmalig gespeichert. Entwurf und Schließen bleiben bis dahin gesperrt.</p><button id="generation-write-retry" type="button">Speicherausgang klären</button>';get('generation-workspace').append(recovery);get('generation-write-retry').onclick=resumeWrite;
  ensureLootUI();
- get('encounter-generate').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-tables').closest('fieldset')!.scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
+ get('encounter-generate').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-actions').scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
  get('generation-plan-open').onclick=()=>{get('generation-feedback').textContent='';get('encounter-builder').scrollIntoView({block:'start'});const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');target.focus({preventScroll:true});};
  get('catalog-tables').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};
@@ -200,7 +200,7 @@ tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required
   const boxes=[...get('generation-tables').querySelectorAll<HTMLInputElement>('input')],selected=boxes.find(box=>box.value===id);if(!selected)return;
   const changed=boxes.some(box=>box.checked!==(box===selected));for(const box of boxes)box.checked=box===selected;
   if(changed)previewDirty=true;sourceLabel();renderPreview();
-  get<HTMLDetailsElement>('generation-tools').open=true;get('generation-tables').closest('fieldset')!.scrollIntoView({block:'center'});selected.focus({preventScroll:true});
+  get<HTMLDetailsElement>('generation-tools').open=true;get('generation-actions').scrollIntoView({block:'center'});selected.focus({preventScroll:true});
  };get('encounter-table-list').oninput=renderSourceActions;get('loot-table-list').oninput=renderSourceActions;renderSourceActions();
  get('encounter-table-new').onclick=()=>{report(()=>openTable());};get('encounter-table-open').onclick=()=>{const t=tables.find(t=>t.id===value('encounter-table-list'));if(t)report(()=>openTable(t));};get('table-close').onclick=requestTableClose;get<HTMLDialogElement>('table-manager').addEventListener('cancel',event=>{event.preventDefault();requestTableClose();});get<HTMLDialogElement>('table-manager').addEventListener('close',restoreCatalog);
  for(const id of ['table-name','table-description','table-scope','table-habitats','table-time','table-loot-link'])get(id).oninput=()=>{
