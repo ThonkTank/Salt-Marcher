@@ -676,8 +676,9 @@ fehlgeschlagenen/pending Read und unvollständige Rohbeträge. Native IPC-/SQLit
 Probe prüft eine zwischenzeitlich bestätigte XP-/Profiländerung, kontrollierten
 Lesefehler und Retry, genau eine ausdrückliche Korrektur auf der neuen Revision,
 Preview/Readback-Gleichheit sowie unveränderte Rastfakten und Scene-Uhr.
-Die Party-History, gebündelte Roster-/Movebedienung und Migration unten bleiben
-eigenständige offene Lieferungen; dieser Korrekturweg benötigt keine neue Tabelle.
+Party-History und Fenstermigration bleiben eigenständige offene Lieferungen;
+die gebündelte Roster-/Movebedienung ist unten angeschlossen. Dieser
+XP-Korrekturweg benötigt keine neue Tabelle.
 
 ## Offene Produktanschlüsse
 
@@ -691,9 +692,10 @@ Die gebundene `requirements-party-window.md` bleibt vollständig maßgeblich.
 Der Topbar-Popup ist eine Teilimplementation. Ab0.148 startet er mit360×220px,
 lässt sich bis240×160px verkleinern und scrollt intern. Seine Größe und die
 ausgewählten zehn Schnellwerte bleiben installationsweit über Neustart erhalten.
-Figuren beginnen eingeklappt; Name, XP- und Rastfenster stehen in einer Zeile,
-Schnellwerte darunter. Aufklappen ersetzt sie durch alle optionalen Profilwerte
-und Aktionen. Namen bleiben vollständig lesbar. XP zeigt aktuellen Level und
+Figuren beginnen eingeklappt; Name, XP- und Rastfenster stehen in einer Zeile.
+Aufklappen zeigt die ausgewählten Schnellwerte und Aktionen; eine zweite
+Schnellwertezeile bei eingeklappter Figur entfällt. Alle zehn optionalen
+Schnellwerte bleiben auswählbar. Namen bleiben vollständig lesbar. XP zeigt aktuellen Level und
 relativen Fortschritt; Tastaturfokus/Tooltip nennen Gesamtstand und nächste
 Schwelle beziehungsweise Maximum oder fehlende XP.
 
@@ -714,16 +716,17 @@ sind keine Suchinhalte. Filtern und Blättern bleiben lesend; Aufklappzustand un
 Rastempfängerauswahl bleiben erhalten. `desktop-party-search.test.mjs` prüft dies
 mit45 Figuren, gleichen Namen, Spielersuche, Kennung und Paging.
 
-Persönliche Loot-/Katalogübergabe aus diesem Popup, Party-Undo/Redo und die restliche Fenstermigration bleiben
-offen; vorhandene XP-/Rast- und Scenecommands qualifizieren diese Punkte nicht.
+Persönliche Beute und der identitätsgebundene Roster-Sprung sind unten
+angeschlossen. Party-Undo/Redo und die restliche Fenstermigration bleiben offen;
+vorhandene XP-/Rast- und Scenecommands qualifizieren diese Punkte nicht.
 Die neue [Rastvormerkung und Scene-Bindung](adventuring-day.md#rastentscheidung-vor-dem-schreiben)
 schließt einen begrenzten Entscheidungsweg. Die weiteren Anschlüsse folgen aus
 der aktuellen Produktstruktur, nicht aus zu kopierenden SaltMarcher-Schemanummern:
 
 | Nutzerwirkung / nächster Schritt | Bereiche und Datenregel | Abnahme und Abhängigkeit |
 |---|---|---|
-| Party auf kleinem Raum lesen | `party-topbar-ui.ts`, `party-overview.ts`, `index.html`, bestehende Styles: kompakter Teilstand oben. Keine zweite Fortschrittsrechnung. Vorher bestand nur die flüchtige820px-Breite ohne Geometriepräferenz; neue Maße ersetzen keine fremde Shellgeometrie. | Weitere direkte Ledger-/Katalogübergabe,200%, vollständige Tastatur/Fokus- und Fenstermigrationsabnahme; die lokalen360/240px-Belege ersetzen sie nicht. |
-| Mehrere Mitglieder bewusst ändern | Party-Rosteroberfläche an bestehende Membership-/Movecommands; stabile CharacterIds, Auswahl außerhalb des Filters erhalten; andere Scenes nur über gemeinsamen Move | 45 Figuren, gleiche Namen, Filter-ABA, Stale Roster/Focus; eine fehlgeschlagene Teilaktion darf keine vermeintlich vollständige Batchbestätigung liefern. Vor Batchadapter Atomarität festlegen und prüfen. |
+| Party auf kleinem Raum lesen | `party-topbar-ui.ts`, `party-overview.ts`, `index.html`, bestehende Styles: kompakter Teilstand oben. Keine zweite Fortschrittsrechnung. Vorher bestand nur die flüchtige820px-Breite ohne Geometriepräferenz; neue Maße ersetzen keine fremde Shellgeometrie. | Weitere200%-, vollständige Tastatur/Fokus- und Fenstermigrationsabnahme; die lokalen360/240px-Belege ersetzen sie nicht. |
+| Mehrere Mitglieder bewusst ändern | Vorhandene `scene-roster`-Übernahme bindet die komplette Auswahl an Roster/Fokus/Scene-Revision und schreibt atomar; stabile CharacterIds, Auswahl außerhalb des Filters erhalten; andere Scenes nur über gemeinsamen Move | Store-/DOMfälle mit45 Figuren, gleichen Namen, Filter-ABA, Stale-Basis und atomarem Rollback sind unten beschrieben. Vollständige200%-/OS-Abnahme bleibt offen; keine Schleife separat bestätigter Einzelbefehle ergänzen. |
 | Gruppe gemeinsam bewegen | Bestehender `LiveAction.move` und Scene-/Maskenreconciliation; bestehendes/neues Ziel mit Ort und Mitgliedern, namenlose neue Scene mit geerbtem Ort/Uhr | Split/Rejoin samt divergenten Uhren, letzte Figur, Combat/Journey, Fehler/Replay; keine eigene Movefachlogik im Party-Popup. |
 | Bestätigte Partyaktionen zurücknehmen | Bestehende `executeLive`-/`executeProgress`-/Lootreceipts und gezielte Vorher-/Nachherfelder inventarisieren; Schema und atomaren Historyanschluss in deren vorhandenen Transaktionen ergänzen | Erst echte XP-, Rast-, Profil-, Membership-, Move- und Lootfälle samt Konflikt/Replyverlust/Fresh schließen; danach 100 Schritte, Redobranch und Importinvalidierung. Keine Ableitung inverser Aktionen allein aus Text-/Anzeigehistory. Der normative Historyvertrag oben bleibt unverändert. |
 | History sicher anbieten | Erst nach belastbaren Historycommands im Party-Popup vier Readzustände, aktuelle Undo-/Redoautorität, isoliertes Retry und Originalcommand-Recovery anbinden | Verspätete Antwort nach Close/Workspace-ABA, beschädigter Read ohne neue Schreibautorität, 240 px Fehler/Retry mit Tastatur. Quickfieldpräferenzen an ihrem tatsächlichen Installationsowner beteiligen; keine zweite DB nur wegen der Quellarchitektur einführen. |
@@ -787,8 +790,12 @@ erhalten die gesamte Auswahl. Suche, Anzahl und Übernahme bleiben auch bei
 240×160px erreichbar, die Liste scrollt separat. Die Auswahl wird erst mit
 „Übernehmen“ gemeinsam bestätigt. Andere Szenen werden über „Figuren gemeinsam
 verschieben“ erreicht; der bestehende Move-Dialog erhält „Alle auswählen“ und
-Ziele aus Ort und tatsächlichen Mitgliedern. Nur gleiche Beschriftungen erhalten
-eine kurze Kennung. Historische Szenentitel werden nicht umbenannt. Namenlose
+Ziele aus Ort und tatsächlichen Mitgliedern. Nur gleiche sichtbare Beschriftungen
+erhalten eine kurze Kennung. `partySceneLabels` gruppiert dafür auch kanonisch
+äquivalente Unicode-Schreibweisen, ohne die Originaltexte umzuschreiben. Bei
+gleichen ersten acht IDzeichen wächst das Präfix bis zur eindeutigen
+Unterscheidung in der Gruppe; Szenenreihenfolge und vollständige Ziel-IDs bleiben
+unverändert. Historische Szenentitel werden nicht umbenannt. Namenlose
 neue Szenen erben weiterhin Ort, Position und Uhr über den vorhandenen Command.
 Ein Split wechselt den Fokus nur nach der bestehenden Lifecycle-Regel.
 
@@ -805,7 +812,13 @@ Die Probe mit45 Figuren prüft gleiche Namen, Auswahl außerhalb des Filters und
 Tastaturfokus. Storefälle prüfen Reopen, Replay, Fremdszenen, Stale-Basis und
 atomaren Rollback im Maskenabgleich. Ein nativer Ablauf übernimmt die Auswahl,
 teilt eine namenlose Szene ab, führt sie über das bestehende Ziel wieder
-zusammen und liest den Zustand nach vollständigem Neustart.
+zusammen und liest den Zustand nach vollständigem Neustart. Eine weitere native
+Probe erzeugt gültige UUIDs mit absichtlich gleichen ersten acht Zeichen und
+drei gleich beschriftete Szenen. Die Auswahl über den eindeutigen Zieltext
+schreibt genau einen bestehenden Movecommand an die passende vollständige ID;
+andere Gruppe, Titel, Uhren, Profile, XP und Rast bleiben erhalten. Ein regulärer
+Appneustart liest denselben Zielzustand. Das ist ein begrenzter Zielauswahlbeleg,
+keine gesamte Partyabnahme und keine Datenmigration.
 
 Offen bleiben Party-Undo/Redo einschließlich100-Schritt-History, vollständige
 Fenstermigration und OS-/200%-Abnahme. Persönliche Loot-/Rosterübergaben sind
