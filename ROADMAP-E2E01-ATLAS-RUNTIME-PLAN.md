@@ -1,6 +1,6 @@
 # Gemeinsamer Atlas: räumlicher und technischer Anschluss
 
-Stand: 11.10.2026. Normative Grundlage ist [ARCHITECTURE](ARCHITECTURE.md),
+Stand: 17.10.2026. Normative Grundlage ist [ARCHITECTURE](ARCHITECTURE.md),
 der vollständige Nutzen steht im [Atlasplan](ROADMAP-HEX-ATLAS.md).
 Diese Datei besitzt Maßstab, Geometrie, räumliche Abfragen und Atlascommands.
 Speicherung/Host/Extensions werden nicht nochmals hier spezifiziert.
@@ -42,14 +42,16 @@ sind lesende Darstellungen dieser Fakten. Empty/Placeholder legt keine Karte an.
 Die Desktopkorrektur in `world-ui.ts`/`hex-map-gestures.ts` verhindert automatische
 Worldwrites durch Kameraereignisse und erhält einen unterbrochenen Strich als
 lokalen Entwurf. [Verhalten und begrenzte Belege](docs/plans/maps/hex-editing.md)
-sind von einer vollständigen gemeinsamen Canvasimplementation getrennt. Desktop
-verwendet `PassiveMapCanvas` gemeinsam für World-/Drawing-SVG und eine weitere
-SVGfläche im Volume-UI; der bestehende
-Hostadapter in `features/atlas` kombiniert Pixi-Renderer, RelativeFrame und
-SpatialCanvas. Diese Wege sind keine gegenseitigen Plattformnachweise und
-begründen keine neue parallele Autoren-/Kamerawahrheit.
+sind lokale Teilbelege. Der gemeinsame Desktopatlas verwendet inzwischen
+`AtlasCanvas` mit Canvas2D; die ursprünglichen World-/Drawing-/Stadt-/Dungeonhosts
+bauen dort keine SVG-Geometrie mehr. `PassiveMapCanvas` bleibt für isolierte
+ältere Adopter erhalten, ebenso die eigene SVGfläche im Volume-UI. Der
+historische Hostadapter in `features/atlas` kombiniert Pixi-Renderer,
+RelativeFrame und SpatialCanvas. Diese Wege sind keine gegenseitigen
+Plattformnachweise und begründen keine neue parallele Autoren-/Kamerawahrheit.
+Der umgesetzte Desktopstand mit Grenzen steht unter „Canvas2D als Atlasdarstellung“.
 
-Nächste ausführbare Anschlüsse in dieser Reihenfolge:
+Für verbleibende Adopter und deren Qualifikation gelten diese Anschlüsse in Reihenfolge:
 
 1. **Passive Eingaben in allen aktuellen Adoptern.** Die vorhandenen
    `drawing-ui.ts`-/`renderer.ts`-Handler gegen mittlere Taste, ausgewählte
