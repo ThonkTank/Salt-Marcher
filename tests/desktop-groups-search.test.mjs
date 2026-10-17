@@ -66,3 +66,14 @@ test('returning after a new location refreshes the current group location choice
   assert.equal(x.el('groups-place').value,'');assert.equal(x.el('groups-notes'),notes);assert.equal(notes.value,'  Unfertige Hinterhalt-Notiz\r\n');assert.equal(x.el('groups-title').value,title);assert.equal(x.views.length,views);assert.ok(x.store.db.serialize().equals(before));
  }finally{x.cleanup();}
 });
+
+test('Unicode group searches retain all pages and validate cursors against the same normalized query',()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'groups-search-unicode-')),{CampaignStore}=require('../.build/groups-search-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite');
+ try{
+  const campaign=store.create('Gruppen mit Umlauten'),w=store.activate(campaign.id);
+  for(let i=0;i<30;i++)store.executeProgress({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action:{kind:'group-create',title:'A\u0308nnes Wölfe '+String(i).padStart(2,'0'),encounterId:null,expectedEncounterRevision:null}});
+  const bytes=store.db.serialize(),first=store.preparedGroups(w.token,'WÖLFE',null);assert.equal(first.items.length,25);assert.ok(first.next);
+  const last=store.preparedGroups(w.token,'ÄNNES',first.next);assert.equal(last.items.length,5);assert.equal(last.next,null);assert.equal(new Set([...first.items,...last.items].map(g=>g.id)).size,30);
+  assert.throws(()=>store.preparedGroups(w.token,'anderer Titel',first.next),/Suchseite veraltet/);assert.ok(store.db.serialize().equals(bytes),'search must preserve group titles, revisions and contents');
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
