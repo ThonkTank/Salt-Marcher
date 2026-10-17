@@ -19,7 +19,7 @@ function transactionFor(input: { readonly files: FileStore; readonly manifestPat
   const journalPath = input.manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal");
   const allowed = (path: string) => {
     if (path === input.manifestPath) return true;
-    const match = /^Kampagnen\/SaltMarcher\/[^/]+\/Weltwissen\/(npc|faction|quest|rumor|rule)\/([^/]+)\.world-note\.json$/.exec(path);
+    const match = /^Kampagnen\/SaltMarcher\/[^/]+\/Weltwissen\/(note|npc|faction|quest|rumor|rule)\/([^/]+)\.world-note\.json$/.exec(path);
     if (!match) return false;
     try { return worldNotePath(input.namespace, match[1] as WorldNoteKind,
       campaignLocalId(match[2]!)) === path; } catch { return false; }

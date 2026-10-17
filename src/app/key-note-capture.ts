@@ -59,7 +59,7 @@ export class KeyNoteCapture {
    if(result.value.more)this.choiceStatus.textContent+=' Weitere Treffer: Namen genauer eingeben.';
    for(const candidate of result.value.entries){
     const button=node('button');button.type='button';button.dataset.noteId=candidate.id;
-    button.append(node('strong',candidate.title),node('span',({npc:'NSC',rumor:'Gerücht',quest:'Quest',faction:'Fraktion',rule:'Regel'})[candidate.kind]),node('span',candidate.preview||'Noch kein GM-Text.'));
+    button.append(node('strong',candidate.title),node('span',({note:'Notiz',npc:'NSC',rumor:'Gerücht',quest:'Quest',faction:'Fraktion',rule:'Regel'})[candidate.kind]),node('span',candidate.preview||'Noch kein GM-Text.'));
     button.onclick=()=>{if(this.pending||this.command||!this.current(epoch)||seq!==this.lookupSequence)return;this.chosen=candidate;this.explicitNew='';this.title.value=candidate.title;this.kind.value=candidate.kind;this.lookupQuery=candidate.title;this.status.textContent='Vorhandene Notiz gewählt. Der bisherige Inhalt bleibt erhalten; deine Eingabe wird unten angehängt.';for(const b of this.existing.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===button));this.controls();this.gm.focus();void this.showUses(candidate,epoch);};
     this.existing.append(button);
    }

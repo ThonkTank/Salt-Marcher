@@ -22,6 +22,7 @@ const label = (text: string, field: HTMLElement) => {
   return l;
 };
 const kinds = {
+  note: "Notiz",
   npc: "NSC",
   faction: "Fraktion",
   quest: "Quest",

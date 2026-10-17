@@ -14,7 +14,7 @@ export function searchNoteChoices(db:any,cam:string,search:string,offset:number)
    if(createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw Error('Prüfsumme');const note=worldNoteDocument(JSON.parse(row.payload));
    if(note.deleted||note.id!==row.id||note.revision!==row.revision)throw Error('Notizzuordnung');
    const preview=noteSearchPreview(row.search_preview,note,marks);
-   return{ref:{kind:'note',id:note.id},revision:note.revision,title:note.title,label:({npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht',rule:'Regelreferenz'})[note.kind],...(preview?{preview}:{})};
+   return{ref:{kind:'note',id:note.id},revision:note.revision,title:note.title,label:({note:'Notiz',npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht',rule:'Regelreferenz'})[note.kind],...(preview?{preview}:{})};
   }catch{damaged++;return{ref:{kind:'note',id:row.id},title:'Notiz nicht lesbar',label:'Quelle prüfen',unavailable:true};}
  });
  return{entries,next:rows.length>40?offset+40:null,...(damaged?{notice:`${damaged} Quellen auf dieser Seite sind beschädigt und können nicht verknüpft werden.`}:{})};
