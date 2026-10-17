@@ -19,7 +19,7 @@ import type {
 import { openWorld, atlasWorldTarget, atlasWorldTravelState,previewAtlasWorldTravel,startAtlasWorldTravel,refreshWorldAfterAtlasTravel } from "./world-ui";
 import type {CanvasBox} from "./passive-map-canvas";
 import {AtlasCanvas} from "./atlas-canvas";
-import {AtlasPaint,atlasPaint,paintFromElement} from "./atlas-canvas-scene";
+import {AtlasPaint,atlasPaint} from "./atlas-canvas-scene";
 import {
   atlasFrame,
   localToAtlas,
@@ -40,9 +40,9 @@ import type {
 } from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames } from "./world-model";
-import { citySvg, posed, roadPoints } from "./city-model";
+import { cityPaint, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
-import { roomPath, elementSvg } from "./drawing-model";
+import { roomPath, elementPaint } from "./drawing-model";
 import { atlasCityPoint, atlasCityState, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
@@ -1168,7 +1168,12 @@ export class CampaignAtlasWorkbench {
   }
   private down(e: PointerEvent) {
     this.ignoreClick=false; // A real press starts a new gesture; delayed drag clicks are consumed by click().
-    if (e.button !== 0 || e.altKey || this.busy || !this.geometryCurrent() || !this.camera.ready) return;
+    if (e.button !== 0 || e.altKey) return;
+    if (this.busy || !this.geometryCurrent() || !this.camera.ready) {
+      // A rejected press owns its release/click, even if the frame finishes meanwhile.
+      this.suppressClick();
+      return;
+    }
     if (this.family === "terrain" && this.data) return;
 
     if (
@@ -1805,11 +1810,8 @@ export class CampaignAtlasWorkbench {
             Math.min(...pts.map((p) => p.y)) <= ymax
           );
         });
-        const doc = new DOMParser().parseFromString(
-          citySvg({ ...shownCity, units: visibleUnits }),
-          "image/svg+xml",
-        );
-        for (const c of Array.from(doc.documentElement.children)) {
+        const cityScene = cityPaint({ ...shownCity, units: visibleUnits });
+        for (const c of cityScene.children) {
           const uid = c.getAttribute("data-city-unit"),
             interior = data.bindings.find(
               (b) => b.parent === "building" && b.parentId === uid,
@@ -1820,7 +1822,7 @@ export class CampaignAtlasWorkbench {
               mpp <= 0.4 ||
               interior.ownerId === this.scopeId)
           ) {
-            for (const p of c.querySelectorAll("polygon")) {
+            for (const p of c.children.filter(child => child.tagName === "polygon")) {
               p.setAttribute("fill", "none");
               p.setAttribute("stroke", "#624337");
               p.setAttribute("stroke-width", String(Math.max(0.15, mpp)));
@@ -1837,7 +1839,7 @@ export class CampaignAtlasWorkbench {
           }
           for (const text of [
             c,
-            ...Array.from(c.querySelectorAll("text")),
+            ...c.children.filter(child => child.tagName === "text"),
           ].filter((n) => n.tagName === "text"))
             text.setAttribute(
               "font-size",
@@ -1845,7 +1847,7 @@ export class CampaignAtlasWorkbench {
                 Math.min(Number(text.getAttribute("font-size")) || 6, 12 * mpp),
               ),
             );
-          g.append(paintFromElement(c));
+          g.append(c);
         }
         for (const u of visibleUnits
           .filter((u) => u.kind !== "node")
@@ -2214,8 +2216,7 @@ export class CampaignAtlasWorkbench {
     for (const e of data.geometry.drawing.elements.filter(
       (e) => e.scopeId === b.ownerId && e.floorId === floor && !e.archived,
     )) {
-      const node = shape("g");
-      node.innerHTML = elementSvg(e, shown, data.geometry.drawing.elements);
+      const node = elementPaint(e, shown, data.geometry.drawing.elements);
       node.dataset.atlasObject='true';node.dataset.kind='element';node.dataset.id=e.id;
       g.append(node);
     }

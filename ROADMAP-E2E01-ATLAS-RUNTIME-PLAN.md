@@ -655,11 +655,17 @@ langen Konturen, vielen Texten/Lichtern, sehr großen Monitoren und 200%.
 bei unzureichender Detailqualität gezieltere Bildkacheln/LOD vergleichen.
 Pixi/WebGL bleibt eine Alternative für GPU-Batching/Layerkomposition;
 OffscreenCanvas für nachgewiesene Zeichenarbeit auf dem UI-Thread. Kein
-vorsorglicher Shader-/Workerunterbau. Bestehende Stadt-/Objektglyphgeneratoren
-werden teilweise noch aus intern erzeugtem SVG-Markup in passive Kommandos
-übersetzt; das SVG wird weder eingebunden noch als Screenshot gerastert.
-Direkte gemeinsame Geometrieemission ist als Folgevereinfachung zu prüfen,
-bevor weitere Glyphfamilien hinzukommen. Ältere isolierte Karten behalten
+vorsorglicher Shader-/Workerunterbau. Stadt-/Objektglyphgeneratoren emittieren
+jetzt direkt passive Geometrie (`cityPaint`, `elementPaint`); auch ausgewählte
+Zeichenobjekte und Zeichenvorschauen benötigen keinen XML-Parser oder
+abgetrennte SVG-Knoten. Die bisherigen SVG-Ausgaben serialisieren dieselbe
+Geometrie; Attribute und Texte werden erst am Ausgaberand maskiert. Ein
+festgehaltener Vergleich mit den vorherigen Generatoren prüft alle vorhandenen
+Symbolfamilien, Türzustände, Objektvarianten und Stadtlayer. Native Atlasproben
+lesen die veröffentlichte Canvasfläche und Kamera statt entfernter SVG-Knoten.
+Während Speichern/Framevorbereitung abgewiesene Pointergesten dürfen beim
+späteren Loslassen keine neue Objektauswahl auslösen.
+Ältere isolierte Karten behalten
 vorläufig ihren SVG-Host; eine gemeinsame Kamerabasis erst im nächsten echten
 Anschluss konsolidieren. SVG-/PNG-/JPEG-Ausgaben und die öffentliche Whitelist
 bleiben eigenständige, getestete Ausgabewege. Keine Datenformatmigration,
