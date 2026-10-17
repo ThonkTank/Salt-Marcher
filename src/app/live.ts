@@ -167,7 +167,12 @@ async function ensureLiveRuntime() {
   const current=()=>context?.token===token&&(sceneId===null||data?.scene?.id===sceneId);
   if (!(await flushLive())||!current()) return false;
   if (!data) {await openLive();if(!current())return false;} if (!data) return false;
-  if (!data.scene) {if(!await execute({kind:'initialize',expectedRosterRevision:data.rosterRevision})||!current())return false;}
+  if (!data.scene) {
+    if(!await execute({kind:'initialize',expectedRosterRevision:data.rosterRevision})||!current())return false;
+    // Initialization receipts contain the scene, but not the complete group/focus
+    // projection. Read it before any follow-up intent uses that new runtime.
+    await openLive();if(!current())return false;
+  }
   resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();return !!data.scene;
 }
 export async function openLiveSoundboard(){

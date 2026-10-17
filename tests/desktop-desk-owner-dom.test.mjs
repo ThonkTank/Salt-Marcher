@@ -120,3 +120,13 @@ test('lost quick creation reply keeps exact command, checks receipt and does not
  window.campaign.reconcilePreparationContent=async(c,token)=>{checked=c;assert.equal(token,'alpha');return ok({outcome:'applied',targetChanged:false});};x.el('desk-create-check').onclick();await until(()=>x.el('desk-create-status').textContent.includes('angelegt und'));
  assert.deepEqual(checked,saved.command);assert.equal(sent,1);assert.equal(x.el('desk-new-title').value,'');assert.equal(x.el('desk-create-check').hidden,true);
 });
+
+test('a flush waits for its scene draft read and cannot continue in a replacement context',async t=>{
+ const x=fixture(t),held=deferred(),original=window.campaign.sceneCreationDraft;
+ window.campaign.sceneCreationDraft=async(token,id)=>token==='alpha'?held.promise:original(token,id);
+ x.activate('alpha');let finished=false;const flush=x.ui.flushSceneDesk().then(ok=>{finished=true;return ok;});
+ await tick();assert.equal(finished,false);
+ x.activate('beta');await until(()=>x.title()?.value==='beta');x.edit('Beta remains mine');
+ held.resolve(ok(null));assert.equal(await flush,false);assert.equal(x.title().value,'Beta remains mine');assert.equal(x.changes.length,0);
+ assert.equal(await x.ui.flushSceneDesk(),true);assert.equal(x.changes.at(-1).campaignId,'beta');
+});
