@@ -149,7 +149,7 @@ export class LandscapeWorkbench {
     html("land-finish").onclick = () =>
       void this.finish().catch((e) => this.host.error(e));
     html("land-cancel").onclick = () => this.cancel();
-    html("land-reload").onclick = () => void (this.host.refresh?this.host.refresh():this.load(this.host.box(),true));
+    html("land-reload").onclick = () => void (async()=>{await (this.host.refresh?this.host.refresh():this.load(this.host.box(),true));if(this.selected?.assetId&&!this.assets.has(this.selected.assetId))await this.selectId(this.selected.id);})().catch(e=>this.host.error(e));
     html("land-reference").onclick = () =>
       void this.importReference().catch((e) => this.host.error(e));
     html("land-grid").onchange = () => this.host.redraw();
@@ -410,14 +410,14 @@ export class LandscapeWorkbench {
       if(!force&&this.key===frameKey&&this.publishedLayer===layer)return;this.key=frameKey;this.publishedLayer=layer;
       this.request++;const generation=this.request;
       this.records=layer.records;this.raster=layer.tiles;html('land-reload').hidden=layer.state==='ready';
-      this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt; Vorlagen sind als Umrisse dargestellt.':'Landschaft geladen.');
+      this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Vorlagen sind als Umrisse dargestellt.':''):'Landschaft geladen.');
       this.objectOptions();this.host.redraw();
       const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));
       for(const id of this.assets.keys())if(!visibleAssets.has(id)&&id!==this.calibration?.record.assetId)this.assets.delete(id);
       for(const r of this.records)if(r.assetId&&r.visible!==false&&!this.assets.has(r.assetId)){
         const result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);
         if(token!==this.token||generation!==this.request||this.host.data()?.region?.fence!==data.region?.fence)return;
-        if(result.ok)this.rememberAsset(r.assetId,result.value);else this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');
+        if(result.ok)this.rememberAsset(r.assetId,result.value);else {html('land-reload').hidden=false;this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');}
         this.host.redraw();
       }
       return;
@@ -820,7 +820,7 @@ export class LandscapeWorkbench {
     }
     if(record.assetId&&!this.assets.has(record.assetId)){
       const image=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,record.assetId,1024):await window.campaign.referenceAsset(token,record.assetId);
-      if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.rememberAsset(record.assetId,image.value);else this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');
+      if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.rememberAsset(record.assetId,image.value);else {html('land-reload').hidden=false;this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');}
     }
     this.inspector();
     this.host.redraw();
@@ -1033,6 +1033,7 @@ export class LandscapeWorkbench {
     if (token !== this.token) return;
     if (!result.ok) throw new Error(result.error);
     if (!result.value) return;
+    await this.host.refresh?.();if(token!==this.token)return;
     const a = result.value,
       b = this.host.box(),
       r = emptyRecord("reference");

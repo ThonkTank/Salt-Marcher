@@ -48,14 +48,14 @@ export class AtlasLandscapeReader {
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number):AtlasLandscapeLayer{
   const layer:AtlasLandscapeLayer={state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
-  let used=0,dense=false;
+  let used=0,dense=false,referenceBytes=0;const references:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false)){
    if(q.references===false&&r.kind==='reference')continue;
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
-   const record=visual(r),size=Buffer.byteLength(JSON.stringify(record));
+   const record=visual(r),size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
    if(layer.coverage.objects>500||layer.coverage.references>16||used+size>Math.min(512*1024,budget/3)){dense=true;layer.records=[];}else if(!dense){used+=size;layer.records.push(record);}
   }
-  layer.coverage.mode=dense?'raster':'detail';
+  layer.coverage.mode=dense?'raster':'detail';const exactReferences=layer.coverage.references<=16&&referenceBytes<=128*1024;if(dense)layer.records=exactReferences?references:[];
   if(!dense&&!this.sql("SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')='patch' AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? LIMIT 1").get(source.campaignId,q.box.x,q.box.x+q.box.width,q.box.y,q.box.y+q.box.height))return layer;
   // At most four world-aligned tiles; a smaller detail level is explicit display aggregation.
   let edge=2**Math.ceil(Math.log2(Math.max(q.box.width,q.box.height)));
@@ -65,7 +65,7 @@ export class AtlasLandscapeReader {
   for(let pixels=256;pixels>=16;pixels/=2){
    layer.tiles=[];
    for(const box of regions){
-    const key=JSON.stringify([source.campaignId,box,pixels,dense,dense?q.box.width/q.width:0,q.references!==false]),hit=this.cache.get(key);
+    const key=JSON.stringify([source.campaignId,box,pixels,dense,dense?q.box.width/q.width:0,q.references!==false,exactReferences]),hit=this.cache.get(key);
     let json=hit?.json;
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
@@ -73,7 +73,7 @@ export class AtlasLandscapeReader {
      if(dense)for(const r of this.rows(source,box,false)){
       if(r.kind==='road'||r.kind==='river')image.paintLine(r.points,Math.max(r.width,q.box.width/q.width*2),r.kind==='river'?'#629ebc':'#a37e51');
       else if(r.kind==='place')image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
-      else if(r.kind==='reference'&&q.references!==false){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
+      else if(r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
      }
      const data=PNG.sync.write({width:pixels,height:pixels,data:Buffer.from(image.finish())} as PNG).toString('base64');
      json=JSON.stringify({campaignId:source.campaignId,revision:source.revision,box,width:pixels,height:pixels,data:'data:image/png;base64,'+data});
