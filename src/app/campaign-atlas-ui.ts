@@ -43,7 +43,7 @@ import { terrainNames, cellAt } from "./world-model";
 import { citySvg, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
 import { roomPath, elementSvg, inside } from "./drawing-model";
-import { atlasCityPoint, atlasCityState, updateCityInteriors, atlasCityPlacementActive, atlasCityPlacementKey, openCityReference } from "./city-ui";
+import { atlasCityPoint, atlasCityState, updateCityInteriors, atlasCityPlacementActive, atlasCityPlacementKey, atlasCityShapeHandles, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
   atlasDrawingRectangle,
@@ -2054,6 +2054,7 @@ export class CampaignAtlasWorkbench {
         if(preview&&preview.token===this.owner?.token&&preview.view.header.id===citySaved.header.id&&preview.placement){
           const origin=shape('polygon',{points:posed(preview.placement.original).map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:'#176c74','stroke-width':String(Math.max(.4,mpp*1.5)),'stroke-dasharray':`${mpp*5} ${mpp*4}`,'pointer-events':'none'});origin.dataset.cityPlacementOrigin=preview.placement.original.id;g.append(origin);
         }
+        if(!this.groupView&&this.family==='city'&&preview?.view.header.id===city.header.id)atlasCityShapeHandles(g as SVGGElement,mpp);
         root.append(g);
       }
       if(!get<HTMLInputElement>('atlas-perception').checked)for(const place of data.places){

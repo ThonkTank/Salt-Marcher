@@ -915,3 +915,30 @@ test('leaving the Atlas does not report its deliberately cancelled background re
   assert.equal(s.atlas.root.hidden,true);assert.equal(x.messages.slice(previous).filter(m=>m.error).length,0);assert.doesNotMatch(x.document.getElementById('atlas-save-status').textContent,/abgebrochen/);
  }finally{release?.({ok:false,error:'cancelled'});await s.close();}
 });
+
+test('city shape handles preview, cancel, save and undo through the canonical Atlas writer',async()=>{
+ const x=await setup();
+ try{
+  const road=x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.kind==='road'),house=structuredClone(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one));
+  x.document.querySelector('[data-city-unit="'+road.id+'"]').dispatchEvent(new x.window.Event('click',{bubbles:true}));await until(()=>x.document.getElementById('city-unit-name').value==='Main street');
+  x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());assert.equal(await x.ui.flushCity(),false);
+  const handles=x.document.querySelectorAll('#city-map [data-city-shape-handle]');assert.equal(handles.length,3);handles[1].dispatchEvent(new x.window.Event('click',{bubbles:true}));await x.ui.atlasCityPoint({x:120,y:140});assert.equal(x.writes.length,0);assert.match(x.document.querySelector('#city-map [data-city-unit="'+road.id+'"]').getAttribute('points'),/120,140/);
+  x.click('city-shape-cancel');assert.equal(x.ui.atlasCityPlacementActive(),false);assert.deepEqual(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===road.id).via,[]);
+  x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());x.document.querySelector('#city-map [data-city-shape-insert]').dispatchEvent(new x.window.Event('click',{bubbles:true}));await x.ui.atlasCityPoint({x:120,y:145});x.click('city-shape-accept');await until(()=>!x.ui.atlasCityPlacementActive());
+  const saved=x.store.city(x.current().token,x.cityIds.one);assert.deepEqual(saved.units.find(u=>u.id===road.id).via,[{x:120,y:145}]);assert.deepEqual(saved.units.find(u=>u.id===house.id),house);assert.equal(x.writes.length,1);
+  x.click('city-undo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===road.id).via.length===0);
+ }finally{await x.cleanup();}
+});
+
+test('bounded shape save recovers a lost receipt and keeps an explicit rejection cancellable',async()=>{
+ const x=await setup();
+ try{
+  const road=x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.kind==='road');
+  await x.ui.openCityReference(x.cityIds.one,road.id,true);x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());await x.ui.atlasCityPoint({x:5,y:130});
+  const send=x.window.campaign.executeAtlasCommit,calls=[];let first=true;
+  x.window.campaign.executeAtlasCommit=async command=>{calls.push(structuredClone(command));const result=await send(command);if(first){first=false;throw new Error('Lost receipt');}return result;};
+  x.click('city-shape-accept');await until(()=>/nicht bestätigt/.test(x.document.getElementById('city-shape-status').textContent));assert.equal(x.document.getElementById('city-shape-cancel').disabled,true);x.click('city-shape-accept');await until(()=>!x.ui.atlasCityPlacementActive());assert.deepEqual(calls[0],calls[1]);
+  const saved=x.store.city(x.current().token,x.cityIds.one);assert.equal(saved.header.revision,3);assert.deepEqual(saved.units.find(u=>u.id===road.nodeIds[0]).point,{x:5,y:130});
+  x.window.campaign.executeAtlasCommit=async()=>({ok:false,error:'Invalid polygon'});x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());await x.ui.atlasCityPoint({x:7,y:130});x.click('city-shape-accept');await until(()=>/Invalid polygon/.test(x.document.getElementById('city-shape-status').textContent));assert.equal(x.document.getElementById('city-shape-cancel').disabled,false);x.click('city-shape-cancel');assert.equal(x.ui.atlasCityPlacementActive(),false);
+ }finally{await x.cleanup();}
+});

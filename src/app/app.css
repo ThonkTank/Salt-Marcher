@@ -926,3 +926,6 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 .note-merge-dialog>label{display:block;margin-block:12px}
 .note-merge-dialog textarea,.note-merge-dialog select{width:100%}
 .note-merge-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;border:1px solid #b8c8dd}
+
+/* Keep search results still when the asynchronous scale read arrives. */
+#atlas-scale{flex:0 0 8.5rem;min-height:1.5em;white-space:nowrap;font-variant-numeric:tabular-nums}
