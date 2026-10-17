@@ -7,7 +7,7 @@ import {atlasLocationWrite} from "./campaign-atlas-author";
 import {atlasRegionSVG} from "./atlas-region-export";
 import {LandscapeWorkbench} from "./atlas-landscape-ui";
 import {earthView} from "./atlas-landscape";
-import { appendRoomNumber } from "./room-number-label";
+import {appendAtlasRoomLabels} from "./atlas-room-labels";
 import { atlasPNG, publicAtlasSVG } from "./campaign-atlas-export";
 import { journeyPlayback } from "./journey-playback";
 import { atlasPartyPoint,atlasWorldRoute } from "./atlas-runtime-model";
@@ -2149,7 +2149,7 @@ export class CampaignAtlasWorkbench {
         const rasters=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,(part,w,h)=>window.campaign.landscapeRaster(owner.token,part,w,h,'export'),()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Bild wird vorbereitet: ${done}/${total}`;});
         const assets=new Map(this.landscape.assets);
         if(get<HTMLInputElement>("atlas-export-reference").checked)for(const r of region.value.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAsset(owner.token,r.assetId);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
-        svg=atlasRegionSVG(snapshot,region.value.records,box,width,assets,{rasters,grid:get<HTMLInputElement>("atlas-export-grid").checked,level:Number(get<HTMLSelectElement>("atlas-hex-level").value),references:get<HTMLInputElement>("atlas-export-reference").checked,floorId:this.floorId,roofs:get<HTMLInputElement>("atlas-roofs").checked});
+        svg=atlasRegionSVG(snapshot,region.value.records,box,width,assets,{rasters,grid:get<HTMLInputElement>("atlas-export-grid").checked,level:Number(get<HTMLSelectElement>("atlas-hex-level").value),references:get<HTMLInputElement>("atlas-export-reference").checked,floorId:this.floorId,roofs:get<HTMLInputElement>("atlas-roofs").checked,scopeId:["interior","decoration"].includes(this.family)?this.scopeId:null,labelUnitsPerPixel:box.width/Math.max(1,this.svg.clientWidth)});
       }
       const bytes = await atlasPNG(svg, width, height,format);
       if (this.owner !== owner || this.exportCancelled) return;
@@ -2313,23 +2313,7 @@ export class CampaignAtlasWorkbench {
       path.dataset.kind = "room";
       path.dataset.id = room.id;
       g.append(path);
-      appendRoomNumber(labels, room, mpp, point => {const at=localToAtlas(point,f);return {x:at.x-box.x,y:at.y-box.y};});
-      const vertices = room.polygons[0]!.outer;
-      if (
-        (Math.max(...vertices.map((p) => p.x)) -
-          Math.min(...vertices.map((p) => p.x))) /
-          mpp >
-        60
-      )
-        this.label(
-          labels,
-          room.name.slice(0, 40),
-          this.relativePoint(localToAtlas({
-            x: vertices.reduce((n, p) => n + p.x, 0) / vertices.length,
-            y: vertices.reduce((n, p) => n + p.y, 0) / vertices.length,
-          }, f)),
-          mpp,
-        );
+      appendAtlasRoomLabels(labels,room,mpp,point=>{const at=localToAtlas(point,f);return {x:at.x-box.x,y:at.y-box.y};});
       if (
         this.selection?.kind === "room" &&
         this.selection.id === room.id &&

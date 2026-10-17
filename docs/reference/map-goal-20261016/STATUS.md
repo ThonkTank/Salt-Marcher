@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `881a56d5da421d4aa89ce50fdd53b35cbe8ef86b`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues only through the 90-minute heartbeat; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `53c75af70`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -44,6 +44,6 @@ The new integrated search case edits prose without changing section IDs, finds a
 
 ## Open acceptance
 
-The browser surface loads the product and the five synthetic QA campaigns. Supported input on “Fortsetzen” has not changed the chooser. Read-only DOM inspection found an enabled button, normal pointer events and the button itself at its center; this does not identify an application defect. No native save dialog was confirmed. Native app control is unavailable in this task. A fresh Dungeon Scrawl tab also loaded its real UI but could not dismiss its startup dialog: the locator action timed out before command dispatch and the documented accessibility click produced no visible change. This is evidence of an input problem across the two surfaces, not a completed competitor workflow.
+The global browser input blocker is repaired. A native Electron confirmation from another comparator page had intercepted input outside the individual tab DOM/AX views; cancellation restored real trusted clicks. The actual tavern interior task now reaches two rooms, a bound door, house return, fresh-host reopening and a PNG export. Dungeon Scrawl was actually used to draw and export the same two-room floorplan. The observed false room count/opening action and broken GM export labels were corrected and visibly rechecked. [Workflow, limits and before/after artifacts](INPUT-REPAIR-20261017.md).
 
-The complete visible task above, its usable comparator counterpart, fresh-host persistence and actual live/public handout inspection remain open. The isolated native package at `727ce64b` is an older technical preview and does not contain the current navigation or room-read integration. Packaging, native UI qualification, comparison and owner acceptance remain separate claims. The draft is not promoted to Main on technical tests alone; promotion requires linear integration and its exact-SHA CI.
+Editable save/fresh reopen in Dungeon Scrawl, the complete region/city counterpart, actual live party travel and fresh public/player handout checks remain open. The isolated native package at `727ce64b` is an older technical preview. Packaging, native UI qualification, comparison and owner acceptance remain separate claims. The draft is not promoted to Main on technical tests alone; promotion requires linear integration and its exact-SHA CI.

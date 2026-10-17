@@ -8,7 +8,7 @@ import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML,DOMParser} from 'linkedom';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/city-dom-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-buildSync({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG} from './src/app/campaign-atlas-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG} from './src/app/campaign-atlas-export'; export {atlasRegionSVG} from './src/app/atlas-region-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 for(const [name,entry] of [['service','desktop/room-directory.ts'],['worker','desktop/room-directory-worker.ts']])buildSync({entryPoints:[entry],outfile:'.build/city-dom-directory-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['src/app/landscape-raster.ts'],outfile:'.build/city-dom-raster.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/city-dom-store.cjs'),tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -418,7 +418,9 @@ test('house inspector counts canonical rooms and opens the same interior after r
   await s.activate('Alpha');await s.atlas.open();await s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);await settle();
   assert.equal(get('city-interior-status').textContent,'Innenraum angelegt · 2 Räume');
   x.click('city-interior');await until(()=>s.atlas.family==='interior');assert.equal(s.atlas.scopeId,scope);
-  await returnHome();await s.atlas.navigate('city',x.cityIds.two,x.unitIds.two);await settle();
+  await returnHome();
+  x.store.executeAtlas({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.two,parent:'world',parentId:null,x:1500,y:2000,angle:0,revision:0},expectedRevision:null}});
+  await s.atlas.refresh();await s.atlas.navigate('city',x.cityIds.two,x.unitIds.two);await settle();
   assert.equal(get('city-interior-status').textContent,'Innenraum noch nicht angelegt.');assert.equal(get('city-interior').textContent,'Innenraum anlegen');
   x.click('city-interior');await until(()=>s.atlas.family==='interior');assert.notEqual(s.atlas.scopeId,scope);
   x.click('atlas-interior-house');await until(()=>s.atlas.family==='city');await settle();assert.equal(get('city-interior-status').textContent,'Innenraum angelegt · 0 Räume');
@@ -549,6 +551,15 @@ test('rotated house room labels remain on the screen axes at projected room posi
   const projected={x:frame.x-center.y,y:frame.y+center.x};
   assert.ok(Math.abs(Number(number.getAttribute('x'))-(projected.x-Number(s.svg.dataset.atlasOriginX)))<1e-7);
   assert.ok(Math.abs(Number(number.getAttribute('y'))-(projected.y-Number(s.svg.dataset.atlasOriginY)))<1e-7);
+  const box={x:frame.x-15,y:frame.y-15,width:30,height:30},mpp=box.width/2048,atlas=x.store.campaignAtlas(x.current().token),options={grid:false,level:0,references:false,floorId:'ground',roofs:false,scopeId:room.scopeId,labelUnitsPerPixel:box.width/660};
+  const exported=x.ui.atlasRegionSVG(atlas,[],box,2048,new Map(),options),exportLabels=exported.querySelector('[data-atlas-room-labels="'+room.scopeId+'"]'),exportName=exportLabels.querySelector('[data-room-name]'),exportNumber=exportLabels.querySelector('[data-room-number]');
+  assert.equal(exportLabels.getAttribute('transform'),null);assert.equal(exportName.textContent,'Taproom');assert.equal(Number(exportName.getAttribute('font-size')),12*options.labelUnitsPerPixel);
+  assert.ok(Math.abs(Number(exportNumber.getAttribute('x'))-(projected.x-box.x))<1e-7);assert.ok(Math.abs(Number(exportNumber.getAttribute('y'))-(projected.y-box.y))<1e-7);
+  assert.equal(exported.querySelector('[data-city-unit="'+u.id+'"]').querySelector('text'),null);
+  const cityExport=x.ui.atlasRegionSVG(atlas,[],box,2048,new Map(),{...options,scopeId:null,roofs:true});
+  const caption=cityExport.querySelector('[data-city-unit="'+u.id+'"]').querySelector('text');assert.equal(caption.textContent,u.name);assert.ok(Number(caption.getAttribute('font-size'))<=12*options.labelUnitsPerPixel);
+  assert.equal(cityExport.querySelector('[data-atlas-room-labels="'+room.scopeId+'"]'),null);
+
  }finally{await s.close();}
 });
 
