@@ -864,8 +864,8 @@ test('late infill acceptance preserves a newer recipe draft while storing only t
   x.click('city-generate');await settle();await x.drain();
   const send=x.window.campaign.executeCity;x.window.campaign.executeCity=async command=>{const result=await send(command);return new Promise(resolve=>{release=()=>resolve(result);});};
   x.click('city-preview-accept');await until(()=>!!release);
-  get('city-density').value='0.2';get('city-density').onchange();release();
-  await until(()=>get('city-preview').hidden);assert.equal(get('city-density').value,'0.2','later input remains available for the next proposal');
+  get('city-density').value='0.2';get('city-density').onchange();const revision=x.ui.atlasCityState().view.header.revision;release();
+  await until(()=>x.ui.atlasCityState().view.header.revision>revision);assert.equal(get('city-density').value,'0.2','later input remains available for the next proposal');
   assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.kind==='district').infill.density,.65);
   await x.activate('Alpha');assert.equal(get('city-density').value,'0.65','fresh activation reads the actually accepted recipe');
  }finally{release?.();await x.cleanup();}
