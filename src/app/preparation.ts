@@ -6,6 +6,8 @@ import {hasPendingCommit} from './commit-confirmation';
 import {NoteRoomUses} from './note-room-uses';
 import {chooseTextReference} from './text-reference-picker';
 import {rawTextOffset} from './text-references';
+import {appendNoteExcerpt} from './note-excerpt';
+import {normalizedNoteTitle,type KeyNoteChoices} from './key-note-capture-contracts';
 import {preserveLiteralEdit} from './literal-text-edit';
 import {showNarrative,flushNarrative,prepareNarrativeLocation} from './narrative-ui';
 import type { WorkspaceGeometry, Result } from './contracts';
@@ -41,8 +43,56 @@ function usePreparation(next: Preparation, filtered = false) {
 const noteRow = (id: string | null) => id ? campaignNotes.get(id) : undefined;
 let noteDraft: Note | null = null, planDraft: ManualPlan | null = null;
 let excerptField:'readAloud'|'gmNotes'|null=null;
-let excerpt:{source:import('./preparation-contracts').NoteExcerptSource;text:string;token:string;load:number}|null=null;
-let excerptBusy=false;
+let excerpt:{source:import('./preparation-contracts').NoteExcerptSource;original:Note;text:string;token:string;load:number}|null=null;
+let excerptBusy=false,excerptComposing=false;
+let excerptChosen:Note|null=null,excerptExplicitNew=false,excerptLookup=0,excerptReading=false;
+let excerptChoices:KeyNoteChoices={entries:[],more:false};
+function excerptCurrent(input:NonNullable<typeof excerpt>){return excerpt===input&&context?.token===input.token&&preparationLoad===input.load&&selectedNote===input.source.id;}
+function excerptControls(){
+ const chosen=excerptChosen;
+ get<HTMLInputElement>('note-excerpt-title').readOnly=!!chosen;
+ get<HTMLSelectElement>('note-excerpt-kind').disabled=!!chosen;
+ get<HTMLButtonElement>('note-excerpt-new').hidden=!chosen&&!excerptChoices.entries.length;
+ get<HTMLButtonElement>('note-excerpt-save').disabled=excerptReading;
+ for(const button of get('note-excerpt-choices').querySelectorAll('button'))button.disabled=excerptReading;
+ get('note-excerpt-save').textContent=chosen?'An vorhandene Notiz anhängen':'Notiz mit Herkunft anlegen';
+ get('note-excerpt-text-label').textContent=chosen?'Wird am bisherigen Text angehängt':'Markierter Originaltext';
+ get('note-excerpt-existing').hidden=!chosen;
+ get('note-excerpt-existing-text').textContent=chosen?(chosen[excerpt!.source.field]||'Noch kein Text in diesem Feld.') :'';
+ if(excerpt)get<HTMLTextAreaElement>('note-excerpt-text').value=chosen?appendNoteExcerpt({...chosen,readAloud:'',gmNotes:''},excerpt.original,excerpt.source.field,excerpt.text)[excerpt.source.field]:excerpt.text;
+}
+async function lookupExcerpt(){
+ const input=excerpt,query=value('note-excerpt-title'),seq=++excerptLookup;
+ excerptChosen=null;excerptExplicitNew=false;excerptReading=false;excerptChoices={entries:[],more:false};get('note-excerpt-choices').replaceChildren();excerptControls();
+ if(!input||!query.trim()){get('note-excerpt-choices-status').textContent='Name eingeben, um vorhandene Originalnotizen zu finden.';return true;}
+ get('note-excerpt-choices-status').textContent='Vorhandene Originalnotizen werden gesucht…';
+ const current=()=>excerptCurrent(input)&&seq===excerptLookup&&query===value('note-excerpt-title');
+ try{
+  const choices=unwrap(await window.campaign.keyNoteChoices(input.token,query));if(!current())return false;
+  excerptChoices=choices;
+  get('note-excerpt-choices-status').textContent=choices.notice??(excerptChoices.entries.length?'Vorhandenes Original wählen oder ausdrücklich eine eigenständige neue Notiz anlegen.':'Keine passende vorhandene Notiz.');
+  if(choices.more)get('note-excerpt-choices-status').append(' Weitere Treffer: Namen genauer eingeben.');
+  for(const candidate of excerptChoices.entries){
+   if(candidate.id===input.source.id)continue;
+   const button=document.createElement('button');button.type='button';button.dataset.noteId=candidate.id;
+   button.textContent=candidate.title+' · '+({note:'Notiz',npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht',rule:'Regelreferenz'})[candidate.kind]+(candidate.preview?' · '+candidate.preview:'');
+   button.onclick=()=>{void(async()=>{
+    if(excerptBusy||excerptReading||!current())return;excerptReading=true;excerptControls();
+    try{
+     const [directory,pendingDraft]=await Promise.all([window.campaign.preparation(input.token,''),window.campaign.preparationDraft(input.token,'note',candidate.id)]);
+     const row=unwrap(directory).notes.find(r=>r.note.id===candidate.id),draft=unwrap(pendingDraft);
+     if(!current())return;
+     if(!row||row.trashed||row.note.revision!==candidate.revision)throw Error('Original wurde geändert. Namen erneut eingeben und Auswahl prüfen.');
+     if(draft||retained.get(draftKey('note',candidate.id))||draftProblems.has(draftKey('note',candidate.id)))throw Error('Dieses Original hat einen offenen Arbeitsentwurf. Erst im Originaleditor aufklären.');
+     excerptChosen=structuredClone(row.note);get<HTMLInputElement>('note-excerpt-title').value=row.note.title;get<HTMLSelectElement>('note-excerpt-kind').value=row.note.kind;
+     get('note-excerpt-choices').replaceChildren();get('note-excerpt-choices-status').textContent='Vorhandenes Original: '+row.note.title+' · frühere Texte und Verwendungen bleiben erhalten.';
+    }catch(error){if(current())get('note-excerpt-choices-status').textContent=(error as Error).message;}
+    finally{if(excerptCurrent(input)&&seq===excerptLookup){excerptReading=false;excerptControls();}}
+   })();};get('note-excerpt-choices').append(button);
+  }
+  excerptControls();return true;
+ }catch(error){if(current())get('note-excerpt-choices-status').textContent='Suche fehlgeschlagen: '+(error as Error).message;return false;}
+}
 let selectedNote: string | null = null, selectedPlan: string | null = null, selectedScene: string | null = null;
 let selectedLocation: string | null = null, locationDraft: LocationRow | null = null;
 let openMap: (scopeId: string) => Promise<void>;
@@ -509,28 +559,40 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     const token=context?.token,load=preparationLoad,edit=preparationInputVersion;
     if(!await flushPreparation()||context?.token!==token||preparationLoad!==load||selectedNote!==before.id||preparationInputVersion!==edit)return;
     const source=originalNote();if(!source||source[field].slice(start,end)!==text)return;
-    excerpt={source:{id:source.id,revision:source.revision,field,start,end},text,token:token!,load};
+    excerpt={source:{id:source.id,revision:source.revision,field,start,end},original:source,text,token:token!,load};
     get('note-excerpt-origin').textContent='Quelle: '+source.title+' · '+(field==='gmNotes'?'privater GM-Text':'Text zum Vorlesen');
     get<HTMLInputElement>('note-excerpt-title').value='';get<HTMLTextAreaElement>('note-excerpt-text').value=text;
+    excerptComposing=false;get<HTMLDetailsElement>('note-excerpt-existing').open=false;void lookupExcerpt();
     get<HTMLDialogElement>('note-excerpt-dialog').showModal();get('note-excerpt-title').focus();
   })();};
   get('note-excerpt-cancel').onclick=()=>{if(!excerptBusy){get<HTMLDialogElement>('note-excerpt-dialog').close();excerpt=null;}};
   get('note-excerpt-dialog').addEventListener('cancel',event=>{if(excerptBusy)event.preventDefault();else excerpt=null;});
+  get('note-excerpt-title').oninput=()=>{if(!excerptBusy)void lookupExcerpt();};
+  get('note-excerpt-form').addEventListener('compositionstart',()=>{excerptComposing=true;});
+  get('note-excerpt-form').addEventListener('compositionend',()=>{excerptComposing=false;});
+  get('note-excerpt-new').onclick=()=>{if(excerptBusy||excerptReading)return;excerptChosen=null;excerptExplicitNew=true;get('note-excerpt-choices-status').textContent='Eigenständige neue Notiz gewählt. Vorhandene Originale bleiben getrennt.';excerptControls();};
   get('note-excerpt-form').onsubmit=event=>{event.preventDefault();void(async()=>{
-    const input=excerpt;if(!input||excerptBusy||blocked||!value('note-excerpt-title').trim())return;
-    const current=()=>excerpt===input&&context?.token===input.token&&preparationLoad===input.load&&selectedNote===input.source.id;
+    const input=excerpt;if(!input||excerptBusy||excerptReading||excerptComposing||blocked||!value('note-excerpt-title').trim())return;
+    const current=()=>excerptCurrent(input);
     if(!current())return;excerptBusy=true;get('note-excerpt-form').inert=true;
-    const note:Note={version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,kind:value('note-excerpt-kind') as Note['kind'],title:value('note-excerpt-title'),readAloud:input.source.field==='readAloud'?input.text:'',gmNotes:input.source.field==='gmNotes'?input.text:'',relations:[{targetId:campaignLocalId(input.source.id),label:'Quelle'}],creatureId:null,deleted:false};
     try{
-      const saved=await change({kind:'note',expectedRevision:null,note,excerpt:input.source},false,current);
+      if(!excerptChosen){
+        const title=value('note-excerpt-title'),explicit=excerptExplicitNew;
+        if(!await lookupExcerpt()||!current()||title!==value('note-excerpt-title'))return;
+        excerptExplicitNew=explicit;
+        if(!explicit&&excerptChoices.entries.some(n=>normalizedNoteTitle(n.title)===normalizedNoteTitle(title))){get('note-excerpt-choices-status').textContent='Diesen Namen gibt es bereits. Original wählen oder ausdrücklich eigenständig neu anlegen.';return;}
+      }
+      const chosen=excerptChosen;
+      const note:Note=chosen?appendNoteExcerpt(chosen,input.original,input.source.field,input.text):{version:1,id:campaignLocalId(crypto.randomUUID()),revision:1,kind:value('note-excerpt-kind') as Note['kind'],title:value('note-excerpt-title'),readAloud:input.source.field==='readAloud'?input.text:'',gmNotes:input.source.field==='gmNotes'?input.text:'',relations:[{targetId:campaignLocalId(input.source.id),label:'Quelle'}],creatureId:null,deleted:false};
+      const saved=await change({kind:'note',expectedRevision:chosen?.revision??null,note,excerpt:{...input.source,...(excerptExplicitNew?{allowSameTitle:true}:{})}},false,current);
       if(!current())return;
       // An unconfirmed request is resolved through the existing preparation
       // controls, outside the modal. Never resend it automatically.
       get<HTMLDialogElement>('note-excerpt-dialog').close();excerpt=null;
       if(!saved)return;
       noteDraft=structuredClone(originalNote()!);renderNoteList();renderRelations();
-      const status=get('note-excerpt-status');status.replaceChildren(document.createTextNode('„'+note.title+'“ angelegt · Herkunft und Auszug verknüpft. '));
-      const open=document.createElement('button');open.type='button';open.textContent='Neue Notiz öffnen';open.onclick=()=>{if(context?.token===input.token)void openPreparedNote(note.id);};status.append(open);
+      const status=get('note-excerpt-status');status.replaceChildren(document.createTextNode('„'+note.title+'“ '+(chosen?'ergänzt':'angelegt')+' · Herkunft und Auszug verknüpft. '));
+      const open=document.createElement('button');open.type='button';open.textContent=chosen?'Originalnotiz öffnen':'Neue Notiz öffnen';open.onclick=()=>{if(context?.token===input.token)void openPreparedNote(note.id);};status.append(open);
       const area=get<HTMLTextAreaElement>(input.source.field==='gmNotes'?'note-gm':'note-read-aloud');area.focus();const end=noteDraft[input.source.field].slice(0,input.source.end).replace(/\r\n?/g,'\n').length;area.setSelectionRange(end,end);
     }finally{excerptBusy=false;get('note-excerpt-form').inert=false;}
   })();};
@@ -613,16 +675,28 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
       if (result.targetChanged || result.outcome === 'conflict') {
         tell(result.outcome === 'applied' ? 'Speicherung bestätigt, aber der aktuelle Vorbereitungsstand ist verändert oder nicht verlässlich lesbar. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.' : 'Vorbereitungskonflikt bestätigt. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.', true); return;
       }
+      const sourceBefore=command.change.kind==='note'&&command.change.excerpt?noteRow(command.change.excerpt.id)?.note:null;
       usePreparation(result.data);
       const change = command.change;
       const targetId = change.kind === 'note' ? change.note.id : change.kind === 'plan' ? change.plan.id : change.kind === 'location' ? change.document.id : change.id;
       const target = preparationTarget(change), key = draftKey(target.kind, target.id), saved = retained.get(key);
-      if (saved) {
+      if(saved&&change.kind==='note'&&change.excerpt){
+        // This is one guarded append with two provenance directions, never a
+        // plain note draft to autosave after an unapplied command.
+        if(saved.change.kind!=='note'||!equal(saved.change.note,change.note))throw Error('Weitere Eingaben liegen über dem Auszugsauftrag. Entwurf bleibt zur manuellen Klärung erhalten.');
+        unwrap(await window.campaign.discardPreparationDraft(token,target.kind,target.id,saved.writeId));if(!current())return;retained.set(key,null);
+        if(noteDraft?.id===targetId)noteDraft=structuredClone(noteRow(targetId)!.note);
+      }else if (saved) {
         const revision = target.kind === 'note' ? data.notes.find(r => r.note.id === target.id)?.note.revision : target.kind === 'plan' ? data.plans.find(p => p.id === target.id)?.revision : data.locations.find(r => r.document.id === target.id)?.revision;
         if (revision === undefined) throw new Error('Der Entwurfsstand ist nicht lesbar.');
         const rebased: PreparationEdit = saved.change.kind === 'note' ? { ...saved.change, expectedRevision: revision, note: { ...saved.change.note, revision } } : saved.change.kind === 'plan' ? { ...saved.change, expectedRevision: revision, plan: { ...saved.change.plan, revision } } : { ...saved.change, expectedRevision: revision };
         const next: PreparationDraft = { version: 1, writeId: crypto.randomUUID(), change: rebased, failedCommand: null };
         unwrap(await window.campaign.keepPreparationDrafts(token, [next])); if(!current())return;retained.set(key, next);
+      }
+      if(sourceBefore&&noteDraft?.id===sourceBefore.id){
+        const sourceNow=noteRow(sourceBefore.id)?.note;
+        if(!sourceNow||!equal({...sourceBefore,revision:sourceNow.revision,relations:sourceNow.relations},sourceNow))throw Error('Die Quelle wurde zusätzlich geändert. Entwurf bleibt zur manuellen Klärung erhalten.');
+        noteDraft={...noteDraft,revision:sourceNow.revision,relations:sourceNow.relations};
       }
       if ((change.kind === 'note' || change.kind === 'note-trash') && noteDraft?.id === targetId && originalNote()) noteDraft = { ...noteDraft, revision: originalNote()!.revision };
       if (change.kind === 'plan' && planDraft?.id === targetId && originalPlan()) planDraft = { ...planDraft, revision: originalPlan()!.revision };
@@ -630,12 +704,13 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
       blocked = false; failedCommand = null; get('preparation-reconcile').hidden = true; get('preparation-refresh').hidden = true;
       await retainOpenDrafts();
       if(!owns())return;
+      if(change.kind==='note'&&change.excerpt){if(selectedNote===targetId)await renderNotes();else{renderRelations();renderNoteList();}if(!owns())return;}
       if (change.kind === 'note-trash' && selectedNote === targetId && noteThread?.editorId === targetId) {
         get<HTMLInputElement>('world-trash').checked = !!noteRow(targetId)?.trashed;
         await renderNotes();
         if (!owns()) return;
       }
-      tell(result.outcome === 'applied' ? 'Speicherung der Vorbereitung bestätigt. Weitere Eingaben bleiben offen.' : 'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.');
+      tell(result.outcome === 'applied' ? 'Speicherung der Vorbereitung bestätigt. Weitere Eingaben bleiben offen.' : change.kind==='note'&&change.excerpt?'Auszug nicht übernommen. Der Originaltext bleibt in der Quelle; dort erneut markieren und ausdrücklich übernehmen.':'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.');
     } catch (error) { if(owns())tell((error as Error).message + ' Status bleibt ungeklärt.', true); }
   })(); };
   get('preparation-refresh').onclick = () => { void (async () => {

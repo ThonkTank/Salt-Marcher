@@ -12,7 +12,8 @@ import {atlasPartyPoint} from '../atlas-runtime-model';
 import {installLandscape,installLandscapeIndex,landscapeRegion,executeLandscape} from './atlas-landscape';
 import {rememberSourceUnlink,validateNoteSourceHistory} from './note-source-history';
 import {readNoteThread,checkNoteThread} from './note-thread';
-import {captureKeyNote,keyNoteCaptureStatus,readKeyNoteChoices} from './key-note-capture';
+import {captureKeyNote,keyNoteCaptureStatus,readKeyNoteChoices,hasNoteTitle} from './key-note-capture';
+import {appendNoteExcerpt} from '../note-excerpt';
 import type {KeyNoteCaptureCommand} from '../key-note-capture-contracts';
 import {readNoteRoomUses} from './note-room-uses';
 import {installAtlasTravel,atlasEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
@@ -618,6 +619,7 @@ export class CampaignStore {
         const old = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
         if (old) {
           const existing = this.decodePreparationDraft(old);
+          if(draft.change.kind==='note'&&draft.change.excerpt&&existing.writeId!==draft.writeId&&(!draft.failedCommand||existing.failedCommand?.commandId!==draft.failedCommand.commandId))throw new Error('Ein anderer Arbeitsentwurf dieses Originals bleibt erhalten.');
           if (existing.writeId === draft.writeId && json(existing) !== json(draft)) throw new Error('Entwurfskennung bereits anders verwendet.');
         }
         const payload = json(draft), checksum = hash(payload);
@@ -1319,7 +1321,15 @@ export class CampaignStore {
           if(!row||row.trashed||row.revision!==source.revision)throw new Error('Auszugskonflikt: Die Quelle wurde geändert oder ist nicht verfügbar.');
           sourceNote=this.decodeNote(row,'Beschädigte Quelle bleibt unverändert.');
           const selected=sourceNote[source.field].slice(source.start,source.end),other=source.field==='gmNotes'?'readAloud':'gmNotes';
-          if(source.end>sourceNote[source.field].length||!selected.trim()||change.note[source.field]!==selected||change.note[other]!==''||change.note.relations.length!==1||change.note.relations[0]?.targetId!==source.id||change.note.relations[0]?.label!=='Quelle'||change.note.relations[0]?.familyKind!==undefined)throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
+          if(source.end>sourceNote[source.field].length||!selected.trim())throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
+          if(oldNote){
+            if(this.db.prepare("SELECT 1 FROM preparation_draft WHERE campaign_id=? AND kind='note' AND target_id=?").get(campaignId,oldNote.id))throw new Error('Dieses Original hat einen offenen Arbeitsentwurf. Erst im Originaleditor aufklären.');
+            const expected=worldNoteDocument(appendNoteExcerpt(oldNote,sourceNote,source.field,selected));
+            if(json(expected)!==json(change.note))throw new Error('Die Ergänzung stimmt nicht mit Original und markierter Quelle überein.');
+          }else{
+            if(change.note[source.field]!==selected||change.note[other]!==''||change.note.relations.length!==1||change.note.relations[0]?.targetId!==source.id||change.note.relations[0]?.label!=='Quelle'||change.note.relations[0]?.familyKind!==undefined)throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
+            if(!source.allowSameTitle&&hasNoteTitle(this.db,campaignId,change.note.title))throw new Error('Diesen Namen gibt es bereits. Vorhandene Notiz wählen oder ausdrücklich eigenständig neu anlegen.');
+          }
         }
         if (oldNote && oldNote.kind !== change.note.kind) throw new Error('Die Notizart bleibt an ihrer Identität gebunden.');
         if(oldNote?.relations.some(relation=>relation.familyKind&&!change.note.relations.some(next=>next.targetId===relation.targetId&&next.label===relation.label&&next.familyKind===relation.familyKind)))throw new Error('Familienbeziehungen werden nur als vollständiges Paar geändert.');
@@ -1335,7 +1345,7 @@ export class CampaignStore {
         this.db.prepare('INSERT INTO world_note VALUES(?,?,?,0,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(campaignId, targetId, revision, payload, hash(payload));
         this.db.prepare('DELETE FROM note_search WHERE campaign_id=? AND note_id=?').run(campaignId, targetId);
         this.db.prepare('INSERT INTO note_search(campaign_id,note_id,title,body) VALUES(?,?,?,?)').run(campaignId, targetId, note.title, note.readAloud + '\n' + note.gmNotes);
-        if(sourceNote){
+        if(sourceNote&&!sourceNote.relations.some(r=>r.targetId===note.id&&r.label==='Auszug')){
           // Reuse the canonical writer inside this transaction: index, checksum,
           // receipt and both directions either all publish or all roll back.
           this.commitPreparation({commandId:command.commandId+'|excerpt-source',campaignId,token:command.token,change:{kind:'note',expectedRevision:sourceNote.revision,note:{...sourceNote,relations:[...sourceNote.relations,{targetId:note.id,label:'Auszug'}]}}});
