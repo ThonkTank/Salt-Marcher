@@ -22,7 +22,14 @@ Framevorbereitung zwischen Druck und Loslassen abschließen.
 Bilddecodierungen und Zeichenpuffer sind begrenzt; Details und verbleibende
 Alternativen stehen im [Atlas-Runtimeplan](../../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md).
 
-Die älteren isolierten Dungeon-/Hexansichten behalten `PassiveMapCanvas` mit
+Im gemeinsamen Workbench markiert der Atlas die vier alten Kartenhosts
+(Raumbearbeitung, Stadt, Hexreise und Dungeonreise) ausdrücklich als abgelöst.
+Ihre Geometrie bleibt leer: Auch beim Nachladen von Werkzeugen, Bearbeiten
+oder Wechsel zum Live-Tisch entsteht kein versteckter SVG-Baum. Die Fachfelder,
+Entwürfe und Statusanzeigen laufen weiter; Ausgaben benutzen ihre eigenen
+Geometriegeneratoren. CSS-Ausblenden allein genügt dafür nicht.
+
+Die älteren isolierten Dungeon-/Hexansichten außerhalb dieses Workbenchs behalten `PassiveMapCanvas` mit
 SVG-Gruppen und DOM-Treffern. Sie teilen keine zweite Autorenwahrheit mit dem
 Atlas. Die Kamerasemantik bleibt gleich; die Implementierungen sind derzeit
 getrennt und bei der nächsten tatsächlichen Adoptermigration zu konsolidieren.

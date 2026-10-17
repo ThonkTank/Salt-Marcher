@@ -613,7 +613,11 @@ Lieferstufen noch die Produktabnahme ab. Stiländerungen sind zurückgestellt.
 
 Der gemeinsame Atlas (`campaign-atlas-ui.ts`, `atlas-canvas.ts`,
 `atlas-canvas-scene.ts`) zeichnet jetzt auf eine echte Canvas2D-Fläche. Kein
-Kartenobjekt erzeugt ein verbundenes SVG-/DOM-Element. Die passive Kamera
+Kartenobjekt erzeugt ein verbundenes SVG-/DOM-Element. Die alten Kartenhosts
+für Raum-, Stadt-, Hex- und Dungeonwerkzeuge sind im gemeinsamen Workbench
+ausdrücklich abgelöst und bleiben leer, auch beim Laden von Werkzeugen oder
+am Live-Tisch. Fachfelder, Status und Exportgeneratoren bleiben davon getrennt;
+ein per CSS verborgenes SVG wäre weiterhin ein unnötiger zweiter Zeichenweg. Die passive Kamera
 behält Ankerzoom, Pointercapture, Ansichtshistorie und Kontextcache; Landschaft,
 Stadt, Innenräume, Griffe, Reise und Marker benutzen dieselbe relative Szene.
 Die Szenenkommandos werden je fachlicher Änderung kompiliert; Pan und Zoom

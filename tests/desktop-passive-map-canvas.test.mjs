@@ -61,3 +61,12 @@ test('relative Atlas camera transforms the existing scene and native hit nodes, 
  canvas.pan(30,-10);assert.equal(root.firstChild,scene);assert.equal(root.querySelector('rect'),object);assert.equal(builds,1);assert.equal(scene.getAttribute('transform'),'translate(-30 10)');assert.equal(root.querySelector('[data-canvas-hud]').getAttribute('transform'),'translate(30 -10)');assert.equal(root.getAttribute('viewBox'),'0 0 400 200');window.document.elementFromPoint=()=>object;assert.equal(canvas.hit(0,0),object);
  canvas.zoom(.5);assert.equal(builds,1);canvas.render(draw);assert.equal(builds,2);assert.notEqual(root.firstChild,scene);assert.equal(root.firstChild.getAttribute('transform'),'translate(0 0)');
 });
+
+// The workbench retains controls, but its former map is no longer a renderer.
+test('retired SVG host neither rebuilds geometry nor exposes its previous hits',()=>{
+ const {dom,root,canvas}=fixture();let builds=0;
+ const draw=scene=>{builds++;scene.innerHTML='<path/>';};canvas.render(draw);const old=root.querySelector('path');
+ dom.window.document.elementFromPoint=()=>old;assert.equal(canvas.hit(0,0),old);
+ root.dataset.sharedAtlas='true';canvas.render(draw);canvas.pan(20,0);canvas.render(draw);
+ assert.equal(builds,1);assert.equal(root.children.length,0);assert.equal(canvas.hit(0,0),null);
+});
