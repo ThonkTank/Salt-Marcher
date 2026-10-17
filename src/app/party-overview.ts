@@ -24,5 +24,14 @@ export function characterRestHint(p:Progress|undefined){
 /** Place and present membership describe a destination without renaming stored scenes. */
 export function partySceneLabels(view:import('./live-contracts').LiveView){
  const labels=view.scenes.map(scene=>({id:scene.id,label:(scene.locationTitle||'Ohne Ort')+' · '+(view.roster.filter(c=>c.active&&c.sceneId===scene.id).map(c=>c.profile.name).join(', ')||'Keine Figuren')}));
- return new Map(labels.map(scene=>[scene.id,scene.label+(labels.filter(other=>other.label===scene.label).length>1?' · '+scene.id.slice(0,8):'')]));
+ const groups=new Map<string,typeof labels>();
+ for(const scene of labels){const key=scene.label.normalize('NFC'),group=groups.get(key)??[];group.push(scene);groups.set(key,group);}
+ const result=new Map<string,string>();
+ for(const group of groups.values()){
+  // Adjacent sorted IDs determine the longest shared prefix without pairwise scans.
+  const ids=group.map(scene=>scene.id).sort();let width=8;
+  for(let i=1;i<ids.length;i++){const a=ids[i-1]!,b=ids[i]!;let shared=0;while(shared<a.length&&shared<b.length&&a[shared]===b[shared])shared++;width=Math.max(width,shared+1);}
+  for(const scene of group)result.set(scene.id,scene.label+(group.length>1?' · '+scene.id.slice(0,width):''));
+ }
+ return result;
 }

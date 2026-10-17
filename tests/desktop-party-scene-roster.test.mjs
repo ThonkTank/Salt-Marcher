@@ -264,3 +264,16 @@ test("move destinations use place and membership, disambiguating only collisions
 });
 
 test('mask reconciliation failure rolls back the whole roster decision and its receipt',t=>{const x=fixture(t),[a,b,c]=x.heroes;x.execute([a.id,b.id]);const v=x.store.live(x.w.token);x.store.executeCombat({...x.command({kind:'create',sceneId:v.scene.id,title:'Torwache',includeParty:true,expectedMembershipRevision:v.scene.membershipRevision}),combatId:null,expectedRevision:null});x.store.db.exec("CREATE TRIGGER roster_reconcile_failure BEFORE INSERT ON mask_reconciliation_receipt BEGIN SELECT RAISE(ABORT,'reconciliation blocked'); END");const command=x.command(x.action([b.id,c.id])),before=x.store.db.serialize();assert.throws(()=>x.store.executeLive(command),/reconciliation blocked/);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.liveStatus(command,x.w.token).outcome,'not-applied');});
+
+test('move targets with colliding short IDs stay distinct and stable when scene order changes',()=>{
+ const a='12345678-aaaa-4000-8000-111111111111',b='12345678-bbbb-4000-8000-222222222222',view={scenes:[{id:a,title:'Historische Prosa A',locationTitle:'Tor'},{id:b,title:'Historische Prosa B',locationTitle:'Tor'},{id:'elsewhere',title:'Unverändert',locationTitle:'Wald'}],roster:[{active:true,sceneId:a,profile:{name:'Iri'}},{active:true,sceneId:b,profile:{name:'Iri'}},{active:true,sceneId:'elsewhere',profile:{name:'Ada'}}]},before=structuredClone(view),labels=partySceneLabels(view);
+ assert.notEqual(labels.get(a),labels.get(b),'visible move targets must identify different scenes');assert.match(labels.get(a),/^Tor · Iri · 12345678-a/);assert.match(labels.get(b),/^Tor · Iri · 12345678-b/);assert.equal(labels.get('elsewhere'),'Wald · Ada');assert.deepEqual(partySceneLabels({...view,scenes:[...view.scenes].reverse()}),new Map([...labels].reverse()));assert.deepEqual(view,before);
+});
+test('long shared scene-ID prefixes and prefix IDs do not leave equal move labels',()=>{
+ const ids=['scene-prefix','scene-prefix-a','scene-prefix-b','scene-prefix-b1'],view={scenes:ids.map(id=>({id,title:'Titel '+id,locationTitle:null})),roster:[]},labels=partySceneLabels(view);
+ assert.equal(new Set(labels.values()).size,ids.length);for(const id of ids){assert(labels.get(id).startsWith('Ohne Ort · Keine Figuren · '));assert(id.startsWith(labels.get(id).split(' · ').at(-1)));}assert.deepEqual(partySceneLabels(view),labels);
+});
+test('canonically equivalent visible place and member names also receive distinct scene IDs without normalization writes',()=>{
+ const a='scene-a111',b='scene-b222',view={scenes:[{id:a,title:'Titel A',locationTitle:'Café'},{id:b,title:'Titel B',locationTitle:'Cafe\u0301'}],roster:[{active:true,sceneId:a,profile:{name:'Íri'}},{active:true,sceneId:b,profile:{name:'I\u0301ri'}}]},before=JSON.stringify(view),labels=partySceneLabels(view);
+ assert.notEqual(labels.get(a).normalize('NFC'),labels.get(b).normalize('NFC'));assert(labels.get(a).endsWith('scene-a1'));assert(labels.get(b).endsWith('scene-b2'));assert.equal(JSON.stringify(view),before);
+});
