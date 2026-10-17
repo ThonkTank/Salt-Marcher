@@ -51,7 +51,7 @@ function clearResults(text:string,loading=false,error=false){
 function renderCatalogControls(){
  const chips=get('catalog-filter-chips');chips.replaceChildren();
  for(const input of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select')){
-  if(input.id==='catalog-direction'||!input.value)continue;
+  if(input.id==='catalog-direction'||!input.value||input.id==='catalog-cr-min'&&Number(input.value)===0)continue;
   const label=document.querySelector<HTMLLabelElement>('label[for="'+input.id+'"]')?.textContent??input.id;
   const chip=document.createElement('button');chip.type='button';chip.textContent=label+': '+input.value+' ×';chip.setAttribute('aria-label',label+' entfernen');
   chip.onclick=()=>{input.value='';input.oninput?.call(input,new Event('input'));input.focus();};chips.append(chip);
@@ -84,9 +84,22 @@ async function refreshCatalogInfo(){
 export async function openCatalog(){itemReference?.show(catalogContent==='items');await Promise.all([refreshCatalogInfo(),catalogContent==='monster'?search():Promise.resolve(),refreshPlans(),refreshGeneration()]);}
 export async function openCatalogReference(ref:{kind:'creature'|'encounter';id:string},stillCurrent=()=>true){if(!stillCurrent())return;catalogContentView('monster');void openCatalog();if(ref.kind==='creature')await selectCreature(ref.id);else await loadPlan(ref.id);}
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
+function normalizeChallengeRange(changed:HTMLInputElement|HTMLSelectElement){
+ if(changed.id!=='catalog-cr-min'&&changed.id!=='catalog-cr-max')return;
+ if(changed.value&&Number.isFinite(Number(changed.value))&&Number(changed.value)<0)changed.value='0';
+ const low=get<HTMLInputElement>('catalog-cr-min'),high=get<HTMLInputElement>('catalog-cr-max');
+ if(!low.value||!high.value||!Number.isFinite(Number(low.value))||!Number.isFinite(Number(high.value))||Number(low.value)<=Number(high.value))return;
+ (changed===low?high:low).value=changed.value;
+}
 function query():CreatureCatalogQuery{
  const q:CreatureCatalogQuery={text:value('catalog-search'),offset,limit:25,sort,direction:value('catalog-direction') as 'asc'|'desc'};
- const fields=q as Record<string,unknown>;for(const [id,key]of [['catalog-cr-min','crMin'],['catalog-cr-max','crMax'],['catalog-ac-min','acMin'],['catalog-ac-max','acMax'],['catalog-hp-min','hpMin'],['catalog-hp-max','hpMax']])if(value(id!))fields[key!]=Number(value(id!));
+ const fields=q as Record<string,unknown>;
+ for(const [id,key,label]of [['catalog-cr-min','crMin','HG von'],['catalog-cr-max','crMax','HG bis'],['catalog-ac-min','acMin','RK min.'],['catalog-ac-max','acMax','RK max.'],['catalog-hp-min','hpMin','HP min.'],['catalog-hp-max','hpMax','HP max.']] as const){
+  const input=get<HTMLInputElement>(id),number=Number(input.value);
+  // Native number controls expose incomplete input (e.g. "-") as an empty value.
+  if(input.validity?.badInput||input.value&&(!Number.isFinite(number)||number<0)){input.setAttribute('aria-invalid','true');throw new Error(label+': Eine gültige nichtnegative Zahl eingeben.');}
+  input.removeAttribute('aria-invalid');if(input.value&&!(key==='crMin'&&number===0))fields[key]=number;
+ }
  for(const [id,key]of [['catalog-type','types'],['catalog-subtype','subtypes'],['catalog-size','sizes'],['catalog-habitat','habitats'],['catalog-alignment','alignments']])if(value(id!))fields[key!]=[value(id!)];
  for(const [id,key]of [['catalog-movement','movement'],['catalog-senses','senses'],['catalog-vulnerabilities','vulnerabilities'],['catalog-resistances','resistances'],['catalog-immunities','immunities'],['catalog-condition-immunities','conditionImmunities']])if(value(id!))fields[key!]=value(id!);return q;
 }
@@ -202,7 +215,7 @@ export function initCatalog(status:typeof tell,onPrepare:typeof prepare,onLiveAd
  get('catalog-content-strip').onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const target=get<HTMLButtonElement>(e.key==='Home'?'catalog-monsters-tab':e.key==='End'?'catalog-items-tab':catalogContent==='monster'?'catalog-items-tab':'catalog-monsters-tab');target.click();target.focus();};
  initGeneration(status,{plan:async()=>{if(!await flushPlan())return null;return plan?structuredClone(plan):null;},creature:()=>creature,filters:()=>tableLookupQuery??query(),beginTableLookup,info:()=>info,accept:async accepted=>{const gen=generation;if(!await flushPlan()||gen!==generation)return;adoptPlan(accepted,false);await refreshPlans();if(gen===generation)get('encounter-builder').scrollIntoView({block:'start'});}});
  get('catalog-form').onsubmit=event=>{event.preventDefault();offset=0;void search();};
- for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
+ for(const c of get('catalog-filters').querySelectorAll<HTMLInputElement|HTMLSelectElement>('input,select'))c.oninput=()=>{normalizeChallengeRange(c);renderCatalogControls();if(!tableLookupQuery)generationCatalogFiltersChanged();clearSearchTimer();searchRequest++;offset=0;clearResults('Kreaturen werden gesucht…',true);searchTimer=setTimeout(()=>{searchTimer=null;void search();},200);};
  get('catalog-reset').onclick=()=>{const direction=value('catalog-direction');get<HTMLFormElement>('catalog-form').reset();get<HTMLInputElement>('catalog-direction').value=direction;offset=0;if(!tableLookupQuery)generationCatalogFiltersChanged();void search();};get('catalog-prev').onclick=()=>{offset=Math.max(0,offset-25);void search();};get('catalog-next').onclick=()=>{offset+=25;void search();};for(const button of get('catalog-table').querySelectorAll<HTMLButtonElement>('thead button'))button.onclick=()=>{const next=button.dataset.sort as CreatureCatalogQuery['sort'];get<HTMLInputElement>('catalog-direction').value=sort===next&&value('catalog-direction')==='asc'?'desc':'asc';sort=next;offset=0;void search();};
  get('catalog-plan-open').onclick=()=>{get('encounter-builder').scrollIntoView({block:'start'});get<HTMLElement>(plan?'encounter-name':'encounter-new').focus({preventScroll:true});};
  const returnToResults=()=>{showMonsters();get('catalog-browser').scrollIntoView({block:'start'});get<HTMLInputElement>('catalog-search').focus({preventScroll:true});};get('catalog-search-open').onclick=returnToResults;get('catalog-results-return').onclick=returnToResults;

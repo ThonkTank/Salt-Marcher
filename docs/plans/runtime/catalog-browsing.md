@@ -54,6 +54,39 @@ dabei wie bisher markiert. Keine zweite Auswahl- oder Tastaturverwaltung.
 
 Es gibt keine neue Persistenz oder Schemaänderung.
 
+### Gültige HG-Bereiche und native Zahleneingaben
+
+Die zuletzt geänderte HG-Grenze bestimmt den Bereich: „von8“ oberhalb „bis5“
+zieht die sichtbare Obergrenze auf8; „bis2“ unterhalb „von8“ zieht die
+Untergrenze auf2. Endliche negative HG-Eingaben werden auf0 begrenzt.
+Bruchgrenzen wie0,125 bleiben exakt; keine Rundung auf ganze HG und kein
+zusätzlicher fester Höchstwert beschneiden den vorhandenen Providervertrag.
+Leere Obergrenze bedeutet weiterhin unbeschränkt. Mindest-HG0 verändert den
+Pool nicht und wird weder als aktiver Chip noch als zusätzlicher Queryfilter
+weitergegeben. Höchst-HG0 bleibt dagegen ein wirksamer Filter. Andere
+Katalogfilter, Sortierung und Encountereinstellungen bleiben erhalten.
+
+Native Zahlfelder können beispielsweise ein eingegebenes „−“ als leeren Wert
+mit `validity.badInput` melden. Das ist ausdrücklich kein leerer Filter.
+Der gemeinsame `catalog-ui.query()`-Einstieg prüft diesen Zustand sowie endliche
+nichtnegative vorhandene Werte für alle sechs HG-/RK-/HP-Grenzen. Er zeigt den
+Fehler am Feld und in der Ergebnisfläche, ohne eine unbeschränkte Suche zu
+senden. Derselbe Fehler erscheint beim Generator. „Vorschläge“ beendet den
+Aufruf vor Planabschluss oder Generierungs-IPC; vorhandene Planungstexte und
+der Rohwert bleiben erhalten. Der bestehende transiente Vorschlagsfingerprint
+kennt auch ungültige Filter, sodass eine spät gelieferte Vorschau für den alten
+gültigen Stand keine Übernahmeautorität für den neuen ungültigen Stand bekommt.
+Die ursprünglichen Requestfilter bleiben historische Fakten. Korrigieren oder
+Leeren stellt die normale Suche/Generierung wieder her, ohne neue Persistenz.
+
+Die bisherigen Querytests deckten Requestreihenfolge und Chipentfernung ab,
+prüften aber weder überkreuzte Grenzen noch die native Unterscheidung zwischen
+leer und ungültig. Neue DOM-Gegenfälle prüfen beide Änderungsrichtungen,
+Brüche, negative Werte, HG0, dieselben Filter im tatsächlichen Generatoraufruf,
+Fehler/Recovery und eine spät eintreffende alte Vorschau. Diese Teilkorrektur
+ersetzt nicht die noch offene Mehrfachauswahl, gemeinsame Biomidentität,
+gesamte Katalog-/Generierungs- oder Plattformabnahme.
+
 `desktop-catalog-query-context.test.mjs` verzögert Query-/Detailantworten und
 Debouncetimer kontrolliert. Es prüft alte Antwort während neuer Eingabe,
 Fehler/Recovery, Reset/Sort ohne Folgeanfrage, Kampagnenwechsel und Indexfehler.
@@ -77,8 +110,9 @@ Nachweise.
    vollständige Filtermenge verwenden. Einzeln entfernbare Chips und sichtbare Headersortierung sind vorhanden;
    Mehrfachauswahl fehlt im Desktop noch. Gewählte Werte beim Suchen erhalten,
    sichtbare Labels ohne Groß-/Kleinschreibung und Diakritika auffindbar machen.
-   HGgrenzen sinnvoll begrenzen und den vollen Standardbereich nicht als
-   zusätzlichen Filter veröffentlichen. Abnahme: mehrere Typen/Biome,
+   Die HG-Bereichskorrektur und die Unterscheidung leer/ungültig sind oben
+   angeschlossen; weitere Filter müssen denselben vollständigen Poolvertrag
+   behalten. Abnahme: mehrere Typen/Biome,
    gleichzeitige Werte, Chip entfernen, Reset, Sort/Paging und exakt dieselbe
    Kandidatenmenge bei der Generierung. Schwierigkeits-/Mengen-/Diversitäts-
    vorgaben und offene Encounterprosa dürfen dabei nicht überschrieben werden.

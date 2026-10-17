@@ -103,6 +103,21 @@ test('removing a numeric filter chip preserves the name and type criteria',async
  x.el('catalog-cr-max').focus=()=>{};[...x.el('catalog-filter-chips').querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='HG bis entfernen').click();await x.debounce();
  assert.equal(x.reads[1].query.text,'Goblin');assert.deepEqual(x.reads[1].query.types,['Humanoid']);assert.equal(x.reads[1].query.crMax,undefined);assert.equal(x.el('catalog-filter-chips').querySelectorAll('button').length,2);
 });
+
+for(const [changed,low,high,expectedLow,expectedHigh]of [
+ ['min','8','5','8','8'],['max','8','2','2','2'],
+ ['min','0.5','0.125','0.5','0.5'],['max','0.5','0.125','0.125','0.125'],
+ ['min','-2','5','0','5'],['max','2','-1','0','0'],
+])test(`HG range follows the changed ${changed} bound (${low}..${high}) without changing other filters`,async t=>{
+ const x=await fixture(t);await x.resolve(0,'Initial');await x.opened;x.type('Dragon');x.el('catalog-type').value='Dragon';x.el('catalog-cr-min').value=low;x.el('catalog-cr-max').value=high;x.el('catalog-cr-'+changed).oninput();
+ assert.equal(x.el('catalog-cr-min').value,expectedLow);assert.equal(x.el('catalog-cr-max').value,expectedHigh);await x.debounce();const q=x.reads[1].query;assert.equal(q.crMin,Number(expectedLow)===0?undefined:Number(expectedLow));assert.equal(q.crMax,Number(expectedHigh));assert.equal(q.text,'Dragon');assert.deepEqual(q.types,['Dragon']);assert.equal(q.offset,0);assert.match(x.el('generation-catalog-summary').textContent,new RegExp('HG bis: '+Number(expectedHigh)));assert.equal([...x.el('catalog-filter-chips').querySelectorAll('button')].some(b=>b.getAttribute('aria-label')==='HG von entfernen'),Number(expectedLow)!==0);
+});
+test('zero lower HG is the unfiltered default, while a zero upper HG remains an active exact bound',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Initial');await x.opened;x.el('catalog-cr-min').value='0';x.el('catalog-cr-min').oninput();await x.debounce();assert.equal(x.reads[1].query.crMin,undefined);assert.equal(x.el('catalog-filter-chips').childElementCount,0);assert.match(x.el('generation-catalog-summary').textContent,/Keine zusätzlichen/);await x.resolve(1,'All');x.el('catalog-cr-max').value='0';x.el('catalog-cr-max').oninput();await x.debounce();assert.equal(x.reads[2].query.crMax,0);assert.equal(x.reads[2].query.crMin,undefined);assert.equal(x.el('catalog-filter-chips').childElementCount,1);assert.match(x.el('generation-catalog-summary').textContent,/HG bis: 0/);
+});
+test('an incomplete native numeric filter is not read as an empty unrestricted filter and recovers without losing other inputs',async t=>{
+ const x=await fixture(t);await x.resolve(0,'Initial');await x.opened;const input=x.el('catalog-cr-min');let bad=true;Object.defineProperty(input,'validity',{get:()=>({badInput:bad})});x.el('catalog-search').value='Guard';input.value='';assert.doesNotThrow(()=>input.oninput());await x.debounce();assert.equal(x.reads.length,1,'no unrestricted IPC while the browser reports badInput');assert.equal(x.el('catalog-page').getAttribute('role'),'alert');assert.match(x.el('catalog-page').textContent,/HG von.*Zahl/);assert.match(x.el('generation-catalog-summary').textContent,/HG von.*Zahl/);assert.equal(input.getAttribute('aria-invalid'),'true');bad=false;input.value='0.125';input.oninput();await x.debounce();assert.equal(x.reads.length,2);assert.equal(x.reads[1].query.crMin,0.125);assert.equal(x.reads[1].query.text,'Guard');assert.notEqual(input.getAttribute('aria-invalid'),'true');await x.resolve(1,'Guard');assert.notEqual(x.el('catalog-page').getAttribute('role'),'alert');
+});
 test('column sorting toggles visibly and clearing filters keeps that sort and selected detail',async t=>{
  const x=await fixture(t);await x.resolve(0,'Goblin');await x.opened;
  window.campaign.creature=async()=>({ok:true,value:{id:'Goblin',name:'Goblin',abilities:{},traits:[],actions:[],legendaryActions:[]}});x.el('catalog-rows').querySelector('button').click();await tick();await tick();
