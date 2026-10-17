@@ -1,3 +1,4 @@
+import {CombatSelectionPanel} from './combat-selection-ui';
 import {combatMobs,combatMobRow} from './combat-mob-ui';
 import {CombatGroupPicker,sceneGroupDragType,sceneGroupTray} from './combat-group-ui';
 import {CombatInitiativePanel} from './combat-initiative-ui';
@@ -35,6 +36,7 @@ const groupPicker=new CombatGroupPicker();
 let workspace: WorkspaceGeometry | null = null, scene: LiveScene | null = null, view: CombatView | null = null;
 const expandedMobs=new Set<string>();
 let resolution:CombatResolutionPanel|null=null;
+let selectionPanel:CombatSelectionPanel|null=null;
 let openNpcProfile:((id:string,current:()=>boolean)=>Promise<void>)|undefined;
 export function setCombatNpcNavigation(open:NonNullable<typeof openNpcProfile>){openNpcProfile=open;}
 let hitPanel:CombatHitPanel|null=null;
@@ -112,6 +114,7 @@ export function combatContext(next: WorkspaceGeometry | null, current: LiveScene
   const basis=JSON.stringify([next?.token,current?.id,current?.membershipRevision,rosterRevision]),partyChanged=basis!==partyContext;partyContext=basis;
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
+  if(changed||partyChanged){selectionPanel?.reset();if(next&&current&&get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();}
   get('combat-panel').hidden = !current;
   if (changed) { expandedMobs.clear();groupPicker.reset();const tray=get<HTMLDetailsElement>('combat-scene-groups');if(tray){tray.open=false;get('combat-scene-group-cards').replaceChildren();}closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
   else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
@@ -129,7 +132,7 @@ async function load(id?: string):Promise<boolean> {
     acceptCombat(result);render();await loadNotes();if(!current())return false;
     void listDrafts();if(basis!==partyContext)void refreshPartyCandidates();return true;
   }catch(error){if(current()){loadError=(error as Error).message;view=null;selected=null;render();tell(loadError,true);}}
-  finally{if(current()){loadPending=false;lock();}}
+  finally{if(current()){loadPending=false;lock();if(get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();}}
   return false;
 }
 
@@ -301,7 +304,8 @@ function lockConditionShortcuts(){
  for(const button of get('fighter-condition-shortcuts').querySelectorAll<HTMLButtonElement>('button'))button.disabled=blocked()||editorLoading||!!key&&draftCache.readFailures.has(key)||draftOpen||button.dataset.statblockDisabled==='true';
 }
 function lock() {
-  for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!control.closest('.combat-resolution'))control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
+  for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!control.closest('.combat-resolution,#combat-selection'))control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
+  selectionPanel?.lock();
   resolution?.setBlocked(!!blocked());
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
   const contextBlocked=!workspace||!scene||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
@@ -346,11 +350,12 @@ function render() {
   if(creation.dataset.combatId!==creationId){creation.dataset.combatId=creationId;creation.open=!combat;}
   renderReinforcements();
   get('combat-creation').hidden = false;
+  get('combat-create-form').hidden=true;
   get('combat-shared-notice').textContent=combat?.sharedNotice??'';
   get('combat-workspace').hidden = !combat;
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
   const startIssue=combat?.phase==='preparing'?combatStartIssue(combat):null;
-  get('combat-assessment').textContent = startIssue??(view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '');
+  get('combat-assessment').textContent = startIssue??(view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.sceneGroups ? ' · Szenengruppen: '+combat.sceneGroups.map(g=>g.name).join(', ') : combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '');
   const additions=get<HTMLDetailsElement>('combat-add-details');additions.querySelector('summary')!.textContent=combat?.phase==='preparing'?'Gegner vorbereiten':'Verstärkung hinzufügen';
   if(additions.dataset.combatId!==combat?.id){additions.dataset.combatId=combat?.id??'';additions.open=!!startIssue;}
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
@@ -454,6 +459,9 @@ async function recoveredCombat(event:CommitResolution){
 }
 export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   tell = status;afterSaved=refresh;
+  const selectionRoot=document.createElement('section');get('combat-creation').prepend(selectionRoot);
+  selectionPanel=new CombatSelectionPanel(selectionRoot,()=>{const owner=preparationOwner();return owner&&workspace&&scene?{workspace,scene,current:owner.current}:null;},(action,current)=>execute(action,undefined,current),blocked);
+  get('combat-creation').addEventListener('toggle',()=>{if(get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();});
   const groupButton=document.createElement('button');groupButton.type='button';groupButton.id='combat-group-open';groupButton.textContent='Vorbereitete Monstergruppe hinzufügen…';groupButton.onclick=()=>void reinforceWorldGroup().catch(e=>tell(e.message,true));get('combat-reinforcement').prepend(groupButton,sceneGroupTray(()=>{const owner=preparationOwner();return owner&&workspace?{token:workspace.token,sceneId:owner.sceneId,current:owner.current}:null;},reinforceWorldGroup,status));
   const panel=get('combat-panel');panel.addEventListener('dragover',e=>{if(e.dataTransfer?.types.includes(sceneGroupDragType)&&editableCombat(view?.combat??null)&&!blocked()){e.preventDefault();e.dataTransfer.dropEffect='copy';}});panel.addEventListener('drop',e=>{const raw=e.dataTransfer?.getData(sceneGroupDragType);if(!raw||!workspace||!scene||blocked()||!editableCombat(view?.combat??null))return;e.preventDefault();try{const data=JSON.parse(raw);if(data.sceneId!==scene.id||typeof data.groupId!=='string'||!Number.isSafeInteger(data.revision))throw new Error('Gruppe gehört zu einer anderen Szene.');void reinforceWorldGroup(data.groupId,data.revision).catch(error=>tell(error.message,true));}catch(error){tell((error as Error).message,true);}});
 initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftCache,(action,revision)=>execute(action,revision),status);get('combat-initiative-open').onclick=()=>void initiativePanel?.open();hitPanel=new CombatHitPanel(get('combat-hit-effect'),(action,revision)=>execute(action,revision),async(opening,preset,formula,critical)=>{let result:SceneCheck|null=null;const actor=view?.combat?.participants.find(p=>p.id===opening.attackerId),id=view?.combat?.id,gen=generation;if(!actor||!id)return null;await rollSceneFormula({label:preset.label+(critical?' · Kritisch':''),actor:actor.name,formula,formulaKind:'damage',dc:null,sourceCreatureId:actor.sourceId!,sourceActionId:opening.action.id},check=>{if(generation===gen&&view?.combat?.id===id)result=check;});return result;});areaPanel=new CombatAreaPanel(get('combat-area-effect'),(action,revision)=>execute(action,revision));get('combat-area-open').onclick=()=>areaPanel?.open();resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution,(losses,revision,current)=>execute({kind:'confirm-npc-losses',losses},revision,current),async(id,current)=>{if(openNpcProfile)await openNpcProfile(id,current);});onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
