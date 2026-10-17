@@ -1283,7 +1283,7 @@ export class CampaignAtlasWorkbench {
     const hit = (e.target as Element).closest<SVGElement>(
       "[data-atlas-object]",
     );
-    if (hit?.dataset.kind === "party") {
+    if (hit?.dataset.kind === "party" && this.family === "travel") {
       this.partyDrag = {
         id: e.pointerId,
         start: this.point(e),
@@ -2534,6 +2534,7 @@ export class CampaignAtlasWorkbench {
       fill: "#244f87",
       stroke: "white",
       "stroke-width": mpp * 2,
+      "pointer-events":this.family==='travel'?'auto':'none',
     });
     token.dataset.atlasObject = "true";
     token.dataset.kind = "party";

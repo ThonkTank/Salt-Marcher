@@ -805,3 +805,18 @@ test('infill saves an edited exact house before loading its generation basis',as
  try{await x.ui.openCityReference(x.cityIds.two,x.unitIds.two,true,true);const commands=[],send=x.window.campaign.executeAtlasCommit;x.window.campaign.executeAtlasCommit=async c=>{commands.push(c);return send(c);};x.enter('city-unit-notes','The innkeeper knows the crypt');x.click('city-panel-infill');await until(()=>!x.document.getElementById('city-generate').disabled);assert.equal(x.ui.atlasCityState().partial,false);assert.equal(x.store.city(x.current().token,x.cityIds.two).units.find(u=>u.id===x.unitIds.two).notes,'The innkeeper knows the crypt');assert.equal(x.document.getElementById('city-unit-notes').value,'The innkeeper knows the crypt');assert.equal(commands.filter(c=>c.action.kind==='city').length,1);}
  finally{await x.cleanup();}
 });
+
+test('party marker over a house lets city inspection pass through and is draggable only for travel',async()=>{
+ const x=await setup(),s=await placeSurface(x),command=action=>({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action});
+ try{
+  x.store.executeAtlasCommit(command({kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0},expectedRevision:null}));
+  const pc=x.store.executeLive(command({kind:'create-character',profile:{name:'Iri',speedFeet:30}})).character,live=x.store.live(x.current().token);
+  x.store.executeLive(command({kind:'membership',characterId:pc.id,expectedRevision:pc.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:null,expectedFocusRevision:live.focusRevision}));
+  const scene=x.store.executeLive(command({kind:'initialize',expectedRosterRevision:x.store.live(x.current().token).rosterRevision})).scene;
+  x.store.executeAtlasTravel({...command({kind:'place',point:{x:1060,y:2060},expectedPositionRevision:0,expectedMembershipRevision:scene.membershipRevision}),sceneId:scene.id});
+  await s.atlas.navigate('city',x.cityIds.one);await s.atlas.refresh();s.atlas.render();const before=x.store.db.serialize(),marker=s.svg.querySelector('[data-kind="party"]');assert.ok(marker);assert.equal(marker.getAttribute('pointer-events'),'none');
+  const down=new x.window.Event('pointerdown',{bubbles:true});Object.assign(down,{button:0,pointerId:99,clientX:100,clientY:100});marker.dispatchEvent(down);assert.equal(s.atlas.partyDrag,null);
+  const click=new x.window.Event('click',{bubbles:true});Object.assign(click,{button:0,clientX:100,clientY:100});s.svg.querySelector('[data-kind="building"][data-id="'+x.unitIds.one+'"]').dispatchEvent(click);await until(()=>s.atlas.selection?.id===x.unitIds.one);assert.equal(x.document.getElementById('city-unit-name').value,'House one');assert.ok(x.store.db.serialize().equals(before));
+  s.atlas.family='travel';s.atlas.render();const travelMarker=s.svg.querySelector('[data-kind="party"]');assert.equal(travelMarker.getAttribute('pointer-events'),'auto');const travelDown=new x.window.Event('pointerdown',{bubbles:true});Object.assign(travelDown,{button:0,pointerId:100,clientX:100,clientY:100});s.svg.setPointerCapture=()=>{};travelMarker.dispatchEvent(travelDown);assert.equal(s.atlas.partyDrag?.id,100);s.atlas.cancel();
+ }finally{await s.close();}
+});

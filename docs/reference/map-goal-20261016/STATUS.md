@@ -1,6 +1,6 @@
 # Atlas workflow: implementation and open acceptance
 
-Source includes SaltMarcher Main `f2062971b`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
+Source includes SaltMarcher Main `347ddd528`, version 0.160.0, on `qa/atlas-navigation-20261016`. Published commits, older checkouts and qualified snapshots remain preserved. The continuous Goal is paused by user request. Work continues through the 90-minute heartbeat and explicitly requested direct blocker repair; explicit owner acceptance is still required.
 
 ## GM task
 
@@ -55,3 +55,5 @@ Die beobachtete manuelle zweite Türbindung, der nach Rücknahme fehlgeschlagene
 The bounded region integration retains precise place markers, exact house room counts, navigation guards and public projection. Actual regional search → location book → description-only live reuse passed; Hextml now has a real project export and independent fresh-file import, including recovered secret notes. The selected-house overlay no longer replaces neighboring city geometry. [Regional follow-up and remaining limits](REGIONAL-20261017.md).
 
 Nach gezielter Hausauswahl lädt „Bebauen“ wieder die bestehende Viertel-/Straßengrundlage derselben Stadt. Die fertige Vorschau zeigt das ganze Viertel. Der tatsächliche Ablauf erreicht 99 Häuser bei erhaltener Taverne, Hausnotiz, Zwei-Raum-Innenraum und 21s Gruppenzeit. Ein Watabou-Durchlauf mit benanntem Ort, lokalem Geometriewurf und SVG-Ausgabe wurde tatsächlich durchgeführt; die grafischen und fachlichen Grenzen bleiben offen. [Bebauungsnachtest](INFILL-20261017.md).
+
+Der Gruppenmarker über einem Haus blockiert dessen Bearbeitungsklick nicht mehr; Gruppenverschiebung bleibt auf „Erkunden“ begrenzt. Die passive Ereignisdiagnose, Korrektur und tatsächliche Wiederholung sind im Bebauungsnachtest festgehalten.
