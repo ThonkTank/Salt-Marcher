@@ -61,9 +61,9 @@ export class NoteMergeUI {
       this.options.tell('Originalvermerk lokal gesichert. Prüfe die gespeicherten Notizen und Verweise, bevor du eine neue Zusammenführung beginnst.');
     }catch(e){this.feedback(e);}};
     this.reviewed.onchange=()=>this.sync();this.confirm.onclick=()=>{void this.submit();};this.check.onclick=()=>{void this.checkPending();};this.refresh.onclick=()=>{void this.refreshPreview();};
-    this.close.onclick=()=>{if(!this.busy&&!this.composing){this.persist();this.dialog.close();}};
-    this.discard.onclick=()=>{if(this.busy||this.hasPending())return;try{this.options.storage.removeItem(this.key());this.draft=null;this.resume.hidden=true;this.dialog.close();}catch(e){this.feedback(e);}};
-    this.dialog.addEventListener('cancel',event=>{if(this.busy||this.composing)event.preventDefault();else this.persist();});this.sync();
+    this.close.onclick=()=>{if(!this.busy&&!this.composing&&this.persist())this.dialog.close();};
+    this.discard.onclick=()=>{if(this.busy||this.composing||this.loadError||this.draft?.command)return;try{this.options.storage.removeItem(this.key());this.draft=null;this.persisted=true;this.resume.hidden=true;this.dialog.close();}catch(e){this.feedback(e);}};
+    this.dialog.addEventListener('cancel',event=>{if(this.busy||this.composing||!this.persist())event.preventDefault();});this.sync();
   }
   private key(){return 'note-merge:'+this.campaignId;}
   activate(campaignId:string){
@@ -78,7 +78,7 @@ export class NoteMergeUI {
     }catch(e){this.loadError=true;try{this.raw.value=this.options.storage.getItem(this.key())??'';}catch{}this.options.tell((e as Error).message,true);}
     this.resume.hidden=!this.draft&&!this.loadError;this.sync();
   }
-  hasPending(){return this.loadError||!!this.draft?.command;}
+  hasPending(){return this.loadError||!!this.draft?.command||(!this.persisted&&!!this.draft);}
   private valid(epoch=this.epoch){return this.epoch===epoch&&!!this.owner?.current();}
   private feedback(error:unknown){this.status.textContent=(error as Error).message;this.options.tell(this.status.textContent,true);}
   private persist(){
@@ -112,7 +112,7 @@ export class NoteMergeUI {
     }catch(e){if(epoch===this.epoch)this.feedback(e);}finally{this.sync();}
   }
   async refreshPreview(){
-    if(this.busy||this.hasPending()||!this.owner||!this.draft||!this.draft.targetId)return;
+    if(this.busy||this.loadError||this.draft?.command||!this.owner||!this.draft||!this.draft.targetId)return;
     const epoch=this.epoch;this.busy=true;this.reviewed.checked=false;this.sync();
     try{
       const preview=unwrap(await this.options.api.noteMergePreview(this.owner.token,this.draft.sourceId,this.draft.targetId));if(!this.valid(epoch))return;this.preview=preview;
