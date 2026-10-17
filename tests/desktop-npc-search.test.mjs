@@ -47,3 +47,15 @@ test('composition waits for committed text; ordinary input then searches without
 test('campaign activation invalidates delayed list replies and resets foreign filter identities',async()=>{
  const x=await fixture();try{const original=window.campaign.npcs,held=deferred();window.campaign.npcs=async()=>held.promise;x.input('Wald');x.submit();await tick();x.el('npc-filter-faction').value='foreign';x.ui.activateNpcs({...x.w,token:'new'});held.resolve(await original(x.w.token,{text:'Wald',lifecycle:'all',factionId:null,locationId:null,offset:0}));await tick();assert.equal(x.titles().length,0);assert.equal(x.el('npc-search').value,'');assert.equal(x.el('npc-filter-faction').value,'');assert.equal(x.el('npc-list-status').hidden,true);}finally{await x.cleanup();}
 });
+
+test('NPC search uses Unicode case and canonical equivalence in every authored field without rewriting prose',()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'npc-search-unicode-')),{CampaignStore}=require('../.build/npc-search-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite');
+ try{
+  const campaign=store.create('Umlaute'),w=store.activate(campaign.id),id=randomUUID(),slot={id:randomUUID(),startMinute:60,endMinute:120,activity:'Ölhandel',place:'other',notes:'Säcke zählen'},override={day:'2',label:'Ärztetag',slots:[{...slot,id:randomUUID(),activity:'Flöße prüfen',notes:'Müde Händler'}]};
+  const npc=store.executeNpc({commandId:randomUUID(),campaignId:campaign.id,token:w.token,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name:'Jäger Änne',creatureId:null,readAloud:'  Grüße.\r\n- Gruß vom Tor',gmNotes:'  Überwacht den Fluss.\r\n- Geheimnis',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'Gru\u0308ner Mantel',behavior:'Lächelt',history:'Hört Stimmen',dailyPlan:[slot],dailyOverrides:[override]},locationId:null,health:null}}),bytes=store.db.serialize();
+  const queries=['JÄGER','A\u0308NNE','GRÜẞE','überwacht','GRÜNER','LÄCHELT','HÖRT','ÖLHANDEL','SÄCKE','ÄRZTETAG','FLÖẞE','MÜDE'];
+  for(const text of queries){const found=store.npcs(w.token,{text,lifecycle:'all',factionId:null,locationId:null,offset:0});assert.deepEqual(found.rows.map(n=>n.id),[id],text);assert.equal(found.total,1,text);}
+  assert.equal(store.npcs(w.token,{text:'JÄGER',lifecycle:'defeated',factionId:null,locationId:null,offset:0}).total,0);
+  assert.ok(store.db.serialize().equals(bytes),'search must leave authored bytes and revisions unchanged');assert.deepEqual(store.npc(w.token,id),npc);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
+});
