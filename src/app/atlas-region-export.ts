@@ -19,45 +19,27 @@ export function atlasRegionPaint(
     floorId: string;
     roofs: boolean;
     rasters?: import("./landscape-raster").LandscapeRaster[];
-    geometryOnly?: boolean;
-    geometryTiles?: import("./landscape-raster").LandscapeRaster[];
   },
 ) {
   const scene = landscapeNode("group", {}),
     mpp = box.width / width;
-  if (!options.geometryOnly)
-    scene.append(
-      landscapeNode("rect", {
-        width: box.width,
-        height: box.height,
-        style: { fill: "#b8c896" },
-      }),
-    );
-  if (!options.geometryOnly)
-    drawLandscape(
-      scene,
-      records,
-      box,
-      mpp,
-      assets,
-      options.references,
-      options.rasters,
-    );
-  if (options.grid && !options.geometryOnly)
-    drawLandscapeGrid(scene, box, options.level, mpp);
-  if (options.geometryTiles) {
-    for (const tile of options.geometryTiles)
-      scene.append(
-        landscapeNode("image", {
-          x: tile.box.x - box.x,
-          y: tile.box.y - box.y,
-          width: tile.box.width,
-          height: tile.box.height,
-          source: tile.data,
-        }),
-      );
-    return scene;
-  }
+  scene.append(
+    landscapeNode("rect", {
+      width: box.width,
+      height: box.height,
+      style: { fill: "#b8c896" },
+    }),
+  );
+  drawLandscape(
+    scene,
+    records,
+    box,
+    mpp,
+    assets,
+    options.references,
+    options.rasters,
+  );
+  if (options.grid) drawLandscapeGrid(scene, box, options.level, mpp);
   if (data.region?.raster) {
     const tile = data.region.raster;
     scene.append(

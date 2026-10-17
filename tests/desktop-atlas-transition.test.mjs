@@ -117,14 +117,21 @@ test('an unavailable derived index cannot prevent opening an unrelated healthy c
  assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name IN ('atlas_landscape_area','atlas_landscape_objects')").get().n,0);
 });
 
-test('GM export tiles cover the requested pixels, reject mixed revisions and stop on cancellation or byte budget',async()=>{
- const {landscapeExportTiles}=require('../.build/transition-export.cjs'),box={x:-12345,y:-98765,width:4e7,height:2e7},calls=[];
- const read=async(part,width,height)=>{calls.push({part,width,height});return{ok:true,value:{campaignId:'c',revision:7,box:part,width,height,data:'data:image/png;base64,test'}};};
- const tiles=await landscapeExportTiles(box,2050,1100,'c',7,read,()=>true);assert.equal(tiles.length,6);assert.deepEqual(calls.map(c=>[c.width,c.height]),[[1024,1024],[1024,1024],[2,1024],[1024,76],[1024,76],[2,76]]);const last=tiles.at(-1);assert(Math.abs(last.box.x+last.box.width-box.x-box.width)<1e-6);assert(Math.abs(last.box.y+last.box.height-box.y-box.height)<1e-6);
- let running=true,count=0;await assert.rejects(landscapeExportTiles(box,2050,1100,'c',7,async(...args)=>{count++;running=false;return read(...args);},()=>running),/abgebrochen/);assert.equal(count,1);
- await assert.rejects(landscapeExportTiles(box,100,100,'c',8,read,()=>true),/während der Ausgabe/);
- const data='A'.repeat(8*1024*1024);await assert.rejects(landscapeExportTiles(box,8192,8192,'c',7,async(...args)=>{const r=await read(...args);r.value.data=data;return r;},()=>true),/Bildspeicher/);
- assert.equal(calls.length<70,true);await assert.rejects(landscapeExportTiles(box,8193,1,'c',7,read,()=>true),/prüfen/);
+test('GM scenes stream with exact pixel placement, source identity and cancellation',async()=>{
+ const {atlasExportTiles}=require('../.build/transition-export.cjs'),box={x:-12345,y:-98765,width:4e7,height:2e7},calls=[],progress=[];
+ const collect=async stream=>{const tiles=[];for await(const tile of stream)tiles.push(tile);return tiles;};
+ const read=async(part,width,height)=>{calls.push({part,width,height});return{ok:true,value:{campaignId:'c',revision:7,box:part,width,height,scene:{}}};};
+ const stream=atlasExportTiles(box,2050,1100,'c',7,read,()=>true,(...p)=>progress.push(p),1024);
+ assert.equal(calls.length,0,'Do not read or retain tiles before consumption');
+ const tiles=await collect(stream);assert.equal(tiles.length,6);assert.deepEqual(calls.map(c=>[c.width,c.height]),[[1024,1024],[1024,1024],[2,1024],[1024,76],[1024,76],[2,76]]);
+ assert.deepEqual(tiles.map(t=>[t.x,t.y]),[[0,0],[1024,0],[2048,0],[0,1024],[1024,1024],[2048,1024]]);assert.deepEqual(progress.at(-1),[6,6]);
+ const last=tiles.at(-1);assert(Math.abs(last.box.x+last.box.width-box.x-box.width)<1e-6);assert(Math.abs(last.box.y+last.box.height-box.y-box.height)<1e-6);
+ let running=true,count=0;await assert.rejects(collect(atlasExportTiles(box,2050,1100,'c',7,async(...args)=>{count++;running=false;return read(...args);},()=>running)),/abgebrochen/);assert.equal(count,1);
+ running=true;count=0;const paused=atlasExportTiles(box,2050,1100,'c',7,async(...args)=>{count++;return read(...args);},()=>running);
+ await paused.next();assert.equal(count,1,'The successor must wait for the consumer');running=false;await assert.rejects(paused.next(),/abgebrochen/);assert.equal(count,1);
+ for(const change of [{campaignId:'other'},{revision:8},{width:99},{height:99},{box:{...box,x:0}}])await assert.rejects(collect(atlasExportTiles(box,100,100,'c',7,async(...args)=>{const r=await read(...args);return{ok:true,value:{...r.value,...change}};},()=>true)),/während der Ausgabe/);
+ await assert.rejects(collect(atlasExportTiles(box,100,100,'c',7,async()=>({ok:false,error:'Source unavailable'}),()=>true)),/Source unavailable/);
+ await assert.rejects(collect(atlasExportTiles(box,8193,1,'c',7,read,()=>true)),/prüfen/);
 });
 
 test('public export uses remembered public terrain, never current hidden GM geometry',async t=>{
