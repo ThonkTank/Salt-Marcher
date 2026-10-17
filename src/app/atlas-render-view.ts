@@ -10,5 +10,5 @@ export function drawingGeometryOnly(view:DrawingMapView):DrawingMapView {
 }
 export function atlasGeometryOnly(a:AtlasRenderView):AtlasRenderView {
  const {keyDescription:unusedDescription,contents:unusedContents,...geometry}=a.geometry;
- return{...a,workspace:workspaceGeometryOnly(a.workspace),geometry:{...geometry,rooms:workspaceGeometryOnly(a.workspace).rooms,drawing:{...drawingGeometryOnly(a.geometry.drawing),hiddenRooms:[]}}};
+ const workspace=workspaceGeometryOnly(a.workspace);return{...a,workspace,geometry:{...geometry,rooms:workspace.rooms,drawing:{...drawingGeometryOnly(a.geometry.drawing),hiddenRooms:[]}}};
 }

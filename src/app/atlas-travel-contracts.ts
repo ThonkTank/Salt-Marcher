@@ -59,7 +59,9 @@ export interface AtlasTravelCommand {
   sceneId: string;
   action: AtlasTravelAction;
 }
+export interface AtlasTravelCommit {campaignId:string;commandId:string;sceneId:string}
 export interface AtlasTravelAPI {
+  executeAtlasTravelCommit(command:AtlasTravelCommand):Promise<Result<AtlasTravelCommit>>;
   previewAtlasTravel(
     token: string,
     destination: Point,

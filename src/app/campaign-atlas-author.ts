@@ -50,11 +50,11 @@ export async function writeAtlas(
 }
 
 /** Terrain changes need a durable receipt, not another complete campaign copy. */
-export async function writeAtlasCommit(c: AtlasCommand): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>> {
-  if(pending.has(c.token)) return {ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
+export async function writeAtlasCommit(c: AtlasCommand,recovery=false): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>> {
+  if(pending.has(c.token)&&!recovery) return {ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
   try {
     const result=await window.campaign.executeAtlasCommit(c);
-    if(result.ok)document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:result.value}));
+    if(result.ok){pending.delete(c.token);document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:result.value}));}
     document.dispatchEvent(new Event('atlas-write-state'));
     return result;
   } catch(e) {
@@ -62,6 +62,8 @@ export async function writeAtlasCommit(c: AtlasCommand): Promise<Result<import('
     return {ok:false,error:'Ausgang des Atlasauftrags unbekannt. Der Auftrag bleibt mit derselben Kennung für Speicherstand klären erhalten. '+(e as Error).message};
   }
 }
+
+export async function recoverAtlasCommit(token:string){const command=pending.get(token);return command?writeAtlasCommit(command,true):null;}
 
 const wrap = (
   c: { commandId: string; token: string; campaignId: string },

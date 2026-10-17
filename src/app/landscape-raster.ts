@@ -22,6 +22,18 @@ export class LandscapeRasterizer {
     const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
     for(const polygon of record.polygons)this.polygon(polygon,rgb);
   }
+  paintPolygons(polygons:Polygon[],color:string){
+    if(!/^#[a-f0-9]{6}$/i.test(color))throw new Error('Darstellungsfarbe fehlt.');
+    const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));for(const p of polygons)this.polygon(p,rgb);
+  }
+  paintLine(points:{x:number;y:number}[],width:number,color:string){
+    const radius=Math.max(width/2,this.box.width/this.width/2);
+    for(let i=0;i<points.length;i++){
+      const p=points[i]!,a=points[i-1];
+      if(a){const d=Math.hypot(p.x-a.x,p.y-a.y)||1,x=-(p.y-a.y)/d*radius,y=(p.x-a.x)/d*radius;this.paintPolygons([{outer:[{x:a.x+x,y:a.y+y},{x:p.x+x,y:p.y+y},{x:p.x-x,y:p.y-y},{x:a.x-x,y:a.y-y}],holes:[]}],color);}
+      this.paintPolygons([{outer:Array.from({length:12},(_,i)=>({x:p.x+Math.cos(i*Math.PI/6)*radius,y:p.y+Math.sin(i*Math.PI/6)*radius})),holes:[]}],color);
+    }
+  }
   private polygon(p: Polygon, rgb: number[]) {
     const rings=[p.outer,...p.holes].map(r=>r.map(v=>({x:(v.x-this.box.x)/this.box.width*this.w,y:(v.y-this.box.y)/this.box.height*this.h})));
     let minY=this.h,maxY=-1;

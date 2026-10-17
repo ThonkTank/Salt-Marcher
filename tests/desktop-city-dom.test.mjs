@@ -1,3 +1,4 @@
+import {atlasRegionBridge} from './atlas-region-bridge-helper.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,readFileSync,rmSync,writeFileSync,mkdirSync} from 'node:fs';
@@ -39,10 +40,11 @@ async function setup(){
  const saved=Object.fromEntries(['window','document','DOMParser','Event','CustomEvent','Option','ResizeObserver','setTimeout','clearTimeout'].map(k=>[k,globalThis[k]])),timers=new Map();let timer=0;
  Object.assign(globalThis,{window,document,DOMParser,Event:window.Event,CustomEvent:window.CustomEvent,ResizeObserver:class{observe(){} disconnect(){}},Option:function(text,value){const o=document.createElement('option');o.textContent=text;o.value=value;return o;},setTimeout:(fn,ms)=>{timers.set(++timer,{fn,ms});return timer;},clearTimeout:id=>timers.delete(id)});
  const writes=[],messages=[];let current;
+ const regionBridge=atlasRegionBridge(store);
  const reply=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};
  window.campaign={world:async token=>reply(()=>store.world(token)),landscapeFind:async(t,q)=>reply(()=>store.landscapeFind(t,q)),landscapeRegion:async(t,b,m,includePatches)=>reply(()=>store.landscapeRegion(t,b,m,includePatches)),campaignAtlas:async (token,groupView)=>reply(()=>store.campaignAtlas(token,groupView)),npcs:async(t,q)=>reply(()=>store.npcs(t,q)),cities:async t=>reply(()=>store.cities(t)),city:async(t,id)=>reply(()=>store.city(t,id)),executeCity:async command=>{writes.push(structuredClone(command));return reply(()=>store.executeAtlas({...command,action:command.action.kind==='undo'||command.action.kind==='redo'?{kind:command.action.kind}:{kind:'city',command}}).atlas.cities.find(c=>c.header.id===command.cityId));},executeAtlas:async command=>{if(!['city','undo','redo'].includes(command.action.kind))return reply(()=>store.executeAtlas(command));const city=command.action.kind==='city'?command.action.command:{...command,cityId:document.getElementById('city-select').value,action:command.action};const result=await window.campaign.executeCity(city);return result.ok?reply(()=>({atlas:store.campaignAtlas(command.token),result:result.value})):result;},exportCity:async()=>({ok:true,value:{cancelled:false}})};
  // Bounded Atlas APIs use the actual store and browser-safe rasterizer, not a second campaign snapshot.
- Object.assign(window.campaign,{
+ Object.assign(window.campaign,regionBridge.api,{
   atlasRenderView:async(token,groupView)=>reply(()=>store.atlasRenderView(token,groupView)),
   drawingMap:async token=>reply(()=>store.drawingMap(token)),
   drawingElement:async(token,id)=>reply(()=>store.drawingElement(token,id)),
@@ -71,7 +73,7 @@ async function setup(){
  document.getElementById('city-zoom').value='1';document.getElementById('city-seed').value='city-seed';document.getElementById('city-density').value='0.5';document.getElementById('city-size').value='8';document.getElementById('city-reach').value='80';
  await activate('Alpha');await select();document.getElementById('city-location').value=store.city(current.token,cityIds.one).header.locationId;
  return{store,ui,window,document,cityIds,unitIds,writes,messages,timers,activate,select,choose,enter,click,drain,current:()=>current,
-  async cleanup(){await drain();await directory.close();timers.clear();store.close();Object.assign(globalThis,saved);rmSync(root,{recursive:true,force:true});}
+  async cleanup(){await drain();await directory.close();timers.clear();regionBridge.close();store.close();Object.assign(globalThis,saved);rmSync(root,{recursive:true,force:true});}
  };
 }
 
@@ -309,9 +311,10 @@ test('shared Atlas routes target clicks into the house preview and retains selec
  try{
   const w=x.current(),storage=new Map();Object.assign(globalThis,{DOMPoint:class {constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return{x:this.x,y:this.y};}},requestAnimationFrame:fn=>{queueMicrotask(()=>fn(0));return 0;},cancelAnimationFrame:()=>{},localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)}});
   const binding={id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0};x.store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'bind',binding,expectedRevision:null}});
-  x.window.campaign.atlasRenderView=async token=>({ok:true,value:x.store.atlasRenderView(token)});
+
   atlas=new x.ui.CampaignAtlasWorkbench({selectRoom:async()=>{},roomDraft:()=>null,flush:()=>x.ui.flushCity(),updated:async()=>{},status:(message,error)=>x.messages.push({message,error})});
   for(const select of x.document.querySelectorAll('#campaign-atlas select'))if(!Object.hasOwn(select,'value')){select.add=o=>select.append(o);let chosen='';Object.defineProperty(select,'value',{get(){const options=[...select.querySelectorAll('option')];return options.find(o=>o.value===chosen)?.value??options[0]?.value??'';},set(v){chosen=String(v);}});}
+  for(const input of x.document.querySelectorAll('input[type=checkbox]'))if(typeof input.checked!=='boolean')input.checked=input.hasAttribute('checked');
   const svg=x.document.getElementById('campaign-map');Object.defineProperty(svg,'clientWidth',{value:800});Object.defineProperty(svg,'clientHeight',{value:500});svg.getScreenCTM=()=>({inverse:()=>({})});
   atlas.activate(w);await atlas.open();await atlas.navigate('city',x.cityIds.one,x.unitIds.one);await settle();
   const original=x.store.city(w.token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one),before=x.writes.length;
@@ -342,6 +345,7 @@ async function placeSurface(x,callbacks={}){
  const saved=Object.fromEntries(['DOMPoint','requestAnimationFrame','cancelAnimationFrame','localStorage'].map(k=>[k,globalThis[k]])),storage=new Map();Object.assign(globalThis,{DOMPoint:class {constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return{x:this.x,y:this.y};}},requestAnimationFrame:fn=>{queueMicrotask(()=>fn(0));return 0;},cancelAnimationFrame:()=>{},localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)}});
  const atlas=new x.ui.CampaignAtlasWorkbench({selectRoom:async()=>{},roomDraft:()=>null,flush:()=>x.ui.flushCity(),updated:async()=>{},status:(message,error)=>x.messages.push({message,error}),...callbacks});
  for(const select of x.document.querySelectorAll('select'))if(!Object.hasOwn(select,'value')){select.add=o=>select.append(o);let chosen='';Object.defineProperty(select,'value',{get(){const options=[...select.querySelectorAll('option')];return options.find(o=>o.value===chosen)?.value??options[0]?.value??'';},set(v){chosen=String(v);}});}
+ for(const input of x.document.querySelectorAll('input[type=checkbox]'))if(typeof input.checked!=='boolean')input.checked=input.hasAttribute('checked');
  for(const dialog of x.document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
  const svg=x.document.getElementById('campaign-map');Object.defineProperty(svg,'clientWidth',{value:800});Object.defineProperty(svg,'clientHeight',{value:500});svg.getScreenCTM=()=>({inverse:()=>({})});atlas.activate(x.current());await atlas.open();await settle();
  return {atlas,svg,point:async(a,b)=>{const event=new x.window.Event('click',{bubbles:true});event.button=0;event.clientX=a-Number(svg.dataset.atlasOriginX);event.clientY=b-Number(svg.dataset.atlasOriginY);svg.dispatchEvent(event);await settle();},async close(){try{atlas.hide();await x.cleanup();}finally{Object.assign(globalThis,saved);}}};
@@ -352,6 +356,19 @@ test('shared Atlas creates a precise canonical place, reads it and returns from 
  try{const original=x.store.world(x.current().token).places.length,view=()=>[surface.svg.getAttribute('viewBox'),surface.svg.dataset.atlasOriginX,surface.svg.dataset.atlasOriginY];await surface.point(123.25,456.75);const before=view();x.click('atlas-create-place');await until(()=>x.document.getElementById('atlas-place-dialog').open);x.enter('atlas-place-name','Canonical chapel');x.enter('atlas-place-description','First prose\n\nSecond prose');x.enter('atlas-place-notes','Private\n\nKeep exact');x.document.getElementById('atlas-place-form').dispatchEvent(new x.window.Event('submit',{cancelable:true}));await until(()=>!x.document.getElementById('atlas-place-dialog').open);assert.deepEqual(view(),before);
   const place=x.store.campaignAtlas(x.current().token).places.find(p=>p.name==='Canonical chapel');assert.deepEqual(place.point,{x:123.25,y:456.75});assert.equal(surface.svg.querySelectorAll('[data-kind="place"][data-id="'+place.locationId+'"]').length,1);const marker=surface.svg.querySelector('[data-kind="place"][data-id="'+place.locationId+'"]');assert.equal(marker.querySelector('text').getAttribute('x'),marker.querySelector('circle').getAttribute('cx'));x.click('atlas-place-read');await until(()=>read===place.locationId);x.click('atlas-place-edit');await until(()=>!!edit);await edit.back();assert.deepEqual(view(),before);assert.equal(x.document.getElementById('atlas-selection-title').textContent,'Canonical chapel');
   x.click('atlas-undo');await until(()=>x.store.world(x.current().token).places.length===original);assert.equal(x.store.preparation(x.current().token).locations.some(p=>p.document.id===place.locationId),false);x.click('atlas-redo');await until(()=>x.store.world(x.current().token).places.length===original+1);assert.equal(x.store.preparation(x.current().token).locations.find(p=>p.document.id===place.locationId).document.sections[1].markdown,'Private\n\nKeep exact');
+ }finally{await surface.close();}
+});
+
+test('a canonical place and its linked landscape POI form one search result and one navigation marker',async()=>{
+ const x=await setup(),surface=await placeSurface(x);try{
+  const w=x.current(),map=x.store.world(w.token).maps[0],id=randomUUID(),point={x:100,y:200},write=action=>x.store.executeAtlasCommit({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action});
+  write({kind:'location-create',mapId:map.id,expectedMapRevision:map.revision,point,document:{kind:'location',version:1,id,name:'Unified chapel',type:'poi',sections:[],detailMaps:[],keyLinks:[]}});
+  write({kind:'landscape-put',record:{id:randomUUID(),revision:1,kind:'place',name:'Unified chapel',points:[point],polygons:[],resolution:4828.032,width:0,values:{},locationId:id},expectedRevision:null});
+  await surface.atlas.refresh();x.enter('atlas-search','Unified chapel');await settle();await settle();
+  await until(()=>[...x.document.querySelectorAll('#atlas-search-results button')].some(b=>b.textContent==='Unified chapel'));
+  await x.drain();await settle();assert.equal([...x.document.querySelectorAll('#atlas-search-results button')].filter(b=>b.textContent==='Unified chapel').length,1);
+  surface.atlas.render();assert.equal(surface.svg.querySelectorAll('[data-kind="place"][data-id="'+id+'"]').length,1);
+  surface.atlas.data.places=[];x.enter('atlas-search','Unified chapel');await settle();await x.drain();await until(()=>x.document.querySelector('#atlas-search-results button'));x.document.querySelector('#atlas-search-results button').click();await until(()=>x.document.getElementById('atlas-selection-title').textContent==='Unified chapel');assert.equal(surface.atlas.family,'navigation');assert.equal(x.document.getElementById('atlas-place-actions').hidden,false);
  }finally{await surface.close();}
 });
 
@@ -374,13 +391,14 @@ function mapEvidence(svg,name){
 async function interiorSurface(x){
  let workspace=x.current(),selected=null,surface;
  x.store.executeAtlas({commandId:randomUUID(),token:workspace.token,campaignId:workspace.campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0},expectedRevision:null}});
+ x.store.executeAtlas({commandId:randomUUID(),token:workspace.token,campaignId:workspace.campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.two,parent:'world',parentId:null,x:3000,y:4000,angle:0,revision:0},expectedRevision:null}});
  x.window.campaign.drawing=async token=>({ok:true,value:x.store.drawing(token)});
  x.ui.initDrawing((message,error)=>x.messages.push({message,error}),()=>workspace,()=>workspace.rooms.find(r=>r.id===selected)??null,async()=>true,async next=>{workspace=next;await surface.atlas.refresh();},()=>surface?.atlas.render());
  await x.ui.activateDrawing(workspace);
  surface=await placeSurface(x,{flush:()=>x.ui.flushDrawing(),selectRoom:async id=>{selected=id;},updated:async next=>{workspace=next;await x.ui.activateDrawing(next);}});
  surface.svg.setPointerCapture=()=>{};
  await surface.atlas.navigate('city',x.cityIds.one,x.unitIds.one);
- x.click('atlas-building-interior');await until(()=>surface.atlas.family==='interior');await settle();
+ x.click('atlas-building-interior');await until(()=>surface.atlas.family==='interior').catch(error=>{error.message+=' '+JSON.stringify(x.messages)+' '+x.document.getElementById('atlas-save-status').textContent;throw error;});await settle();
  const point=(type,at,target=surface.svg)=>{const e=new x.window.Event(type,{bubbles:true});Object.assign(e,{button:0,pointerId:7,clientX:at.x-Number(surface.svg.dataset.atlasOriginX),clientY:at.y-Number(surface.svg.dataset.atlasOriginY)});target.dispatchEvent(e);};
  const tool=name=>x.document.querySelector('[data-drawing-tool="'+name+'"]').click();
  return {...surface,tool,point,workspace:()=>workspace,async activate(name){await x.activate(name);workspace=x.current();selected=null;await x.ui.activateDrawing(workspace);surface.atlas.activate(workspace);},async rectangle(name,a,b,target){tool('room-rectangle');x.enter('drawing-room-name',name);point('pointerdown',a,typeof target==='string'?surface.svg.querySelector(target):target);point('pointermove',b);point('pointerup',b);await until(()=>x.store.campaignAtlas(x.current().token).workspace.rooms.some(r=>r.name===name)).catch(error=>{error.message+=' '+JSON.stringify(x.messages);throw error;});await x.drain();await settle();}};
@@ -442,7 +460,7 @@ test('house inspector counts canonical rooms and opens the same interior after r
   assert.equal(get('city-interior-status').textContent,'Innenraum angelegt · 2 Räume');
   x.click('city-interior');await until(()=>s.atlas.family==='interior');assert.equal(s.atlas.scopeId,scope);
   await returnHome();
-  x.store.executeAtlas({commandId:randomUUID(),token:x.current().token,campaignId:x.current().campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.two,parent:'world',parentId:null,x:1500,y:2000,angle:0,revision:0},expectedRevision:null}});
+  // The shared interior fixture already binds both cities for exact focus reads.
   await s.atlas.refresh();await s.atlas.navigate('city',x.cityIds.two,x.unitIds.two);await settle();
   assert.equal(get('city-interior-status').textContent,'Innenraum noch nicht angelegt.');assert.equal(get('city-interior').textContent,'Innenraum anlegen');
   x.click('city-interior');await until(()=>s.atlas.family==='interior');assert.notEqual(s.atlas.scopeId,scope);
@@ -534,8 +552,8 @@ test('a newer Atlas navigation wins over an older request waiting for editors',a
 test('a late Atlas navigation read cannot select an object in the next campaign',async()=>{
  const x=await setup(),s=await interiorSurface(x);let release;
  try{
-  const read=x.window.campaign.atlasRenderView;let first=true;
-  x.window.campaign.atlasRenderView=async(...args)=>{const result=await read(...args);if(first){first=false;return new Promise(resolve=>release=()=>resolve(result));}return result;};
+  const read=x.window.campaign.atlasRegion;let first=true;
+  x.window.campaign.atlasRegion=async(...args)=>{const result=await read(...args);if(first){first=false;return new Promise(resolve=>release=()=>resolve(result));}return result;};
   const pending=s.atlas.navigate('city',x.cityIds.two);await until(()=>!!release);
   await s.activate('Beta');await s.atlas.open();
   const box=s.svg.getAttribute('viewBox'),before=x.store.db.serialize();release();await pending;
@@ -656,8 +674,8 @@ test('group-view room labels come from live public perception rather than GM roo
   const labels=s.svg.querySelector('[data-atlas-public-view]');assert.ok(labels);mapEvidence(s.svg,'interior-public.svg');assert.match(labels.textContent,/Public taproom/);assert.doesNotMatch(labels.textContent,/GM:|Hidden vault/);assert.equal(labels.querySelectorAll('[data-room-number]').length,0);assert.equal(labels.getAttribute('transform'),null);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.playerView(x.current().token).frame.mode,'blank');
   s.point('pointerdown',at(0,0));s.point('pointermove',at(2,2));s.point('pointerup',at(2,2));s.point('click',at(0,0));await settle();assert.ok(x.store.db.serialize().equals(before));assert.equal(x.ui.atlasDrawingDraft().path.length,0);
   player({kind:'settings',settings:{blank:true,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}});await s.atlas.refresh();assert.equal(s.svg.querySelector('[data-atlas-public-view]').textContent,'');
-  const read=x.window.campaign.atlasRenderView,stable=x.store.db.serialize();x.window.campaign.atlasRenderView=async()=>({ok:false,error:'Context unavailable'});await s.atlas.refresh();assert.match(x.document.getElementById('atlas-view-status').textContent,/nicht verfügbar/);assert.equal(x.document.getElementById('atlas-view-refresh').hidden,false);assert.equal(s.svg.querySelector('[data-atlas-public-view]').querySelectorAll('circle,path').length,0);assert.doesNotMatch(s.svg.textContent,/GM:|Public taproom/);
-  x.window.campaign.atlasRenderView=read;x.click('atlas-view-refresh');await until(()=>s.atlas.travelReadState==='ready');assert.ok(s.svg.querySelector('[data-atlas-public-view]').querySelector('circle'));assert.ok(x.store.db.serialize().equals(stable));
+  const read=x.window.campaign.atlasRegion,stable=x.store.db.serialize();x.window.campaign.atlasRegion=async()=>({ok:false,error:'Context unavailable'});await s.atlas.refresh();assert.match(x.document.getElementById('atlas-view-status').textContent,/nicht verfügbar/);assert.equal(x.document.getElementById('atlas-view-refresh').hidden,false);assert.equal(s.svg.querySelector('[data-atlas-public-view]').querySelectorAll('circle,path').length,0);assert.doesNotMatch(s.svg.textContent,/GM:|Public taproom/);
+  x.window.campaign.atlasRegion=read;x.click('atlas-view-refresh');await until(()=>s.atlas.travelReadState==='ready');assert.ok(s.svg.querySelector('[data-atlas-public-view]').querySelector('circle'));assert.ok(x.store.db.serialize().equals(stable));
   toggle.checked=false;toggle.onchange();await until(()=>!s.svg.querySelector('[data-atlas-public-view]'));const gm=s.svg.querySelector('[data-atlas-room-labels="'+first.scopeId+'"]');assert.match(gm.textContent,/GM: Taproom contact/);assert.match(gm.textContent,/GM: Hidden vault/);assert.equal(gm.querySelectorAll('[data-room-number]').length,2);
  }finally{await s.close();}
 });
@@ -685,11 +703,11 @@ test('world group preview shows public facts and the precise party point through
   await s.atlas.setFamily('terrain',false);assert.equal(x.document.getElementById('atlas-landscape-tools').hidden,true);assert.equal(s.atlas.landscape.active,false);
   await s.atlas.setFamily('travel',false);assert.ok(x.store.db.serialize().equals(before));
   const checkPoint=()=>{const a=s.atlas.data,p=a.scene.position,at=p.city?{x:1000+p.city.x,y:2000+p.city.y}:p.outdoor,token=[...s.svg.querySelector('[data-atlas-public-view]').querySelectorAll('circle')].at(-1);assert.ok(at);assert.ok(Math.abs(Number(token.getAttribute('cx'))-(at.x-Number(s.svg.dataset.atlasOriginX)))<1e-7);assert.ok(Math.abs(Number(token.getAttribute('cy'))-(at.y-Number(s.svg.dataset.atlasOriginY)))<1e-7);};checkPoint();
-  const requests=[];x.window.campaign.executeAtlasTravel=async(c,groupView)=>{requests.push(groupView);try{return{ok:true,value:x.store.executeAtlasTravel(c,groupView)};}catch(e){return{ok:false,error:e.message};}};
+  const requests=[],readRegion=x.window.campaign.atlasRegion;x.window.campaign.atlasRegion=async(token,query,...args)=>{requests.push(query.perception);return readRegion(token,query,...args);};
   const preview=x.store.previewAtlasTravel(x.current().token,{x:1020,y:2010});assert.equal(await s.atlas.travel({kind:'start',preview}),true);
   let journey=s.atlas.data.localJourney;assert.ok(journey);assert.equal(await s.atlas.travel({kind:'step',id:journey.id,expectedRevision:journey.revision}),true);
   const stable=x.store.db.serialize(),invalid={...command({kind:'place',point:{x:1005,y:2005},expectedPositionRevision:s.atlas.data.scene.position.revision,expectedMembershipRevision:scene.membershipRevision}),sceneId:scene.id};assert.throws(()=>x.store.executeAtlasTravel(invalid,'invalid'),/Gruppensicht/);assert.throws(()=>x.store.campaignAtlas(x.current().token,'invalid'),/Gruppensicht/);assert.ok(x.store.db.serialize().equals(stable));
-  assert.deepEqual(requests,[true,true]);assert.ok(s.atlas.data.publicFrame?.map);assert.ok(s.svg.querySelector('[data-atlas-public-view]'));checkPoint();mapEvidence(s.svg,'world-public.svg');assert.ok(BigInt(x.store.liveScene(x.current().token,scene.id).clock.instantMs)>BigInt(clock));assert.equal(x.store.currentPlayerFrame().mode,'blank');
+  assert.ok(requests.length>=2);assert.ok(requests.every(value=>value===true));assert.ok(s.atlas.data.publicFrame?.map);assert.ok(s.svg.querySelector('[data-atlas-public-view]'));checkPoint();mapEvidence(s.svg,'world-public.svg');assert.ok(BigInt(x.store.liveScene(x.current().token,scene.id).clock.instantMs)>BigInt(clock));assert.equal(x.store.currentPlayerFrame().mode,'blank');
  }finally{await s.close();}
 });
 

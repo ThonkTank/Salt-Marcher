@@ -20,8 +20,8 @@ export function groupView(db:any,cam:string,id:string):GroupView {
 export function preparedGroups(db:any,cam:string,search:string,after:string|null){
  if(typeof search!=='string'||search.length>1000||after!==null&&typeof after!=='string')throw new Error('Gruppensuche ungültig.');
  let title:string|null=null;
- if(after!==null){const anchor=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0").get(cam,after,search);if(!anchor)throw new Error('Suchseite veraltet. Suche neu starten.');title=checkedPreparedGroupRow(anchor).title;}
- const rows=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND instr(lower(json_extract(payload,'$.title')),lower(?))>0 AND (? IS NULL OR json_extract(payload,'$.title') COLLATE NOCASE > ? OR (json_extract(payload,'$.title') COLLATE NOCASE = ? AND id>?)) ORDER BY json_extract(payload,'$.title') COLLATE NOCASE,id LIMIT 26").all(cam,search,after,title,title,after);
+ if(after!==null){const anchor=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND id=? AND instr(atlas_lower(json_extract(payload,'$.title')),atlas_lower(?))>0").get(cam,after,search);if(!anchor)throw new Error('Suchseite veraltet. Suche neu starten.');title=checkedPreparedGroupRow(anchor).title;}
+ const rows=db.prepare("SELECT * FROM prepared_group WHERE campaign_id=? AND instr(atlas_lower(json_extract(payload,'$.title')),atlas_lower(?))>0 AND (? IS NULL OR json_extract(payload,'$.title') COLLATE NOCASE > ? OR (json_extract(payload,'$.title') COLLATE NOCASE = ? AND id>?)) ORDER BY json_extract(payload,'$.title') COLLATE NOCASE,id LIMIT 26").all(cam,search,after,title,title,after);
  return {items:rows.slice(0,25).map((r:any)=>{const g=checkedPreparedGroupRow(r);return{id:g.id,title:g.title,locationId:g.locationId,count:g.actors.length};}),next:rows.length>25?rows[24].id:null};
 }
 function checkDraft(d:GroupDraft):GroupDraft{

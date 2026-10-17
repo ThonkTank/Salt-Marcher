@@ -1,4 +1,5 @@
 import {appendAtlasRoomLabels} from './atlas-room-labels';
+import {regionValue} from './atlas-region-contracts';
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import {
@@ -21,9 +22,8 @@ export function atlasRegionSVG(
     references: boolean;
     floorId: string;
     roofs: boolean;
-    scopeId?:string|null;
-    labelUnitsPerPixel?:number;
-    rasters?: import("./landscape-raster").LandscapeRaster[];
+    scopeId?:string|null; labelUnitsPerPixel?:number;
+    rasters?: import("./landscape-raster").LandscapeRaster[];geometryOnly?:boolean;geometryTiles?:import("./landscape-raster").LandscapeRaster[];
   },
 ) {
   const svg = landscapeNode("svg", {
@@ -33,15 +33,17 @@ export function atlasRegionSVG(
     }) as SVGSVGElement,
     mpp = box.width / width,
     labelMpp=options.labelUnitsPerPixel&&Number.isFinite(options.labelUnitsPerPixel)&&options.labelUnitsPerPixel>0?options.labelUnitsPerPixel:mpp;
-  svg.append(
+  if(!options.geometryOnly)svg.append(
     landscapeNode("rect", {
       width: box.width,
       height: box.height,
       fill: "#b8c896",
     }),
   );
-  drawLandscape(svg, records, box, mpp, assets, options.references,options.rasters);
-  if (options.grid) drawLandscapeGrid(svg, box, options.level, mpp);
+  if(!options.geometryOnly)drawLandscape(svg, records, box, mpp, assets, options.references,options.rasters);
+  if (options.grid&&!options.geometryOnly) drawLandscapeGrid(svg, box, options.level, mpp);
+  if(options.geometryTiles){for(const tile of options.geometryTiles)svg.append(landscapeNode('image',{x:tile.box.x-box.x,y:tile.box.y-box.y,width:tile.box.width,height:tile.box.height,href:tile.data,preserveAspectRatio:'none'}));return svg;}
+  if(data.region?.raster){const tile=data.region.raster;svg.append(landscapeNode('image',{x:tile.box.x-box.x,y:tile.box.y-box.y,width:tile.box.width,height:tile.box.height,href:tile.data,preserveAspectRatio:'none'}));return svg;}
   for (const city of data.cities) {
     const binding = data.bindings.find(
       (b) => b.kind === "city" && b.ownerId === city.header.id,
@@ -66,7 +68,7 @@ export function atlasRegionSVG(
         "image/svg+xml",
       );
       for(const child of Array.from(doc.documentElement.children)){
-        const unitId=child.getAttribute('data-city-unit'),interior=data.bindings.find(b=>b.kind==='dungeon'&&b.parent==='building'&&b.parentId===unitId);
+        const unitId=child.getAttribute('data-city-unit'),scope=unitId?regionValue(data.region?.interiors,unitId):undefined,interior=data.bindings.find(b=>b.kind==='dungeon'&&b.parent==='building'&&b.parentId===unitId)??(scope?{ownerId:scope}:null);
         if(interior&&(!options.roofs||interior.ownerId===options.scopeId))for(const polygon of child.querySelectorAll('polygon'))polygon.setAttribute('fill','none');
         if(interior?.ownerId===options.scopeId)for(const text of child.querySelectorAll('text'))text.remove();
         if(child.tagName==='rect'){child.setAttribute('width',String(city.header.width));child.setAttribute('height',String(city.header.height));}
@@ -78,13 +80,14 @@ export function atlasRegionSVG(
   }
   for (const b of data.bindings.filter((b) => b.kind === "dungeon")) {
     if (b.parent === "building" && options.roofs && b.ownerId!==options.scopeId) continue;
+    const floor=data.region?b.ownerId===data.region.scopeId?data.region.floorId:'ground':options.floorId;
     const f = atlasFrame(data, b),
       g = landscapeNode("g", {
         transform: frameTransform({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
     const labels=landscapeNode('g',{'data-atlas-room-labels':b.ownerId});
     for (const room of data.workspace.rooms.filter(
-      (r) => r.scopeId === b.ownerId && r.floorId === options.floorId,
+      (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
       g.append(
         landscapeNode("path", {
@@ -98,7 +101,7 @@ export function atlasRegionSVG(
       appendAtlasRoomLabels(labels,room,labelMpp,point=>{const at=localToAtlas(point,f);return {x:at.x-box.x,y:at.y-box.y};});
     }
     for (const e of data.geometry.drawing.elements.filter(
-      (e) => e.scopeId === b.ownerId && e.floorId === options.floorId && !e.archived,
+      (e) => e.scopeId === b.ownerId && e.floorId === floor,
     )) {
       const container = landscapeNode("g");
       container.innerHTML = elementSvg(

@@ -1,4 +1,4 @@
-import type {CityPoint,CityUnit,CityView,CityCommand} from './city-contracts';
+import type {CityPoint,CityUnit,CityCommand} from './city-contracts';
 
 export interface CityPlacementOwner {token:string;cityId:string;revision:number;unit:CityUnit}
 interface Placement {
@@ -15,7 +15,7 @@ export class CityPlacement {
  opening=false;
  constructor(private port:{
   current:()=>CityPlacementOwner|null;drain:()=>Promise<boolean>;
-  send:(action:CityCommand['action'],id:string,revision:number)=>Promise<CityView>;
+  send:(action:CityCommand['action'],id:string,revision:number)=>Promise<unknown>;
   rejected:(error:unknown)=>boolean;changed:()=>void;
  }){}
  get state(){return this.value;}
