@@ -54,3 +54,10 @@ test('leaving before an uncaptured pan starts releases the camera, while capture
  root.dispatchEvent(new dom.window.MouseEvent('wheel',{deltaY:-1,clientX:150,clientY:100,bubbles:true,cancelable:true}));assert.ok(canvas.view.width<initial.width);canvas.previous();assert.deepEqual(canvas.view,initial);
  pointer('pointerdown',1,100,1);assert.equal(root.hasPointerCapture(1),true);pointer('pointerleave',-1,100,1);assert.equal(canvas.panning,true,'captured drags still cross the canvas boundary');pointer('pointermove',-10,100,1);pointer('pointerup',-10,100,1);assert.equal(canvas.panning,false);assert.equal(canvas.view.x,initial.x+11);canvas.previous();assert.deepEqual(canvas.view,initial);
 });
+
+test('relative Atlas camera transforms the existing scene and native hit nodes, with a stationary HUD',()=>{
+ const {window}=parseHTML('<html><body><svg id="map"></svg></body></html>'),root=window.document.querySelector('svg');const canvas=new PassiveMapCanvas(root,{relative:true,initial:{x:100,y:200,width:400,height:200}});let builds=0;
+ const draw=scene=>{builds++;scene.innerHTML='<rect data-object="a"/><g data-canvas-hud="true"><text>Scale</text></g>';};canvas.render(draw);const scene=root.firstChild,object=root.querySelector('rect');
+ canvas.pan(30,-10);assert.equal(root.firstChild,scene);assert.equal(root.querySelector('rect'),object);assert.equal(builds,1);assert.equal(scene.getAttribute('transform'),'translate(-30 10)');assert.equal(root.querySelector('[data-canvas-hud]').getAttribute('transform'),'translate(30 -10)');assert.equal(root.getAttribute('viewBox'),'0 0 400 200');window.document.elementFromPoint=()=>object;assert.equal(canvas.hit(0,0),object);
+ canvas.zoom(.5);assert.equal(builds,1);canvas.render(draw);assert.equal(builds,2);assert.notEqual(root.firstChild,scene);assert.equal(root.firstChild.getAttribute('transform'),'translate(0 0)');
+});

@@ -2,7 +2,7 @@ import type {RoomGeometry,WorkspaceGeometry,Point} from './contracts';
 import type {AtlasBinding,AtlasRenderView} from './campaign-atlas-contracts';
 import type {DrawingMapView} from './drawing-contracts';
 import type {CityHeader,CityUnit} from './city-contracts';
-import type {LandscapeBox} from './atlas-landscape';
+import type {LandscapeRecord,LandscapeBox} from './atlas-landscape';
 export const REGION_VECTOR_OBJECTS=1500;
 export const REGION_REPLY_BYTES=2*1024*1024;
 export const REGION_ACTIVE_BYTES=16*1024*1024;
@@ -12,14 +12,21 @@ export type CityUnitGeometry=Pick<CityUnit,'id'|'kind'|'name'|'protected'|'point
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
- slice:number|null;roofs:boolean;perception?:boolean;revision?:number;fence?:string;
+ slice:number|null;roofs:boolean;perception?:boolean;references?:boolean;revision?:number;fence?:string;
 }
+export interface AtlasLandscapeLayer {
+ state:'ready'|'error'; records:LandscapeRecord[]; tiles:import('./landscape-raster').LandscapeRaster[];
+ coverage:{complete:boolean;mode:'detail'|'raster';objects:number;references:number};error?:string;
+}
+export interface AtlasHit extends Omit<AtlasObjectFocus,'kind'> {kind:AtlasObjectFocus['kind']|'landscape';name:string;landscapeKind?:LandscapeRecord['kind']}
+export interface AtlasHitPage {items:AtlasHit[];next:number|null;fence:string;total:number}
 export interface AtlasRegionGeometry {
  campaignId:string;token:string;revision:number;fence:string;box:LandscapeBox;slice:number|null;scopeId:string|null;floorId:string;
  rooms:RoomGeometry[];floors:WorkspaceGeometry['floors'];drawing:DrawingMapView;
  cities:CityGeometry[];bindings:AtlasBinding[];scopes:{id:string;name:string}[];
  frames:Record<string,{x:number;y:number;angle:number}>;scopeBounds:Record<string,LandscapeBox>;interiors:Record<string,string>;
  coverage:{complete:boolean;mode:'detail'|'raster';objects:number;unreadable:number;index:'rtree'|'scan'};
+ landscape?:AtlasLandscapeLayer;
  raster?:{box:LandscapeBox;width:number;height:number;data:string};
 }
 export interface AtlasRegionView extends AtlasRenderView {
@@ -39,13 +46,14 @@ export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:Cit
 export interface AtlasRegionAPI {
  atlasRegion(token:string,query:AtlasRegionQuery,consumer?:'view'|'export'):Promise<import('./contracts').Result<AtlasRegionView>>;
  atlasObjectFocus(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string):Promise<import('./contracts').Result<AtlasObjectFocus>>;
+ atlasRegionCandidates(token:string,query:AtlasRegionQuery,point:Point,fence:string,offset?:number,layer?:'geometry'|'landscape'|'all'):Promise<import('./contracts').Result<AtlasHitPage>>;
  atlasRegionHit(token:string,query:AtlasRegionQuery,point:Point,fence:string):Promise<import('./contracts').Result<AtlasObjectFocus|null>>;
  cancelAtlasRegion(token:string,consumer?:'view'|'export'):Promise<import('./contracts').Result<void>>;
  atlasCitySite(token:string,cityId:string,id?:string):Promise<import('./contracts').Result<AtlasCitySite>>;
 }
 export const emptyDrawing=():DrawingMapView=>({elements:[],styles:[],hiddenRooms:[],hiddenFloors:[],features:[]});
 export function validateRegion(q:AtlasRegionQuery){
- if(!q||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0)||q.fence!==undefined&&(typeof q.fence!=='string'||!q.fence))throw new Error('Kartenausschnitt prüfen.');
+ if(!q||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.references!==undefined&&typeof q.references!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0)||q.fence!==undefined&&(typeof q.fence!=='string'||!q.fence))throw new Error('Kartenausschnitt prüfen.');
 }
 
 /** Structured-clone turns null-prototype records into ordinary objects. */

@@ -71,11 +71,13 @@ export class LandscapeWorkbench {
   readonly panel = document.createElement("section");
   readonly assets = new Map<string, string>();
   records: LandscapeRecord[] = [];
-  private raster: import("./landscape-raster").LandscapeRaster | undefined;
+  private raster: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[] | undefined;
   exportBox: LandscapeBox | null = null;
   private token = "";
   private key = "";
+  private publishedLayer: import("./atlas-region-contracts").AtlasLandscapeLayer|undefined;
   private request = 0;
+  private selectionRequest=0;
   private minimumRevision=0;
   private active = false;
   private tool: Tool = "select";
@@ -98,6 +100,9 @@ export class LandscapeWorkbench {
     private svg: SVGSVGElement,
     private host: {
       box: () => LandscapeBox;
+      refresh?:()=>Promise<unknown>;
+      choose?: (point:Point)=>Promise<void>;
+      current?:()=>boolean;
       redraw: () => void;
       write: (a: AtlasAction) => Promise<unknown>;
       error: (e: unknown) => void;
@@ -126,7 +131,7 @@ export class LandscapeWorkbench {
       const r = this.records.find(
         (r) => r.id === html<HTMLSelectElement>("land-object").value,
       );
-      if (r) void this.select(r).catch((e) => this.host.error(e));
+      if (r) void (this.host.data()?.region?.landscape?this.selectId(r.id):this.select(r)).catch((e) => this.host.error(e));
     };
     const property = () => {
       const field = html<HTMLSelectElement>("land-field").value;
@@ -144,7 +149,7 @@ export class LandscapeWorkbench {
     html("land-finish").onclick = () =>
       void this.finish().catch((e) => this.host.error(e));
     html("land-cancel").onclick = () => this.cancel();
-    html("land-reload").onclick = () => void this.load(this.host.box(), true);
+    html("land-reload").onclick = () => void (async()=>{await (this.host.refresh?this.host.refresh():this.load(this.host.box(),true));if(this.selected?.assetId&&!this.assets.has(this.selected.assetId))await this.selectId(this.selected.id);})().catch(e=>this.host.error(e));
     html("land-reference").onclick = () =>
       void this.importReference().catch((e) => this.host.error(e));
     html("land-grid").onchange = () => this.host.redraw();
@@ -153,8 +158,9 @@ export class LandscapeWorkbench {
       "pointerdown",
       (e) => {
         if (!this.active || e.button !== 0 || e.altKey || this.saving) return;
+        if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
-          this.tool === "select" &&
+          this.tool === "select" && !this.host.choose &&
           !(e.target as Element).closest(
             "[data-landscape-id],[data-land-vertex]",
           )
@@ -176,6 +182,7 @@ export class LandscapeWorkbench {
           return;
         }
         if (this.tool === "select") {
+          if(this.host.choose){void this.host.choose(this.lastPoint).catch(e=>this.host.error(e));return;}
           const r = this.records.find(
             (r) =>
               r.id ===
@@ -396,11 +403,27 @@ export class LandscapeWorkbench {
   async load(box = this.host.box(), force = false) {
     const data = this.host.data();
     if (!data || !this.token || data.revision<this.minimumRevision) return;
-    const key = JSON.stringify([this.token, data.revision, box]);
-    if (!force && this.key === key) return;
-    this.key = key;
-    const n = ++this.request,
-      token = this.token;
+    const token=this.token;
+    const layer=data.region?.landscape;
+    if(layer){
+      const frameKey=JSON.stringify([token,data.region!.fence]);
+      if(!force&&this.key===frameKey&&this.publishedLayer===layer)return;this.key=frameKey;this.publishedLayer=layer;
+      this.request++;const generation=this.request;
+      this.records=layer.records;this.raster=layer.tiles;html('land-reload').hidden=layer.state==='ready';
+      this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Vorlagen sind als Umrisse dargestellt.':''):'Landschaft geladen.');
+      this.objectOptions();this.host.redraw();
+      const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));
+      for(const id of this.assets.keys())if(!visibleAssets.has(id)&&id!==this.calibration?.record.assetId)this.assets.delete(id);
+      for(const r of this.records)if(r.assetId&&r.visible!==false&&!this.assets.has(r.assetId)){
+        const result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);
+        if(token!==this.token||generation!==this.request||this.host.data()?.region?.fence!==data.region?.fence)return;
+        if(result.ok)this.rememberAsset(r.assetId,result.value);else {html('land-reload').hidden=false;this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');}
+        this.host.redraw();
+      }
+      return;
+    }
+    const key=JSON.stringify([token,data.revision,box]);if(!force&&this.key===key)return;this.key=key;
+    const n=++this.request;
     const mpp=box.width/Math.max(1,this.svg.clientWidth);
     const r = await window.campaign.landscapeRegion(token, box,mpp,false);
     if (n !== this.request || token !== this.token) return;
@@ -413,7 +436,7 @@ export class LandscapeWorkbench {
     }
     let raster: import("./landscape-raster").LandscapeRaster | undefined;
     {
-      const current=this.raster, pixelsPerMeter=512/Math.max(box.width,box.height);
+      const current=Array.isArray(this.raster)?undefined:this.raster, pixelsPerMeter=512/Math.max(box.width,box.height);
       const covers=current&&current.revision===r.value.revision&&current.box.x<=box.x&&current.box.y<=box.y&&current.box.x+current.box.width>=box.x+box.width&&current.box.y+current.box.height>=box.y+box.height&&current.width/current.box.width>=pixelsPerMeter/1.5;
       if(covers)raster=current;
       else {
@@ -453,16 +476,30 @@ export class LandscapeWorkbench {
       if (record.visible!==false&&record.assetId && !this.assets.has(record.assetId)) {
         const a = await window.campaign.referenceAsset(token, record.assetId);
         if (token !== this.token || n !== this.request) return;
-        if (a.ok) this.assets.set(record.assetId, a.value);
+        if (a.ok) this.rememberAsset(record.assetId, a.value);
       }
     this.host.redraw();
   }
+  private rememberAsset(id:string,data:string){
+    const limit=8*1024*1024,size=data.length*2;if(size>limit){this.say('Bildvorschau zu groß. Original bleibt erhalten.');return;}
+    this.assets.delete(id);let bytes=[...this.assets.values()].reduce((n,v)=>n+v.length*2,0);
+    while(bytes+size>limit&&this.assets.size){const [key,value]=this.assets.entries().next().value!;this.assets.delete(key);bytes-=value.length*2;}
+    this.assets.set(id,data);
+  }
+  private objectOptions(){
+    const select=html<HTMLSelectElement>('land-object');select.replaceChildren(new Option('Auf der Karte auswählen',''));
+    for(const r of this.records)select.add(new Option(r.name||r.kind,r.id));select.value=this.selected?.id??'';
+  }
+  async selectId(id:string){
+    const token=this.token,frame=this.host.data()?.region?.fence,generation=++this.selectionRequest;
+    if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}
+    const response=await window.campaign.atlasLandscapeObject(token,id);
+    if(token!==this.token||generation!==this.selectionRequest||frame!==this.host.data()?.region?.fence)return;
+    if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.select(response.value);
+  }
   draw(root: SVGElement, box: LandscapeBox, mpp: number) {
-    void this.load().catch((e) => this.host.error(e));
     const records = this.selected
-      ? this.records.map((r) =>
-          r.id === this.selected!.id ? this.selected! : r,
-        )
+      ? [...this.records.filter(r=>r.id!==this.selected!.id),this.selected]
       : this.records;
     drawLandscape(root, records, box, mpp, this.assets,true,this.raster);
     const auto = html<HTMLInputElement>("land-auto-level").checked,
@@ -480,7 +517,7 @@ export class LandscapeWorkbench {
         : Number(html<HTMLSelectElement>("atlas-hex-level").value);
     if (html<HTMLInputElement>("land-grid").checked)
       drawLandscapeGrid(root, box, level, mpp);
-    drawScale(root, box, mpp);
+    const hud=landscapeNode("g",{"data-canvas-hud":"true"});drawScale(hud,box,mpp);root.append(hud);
     if (auto && !this.hasDraft())
       html<HTMLSelectElement>("atlas-hex-level").value = String(level);
     if (this.active && auto)
@@ -772,14 +809,18 @@ export class LandscapeWorkbench {
     this.doc = null;
     this.docRevision = null;
     this.vertex = 0;
-    const token = this.token;
+    const token = this.token,frame=this.host.data()?.region?.fence;
     if (record.locationId) {
       const r = await window.campaign.deskContent(token, {kind:"location",id:record.locationId});
-      if (token !== this.token || this.selected?.id !== record.id) return;
+      if (token !== this.token || this.selected?.id !== record.id || frame!==this.host.data()?.region?.fence) return;
       if (!r.ok) throw new Error(r.error);
       if (!r.value.location || r.value.unavailable)throw new Error("Ortsinhalt nicht verfügbar. Originaldaten bleiben erhalten.");
       this.doc = structuredClone(r.value.location);
       this.docRevision = r.value.revision;
+    }
+    if(record.assetId&&!this.assets.has(record.assetId)){
+      const image=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,record.assetId,1024):await window.campaign.referenceAsset(token,record.assetId);
+      if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.rememberAsset(record.assetId,image.value);else {html('land-reload').hidden=false;this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');}
     }
     this.inspector();
     this.host.redraw();
@@ -992,10 +1033,12 @@ export class LandscapeWorkbench {
     if (token !== this.token) return;
     if (!result.ok) throw new Error(result.error);
     if (!result.value) return;
+    await this.host.refresh?.();if(token!==this.token)return;
     const a = result.value,
       b = this.host.box(),
       r = emptyRecord("reference");
-    this.assets.set(a.id, a.data);
+    const preview=await window.campaign.referenceAssetPreview(token,a.id,1024);
+    if(token!==this.token)return;if(!preview.ok)throw new Error(preview.error);this.rememberAsset(a.id,preview.value);
     r.assetId = a.id;
     r.imageWidth = a.width;
     r.imageHeight = a.height;

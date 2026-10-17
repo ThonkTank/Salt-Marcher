@@ -68,9 +68,7 @@ Autorenreads. Raum-/Stadtansichten wechseln oberhalb des Vektor-/Bytebudgets
 auf eine vollständige Rasterdarstellung; Auswahl bleibt an die kanonische
 Geometrie gebunden. Der Geometriecache zählt serialisierte Nutzdaten und
 begrenzt Ansicht und Export gemeinsam auf 64 MiB. Die exakten Regelreader und
-expliziten Vollwerkzeuge sind hiervon getrennt. Kalter Projektionsaufbau,
-Landschaftsvektoren und tatsächlicher App-/GPU-Speicher bleiben Mess- und
-Umstellungsaufgaben; daraus folgt noch keine Entscheidung gegen persistente
+expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist nun in denselben quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht und paginierter exakter Auswahl. Kleine Kameraverschiebungen transformieren die bestehende SVG-Szene innerhalb einer geladenen Abdeckung; eine Workerqueue erhält den TEMP-Index. Kalte Projektionskosten und tatsächlicher App-/GPU-Speicher bleiben Mess- und Umstellungsaufgaben; daraus folgt noch keine Entscheidung gegen persistente
 abgeleitete Geometrie, Canvas2D oder einen anderen Cacheumfang. Details und
 Abnahmegrenzen hält der oben verlinkte Runtimeplan.
 

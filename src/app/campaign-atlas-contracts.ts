@@ -128,14 +128,16 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   referenceImage(
     token: string,
   ): Promise<
-    Result<{ id: string; data: string; width: number; height: number } | null>
+    Result<{ id: string; width: number; height: number } | null>
   >;
   referenceAsset(token: string, id: string): Promise<Result<string>>;
+  referenceAssetPreview(token:string,id:string,size:number):Promise<Result<string>>;
   exportAtlasPNG(
     token: string,
     bytes: number[],
     audience: "gm" | "public",
     format?: "png" | "jpeg",
+    sourceFence?:string,
   ): Promise<Result<{ cancelled: boolean }>>;
   importAtlas(command: {
     commandId: string;
