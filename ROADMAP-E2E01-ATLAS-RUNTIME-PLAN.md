@@ -299,7 +299,7 @@ bleiben kompatibel. Prozessnotizen und lokale Messpfade gehören nicht ins Repo.
 | 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Legacy-Landschaftsreads werden erst beim ersten benötigten Read aufgebaut; der gemeinsame Worker indiziert nur Nichtflächen und verwendet für Terrain kanonische Bounds-Btrees mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen; fehlgeschlagener Indexaufbau rollt vollständig zurück und fällt auf kanonische Btree-Reads zurück, ohne andere Kampagnen zu sperren. Raum-/Stadtprojektionen verwenden ebenfalls einen TEMP-Rtree mit atomarem Scanfallback; aktualisierte Konturen erhalten ihre kanonische Überlappungsreihenfolge. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
 | 3 Übersicht/Frame | Effektive grobe/feine Eigenschaften vor Aggregation bestimmen. Vereinfachte Flächen/Symbole/Kacheln schützen Landschaft beim Herauszoomen. Render/Hit publizieren denselben revisionsgebundenen Frame. | Landschaftsflächen werden in einem separaten Lese-Worker zu begrenzten, revisionsgebundenen Rasterbildern aggregiert; grobe Vorgaben und feine Übersteuerungen bleiben geordnet, Löcher erhalten. Native Linux-Probe: 100000 Flächen, sichtbar Wald → Wasser malen → Save → Neustart → Undo, tatsächliche Bildschirmfarben. Dichte Raum-/Stadtansichten verwenden nun Raster plus quellengebundenen genauen Hit; Elternframes werden unabhängig gelöst. Noch keine persistente Kachelpyramide oder Latenzfreigabe; B01/B04 offen. |
 | 4 Raumfachmodelle | Vorhandene Volumes/Lifecycle weiterverwenden. Gebäude außen/innen aus einem Zustand; echte Paths/Passages getrennt von dekorativen Linien. Reine Zeichnung nur ausdrücklich mit Preview umwandeln. | Grundlagen vorhanden, vollständiger Anschluss offen. 3-m-Wand x1,1 =3,3 m; 1,524-m-Dungeonzellen bleiben exakt; gestapelte Räume, Split/Merge, Anker/Prosa und gemeinsame Kamera/History. |
-| 5 Medien/Jobs | Hashreferenz von Bildtransport trennen, Auflösungsstufen/Kacheln, Bytecaches und Worker einführen. Aktive Drafts/Undo separat budgetieren. Nur Writer nimmt revisionsgebundene Ergebnisse an. | Rasterjobs sind pro Verbraucher abbrechbar und warten auf den Vorgängeraustritt; PNG-Cache 64 MiB, Bild bis 1024×1024, GM-Ausgabekacheln sequenziell bis 8192 Pixel Gesamtkante/256 MiB codiertem Bildspeicher und ausdrücklicher Abbruch, Aktivierung/Revision vor und nach dem Worker geprüft. 64/128/256-Vergleich, Vorlagenauflösungen, GPU-/Draftbudgets, Export und Assetdatei/BLOB-Entscheidung bleiben offen. |
+| 5 Medien/Jobs | Hashreferenz von Bildtransport trennen, Auflösungsstufen/Kacheln, Bytecaches und Worker einführen. Aktive Drafts/Undo separat budgetieren. Nur Writer nimmt revisionsgebundene Ergebnisse an. | Rasterjobs sind pro Verbraucher abbrechbar und warten auf den Vorgängeraustritt; PNG-Cache 64 MiB, Bild bis 1024×1024, GM-Ausgaben bis8192 Pixel Gesamtkante zeichnen sequenzielle Szenenkacheln über eine wiederverwendete Kachelfläche direkt ins Zielbild (höchstens64 MiB kodierte Ausgabe) und lassen sich ausdrücklich abbrechen, Aktivierung/Revision vor und nach dem Worker geprüft. 64/128/256-Vergleich, Vorlagenauflösungen, GPU-/Draftbudgets, Export und Assetdatei/BLOB-Entscheidung bleiben offen. |
 | 6 Verbraucher | Exakte Queries für Reise/Sicht; betroffene Routen/Perception invalidieren, Actorpreflight und gemeinsame Zeit erhalten. Gefilterte Playerprojektion/Assets, bereichsgebundener Export und vollständiger Transfer. | Physische Landschaftsänderungen pausieren aktive/pausierte Welt- und Lokalreisen atomar, ohne Position/Zeit zu ändern. Gegenprobe mit aktiver Reise; dekorative Änderungen brauchen keinen Geometrievollread. GM-PNG/JPEG nutzt dieselbe wirksame Landschaft kachelweise in Ausgabeauflösung. Öffentliche Ausgabe übernimmt nur freigegebene Sicht/Erinnerung, keine aktuellen verdeckten GM-Konturen. Konservative Kampagneninvalidierung, übrige Verbraucherumstellung und volle kausale Abnahme bleiben offen. Renderbilder liefern niemals Spielregeln. |
 | 7 Migration/Ablösung | Je Paket versionierte, in Kopie geprüfte Migration plus DB-/Medienbackup. Alte Adapter nach Verbraucherumstellung entfernen; keine permanente zweite Schreibautorität. | Offen. IDs, Textbytes, Links, Einheiten, Assets, Runtime und alte History vergleichen. Historische Commands/Receipts nicht wieder ausführen/umschreiben; keine pauschale Historylöschung. Bei Downgrade neuere Formate erklärt ablehnen. |
 
@@ -370,9 +370,11 @@ sind erforderlich. Andere Hardware-/Lastbedingungen nicht daraus ableiten.
 
 Die native GM-Ausgabeprobe enthält vor der Korrektur keinen Wald, obwohl er im
 Viewport sichtbar ist: Die alte Größenfilterung entfernte sämtliche kleinen
-Autorenflächen. Der GM-Export verwendet nun sequenzielle Rasterkacheln in der
-angeforderten Ausgabeauflösung (maximal 1024² je Job), ergänzt weiter die
-Vektoren/Referenzen und lässt sich abbrechen. Der Probeweg prüft tatsächliche
+Autorenflächen. Der aktuelle GM-Export zeichnet sequenzielle Szenenkacheln in
+angeforderter Ausgabeauflösung (maximal512² je Kachel), einschließlich der
+begrenzten Landschafts-/Geometrieraster und Referenzen. Eine wiederverwendete
+Kachelfläche speist das Zielbild; erst dieses wird einmal zu PNG/JPEG kodiert.
+Es werden keine PNG-/Base64-Zwischenbilder gesammelt. Der Probeweg prüft tatsächliche
 PNG-Pixel und den unveränderten Vorgängerexport nach Abbruch. Gemischte
 Revisionen, unvollständige Ergebnisse oder überschrittener Bildspeicher liefern
 keine Datei. Der Cache bleibt separat auf 64 MiB begrenzt; Canvas-/GPU-Kopien
@@ -725,6 +727,39 @@ Die Prüfung hat zusätzliche Lücken geschlossen:
   einschließlich Löchern, negativen Koordinaten und Reihenfolge wird gegen
   den unoptimierten Stream geprüft; fehlende SQLite-Math nutzt den Fallback.
   Lokale Invalidierung alter/neuer Grenzen und bestehende Budgets bleiben erhalten.
+
+Die erneute Gegenprüfung vom 17.10.2026 schließt drei weitere Übergangslücken:
+
+- Die Innenraum-Autorenebene wird nach dem Detail- oder Rasterhintergrund
+  genau einmal gezeichnet. Offene Kontur-/Objektzüge bleiben beim Wechsel in
+  dichte Darstellung sichtbar. Auswahlkontur und Griffe verwenden das bereits
+  geladene vollständige Autorenobjekt, auch wenn die Bereichsantwort keine
+  Einzelräume enthält. Griffe werden im geladenen Puffer räumlich gebündelt
+  und auf höchstens1500 begrenzt; jeder sichtbare Griff behält seinen exakten
+  Originalindex. Zoom legt weitere Griffe frei, der Tooltip benennt die
+  Darstellung. Ein10000-Punkte-Original prüft diese Grenze ohne Geometrieverlust.
+  Zeichnen liest nichts nach; der bestehende Shapecommand
+  behält Originalrevision und Quellenprüfung. Ladezustände sperren Griffe;
+  Geschoss und Höhenschnitt werden berücksichtigt. In der Wissensansicht der
+  Gruppe werden keine GM-Autorenkonturen darübergelegt.
+- Objektfokus passt beide Ausdehnungen in das tatsächliche Seitenverhältnis
+  ein. Breite Räume, hohe Elemente und der schmale/weite Viewport bei200%
+  dürfen keine Objektteile allein durch die Fokusberechnung abschneiden.
+- Eine bereits geprüfte lokale Reisevorschau bleibt nach einem reinen
+  Kamera-Read erhalten, sofern dieselbe Quellenkennung bestätigt wird.
+  Während des Reads und bei Fehlern bleibt Reisebeginn gesperrt; ein anderer
+  Quellenstand verwirft die Vorschau weiterhin.
+
+`tools/test-desktop-atlas-author-overlay.mjs` prüft den nativen Autorenablauf
+mit1600 Räumen bei100% und200%: ausgewählten Originalraum lesen, drei Punkte
+zeichnen, in die dichte Rasteransicht zoomen, tatsächliche Canvas-Zeichenaufrufe
+und Fensterbild prüfen, verwerfen, einen Originalgriff verschieben, speichern,
+Undo/Redo und Neustart. Die alte eingefrorene Runtime verliert im gleichen
+Ablauf die Entwurfszeichenaufrufe. Die Regressionstests prüfen zusätzlich
+negative/gedrehte Einordnung, falsches Geschoss, Schnitt, Wissen und Ladezustand.
+Das ergänzt die Funktionsabnahme; physische16GiB und Präsentationslatenz bleiben
+weiterhin gesondert offen. Extrem kleine Objekte benötigen für unterscheidbare
+Einzelgriffe weiterhin einen geeigneten Zoom; Raster selbst sperrt diese nicht.
 
 Reproduzierbarer nativer Vergleich: `tools/measure-atlas-runtime.mjs` über
 `tools/ui-session.py` nach `build:desktop`. Derselbe Fixturebestand kann mit
