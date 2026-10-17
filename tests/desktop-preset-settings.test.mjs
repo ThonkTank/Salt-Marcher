@@ -75,10 +75,11 @@ test('fixed-size composition saves ordinary rules, keeps assignment explicit and
  assert.equal(x.el('preset-fixed-apply').disabled,true);x.el('preset-copy').onclick();
  const source=structuredClone(x.store.presetRegistry(null).presets.find(p=>p.system).config),copyId=x.el('preset-selection').value;
  x.edit('preset-name','Solo duo');x.edit('preset-default-difficulty','medium');x.edit('preset-mob',0);
- for(const invalid of [0,-1,1.5,1000]){x.edit('preset-fixed-count',invalid);x.el('preset-fixed-apply').onclick();assert.match(x.el('preset-status').textContent,/1 bis 999/);assert.equal(x.calls.length,0);}
+ assert.equal(x.el('preset-fixed-count').type,'text');assert.equal(x.el('preset-fixed-count').getAttribute('inputmode'),'numeric');
+ for(const invalid of [0,-1,1.5,1000,'unusable']){x.edit('preset-fixed-count',invalid);x.el('preset-fixed-apply').onclick();assert.match(x.el('preset-status').textContent,/1 bis 999/);assert.equal(x.calls.length,0);}
  x.edit('preset-fixed-count',2);let prevented=false;x.el('preset-fixed-count').onkeydown({key:'Enter',preventDefault(){prevented=true;}});assert.equal(prevented,true);
  assert.equal(x.el('preset-crBlocks-min').value,'1');assert.equal(x.el('preset-crBlocks-max').value,'1');assert.equal(x.el('preset-minion-min').value,'2');assert.equal(x.el('preset-boss-max').value,'2');assert.equal(x.el('preset-mob').value,'0');assert.equal(x.calls.length,0);assert.equal(x.el('preset-assign').disabled,true);
- await x.save();const saved=x.store.presetRegistry(null).presets.find(p=>p.id===copyId);
+ x.edit('preset-fixed-count','unapplied idea');await x.save();const saved=x.store.presetRegistry(null).presets.find(p=>p.id===copyId);
  assert.deepEqual(saved.config.composition.roleMatrix,source.composition.roleMatrix);assert.deepEqual(saved.config.scene,source.scene);assert.equal(saved.config.generationDefaults.difficulty,'medium');assert.equal(x.store.presetRegistry(x.campaign.id).effectiveId,x.store.presetRegistry(null).presets.find(p=>p.system).id);
  x.el('preset-assign').onclick();await settle();const w=x.store.activate(x.campaign.id);
  const request={seed:'rostmuehle-qa17',title:'Späher am Wehr',count:1,party:[{id:'ada',name:'Ada',level:2,count:1}],difficulty:'medium',amount:'few',balance:'neutral',diversity:'neutral',tableIds:[],filters:{types:['Humanoid']},habitat:'',time:'any'};
