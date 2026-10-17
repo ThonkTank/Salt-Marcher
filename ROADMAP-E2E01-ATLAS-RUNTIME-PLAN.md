@@ -718,7 +718,8 @@ Die Prüfung hat zusätzliche Lücken geschlossen:
   und GM-Ausgabe bleiben getrennt.
 - Der Writer baut keinen unbenötigten Landschaftsindex beim Appstart. Im
   Bereichsworker werden schmale, sortierte Schlüssel in vollständigen Seiten
-  zu 128 Datensätzen nachgelesen. Nichtflächen behalten ihren Rtree; Terrain
+  zu 128 Datensätzen nachgelesen und in expliziter Schlüsselreihenfolge gestreamt;
+  die Seite sammelt nicht alle vollständigen Originalpayloads im JavaScript-Heap. Nichtflächen behalten ihren Rtree; Terrain
   verwendet kanonische Bounds. Eine konservative Ablehnung von Flächen ohne
   jeden Raster-Samplepunkt vermeidet wirkungslose Payloadreads. Pixelidentität
   einschließlich Löchern, negativen Koordinaten und Reihenfolge wird gegen

@@ -48,10 +48,11 @@ export class AtlasLandscapeReader {
   const sql=`SELECT CAST(a.rowid AS TEXT) source_row FROM ${indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a'} WHERE a.campaign_id=? AND ${indexed?'i':'a'}.max_x>=? AND ${indexed?'i':'a'}.min_x<=? AND ${indexed?'i':'a'}.max_y>=? AND ${indexed?'i':'a'}.min_y<=? ${sampleClause} ${patches?"AND json_extract(a.payload,'$.kind')='patch' AND json_extract(a.payload,'$.values.terrain') IS NOT NULL":"AND json_extract(a.payload,'$.kind')!='patch'"} ORDER BY ${patches?"CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid":"CASE json_extract(a.payload,'$.kind') WHEN 'reference' THEN 0 ELSE 1 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid"}`;
   // Sort narrow keys, then read complete bounded pages. Sorting full payloads
   // spills authors' large contours/prose into SQLite temporary files.
-  const page=this.sql(`SELECT CAST(a.rowid AS TEXT) source_row,a.payload,a.min_x,a.max_x,a.min_y,a.max_y,json_extract(l.payload,'$.name') location_name,l.trashed FROM json_each(?) ids CROSS JOIN atlas_landscape a ON a.rowid=ids.value LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=?`);
+  const page=this.sql(`SELECT CAST(a.rowid AS TEXT) source_row,a.payload,a.min_x,a.max_x,a.min_y,a.max_y,json_extract(l.payload,'$.name') location_name,l.trashed FROM json_each(?) ids CROSS JOIN atlas_landscape a ON a.rowid=ids.value LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? ORDER BY CAST(ids.key AS INTEGER)`);
   const readPage=function*(ids:string[]){
-   const values=new Map<string,any>(page.all(JSON.stringify(ids),source.campaignId).map((r:any)=>[r.source_row,r]));
-   for(const id of ids){const row=values.get(id);if(!row||row.trashed)continue;const record=JSON.parse(row.payload) as LandscapeRecord;
+   // SQLite bounds its temporary sort with the existing file/cache budget.
+   // Stream the page so 128 unusually large author payloads never accumulate in JS.
+   for(const row of page.iterate(JSON.stringify(ids),source.campaignId)){if(row.trashed)continue;const record=JSON.parse(row.payload) as LandscapeRecord;
     if(row.location_name!==null)record.name=row.location_name;
     if(row.max_x<box.x||row.min_x>box.x+box.width||row.max_y<box.y||row.min_y>box.y+box.height)continue;
     if(record.kind==='reference'&&record.visible===false)continue;
