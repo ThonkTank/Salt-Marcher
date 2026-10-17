@@ -2,7 +2,7 @@ import {test} from 'node:test';import assert from 'node:assert/strict';import {c
 buildSync({entryPoints:['src/app/passive-map-canvas.ts'],outfile:'.build/passive-map-canvas.cjs',bundle:true,platform:'node',format:'cjs'});const {PassiveMapCanvas}=createRequire(import.meta.url)('../.build/passive-map-canvas.cjs');
 class Matrix{constructor(a=1,d=1,e=0,f=0){Object.assign(this,{a,d,e,f});}inverse(){return new Matrix(1/this.a,1/this.d,-this.e/this.a,-this.f/this.d);}}
 class Point{constructor(x,y){Object.assign(this,{x,y});}matrixTransform(m){return new Point(this.x*m.a+m.e,this.y*m.d+m.f);}}
-function fixture(){const dom={window:parseHTML('<html><body><svg id="scene"></svg></body></html>').window};dom.window.MouseEvent=class extends dom.window.Event{constructor(type,init={}){super(type,init);Object.assign(this,init);}};const root=dom.window.document.querySelector('svg'),changes=[];global.DOMPoint=Point;let captured=null;root.getScreenCTM=()=>new Matrix(1,1);root.setPointerCapture=id=>captured=id;root.hasPointerCapture=id=>captured===id;root.releasePointerCapture=id=>{if(id===captured)captured=null;};const canvas=new PassiveMapCanvas(root,{initial:{x:-100,y:-50,width:1000,height:500},changed:(b,why)=>changes.push({b,why})});const pointer=(type,x,y,button=1)=>{const e=new dom.window.MouseEvent(type,{clientX:x,clientY:y,button,bubbles:true,cancelable:true});Object.defineProperty(e,'pointerId',{value:1});root.dispatchEvent(e);};return{dom,root,canvas,changes,pointer};}
+function fixture(pan){const dom={window:parseHTML('<html><body><svg id="scene"></svg></body></html>').window};dom.window.MouseEvent=class extends dom.window.Event{constructor(type,init={}){super(type,init);Object.assign(this,init);}};const root=dom.window.document.querySelector('svg'),changes=[];global.DOMPoint=Point;let captured=null;root.getScreenCTM=()=>new Matrix(1,1);root.setPointerCapture=id=>captured=id;root.hasPointerCapture=id=>captured===id;root.releasePointerCapture=id=>{if(id===captured)captured=null;};const canvas=new PassiveMapCanvas(root,{initial:{x:-100,y:-50,width:1000,height:500},pan,changed:(b,why)=>changes.push({b,why})});const pointer=(type,x,y,button=1)=>{const e=new dom.window.MouseEvent(type,{clientX:x,clientY:y,button,bubbles:true,cancelable:true});Object.defineProperty(e,'pointerId',{value:1});root.dispatchEvent(e);};return{dom,root,canvas,changes,pointer};}
 
 test('one passive scene handles square/hex hits, anchored zoom, middle pan and stable redraw/layout',()=>{
  const {dom,root,canvas,changes,pointer}=fixture(),model={hex:'A',square:'B'},before=JSON.stringify(model);let chosen='';const draw=scene=>{for(const tag of ['rect','polygon']){const item=dom.window.document.createElementNS(root.namespaceURI,tag);item.addEventListener('click',()=>chosen=tag);scene.append(item);}};
@@ -43,4 +43,14 @@ for(const action of ['pan','zoom','reset','drag'])test(`wheel zoom history start
  canvas.previous();assert.deepEqual(canvas.view,firstZoom,'the separate camera action retains its own history step');
  canvas.previous();assert.deepEqual(canvas.view,initial,'the first wheel burst remains one step');
  canvas.next();assert.deepEqual(canvas.view,firstZoom);
+});
+
+test('leaving before an uncaptured pan starts releases the camera, while captured dragging continues outside',()=>{
+ const {dom,root,canvas,pointer}=fixture(e=>e.button===0||e.button===1),initial=canvas.view;
+ pointer('pointerdown',1,100,0);assert.equal(canvas.panning,true);assert.equal(root.hasPointerCapture(1),false);
+ pointer('pointerleave',-1,100,0);assert.equal(canvas.panning,false);assert.deepEqual(canvas.view,initial);
+ // No pointerup arrives at the canvas for this uncaptured outside release.
+ pointer('pointermove',100,100,0);assert.deepEqual(canvas.view,initial,'hovering back must not pan without a pressed button');
+ root.dispatchEvent(new dom.window.MouseEvent('wheel',{deltaY:-1,clientX:150,clientY:100,bubbles:true,cancelable:true}));assert.ok(canvas.view.width<initial.width);canvas.previous();assert.deepEqual(canvas.view,initial);
+ pointer('pointerdown',1,100,1);assert.equal(root.hasPointerCapture(1),true);pointer('pointerleave',-1,100,1);assert.equal(canvas.panning,true,'captured drags still cross the canvas boundary');pointer('pointermove',-10,100,1);pointer('pointerup',-10,100,1);assert.equal(canvas.panning,false);assert.equal(canvas.view.x,initial.x+11);canvas.previous();assert.deepEqual(canvas.view,initial);
 });
