@@ -25,3 +25,6 @@ test('unconfirmed shape acceptance freezes edits and retries exactly the same co
 test('polygon draft retains at least three corners; shared road ends cannot be removed',async()=>{
  const x=setup();await x.editor.begin();x.editor.remove();assert.equal(x.editor.state.points.length,2);x.editor.cancel();const district={id:'district',kind:'district',protected:true,outline:[{x:0,y:0},{x:10,y:0},{x:10,y:10}]};x.setOwner({...x.owner,unit:district,units:[district]});await x.editor.begin();x.editor.remove();assert.equal(x.editor.state.points.length,3);x.editor.insert(1);assert.equal(x.editor.state.points.length,4);await x.editor.accept();assert.equal(x.writes[0][0].upsert[0].outline.length,4);
 });
+test('closed road or wall keeps both handles on its single shared end node',async()=>{
+ const x=setup(),road={...x.owner.unit,kind:'wall',nodeIds:['a','a'],via:[{x:50,y:0},{x:50,y:50}]};x.setOwner({...x.owner,unit:road,units:[x.units[0],road,x.units[4]]});await x.editor.begin();x.editor.choose(3);x.editor.point({x:5,y:5});assert.deepEqual(x.editor.state.points[0],{x:5,y:5});assert.deepEqual(x.editor.state.points[3],{x:5,y:5});await x.editor.accept();assert.deepEqual(x.writes[0][0].upsert[0].point,{x:5,y:5});assert.equal(x.writes[0][0].upsert.filter(u=>u.kind==='node').length,1);
+});

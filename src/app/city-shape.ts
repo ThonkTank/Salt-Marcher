@@ -24,7 +24,7 @@ export class CityShape {
   }finally{if(g===this.generation){this.opening=false;this.port.changed();}}
  }
  choose(index:number){const s=this.state;if(!s||!this.owns(s)||this.locked||!s.points[index])return;s.chosen=index;this.port.changed();}
- point(p:CityPoint){const s=this.state;if(!s||!this.owns(s)||this.locked||!Number.isFinite(p.x+p.y)||Math.max(Math.abs(p.x),Math.abs(p.y))>100000)return;s.points[s.chosen]={x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10};this.port.changed();}
+ point(p:CityPoint){const s=this.state;if(!s||!this.owns(s)||this.locked||!Number.isFinite(p.x+p.y)||Math.max(Math.abs(p.x),Math.abs(p.y))>100000)return;s.points[s.chosen]={x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10};const ends=s.owner.unit.nodeIds;if(ends?.[0]===ends?.[1]&&ends&&(s.chosen===0||s.chosen===s.points.length-1)){s.points[0]={...s.points[s.chosen]!};s.points[s.points.length-1]={...s.points[s.chosen]!};}this.port.changed();}
  insert(index:number){const s=this.state;if(!s||!this.owns(s)||this.locked)return;const a=s.points[index],b=s.points[(index+1)%s.points.length];if(!a||!b)return;s.points.splice(index+1,0,{x:(a.x+b.x)/2,y:(a.y+b.y)/2});s.chosen=index+1;this.port.changed();}
  remove(){const s=this.state;if(!s||!this.owns(s)||this.locked)return;const line=['road','wall'].includes(s.owner.unit.kind);if(s.points.length<=(line?2:3)||line&&(s.chosen===0||s.chosen===s.points.length-1)){s.message='Straßenenden bleiben verbunden; eine Fläche benötigt mindestens drei Ecken.';this.port.changed();return;}s.points.splice(s.chosen,1);s.chosen=Math.min(s.chosen,s.points.length-1);this.port.changed();}
  units(units:CityUnit[]){

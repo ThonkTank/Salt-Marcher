@@ -942,3 +942,12 @@ test('bounded shape save recovers a lost receipt and keeps an explicit rejection
   x.window.campaign.executeAtlasCommit=async()=>({ok:false,error:'Invalid polygon'});x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());await x.ui.atlasCityPoint({x:7,y:130});x.click('city-shape-accept');await until(()=>/Invalid polygon/.test(x.document.getElementById('city-shape-status').textContent));assert.equal(x.document.getElementById('city-shape-cancel').disabled,false);x.click('city-shape-cancel');assert.equal(x.ui.atlasCityPlacementActive(),false);
  }finally{await x.cleanup();}
 });
+
+test('drawing a closed wall welds its new endpoints and shape editing moves that shared node',async()=>{
+ const x=await setup();
+ try{
+  x.document.getElementById('city-tool').value='wall';for(const p of [{x:20,y:20},{x:40,y:20},{x:40,y:40},{x:20,y:20}])await x.ui.atlasCityPoint(p);x.click('city-finish');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.some(u=>u.kind==='wall'));await until(()=>x.document.getElementById('city-tool').value==='select');
+  const wall=x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.kind==='wall');assert.equal(wall.nodeIds[0],wall.nodeIds[1]);x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());x.document.querySelector('#city-map [aria-label="Eckpunkt 4 wählen"]').dispatchEvent(new x.window.Event('click',{bubbles:true}));await x.ui.atlasCityPoint({x:18,y:22});x.click('city-shape-accept');await until(()=>!x.ui.atlasCityPlacementActive());
+  const saved=x.store.city(x.current().token,x.cityIds.one),node=saved.units.find(u=>u.id===wall.nodeIds[0]);assert.deepEqual(node.point,{x:18,y:22});assert.equal(saved.units.find(u=>u.id===wall.id).nodeIds[0],saved.units.find(u=>u.id===wall.id).nodeIds[1]);
+ }finally{await x.cleanup();}
+});
