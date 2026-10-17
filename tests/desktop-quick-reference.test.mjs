@@ -99,3 +99,22 @@ test('direct source inspection starts with its reading document and searches oth
  await x.ui.openQuickReference({kind:'note',id:x.note.id});await tick();assert.equal(x.dialog.classList.contains('quick-reading'),true);assert.equal(x.el('quick-show-search').hidden,false);assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');assert.equal(calls.length,0);
  x.el('quick-show-search').click();await tick();assert.equal(x.dialog.classList.contains('quick-reading'),false);assert.ok(calls.length);assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');x.el('quick-close').click();await x.ui.openQuickReference();assert.equal(x.dialog.classList.contains('quick-reading'),false);
 });
+
+function parentDialog(x,id='key-dialog'){
+ const parent=x.el(id);parent.showModal=()=>{parent.open=true;};parent.close=()=>{parent.open=false;parent.dispatchEvent(new x.window.Event('close'));};parent.showModal();return parent;
+}
+test('explicit inspection stacks only over its own open parent and exposes no game or editing handoffs',async t=>{
+ const x=await fixture(t);x.el('quick-close').click();const parent=parentDialog(x),snapshot=x.store.db.serialize();await x.ui.openQuickReference({kind:'note',id:x.note.id});assert.equal(x.dialog.open,false);
+ await x.ui.inspectQuickReference({kind:'note',id:x.note.id},()=>true,parent);assert.equal(x.dialog.open,true);assert.equal(parent.open,true);assert.equal(x.el('quick-close').textContent,'Zurück zur Notiz');assert.match(x.el('quick-document').textContent,/Private prose/);assert.equal(x.el('quick-document').querySelectorAll('.toolbar button').length,0);assert.equal(x.el('quick-pin'),null);assert.equal(x.el('quick-use-read-aloud'),null);assert.equal(x.handoffs.length,0);assert.ok(x.store.db.serialize().equals(snapshot));
+ x.el('quick-close').click();assert.equal(parent.open,true);parent.close();await x.ui.openQuickReference({kind:'note',id:x.note.id});assert.ok(x.el('quick-pin'));assert.ok(x.el('quick-use-read-aloud'));assert.equal(x.el('quick-close').textContent,'Schließen');
+});
+for(const mode of ['close','scope'])test('inspection cancels private reads after parent/editor invalidation: '+mode,async t=>{
+  const x=await fixture(t);x.el('quick-close').click();const parent=parentDialog(x),read=x.window.campaign.deskContent,held=deferred();let valid=true;x.window.campaign.deskContent=async(...args)=>{const value=await read(...args);await held.promise;return value;};const pending=x.ui.inspectQuickReference({kind:'note',id:x.note.id},()=>valid,parent);await tick();if(mode==='close')parent.close();else valid=false;held.resolve();await pending;assert.equal(x.dialog.open,false);assert.doesNotMatch(x.el('quick-document').textContent,/Private prose/);assert.equal(x.handoffs.length,0);
+});
+test('a second dialog or a parent closed during input drain cannot be covered by an inspection',async t=>{
+ const x=await fixture(t);x.el('quick-close').click();const parent=parentDialog(x),other=parentDialog(x,'location-dialog');await x.ui.inspectQuickReference({kind:'note',id:x.note.id},()=>true,parent);assert.equal(x.dialog.open,false);other.close();x.drain=async()=>{parent.close();return true;};await x.ui.inspectQuickReference({kind:'note',id:x.note.id},()=>true,parent);assert.equal(x.dialog.open,false);assert.equal(x.reads.length,0);
+});
+test('inspection search and history remain read-only even for a location section reference',async t=>{
+ const x=await fixture(t);x.el('quick-close').click();const parent=parentDialog(x);await x.ui.inspectQuickReference({kind:'note',id:x.note.id},()=>true,parent);x.el('quick-show-search').click();await tick();x.el('quick-results').querySelectorAll('button:not(.quick-more)')[1].click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Beta');assert.equal(x.el('quick-document').querySelectorAll('.toolbar button').length,0);x.el('quick-back').click();await tick();assert.equal(x.el('quick-document').querySelector('h2').textContent,'Alpha');
+ const read=x.window.campaign.deskContent;x.window.campaign.deskContent=async(token,ref)=>ref.kind==='location'?{ok:true,value:{ref,title:'Ortsabschnitt',label:'Ort',revision:1,location:{sections:[{title:'Ankunft',markdown:'Nur lesen'}]}}}:read(token,ref);await x.ui.inspectQuickReference({kind:'location',id:randomUUID(),sectionId:randomUUID()},()=>true,parent);assert.equal(x.dialog.open,true);assert.match(x.el('quick-document').textContent,/Nur lesen/);assert.equal(x.handoffs.length,0);
+});
