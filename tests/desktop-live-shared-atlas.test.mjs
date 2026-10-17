@@ -46,7 +46,11 @@ test("Live moves the exact shared Atlas and camera controls, preserving listener
   for (let i = 0; i < 2; i++) {
     portal.mount(id("map"), id("navigation"), id("console"));
     portal.mount(id("map"), id("navigation"), id("console"));
-    assert.equal(id("map").firstElementChild, root);
+    const actions = id("live-atlas-map-actions");
+    assert.equal(id("map").firstElementChild, actions);
+    assert.equal(actions.nextElementSibling, root);
+    assert.equal(id("atlas-to-party").parentNode, actions);
+    assert.equal(id("atlas-overview").parentNode, actions);
     assert.equal(document.querySelectorAll("#campaign-map").length, 1);
     assert.equal(id("campaign-map"), svg);
     assert.equal(svg.getAttribute("viewBox"), "100 200 300 400");
