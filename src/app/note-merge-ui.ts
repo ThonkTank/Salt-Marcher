@@ -31,7 +31,7 @@ export class NoteMergeUI {
   readonly dialog=node('dialog');readonly resume=node('button','Gesicherte Zusammenführung öffnen…');
   private heading=node('h2','NSC-Notizen zusammenführen');private source=node('p');
   readonly target=node('select');readonly publicText=node('textarea');readonly privateText=node('textarea');
-  private originals=node('div');private uses=node('ul');readonly status=node('p');
+  private originals=node('div');private uses=node('ul');private textLimit=node('p');readonly status=node('p');
   readonly reviewed=node('input');readonly confirm=node('button','Texte und Verweise zusammenführen');
   readonly refresh=node('button','Originale und Verweise erneut prüfen');
   readonly check=node('button','Status der Zusammenführung prüfen');
@@ -40,14 +40,14 @@ export class NoteMergeUI {
     this.dialog.id='note-merge-dialog';this.dialog.className='note-merge-dialog';this.resume.id='note-merge-resume';this.resume.type='button';this.resume.hidden=true;host.prepend(this.resume);
     this.target.id='note-merge-target';this.publicText.id='note-merge-read-aloud';this.privateText.id='note-merge-gm';this.confirm.id='note-merge-confirm';this.check.id='note-merge-check';this.reviewed.id='note-merge-reviewed';
     this.publicText.rows=4;this.privateText.rows=8;this.publicText.maxLength=this.privateText.maxLength=2_000_000;
-    this.status.setAttribute('role','status');this.reviewed.type='checkbox';
+    this.status.setAttribute('role','status');this.textLimit.setAttribute('role','status');this.reviewed.type='checkbox';
     const label=(text:string,field:HTMLElement)=>{const l=node('label',text);l.append(field);return l;};
     const details=node('details');details.append(node('summary','Beide Originaltexte lesen'),this.originals);
     const help=node('p','Raum-/Keyverweise und Besuchsquellen sowie Textverweise in Notizen und Orten und freie Beziehungen wechseln zum verbleibenden Original. Die Quellnotiz bleibt unverändert im Papierkorb lesbar. Spielwerte und Familien werden nicht still zusammengelegt.');
     const actions=node('div');actions.className='actions';for(const b of [this.refresh,this.confirm,this.check,this.close,this.discard]){b.type='button';actions.append(b);}
     this.raw.readOnly=true;this.raw.rows=8;this.raw.id='note-merge-recovery-text';this.preserve.type='button';
     this.recovery.append(node('h3','Unlesbarer Originalvermerk'),node('p','Dieser lokale Entwurf wird nicht gesendet. Sichere den vollständigen Vermerk; prüfe anschließend die gespeicherten Originale, bevor du neu zusammenführst.'),this.raw,this.preserve);this.recovery.hidden=true;
-    this.dialog.append(this.heading,this.recovery,this.source,label('Verbleibendes Original',this.target),details,help,this.uses,label('Zusammengeführter Vorlesetext',this.publicText),label('Zusammengeführte GM-Notizen',this.privateText),label('Texte und aufgeführte Verweise geprüft',this.reviewed),this.status,actions);document.body.append(this.dialog);
+    this.dialog.append(this.heading,this.recovery,this.source,label('Verbleibendes Original',this.target),details,help,this.uses,label('Zusammengeführter Vorlesetext',this.publicText),label('Zusammengeführte GM-Notizen',this.privateText),label('Texte und aufgeführte Verweise geprüft',this.reviewed),this.textLimit,this.status,actions);document.body.append(this.dialog);
     button.onclick=this.resume.onclick=()=>{void this.open();};
     this.target.onchange=()=>{if(!this.draft)return;this.draft.targetId=this.target.value;this.preview=null;this.reviewed.checked=false;void this.refreshPreview();};
     for(const [area,field] of [[this.publicText,'readAloud'],[this.privateText,'gmNotes']] as const){
@@ -71,7 +71,7 @@ export class NoteMergeUI {
     if(this.dialog.open)this.dialog.close();
     if(campaignId)try{
       const raw=this.options.storage.getItem(this.key());if(raw){const d=JSON.parse(raw) as Draft;
-        if(d.version!==1||typeof d.sourceId!=='string'||!d.sourceId||typeof d.targetId!=='string'||[d.readAloud,d.gmNotes].some(s=>typeof s!=='string'||s.length>2_000_000)||typeof d.edited!=='boolean'||!Object.hasOwn(d,'command'))throw Error('Gesicherte Zusammenführung ist nicht lesbar. Originalvermerk bleibt erhalten.');
+        if(d.version!==1||typeof d.sourceId!=='string'||!d.sourceId||typeof d.targetId!=='string'||[d.readAloud,d.gmNotes].some(s=>typeof s!=='string'||s.length>8_000_000)||typeof d.edited!=='boolean'||!Object.hasOwn(d,'command'))throw Error('Gesicherte Zusammenführung ist nicht lesbar. Originalvermerk bleibt erhalten.');
         if(d.command!==null){if(!d.command||typeof d.command!=='object'||typeof d.command.commandId!=='string'||!d.command.commandId||typeof d.command.token!=='string'||!d.command.token||d.command.campaignId!==campaignId||d.command.change.kind!=='note-merge'||d.command.change.id!==d.sourceId||d.command.change.targetId!==d.targetId)throw Error('Gesicherter Auftrag gehört nicht zu dieser Zusammenführung.');checkedNoteMerge(d.command.change);}
         this.draft=d;
       }
@@ -87,8 +87,9 @@ export class NoteMergeUI {
     catch(e){this.persisted=false;this.feedback(e);return false;}
   }
   private sync(){
-    const pending=!!this.draft?.command;
-    this.confirm.disabled=this.busy||this.composing||this.loadError||!this.persisted||pending||!this.preview||!!this.preview.blockers.length||!this.reviewed.checked;
+    const pending=!!this.draft?.command,tooLong=!!this.draft&&[this.draft.readAloud,this.draft.gmNotes].some(s=>s.length>2_000_000);
+    this.textLimit.textContent=tooLong?'Ein zusammengeführtes Textfeld überschreitet 2.000.000 Zeichen. Kürze den Entwurf vor der Bestätigung; beide Originale bleiben erhalten.':'';
+    this.confirm.disabled=this.busy||this.composing||this.loadError||!this.persisted||tooLong||pending||!this.preview||!!this.preview.blockers.length||!this.reviewed.checked;
     this.target.disabled=this.busy||this.composing||pending||this.loadError;this.publicText.disabled=this.privateText.disabled=this.busy||pending||this.loadError;
     this.refresh.disabled=this.busy||this.composing||this.loadError||pending||!this.target.value;this.check.hidden=!pending;this.check.disabled=this.busy;
     this.discard.disabled=this.busy||this.composing||pending||this.loadError;this.close.disabled=this.busy||this.composing;this.reviewed.disabled=this.busy||this.composing||pending||this.loadError;
@@ -128,6 +129,7 @@ export class NoteMergeUI {
     if(this.confirm.disabled||!this.owner||!this.draft||!this.preview)return;
     const epoch=this.epoch,p=this.preview;
     const command:PreparationCommand={commandId:crypto.randomUUID(),token:this.owner.token,campaignId:this.owner.campaignId,change:{kind:'note-merge',id:p.source.id,expectedRevision:p.source.revision,targetId:p.target.id,expectedTargetRevision:p.target.revision,basis:p.basis,readAloud:this.draft.readAloud,gmNotes:this.draft.gmNotes}};
+    try{if(command.change.kind==='note-merge')checkedNoteMerge(command.change);}catch(e){this.feedback(e);return;}
     this.draft.command=command;if(!this.persist()){this.draft.command=null;this.sync();return;}
     this.busy=true;this.sync();
     try{const data=unwrap(await this.options.api.changePreparation(command));if(this.valid(epoch))await this.finish(p.target.id,data);}

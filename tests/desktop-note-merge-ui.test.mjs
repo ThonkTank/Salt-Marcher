@@ -46,3 +46,7 @@ test('a late merge preview cannot populate or persist another campaign',async t=
 test('a malformed pending-command marker cannot be treated as a clean resumable draft',t=>{
  const x=fixture(t);x.map.set('note-merge:campaign',JSON.stringify({version:1,sourceId:'source',targetId:'target',readAloud:'',gmNotes:'erhalten',edited:true,command:0}));const u=x.mount();assert(u.hasPending());assert.equal(x.writes.length,0);assert(x.map.get('note-merge:campaign').includes('erhalten'));
 });
+
+test('combined texts exceeding the writer limit remain editable and resumable without a pending command',async t=>{
+ const x=fixture(t);x.preview.source.gmNotes='a'.repeat(1_100_000);x.preview.target.gmNotes='b'.repeat(1_100_000);const u=x.mount();await x.ready(u);u.reviewed.checked=true;u.reviewed.onchange();assert(u.confirm.disabled);await u.submit();assert.equal(x.writes.length,0);assert.equal(u.hasPending(),false);u.close.click();u.dialog.remove();const fresh=x.mount();await fresh.open();assert.equal(fresh.hasPending(),false);assert(fresh.privateText.value.length>2_000_000);x.input(fresh.privateText,'Gekürzt und geprüft');fresh.reviewed.checked=true;fresh.reviewed.onchange();await fresh.submit();assert.equal(x.writes.length,1);assert.equal(x.writes[0].change.gmNotes,'Gekürzt und geprüft');
+});
