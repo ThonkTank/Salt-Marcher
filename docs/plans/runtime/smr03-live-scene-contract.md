@@ -786,7 +786,16 @@ Das kompakte Partyfenster zeigt bei einer laufenden Sitzung ausschließlich
 die Figuren der fokussierten Szene und deren Rastmittelwert. Unter Aktionen
 öffnet „Aktives Szenenroster bearbeiten“ eine Suchauswahl für aktuelle und
 inaktive Figuren. Name, Spieler und Kennung bleiben sichtbar; Filterwechsel
-erhalten die gesamte Auswahl. Suche, Anzahl und Übernahme bleiben auch bei
+erhalten die gesamte Auswahl. Die sichtbare Figurenkennung umfasst mindestens
+acht Zeichen und wächst bei kollidierenden Präfixen bis zur Unterscheidbarkeit.
+`partyIdentityPrefixes` wird von Roster- und Szenenzielprojektion gemeinsam
+verwendet. Im Roster bestimmen alle zulässigen Figuren des aktuellen Snapshots
+die Kürzung, bevor der Suchfilter angewendet wird: Suchen und Umordnen ändern
+die sichtbare Identität nicht. Volle Command-IDs, Profile und gespeicherte Texte
+bleiben erhalten. Ein DOM-Gegenfall mit gleichen Namen/Spielern und UUIDs,
+die erst im letzten Zeichen abweichen, prüft Auswahl, Filter und Reihenfolge;
+der bisherige Test mit unterschiedlichen kurzen IDs deckte diese Verwechslung
+nicht ab. Suche, Anzahl und Übernahme bleiben auch bei
 240×160px erreichbar, die Liste scrollt separat. Die Auswahl wird erst mit
 „Übernehmen“ gemeinsam bestätigt. Andere Szenen werden über „Figuren gemeinsam
 verschieben“ erreicht; der bestehende Move-Dialog erhält „Alle auswählen“ und

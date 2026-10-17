@@ -1,4 +1,5 @@
 import type { LiveView, LiveAction } from "./live-contracts";
+import { partyIdentityPrefixes } from "./party-overview";
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const el = document.createElement(tag);
   if (text !== undefined) el.textContent = text;
@@ -172,6 +173,7 @@ export class PartyRosterPanel {
           !c.archived &&
           (!c.active || c.sceneId === null || c.sceneId === b.focusId),
       ),
+      prefixes = partyIdentityPrefixes(eligible.map(c => c.id)),
       query = this.search.value.trim().toLocaleLowerCase("de-DE"),
       rows = eligible.filter(
         (c) =>
@@ -201,7 +203,7 @@ export class PartyRosterPanel {
                 ? "Ohne Szene"
                 : "Inaktiv") +
             " · " +
-            c.id.slice(0, 8),
+            prefixes.get(c.id),
         );
       row.className = "party-membership-row";
       row.dataset.characterId = c.id;
