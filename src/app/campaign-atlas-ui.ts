@@ -37,7 +37,7 @@ import type {
   AtlasBinding,
 } from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry, Point, Room } from "./contracts";
-import { terrainNames, cellAt } from "./world-model";
+import { terrainNames } from "./world-model";
 import { citySvg, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
 import { roomPath, elementSvg } from "./drawing-model";
@@ -122,11 +122,6 @@ export class CampaignAtlasWorkbench {
   } | null = null;
   private brushId: number | null = null;
   private brushQueue = Promise.resolve();
-  private paintDraft: {
-    id: number;
-    map: import("./world-contracts").AtlasMap;
-    cells: Map<string, import("./world-contracts").AtlasCell>;
-  } | null = null;
   private ignoreClick = false;
   private partyDrag: { id: number; start: Point; last: Point } | null = null;
   private placeIntent: {
@@ -186,7 +181,6 @@ export class CampaignAtlasWorkbench {
         !!this.drag ||
         !!this.vertexDrag ||
         !!this.partyDrag ||
-        !!this.paintDraft ||
         this.brushId !== null,
       changed: () => {
         this.remember();
@@ -397,7 +391,6 @@ export class CampaignAtlasWorkbench {
     this.svg.addEventListener("pointercancel", () => this.cancel());
     this.svg.addEventListener("lostpointercapture", () => {
       if (
-        this.paintDraft ||
         this.brushId !== null ||
         this.drag ||
         this.vertexDrag ||
@@ -587,7 +580,6 @@ export class CampaignAtlasWorkbench {
       this.landscape.hasDraft() ||
       this.bindingDirty ||
       this.draft.length ||
-      this.paintDraft ||
       this.brushId !== null ||
       this.drag ||
       this.vertexDrag ||
@@ -689,7 +681,6 @@ export class CampaignAtlasWorkbench {
   }
   private cancel() {
     this.bindingDirty = false;
-    this.paintDraft = null;
     this.brushId = null;
     this.vertexDrag = null;
     this.partyDrag = null;
@@ -1147,22 +1138,6 @@ export class CampaignAtlasWorkbench {
       })
       .catch((e) => this.error(e));
   }
-  private paintPoint(p: Point) {
-    const d = this.paintDraft;
-    if (!d) return;
-    const level = Number(get<HTMLSelectElement>("atlas-hex-level").value),
-      h = atlasHexAt(p, d.map.hexMeters * 3 ** level),
-      key = level + ":" + h.q + "," + h.r;
-    if (d.cells.has(key)) return;
-    d.cells.set(key, {
-      ...cellAt(d.map, h, level),
-      ...h,
-      level,
-      terrain: get<HTMLSelectElement>("atlas-terrain")
-        .value as import("./world-contracts").Terrain,
-    });
-    this.render();
-  }
   private down(e: PointerEvent) {
     if (e.button !== 0 || e.altKey || this.busy || !this.geometryCurrent()) return;
     if (this.family === "terrain" && this.data) return;
@@ -1228,10 +1203,6 @@ export class CampaignAtlasWorkbench {
     }
   }
   private move(e: PointerEvent) {
-    if (this.paintDraft?.id === e.pointerId) {
-      this.paintPoint(this.point(e));
-      return;
-    }
     if (this.brushId === e.pointerId) {
       this.queueBrush(this.point(e));
       return;
@@ -1252,30 +1223,6 @@ export class CampaignAtlasWorkbench {
   }
   private async up(e: PointerEvent) {
     if(!this.geometryCurrent()&&(this.vertexDrag||this.drag||this.brushId!==null)){this.cancel();this.opts.status('Kartengeometrie inzwischen geändert. Zug nach dem Laden erneut beginnen.',true);return;}
-    if (this.paintDraft?.id === e.pointerId) {
-      const stroke = this.paintDraft;
-      this.paintDraft = null;
-      this.suppressClick();
-      const cells = new Map(
-        stroke.map.cells.map((c) => [c.level + ":" + c.q + "," + c.r, c]),
-      );
-      for (const [k, c] of stroke.cells) cells.set(k, c);
-      if (this.owner)
-        await this.write({
-          kind: "world",
-          command: {
-            commandId: crypto.randomUUID(),
-            token: this.owner.token,
-            campaignId: this.owner.campaign.id,
-            action: {
-              kind: "map",
-              map: { ...stroke.map, cells: [...cells.values()] },
-              expectedRevision: stroke.map.revision,
-            },
-          },
-        });
-      return;
-    }
     if (this.brushId === e.pointerId) {
       this.brushId = null;
       this.suppressClick();
