@@ -13,7 +13,8 @@ let pending:Promise<boolean>|null=null,keeping:Promise<boolean>|null=null,timer:
 let placeNavigation:(id:string)=>Promise<void>=async()=>{};
 export function setNpcPlaceNavigation(open:(id:string)=>Promise<void>){placeNavigation=open;}
 let tell:(text:string,error?:boolean)=>void,after:()=>Promise<void>,enter:(id:string)=>Promise<void>;
-function option(select:HTMLSelectElement,id:string,name:string){const o=document.createElement('option');o.value=id;o.textContent=name;select.append(o);}
+function option(select:HTMLSelectElement,id:string,name:string){const o=document.createElement('option');o.value=id;o.textContent=name;select.append(o);return o;}
+function populateDraft(){for(const name of names){const input=el<HTMLInputElement|HTMLSelectElement>('npc-'+name),value=draft!.fields[name]??'';if((name==='faction'||name==='location')&&value&&![...(input as HTMLSelectElement).options].some(o=>o.value===value))option(input as HTMLSelectElement,value,'Nicht mehr verfügbar').disabled=true;input.value=value;}}
 function lock(){
  const transient=!!pending||recordLoading||!!recordError,unresolved=!!draft?.pendingCommand,blocked=transient||unresolved;
  const check=el<HTMLButtonElement>('npc-write-check');check.hidden=!draft?.pendingCommand;check.disabled=!!pending||recordLoading||!!recordError;
@@ -50,7 +51,7 @@ export async function openNpcs(reset=true,target=reset?0:offset){
   if(result.total>0&&target>=result.total){target=Math.floor((result.total-1)/50)*50;listTarget=target;result=unwrap(await window.campaign.npcs(w.token,{...q,offset:target}));if(!current())return;}
   if(result.offset!==target)throw new Error('Die NSC-Seite gehört nicht zur angefragten Auswahl.');
   for(const [id,items,empty]of [['npc-filter-faction',refs.factions,'Alle Fraktionen'],['npc-filter-location',refs.locations,'Alle Orte'],['npc-faction',refs.factions,'Ohne Fraktion'],['npc-location',refs.locations,'Ohne Ort']] as const){
-   const select=el<HTMLSelectElement>(id),old=select.value;select.replaceChildren();option(select,'',empty);for(const p of items)option(select,p.id,p.name);if(old&&!items.some(p=>p.id===old))option(select,old,'Nicht mehr verfügbar');select.value=old;
+   const select=el<HTMLSelectElement>(id),old=select.value;select.replaceChildren();option(select,'',empty);for(const p of items)option(select,p.id,p.name);if(old&&!items.some(p=>p.id===old))option(select,old,'Nicht mehr verfügbar').disabled=id==='npc-faction'||id==='npc-location';select.value=old;
   }
   const root=el('npc-list');for(const row of result.rows){const b=document.createElement('button');b.type='button';b.textContent=row.name+' · '+(row.lifecycle==='defeated'?'besiegt':{friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[row.role])+(row.factionId?' · '+(refs.factions.find(f=>f.id===row.factionId)?.name??'Fraktion nicht verfügbar'):'');b.onclick=()=>run(()=>select(row.id,false,row.name));root.append(b);}
   offset=result.total===0?0:target;total=result.total;listKey=key;el('npc-page').textContent=total?(offset+1)+'–'+Math.min(offset+50,total)+' von '+total+' NSCs':'Keine passenden NSCs.';
@@ -72,7 +73,7 @@ async function select(id:string,fresh=false,label='NSC',initial?:{name:string;lo
   if(stored&&(stored.id!==id||stored.basis&&stored.basis.id!==id)||v&&v.id!==id)throw new Error('NSC-Antwort gehört zu einer anderen Figur.');
   const loaded=stored??fromView(v,id),retainInput=prior?.id===id&&draft===prior&&version!==priorVersion;
   draft=retainInput?prior:loaded;if(fresh&&initial){draft.fields.name=initial.name;draft.fields.location=initial.locationId;}if(!retainInput){writeId=stored?.writeId??null;version=stored||fresh?1:0;saved=stored?1:0;}
-  for(const name of names)el<HTMLInputElement>('npc-'+name).value=draft.fields[name]??'';
+  populateDraft();
   const calendar=unwrap(await window.campaign.npcPlanCalendar(w.token));if(!current())return;
   drawNpcDailyPlan(el<HTMLInputElement>('npc-dailyPlan'),el<HTMLInputElement>('npc-dailyOverrides'),calendar,[...el<HTMLSelectElement>('npc-location').options].filter(o=>o.value).map(o=>({id:o.value,name:o.textContent??o.value})));
   el<HTMLInputElement>('npc-concentrating').checked=draft.concentrating;el('npc-editor').hidden=false;el('npc-creature-results').replaceChildren();el<HTMLInputElement>('npc-creature').readOnly=!!v?.actorRevision;
@@ -113,7 +114,7 @@ async function finish(c:NpcCommand,w:WorkspaceGeometry,g:number):Promise<boolean
  if(result.outcome==='not-applied'){
   if(result.draft.id!==c.npc.id||result.draft.pendingCommand)throw new Error('NPC-Auftragsprüfung gehört nicht zum ursprünglichen Entwurf.');
   draft=result.draft;writeId=draft.writeId;version++;saved=version;
-  for(const name of names)el<HTMLInputElement>('npc-'+name).value=draft.fields[name]??'';
+  populateDraft();
   const resumedDraft=draft,calendar=unwrap(await window.campaign.npcPlanCalendar(w.token));if(workspace?.token!==w.token||g!==generation||draft!==resumedDraft)return false;
   drawNpcDailyPlan(el<HTMLInputElement>('npc-dailyPlan'),el<HTMLInputElement>('npc-dailyOverrides'),calendar,[...el<HTMLSelectElement>('npc-location').options].filter(o=>o.value).map(o=>({id:o.value,name:o.textContent??o.value})));el<HTMLInputElement>('npc-concentrating').checked=draft.concentrating;
   el('npc-save-status').textContent='Nicht übernommen. Eingaben gesichert; erneut übernehmen ist eine neue ausdrückliche Aktion.';
