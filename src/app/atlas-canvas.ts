@@ -340,6 +340,7 @@ export class AtlasCanvas {
         }
       });
   }
+  private unavailableImages=new Set<string>();
   private async image(source: string) {
     let image = this.decoded.get(source);
     if (image) return image;
@@ -369,6 +370,9 @@ export class AtlasCanvas {
     }
   }
   private clearImages() {
+    this.unavailableImages.clear();
+    this.root.dataset.imageErrors = "0";
+    this.root.dataset.decodedBytes = "0";
     for (const image of this.decoded.values()) image.close();
     this.decoded.clear();
   }
@@ -482,6 +486,8 @@ export class AtlasCanvas {
     this.ctx?.resetTransform();
     this.ctx?.clearRect(0, 0, this.root.width, this.root.height);
     this.root.dataset.canvasState = "empty";
+    this.panel.hidden = true;
+    this.note.textContent = "";
     if (this.contextKey) {
       this.views.delete(this.contextKey);
       this.views.set(this.contextKey, {
@@ -609,8 +615,11 @@ export class AtlasCanvas {
         const frame = this.pending;
         this.pending = null;
         try {
+          let imageErrors=0;
           for (const source of frame.compiled.images) {
-            await this.image(source);
+            const optional=!frame.compiled.requiredImages.has(source);
+            try{if(optional&&this.unavailableImages.has(source))imageErrors++;else await this.image(source);}
+            catch(error){if(!optional)throw error;this.unavailableImages.add(source);imageErrors++;}
             if (frame.generation !== this.generation) break;
           }
           if (frame.generation !== this.generation) {
@@ -624,12 +633,13 @@ export class AtlasCanvas {
           this.root.dataset.sceneVersion = String(++this.sceneVersion);
           this.pruneImages();
           this.paint();
+          this.root.dataset.imageErrors=String(imageErrors);
           this.root.style.visibility = "";
           this.root.removeAttribute("aria-disabled");
-          this.panel.hidden = !frame.text;
+          this.panel.hidden = !frame.text&&!imageErrors;
           this.panel.setAttribute("role", "status");
-          this.note.textContent = frame.text;
-          this.panel.querySelector("button")!.hidden = true;
+          this.note.textContent = imageErrors?`${imageErrors} Bildvorlage(n) nicht verfügbar. Umrisse bleiben sichtbar; übrige Karte ist bedienbar.`:frame.text;
+          this.panel.querySelector("button")!.hidden = !imageErrors;
         } catch (error) {
           if (frame.generation === this.generation) this.fail(error);
           else this.pruneImages();
@@ -641,6 +651,7 @@ export class AtlasCanvas {
   }
   private pruneImages() {
     const keep = this.compiled?.images ?? new Set();
+    for(const source of this.unavailableImages)if(!keep.has(source)&&!this.pending?.compiled.images.has(source))this.unavailableImages.delete(source);
     for (const [key, image] of this.decoded)
       if (!keep.has(key) && !this.pending?.compiled.images.has(key)) {
         image.close();

@@ -63,6 +63,7 @@ export class AtlasCanvasScene {
   private maskSurface: HTMLCanvasElement | null = null;
   readonly commands: Command[] = [];
   readonly images = new Set<string>();
+  readonly requiredImages = new Set<string>();
   constructor(readonly root: AtlasPaint) {
     const visit = (
       node: AtlasPaint,
@@ -99,7 +100,7 @@ export class AtlasCanvasScene {
             alpha: c.alpha,
           })),
         });
-        if (node.kind === "image" && g.source) this.images.add(g.source);
+        if (node.kind === "image" && g.source) {this.images.add(g.source);if(!g.optionalImage)this.requiredImages.add(g.source);}
       }
       for (const child of node.children)
         visit(child, matrix, style, alpha, pointer, hud, title, ancestry);
@@ -197,7 +198,10 @@ export class AtlasCanvasScene {
           }
         } else if (n.kind === "image") {
           const image = images.get(g.source ?? "");
-          if (!image) throw Error("Kartenbild fehlt.");
+          if (!image) {
+            if(!g.optionalImage)throw Error("Kartenbild fehlt.");
+            const x=g.x??0,y=g.y??0,w=g.width??0,h=g.height??0,p=new Path2D();p.rect(x,y,w,h);p.moveTo(x,y);p.lineTo(x+w,y+h);p.moveTo(x+w,y);p.lineTo(x,y+h);ctx.strokeStyle='#75604e';ctx.lineWidth=Math.max(w,h)/200;ctx.stroke(p);continue;
+          }
           ctx.drawImage(image, g.x ?? 0, g.y ?? 0, g.width ?? 0, g.height ?? 0);
         }
       } finally {

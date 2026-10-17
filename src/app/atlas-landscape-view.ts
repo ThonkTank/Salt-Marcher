@@ -11,6 +11,7 @@ export function drawLandscape(
   assets: Map<string, string>,
   references = true,
   raster?: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[],
+  unavailableAssets?: ReadonlySet<string>,
 ) {
   const landscapeNode=atlasPaint;
   let rasterDrawn=false;
@@ -31,8 +32,13 @@ export function drawLandscape(
     if (r.kind === "reference") {
       if (references && r.visible !== false && assets.has(r.assetId!))
         g.append(
-          landscapeNode("image", {source: assets.get(r.assetId!)!, x: 0, y: 0, width: r.width, height: (r.width * (r.imageHeight ?? 1)) / (r.imageWidth ?? 1), opacity: r.opacity ?? 0.4, matrix:[Math.cos(r.angle??0),Math.sin(r.angle??0),-Math.sin(r.angle??0),Math.cos(r.angle??0),r.points[0]!.x-b.x,r.points[0]!.y-b.y], pointer: false}),
+          landscapeNode("image", {source: assets.get(r.assetId!)!, x: 0, y: 0, width: r.width, height: (r.width * (r.imageHeight ?? 1)) / (r.imageWidth ?? 1), opacity: r.opacity ?? 0.4, matrix:[Math.cos(r.angle??0),Math.sin(r.angle??0),-Math.sin(r.angle??0),Math.cos(r.angle??0),r.points[0]!.x-b.x,r.points[0]!.y-b.y], pointer: false, optionalImage:true}),
         );
+      else if(references&&r.visible!==false){
+        const state=unavailableAssets?.has(r.assetId!)?'unavailable':'loading';
+        const outline=landscapeNode('rect',{x:0,y:0,width:r.width,height:r.width*(r.imageHeight??1)/(r.imageWidth??1),matrix:[Math.cos(r.angle??0),Math.sin(r.angle??0),-Math.sin(r.angle??0),Math.cos(r.angle??0),r.points[0]!.x-b.x,r.points[0]!.y-b.y],style:{fill:null,stroke:'#75604e',lineWidth:mpp},data:{referenceState:state,referenceId:r.id},title:`${r.name||'Bildvorlage'} · ${state==='loading'?'wird geladen':'nicht verfügbar'}`});
+        g.append(outline);
+      }
     } else if (r.kind === "patch") {
       if (r.values.terrain && !raster)
         g.append(

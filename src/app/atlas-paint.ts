@@ -40,6 +40,7 @@ export interface PaintOptions {
   path?: string;
   points?: { x: number; y: number }[];
   source?: string;
+  optionalImage?: boolean;
   matrix?: Affine;
   opacity?: number;
   pointer?: boolean;

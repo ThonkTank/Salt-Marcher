@@ -294,9 +294,9 @@ bleiben kompatibel. Prozessnotizen und lokale Messpfade gehören nicht ins Repo.
 
 | Schritt | Konkreter Anschluss / Nutzerwirkung | Direkte Abnahme und aktueller Stand |
 | --- | --- | --- |
-| 0 Ausgangsbasis | Bestehende Writer/History/Volumes/Gebäude/Reise/Player prüfen statt neu bauen. Gleiche kleine Kampagne, Großwelt, dichte/komplexe Region, 5000 Gebäude, 100000 Dungeonzellen, große Bildvorlage/Export als Vergleichsdaten. | Code-/Messbasis vorhanden; bisherige Großwald-/4000-Raumproben sind isolierte Diagnosen, keine 16-GiB-/Gesamtfreigabe. Nativer Großwald-Teilweg belegt; 16-GiB-, Stadt-/Dungeon- und Medienprofile weiter offen. |
+| 0 Ausgangsbasis | Bestehende Writer/History/Volumes/Gebäude/Reise/Player prüfen statt neu bauen. Gleiche kleine Kampagne, Großwelt, dichte/komplexe Region, 5000 Gebäude, 100000 Dungeonzellen, große Bildvorlage/Export als Vergleichsdaten. | Code-/Messbasis vorhanden; bisherige Großwald-/4000-Raumproben sind isolierte Diagnosen, keine 16-GiB-/Gesamtfreigabe. Nativer Vergleich kleiner Karte,100000 Terrainflächen plus1200 Objekte,5000 Gebäude und100000 Volumenzellen bei100/200% liegt vor; physische16-GiB-, vollständige Bearbeitungs- und Medienqualifikation bleiben offen. |
 | 1 Gezielte Reads | `campaign-atlas-contracts`, Store, Preload/Main, Workbench: Übersicht, räumliche Seite, Objektdetail und Commitbeleg trennen. Keine vollständigen Räume/Städte für eine kleine Ansicht; begrenzte Antworten mit ausdrücklicher Fortsetzung/Zusammenfassung. | Erster Anschluss implementiert: getrennte Übersicht/Roomdetail, revisionsgebundene Metadatenseiten für Raum-/Stadt-/Landschaftssuche und kompakter Landschaftscommit. 4000-Raum-Probe ohne Vollansichten und mit unveränderter Prosa. Kampagnenaktivierung und Atlas öffnen nun über Shell und Geometrieprojektionen; der Raumeditor liest den gewählten vollständigen Raum und dessen Arbeitsentwurf gezielt. Raumtextänderungen antworten mit genau diesem Raum. Räumliche Stadt-/Raumreads sind nun bereichs- und bytebegrenzt, genaue Autorenleser getrennt; Legacy-Fachvollreader bleiben gesonderte offene Anschlüsse. Landschaft, Geometrie und genaue paginierte Auswahl verwenden jetzt denselben quellengebundenen Bereichsframe. |
-| 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Landschaft und Nichtflächen laufen am Writer mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen; fehlgeschlagener Indexaufbau rollt vollständig zurück und fällt auf kanonische Btree-Reads zurück, ohne andere Kampagnen zu sperren. Raum-/Stadtprojektionen verwenden ebenfalls einen TEMP-Rtree mit atomarem Scanfallback; aktualisierte Konturen erhalten ihre kanonische Überlappungsreihenfolge. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
+| 2 Raum/Index | Exakte große Bereichsadresse plus lokalen Meteroffset einführen. V1 normalisiert je Achse mit 1000 m, Offset [0,1000), auch negativ; Adresse als kanonische Dezimalzeichenfolge. Lokale Geometrie bleibt unverändert. Rtree gegen Btree messen; grobe Bereichsauswahl vor lokaler Suche. | V1-Adresscodec isoliert geprüft (große +/-Adressen, Millimeternachbarn, Normalisierung); noch keine kanonische Daten-/Kameramigration. Temporäre Rtrees für Legacy-Landschaftsreads werden erst beim ersten benötigten Read aufgebaut; der gemeinsame Worker indiziert nur Nichtflächen und verwendet für Terrain kanonische Bounds-Btrees mit exakter Nachfilterung, Move/Undo/Redo/Delete/Reopen; fehlgeschlagener Indexaufbau rollt vollständig zurück und fällt auf kanonische Btree-Reads zurück, ohne andere Kampagnen zu sperren. Raum-/Stadtprojektionen verwenden ebenfalls einen TEMP-Rtree mit atomarem Scanfallback; aktualisierte Konturen erhalten ihre kanonische Überlappungsreihenfolge. Vergleich mit Btree und restliche räumliche Verbraucher bleiben offen. |
 | 3 Übersicht/Frame | Effektive grobe/feine Eigenschaften vor Aggregation bestimmen. Vereinfachte Flächen/Symbole/Kacheln schützen Landschaft beim Herauszoomen. Render/Hit publizieren denselben revisionsgebundenen Frame. | Landschaftsflächen werden in einem separaten Lese-Worker zu begrenzten, revisionsgebundenen Rasterbildern aggregiert; grobe Vorgaben und feine Übersteuerungen bleiben geordnet, Löcher erhalten. Native Linux-Probe: 100000 Flächen, sichtbar Wald → Wasser malen → Save → Neustart → Undo, tatsächliche Bildschirmfarben. Dichte Raum-/Stadtansichten verwenden nun Raster plus quellengebundenen genauen Hit; Elternframes werden unabhängig gelöst. Noch keine persistente Kachelpyramide oder Latenzfreigabe; B01/B04 offen. |
 | 4 Raumfachmodelle | Vorhandene Volumes/Lifecycle weiterverwenden. Gebäude außen/innen aus einem Zustand; echte Paths/Passages getrennt von dekorativen Linien. Reine Zeichnung nur ausdrücklich mit Preview umwandeln. | Grundlagen vorhanden, vollständiger Anschluss offen. 3-m-Wand x1,1 =3,3 m; 1,524-m-Dungeonzellen bleiben exakt; gestapelte Räume, Split/Merge, Anker/Prosa und gemeinsame Kamera/History. |
 | 5 Medien/Jobs | Hashreferenz von Bildtransport trennen, Auflösungsstufen/Kacheln, Bytecaches und Worker einführen. Aktive Drafts/Undo separat budgetieren. Nur Writer nimmt revisionsgebundene Ergebnisse an. | Rasterjobs sind pro Verbraucher abbrechbar und warten auf den Vorgängeraustritt; PNG-Cache 64 MiB, Bild bis 1024×1024, GM-Ausgabekacheln sequenziell bis 8192 Pixel Gesamtkante/256 MiB codiertem Bildspeicher und ausdrücklicher Abbruch, Aktivierung/Revision vor und nach dem Worker geprüft. 64/128/256-Vergleich, Vorlagenauflösungen, GPU-/Draftbudgets, Export und Assetdatei/BLOB-Entscheidung bleiben offen. |
@@ -333,8 +333,8 @@ Das einzige Alternativenregister steht in
 [ARCHITECTURE B01–B11](ARCHITECTURE.md#vorläufiges-atlasziel-und-überprüfbare-alternativen-16102026).
 Zu jedem entschiedenen Punkt dort aktuelle Richtung, verworfene Alternative,
 Messfall/Revision und verbleibende Unsicherheit nachführen. Gleich geeignete
-Varianten nach geringstem Gesamtaufwand wählen. B01 zuerst begrenztes SVG gegen
-Canvas2D, bei verfehlten Zielen vorhandenes Pixi/WebGL; keine Vorentscheidung
+Varianten nach geringstem Gesamtaufwand wählen. B01 verwendet nach ausdrücklichem Umstellungsauftrag Canvas2D; bei verfehlten
+Zielen vorhandenes Pixi/WebGL vergleichen. Keine Vorentscheidung
 aufgrund reiner Bildrate. B02 Indexpräzision/Updatekosten, B04 Landschaftserhalt,
 B06 Backup-/Assetclosure und B09 alte History sind ebenso Entscheidungskriterien.
 
@@ -601,9 +601,9 @@ bei lokalen Moves/Deletes anhand alter und neuer Grenzen invalidiert; externe
 Änderung/Journalüberlauf/Quellwechsel verwerfen die Ableitung. Keine neue
 persistente Kachel- oder Geometriewahrheit.
 
-Nächste Abnahmen: kalte Projektionskosten, Same-Task-Latenz/RSS,
-Referenzdecode unter Last und dichte Ausgabe messen; 100000-Flächen-/große
-Stadt-/lange Einzelkonturaufgaben nativ wiederholen. B01/B02/B04/B05 behalten
+Die aktuelle Funktions-/Leistungsprüfung und verbleibenden Abnahmen stehen
+im folgenden Abschnitt. Lange Einzelkonturen und Medien unter Last bleiben
+eigene Belastungsfälle. B01/B02/B04/B05 behalten
 ihre Alternativen (persistente abgeleitete Projektion/Kachelpyramide, anderer
 Index, GPU-Renderer), bis diese Messungen einen Wechsel begründen. Der
 Adresscodec benötigt Kamera-/History-/Transferqualifikation vor einer
@@ -638,7 +638,7 @@ Darstellungskonturen werden nicht zur Schreibautorität. Hover-Namen von Markern
 auch ohne Autoren-Auswahl; sie werden bei Gesten/Framewechsel/Fehlern entfernt.
 CSS-Ränder, Kameraskalierung und Bitmap-DPI
 sind getrennt. Autorenhits und Hover verlangen nicht nur die neueste Szene,
-sondern auch deren erfolgreich auf die sichtbare Fläche kopierten Frame mit
+sondern auch deren erfolgreich auf die sichtbare Fläche gezeichneten Frame mit
 aktueller Kamera und aktuellen CSS-Innenmaßen. Kameraänderungen sperren
 Treffer bis zum nächsten Paint; ein Größenwechsel ist schon vor dem
 ResizeObserver-Aufruf gesperrt. Eine verborgen kompilierte Szene erhält beim
@@ -650,8 +650,11 @@ Bilddecodierung mit einem ersetzbaren Nachfolger verhindert Decoder-Fan-out.
 Verlust/Fehler der Zeichenfläche entfernt Treffer und bietet Wiederholung,
 ohne gespeicherte Daten, Kamera oder Listener zu verdoppeln.
 
-Die sichtbare Fläche und der atomare Zeichenpuffer haben jeweils höchstens
+Die sichtbare Zeichenfläche hat höchstens
 4.194.304 Pixel, höchstens4096 Pixel je Achse und maximal2x Geräteauflösung.
+Zeichnen erfolgt synchron in einem Animationsframe direkt in diese Fläche;
+bei einem Fehler wird das unvollständige Bild gelöscht und es werden keine
+Treffer freigegeben. Es gibt keinen zusätzlichen Vollbild-Kopierpuffer.
 Eine Sichtmaske verwendet höchstens einen weiteren solchen
 Puffer pro Szene; dieser und die Maskenpfade werden bei Pan wiederverwendet
 und beim Szenenwechsel freigegeben; sie wird durch `destination-out` aus bekannten/sichtbaren Bereichen
@@ -671,8 +674,9 @@ OffscreenCanvas für nachgewiesene Zeichenarbeit auf dem UI-Thread. Kein
 vorsorglicher Shader-/Workerunterbau. Stadt-/Objektglyphgeneratoren emittieren
 jetzt direkt passive Geometrie (`cityPaint`, `elementPaint`); auch ausgewählte
 Zeichenobjekte und Zeichenvorschauen benötigen keinen XML-Parser oder
-abgetrennte SVG-Knoten. Die bisherigen SVG-Ausgaben serialisieren dieselbe
-Geometrie; Attribute und Texte werden erst am Ausgaberand maskiert. Ein
+abgetrennte SVG-Knoten. PNG/JPEG-Ausgaben verwenden dieselben numerischen Canvas-Kommandos direkt.
+Historische SVG-Schnittstellen besitzen einen getrennten Serializer; Attribute
+und Texte werden erst an diesem Ausgaberand maskiert. Ein
 festgehaltener Vergleich mit den vorherigen Generatoren prüft alle vorhandenen
 Symbolfamilien, Türzustände, Objektvarianten und Stadtlayer. Native Atlasproben
 lesen die veröffentlichte Canvasfläche und Kamera statt entfernter SVG-Knoten.
@@ -683,3 +687,104 @@ vorläufig ihren SVG-Host; eine gemeinsame Kamerabasis erst im nächsten echten
 Anschluss konsolidieren. SVG-/PNG-/JPEG-Ausgaben und die öffentliche Whitelist
 bleiben eigenständige, getestete Ausgabewege. Keine Datenformatmigration,
 kein Stilwechsel und keine vollständige Phase1-/Phase2-Produktabnahme.
+
+
+### Abschlussprüfung des Renderingpakets: Funktion und Geschwindigkeit
+
+Das beauftragte Paket „vollständig anzeigen, präzise bedienen, flüssig
+navigieren“ ist funktional angeschlossen. Lokale native Funktions- und CPU-/
+Speicherbelege ersetzen seine vollständige Hardware-/Präsentationsabnahme nicht. Der spätere ausdrückliche Canvas2D-Auftrag ersetzt
+seine ursprüngliche SVG-Arbeitsrichtung. Er ersetzt keine der fachlichen
+Anforderungen oder Messziele. Keine persistente Geometrieprojektion,
+Text-/Geometrietrennung oder Koordinatenmigration in diesem Paket.
+
+Die Prüfung hat zusätzliche Lücken geschlossen:
+
+- Optionale Bildvorlagen scheitern lokal. Fehlende Vorschaubytes erhalten einen
+  transformierten Umriss; fehlgeschlagener Browserdecode einen Umriss mit Kreuz.
+  Andere Raster und genaue Treffer bleiben nutzbar. Retry verwirft auch den
+  lokalen Fehlercache. Vorschauen sind an die Quellenkennung gebunden und
+  werden beim Quellenwechsel unter derselben Asset-ID neu gelesen. Pflichtbilder
+  für dichte Geometrie dürfen weiter keinen falschen erfolgreichen Frame ergeben.
+- Ein Fehler der Landschaftsprojektion lässt gesunde Raum-/Stadtgeometrie
+  erhalten. Kandidatenseiten benennen nicht verfügbare Ebenen ausdrücklich;
+  verfügbare Treffer verlangen dann eine bewusste Auswahl, auch bei nur einem
+  Treffer. Keine automatische Auswahl oder falsche Leermeldung. Der nächste
+  Sync baut die gescheiterte Landschaft erneut vollständig auf.
+- GM-Ausgaben halten Ausschnitt, Geschoss, Schnitt, Dachfilter, Rasterstufe,
+  Vorlage, Bildgröße und Format vor dem ersten asynchronen Read fest. Alle
+  Ausgabekacheln und die Endkomposition benutzen diese Werte. Quellenwechsel
+  werden weiterhin vor dem Schreiben abgewiesen; öffentliche Datenfreigabe
+  und GM-Ausgabe bleiben getrennt.
+- Der Writer baut keinen unbenötigten Landschaftsindex beim Appstart. Im
+  Bereichsworker werden schmale, sortierte Schlüssel in vollständigen Seiten
+  zu 128 Datensätzen nachgelesen und in expliziter Schlüsselreihenfolge gestreamt;
+  die Seite sammelt nicht alle vollständigen Originalpayloads im JavaScript-Heap. Nichtflächen behalten ihren Rtree; Terrain
+  verwendet kanonische Bounds. Eine konservative Ablehnung von Flächen ohne
+  jeden Raster-Samplepunkt vermeidet wirkungslose Payloadreads. Pixelidentität
+  einschließlich Löchern, negativen Koordinaten und Reihenfolge wird gegen
+  den unoptimierten Stream geprüft; fehlende SQLite-Math nutzt den Fallback.
+  Lokale Invalidierung alter/neuer Grenzen und bestehende Budgets bleiben erhalten.
+
+Reproduzierbarer nativer Vergleich: `tools/measure-atlas-runtime.mjs` über
+`tools/ui-session.py` nach `build:desktop`. Derselbe Fixturebestand kann mit
+`ATLAS_BASELINE_FIXTURES` in eigene Profile kopiert werden; `ATLAS_RUNTIME_DIR`
+vergleicht eine eingefrorene Runtime. Vier Bestände: kleine Kontrollkarte,
+100000 Terrainflächen plus 1200 Wege/Flüsse/Orte, 5000 Gebäude mit Prosa und
+100000 echte Volumenzellen. Jeweils frische Electronprozesse bei 100% und 200%,
+kalte Atlasöffnung einschließlich Scrollen zum tatsächlich sichtbaren Ausschnitt,
+warme Wiederöffnung, native Pan-/Hover-/Vorschau-/Zoomfolgen,
+Workeraktivität, Szenenidentität und Prozess-/JS-/Bitmap-Speicher. Eingaben
+müssen die sichtbare Canvasfläche treffen; ein Pan muss die Kamera nachweislich
+bewegen. Eine frühe Messfassung konnte bei200% einen unterhalb des Fensters
+bereiten Canvas zählen; deren Öffnungszeit ist keine Sichtbarkeitsabnahme. OS-Dateicache
+ist nicht kontrolliert: „kalt“ bezeichnet hier den frischen Prozess/Projektionscache.
+Der ergänzende Volumenschnitt wird eigens ausgewiesen; die erste Dungeonöffnung
+allein zeigt noch keinen geprüften Höhenschnitt. Ein eigener nativer Nachlauf
+mit aktiviertem Schnitt und bestätigten 100000 Zellen liegt bei beiden
+Skalierungen unter 2 s; er ersetzt keine gesamte Bearbeitungs-/Historyabnahme.
+
+Die lokale Vergleichsserie vom 17.10.2026 ergibt für die Landschaft etwa
+3,62–3,69 s → 1,45–1,52 s bis zum nutzbaren Ausschnitt und
+2,82–2,87 s → 1,08–1,16 s bei warmer Wiederöffnung. Kleine Karte, Stadt und
+Dungeon-Grundriss öffnen danach in etwa 0,57–1,53 s. Appbereitschaft wird
+separat erfasst und nicht aus der gesamten Startzeit herausgerechnet.
+Die gemessene Renderer-CPU für Pan/Hover bleibt unter 16 ms p95,
+Vorschauen in der abschließenden Serie unter13ms p95. Zoom erreichte vor
+der nachfolgenden Korrektur bei Landschaft/Dungeon rund16–23ms p95. Das Profil zeigte
+mehrfache Reads/Renderaufbauten innerhalb einer Radfolge. Kameraaufträge
+verwenden nun120ms Ruhezeit und erhalten bis zur Antwort die schon transformierte
+Szene; Quellen-/Filteränderungen behalten ihren eigenen Ladeweg. Veraltete
+Autorenhits bleiben gesperrt. Der unmittelbare Nachlauf senkt Zoom auf etwa4–6ms
+p95; die abschließende Serie mit veränderten Endmaßstäben bestätigt
+3,2–5,9ms p95 für Zoom. Das Nachladen nach einer solchen Folge dauert
+32–481ms; seine gesamte CPUarbeit über diesen Zeitraum wird separat erfasst
+und ist keine einzelne Framezeit. Diese CPUwerte
+umfassen zwei Animationsframes nach echter Eingabe; sie beweisen weder
+Compositorpräsentation noch GPUlaufzeit. Platzhalter gelten nicht als nutzbar:
+vollständige Quellenabdeckung, tatsächliche Zeichenkommandos und sichtbarer
+Viewport werden geprüft. Fensterbilder stammen aus Electron `capturePage`;
+Playwrights Ausschnitt kann bei nativer200%-Skalierung die falsche Bildfläche erfassen.
+
+Offener Abschluss, ohne Umfangsverkleinerung:
+
+1. Tatsächliche Compositorpräsentation neben CPU messen. B01 OffscreenCanvas/
+   Pixi erst bei belegtem Zeichenengpass vergleichen; SQL-/Projektionsarbeit
+   wird dadurch nicht beseitigt. Einzelne lange Konturen und Medien separat
+   belasten, statt deren Kosten aus der Rechteck-/Kachelszene abzuleiten.
+2. Längerfristigen Einsatz mit Autorenänderungen, Undo und Medienwechseln
+   beobachten. Je20 geschlossene Zoomzyklen auf allen vier Beständen bei100/200%
+   hielten JS nach separater GC, Prozess-RSS und dekodierte Bilder stabil;
+   kein Worker hatte mehr als einen aktiven Auftrag. Das ist eine begrenzte
+   Navigationsprobe, kein unbegrenzter Leakbeweis.
+   `ATLAS_CYCLES`/`ATLAS_COLLECT_GC` wiederholen diesen Messfall; Post-GC und
+   normale Speichernutzung nicht gleichsetzen. Cachegrößen nicht vorsorglich erhöhen.
+3. Physische 16-GiB-Qualifikation, tatsächliche Präsentationslatenz und noch
+   fehlende kombinierte Medien-/Einzelkontur-/Graph-/Public-Ausgabebelastungen
+   getrennt abschließen. Bestehende funktionale Native- und Regressionstests
+   bleiben Teilbelege, keine vollständige Phase1-/Phase2-Produktabnahme.
+
+`tools/measure-atlas-regions.mjs` ergänzt die native Messung um Node-/SQLite-
+Stufenzeiten für Store, Shell, Quellenkennung, Workeraufbau, Prüfsumme/Projektion,
+Read/Raster, View und Transportkodierung. Zusammengefasste Stufen sind dort
+benannt und dürfen nicht als isolierte Prüfsummen-/Raster-CPU ausgegeben werden.

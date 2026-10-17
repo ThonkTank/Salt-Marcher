@@ -198,3 +198,12 @@ test('a press rejected during saving cannot become a selection after saving comp
  ui.down({button:0,altKey:false});ui.busy=false;await ui.click({button:0,altKey:false});
  assert.deepEqual(chosen,[],'release belongs to the rejected press, even if its write has finished');
 });
+
+
+test('wheel bursts retain their scene between separated input events and read only the settled view',async t=>{
+ const original={setTimeout:global.setTimeout,clearTimeout:global.clearTimeout};t.after(()=>Object.assign(global,original));let now=0,id=0;const jobs=new Map(),reads=[];
+ global.setTimeout=(run,delay)=>{jobs.set(++id,{run,at:now+delay});return id;};global.clearTimeout=id=>jobs.delete(id);
+ const advance=ms=>{now+=ms;for(const [id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.run();}};
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>false,refresh:async keepScene=>reads.push(keepScene),request:0});
+ ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[],'A normal gap within a wheel burst must not rebuild the scene.');ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[]);advance(40);assert.deepEqual(reads,[true]);assert.equal(jobs.size,0);assert.equal(ui.root.dataset.regionState,'loading');
+});

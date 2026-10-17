@@ -186,7 +186,7 @@ export class CampaignAtlasWorkbench {
         this.brushId !== null,
       changed: () => {
         this.remember();this.svg.dataset.atlasOriginX=String(this.camera.view.x);this.svg.dataset.atlasOriginY=String(this.camera.view.y);
-        this.scheduleRegion();
+        this.scheduleRegion(true);
       },
     });
     get("atlas-export-cancel").onclick=()=>{this.exportCancelled=true;if(this.owner){void window.campaign.cancelLandscapeRaster(this.owner.token,'export');void window.campaign.cancelAtlasRegion(this.owner.token,'export');}};
@@ -446,12 +446,13 @@ export class CampaignAtlasWorkbench {
     const box=this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
     return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(get<HTMLInputElement>('atlas-slice').value):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,perception:get<HTMLInputElement>('atlas-perception').checked};
   }
-  private scheduleRegion(){
+  private scheduleRegion(camera=false){
     if(this.root.hidden||!this.owner)return;
     if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
     if(this.geometryCurrent()){this.root.dataset.regionState='ready';this.svg.setAttribute('aria-busy','false');return;}
     this.request++;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
-    this.regionTimer=setTimeout(()=>{this.regionTimer=null;void this.refresh();},60);
+    // Keep a wheel burst on the retained scene; rebuild only after input settles.
+    this.regionTimer=setTimeout(()=>{this.regionTimer=null;void this.refresh(camera);},camera?120:60);
   }
   private geometryCurrent(){
     const old=this.loadedRegionQuery,q=this.regionQuery();if(!old)return false;
@@ -535,7 +536,7 @@ export class CampaignAtlasWorkbench {
     this.opening={owner,task};
     try{await task;}finally{if(this.opening?.task===task)this.opening=null;}
   }
-  async refresh() {
+  async refresh(keepScene=false) {
     if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
     const w = this.owner,
       request = ++this.request;
@@ -545,7 +546,7 @@ export class CampaignAtlasWorkbench {
     this.previewRequest++;
     this.localPreview = null;
     this.playback.stop();
-    this.render();
+    if(!keepScene)this.render();
     this.renderTravel();
     try {
       const query=this.regionQuery(true);
@@ -956,10 +957,12 @@ export class CampaignAtlasWorkbench {
     const page=async(offset:number)=>{
       const reply=await window.campaign.atlasRegionCandidates(owner.token,query,point,fence,offset,layer);
       if(!valid())return;if(!reply.ok)throw new Error(reply.error);const result=reply.value;
-      if(result.total===1&&offset===0){await choose(result.items[0]!);return;}
-      if(!result.items.length){this.opts.status('Hier ist kein passendes Objekt.');return;}
+      const unavailable=[...new Set([...(result.unavailable??[]),...(layer!=='geometry'&&this.data?.region?.landscape?.state==='error'?['landscape' as const]:[])])],incomplete=!!unavailable.length;
+      if(result.total===1&&offset===0&&!incomplete){await choose(result.items[0]!);return;}
+      if(!result.items.length){this.opts.status(incomplete?'Auswahl unvollständig: Eine Kartenebene ist nicht verfügbar. Ansicht erneut laden.':'Hier ist kein passendes Objekt.',incomplete);return;}
       this.hitDialog.replaceChildren();const title=document.createElement('h2');title.textContent='Objekt an dieser Stelle auswählen';this.hitDialog.append(title);
       const count=document.createElement('p');count.textContent=result.total+' Treffer · '+(offset+1)+'–'+(offset+result.items.length);this.hitDialog.append(count);
+      if(incomplete){const warning=document.createElement('p');warning.setAttribute('role','alert');warning.textContent='Auswahl unvollständig: '+unavailable.map(layer=>layer==='landscape'?'Landschaft':'Raum-/Stadtgeometrie').join(', ')+' nicht verfügbar. Verfügbare Treffer können geöffnet werden; Ansicht erneut laden.';this.hitDialog.append(warning);}
       for(const hit of result.items){const button=document.createElement('button');button.type='button';button.textContent=({landscape:'Landschaft',room:'Raum',building:'Haus',element:'Objekt',scope:'Dungeon',city:'Stadt','city-unit':'Stadtelement'}[hit.kind])+': '+hit.name;button.onclick=()=>void choose(hit).catch(e=>this.error(e));this.hitDialog.append(button);}
       if(offset>0){const back=document.createElement('button');back.textContent='Vorige Treffer';back.onclick=()=>void page(Math.max(0,offset-40)).catch(e=>this.error(e));this.hitDialog.append(back);}
       if(result.next!==null){const next=document.createElement('button');next.textContent='Weitere Treffer';next.onclick=()=>void page(result.next!).catch(e=>this.error(e));this.hitDialog.append(next);}
@@ -1923,12 +1926,12 @@ export class CampaignAtlasWorkbench {
       const audience = get<HTMLSelectElement>("atlas-export-audience").value as
           | "gm"
           | "public",
-        box = this.landscape.exportBox??this.camera.view;
-      const exportQuery={...this.regionQuery(),box:{...box},perception:audience==='public'};
-      const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
-      const snapshot=fresh.value;
+        box = {...(this.landscape.exportBox??this.camera.view)};
+      const exportQuery={...this.regionQuery(),box:{...box},perception:audience==='public'},references=get<HTMLInputElement>('atlas-export-reference').checked,grid=get<HTMLInputElement>('atlas-export-grid').checked,level=Number(get<HTMLSelectElement>('atlas-hex-level').value);
       const format=get<HTMLSelectElement>("atlas-export-format").value as 'png'|'jpeg',size=Number(get<HTMLInputElement>("atlas-export-size").value);
       if(!Number.isInteger(size)||size<256||size>8192)throw new Error("Ausgabegröße zwischen 256 und 8192 Pixel wählen.");
+      const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
+      const snapshot=fresh.value;
       const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
       let scene:AtlasPaint;
       if(audience==='public'){
@@ -1941,7 +1944,6 @@ export class CampaignAtlasWorkbench {
         }
       } else {
         let encoded=0;
-        const references=get<HTMLInputElement>("atlas-export-reference").checked;
         const geometryTiles=await landscapeExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,async(part,w,h)=>{
           const response=await window.campaign.atlasRegion(owner.token,{...exportQuery,box:part,width:w,height:h,revision:snapshot.revision,fence:snapshot.region!.fence,references},'export');if(!response.ok)return response;
           const tile=response.value,layer=tile.region.landscape;
@@ -1949,13 +1951,13 @@ export class CampaignAtlasWorkbench {
           if(!layer||layer.state!=='ready'||!layer.coverage.complete)throw new Error(layer?.error??'Landschaftsausgabe nicht vollständig. Erneut laden.');
           const assets=new Map<string,string>();
           if(references)for(const r of layer.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAssetPreview(owner.token,r.assetId,2048);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
-          const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid:get<HTMLInputElement>("atlas-export-grid").checked,level:Number(get<HTMLSelectElement>("atlas-hex-level").value),references,floorId:this.floorId,roofs:exportQuery.roofs});
+          const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
           const png=await atlasImage(scene,w,h,part);let binary='';for(let i=0;i<png.length;i+=32768)binary+=String.fromCharCode(...png.slice(i,i+32768));const data='data:image/png;base64,'+btoa(binary);encoded+=data.length*2;
           if(encoded>256*1024*1024)throw new Error('Atlas-Ausgabe benötigt zu viel Bildspeicher. Kleineren Ausschnitt wählen.');
           return{ok:true,value:{campaignId:snapshot.campaignId,revision:snapshot.revision,box:part,width:w,height:h,data}};
         },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{get('atlas-save-status').textContent=`Atlas wird ausgegeben: ${done}/${total}`;},512);
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')get('atlas-save-status').textContent='Dichte Landschaft als Übersicht; Vorlagen als Umrisse.';
-        scene=atlasRegionPaint(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:this.floorId,roofs:exportQuery.roofs});
+        scene=atlasRegionPaint(snapshot,[],box,width,new Map(),{grid:false,level:0,references:false,geometryTiles,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
 
       }
       const bytes = await atlasImage(scene,width,height,box,format);

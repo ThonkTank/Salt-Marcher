@@ -135,8 +135,10 @@ export function installLandscape(db: any) {
     );
   }
 }
+const attemptedIndexes=new WeakSet<object>();
 /** Rebuildable connection-local index; never exported or captured in author history. */
 export function installLandscapeIndex(db: any) {
+  attemptedIndexes.add(db);
   // Separate point/line/image candidates keep a world overview from scanning
   // every fine patch just to exclude it before requesting its display raster.
   try { db.transaction(()=>{
@@ -179,6 +181,7 @@ export function landscapeRegion(
     throw new Error("Ausschnitt prüfen.");
   if(!Number.isFinite(metersPerPixel)||metersPerPixel<0)throw new Error('Darstellungsmaßstab prüfen.');
   if(typeof includePatches!=='boolean')throw new Error('Darstellungsfilter prüfen.');
+  if(box&&!attemptedIndexes.has(db))installLandscapeIndex(db);
   const areaTable=includePatches?'atlas_landscape_area':'atlas_landscape_objects';
   const indexed = box && db.prepare("SELECT 1 FROM sqlite_temp_master WHERE name='atlas_landscape_area'").get();
   const select =

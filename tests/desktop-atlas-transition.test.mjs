@@ -38,7 +38,7 @@ test('compact landscape commit is durable and idempotent without full atlas read
 });
 const rectangleBox={x:-1000,y:-1000,width:5000,height:5000};
 test('connection-local landscape index tracks movement, undo/redo, deletion and restart',t=>{
- const f=fixture(t),record=patch();assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name='atlas_landscape_area'").get().n,1);const write=action=>f.store.executeAtlasCommit(f.command(action));
+ const f=fixture(t),record=patch();f.store.landscapeRegion(f.w.token,rectangleBox);assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name='atlas_landscape_area'").get().n,1);const write=action=>f.store.executeAtlasCommit(f.command(action));
  write({kind:'landscape-put',record,expectedRevision:null});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,1);
  write({kind:'landscape-put',record:{...record,polygons:[rectangle(1e8,1e8,100,100)]},expectedRevision:1});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,0);
  write({kind:'undo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,1);write({kind:'redo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,0);
@@ -110,6 +110,7 @@ test('landscape search pages beyond 100 without copying geometry, then loads one
 test('an unavailable derived index cannot prevent opening an unrelated healthy campaign',t=>{
  const f=fixture(t),r=patch();f.store.executeAtlasCommit(f.command({kind:'landscape-put',record:r,expectedRevision:null}));
  const other=f.store.create('Foreign'),put=f.store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+ f.store.landscapeRegion(f.w.token,rectangleBox); // Build the optional writer cache before damaging its trigger path.
  // An external damaged row may make an optional Rtree rebuild impossible.
  f.store.db.exec('DROP TRIGGER temp.atlas_landscape_area_insert; DROP TRIGGER temp.atlas_landscape_objects_insert;');
  put.run(other.id,'damaged',1,10,-10,0,1,'{broken original bytes');
@@ -146,4 +147,11 @@ test('targeted reads and page cursors preserve existing opaque IDs without a new
  const id='a'.repeat(1500),f=fixture(t,[{id,scopeId:'local',floorId:'ground',number:'1',name:'Altbestand',revision:0,polygons:[rectangle(0,0,3,3)],sections:[]},{id:'z',scopeId:'local',floorId:'ground',number:'2',name:'Zweiter Raum',revision:0,polygons:[rectangle(5,0,3,3)],sections:[]}]);
  assert.equal(f.store.atlasRoom(f.w.token,id).id,id);const page=f.store.atlasObjects(f.w.token,{kind:'room',text:'',limit:1});assert.equal(page.items[0].id,id);assert.equal(f.store.atlasObjects(f.w.token,{kind:'room',text:'',limit:1,cursor:page.next}).items[0].id,'z');
  const record={...patch(),id,kind:'road',points:[{x:0,y:0},{x:10,y:0}],polygons:[],width:5};f.store.executeAtlasCommit(f.command({kind:'landscape-put',record,expectedRevision:null}));assert.equal(f.store.atlasLandscapeObject(f.w.token,id).id,id);
+});
+
+test('opening a store does not build an unused writer landscape index; the first bounded legacy read builds it once',t=>{
+ const f=fixture(t),count=()=>f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name IN ('atlas_landscape_area','atlas_landscape_objects')").get().n;
+ assert.equal(count(),0);const r=patch();f.store.executeAtlasCommit(f.command({kind:'landscape-put',record:r,expectedRevision:null}));assert.equal(count(),0);
+ assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records[0].id,r.id);assert.equal(count(),2);
+ f.store.db.exec('DROP TABLE temp.atlas_landscape_area; DROP TABLE temp.atlas_landscape_objects;');assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records[0].id,r.id);assert.equal(count(),0,'An explicitly unavailable cache uses canonical bounds instead of rebuilding per read.');
 });
