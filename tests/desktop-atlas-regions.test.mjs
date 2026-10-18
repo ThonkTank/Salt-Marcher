@@ -233,3 +233,16 @@ test('dense raster picks a rotated object against its exact rectangle away from 
  f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...element,variant:'barrel'},expectedRevision:0}});await f.read(q);
  assert.equal(f.reader.hit(f.source,q,{x:34,y:0})?.id,element.id);assert.equal(f.reader.candidatesAt(f.source,q,{x:34,y:4},0,'all').items.some(h=>h.id===element.id),false,'ellipse corners are outside the exact footprint');
 });
+
+
+test('an interior containing only authored objects is visible outside the origin and picks filled areas and narrow walls precisely',async t=>{
+ const f=fixture(t,0),{newElement}=require('../.build/atlas-region-drawing-model.cjs'),put=element=>f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element,expectedRevision:null}});
+ const wall={...newElement('wall','local','ground',null,[{x:-100,y:50},{x:-80,y:50}]),width:.2,height:6,name:'Freie Wand'},water={...newElement('water','local','ground',null,[{x:-100,y:60},{x:-80,y:60},{x:-80,y:80},{x:-100,y:80}]),name:'Wasserfläche'};put(wall);put(water);
+ const q=query({x:-110,y:40,width:50,height:50}),r=await f.read(q);assert.deepEqual(new Set(r.drawing.elements.map(e=>e.id)),new Set([wall.id,water.id]),'an object-only dungeon cannot become an empty world');
+ assert(f.reader.focus(f.source,'scope','local').box.x<0);assert(f.reader.candidatesAt(f.source,q,{x:-90,y:70},0,'all').items.some(h=>h.id===water.id),'filled object interiors are exact hits');
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:-90,y:52},0,'all').items.some(h=>h.id===wall.id),false,'vertical height does not inflate horizontal wall selection');
+ assert(f.reader.candidatesAt(f.source,q,{x:-90,y:50.05},0,'all').items.some(h=>h.id===wall.id));
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...wall,points:[{x:-300,y:50},{x:-280,y:50}]},expectedRevision:0}});
+ const moved=query({x:-310,y:40,width:50,height:50}),after=await f.read(moved);assert(after.drawing.elements.some(e=>e.id===wall.id),'element-only edits must update the scope extent too');
+
+});

@@ -8,12 +8,12 @@ import {parseHTML} from 'linkedom';
 await build({entryPoints:['src/app/campaign-atlas-ui.ts'],outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
 export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
 export function drawingOverlay(root){globalThis.atlasOverlayCalls++;root.append(globalThis.atlasDraftNode);}
-export const selectElement=()=>{},atlasDrawingPoint=()=>{},atlasDrawingScope=()=>{},reloadDrawing=()=>{};`}));}}]});
+export const selectElement=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},reloadDrawing=()=>{};`}));}}]});
 const {CampaignAtlasWorkbench}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
 function fixture(t){
- const previous={window:global.window,document:global.document,atlasAuthorDraft:global.atlasAuthorDraft,atlasOverlayCalls:global.atlasOverlayCalls,atlasDraftNode:global.atlasDraftNode};t.after(()=>Object.assign(global,previous));
+ const previous={window:global.window,document:global.document,atlasAuthorDraft:global.atlasAuthorDraft,atlasOverlayCalls:global.atlasOverlayCalls,atlasDraftNode:global.atlasDraftNode,atlasAuthorPoints:global.atlasAuthorPoints};t.after(()=>Object.assign(global,previous));
  const ids=['recover','placement','scale','undo','redo','connect-entrance','local-console','create-tools','floor-field','building-interior','selection-title'];
- const {window,document}=parseHTML('<html><body>'+ids.map(id=>`<div id="atlas-${id}"></div>`).join('')+'<label><input id="atlas-slice-enabled"></label><label><input id="atlas-slice"></label><label><input id="atlas-roofs"></label><input id="atlas-perception"><select id="atlas-floor"></select></body></html>');Object.assign(global,{window,document,atlasAuthorDraft:{floor:{scopeId:'local',floorId:'ground'}},atlasOverlayCalls:0});
+ const {window,document}=parseHTML('<html><body>'+ids.map(id=>`<div id="atlas-${id}"></div>`).join('')+'<label><input id="atlas-slice-enabled"></label><label><input id="atlas-slice"></label><label><input id="atlas-roofs"></label><input id="atlas-perception"><select id="atlas-floor"></select><select id="drawing-tool"><option value="room-polygon">Polygon</option></select></body></html>');Object.assign(global,{window,document,atlasAuthorDraft:{floor:{scopeId:'local',floorId:'ground'}},atlasOverlayCalls:0,atlasAuthorPoints:[]});
  const original={name:'Autorenraum',number:'1',id:'room',scopeId:'local',floorId:'ground',revision:7,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},binding={id:'bind',kind:'dungeon',ownerId:'local',parent:'world',parentId:null,x:-100,y:50,angle:Math.PI/2,revision:0};
  let output,current=true;
  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},svg:{clientWidth:100,dataset:{}},camera:{view:{x:-110,y:40,width:20,height:20},render:draw=>{output={children:[],data:{mapScene:'true'},append(...nodes){this.children.push(...nodes);}};draw(output);}},family:'interior',scopeId:'local',floorId:'ground',selection:{kind:'room',id:'room'},draft:[],landscape:{draw(){}},opts:{roomDraft:()=>original},geometryCurrent:()=>current,selectedBinding:()=>null,renderTravel(){},drawTerrain(){},drawInteriorRuntime(){},drawParty(){}});
@@ -74,4 +74,18 @@ test('detail preview replaces only its face slot and preserves object painter or
  };
  const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true').children[0],first=all(base).find(n=>n.kind==='polygons'&&n.data.id==='room');assert(first);assert(all(base).indexOf(first)<all(base).findIndex(n=>n.data.id==='glyph'),'objects must stay above the selected fill');
  f.ui.vertexDrag={room:structuredClone(f.original),polygon:0,vertex:1,point:{x:12,y:4}};const changed=f.render().children.find(n=>n.data.atlasBase==='true').children[0];assert.equal(changed.children[1],base.children[1]);assert.notEqual(all(changed).find(n=>n.kind==='polygons').geometry.polygons,first.geometry.polygons);assert.equal(f.original.polygons[0].outer[1].x,9);
+});
+
+test('a polygon tool continues its draft in a dense raster instead of triggering an object read',async t=>{
+ const f=fixture(t),errors=[];Object.assign(f.ui,{owner:{token:'t'},loadedRegionQuery:{},entranceDraft:null,point:()=>({x:-103,y:52}),error:e=>errors.push(e),camera:{...f.ui.camera,ready:true,hitAt:()=>null}});
+ window.campaign=new Proxy({},{get(){throw Error('A drawing click must not query a raster object');}});await f.ui.click({button:0,altKey:false});assert.deepEqual(errors,[]);assert.equal(atlasAuthorPoints.length,1);assert(Math.abs(atlasAuthorPoints[0].x-2)<1e-8&&Math.abs(atlasAuthorPoints[0].y-3)<1e-8);
+});
+test('an active point tool owns the press instead of dragging an existing room grip or party marker',t=>{
+ const f=fixture(t);Object.assign(f.ui,{entranceDraft:null,camera:{...f.ui.camera,ready:true,hitAt(){throw Error('Point tools must not start semantic drags');}}});
+ f.ui.down({button:0,altKey:false,pointerId:1});assert.equal(f.ui.vertexDrag,undefined);assert.equal(f.ui.partyDrag,undefined);
+});
+
+test('an object-only interior paints its geometry instead of reducing it to an empty dungeon marker',t=>{
+ const f=fixture(t);f.ui.selection=null;f.ui.opts.roomDraft=()=>null;f.ui.data.region.raster=undefined;f.ui.data.region.scopeBounds={local:{x:1,y:2,width:4,height:1}};f.ui.data.geometry.drawing={elements:[{id:'wall',kind:'wall',scopeId:'local',floorId:'ground',archived:false,points:[{x:1,y:2},{x:5,y:2}],color:'#123456',width:.2,height:6}]};
+ const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true');assert(all(base).some(n=>n.data.kind==='element'&&n.data.id==='wall'));
 });

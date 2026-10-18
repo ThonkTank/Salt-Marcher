@@ -802,7 +802,21 @@ Originaldrehung geprüft; Fässer/Säulen gegen ihre Ellipse. Das gilt gemeinsam
 für Trefferseiten und den vorhandenen Einzeltrefferweg, auch ohne sichtbare
 Einzelglyph-ID. Die großzügige Indexhülle ist weiterhin nur Kandidatensuche.
 Ein1600-Räume-Rasterfall prüft Treffer abseits des Ankers und Gegenpunkte
-innerhalb der Indexhülle, aber außerhalb der tatsächlichen Kontur.
+innerhalb der Indexhülle, aber außerhalb der tatsächlichen Kontur. Aktive
+Punktwerkzeuge besitzen außerdem ihre Eingabe: Raster-Hitfallback und
+bestehende Raumgriffe/Partymarker dürfen keinen Polygon-/Objekt-/Eingangszug
+übernehmen. Der native Ablauf ergänzt nach dem Rasterwechsel einen vierten
+Entwurfspunkt, bevor er verwirft; Sichtbarkeit allein genügt nicht als Nachweis
+fortsetzbarer Bearbeitung.
+
+Auch ein Dungeon ohne Raumflächen behält seine freien Objekte: Ableitbare
+Geschossgrenzen umfassen Räume und Zeichnungselemente und werden bei
+Element-/Volumenänderungen erneuert. Detaildarstellung zeichnet vorhandene
+Elemente auch bei leerer Raumliste. Ein negativer, objektbasierter Dungeon
+prüft freie Wand und gefüllte Wasserfläche sowie deren spätere Verschiebung.
+Gefüllte Terrain-/Wasser-/Dachobjekte und gedrehte Rechteckkörper behalten auch
+in der Rasterprojektion ihre Flächen; horizontale Wandtreffer verwenden die
+Wandbreite, niemals die vertikale Höhe als Dicke.
 
 Der erweiterte native Autorenlauf prüft zusätzlich den Klick auf ein großes
 Objekt außerhalb seines Ankerradius: Kandidaten enthalten Objekt und die
