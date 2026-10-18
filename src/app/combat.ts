@@ -2,6 +2,7 @@ import {CombatSelectionPanel} from './combat-selection-ui';
 import {combatMobs,combatMobRow} from './combat-mob-ui';
 import {CombatGroupPicker,sceneGroupDragType,sceneGroupTray} from './combat-group-ui';
 import {CombatInitiativePanel} from './combat-initiative-ui';
+import {initiativeGroups} from './combat-initiative';
 import {CombatHitPanel} from './combat-hit-ui';
 import {CombatAreaPanel} from './combat-area-ui';
 import {renderCombatActions} from './combat-actions-ui';
@@ -41,8 +42,9 @@ export function setCombatCatalogNavigation(open:NonNullable<typeof openCreatureC
 let hitPanel:CombatHitPanel|null=null;
 let areaPanel:CombatAreaPanel|null=null;
 let initiativePanel:CombatInitiativePanel|null=null;
-let reinforcementRequest=0,reinforcementBusy=false,reinforcementSearched=false,reinforcementSourceChosen=false;
-let reinforcementResults:{id:string;name:string;challengeRating:string}[]=[];
+let reinforcementRequest=0,reinforcementBusy=false,reinforcementSourceChosen=false;
+// null uses the combat's sources; an empty search must remain empty, even on failure.
+let reinforcementResults:{id:string;name:string;challengeRating:string}[]|null=null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 type PendingLegendary={participantId:string;actionId:string;cost:number};
 type PendingDamage={check:SceneCheck;combatId:string;attackerId:string;targetId?:string;appliedTargets?:string[]};
@@ -56,7 +58,7 @@ let pendingSave:PendingSave|null=null,savePending=false;
 export function pendingRollStillValid(pending:{combatId:string;attackerId:string}|null,combat:CombatView['combat']){return !!pending&&!!combat&&editableCombat(combat)&&pending.combatId===combat.id&&combat.participants.some(participant=>participant.id===pending.attackerId);}
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
-function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){expandedMobs.clear();groupPicker.reset();reinforcementRequest++;reinforcementBusy=false;reinforcementSearched=false;reinforcementSourceChosen=false;reinforcementResults=[];closeReinforcements();get<HTMLSelectElement>('combat-creature-source').value='';get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
+function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){expandedMobs.clear();groupPicker.reset();reinforcementRequest++;reinforcementBusy=false;reinforcementSourceChosen=false;reinforcementResults=null;closeReinforcements();get<HTMLSelectElement>('combat-creature-source').value='';get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='',preparationContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
@@ -293,13 +295,12 @@ function openReinforcements(){
 function renderReinforcements(){
  const select=get<HTMLSelectElement>('combat-creature-select'),previous=select.value,combat=view?.combat;
  const source=get<HTMLSelectElement>('combat-creature-source');
- const groups=new Map<string,{label:string}>();
- for(const actor of combat?.participants??[])if(actor.sourceId&&!actor.worldActorId&&!groups.has(actor.groupId)){
-  const count=combat!.participants.filter(p=>p.groupId===actor.groupId).length;
-  if(count>1||actor.partitionKind==='mob')groups.set(actor.groupId,{label:(actor.groupName?actor.groupName+' · ':'')+(combat?.sources?.find(c=>c.id===actor.sourceId)?.name??actor.name)+' · vorhandene Initiative '+actor.initiative+' ('+count+')'});
- }
- if(!reinforcementSourceChosen||!source.value||source.value==='group'&&!groups.size)source.value=groups.size?'group':'catalog';
- source.querySelector<HTMLOptionElement>('option[value="group"]')!.disabled=!groups.size;
+ const groups=combat?initiativeGroups(combat).filter(members=>{
+  const actor=members[0]!;
+  return actor.sourceId&&!actor.worldActorId&&(members.length>1||actor.partitionKind==='mob');
+ }):[];
+ if(!reinforcementSourceChosen||!source.value||source.value==='group'&&!groups.length)source.value=groups.length?'group':'catalog';
+ source.querySelector<HTMLOptionElement>('option[value="group"]')!.disabled=!groups.length;
  const grouped=source.value==='group';
  get('combat-creature-search-form').hidden=grouped;get('combat-creature-status').hidden=grouped;
  get('combat-creature-initiative-field').hidden=grouped;get('combat-creature-grouped-field').hidden=grouped||Number(value('combat-creature-count'))<=1;
@@ -307,16 +308,19 @@ function renderReinforcements(){
  get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps. Vorhandene HP und Zustände sowie der laufende Zug bleiben erhalten.':'Statblock, HP, RK und XP werden übernommen. Der laufende Zug bleibt erhalten.';
  select.replaceChildren();
  const add=(id:string,text:string)=>{const option=document.createElement('option');option.value=id;option.textContent=text;select.append(option);};
- if(grouped)for(const [id,group]of groups)add('group:'+id,group.label);
+ if(grouped)for(const members of groups){
+  const actor=members[0]!;
+  add('group:'+actor.groupId,(actor.groupName?actor.groupName+' · ':'')+(combat?.sources?.find(c=>c.id===actor.sourceId)?.name??actor.name)+' · vorhandene Initiative '+actor.initiative+' ('+members.length+')');
+ }
  // A completed catalog search must never silently retain an unrelated troop.
- else for(const c of reinforcementSearched?reinforcementResults:combat?.sources??[])add('creature:'+c.id,c.name+' · HG '+c.challengeRating);
+ else for(const c of reinforcementResults??combat?.sources??[])add('creature:'+c.id,c.name+' · HG '+c.challengeRating);
  if(!select.options.length)add('',reinforcementBusy?'Monster werden gesucht…':'Keine Katalogkreatur ausgewählt. Monster suchen.');
  select.value=[...select.options].some(o=>o.value===previous)?previous:select.options[0]?.value??'';
 }
 async function searchReinforcements(){
  const w=workspace,combat=view?.combat;if(!w||!combat||blocked()||reinforcementBusy)return;
  const g=generation,id=combat.id,load=loadNumber,request=++reinforcementRequest;
- get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;reinforcementSearched=true;
+ get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;
  reinforcementBusy=true;reinforcementResults=[];get('combat-creature-status').textContent='Monster werden gesucht…';renderReinforcements();lock();
  try{
   const result=unwrap(await window.campaign.creatures({text:value('combat-creature-search'),offset:0,limit:25,sort:'name',direction:'asc'}));
@@ -416,16 +420,17 @@ function render() {
   const openHealth=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;get<HTMLDetailsElement>('fighter-condition-panel').open=false;const target=get<HTMLInputElement>('fighter-amount');if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'nearest'});}})();};
   const openConditions=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;get<HTMLDetailsElement>('fighter-condition-panel').open=true;const target=get('fighter-condition-shortcuts');target.scrollIntoView({block:'nearest'});target.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});})().catch(error=>tell((error as Error).message,true));};
   const order=combat?combatOrder(combat):[],turnIndex=combat?.phase==='running'?order.findIndex(p=>p.id===combat.turnId):-1;
-  for (const p of order) {
+  const groupSizes=new Map(combat?initiativeGroups(combat).map(members=>[members[0]!.groupId,members.length]):[]);
+  for (const [index,p] of order.entries()) {
     const mob=mobByMember.get(p.id);
     if(mob&&!drawn.has(mob.id)){drawn.add(mob.id);body.append(combatMobRow(mob,combat!,{expanded:expandedMobs.has(mob.id),selected,current,choose:id=>{void chooseFighter(id);},health:openHealth,initiative:id=>{void initiativePanel?.open(id);},toggle:()=>{if(expandedMobs.has(mob.id))expandedMobs.delete(mob.id);else expandedMobs.add(mob.id);render();[...get('combat-rows').querySelectorAll<HTMLElement>('[data-mob-id]')].find(row=>row.dataset.mobId===mob.id)?.querySelector<HTMLButtonElement>('.combat-mob-toggle')?.focus({preventScroll:true});}}));}
 
     if(mob&&!expandedMobs.has(mob.id))continue;
-    const tr = document.createElement('tr'); tr.dataset.participantId = p.id;if(mob)tr.dataset.mobMember=mob.id;if(turnIndex>=0&&order.indexOf(p)<turnIndex)tr.classList.add('completed-turn');
+    const tr = document.createElement('tr'); tr.dataset.participantId = p.id;if(mob)tr.dataset.mobMember=mob.id;if(turnIndex>=0&&index<turnIndex)tr.classList.add('completed-turn');
     if (p.id === combat!.turnId && combat!.phase === 'running') tr.classList.add('current-turn');
     const name = document.createElement('td'), choose = document.createElement('button');
     choose.textContent = p.name;choose.title=p.name; choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
-    const tag = document.createElement('small'); tag.textContent = p.characterId ? 'Party' : combat!.participants.filter(other => other.groupId === p.groupId).length > 1 ? 'Gemeinsame Initiative' : 'Einzelinitiative'; tag.title=tag.textContent??'';tag.textContent=p.characterId?'Party':combat!.participants.filter(other=>other.groupId===p.groupId).length>1?'gemeinsam':'einzeln';if(p.groupName)tag.textContent=p.groupName;tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); if(!p.characterId&&p.role)tag.textContent={friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]+' · '+tag.textContent;if(turnIndex>=0&&order.indexOf(p)<turnIndex)tag.textContent+=' · Zug beendet';name.append(tag); tr.append(name);
+    const tag = document.createElement('small'),shared=(groupSizes.get(p.groupId)??0)>1;tag.title=p.characterId?'Party':shared?'Gemeinsame Initiative':'Einzelinitiative';tag.textContent=p.characterId?'Party':shared?'gemeinsam':'einzeln';if(p.groupName)tag.textContent=p.groupName;tag.textContent+=(p.hiddenFromPlayers?' · Auf Anzeige verborgen':''); if(!p.characterId&&p.role)tag.textContent={friendly:'verbündet',neutral:'neutral',hostile:'feindlich'}[p.role]+' · '+tag.textContent;if(turnIndex>=0&&index<turnIndex)tag.textContent+=' · Zug beendet';name.append(tag); tr.append(name);
     const death=p.death?.dead?'Tot':p.death?.stable?'Stabilisiert':p.characterId&&p.healthKnown!==false&&p.hp===0?'Todesrettung '+(p.death?.successes??0)+'✓ / '+(p.death?.failures??0)+'✗':'';
     for (const [index,text] of [String(p.initiative), p.armorClass===null?'offen':String(p.armorClass), p.healthKnown === false ? 'HP offen' : p.hp + ' / ' + p.maxHp + (p.tempHp ? ' + ' + p.tempHp + ' temp.' : ''), [death,p.healthKnown === false ? '' : p.hp === 0 ? '0 HP' : p.hp <= p.maxHp / 2 ? 'Angeschlagen' : '', p.conditions, p.concentrating ? 'Konzentration' : '',p.legendaryActions?'Legendär '+p.legendaryActions.remaining+'/'+p.legendaryActions.maximum:'',p.timedEffects?.map(effect=>effect.name+' '+effect.remaining+'R').join(', ')].filter(Boolean).join(' · ') || '—'].entries()) {
       const td = document.createElement('td');

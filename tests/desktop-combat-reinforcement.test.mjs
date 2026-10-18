@@ -71,6 +71,20 @@ test('runner offers the existing group directly and commits a single source-back
  assert.equal(x.writes[0].action.kind,'add-creature');assert.equal(x.writes[0].action.groupId,x.group);assert.equal(x.writes[0].action.initiative,undefined);
  assert.equal(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants.length,4);
 });
+test('reinforcement keeps same-creature troops distinct and preserves the selected troop across a health update',async t=>{
+ const x=await uiFixture(t);
+ x.execute({kind:'add-creature',creatureId:x.creature.id,count:2,grouped:true,initiative:15});
+ const c=x.execute({kind:'add-creature',creatureId:x.creature.id,count:1,grouped:false,initiative:6});
+ await x.ui.openExistingCombat(c.id);
+ const select=x.el('combat-creature-select'),options=[...select.options];
+ assert.equal(options.length,2);assert.match(options[0].textContent,/vorhandene Initiative 9 \(3\)/);assert.match(options[1].textContent,/vorhandene Initiative 15 \(2\)/);
+ const secondGroup=c.participants[3].groupId;assert.equal(options[1].value,'group:'+secondGroup);select.value=options[1].value;
+ x.execute({kind:'damage',participantId:c.participants[3].id,amount:3});await x.ui.openExistingCombat(c.id);
+ assert.equal(select.value,'group:'+secondGroup);
+ x.el('combat-creature-count').value='1';x.el('combat-creature-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-creature-add').disabled);
+ const saved=x.store.combat(x.w.token,x.scene.id,c.id).combat;
+ assert.equal(saved.participants.at(-1).groupId,secondGroup);assert.equal(saved.participants.at(-1).initiative,15);assert.equal(saved.participants[3].hp,4);assert.equal(saved.participants[5].groupId,c.participants[5].groupId);assert.equal(saved.turnId,c.turnId);
+});
 test('late catalog results cannot populate another encounter or enable a fabricated choice',async t=>{
  const x=await uiFixture(t);x.el('combat-creature-search').value='Dragon';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);
  const other=x.execute({kind:'create',sceneId:x.scene.id,title:'Andere Begegnung',includeParty:false,expectedMembershipRevision:x.scene.membershipRevision});await x.ui.openExistingCombat(other.id);
@@ -87,6 +101,13 @@ test('a failed catalog search never offers an old troop as a result and can reco
  x.queries[1].resolve({ok:true,value:{rows:[{id:'dragon',name:'Dragon',challengeRating:'9'}],total:1}});await until(()=>x.el('combat-creature-select').textContent.includes('Dragon'));
  assert.equal(x.el('combat-creature-add').disabled,false);assert.doesNotMatch(x.el('combat-creature-select').textContent,/Goblin/);assert.equal(x.el('combat-creature-select').value,'creature:dragon');
  x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();assert.match(x.el('combat-creature-select').textContent,/Goblin/);assert.equal(x.el('combat-creature-initiative-field').hidden,true);assert.equal(x.el('combat-creature-grouped-field').hidden,true);assert.equal(x.el('combat-creature-search-form').hidden,true);
+});
+test('an empty catalog search remains empty after switching sources instead of falling back to combat creatures',async t=>{
+ const x=await uiFixture(t);x.el('combat-creature-search').value='No such creature';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);
+ x.queries[0].resolve({ok:true,value:{rows:[],total:0}});await until(()=>x.el('combat-creature-status').textContent.startsWith('Keine Treffer'));
+ assert.equal(x.el('combat-creature-add').disabled,true);assert.doesNotMatch(x.el('combat-creature-select').textContent,/Goblin/);
+ x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();assert.match(x.el('combat-creature-select').textContent,/Goblin/);
+ x.el('combat-creature-source').value='catalog';x.el('combat-creature-source').onchange();assert.equal(x.el('combat-creature-select').value,'');assert.equal(x.el('combat-creature-add').disabled,true);assert.doesNotMatch(x.el('combat-creature-select').textContent,/Goblin/);assert.equal(x.writes.length,0);
 });
 
 test('condition shortcuts wait for the selected working draft and stay blocked on a read failure',async t=>{
