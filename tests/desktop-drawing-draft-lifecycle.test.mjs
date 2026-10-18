@@ -51,7 +51,8 @@ test('two direct door clicks create independent commands and wall anchors withou
  assert.deepEqual(writes[0].action.element.points,[{x:10,y:4}]);assert.deepEqual(writes[1].action.element.points,[{x:6,y:0}]);
  assert.equal(f.document.getElementById('drawing-tool').value,'door');assert.deepEqual(f.atlasDrawingDraft().path,[]);assert.equal(await f.flushDrawing(),true);
  f.syncDrawingControls();assert.equal(f.document.getElementById('drawing-finish').hasAttribute('hidden'),true);assert.equal(f.document.getElementById('drawing-cancel').hasAttribute('hidden'),true);
- f.document.getElementById('drawing-cancel').click();assert.equal(f.document.getElementById('drawing-tool').value,'select');
+ assert.equal(f.document.getElementById('drawing-snap').closest('label').hidden,true);
+ f.document.getElementById('drawing-cancel').click();assert.equal(f.document.getElementById('drawing-tool').value,'select');f.syncDrawingControls();assert.equal(f.document.getElementById('drawing-snap').closest('label').hidden,false);
 });
 for(const cancel of ['tool','owner'])test('a pending direct door read cannot write after '+cancel+' changes',async t=>{
  const f=await fixture(t),writes=doorWrites(f);let release;const blocked=new Promise(r=>release=r);
