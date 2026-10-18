@@ -2,8 +2,9 @@
 
 ## Product and architecture
 
-- SaltMarcher continues the former Kampagnenwerkstatt. Read `docs/PRODUCT.md`,
-  `docs/SCOPE.md`, `docs/INDEX.md`, `ARCHITECTURE.md`, and `acceptance.json`.
+- SaltMarcher continues the former Kampagnenwerkstatt. Start at `docs/INDEX.md`.
+  For the selected task, read the relevant product/scope/architecture sections
+  and acceptance IDs. Do not load the entire `acceptance.json` as background.
 - Use the Electron/TypeScript/SQLite application in `desktop/` and `src/app/`.
   The historical Obsidian adapter remains a reference, not a delivery target.
 - Keep renderer privileges restricted to the preload bridge. Main owns native
