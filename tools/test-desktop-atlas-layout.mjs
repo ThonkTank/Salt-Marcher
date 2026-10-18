@@ -113,7 +113,7 @@ try{
   await page.locator('#live-tab').click();await page.locator('#live').waitFor({state:'visible'});assert(await page.locator('#party-shortcut').isVisible());result.runtimeOutsideEditor=true;
   await page.locator('#atlas-tab').click();await atlasCanvasReady(page);await frame('returned');
   for(const [w,h,z]of [[1280,880,1],[1366,768,1],[1920,1080,1],[640,480,1],[1280,880,2]]){const f=await frame('viewport-'+w+'-'+z,w,h,z);assert(!f.viewport.scroll);if(z===1&&w>=1200)assert(f.ratio>=.70);
-   await page.locator('#atlas-reference-open').click();await page.locator('#atlas-reference-search').fill('Deutschland');await page.locator('#atlas-reference-results button').filter({hasText:/^Deutschland ·/}).first().click();await atlasCanvasReady(page);
+   await page.locator('#atlas-reference-open').click();await page.locator('#atlas-reference-search').fill('Deutschland');await page.locator('#atlas-reference-results button').filter({hasText:/^Deutschland ·/}).first().click();await atlasCanvasReady(page);assert(await page.locator('#atlas-create-city').isHidden());
    if(w/z<1140){assert.equal(await page.locator('#campaign-atlas').getAttribute('data-overlay'),'true');assert.deepEqual(await page.locator('#campaign-map').boundingBox(),f.box);}
    await page.locator('#atlas-secondary-close').click();await page.locator('#campaign-map').focus();await page.keyboard.press('Escape');await atlasCanvasReady(page);}
  }
