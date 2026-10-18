@@ -11,9 +11,9 @@ let preparationEditor:(()=>PreparationPacketEditor)|null=null,packetEditor:Packe
 export function registerPreparationPacketEditor(editor:()=>PreparationPacketEditor){preparationEditor=editor;}
 export function packetNoteFeedback(text:string,error=false){packetEditor?.feedback(text,error);}
 let packet:SessionPacket|null=null,source:PacketSource|null=null,liveSource:LivePacketSource|null=null,request=0,selected:string|null=null,docked=false,surface='atlas',partyWasHidden=false;
-let openPreparationPacket:(visitId?:string)=>Promise<boolean>=async()=>false;
+let openPreparationPacket:(visitId?:string,current?:()=>boolean)=>Promise<boolean>=async()=>false;
 
-let loadPacket:(next?:PacketSource)=>Promise<boolean>;
+let loadPacket:(next?:PacketSource,openingCurrent?:()=>boolean)=>Promise<boolean>;
 export function closeSessionPacket(){request++;packetEditor?.reset();packet=null;source=null;const d=document.getElementById('session-packet-dialog') as HTMLDialogElement|null;if(d?.open)d.close();if(docked){docked=false;const host=el('live-packet-host');host.hidden=true;el('live-workspace').classList.remove('packet-at-desk');el('live').classList.remove('packet-at-desk');el('live-party-panel').hidden=partyWasHidden;if(d){document.body.append(d);d.classList.remove('packet-docked');d.removeAttribute('role');}el('session-packet-party-toggle').hidden=true;}}
 export function closePreparationPacket(){if(!docked)closeSessionPacket();}
 export function setSessionPacketSurface(tab:string){surface=tab;if(docked&&tab==='live'&&liveSource)void loadPacket(liveSource);}
@@ -29,7 +29,8 @@ export async function openLiveSessionPacket(next:LivePacketSource){
  el('live-packet-host').hidden=false;el('live-packet-host').append(dialog);el('live-workspace').classList.add('packet-at-desk');el('live').classList.add('packet-at-desk');dialog.classList.add('packet-docked');dialog.setAttribute('role','region');dialog.open=true;el('session-packet-party-toggle').hidden=false;el('session-packet-party-toggle').setAttribute('aria-pressed','false');
  await loadPacket(next);
 }
-export async function openPreparationSessionPacket(visitId?:string){return openPreparationPacket(visitId);}
+/** The caller guards this opening read; the displayed packet then owns its normal plan/visit context. */
+export async function openPreparationSessionPacket(visitId?:string,current?:()=>boolean){return openPreparationPacket(visitId,current);}
 export function initSessionPacket(tell:(s:string,e?:boolean)=>void,owner:()=>{token:string;planId:string;visitId?:string|null}|null,flush:()=>Promise<boolean>,offerVisit?:(planId:string,visitId:string,current:()=>boolean)=>Promise<void>){
  const bar=document.createElement('div');bar.className='toolbar';bar.innerHTML='<button id="session-packet-open" type="button">Spielabendmappe öffnen…</button>';el('plan-name').after(bar);
  const workspace=el('live-workspace');const host=document.createElement('section');host.id='live-packet-host';host.hidden=true;workspace.append(host);
@@ -64,22 +65,23 @@ export function initSessionPacket(tell:(s:string,e?:boolean)=>void,owner:()=>{to
   for(const v of rows){const b=document.createElement('button');b.type='button';b.dataset.visitId=v.id;b.textContent=(packet.visits.indexOf(v)+1)+'. '+v.title+(source?.sceneId&&source.visitId===v.id?' · aktuelle Übernahme':'');b.onclick=()=>{if(b.isConnected&&!packetEditor?.active&&source?.current())visit(v.id);};root.append(b);}
   visit(rows.some(v=>v.id===selected)||keepSelection&&packet.visits.some(v=>v.id===selected)?selected!:rows[0]?.id??'');
  }
- loadPacket=async(next?:PacketSource)=>{
+ loadPacket=async(next?:PacketSource,openingCurrent=()=>true)=>{
   if(next)source=next;const o=source,n=++request;if(!o)return false;
   const oldSelected=selected,oldScroll=el('session-packet-content').scrollTop;packet=null;
+  const cancelled=()=>{if(n!==request||!same(o))return true;if(!openingCurrent()){closeSessionPacket();return true;}return false;};
   for(const id of ['content','visits','warnings','count'])el('session-packet-'+id).replaceChildren();
   el<HTMLButtonElement>('session-packet-export').disabled=true;dialog.setAttribute('aria-busy','true');
   el('session-packet-summary').textContent='Spielabendmappe wird zusammengestellt…';
   try{
-   if(!await o.flush()){if(n===request&&same(o))el('session-packet-summary').textContent='Eingaben zuerst speichern; danach die Mappe erneut öffnen oder aktualisieren.';return false;}if(n!==request||!same(o))return false;
+   if(!await o.flush()){if(n===request&&same(o))el('session-packet-summary').textContent='Eingaben zuerst speichern; danach die Mappe erneut öffnen oder aktualisieren.';return false;}if(cancelled())return false;
    if(!docked&&!dialog.open)dialog.showModal();el('session-packet-summary').textContent='Spielabendmappe wird zusammengestellt…';
-   const r=await window.campaign.sessionPacket(o.token,o.planId);if(n!==request||!same(o))return false;if(!r.ok)throw new Error(r.error);if(r.value.planId!==o.planId)throw new Error('Spielabendmappe gehört zu einem anderen Plan.');packet=r.value;
+   const r=await window.campaign.sessionPacket(o.token,o.planId);if(cancelled())return false;if(!r.ok)throw new Error(r.error);if(r.value.planId!==o.planId)throw new Error('Spielabendmappe gehört zu einem anderen Plan.');packet=r.value;
    el('session-packet-summary').textContent=(packet.planName||'Unbenannter Spielabend')+' · '+packet.campaignName+' · '+packet.visits.length+' Besuche · Planungsparty: '+(packet.party.join(' · ')||'keine Vorgabe');
    const warnings=el('session-packet-warnings');warnings.replaceChildren();for(const text of packet.warnings){const p=document.createElement('p');p.textContent=text;warnings.append(p);}draw(true);if(selected===oldSelected)el('session-packet-content').scrollTop=oldScroll;el<HTMLButtonElement>('session-packet-export').disabled=false;return true;
   }catch(error){if(n===request&&same(o)){packet=null;el('session-packet-content').replaceChildren();el('session-packet-visits').replaceChildren();el('session-packet-summary').textContent=(error as Error).message;tell((error as Error).message,true);}return false;}
   finally{if(n===request)dialog.setAttribute('aria-busy','false');}
  };
- openPreparationPacket=async visitId=>{closeSessionPacket();el<HTMLInputElement>('session-packet-search').value='';const o=preparationSource();if(!o)return false;selected=visitId??o.visitId??null;const loaded=await loadPacket(o);return loaded&&(!visitId||!!packet?.visits.some(visit=>visit.id===visitId));};el('session-packet-open').onclick=()=>act(async()=>{await openPreparationPacket();});el('session-packet-refresh').onclick=()=>{if(!packetEditor?.active)act(async()=>{await loadPacket();});};const close=()=>act(async()=>{if(!packetEditor?.active||await packetEditor.leave(false))closeSessionPacket();});el('session-packet-close').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});el('session-packet-search').oninput=()=>{if(!packetEditor?.active)draw();};
+ openPreparationPacket=async(visitId,current=()=>true)=>{if(!current())return false;closeSessionPacket();el<HTMLInputElement>('session-packet-search').value='';const o=preparationSource();if(!o)return false;selected=visitId??o.visitId??null;const loaded=await loadPacket(o,current);return loaded&&(!visitId||!!packet?.visits.some(visit=>visit.id===visitId));};el('session-packet-open').onclick=()=>act(async()=>{await openPreparationPacket();});el('session-packet-refresh').onclick=()=>{if(!packetEditor?.active)act(async()=>{await loadPacket();});};const close=()=>act(async()=>{if(!packetEditor?.active||await packetEditor.leave(false))closeSessionPacket();});el('session-packet-close').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});el('session-packet-search').oninput=()=>{if(!packetEditor?.active)draw();};
  for(const [id,delta]of [['session-packet-prev',-1],['session-packet-next',1]] as const)el(id).onclick=()=>{if(packetEditor?.active)return;const rows=matches(),index=rows.findIndex(v=>v.id===selected),next=rows[index+delta];if(next)visit(next.id);};
  el('session-packet-party-toggle').onclick=()=>{const panel=el('live-party-panel');panel.hidden=!panel.hidden;if(!panel.hidden)el<HTMLDetailsElement>('live-party-details').open=true;el('session-packet-party-toggle').setAttribute('aria-pressed',String(!panel.hidden));};
  el('session-packet-export').onclick=()=>{

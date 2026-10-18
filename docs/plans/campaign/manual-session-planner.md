@@ -50,6 +50,9 @@ vorausgewählt; neue Ziele erhalten eigene Namen. Auswahlfelder ohne vorhandene
 Alternativen entfallen. **Notizmappe öffnen…** bleibt der Einstieg zum Lesen
 und Bearbeiten der Quellen. Beide Wege verwenden dieselben Originalnotizen und
 die bestehenden geprüften Besuchsverknüpfungen.
+**Auswahl verwenden und Mappe öffnen** zeigt nach bestätigter Verknüpfung direkt
+die Spielabendmappe auf dem gewählten Besuch. Schlägt nur das Öffnen fehl, bleibt
+die gespeicherte Verknüpfung erhalten; der Schreibauftrag wird nicht wiederholt.
 
 Gespeicherte Begegnungen werden erst ab zwei Suchzeichen über den vorhandenen
 Katalogzugang gelesen. SQL begrenzt auf neun Metadatensätze: acht auswählbare

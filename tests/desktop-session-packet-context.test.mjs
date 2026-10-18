@@ -140,3 +140,16 @@ test('a place without authored sections remains accessible in the live packet an
  const button=x.el('content').querySelector('.packet-location-action');assert.ok(button);button.click();await wait();assert.deepEqual(actions,[{kind:'location',id:'weidenhain'}]);
  x.el('next').click();button.onclick();await wait();assert.equal(actions.length,1);
 });
+
+
+test('a revoked handoff cannot open or replace an existing preparation packet',async t=>{
+ const x=uiSetup(t);await x.ui.openPreparationSessionPacket('first');assert.equal(await x.ui.openPreparationSessionPacket('second',()=>false),false);assert.equal(x.el('dialog').open,true);assert.equal(x.el('visits').querySelector('[aria-pressed="true"]').dataset.visitId,'first');
+});
+for(const phase of ['flush','read'])test(`a handoff revoked during ${phase} cannot reveal stale packet contents`,async t=>{
+ const x=uiSetup(t),waitForReply=deferred();let current=true,called=false;
+ if(phase==='flush')x.flush=async()=>{called=true;return waitForReply.promise;};else x.window.campaign.sessionPacket=async()=>{called=true;return waitForReply.promise;};
+ const opening=x.ui.openPreparationSessionPacket('second',()=>current);await wait();assert.equal(called,true);current=false;waitForReply.resolve(phase==='flush'?true:{ok:true,value:packet()});assert.equal(await opening,false);assert.equal(x.el('dialog').open,false);assert.equal(x.el('content').textContent,'');
+});
+test('the handoff guard ends after opening so ordinary packet navigation and refresh remain usable',async t=>{
+ const x=uiSetup(t);let current=true;assert.equal(await x.ui.openPreparationSessionPacket('second',()=>current),true);current=false;x.el('prev').click();assert.match(x.el('content').textContent,/Ankunft/);x.el('refresh').click();await wait();assert.equal(x.el('dialog').open,true);assert.match(x.el('content').textContent,/Ankunft/);assert.equal(x.el('export').disabled,false);
+});
