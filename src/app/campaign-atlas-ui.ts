@@ -154,7 +154,7 @@ export class CampaignAtlasWorkbench {
   ) {
     // These controls now use the shared Canvas surface, including at the Live desk.
     // Retire their old renderers explicitly; CSS hiding alone still builds SVG trees.
-    for(const id of ['map','city-map','world-map','dungeon-map']){
+    for(const id of ['map','city-map','world-map']){
       const legacy=get(id);legacy.dataset.sharedAtlas='true';legacy.replaceChildren();
     }
     this.root.id = "campaign-atlas";
