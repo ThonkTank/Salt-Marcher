@@ -94,10 +94,10 @@ buildSync({stdin:{contents:"export * from './src/app/preparation';export {linkVi
 const nativeTimeout=globalThis.setTimeout;
 const settle=async()=>{for(let i=0;i<15;i++)await new Promise(r=>setImmediate(r));};
 const until=async check=>{const deadline=Date.now()+5000;while(Date.now()<deadline){if(check())return;await delay(10);}assert.ok(check(),'expected preparation state');};
-async function fixture(t,inspect=false){
+async function fixture(t,inspect=false,kind='npc'){
  const root=mkdtempSync(path.join(tmpdir(),'preparation-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'db.sqlite')),campaign=store.create('Quellen'),workspace=store.activate(campaign.id);
  const command=change=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,change}),ids={ada:randomUUID(),borin:randomUUID()};
- for(const [id,title]of [[ids.ada,'Ada'],[ids.borin,'Borin']])store.changePreparation(command({kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title,readAloud:'  Original\r\n',gmNotes:'GM privat',relations:[],creatureId:null,deleted:false}}));
+ for(const [id,title]of [[ids.ada,'Ada'],[ids.borin,'Borin']])store.changePreparation(command({kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind,title,readAloud:'  Original\r\n',gmNotes:'GM privat',relations:[],creatureId:null,deleted:false}}));
  const original=store.preparation(workspace.token).notes.find(row=>row.note.id===ids.borin).note;
  const {document,window}=parseHTML(readFileSync('src/app/index.html','utf8')),prior={};
  for(const key of ['window','document','HTMLInputElement','HTMLSelectElement','HTMLTextAreaElement','Option','Event','setTimeout','clearTimeout'])prior[key]=globalThis[key];
@@ -711,4 +711,34 @@ test('a room return restores its source knowledge view after visiting a linked p
 
 test('source inspection in a mounted room-key note editor preserves the parent and saves through the original writer',async t=>{
  const x=await sourceReader(t),dialog=x.el('key-dialog'),panel=x.el('note-editor').ownerDocument.createElement('section');dialog.append(panel);panel.append(x.el('note-editor'));dialog.open=true;const field=x.el('note-gm');field.value='Eigener Zusatz am Raum';field.dispatchEvent(new x.window.Event('input'));field.setSelectionRange(4,9);x.el('note-relations').querySelector('[aria-label="Ansehen: Quelle: Ada"]').click();await until(()=>x.el('quick-document').querySelector('h2')?.textContent==='Ada');assert.equal(dialog.open,true);assert.equal(x.el('note-editor').parentElement,panel);assert.equal(x.el('note-title').value,'Borin');assert.equal(field.selectionStart,4);assert.equal(field.selectionEnd,9);x.el('quick-close').click();assert.equal(dialog.open,true);assert.equal(x.el('note-title').value,'Borin');assert.equal(field.value,'Eigener Zusatz am Raum');assert.equal(x.writes.length,1);assert.equal(x.writes[0].change.note.id,x.ids.borin);
+});
+
+async function questEditor(t){const x=await fixture(t,false,'quest');await x.activate();await x.ui.openPreparedNote(x.ids.borin);return x;}
+const narrativeButton=(x,label)=>[...x.el('narrative-editor').querySelectorAll('button')].find(b=>b.textContent===label);
+function closeQuestInput(x){const select=x.el('narrative-editor').querySelector('[aria-label="Narrativer Status"]');select.value='closed';select.onchange();return select;}
+function editQuestText(x,text){x.el('note-gm').value=text;x.el('note-gm').dispatchEvent(new x.window.Event('input'));}
+test('quest completion drains its own text edit and saves the status against that confirmed note',async t=>{
+ const x=await questEditor(t);editQuestText(x,'  Schrank leer\r\nBeleg behalten  ');closeQuestInput(x);narrativeButton(x,'Narrative Angaben speichern').click();await until(()=>x.store.narrative(x.workspace.token,x.ids.borin).state.status==='closed');
+ const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.equal(saved.gmNotes,'  Schrank leer\r\nBeleg behalten  ');assert.equal(saved.revision,2);assert.equal(x.store.narrative(x.workspace.token,x.ids.borin).draft,null);assert.ok(!x.messages.some(m=>m.error));
+});
+test('acknowledged own text autosave preserves the status input and its recovery basis',async t=>{
+ const x=await questEditor(t),select=closeQuestInput(x);editQuestText(x,'Schrank leer');assert.equal(await x.ui.flushPreparation(true,true),true);
+ assert.equal(x.el('narrative-editor').querySelector('[aria-label="Narrativer Status"]'),select);assert.equal(select.value,'closed');assert.equal(x.store.narrative(x.workspace.token,x.ids.borin).draft.noteRevision,2);
+ narrativeButton(x,'Narrative Angaben speichern').click();await until(()=>x.store.narrative(x.workspace.token,x.ids.borin).state.status==='closed');assert.ok(!x.messages.some(m=>m.error));
+});
+test('a foreign text change after the own receipt still blocks quest completion',async t=>{
+ const x=await questEditor(t);closeQuestInput(x);editQuestText(x,'Eigener Beleg');assert.equal(await x.ui.flushPreparation(true,true),true);
+ const note=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;x.store.changePreparation(x.command({kind:'note',expectedRevision:note.revision,note:{...note,gmNotes:'Fremde Änderung'}}));narrativeButton(x,'Narrative Angaben speichern').click();await until(()=>x.messages.some(m=>m.error));
+ assert.equal(x.store.narrative(x.workspace.token,x.ids.borin).state.status,'open');assert.equal(x.store.narrative(x.workspace.token,x.ids.borin).draft.noteRevision,2);assert.equal(x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note.gmNotes,'Fremde Änderung');
+});
+
+test('an own text receipt never approves a recovered draft with an older foreign basis',async t=>{
+ const x=await questEditor(t);x.store.keepNarrativeDraft(x.workspace.token,{noteId:x.ids.borin,writeId:randomUUID(),revision:0,noteRevision:1,status:'closed',locationId:null,contributors:[],poolXp:'-',items:[]},null);
+ const old=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:{...old,gmNotes:'Fremder Stand'}}));await x.activate();await x.ui.openPreparedNote(x.ids.borin);editQuestText(x,'Fremder Stand plus eigene Ergänzung');assert.equal(await x.ui.flushPreparation(true,true),true);
+ const n=x.store.narrative(x.workspace.token,x.ids.borin);assert.equal(n.noteRevision,3);assert.equal(n.draft.noteRevision,1);assert.equal(n.draft.poolXp,'-');assert.equal(n.state.status,'open');assert.ok(narrativeButton(x,'Geprüften Entwurf auf aktuellen Stand übernehmen'));
+});
+test('own text receipts keep incomplete reward input recoverable without replacing controls',async t=>{
+ const x=await questEditor(t),select=closeQuestInput(x),pool=x.el('narrative-editor').querySelector('[aria-label="Quest-XP-Pool"]');pool.value='-';pool.oninput();editQuestText(x,'Eigener Beleg');assert.equal(await x.ui.flushPreparation(true,true),true);
+ const n=x.store.narrative(x.workspace.token,x.ids.borin);assert.equal(n.draft.noteRevision,2);assert.equal(n.draft.poolXp,'-');assert.equal(n.draft.status,'closed');assert.equal(n.state.status,'open');assert.equal(x.el('narrative-editor').querySelector('[aria-label="Narrativer Status"]'),select);assert.equal(pool.value,'-');
+ await x.ui.openPreparedNote(x.ids.ada);await x.ui.openPreparedNote(x.ids.borin);assert.equal(x.el('narrative-editor').querySelector('[aria-label="Quest-XP-Pool"]').value,'-');assert.ok(!narrativeButton(x,'Geprüften Entwurf auf aktuellen Stand übernehmen'));
 });

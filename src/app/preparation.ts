@@ -9,7 +9,7 @@ import {rawTextOffset} from './text-references';
 import {appendNoteExcerpt} from './note-excerpt';
 import {normalizedNoteTitle,type KeyNoteChoices} from './key-note-capture-contracts';
 import {preserveLiteralEdit} from './literal-text-edit';
-import {showNarrative,flushNarrative,prepareNarrativeLocation} from './narrative-ui';
+import {showNarrative,flushNarrative,prepareNarrativeLocation,acceptNarrativeNoteReceipt} from './narrative-ui';
 import type { WorkspaceGeometry, Result } from './contracts';
 import { preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationChange, type PreparationCommand, type Note, type LocationRow } from './preparation-contracts';
 import { newLocation } from '../features/location/location-schema';
@@ -298,6 +298,7 @@ export async function flushPreparation(skipSession=false,skipNarrative=false): P
       const current = originalNote()!;
       if (noteDraft) noteDraft = { ...noteDraft, revision: current.revision };
       renderNoteList();
+      if(!await acceptNarrativeNoteReceipt(context!,beforeNote!,current))return false;
     }
     if (changedPlan) {
       const sent = structuredClone(planDraft!);
