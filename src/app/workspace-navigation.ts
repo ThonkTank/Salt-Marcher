@@ -13,7 +13,7 @@ export function initWorkspaceNavigation() {
   for (const id of ['quick-reference-open','location-material-return']) { const control = document.getElementById(id); if (control) header.insertBefore(control, tools); }
   const menu = document.getElementById('workspace-nav-menu') as HTMLDetailsElement;
   const narrow = window.matchMedia('(max-width: 850px)');
-  const resize = () => { menu.open = !narrow.matches; };
+  const resize = () => { menu.open = document.body.classList.contains('atlas-workspace')||!narrow.matches; };
   narrow.addEventListener('change', resize); resize();
   menu.addEventListener('click', event => {
     if (narrow.matches && (event.target as Element).closest('button')) {
@@ -31,13 +31,15 @@ export function initWorkspaceNavigation() {
   const navigation = document.getElementById('workspace-navigation')!, focus = document.getElementById('live-focus-bar')!, footer = document.getElementById('music-mini')!;
   const measure = () => {
     const style = document.documentElement.style;
-    style.setProperty('--workspace-header-height', header.getBoundingClientRect().height + 'px');
-    style.setProperty('--workspace-nav-height', (narrow.matches ? navigation.getBoundingClientRect().height : 0) + 'px');
+    const atlas=document.body.classList.contains('atlas-workspace');
+    style.setProperty('--workspace-header-height', (atlas?document.querySelector('.atlas-command-bar')!.getBoundingClientRect().height:header.getBoundingClientRect().height) + 'px');
+    style.setProperty('--workspace-nav-height', (!atlas&&narrow.matches ? navigation.getBoundingClientRect().height : 0) + 'px');
     style.setProperty('--live-focus-height', focus.getBoundingClientRect().height + 'px');
-    style.setProperty('--workspace-footer-height', footer.getBoundingClientRect().height + 'px');
+    style.setProperty('--workspace-footer-height', (atlas?0:footer.getBoundingClientRect().height) + 'px');
   };
   const observer = new ResizeObserver(measure);
   for (const element of [header, navigation, focus, footer]) observer.observe(element);
+  document.addEventListener('workspace-layout-changed',measure);
   narrow.addEventListener('change', measure); measure();
   syncWorkspaceNavigation();
 }

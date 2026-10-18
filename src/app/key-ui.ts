@@ -27,6 +27,7 @@ let keyReturn:(()=>void)|null=null,keyLeave:(()=>void)|null=null;
 let timer:ReturnType<typeof setTimeout>|null=null,blocked=false,editorLocked=false,transition=0,baseSignature='',baseRoomRevision:number|null=null,baseKeyRevision:number|null=null,acknowledged:Workspace|null=null;
 type PreparedBatch={owner:ReturnType<typeof owner>;rooms:{id:string;expectedRevision:number;keyRevision:number|null}[];patch:KeyBatch};
 let preparedBatch:PreparedBatch|null=null;
+function showKeyDialog(){const dialog=el<HTMLDialogElement>('key-dialog');if(document.body.classList.contains('atlas-workspace')){document.dispatchEvent(new Event('atlas-key-panel'));if(!dialog.open)dialog.show();}else if(!dialog.open)dialog.showModal();}
 function saveState(state:string,text:string){const status=el('key-save-status');status.dataset.state=state;status.textContent=text;}
 function signature(content:KeyContent,number:string|null,legacy:[string,string][]=[]){return JSON.stringify({content:{...content,revision:0},number,legacy});}
 function currentSignature(){return draft?signature(collect(),draft.kind==='room'?field('key-number').value:null,draft.kind==='room'?[...legacyDraft]:[]):'';}
@@ -336,7 +337,7 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
   }
  });
  el('key-dialog').addEventListener('cancel',event=>{event.preventDefault();void moveEditor(()=>el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);});
- el('key-open').onclick=()=>{const o=owner(),room=selected(),intent=++transition;run(async()=>{if(!(await before())||!owns(o)||intent!==transition)return;if(!room)throw new Error('Raum auswählen.');scopeId=room.scopeId;if(!await refresh()||!owns(o)||intent!==transition)return;openRoom(room.id);optionList('key-filter-level',records().filter(r=>r.kind==='level'&&r.scopeId===scopeId),null,'Alle Level');optionList('key-filter-group',records().filter(r=>r.kind==='group'&&r.scopeId===scopeId),null,'Alle Gruppen');el<HTMLDialogElement>('key-dialog').showModal();});};
+ el('key-open').onclick=()=>{const o=owner(),room=selected(),intent=++transition;run(async()=>{if(!(await before())||!owns(o)||intent!==transition)return;if(!room)throw new Error('Raum auswählen.');scopeId=room.scopeId;if(!await refresh()||!owns(o)||intent!==transition)return;openRoom(room.id);optionList('key-filter-level',records().filter(r=>r.kind==='level'&&r.scopeId===scopeId),null,'Alle Level');optionList('key-filter-group',records().filter(r=>r.kind==='group'&&r.scopeId===scopeId),null,'Alle Gruppen');showKeyDialog();});};
  el('key-add-room').onclick=()=>{void moveEditor(async()=>{
   run(async()=>{const o=owner(),w=workspace();if(!w)return;if(!await before())throw new Error('Andere offene Eingaben zuerst prüfen.');if(!owns(o))return;
    const result=await atlasDefaultRoomWrite(w.token,w.campaign.id);if(!owns(o))return;if(!result.ok)throw new Error(result.error);

@@ -58,3 +58,12 @@ test('failed shared usage context revokes a loaded shop until explicit recovery'
   assert.equal(x.el('shop-name').value,x.shops[0].name);assert.deepEqual(x.messages,[]);assert.equal(x.writes.length,0);
  }finally{window.campaign.preparation=preparation;await x.cleanup();}
 });
+
+test('manual stock addition works without configuring an automatic restock rule',async()=>{
+ const x=await fixture();try{
+  const manual=[...x.el('shop-stock').querySelectorAll('label')].find(l=>l.firstChild.textContent==='Manuell hinzufügen')?.querySelector('input'),add=[...x.el('shop-stock').querySelectorAll('button')].find(b=>b.textContent==='Auffüllen');assert(manual);assert(add);
+  manual.value='3';add.onclick();await until(()=>x.writes.some(c=>c.action.kind==='restock'));await x.settle();
+  const action=x.writes.find(c=>c.action.kind==='restock').action;assert.equal(action.quantity,3);assert.equal(action.mode,'add');assert.equal(action.shopId,x.shops[0].id);assert.equal(action.entryId,x.shops[0].stock[0].id);
+  const saved=x.store.shop(x.w.token,x.shops[0].id).shop;assert.equal(saved.stock[0].quantity,8);assert.equal(saved.stock[0].restock,null);assert.equal(x.store.shop(x.w.token,x.shops[1].id).shop.stock[0].quantity,7);assert.equal(x.writes.filter(c=>c.action.kind==='shop').length,0,'manual addition must not create or save an automatic rule');
+ }finally{await x.cleanup();}
+});
