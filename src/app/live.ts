@@ -10,7 +10,7 @@ import {SceneVisitBinder} from './scene-visit-ui';
 import {openTreasureDistribution} from './treasury-ui';
 import {LiveEncounterGenerator} from './live-generation-ui';
 import {closeSessionPacket,openLiveSessionPacket,syncLiveSessionPacket,type LivePacketSource} from './session-packet-ui';
-import {initSessionNavigator,sessionNavigatorContext,sessionNavigatorBusy} from './session-progress-ui';
+import {initSessionNavigator,sessionNavigatorContext,sessionNavigatorPreparation,sessionNavigatorBusy} from './session-progress-ui';
 import {initSceneDesk,sceneDeskContext,flushSceneDesk} from './scene-desk-ui';
 import {refreshMusic} from './music-ui';
 import {renderLiveWorld} from './world-ui';
@@ -44,7 +44,8 @@ const get = <T extends HTMLElement>(id: string) => document.getElementById(id) a
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-let context: WorkspaceGeometry | null = null, data: LiveView | null = null, sources: Preparation | null = null,liveReadRequest=0;
+let context: WorkspaceGeometry | null = null, data: LiveView | null = null, sources: Preparation | null = null,liveReadRequest=0,liveSourcesRequest=0;
+let liveSourcesLoading=false,liveSourcesProblem='';
 let sessionChronicle:ChronicleView|null=null,sessionChronicleError='',sessionChronicleRequest=0;
 type RecapText=import('./live-contracts').SessionRecapDraft;
 type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;saving?:Promise<boolean>};
@@ -111,7 +112,7 @@ const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes,
 const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:sceneDraft?.id===data.scene?.id?sceneDraft?.locationId??null:data.scene?.locationId??null}:null;
 export function activateLive(workspace: WorkspaceGeometry) {
-  liveReadRequest++;
+  liveReadRequest++;liveSourcesRequest++;liveSourcesLoading=false;liveSourcesProblem='';
   if(context){const retained=recapDrafts.get(context.campaign.id),text=recapFields();if(retained&&!equal(retained.text,text)){retained.text=text;retained.dirty=true;}}
   const draft=workspace?recapDrafts.get(workspace.campaign.id):undefined;
   get<HTMLTextAreaElement>('live-session-summary').value=draft?.text.summary??'';get<HTMLTextAreaElement>('live-session-handoff').value=draft?.text.handoff??'';
@@ -124,6 +125,7 @@ export function activateLive(workspace: WorkspaceGeometry) {
   context = workspace; data = null; sources = null;sessionChronicle=null;sessionChronicleError='';sessionChronicleRequest++; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
   activateRuleReferences(workspace);
   get<HTMLInputElement>('live-knowledge-search').value='';
+  get('live-sources-state').hidden=true;get('adoption-plan').replaceChildren();get('adoption-visit').replaceChildren();
   get('live-reconcile').hidden = true; get('live-refresh').hidden = true; get('live-workspace').hidden = true; get('live-empty').hidden = false;
   get('live-focus-bar').hidden=true;
   placePartyEditor(false);get('running-editor').hidden = true; get('live-start-hint').hidden = false; get('live-continue').hidden = false;
@@ -135,28 +137,55 @@ export function activateLive(workspace: WorkspaceGeometry) {
   for (const id of ['adoption-dialog', 'move-dialog', 'archive-dialog', 'character-dialog']) if (get<HTMLDialogElement>(id).open) get<HTMLDialogElement>(id).close();
 }
 export async function openLive(planId?: string, visitId?: string) {
-  if (!context) { tell('Bitte zuerst eine Kampagne öffnen.', true); return; }
+  if (!context) { tell('Bitte zuerst eine Kampagne öffnen.', true); return false; }
   const owner=context,token=owner.token,n=++liveReadRequest,current=()=>context===owner&&n===liveReadRequest;
+  const sourceRun=++liveSourcesRequest,preparation=readLiveSources(owner);
   sessionChronicle=null;sessionChronicleError='Chronik wird geladen.';void refreshLiveSession();
   try {
-    const [liveResult,prepResult]=await Promise.all([window.campaign.live(token),window.campaign.preparation(token, '')]);
-    if (!current()||!context) return;
-    const live=unwrap(liveResult),prep=unwrap(prepResult);
+    const liveResult=await window.campaign.live(token);
+    if (!current()||!context) return false;
+    const live=unwrap(liveResult);
     let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     if(recap.readError&&!live.recapDraftError&&!recap.dirty){recap.text=live.recapDraft??{summary:'',handoff:''};recap.basis=live.recapDraft??null;get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     recap.readError=live.recapDraftError;showRecapSave();
-    data = live; sources = prep;narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
+    data = live; sources = null;liveSourcesLoading=true;liveSourcesProblem='Vorbereitung wird geladen…';narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
     characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
     // Reopen an existing table without initializing a group or starting a new evening.
     resumed = !!live.scene;
     sceneDraft = live.scene ? structuredClone(live.scene) : null;
     render();
+    const material=acceptLiveSources(owner,sourceRun,preparation);
+    if(planId&&(!await material||!current()))return false;
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
-  } catch (error) { if(!current())return;data = null; sceneDraft = null; characterDraft = null; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true); }
+    return true;
+  } catch (error) { if(!current())return;data = null; sceneDraft = null; characterDraft = null;get('live-sources-state').hidden=true; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true);return false; }
+}
+// Material is campaign-wide and may arrive after a scene write/focus change.
+// Its own generation revokes only replaced reads and campaign activations.
+async function readLiveSources(owner:WorkspaceGeometry):Promise<Result<Preparation>>{
+ try{return await window.campaign.preparation(owner.token,'');}
+ catch(error){return{ok:false,error:(error as Error).message};}
+}
+async function acceptLiveSources(owner:WorkspaceGeometry,run:number,read:Promise<Result<Preparation>>){
+ const result=await read;if(context!==owner||run!==liveSourcesRequest||!data)return false;
+ sources=result.ok?result.value:null;liveSourcesLoading=false;
+ liveSourcesProblem=result.ok?'':'Vorbereitung nicht verfügbar: '+result.error;
+ renderLiveSources();return result.ok;
+}
+async function reloadLiveSources(){
+ if(!context||!data)return false;const owner=context,run=++liveSourcesRequest;
+ sources=null;liveSourcesLoading=true;liveSourcesProblem='Vorbereitung wird geladen…';renderLiveSources();
+ return acceptLiveSources(owner,run,readLiveSources(owner));
+}
+function renderLiveSources(){
+ get('live-sources-state').hidden=!liveSourcesProblem;get('live-sources-status').textContent=liveSourcesProblem;
+ get('live-sources-retry').hidden=liveSourcesLoading;
+ renderLocationChoices();renderSceneOrigin();renderScenePlace();renderNpcChoices();renderLiveKnowledge();renderAdoptionPlans();
+ sessionNavigatorPreparation(sources,resumed);syncLivePacketContext();
 }
 export async function openPlannedVisitReview(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){
  const owner=context,token=owner?.token,current=()=>stillCurrent()&&context===owner&&context?.token===token;if(!token||!current())return false;
- await openLive(planId,visitId);if(!current())return false;
+ if(!await openLive(planId,visitId)||!current())return false;
  if(value('adoption-plan')!==planId||value('adoption-visit')!==visitId){tell('Der vorbereitete Besuch ist am Spieltisch nicht mehr verfügbar.',true);return false;}
  if(!await ensureLiveRuntime()||!current())return false;
  get<HTMLDetailsElement>('adoption-picker').open=true;const reviewed=await previewPlannedVisit(planId,visitId,current);if(!current())return false;
@@ -191,6 +220,8 @@ function busy(on: boolean, structural = false, textSave = false) {
   get<HTMLInputElement>('new-character-name').disabled = on && !textSave;
   for(const id of ['live-moment-category','live-moment-title','live-moment-summary','live-moment-follow-up'])get<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(id).disabled=on&&!textSave;
   if (structural) for (const id of [...profileFields.map(([id]) => id), 'running-title', 'running-notes', 'running-read-aloud', 'running-location']) get<HTMLInputElement>(id).disabled = on;
+  get<HTMLSelectElement>('running-location').disabled=!sources||on&&structural;
+  get<HTMLButtonElement>('adoption-preview').disabled=on&&!textSave||!sources?.plans.find(p=>p.id===value('adoption-plan'))?.scenes.length;
   if (structural) {
     for (const id of ['move-title', 'move-target']) get<HTMLInputElement>(id).disabled = on;
     for (const box of get('move-members').querySelectorAll<HTMLInputElement>('input')) box.disabled = on;
@@ -398,14 +429,16 @@ function renderSceneMeta() {
   renderTimePreview();
   void refreshScenePreparation();
   void refreshRuleReferences(resumed?scene?.id??null:null);
-  const origin = get('running-origin'); origin.replaceChildren();
+  renderSceneOrigin();renderScenePlace();
+}
+function renderSceneOrigin(){
+  const scene=data?.scene,origin = get('running-origin'); origin.replaceChildren();
   if (scene?.adoption) {
     const a = scene.adoption, title = document.createElement('p'), notes = document.createElement('p'), place = document.createElement('p');
     title.textContent = 'Übernommen: ' + (a.title || 'Unbenannter Besuch'); notes.textContent = a.notes;
     place.textContent = 'Ort bei Übernahme: ' + (sources?.locations.find(l => l.document.id === a.locationId)?.document.name ?? (a.locationId ? 'nicht verfügbar' : 'kein Ort'));
     origin.append(title, notes, place);
   } else origin.textContent = 'Noch kein vorbereiteter Besuch übernommen.';
-  renderScenePlace();
 }
 function renderScenePlace(){
   get('running-context-summary').textContent=(sources?.locations.find(l=>l.document.id===sceneDraft?.locationId)?.document.name??(sceneDraft?.locationId?'Ort nicht verfügbar':'Kein Ort'))+' · Titel und Ort ändern';
@@ -486,6 +519,7 @@ function loadLiveNarrative(noteId:string){if(!context||narrativeCache.has(noteId
 function narrativeFacts(view:NarrativeView){const state=view.state,location=state.locationId?sources?.locations.find(row=>row.document.id===state.locationId)?.document.name??'Ort nicht verfügbar':'Ohne Ortsbindung',contributors=state.contributors.map(id=>data?.roster.find(character=>character.id===id)?.profile.name??'Unbekannte Figur');return(state.status==='closed'?'Abgeschlossen':'Offen')+' · '+location+(contributors.length?' · Beteiligte: '+contributors.join(', '):'')+(state.poolXp?' · '+state.poolXp+' XP vorgemerkt':'')+(view.award?' · Belohnung vergeben':'');}
 function renderLiveKnowledge(){
   const root=get('live-knowledge-results');root.replaceChildren();const query=value('live-knowledge-search').trim().toLocaleLowerCase('de');
+  if(!sources){get('live-knowledge-result').textContent=liveSourcesProblem;return;}
   const found=findLiveKnowledge((sources?.notes??[]).filter(row=>!row.trashed&&row.note.kind!=='rule'),query,30,row=>preparedNoteIds.has(row.note.id)),rows=found.rows;get('live-knowledge-result').textContent=rows.length===found.total?found.total+' Einträge angezeigt.':rows.length+' von '+found.total+' Einträgen angezeigt – Suche präzisieren.';
   for(const row of rows){const note=row.note,card=document.createElement('article'),heading=document.createElement('div'),title=document.createElement('h4'),kind=document.createElement('small'),actions=document.createElement('div');heading.className='toolbar';title.textContent=note.title||'Unbenannter Eintrag';kind.textContent=({note:'Notiz',npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht',rule:'Regel'})[note.kind]+(preparedNoteIds.has(note.id)?' · Mit aktuellem Besuch verknüpft':'');heading.append(title,kind);actions.className='toolbar';
     if(note.readAloud){const publicText=document.createElement('pre'),use=document.createElement('button');publicText.textContent=note.readAloud;publicText.className='live-knowledge-public';use.type='button';use.textContent='Als Vorlesetext einsetzen';use.onclick=()=>useKnowledgeReadAloud(note.readAloud,note.title);card.append(heading,publicText);actions.append(use);}else card.append(heading);
@@ -512,6 +546,10 @@ function renderScene() {
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
   get<HTMLButtonElement>('running-player-location').disabled=!sceneDraft?.locationId;
   renderLiveMomentDraft();
+  renderLocationChoices();renderNpcChoices();renderLiveSession();
+  renderLiveKnowledge();renderSceneMeta();renderGroups();
+}
+function renderLocationChoices(){
   const select = get<HTMLSelectElement>('running-location'); select.replaceChildren();
   const none = document.createElement('option'); none.value = ''; none.textContent = 'Kein Ort'; select.append(none);
   const current = sceneDraft?.locationId;
@@ -520,8 +558,7 @@ function renderScene() {
   }
   if (current && !sources?.locations.some(l => l.document.id === current)) { const option = document.createElement('option'); option.value = current; option.textContent = 'Ort nicht verfügbar'; option.disabled = true; select.append(option); }
   select.value = current ?? '';
-  renderNpcChoices();renderLiveSession();
-  renderLiveKnowledge();renderSceneMeta(); renderGroups();
+  select.disabled=!sources||intentBlocked();
 }
 function groupPeople(id:string){return data?.roster.filter(c=>c.active&&c.sceneId===id).map(c=>c.profile.name).join(', ')||'Leere Party';}
 function groupLabel(group:Pick<LiveView['scenes'][number],'id'|'title'|'primary'|'clock'>){
@@ -639,7 +676,7 @@ interface ResumeLease {current:()=>boolean;dismiss:()=>void;focus:(id:string)=>P
 async function openMaskFromResume(mask:SessionCloseMask,lease:ResumeLease){lease.dismiss();if(!await lease.focus(mask.sceneId))return;if(mask.kind==='combat'){await openExistingCombat(mask.id);if(lease.current())get('combat-panel').scrollIntoView({block:'start'});}else{await openExistingChase(mask.id);if(lease.current())get('chase-panel').scrollIntoView({block:'start'});}}
 
 async function readSessionResumePrep(token:string,scenes:LiveView['scenes'],current:()=>boolean=()=>context?.token===token):Promise<SessionResumePrep>{
- const plans=(sources?.plans??[]).filter(plan=>plan.scenes.length).map(plan=>({id:plan.id,name:plan.name,revision:plan.revision})),problems:string[]=[],packets=new Map<string,Promise<SessionPacket|null>>();
+ const plans=(sources?.plans??[]).filter(plan=>plan.scenes.length).map(plan=>({id:plan.id,name:plan.name,revision:plan.revision})),problems:string[]=sources?[]:[liveSourcesProblem||'Vorbereitungspläne nicht verfügbar.'],packets=new Map<string,Promise<SessionPacket|null>>();
  const preferred=value('live-session-plan'),preferredIndex=plans.findIndex(plan=>plan.id===preferred);if(preferredIndex>0)plans.unshift(plans.splice(preferredIndex,1)[0]!);
  const check=()=>{if(!current())throw new Error('Wiederaufnahme inzwischen beendet.');};
  async function read<T>(label:string,load:()=>Promise<Result<T>>):Promise<T|null>{check();try{const value=unwrap(await load());check();return value;}catch(error){check();problems.push(label+': '+(error as Error).message);return null;}}
@@ -677,7 +714,7 @@ async function checkedResumeVisit(row:SessionResumeVisit,lease:ResumeLease){
  if(packet.planId!==row.nextVisit.planId||packet.planRevision!==row.nextVisit.planRevision||packet.basis!==row.packetBasis||!packet.visits.some(v=>v.id===row.nextVisit.visitId))throw new Error('Die angezeigte Vorbereitung wurde geändert. Dialog schließen, erneut öffnen und Aktion neu wählen.');
  return true;
 }
-async function openVisitFromResume(row:SessionResumeVisit,lease:ResumeLease){if(!await checkedResumeVisit(row,lease))return;lease.dismiss();if(!await lease.focus(row.sceneId))return;await openLive(row.nextVisit.planId,row.nextVisit.visitId);if(!lease.current())return;get<HTMLDetailsElement>('adoption-picker').open=true;get<HTMLButtonElement>('adoption-preview').click();}
+async function openVisitFromResume(row:SessionResumeVisit,lease:ResumeLease){if(!await checkedResumeVisit(row,lease))return;lease.dismiss();if(!await lease.focus(row.sceneId))return;if(!await openLive(row.nextVisit.planId,row.nextVisit.visitId)||!lease.current())return;get<HTMLDetailsElement>('adoption-picker').open=true;get<HTMLButtonElement>('adoption-preview').click();}
 async function openPacketFromResume(row:SessionResumeVisit,lease:ResumeLease){if(!await checkedResumeVisit(row,lease))return;lease.dismiss();if(!await lease.focus(row.sceneId))return;const plan=get<HTMLSelectElement>('live-session-plan');plan.value=row.nextVisit.planId;plan.dispatchEvent(new Event('change'));await openLivePacket();if(!lease.current())return;const target=[...get('session-packet-visits').querySelectorAll<HTMLButtonElement>('button')].find(button=>button.dataset.visitId===row.nextVisit.visitId);target?.click();}
 async function startOpeningFromResume(row:SessionResumeVisit,readAloud:string|null,lease:ResumeLease){
  if(!await checkedResumeVisit(row,lease))return;lease.dismiss();if(!await lease.focus(row.sceneId))return;
@@ -744,7 +781,9 @@ async function openSessionResume(){
  finally{if(current())dialog.setAttribute('aria-busy','false');}
 }
 
-function renderNpcChoices(){renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
+function renderNpcChoices(){
+ if(!sources){const select=get<HTMLSelectElement>('running-player-npc');select.replaceChildren();select.disabled=true;get<HTMLButtonElement>('running-player-npc-show').disabled=true;get('running-player-npc-result').textContent=liveSourcesProblem;return;}
+ get<HTMLSelectElement>('running-player-npc').disabled=false;renderLiveNpcChoices(get<HTMLSelectElement>('running-player-npc'),get<HTMLButtonElement>('running-player-npc-show'),get('running-player-npc-result'),(sources?.notes.filter(row=>!row.trashed&&row.note.kind==='npc')??[]).map(row=>({id:row.note.id,title:row.note.title})),value('running-player-npc-filter'));}
 function renderGroups() {
   const select = get<HTMLSelectElement>('scene-focus'); select.replaceChildren();
   const cards = get('group-list'); cards.replaceChildren(); cards.hidden = !resumed || (data?.scenes.length ?? 0) < 2;
@@ -776,19 +815,27 @@ function renderTimePreview(){
 
 function render() {
   get('live-empty').hidden = !!data; get('live-workspace').hidden = !data; renderList(); renderCharacter(); renderScene();
-  const select = get<HTMLSelectElement>('adoption-plan'), current = select.value; select.replaceChildren();
+  get('live-sources-state').hidden=!liveSourcesProblem;get('live-sources-status').textContent=liveSourcesProblem;get('live-sources-retry').hidden=liveSourcesLoading;
+  renderAdoptionPlans();
+}
+function renderAdoptionPlans(){
+  const select = get<HTMLSelectElement>('adoption-plan'), current = select.value,visit=value('adoption-visit');
+  select.disabled=!sources;get<HTMLSelectElement>('adoption-visit').disabled=!sources;
+  if(!sources){get<HTMLButtonElement>('adoption-preview').disabled=true;return;}
+  select.replaceChildren();
   for (const plan of sources?.plans ?? []) { const option = document.createElement('option'); option.value = plan.id; option.textContent = plan.name || 'Unbenannter Plan'; select.append(option); }
   if (sources?.plans.some(p => p.id === current)) select.value = current;
-  renderVisits();
+  renderVisits();if(sources.plans.find(p=>p.id===select.value)?.scenes.some(v=>v.id===visit))get<HTMLSelectElement>('adoption-visit').value=visit;
 }
 export function initLive(status: typeof tell, navigate: typeof openLocation,openNote:typeof openKnowledgeNote=async()=>{},openNotebook:typeof openLocationNotebook=async()=>{},openReward:typeof openPreparedReward=async()=>{},openDeadline:typeof openMomentDeadline=async()=>{},openVisit:typeof openMomentVisit=async()=>true) {
+  const sourceState=document.createElement('div');sourceState.id='live-sources-state';sourceState.hidden=true;sourceState.className='toolbar';sourceState.innerHTML='<p id="live-sources-status" role="status"></p><button id="live-sources-retry" type="button">Vorbereitung erneut laden</button>';get('live-workspace').before(sourceState);get('live-sources-retry').onclick=()=>void reloadLiveSources();
   const rewardButton=document.createElement('button');rewardButton.id='live-visit-reward';rewardButton.type='button';rewardButton.textContent='Besuchsbelohnung…';rewardButton.hidden=true;get('combat-resume').after(rewardButton);rewardButton.onclick=()=>void openCurrentVisitReward().catch(error=>tell(error.message,true));
   sessionResumeButton=document.createElement('button');sessionResumeButton.id='live-session-resume';sessionResumeButton.type='button';sessionResumeButton.textContent='Nächsten Abend vorbereiten…';get('live-session-start').after(sessionResumeButton);sessionResumeButton.onclick=()=>void openSessionResume();
   const resumeDialog=document.createElement('dialog');resumeDialog.id='live-session-resume-dialog';resumeDialog.innerHTML='<div class="toolbar"><h2>Nächsten Spielabend aufnehmen</h2><button id="live-session-resume-x" type="button">Schließen</button></div><p id="live-session-resume-status" role="status"></p><section class="session-resume-handoff"><h3>Letzte Übergabe</h3><p id="live-session-resume-handoff"></p></section><section><h3>Startbriefings</h3><p class="caption">Pro Gruppe: Übergabe, Party, Weltlage, offene Fäden und Eröffnung.</p><div id="live-session-resume-groups"></div></section><section><h3>Gruppenbereitschaft</h3><div id="live-session-resume-readiness"></div></section><section><h3>Weltlage der Gruppen</h3><div id="live-session-resume-worlds"></div></section><section><h3>Nächste vorbereitete Besuche</h3><div id="live-session-resume-visits"></div></section><section><h3>Laufende Szenen</h3><div id="live-session-resume-masks"></div></section><section class="session-resume-narrative"><div class="toolbar"><div><h3>Offene Aufträge und Gerüchte</h3><p id="live-session-resume-narrative-count"></p></div><button id="live-session-resume-narrative-open" type="button">Auftragsjournal öffnen…</button></div><div id="live-session-resume-narratives"></div></section><section class="session-close-check"><div><h3>Beute</h3><p id="live-session-resume-loot-status"></p></div><button id="live-session-resume-loot" type="button">Beute verteilen…</button></section><section class="session-close-check"><div><h3>Partyfortschritt</h3><p>XP, Tagesbelastung und Empfänger vor dem Start prüfen.</p></div><button id="live-session-resume-xp" type="button">XP abrechnen…</button></section><div class="toolbar"><span class="grow"></span><button id="live-session-resume-close" type="button">Schließen</button></div>';document.body.append(resumeDialog);initHandoffVisitDialog();for(const id of ['live-session-resume-x','live-session-resume-close'])get<HTMLButtonElement>(id).onclick=()=>{sessionResumeRequest++;resumeDialog.close();};resumeDialog.addEventListener('cancel',()=>sessionResumeRequest++);get('live-session-resume-loot').onclick=()=>{sessionResumeRequest++;resumeDialog.close();void openTreasureDistribution(undefined,data?.scene?.id).catch(error=>tell(error.message,true));};get('live-session-resume-xp').onclick=()=>{sessionResumeRequest++;resumeDialog.close();const popover=get<HTMLElement>('party-popover');if(!popover.matches(':popover-open'))popover.showPopover();get<HTMLButtonElement>('party-award-open').click();};get('live-session-resume-narrative-open').onclick=()=>{sessionResumeRequest++;resumeDialog.close();void openNarrativeJournal().catch(error=>tell(error.message,true));};
   tell=status;openLocation=navigate;openKnowledgeNote=openNote;openLocationNotebook=openNotebook;openPreparedReward=openReward;openMomentDeadline=openDeadline;openMomentVisit=openVisit;initSessionNavigator(status,async(planId,visitId)=>{await previewPlannedVisit(planId,visitId);},async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);npcCastBinder=new NpcCastBinder(status,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,useLiveReferenceReadAloud,addLiveNpc,async(id,contact,current)=>{await npcNavigation?.(id,contact,current);},async(id,current)=>{if(current())await openKnowledgeNote(id,current);},async(id,current)=>{if(current())await openGroup?.(id,current);},async(id,current)=>{await npcAutonomyNavigation?.(id,current);},async(id,current)=>{await npcPlacesNavigation?.(id,current);},async(id,current)=>{if(current())await openLocationNotebook(id,current);});const castButton=document.createElement('button');castButton.id='live-npc-cast';castButton.type='button';castButton.textContent='NSCs am Spieltisch…';get('live-party-reference').before(castButton);castButton.onclick=()=>void npcCastBinder.open().catch(e=>tell(e.message,true));visitBinder=new SceneVisitBinder(status,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,useLiveReferenceReadAloud,openKnowledgeNote);liveGenerator=new LiveEncounterGenerator(status,()=>context&&data?.scene&&resumed?{workspace:context,live:data}:null,flushLive,prepareGeneratedCombat);const lootButton=document.createElement('button');lootButton.id='live-loot-distribute';lootButton.type='button';lootButton.textContent='Beute verteilen…';packetButton.after(lootButton);lootButton.onclick=()=>void(async()=>{const token=context?.token,id=data?.scene?.id;if(!id||!await flushLive()||context?.token!==token||data?.scene?.id!==id)return;await openTreasureDistribution(undefined,id);})().catch(e=>tell(e.message,true));const closeDialog=document.createElement('dialog');closeDialog.id='live-session-close-dialog';closeDialog.innerHTML='<div class="toolbar"><h2>Spielabend abschließen</h2><button id="live-session-close-x" type="button">Schließen</button></div><p id="live-session-close-status" role="status"></p><p id="live-session-close-facts" class="session-close-facts"></p><section><h3>Laufende Szenen</h3><div id="live-session-close-masks"></div></section><section class="session-close-check"><div><h3>Spielabend-XP</h3><p id="live-session-close-xp-status"></p></div><button id="live-session-close-xp" type="button">XP abrechnen…</button></section><section class="session-close-check"><div><h3>Beute</h3><p id="live-session-close-loot-status"></p></div><button id="live-session-close-loot" type="button">Beute verteilen…</button></section><section class="session-close-suggestion"><div class="toolbar"><h3>Vorschlag für den nächsten Einstieg</h3><button id="live-session-close-use-suggestion" type="button">Vorschlag übernehmen</button></div><pre id="live-session-close-suggestion"></pre></section><p id="live-session-close-draft-status" class="caption" role="status"></p><button id="live-session-close-draft-retry" type="button" hidden>Eigene Fassung erneut sichern…</button><label>Rückblick<textarea id="live-session-close-summary" maxlength="10000" placeholder="Was ist heute geschehen?"></textarea></label><label>Nächster Spielabend<textarea id="live-session-close-handoff" maxlength="10000" placeholder="Einstieg, offene Szenen und Vorbereitung"></textarea></label><p class="caption">Offene Kämpfe, Verfolgungen und Beute bleiben nach dem Abschluss erhalten.</p><div class="toolbar"><button id="live-session-close-refresh" type="button">Erneut prüfen</button><span class="grow"></span><button id="live-session-close-cancel" type="button">Abbrechen</button><button id="live-session-close-confirm" type="button">Spielabend jetzt beenden</button><button id="live-session-close-prepare" type="button">Beenden + Einstieg vorbereiten…</button></div>';document.body.append(closeDialog);for(const id of ['live-session-close-x','live-session-close-cancel'])get<HTMLButtonElement>(id).onclick=()=>{leaveSessionCloseReview();};get('live-session-close-refresh').onclick=()=>void loadSessionCloseReview(true);get('live-session-close-confirm').onclick=()=>void finishLiveSession();get('live-session-close-prepare').onclick=()=>void finishLiveSession(true);get('live-session-close-xp').onclick=()=>{if(!currentSessionCloseReview())return;leaveSessionCloseReview();const popover=get<HTMLElement>('party-popover');if(!popover.matches(':popover-open'))popover.showPopover();get<HTMLButtonElement>('party-award-open').click();};get('live-session-close-loot').onclick=()=>{if(!currentSessionCloseReview())return;leaveSessionCloseReview();void openTreasureDistribution(undefined,data?.scene?.id).catch(error=>tell(error.message,true));};get('live-session-close-use-suggestion').onclick=()=>{if(!currentSessionCloseReview()||closeDialog.getAttribute('aria-busy')==='true'||get<HTMLButtonElement>('live-session-close-use-suggestion').disabled)return;get<HTMLTextAreaElement>('live-session-close-handoff').value=get('live-session-close-suggestion').textContent??'';queueRecapSave();};closeDialog.addEventListener('cancel',leaveSessionCloseReview);for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff'])get(id).addEventListener('input',()=>queueRecapSave());for(const id of ['live-session-draft-retry','live-session-close-draft-retry'])get(id).onclick=()=>void retryRecapSave();initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status,refreshLiveSession);initProgress((text,error)=>{status(text,error);if(get<HTMLDialogElement>('live-health-dialog').open){get('live-health-status').textContent=text;get('live-health-status').className=error?'error':'caption';}},scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(()=>{renderPartyReference();void refreshLiveSession();});initHealthDialog();get('live-loot-back').onclick=returnFromPartyLoot;initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
-  get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
+  get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;if(!await openLive(visit.planId,visit.visitId))return;get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
   for(const id of ['character-new','live-party-new'])get(id).onclick=openNewCharacter;
   get('character-cancel').onclick = () => get<HTMLDialogElement>('character-dialog').close();
   get('character-dialog').addEventListener('cancel',event=>{if(creatingCharacter)event.preventDefault();});
@@ -850,7 +897,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
       if(!await flushLive()||!current())return;
       const followUpRef=narrativeFollowUp?{kind:narrativeFollowUp,id:crypto.randomUUID()}:null;
       const ack=await execute({kind:'live-moment',sceneId,expectedRevision:data!.scene!.revision,category,title,summary,draft,followUp:followUpRef});if(!ack)return;const work=momentWorks.get(sceneId);if(work&&sameLiveMomentDraft(work.basis,draft)&&!ack.scene?.momentDraft)work.basis=null;if(!current())return;
-      let refreshProblem=false;if(narrativeFollowUp){try{const refreshed=await window.campaign.preparation(token,'');if(!current())return;if(refreshed.ok){sources=refreshed.value;renderLiveKnowledge();}else refreshProblem=true;}catch{if(!current())return;refreshProblem=true;}}
+      let refreshProblem=false;if(narrativeFollowUp)void reloadLiveSources();
       const unchanged=canClearSavedLiveMoment(sceneId,momentOwner?.sceneId??null,draft,currentLiveMomentDraft());
       if(unchanged){writeLiveMomentDraft(emptyLiveMomentDraft());captureMomentDraft();showMomentDraftState();if(followUp!=='deadline'&&followUp!=='visit')get<HTMLInputElement>('live-moment-title').focus();}
       if((followUp==='deadline'||followUp==='visit')&&scene&&current())try{
