@@ -64,8 +64,9 @@ export function installItemDefinitions(db: any) {
   installSrdItems(db);
 }
 function installSrdItems(db:any){
+ // Projection corrections can change the definition without changing its pinned source hash.
  db.transaction(()=>{for(const source of [...srdItemDefinitions,...coinDefinitions]){const row=db.prepare('SELECT * FROM item_definition WHERE id=?').get(source.id),legacy=db.prepare('SELECT 1 FROM authored_item WHERE id=?').get(source.id);let d=source;
-  if(row){const current=decoded(row,source.id,row.revision);if(current.source.kind!=='srd51'||current.sourceHash===source.sourceHash)continue;recordItemDefinitionVersion(db,current);d={...source,revision:current.revision+1};}else if(legacy)continue;
+  if(row){const current=decoded(row,source.id,row.revision);if(current.source.kind!=='srd51'||canonicalJson(current)===canonicalJson({...source,revision:current.revision}))continue;recordItemDefinitionVersion(db,current);d={...source,revision:current.revision+1};}else if(legacy)continue;
   checkedDefinition(d);recordItemDefinitionVersion(db,d);const payload=JSON.stringify(d);db.prepare('INSERT INTO item_definition VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(d.id,d.revision,payload,hash(payload));db.prepare('INSERT INTO authored_item VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,name=excluded.name,category=excluded.category,unit_copper=excluded.unit_copper').run(d.id,d.revision,d.name,d.category,d.unitCopper??'0');
  }}).immediate();
 }
