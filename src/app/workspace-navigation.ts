@@ -13,18 +13,20 @@ export function initWorkspaceNavigation() {
   for (const id of ['quick-reference-open','location-material-return']) { const control = document.getElementById(id); if (control) header.insertBefore(control, tools); }
   const menu = document.getElementById('workspace-nav-menu') as HTMLDetailsElement;
   const narrow = window.matchMedia('(max-width: 850px)');
+  // In the Atlas, the containing popup owns visibility; its nested details stay open.
+  const compact = () => narrow.matches && !document.body.classList.contains('atlas-workspace');
   const resize = () => { menu.open = document.body.classList.contains('atlas-workspace')||!narrow.matches; };
   narrow.addEventListener('change', resize); resize();
   menu.addEventListener('click', event => {
-    if (narrow.matches && (event.target as Element).closest('button')) {
+    if (compact() && (event.target as Element).closest('button')) {
       menu.open = false; menu.querySelector('summary')!.focus();
     }
   });
   content.addEventListener('click', event => { if ((event.target as Element).closest('button')) tools.open = false; });
-  document.addEventListener('pointerdown', event => { if (!tools.contains(event.target as Node)) tools.open = false; if (narrow.matches && !menu.contains(event.target as Node)) menu.open = false; });
+  document.addEventListener('pointerdown', event => { if (!tools.contains(event.target as Node)) tools.open = false; if (compact() && !menu.contains(event.target as Node)) menu.open = false; });
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape' || event.defaultPrevented || document.querySelector('dialog[open]')) return;
-    for (const panel of [tools, ...(narrow.matches ? [menu] : [])]) if (panel.open) {
+    for (const panel of [tools, ...(compact() ? [menu] : [])]) if (panel.open) {
       panel.open = false; panel.querySelector('summary')!.focus(); event.preventDefault(); break;
     }
   });
