@@ -81,3 +81,7 @@ Navigation und keine menschliche Nutzerakzeptanz. Bearbeitbares Scrawl-Speichern
 und frisches Wiederöffnen bleiben für die aktuelle Vergleichskarte ungeprüft:
 „Speichern unter“ führte in einen durch die verfügbare Browsersteuerung nicht
 bedienbaren nativen Dateidialog. Der PNG-Export funktioniert.
+
+Auch beim Wechsel zu Formgriffen oder Hausplatzierung wird der aktive
+Bearbeitungsbereich sichtbar gemacht. Dieser Sprung erfolgt beim Einstieg,
+niemals bei jedem Ziehen eines Griffs.
