@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   workspaceInitial:token=>ipcRenderer.invoke('campaign:workspace-initial',token),
   atlasRegion:(token,query,consumer)=>ipcRenderer.invoke('atlas:geometry-region',token,query,consumer),
   atlasObjectFocus:(token,kind,id)=>ipcRenderer.invoke('atlas:focus',token,kind,id),
-  atlasRegionCandidates:(token,query,point,fence,offset,layer)=>ipcRenderer.invoke('atlas:region-candidates',token,query,point,fence,offset,layer),
+  atlasRegionCandidates:(token,query,point,fence,offset,layer,visualElementId)=>ipcRenderer.invoke('atlas:region-candidates',token,query,point,fence,offset,layer,visualElementId),
   atlasRegionHit:(token,query,point,fence)=>ipcRenderer.invoke('atlas:region-hit',token,query,point,fence),
   cancelAtlasRegion:(token,consumer)=>ipcRenderer.invoke('atlas:region-cancel',token,consumer),
   atlasCitySite:(token,cityId,id)=>ipcRenderer.invoke('atlas:city-site',token,cityId,id),

@@ -216,6 +216,22 @@ test('sample-grid rejection is pixel-identical to the full source stream across 
  const q=query({x:-17,y:-11,width:32,height:24}),r=await f.read(q),db=new Database(f.store.filename,{readonly:true});t.after(()=>db.close());const unfiltered=new AtlasRegionReader(db);unfiltered.landscape.sampleMath=false;await unfiltered.sync(f.source);const expected=unfiltered.read(f.source,q);assert.deepEqual(r.landscape.tiles,expected.landscape.tiles);assert.deepEqual(r.landscape.coverage,expected.landscape.coverage);
 });
 
+
+test('exact glyph union preserves overlapping hits, paging, source fence and floor/archive filters',async t=>{
+ const f=fixture(t,45),{newElement}=require('../.build/atlas-region-drawing-model.cjs');
+ const polygons=room(0).polygons,payload=JSON.stringify({polygons,sections:[]});f.store.db.prepare('UPDATE room SET payload=?,checksum=?').run(payload,hash(payload));
+ const element={...newElement('feature','local','ground','r0',[{x:20,y:0}]),name:'Großes Glyph',width:20,height:20};
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element,expectedRevision:null}});
+ const q=query();await f.read(q);let page=f.reader.candidatesAt(f.source,q,{x:1,y:1},0,'all',element.id);
+ assert.equal(page.total,46);assert.equal(page.items[0].id,element.id);assert.equal(page.items[0].name,element.name);assert.equal(page.next,40);
+ const second=f.reader.candidatesAt(f.source,q,{x:1,y:1},40,'all',element.id);assert.equal(second.items.length,6);assert.equal(second.next,null);assert.equal(new Set([...page.items,...second.items].map(h=>h.id)).size,46);
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:20,y:0},0,'all',element.id).items.filter(h=>h.id===element.id).length,1,'canonical and glyph hits are unioned once');
+ assert.throws(()=>f.reader.candidatesAt(f.source,{...q,fence:'old'}, {x:1,y:1},0,'all',element.id),/geändert/);
+ const hidden={...q,floorId:'upper'};assert.equal(f.reader.candidatesAt(f.source,hidden,{x:1,y:1},0,'all',element.id).total,0);
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...element,archived:true},expectedRevision:0}});await f.read(q);
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:1,y:1},0,'all',element.id).total,45,'an archived/stale glyph cannot return');
+});
+
 test('camera successors cannot replace queued object selection; both lanes remain bounded and cancellable',async t=>{
  const f=fixture(t,5),source=f.store.atlasRegionSource(f.shell.token);
  for(const kind of ['focus','hit','candidates']){
@@ -227,4 +243,33 @@ test('camera successors cannot replace queued object selection; both lanes remai
   assert.equal(kind==='candidates'?selected.value.items[0].id:selected.value.id,'r0');assert.equal(frames.at(-1).status,'fulfilled');assert.equal(frames.filter(r=>r.status==='fulfilled').length,1);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.queued,false);
   const pending=Promise.allSettled([service.read(source,query({x:50,y:50,width:30,height:10})),service.focus(source,'room','r0'),service.read(source,query({x:60,y:50,width:30,height:10}))]);await service.cancelAndWait();assert((await pending).every(r=>r.status==='rejected'&&/abgebrochen/.test(r.reason.message)));await service.close();
  }
+
+});
+
+
+test('dense raster picks a rotated object against its exact rectangle away from the anchor',async t=>{
+ const f=fixture(t,1600),{newElement}=require('../.build/atlas-region-drawing-model.cjs'),polygons=room(0).polygons,payload=JSON.stringify({polygons,sections:[]});f.store.db.prepare('UPDATE room SET payload=?,checksum=?').run(payload,hash(payload));
+ const element={...newElement('object','local','ground','r0',[{x:20,y:0}]),width:30,height:10,angle:45,name:'Gedrehte Truhe'};
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element,expectedRevision:null}});
+ const q=query({x:0,y:-10,width:50,height:40}),region=await f.read(q);assert.equal(region.coverage.mode,'raster');
+ assert.equal(f.reader.hit(f.source,q,{x:30,y:10})?.id,element.id);
+ assert.deepEqual(f.reader.candidatesAt(f.source,q,{x:30,y:10},0,'all').items.map(h=>h.id),[element.id],'a raster has no glyph ID; its exact object extent must still be selectable');
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:20,y:12},0,'all').items.some(h=>h.id===element.id),false,'the spatial-index envelope must not act as an exact hit');
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...element,variant:'barrel'},expectedRevision:0}});await f.read(q);
+ assert.equal(f.reader.hit(f.source,q,{x:34,y:0})?.id,element.id);assert.equal(f.reader.candidatesAt(f.source,q,{x:34,y:4},0,'all').items.some(h=>h.id===element.id),false,'ellipse corners are outside the exact footprint');
+});
+
+
+test('an interior containing only authored objects is visible outside the origin and picks filled areas and narrow walls precisely',async t=>{
+ const f=fixture(t,0),{newElement}=require('../.build/atlas-region-drawing-model.cjs'),put=element=>f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element,expectedRevision:null}});
+ const wall={...newElement('wall','local','ground',null,[{x:-100,y:50},{x:-80,y:50}]),width:.2,height:6,name:'Freie Wand'},water={...newElement('water','local','ground',null,[{x:-100,y:60},{x:-80,y:60},{x:-80,y:80},{x:-100,y:80}]),name:'Wasserfläche'};put(wall);put(water);
+ const door={...newElement('door','local','ground',null,[{x:-70,y:70}]),name:'Punkttür'};put(door);
+ const q=query({x:-110,y:40,width:50,height:50}),r=await f.read(q);assert.deepEqual(new Set(r.drawing.elements.map(e=>e.id)),new Set([wall.id,water.id,door.id]),'an object-only dungeon cannot become an empty world');
+ assert(f.reader.candidatesAt(f.source,q,{x:-70,y:70},0,'all').items.some(h=>h.id===door.id),'single-point door symbols remain reachable');
+ assert(f.reader.focus(f.source,'scope','local').box.x<0);assert(f.reader.candidatesAt(f.source,q,{x:-90,y:70},0,'all').items.some(h=>h.id===water.id),'filled object interiors are exact hits');
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:-90,y:52},0,'all').items.some(h=>h.id===wall.id),false,'vertical height does not inflate horizontal wall selection');
+ assert(f.reader.candidatesAt(f.source,q,{x:-90,y:50.05},0,'all').items.some(h=>h.id===wall.id));
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...wall,points:[{x:-300,y:50},{x:-280,y:50}]},expectedRevision:0}});
+ const moved=query({x:-310,y:40,width:50,height:50}),after=await f.read(moved);assert(after.drawing.elements.some(e=>e.id===wall.id),'element-only edits must update the scope extent too');
+
 });

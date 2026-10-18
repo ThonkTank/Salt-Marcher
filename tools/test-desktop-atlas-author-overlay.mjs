@@ -2,7 +2,7 @@
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,writeFile,readFile,stat,cp,symlink} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {atlasCanvasReady,atlasCanvasPoint} from './atlas-canvas-probe.mjs';
@@ -10,6 +10,7 @@ const root=process.cwd(),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/a
 const require=createRequire(root+'/package.json'),{_electron}=require('playwright-core');
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/atlas-author-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=require(root+'/.build/atlas-author-store.cjs');
+require('esbuild').buildSync({entryPoints:['src/app/drawing-model.ts'],outfile:'.build/atlas-author-elements.cjs',bundle:true,platform:'node',format:'cjs'});const {newElement}=require(root+'/.build/atlas-author-elements.cjs');
 const runtime=await mkdtemp(out+'/runtime-');await cp(process.env.ATLAS_AUTHOR_RUNTIME_DIR??root+'/.build/desktop',runtime,{recursive:true});if(!await stat(runtime+'/node_modules').then(()=>true).catch(()=>false))await symlink(root+'/node_modules',runtime+'/node_modules');
 const bus=(await mkdtemp('/tmp/atlas-author-bus-'))+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,bus,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});
 for(let i=0;i<100&&!await stat(bus).then(()=>true).catch(()=>false);i++)await new Promise(r=>setTimeout(r,20));
@@ -18,7 +19,7 @@ try{for(const zoom of (process.env.ATLAS_ZOOMS??'1,2').split(',').map(Number)){
  const profile=await mkdtemp(out+'/profile-'),store=new CampaignStore(profile+'/workbench.sqlite');
  const make=(id,x,y)=>({id,scopeId:'local',floorId:'ground',number:id==='selected'?'1':id.slice(1),name:id==='selected'?'Autorenraum':'Nachbar '+id,revision:0,polygons:[{outer:[{x,y},{x:x+8,y},{x:x+8,y:y+8},{x,y:y+8}],holes:[]}],sections:[]});
  const original=make('selected',0,0);original.polygons[0].outer=[{x:0,y:0},{x:80,y:0},{x:80,y:80},{x:0,y:80}];const rooms=[original];for(let i=0;i<1600;i++){const x=(i%40-20)*12,y=(Math.floor(i/40)-20)*12;if(x!==0||y!==0)rooms.push(make('n'+(i+2),x,y));}
- const campaign=store.create('Autorenebene',rooms);store.tutorial('skipped');store.close();
+ const campaign=store.create('Autorenebene',rooms);store.tutorial('skipped');const token=store.activateShell(campaign.id).token,glyph={...newElement('object','local','ground','selected',[{x:40,y:40}]),name:'Sichtbares Objekt',width:30,height:30};store.executeDrawing({commandId:randomUUID(),token,campaignId:campaign.id,action:{kind:'element',element:glyph,expectedRevision:null}});store.close();
  const rec={zoom,profile,rooms:rooms.length,errors:[]};result.cases.push(rec);
  const open=async()=>{
   app=await _electron.launch({executablePath:root+'/node_modules/electron/dist/electron',args:[runtime+'/main.cjs','--data-dir',profile,'--ozone-platform=x11'],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus}});
@@ -33,14 +34,26 @@ try{for(const zoom of (process.env.ATLAS_ZOOMS??'1,2').split(',').map(Number)){
  const settle=async()=>{await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await atlasCanvasReady(page);};
  const pixelCount=()=>page.locator('#campaign-map').evaluate(c=>{const bytes=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let grips=0;for(let i=0;i<bytes.length;i+=4){if(Math.abs(bytes[i]-36)<5&&Math.abs(bytes[i+1]-79)<5&&Math.abs(bytes[i+2]-135)<5)grips++;}return{grips};});
  let page=await open();await page.evaluate(()=>{const proto=CanvasRenderingContext2D.prototype,clear=proto.clearRect,stroke=proto.stroke;proto.clearRect=function(...args){if(this.canvas.id==='campaign-map')window.__atlasAuthorPaint={draft:0,grips:0};return clear.apply(this,args);};proto.stroke=function(...args){if(this.canvas.id==='campaign-map'){if(this.strokeStyle==='#236871')window.__atlasAuthorPaint.draft++;if(this.strokeStyle==='#244f87')window.__atlasAuthorPaint.grips++;}return stroke.apply(this,args);};});
+ // A visible glyph must join exact overlaps, even far from its logical anchor.
+ await page.locator('#drawing-tool').selectOption('select');await settle();
+ const glyphPoint=await atlasCanvasPoint(page,{x:50,y:50});await page.mouse.click(glyphPoint.x,glyphPoint.y);
+ await page.locator('#atlas-hit-candidates').waitFor({state:'visible'});const candidates=await page.locator('#atlas-hit-candidates').innerText();assert.match(candidates,/Objekt: Sichtbares Objekt/);assert.match(candidates,/Raum: 1. Autorenraum/);rec.glyphCandidates=candidates;await page.keyboard.press('Escape');
+ await page.evaluate(()=>window.__retainedFloorOption=document.querySelector('#atlas-floor').firstChild);
+ rec.retainedPaints=[];
  await page.locator('#drawing-tool').selectOption('room-polygon');
- for(const p of [{x:10,y:10},{x:70,y:10},{x:70,y:60}]){const at=await atlasCanvasPoint(page,p);assert.equal(at.target,'campaign-map',JSON.stringify({p,at,view:await page.locator('#campaign-map').evaluate(c=>({view:c.dataset.atlasView,r:c.getBoundingClientRect().toJSON(),width:c.clientWidth,height:c.clientHeight,innerHeight}))}));await page.mouse.click(at.x,at.y);}
+ for(const p of [{x:10,y:10},{x:70,y:10},{x:70,y:60}]){const at=await atlasCanvasPoint(page,p);assert.equal(at.target,'campaign-map',JSON.stringify({p,at,view:await page.locator('#campaign-map').evaluate(c=>({view:c.dataset.atlasView,r:c.getBoundingClientRect().toJSON(),width:c.clientWidth,height:c.clientHeight,innerHeight}))}));await page.mouse.click(at.x,at.y);await settle();rec.retainedPaints.push(await page.locator('#campaign-map').evaluate(c=>({builds:Number(c.dataset.pathBuilds),reuses:Number(c.dataset.pathReuses),sameFloorOption:window.__retainedFloorOption===document.querySelector('#atlas-floor').firstChild})));}
+ assert(rec.retainedPaints.every(p=>p.reuses>50&&p.sameFloorOption),'draft updates must retain background paths and inspector controls');
  await page.waitForFunction(()=>document.querySelector('#drawing-path-status').textContent.includes('3 Punkte'));
+ await page.locator('#campaign-map').evaluate(c=>{c.dispatchEvent(new Event('contextlost',{cancelable:true}));c.dispatchEvent(new Event('contextrestored'));});await settle();assert.match(await page.locator('#drawing-path-status').innerText(),/3 Punkte/);rec.restorationHandlerRetainedDraft=true;
  const center=await atlasCanvasPoint(page,{x:40,y:40});await page.mouse.move(center.x,center.y);for(let i=0;i<8;i++)await page.mouse.wheel(0,100);await atlasCanvasReady(page);
  await page.waitForFunction(()=>document.querySelector('#atlas-hint').textContent.includes('Dichte Kartengeometrie'));
  await settle();assert.match(await page.locator('#drawing-path-status').innerText(),/3 Punkte/);rec.authorPaint=await page.evaluate(()=>window.__atlasAuthorPaint);assert(rec.authorPaint.draft>0,'Actual Canvas2D draft strokes must be present above the dense raster');rec.rasterDraft=await pixelCount();
  await writeFile(out+'/draft-'+zoom+'.png',Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').webContents.capturePage()).toPNG().toString('base64')),'base64'));
+ const nextPoint=await atlasCanvasPoint(page,{x:10,y:60});await page.mouse.click(nextPoint.x,nextPoint.y);await page.waitForFunction(()=>document.querySelector('#drawing-path-status').textContent.includes('4 Punkte'));await settle();rec.continuedRasterDraft=true;
  await page.locator('#drawing-cancel').click();await page.locator('#drawing-tool').selectOption('select');await settle();rec.cancelledPaint=await page.evaluate(()=>window.__atlasAuthorPaint);assert.equal(rec.cancelledPaint.draft,0,'Cancel must remove the actual draft stroke');assert.equal(rec.cancelledPaint.grips,4);rec.rasterHandles=await pixelCount();assert(rec.rasterHandles.grips>0,'Exact original handles must remain visible with a raster background');
+ // Dense images carry no per-object glyph ID: canonical footprint picking must work too.
+ const denseGlyph=await atlasCanvasPoint(page,{x:50,y:50});await page.mouse.click(denseGlyph.x,denseGlyph.y);
+ await page.locator('#atlas-hit-candidates').waitFor({state:'visible'});rec.denseGlyphCandidates=await page.locator('#atlas-hit-candidates').innerText();assert.match(rec.denseGlyphCandidates,/Objekt: Sichtbares Objekt/);assert.match(rec.denseGlyphCandidates,/Raum: 1. Autorenraum/);await page.keyboard.press('Escape');
  const from=await atlasCanvasPoint(page,{x:80,y:0}),to=await atlasCanvasPoint(page,{x:100,y:0});await page.mouse.move(from.x,from.y);await page.mouse.down();await page.mouse.move(to.x,to.y,{steps:5});await page.mouse.up();
  await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Gespeichert');await settle();
  const db=()=>new (require('better-sqlite3'))(profile+'/workbench.sqlite',{readonly:true});const read=()=>{const d=db();try{return JSON.parse(d.prepare('SELECT payload FROM room WHERE id=?').get('selected').payload);}finally{d.close();}};

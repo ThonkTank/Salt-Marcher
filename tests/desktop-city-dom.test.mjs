@@ -1143,3 +1143,52 @@ test('global street search ignores a late query and opens the exact bounded stre
   await until(()=>s.atlas.selection?.id===road.id);await settle();assert.equal(get('city-unit-name').value,'Verbindungsgasse');assert.equal(s.atlas.selection.cityId,city.header.id);assert.equal(x.ui.atlasCityState().partial,true);assert.equal(fullReads,0);
  }finally{release?.();await s.close();}
 });
+
+test('a crossing street stays a marked draft until explicit permission, and changed geometry revokes permission',async()=>{
+ const x=await setup();try{
+  const get=id=>x.document.getElementById(id),before=x.store.db.serialize();
+  get('city-tool').value='road';await x.ui.atlasCityPoint({x:40,y:60});await x.ui.atlasCityPoint({x:80,y:60});
+  assert.match(get('city-path-hint').textContent,/Kreuzt 1 Haus: House one/);assert.equal(get('city-finish').disabled,true);assert.equal(get('city-street-crossing-field').hidden,false);
+  x.click('city-finish');await settle();assert.ok(x.store.db.serialize().equals(before));assert.equal(x.ui.atlasCityState().conflicts[0].id,x.unitIds.one);
+  get('city-street-crossing').checked=true;get('city-street-crossing').onchange();assert.equal(get('city-finish').disabled,false);
+  await x.ui.atlasCityPoint({x:90,y:60});assert.equal(get('city-street-crossing').checked,false);assert.equal(get('city-finish').disabled,true);
+  get('city-street-crossing').checked=true;get('city-street-crossing').onchange();x.enter('city-draw-width','10');assert.equal(get('city-street-crossing').checked,false);
+  get('city-street-crossing').checked=true;get('city-street-crossing').onchange();x.click('city-finish');await until(()=>x.store.city(x.current().token,x.cityIds.one).header.revision===3);
+  assert.deepEqual(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one).notes,'Original');
+  x.click('city-undo');await until(()=>x.store.city(x.current().token,x.cityIds.one).header.revision===4);assert.equal(x.store.city(x.current().token,x.cityIds.one).units.filter(u=>u.kind==='road').length,1);
+ }finally{await x.cleanup();}
+});
+test('a corrected street around the house clears the warning and commits its exact width without touching the house',async()=>{
+ const x=await setup();try{
+  const get=id=>x.document.getElementById(id),before=x.store.city(x.current().token,x.cityIds.one),house=before.units.find(u=>u.id===x.unitIds.one);
+  get('city-tool').value='road';await x.ui.atlasCityPoint({x:40,y:60});await x.ui.atlasCityPoint({x:80,y:60});x.click('city-back-path');
+  for(const point of [{x:40,y:40},{x:80,y:40},{x:80,y:60}])await x.ui.atlasCityPoint(point);
+  assert.equal(get('city-street-crossing-field').hidden,true);assert.equal(get('city-finish').disabled,false);assert.equal(x.ui.atlasCityState().conflicts.length,0);
+  x.click('city-finish');await until(()=>x.store.city(x.current().token,x.cityIds.one).header.revision===3);
+  const after=x.store.city(x.current().token,x.cityIds.one),street=after.units.find(u=>u.kind==='road'&&u.name==='Neue Straße');assert.equal(street.width,8);assert.deepEqual(street.via,[{x:40,y:40},{x:80,y:40}]);assert.deepEqual(after.units.find(u=>u.id===house.id),house);
+ }finally{await x.cleanup();}
+});
+
+test('immediate Atlas undo after a city save waits for a current fence and ignores the older pending scene',async()=>{
+ const x=await setup(),w=x.current();x.store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0},expectedRevision:null}});
+ const s=await placeSurface(x);let release;try{
+  await s.atlas.navigate('city',x.cityIds.one,x.unitIds.one);
+  const read=x.window.campaign.atlasRegion;let hold=true;
+  x.window.campaign.atlasRegion=async(...args)=>{const reply=await read(...args);if(hold){hold=false;await new Promise(resolve=>release=resolve);}return reply;};
+  x.enter('city-unit-name','Renamed before map refresh');await x.ui.flushCity();await until(()=>!!release);
+  assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one).name,'Renamed before map refresh');
+  await s.atlas.history('undo');
+  assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===x.unitIds.one).name,'House one');
+  release();await settle();await x.drain();assert.equal(x.document.getElementById('city-unit-name').value,'House one');assert.doesNotMatch(x.messages.map(m=>m.message).join('\n'),/Ausschnitt vor dem Zeichnen/);
+ }finally{release?.();await s.close();}
+});
+
+test('a new shared street owns selection and undoing its creation returns to the surviving city',async()=>{
+ const x=await setup(),w=x.current();x.store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:x.cityIds.one,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0},expectedRevision:null}});
+ const s=await placeSurface(x);try{
+  await s.atlas.navigate('city',x.cityIds.one);x.document.getElementById('city-tool').value='road';await x.ui.atlasCityPoint({x:10,y:100});await x.ui.atlasCityPoint({x:40,y:100});x.click('city-finish');await until(()=>s.atlas.selection?.kind==='city-unit');
+  const id=s.atlas.selection.id;assert.equal(x.store.city(w.token,x.cityIds.one).units.find(u=>u.id===id).name,'Neue Straße');
+  await s.atlas.history('undo');assert.equal(x.store.city(w.token,x.cityIds.one).units.some(u=>u.id===id),false);assert.equal(s.atlas.selection.kind,'city');
+  await s.atlas.history('redo');assert.equal(x.store.city(w.token,x.cityIds.one).units.find(u=>u.id===id).name,'Neue Straße');
+ }finally{await s.close();}
+});

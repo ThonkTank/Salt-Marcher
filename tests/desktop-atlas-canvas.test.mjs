@@ -394,6 +394,8 @@ test("switching map context revokes old commands and decoded media before new so
   assert.equal(f.root.dataset.canvasState, "empty");
   assert.equal(f.root.dataset.decodedBytes, "0");
   assert.equal(f.root.dataset.imageErrors, "0");
+  f.root.dispatchEvent(new f.window.Event('contextrestored'));await settle();
+  assert.equal(f.canvas.ready,false,'Restoration must not resurrect the previous campaign builder');
 });
 
 test("marker titles survive outside semantic selection and the surface clears hover on a new gesture", async (t) => {
@@ -564,6 +566,13 @@ test('one GM export freezes floor, grid, scale, reference, box, size and format 
 });
 
 
+test('explicitly retained local paths survive rebase; dynamic paths and context caches remain independent',t=>{
+ fixture(t);const cache=new WeakMap(),base=atlasPaint('group',{retainGeometry:true}),fixed=atlasPaint('polygons',{polygons:[{outer:[{x:0,y:0},{x:10,y:0},{x:10,y:10}],holes:[]}]}),dynamic=atlasPaint('polyline',{points:[{x:1,y:1},{x:2,y:2}]}),wrap=atlasPaint('group');base.append(fixed);wrap.append(base,dynamic);
+ const first=new AtlasCanvasScene(wrap,cache);base.geometry.matrix=[1,0,0,1,20,-10];dynamic.geometry.points=[{x:3,y:3},{x:4,y:4}];const next=new AtlasCanvasScene(wrap,cache);
+ assert.equal(next.commands[0].path,first.commands[0].path);assert.equal(next.commands[0].matrix.e,20);assert.equal(next.commands[0].matrix.f,-10);assert.notEqual(next.commands[1].path,first.commands[1].path);assert.equal(next.pathReuses,1);assert.equal(next.pathBuilds,1);
+ assert.notEqual(new AtlasCanvasScene(wrap,new WeakMap()).commands[0].path,first.commands[0].path,'a different presentation context owns a different path cache');
+});
+
 test('numeric contours and mask holes compile once into reusable native paths without path text',t=>{
  const f=fixture(t),NativePath=global.Path2D;
  global.Path2D=class extends NativePath{constructor(value){assert.equal(value,undefined,'Generated geometry must never serialize SVG path text');super();}};
@@ -575,4 +584,22 @@ test('numeric contours and mask holes compile once into reusable native paths wi
  const path=scene.commands[0].path,queries=[];f.ctx.isPointInPath=(p,x,y,rule)=>{queries.push({p,x,y,rule});return true;};
  scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});
  assert.equal(scene.hit(f.ctx,{x:21,y:31},['atlasObject']).data.id,'room');assert.deepEqual(queries,[{p:path,x:1,y:1,rule:'evenodd'}]);assert.equal(scene.commands[0].path,path,'Drawing and hit testing retain the same compiled path');scene.dispose();
+
+});
+
+test('host recovery waits for its current confirmed frame instead of replaying a stale builder',async t=>{
+ const f=fixture(t);f.canvas.render(root=>root.append(rect('old')));await settle();let confirmed=false,calls=0;
+ f.canvas.options.redraw=()=>{calls++;if(confirmed)f.canvas.render(root=>root.append(rect('current')));};
+ f.root.dispatchEvent(new f.window.Event('contextlost',{cancelable:true}));f.root.dispatchEvent(new f.window.Event('contextrestored'));await settle();assert.equal(calls,1);assert.equal(f.canvas.ready,false);
+ confirmed=true;f.canvas.options.redraw();await settle();assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,'current');
+});
+
+
+test('a new source recovers from the previous scene failure without hiding an unavailable-device retry',async t=>{
+ const f=fixture(t),fill=f.ctx.fill;f.ctx.fill=()=>{throw Error('old source failed');};f.canvas.render(root=>root.append(rect('old')));await settle();assert.equal(f.canvas.failed,true);
+ f.ctx.fill=fill;f.canvas.context('new',f.canvas.view);f.canvas.render(root=>root.append(rect('new')));await settle();assert.equal(f.canvas.ready,true);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,'new');
+});
+test('changing source with no Canvas context preserves a visible working retry',async t=>{
+ const f=fixture(t,{available:false});f.canvas.context('new',f.canvas.view);assert.equal(f.document.querySelector('.map-canvas-state').hidden,false);assert.equal(f.root.dataset.canvasState,'unavailable');
+ f.canvas.render(root=>root.append(rect('new')));f.available(true);f.document.querySelector('.map-canvas-state button').click();await settle();assert.equal(f.canvas.ready,true);
 });

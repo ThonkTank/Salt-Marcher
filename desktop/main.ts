@@ -384,10 +384,11 @@ else {
       const source=store.atlasRegionSource(token,atlasSelectionRegions.cursor),value=await atlasSelectionRegions.focus(source,kind,id);
       if(store.atlasRegionSource(token).fence!==source.fence)throw new Error('Atlas inzwischen geändert. Auswahl erneut öffnen.');return value;
     });
-    handle('atlas:region-candidates',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,point:import('../src/app/contracts').Point,fence:string,offset=0,layer:'geometry'|'landscape'|'all'='geometry')=>{
+    handle('atlas:region-candidates',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,point:import('../src/app/contracts').Point,fence:string,offset=0,layer:'geometry'|'landscape'|'all'='geometry',visualElementId?:string)=>{
+      if(visualElementId!==undefined&&(typeof visualElementId!=='string'||!visualElementId))throw new Error('Kartenauswahl prüfen.');
       if(roomReadBarrier||!['geometry','landscape','all'].includes(layer)||!Number.isSafeInteger(offset)||offset<0)throw new Error('Kartenauswahl prüfen.');validateRegion(query);const source=store.atlasRegionSource(token,atlasRegions.cursor);
       if(source.fence!==fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
-      const value=await atlasRegions.candidates(source,query,point,offset,layer);if(store.atlasRegionSource(token).fence!==fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');return value;
+      const value=await atlasRegions.candidates(source,query,point,offset,layer,visualElementId);if(store.atlasRegionSource(token).fence!==fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
     handle('atlas:region-hit',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,point:import('../src/app/contracts').Point,fence:string)=>{
       if(roomReadBarrier)throw new Error('Graphwechsel läuft.');validateRegion(query);const source=store.atlasRegionSource(token,atlasSelectionRegions.cursor);

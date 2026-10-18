@@ -46,7 +46,7 @@ export interface AtlasCitySite {interior?:{scopeId:string;roomCount:number};head
 export interface AtlasRegionAPI {
  atlasRegion(token:string,query:AtlasRegionQuery,consumer?:'view'|'export'):Promise<import('./contracts').Result<AtlasRegionView>>;
  atlasObjectFocus(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string):Promise<import('./contracts').Result<AtlasObjectFocus>>;
- atlasRegionCandidates(token:string,query:AtlasRegionQuery,point:Point,fence:string,offset?:number,layer?:'geometry'|'landscape'|'all'):Promise<import('./contracts').Result<AtlasHitPage>>;
+ atlasRegionCandidates(token:string,query:AtlasRegionQuery,point:Point,fence:string,offset?:number,layer?:'geometry'|'landscape'|'all',visualElementId?:string):Promise<import('./contracts').Result<AtlasHitPage>>;
  atlasRegionHit(token:string,query:AtlasRegionQuery,point:Point,fence:string):Promise<import('./contracts').Result<AtlasObjectFocus|null>>;
  cancelAtlasRegion(token:string,consumer?:'view'|'export'):Promise<import('./contracts').Result<void>>;
  atlasCitySite(token:string,cityId:string,id?:string):Promise<import('./contracts').Result<AtlasCitySite>>;

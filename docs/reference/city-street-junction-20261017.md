@@ -49,3 +49,6 @@ getrennt; gleichzeitige Reise- und Zeichenwerkzeuge werden nicht verlangt.
 
 Der anschließende [Such- und Scrawl-Persistenzvergleich](city-street-search-20261018.md)
 belegt benanntes Wiederfinden, Bearbeiten und den Wechsel zur Spielleitung.
+
+Die [Straßenbreiten- und Hausprüfung](city-road-clearance-20261018.md) ergänzt
+sichtbare Konflikte im Entwurf und das Zurücknehmen des letzten Punkts.

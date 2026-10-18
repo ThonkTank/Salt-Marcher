@@ -33,3 +33,23 @@ test('existing street nodes are reused; walls never attract a new street',()=>{
  assert.equal(result.road.nodeIds[0],'a');assert.equal(result.upsert.filter(u=>u.kind==='road').length,1);
  assert.throws(()=>createStreet(base,[{x:1,y:0},{x:2,y:0}],4,ids()),/aufeinander/);
 });
+
+const house={id:'house',kind:'building',name:'Old inn',protected:true,position:{x:50,y:50},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}]};
+test('street footprint flags crossings and width-only overlaps but permits a clear route and curb contact',()=>{
+ assert.equal(streetPreview([house],[{x:30,y:50},{x:70,y:50}],4).conflicts[0].id,'house');
+ assert.equal(streetPreview([house],[{x:30,y:43},{x:70,y:43}],6).conflicts.length,1);
+ assert.equal(streetPreview([house],[{x:30,y:43},{x:70,y:43}],4).conflicts.length,0);
+ assert.equal(streetPreview([house],[{x:30,y:40},{x:70,y:40}],4).conflicts.length,0);
+});
+test('street clearance follows every bend and the posed rotated footprint without changing source data',()=>{
+ const rotated={...house,angle:Math.PI/4},before=structuredClone(rotated),path=[{x:20,y:50},{x:40,y:50},{x:40,y:30},{x:65,y:30}];
+ assert.equal(streetPreview([rotated],path,4).conflicts.length,0);
+ assert.equal(streetPreview([rotated],[{x:20,y:50},{x:43,y:50},{x:43,y:30}],4).conflicts.length,1);
+ assert.deepEqual(rotated,before);
+});
+test('junction snapping is applied before house clearance, including a segment wholly inside a house',()=>{
+ const road=[node('s',0,50),node('e',40,50),{id:'r',kind:'road',name:'Main',protected:true,nodeIds:['s','e'],width:6}];
+ assert.equal(streetPreview([...road,house],[{x:37,y:52},{x:50,y:52}],4).path[0].y,50);
+ assert.equal(streetPreview([house],[{x:48,y:48},{x:52,y:52}],1).conflicts.length,1);
+ assert.equal(streetPreview([{...house,kind:'district'}],[{x:30,y:50},{x:70,y:50}],4).conflicts.length,0);
+});
