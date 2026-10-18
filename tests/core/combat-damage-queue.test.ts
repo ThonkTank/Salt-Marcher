@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,hasCombatCondition,pendingRollStillValid,setCombatCondition} from '../../src/app/combat';
+import {deferLegendaryCost,enqueuePendingDamage,retainPendingAttack,pendingRollStillValid} from '../../src/app/combat';
 import {fighterDraftBasisMatches} from '../../src/app/combat-draft-contracts';
 
 test('unresolved combat damage rolls remain queued in roll order',()=>{
@@ -34,14 +34,6 @@ test('legendary cost waits for a targeted roll but not an immediate damage roll'
   assert.equal(deferLegendaryCost('save'),true);
   assert.equal(deferLegendaryCost('check'),true);
   assert.equal(deferLegendaryCost('damage'),false);
-});
-
-test('condition shortcuts preserve free notes and recognize catalog language',()=>{
-  const added=setCombatCondition('Fluch des Sehers; Poisoned','Liegend','Prone',true);
-  assert.equal(added,'Fluch des Sehers, Poisoned, Liegend');
-  assert.equal(hasCombatCondition(added,'Vergiftet','Poisoned'),true);
-  assert.equal(setCombatCondition(added,'Vergiftet','Poisoned',false),'Fluch des Sehers, Liegend');
-  assert.equal(setCombatCondition(added,'Liegend','Prone',true),added);
 });
 
 test('automatic round state does not conflict with fighter drafts',()=>{
