@@ -135,3 +135,8 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas #atlas-tool-settings{position:relative;padding:0;margin:0;border:0;border-radius:0;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:visible;background:#f8f9fa}
 #campaign-atlas .atlas-tool-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;min-height:40px;padding:6px 8px;border-bottom:1px solid #d7dde2;box-sizing:border-box}
 #campaign-atlas #atlas-tool-settings-close{width:26px;min-height:26px;padding:0;border:0;background:transparent;font-size:20px}
+#campaign-atlas :is(#land-line-options,#land-selected-line,#land-brush-options) input[type=color]{display:block;width:100%;height:32px;min-height:32px;padding:2px;border:1px solid #aab5ac}
+#campaign-atlas :is(#land-line-options,#land-selected-line,#land-brush-options) label:has(>input[type=checkbox]){display:flex;align-items:center;gap:6px}
+#campaign-atlas :is(#land-line-options,#land-selected-line,#land-brush-options) input[type=checkbox]{width:auto;flex:none;margin:0}
+#campaign-atlas #land-palette button{font-size:22px;line-height:1;padding:2px 5px;min-width:28px}
+#campaign-atlas :is(#land-line-options,#land-selected-line)>strong{display:block;margin-top:8px;font-size:12px;color:#45604b}

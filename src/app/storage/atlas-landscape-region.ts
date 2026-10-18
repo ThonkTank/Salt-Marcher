@@ -1,11 +1,11 @@
+import { lineContains } from "../landscape-line";
 import {PNG} from 'pngjs';
 import type {Point} from '../contracts';
 import {bounds,landscapePaintBox,type LandscapeRecord,type LandscapeBox} from '../atlas-landscape';
 import {LandscapeRasterizer,type LandscapeRaster} from '../landscape-raster';
 import type {AtlasRegionQuery,AtlasRegionSource,AtlasLandscapeLayer,AtlasHitPage,AtlasHit} from '../atlas-region-contracts';
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
-const distance=(p:Point,a:Point,b:Point)=>{const x=b.x-a.x,y=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*x+(p.y-a.y)*y)/(x*x+y*y||1)));return Math.hypot(p.x-a.x-t*x,p.y-a.y-t*y);};
-const visual=(r:LandscapeRecord):LandscapeRecord=>{const {id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked}=r;return{id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,values:{}};};
+const visual=(r:LandscapeRecord):LandscapeRecord=>{const {id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line}=r;return{id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,values:{}};};
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
  private statements=new Map<string,any>();
@@ -53,7 +53,7 @@ export class AtlasLandscapeReader {
   // Conservative epsilon and clipping match Rasterizer's 2x sample lattice.
   const sampling=patches&&pixels>0&&this.sampleMath;
   const sampleClause=sampling?` AND ceil((max(a.min_x,?)-?)/?*?-.5000001)<=floor((min(a.max_x,?)-?)/?*?-.4999999) AND ceil((max(a.min_y,?)-?)/?*?-.5000001)<=floor((min(a.max_y,?)-?)/?*?-.4999999)`:'';
-  const sql=`SELECT CAST(a.rowid AS TEXT) source_row FROM ${indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a'} WHERE a.campaign_id=? AND ${indexed?'i':'a'}.max_x>=? AND ${indexed?'i':'a'}.min_x<=? AND ${indexed?'i':'a'}.max_y>=? AND ${indexed?'i':'a'}.min_y<=? ${sampleClause} ${patches?"AND json_extract(a.payload,'$.kind')='patch' AND json_extract(a.payload,'$.values.terrain') IS NOT NULL":"AND json_extract(a.payload,'$.kind')!='patch'"} ORDER BY ${patches?"CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid":"CASE json_extract(a.payload,'$.kind') WHEN 'reference' THEN 0 ELSE 1 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid"}`;
+  const sql=`SELECT CAST(a.rowid AS TEXT) source_row FROM ${indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a'} WHERE a.campaign_id=? AND ${indexed?'i':'a'}.max_x>=? AND ${indexed?'i':'a'}.min_x<=? AND ${indexed?'i':'a'}.max_y>=? AND ${indexed?'i':'a'}.min_y<=? ${sampleClause} ${patches?"AND json_extract(a.payload,'$.kind')='patch' AND (json_extract(a.payload,'$.values.terrain') IS NOT NULL OR json_extract(a.payload,'$.paint') IS NOT NULL)":"AND json_extract(a.payload,'$.kind')!='patch'"} ORDER BY ${patches?"CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid":"CASE WHEN json_extract(a.payload,'$.kind')='reference' THEN 0 WHEN json_extract(a.payload,'$.line.overSymbols')=1 THEN 3 WHEN json_extract(a.payload,'$.line') IS NOT NULL THEN 1 ELSE 2 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid"}`;
   // Sort narrow keys, then read complete bounded pages. Sorting full payloads
   // spills authors' large contours/prose into SQLite temporary files.
   const page=this.sql(`SELECT CAST(a.rowid AS TEXT) source_row,a.payload,a.min_x,a.max_x,a.min_y,a.max_y,json_extract(l.payload,'$.name') location_name,l.trashed FROM json_each(?) ids CROSS JOIN atlas_landscape a ON a.rowid=ids.value LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? ORDER BY CAST(ids.key AS INTEGER)`);
@@ -100,8 +100,9 @@ export class AtlasLandscapeReader {
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
      const image=new LandscapeRasterizer(box,pixels,pixels);for(const r of this.rows(source,box,true,pixels))image.paint(r);
+     for(const r of this.rows(source,box,true,pixels))if(r.paint)image.paintColor(r);
      if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
-      if(r.kind==='road'||r.kind==='river')image.paintLine(r.points,Math.max(r.width,q.box.width/q.width*2),r.kind==='river'?'#629ebc':'#a37e51');
+      if(r.kind==='road'||r.kind==='river')image.paintRecordLine(r,q.box.width/q.width);
       else if(r.kind==='place')image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
       else if(r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
      }
@@ -118,7 +119,7 @@ export class AtlasLandscapeReader {
  hits(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point,offset=0):AtlasHitPage{
   const mpp=q.box.width/q.width,tolerance=mpp*6,box={x:p.x-tolerance,y:p.y-tolerance,width:tolerance*2,height:tolerance*2},items:AtlasHit[]=[];let skipped=0,more=false;
   for(const r of this.rows(source,box,false)){
-   const touch=r.kind==='reference'?(()=>{const a=-(r.angle??0),dx=p.x-r.points[0]!.x,dy=p.y-r.points[0]!.y,x=dx*Math.cos(a)-dy*Math.sin(a),y=dx*Math.sin(a)+dy*Math.cos(a);return x>=0&&x<=r.width&&y>=0&&y<=r.width*(r.imageHeight??1)/(r.imageWidth??1);})():r.kind==='place'?Math.hypot(p.x-r.points[0]!.x,p.y-r.points[0]!.y)<=tolerance:r.points.some((v,i)=>i>0&&distance(p,r.points[i-1]!,v)<=Math.max(tolerance,r.width/2));
+   const touch=r.kind==='reference'?(()=>{const a=-(r.angle??0),dx=p.x-r.points[0]!.x,dy=p.y-r.points[0]!.y,x=dx*Math.cos(a)-dy*Math.sin(a),y=dx*Math.sin(a)+dy*Math.cos(a);return x>=0&&x<=r.width&&y>=0&&y<=r.width*(r.imageHeight??1)/(r.imageWidth??1);})():r.kind==='place'?Math.hypot(p.x-r.points[0]!.x,p.y-r.points[0]!.y)<=tolerance:lineContains(r,p,tolerance);
    if(!touch)continue;if(skipped++<offset)continue;if(items.length===40){more=true;continue;}
    const b=bounds(r);items.push({kind:'landscape',id:r.id,name:r.name||({road:'Weg',river:'Fluss',place:'Ort',reference:'Bildvorlage',patch:'Gelände'}[r.kind]),landscapeKind:r.kind,point:{x:b.x+b.width/2,y:b.y+b.height/2},box:b,revision:r.revision});
   }
