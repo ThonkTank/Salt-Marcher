@@ -38,9 +38,11 @@ try{for(const zoom of (process.env.ATLAS_ZOOMS??'1,2').split(',').map(Number)){
  await page.locator('#drawing-tool').selectOption('select');await settle();
  const glyphPoint=await atlasCanvasPoint(page,{x:50,y:50});await page.mouse.click(glyphPoint.x,glyphPoint.y);
  await page.locator('#atlas-hit-candidates').waitFor({state:'visible'});const candidates=await page.locator('#atlas-hit-candidates').innerText();assert.match(candidates,/Objekt: Sichtbares Objekt/);assert.match(candidates,/Raum: 1. Autorenraum/);rec.glyphCandidates=candidates;await page.keyboard.press('Escape');
- await page.evaluate(()=>window.__retainedFloorOption=document.querySelector('#atlas-floor').firstChild);
  rec.retainedPaints=[];
  await page.locator('#drawing-tool').selectOption('room-polygon');
+ // Changing tool refreshes its context controls. Only subsequent draft updates
+ // must retain the resulting inspector, so capture that settled baseline.
+ await settle();await page.evaluate(()=>window.__retainedFloorOption=document.querySelector('#atlas-floor').firstChild);
  for(const p of [{x:10,y:10},{x:70,y:10},{x:70,y:60}]){const at=await atlasCanvasPoint(page,p);assert.equal(at.target,'campaign-map',JSON.stringify({p,at,view:await page.locator('#campaign-map').evaluate(c=>({view:c.dataset.atlasView,r:c.getBoundingClientRect().toJSON(),width:c.clientWidth,height:c.clientHeight,innerHeight}))}));await page.mouse.click(at.x,at.y);await settle();rec.retainedPaints.push(await page.locator('#campaign-map').evaluate(c=>({builds:Number(c.dataset.pathBuilds),reuses:Number(c.dataset.pathReuses),sameFloorOption:window.__retainedFloorOption===document.querySelector('#atlas-floor').firstChild})));}
  assert(rec.retainedPaints.every(p=>p.reuses>50&&p.sameFloorOption),'draft updates must retain background paths and inspector controls');
  await page.waitForFunction(()=>document.querySelector('#drawing-path-status').textContent.includes('3 Punkte'));
