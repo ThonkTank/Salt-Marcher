@@ -7,7 +7,7 @@ import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { drawLandscape, drawLandscapeGrid } from "./atlas-landscape-view";
 import { atlasFrame, frameMatrix } from "./campaign-atlas-model";
 import { cityPaint } from "./city-model";
-import { roomPath, elementPaint } from "./drawing-model";
+import { elementPaint } from "./drawing-model";
 export function atlasRegionPaint(
   data: AtlasRenderView,
   records: LandscapeRecord[],
@@ -122,8 +122,8 @@ export function atlasRegionPaint(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
       g.append(
-        landscapeNode("path", {
-          path: roomPath(room.polygons),
+        landscapeNode("polygons", {
+          polygons: room.polygons,
           style: {
             fill: "#ded7bd",
             stroke: "#3f5146",

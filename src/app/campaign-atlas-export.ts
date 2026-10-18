@@ -13,7 +13,6 @@ import {
   localToAtlas,
 } from "./campaign-atlas-model";
 import {atlasPartyPoint} from './atlas-runtime-model';
-import { roomPath } from "./drawing-model";
 import { terrainColors } from "./world-model";
 /** Public output uses only the public projection, never hidden GM nodes. */
 export function publicAtlasPaint(
@@ -52,8 +51,8 @@ export function publicAtlasPaint(
       [a.perception.visible, "#ded7bd"],
     ] as const)
       if (polys.length)
-        add("path", {
-          path: roomPath(polys),
+        add("polygons", {
+          polygons: polys,
           matrix: matrix,
           style: { fill: fill, fillRule: "evenodd" },
         });
@@ -126,8 +125,8 @@ export function publicAtlasPaint(
     }
     const visible=map.cells.filter(c=>c.visible);
     if(visible.length&&(landscape.length||rasters.length)){
-      const paths=visible.map(c=>{const poly=hexPolygon(c.q,c.r,map.hexMeters).outer;return poly.map((p,i)=>(i?'L':'M')+(p.x-box.x)+' '+(p.y-box.y)).join(' ')+' Z';});
-      const current=atlasPaint('group',{clip:{path:paths.join(' '),id:'visible-landscape'}});
+      const polygons=visible.map(c=>({outer:hexPolygon(c.q,c.r,map.hexMeters).outer.map(p=>({x:p.x-box.x,y:p.y-box.y})),holes:[]}));
+      const current=atlasPaint('group',{clip:{polygons,id:'visible-landscape'}});
       drawLandscape(current,landscape.filter(r=>r.kind!=='reference'&&r.kind!=='place').map(r=>({...r,name:''})),box,mpp,new Map(),false,rasters);
       scene.append(current);
     }

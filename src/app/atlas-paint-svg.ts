@@ -1,3 +1,4 @@
+import type { Polygon } from "./contracts";
 import { AtlasPaint } from "./atlas-paint";
 const ns = "http://www.w3.org/2000/svg";
 const escapeXML = (value: unknown) =>
@@ -12,7 +13,15 @@ const escapeXML = (value: unknown) =>
         "'": "&apos;",
       })[c]!,
   );
-function clipMarkup(n:AtlasPaint){const c=n.geometry.clip;return c?`<defs><clipPath id="${escapeXML(c.id??"paint-clip")}"><path d="${escapeXML(c.path)}" clip-rule="${c.rule??"nonzero"}"/></clipPath></defs>`:"";}
+/** Serialize numeric contours only at an explicitly requested vector boundary. */
+export function polygonMarkupPath(polygons: Polygon[]) {
+  return polygons
+    .flatMap(p => [p.outer, ...p.holes])
+    .map(r => "M" + r.map(p => p.x + "," + p.y).join("L") + "Z")
+    .join(" ");
+}
+function clipMarkup(n:AtlasPaint){const c=n.geometry.clip;return c?`<defs><clipPath id="${escapeXML(c.id??"paint-clip")}"><path d="${escapeXML(c.polygons?polygonMarkupPath(c.polygons):c.path??'')}" clip-rule="${c.rule??"nonzero"}"/></clipPath></defs>`:"";}
+
 function attributes(n: AtlasPaint) {
   const p = n.geometry,
     a: Record<string, string | number> = {};
@@ -30,6 +39,7 @@ function attributes(n: AtlasPaint) {
   if (p.radiusX !== undefined) a.rx = p.radiusX;
   if (p.radiusY !== undefined) a.ry = p.radiusY;
   if (p.path !== undefined) a.d = p.path;
+  if (p.polygons) a.d = polygonMarkupPath(p.polygons);
   if (p.points) a.points = p.points.map((p) => p.x + "," + p.y).join(" ");
   if (p.source !== undefined) a.href = p.source;
   if (p.matrix) a.transform = "matrix(" + p.matrix.join(" ") + ")";
@@ -79,7 +89,7 @@ function attributes(n: AtlasPaint) {
   return a;
 }
 const tag = (n: AtlasPaint) =>
-  n.geometry.size ? "svg" : n.kind === "group" ? "g" : n.kind;
+  n.geometry.size ? "svg" : n.kind === "group" ? "g" : n.kind === "polygons" ? "path" : n.kind;
 /** Adapter for historical standalone hosts and their existing vector/document interfaces. Atlas screen and raster export never serialize SVG. */
 export function paintMarkup(n: AtlasPaint): string {
   const name = tag(n),
@@ -92,7 +102,7 @@ export function paintElement(n: AtlasPaint, doc: Document): SVGElement {
   const e = doc.createElementNS(ns, tag(n));
   for (const [k, v] of Object.entries(attributes(n)))
     e.setAttribute(k, String(v));
-  if(n.geometry.clip){const defs=doc.createElementNS(ns,"defs"),clip=doc.createElementNS(ns,"clipPath"),path=doc.createElementNS(ns,"path");clip.setAttribute("id",n.geometry.clip.id??"paint-clip");path.setAttribute("d",n.geometry.clip.path);path.setAttribute("clip-rule",n.geometry.clip.rule??"nonzero");clip.append(path);defs.append(clip);e.append(defs);}
+  if(n.geometry.clip){const defs=doc.createElementNS(ns,"defs"),clip=doc.createElementNS(ns,"clipPath"),path=doc.createElementNS(ns,"path");clip.setAttribute("id",n.geometry.clip.id??"paint-clip");path.setAttribute("d",n.geometry.clip.polygons?polygonMarkupPath(n.geometry.clip.polygons):n.geometry.clip.path??'');path.setAttribute("clip-rule",n.geometry.clip.rule??"nonzero");clip.append(path);defs.append(clip);e.append(defs);}
   if (n.title) {
     const t = doc.createElementNS(ns, "title");
     t.textContent = n.title;

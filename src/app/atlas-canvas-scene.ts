@@ -1,5 +1,18 @@
+import type { Polygon } from "./contracts";
 import { AtlasPaint, type PaintStyle } from "./atlas-paint";
 export { AtlasPaint, atlasPaint } from "./atlas-paint";
+function polygonPath(polygons: Polygon[]) {
+  const path = new Path2D();
+  for (const polygon of polygons) {
+    for (const ring of [polygon.outer, ...polygon.holes]) {
+      if (!ring.length) continue;
+      path.moveTo(ring[0]!.x, ring[0]!.y);
+      for (let i = 1; i < ring.length; i++) path.lineTo(ring[i]!.x, ring[i]!.y);
+      path.closePath();
+    }
+  }
+  return path;
+}
 export interface PaintHit {
   data: Record<string, string>;
 }
@@ -18,13 +31,13 @@ type Command = {
   cuts?: { path: Path2D; alpha: number }[];
 };
 function pathFor(n: AtlasPaint) {
-  const g = n.geometry,
-    p = new Path2D(),
+  const g = n.geometry;
+  if (n.kind === "polygons") return polygonPath(g.polygons ?? []);
+  if (n.kind === "path") return new Path2D(g.path ?? "");
+  const p = new Path2D(),
     x = g.x ?? 0,
     y = g.y ?? 0;
   switch (n.kind) {
-    case "path":
-      return new Path2D(g.path ?? "");
     case "rect":
       if (g.radiusX) p.roundRect(x, y, g.width ?? 0, g.height ?? 0, g.radiusX);
       else p.rect(x, y, g.width ?? 0, g.height ?? 0);
@@ -80,7 +93,7 @@ export class AtlasCanvasScene {
       const g = node.geometry;
       if (g.hidden) return;
       matrix = g.matrix ? matrix.multiply(new DOMMatrix(g.matrix)) : matrix;
-      if(g.clip)clips=[...clips,{path:new Path2D(g.clip.path),matrix,rule:g.clip.rule??"nonzero"}];
+      if(g.clip)clips=[...clips,{path:g.clip.polygons?polygonPath(g.clip.polygons):new Path2D(g.clip.path??''),matrix,rule:g.clip.rule??"nonzero"}];
       style = { ...style, ...node.style };
       alpha *= g.opacity ?? 1;
       pointer = pointer && g.pointer !== false;
@@ -100,7 +113,7 @@ export class AtlasCanvasScene {
           title,
           ancestry,
           cuts: g.maskCuts?.map((c) => ({
-            path: new Path2D(c.path),
+            path: polygonPath(c.polygons),
             alpha: c.alpha,
           })),
         });

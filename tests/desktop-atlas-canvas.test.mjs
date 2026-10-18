@@ -112,7 +112,7 @@ class Path {
     this.commands.push(["line", ...a]);
   }
   addPath(path,matrix){this.commands.push(["add",path,matrix]);}
-  closePath() {}
+  closePath() { this.commands.push(["close"]); }
 }
 const settle = () => new Promise((r) => setImmediate(r));
 function fixture(t, { available = true } = {}) {
@@ -561,4 +561,18 @@ test('one GM export freezes floor, grid, scale, reference, box, size and format 
   return{ok:true,value:frame(q)};
  },exportAtlasPNG:async(token,bytes,audience,format,fence)=>{assert(bytes instanceof Uint8Array);assert.equal(format,'png');assert.equal(fence,'f');saved++;return{ok:true,value:{cancelled:false}};}};
  await ui.exportPNG();assert.deepEqual(errors,[]);assert.equal(saved,1);assert.equal(queries.length,4);assert(queries.slice(1).every(q=>q.references===false));assert.deepEqual(encodings,[{width:1025,height:2,type:'image/png'}]);assert.equal(copies.length,3);assert(copies.every(n=>n>0),'All tiles use the originally selected grid/level');assert(queries.every(q=>q.floorId==='ground'));assert.deepEqual(queries.slice(1).map(q=>q.box.x),[0,512,1024]);assert.equal(f.document.querySelector('#atlas-save-status').textContent,'Atlas-PNG gespeichert');assert(created.every(c=>c.width===0&&c.height===0));
+});
+
+
+test('numeric contours and mask holes compile once into reusable native paths without path text',t=>{
+ const f=fixture(t),NativePath=global.Path2D;
+ global.Path2D=class extends NativePath{constructor(value){assert.equal(value,undefined,'Generated geometry must never serialize SVG path text');super();}};
+ const outer=[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}],hole=[{x:2,y:2},{x:8,y:2},{x:8,y:8},{x:2,y:8}],polygons=[{outer,holes:[hole]}];
+ const root=atlasPaint('group'),room=atlasPaint('polygons',{polygons,matrix:[1,0,0,1,20,30],style:{fill:'red',fillRule:'evenodd'},data:{atlasObject:'true',id:'room'}});
+ root.append(room,atlasPaint('rect',{width:20,height:20,pointer:false,maskCuts:[{polygons,alpha:1}],style:{fill:'black'}}));
+ const scene=new AtlasCanvasScene(root),expected=[['move',0,0],['line',10,0],['line',10,10],['line',0,10],['close'],['move',2,2],['line',8,2],['line',8,8],['line',2,8],['close']];
+ assert.deepEqual(scene.commands[0].path.commands,expected);assert.deepEqual(scene.commands[1].cuts[0].path.commands,expected);
+ const path=scene.commands[0].path,queries=[];f.ctx.isPointInPath=(p,x,y,rule)=>{queries.push({p,x,y,rule});return true;};
+ scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});
+ assert.equal(scene.hit(f.ctx,{x:21,y:31},['atlasObject']).data.id,'room');assert.deepEqual(queries,[{p:path,x:1,y:1,rule:'evenodd'}]);assert.equal(scene.commands[0].path,path,'Drawing and hit testing retain the same compiled path');scene.dispose();
 });

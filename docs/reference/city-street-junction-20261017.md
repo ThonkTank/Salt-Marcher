@@ -46,3 +46,6 @@ Stilllegung übersprungen; die tatsächlich vorhandenen Flächen bleiben leer.
 Paketierter nativer Host, vollständige weitere Konkurrenzabläufe und Nutzerabnahme
 bleiben separat offen. Atlas-Bearbeitung und Atlas-Spielleitung sind absichtlich
 getrennt; gleichzeitige Reise- und Zeichenwerkzeuge werden nicht verlangt.
+
+Der anschließende [Such- und Scrawl-Persistenzvergleich](city-street-search-20261018.md)
+belegt benanntes Wiederfinden, Bearbeiten und den Wechsel zur Spielleitung.
