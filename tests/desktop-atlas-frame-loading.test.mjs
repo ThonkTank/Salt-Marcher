@@ -92,3 +92,15 @@ test('an unavailable bounded preview never falls back to loading the complete or
  await f.ui.load();assert.equal(originals,0);assert.equal(f.ui.assets.size,0);assert.equal(f.document.querySelector('#land-reload').hidden,false);assert.match(f.document.querySelector('#land-status').textContent,/nicht verfügbar/);
  f.window.campaign.referenceAssetPreview=async()=>({ok:true,value:'bounded-preview'});await f.ui.load(true);assert.equal(f.ui.assets.get('large'),'bounded-preview');assert.equal(originals,0);
 });
+
+test('line and selection tools hide irrelevant palettes but keep manual grid level and terrain painting reachable',t=>{
+ const f=fixture(t),palette=f.document.createElement('label');palette.innerHTML='<select id="atlas-terrain"><option value="plain">Ebene</option></select>';f.document.body.append(palette);
+ const hex=f.document.querySelector('#atlas-hex-level'),levelLabel=f.document.createElement('label');hex.replaceWith(levelLabel);levelLabel.append(hex);
+ f.document.querySelector('#land-auto-level').checked=true;f.ui.setActive(true);
+ const tool=f.document.querySelector('#land-tool'),choose=value=>{tool.value=value;tool.dispatchEvent(new f.window.Event('change'));};
+ choose('road');assert.equal(palette.hidden,true);assert.equal(levelLabel.hidden,true);assert.equal(f.document.querySelector('#land-width').closest('label').hidden,false);
+ const auto=f.document.querySelector('#land-auto-level');auto.checked=false;auto.onchange();assert.equal(levelLabel.hidden,false);
+ choose('hex');assert.equal(palette.hidden,false);assert.equal(levelLabel.hidden,false);
+ f.document.querySelector('#land-field').value='elevationM';f.document.querySelector('#land-field').onchange();assert.equal(palette.hidden,true);assert.equal(f.document.querySelector('#land-value-field').hidden,false);
+ f.ui.setActive(false);assert.equal(palette.hidden,false);assert.equal(levelLabel.hidden,false);
+});
