@@ -21,6 +21,20 @@ async function fixture(t,metadataFailure=false,overrides={}){
  const debounce=async()=>{for(const [id,entry]of [...timers])if(entry.delay===200){timers.delete(id);entry.fn();}await tick();};
  return{ui,w,el,reads,messages,liveAdds,timers,opened,resolve,type,debounce};
 }
+for(const empty of [false,true])test(`returning to an accepted ${empty?'empty':'populated'} monster page keeps its exact rows, selection and paging without another source read`,async t=>{
+ const x=await fixture(t);await x.resolve(0,'Guard');await x.opened;
+ x.type('Dragon');await x.debounce();if(empty){x.reads[1].resolve({ok:true,value:{...page('Dragon',0,0),rows:[]}});await tick();await tick();}else await x.resolve(1,'Dragon');
+ if(!empty){x.el('catalog-next').click();await until(()=>x.reads.length===3);await x.resolve(2,'Dragon page two',25);window.campaign.creature=async()=>({ok:true,value:detail('Dragon page two')});x.el('catalog-rows').querySelector('button').click();await tick();await tick();}
+ const rows=[...x.el('catalog-rows').children],footer=x.el('catalog-page').textContent,inspector=x.el('catalog-detail').textContent,reads=x.reads.length;
+ await x.ui.openCatalog();await x.ui.openCatalog();
+ assert.equal(x.reads.length,reads);assert.deepEqual([...x.el('catalog-rows').children],rows);assert.equal(x.el('catalog-page').textContent,footer);assert.equal(x.el('catalog-search').value,'Dragon');assert.equal(x.el('catalog-detail').textContent,inspector);assert.equal(x.el('catalog-table').getAttribute('aria-busy'),'false');
+ // An explicit new search still goes through the provider, including after an empty result.
+ x.el('catalog-form').onsubmit({preventDefault(){}});await until(()=>x.reads.length===reads+1);assert.equal(x.reads.at(-1).query.offset,0);await x.resolve(reads,'Explicit retry');
+});
+test('returning after a failed source read retries instead of retaining the failure as an accepted page',async t=>{
+ const x=await fixture(t);x.reads[0].resolve({ok:false,error:'Read unavailable'});await x.opened;assert.equal(x.el('catalog-page').getAttribute('role'),'alert');
+ const retry=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Recovered');await retry;assert.match(x.el('catalog-rows').textContent,/Recovered/);assert.equal(x.el('catalog-table').getAttribute('aria-busy'),'false');
+});
 test('typing invalidates an older query before debounce and clears old actionable rows',async t=>{
  const x=await fixture(t);x.type('Dragon');await x.resolve(0,'Old goblin');assert.equal(x.el('catalog-rows').querySelectorAll('button').length,0);assert.match(x.el('catalog-page').textContent,/gesucht|geladen|Suche/i);await x.debounce();assert.equal(x.reads[1].query.text,'Dragon');await x.resolve(1,'Dragon');assert.match(x.el('catalog-rows').textContent,/Dragon/);assert.doesNotMatch(x.el('catalog-rows').textContent,/Old goblin/);
 });
@@ -39,7 +53,7 @@ test('activation invalidates old rows and late campaign responses',async t=>{
 
 test('metadata failure stays local while healthy creature results and explicit details remain usable',async t=>{
  const x=await fixture(t,true);await x.resolve(0,'Guard');await x.opened;assert.match(x.el('catalog-credit').textContent,/Catalog index unavailable/);assert.equal(x.el('catalog-credit').getAttribute('role'),'alert');assert.match(x.el('catalog-rows').textContent,/Guard/);window.campaign.creature=async()=>({ok:true,value:detail('Guard')});x.el('catalog-rows').querySelector('button').click();await until(()=>x.el('catalog-detail').querySelector('h3')?.textContent==='Guard');
- window.campaign.creatureInfo=async()=>({ok:true,value:{notice:'Recovered source credit',hash:'pinned',types:['Humanoid'],sizes:[],habitats:[],alignments:[],subtypes:[]}});const reopened=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Guard');await reopened;assert.equal(x.el('catalog-credit').textContent,'Recovered source credit');assert.notEqual(x.el('catalog-credit').getAttribute('role'),'alert');assert.equal(x.el('catalog-type').querySelectorAll('option').length,2);
+ window.campaign.creatureInfo=async()=>({ok:true,value:{notice:'Recovered source credit',hash:'pinned',types:['Humanoid'],sizes:[],habitats:[],alignments:[],subtypes:[]}});const row=x.el('catalog-rows').querySelector('button');await x.ui.openCatalog();assert.equal(x.reads.length,1);assert.equal(x.el('catalog-rows').querySelector('button'),row);assert.equal(x.el('catalog-credit').textContent,'Recovered source credit');assert.notEqual(x.el('catalog-credit').getAttribute('role'),'alert');assert.equal(x.el('catalog-type').querySelectorAll('option').length,2);
 });
 test('an old campaign query cannot overwrite a completed new campaign query',async t=>{
  const x=await fixture(t);x.ui.activateCatalog({...x.w,token:'two',campaign:{id:'other'}});const next=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Current');await next;await x.resolve(0,'Old');await x.opened;assert.match(x.el('catalog-rows').textContent,/Current/);assert.doesNotMatch(x.el('catalog-rows').textContent,/Old/);
@@ -263,12 +277,12 @@ for(const failed of [false,true])test(`hidden monster metadata ${failed?'failure
  requests[1].resolve({ok:true,value:catalogInfo('Current metadata')});await until(()=>x.el('catalog-credit').textContent==='Current metadata');assert.equal(x.el('catalog-type').querySelectorAll('option').length,2);assert.equal(x.el('catalog-rows').querySelector('button'),row);
 });
 test('parallel monster metadata openings share one request and one set of options',async t=>{
- const held=deferred();let calls=0;const x=await fixture(t,false,{creatureInfo:()=>{calls++;return held.promise;}});await x.resolve(0,'Guard');const second=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Guard');assert.equal(calls,1);
+ const held=deferred();let calls=0;const x=await fixture(t,false,{creatureInfo:()=>{calls++;return held.promise;}});await x.resolve(0,'Guard');const second=x.ui.openCatalog();await tick();assert.equal(x.reads.length,1);assert.equal(calls,1);
  held.resolve({ok:true,value:{notice:'Shared metadata',hash:'pinned',types:['Humanoid'],sizes:[],habitats:[],alignments:[],subtypes:[]}});await Promise.all([x.opened,second]);assert.equal(x.el('catalog-type').querySelectorAll('option').length,2);
 });
 test('a synchronous monster metadata failure releases the visible retry',async t=>{
  const x=await fixture(t,true,{creatureInfo:()=>{throw new Error('Synchronous metadata failure');}});await x.resolve(0,'Guard');await x.opened;assert.match(x.el('catalog-credit').textContent,/Synchronous metadata failure/);
- window.campaign.creatureInfo=()=>({ok:true,value:{notice:'Retried metadata',hash:'pinned',types:[],sizes:[],habitats:[],alignments:[],subtypes:[]}});const retry=x.ui.openCatalog();await until(()=>x.reads.length===2);await x.resolve(1,'Guard');await retry;assert.equal(x.el('catalog-credit').textContent,'Retried metadata');
+ window.campaign.creatureInfo=()=>({ok:true,value:{notice:'Retried metadata',hash:'pinned',types:[],sizes:[],habitats:[],alignments:[],subtypes:[]}});await x.ui.openCatalog();assert.equal(x.reads.length,1);assert.equal(x.el('catalog-credit').textContent,'Retried metadata');
 });
 test('the shared Monster browser in a table lookup also resumes missing metadata from Items',async t=>{
  const requests=[],x=await fixture(t,false,{creatureInfo:()=>{const d=deferred();requests.push(d);return d.promise;},itemReferenceCatalog:async()=>({ok:false,error:'No items in fixture'})});await x.resolve(0,'Guard');x.el('catalog-items-tab').click();requests[0].resolve({ok:false,error:'Hidden metadata failure'});await x.opened;
