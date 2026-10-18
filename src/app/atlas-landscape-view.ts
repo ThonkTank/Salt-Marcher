@@ -1,3 +1,5 @@
+import {colorParts,unionPolygons,subtractPolygons,intersectPolygons} from './landscape-brush';
+import { lineParts } from "./landscape-line";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { hexPolygon, LANDSCAPE_PLACE_FONT_PX } from "./atlas-landscape";
@@ -14,19 +16,30 @@ export function drawLandscape(
   unavailableAssets?: ReadonlySet<string>,
 ) {
   const landscapeNode=atlasPaint;
-  let rasterDrawn=false;
+  let rasterDrawn=false,colorsDrawn=false;
+  const ordered=[...records].sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0));
+  const drawColors=()=>{
+    if(raster||colorsDrawn)return;colorsDrawn=true;
+    let water:import('./contracts').Polygon[]=[];
+    for(const r of ordered)if(r.kind==='patch'&&r.values.terrain)water=r.values.terrain==='water'?unionPolygons(water,r.polygons):subtractPolygons(water,r.polygons);
+    for(const r of ordered)if(r.paint)for(const part of colorParts(r)){
+      const polygons=r.paint.target==='water'?intersectPolygons(part.polygons,water):subtractPolygons(part.polygons,water);
+      root.append(landscapeNode('polygons',{polygons:polygons.map(p=>({outer:p.outer.map(v=>({x:v.x-b.x,y:v.y-b.y})),holes:p.holes.map(r=>r.map(v=>({x:v.x-b.x,y:v.y-b.y})))})),pointer:false,opacity:part.opacity*r.paint.opacity,style:{fill:part.color,fillRule:'evenodd'}}));
+    }
+  };
   const drawRaster=()=>{
     if(!raster||rasterDrawn)return;rasterDrawn=true;
     for(const tile of raster)root.append(landscapeNode("image", {source: tile.data, x:tile.box.x-b.x,y:tile.box.y-b.y,width:tile.box.width,height:tile.box.height, pointer: false, data: {landscapeRaster: String('true')}}));
   };
   for (const r of [...records].sort(
     (a, b) =>
-      (a.kind === "reference" ? -1 : a.kind === "patch" ? 0 : 1) -
-        (b.kind === "reference" ? -1 : b.kind === "patch" ? 0 : 1) ||
+      (a.kind === "reference" ? -1 : a.kind === "patch" ? 0 : a.line?.overSymbols ? 3 : a.line ? 1 : 2) -
+        (b.kind === "reference" ? -1 : b.kind === "patch" ? 0 : b.line?.overSymbols ? 3 : b.line ? 1 : 2) ||
       b.resolution - a.resolution ||
       (a.order ?? 0) - (b.order ?? 0),
   )) {
     if(r.kind!=="reference")drawRaster();
+    if(r.kind!=="reference"&&r.kind!=="patch")drawColors();
     const g = landscapeNode("group", {data: {landscapeId: String(r.id)}});
     root.append(g);
     if (r.kind === "reference") {
@@ -50,6 +63,8 @@ export function drawLandscape(
               })),
              pointer: false, style: {fill: terrainColors[r.values.terrain]!, fillRule: "evenodd"}}),
         );
+    } else if ((r.kind === "road" || r.kind === "river") && r.line) {
+      for(const p of lineParts(r))g.append(p.polygons ? landscapeNode("polygons",{polygons:p.polygons.map(poly=>({outer:poly.outer.map(v=>({x:v.x-b.x,y:v.y-b.y})),holes:[]})),opacity:p.opacity,style:{fill:p.color}}) : landscapeNode("polyline",{points:p.points.map(v=>({x:v.x-b.x,y:v.y-b.y})),opacity:p.opacity,style:{stroke:p.color,fill:null,lineWidth:p.width,lineDash:p.dash,lineDashOffset:p.dashOffset,lineJoin:"round",lineCap:"round"}}));
     } else if (r.kind === "road" || r.kind === "river")
       g.append(
         landscapeNode("polyline", {points: r.points.map(p=>({x:p.x-b.x,y:p.y-b.y})), style: {fill: null, stroke: r.kind === "river" ? "#629ebc" : "#a37e51", lineWidth: Math.max(r.width, mpp * 2), lineJoin: "round", lineCap: "round", lineDash: r.kind === "road" && r.style === "path"
@@ -66,7 +81,7 @@ export function drawLandscape(
       );
     }
   }
-  drawRaster();
+  drawRaster();drawColors();
 }
 export function drawLandscapeGrid(
   root: AtlasPaint,
