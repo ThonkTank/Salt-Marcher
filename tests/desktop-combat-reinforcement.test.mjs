@@ -280,3 +280,31 @@ test('reinforcement dialog separates troop additions from catalog results and cl
  assert.equal(saved.turnId,x.combat.turnId);assert.equal(saved.participants.at(-1).hp,11);
  x.el('combat-add-open').onclick();x.ui.combatContext(null,null);assert.equal(dialog.hasAttribute('open'),false);
 });
+
+test('catalog preparation commits its first enemies, party and receipt together and reopens without a second add',t=>{
+ const x=fixture(t),character=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Mira'}})).character,live=x.store.live(x.w.token);
+ x.scene=x.store.executeLive(x.command({kind:'membership',characterId:character.id,expectedRevision:character.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision})).scene;
+ const command={...x.command({kind:'create',sceneId:x.scene.id,title:'Hafentor',includeParty:true,expectedMembershipRevision:x.scene.membershipRevision,catalogCreature:{creatureId:x.creature.id,count:2,grouped:true}}),combatId:null,expectedRevision:null};
+ const before=x.store.db.prepare('SELECT count(*) n FROM combat WHERE campaign_id=?').get(x.campaign.id).n,result=x.store.executeCombat(command),c=result.combat;
+ assert.equal(c.revision,1);assert.equal(c.phase,'preparing');assert.equal(c.participants.length,3);assert.equal(c.participants[0].characterId,character.id);const enemies=c.participants.filter(p=>p.sourceId===x.creature.id);assert.equal(enemies.length,2);assert.equal(enemies[0].groupId,enemies[1].groupId);assert.notEqual(enemies[0].id,enemies[1].id);assert(enemies.every(p=>p.hp===7&&p.partitionKind==='mob'));assert.equal(result.assessment.baseXp,100);
+ assert.deepEqual(x.store.executeCombat(command),result);assert.equal(x.store.db.prepare('SELECT count(*) n FROM combat WHERE campaign_id=?').get(x.campaign.id).n,before+1);assert.equal(x.store.db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(command.commandId).n,1);
+ x.store.close();x.store=new CampaignStore(x.file);x.w=x.store.activate(x.campaign.id);assert.deepEqual(x.store.combat(x.w.token,x.scene.id,c.id).combat,c);
+});
+test('invalid initial catalog data or a late receipt failure leaves no partial preparation',t=>{
+ const x=fixture(t),action={kind:'create',sceneId:x.scene.id,title:'Hafentor',includeParty:true,expectedMembershipRevision:x.scene.membershipRevision,catalogCreature:{creatureId:x.creature.id,count:2,grouped:true}},command=a=>({...x.command(a),combatId:null,expectedRevision:null});
+ const before=x.store.db.serialize();
+ for(const change of [{catalogCreature:null},{catalogCreature:{...action.catalogCreature,creatureId:'missing'}},{catalogCreature:{...action.catalogCreature,count:0}},{catalogCreature:{...action.catalogCreature,count:1001}},{catalogCreature:{...action.catalogCreature,grouped:'yes'}},{planId:'missing'},{sceneSelection:{}},{preparedGroupId:'missing'},{generation:{}},{worldActorIds:[]},{expectedMembershipRevision:-1}]){
+  assert.throws(()=>x.store.executeCombat(command({...action,...change})));assert.ok(x.store.db.serialize().equals(before));
+ }
+ x.store.db.exec("CREATE TRIGGER owned_initial_receipt_failure BEFORE INSERT ON combat_receipt BEGIN SELECT RAISE(ABORT,'receipt unavailable');END;");const withTrigger=x.store.db.serialize(),retry=command(action);assert.throws(()=>x.store.executeCombat(retry),/receipt unavailable/);assert.ok(x.store.db.serialize().equals(withTrigger));x.store.db.exec('DROP TRIGGER owned_initial_receipt_failure');assert.equal(x.store.executeCombat(retry).combat.participants.length,2);
+});
+test('catalog handoff creates one complete preparation and resolves a lost reply from that single receipt',async t=>{
+ const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);window.requestAnimationFrame=()=>0;
+ window.campaign.executeCombat=async command=>{x.writes.push(command);x.store.executeCombat(command);throw new Error('reply lost');};
+ await x.ui.addCatalogCreature(x.creature.id,2,true);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.deepEqual(x.writes[0].action.catalogCreature,{creatureId:x.creature.id,count:2,grouped:true});
+ const current=x.store.combat(x.w.token,x.scene.id).combat;assert.notEqual(current.id,x.combat.id);assert.equal(current.revision,1);assert.equal(current.participants.length,2);assert.equal(x.el('combat-start').disabled,false);assert(!x.messages.some(m=>String(m[0]).includes('Buchungsantwort fehlt')));
+});
+test('failed initial catalog handoff preserves the selected finished combat instead of storing an empty replacement',async t=>{
+ const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);window.requestAnimationFrame=()=>0;const before=x.store.db.serialize();
+ await x.ui.addCatalogCreature('missing',2,true);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.combat(x.w.token,x.scene.id).combat.id,x.combat.id);assert.match(x.el('combat-status').textContent,/Abgeschlossen/);
+});

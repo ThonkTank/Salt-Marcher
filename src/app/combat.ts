@@ -207,10 +207,10 @@ export async function addWorldNpc(actorId:string,stillCurrent:()=>boolean=()=>tr
 }
 export async function addCatalogCreature(creatureId:string,count:number,grouped:boolean) {
   const owner=preparationOwner();if(!owner||!await load()||!owner.current())return;
-  if (!editableCombat(view?.combat??null)) {
-    if(!await execute({kind:'create',sceneId:owner.sceneId,title:'Neue Begegnung',includeParty:true,expectedMembershipRevision:owner.revision})||!owner.current())return;
-  }
-  if(await execute({kind:'add-creature',creatureId,count,grouped})&&owner.current()){
+  const action:CombatAction=editableCombat(view?.combat??null)
+    ?{kind:'add-creature',creatureId,count,grouped}
+    :{kind:'create',sceneId:owner.sceneId,title:'Neue Begegnung',includeParty:true,expectedMembershipRevision:owner.revision,catalogCreature:{creatureId,count,grouped}};
+  if(await execute(action)&&owner.current()){
     closeReinforcements();
     // The live focus bar has just appeared after leaving the catalog. Measure
     // its sticky offset before positioning the encounter heading beneath it.

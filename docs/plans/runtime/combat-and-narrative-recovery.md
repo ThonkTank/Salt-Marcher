@@ -95,6 +95,35 @@ bleibt mit Roundfortschritt, Before-/Afterrevision und Reconciliationrecord
 verbunden. Diese lokalen Belege und die vorhandenen Wechselprüfungen schließen
 nicht die gesamte Legendaryregel-, Mehrmasken-/Undo- oder native Bedienabnahme.
 
+## Spontane Katalogübernahme ohne Teilkampf
+
+Die erste Katalogkreatur gehört zur atomaren Kampfanlage. `CombatAction.create`
+bindet optional `catalogCreature` mit ID, Anzahl und Gruppenmodus;
+die Quelle wird vor dem ersten Kampfrecord über denselben `addCreature`-Pfad
+wie spätere Verstärkung aufgelöst. Kombinationen mit Plan, Generator oder
+Szenengruppenauswahl werden abgewiesen. Der Renderer sendet bei fehlendem oder
+abgeschlossenem Kampf genau diesen einen Auftrag. Ein bestehender offener Kampf
+erhält weiterhin einen einzelnen `add-creature`-Auftrag.
+
+Damit entfallen die frühere leere Anlage und der zweite Schreibauftrag für
+die ersten Gegner. Ungültige Daten, eine nicht mehr passende Membershipbasis
+oder ein später Receiptfehler rollen die gesamte Anlage zurück. Receipt-Replay
+und die vorhandene `commitStatus`-Klärung bestätigen genau den vollständigen
+Kampf; bestehende Receiptformate und gespeicherte Kämpfe bleiben unverändert.
+Ein eigener Tabellen-/Schemawechsel ist nicht erforderlich. Die ursprüngliche
+reine Szenengruppenauswahl bleibt ein eigener Einstieg; die im Produkt bereits
+angebotene ausdrückliche spontane Katalogübernahme bleibt erhalten.
+
+`desktop-combat-reinforcement.test.mjs` prüft Anlage mit Party und Mob,
+Fresh/Replay, Fehlerrollback einschließlich Receipt, Quellenkonflikte und den
+tatsächlichen Rendererauftrag bei fehlender Kreatur und verlorener Antwort.
+Die native Prüfung `tools/test-desktop-catalog-combat.mjs` führt Katalogauswahl,
+kontrollierte Ablehnung/Replyverlust, individuelle Spieler-/gemeinsame
+Gegnerinitiative, Schaden, Zugwechsel/Undo, Abschluss und Neustart bei 100/200 %
+zusammen aus. Diese kleinen Fixtures ersetzen keine große Kampf-/History-,
+Mehrplattform- oder physische Eingabequalifikation. Anlage-/Gegnerrohentwürfe
+und unbekannte Ausgänge über andere Einstiegspfade bleiben unten offen.
+
 ## Geprüfter Umfang
 
 - `tests/desktop-narrative-integrity.test.mjs`: falsche Statusidentität/-revision,
