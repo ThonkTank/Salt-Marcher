@@ -290,7 +290,6 @@ export class CampaignStore {
   landscapeRegion(token:string,box:import('../atlas-landscape').LandscapeBox,metersPerPixel=0,includePatches=true){const cam=this.guard(token);return {revision:atlasRoot(this.db,cam).revision,records:landscapeRegion(this.db,cam,box,metersPerPixel,includePatches)};}
   registerReference(token:string,mime:string,bytes:Buffer){const cam=this.guard(token),id=hash(bytes);this.db.prepare('INSERT OR IGNORE INTO atlas_reference_asset VALUES(?,?,?,?)').run(cam,id,mime,bytes);return id;}
   referenceAssetSource(token:string,id:string){const r=this.db.prepare('SELECT mime,bytes FROM atlas_reference_asset WHERE campaign_id=? AND id=?').get(this.guard(token),id);if(!r)throw new Error('Referenzbild fehlt.');return r as {mime:string;bytes:Buffer};}
-  referenceAsset(token:string,id:string){const r=this.db.prepare('SELECT * FROM atlas_reference_asset WHERE campaign_id=? AND id=?').get(this.guard(token),id);if(!r)throw new Error('Referenzbild fehlt.');return 'data:'+r.mime+';base64,'+r.bytes.toString('base64');}
   atlasIdentity(token:string) {
     const campaignId=this.guard(token);
     return {campaignId,token,revision:atlasRoot(this.db,campaignId).revision};

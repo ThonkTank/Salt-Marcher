@@ -4,12 +4,11 @@ import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 for(const [name,file] of [['store','storage/store'],['position','atlas-position'],['raster','landscape-raster'],['export','atlas-landscape-export'],['public','campaign-atlas-export']])buildSync({entryPoints:['src/app/'+file+'.ts'],outfile:'.build/transition-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-buildSync({entryPoints:['desktop/atlas-raster-worker.ts'],outfile:'.build/transition-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-buildSync({entryPoints:['desktop/atlas-raster.ts'],outfile:'.build/transition-service.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({entryPoints:['desktop/atlas-region-worker.ts'],outfile:'.build/transition-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+buildSync({entryPoints:['desktop/atlas-region.ts'],outfile:'.build/transition-service.cjs',bundle:true,platform:'node',format:'cjs'});
 const {CampaignStore}=require('../.build/transition-store.cjs'),positions=require('../.build/transition-position.cjs'),{LandscapeRasterizer}=require('../.build/transition-raster.cjs');
 const rectangle=(x,y,w,h)=>({outer:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],holes:[]});
 const patch=(x=0,y=0,w=100,h=100,terrain='forest',resolution=100)=>({id:randomUUID(),revision:0,kind:'patch',name:'Wald',points:[],polygons:[rectangle(x,y,w,h)],resolution,width:0,values:{terrain}});
@@ -63,20 +62,17 @@ test('overview raster preserves fine forest, holes and terrain overrides; elevat
  assert.throws(()=>new LandscapeRasterizer(rectangleBox,1e9,1),/prüfen/);
 });
 
-test('native raster worker streams 100000 small patches into a bounded Earth overview without changing author data',async t=>{
- const f=fixture(t),{AtlasRasterService}=require('../.build/transition-service.cjs'),service=new AtlasRasterService(path.resolve('.build/transition-worker.cjs'));t.after(()=>service.close());
+test('the common region worker streams 100000 patches into bounded overview tiles without changing author data',async t=>{
+ const f=fixture(t),{AtlasRegionService}=require('../.build/transition-service.cjs'),service=new AtlasRegionService(new URL('../.build/transition-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
  const put=f.store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
  f.store.db.transaction(()=>{for(let i=0;i<100000;i++){const x=(i%316)*5000,y=Math.floor(i/316)*5000,r=patch(x,y,5000,5000);put.run(f.campaign.id,r.id,1,x,x+5000,y,y+5000,JSON.stringify(r));}})();
- const before=f.store.atlasOverview(f.w.token),box={x:-1e6,y:-1e6,width:4e7,height:2e7};
- const coldStart=performance.now(),raster=await service.read(f.filename,f.campaign.id,before.revision,box,512,256);console.log(JSON.stringify({raster100000ColdMs:performance.now()-coldStart}));
- const {PNG}=require('pngjs'),png=PNG.sync.read(Buffer.from(raster.data.split(',')[1],'base64'));let forest=0;for(let i=0;i<png.data.length;i+=4)if(png.data[i]===102&&png.data[i+1]===139&&png.data[i+2]===105&&png.data[i+3]>0)forest++;assert(forest>100);assert.equal(png.width,512);assert.equal(f.store.atlasOverview(f.w.token).revision,before.revision);assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_command').get().n,0);
- assert.equal((await service.read(f.filename,f.campaign.id,before.revision,box,512,256)).data,raster.data);
- const boxes=Array.from({length:40},(_,i)=>({x:(i*7%316)*5000+1,y:(i*13%316)*5000+1,width:6000,height:6000}));
- const query=()=>boxes.map(box=>{const start=performance.now(),ids=f.store.landscapeRegion(f.w.token,box).records.map(r=>r.id).sort();return{ms:performance.now()-start,ids};});
- const indexed=query();f.store.db.exec('DROP TABLE temp.atlas_landscape_area; DROP TABLE temp.atlas_landscape_objects;');const btree=query();assert.deepEqual(indexed.map(r=>r.ids),btree.map(r=>r.ids));
- const timing=rows=>{const ms=rows.map(r=>r.ms).sort((a,b)=>a-b);return{median:ms[20],p95:ms[38]};};console.log(JSON.stringify({region100000:{rtree:timing(indexed),btree:timing(btree)}}));
- const older=service.read(f.filename,f.campaign.id,before.revision,{...box,x:1},64,64);const olderRejected=assert.rejects(older,/abgebrochen/);const newer=service.read(f.filename,f.campaign.id,before.revision,{...box,x:2},64,64);await olderRejected;assert.equal((await newer).box.x,2);
- const interrupted=service.read(f.filename,f.campaign.id,before.revision,{...box,x:0},512,256);const rejected=assert.rejects(interrupted,/abgebrochen/);service.close();await rejected;
+ const before=f.store.atlasOverview(f.w.token),box={x:-1e6,y:-1e6,width:4e7,height:2e7},query={box,width:512,height:256,scopeId:'local',floorId:'ground',slice:null,roofs:true};
+ const region=await service.read(f.store.atlasRegionSource(f.w.token,service.cursor),query),layer=region.landscape;assert.equal(layer.state,'ready');assert(layer.coverage.complete);assert(layer.tiles.length>0&&layer.tiles.length<=4);assert(Buffer.byteLength(JSON.stringify(region))<=2*1024*1024);
+ const {PNG}=require('pngjs');let forest=0;for(const tile of layer.tiles){const png=PNG.sync.read(Buffer.from(tile.data.split(',')[1],'base64'));for(let i=0;i<png.data.length;i+=4)if(png.data[i]===102&&png.data[i+1]===139&&png.data[i+2]===105&&png.data[i+3]>0)forest++;}assert(forest>0,'fine forest survives world-aligned overview aggregation');
+ const tile=layer.tiles.find(t=>t.box.x<=500000&&t.box.x+t.box.width>500000&&t.box.y<=500000&&t.box.y+t.box.height>500000),png=PNG.sync.read(Buffer.from(tile.data.split(',')[1],'base64')),pixel=(Math.floor((500000-tile.box.y)/tile.box.height*png.height)*png.width+Math.floor((500000-tile.box.x)/tile.box.width*png.width))*4;assert.deepEqual([...png.data.slice(pixel,pixel+4)],[102,139,105,255]);
+ assert.equal(f.store.atlasOverview(f.w.token).revision,before.revision);assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_command').get().n,0);
+ assert.deepEqual(await service.read(f.store.atlasRegionSource(f.w.token,service.cursor),query),region);assert.equal(service.diagnostics.workerStarts,1);
+ const interrupted=service.read(f.store.atlasRegionSource(f.w.token,service.cursor),{...query,box:{...box,x:1}});service.cancel();await assert.rejects(interrupted,/abgebrochen/);
 });
 test('a landscape edit pauses an active local trip without changing confirmed position or time',t=>{
  const f=fixture(t),command=action=>f.command(action),scene=f.store.executeLive(command({kind:'initialize',expectedRosterRevision:f.store.live(f.w.token).rosterRevision})).scene;

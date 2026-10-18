@@ -18,13 +18,15 @@ Normale Auswahl und reine Namensänderungen behalten den begrenzten Reader. Die 
 
 Auf dem abschließenden Produktbuild: globale Straßensuche → dieselben 24 Meter markieren vier Häuser und sperren Abschluss → zwölf Meter markieren noch ein Haus → zehn Meter bleiben frei und werden gespeichert. Der gespeicherte Zustand hat keinen hängenbleibenden Prüfhinweis. Danach vorhandenen mittleren Griff ins Haus ziehen → Warnung und gesperrte Übernahme → Griff auf freien Verlauf zurückziehen → übernehmen → Undo zeigt den ursprünglichen Zwischenpunkt, Redo die Korrektur.
 
-Ein vollständiger Neustart des eigenen QA-Hostprozesses erhält zehn Meter und die korrigierte Punktfolge `273.3,335 → 286.9,354.4 → 288.1364782600718,390.8469352922217`. Die erneute Straßensuche öffnet diese Form. Atlas leiten öffnet die Live-Karte; Gruppenfokus und zweimal Vergrößern zeigen Mira im Lagerraum und die bestehende Zweiraumgeometrie. Die Uhr bleibt `00:00:21`. Rückkehr erhält Straßenidentität, Breite, Punkte und exakt dieselbe Bearbeitungskamera. Die GM-PNG-Ausgabe wird separat angesehen.
+Ein vollständiger Neustart des eigenen QA-Hostprozesses erhält zehn Meter und die korrigierte Punktfolge `273.3,335 → 287.1,354.2 → 288.1364782600718,390.8469352922217`. Die erneute Straßensuche öffnet diese Form. Atlas leiten öffnet die Live-Karte; Gruppenfokus und zweimal Vergrößern zeigen Mira im Lagerraum und die bestehende Zweiraumgeometrie. Die Uhr bleibt `00:00:21`. Rückkehr erhält Straßenidentität, Breite, Punkte und exakt dieselbe Bearbeitungskamera. Die GM-PNG-Ausgabe wird separat angesehen.
 
 ## Vergleich mit Dungeon Scrawl
 
 Tatsächlich in der offiziellen Oberfläche neu gezeichnet: benanntes Lagerhaus auf eigener Ebene, benannte Zugangsgasse auf anderer Ebene; Verbreiterung zum Haus überlappt dessen Geometrie ohne Hauswarnung. Undo und Verbreiterung zur freien Seite korrigieren den Zugang. Nur aneinanderstoßende Rechtecke hinterließen zunächst eine Innenwand; überlappende Rechtecke ergeben den durchgängigen verbreiterten Zugang. Undo/Redo und PNG-Ausgabe wurden bedient und das Bild geprüft. Die Schutzwirkung der Ebenentrennung und die sichtbare geometrische Korrektur wurden übernommen, ohne daraus semantische Straßen-/Hausregeln in Scrawl abzuleiten.
 
 Die aktuelle Scrawl-Speicherdatei konnte über den dokumentierten Dateidialog-/Downloadpfad nicht erneut gespeichert oder frisch importiert werden. Die bearbeitete Sitzung bleibt erhalten. Diese Prüfung belegt daher die geometrische Korrektur und PNG-Ausgabe; sie ist kein neuer vollständiger Persistenz-, Straßennetz-, Reise- oder Spieleranzeigevergleich. Die frühere gespeicherte Vergleichsdatei und ihre früheren Belege bleiben davon getrennt.
+
+Nach Integration von Main `e67fe1b72` wurden Breitenkonflikt und Formkorrektur erneut tatsächlich bedient. Ein gemeinsames Endstück wurde im Entwurf ins Haus gezogen: vier Konflikte, gesperrte Übernahme; Verwerfen erhielt seine genaue ursprüngliche Nodekoordinate. Die Konfliktlösung übernimmt Mains gemeinsamen Bereichs-/Bildvorschaupfad, erhält den eigenen Auswahl-Worker und die getrennte öffentliche Gruppensicht. Zusätzliche Integrationsläufe: 59/59 sowie 7/7 betroffene Stadt-/Export-/Recovery-Fälle normal beendet.
 
 ## Technische Belege und Grenzen
 

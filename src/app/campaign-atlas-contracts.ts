@@ -110,8 +110,7 @@ export type AtlasRenderView = Omit<CampaignAtlas<RoomGeometry,DrawingElementGeom
 export interface AtlasAPI extends importAtlasRegionAPI {
   atlasRoomCommit(edit:Edit):Promise<Result<import('./contracts').RoomCommit>>;
   atlasRenderView(token:string,groupView?:boolean):Promise<Result<AtlasRenderView>>;
-  cancelLandscapeRaster(token:string,consumer:'view'|'export'):Promise<Result<void>>;
-  landscapeRaster(token:string,box:import('./atlas-landscape').LandscapeBox,width:number,height:number,consumer?:'view'|'export'):Promise<Result<import('./landscape-raster').LandscapeRaster>>;
+
   atlasOverview(token: string): Promise<Result<AtlasOverview>>;
   atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;
   atlasLandscapeObject(token: string, id: string): Promise<Result<import('./atlas-landscape').LandscapeRecord>>;
@@ -122,18 +121,11 @@ export interface AtlasAPI extends importAtlasRegionAPI {
     token: string,
     text: string,
   ): Promise<Result<import("./atlas-landscape").LandscapeRecord[]>>;
-  landscapeRegion(
-    token: string,
-    box: import("./atlas-landscape").LandscapeBox,
-    metersPerPixel?:number,
-    includePatches?:boolean,
-  ): Promise<Result<import("./atlas-landscape").LandscapeRegion>>;
   referenceImage(
     token: string,
   ): Promise<
     Result<{ id: string; width: number; height: number } | null>
   >;
-  referenceAsset(token: string, id: string): Promise<Result<string>>;
   referenceAssetPreview(token:string,id:string,size:number):Promise<Result<string>>;
   exportAtlasPNG(
     token: string,
