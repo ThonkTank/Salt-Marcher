@@ -26,11 +26,11 @@ try{for(const scale of [1,2]){
  const rooms=()=>db.prepare('SELECT * FROM room ORDER BY id').all().map(r=>({...r,...JSON.parse(r.payload)})),room=name=>rooms().find(r=>r.name===name),doors=()=>db.prepare("SELECT payload FROM drawing_element WHERE kind='door' ORDER BY id").all().map(r=>JSON.parse(r.payload));
  const bindingsBefore=db.prepare("SELECT count(*) n FROM atlas_binding WHERE kind='dungeon'").get().n;await page.locator('#atlas-create-dungeon').click();let b=await page.locator('#campaign-map').boundingBox();await page.mouse.click(b.x+b.width*.5,b.y+b.height*.5);
  await until(()=>db.prepare("SELECT count(*) n FROM atlas_binding WHERE kind='dungeon'").get().n===bindingsBefore+1);await atlasCanvasReady(page);
- await page.getByText('Ansicht / Zoom',{exact:true}).click();for(let i=0;i<24;i++){if(JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')).width<70)break;await page.getByRole('button',{name:'+ Vergrößern',exact:true}).click();}await page.getByText('Ansicht / Zoom',{exact:true}).click();await atlasCanvasReady(page);
+ for(let i=0;i<24;i++){if(JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')).width<70)break;await page.getByRole('button',{name:'Vergrößern',exact:true}).click();}await atlasCanvasReady(page);
  const binding=db.prepare("SELECT * FROM atlas_binding WHERE kind='dungeon' ORDER BY rowid DESC LIMIT 1").get(),world=p=>({x:binding.x+p.x,y:binding.y+p.y});
  const screen=async p=>atlasCanvasPoint(page,world(p),false);
  const choose=async name=>{await page.locator('#atlas-search').fill(name);await page.locator('#atlas-search-results button').filter({hasText:name}).click();await page.waitForFunction(n=>document.querySelector('#room-name')?.value===n,name);await atlasCanvasReady(page);};
- const tool=async name=>{await page.locator('#atlas-dock-tool').click();await page.getByRole('button',{name,exact:true}).click();};
+ const tool=async name=>{await page.getByRole('button',{name,exact:true}).click();};
  for(const [index,name,left,right]of[[0,'Torhalle',-15.24,-6.096],[1,'Wachstube',-6.096,3.048],[2,'Archiv',3.048,12.192]]){
   await tool('Raumrechteck');assert.equal(await page.locator('#atlas-new-name').isVisible(),false,'Only the owning room-name field is offered');await page.locator('#drawing-room-name').fill(name);
   const a=await screen({x:left,y:-4.572}),z=await screen({x:right,y:4.572});
@@ -42,9 +42,9 @@ try{for(const scale of [1,2]){
  assert.equal(doors().length,2);assert(doors().every(d=>d.anchor&&d.roomId));
  const output=async suffix=>{
   // Fit the complete authored ground plan through the public camera controls.
-  await page.getByText('Ansicht / Zoom',{exact:true}).click();
-  for(let i=0;i<8;i++){const v=JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')),pts=rooms().flatMap(r=>r.polygons.flatMap(p=>p.outer.map(world)));if(pts.every(p=>p.x>=v.x+2&&p.y>=v.y+2&&p.x<=v.x+v.width-2&&p.y<=v.y+v.height-2))break;await page.getByRole('button',{name:'− Verkleinern',exact:true}).click();}
-  await page.getByText('Ansicht / Zoom',{exact:true}).click();await atlasCanvasReady(page);
+  
+  for(let i=0;i<8;i++){const v=JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')),pts=rooms().flatMap(r=>r.polygons.flatMap(p=>p.outer.map(world)));if(pts.every(p=>p.x>=v.x+2&&p.y>=v.y+2&&p.x<=v.x+v.width-2&&p.y<=v.y+v.height-2))break;await page.getByRole('button',{name:'Verkleinern',exact:true}).click();}
+  await atlasCanvasReady(page);
   await page.locator('#atlas-output-open').click();const box=JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view'));if(!await page.locator('#atlas-export-size').isVisible())await page.locator('#atlas-output details summary').click();await page.locator('#atlas-export-size').fill('1536');await page.locator('#atlas-export-grid').uncheck();const file=profile+'/'+suffix+'.png';await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},file);const before=JSON.stringify({rooms:rooms(),doors:doors()});await page.locator('#atlas-export-png').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert');const bytes=await readFile(file);assert.equal(JSON.stringify({rooms:rooms(),doors:doors()}),before,'Export never writes author geometry');const png=PNG.sync.read(bytes);assert(png.width>500&&png.height>500);await writeFile(out+'/'+suffix+'-'+scale+'.png',bytes);const p=world({x:-10.668,y:-6.096}),x=Math.floor((p.x-box.x)/box.width*png.width),y=Math.floor((p.y-box.y)/box.height*png.height),pixel=[...png.data.slice((y*png.width+x)*4,(y*png.width+x)*4+4)];await page.locator('#atlas-output-back').click();return {bytes,pixel};};
  const beforePng=await output('before'),original=structuredClone(room('Torhalle')),originalDoors=structuredClone(doors());
  await choose('Torhalle');await tool('Auswahl / Eckpunkte');const a=await screen({x:-10.668,y:-4.572}),z=await screen({x:-10.668,y:-7.62});await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(z.x,z.y,{steps:8});await page.mouse.up();await until(()=>room('Torhalle').revision>original.revision);await atlasCanvasReady(page);
