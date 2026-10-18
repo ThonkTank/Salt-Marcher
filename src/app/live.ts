@@ -904,7 +904,7 @@ function initGroups() {
   })(); };
   get('group-move').onclick = () => {void openPartyMove().catch(error=>tell(error.message,true));};
   get('move-all').onclick=()=>{for(const box of get('move-members').querySelectorAll<HTMLInputElement>('input'))box.checked=true;};
-  get('move-target').onchange = () => { get('move-new-fields').hidden = !!value('move-target'); };
+  get('move-target').onchange = renderPartyMoveTime;
   get('move-cancel').onclick = () => { moveBasis = null; get<HTMLDialogElement>('move-dialog').close(); };
   get('move-form').onsubmit = event => { event.preventDefault(); void (async () => {
     const basis = moveBasis; if (!basis) return;
@@ -1003,7 +1003,7 @@ export async function openPartyMove(ownerToken?:string,ownerSceneId?:string,stil
     moveBasis = { kind: 'move', sceneId: source.id, expectedRosterRevision: data.rosterRevision, expectedFocusRevision: data.focusRevision, expectedSceneMembershipRevision: source.membershipRevision, expectedClockRevision: source.clock.revision };
     const labels=partySceneLabels(data);
     moveTargets = structuredClone(data.scenes); get('move-members').replaceChildren();
-    get('move-source').textContent = labels.get(source.id)??groupLabel({...source,primary:source.id===data.primaryId});
+    get('move-source').textContent = (labels.get(source.id)??groupLabel({...source,primary:source.id===data.primaryId}))+' · '+formatSceneInstant(source.clock.instantMs);
     for (const id of source.members) {
       const c = data.roster.find(c => c.id === id)!;
       const label = document.createElement('label'), box = document.createElement('input'); box.type = 'checkbox'; box.value = id;
@@ -1011,9 +1011,20 @@ export async function openPartyMove(ownerToken?:string,ownerSceneId?:string,stil
     }
     const select = get<HTMLSelectElement>('move-target'); select.replaceChildren();
     const fresh = document.createElement('option'); fresh.value = ''; fresh.textContent = 'Neue unabhängige Gruppe'; select.append(fresh);
-    for (const g of moveTargets.filter(g => g.id !== source.id)) { const option = document.createElement('option'); option.value = g.id; option.textContent = labels.get(g.id)??groupLabel(g); select.append(option); }
+    for (const g of moveTargets.filter(g => g.id !== source.id)) { const option = document.createElement('option'); option.value = g.id; option.textContent = (labels.get(g.id)??groupLabel(g))+' · '+formatSceneInstant(g.clock.instantMs); select.append(option); }
     select.value = ''; get('move-new-fields').hidden = false; get<HTMLInputElement>('move-title').value = '';
+    renderPartyMoveTime();
     get<HTMLDialogElement>('move-dialog').showModal();
     get('move-title').dataset.clockRevision = String(source.clock.revision); get('move-title').dataset.contentRevision = String(source.revision);
     return true;
+}
+
+function renderPartyMoveTime(){
+ const target=moveTargets.find(scene=>scene.id===value('move-target'));
+ get('move-new-fields').hidden=!!target;
+ get('move-time').hidden=!target;
+ get('move-confirm').textContent=target?'Zur Zielzeit verschieben':'Figuren verschieben';
+ const source=moveTargets.find(scene=>scene.id===moveBasis?.sceneId);
+ if(!target||!source)return;
+ get('move-time').textContent='Ausgangsgruppe: '+formatSceneInstant(source.clock.instantMs)+'. Zielgruppe: '+formatSceneInstant(target.clock.instantMs)+'. Mit „Zur Zielzeit verschieben“ wechseln die gewählten Figuren zur Zeit der Zielgruppe. Beide Gruppenzeiten bleiben unverändert. Eine Rast wird dadurch nicht gebucht.';
 }
