@@ -67,7 +67,7 @@ test('an independent campaign copy binds a moment follow-up to its copied world 
  try{const campaign=copy.acceptCampaignSnapshot(snapshot,'Kopie',{}),w=copy.activate(campaign.id),event=copy.chronicle(w.token).entries.find(e=>e.followUp);assert.notEqual(event.followUp.id,source.followUp.id);assert.ok(copy.preparation(w.token).notes.some(row=>row.note.id===event.followUp.id&&row.note.gmNotes==='Rohtext'));assert.deepEqual(x.store.chronicle(x.w.token).entries.find(e=>e.followUp),source);assert.ok(readFileSync(snapshot).equals(bytes));}finally{copy.close();}
 });
 
-test('a failed knowledge refresh still confirms and clears the saved moment exactly once',async t=>{const x=await setup(t);x.fields('Bestätigte Spur','Ergebnis');x.el('live-moment-follow-up').value='quest';x.window.campaign.preparation=async()=>{throw new Error('Kontrollierter Readfehler');};x.submit();await settle();assert.equal(x.el('live-moment-title').value,'');assert.equal(x.el('live-moment-follow-up').value,'');assert.match(x.el('live-moment-result').textContent,/gespeichert/);assert.match(x.el('live-moment-result').textContent,/Wissensbinder/);x.el('live-moment-follow-up-open').click();await settle();assert.deepEqual(x.noteOpens,[x.commands.find(c=>c.action.kind==='live-moment').action.followUp.id]);assert.equal(x.commands.filter(c=>c.action.kind==='live-moment').length,1);assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.title==='Bestätigte Spur').length,1);});
+test('a failed knowledge refresh still confirms and clears the saved moment exactly once',async t=>{const x=await setup(t);x.fields('Bestätigte Spur','Ergebnis');x.el('live-moment-follow-up').value='quest';x.window.campaign.preparation=async()=>{throw new Error('Kontrollierter Readfehler');};x.submit();await settle();assert.equal(x.el('live-moment-title').value,'');assert.equal(x.el('live-moment-follow-up').value,'');assert.match(x.el('live-moment-result').textContent,/gespeichert/);assert.match(x.el('live-sources-status').textContent,/Kontrollierter Readfehler/);x.el('live-moment-follow-up-open').click();await settle();assert.deepEqual(x.noteOpens,[x.commands.find(c=>c.action.kind==='live-moment').action.followUp.id]);assert.equal(x.commands.filter(c=>c.action.kind==='live-moment').length,1);assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.title==='Bestätigte Spur').length,1);});
 
 test('a newer recap summary survives the acknowledgement of its previous submitted ending',async t=>{
  const x=await setup(t);x.el('live-session-start').click();await settle();assert.equal(x.store.chronicle(x.w.token).entries[0].sessionMarker,'start');
@@ -654,4 +654,53 @@ test('discarding a profile recovery revokes its pending receipt answer',async t=
  x.window.campaign.executeLive=async command=>{await writer(command);throw Error('Profilantwort verloren');};await assert.rejects(x.ui.runPartyLive(x.w.token,{kind:'profile',characterId:old.id,expectedRevision:old.profileRevision,profile:{...old.profile,name:'Gespeichertes Profil'}}));x.window.campaign.executeLive=writer;
  let release;x.window.campaign.liveStatus=(command,token)=>new Promise(resolve=>{release=()=>resolve({ok:true,value:x.store.liveStatus(command,token)});});x.releases.push(()=>release?.());x.el('live-reconcile').click();await settle();x.el('live-refresh').click();await settle();assert.equal(x.el('live-reconcile').hidden,true);
  x.el('character-name').value='Neuer Entwurf nach Reload';x.el('character-name').oninput();x.messages.length=0;release();await settle();assert.deepEqual(x.messages,[]);assert.equal(x.el('character-name').value,'Neuer Entwurf nach Reload');assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,'Neuer Entwurf nach Reload');
+});
+
+for(const rejected of [false,true])test(`unavailable preparation keeps the live scene usable: ${rejected?'transport rejection':'provider error'}`,async t=>{
+ const x=await setup(t),read=x.window.campaign.preparation;x.window.campaign.preparation=async()=>{if(rejected)throw Error('Vorbereitung nicht erreichbar');return{ok:false,error:'Vorbereitung nicht lesbar'};};
+ await x.ui.openLive();await settle();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('running-editor').hidden,false);assert.equal(x.el('scene-focus').value,x.scene.id);assert.match(x.el('live-knowledge-result').textContent,/nicht (erreichbar|lesbar|verfügbar)/);
+ const text='  Trotz fehlender Vorbereitung\r\nweiterleiten';x.el('running-notes').value=text;x.el('running-notes').oninput();assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,text);x.window.campaign.preparation=read;
+});
+
+test('pending preparation does not delay the core scene or overwrite later text when it arrives',async t=>{
+ const x=await setup(t),read=x.window.campaign.preparation,reply=await read(x.w.token);let release,opened=false;x.window.campaign.preparation=()=>new Promise(resolve=>{release=()=>resolve(reply);});x.releases.push(()=>release?.());const loading=x.ui.openLive().then(()=>{opened=true;});await settle();assert.equal(opened,true,'the required scene load finishes independently');
+ const text='Neue Prosa während Vorbereitung lädt';x.el('running-notes').value=text;x.el('running-notes').oninput();assert.equal(await x.ui.flushLive(),true);release();await loading;await settle();assert.equal(x.el('running-notes').value,text);assert.equal(x.store.live(x.w.token).scene.notes,text);
+});
+test('material retry reads only preparation and preserves unsaved text, location and visit controls',async t=>{
+ const x=await setup(t),location=x.ui.newLocation(randomUUID(),'Nordtor','poi',[randomUUID(),randomUUID()]);x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:location}});
+ const original=x.store.live(x.w.token).scene;x.store.executeLive(x.command({kind:'scene-content',sceneId:original.id,expectedRevision:original.revision,title:original.title,notes:'',locationId:location.id}));
+ const read=x.window.campaign.preparation,core=x.window.campaign.live;let liveReads=0,materialReads=0;x.window.campaign.live=(...args)=>{liveReads++;return core(...args);};x.window.campaign.preparation=async()=>({ok:false,error:'Vorbereitung nicht lesbar'});
+ await x.ui.openLive();await settle();assert.equal(x.el('running-location').value,location.id);assert.equal(x.el('running-location').disabled,true);assert.equal(x.el('adoption-preview').disabled,true);assert.equal(x.el('running-player-npc-show').disabled,true);
+ liveReads=0;const text='  Eigene neue Prosa\r\nbleibt offen';x.el('running-notes').value=text;x.el('running-notes').oninput();
+ x.window.campaign.preparation=(...args)=>{materialReads++;return read(...args);};x.el('live-sources-retry').click();await settle();
+ assert.equal(liveReads,0);assert.equal(materialReads,1);assert.equal(x.el('running-notes').value,text);assert.equal(x.el('running-location').value,location.id);assert.equal(x.el('running-location').disabled,false);assert.equal(x.el('live-sources-state').hidden,true);
+ assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.locationId,location.id);assert.equal(x.store.live(x.w.token).scene.notes,text);assert.equal(x.el('adoption-preview').disabled,true);
+});
+for(const rejected of [false,true])test(`late material ${rejected?'failure':'success'} cannot cross a campaign activation`,async t=>{
+ const x=await setup(t),old=await x.window.campaign.preparation(x.w.token);let release;x.window.campaign.preparation=()=>new Promise(r=>{release=()=>r(rejected?{ok:false,error:'Alte Kampagne kaputt'}:old);});x.releases.push(()=>release?.());await x.ui.openLive();await settle();
+ const cam=x.store.create('Andere Kampagne'),w=x.store.activate(cam.id),read=x.window.campaign.live;x.ui.activateLive(w);x.window.campaign.preparation=async()=>({ok:true,value:x.store.preparation(w.token)});await x.ui.openLive();await settle();release();await settle();
+ assert.equal(x.el('live-sources-state').hidden,true);assert.doesNotMatch(x.el('live-knowledge-result').textContent,/Alte Kampagne/);assert.equal(x.el('scene-focus').children.length,0);assert.equal(x.commands.length,0);
+});
+test('newer material retry revokes the old read and late material never rebuilds scene contexts',async t=>{
+ const x=await setup(t),read=x.window.campaign.preparation,reply=await read(x.w.token);let release,sceneReads=0;x.window.campaign.preparation=()=>new Promise(r=>{release=()=>r({ok:false,error:'Überholter Fehler'});});x.releases.push(()=>release?.());
+ const sceneRead=x.window.campaign.scenePreparation;x.window.campaign.scenePreparation=(...args)=>{sceneReads++;return sceneRead(...args);};await x.ui.openLive();await settle();assert.equal(sceneReads,1);
+ x.window.campaign.preparation=async()=>reply;x.el('live-sources-retry').onclick();await settle();assert.equal(sceneReads,1);release();await settle();assert.equal(x.el('live-sources-state').hidden,true);assert.doesNotMatch(x.el('live-knowledge-result').textContent,/Überholter/);
+});
+test('required live failure remains a core failure even when preparation is healthy',async t=>{
+ const x=await setup(t);x.window.campaign.live=async()=>({ok:false,error:'Scene nicht lesbar'});await x.ui.openLive();await settle();assert.equal(x.el('live-workspace').hidden,true);assert.equal(x.el('live-sources-state').hidden,true);assert.ok(x.messages.some(m=>m.error&&m.text==='Scene nicht lesbar'));
+});
+test('planned visit opening waits for material and abandons its intent after newer text input',async t=>{
+ const x=await setup(t),planId=randomUUID(),visitId=randomUUID();x.store.changePreparation({...x.command(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:planId,revision:1,name:'Späterer Plan',scenes:[{id:visitId,title:'Nordtor',notes:'Wachen',locationId:null}]}}});
+ const reply={ok:true,value:x.store.preparation(x.w.token)};let release,done=false,held=false;x.window.campaign.preparation=()=>{if(held)return Promise.resolve(reply);held=true;return new Promise(r=>{release=()=>r(reply);});};x.releases.push(()=>release?.());const review=x.ui.openPlannedVisitReview(planId,visitId).then(r=>{done=true;return r;});await settle();assert.equal(done,false);assert.equal(x.el('running-editor').hidden,false);
+ x.el('running-notes').value='Neuere Absicht';x.el('running-notes').oninput();release();assert.equal(await review,false);await settle();assert.notEqual(x.el('adoption-dialog').open,true);assert.equal(x.el('running-notes').value,'Neuere Absicht');assert.equal(x.commands.length,0);
+});
+
+test('a committed moment and the next moment remain usable while material refresh is pending',async t=>{
+ const x=await setup(t),read=x.window.campaign.preparation,reply=await read(x.w.token),pending=[];const release=()=>{for(const resolve of pending.splice(0))resolve(reply);};x.window.campaign.preparation=()=>new Promise(r=>pending.push(r));x.releases.push(release);
+ x.fields('Gesicherte Quest','Spur');x.el('live-moment-follow-up').value='quest';x.submit();await settle();assert.equal(x.el('live-moment-title').value,'');assert.match(x.el('live-moment-result').textContent,/gespeichert/);assert.match(x.el('live-sources-status').textContent,/geladen/);
+ x.fields('Nächster Moment','Weiterleiten');x.submit();await settle();assert.equal(x.commands.filter(c=>c.action.kind==='live-moment').length,2);assert.equal(x.el('live-moment-title').value,'');release();await settle();assert.equal(x.el('live-sources-state').hidden,true);assert.match(x.el('live-moment-result').textContent,/Kampagnenchronik gespeichert/);
+});
+test('the authoritative scene request is dispatched before optional material on the shared bridge',async t=>{
+ const x=await setup(t),calls=[],live=x.window.campaign.live,prep=x.window.campaign.preparation;
+ x.window.campaign.live=(...args)=>{calls.push('scene');return live(...args);};x.window.campaign.preparation=(...args)=>{calls.push('material');return prep(...args);};await x.ui.openLive();await settle();assert.deepEqual(calls.slice(0,2),['scene','material']);
 });

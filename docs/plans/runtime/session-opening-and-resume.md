@@ -50,9 +50,48 @@ und nach bestätigter Ortsänderung. Profilinspektion und lokaler Ortsentwurf
 lösen diesen Anschluss nicht aus. Native Gegenproben zählen reale Welt-/Agenda-
 IPC-Aufrufe, erhalten Eingabetext, Fokus und Cursor über automatisches Speichern
 und lesen nach normalem Neustart bei200% denselben Text und Reisestand.
-Große Vorbereitungs-/Rosterprojektionen, die Fehlerisolation der Startquellen
-und parallele Inhaltsreads eigenständiger Dialoge bleiben gesondert zu messen;
+Große Vorbereitungs-/Rosterprojektionen und parallele Inhaltsreads
+eigenständiger Dialoge bleiben gesondert zu messen;
 keine vollständige Last-, Plattform- oder Produktabnahme aus diesen Teilbelegen.
+
+## Scene zuerst, ergänzende Vorbereitung unabhängig
+
+Scene, Party und ihre Revisionen kommen aus `LiveView`. `Preparation` liefert
+Orte, Wissen und auswählbare Pläne. Der maßgebliche Scene-Read wird vor den
+optionalen Material-/Chronikreads an die gemeinsame Main-Bridge geschickt. Beide
+Ergebnisse werden unabhängig übernommen; eine langsame
+oder unlesbare Vorbereitung verhindert weder Sceneöffnung noch Texteingabe und
+Speicherung. Fehlende Vorbereitung ist ausdrücklich unbekannt, kein leerer
+Inhaltsbestand. Nur ihre Auswahlcontrols sind gesperrt; bestehende Orts- und
+Besuchsidentitäten bleiben erhalten. Der Quellenstatus bietet einen gezielten
+Retry ohne Live-Readback, Sceneaufbau oder Rücksetzen von Eingaben.
+
+Die Materialantwort besitzt eine eigene, an die Kampagnenaktivierung gebundene
+Readgeneration. Schreibantworten und Gruppenauswahl widerrufen diese kampagnenweite
+Quelle nicht. Neuer Quellenread und Kampagnenwechsel widerrufen ältere Antworten.
+Die späte Übernahme aktualisiert ausschließlich Materialcontrols und Planangebot,
+nicht Sceneprosa, Party, Zeit, Besuchsergebnisentwurf oder deren Kontexte. Auch
+der Inhaltsrefresh nach bestätigtem Live-Moment verwendet diesen Pfad. Der
+bestätigte Moment und die nächste Eingabe warten nicht auf diesen Zusatzread;
+sein Fehler erscheint ausschließlich am Quellenstatus.
+
+Notwendiger Unterschied: Eine ausdrücklich angeforderte Planübernahme wartet auf
+ihre Quelle. Neue Eingaben oder Kontextwechsel widerrufen die alte Öffnungsabsicht;
+die später geladene Quelle bleibt für die dann aktuelle Scene nutzbar. Der
+Besuchsstand einer bereits übernommenen Plan-ID kann unabhängig lesbar bleiben;
+eine fehlende Planliste löscht weder Übernahme noch Ergebnis. Ein Fehler von
+`LiveView` bleibt ein Gesamtfehler. Keine neue Persistenz, Migration, IPC oder
+Schreibroute; die bestehenden Writer-, Revisions- und Receiptregeln gelten weiter.
+
+Gegenproben prüfen Fehler/Transportabbruch, hängende Quelle, Quellenretry ohne
+Live-Read, unveränderte Ortsbindung und Prosa, späte Antworten nach Textwrite,
+Kampagnenwechsel, überholtem Retry und widerrufener Planabsicht. Die native
+Live-/Reiseprobe ergänzt eine fehlerhafte echte Preparation-IPC-Antwort und einen
+verzögerten Retry über Textautosave hinweg, anschließend normalen Close/Fresh bei
+100%/200%. Große Quellbestände einschließlich synchroner Arbeit im gemeinsamen
+Main-Prozess gesondert messen; die unabhängige Rendererübernahme ist keine
+Garantie gegen dortige Blockaden. Weitere Plattformen und vollständige
+Produktabnahme bleiben offen.
 
 ## Vorhandener Ablauf
 
