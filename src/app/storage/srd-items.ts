@@ -2,29 +2,11 @@ import transcriptAsset from "../../features/catalog/data/items-srd51-transcript.
 import manifestAsset from "../../features/catalog/data/items-srd51-source-manifest.json";
 import { createHash } from "node:crypto";
 import { canonicalJson } from "../generation/canonical-json";
+import type { ItemReferenceRecord } from "../item-reference-contracts";
 import type { ItemDefinition } from "../items-contracts";
-interface SourceRecord {
-  id: string;
-  name: string;
-  category: string;
-  subcategory: string;
-  magic: boolean;
-  attunement: string;
-  cost?: { sourceText: string; copperPieces?: number | null };
-  weight?: { sourceText: string };
-  rarity?: { value?: string; sourceText?: string };
-  properties: { name: string; sourceText?: string }[];
-  description: { text: string }[];
-  armor?: Record<string, string>;
-  damage?: Record<string, string>;
-  speed?: { sourceText: string };
-  carryingCapacity?: { sourceText: string };
-  sourceHeader?: { text: string };
-  source: { pdfUrl: string; pdfPages: number[] };
-}
 const transcript = transcriptAsset as {
   complete: boolean;
-  records: SourceRecord[];
+  records: ItemReferenceRecord[];
 };
 const manifest = manifestAsset as {
   complete: boolean;
@@ -36,7 +18,7 @@ export const srdItemSourceStatus = {
   message: `${transcript.records.length} erfasste SRD-5.1-Definitionen + eigene Gegenstände · ${manifest.coverage.inventoryOccurrences}/459 Quellenfundstellen erfasst; vollständiger Katalog und unabhängige Quellenabnahme offen.`,
 };
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
-function project(r: SourceRecord): ItemDefinition {
+function project(r: ItemReferenceRecord): ItemDefinition {
   const details: string[] = [];
   if (r.sourceHeader) details.push(r.sourceHeader.text);
   if (r.cost) details.push("Price: " + r.cost.sourceText);
@@ -44,7 +26,7 @@ function project(r: SourceRecord): ItemDefinition {
     const labels: Record<string, string> = {
       armorClassText: "Armor Class",
       dexterityRuleText: "Dexterity",
-      strengthRuleText: "Strength",
+      strengthRequirementText: "Strength",
       stealthRuleText: "Stealth",
     };
     details.push(
@@ -55,6 +37,8 @@ function project(r: SourceRecord): ItemDefinition {
   if (r.speed) details.push("Speed: " + r.speed.sourceText);
   if (r.carryingCapacity)
     details.push("Carrying capacity: " + r.carryingCapacity.sourceText);
+  for (const property of r.properties)
+    if (property.description) details.push(property.name + ": " + property.description);
   const cost = r.cost?.copperPieces;
   return {
     id: r.id,
@@ -71,7 +55,7 @@ function project(r: SourceRecord): ItemDefinition {
           : "unspecified",
     unitCopper: cost === null || cost === undefined ? null : String(cost),
     weightText: r.weight?.sourceText ?? "",
-    properties: r.properties.map((p) => p.sourceText ?? p.name),
+    properties: r.properties.map((p) => p.name),
     description: [...details, ...r.description.map((d) => d.text)].join("\n\n"),
     source: {
       kind: "srd51",
