@@ -1,6 +1,6 @@
 # Gasse um ein vorhandenes Haus führen · 18.10.2026
 
-Die Aufgabe: Einen Zugang zwischen vorhandenen Straßen zeichnen, ein bestehendes
+Die Aufgabe: Eine Gasse vom Blockrand an eine vorhandene Straße zeichnen, ein bestehendes
 Haus erhalten, einen falsch gesetzten Punkt korrigieren, speichern, Undo/Redo
 verwenden, nach neuem Laden wiederfinden und zur Spielleitung wechseln.
 
