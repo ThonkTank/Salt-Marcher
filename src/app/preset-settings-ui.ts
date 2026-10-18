@@ -59,7 +59,12 @@ function init(){if(initialized)return;initialized=true;
  get('preset-close').onclick=close;get<HTMLDialogElement>('preset-manager').oncancel=e=>{e.preventDefault();close();};
  get('preset-discard-keep').onclick=()=>get<HTMLDialogElement>('preset-discard').close();get('preset-discard-confirm').onclick=()=>{get<HTMLDialogElement>('preset-discard').close();discard();};
  get('preset-selection').onchange=()=>{const id=value('preset-selection');get<HTMLSelectElement>('preset-selection').value=presetDraft?.id??'';finishPaint();confirmDiscard(()=>choose(id));};
- get('preset-context').onchange=()=>{if(busy||pending)return;const nextCampaignId=value('preset-context')||null;busy=true;lock();void reload(nextCampaignId).catch(e=>status(e.message)).finally(()=>{busy=false;lock();});};
+ get('preset-context').onchange=()=>{
+  if(busy||pending)return;const nextCampaignId=value('preset-context')||null;
+  get<HTMLSelectElement>('preset-context').value=campaignId??'';
+  busy=true;status('Kampagnenzuweisung wird geladen…');lock();
+  void reload(nextCampaignId).then(()=>status('Kampagnenzuweisung geladen. Der bearbeitete Presetentwurf bleibt unverändert.')).catch(e=>status(e.message)).finally(()=>{busy=false;lock();});
+ };
  get('preset-copy').onclick=()=>{if(busy||pending)return;readPresetFields();copy();};get('preset-reset').onclick=()=>{if(!presetDraft||presetDraft.system||busy||pending)return;clearPaint();presetDraft.config=structuredClone(registry!.presets.find(p=>p.system)!.config);renderPreset();};
  get('preset-form').oninput=()=>{if(!busy&&!pending)readPresetFields();};get('preset-form').onsubmit=e=>{e.preventDefault();if(!presetDraft||presetDraft.system||!registry||busy||pending||conflict)return;try{flushBoundary();readPresetFields();checkedGeneratorConfig(presetDraft.config);void execute({kind:'preset-save',preset:presetDraft,expectedRegistryRevision:registry.revision});}catch(error){status((error as Error).message);}};
  get('preset-assign').onclick=()=>{if(presetDraft&&registry&&campaignId&&!dirty())void execute({kind:'preset-assign',id:presetDraft.id,expectedRegistryRevision:registry.revision});};
