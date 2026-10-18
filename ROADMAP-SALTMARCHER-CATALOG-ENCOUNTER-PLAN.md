@@ -130,6 +130,14 @@ Offizielle Produktreferenzen für die Mindestabnahme:
   Commandausgang über Receipt im selben Ergebnis prüfen. Installation besitzt
   Registry, Campaign nur Zuweisung; produktive Schreib-/Recoveryautorität mit
   Campaign/Data ([Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md)) bestätigen, keine zweite Campaignregistry.
+  Kampagnenkennung und gelesene Registry bilden einen gemeinsamen bestätigten
+  Kontext. Ein fehlgeschlagener Kontextwechsel erhält die bisherige Auswahl und
+  den offenen Vorgabenentwurf; er zeigt keine alte Zuweisung für die neue Campaign.
+  Beim fehlgeschlagenen Öffnen bleibt die Quelle ausdrücklich nicht verfügbar,
+  ohne frühere Formularwerte als gültige Vorgaben anzubieten. Speichern/Zuweisen
+  bleiben getrennte Befehle mit unveränderten Revisionen und Receipts. Gezielte
+  Store-/DOM- und native Fehler-/Retry-/Neustartproben prüfen diesen Übergang;
+  vollständige Generator-, Leistungs- und Plattformabnahme bleiben eigenständig.
 - Scene und Session konsumieren einen gemeinsamen Compositionselector und dieselbe
   kanonische Presetrevision/Confighash-Provenienz. Kandidaten vor Ranking gegen
   Rollen/Mengen/Kombinationen/Stock/Statblockkapazität prüfen; Domainranking geht vor

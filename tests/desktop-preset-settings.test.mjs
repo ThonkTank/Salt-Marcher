@@ -87,3 +87,26 @@ test('fixed-size composition saves ordinary rules, keeps assignment explicit and
  assert.equal(run.preset.id,copyId);assert.equal(plan.entries.reduce((sum,e)=>sum+e.count,0),2);assert.equal(plan.assessment.difficulty,'Mittel');assert.equal(plan.assessment.adjustedXp,100);assert.equal(plan.composition.blocks.length,1);assert.equal(plan.composition.blocks[0].quantity,2);
  x.el('preset-close').onclick();await x.open(x.campaign.id);assert.equal(x.el('preset-selection').value,copyId);assert.equal(x.el('preset-boss-max').value,'2');
 });
+
+for(const rejected of [false,true])test(`a failed campaign-context read retains the confirmed assignment context and draft: ${rejected?'transport':'provider'}`,async t=>{
+ const x=await fixture(t),other=x.store.create('Hafen');await x.open(x.campaign.id);x.el('preset-copy').onclick();x.edit('preset-name','Waldregeln');await x.save();x.el('preset-assign').onclick();await settle();const savedId=x.el('preset-selection').value;
+ x.edit('preset-name','Weiterer offener Name');const read=x.window.campaign.presetRegistry;x.window.campaign.presetRegistry=async id=>{if(id===other.id){if(rejected)throw Error('Kontext nicht erreichbar');return{ok:false,error:'Kontext nicht lesbar'};}return read(id);};
+ x.el('preset-context').value=other.id;x.el('preset-context').onchange();await settle();
+ assert.equal(x.el('preset-context').value,x.campaign.id);assert.equal(x.el('preset-name').value,'Weiterer offener Name');assert.match(x.el('preset-effective').textContent,/Waldregeln/);assert.match(x.el('preset-status').textContent,/Kontext nicht (erreichbar|lesbar)/);assert.equal(x.calls.length,2);assert.notEqual(x.store.presetRegistry(other.id).effectiveId,savedId);
+ x.window.campaign.presetRegistry=read;x.el('preset-context').value=other.id;x.el('preset-context').onchange();await settle();assert.equal(x.el('preset-context').value,other.id);assert.match(x.el('preset-effective').textContent,/Systempreset/);assert.equal(x.el('preset-name').value,'Weiterer offener Name');assert.equal(x.el('preset-assign').disabled,true);
+ await x.save();assert.equal(x.store.presetRegistry(other.id).effectiveId,x.store.presetRegistry(null).presets.find(p=>p.system).id);x.el('preset-assign').onclick();await settle();assert.equal(x.store.presetRegistry(other.id).effectiveId,savedId);assert.equal(x.store.presetRegistry(x.campaign.id).effectiveId,savedId);
+});
+
+test('failed opening cannot present the former campaign registry as the new campaign assignment',async t=>{
+ const x=await fixture(t),other=x.store.create('Hafen');await x.open(x.campaign.id);x.el('preset-copy').onclick();x.edit('preset-name','Nur Wald');await x.save();x.el('preset-assign').onclick();await settle();x.el('preset-close').onclick();
+ const read=x.window.campaign.presetRegistry;x.window.campaign.presetRegistry=async()=>({ok:false,error:'Registry nicht lesbar'});await x.open(other.id);
+ assert.equal(x.el('preset-context').value,other.id);assert.equal(x.el('preset-form').hidden,true);assert.equal(x.el('preset-selection').children.length,0);assert.match(x.el('preset-effective').textContent,/nicht verfügbar/);assert.doesNotMatch(x.el('preset-effective').textContent,/Nur Wald/);for(const id of ['preset-copy','preset-save','preset-assign','preset-reset','preset-delete'])assert.equal(x.el(id).disabled,true,id);assert.equal(x.el('preset-close').disabled,false);assert.equal(x.calls.length,2);
+ x.el('preset-close').onclick();x.window.campaign.presetRegistry=read;await x.open(other.id);assert.equal(x.el('preset-form').hidden,false);assert.match(x.el('preset-effective').textContent,/Systempreset/);assert.equal(x.el('preset-copy').disabled,false);
+});
+
+test('assignment receipt restores its confirmed registry when reopening could not read the registry',async t=>{
+ const x=await fixture(t);await x.open(x.campaign.id);x.el('preset-copy').onclick();x.edit('preset-name','Belegregeln');await x.save();const id=x.el('preset-selection').value;
+ x.window.campaign.presetCommand=async c=>{x.calls.push(c);x.store.presetCommand(c);throw Error('Antwort nach Commit verloren');};x.el('preset-assign').onclick();await settle();assert.equal(x.calls.length,2);assert.equal(x.store.presetRegistry(x.campaign.id).effectiveId,id);
+ x.el('preset-manager').open=false;x.window.campaign.presetRegistry=async()=>({ok:false,error:'Registry nicht verfügbar'});delete require.cache[require.resolve('../.build/preset-settings-ui-test.cjs')];const fresh=require('../.build/preset-settings-ui-test.cjs');await fresh.openPresetSettings(null);await settle();assert.equal(x.el('preset-form').hidden,true);assert.equal(x.el('preset-check').hidden,false);
+ x.el('preset-check').onclick();await settle();assert.equal(x.calls.length,2);assert.equal(x.el('preset-check').hidden,true);assert.equal(x.el('preset-form').hidden,false);assert.equal(x.el('preset-name').value,'Belegregeln');assert.equal(x.el('preset-selection').value,id);assert.match(x.el('preset-effective').textContent,/Belegregeln/);assert.match(x.el('preset-status').textContent,/Zuweisung gespeichert/);
+});
