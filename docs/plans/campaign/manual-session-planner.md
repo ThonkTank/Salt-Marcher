@@ -43,6 +43,14 @@ optionale Ortsverweise im gemeinsamen SQLite-Store. `session-ui.ts`,
 Gruppen, Belohnungen sowie Ersetzung und Wiederverwendung. Die reinen
 `ManualPlan`-Codecs prüfen den gemeinsamen Planvertrag.
 
+Im Kopf des Notizeditors öffnet **Für Spielabend verwenden…** die Quellenwahl
+und das Ziel vor den Originaltexten. Die Übersicht und ihre geladenen Quellen
+lassen sich dort einzeln auswählen. Ein vorhandener aktueller Abend/Besuch ist
+vorausgewählt; neue Ziele erhalten eigene Namen. Auswahlfelder ohne vorhandene
+Alternativen entfallen. **Notizmappe öffnen…** bleibt der Einstieg zum Lesen
+und Bearbeiten der Quellen. Beide Wege verwenden dieselben Originalnotizen und
+die bestehenden geprüften Besuchsverknüpfungen.
+
 Gespeicherte Begegnungen werden erst ab zwei Suchzeichen über den vorhandenen
 Katalogzugang gelesen. SQL begrenzt auf neun Metadatensätze: acht auswählbare
 Treffer plus Überlaufhinweis. Neue Eingaben, Besuchs-/Planwechsel und neuere

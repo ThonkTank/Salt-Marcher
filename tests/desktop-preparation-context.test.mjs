@@ -353,6 +353,25 @@ function threadSelection(x){
  const page=x.store.noteThread(x.workspace.token,x.ids.borin,0,true);
  return{rootId:x.ids.borin,rootRevision:page.root.revision,includeRoot:true,entries:page.entries.map(({id,stamp})=>({id,stamp}))};
 }
+
+test('direct evening handoff reviews sources before prose and writes only the approved originals to the current visit',async t=>{
+ const x=await fixture(t);threadSelection(x);await x.activate();await x.ui.prepareNextVisit(null,{title:'Am Fährsteg',notes:'Eigene Besuchsnotiz',locationId:null});
+ const plan=x.store.preparation(x.workspace.token).plans[0],visit=plan.scenes[0];await x.ui.openPreparedNote(x.ids.borin);
+ const area=x.el('note-gm');area.value+='\nVor der Übergabe ergänzt.';area.dispatchEvent(new x.window.Event('input'));
+ x.el('note-thread-prepare').click();await until(()=>x.el('note-thread-dialog').open&&!x.el('note-thread-use').disabled);
+ const target=x.el('note-thread-reading').firstElementChild;assert(target.classList.contains('note-thread-target'));assert.equal(x.el('note-thread-plan').value,plan.id);assert.equal(x.el('note-thread-visit').value,visit.id);assert.equal(x.el('note-thread-source-choices').hidden,false);assert.match(x.el('note-thread-source-choices').textContent,/Ada/);
+ assert.match(x.store.preparation(x.workspace.token).notes.find(n=>n.note.id===x.ids.borin).note.gmNotes,/Vor der Übergabe ergänzt/);
+ const box=x.el('note-thread-source-choices').querySelector('input');box.checked=false;box.onchange();assert.equal(x.el('note-thread-sources').querySelector('input').checked,false);assert.match(x.el('note-thread-choice').textContent,/1 Originalnotizen/);
+ x.el('note-thread-use').click();await until(()=>!x.el('note-thread-dialog').open);const saved=x.store.session(x.workspace.token,plan.id).visits[0];assert.deepEqual(saved.noteIds,[x.ids.borin]);assert.equal(x.store.preparation(x.workspace.token).plans[0].scenes[0].notes,'Eigene Besuchsnotiz');
+ await x.ui.openPreparedNote(x.ids.borin);x.el('note-thread-open').click();await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-source-choices').hidden,true);assert.notEqual(x.el('note-thread-reading').firstElementChild,target);
+});
+
+test('direct handoff cannot bypass composition or open a different nested source on failure',async t=>{
+ const x=await fixture(t);await nestedThread(x);const field=x.el('note-gm');field.dispatchEvent(new x.window.Event('compositionstart',{bubbles:true}));field.value='Noch nicht fertig';field.dispatchEvent(new x.window.Event('input'));x.el('note-thread-prepare').click();await settle();
+ assert.equal(x.el('note-thread-heading').textContent,'Notizmappe: Borin');assert.equal(x.el('note-thread-editor').hidden,false);assert.equal(x.writes.length,0);
+ field.dispatchEvent(new x.window.Event('compositionend',{bubbles:true}));x.el('note-thread-prepare').click();await until(()=>x.el('note-thread-heading').textContent==='Notizmappe: Ada'&&!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-reading').firstElementChild.className,'note-thread-target');assert.equal(x.el('note-title').value,'Ada');assert.equal(x.writes.length,1);
+ x.el('note-thread-parent').click();await until(()=>x.el('note-thread-heading').textContent==='Notizmappe: Borin'&&!x.el('note-thread-parent').disabled);assert.equal(x.el('note-thread-source-choices').hidden,true);
+});
 test('thread preparation uses the selected new plan name and stores references without copying source prose',async t=>{
  const x=await fixture(t),selection=threadSelection(x);await x.activate();await x.ui.prepareNextVisit(null,{title:'Offene Spur verfolgen',notes:'',locationId:null,newPlan:true,newPlanName:'Abend 9 · Nachtwache',noteIds:[x.ids.borin,x.ids.ada],noteThread:selection});
  const plan=x.store.preparation(x.workspace.token).plans[0],visit=x.store.session(x.workspace.token,plan.id).visits[0];assert.equal(plan.name,'Abend 9 · Nachtwache');assert.equal(plan.scenes[0].notes,'');assert.deepEqual(visit.noteIds,[x.ids.borin,x.ids.ada]);assert.equal(x.writes.length,1);assert.deepEqual(x.writes[0].change.opening.noteThread,selection);
