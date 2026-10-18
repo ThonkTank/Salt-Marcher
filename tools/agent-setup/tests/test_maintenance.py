@@ -155,6 +155,19 @@ class MaintenanceTests(unittest.TestCase):
         self.cli('chat-mark', '--thread', 'project-thread', '--item', 'turn/item/offset')
         self.assertEqual(self.cli('status')['chat_marks'], {'project-thread': 'turn/item/offset'})
 
+    def test_need_survives_context_switch_without_loading_other_modes(self):
+        self.cli('note', '--mode', 'find-code', '--question', 'Real lookup barrier', '--source', 'thread/item')
+        self.cli('note', '--mode', 'find-code', '--question', 'Real lookup barrier', '--source', 'thread/item')
+        self.assertEqual(self.cli('status')['needs'], [])
+        for _ in range(2):
+            self.cli('finish', '--outcome', 'no-work', '--evidence', 'Checked without changes')
+        self.assertEqual(self.cli('status')['needs_count'], 1)
+        self.cli('start', '--goal', 'Resolve lookup barrier', '--paths', 'src/item.ts', '--from-note', '0')
+        self.cli('checkpoint', '--phase', 'check', '--next', 'Verify changed entrypoint')
+        self.assertEqual(self.cli('status')['active']['need']['source'], 'thread/item')
+        self.cli('park', '--reason', 'External block')
+        self.assertEqual(self.cli('status')['blocked'][0]['need']['question'], 'Real lookup barrier')
+
 
 if __name__ == '__main__':
     unittest.main()

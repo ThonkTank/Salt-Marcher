@@ -34,6 +34,12 @@ bestätigt weder CI noch Qualität selbst; passende Belege bleiben nötig.
 Stelle. `progress --through SHA` setzt im Aktualitätsmodus den Git-Abgleichsstand
 nur nach vollständiger Beurteilung aller Änderungen bis zu diesem SHA weiter.
 Ein fertiggestellter Teilauftrag verschiebt diese Marke nicht automatisch.
+Ein im Lauf beobachteter Bedarf für einen anderen Modus bleibt mit
+`note --mode MODUS --question 'Konkrete Frage' --source 'Chat-/Item-/Quellmarke'`
+erhalten. `status` zeigt nur die ersten fünf Hinweise des aktuellen Modus.
+`start --from-note INDEX` übernimmt einen solchen Hinweis in die aktive Aufgabe;
+Unterbrechung und Blockade verlieren ihn nicht. Erst nach gesichertem Hinweis
+die gelesene Chatstelle weitersetzen. Kein vorab erzeugter Fragenkatalog.
 
 ## Zeichen zählen, keine Inhalte ausgeben
 

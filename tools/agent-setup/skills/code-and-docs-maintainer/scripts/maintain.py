@@ -135,11 +135,12 @@ def run(args):
             raise ValueError('Checkpoint exists; resume it instead of resetting progress')
         state = {'version': 1, 'repository': str(repo), 'mode': MODES[0], 'active': None,
                  'progress_base': revision(repo, 'HEAD'),
-                 'blocked': [], 'reviews': {}, 'chat_marks': {}, 'last_completed': None}
+                 'blocked': [], 'reviews': {}, 'chat_marks': {}, 'needs': {}, 'last_completed': None}
         write_state(path, state)
         return {'checkpoint': str(path), 'mode': state['mode']}
 
     state = load_state(path, repo)
+    state.setdefault('needs', {})
     sha = revision(repo, 'HEAD')
     entries = inventory(repo, sha)
     candidates, pending = progress(state, entries)
@@ -147,6 +148,8 @@ def run(args):
     if command == 'status':
         return {'mode': state['mode'], 'active': state['active'], 'blocked': state['blocked'],
                 'progress_base': state['progress_base'],
+                'needs': state['needs'].get(state['mode'], [])[:5],
+                'needs_count': len(state['needs'].get(state['mode'], [])),
                 'last_completed': state['last_completed'], 'chat_marks': state['chat_marks'],
                 'inventory': {'revision': sha, 'files': len(entries), 'eligible': len(candidates),
                               'pending': len(pending), 'reference_files': sum(
@@ -177,12 +180,20 @@ def run(args):
             raise ValueError('Task paths must exist at the recorded basis')
         state['active'] = {'mode': state['mode'], 'goal': args.goal, 'basis': sha,
                            'paths': paths, 'phase': 'work', 'next': 'Complete the selected task'}
+        if args.from_note is not None:
+            if args.from_note < 0:
+                raise ValueError('Use a nonnegative need index')
+            state['active']['need'] = state['needs'].get(state['mode'], []).pop(args.from_note)
     elif command == 'checkpoint':
         if not active:
             raise ValueError('No active task')
         active.update(phase=args.phase, next=args.next)
     elif command == 'chat-mark':
         state['chat_marks'][args.thread] = args.item
+    elif command == 'note':
+        needs = state['needs'].setdefault(args.mode, [])
+        if not any(row['question'].casefold().split() == args.question.casefold().split() for row in needs):
+            needs.append({'question': args.question, 'source': args.source, 'basis': sha})
     elif command == 'progress':
         if state['mode'] != 'current':
             raise ValueError('Advance the progress baseline only in the current-statements mode')
@@ -266,6 +277,7 @@ def main():
     start = subs.add_parser('start')
     start.add_argument('--goal', required=True)
     start.add_argument('--paths', nargs='+', required=True)
+    start.add_argument('--from-note', type=int)
     step = subs.add_parser('checkpoint')
     step.add_argument('--phase', choices=('work', 'check', 'publish'), required=True)
     step.add_argument('--next', required=True)
@@ -283,6 +295,10 @@ def main():
     chat = subs.add_parser('chat-mark')
     chat.add_argument('--thread', required=True)
     chat.add_argument('--item', required=True)
+    need = subs.add_parser('note')
+    need.add_argument('--mode', choices=MODES, required=True)
+    need.add_argument('--question', required=True)
+    need.add_argument('--source', required=True)
     baseline = subs.add_parser('progress')
     baseline.add_argument('--through', required=True)
     finish = subs.add_parser('finish')
@@ -298,7 +314,7 @@ def main():
     count.add_argument('--code-search', action='append', default=[])
     args = parser.parse_args()
     try:
-        for field in ('goal', 'reason', 'evidence', 'next', 'thread', 'item'):
+        for field in ('goal', 'reason', 'evidence', 'next', 'thread', 'item', 'question', 'source'):
             if hasattr(args, field) and not getattr(args, field).strip():
                 raise ValueError('--' + field + ' must explain a concrete task or decision')
         if args.command == 'next' and not 1 <= args.limit <= 50:
