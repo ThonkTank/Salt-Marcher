@@ -668,5 +668,8 @@ test('export scale uses world meters and is drawn once after streamed tiles with
  const read=async(part,width,height)=>({ok:true,value:{campaignId:'c',revision:1,box:part,width,height,scene:atlasPaint('rect',{width:part.width,height:part.height,style:{fill:'green'}})}});
  await atlasImage(atlasExportTiles(box,1024,614,'c',1,read,()=>true),1024,614,box,'png',()=>true,overlay);
  assert.equal(events.filter(e=>e==='5.00 km · 3.107 Meilen').length,1);assert.equal(events.at(-1),'5.00 km · 3.107 Meilen');assert(events.lastIndexOf('clear')<events.lastIndexOf('tile'),'legend composition must preserve the completed map');
+ const world=atlasExportScale({x:0,y:0,width:20000000,height:12000000},2048,1229),label=world.children.find(n=>n.kind==='text');
+ assert.equal(label.style.fontSize,11,'world-scale labels use browser-safe glyph metrics');
+ assert.equal(label.geometry.matrix[0],20000000/1024,'the transform preserves printed label size');
  assert.equal(atlasExportScale(box,8192,50),undefined,'an extremely shallow output has no space for a legible scale');
 });
