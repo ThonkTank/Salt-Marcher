@@ -120,6 +120,8 @@ export class LandscapeWorkbench {
     this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
     html("atlas-tool-fields").after(this.panel);
     html<HTMLSelectElement>("land-tool").onchange = () => {
+      // A ruler is temporary; leaving it must not require saving a drawing.
+      if(this.tool==='measure'&&!this.saving&&this.pointer===null)this.points=[];
       if (this.hasDraft()) {
         html<HTMLSelectElement>("land-tool").value = this.tool;
         this.say("Zuerst abschließen oder verwerfen.");
@@ -493,7 +495,8 @@ export class LandscapeWorkbench {
   }
   private objectOptions(){
     const select=html<HTMLSelectElement>('land-object');select.replaceChildren(new Option('Auf der Karte auswählen',''));
-    for(const r of this.records)select.add(new Option(r.name||r.kind,r.id));select.value=this.selected?.id??'';
+    const records=this.selected&&!this.records.some(r=>r.id===this.selected!.id)?[...this.records,this.selected]:this.records;
+    for(const r of records)select.add(new Option(r.name||r.kind,r.id));select.value=this.selected?.id??'';
   }
   async selectId(id:string){
     const token=this.token,frame=this.host.data()?.region?.fence,generation=++this.selectionRequest;
@@ -607,12 +610,15 @@ export class LandscapeWorkbench {
       .forEach((n) => (n.disabled = value));
   }
   private async commit(a: AtlasAction) {
+    const token=this.token,keep=this.tool==='select'&&a.kind==='landscape-put'&&
+      (a.record.kind==='road'||a.record.kind==='river')?a.record.id:null;
     this.saving = true;
     this.disable(true);
     try {
       const r = await this.host.write(a);
       if (!r)
         throw new Error("Änderung nicht bestätigt. Entwurf bleibt erhalten.");
+      if(token!==this.token)return r;
       this.points = [];
       this.brushStrokes = [];
       this.dirty = false;
@@ -622,7 +628,17 @@ export class LandscapeWorkbench {
       html("land-selection").replaceChildren();
       this.key = "";
       await this.load(true);
-      this.say("Gespeichert");
+      if(keep){
+        const fence=this.host.data()?.region?.fence;
+        // The acknowledged edit has a new revision. Read it before accepting
+        // another handle drag; never reuse the pre-save inspector snapshot.
+        try{
+          const latest=await window.campaign.atlasLandscapeObject(token,keep);
+          if(token!==this.token||fence!==this.host.data()?.region?.fence)return r;
+          if(latest.ok){this.selected=structuredClone(latest.value);this.inspector();this.objectOptions();}
+        }catch{ /* The edit is saved; reopening the selection remains available. */ }
+      }
+      this.say(keep&&!this.selected?"Gespeichert. Objekt erneut auswählen.":"Gespeichert");
       return r;
     } finally {
       this.saving = false;
@@ -782,6 +798,7 @@ export class LandscapeWorkbench {
       if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.rememberAsset(record.assetId,image.value);else {html('land-reload').hidden=false;this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');}
     }
     this.inspector();
+    this.objectOptions();
     this.host.redraw();
   }
   private inspector() {
