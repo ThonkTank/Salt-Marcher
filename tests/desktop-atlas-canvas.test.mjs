@@ -646,3 +646,15 @@ test('loss during a draw cannot publish a successful frame before the loss event
  f.canvas.render(root=>root.append(rect('room')));await settle();assert.equal(f.canvas.ready,false);assert.equal(f.root.dataset.canvasState,'unavailable');assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
  lost=false;f.ctx.fill=()=>{};f.root.dispatchEvent(new f.window.Event('contextrestored'));await settle();assert.equal(f.canvas.ready,true);
 });
+
+test('detailed Atlas and PNG surfaces use the saved room colors and the same canonical contour',()=>{
+ const room={id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:[{x:0,y:0},{x:12,y:0},{x:12,y:6},{x:0,y:6}],holes:[]}]},style={id:'r',fill:'#3f7c9e',wall:'#8b2e4b'};
+ for(const styles of [[],[style]])for(const selected of [false,true]){
+  const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[room]},geometry:{drawing:{elements:[],styles}}};
+  const live=atlasPaint('group'),ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:data,selection:selected?{id:'r'}:null,label(){}});ui.drawRoomFace(live,room,0.1);
+  const output=atlasRegionPaint(data,[],{x:0,y:0,width:12,height:6},120,new Map(),{grid:false,level:0,references:false,floorId:'ground',roofs:false}),face=output.children.flatMap(n=>n.children).find(n=>n.kind==='polygons');
+  assert.deepEqual(live.children[0].geometry.polygons,room.polygons);assert.deepEqual(face.geometry.polygons,room.polygons);
+  assert.equal(live.children[0].style.fill,styles.length?style.fill:selected?'#e8d8ac':'#e2dac4');assert.equal(face.style.fill,styles.length?style.fill:'#e2dac4');
+  assert.equal(live.children[0].style.stroke,styles.length?style.wall:'#3d4b45');assert.equal(face.style.stroke,live.children[0].style.stroke);assert.equal(face.style.lineWidth,live.children[0].style.lineWidth);
+ }
+});

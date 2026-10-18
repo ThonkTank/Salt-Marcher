@@ -2,7 +2,7 @@ import {atlasPaint,rotation} from "./atlas-paint";
 import {paintMarkup,polygonMarkupPath as roomPath} from "./atlas-paint-svg";
 import {visibility} from '../compute';
 import clipping,{type MultiPolygon} from 'polygon-clipping';
-import type {Point,Polygon,RoomGeometry} from './contracts';import type {DrawingElement,DrawingElementGeometry,DrawingView} from './drawing-contracts';
+import type {Point,Polygon,RoomGeometry} from './contracts';import type {DrawingElement,DrawingElementGeometry,DrawingView,RoomStyle} from './drawing-contracts';
 const toMulti=(p:Polygon[]):MultiPolygon=>p.map(p=>[p.outer,...p.holes].map(r=>[...r.map(p=>[p.x,p.y] as [number,number]),[r[0]!.x,r[0]!.y] as [number,number]]));
 const fromMulti=(p:MultiPolygon):Polygon[]=>p.map(p=>({outer:p[0]!.slice(0,-1).map(([x,y])=>({x,y})),holes:p.slice(1).map(r=>r.slice(0,-1).map(([x,y])=>({x,y})))})).filter(p=>p.outer.length>=3);
 export function combineRooms(polygons:Polygon[][]){const [first,...rest]=polygons.map(toMulti);return first?fromMulti(clipping.union(first,...rest)):[];}
@@ -14,6 +14,10 @@ export function newElement(kind:DrawingElement['kind'],scopeId:string,floorId:st
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 export {roomPath};
 export function drawingSegments(rooms:RoomGeometry[],elements:DrawingElementGeometry[]){const doors=elements.filter(e=>e.kind==='door'&&!e.archived&&(e.state==='open'||!e.blocksSight)),segments:{a:Point;b:Point}[]=[];const append=(a:Point,b:Point)=>{const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);if(length<1e-8)return;const gaps:{from:number;to:number}[]=[];for(const door of doors){const p=anchored(door,rooms),center=p.length>1?{x:(p[0]!.x+p[1]!.x)/2,y:(p[0]!.y+p[1]!.y)/2}:p[0]!;const t=((center.x-a.x)*dx+(center.y-a.y)*dy)/(length*length),distance=Math.abs((center.x-a.x)*dy-(center.y-a.y)*dx)/length;if(t>=0&&t<=1&&distance<.05)gaps.push({from:Math.max(0,t-door.width/2/length),to:Math.min(1,t+door.width/2/length)});}gaps.sort((a,b)=>a.from-b.from);let start=0;for(const gap of [...gaps,{from:1,to:1}]){if(gap.from>start)segments.push({a:{x:a.x+dx*start,y:a.y+dy*start},b:{x:a.x+dx*gap.from,y:a.y+dy*gap.from}});start=Math.max(start,gap.to);}};for(const room of rooms)for(const ring of room.polygons.flatMap(p=>[p.outer,...p.holes]))for(let i=0;i<ring.length;i++)append(ring[i]!,ring[(i+1)%ring.length]!);for(const e of elements.filter(e=>e.kind==='wall'&&e.blocksSight&&!e.archived))for(let i=1;i<e.points.length;i++)append(e.points[i-1]!,e.points[i]!);return segments;}
+/** Canonical room surface for the detailed Atlas and its raster output. */
+export function roomFacePaint(room:RoomGeometry,unitsPerPixel:number,style?:Pick<RoomStyle,'fill'|'wall'>,selected=false){
+ return atlasPaint('polygons',{polygons:room.polygons,style:{fill:style?.fill??(selected?'#e8d8ac':'#e2dac4'),stroke:style?.wall??'#3d4b45',lineWidth:Math.max(0.07,Math.min(0.18,unitsPerPixel)),fillRule:'evenodd'}});
+}
 /** One geometry source for Canvas display and raster export; legacy hosts use an adapter. */
 export function elementPaint(e:DrawingElementGeometry,rooms:RoomGeometry[],elements:DrawingElementGeometry[]=[]){
  const p=anchored(e,rooms),at=p[0]??{x:0,y:0},pts=p,g=atlasPaint("group", {data: {drawingId: String(e.id)}});

@@ -42,7 +42,7 @@ import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames } from "./world-model";
 import { cityPaint, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
-import { elementPaint } from "./drawing-model";
+import { elementPaint, roomFacePaint } from "./drawing-model";
 import { atlasCityPoint, atlasCityState, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
@@ -2284,7 +2284,7 @@ export class CampaignAtlasWorkbench {
     return copy;
   }
   private drawRoomFace(g:AtlasPaint,room:import('./contracts').RoomGeometry,mpp:number){
-      const path = shape("polygons", {polygons: room.polygons, style: {fill: this.selection?.id === room.id ? "#e8d8ac" : "#e2dac4", stroke: "#3d4b45", lineWidth: Math.max(0.07, Math.min(0.18, mpp)), fillRule: "evenodd"}});
+      const path = roomFacePaint(room,mpp,this.data?.geometry.drawing.styles.find(s=>s.id===room.id),this.selection?.id===room.id);
 
       path.data.atlasObject = "true";
       path.data.kind = "room";
