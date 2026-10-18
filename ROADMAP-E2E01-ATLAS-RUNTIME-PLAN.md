@@ -199,6 +199,47 @@ den ganzen gültigen Umbau atomar; Verwerfen lässt bestätigte Arbeit unveränd
 Undo nach Annahme bleibt möglich. Draftspeicher und große Undo-Deltas werden
 separat budgetiert; ein Preview ist kein Autosave der Vorschlagswahrheit.
 
+### Dungeon-Key und Autorenlesestand (18.10.2026)
+
+Key und Volumenwerkzeug lesen über `dungeonAuthoring` den gemeinsamen
+Autorenstand im SQLite-Lesesnapshot, einschließlich geschützter Graphgeometrie.
+Der Key bestimmt Kartenzuordnung aus diesem Stand, nicht aus den zufällig
+im Atlas geladenen Räumen. Archivierte Räume und Räume archivierter Geschosse
+bleiben einmalig als archivierter Inhalt erreichbar und bearbeitbar. Der
+Kartenknopf nutzt für aktive Räume die gezielte Atlasnavigation samt Geschoss,
+Kamera und stabiler Raumkennung. Eine fehlgeschlagene Geometrienachlese wird als
+nicht geladen angezeigt und sperrt die Kartennavigation, statt fehlende Geometrie
+zu behaupten.
+
+Gemeinsame Dungeon-Autorenbefehle antworten über `atlasDrawingCommit` mit ihrem
+Autorenstand und Atlasrevision. Sie erzeugen nach dem Commit keine vollständige
+Atlas-/Reiseantwort mehr. Auch der gemeinsame räumliche Nachabgleich liest nur
+seine Geometrie-/Kartenfakten, keine Wahrnehmung oder Spuren. Bestehende Befehlskennungen, Revisionen, gemeinsame
+History und Wiederholungsbelege bleiben unverändert; verlorene Antworten werden
+über den vorhandenen kompakten Atlas-Recoverypfad geklärt. Es gibt keine
+Datenmigration. Reise, Wahrnehmung und ihre Fehler bleiben im Laufzeitleser;
+Fallenbedienung mit aktuellen Charges konsumiert weiterhin ihren Laufzeitstand.
+
+Gezielte Store-/DOM-Prüfungen decken ausgewählte Kartengeometrie, archivierte
+Geschosse, Graphschutz, fehlgeschlagene Nachlese und Commit/Replay/Undo/Redo bei
+beschädigten laufzeitexklusiven Spuren ab. Die native Probe
+`tools/test-desktop-dungeon-authoring.mjs` verfolgt Raumtext → anderer Raum/
+Geschoss → Atlas → Volumenwerkzeug → archivierter Key → Prozessneustart bei
+100/200 Prozent. Fehlerisolation mit absichtlich beschädigten Spuren und der
+anschließende fehlerfreie Kartennavigationsablauf sind getrennte Versuchsfälle;
+die beschädigte Laufzeitkarte wird dadurch nicht als verfügbar oder repariert
+ausgewiesen. Ihre Rohresultate bleiben von Produktabnahme getrennt.
+
+**Offen:** Der Key liest weiterhin die vollständige Autorenansicht und allgemeine
+Vorbereitungsdaten für Referenznamen. Große Keys brauchen einen eigenen
+seitenweisen Such-/Detailvertrag einschließlich Vorlagenabhängigkeiten,
+Archivmetadaten und quellengebundener Sammeländerungen. Die Vorschau benötigt
+passende lokale Geometrie und darf ihre Texte nicht aus einer vereinfachten
+Kartenkontur zurückschreiben. Diese Begrenzung und die gemeinsame native
+100.000-Zellen-Qualifikation sind hier nicht abgeschlossen. Gegenwärtige
+Archivkennungen ersetzen noch keinen vollständigen geometrieunabhängigen
+Room-/Volume-Neuzuordnungsablauf.
+
 ## Mehrstufige Landschaft und Atlasgestaltung
 
 Hexgröße bezeichnet den Abstand gegenüberliegender Kanten: 3, 9, 27, … Meilen mit Faktor 3 (bei regelmäßigen Nachbarhexes zugleich Mittelpunktabstand). Die kleinste Stufe beträgt 3 Meilen; die weiteste Kameraansicht umfasst eine erdgroße Referenz von etwa 40.000 × 20.000 km, ohne die Welt zu begrenzen;

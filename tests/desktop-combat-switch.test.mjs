@@ -57,7 +57,7 @@ test('a packet encounter invalidated during loading never sends a create command
 
 test('refreshing Combat cannot enable an empty Scene-group selection through its generic control lock',async()=>{
  const x=await fixture();try{
-  for(const key of ['live','progress','scenePreparation','groupView'])window.campaign[key]=async(...args)=>({ok:true,value:x.store[key](...args)});
+  for(const key of ['sceneEncounterSelection'])window.campaign[key]=async(...args)=>({ok:true,value:x.store[key](...args)});
   x.el('combat-creation').open=true;x.el('combat-selection-refresh').click();await until(()=>x.el('combat-selection-status').textContent==='');
   assert.equal(x.el('combat-selection-prepare').disabled,true);x.el('combat-refresh').onclick();await until(()=>!x.el('combat-refresh').disabled);
   assert.equal(x.el('combat-selection-prepare').disabled,true);assert.equal(x.writes.length,0);
@@ -77,7 +77,7 @@ test('adopting a visit in the same Scene automatically refreshes available encou
  const x=await fixture();try{
   await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
   const live=x.store.live(x.w.token);x.ui.combatContext(x.w,live.scene,live.rosterRevision);await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
-  for(const key of ['live','progress','scenePreparation','groupView'])window.campaign[key]=async(...args)=>({ok:true,value:x.store[key](...args)});
+  for(const key of ['sceneEncounterSelection'])window.campaign[key]=async(...args)=>({ok:true,value:x.store[key](...args)});
   x.el('combat-creation').open=true;x.el('combat-selection-refresh').click();await until(()=>x.el('combat-selection-status').textContent==='');
   assert.equal(x.el('combat-selection-groups').querySelectorAll(':scope > article > label > input').length,0);
   const before=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat,adopted=adoptEncounterVisit(x);

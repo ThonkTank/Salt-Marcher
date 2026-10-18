@@ -1,3 +1,4 @@
+import {openDesktopKeyReferences} from './qa-key-entry.mjs';
 import {createRequire} from 'node:module';
 import {readFile,writeFile,mkdtemp,mkdir,appendFile,stat} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
@@ -39,7 +40,7 @@ const merged='Nera hat ihren Sold erhalten. Sie kennt den Zugang zum Keller.\n\n
 let stage='launch',closed=true;const results={};
 async function openNote(title){await page.locator('#world-search').fill(title);await page.locator('#world-list').getByRole('button',{name:title,exact:true}).click();await page.waitForFunction(t=>document.querySelector('#note-title').value===t,title);}
 async function openUse(room){await page.locator('#note-room-uses-list button').filter({hasText:room}).click();await page.locator('#key-dialog').waitFor({state:'visible'});}
-async function refs(){if(!await page.locator('#key-references').isVisible())await page.locator('#key-dialog summary').filter({hasText:'Kampagnenreferenzen'}).click();}
+async function refs(){if(!await page.locator('#key-references').isVisible())await openDesktopKeyReferences(page);}
 try{
  await launch();closed=false;await page.locator('#workspace-navigation').waitFor({state:'visible'});await tab('#preparation-tab');
  stage='read both NPC sources and prepare guarded merge';await openNote(duplicate.title);assert.equal(await page.locator('#note-gm').inputValue(),duplicate.gmNotes.replaceAll('\r\n','\n'));await page.locator('#note-merge-open').click();await page.locator('#note-merge-dialog').waitFor({state:'visible'});await page.locator('#note-merge-target').selectOption(nera.id);await page.locator('#note-merge-dialog').getByText('Originale und 2 Verweisstellen geladen.',{exact:false}).waitFor({state:'visible'});await page.locator('#note-merge-dialog summary').click();assert((await page.locator('#note-merge-dialog').innerText()).includes('Ältere Mitschrift: Neras Sold ist noch offen.'));assert((await page.locator('#note-merge-dialog').innerText()).includes('Nera hat ihren Sold erhalten.'));await shot('both-originals-and-affected-references');await page.locator('#note-merge-gm').fill(merged);

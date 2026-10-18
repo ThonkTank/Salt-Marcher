@@ -44,7 +44,7 @@ export function setCombatCatalogNavigation(open:NonNullable<typeof openCreatureC
 let hitPanel:CombatHitPanel|null=null;
 let areaPanel:CombatAreaPanel|null=null;
 let initiativePanel:CombatInitiativePanel|null=null;
-let reinforcementRequest=0,reinforcementBusy=false;
+let reinforcementRequest=0,reinforcementBusy=false,reinforcementSearched=false,reinforcementSourceChosen=false;
 let reinforcementResults:{id:string;name:string;challengeRating:string}[]=[];
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 type PendingLegendary={participantId:string;actionId:string;cost:number};
@@ -59,7 +59,7 @@ let pendingSave:PendingSave|null=null,savePending=false;
 export function pendingRollStillValid(pending:{combatId:string;attackerId:string}|null,combat:CombatView['combat']){return !!pending&&!!combat&&editableCombat(combat)&&pending.combatId===combat.id&&combat.participants.some(participant=>participant.id===pending.attackerId);}
 let tell: (text: string, error?: boolean) => void, afterSaved:(()=>Promise<void>)|undefined;
 let loadPending=false,loadError:string|null=null,requestedCombatId:string|null=null,knownRecent:CombatView['recent']=[];
-function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){expandedMobs.clear();groupPicker.reset();reinforcementRequest++;reinforcementBusy=false;reinforcementResults=[];get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
+function acceptCombat(result:CombatView){if(view?.combat?.id!==result.combat?.id){expandedMobs.clear();groupPicker.reset();reinforcementRequest++;reinforcementBusy=false;reinforcementSearched=false;reinforcementSourceChosen=false;reinforcementResults=[];closeReinforcements();get<HTMLSelectElement>('combat-creature-source').value='';get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-search').value='';get<HTMLInputElement>('combat-creature-initiative').value='';get('combat-creature-status').textContent='';}view=result;requestedCombatId=result.combat?.id??null;knownRecent=result.recent;if(pendingDamage.some(damage=>damage.combatId!==result.combat?.id))pendingDamage=[];if(pendingAttack&&!pendingRollStillValid(pendingAttack,result.combat))pendingAttack=null;if(pendingSave&&!pendingRollStillValid(pendingSave,result.combat))pendingSave=null;}
 let loadNumber=0,candidateRequest=0,candidatePending=false,candidateLoading=false,partyContext='',preparationContext='';
 const fighterFields=fighterDraftFields;
 type FighterDraft=FighterWorkingDraft;
@@ -211,7 +211,7 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
     if(!await execute({kind:'create',sceneId:owner.sceneId,title:'Neue Begegnung',includeParty:true,expectedMembershipRevision:owner.revision})||!owner.current())return;
   }
   if(await execute({kind:'add-creature',creatureId,count,grouped})&&owner.current()){
-    get<HTMLDetailsElement>('combat-add-details').open=false;
+    closeReinforcements();
     // The live focus bar has just appeared after leaving the catalog. Measure
     // its sticky offset before positioning the encounter heading beneath it.
     window.requestAnimationFrame(()=>{if(owner.current())get('combat-panel').scrollIntoView({block:'start'});});
@@ -281,28 +281,49 @@ function renderConcentrationEffect(){
   const box=get('combat-concentration-effect'),combat=view?.combat,actor=combat?.participants.find(p=>p.concentrationChecks?.length),check=actor?.concentrationChecks?.[0];if(!combat||!actor||!check||!editableCombat(combat)){box.hidden=true;return;}box.hidden=false;get('combat-concentration-result').textContent=actor.name+' · Konzentration SG '+check.dc+' nach '+check.damage+' Schaden'+(actor.concentrationChecks!.length>1?' · 1 von '+actor.concentrationChecks!.length+' offenen Prüfungen':'');
   const modifier=get<HTMLInputElement>('combat-concentration-modifier'),key=actor.id+':'+check.damage+':'+check.dc;if(modifier.dataset.checkKey!==key){modifier.dataset.checkKey=key;modifier.value='0';}for(const id of ['combat-concentration-roll','combat-concentration-pass','combat-concentration-fail'])get<HTMLButtonElement>(id).disabled=blocked();modifier.disabled=blocked();
 }
+function closeReinforcements(){
+ const dialog=get<HTMLDialogElement>('combat-add-dialog');
+ if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
+}
+function openReinforcements(){
+ if(blocked()||!editableCombat(view?.combat??null))return;
+ renderReinforcements();lock();
+ const dialog=get<HTMLDialogElement>('combat-add-dialog');
+ if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+ get<HTMLInputElement>(value('combat-creature-source')==='catalog'?'combat-creature-search':'combat-creature-count').focus();
+}
 function renderReinforcements(){
  const select=get<HTMLSelectElement>('combat-creature-select'),previous=select.value,combat=view?.combat;
+ const source=get<HTMLSelectElement>('combat-creature-source');
+ const groups=new Map<string,{label:string}>();
+ for(const actor of combat?.participants??[])if(actor.sourceId&&!actor.worldActorId&&!groups.has(actor.groupId)){
+  const count=combat!.participants.filter(p=>p.groupId===actor.groupId).length;
+  if(count>1||actor.partitionKind==='mob')groups.set(actor.groupId,{label:(actor.groupName?actor.groupName+' · ':'')+(combat?.sources?.find(c=>c.id===actor.sourceId)?.name??actor.name)+' · vorhandene Initiative '+actor.initiative+' ('+count+')'});
+ }
+ if(!reinforcementSourceChosen||!source.value||source.value==='group'&&!groups.size)source.value=groups.size?'group':'catalog';
+ source.querySelector<HTMLOptionElement>('option[value="group"]')!.disabled=!groups.size;
+ const grouped=source.value==='group';
+ get('combat-creature-search-form').hidden=grouped;get('combat-creature-status').hidden=grouped;
+ get('combat-creature-initiative-field').hidden=grouped;get('combat-creature-grouped-field').hidden=grouped||Number(value('combat-creature-count'))<=1;
+ get('combat-creature-select-label').textContent=grouped?'Vorhandener Trupp':'Katalogkreatur';
+ get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps. Vorhandene HP und Zustände sowie der laufende Zug bleiben erhalten.':'Statblock, HP, RK und XP werden übernommen. Der laufende Zug bleibt erhalten.';
  select.replaceChildren();
  const add=(id:string,text:string)=>{const option=document.createElement('option');option.value=id;option.textContent=text;select.append(option);};
- const groups=new Set<string>();
- for(const actor of combat?.participants??[])if(actor.sourceId&&!actor.worldActorId&&!groups.has(actor.groupId)){
-  groups.add(actor.groupId);const count=combat!.participants.filter(p=>p.groupId===actor.groupId).length;
-  if(count>1||actor.partitionKind==='mob')add('group:'+actor.groupId,(actor.groupName?actor.groupName+' · ':'')+(combat?.sources?.find(c=>c.id===actor.sourceId)?.name??actor.name)+' · vorhandene Initiative '+actor.initiative+' ('+count+')');
- }
- const creatures=new Map([...(combat?.sources??[]),...reinforcementResults].map(c=>[c.id,c]));
- for(const c of creatures.values())add('creature:'+c.id,c.name+' · HG '+c.challengeRating);
- if(!select.options.length)add('','Monster suchen oder zuerst einen Statblock in diesen Kampf übernehmen.');
+ if(grouped)for(const [id,group]of groups)add('group:'+id,group.label);
+ // A completed catalog search must never silently retain an unrelated troop.
+ else for(const c of reinforcementSearched?reinforcementResults:combat?.sources??[])add('creature:'+c.id,c.name+' · HG '+c.challengeRating);
+ if(!select.options.length)add('',reinforcementBusy?'Monster werden gesucht…':'Keine Katalogkreatur ausgewählt. Monster suchen.');
  select.value=[...select.options].some(o=>o.value===previous)?previous:select.options[0]?.value??'';
 }
 async function searchReinforcements(){
  const w=workspace,combat=view?.combat;if(!w||!combat||blocked()||reinforcementBusy)return;
  const g=generation,id=combat.id,load=loadNumber,request=++reinforcementRequest;
+ get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;reinforcementSearched=true;
  reinforcementBusy=true;reinforcementResults=[];get('combat-creature-status').textContent='Monster werden gesucht…';renderReinforcements();lock();
  try{
   const result=unwrap(await window.campaign.creatures({text:value('combat-creature-search'),offset:0,limit:25,sort:'name',direction:'asc'}));
   if(g!==generation||request!==reinforcementRequest||workspace?.token!==w.token||view?.combat?.id!==id||load!==loadNumber)return;
-  reinforcementResults=result.rows;get('combat-creature-status').textContent=result.total?Math.min(25,result.total)+' von '+result.total+' Treffern. Bekannte Statblöcke und Gruppen bleiben verfügbar.':'Keine Treffer. Bekannte Statblöcke und Gruppen bleiben verfügbar.';
+  reinforcementResults=result.rows;get('combat-creature-status').textContent=result.total?Math.min(25,result.total)+' von '+result.total+' Treffern.':'Keine Treffer. Suche ändern oder einen vorhandenen Trupp wählen.';
  }catch(error){if(g===generation&&request===reinforcementRequest&&view?.combat?.id===id&&load===loadNumber)get('combat-creature-status').textContent='Suche fehlgeschlagen: '+(error as Error).message;}
  finally{if(g===generation&&request===reinforcementRequest){reinforcementBusy=false;if(load!==loadNumber)get('combat-creature-status').textContent='Kampfstand geändert. Bei Bedarf erneut suchen.';renderReinforcements();lock();}}
 }
@@ -348,6 +369,8 @@ function lock() {
   if(reinforcementBusy)for(const control of get('combat-reinforcement').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement>('input,button,select'))control.disabled=true;
   get<HTMLButtonElement>('combat-creature-add').disabled=blocked()||reinforcementBusy||!value('combat-creature-select');
   const linked=value('combat-creature-select').startsWith('group:');
+  get('combat-creature-grouped-field').hidden=linked||Number(value('combat-creature-count'))<=1;
+  if(get('combat-creature-grouped-field').hidden)get<HTMLInputElement>('combat-creature-grouped').checked=false;
   get<HTMLInputElement>('combat-creature-initiative').disabled=blocked()||reinforcementBusy||linked;
   get<HTMLInputElement>('combat-creature-grouped').disabled=blocked()||reinforcementBusy||linked;
 }
@@ -365,9 +388,12 @@ function render() {
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
   const startIssue=combat?.phase==='preparing'?combatStartIssue(combat):null;
   get('combat-assessment').textContent = startIssue??(view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.sceneGroups ? ' · Szenengruppen: '+combat.sceneGroups.map(g=>g.name).join(', ') : combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '');
-  const additions=get<HTMLDetailsElement>('combat-add-details');additions.querySelector('summary')!.textContent=combat?.phase==='preparing'?'Gegner vorbereiten':'Verstärkung hinzufügen';
-  if(additions.dataset.combatId!==combat?.id){additions.dataset.combatId=combat?.id??'';additions.open=!!startIssue;}
-  if(additions.dataset.phase!==combat?.phase){additions.dataset.phase=combat?.phase??'';if(combat?.phase==='running')additions.open=false;}
+  const additionLabel=combat?.phase==='preparing'?'Gegner vorbereiten':'Verstärkung hinzufügen';
+  get('combat-add-open').textContent=additionLabel+'…';get('combat-add-title').textContent=additionLabel;
+  const additions=get<HTMLDialogElement>('combat-add-dialog');
+  if(additions.dataset.combatId!==combat?.id||!editableCombat(combat??null))closeReinforcements();
+  additions.dataset.combatId=combat?.id??'';
+  get('combat-add-context').textContent=combat?.phase==='running'?'Runde '+combat.round+' · Am Zug: '+(combat.participants.find(p=>p.id===combat.turnId)?.name??'—')+' · Zug bleibt erhalten.':'Gegner mit Statblock, HP und XP übernehmen.';
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
   const recent=[...(view?.recent??knownRecent)];if(combat&&!recent.some(item=>item.id===combat.id))recent.unshift({id:combat.id,title:combat.title,phase:combat.phase});
@@ -380,7 +406,7 @@ function render() {
   get('combat-initiative-open').textContent=combat?.phase==='running'?'Initiative ändern…':'Initiative eintragen…';
   get('combat-finish').hidden = !combat || terminal;
   get('combat-finish').textContent = combat?.phase === 'preparing' ? 'Vorbereitung beenden…' : 'Kampf abschließen…';
-  get('combat-add-details').hidden = !combat || terminal;
+  get('combat-add-open').hidden = !combat || terminal;
   get('combat-notes-details').hidden = !combat || terminal;
   renderNotes();
   resolution?.context(workspace,scene,combat??null);
@@ -478,7 +504,7 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   const selectionRoot=document.createElement('section');get('combat-creation').querySelector('summary')!.after(catalogButton,selectionRoot);
   selectionPanel=new CombatSelectionPanel(selectionRoot,()=>{const owner=preparationOwner();return owner&&workspace&&scene?{workspace,scene,current:owner.current}:null;},(action,current)=>execute(action,undefined,current),blocked);
   get('combat-creation').addEventListener('toggle',()=>{if(get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();});
-  const groupButton=document.createElement('button');groupButton.type='button';groupButton.id='combat-group-open';groupButton.textContent='Vorbereitete Monstergruppe hinzufügen…';groupButton.onclick=()=>void reinforceWorldGroup().catch(e=>tell(e.message,true));get('combat-reinforcement').prepend(groupButton,sceneGroupTray(()=>{const owner=preparationOwner();return owner&&workspace?{token:workspace.token,sceneId:owner.sceneId,current:owner.current}:null;},reinforceWorldGroup,status));
+  const groupButton=document.createElement('button');groupButton.type='button';groupButton.id='combat-group-open';groupButton.textContent='Vorbereitete Monstergruppe hinzufügen…';groupButton.onclick=()=>{closeReinforcements();void reinforceWorldGroup().catch(e=>tell(e.message,true));};const moreSources=document.createElement('details'),moreSummary=document.createElement('summary');moreSummary.textContent='Vorbereitete Szenengruppen';moreSources.append(moreSummary,groupButton,sceneGroupTray(()=>{const owner=preparationOwner();return owner&&workspace?{token:workspace.token,sceneId:owner.sceneId,current:owner.current}:null;},async(...args)=>{closeReinforcements();await reinforceWorldGroup(...args);},status));get('combat-add-dialog').append(moreSources);
   const panel=get('combat-panel');panel.addEventListener('dragover',e=>{if(e.dataTransfer?.types.includes(sceneGroupDragType)&&editableCombat(view?.combat??null)&&!blocked()){e.preventDefault();e.dataTransfer.dropEffect='copy';}});panel.addEventListener('drop',e=>{const raw=e.dataTransfer?.getData(sceneGroupDragType);if(!raw||!workspace||!scene||blocked()||!editableCombat(view?.combat??null))return;e.preventDefault();try{const data=JSON.parse(raw);if(data.sceneId!==scene.id||typeof data.groupId!=='string'||!Number.isSafeInteger(data.revision))throw new Error('Gruppe gehört zu einer anderen Szene.');void reinforceWorldGroup(data.groupId,data.revision).catch(error=>tell(error.message,true));}catch(error){tell((error as Error).message,true);}});
 initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftCache,(action,revision)=>execute(action,revision),status);get('combat-initiative-open').onclick=()=>void initiativePanel?.open();hitPanel=new CombatHitPanel(get('combat-hit-effect'),(action,revision)=>execute(action,revision),async(opening,preset,formula,critical)=>{let result:SceneCheck|null=null;const actor=view?.combat?.participants.find(p=>p.id===opening.attackerId),id=view?.combat?.id,gen=generation;if(!actor||!id)return null;await rollSceneFormula({label:preset.label+(critical?' · Kritisch':''),actor:actor.name,formula,formulaKind:'damage',dc:null,sourceCreatureId:actor.sourceId!,sourceActionId:opening.action.id},check=>{if(generation===gen&&view?.combat?.id===id)result=check;});return result;});areaPanel=new CombatAreaPanel(get('combat-area-effect'),(action,revision)=>execute(action,revision));get('combat-area-open').onclick=()=>areaPanel?.open();resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution,(losses,revision,current)=>execute({kind:'confirm-npc-losses',losses},revision,current),async(id,current)=>{if(openNpcProfile)await openNpcProfile(id,current);});onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
   for(const id of [...fighterFields,'fighter-group-name','fighter-concentration','fighter-counted'])get(id).addEventListener('input',keepFighterDraft);
@@ -495,7 +521,10 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
+  get('combat-add-open').onclick=openReinforcements;get('combat-add-close').onclick=closeReinforcements;
+  get('combat-creature-source').onchange=()=>{reinforcementSourceChosen=true;get<HTMLInputElement>('combat-creature-initiative').value='';renderReinforcements();lock();};
   get('combat-creature-search-form').onsubmit=event=>{event.preventDefault();void searchReinforcements();};
+  get('combat-creature-count').oninput=lock;
   get('combat-creature-select').onchange=()=>{get<HTMLInputElement>('combat-creature-initiative').value='';lock();};
   get('combat-creature-form').onsubmit=event=>{
    event.preventDefault();if(blocked()||reinforcementBusy)return;
@@ -503,9 +532,9 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
    const creatureId=groupId?view?.combat?.participants.find(p=>p.groupId===groupId&&!p.worldActorId)?.sourceId:choice.startsWith('creature:')?choice.slice(9):null;
    if(!creatureId)return;
    const initiative=value('combat-creature-initiative').trim();
-   void execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})}).then(ok=>{if(ok)get<HTMLDetailsElement>('combat-add-details').open=false;});
+   void execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})}).then(ok=>{if(ok)closeReinforcements();});
   };
-  get('combat-add-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }); };
+  get('combat-add-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }).then(ok=>{if(ok)closeReinforcements();}); };
   get('combat-start').onclick = () => void execute({ kind: 'start' });
   get('combat-next').onclick = () => void execute({ kind: 'next' });
   get('combat-undo').onclick = () => void execute({ kind: 'undo' });

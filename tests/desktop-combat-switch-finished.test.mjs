@@ -55,7 +55,7 @@ test('quick picker displays stable combat numbers for otherwise identical titles
 
 test('the next encounter stays ahead of completed resolution and empty preparation explains the missing roster',async()=>{
  const x=await fixture({empty:true});try{
-  assert.equal(x.el('combat-start').disabled,true);assert.match(x.el('combat-assessment').textContent,/Füge Teilnehmer/);assert.equal(x.el('combat-add-details').open,true);assert.equal(x.el('combat-add-details').querySelector('summary').textContent,'Gegner vorbereiten');assert.equal(x.writes.length,0);
+  assert.equal(x.el('combat-start').disabled,true);assert.match(x.el('combat-assessment').textContent,/Füge Teilnehmer/);assert.equal(x.el('combat-add-open').textContent,'Gegner vorbereiten…');assert.equal(x.el('combat-add-open').hidden,false);assert.equal(x.writes.length,0);
   x.choose(x.a.id);await until(()=>x.el('combat-title').textContent==='Torwache');const children=[...x.el('combat-panel').children];assert.ok(children.indexOf(x.el('combat-creation'))<children.indexOf(x.el('combat-resolution')),'next preparation must be reachable before a potentially long result/loot list');assert.equal(x.el('combat-creation').hidden,false);
  }finally{x.cleanup();}
 });

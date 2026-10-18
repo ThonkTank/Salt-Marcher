@@ -97,7 +97,7 @@ else {
     function handle<T>(name: string, operation: (...args: any[]) => T | Promise<T>) {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
-        try { const value=await operation(...args);if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
+        try { const value=await operation(...args);if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','atlas:drawing-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
         catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.' }; }
       });
     }
@@ -151,6 +151,7 @@ else {
     handle('campaign:regenerate-session', (token: string,id: string,index: number,seed: string)=>store.regenerateSessionProposal(token,id,index,seed));
     handle('campaign:session-runs', (token: string,id: string)=>store.sessionRuns(token,id));
     handle('campaign:session-run', (token: string,id: string)=>store.sessionRun(token,id));
+    handle('campaign:scene-encounter-selection',(token:string,id:string)=>store.sceneEncounterSelection(token,id));
     handle('campaign:scene-preparation', (token: string,id: string)=>store.scenePreparation(token,id));
     handle('campaign:scene-rules',(token:string,id:string)=>store.sceneRules(token,id));
     handle('campaign:execute-scene-rule',(command:SceneRuleCommand)=>store.executeSceneRule(command));
@@ -306,6 +307,7 @@ else {
     handle('music:pick',(token:string)=>transfer(async()=>{store.music(token);const selection=await dialog.showOpenDialog(win,{title:'Lokale Audiodateien hinzufügen',properties:['openFile','multiSelections'],filters:[{name:'Audio',extensions:['mp3','ogg','oga','opus','wav','flac','m4a','aac']}]});if(selection.canceled)return{cancelled:true,ids:[]};const medias:import('../src/app/music-contracts').AudioAsset['media'][]=[];for(const filename of selection.filePaths)medias.push(await copyAudio(filename,path.join(dataDir,'audio'),hooks));if(audioCancelled)throw new Error('Audioimport abgebrochen.');return{cancelled:false,ids:store.ingestAudios(token,medias).map(a=>a.id)};}));
     handle('music:export',(token:string)=>transfer(async()=>{const library=store.audioLibrary(token),selection=await dialog.showSaveDialog(win,{title:'Musikbibliothek mit Medien exportieren',defaultPath:'Musikbibliothek.kwmusic',filters:[{name:'SaltMarcher Musikbibliothek',extensions:['kwmusic']}]});if(selection.canceled||!selection.filePath)return{cancelled:true};await exportAudioBundle(selection.filePath,path.join(dataDir,'audio'),library,hooks);return{cancelled:false};}));
     handle('music:import',(token:string)=>transfer(async()=>{store.music(token);const selection=await dialog.showOpenDialog(win,{title:'Musikbibliothek importieren',properties:['openFile'],filters:[{name:'SaltMarcher Musikbibliothek',extensions:['kwmusic']}]});if(selection.canceled)return{cancelled:true,ids:[]};const library=await importAudioBundle(selection.filePaths[0]!,path.join(dataDir,'audio'),hooks);if(audioCancelled)throw new Error('Bibliotheksimport abgebrochen.');return{cancelled:false,ids:store.mergeAudioLibrary(token,library)};}));
+    handle('dungeon:authoring',(token:string)=>store.dungeonAuthoring(token));
     handle('dungeon:view',(token:string)=>store.dungeon(token));
     handle('dungeon:preview',(token:string,r:import('../src/app/dungeon-contracts').DungeonRequest)=>store.previewDungeon(token,r));
     handle('dungeon:execute',(c:import('../src/app/dungeon-contracts').DungeonCommand)=>store.executeDungeon(c));
@@ -358,6 +360,7 @@ else {
     handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));
     handle('atlas:room-commit',(edit:import('../src/app/contracts').Edit)=>store.atlasRoomCommit(edit));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
+    handle('atlas:drawing-commit',(command:import('../src/app/drawing-contracts').DrawingCommand)=>store.atlasDrawingCommit(command));
     handle('atlas:commit',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>c.action?.kind==='graph-accept'?afterRoomReaders(()=>store.executeAtlasCommit(c)):store.executeAtlasCommit(c));
     handle('campaign:workspace-initial',(token:string)=>store.workspaceInitial(token));
     handle('atlas:region-cancel',(token:string,consumer:'view'|'export'='view')=>{store.roomReadSource(token);if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');(consumer==='view'?atlasRegions:atlasExportRegions).cancel();});
