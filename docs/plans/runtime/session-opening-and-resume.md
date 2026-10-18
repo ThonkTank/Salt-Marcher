@@ -1,8 +1,55 @@
 # Spielabendstart und Wiederaufnahme
 
-Stand: 15.10.2026. `live.ts` verbindet vorhandene Gruppen, Weltlage, Mappe und
+Stand: 18.10.2026. `live.ts` verbindet vorhandene Gruppen, Weltlage, Mappe und
 Chronik. Der Start markiert einen Spielabend in der bestehenden Scene; er
 übernimmt keinen Besuch, bewegt keine Zeit und verteilt keine Beute.
+
+
+## Ein bestätigter Live-Laufstand, eine gemeinsame Aktualisierung
+
+Die [Live-Originalanforderung](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/session/requirements/requirements-live-session.md)
+verlangt eine lesende Sessionkomposition der fokussierten Scene. `openLive`
+liest Scene/Party und Vorbereitungsquellen; `mergeAck` übernimmt bestätigte
+Writerantworten samt Revisionen und erhält neuere Textentwürfe. Der gemeinsame
+Aufbau versorgt Sceneprosa, Party, Weltlage, Referenzen und Maskenkontexte.
+
+Der Standardpfad projiziert jeden bestätigten Stand einmal. Die Auswahl eines
+Charakterprofils und die noch ungespeicherte Ortsauswahl ändern nur ihre lokalen
+Controls. Erst die bestätigte Änderung aktualisiert abhängige Kontexte. Dies
+braucht weder einen weiteren Store noch einen Cache oder eine künstliche Revision.
+
+Zuvor rief die Profil-/Membershipdarstellung bereits den gesamten Scenekontext
+auf; der übergeordnete Aufbau tat dasselbe nochmals. Writerantworten und ihre
+Aufrufer wiederholten dies zusätzlich. Diese Verschachtelung ist entfernt:
+`openLive` und `mergeAck` verwenden denselben Sceneaufbau, nachgeordnete Controls
+starten keinen zweiten Gesamtaufbau. Focus-, Move-, Besuchs-, Membership- und
+Zeitaktionen verlassen sich auf die bestätigte Komposition. Ein bereits laufender
+Runtimekontext wird vor einer Folgeaktion nicht nochmals vollständig aufgebaut.
+Die Entwurfs-/Flush- und Receiptregeln bleiben bei ihren bisherigen Besitzern.
+Auch Party-Profilantworten werden nur hier übernommen. Die frühere zweite
+Übernahme im Topbaradapter überschrieb eine während der Antwort entstandene
+Live-Profileingabe. Der Writeraufruf hält deshalb die abgesendete Profilfassung;
+eine neue Eingabe besitzt bereits ein neues Profilobjekt und bleibt einschließlich
+eines bewussten Rückwechsels zum alten Wortlaut erhalten. Ohne spätere Eingabe
+gilt die bestätigte Profilfassung. Recovery ohne diese Aufrufbasis behält den
+bestehenden konservativen Entwurfserhalt; keine automatische Wiederholung.
+
+Notwendige Unterschiede: Die Initialisierungsantwort enthält noch nicht die
+vollständige Gruppen-/Fokusprojektion; danach bleibt ein gezieltes Wiederlesen
+nötig. Eigenständige Kampf-, Referenz- und Inhaltsdialoge behalten ihre fachlichen
+Reads und Revisionen. Eine Gesamtaktualisierung ist damit kein atomarer
+Crossfeatureframe und keine Zusage genau eines Datenbankreads für sämtliche
+Dialoge. Die separaten Welt-/Agendabasen beschreibt der [Reiseplan](../maps/hex-travel.md).
+
+Gezielte Prüfungen zählen den gemeinsamen Vorbereitungs-/Referenzanschluss beim
+Öffnen und Textsave, bei Fokus/Membership mit geschlossenem Kampfauswahldialog
+und nach bestätigter Ortsänderung. Profilinspektion und lokaler Ortsentwurf
+lösen diesen Anschluss nicht aus. Native Gegenproben zählen reale Welt-/Agenda-
+IPC-Aufrufe, erhalten Eingabetext, Fokus und Cursor über automatisches Speichern
+und lesen nach normalem Neustart bei200% denselben Text und Reisestand.
+Große Vorbereitungs-/Rosterprojektionen, die Fehlerisolation der Startquellen
+und parallele Inhaltsreads eigenständiger Dialoge bleiben gesondert zu messen;
+keine vollständige Last-, Plattform- oder Produktabnahme aus diesen Teilbelegen.
 
 ## Vorhandener Ablauf
 
