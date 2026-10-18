@@ -13,7 +13,7 @@ export const atlasToLocal = (p: Point, f: AtlasFrame): Point => ({
   x: (p.x - f.x) * Math.cos(f.angle) + (p.y - f.y) * Math.sin(f.angle),
   y: -(p.x - f.x) * Math.sin(f.angle) + (p.y - f.y) * Math.cos(f.angle),
 });
-export function atlasFrame(atlas: AtlasRenderView, b: AtlasBinding): AtlasFrame {
+export function atlasFrame(atlas: Pick<AtlasRenderView,"cities"|"bindings">, b: AtlasBinding): AtlasFrame {
   const frames=(atlas as import('./atlas-region-contracts').AtlasRegionView).region?.frames;const resolved=frames&&Object.hasOwn(frames,b.id)?frames[b.id]:null;if(resolved)return {...resolved};
   if (b.parent === "world") return { x: b.x, y: b.y, angle: b.angle };
   const city = atlas.cities.find((c) =>

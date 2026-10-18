@@ -199,7 +199,7 @@ export function initVolume(status:typeof tell,getWorkspace:typeof workspace,getR
 }
 export async function openVolume(){
  const w=workspace(),o=owner(),request=++readRequest;if(!w||!room())return;
- const result=await window.campaign.dungeon(w.token);
+ const result=await window.campaign.dungeonAuthoring(w.token);
  if(!current(o)||request!==readRequest)return;
  if(!result.ok)throw new Error(result.error);
  // A read must not silently advance the revision underneath an unsubmitted stroke.

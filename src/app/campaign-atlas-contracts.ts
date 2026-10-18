@@ -105,6 +105,7 @@ export interface AtlasCommitAck {
 }
 export type AtlasRenderView = Omit<CampaignAtlas<RoomGeometry,DrawingElementGeometry,import("./atlas-region-contracts").CityGeometry>,'scene'|'terrain'> & {terrain:Omit<AtlasMap,'cells'|'landscape'>;scene:Pick<SceneWorld,'scene'|'position'|'journey'>|null;region?:Omit<import("./atlas-region-contracts").AtlasRegionGeometry,'rooms'|'floors'|'drawing'|'cities'|'bindings'|'scopes'>};
 export interface AtlasAPI extends importAtlasRegionAPI {
+  atlasDrawingCommit(command:DrawingCommand):Promise<Result<{workspace:import('./contracts').Workspace;view:import('./drawing-contracts').DrawingView;atlasRevision:number}>>;
   atlasRoomCommit(edit:Edit):Promise<Result<import('./contracts').RoomCommit>>;
   atlasRenderView(token:string):Promise<Result<AtlasRenderView>>;
   atlasOverview(token: string): Promise<Result<AtlasOverview>>;
