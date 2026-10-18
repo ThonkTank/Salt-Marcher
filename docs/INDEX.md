@@ -19,6 +19,8 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Campaign und Planung | [Gesamtumfang](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Campaign/Data](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), [manuelle Sessionplanung](plans/campaign/manual-session-planner.md) |
 | Spielabendmappe und Markdownausgabe | [Quellenstand, Suche und nächste Abnahmen](plans/campaign/session-packet.md) |
 | Party und LiveSession | [Fachvertrag und Kernumsetzung](plans/runtime/smr03-live-scene-contract.md), [Spielabendstart und Wiederaufnahme](plans/runtime/session-opening-and-resume.md) |
+| Kampfentwürfe, Szenenauswahl und Nachbereitung | [Codeeinstiege, Datenregeln und offene Abnahmen](plans/runtime/combat-recovery.md) |
+| Quest-/Gerüchtabschluss und verlorene Antworten | [Narrative Entwürfe, Award und Recovery](plans/runtime/narrative-recovery.md) |
 | Adventuring Day und XP-Vorschau | [Aktive Party, Rechengrenzen und nächste Abnahmen](plans/runtime/adventuring-day.md) |
 | Passive Spielerprojektion | [Datenfreigabe, große Karten und nächste Schritte](plans/runtime/player-projection.md) |
 | GM-Referenzsuche und Regeln | [Lesen, Übergabe und nächste Schritte](plans/runtime/rule-references.md), [Autorenverweise und Kopien](plans/campaign/authored-text-references.md) |

@@ -1,7 +1,7 @@
 # Verfolgung als laufende Scenemaske
 
 Stand: 13.10.2026. Ergänzt den [Party-/Livevertrag](smr03-live-scene-contract.md),
-[Nachbereitung](combat-and-narrative-recovery.md) und den [Gesamtumfang](../../SCOPE.md).
+[Nachbereitung](combat-recovery.md#nachbereitung-und-bestehende-schätze) und den [Gesamtumfang](../../SCOPE.md).
 
 ## Quellen und aktueller Anschluss
 
