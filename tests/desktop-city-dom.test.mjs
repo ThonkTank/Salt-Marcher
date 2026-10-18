@@ -401,7 +401,7 @@ async function interiorSurface(x){
  x.window.campaign.drawing=async token=>({ok:true,value:x.store.drawing(token)});
  x.ui.initDrawing((message,error)=>x.messages.push({message,error}),()=>workspace,()=>workspace.rooms.find(r=>r.id===selected)??null,async()=>true,async next=>{workspace=next;await surface.atlas.refresh();},()=>surface?.atlas.render());
  await x.ui.activateDrawing(workspace);
- surface=await placeSurface(x,{flush:()=>x.ui.flushDrawing(),selectRoom:async id=>{selected=id;},updated:async next=>{workspace=next;await x.ui.activateDrawing(next);}});
+ surface=await placeSurface(x,{roomDraft:()=>workspace.rooms.find(r=>r.id===selected)??null,flush:()=>x.ui.flushDrawing(),selectRoom:async id=>{selected=id;},updated:async next=>{workspace=next;await x.ui.activateDrawing(next);}});
  surface.svg.setPointerCapture=()=>{};
  await surface.atlas.navigate('city',x.cityIds.one,x.unitIds.one);
  x.click('atlas-building-interior');await until(()=>surface.atlas.family==='interior').catch(error=>{error.message+=' '+JSON.stringify(x.messages)+' '+x.document.getElementById('atlas-save-status').textContent;throw error;});await settle();
