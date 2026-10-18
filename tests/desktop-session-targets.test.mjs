@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';
+import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID,createHash} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';
 const require=createRequire(import.meta.url);buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/session-targets-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({entryPoints:['src/app/generation/session-targets.ts'],outfile:'.build/session-targets.cjs',bundle:true,platform:'node',format:'cjs'});const {CampaignStore}=require('../.build/session-targets-store.cjs'),{sessionTargets}=require('../.build/session-targets.cjs');
 const party=[{id:'a',name:'Gruppe A',level:3,count:2},{id:'b',name:'Gruppe B',level:4,count:2}];
 test('original Golden allocation is exact and automatic count uses the original seeded policy',()=>{
@@ -53,4 +53,36 @@ test('source revisions create a new calculation while previous authored results 
  x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:table.revision,table:{...table,name:'Andere Quelle'}}));
  const next=x.store.generateSession(x.w.token,x.request);assert.notEqual(next.id,run.id);assert.deepEqual(x.store.sessionRun(x.w.token,run.id),run);assert.equal(x.store.generateSession(x.w.token,x.request).id,next.id);
  const regenerated=x.store.regenerateSessionProposal(x.w.token,next.id,0,'extra-entwurf');assert.equal(regenerated.origin,undefined);assert.equal(x.store.generateSession(x.w.token,x.request).id,next.id);
+});
+
+
+test('reordering encounter source sets resumes the same edited session without duplicating immutable runs',async t=>{
+ const x=fixture(t),first=x.store.encounterTables(x.w.token,false)[0],second={...first,id:randomUUID(),revision:0,name:'Zweite Quelle'};
+ x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:null,table:second}));
+ const request={...x.request,encounter:{...x.request.encounter,tableIds:[first.id,second.id]}},original=structuredClone(request),run=x.store.generateSession(x.w.token,request);
+ // Emulate a valid older writer: origin-v1 recorded the selected table order verbatim.
+ const historical=structuredClone(run);historical.origin.request.encounter.tableIds.sort().reverse();const payload=JSON.stringify(historical);
+ x.store.db.prepare('UPDATE session_run SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,run.id);
+ x.store.executeSession(x.command({kind:'edit-proposal',planId:x.planId,runId:run.id,index:0,expectedRevision:1,title:'Meine Brücke',notes:'Eigener Text\r\n',readAloud:'Still.',locationId:null,noteIds:[],reward:{poolXp:11,items:[]}}));
+ const edited=x.store.sessionRun(x.w.token,run.id),before=x.store.db.serialize(),reordered={...request,encounter:{...request.encounter,tableIds:[second.id,first.id]}};
+ assert.deepEqual(x.store.generateSession(x.w.token,reordered),edited);
+ assert.deepEqual(request,original,'normalization must not mutate caller input');assert.ok(x.store.db.serialize().equals(before));
+ const fresh=new CampaignStore(x.file);try{assert.deepEqual(fresh.generateSession(fresh.activate(x.cam.id).token,reordered),edited);}finally{fresh.close();}
+ // Opening another store updates activation metadata independently of generation.
+ const reopened=x.store.db.serialize();
+ // Sorting is not deduplication: malformed duplicate source choices still fail.
+ assert.throws(()=>x.store.generateSession(x.w.token,{...request,encounter:{...request.encounter,tableIds:[first.id,first.id]}}));
+ assert.ok(x.store.db.serialize().equals(reopened));
+ const snapshot=path.join(x.root,'source-set-copy.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);
+ const cam=x.store.acceptCampaignSnapshot(snapshot,'Eigene Kopie',{}),w=x.store.activate(cam.id),copied=x.store.sessionRun(w.token,x.store.db.prepare('SELECT id FROM session_run WHERE campaign_id=?').get(cam.id).id),copyBefore=x.store.db.serialize();
+ const copiedRequest=structuredClone(copied.origin.request);copiedRequest.encounter.tableIds.reverse();
+ assert.deepEqual(x.store.generateSession(w.token,copiedRequest),copied);assert.ok(x.store.db.serialize().equals(copyBefore));
+});
+
+
+test('ordered location bindings remain a different session origin',t=>{
+ const x=fixture(t),ids=[];for(const name of ['Westufer','Ostufer']){const id=randomUUID();ids.push(id);x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id,name,type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});}
+ const first=x.store.generateSession(x.w.token,{...x.request,locationIds:ids}),next=x.store.generateSession(x.w.token,{...x.request,locationIds:ids.slice().reverse()});
+ assert.notEqual(first.id,next.id);assert.deepEqual(first.proposals.map(p=>p.locationId),[ids[0],ids[1],ids[0]]);assert.deepEqual(next.proposals.map(p=>p.locationId),[ids[1],ids[0],ids[1]]);
+ assert.deepEqual(x.store.sessionRun(x.w.token,first.id),first);
 });

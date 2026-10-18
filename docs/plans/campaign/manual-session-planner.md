@@ -13,6 +13,14 @@ Gleiche gespeicherte Planungsrevision, gleicher Seed, dieselben Inhaltsvorgaben
 und unveränderte Welt-, Katalog-, Preset-, Tabellen- und Beutegrundlagen öffnen
 jetzt dieselbe Vorschau. Wiederholung erzeugt keine zusätzlichen Encounterläufe.
 Eigene Szenentexte, Belohnungsänderungen und Übernahmestände bleiben erhalten.
+Die Auswahl von Encounter-Tabellen wird als ungeordnete Menge verglichen:
+Umgeordnete Tabellenkennungen öffnen dieselbe gespeicherte Berechnung. Nur die
+Vergleichskopien werden sortiert, einschließlich älterer Origin-V1-Daten;
+gespeicherte Originalbytes und der Aufruferrequest bleiben unverändert.
+Doppelte Tabellenkennungen bleiben ungültig. Orts-, Notiz- und verbindliche
+NPC-Reihenfolgen werden nicht sortiert, da sie Szenenbindungen beeinflussen.
+Storegegenproben prüfen bearbeitete Vorschau, keine zusätzlichen Datenbytes,
+Fresh und weiterhin verschiedene Läufe bei vertauschten Ortsbesuchen.
 „Neuer Seed für weiteren Entwurf“ macht eine zusätzliche Berechnung ausdrücklich.
 Geänderte Quellrevisionen oder relevante Ledger-/XP-Grundlagen erzeugen einen
 neuen Lauf; vorherige Ergebnisse bleiben lesbar. Einzelne Neugenerierungen
