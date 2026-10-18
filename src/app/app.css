@@ -800,3 +800,10 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 
 #campaign-atlas[data-family="terrain"] #atlas-selection-title,#campaign-atlas[data-family="terrain"] #atlas-hint{display:none}
 #atlas-landscape-tools{padding:.5rem 0;margin:.5rem 0}
+
+/* Keep the current fight ahead of encounter browsing and repair actions. */
+#combat-panel .combat-heading{align-items:center;gap:.65rem}
+#combat-panel .combat-heading h2{margin:.3rem auto .3rem 0}
+#combat-panel #combat-history-details{margin:0;position:relative}
+#combat-history-details>summary{cursor:pointer;padding:.6rem}
+#combat-history-details[open]>.toolbar{position:absolute;right:0;top:100%;z-index:6;background:var(--white);border:1px solid var(--line);padding:.75rem;box-shadow:0 5px 15px #24344924;min-width:min(32rem,70vw)}
