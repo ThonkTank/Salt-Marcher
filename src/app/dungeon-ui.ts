@@ -50,7 +50,7 @@ function run(fn:(o:Owner)=>Promise<boolean>,recovery=false){
 function invalidatePreview(){routeIntent++;preview=null;el('dungeon-preview').textContent='';el<HTMLButtonElement>('dungeon-confirm').disabled=true;}
 function acceptReply(attempt:Attempt,value:DungeonView,o:Owner,recovered=false){
  const captured=attempt.command.action;
- if(value.sceneId!==o.sceneId){status('Aktion für die ursprüngliche Gruppe gespeichert. Der Fokus hat gewechselt; offene Eingaben behalten und anschließend aktualisieren.',true);return false;}
+ if(value.sceneId!==o.sceneId){contextReady=false;playback.stop();dungeonTravelReadState(false,'Fokusgruppe geändert. Offene Eingaben behalten und anschließend aktualisieren.');status('Aktion für die ursprüngliche Gruppe gespeichert. Der Fokus hat gewechselt; offene Eingaben behalten und anschließend aktualisieren.',true);return false;}
  if(captured.kind==='pace-settings'&&value.travelPace&&(!recovered||value.travelPace.settings.revision===captured.settings.revision+1&&canonicalJson({...value.travelPace.settings,revision:captured.settings.revision})===canonicalJson(captured.settings)))acceptDungeonPace(captured.settings,value.travelPace);
  data=value;confirmedFields=attempt.fields;
  if(captured.kind==='track-correct'&&attempt.track){

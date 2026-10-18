@@ -169,3 +169,18 @@ for(const intervening of [false,true])test('lost pace acknowledgement preserves 
  if(intervening){assert.deepEqual(x.store.db.serialize(),saved);assert.equal(x.view().travelPace.settings.groupMetersPerMinute,24);assert.equal(x.get('dungeon-group-speed').value,'18');}
  else{assert.equal(x.view().travelPace.settings.groupMetersPerMinute,18);assert.equal(x.view().travelPace.settings.revision,lost.action.settings.revision+2);assert.equal(await x.ui.flushDungeon(),true);}
 });
+
+function focusDungeonRearGroup(x){
+ const v=x.store.live(x.w.token),scene=x.store.liveScene(x.w.token,x.scene.id),next=x.store.executeLive(x.command({kind:'move',sceneId:scene.id,expectedRosterRevision:v.rosterRevision,expectedFocusRevision:v.focusRevision,expectedClockRevision:scene.clock.revision,expectedSceneMembershipRevision:scene.membershipRevision,memberIds:[x.ids[1]],target:{kind:'new',title:'Nachhut',expectedContentRevision:scene.revision}})).session.createdScene;
+ x.store.executeLive(x.command({kind:'focus',sceneId:next.id,expectedRevision:x.store.live(x.w.token).focusRevision}));return next;
+}
+test('reconciliation after a focus change retains old-group drafts and requires explicit discard before new-group writes',async t=>{
+ const x=await lostDungeonRound(t);x.get('dungeon-group-speed').value='12';const next=focusDungeonRearGroup(x),saved=x.store.db.serialize();
+ x.ui.syncDungeonLiveContext(x.w.token,next.id);x.get('dungeon-reconcile').click();await x.until(()=>x.get('dungeon-reconcile').hidden);await x.tick();assert.equal(x.get('dungeon-travel-controls').inert,true);assert.equal(x.get('dungeon-group-speed').value,'12');assert.equal(await x.ui.flushDungeon(),false);assert.deepEqual(x.store.db.serialize(),saved);
+ x.get('dungeon-input-discard').click();await x.until(()=>x.get('dungeon-travel-controls').inert===false);assert.equal(x.ui.atlasDungeonState().data.sceneId,next.id);assert.equal(x.get('dungeon-group-speed').value,'');assert.deepEqual(x.store.db.serialize(),saved);
+});
+test('a successful command reply for a changed focus cannot leave old-group commands enabled',async t=>{
+ const x=await panel(t),write=x.window.campaign.executeDungeon,{mountDungeonTravelConsole}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs'),host=document.createElement('section');document.body.append(host);mountDungeonTravelConsole(host);await x.ui.openDungeon();let next;
+ x.window.campaign.executeDungeon=async c=>{await write(c);next=focusDungeonRearGroup(x);return{ok:true,value:x.view()};};
+ x.get('dungeon-group-speed').value='12';x.get('dungeon-pace-save').click();await x.until(()=>!!next);await x.tick();assert.equal(x.get('dungeon-travel-controls').inert,true);assert.equal(x.get('dungeon-group-speed').value,'12');assert.equal(x.ui.atlasDungeonState().data.sceneId,x.scene.id);
+});
