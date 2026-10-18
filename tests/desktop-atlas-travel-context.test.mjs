@@ -15,7 +15,7 @@ function fixture(t) {
     const character = store.executeLive(command({ kind: 'create-character', profile: { name: 'Ada', speedFeet: 30 } })).character, live = store.live(w.token);
     store.executeLive(command({ kind: 'membership', characterId: character.id, expectedRevision: character.membershipRevision, expectedRosterRevision: live.rosterRevision, active: true, targetSceneId: a.id, expectedFocusRevision: live.focusRevision }));
     const beforeGlobals = { window: globalThis.window, document: globalThis.document, Event:globalThis.Event, CustomEvent:globalThis.CustomEvent };
-    const { window, document } = parseHTML(readFileSync('src/app/index.html','utf8')+'<div id="atlas-advanced-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join(''));
+    const { window, document } = parseHTML(readFileSync('src/app/index.html','utf8')+'<div id="atlas-context-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' + ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end'].map(k => `<button id="atlas-local-${k}"></button>`).join(''));
     Object.assign(globalThis, { window, document, Event:window.Event, CustomEvent:window.CustomEvent });
     for (const select of document.querySelectorAll('select'))
         Object.defineProperty(select, 'value', { value: '', writable: true });
@@ -40,7 +40,7 @@ test('pending and failed Atlas context reads revoke previews and block travel; r
     assert.equal(x.get('start').disabled, true);
     assert.equal(x.ui.hitDialog.open,false,'pending source refresh closes the old exact-choice dialog');
     assert.equal(x.get('place').disabled, true);
-    assert.equal(document.getElementById('atlas-advanced-fields').inert, true);
+    assert.equal(document.getElementById('atlas-context-fields').inert, true);
     assert.match(x.get('status').textContent, /geladen/);
     await x.ui.travelControl('start');
     assert.equal(x.sent.length, 0);
@@ -53,7 +53,7 @@ test('pending and failed Atlas context reads revoke previews and block travel; r
     window.campaign.atlasRegion = async () => ({ ok: true, value: {...x.store.atlasRenderView(x.w.token),region:{coverage:{mode:'detail',unreadable:0}}} });
     await x.ui.refresh();
     assert.equal(x.get('place').disabled, false);
-    assert.equal(document.getElementById('atlas-advanced-fields').inert, false);
+    assert.equal(document.getElementById('atlas-context-fields').inert, false);
     assert.equal(x.get('start').disabled, true);
     assert.equal(x.get('refresh').hidden, true);
     assert.equal(x.ui.localPreview, null);

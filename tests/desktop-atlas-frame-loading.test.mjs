@@ -41,25 +41,27 @@ test('a selected reference keeps its original slot below terrain and updates wit
  const first=draw();f.ui.selected.width=2;const next=draw();assert.equal(first.children[1],next.children[1]);assert.equal(next.children[0].data.landscapeId,'a');assert.equal(next.children[1].data.landscapeId,'road');assert.equal(next.children[0].children[0].geometry.width,2);
 });
 
-test('Hex fill previews and commits every cell between sparse pointer samples, with no write before confirmation',async t=>{
+test('Hex fill previews every crossed cell and commits each released stroke exactly once',async t=>{
  const f=fixture(t);f.set([]);const writes=[];f.host.write=async action=>{writes.push(action);return true;};
  f.ui.setActive(true);const tool=f.document.querySelector('#land-tool');tool.value='hex';tool.dispatchEvent(new f.window.Event('change'));
  f.host.hit=()=>null;f.host.point=e=>({x:e.clientX,y:e.clientY});const canvas=f.document.querySelector('canvas');canvas.setPointerCapture=()=>{};canvas.hasPointerCapture=()=>false;
  const pointer=(type,x)=>{const e=new f.window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{button:0,pointerId:1,clientX:x,clientY:0});canvas.dispatchEvent(e);};
  const palette=f.document.createElement('select');palette.id='atlas-terrain';palette.append(new Option('Wald','forest'));f.document.body.append(palette);
  f.document.querySelector('#land-radius').value='1000000';f.document.querySelector('#land-auto-level').checked=false;
- pointer('pointerdown',-4*HEX_METERS);pointer('pointermove',4*HEX_METERS);pointer('pointermove',0);pointer('pointerup',0);
- pointer('pointerdown',10*HEX_METERS);pointer('pointermove',11*HEX_METERS);pointer('pointerup',11*HEX_METERS);
- pointer('pointerdown',10*HEX_METERS);pointer('pointerup',10*HEX_METERS);
+ pointer('pointerdown',-4*HEX_METERS);pointer('pointermove',4*HEX_METERS);pointer('pointermove',0);
  f.ui.draw(f.scene,{x:-5*HEX_METERS,y:-HEX_METERS,width:10*HEX_METERS,height:2*HEX_METERS},10);
  assert.equal(writes.length,0);const preview=f.scene.children.find(n=>n.data.landHexDraft==='true');
- await f.ui.finish();assert.equal(writes.length,1);const patch=writes[0].record;assert.equal(patch.polygons.length,11,'Keep disjoint gestures and deduplicate retracing without connecting them');
- for(const q of [10,11])assert(contains({x:q*HEX_METERS,y:0},patch.polygons));
- assert.equal(patch.values.terrain,'forest');for(let q=-4;q<=4;q++)assert(contains({x:q*HEX_METERS,y:0},patch.polygons),'Missing intermediate hex '+q);
- assert(!contains({x:5*HEX_METERS,y:0},patch.polygons));
- assert(preview,'Show the actual hex footprint, not a thin pointer path');
+ pointer('pointerup',0);await new Promise(r=>setImmediate(r));assert.equal(writes.length,1);
+ const patch=writes[0].record;assert.equal(patch.values.terrain,'forest');
+ for(let q=-4;q<=4;q++)assert(contains({x:q*HEX_METERS,y:0},patch.polygons),'Missing intermediate hex '+q);
+ assert(!contains({x:5*HEX_METERS,y:0},patch.polygons));assert(preview);
  const relativePatch=patch.polygons.map(p=>({...p,outer:p.outer.map(v=>({x:v.x+5*HEX_METERS,y:v.y+HEX_METERS}))}));
- assert.deepEqual(preview.geometry.polygons,relativePatch,'Preview and saved geometry must be identical');
+ assert.deepEqual(preview.geometry.polygons,relativePatch,'Preview and committed footprint must match');
+ pointer('pointerdown',10*HEX_METERS);pointer('pointermove',11*HEX_METERS);assert.equal(writes.length,1);
+ pointer('pointerup',11*HEX_METERS);await new Promise(r=>setImmediate(r));assert.equal(writes.length,2);
+ for(const q of [10,11])assert(contains({x:q*HEX_METERS,y:0},writes[1].record.polygons));
+ assert(!contains({x:5*HEX_METERS,y:0},writes[1].record.polygons),'Distinct strokes must not become a connecting line');
+
 });
 
 

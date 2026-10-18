@@ -81,6 +81,7 @@ export class LandscapeWorkbench {
   private selectionRequest=0;
   private minimumRevision=0;
   private active = false;
+  private spacePan = false;
   private tool: Tool = "select";
   private points: Point[] = [];
   private brushStrokes: Point[][] = [];
@@ -126,6 +127,7 @@ export class LandscapeWorkbench {
       }
       this.tool = html<HTMLSelectElement>("land-tool").value as Tool;
       this.toolFields();
+      this.say("Werkzeug wählen, auf der Karte arbeiten. Enter schließt Punktzüge ab; Escape verwirft.");
       this.measurement=[];
       this.selected = null;
       this.doc = null;
@@ -162,7 +164,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointerdown",
       (e) => {
-        if (!this.active || e.button !== 0 || e.altKey || this.saving) return;
+        if (!this.active || e.button !== 0 || e.altKey || this.spacePan || this.saving) return;
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
           this.tool === "select" && !this.host.choose &&
@@ -270,7 +272,7 @@ export class LandscapeWorkbench {
         this.lineDragChanged = false;
         if (commitLine) void this.finish().catch(e => this.host.error(e));
         if (["paint", "hex", "reset"].includes(this.tool))
-          this.say(`${this.brushStrokes.length + 1} Strich(e) im Entwurf. Abschließen oder verwerfen.`);
+          void this.finish().catch(e=>this.host.error(e));
         if (svg.hasPointerCapture(e.pointerId))
           svg.releasePointerCapture(e.pointerId);
         this.host.redraw();
@@ -285,7 +287,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "click",
       (e) => {
-        if (!this.active || this.saving || e.altKey) return;
+        if (!this.active || this.saving || this.spacePan || e.altKey) return;
         if (this.tool === "select") {
           if (
             this.hit(e, ["landscapeId","landVertex"])
@@ -315,7 +317,7 @@ export class LandscapeWorkbench {
               this.calibration.points.length +
               " von 2. Danach abschließen.",
           );
-        } else this.points.push(p);
+        } else {this.points.push(p);this.say(this.points.length+" Punkte · Enter oder Zug abschließen übernimmt. Backspace entfernt den letzten Punkt.");}
         if (this.tool === "place")
           this.say('Ortspunkt gesetzt. Mit „Zug abschließen“ anlegen.');
         this.host.redraw();
@@ -324,6 +326,8 @@ export class LandscapeWorkbench {
     );
     svg.addEventListener("keydown", (e) => {
       if (!this.active) return;
+      if(e.code==="Space"){this.spacePan=true;return;}
+      if(e.key==="Backspace"){e.preventDefault();this.points.pop();this.host.redraw();return;}
       if (e.key === "Escape") {
         e.preventDefault();
         this.cancel();
@@ -333,6 +337,8 @@ export class LandscapeWorkbench {
         void this.finish().catch((e) => this.host.error(e));
       }
     });
+    window.addEventListener("keyup",e=>{if(e.code==="Space")this.spacePan=false;});
+    window.addEventListener("blur",()=>{this.spacePan=false;});
   }
   private hit(e:MouseEvent,keys:string[]){return this.host.hit(e,keys);}
   private point(e: MouseEvent) {
@@ -577,7 +583,7 @@ export class LandscapeWorkbench {
   }
 
   private sayIfIdle(s: string) {
-    if (!this.hasDraft() && !this.selected) this.say(s);
+    if (!this.hasDraft() && !this.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
   }
   recovered() {
     this.cancel();
