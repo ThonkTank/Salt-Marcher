@@ -694,7 +694,7 @@ kein Stilwechsel und keine vollständige Phase1-/Phase2-Produktabnahme.
 ### Abschlussprüfung des Renderingpakets: Funktion und Geschwindigkeit
 
 Das beauftragte Paket „vollständig anzeigen, präzise bedienen, flüssig
-navigieren“ ist funktional angeschlossen. Lokale native Funktions- und CPU-/
+navigieren“ ist funktional angeschlossen. Lokale native Funktions- und Taskzeit-/
 Speicherbelege ersetzen seine vollständige Hardware-/Präsentationsabnahme nicht. Der spätere ausdrückliche Canvas2D-Auftrag ersetzt
 seine ursprüngliche SVG-Arbeitsrichtung. Er ersetzt keine der fachlichen
 Anforderungen oder Messziele. Keine persistente Geometrieprojektion,
@@ -828,7 +828,7 @@ Die lokale Vergleichsserie vom 17.10.2026 ergibt für die Landschaft etwa
 2,82–2,87 s → 1,08–1,16 s bei warmer Wiederöffnung. Kleine Karte, Stadt und
 Dungeon-Grundriss öffnen danach in etwa 0,57–1,53 s. Appbereitschaft wird
 separat erfasst und nicht aus der gesamten Startzeit herausgerechnet.
-Die gemessene Renderer-CPU für Pan/Hover bleibt unter 16 ms p95,
+Die damals gemessene verstrichene Renderer-Taskzeit für Pan/Hover bleibt unter16ms p95,
 Vorschauen in der abschließenden Serie unter13ms p95. Zoom erreichte vor
 der nachfolgenden Korrektur bei Landschaft/Dungeon rund16–23ms p95. Das Profil zeigte
 mehrfache Reads/Renderaufbauten innerhalb einer Radfolge. Kameraaufträge
@@ -837,8 +837,8 @@ Szene; Quellen-/Filteränderungen behalten ihren eigenen Ladeweg. Veraltete
 Autorenhits bleiben gesperrt. Der unmittelbare Nachlauf senkt Zoom auf etwa4–6ms
 p95; die abschließende Serie mit veränderten Endmaßstäben bestätigt
 3,2–5,9ms p95 für Zoom. Das Nachladen nach einer solchen Folge dauert
-32–481ms; seine gesamte CPUarbeit über diesen Zeitraum wird separat erfasst
-und ist keine einzelne Framezeit. Diese CPUwerte
+32–481ms; seine gesamte Taskzeit über diesen Zeitraum wird separat erfasst
+und ist keine einzelne Framezeit. Diese Taskzeitwerte
 umfassen zwei Animationsframes nach echter Eingabe; sie beweisen weder
 Compositorpräsentation noch GPUlaufzeit. Platzhalter gelten nicht als nutzbar:
 vollständige Quellenabdeckung, tatsächliche Zeichenkommandos und sichtbarer
@@ -848,8 +848,9 @@ Playwrights Ausschnitt kann bei nativer200%-Skalierung die falsche Bildfläche e
 Eine erneute lokale Lastserie am kombinierten Stand vom18.10.2026 erreicht
 bei100000 Landschaftsflächen die Öffnungsziele nicht durchgehend:
 3,22s bei100%,2,24s bei200%; Zoom-p95 im ersten Fall18,04ms,
-Hover-p95 im zweiten21,24ms. Die Vorschau bleibt mit16,46–18,36ms
-unter50ms. Der Host war gleichzeitig belastet (Load1 etwa13,75);
+Hover-p95 im zweiten21,24ms. Die Vorschau liegt in dieser ersten Serie mit16,46–18,36ms
+unter50ms; der Wiederholungslauf überschreitet die Grenze mit83,85ms
+bei100%. Diese Werte sind verstrichene Taskdauer, keine reineCPUzeit. Der Host war gleichzeitig belastet (Load1 etwa13,75);
 das erklärt die Abweichung noch nicht kausal. Frühere schnellere Läufe
 werden dadurch nicht zu einer allgemeinen Leistungsabnahme. Der Vergleich
 mit eingefrorenem Main und identischen Fixturekopien sowie die physische
@@ -857,9 +858,21 @@ Hardwarequalifikation bleiben erforderlich. Diese Serie ist kein Beleg für
 eine durchgehende Einhaltung von2s/16ms und rechtfertigt keinen vorsorglichen
 Rendererwechsel. Die Funktions-/Wiederverwendungsnachweise bleiben getrennt.
 
+Die Methodenprüfung stellt außerdem klar: `Performance.enable` verwendet
+standardmäßig `timeTicks`. `TaskDuration` war deshalb verstrichene Taskzeit,
+nicht die in älteren Belegbezeichnungen behauptete reineCPUzeit. Das bestehende
+Messwerkzeug setzt die Domäne nun ausdrücklich und speichert daneben
+`ThreadTime` als Renderer-CPUzeit; Eingabe- und Nachladefenster führen beide
+Werte. Getrennte CPU-/Taskziele und eine ausdrücklich ungemessene
+Präsentationslatenz verhindern einen gemeinsamen falschen Erfolgswert.
+Alte Rohbelege bleiben unverändert; ihre `cpu`-Felder sind historische
+Fehlbezeichnungen und dürfen nicht als Thread-CPUwerte verglichen werden.
+Grundlage: [CDP-Zeitdomänen](https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/json/browser_protocol.json)
+und [Chromium-Metrikimplementierung](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/inspector/inspector_performance_agent.cc).
+
 Offener Abschluss, ohne Umfangsverkleinerung:
 
-1. Tatsächliche Compositorpräsentation neben CPU messen. B01 OffscreenCanvas/
+1. Tatsächliche Compositorpräsentation neben CPU- und verstrichener Taskzeit messen. B01 OffscreenCanvas/
    Pixi erst bei belegtem Zeichenengpass vergleichen; SQL-/Projektionsarbeit
    wird dadurch nicht beseitigt. Einzelne lange Konturen und Medien separat
    belasten, statt deren Kosten aus der Rechteck-/Kachelszene abzuleiten.
