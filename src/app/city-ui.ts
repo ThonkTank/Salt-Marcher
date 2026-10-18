@@ -138,7 +138,7 @@ function revealCityEditor(id:string){const node=el<HTMLElement>(id),panel=docume
 export async function openCityReference(id:string,unitId?:string,targeted=false,force=false,allowMissing=false){
  const w=workspace,g=epoch;if(!w)return;if(placement?.active||shapeEdit?.active||path.length||generationJob)throw new Error('Neue Stadteingabe bleibt offen. Karte erneut wählen.');if(!await flushCity()||!owned(w.token,g))return;
  if(targeted){
-  if(!force&&view?.header.id===id&&(!unitId||selected===unitId)){if(!unitId&&selected){selected=null;people=null;showPanel('draw');}if(unitId)showPanel('selection');render();if(unitId)revealCityEditor('city-inspector');return;}
+  if(!force&&view?.header.id===id&&(!unitId||selected===unitId)){if(!unitId&&selected){selected=null;people=null;showPanel('draw');}render();if(unitId){const panel=el('city-tool').closest<HTMLElement>('.city-sidebar')?.dataset.panel??'selection';revealCityEditor(panel==='selection'?'city-inspector':'city-'+panel+'-controls');}return;}
   await readCitySite(id,unitId,w.token,g,++readRequest);
  }else{
   await openCity();if(!owned(w.token,g))return;if(dirty||placement?.active||shapeEdit?.active||path.length||generationJob)throw new Error('Neue Stadteingabe bleibt offen. Karte erneut wählen.');
