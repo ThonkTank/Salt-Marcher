@@ -1,3 +1,4 @@
+import {readSceneEncounterSelection} from './scene-encounter-selection';
 import {noteMergeWork} from './note-merge';
 import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
 import {readAtlasScene} from './world';
@@ -943,6 +944,7 @@ export class CampaignStore {
   regenerateSessionProposal(token: string,runId: string,index: number,seed: string) { return regenerateSessionProposal(this.db,this.guard(token),runId,index,seed); }
   sessionRuns(token: string,planId: string) { return readSessionRuns(this.db,this.guard(token),planId); }
   sessionRun(token: string,id: string) { return readSessionRun(this.db,this.guard(token),id); }
+  sceneEncounterSelection(token:string,sceneId:string){return readSceneEncounterSelection(this.db,this.guard(token),sceneId);}
   scenePreparation(token: string,sceneId: string) { return scenePreparation(this.db,this.guard(token),sceneId); }
   sceneRules(token:string,sceneId:string){return readSceneRules(this.db,this.guard(token),sceneId);}
   executeSceneRule(command:SceneRuleCommand){return executeSceneRule(this.db,command,()=>this.guard(command.token,command.campaignId));}

@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   regenerateSessionProposal: (token: string,id: string,index: number,seed: string)=>ipcRenderer.invoke('campaign:regenerate-session',token,id,index,seed),
   sessionRuns: (token: string,id: string)=>ipcRenderer.invoke('campaign:session-runs',token,id),
   sessionRun: (token: string,id: string)=>ipcRenderer.invoke('campaign:session-run',token,id),
+  sceneEncounterSelection:(token:string,id:string)=>ipcRenderer.invoke('campaign:scene-encounter-selection',token,id),
   scenePreparation: (token: string,id: string)=>ipcRenderer.invoke('campaign:scene-preparation',token,id),
   sceneRules:(token:string,id:string)=>ipcRenderer.invoke('campaign:scene-rules',token,id),
   executeSceneRule:(command:import('../src/app/rule-reference-contracts').SceneRuleCommand)=>ipcRenderer.invoke('campaign:execute-scene-rule',command),

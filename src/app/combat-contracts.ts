@@ -64,6 +64,7 @@ export type CombatAction =
   | { kind: 'finish'; outcome: string; rewards?: FinishRewards; finishDraftWriteId?:string };
 export interface CombatCommand { commandId: string; campaignId: string; token: string; combatId: string | null; expectedRevision: number | null; action: CombatAction;draftWriteId?:string }
 export interface CombatAPI extends CombatDraftAPI {
+  sceneEncounterSelection(token:string,sceneId:string):Promise<Result<import('./scene-encounter-selection').SceneEncounterSelectionView>>;
   combatResolution(token:string,sceneId:string,combatId:string,after:string|null):Promise<Result<CombatResolution>>;
   combat(token: string, sceneId: string, combatId?: string): Promise<Result<CombatView>>;
   executeCombat(command: CombatCommand): Promise<Result<CombatView>>;

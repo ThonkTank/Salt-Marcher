@@ -151,6 +151,7 @@ else {
     handle('campaign:regenerate-session', (token: string,id: string,index: number,seed: string)=>store.regenerateSessionProposal(token,id,index,seed));
     handle('campaign:session-runs', (token: string,id: string)=>store.sessionRuns(token,id));
     handle('campaign:session-run', (token: string,id: string)=>store.sessionRun(token,id));
+    handle('campaign:scene-encounter-selection',(token:string,id:string)=>store.sceneEncounterSelection(token,id));
     handle('campaign:scene-preparation', (token: string,id: string)=>store.scenePreparation(token,id));
     handle('campaign:scene-rules',(token:string,id:string)=>store.sceneRules(token,id));
     handle('campaign:execute-scene-rule',(command:SceneRuleCommand)=>store.executeSceneRule(command));
