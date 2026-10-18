@@ -220,3 +220,16 @@ test('camera successors cannot replace queued object selection; both lanes remai
  }
 
 });
+
+
+test('dense raster picks a rotated object against its exact rectangle away from the anchor',async t=>{
+ const f=fixture(t,1600),{newElement}=require('../.build/atlas-region-drawing-model.cjs'),polygons=room(0).polygons,payload=JSON.stringify({polygons,sections:[]});f.store.db.prepare('UPDATE room SET payload=?,checksum=?').run(payload,hash(payload));
+ const element={...newElement('object','local','ground','r0',[{x:20,y:0}]),width:30,height:10,angle:45,name:'Gedrehte Truhe'};
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element,expectedRevision:null}});
+ const q=query({x:0,y:-10,width:50,height:40}),region=await f.read(q);assert.equal(region.coverage.mode,'raster');
+ assert.equal(f.reader.hit(f.source,q,{x:30,y:10})?.id,element.id);
+ assert.deepEqual(f.reader.candidatesAt(f.source,q,{x:30,y:10},0,'all').items.map(h=>h.id),[element.id],'a raster has no glyph ID; its exact object extent must still be selectable');
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:20,y:12},0,'all').items.some(h=>h.id===element.id),false,'the spatial-index envelope must not act as an exact hit');
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...element,variant:'barrel'},expectedRevision:0}});await f.read(q);
+ assert.equal(f.reader.hit(f.source,q,{x:34,y:0})?.id,element.id);assert.equal(f.reader.candidatesAt(f.source,q,{x:34,y:4},0,'all').items.some(h=>h.id===element.id),false,'ellipse corners are outside the exact footprint');
+});

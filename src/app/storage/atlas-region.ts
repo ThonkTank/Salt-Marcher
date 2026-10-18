@@ -27,6 +27,17 @@ const at=(p:Point,f:Frame):Point=>({x:f.x+p.x*Math.cos(f.angle)-p.y*Math.sin(f.a
 const inverse=(p:Point,f:Frame):Point=>({x:(p.x-f.x)*Math.cos(f.angle)+(p.y-f.y)*Math.sin(f.angle),y:-(p.x-f.x)*Math.sin(f.angle)+(p.y-f.y)*Math.cos(f.angle)});
 const overlap=(a:Box,b:Box)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
 const distance=(p:Point,a:Point,b:Point)=>{const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);};
+// Authored object footprints match elementPaint, independent of detail/raster display.
+// The index's generous stroke bounds supply candidates, never the exact answer.
+const touches=(s:Shape,p:Point,mpp:number)=>{
+ if(s.value.kind==='object'&&s.points?.length===1){
+  const e=s.value,a=s.points[0]!,dx=p.x-a.x,dy=p.y-a.y;
+  if(e.variant==='barrel'||e.variant==='pillar')return (dx/(e.width/2))**2+(dy/(e.height/2))**2<=1;
+  const angle=e.angle*Math.PI/180,x=dx*Math.cos(angle)+dy*Math.sin(angle),y=-dx*Math.sin(angle)+dy*Math.cos(angle);
+  return Math.abs(x)<=e.width/2&&Math.abs(y)<=e.height/2;
+ }
+ return s.polygons?inside(p,s.polygons):!!s.points?.some((v,i,a)=>i?distance(p,a[i-1]!,v)<=Math.max((s.stroke??0)/2,mpp*3):a.length===1&&Math.hypot(p.x-v.x,p.y-v.y)<=mpp*8);
+};
 const bytes=(v:unknown)=>Buffer.byteLength(JSON.stringify(v));
 const pause=()=>new Promise<void>(resolve=>setImmediate(resolve));
 /** Rebuildable TEMP projections on a readonly source connection. No author data is written. */
@@ -260,14 +271,14 @@ export class AtlasRegionReader {
   }
   this.visit(q,(s,f,kind,b)=>{
    if(kind==='city-paper'||visual&&kind==='element'&&s.value.id===visualElementId)return;
-   const local=inverse(p,f),touch=s.polygons?inside(local,s.polygons):s.points?.some((v,i,a)=>i?distance(local,a[i-1]!,v)<=Math.max((s.stroke??0)/2,q.box.width/q.width*3):a.length===1&&Math.hypot(local.x-v.x,local.y-v.y)<=radius);
+   const touch=touches(s,inverse(p,f),q.box.width/q.width);
    if(touch)emit(s,f,kind,b);
   },undefined,{x:p.x-radius,y:p.y-radius,width:radius*2,height:radius*2});return{items,next:more?offset+items.length:null,fence:source.fence,total:matched,...(this.readFaults||this.sql('SELECT 1 FROM temp.region_problem LIMIT 1').get()?{unavailable:['geometry'] as ('geometry')[]}: {})};
  }
  hit(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point):AtlasObjectFocus|null{
   validateRegion(q);if(!p||!Number.isFinite(p.x+p.y)||!overlap({x:p.x,y:p.y,width:0,height:0},q.box))throw new Error('Kartenauswahl prüfen.');
   let hit:AtlasObjectFocus|null=null;this.visit(q,(s,f,kind,b)=>{
-   if(kind==='city-paper')return;const local=inverse(p,f),touch=s.polygons?inside(local,s.polygons):s.points?.some((b,i,a)=>i?distance(local,a[i-1]!,b)<=Math.max((s.stroke??0)/2,q.box.width/q.width*3):a.length===1&&Math.hypot(local.x-b.x,local.y-b.y)<=q.box.width/q.width*8);
+   if(kind==='city-paper')return;const touch=touches(s,inverse(p,f),q.box.width/q.width);
    if(touch)hit=kind==='city-marker'?this.focus(source,'city',b.ownerId):kind==='scope-marker'?this.focus(source,'scope',b.ownerId):kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
   });return hit;
  }

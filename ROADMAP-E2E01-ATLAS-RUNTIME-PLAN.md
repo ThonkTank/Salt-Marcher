@@ -796,9 +796,17 @@ und eine Auswahlumgehung:
   gemeinsam; Quelle, Floor-/Dach-/Bindingfilter, Seitengrenzen und Archivierung
   gelten weiter. Detailpayloads werden erst nach der bewussten Auswahl gelesen.
 
+Eine zusätzliche Rasterprobe schließt den Ankerpunktfehler großer Objekte:
+Truhen/Betten und vergleichbare Rechteckobjekte werden gegen Breite, Höhe und
+Originaldrehung geprüft; Fässer/Säulen gegen ihre Ellipse. Das gilt gemeinsam
+für Trefferseiten und den vorhandenen Einzeltrefferweg, auch ohne sichtbare
+Einzelglyph-ID. Die großzügige Indexhülle ist weiterhin nur Kandidatensuche.
+Ein1600-Räume-Rasterfall prüft Treffer abseits des Ankers und Gegenpunkte
+innerhalb der Indexhülle, aber außerhalb der tatsächlichen Kontur.
+
 Der erweiterte native Autorenlauf prüft zusätzlich den Klick auf ein großes
 Objekt außerhalb seines Ankerradius: Kandidaten enthalten Objekt und die
-überlappenden Räume. Drei echte Entwurfspunkte behalten Hintergrundpfade und
+überlappenden Räume, sowohl im Detail als auch nach dem Rasterwechsel. Drei echte Entwurfspunkte behalten Hintergrundpfade und
 identische Geschossoptionen; `pathBuilds`/`pathReuses` zählen lokale geometrische
 Pfade, keine GPUarbeit. Rasterwechsel, Verwerfen, Originalgriff, Save/Undo/Redo
 und frischer Prozess bleiben Teil desselben Ablaufs bei100% und200%.
