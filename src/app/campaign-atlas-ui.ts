@@ -245,6 +245,8 @@ export class CampaignAtlasWorkbench {
       const width=this.svg.clientWidth,height=this.svg.clientHeight;
       if(width<=0||height<=0){viewport=null;return;}
       this.camera.resizeViewport(viewport??{width,height}, {width,height});viewport={width,height};
+      // The buffered geometry can remain valid; publish current selection handles at the new size too.
+      this.scheduleRender();
     }).observe(this.svg);
     const names = {terrain:"Landschaft",city:"Stadt",interior:"Dungeon"};
     for (const [id, name] of Object.entries(names)) {
