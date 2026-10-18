@@ -162,3 +162,21 @@ test('core drawing controls dock before details without cloning handlers and ret
  f.ui.drawingDock=[];f.ui.dockDrawingTools(true);assert.equal(target.children.length,nodes.length);nodes.forEach((n,i)=>assert.equal(target.children[i],n));assert.equal(target.hidden,false);nodes[0].click();assert.equal(clicks,1);
  f.ui.dockDrawingTools(false);assert.equal(source.children.length,nodes.length+1);[...nodes,tail].forEach((n,i)=>assert.equal(source.children[i],n));assert.equal(target.hidden,true);f.ui.dockDrawingTools(true);assert.equal(target.children.length,nodes.length);nodes.forEach((n,i)=>assert.equal(target.children[i],n));
 });
+
+function doorResolver(t,rooms){
+ const f=fixture(t);f.ui.owner={token:'t'};f.ui.loadedRegionQuery={};f.ui.data.region.fence='source';f.ui.opts.roomDraft=()=>null;
+ window.campaign={atlasRegionCandidates:async()=>({ok:true,value:{items:rooms.map(r=>({kind:'room',id:r.id,scopeId:r.scopeId,floorId:r.floorId})),total:rooms.length,next:null}}),atlasRoom:async(token,id)=>({ok:true,value:rooms.find(r=>r.id===id)})};return f;
+}
+test('a door on a shared wall resolves original rooms without changing the selected room or using display contours',async t=>{
+ const a={id:'a',scopeId:'local',floorId:'ground',revision:8,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},b={...a,id:'b',polygons:[{outer:[{x:9,y:2},{x:15,y:2},{x:15,y:8},{x:9,y:8}],holes:[]}]};
+ const f=doorResolver(t,[a,b]),target=await f.ui.doorRoomAt({x:-105,y:59});assert(['a','b'].includes(target.room.id));assert.equal(target.room.revision,8);assert.equal(f.ui.selection.id,'room');
+ f.ui.data.region.fence='old';window.campaign.atlasRoom=async()=>{f.ui.data.region.fence='new';return{ok:true,value:a};};await assert.rejects(f.ui.doorRoomAt({x:-105,y:59}),/inzwischen geändert/);
+});
+test('distinct crossing walls require a room choice instead of silently binding a door',async t=>{
+ const a={id:'a',scopeId:'local',floorId:'ground',revision:0,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},b={...a,id:'b',polygons:[{outer:[{x:7,y:5},{x:11,y:5},{x:11,y:9},{x:7,y:9}],holes:[]}]};
+ const f=doorResolver(t,[a,b]);await assert.rejects(f.ui.doorRoomAt({x:-105,y:59}),/Mehrere Wände/);
+});
+
+test('direct door mode has no inactive corner or wall grips competing with placement',t=>{
+ const f=fixture(t);f.document.getElementById('drawing-tool').innerHTML='<option value="door" selected>Tür</option>';const scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasEdge!==undefined||n.data.atlasVertex!==undefined).length,0);
+});

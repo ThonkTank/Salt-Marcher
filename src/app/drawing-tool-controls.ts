@@ -31,6 +31,8 @@ export function drawingToolControls(tool: string, hasRoom: boolean, append: bool
     actionEnabled: active && hasTarget && pathPoints >= minimumPoints,
     instruction: tool === 'select'
       ? 'Raum oder Element auswählen; Raumecken lassen sich direkt ziehen.'
+      : tool === 'door'
+        ? 'Raumwand anklicken: Die Tür wird sofort gespeichert. Escape beendet.'
       : roomTool
         ? 'Auf der Karte zeichnen, dann den Zug übernehmen.'
         : 'Element auf der Karte platzieren oder zeichnen, dann den Zug übernehmen.',
