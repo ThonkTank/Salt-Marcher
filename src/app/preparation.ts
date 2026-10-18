@@ -52,6 +52,7 @@ function excerptControls(){
  const chosen=excerptChosen;
  get<HTMLInputElement>('note-excerpt-title').readOnly=!!chosen;
  get<HTMLSelectElement>('note-excerpt-kind').disabled=!!chosen;
+ get('note-excerpt-new-kind').hidden=!!chosen;
  get<HTMLButtonElement>('note-excerpt-new').hidden=!chosen&&!excerptChoices.entries.length;
  get<HTMLButtonElement>('note-excerpt-save').disabled=excerptReading;
  for(const button of get('note-excerpt-choices').querySelectorAll('button'))button.disabled=excerptReading;
@@ -395,7 +396,7 @@ async function renderNotes(initialLocationId?:string) {
   renderNoteList();
   get<HTMLButtonElement>('note-text-reference').disabled=!row||row.trashed||blocked||draftProblems.has(draftKey('note', row.note.id));
   get<HTMLButtonElement>('note-excerpt').disabled=!row||row.trashed||blocked||draftProblems.has(draftKey('note',row.note.id));
-  excerptField=null;get('note-excerpt-status').replaceChildren();
+  excerptField=null;get('note-excerpt-status').replaceChildren();get('note-excerpt').hidden=true;get('note-gm').after(get('note-selection-actions'));
   if (!row) return;
   void checkpoint();
   const shown = noteDraft ?? row.note;
@@ -554,7 +555,16 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
   get('world-new').onclick = () => { get<HTMLDialogElement>('world-dialog').showModal(); get('world-name').focus(); };
   get('world-cancel').onclick = () => get<HTMLDialogElement>('world-dialog').close();
-  for(const [id,field]of [['note-read-aloud','readAloud'],['note-gm','gmNotes']] as const)get(id).addEventListener('focus',()=>{excerptField=field;});
+  for(const [id,field]of [['note-read-aloud','readAloud'],['note-gm','gmNotes']] as const){
+   const area=get<HTMLTextAreaElement>(id);
+   const selectionChanged=()=>{
+    excerptField=field;
+    // Keep the action next to the selected field, including inside read-aloud.
+    area.after(get('note-selection-actions'));
+    get('note-excerpt').hidden=!area.value.slice(area.selectionStart,area.selectionEnd).trim();
+   };
+   for(const event of ['focus','select','keyup','mouseup','input'])area.addEventListener(event,selectionChanged);
+  }
   get('note-excerpt').onclick=()=>{void(async()=>{
     const field=excerptField??'gmNotes',area=get<HTMLTextAreaElement>(field==='gmNotes'?'note-gm':'note-read-aloud'),before=noteDraft;
     if(!before||blocked||excerptBusy)return;
@@ -565,7 +575,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     const source=originalNote();if(!source||source[field].slice(start,end)!==text)return;
     excerpt={source:{id:source.id,revision:source.revision,field,start,end},original:source,text,token:token!,load};
     get('note-excerpt-origin').textContent='Quelle: '+source.title+' · '+(field==='gmNotes'?'privater GM-Text':'Text zum Vorlesen');
-    get<HTMLInputElement>('note-excerpt-title').value='';get<HTMLTextAreaElement>('note-excerpt-text').value=text;
+    get<HTMLInputElement>('note-excerpt-title').value='';get<HTMLSelectElement>('note-excerpt-kind').value='note';get<HTMLTextAreaElement>('note-excerpt-text').value=text;
     excerptComposing=false;get<HTMLDetailsElement>('note-excerpt-existing').open=false;void lookupExcerpt();
     get<HTMLDialogElement>('note-excerpt-dialog').showModal();get('note-excerpt-title').focus();
   })();};

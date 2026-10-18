@@ -34,6 +34,20 @@ IDs; Creature-/Itemziele behalten den zugehörigen Katalog-/Definitionsbezug.
 Quelle, Snapshot und opaque Erweiterungsbodies bleiben erhalten. NPC-Rohentwürfe
 und ungeklärte Commands folgen ihrem bestehenden Recoveryvertrag.
 
+## Markierte Texte als Weltwissen übernehmen
+
+Eine nichtleere Auswahl im GM- oder Vorlesetext zeigt die Übernahmeaktion direkt
+am jeweiligen Textfeld. Sie ist mit Tab erreichbar und bleibt oberhalb der
+festen Musikleiste sichtbar; in einer geöffneten Mappe folgt sie deren Scrollbereich.
+Der Dialog sucht zuerst nach dem Originalnamen. Ein gewähltes Original behält
+seine Art; nur eine neue Notiz verlangt die Artwahl. Der unveränderte Quelltext
+und beide Herkunftsbeziehungen bleiben beim bestehenden Writer.
+
+Die nativen Prüfungen `tools/test-desktop-note-excerpts.mjs` und
+`tools/test-desktop-note-existing-excerpts.mjs` prüfen Neuanlage, Ergänzung,
+Spielabendverwendung, normales Prozessende, frisches Wiederfinden und
+Weiterbearbeitung. `GM_QA_ZOOM=2` prüft denselben Ablauf vergrößert.
+
 ## Beziehungspaare beim Kampagnentransfer
 
 Paarhistory und offene Paaraufträge verwenden `sourceId` als lokale World-Notiz.

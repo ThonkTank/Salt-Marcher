@@ -23,6 +23,17 @@ test('opening an unavailable note reports failure without claiming the previous 
  const title=x.el('note-title').value;assert.equal(await x.ui.openPreparedNote('missing-note'),false);assert.equal(x.el('note-title').value,title);assert.equal(x.writes.length,0);
 });
 
+test('excerpt action follows the selected text field and clears when the note changes',async t=>{
+ const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);
+ const button=x.el('note-excerpt'),actions=x.el('note-selection-actions'),gm=x.el('note-gm'),read=x.el('note-read-aloud');
+ assert.equal(button.hidden,true);gm.setSelectionRange(0,9);gm.dispatchEvent(new x.window.Event('select'));
+ assert.equal(button.hidden,false);assert.equal(gm.nextElementSibling,actions);
+ gm.setSelectionRange(3,3);gm.dispatchEvent(new x.window.Event('select'));assert.equal(button.hidden,true);
+ read.setSelectionRange(0,5);read.dispatchEvent(new x.window.Event('select'));assert.equal(button.hidden,false);assert.equal(read.nextElementSibling,actions);
+ button.click();await until(()=>x.el('note-excerpt-dialog').open);assert.equal(x.el('note-excerpt-text').value,'  Ori');x.el('note-excerpt-cancel').click();
+ await x.ui.openPreparedNote(x.ids.ada);assert.equal(button.hidden,true);assert.equal(gm.nextElementSibling,actions);
+});
+
 async function sourceReader(t){
  const x=await fixture(t,true);x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:{...x.original,relations:[{targetId:x.ids.ada,label:'Quelle'}]}}));await x.activate();await x.ui.openPreparedNote(x.ids.borin);return x;
 }
