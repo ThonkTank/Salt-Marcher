@@ -1,3 +1,4 @@
+import { automaticGrid, gridMeters, travelHexSizes } from "./atlas-navigation-scale";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import { pendingAtlasWrite } from "./campaign-atlas-author";
 import polygonClipping from "polygon-clipping";
@@ -5,7 +6,6 @@ import type { AtlasRenderView, AtlasAction } from "./campaign-atlas-contracts";
 import type { Point, Polygon } from "./contracts";
 import {
   emptyRecord,
-  hexSize,
   hexStrokesPolygons,
   distance,
   formatDistance,
@@ -251,7 +251,7 @@ export class LandscapeWorkbench {
           }
           this.dirty = true;
         } else {
-          const previous = this.points.at(-1), size = hexSize(Number(html<HTMLSelectElement>("atlas-hex-level").value));
+          const previous = this.points.at(-1), size = gridMeters(html<HTMLSelectElement>("atlas-hex-level").value);
           const a = previous && atlasHexAt(previous, size), b = atlasHexAt(p, size);
           const changed = !previous || (this.tool === "hex"
             ? a!.q !== b.q || a!.r !== b.r
@@ -431,6 +431,7 @@ export class LandscapeWorkbench {
   context(token: string) {
     if (this.token === token) return;
     this.token = token;
+    this.autoGrid=null;this.gridFade=null;
     this.cancel();
     this.records = [];this.background=null;
     this.raster = undefined;this.minimumRevision=0;
@@ -531,35 +532,12 @@ export class LandscapeWorkbench {
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
     }
     retained.append(node);root.append(retained);
-    // An open draft owns its Hex size; the camera only chooses it between edits.
-    const auto = html<HTMLInputElement>("land-auto-level").checked && !this.hasDraft(),
-      level = auto
-        ? Math.max(
-            0,
-            Math.min(
-              8,
-              Math.round(
-                Math.log(Math.max(1, box.width / hexSize(0) / 12)) /
-                  Math.log(3),
-              ),
-            ),
-          )
-        : Number(html<HTMLSelectElement>("atlas-hex-level").value);
-    if (html<HTMLInputElement>("land-grid").checked)
-      drawLandscapeGrid(root, box, level, mpp);
-    const hud=landscapeNode("group", {hud:true});drawScale(hud,box,mpp);root.append(hud);
-    if (auto)
-      html<HTMLSelectElement>("atlas-hex-level").value = String(level);
-    if (this.active && auto)
-      this.sayIfIdle(
-        `${3 * 3 ** level} Meilen Kante zu Kante · ${formatDistance(box.width)} sichtbar`,
-      );
     const pts =
       this.calibration?.points ??
       (this.points.length ? this.points : this.measurement);
     if (pts.length && this.tool === "hex") {
       try {
-        const polygons = hexStrokesPolygons([...this.brushStrokes, pts], hexSize(Number(html<HTMLSelectElement>("atlas-hex-level").value)));
+        const polygons = hexStrokesPolygons([...this.brushStrokes, pts], gridMeters(html<HTMLSelectElement>("atlas-hex-level").value));
         root.append(landscapeNode("polygons", {polygons: polygons.map(p => ({outer: p.outer.map(v => ({x:v.x-box.x,y:v.y-box.y})), holes: []})), pointer:false, opacity:0.6, style:{fill:"#d46e38",stroke:"#d46e38",lineWidth:mpp}, data:{editorOnly:"true",landHexDraft:"true"}}));
       } catch (error) { this.say((error as Error).message); }
     } else if (pts.length) {
@@ -600,6 +578,42 @@ export class LandscapeWorkbench {
     }
   }
 
+  private autoGrid: string | null = null;
+  private gridFade: {from: string; to: string; start: number} | null = null;
+  drawOverlay(root: AtlasPaint, box: LandscapeBox, mpp: number): boolean {
+    const input = html<HTMLSelectElement>('atlas-hex-level');
+    const draft = this.hasDraft();
+    input.disabled = draft;
+    html<HTMLInputElement>('land-auto-level').disabled = draft;
+    const auto = html<HTMLInputElement>('land-auto-level').checked && !draft;
+    let level = input.value;
+    if (auto) {
+      level = automaticGrid(mpp, this.autoGrid);
+      if (level !== this.autoGrid) {
+        const old = this.autoGrid;
+        this.autoGrid = level;
+        this.gridFade = old ? {from:old,to:level,start:performance.now()} : null;
+      }
+      input.value = level;
+    } else this.gridFade = null;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const t = this.gridFade && !reduced ? Math.min(1,(performance.now()-this.gridFade.start)/180) : 1;
+    if (html<HTMLInputElement>('land-grid').checked) {
+      if (this.gridFade && t < 1) {
+        const old = atlasPaint('group',{opacity:1-t});
+        drawLandscapeGrid(old,box,this.gridFade.from,mpp);root.append(old);
+      }
+      const current = atlasPaint('group',{opacity:t});
+      drawLandscapeGrid(current,box,level,mpp);root.append(current);
+    }
+    drawScale(root,box,mpp);
+    if(this.active && auto) {
+      const preset=travelHexSizes.find(p=>p.id===level)!;
+      this.sayIfIdle(`${preset.label} · ${preset.miles.toLocaleString('de-DE')} Meilen Kante zu Kante · 8 Reisestunden/Tag`);
+    }
+    if(t===1)this.gridFade=null;
+    return t<1;
+  }
   private sayIfIdle(s: string) {
     if (!this.hasDraft() && !this.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
   }
@@ -705,9 +719,7 @@ export class LandscapeWorkbench {
       return;
     }
     if (!this.points.length) return;
-    const res = hexSize(
-      Number(html<HTMLSelectElement>("atlas-hex-level").value),
-    );
+    const res = gridMeters(html<HTMLSelectElement>("atlas-hex-level").value);
     if (["paint", "hex", "reset"].includes(this.tool)) {
       let polygons: Polygon[];
       if (this.tool === "hex") {

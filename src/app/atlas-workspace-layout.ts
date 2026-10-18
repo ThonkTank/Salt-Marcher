@@ -42,7 +42,7 @@ export class AtlasWorkspaceLayout {
   dock.append(bar,main,handle,collapse);
   this.context.className='atlas-map-context';
   const view=el('atlas-room-view');view.append(el('atlas-perception').closest('label')!);
-  this.context.append(el('atlas-selection-title'),el('atlas-floor-field'),view);
+  this.context.append(el('atlas-selection-title'),el('atlas-floor-field'),view,el('atlas-scale'));
   this.root.querySelector('.atlas-stage')!.prepend(this.context);
   const restore=button('atlas-restore','Bedienung einblenden');restore.hidden=true;restore.onclick=()=>this.maximize(false);this.root.append(restore);
   const expand=button('atlas-dock-expand','Werkzeuge');expand.hidden=true;expand.onclick=()=>this.collapse(false);this.root.append(expand);
@@ -77,7 +77,7 @@ export class AtlasWorkspaceLayout {
   el('atlas-output-open').textContent='Ausgabe';
   header.prepend(nav);header.append(status,music,more,el('atlas-output-open'),max);
   header.insertBefore(search,el('atlas-undo'));
-  this.more.append(el('atlas-overview'),el('atlas-to-party'),el('atlas-scale'),el('atlas-region-retry'));
+  this.more.append(el('atlas-reference-open'),el('atlas-overview'),el('atlas-to-party'),el('atlas-region-retry'));
   this.notices.append(el('atlas-recover'));
   const output=button('atlas-more-output','Bild ausgeben…');output.onclick=()=>el('atlas-output-open').click();this.more.append(output);
   const observer=new MutationObserver(records=>{
@@ -113,6 +113,7 @@ export class AtlasWorkspaceLayout {
   }
   document.dispatchEvent(new Event('workspace-layout-changed'));
  }
+ comparison(open:boolean){this.root.dataset.comparing=String(open);if(open)this.collapse(false);}
  private applyWidth(){this.root.style.setProperty('--atlas-dock-width',this.width+'px');}
  private collapse(collapsed:boolean){this.root.dataset.collapsed=String(collapsed);el('atlas-dock-expand').hidden=!collapsed;try{localStorage.setItem('atlas-panel-collapsed',String(collapsed));}catch{/* optional preference */}}
  private maximize(maximized:boolean){this.root.dataset.maximized=String(maximized);el('atlas-restore').hidden=!maximized;if(!maximized)el('atlas-maximize').focus({preventScroll:true});}
@@ -127,6 +128,7 @@ export class AtlasWorkspaceLayout {
   const add=(node:HTMLElement|null,target=this.tools)=>{if(node)this.move(node,target,this.familyNodes);};
   add(el('atlas-tool-fields'));add(el('atlas-context-fields'));add(el('atlas-placement'),this.selection);
   if(family==='navigation'){
+   add(el('atlas-reference-open'));
    const actions=document.createElement('div');actions.className='atlas-tool-buttons';actions.dataset.familyAction='true';
    for(const [label,pan]of [['Auswahl',false],['Hand',true]] as const){const action=button('',label);action.setAttribute('aria-pressed',String(this.root.dataset.panMode===String(pan)));action.onclick=()=>{this.root.dataset.panMode=String(pan);for(const b of actions.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===action));};actions.append(action);}this.tools.prepend(actions);
   }

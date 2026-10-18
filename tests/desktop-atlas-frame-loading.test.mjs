@@ -70,17 +70,18 @@ test('automatic Hex grid follows the draft size through zoom and resumes after c
  f.document.querySelector('#land-auto-level').checked=true;
  f.document.querySelector('#land-grid').checked=true;
  const tool=f.document.querySelector('#land-tool');tool.value='hex';tool.onchange();
- const draw=width=>{const scene=new AtlasPaint('group');f.ui.draw(scene,{x:-width/2,y:-width/2,width,height:width},width/800);return scene;};
- const gridWidth=scene=>{const points=scene.children.find(n=>n.data.landscapeGrid==='true').geometry.points;return Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x));};
+ const draw=width=>{const scene=new AtlasPaint('group'),box={x:-width/2,y:-width/2,width,height:width};f.ui.drawOverlay(scene,box,width/800);f.ui.draw(scene,box,width/800);return scene;};
+ const gridWidth=scene=>{const points=scene.children.flatMap(n=>n.kind==='group'?n.children:[n]).find(n=>n.data.landscapeGrid==='true').geometry.points;return Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x));};
  assert(Math.abs(gridWidth(draw(12*HEX_METERS))-HEX_METERS)<.001);
  f.ui.points=[{x:0,y:0}];
  const zoomed=draw(36*HEX_METERS);
- assert.equal(f.document.querySelector('#atlas-hex-level').value,'0');
+ assert.equal(f.document.querySelector('#atlas-hex-level').value,'hour');
  const footprint=zoomed.children.find(n=>n.data.landHexDraft==='true').geometry.polygons[0].outer;
  assert(Math.abs(gridWidth(zoomed)-(Math.max(...footprint.map(p=>p.x))-Math.min(...footprint.map(p=>p.x))))<.001,'Visible grid and authored footprint must use one Hex size');
  f.ui.cancel();
- assert(Math.abs(gridWidth(draw(36*HEX_METERS))-3*HEX_METERS)<.001,'Automatic grid resumes when no draft is open');
- assert.equal(f.document.querySelector('#atlas-hex-level').value,'1');
+ draw(96*HEX_METERS);f.ui.gridFade=null;
+ assert(Math.abs(gridWidth(draw(96*HEX_METERS))-8*HEX_METERS)<.001,'Automatic grid resumes with the day preset when no draft is open');
+ assert.equal(f.document.querySelector('#atlas-hex-level').value,'day');
 });
 
 test('an oversized Hex draft fails visibly without saving or discarding its points',async t=>{

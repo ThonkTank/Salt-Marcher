@@ -15,3 +15,19 @@ changes. Its upstream commit, archive hash, source hash, source document,
 license and attribution are pinned in the catalog manifest. The copied JSON
 artifact is independently guarded by SHA-256
 `afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d`.
+
+## Geographic comparison catalog
+
+Natural Earth administrative map units, German states, physical islands and
+continents: public domain, revision
+`ca96624a56bd078437bca8184e78163e5039ad19` of
+https://github.com/nvkelso/natural-earth-vector .
+
+City boundaries (except Tokyo) and Rügen/Sylt: © OpenStreetMap contributors,
+https://www.openstreetmap.org/copyright , available under the Open Database
+License (ODbL), https://opendatacommons.org/licenses/odbl/1-0/ .
+The derived bounding coordinates, source links and rounded dimensions are
+provided in `src/app/atlas-reference-catalog.ts`, retrieved 2026-10-18. The
+OSM-derived subset remains available under ODbL. Natural Earth data retains
+its public-domain status. Dimensions are approximate geographic extents,
+not land areas; separate overseas map units remain separate comparisons.

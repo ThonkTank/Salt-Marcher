@@ -96,7 +96,7 @@ function rectangleGesture(t){
  for(const id of ['atlas-new-name','atlas-draft-cancel','drawing-cancel']){const n=f.document.createElement(id==='atlas-new-name'?'input':'button');n.id=id;f.document.body.append(n);}
  f.document.getElementById('atlas-new-name').value='Zollhaus';
  Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>selected.push(id),status(){}},error:e=>{throw e;}});
- f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
+ f.ui.reference={active:false};f.ui.camera.stopZoom=()=>{};f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
  const event=(x,y)=>({button:0,pointerId:3,clientX:x,clientY:y,altKey:false});
  return{...f,writes,selected,captures,event};
 }

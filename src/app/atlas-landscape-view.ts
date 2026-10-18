@@ -1,6 +1,7 @@
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
-import { formatDistance, hexPolygon, hexSize, LANDSCAPE_PLACE_FONT_PX } from "./atlas-landscape";
+import { hexPolygon, LANDSCAPE_PLACE_FONT_PX } from "./atlas-landscape";
+import { gridMeters, scaleBar } from "./atlas-navigation-scale";
 import { terrainColors } from "./world-model";
 export function drawLandscape(
   root: AtlasPaint,
@@ -70,11 +71,11 @@ export function drawLandscape(
 export function drawLandscapeGrid(
   root: AtlasPaint,
   b: LandscapeBox,
-  level: number,
+  level: number | string,
   mpp: number,
 ) {
   const landscapeNode=atlasPaint;
-  const size = hexSize(level),
+  const size = gridMeters(level),
     r = Math.ceil(Math.max(b.width, b.height) / size) + 2;
   if (r > 45) return;
   const cr = Math.round((b.y + b.height / 2) / ((size * Math.sqrt(3)) / 2)),
@@ -87,12 +88,10 @@ export function drawLandscapeGrid(
 }
 export function drawScale(root: AtlasPaint, b: LandscapeBox, mpp: number) {
   const landscapeNode=atlasPaint;
-  const raw = mpp * 120,
-    pow = 10 ** Math.floor(Math.log10(raw)),
-    n = [1, 2, 5, 10].find((n) => n * pow >= raw)!,
-    len = n * pow;
+  const bar = scaleBar(mpp, b.width / mpp), len = bar.meters;
   root.append(
-    landscapeNode("polyline", {points:[{x:mpp*20,y:b.height-mpp*35},{x:mpp*20,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*35}], pointer: false, style: {fill: null, stroke: "#23382d", lineWidth: mpp * 2}, data: {editorOnly: String("true")}}),
-    landscapeNode("text", {x: mpp * 20, y: b.height - mpp * 42, style: {fontSize: mpp * 11, fill: "#23382d"}, data: {editorOnly: String("true")}}, formatDistance(len)),
+    landscapeNode("rect", {x:mpp*12,y:b.height-mpp*62,width:Math.min(b.width-mpp*24,mpp*280),height:mpp*44,style:{fill:"#fffaf0",fillOpacity:.92},pointer:false,data:{editorOnly:"true"}}),
+    landscapeNode("polyline", {points:[{x:mpp*20,y:b.height-mpp*35},{x:mpp*20,y:b.height-mpp*30},{x:mpp*20+len/2,y:b.height-mpp*30},{x:mpp*20+len/2,y:b.height-mpp*35},{x:mpp*20+len/2,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*35}], pointer: false, style: {fill: null, stroke: "#23382d", lineWidth: mpp * 2}, data: {editorOnly: String("true")}}),
+    landscapeNode("text", {matrix:[mpp,0,0,mpp,mpp*20,b.height-mpp*42], x:0,y:0, style: {fontSize:11, fill: "#23382d"}, data: {editorOnly: String("true")}}, bar.label),
   );
 }

@@ -15,7 +15,7 @@ export function atlasRegionPaint(
   assets: Map<string, string>,
   options: {
     grid: boolean;
-    level: number;
+    level: number | string;
     references: boolean;
     floorId: string;
     roofs: boolean;
