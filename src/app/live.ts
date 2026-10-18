@@ -80,7 +80,7 @@ async function saveRecap(w:WorkspaceGeometry,state:RecapWork):Promise<boolean>{
 let readAloudOwner: string | null = null;
 let selected: string | null = null, characterDraft: Character | null = null, sceneDraft: LiveScene | null = null;
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
-let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
+let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: {command:LiveCommand;submittedProfile?:CharacterProfile} | null = null;
 let requestIsTextSave = false;
 type MomentWork={w:WorkspaceGeometry;sceneId:string;text:LiveMomentDraft;basis:LiveMomentDraft|null;dirty:boolean;error:string;readError:string;publishing?:boolean;saving?:Promise<boolean>};
 const momentWorks=new Map<string,MomentWork>();let momentOwner:MomentWork|null=null;
@@ -174,7 +174,7 @@ async function ensureLiveRuntime() {
     // projection. Read it before any follow-up intent uses that new runtime.
     await openLive();if(!current())return false;
   }
-  resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();return !!data.scene;
+  if(!resumed){resumed=true;sceneDraft=data.scene?structuredClone(data.scene):null;renderScene();}return !!data.scene;
 }
 export async function openLiveSoundboard(){
  if(!data?.scene){get('live-continue').scrollIntoView({block:'center'});get<HTMLButtonElement>('live-continue').focus();tell('Öffne zuerst eine Gruppe am Spieltisch.');return;}
@@ -197,7 +197,7 @@ function busy(on: boolean, structural = false, textSave = false) {
   }
   for (const button of get('roster-list').querySelectorAll('button')) (button as HTMLButtonElement).disabled = on;
 }
-function mergeAck(ack: LiveAck, action: LiveAction) {
+function mergeAck(ack: LiveAck, action: LiveAction, submittedProfile?: CharacterProfile) {
   if (!data) return;
   liveReadRequest++;
   const priorScene = data.scene, priorCharacter = originalCharacter();
@@ -208,8 +208,9 @@ function mergeAck(ack: LiveAck, action: LiveAction) {
     if(current.archived){data.roster=data.roster.filter(c=>c.id!==current.id);if(selected===current.id){selected=data.roster[0]?.id??null;characterDraft=originalCharacter()?structuredClone(originalCharacter()!):null;}}
     if (characterDraft?.id === current.id) {
       const dirty = priorCharacter && !equal(characterDraft.profile, priorCharacter.profile);
-      characterDraft = action.kind === 'profile' ? { ...current, profile: characterDraft.profile } :
-        dirty ? { ...current, profile: characterDraft.profile, profileRevision: characterDraft.profileRevision } : structuredClone(current);
+      const keepProfile = action.kind === 'profile' ? !submittedProfile || characterDraft.profile !== submittedProfile : dirty;
+      characterDraft = keepProfile ? { ...current, profile: characterDraft.profile,
+        profileRevision: action.kind === 'profile' ? current.profileRevision : characterDraft.profileRevision } : structuredClone(current);
     }
   }
   if (ack.session) {
@@ -229,13 +230,14 @@ function mergeAck(ack: LiveAck, action: LiveAction) {
     else sceneDraft = structuredClone(ack.scene);
     data.scenes = data.scenes.map(s => s.id === ack.scene!.id ? { ...s, title: ack.scene!.title, members: ack.scene!.members.length, membershipRevision: ack.scene!.membershipRevision, clock: ack.scene!.clock } : s);
   }
-  renderList();renderCharacter(); renderMembership(); renderSceneMeta(); renderGroups();
+  // Publish each confirmed LiveAck through the same composition as an opened scene.
+  renderList();renderCharacter();renderScene();
   document.dispatchEvent(new Event('campaign-party-changed'));
 }
 async function execute(action: LiveAction): Promise<LiveAck | null> {
   if (!context || blocked || request) return null;
   liveReadRequest++;
-  const focusRevision = data?.focusRevision,previousLocationId=data?.scene?.locationId, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
+  const submittedProfile=characterDraft?.profile,focusRevision = data?.focusRevision,previousLocationId=data?.scene?.locationId, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
   const structural = ['focus', 'move', 'membership', 'scene-roster', 'archive-character'].includes(action.kind);
   // Blur starts a text save before the user's button click arrives. Keep queued
   // intents available; their handlers await flushLive before writing.
@@ -246,10 +248,10 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
       const ack = unwrap(await window.campaign.executeLive(command));
       if (context?.token !== token) return null;
       if((action.kind==='live-moment'||action.kind==='scene-content'||action.kind==='session-marker')&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
-      mergeAck(ack, action);if(liveActionUpdatesRecap(action)||action.kind==='scene-content'&&ack.scene?.locationId!==previousLocationId)void refreshLiveSession();tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
+      mergeAck(ack, action, submittedProfile);if(liveActionUpdatesRecap(action)||action.kind==='scene-content'&&ack.scene?.locationId!==previousLocationId)void refreshLiveSession();tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;
-      failed = command; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
+      failed = {command,submittedProfile}; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
       tell((error as Error).message + ' Entwurf bleibt offen. Zuerst den Speicherstatus prüfen.', true); return null;
     } finally { request = null; requestIsTextSave = false; busy(false, structural); renderGroups(); }
   })();
@@ -348,7 +350,6 @@ function renderMembership() {
   const c = originalCharacter();
   get('character-membership').textContent = c?.active ? 'Teil der aktuellen Party' : 'Nicht in der aktuellen Party';
   get('character-toggle').textContent = c?.active ? 'Für heute deaktivieren' : 'Für heute aktivieren';
-  renderSceneMeta();
 }
 function renderVisits() {
   const plan = sources?.plans.find(p => p.id === value('adoption-plan')), select = get<HTMLSelectElement>('adoption-visit'); select.replaceChildren();
@@ -404,6 +405,9 @@ function renderSceneMeta() {
     place.textContent = 'Ort bei Übernahme: ' + (sources?.locations.find(l => l.document.id === a.locationId)?.document.name ?? (a.locationId ? 'nicht verfügbar' : 'kein Ort'));
     origin.append(title, notes, place);
   } else origin.textContent = 'Noch kein vorbereiteter Besuch übernommen.';
+  renderScenePlace();
+}
+function renderScenePlace(){
   get('running-context-summary').textContent=(sources?.locations.find(l=>l.document.id===sceneDraft?.locationId)?.document.name??(sceneDraft?.locationId?'Ort nicht verfügbar':'Kein Ort'))+' · Titel und Ort ändern';
   get<HTMLButtonElement>('running-open-location').disabled = !sceneDraft?.locationId;
   get<HTMLButtonElement>('running-player-location').disabled = !sceneDraft?.locationId;
@@ -763,7 +767,7 @@ async function changeFocus(id: string,current:()=>boolean=()=>true) {
   const token = context?.token, revision = data?.focusRevision, combat=get('combat-panel'), bounds=combat.getBoundingClientRect?.();
   const atCombat=!combat.hidden&&bounds&&Math.min(bounds.bottom,window.innerHeight)-Math.max(bounds.top,0)>window.innerHeight/2;
   if (!current()||revision === null || revision === undefined || !(await flushLive()) || context?.token !== token||!current()) { if(current())get<HTMLSelectElement>('scene-focus').value = data?.focusId ?? ''; return false; }
-  if (await execute({ kind: 'focus', sceneId: id, expectedRevision: revision })){renderScene();(atCombat?combat:get('live-workspace')).scrollIntoView?.({block:'start'});return true;}return false;
+  if (await execute({ kind: 'focus', sceneId: id, expectedRevision: revision })){(atCombat?combat:get('live-workspace')).scrollIntoView?.({block:'start'});return true;}return false;
 }
 function renderTimePreview(){
  const scene=data?.scene,w=context,n=++timePreviewRequest;manualTimePreview=null;get<HTMLButtonElement>('time-advance').disabled=true;if(!scene||!w)return;const amount=value('time-amount'),unit=value('time-unit'),units:Record<string,'second'|'minute'|'hour'|'day'>={seconds:'second',minutes:'minute',hours:'hour',days:'day'};get('time-preview').textContent='Kalenderzeit wird berechnet…';
@@ -781,7 +785,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
   const rewardButton=document.createElement('button');rewardButton.id='live-visit-reward';rewardButton.type='button';rewardButton.textContent='Besuchsbelohnung…';rewardButton.hidden=true;get('combat-resume').after(rewardButton);rewardButton.onclick=()=>void openCurrentVisitReward().catch(error=>tell(error.message,true));
   sessionResumeButton=document.createElement('button');sessionResumeButton.id='live-session-resume';sessionResumeButton.type='button';sessionResumeButton.textContent='Nächsten Abend vorbereiten…';get('live-session-start').after(sessionResumeButton);sessionResumeButton.onclick=()=>void openSessionResume();
   const resumeDialog=document.createElement('dialog');resumeDialog.id='live-session-resume-dialog';resumeDialog.innerHTML='<div class="toolbar"><h2>Nächsten Spielabend aufnehmen</h2><button id="live-session-resume-x" type="button">Schließen</button></div><p id="live-session-resume-status" role="status"></p><section class="session-resume-handoff"><h3>Letzte Übergabe</h3><p id="live-session-resume-handoff"></p></section><section><h3>Startbriefings</h3><p class="caption">Pro Gruppe: Übergabe, Party, Weltlage, offene Fäden und Eröffnung.</p><div id="live-session-resume-groups"></div></section><section><h3>Gruppenbereitschaft</h3><div id="live-session-resume-readiness"></div></section><section><h3>Weltlage der Gruppen</h3><div id="live-session-resume-worlds"></div></section><section><h3>Nächste vorbereitete Besuche</h3><div id="live-session-resume-visits"></div></section><section><h3>Laufende Szenen</h3><div id="live-session-resume-masks"></div></section><section class="session-resume-narrative"><div class="toolbar"><div><h3>Offene Aufträge und Gerüchte</h3><p id="live-session-resume-narrative-count"></p></div><button id="live-session-resume-narrative-open" type="button">Auftragsjournal öffnen…</button></div><div id="live-session-resume-narratives"></div></section><section class="session-close-check"><div><h3>Beute</h3><p id="live-session-resume-loot-status"></p></div><button id="live-session-resume-loot" type="button">Beute verteilen…</button></section><section class="session-close-check"><div><h3>Partyfortschritt</h3><p>XP, Tagesbelastung und Empfänger vor dem Start prüfen.</p></div><button id="live-session-resume-xp" type="button">XP abrechnen…</button></section><div class="toolbar"><span class="grow"></span><button id="live-session-resume-close" type="button">Schließen</button></div>';document.body.append(resumeDialog);initHandoffVisitDialog();for(const id of ['live-session-resume-x','live-session-resume-close'])get<HTMLButtonElement>(id).onclick=()=>{sessionResumeRequest++;resumeDialog.close();};resumeDialog.addEventListener('cancel',()=>sessionResumeRequest++);get('live-session-resume-loot').onclick=()=>{sessionResumeRequest++;resumeDialog.close();void openTreasureDistribution(undefined,data?.scene?.id).catch(error=>tell(error.message,true));};get('live-session-resume-xp').onclick=()=>{sessionResumeRequest++;resumeDialog.close();const popover=get<HTMLElement>('party-popover');if(!popover.matches(':popover-open'))popover.showPopover();get<HTMLButtonElement>('party-award-open').click();};get('live-session-resume-narrative-open').onclick=()=>{sessionResumeRequest++;resumeDialog.close();void openNarrativeJournal().catch(error=>tell(error.message,true));};
-  tell=status;openLocation=navigate;openKnowledgeNote=openNote;openLocationNotebook=openNotebook;openPreparedReward=openReward;openMomentDeadline=openDeadline;openMomentVisit=openVisit;initSessionNavigator(status,async(planId,visitId)=>{await previewPlannedVisit(planId,visitId);},async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});if(ack)renderScene();return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);npcCastBinder=new NpcCastBinder(status,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,useLiveReferenceReadAloud,addLiveNpc,async(id,contact,current)=>{await npcNavigation?.(id,contact,current);},async(id,current)=>{if(current())await openKnowledgeNote(id,current);},async(id,current)=>{if(current())await openGroup?.(id,current);},async(id,current)=>{await npcAutonomyNavigation?.(id,current);},async(id,current)=>{await npcPlacesNavigation?.(id,current);},async(id,current)=>{if(current())await openLocationNotebook(id,current);});const castButton=document.createElement('button');castButton.id='live-npc-cast';castButton.type='button';castButton.textContent='NSCs am Spieltisch…';get('live-party-reference').before(castButton);castButton.onclick=()=>void npcCastBinder.open().catch(e=>tell(e.message,true));visitBinder=new SceneVisitBinder(status,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,useLiveReferenceReadAloud,openKnowledgeNote);liveGenerator=new LiveEncounterGenerator(status,()=>context&&data?.scene&&resumed?{workspace:context,live:data}:null,flushLive,prepareGeneratedCombat);const lootButton=document.createElement('button');lootButton.id='live-loot-distribute';lootButton.type='button';lootButton.textContent='Beute verteilen…';packetButton.after(lootButton);lootButton.onclick=()=>void(async()=>{const token=context?.token,id=data?.scene?.id;if(!id||!await flushLive()||context?.token!==token||data?.scene?.id!==id)return;await openTreasureDistribution(undefined,id);})().catch(e=>tell(e.message,true));const closeDialog=document.createElement('dialog');closeDialog.id='live-session-close-dialog';closeDialog.innerHTML='<div class="toolbar"><h2>Spielabend abschließen</h2><button id="live-session-close-x" type="button">Schließen</button></div><p id="live-session-close-status" role="status"></p><p id="live-session-close-facts" class="session-close-facts"></p><section><h3>Laufende Szenen</h3><div id="live-session-close-masks"></div></section><section class="session-close-check"><div><h3>Spielabend-XP</h3><p id="live-session-close-xp-status"></p></div><button id="live-session-close-xp" type="button">XP abrechnen…</button></section><section class="session-close-check"><div><h3>Beute</h3><p id="live-session-close-loot-status"></p></div><button id="live-session-close-loot" type="button">Beute verteilen…</button></section><section class="session-close-suggestion"><div class="toolbar"><h3>Vorschlag für den nächsten Einstieg</h3><button id="live-session-close-use-suggestion" type="button">Vorschlag übernehmen</button></div><pre id="live-session-close-suggestion"></pre></section><p id="live-session-close-draft-status" class="caption" role="status"></p><button id="live-session-close-draft-retry" type="button" hidden>Eigene Fassung erneut sichern…</button><label>Rückblick<textarea id="live-session-close-summary" maxlength="10000" placeholder="Was ist heute geschehen?"></textarea></label><label>Nächster Spielabend<textarea id="live-session-close-handoff" maxlength="10000" placeholder="Einstieg, offene Szenen und Vorbereitung"></textarea></label><p class="caption">Offene Kämpfe, Verfolgungen und Beute bleiben nach dem Abschluss erhalten.</p><div class="toolbar"><button id="live-session-close-refresh" type="button">Erneut prüfen</button><span class="grow"></span><button id="live-session-close-cancel" type="button">Abbrechen</button><button id="live-session-close-confirm" type="button">Spielabend jetzt beenden</button><button id="live-session-close-prepare" type="button">Beenden + Einstieg vorbereiten…</button></div>';document.body.append(closeDialog);for(const id of ['live-session-close-x','live-session-close-cancel'])get<HTMLButtonElement>(id).onclick=()=>{leaveSessionCloseReview();};get('live-session-close-refresh').onclick=()=>void loadSessionCloseReview(true);get('live-session-close-confirm').onclick=()=>void finishLiveSession();get('live-session-close-prepare').onclick=()=>void finishLiveSession(true);get('live-session-close-xp').onclick=()=>{if(!currentSessionCloseReview())return;leaveSessionCloseReview();const popover=get<HTMLElement>('party-popover');if(!popover.matches(':popover-open'))popover.showPopover();get<HTMLButtonElement>('party-award-open').click();};get('live-session-close-loot').onclick=()=>{if(!currentSessionCloseReview())return;leaveSessionCloseReview();void openTreasureDistribution(undefined,data?.scene?.id).catch(error=>tell(error.message,true));};get('live-session-close-use-suggestion').onclick=()=>{if(!currentSessionCloseReview()||closeDialog.getAttribute('aria-busy')==='true'||get<HTMLButtonElement>('live-session-close-use-suggestion').disabled)return;get<HTMLTextAreaElement>('live-session-close-handoff').value=get('live-session-close-suggestion').textContent??'';queueRecapSave();};closeDialog.addEventListener('cancel',leaveSessionCloseReview);for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff'])get(id).addEventListener('input',()=>queueRecapSave());for(const id of ['live-session-draft-retry','live-session-close-draft-retry'])get(id).onclick=()=>void retryRecapSave();initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status,refreshLiveSession);initProgress((text,error)=>{status(text,error);if(get<HTMLDialogElement>('live-health-dialog').open){get('live-health-status').textContent=text;get('live-health-status').className=error?'error':'caption';}},scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(()=>{renderPartyReference();void refreshLiveSession();});initHealthDialog();get('live-loot-back').onclick=returnFromPartyLoot;initRuleReferences(status);
+  tell=status;openLocation=navigate;openKnowledgeNote=openNote;openLocationNotebook=openNotebook;openPreparedReward=openReward;openMomentDeadline=openDeadline;openMomentVisit=openVisit;initSessionNavigator(status,async(planId,visitId)=>{await previewPlannedVisit(planId,visitId);},async(sceneId,adoptionId,status,outcome)=>{const token=context?.token;if(!token||!await flushLive()||context?.token!==token||data?.scene?.id!==sceneId||data.scene.adoption?.id!==adoptionId)return false;const ack=await execute({kind:'visit-outcome',sceneId,adoptionId,expectedRevision:data.scene.revision,status,outcome});return !!ack;});const packetButton=document.createElement('button');packetButton.id='live-session-packet';packetButton.type='button';packetButton.textContent='Mappe am Spieltisch öffnen';get('live-session-progress-refresh').after(packetButton);packetButton.onclick=()=>void openLivePacket().catch(e=>tell(e.message,true));get('live-session-plan').addEventListener('change',syncLivePacketContext);npcCastBinder=new NpcCastBinder(status,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,useLiveReferenceReadAloud,addLiveNpc,async(id,contact,current)=>{await npcNavigation?.(id,contact,current);},async(id,current)=>{if(current())await openKnowledgeNote(id,current);},async(id,current)=>{if(current())await openGroup?.(id,current);},async(id,current)=>{await npcAutonomyNavigation?.(id,current);},async(id,current)=>{await npcPlacesNavigation?.(id,current);},async(id,current)=>{if(current())await openLocationNotebook(id,current);});const castButton=document.createElement('button');castButton.id='live-npc-cast';castButton.type='button';castButton.textContent='NSCs am Spieltisch…';get('live-party-reference').before(castButton);castButton.onclick=()=>void npcCastBinder.open().catch(e=>tell(e.message,true));visitBinder=new SceneVisitBinder(status,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,useLiveReferenceReadAloud,openKnowledgeNote);liveGenerator=new LiveEncounterGenerator(status,()=>context&&data?.scene&&resumed?{workspace:context,live:data}:null,flushLive,prepareGeneratedCombat);const lootButton=document.createElement('button');lootButton.id='live-loot-distribute';lootButton.type='button';lootButton.textContent='Beute verteilen…';packetButton.after(lootButton);lootButton.onclick=()=>void(async()=>{const token=context?.token,id=data?.scene?.id;if(!id||!await flushLive()||context?.token!==token||data?.scene?.id!==id)return;await openTreasureDistribution(undefined,id);})().catch(e=>tell(e.message,true));const closeDialog=document.createElement('dialog');closeDialog.id='live-session-close-dialog';closeDialog.innerHTML='<div class="toolbar"><h2>Spielabend abschließen</h2><button id="live-session-close-x" type="button">Schließen</button></div><p id="live-session-close-status" role="status"></p><p id="live-session-close-facts" class="session-close-facts"></p><section><h3>Laufende Szenen</h3><div id="live-session-close-masks"></div></section><section class="session-close-check"><div><h3>Spielabend-XP</h3><p id="live-session-close-xp-status"></p></div><button id="live-session-close-xp" type="button">XP abrechnen…</button></section><section class="session-close-check"><div><h3>Beute</h3><p id="live-session-close-loot-status"></p></div><button id="live-session-close-loot" type="button">Beute verteilen…</button></section><section class="session-close-suggestion"><div class="toolbar"><h3>Vorschlag für den nächsten Einstieg</h3><button id="live-session-close-use-suggestion" type="button">Vorschlag übernehmen</button></div><pre id="live-session-close-suggestion"></pre></section><p id="live-session-close-draft-status" class="caption" role="status"></p><button id="live-session-close-draft-retry" type="button" hidden>Eigene Fassung erneut sichern…</button><label>Rückblick<textarea id="live-session-close-summary" maxlength="10000" placeholder="Was ist heute geschehen?"></textarea></label><label>Nächster Spielabend<textarea id="live-session-close-handoff" maxlength="10000" placeholder="Einstieg, offene Szenen und Vorbereitung"></textarea></label><p class="caption">Offene Kämpfe, Verfolgungen und Beute bleiben nach dem Abschluss erhalten.</p><div class="toolbar"><button id="live-session-close-refresh" type="button">Erneut prüfen</button><span class="grow"></span><button id="live-session-close-cancel" type="button">Abbrechen</button><button id="live-session-close-confirm" type="button">Spielabend jetzt beenden</button><button id="live-session-close-prepare" type="button">Beenden + Einstieg vorbereiten…</button></div>';document.body.append(closeDialog);for(const id of ['live-session-close-x','live-session-close-cancel'])get<HTMLButtonElement>(id).onclick=()=>{leaveSessionCloseReview();};get('live-session-close-refresh').onclick=()=>void loadSessionCloseReview(true);get('live-session-close-confirm').onclick=()=>void finishLiveSession();get('live-session-close-prepare').onclick=()=>void finishLiveSession(true);get('live-session-close-xp').onclick=()=>{if(!currentSessionCloseReview())return;leaveSessionCloseReview();const popover=get<HTMLElement>('party-popover');if(!popover.matches(':popover-open'))popover.showPopover();get<HTMLButtonElement>('party-award-open').click();};get('live-session-close-loot').onclick=()=>{if(!currentSessionCloseReview())return;leaveSessionCloseReview();void openTreasureDistribution(undefined,data?.scene?.id).catch(error=>tell(error.message,true));};get('live-session-close-use-suggestion').onclick=()=>{if(!currentSessionCloseReview()||closeDialog.getAttribute('aria-busy')==='true'||get<HTMLButtonElement>('live-session-close-use-suggestion').disabled)return;get<HTMLTextAreaElement>('live-session-close-handoff').value=get('live-session-close-suggestion').textContent??'';queueRecapSave();};closeDialog.addEventListener('cancel',leaveSessionCloseReview);for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff'])get(id).addEventListener('input',()=>queueRecapSave());for(const id of ['live-session-draft-retry','live-session-close-draft-retry'])get(id).onclick=()=>void retryRecapSave();initSceneDesk(status,prepareLiveEncounter,addLiveCreature);initCombat(status,refreshScenePreparation);initChase(status,refreshLiveSession);initProgress((text,error)=>{status(text,error);if(get<HTMLDialogElement>('live-health-dialog').open){get('live-health-status').textContent=text;get('live-health-status').className=error?'error':'caption';}},scene=>{if(!data?.scene||data.scene.id!==scene.id||data.scene.clock.epochId!==scene.clock.epochId||data.scene.clock.revision>scene.clock.revision)return;data.scene.clock=scene.clock;for(const row of data.scenes)if(row.id===scene.id)row.clock=scene.clock;renderSceneMeta();renderGroups();});onProgressChanged(()=>{renderPartyReference();void refreshLiveSession();});initHealthDialog();get('live-loot-back').onclick=returnFromPartyLoot;initRuleReferences(status);
   initGroups();
   get('scene-preparation-refresh').onclick=()=>void refreshScenePreparation();
   get('live-next-visit').onclick=()=>{void(async()=>{if(!nextVisit||!await flushLive())return;const visit=nextVisit;await openLive(visit.planId,visit.visitId);get<HTMLDetailsElement>('adoption-picker').open=true;get('adoption-preview').click();})();};
@@ -805,15 +809,15 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
     const token = context?.token, id = selected;
     if (!(await flushLive()) || context?.token !== token || selected !== id || !data) return;
     const c = originalCharacter(); if (!c) return;
-    if (await execute({ kind: 'membership', characterId: c.id, expectedRevision: c.membershipRevision, expectedRosterRevision: data.rosterRevision,
-      active: !c.active, targetSceneId: c.active ? null : data.focusId, expectedFocusRevision: data.focusRevision })) renderMembership();
+    await execute({ kind: 'membership', characterId: c.id, expectedRevision: c.membershipRevision, expectedRosterRevision: data.rosterRevision,
+      active: !c.active, targetSceneId: c.active ? null : data.focusId, expectedFocusRevision: data.focusRevision });
   })(); };
   get('live-continue').onclick = () => { void (async () => {
     const token = context?.token;
     if (!(await flushLive()) || context?.token !== token || !data) return;
     if (await execute({ kind: 'initialize', expectedRosterRevision: data.rosterRevision })) {
       if (!(await flushLive())) return;
-      resumed = true; await openLive(); renderScene(); tell('Gespeichert.');
+      resumed = true; await openLive(); tell('Gespeichert.');
     }
   })(); };
   for (const [id, field] of [['running-title', 'title'], ['running-notes', 'notes'], ['running-read-aloud','readAloud']] as const) {
@@ -823,7 +827,7 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
     } };
     get(id).onblur = () => { if (!composing) void flushLive(); };
   }
-  get('running-location').onchange = () => { if (sceneDraft) { sceneDraft = { ...sceneDraft, locationId: value('running-location') || null }; renderSceneMeta(); schedule(); } };
+  get('running-location').onchange = () => { if (sceneDraft) { sceneDraft = { ...sceneDraft, locationId: value('running-location') || null }; renderScenePlace(); schedule(); } };
   get('running-open-location').onclick = () => { void (async () => { const token = context?.token; if (await flushLive() && token === context?.token && sceneDraft?.locationId) await openLocation(sceneDraft.locationId); })(); };
   get('running-player-follow').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus();if(await flushLive()&&context?.token===token)await cuePlayer('follow',focus);})();};
   get('running-player-location').onclick=()=>{void(async()=>{const token=context?.token,focus=playerFocus(),locationId=sceneDraft?.locationId;if(!focus||!locationId)return;if(await flushLive()&&context?.token===token&&sceneDraft?.locationId===locationId)await cuePlayerImage('location',locationId,focus);})();};
@@ -873,21 +877,21 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
   get('adoption-cancel').onclick = () => { adoption = null; get<HTMLDialogElement>('adoption-dialog').close(); };
   const confirmAdoption=(openPacket:boolean)=>void(async()=>{
     const action=adoption;if(!action)return;
-    if(await execute(action)){adoption=null;get<HTMLDialogElement>('adoption-dialog').close();get<HTMLDetailsElement>('adoption-picker').open=false;renderScene();if(openPacket)await openLivePacket();}
+    if(await execute(action)){adoption=null;get<HTMLDialogElement>('adoption-dialog').close();get<HTMLDetailsElement>('adoption-picker').open=false;if(openPacket)await openLivePacket();}
   })().catch(error=>tell((error as Error).message,true));
   get('adoption-confirm').onclick=()=>confirmAdoption(false);
   get('adoption-confirm-packet').onclick=()=>confirmAdoption(true);
   get('live-apply').onclick = () => { void flushLive(); };
   get('live-reconcile').onclick = () => { void (async () => {
-    const command = failed, token = context?.token; if (!command || !token) return;
+    const pending = failed, command = pending?.command, token = context?.token; if (!pending || !command || !token) return;
     try {
       const result = unwrap(await window.campaign.liveStatus(command, token));
-      if (context?.token !== token) return;
+      if (context?.token !== token || failed !== pending) return;
       if (result.targetChanged) {
         tell(result.receipt ? 'Speicherung bestätigt, inzwischen liegt ein neuerer Zielstand vor. Entwurf bleibt offen; vor dem Aktualisieren eigenen Text sichern.' : 'Konflikt bestätigt. Entwurf bleibt offen; vor dem Aktualisieren eigenen Text sichern.', true);
         return;
       }
-      if (result.receipt) mergeAck({ ...result.receipt, ...(result.currentScene ? { scene: result.currentScene } : {}), ...(result.currentCharacter ? { character: result.currentCharacter } : {}) }, command.action);
+      if (result.receipt) mergeAck({ ...result.receipt, ...(result.currentScene ? { scene: result.currentScene } : {}), ...(result.currentCharacter ? { character: result.currentCharacter } : {}) }, command.action, pending.submittedProfile);
       blocked = false; failed = null; get('live-reconcile').hidden = true; get('live-refresh').hidden = true;
       tell(result.outcome === 'applied' ? 'Speicherung bestätigt. Weitere Eingaben bleiben offen.' : 'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.');
     } catch (error) { tell((error as Error).message + ' Status bleibt ungeklärt.', true); }
@@ -922,12 +926,12 @@ function initGroups() {
     const action: Extract<LiveAction, { kind: 'move' }> = { ...basis, memberIds, target: targetId && target ?
       { kind: 'existing', sceneId: target.id, expectedMembershipRevision: target.membershipRevision, expectedClockRevision: target.clock.revision } :
       { kind: 'new', title: value('move-title'), expectedContentRevision: Number(get('move-title').dataset.contentRevision) } };
-    if (await execute(action)) { moveBasis = null; get<HTMLDialogElement>('move-dialog').close(); renderScene(); }
+    if (await execute(action)) { moveBasis = null; get<HTMLDialogElement>('move-dialog').close(); }
   })(); };
   for (const id of ['time-amount', 'time-unit']) get(id).addEventListener('input', renderTimePreview);
   get('time-reason').addEventListener('input',renderTimePreview);
-  get('time-form').onsubmit=event=>{event.preventDefault();void(async()=>{const p=manualTimePreview,token=context?.token;if(!p||!token||!data?.scene||p.sceneId!==data.scene.id||!await flushLive()||context?.token!==token)return;manualTimePreview=null;if(await execute(p.action))renderSceneMeta();else renderTimePreview();})();};
-  timeNavigator=new TimeNavigator(tell,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,async(action,stillCurrent)=>{const token=context?.token;if(!token||!await flushLive()||!stillCurrent()||context?.token!==token||data?.scene?.id!==action.sceneId)return false;const ack=await execute(action);if(ack)renderSceneMeta();return !!ack;},recoverTimeWrite);
+  get('time-form').onsubmit=event=>{event.preventDefault();void(async()=>{const p=manualTimePreview,token=context?.token;if(!p||!token||!data?.scene||p.sceneId!==data.scene.id||!await flushLive()||context?.token!==token)return;manualTimePreview=null;if(!await execute(p.action))renderTimePreview();})();};
+  timeNavigator=new TimeNavigator(tell,()=>context&&data?.scene&&resumed?{workspace:context,scene:data.scene}:null,flushLive,async(action,stillCurrent)=>{const token=context?.token;if(!token||!await flushLive()||!stillCurrent()||context?.token!==token||data?.scene?.id!==action.sceneId)return false;const ack=await execute(action);return !!ack;},recoverTimeWrite);
   resetLiveArchives=initLiveArchives(()=>context?.token??null,flushLive,()=>context?.campaign.id??null);
 }
 
@@ -937,7 +941,6 @@ export async function runPartyLive(token:string,action:LiveAction,stillCurrent:(
  if(!data)await openLive();
  if(!stillCurrent()||context?.token!==token||!data)throw new Error('Party oder Auswahl nicht mehr verfügbar.');
  const ack=await execute(action);if(!ack)throw new Error('Änderung nicht bestätigt. Speicherstatus im Spieltisch prüfen; Eingabe bleibt erhalten.');
- if(ack.character&&characterDraft?.id===ack.character.id){characterDraft=structuredClone(ack.character);renderCharacter();}
  return ack;
 }
 export async function runPartyProgress(token:string,action:import('./progression').ProgressAction,stillCurrent:()=>boolean=()=>true){
@@ -980,7 +983,7 @@ async function openLivePacket(){const source=livePacketSource();if(!source){tell
 export async function openTimeNavigator(target?:{eventId:string;expectedRevision:number;phase:'start'|'end';sceneId:string;title?:string},expectedSceneId?:string){if(!await ensureLiveRuntime())return;if(expectedSceneId&&data?.scene?.id!==expectedSceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await timeNavigator.open(target);}
 export async function openTravelRest(sceneId:string){if(!await ensureLiveRuntime()||!await flushLive())return;if(data?.scene?.id!==sceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await openPartyRest(sceneId);}
 
-async function recoverTimeWrite(){const command=failed,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failed!==command)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failed=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}
+async function recoverTimeWrite(){const pending=failed,command=pending?.command,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failed!==pending)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failed=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}
 
 async function readSessionChronicle(token:string):Promise<Result<ChronicleView>>{try{return await window.campaign.chronicle(token);}catch(error){return{ok:false,error:(error as Error).message};}}
 

@@ -8,7 +8,7 @@ import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {parseHTML} from 'linkedom';
 const base='.build/planner-live-moment',require=createRequire(import.meta.url);
-mkdirSync(base+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',base+'/catalog/srd-5.1.generated.json');buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
+mkdirSync(base+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',base+'/catalog/srd-5.1.generated.json');buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export {newLocation} from './src/features/location/location-schema';export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
 async function setup(t,resume=true,initialize=true,recapRaw){
  const root=mkdtempSync(path.join(tmpdir(),'moment-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite')),campaign=store.create('Abend'),w=store.activate(campaign.id);
@@ -609,4 +609,49 @@ test('read-aloud follows the focused scene without changing either group text or
  x.el('running-notes').value='Borin wartet auf das Zeichen';x.el('running-notes').oninput();x.el('group-list').querySelector('button').click();await settle();
  assert.equal(prose.open,true);assert.equal(read.value,'  Drei blaue Blitze.\r\nDer Riegel knarrt.');assert.equal(x.store.liveScene(x.w.token,other).notes,'Borin wartet auf das Zeichen');
  prose.open=false;await x.ui.openLive();assert.equal(prose.open,false);assert.equal(x.store.liveScene(x.w.token,x.scene.id).readAloud,read.value);
+});
+
+test('one confirmed live load or text save publishes one scene context; profile inspection publishes none',async t=>{
+ const x=await setup(t);await settle();const reads={preparation:0,rules:0},preparation=x.window.campaign.scenePreparation,rules=x.window.campaign.sceneRules;
+ x.window.campaign.scenePreparation=async(...args)=>{reads.preparation++;return preparation(...args);};x.window.campaign.sceneRules=async(...args)=>{reads.rules++;return rules(...args);};
+ await x.ui.openLive();await settle();assert.deepEqual(reads,{preparation:1,rules:1},'opening the scene publishes one confirmed context');
+ reads.preparation=reads.rules=0;const text='  Eine aktuelle Notiz\r\nbleibt erhalten';x.el('running-notes').value=text;x.el('running-notes').oninput();assert.equal(await x.ui.flushLive(),true);await settle();assert.deepEqual(reads,{preparation:1,rules:1},'one confirmed scene write publishes one context');assert.equal(x.store.live(x.w.token).scene.notes,text);
+ reads.preparation=reads.rules=0;x.el('roster-list').querySelectorAll('button')[1].click();await settle();assert.deepEqual(reads,{preparation:0,rules:0},'inspecting a different character does not reload the unchanged scene');assert.equal(x.el('character-name').value,'Borin');assert.equal(x.el('running-notes').value,text);
+});
+
+
+test('focus and membership commands publish once; a local location draft waits for its confirmed write',async t=>{
+ const x=await setup(t),location=x.ui.newLocation(randomUUID(),'Nordtor','poi',[randomUUID(),randomUUID()]);x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:location}});
+ const other=await x.focusOther();await settle();x.el('combat-creation').open=false;const reads={preparation:0,rules:0},preparation=x.window.campaign.scenePreparation,rules=x.window.campaign.sceneRules;
+ x.window.campaign.scenePreparation=async(...args)=>{reads.preparation++;return preparation(...args);};x.window.campaign.sceneRules=async(...args)=>{reads.rules++;return rules(...args);};
+ x.el('group-list').querySelector('button').click();await settle();assert.equal(x.store.live(x.w.token).focusId,x.scene.id);assert.deepEqual(reads,{preparation:1,rules:1});
+ reads.preparation=reads.rules=0;x.el('character-toggle').click();await settle();assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===x.heroes[0].id).active,false);assert.deepEqual(reads,{preparation:1,rules:1});
+ reads.preparation=reads.rules=0;x.el('running-location').value=location.id;x.el('running-location').onchange();await settle();assert.match(x.el('running-context-summary').textContent,/Nordtor/);assert.equal(x.store.live(x.w.token).scene.locationId,null);assert.deepEqual(reads,{preparation:0,rules:0});
+ assert.equal(await x.ui.flushLive(),true);await settle();assert.equal(x.store.live(x.w.token).scene.locationId,location.id);assert.deepEqual(reads,{preparation:1,rules:1});assert.notEqual(other,x.scene.id);
+});
+
+for(const newer of [null,'Neuere eigene Fassung','Ada'])test(`a Party profile acknowledgement has one merge and preserves newer local intent: ${newer??'no later input'}`,async t=>{
+ const x=await setup(t),old=x.store.live(x.w.token).roster.find(c=>c.id===x.heroes[0].id),release=x.defer('profile');
+ const saving=x.ui.runPartyLive(x.w.token,{kind:'profile',characterId:old.id,expectedRevision:old.profileRevision,profile:{...old.profile,name:'Party-Profil'}});await settle();
+ assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,'Party-Profil');
+ if(newer!==null){x.el('character-name').value=newer;x.el('character-name').oninput();}
+ release();await saving;await settle();assert.equal(x.el('character-name').value,newer??'Party-Profil');
+ assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,newer??'Party-Profil');assert.equal(x.commands.filter(c=>c.action.kind==='profile').length,newer===null?1:2);
+});
+
+for(const newer of [null,'Entwurf nach Antwortverlust','Ada'])test(`Party profile receipt recovery uses the same submitted draft basis: ${newer??'no later input'}`,async t=>{
+ const x=await setup(t),old=x.store.live(x.w.token).roster.find(c=>c.id===x.heroes[0].id),writer=x.window.campaign.executeLive;let lost=false;
+ x.window.campaign.executeLive=async command=>{const result=await writer(command);if(command.action.kind==='profile'&&!lost){lost=true;throw Error('Profilantwort verloren');}return result;};
+ x.window.campaign.liveStatus=async(command,token)=>({ok:true,value:x.store.liveStatus(command,token)});
+ await assert.rejects(x.ui.runPartyLive(x.w.token,{kind:'profile',characterId:old.id,expectedRevision:old.profileRevision,profile:{...old.profile,name:'Party-Profil'}}));
+ if(newer!==null){x.el('character-name').value=newer;x.el('character-name').oninput();}
+ x.el('live-reconcile').click();await settle();assert.equal(x.el('live-reconcile').hidden,true);assert.equal(x.el('character-name').value,newer??'Party-Profil');
+ assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,newer??'Party-Profil');assert.equal(x.commands.filter(c=>c.action.kind==='profile').length,newer===null?1:2);
+});
+
+test('discarding a profile recovery revokes its pending receipt answer',async t=>{
+ const x=await setup(t),old=x.store.live(x.w.token).roster.find(c=>c.id===x.heroes[0].id),writer=x.window.campaign.executeLive;
+ x.window.campaign.executeLive=async command=>{await writer(command);throw Error('Profilantwort verloren');};await assert.rejects(x.ui.runPartyLive(x.w.token,{kind:'profile',characterId:old.id,expectedRevision:old.profileRevision,profile:{...old.profile,name:'Gespeichertes Profil'}}));x.window.campaign.executeLive=writer;
+ let release;x.window.campaign.liveStatus=(command,token)=>new Promise(resolve=>{release=()=>resolve({ok:true,value:x.store.liveStatus(command,token)});});x.releases.push(()=>release?.());x.el('live-reconcile').click();await settle();x.el('live-refresh').click();await settle();assert.equal(x.el('live-reconcile').hidden,true);
+ x.el('character-name').value='Neuer Entwurf nach Reload';x.el('character-name').oninput();x.messages.length=0;release();await settle();assert.deepEqual(x.messages,[]);assert.equal(x.el('character-name').value,'Neuer Entwurf nach Reload');assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,'Neuer Entwurf nach Reload');
 });
