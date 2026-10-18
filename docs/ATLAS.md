@@ -6,11 +6,11 @@ Die Desktopanwendung verwendet eine Kampagnenwelt. Hexgelände, Städte, Gebäud
 
 Der Atlas verwendet die gesamte Fensterfläche. Die feste obere Befehlsleiste enthält das Atlasmenü mit Kampagnenverwaltung, Einstellungen, Hilfe und Rückkehr zur Kampagnenübersicht, Rückgängig/Wiederholen, Auswahl/Hand, Ansichtsverlauf, Zoom und Weltübersicht. Suche, Größenvergleich, Ansicht, Import, Export und Speicherstatus bleiben unabhängig vom Werkzeug erreichbar. Ab 1200 CSS-Pixeln steht die Leiste in einer Zeile, darunter in zwei Zeilen. Menüs und Suchergebnisse überlagern die Karte. Party, Reise, Spielzeit, Musik und Spieleranzeige gehören ausschließlich zu den Spielleitungsbereichen; Alt+P öffnet im Editor keine Partyansicht.
 
-Links bleiben **Landschaft**, **Stadt** und **Dungeon** mit ihren Werkzeugen sichtbar. Innenräume und Ausstattung gehören zu Dungeon. Grundeinstellungen stehen unter den Werkzeugen, Geschosse bei Dungeon. Eine Objektauswahl ersetzt die Werkzeugliste nicht. Die linke Leiste ist standardmäßig 240 Pixel breit und zwischen 200 und 300 Pixeln verstellbar. **Ansicht** bietet das Ausblenden einer oder beider Seitenleisten; die Befehlsleiste bleibt dabei sichtbar.
+Links bleiben **Landschaft**, **Stadt** und **Dungeon** mit ihren Werkzeugen als kompakte Symbolpalette sichtbar. Tooltips nennen jedes Werkzeug; der aktive Werkzeugname steht über den Einstellungen. Innenräume und Ausstattung gehören zu Dungeon. Grundeinstellungen stehen unter den Werkzeugen, Geschosse bei Dungeon. Eine Objektauswahl ersetzt die Werkzeugliste nicht. Die linke Leiste ist standardmäßig 240 Pixel breit und zwischen 200 und 300 Pixeln verstellbar. **Ansicht** bietet das Ausblenden einer oder beider Seitenleisten; die Befehlsleiste bleibt dabei sichtbar.
 
 Eigenschaften einer ausdrücklichen Auswahl, **Beschreibung bearbeiten**, Objektbibliothek, **Viertel bebauen**, Analyse, Nachzeichenvorlage, Größenvergleich und Bildexport öffnen ihren Kontext rechts. Diese Leiste ist standardmäßig 340 Pixel breit und zwischen 280 und 480 Pixeln verstellbar. Würden weniger als 560 Pixel Kartenbreite verbleiben, überlagert sie die Karte. Schließen erhält den aktuellen Kontext und offene Eingaben; Zoomen und Nachladen öffnen sie nicht wieder. Der Schalter oben blendet den Kontext erneut ein. Eine offene Raumbeschreibung wird nicht automatisch durch einen anderen Kontext verdrängt. Raumtexte verwenden dieselben Key-Records und Speicherregeln.
 
-Breiten und linke Sichtbarkeit bleiben als neue lokale Ansichtspräferenz erhalten. Seitenleistenänderungen erhalten Kartenmittelpunkt und Meter pro Bildschirmpixel, ohne Autorenänderung oder Eintrag im Ansichtsverlauf. Maßstab und sichtbare Ausdehnung bleiben als nicht bedienbare Kartenanzeigen sichtbar.
+Breiten und linke Sichtbarkeit bleiben als neue lokale Ansichtspräferenz erhalten. Seitenleistenänderungen erhalten Kartenmittelpunkt und Meter pro Bildschirmpixel, ohne Autorenänderung oder Eintrag im Ansichtsverlauf. Die feste Maßstabsleiste bleibt als nicht bedienbare Kartenanzeige sichtbar.
 
 Das Mausrad zoomt am Zeiger. Mittlere Maustaste oder **Leertaste + Ziehen** verschieben vorübergehend die Kamera. Enter schließt einen Punktzug ab, Backspace entfernt seinen letzten Punkt, Escape verwirft ihn. Kartenkürzel wirken auf der Karte, nicht während Texteingaben. Werkzeuge und Werkzeugfamilien dürfen einen begonnenen Zug nicht stillschweigend verwerfen.
 
@@ -65,7 +65,7 @@ Offen bleiben der vollständige Biom-/Symbolkatalog, Heightmaps, automatische Br
 
 Die feste Leiste unten zeigt die Entfernung über 160 Bildschirmpixel, in kleinen
 Fenstern höchstens ein Drittel der Kartenbreite. Meter/Kilometer und Meilen
-folgen dem Zoom unmittelbar; oben stehen sichtbare Breite und Höhe. Mausrad und
+folgen dem Zoom unmittelbar. Mausrad und
 Trackpad zoomen um den Mauszeiger, die Plus-/Minustasten um die Ansichtsmitte.
 **Vorige Ansicht** nimmt eine zusammenhängende Zoomgeste zurück. Reduzierte
 Bewegung in den Systemeinstellungen schaltet die Übergangsanimation aus.

@@ -20,7 +20,7 @@ const prefix=process.env.ATLAS_PACKAGE?[]:[root+'/.build/desktop/main.cjs'];
 const result={baseline,profile,executable,source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),runtimeHashes:Object.fromEntries(await Promise.all(['ui/renderer.js','ui/app.css'].map(async file=>[file,createHash('sha256').update(await readFile(root+'/.build/desktop/'+file)).digest('hex')]))),frames:[],errors:[]};let app;
 try{
  app=await _electron.launch({executablePath:executable,args:[...prefix,'--data-dir',profile,'--ozone-platform=x11'],timeout:60000});
- if(process.env.ATLAS_PACKAGE)assert.equal(await app.evaluate(({app})=>app.getVersion()),'0.162.0');
+ if(process.env.ATLAS_PACKAGE)assert.equal(await app.evaluate(({app})=>app.getVersion()),require(root+'/package.json').version);
  const page=await app.firstWindow();page.on('pageerror',e=>{result.errors.push(e.stack??e.message);console.error(e.stack);});
  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
  await page.locator('.campaign-card').filter({hasText:'Atlaswerkstatt'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
@@ -44,6 +44,11 @@ try{
   assert(await page.locator('#room-name').isVisible());
   assert.equal(await page.locator('#atlas-families button').count(),3);
   assert(await page.locator('[data-tool-buttons="drawing-tool"]').isVisible());
+  const tools=await page.locator('[data-tool-buttons="drawing-tool"]').evaluate(n=>({height:n.getBoundingClientRect().height,columns:getComputedStyle(n).gridTemplateColumns.split(' ').length}));
+  assert.equal(tools.columns,4);assert(tools.height<=180,'dungeon tools fit into a compact icon palette');
+  assert.equal(await page.locator('#atlas-scale').count(),0);
+  assert(await page.locator('#atlas-terrain').isHidden());assert(await page.locator('#atlas-hex-level').isHidden());
+
   await page.locator('#campaign-map').focus();await page.keyboard.press('Alt+p');assert.equal(await page.locator('#party-popover').evaluate(n=>n.matches(':popover-open')),false);
   const camera=()=>page.locator('#campaign-map').evaluate(n=>{const b=JSON.parse(n.dataset.atlasView),r=n.getBoundingClientRect();return{cx:b.x+b.width/2,cy:b.y+b.height/2,mpp:b.width/r.width};});
   const stable=await camera();

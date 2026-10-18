@@ -15,7 +15,7 @@ seed.tutorial('skipped');const before=seed.db.prepare('SELECT payload FROM atlas
 const executable=process.env.ATLAS_PACKAGE?path.join(process.env.ATLAS_PACKAGE,'electron'):path.join(root,'node_modules/electron/dist/electron');
 const prefix=process.env.ATLAS_PACKAGE?[]:[path.join(root,'.build/desktop/main.cjs')];
 const errors=[],results={profile,executable};let app,closed=true;
-async function launch(){app=await _electron.launch({executablePath:executable,args:[...prefix,'--data-dir',profile],timeout:30000});closed=false;const page=await app.firstWindow();if(process.env.ATLAS_PACKAGE)assert.equal(await app.evaluate(({app})=>app.getVersion()),'0.162.0');page.on('pageerror',e=>errors.push(e.stack));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);if(await page.locator('#campaign-atlas').isHidden())await page.getByRole('button',{name:'Atlas',exact:true}).filter({visible:true}).click();await ready(page);return page;}
+async function launch(){app=await _electron.launch({executablePath:executable,args:[...prefix,'--data-dir',profile],timeout:30000});closed=false;const page=await app.firstWindow();if(process.env.ATLAS_PACKAGE)assert.equal(await app.evaluate(({app})=>app.getVersion()),require(root+'/package.json').version);page.on('pageerror',e=>errors.push(e.stack));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);if(await page.locator('#campaign-atlas').isHidden())await page.getByRole('button',{name:'Atlas',exact:true}).filter({visible:true}).click();await ready(page);return page;}
 async function ready(page){await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.regionState==='ready'&&['loaded','empty'].includes(document.querySelector('#campaign-map').dataset.canvasState),null,{timeout:30000});}
 async function view(page){return page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.atlasView));}
 async function close(){const exit=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});closed=true;}
@@ -24,9 +24,27 @@ async function reference(page,name){await openComparison(page);await page.locato
 try{
  let page=await launch();const canvas=page.locator('#campaign-map'),bounds=await canvas.boundingBox(),v0=await view(page);
  await page.mouse.move(bounds.x+bounds.width*.3,bounds.y+bounds.height*.3);await page.mouse.wheel(0,-160);await ready(page);
- const v1=await view(page);assert(v1.width<v0.width);assert.match(await page.locator('#atlas-scale').innerText(),/^Sichtbar:/);
+ const v1=await view(page);assert(v1.width<v0.width);assert.equal(await page.locator('#atlas-scale').count(),0);
  const ax=v0.x+v0.width*.3,ay=v0.y+v0.height*.3;assert(Math.abs((ax-v1.x)/v1.width-.3)<.01);assert(Math.abs((ay-v1.y)/v1.height-.3)<.01);
  await page.getByRole('button',{name:'Vorige Ansicht',exact:true}).click();await ready(page);assert(Math.abs((await view(page)).width-v0.width)<1e-6);results.zoomAnchorAndHistory=true;
+ // Real renderer frame timing, including scroll and Chromium's Ctrl+wheel pinch.
+ for(const ctrlKey of [false,true]){
+  const widths=await canvas.evaluate(async(n,ctrlKey)=>{
+   const r=n.getBoundingClientRect(),widths=[JSON.parse(n.dataset.atlasView).width];
+   for(let i=0;i<36;i++){
+    n.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:i<24?32:2,deltaMode:0,ctrlKey,clientX:r.x+r.width*.3,clientY:r.y+r.height*.3}));
+    await new Promise(resolve=>requestAnimationFrame(resolve));widths.push(JSON.parse(n.dataset.atlasView).width);
+   }
+   await new Promise(resolve=>setTimeout(resolve,200));widths.push(JSON.parse(n.dataset.atlasView).width);return widths;
+  },ctrlKey);
+  assert(widths.at(-1)>widths[0]*2);
+  assert(widths.every((w,i)=>i===0||w>=widths[i-1]-1e-7),'touchpad gesture reversed unexpectedly');
+  await ready(page);results[ctrlKey?'pinchMonotonic':'scrollMonotonic']=true;
+  await page.getByRole('button',{name:'Vorige Ansicht',exact:true}).click();await ready(page);
+  assert(Math.abs((await view(page)).width-v0.width)<1e-6,'whole touchpad gesture has one history entry');
+ }
+ assert.equal(await canvas.evaluate(n=>getComputedStyle(n).backgroundColor),'rgb(184, 200, 150)','the unloaded margin matches the map base');
+
  await reference(page,'Deutschland');await page.screenshot({path:output+'/germany-before-focus.png'});
  await page.locator('#atlas-reference-show').click();await ready(page);
  const b=await canvas.boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2+45,b.y+b.height/2+20,{steps:5});await page.mouse.up();

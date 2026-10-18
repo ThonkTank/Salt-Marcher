@@ -1,6 +1,6 @@
 import {AtlasWorkspaceLayout} from './atlas-workspace-layout';
 import { AtlasReferenceUI } from "./atlas-reference-ui";
-import { distanceLabel, travelHexSizes } from "./atlas-navigation-scale";
+import { travelHexSizes } from "./atlas-navigation-scale";
 import {regionValue} from './atlas-region-contracts';
 import {selectElement} from './drawing-ui';
 import type {AtlasRegionQuery} from './atlas-region-contracts';
@@ -95,6 +95,7 @@ export class CampaignAtlasWorkbench {
   private hitVersion=0;
   private regionTimer:ReturnType<typeof setTimeout>|null=null;
   private loadedRegionQuery:AtlasRegionQuery|null=null;
+  private regionReading:number|null=null;
   private searchRequest=0;
   private opening:{owner:WorkspaceGeometry;task:Promise<void>}|null=null;
   private livePortal:LiveAtlasPortal|null=null;
@@ -179,7 +180,7 @@ export class CampaignAtlasWorkbench {
     }
     this.root.id = "campaign-atlas";
     this.root.hidden = true;
-    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-output-open">Bild ausgeben</button><button id="atlas-reference-open">Größe vergleichen</button><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Stadt, Haus oder Raum"></label><span id="atlas-scale"></span><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><canvas id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas">Atlas: Auswahl und Navigation über Ortsuche und Objektliste.</canvas><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><div id="atlas-edit-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint" data-idle="true">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
+    this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-output-open">Bild ausgeben</button><button id="atlas-reference-open">Größe vergleichen</button><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Stadt, Haus oder Raum"></label><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><canvas id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas">Atlas: Auswahl und Navigation über Ortsuche und Objektliste.</canvas><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><div id="atlas-edit-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint" data-idle="true">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
       terrainNames,
     )
       .map(([id, title]) => `<option value="${id}">${title}</option>`)
@@ -216,7 +217,7 @@ export class CampaignAtlasWorkbench {
         this.brushId !== null,
       changed: () => {
         this.remember();this.svg.dataset.atlasOriginX=String(this.camera.view.x);this.svg.dataset.atlasOriginY=String(this.camera.view.y);
-        this.updateScale();this.scheduleRegion(true);if(this.exportOpen)this.exportAreaStatus();
+        this.scheduleRegion(true);if(this.exportOpen)this.exportAreaStatus();
       },
     });
     this.root.querySelector(".map-canvas-controls")!.append(get("atlas-output-open"));
@@ -524,23 +525,35 @@ export class CampaignAtlasWorkbench {
     this.opts.status(text, true);
   }
   private regionQuery(buffered=false):AtlasRegionQuery{
-    const box=this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
+    const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
     return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(get<HTMLInputElement>('atlas-slice').value):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,perception:get<HTMLInputElement>('atlas-perception').checked};
   }
   private scheduleRegion(camera=false){
     if(this.root.hidden||!this.owner)return;
-    if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
-    if(this.geometryCurrent()){this.root.dataset.regionState='ready';this.svg.setAttribute('aria-busy','false');return;}
-    this.request++;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
-    // Keep a wheel burst on the retained scene; rebuild only after input settles.
+    if(this.geometryCurrent()){
+      if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
+      const settled=this.root.dataset.regionState!=='ready';
+      this.root.dataset.regionState='ready';this.svg.setAttribute('aria-busy','false');
+      if(camera&&settled)this.scheduleRender();
+      return;
+    }
+    this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
+    // Throttle camera reads instead of postponing them until input stops. A read
+    // already in flight can publish a useful frame during a long touchpad gesture.
+    if(camera&&(this.regionTimer||this.regionReading===this.request))return;
+    if(this.regionTimer)clearTimeout(this.regionTimer);
+    if(!camera)this.request++;
     this.regionTimer=setTimeout(()=>{this.regionTimer=null;void this.refresh(camera);},camera?120:60);
+  }
+  private geometryCoversView(){
+    const old=this.loadedRegionQuery,q=this.regionQuery();if(!old)return false;
+    return old.scopeId===q.scopeId&&old.floorId===q.floorId&&old.slice===q.slice&&old.roofs===q.roofs&&old.perception===q.perception&&old.box.x<=q.box.x&&old.box.y<=q.box.y&&old.box.x+old.box.width>=q.box.x+q.box.width&&old.box.y+old.box.height>=q.box.y+q.box.height;
   }
   private geometryCurrent(){
     const old=this.loadedRegionQuery,q=this.regionQuery();if(!old)return false;
-    if(old.scopeId!==q.scopeId||old.floorId!==q.floorId||old.slice!==q.slice||old.roofs!==q.roofs||old.perception!==q.perception)return false;
-    // Pan reuses the loaded buffer. Zoom uses a new frame so constant-pixel tools and hits keep their scale.
-    const scale=old.box.width/old.width/(q.box.width/q.width);
-    return Math.abs(scale-1)<1e-6&&old.box.x<=q.box.x&&old.box.y<=q.box.y&&old.box.x+old.box.width>=q.box.x+q.box.width&&old.box.y+old.box.height>=q.box.y+q.box.height;
+    // Authoring still requires geometry at the displayed scale. During motion,
+    // a matching buffered frame may be painted without authorizing stale hits.
+    return this.geometryCoversView()&&Math.abs(old.box.width/old.width/(q.box.width/q.width)-1)<1e-6;
   }
   private scheduleRender() {
     if (this.root.hidden || this.renderQueued) return;
@@ -628,6 +641,8 @@ export class CampaignAtlasWorkbench {
     const w = this.owner,
       request = ++this.request;
     if (!w) return;
+    this.regionReading=request;
+    let completed=false;
     const cameraPreview=keepScene?this.localPreview:null,previewFence=this.data?.region?.fence;
     const retry = this.travelReadState === "failed";get("atlas-region-retry").hidden=true;if(!this.data)get("atlas-save-status").textContent="Kartenausschnitt wird geladen…";
     this.hitVersion++;this.hitDialog.close();this.travelReadState = "loading";this.loadedRegionQuery=null;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
@@ -657,13 +672,16 @@ export class CampaignAtlasWorkbench {
       // Camera reads do not change the intended route. Restore it only after
       // confirming exactly the same source; pending/failed reads stay locked.
       if(cameraPreview&&previewFence&&r.value.region.fence===previewFence)this.localPreview=cameraPreview;
-      this.render();return true;
+      completed=true;this.render(keepScene);return true;
     } catch (e) {
       if (this.owner === w && request === this.request) {
         this.travelReadState = "failed";this.root.dataset.regionState='failed';this.svg.setAttribute('aria-busy','false');
         this.error(e);get("atlas-region-retry").hidden=false;get("atlas-hint").textContent="Ansicht nicht verfügbar. Vorheriger Kartenstand; erneut laden.";
         this.renderTravel();
       }return false;
+    } finally {
+      if(this.regionReading===request)this.regionReading=null;
+      if(completed&&this.owner===w&&request===this.request&&!this.geometryCurrent())this.scheduleRegion(true);
     }
   }
   private remember() {
@@ -1942,11 +1960,7 @@ export class CampaignAtlasWorkbench {
     }
     if(floors.some(f=>f.id===this.floorId))floor.value=this.floorId;
   }
-  private updateScale() {
-    const box=this.camera.view;
-    get('atlas-scale').textContent=`Sichtbar: ${distanceLabel(box.width)} × ${distanceLabel(box.height)}`;
-  }
-  private render() {
+  private render(preview=false) {
     const data=this.data;
     if(!data||this.root.hidden)return;
     this.renderPanel(data);this.renderTravel();this.layout?.sync();
@@ -1954,10 +1968,9 @@ export class CampaignAtlasWorkbench {
     this.svg.dataset.atlasOriginX = String(box.x);
     this.svg.dataset.atlasOriginY = String(box.y);
     const mpp = box.width / Math.max(1, this.svg.clientWidth);
-    this.updateScale();
     // Keep the last confirmed scene intact while a new filter/source is loading.
     // In particular, never interpret old contours under new floor/roof/slice controls.
-    if(!this.geometryCurrent())return;
+    if(!this.geometryCurrent()&&!(preview&&this.geometryCoversView()))return;
     this.camera.render((root) => {
       this.drawTerrain(root, box, mpp);
       this.landscape.draw(root,box,mpp);

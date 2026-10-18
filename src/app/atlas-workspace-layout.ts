@@ -45,12 +45,12 @@ export class AtlasWorkspaceLayout {
   this.secondary.append(heading,this.secondaryContent);this.root.querySelector('.atlas-layout')!.append(this.secondary);
   const families=el('atlas-families');
   const main=document.createElement('div');main.className='atlas-dock-body';
-  main.append(this.tools,el('atlas-edit-panel'));
+  const activeTool=document.createElement('strong');activeTool.id='atlas-active-tool';activeTool.setAttribute('aria-live','polite');
+  main.append(activeTool,this.tools,el('atlas-edit-panel'));
   const dock=el('atlas-panel');this.palette.id='atlas-tool-palette';dock.append(families,this.palette,main);
   this.tools.append(el('atlas-tool-fields'));
   this.selection.append(el('atlas-selection-title'));
   el('atlas-hint').classList.add('atlas-editor-hint');main.append(el('atlas-hint'));
-  this.root.querySelector('.atlas-stage')!.prepend(el('atlas-scale'));
   try{const p=JSON.parse(localStorage.getItem('atlas-editor-layout-v2')??'null');if(p){this.width=Math.max(200,Math.min(300,Number(p.width)||240));this.detailWidth=Math.max(280,Math.min(480,Number(p.detailWidth)||340));this.root.dataset.collapsed=String(p.collapsed===true);}}catch{/* optional preference */}
   this.resizer(dock,'atlas-panel-width','Werkzeugleiste verbreitern',false);
   this.resizer(this.secondary,'atlas-details-width','Kontextleiste verbreitern',true);
@@ -204,7 +204,7 @@ export class AtlasWorkspaceLayout {
   const select=el<HTMLSelectElement>(id);if(!this.root.contains(select))return;
   let group=this.root.querySelector<HTMLElement>('[data-tool-buttons="'+id+'"]');
   if(!group){group=document.createElement('div');group.className='atlas-tool-buttons';group.dataset.toolButtons=id;group.setAttribute('aria-label','Werkzeuge');
-   for(const option of select.options){const [symbol,label]=toolNames[option.value]??['◇',option.textContent??option.value];const b=button('',label);const icon=document.createElement('span');icon.className='atlas-tool-icon';icon.setAttribute('aria-hidden','true');icon.textContent=symbol;b.prepend(icon);b.title=option.textContent??label;b.setAttribute('aria-label',b.title);b.dataset.toolSelect=id;b.dataset.toolValue=option.value;b.onclick=()=>void this.host.tool(id==='land-tool'?'terrain':id==='city-tool'?'city':'interior',id,option.value).then(()=>this.sync()).catch(this.host.error);group.append(b);}
+   for(const option of select.options){const [symbol,label]=toolNames[option.value]??['◇',option.textContent??option.value];const b=button('','');const caption=document.createElement('span');caption.className='atlas-tool-label';caption.textContent=label;b.append(caption);const icon=document.createElement('span');icon.className='atlas-tool-icon';icon.setAttribute('aria-hidden','true');icon.textContent=symbol;b.prepend(icon);b.title=option.textContent??label;b.setAttribute('aria-label',b.title);b.dataset.toolSelect=id;b.dataset.toolValue=option.value;b.onclick=()=>void this.host.tool(id==='land-tool'?'terrain':id==='city-tool'?'city':'interior',id,option.value).then(()=>this.sync()).catch(this.host.error);group.append(b);}
    select.closest('label')!.classList.add('atlas-native-tool-select');select.addEventListener('change',()=>this.sync());
   }
   group.hidden=false;this.palette.prepend(group);
@@ -215,7 +215,11 @@ export class AtlasWorkspaceLayout {
   const name=el('atlas-new-name').closest('label')!;
   if(this.family!=='terrain')name.hidden=(this.family==='city'&&this.root.dataset.citySelected==='true'&&!this.root.dataset.placing)||(this.family==='interior'&&!this.root.dataset.placing);
   if(this.family==='city'){const tool=el<HTMLSelectElement>('city-tool').value;el('city-draw-width').closest('label')!.hidden=!['road','wall'].includes(tool);const count=Number(el('city-path-hint').textContent?.match(/^(\d+) Punkte/)?.[1]??0);el('city-finish').hidden=!count;el('city-cancel-path').hidden=!count;}
+  if(this.family!=='terrain'){el('atlas-terrain').closest('label')!.hidden=true;if(this.auxiliary!=='grid')el('atlas-hex-level').closest('label')!.hidden=true;}
   const navigating=this.root.dataset.family==='navigation';
+  const selectId=this.family==='terrain'?'land-tool':this.family==='city'?'city-tool':'drawing-tool';
+  const tool=el<HTMLSelectElement>(selectId);
+  el('atlas-active-tool').textContent=navigating?(this.root.dataset.panMode==='true'?'Hand':'Auswahl'):(toolNames[tool.value]?.[1]??tool.selectedOptions[0]?.textContent??'Werkzeug');
   for(const id of ['land-tool','city-tool','drawing-tool']){const select=el<HTMLSelectElement>(id);for(const b of this.root.querySelectorAll<HTMLButtonElement>('[data-tool-select="'+id+'"]')){b.setAttribute('aria-pressed',String(!navigating&&b.dataset.toolValue===select.value));b.disabled=select.disabled;}}
   el('atlas-select').setAttribute('aria-pressed',String(navigating&&this.root.dataset.panMode!=='true'));el('atlas-pan').setAttribute('aria-pressed',String(this.root.dataset.panMode==='true'));
  }

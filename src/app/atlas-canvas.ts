@@ -39,6 +39,8 @@ export class AtlasCanvas {
   private zoomFrame = 0;
   private zoomTarget: CanvasBox | null = null;
   private zoomGeneration = 0;
+  private zoomAnchor = { x: 0, y: 0 };
+  private zoomUpdatedAt = 0;
   private sceneOrigin = { x: 0, y: 0 };
   private sceneVersion = 0;
   private tooltipPoint: { clientX: number; clientY: number } | null = null;
@@ -315,6 +317,10 @@ export class AtlasCanvas {
   get view() {
     return { ...this.box };
   }
+  /** The intended viewport lets region loading run ahead of a zoom gesture. */
+  get destination() {
+    return { ...(this.zoomTarget ?? this.box) };
+  }
   get panning() {
     return !!this.drag;
   }
@@ -563,7 +569,10 @@ export class AtlasCanvas {
     coalesce = false,
   ) {
     if (!Number.isFinite(factor) || factor <= 0) return;
-    const base = this.zoomTarget ?? this.box;
+    // A deliberate reversal responds from the displayed view, without first
+    // completing the unfinished movement in the opposite direction.
+    const reversing = this.zoomTarget && (factor - 1) * (this.zoomTarget.width - this.box.width) < 0;
+    const base = reversing ? this.box : this.zoomTarget ?? this.box;
     const width = Math.min(
       (typeof this.options.maxWidth === "function" ? this.options.maxWidth() : this.options.maxWidth) ?? 1e12,
       Math.max(this.options.minWidth ?? 0.001, base.width * factor));
@@ -571,23 +580,30 @@ export class AtlasCanvas {
     // has not yet been reached and the user moves the pointer during a burst.
     const target = zoomBox(this.box, width, anchor);
     const smooth = this.options.smoothZoom && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (!smooth) { this.set(target, true, "zoom", coalesce); return; }
+    if (!smooth) { this.stopZoom(); this.set(target, true, "zoom", coalesce); return; }
     const before = this.view;
     this.zoomTarget = target;
+    this.zoomAnchor = anchor;
+    this.zoomUpdatedAt = performance.now();
     if (!coalesce && !this.zoomFrame) {
-      // remember() compares against the current box, so record the gesture now.
       this.box = target; this.remember(before); this.box = before;
     }
+    // One animation follows changing input. Restarting an easing curve for every
+    // touchpad event adds lag, and a frame timestamp before the input can reverse it.
+    if (this.zoomFrame) return;
     const generation = ++this.zoomGeneration;
-    if (this.zoomFrame) cancelAnimationFrame(this.zoomFrame);
-    const started = performance.now();
+    let previous = this.zoomUpdatedAt;
     const tick = (now: number) => {
-      if (generation !== this.zoomGeneration) return;
+      if (generation !== this.zoomGeneration || !this.zoomTarget) return;
       this.zoomFrame = 0;
-      const t = Math.min(1, (now-started)/160), eased = 1-(1-t)**3;
-      const box = zoomBox(before, before.width * (target.width/before.width)**eased, anchor);
-      this.set(box, true, "zoom", true);
-      if (t < 1) this.zoomFrame = requestAnimationFrame(tick);
+      const elapsed = Math.max(0, now - previous);
+      previous = Math.max(previous, now);
+      const current = this.view, target = this.zoomTarget;
+      const done = now - this.zoomUpdatedAt >= 160 || Math.abs(Math.log(target.width / current.width)) < 1e-7;
+      const progress = done ? 1 : 1 - Math.exp(-elapsed / 40);
+      this.set(zoomBox(current, current.width * (target.width / current.width) ** progress, this.zoomAnchor), true, "zoom", true);
+      if (generation !== this.zoomGeneration) return;
+      if (!done) this.zoomFrame = requestAnimationFrame(tick);
       else this.zoomTarget = null;
     };
     this.zoomFrame = requestAnimationFrame(tick);
