@@ -1192,3 +1192,48 @@ test('a new shared street owns selection and undoing its creation returns to the
   await s.atlas.history('redo');assert.equal(x.store.city(w.token,x.cityIds.one).units.find(u=>u.id===id).name,'Neue Straße');
  }finally{await s.close();}
 });
+
+test('existing street widening checks houses missing from exact selection before autosave, then retains undo and house contents',async()=>{
+ const x=await setup();try{
+  const get=id=>x.document.getElementById(id),initial=x.store.city(x.current().token,x.cityIds.one),road=initial.units.find(u=>u.kind==='road'),house=structuredClone(initial.units.find(u=>u.id===x.unitIds.one));
+  await x.ui.openCityReference(x.cityIds.one,road.id,true,true);assert.equal(x.ui.atlasCityState().partial,true);assert.equal(x.ui.atlasCityState().view.units.some(u=>u.id===house.id),false);
+  let reads=0;const read=x.window.campaign.city;x.window.campaign.city=async(...args)=>{reads++;return read(...args);};const before=x.store.db.serialize();
+  x.enter('city-unit-width','132');await until(()=>/Kreuzt 1 Haus: House one/.test(get('city-edit-clearance').textContent));assert.equal(get('city-edit-crossing-field').hidden,false);assert.equal(get('city-unit-form').querySelector('button[type="submit"]').disabled,true);
+  assert.equal(await x.ui.flushCity(),false);assert.ok(x.store.db.serialize().equals(before));assert.equal(reads,1);assert.equal(x.ui.atlasCityState().conflicts[0].id,house.id);assert.equal(x.ui.atlasCityState().view.units.find(u=>u.id===road.id).width,132);
+  get('city-edit-crossing').checked=true;get('city-edit-crossing').dispatchEvent(new x.window.Event('input',{bubbles:true}));assert.equal(await x.ui.flushCity(),true);
+  let saved=x.store.city(x.current().token,x.cityIds.one);assert.equal(saved.header.revision,initial.header.revision+1,'One edit creates one history step');assert.equal(get('city-edit-clearance').hidden,true,'A confirmed save must clear the pending clearance notice');assert.equal(get('city-unit-form').querySelector('button[type="submit"]').disabled,false);assert.equal(saved.units.find(u=>u.id===road.id).width,132);assert.deepEqual(saved.units.find(u=>u.id===house.id),house);
+  x.click('city-undo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===road.id).width===6);
+  x.click('city-redo');await until(()=>x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===road.id).width===132);assert.deepEqual(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===house.id),house);
+ }finally{await x.cleanup();}
+});
+test('correcting an existing street width clears its collision draft and never grants later geometry changes',async()=>{
+ const x=await setup();try{
+  const get=id=>x.document.getElementById(id),city=x.store.city(x.current().token,x.cityIds.one),road=city.units.find(u=>u.kind==='road');await x.ui.openCityReference(city.header.id,road.id,true,true);
+  x.enter('city-unit-width','132');await until(()=>!get('city-edit-crossing-field').hidden);get('city-edit-crossing').checked=true;get('city-edit-crossing').dispatchEvent(new x.window.Event('input',{bubbles:true}));x.enter('city-unit-width','134');assert.equal(get('city-edit-crossing').checked,false);assert.equal(await x.ui.flushCity(),false);
+  x.enter('city-unit-width','8');assert.equal(get('city-edit-crossing-field').hidden,true);assert.equal(x.ui.atlasCityState().conflicts.length,0);assert.equal(await x.ui.flushCity(),true);assert.equal(x.store.city(x.current().token,x.cityIds.one).units.find(u=>u.id===road.id).width,8);
+ }finally{await x.cleanup();}
+});
+test('shape editing from an exact street selection marks a house conflict and blocks keyboard acceptance until corrected',async()=>{
+ const x=await setup();try{
+  const get=id=>x.document.getElementById(id),initial=x.store.city(x.current().token,x.cityIds.one),road=initial.units.find(u=>u.kind==='road'),house=structuredClone(initial.units.find(u=>u.id===x.unitIds.one));await x.ui.openCityReference(initial.header.id,road.id,true,true);const before=x.store.db.serialize();
+  x.click('city-shape-open');await until(()=>x.ui.atlasCityPlacementActive());await x.ui.atlasCityPoint({x:60,y:60});
+  assert.match(get('city-shape-status').textContent,/Kreuzt 1 Haus: House one/);assert.equal(get('city-shape-accept').disabled,true);assert.equal(x.ui.atlasCityState().conflicts[0].id,house.id);x.ui.atlasCityPlacementKey('Enter');await settle();assert.ok(x.store.db.serialize().equals(before));
+  get('city-shape-crossing').checked=true;get('city-shape-crossing').onchange();assert.equal(get('city-shape-accept').disabled,false);await x.ui.atlasCityPoint({x:61,y:60});assert.equal(get('city-shape-crossing').checked,false);
+  await x.ui.atlasCityPoint({x:5,y:130});assert.equal(get('city-shape-crossing-field').hidden,true);x.click('city-shape-accept');await until(()=>!x.ui.atlasCityPlacementActive());const after=x.store.city(x.current().token,x.cityIds.one);assert.deepEqual(after.units.find(u=>u.id===house.id),house);assert.deepEqual(after.units.find(u=>u.id===road.nodeIds[0]).point,{x:5,y:130});
+ }finally{await x.cleanup();}
+});
+
+test('a late house-clearance read cannot replace another campaign or authorize its geometry',async()=>{
+ const x=await setup();let release;try{
+  const original=x.store.city(x.current().token,x.cityIds.one),road=original.units.find(u=>u.kind==='road');await x.ui.openCityReference(original.header.id,road.id,true,true);
+  const read=x.window.campaign.city;x.window.campaign.city=async(...args)=>{const response=await read(...args);return new Promise(resolve=>release=()=>resolve(response));};
+  x.enter('city-unit-width','132');await until(()=>!!release);x.window.campaign.city=read;await x.activate('Beta');const before=x.store.db.serialize();release();await settle();
+  assert.equal(x.document.getElementById('city-title').textContent,'Beta one');assert.ok(x.store.db.serialize().equals(before));assert.equal(x.writes.length,0);assert.equal(x.ui.atlasCityState().conflicts.length,0);
+ }finally{release?.();await x.cleanup();}
+});
+test('a failed house-clearance read cannot autosave a broadened exact-selection street',async()=>{
+ const x=await setup();try{
+  const city=x.store.city(x.current().token,x.cityIds.one),road=city.units.find(u=>u.kind==='road');await x.ui.openCityReference(city.header.id,road.id,true,true);const before=x.store.db.serialize();
+  x.window.campaign.city=async()=>({ok:false,error:'Reader unavailable'});x.enter('city-unit-width','132');await settle();assert.equal(await x.ui.flushCity(),false);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.document.getElementById('city-unit-width').value,'132');assert(x.messages.some(m=>m.message==='Reader unavailable'));
+ }finally{await x.cleanup();}
+});

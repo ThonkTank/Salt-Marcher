@@ -45,6 +45,18 @@ export function streetHouseConflicts(units:CityUnit[],path:CityPoint[],width:num
   }return false;
  });
 }
+/** Include every road whose footprint changed, including neighbours of a moved node. */
+export function editedStreetPreview(original:CityUnit[],units:CityUnit[]){
+ const prior=new Map(original.map(u=>[u.id,u]));
+ const roads=units.filter(u=>u.kind==='road').flatMap(road=>{
+  const old=prior.get(road.id),path=roadPoints(road,units);
+  if(old&&JSON.stringify([old.width??6,roadPoints(old,original)])===JSON.stringify([road.width??6,path]))return [];
+  return [{road,path}];
+ });
+ const conflicts=new Map<string,CityUnit>();
+ for(const {road,path}of roads)for(const house of streetHouseConflicts(units,path,road.width??6))conflicts.set(house.id,house);
+ return {roads,conflicts:[...conflicts.values()]};
+}
 export function streetPreview(units:CityUnit[],path:CityPoint[],width=8){
  const points=path.map(p=>({...p})),junctions:StreetSnap[]=[];
  for(const i of new Set([0,points.length-1])){

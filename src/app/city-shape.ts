@@ -2,8 +2,10 @@ import {AtlasPaint,atlasPaint} from './atlas-paint';
 import {paintElement,type PaintTarget} from './atlas-paint-svg';
 import type {CityPoint,CityUnit,CityCommand} from './city-contracts';
 import {roadPoints} from './city-model';
+import {editedStreetPreview} from './city-street-junction';
 
 interface Owner {token:string;cityId:string;revision:number;unit:CityUnit;units:CityUnit[]}
+const guidance='Griff ziehen oder wählen und Zielpunkt anklicken. Kleine Griffe fügen einen Punkt ein. Gemeinsame Straßenenden bleiben verbunden.';
 const identity=(o:Owner)=>JSON.stringify([o.token,o.cityId,o.unit.id]);
 export function editableCityShape(u:CityUnit){return ['road','wall','district','plaza','water'].includes(u.kind);}
 /** A revision-bound geometry draft; shared road nodes are edited in the same command. */
@@ -11,24 +13,29 @@ export class CityShape {
  state:null|{owner:Owner;points:CityPoint[];chosen:number;busy:boolean;message:string;attempt:null|{id:string;action:CityCommand['action']}}=null;
  opening=false;
  private generation=0;
+ private crossingPermission="";
+ get clearance(){const s=this.state;return s?editedStreetPreview(s.owner.units,this.units(s.owner.units)):{roads:[],conflicts:[]};}
+ private crossingKey(){const s=this.state;return s?JSON.stringify([identity(s.owner),this.port.current()?.revision,s.points]):"";}
+ get crossingAllowed(){return !!this.state&&this.crossingPermission===this.crossingKey();}
+ permitCrossing(allowed:boolean){if(this.locked)return;this.crossingPermission=allowed?this.crossingKey():"";this.port.changed();}
  constructor(private port:{current:()=>Owner|null;drain:()=>Promise<boolean>;send:(action:CityCommand['action'],id:string,revision:number)=>Promise<unknown>;rejected:(e:unknown)=>boolean;changed:()=>void}){}
  get active(){return !!this.state;}
  get locked(){return !!this.state&&(this.state.busy||!!this.state.attempt);}
  private owns(s:NonNullable<CityShape['state']>){const o=this.port.current();return this.state===s&&!!o&&identity(o)===identity(s.owner);}
- contextChanged(){this.generation++;this.state=null;this.opening=false;}
+ contextChanged(){this.crossingPermission="";this.generation++;this.state=null;this.opening=false;}
  async begin(){
   if(this.opening||this.active)return;
   const owner=this.port.current(),g=++this.generation;if(!owner||!editableCityShape(owner.unit))return;
   this.opening=true;this.port.changed();
   try{if(!await this.port.drain()||g!==this.generation)return;const current=this.port.current();if(!current||identity(current)!==identity(owner))return;
    const original=structuredClone(current),line=['road','wall'].includes(original.unit.kind);
-   this.state={owner:original,points:structuredClone(line?roadPoints(original.unit,original.units):original.unit.outline!),chosen:0,busy:false,attempt:null,message:'Griff ziehen oder wählen und Zielpunkt anklicken. Kleine Griffe fügen einen Punkt ein. Gemeinsame Straßenenden bleiben verbunden.'};
+   this.crossingPermission='';this.state={owner:original,points:structuredClone(line?roadPoints(original.unit,original.units):original.unit.outline!),chosen:0,busy:false,attempt:null,message:guidance};
   }finally{if(g===this.generation){this.opening=false;this.port.changed();}}
  }
  choose(index:number){const s=this.state;if(!s||!this.owns(s)||this.locked||!s.points[index])return;s.chosen=index;this.port.changed();}
- point(p:CityPoint){const s=this.state;if(!s||!this.owns(s)||this.locked||!Number.isFinite(p.x+p.y)||Math.max(Math.abs(p.x),Math.abs(p.y))>100000)return;s.points[s.chosen]={x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10};const ends=s.owner.unit.nodeIds;if(ends?.[0]===ends?.[1]&&ends&&(s.chosen===0||s.chosen===s.points.length-1)){s.points[0]={...s.points[s.chosen]!};s.points[s.points.length-1]={...s.points[s.chosen]!};}this.port.changed();}
- insert(index:number){const s=this.state;if(!s||!this.owns(s)||this.locked)return;const a=s.points[index],b=s.points[(index+1)%s.points.length];if(!a||!b)return;s.points.splice(index+1,0,{x:(a.x+b.x)/2,y:(a.y+b.y)/2});s.chosen=index+1;this.port.changed();}
- remove(){const s=this.state;if(!s||!this.owns(s)||this.locked)return;const line=['road','wall'].includes(s.owner.unit.kind);if(s.points.length<=(line?2:3)||line&&(s.chosen===0||s.chosen===s.points.length-1)){s.message='Straßenenden bleiben verbunden; eine Fläche benötigt mindestens drei Ecken.';this.port.changed();return;}s.points.splice(s.chosen,1);s.chosen=Math.min(s.chosen,s.points.length-1);this.port.changed();}
+ point(p:CityPoint){const s=this.state;if(!s||!this.owns(s)||this.locked||!Number.isFinite(p.x+p.y)||Math.max(Math.abs(p.x),Math.abs(p.y))>100000)return;this.crossingPermission='';s.message=guidance;s.points[s.chosen]={x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10};const ends=s.owner.unit.nodeIds;if(ends?.[0]===ends?.[1]&&ends&&(s.chosen===0||s.chosen===s.points.length-1)){s.points[0]={...s.points[s.chosen]!};s.points[s.points.length-1]={...s.points[s.chosen]!};}this.port.changed();}
+ insert(index:number){const s=this.state;if(!s||!this.owns(s)||this.locked)return;const a=s.points[index],b=s.points[(index+1)%s.points.length];if(!a||!b)return;this.crossingPermission="";s.message=guidance;s.points.splice(index+1,0,{x:(a.x+b.x)/2,y:(a.y+b.y)/2});s.chosen=index+1;this.port.changed();}
+ remove(){const s=this.state;if(!s||!this.owns(s)||this.locked)return;const line=['road','wall'].includes(s.owner.unit.kind);if(s.points.length<=(line?2:3)||line&&(s.chosen===0||s.chosen===s.points.length-1)){s.message='Straßenenden bleiben verbunden; eine Fläche benötigt mindestens drei Ecken.';this.port.changed();return;}this.crossingPermission="";s.message=guidance;s.points.splice(s.chosen,1);s.chosen=Math.min(s.chosen,s.points.length-1);this.port.changed();}
  units(units:CityUnit[]){
   const s=this.state;if(!s)return units;const u=s.owner.unit;
   if(!['road','wall'].includes(u.kind))return units.map(row=>row.id===u.id?{...row,outline:s.points,protected:true}:row);
@@ -41,6 +48,7 @@ export class CityShape {
   const ids=new Set([s.owner.unit.id,...s.owner.unit.nodeIds??[]]);
   const upsert=this.units(s.owner.units).filter(u=>ids.has(u.id)),original=s.owner.units.filter(u=>ids.has(u.id));
   if(!s.attempt&&JSON.stringify(upsert)===JSON.stringify(original)){this.cancel();return;}
+  if(!s.attempt&&this.clearance.conflicts.length&&!this.crossingAllowed){s.message='Straße kreuzt Häuser. Verlauf ändern oder Durchquerung ausdrücklich zulassen.';this.port.changed();return;}
   s.attempt??={id:crypto.randomUUID(),action:{kind:'change',upsert:structuredClone(upsert),remove:[],label:'Stadtform bearbeiten'}};
   s.busy=true;s.message='Stadtform wird gespeichert…';this.port.changed();
   try{await this.port.send(s.attempt.action,s.attempt.id,s.owner.revision);if(this.state===s)this.state=null;}

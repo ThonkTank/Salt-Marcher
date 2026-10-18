@@ -28,3 +28,17 @@ test('polygon draft retains at least three corners; shared road ends cannot be r
 test('closed road or wall keeps both handles on its single shared end node',async()=>{
  const x=setup(),road={...x.owner.unit,kind:'wall',nodeIds:['a','a'],via:[{x:50,y:0},{x:50,y:50}]};x.setOwner({...x.owner,unit:road,units:[x.units[0],road,x.units[4]]});await x.editor.begin();x.editor.choose(3);x.editor.point({x:5,y:5});assert.deepEqual(x.editor.state.points[0],{x:5,y:5});assert.deepEqual(x.editor.state.points[3],{x:5,y:5});await x.editor.accept();assert.deepEqual(x.writes[0][0].upsert[0].point,{x:5,y:5});assert.equal(x.writes[0][0].upsert.filter(u=>u.kind==='node').length,1);
 });
+
+test('moving a shared end checks an attached street outside the selected road, and correction revokes crossing consent',async()=>{
+ const x=setup();x.units[3].nodeIds=['b','c'];x.units.push({id:'c',kind:'node',point:{x:100,y:0}});Object.assign(x.units[4],{position:{x:75,y:10},outline:[{x:-3,y:-3},{x:3,y:-3},{x:3,y:3},{x:-3,y:3}]});
+ await x.editor.begin();x.editor.choose(1);x.editor.point({x:50,y:20});
+ assert.deepEqual(x.editor.clearance.conflicts.map(u=>u.id),['house']);assert.deepEqual(x.editor.clearance.roads.map(r=>r.road.id),['r','other']);
+ await x.editor.accept();assert.equal(x.writes.length,0);assert.equal(x.editor.active,true);
+ x.editor.permitCrossing(true);assert.equal(x.editor.crossingAllowed,true);x.editor.point({x:51,y:20});assert.equal(x.editor.crossingAllowed,false);await x.editor.accept();assert.equal(x.writes.length,0);
+ x.editor.point({x:50,y:-5});assert.equal(x.editor.clearance.conflicts.length,0);await x.editor.accept();assert.equal(x.writes.length,1);assert.equal(x.writes[0][0].upsert.some(u=>u.id==='house'),false);
+});
+test('explicit shared-node crossing consent preserves houses and recovers the identical unconfirmed command',async()=>{
+ const x=setup();Object.assign(x.units[4],{position:{x:20,y:10},outline:[{x:-3,y:-3},{x:3,y:-3},{x:3,y:3},{x:-3,y:3}]});
+ let first=true;x.setSend(async(...args)=>{x.writes.push(structuredClone(args));if(first){first=false;throw new Error('Lost acknowledgement');}});
+ await x.editor.begin();x.editor.choose(1);x.editor.point({x:50,y:25});assert.equal(x.editor.clearance.conflicts.length,1);x.editor.permitCrossing(true);await x.editor.accept();assert.equal(x.editor.locked,true);x.editor.permitCrossing(false);await x.editor.accept();assert.deepEqual(x.writes[0],x.writes[1]);assert.equal(x.editor.active,false);assert.equal(x.writes[0][0].upsert.some(u=>u.id==='house'),false);
+});
