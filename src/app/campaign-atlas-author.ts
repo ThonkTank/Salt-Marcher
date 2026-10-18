@@ -93,16 +93,17 @@ export async function atlasDrawingWrite(
 ): Promise<
   Result<{ workspace: import("./contracts").Workspace; view: DrawingView }>
 > {
-  const result = await wrap(c, { kind: "drawing", command: c });
-  return result.ok
-    ? {
-        ok: true,
-        value: {
-          workspace: result.value.atlas.workspace,
-          view: result.value.atlas.geometry.drawing,
-        },
-      }
-    : result;
+  if(pending.has(c.token))return{ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
+  try{
+    const result=await window.campaign.atlasDrawingCommit(c);
+    if(result.ok){pending.delete(c.token);document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:c.token,campaignId:c.campaignId,revision:result.value.atlasRevision}}));}
+    document.dispatchEvent(new Event('atlas-write-state'));
+    return result;
+  }catch(e){
+    pending.set(c.token,{commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:{kind:'drawing',command:structuredClone(c)}});
+    document.dispatchEvent(new Event('atlas-write-state'));
+    return{ok:false,error:'Ausgang des Atlasauftrags unbekannt. Derselbe Auftrag bleibt für Speicherstand klären erhalten. '+(e as Error).message};
+  }
 }
 export async function atlasRoomWrite(edit: Edit): Promise<Result<RoomCommit>> {
   if(pending.has(edit.token))return{ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};

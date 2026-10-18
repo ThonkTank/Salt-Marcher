@@ -84,7 +84,7 @@ export function putAtlasEntrance(db: any, a: CampaignAtlas, e: AtlasEntrance) {
   ).run(a.campaignId, e.id, JSON.stringify(next), hash(next));
 }
 
-export function atlasLocalGeometryBasis(a: CampaignAtlas) {
+export function atlasLocalGeometryBasis(a: Pick<CampaignAtlas,"terrain"|"bindings"|"cities">) {
   return hash({
     terrain: a.terrain.revision,
     bindings: a.bindings,

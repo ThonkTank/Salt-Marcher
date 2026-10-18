@@ -19,7 +19,8 @@ test('additional rooms stay on the selected dungeon floor, avoid occupied geomet
 });
 test('three default rooms are separate usable rectangles instead of a stack at the origin',t=>{const x=setup(t);let w=x.workspace;for(let i=0;i<3;i++)w=x.store.addRoom(w.token);assert.equal(w.rooms.length,3);const bs=w.rooms.map(bounds).sort((a,b)=>a.left-b.left);assert.equal(bs[0].left,0);assert.equal(bs[0].bottom,0);for(let i=1;i<3;i++)assert.ok(bs[i].left>=bs[i-1].right+1.524-1e-8);});
 async function editor(t,seed,withNotes=false){const x=setup(t);x.workspace=x.store.addRoom(x.workspace.token);if(seed){const{emptyKey}=require('../.build/room-authoring-key-contracts.cjs'),content=emptyKey(x.workspace.rooms[0]);seed(content);x.store.executeDrawing({commandId:randomUUID(),campaignId:x.campaign.id,token:x.workspace.token,action:{kind:'key-content',content,expectedRevision:null}});x.workspace=x.store.workspace();}const prior={document:globalThis.document,window:globalThis.window,Event:globalThis.Event,CustomEvent:globalThis.CustomEvent};const{document,window}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{document,window,Event:window.Event,CustomEvent:window.CustomEvent});for(const d of document.querySelectorAll('dialog')){d.open=false;d.showModal=()=>{d.open=true;};d.close=()=>{d.open=false;};}Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.querySelector('option[selected]')?.value??this.querySelector('option')?.value??'';},set(value){for(const o of this.querySelectorAll('option'))o.toggleAttribute('selected',o.value===String(value));}});for(const c of document.querySelectorAll('input[type=checkbox]'))c.checked=false;for(const c of document.querySelectorAll('input'))c.select=()=>{};const ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};let hold,release,creates=0;const noteOpens=[];
- window.campaign={dungeon:async()=>ok(()=>x.store.dungeon(x.workspace.token)),preparation:async()=>ok(()=>x.store.preparation(x.workspace.token)),executeDrawing:async c=>ok(()=>x.store.executeDrawing(c)),addRoom:async token=>{creates++;if(hold){hold=false;await new Promise(r=>release=r);}return ok(()=>x.store.addRoom(token));}};
+ window.campaign={dungeonAuthoring:async()=>ok(()=>x.store.dungeonAuthoring(x.workspace.token)),preparation:async()=>ok(()=>x.store.preparation(x.workspace.token)),executeDrawing:async c=>ok(()=>x.store.executeDrawing(c)),addRoom:async token=>{creates++;if(hold){hold=false;await new Promise(r=>release=r);}return ok(()=>x.store.addRoom(token));}};
+ window.campaign.atlasDrawingCommit=async c=>ok(()=>x.store.atlasDrawingCommit(c));
  window.campaign.executeAtlas=async c=>{if(c.action.kind==='room-default'){creates++;if(hold){hold=false;await new Promise(r=>release=r);}}return ok(()=>x.store.executeAtlas(c));};
  if(withNotes){
   window.HTMLElement.prototype.focus=function(){};window.HTMLElement.prototype.scrollIntoView=function(){};window.HTMLElement.prototype.select=function(){};window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};window.HTMLElement.prototype.reportValidity=()=>true;
@@ -117,4 +118,21 @@ for(const reuse of [false,true])test(`captured general note returns to its room 
  if(reuse){el('key-note-existing').querySelector('button').click();el('key-note-gm').value='';}else el('key-note-gm').value='Neue Entscheidung';
  el('key-note-capture-dialog').querySelector('form').onsubmit({preventDefault(){}});await until(()=>x.noteOpens.length===1&&!el('key-note-capture-dialog').open);await tick();
  assert.equal(el('key-dialog').open,true);assert.equal(el('key-reference-panel').hidden,false);assert.equal(el('note-title').value,title);el('key-reference-return').click();await until(()=>el('key-reference-panel').hidden);assert.equal(el('key-dialog').open,true);assert.equal(x.store.preparation(x.current.token).notes.length,1);if(reuse)assert.equal(x.noteOpens[0],existing.id);
+});
+
+test('a selected-only map does not turn other authored rooms into missing geometry or block their map action',async t=>{
+ const x=await editor(t),first=x.current.rooms[0],next=x.store.addRoom(x.current.token).rooms.find(r=>r.id!==first.id);
+ x.current.rooms.splice(0,x.current.rooms.length,first);x.current.geometryCoverage='selected';
+ x.document.getElementById('key-reload').onclick();await until(()=>x.document.getElementById('key-room-list').querySelectorAll('button').length===2);
+ const row=[...x.document.getElementById('key-room-list').querySelectorAll('button')].find(b=>b.textContent.includes(next.name));assert.doesNotMatch(row.textContent,/Ohne Geometrie|Archiviert/);
+ row.onclick();await until(()=>x.document.getElementById('key-name').value===next.name&&!x.document.getElementById('key-map').disabled);assert.equal(x.document.getElementById('key-dialog').open,true);
+});
+
+test('a failed authoring refresh never invents absent geometry, retains saved text, and reload restores map navigation',async t=>{
+ const x=await editor(t),read=x.window.campaign.dungeonAuthoring;let fail=true;
+ x.window.campaign.dungeonAuthoring=async()=>fail?{ok:false,error:'Autorenstand derzeit nicht verfügbar'}:read();
+ x.enter('key-gm-notes','Gespeicherte Spur');assert.equal(await x.ui.flushKeys(),true);
+ assert.equal(x.document.getElementById('key-gm-notes').value,'Gespeicherte Spur');assert.equal(x.document.getElementById('key-map').disabled,true);
+ assert.match(x.document.getElementById('key-room-list').textContent,/Geometrie nicht geladen/);assert.doesNotMatch(x.document.getElementById('key-room-list').textContent,/Ohne Geometrie|Archiviert/);
+ fail=false;x.document.getElementById('key-reload').onclick();await until(()=>!x.document.getElementById('key-map').disabled);assert.equal(x.document.getElementById('key-gm-notes').value,'Gespeicherte Spur');
 });

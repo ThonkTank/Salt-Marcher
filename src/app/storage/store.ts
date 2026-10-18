@@ -4,7 +4,7 @@ import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
 import {readAtlasScene} from './world';
 import {atlasReadChanges} from './atlas-read-journal';
 import type {AtlasRegionGeometry,AtlasRegionSource,AtlasRegionView} from '../atlas-region-contracts';
-import {drawingElement} from './drawing';
+import {drawingElement,drawingRoom} from './drawing';
 import {dungeonMapView} from './dungeon-play';
 import {roomGeometries,visibleRoomWhere,roomDirectoryQuery,roomOrder} from './room-reads';
 import type {WorkspaceShell,WorkspaceGeometry,RoomDirectoryQuery} from '../contracts';
@@ -243,7 +243,9 @@ export class CampaignStore {
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
   }
   private reconcileAtlasGeometry(token:string){
-    const a=this.campaignAtlas(token),cam=a.campaignId,geometry=dungeonGeometry(this.db,cam);
+    const cam=this.guard(token),root=atlasRoot(this.db,cam),geometry=dungeonGeometry(this.db,cam);
+    // Reconcile spatial facts only; descriptions, perceptions and traces are consumers.
+    const a={terrain:JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id))};
     for(const row of this.db.prepare('SELECT * FROM scene_position WHERE campaign_id=?').all(cam)){
       const p=JSON.parse(row.payload),binding=p.dungeon?a.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===p.dungeon.scopeId):p.city?a.bindings.find(b=>b.kind==='city'&&b.ownerId===p.city.cityId):null;
       if(!binding)continue;const point=localToAtlas(p.dungeon??p.city,atlasFrame(a,binding)),basis=hash(json(point));if(p.spatialBasis===basis)continue;
@@ -334,6 +336,11 @@ export class CampaignStore {
   atlasRoomCommit(edit:Edit):import('../contracts').RoomCommit {
     this.applyAtlas({commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,action:{kind:'room-edit',edit}});
     return{...this.edit(edit),atlasRevision:atlasRoot(this.db,edit.campaignId).revision};
+  }
+  atlasDrawingCommit(command:DrawingCommand){
+    this.applyAtlas({commandId:command.commandId,token:command.token,campaignId:command.campaignId,action:{kind:'drawing',command}});
+    // The Atlas receipt already checked replay; read back the same complete author inventory.
+    return {workspace:this.workspace(),view:this.dungeonAuthoring(command.token).drawing,atlasRevision:atlasRoot(this.db,command.campaignId).revision};
   }
   executeAtlasCommit(c:AtlasCommand):import('../campaign-atlas-contracts').AtlasCommitAck {
     const value=this.applyAtlas(c) as {id?:string}|undefined;
@@ -1033,6 +1040,19 @@ export class CampaignStore {
     return{coverage:'selected',elements:[],styles,volumes,hiddenRooms:[],hiddenFloors:[],features};
   }
   drawingElement(token:string,id:string):import('../drawing-contracts').DrawingElement{if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.drawingElement(token,id));return drawingElement(this.db,this.guard(token),id);}
+  /** Authoring needs canonical geometry/content, never live travel or perception. */
+  dungeonAuthoring(token:string):import('../dungeon-contracts').DungeonGeometry{
+    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.dungeonAuthoring(token));
+    const cam=this.guard(token);
+    return this.db.transaction(()=>{
+      const geometry=dungeonGeometry(this.db,cam),preserved=new Map(geometry.drawing.hiddenRooms.map(r=>[r.id,r]));
+      // Archiving a floor hides its map, not the authored room contents.
+      for(const row of this.db.prepare("SELECT r.id FROM room r JOIN drawing_hidden h ON h.campaign_id=r.campaign_id AND h.scope_id=r.scope_id AND h.id=r.floor_id AND h.kind='floor' AND h.hidden=1 WHERE r.campaign_id=?").iterate(cam))if(!preserved.has(row.id))preserved.set(row.id,drawingRoom(this.db,cam,row.id));
+      geometry.drawing.hiddenRooms=[...preserved.values()];
+      if(this.graphShadow)geometry.drawing.graphPreview=this.graphShadow.state();
+      return geometry;
+    })();
+  }
   dungeon(token:string){const cam=this.guard(token),view=dungeonView(this.db,cam);return this.graphShadow?{...view,...dungeonGeometry(this.graphShadow.db,cam),drawing:{...drawingView(this.graphShadow.db,cam),graphPreview:this.graphShadow.state()}}:view;}
   previewDungeon(token:string,r:DungeonRequest){return previewDungeon(this.db,this.guard(token),r);}
   executeDungeon(c:DungeonCommand){if(this.graphShadow)throw new Error('Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen. Dungeon-Leiten nutzt die bestätigte Geometrie.');return executeDungeon(this.db,c,()=>{this.guard(c.token,c.campaignId);},command=>this.executeLive(command),command=>this.executeCombat(command),command=>this.executeProgress(command));}
