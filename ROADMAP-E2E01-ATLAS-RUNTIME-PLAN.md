@@ -861,6 +861,20 @@ und eine Auswahlumgehung:
   bleibt die Oberfläche bis zu dessen bestätigter Antwort gesperrt. Fehler der
   vorherigen Szene sperren keine gesunde neue Quelle; bei tatsächlich fehlendem
   Canvas-Kontext bleibt der sichtbare Wiederholungsweg erhalten.
+  Canvas2D-`contextlost` wird dabei nicht abgebrochen: Der
+  [HTML-Standard](https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model)
+  würde sonst den Browserversuch zur Wiederherstellung des Backingstores
+  abbrechen. Start, Retry und `contextrestored` übernehmen den Kontext über
+  dieselbe geprüfte Grenze; `null`, Übernahmefehler und `isContextLost()` bleiben
+  lokal sichtbar. Ein noch verlorener Kontext autorisiert weder Treffer noch
+  einen angeblich fertigen Frame, auch vor Ereigniszustellung oder bei Verlust
+  während des Zeichnens. Der gleiche Canvas-Host erhält Kamera und Listener;
+  sein vom Browser wiederhergestellter Backingstore wird mit dem aktuellen
+  bestätigten Frame gefüllt. Ein Ersatz aller Host-/Werkzeugbindungen ist
+  dafür nicht nötig. `tools/test-desktop-canvas-recovery.mjs` prüft kontrollierte
+  Canvas-API-/Ereignisfehler bei 100 % und 200 %, Navigation während Ausfall,
+  aktuellen Zielstand, einen einzelnen Kamerazug und unveränderte Autoreninhalte.
+  Das ist keine physische GPU-/Treiber-Resetqualifikation; diese bleibt offen.
 - Ein direkt getroffenes Zeichnungsglyph öffnet nicht mehr still sein Objekt.
   Die vorhandene Kandidatenabfrage vereinigt seine genaue Quellen-ID mit den
   übrigen geometrischen und Landschaftstreffern. Das erhält die Erreichbarkeit
