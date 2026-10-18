@@ -123,6 +123,7 @@ test('condition shortcuts cannot adopt unrelated raw values and resume after exp
 
 test('HP cells reuse the target editor and Enter applies one damage command to that individual',async t=>{
  const x=await uiFixture(t),target=x.combat.participants[1],amount=x.el('fighter-amount');let focused=false;
+ x.el('combat-rows').querySelector('.combat-mob-toggle').onclick();
  const scrolls=[];amount.scrollIntoView=options=>scrolls.push(options.block);amount.focus=()=>{focused=true;};amount.select=()=>{};amount.reportValidity=()=>Number(amount.value)>0;
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];
  assert.equal(cells.length,3);assert.match(cells[1].getAttribute('aria-label'),/Goblin B.*7 \/ 7/);
@@ -141,6 +142,7 @@ test('HP cells reuse the target editor and Enter applies one damage command to t
 
 test('roster condition entry opens the individual shortcuts without a write and changes only that troop member',async t=>{
  const x=await uiFixture(t),target=x.combat.participants[1],root=x.el('fighter-condition-shortcuts'),scrolls=[];
+ x.el('combat-rows').querySelector('.combat-mob-toggle').onclick();
  root.scrollIntoView=options=>scrolls.push(options.block);
  const entry=x.el('combat-rows').querySelectorAll('.combat-conditions')[1];assert.ok(entry,'condition entry available in each roster row');
  entry.onclick();await until(()=>scrolls.length===1);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);assert.deepEqual(scrolls,['nearest']);
@@ -153,6 +155,7 @@ test('roster condition entry opens the individual shortcuts without a write and 
 
 test('a delayed roster condition entry cannot scroll into another scene or issue a write',async t=>{
  const x=await uiFixture(t),root=x.el('fighter-condition-shortcuts'),scrolls=[];root.scrollIntoView=()=>scrolls.push(true);
+ x.el('combat-rows').querySelector('.combat-mob-toggle').onclick();
  let resolve;window.campaign.combatDraft=()=>new Promise(r=>{resolve=r;});
  const entry=x.el('combat-rows').querySelector('.combat-conditions');assert.ok(entry);entry.onclick();await until(()=>!!resolve);
  x.ui.combatContext(null,null);resolve({ok:true,value:null});await tick();await tick();assert.deepEqual(scrolls,[]);assert.equal(x.writes.length,0);assert.equal(x.el('combat-panel').hidden,true);
@@ -160,6 +163,7 @@ test('a delayed roster condition entry cannot scroll into another scene or issue
 
 test('an HP lookup that completes after a target switch cannot steal the new editor focus',async t=>{
  const x=await uiFixture(t),amount=x.el('fighter-amount'),replies=[];let focused=0;
+ x.el('combat-rows').querySelector('.combat-mob-toggle').onclick();
  let scrolled=0;amount.scrollIntoView=()=>scrolled++;amount.focus=()=>focused++;amount.select=()=>{};
  window.campaign.combatDraft=()=>new Promise(resolve=>replies.push(resolve));
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];cells[0].onclick();await until(()=>replies.length===1);cells[1].onclick();await until(()=>replies.length===2);
@@ -169,6 +173,7 @@ test('an HP lookup that completes after a target switch cannot steal the new edi
 
 test('initiative cells open one field per group and never submit the fighter HP draft',async t=>{
  const x=await uiFixture(t),target=x.combat.participants[1];x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-name').disabled);x.el('fighter-hp').value='2';x.el('fighter-hp').dispatchEvent(new window.Event('input'));await tick();await tick();
+ x.el('combat-rows').querySelector('.combat-mob-toggle').onclick();
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-initiative')];assert.equal(cells.length,3);cells[1].onclick();await until(()=>x.el('combat-initiative-dialog').querySelectorAll('input[data-participant-id]').length===1);
  const input=x.el('combat-initiative-dialog').querySelector('input[data-participant-id]');assert.equal(input.dataset.participantId,x.combat.participants[0].id);input.value='17';input.dispatchEvent(new window.Event('input'));x.el('initiative-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-initiative-dialog').hasAttribute('open'));
  const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;assert.equal(x.writes[0].action.kind,'initiative');assert.ok(saved.participants.every(p=>p.initiative===17));assert.deepEqual(saved.participants.map(p=>p.hp),[7,7,7]);assert.equal(saved.turnId,x.combat.turnId);
@@ -198,7 +203,7 @@ test('troop rename changes all peers atomically, preserves individual aliases an
 test('runner saves one troop name for the selected group and offers it directly for reinforcement',async t=>{
  const x=await uiFixture(t);x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-name').disabled);
  x.el('fighter-group-name').value='Schützen';x.el('fighter-group-name').dispatchEvent(new window.Event('input'));await tick();await tick();x.el('combat-participant-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);
- assert.equal(x.writes[0].action.changes.groupName,'Schützen');assert.match(x.el('combat-creature-select').textContent,/Schützen · Goblin · vorhandene Initiative 9/);assert.equal([...x.el('combat-rows').querySelectorAll('small')].filter(e=>e.textContent==='Schützen').length,3);
+ assert.equal(x.writes[0].action.changes.groupName,'Schützen');assert.match(x.el('combat-creature-select').textContent,/Schützen · Goblin · vorhandene Initiative 9/);assert.match(x.el('combat-rows').querySelector('.combat-mob-card strong').textContent,/^Schützen/);assert.ok(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants.every(p=>p.groupName==='Schützen'));
 });
 
 
@@ -237,6 +242,7 @@ test('expanded troop keeps individual controls without repeating the front membe
  const x=await uiFixture(t),before=structuredClone(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat);
  const card=()=>x.el('combat-rows').querySelector('.combat-mob-card');
  assert.ok(card().querySelector('.combat-mob-health'));
+ assert.equal(x.el('combat-rows').querySelectorAll('tr[data-participant-id]').length,0);
  card().querySelector('.combat-mob-toggle').onclick();
  assert.equal(card().querySelector('.combat-mob-health'),null,'Expanded members already expose their own HP controls');
  assert.doesNotMatch(card().textContent,/Vorderes Mitglied/);
@@ -246,7 +252,8 @@ test('expanded troop keeps individual controls without repeating the front membe
  for(const member of members){assert.ok(member.querySelector('.combat-health'));assert.ok(member.querySelector('.combat-conditions'));}
  assert.equal(x.writes.length,0);assert.deepEqual(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat,before);
  card().querySelector('.combat-mob-toggle').onclick();assert.ok(card().querySelector('.combat-mob-health'));
- assert.ok([...x.el('combat-rows').querySelectorAll('tr[data-participant-id]')].every(row=>row.hidden));
+ assert.equal(x.el('combat-rows').querySelectorAll('tr[data-participant-id]').length,0);
+ card().querySelector('.combat-mob-toggle').onclick();assert.deepEqual([...x.el('combat-rows').querySelectorAll('tr[data-participant-id]')].map(row=>row.dataset.participantId),before.participants.map(p=>p.id));assert.equal(x.writes.length,0);
 });
 
 

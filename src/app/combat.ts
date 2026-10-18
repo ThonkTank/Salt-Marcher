@@ -419,7 +419,8 @@ function render() {
     const mob=mobByMember.get(p.id);
     if(mob&&!drawn.has(mob.id)){drawn.add(mob.id);body.append(combatMobRow(mob,combat!,{expanded:expandedMobs.has(mob.id),selected,current,choose:id=>{void chooseFighter(id);},health:openHealth,initiative:id=>{void initiativePanel?.open(id);},toggle:()=>{if(expandedMobs.has(mob.id))expandedMobs.delete(mob.id);else expandedMobs.add(mob.id);render();[...get('combat-rows').querySelectorAll<HTMLElement>('[data-mob-id]')].find(row=>row.dataset.mobId===mob.id)?.querySelector<HTMLButtonElement>('.combat-mob-toggle')?.focus({preventScroll:true});}}));}
 
-    const tr = document.createElement('tr'); tr.dataset.participantId = p.id;tr.hidden=!!mob&&!expandedMobs.has(mob.id);if(mob)tr.dataset.mobMember=mob.id;if(turnIndex>=0&&order.indexOf(p)<turnIndex)tr.classList.add('completed-turn');
+    if(mob&&!expandedMobs.has(mob.id))continue;
+    const tr = document.createElement('tr'); tr.dataset.participantId = p.id;if(mob)tr.dataset.mobMember=mob.id;if(turnIndex>=0&&order.indexOf(p)<turnIndex)tr.classList.add('completed-turn');
     if (p.id === combat!.turnId && combat!.phase === 'running') tr.classList.add('current-turn');
     const name = document.createElement('td'), choose = document.createElement('button');
     choose.textContent = p.name;choose.title=p.name; choose.setAttribute('aria-pressed', String(selected === p.id)); choose.onclick = () => { void chooseFighter(p.id); }; name.append(choose);
