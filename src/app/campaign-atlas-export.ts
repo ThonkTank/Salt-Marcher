@@ -1,5 +1,6 @@
 import { AtlasPaint, atlasPaint } from "./atlas-paint";
 import { AtlasCanvasScene } from "./atlas-canvas-scene";
+import {drawScale} from "./atlas-landscape-view";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
 import type { PlayerFrame } from "./player-contracts";
@@ -131,6 +132,15 @@ export function publicAtlasPaint(
     );
   return scene;
 }
+/** Metric overlay is composed once after all scene tiles, at a readable image size. */
+export function atlasExportScale(box:CanvasBox,width:number,height:number){
+  if(width<256||height<100)return undefined;
+  const scene=atlasPaint('group'),mpp=box.width/width*Math.max(1,Math.min(width/1024,height/100));
+  drawScale(scene,box,mpp);
+  // Contrast stays independent of the terrain under the printed legend.
+  scene.children.unshift(atlasPaint('rect',{x:12*mpp,y:box.height-64*mpp,width:Math.min(box.width-24*mpp,260*mpp),height:44*mpp,style:{fill:'#fff',fillOpacity:.9}}));
+  return scene;
+}
 /** A scene is drawn directly; GM scenes stream through one reusable tile surface. */
 export async function atlasImage(
   source:
@@ -141,6 +151,7 @@ export async function atlasImage(
   box: CanvasBox,
   format: "png" | "jpeg" = "png",
   current: () => boolean = () => true,
+  overlay?:AtlasPaint,
 ): Promise<Uint8Array> {
   if (
     !Number.isInteger(width) ||
@@ -180,6 +191,7 @@ export async function atlasImage(
       }
     }
     checkCurrent();
+    if(overlay)await drawScene(canvas,overlay,box,checkCurrent,false);
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
         (b) =>
@@ -206,6 +218,7 @@ async function drawScene(
   scene: AtlasPaint,
   box: CanvasBox,
   checkCurrent: () => void,
+  clear = true,
 ) {
   const compiled = new AtlasCanvasScene(scene),
     images = new Map<string, CanvasImageSource>();
@@ -222,7 +235,7 @@ async function drawScene(
     const ctx = canvas.getContext("2d");
     if (!ctx) throw Error("Bildausgabe nicht verfügbar.");
     ctx.resetTransform();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if(clear)ctx.clearRect(0, 0, canvas.width, canvas.height);
     compiled.draw(
       ctx,
       new DOMMatrix([

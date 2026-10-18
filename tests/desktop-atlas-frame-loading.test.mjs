@@ -131,4 +131,9 @@ for(const kind of ['road','river'])test(`${kind} endpoint drag commits on releas
  pointer('pointerdown',8);pointer('pointerup',8);await new Promise(r=>setImmediate(r));assert.equal(writes.length,0,'selecting a handle is not an edit');
  pointer('pointerdown',8);pointer('pointermove',5);assert.equal(writes.length,0,'preview stays a draft');pointer('pointercancel',5);assert.equal(writes.length,0,'an interrupted drag must never save');
  pointer('pointerdown',5);pointer('pointermove',4);pointer('pointerup',4);await new Promise(r=>setImmediate(r));assert.equal(writes.length,1);assert.deepEqual(writes[0].record.points,[{x:1,y:2},{x:4,y:2}]);assert.equal(writes[0].expectedRevision,0);
+ let picked=0;canvas.addEventListener('click',()=>picked++);f.host.hit=()=>null;
+ const release=new f.window.Event('click',{bubbles:true,cancelable:true});canvas.dispatchEvent(release);
+ assert.equal(picked,0,'release click cannot clear the saved landscape selection through the Atlas picker');assert.equal(release.defaultPrevented,true);
+ pointer('pointerdown',12);pointer('pointerup',12);canvas.dispatchEvent(new f.window.Event('click',{bubbles:true,cancelable:true}));
+ assert.equal(picked,1,'a new ordinary click still reaches the Atlas picker');
 });

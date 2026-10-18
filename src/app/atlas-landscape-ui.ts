@@ -89,6 +89,7 @@ export class LandscapeWorkbench {
   private vertex = 0;
   private dragging = false;
   private lineDragChanged = false;
+  private releaseClick = false;
   private dirty = false;
   private saving = false;
   private measurement: Point[] = [];
@@ -163,6 +164,7 @@ export class LandscapeWorkbench {
       "pointerdown",
       (e) => {
         if (!this.active || e.button !== 0 || e.altKey || this.saving) return;
+        this.releaseClick = false;
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
           this.tool === "select" && !this.host.choose &&
@@ -268,7 +270,10 @@ export class LandscapeWorkbench {
         this.pointer = null;
         this.dragging = false;
         this.lineDragChanged = false;
-        if (commitLine) void this.finish().catch(e => this.host.error(e));
+        if (commitLine) {
+          this.releaseClick = true;
+          void this.finish().catch(e => this.host.error(e));
+        }
         if (["paint", "hex", "reset"].includes(this.tool))
           this.say(`${this.brushStrokes.length + 1} Strich(e) im Entwurf. Abschließen oder verwerfen.`);
         if (svg.hasPointerCapture(e.pointerId))
@@ -285,7 +290,15 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "click",
       (e) => {
-        if (!this.active || this.saving || e.altKey) return;
+        if (!this.active || e.altKey) return;
+        // A saved handle drag still produces a click after pointerup. It must
+        // not reach the Atlas picker and clear the just-edited selection.
+        if (this.releaseClick || this.saving) {
+          this.releaseClick = false;
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return;
+        }
         if (this.tool === "select") {
           if (
             this.hit(e, ["landscapeId","landVertex"])
