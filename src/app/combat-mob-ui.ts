@@ -134,7 +134,7 @@ export function combatMobRow(
       ),
       choose,
       hp,
-      node("span", "RK " + mob.front.armorClass),
+      node("span", "RK " + (mob.front.armorClass??"offen")),
       initiative,
     );
     card.append(front);

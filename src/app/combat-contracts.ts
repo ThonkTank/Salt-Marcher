@@ -10,7 +10,7 @@ export function hasCombatCondition(text:string,label:string,source:string){const
 export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
 export interface Combatant {role?:import('./npc-contracts').NpcRole;
   id: string; characterId: string | null; groupId: string; groupName?: string; name: string;
-  initiative: number; initiativeBonus: number; armorClass: number;
+  initiative: number; initiativeBonus: number; armorClass: number | null;
   hp: number; maxHp: number; tempHp: number; conditions: string; concentrating: boolean;
   death?:CharacterHealth['death'];deathLast?:{result:DeathSaveResult;roll:number|null};
   concentrationChecks?:{damage:number;dc:number}[];concentrationLast?:{damage:number;dc:number;roll:number|null;modifier:number;total:number|null;success:boolean};
@@ -106,9 +106,10 @@ export function checkedCombatant(p:Combatant):Combatant {
     if(p.groupName!==undefined&&(typeof p.groupName!=='string'||p.groupName.length>120||p.groupName!==p.groupName.trim()))throw new Error('Truppname benötigt höchstens 120 Zeichen ohne äußere Leerzeichen.');
     if(p.role!==undefined&&!['friendly','neutral','hostile'].includes(p.role))throw new Error('Ungültige Begegnungsrolle.');
     if (p.healthKnown !== undefined && typeof p.healthKnown !== 'boolean' || p.healthKnown === false && !p.characterId) throw new Error('Unbekannter HP-Status ungültig.');
-    for (const value of [p.initiative, p.initiativeBonus, p.armorClass, p.hp, p.maxHp, p.tempHp]) if (!Number.isSafeInteger(value) || Math.abs(value) > 1000000) throw new Error('Kampfwerte benötigen ganze Zahlen bis 1.000.000.');
+    for (const value of [p.initiative, p.initiativeBonus, p.hp, p.maxHp, p.tempHp]) if (!Number.isSafeInteger(value) || Math.abs(value) > 1000000) throw new Error('Kampfwerte benötigen ganze Zahlen bis 1.000.000.');
+    if (p.armorClass !== null && (!Number.isSafeInteger(p.armorClass) || p.armorClass < 0 || p.armorClass > 1000000)) throw new Error('Rüstungsklasse benötigt eine nichtnegative ganze Zahl oder bleibt offen.');
     if (p.xp !== undefined && (!Number.isSafeInteger(p.xp) || p.xp < 0)) throw new Error('Kreatur-XP benötigen eine nichtnegative ganze Zahl.');
-    if (p.maxHp < 1 || p.hp < 0 || p.hp > p.maxHp || p.tempHp < 0 || p.armorClass < 0) throw new Error('Trefferpunkte oder Rüstungsklasse ungültig.');
+    if (p.maxHp < 1 || p.hp < 0 || p.hp > p.maxHp || p.tempHp < 0) throw new Error('Trefferpunkte oder Rüstungsklasse ungültig.');
     if(p.death!==undefined){if(!p.characterId)throw new Error('Todesrettungswürfe gehören zu einer Party-Figur.');checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,death:p.death});}
     if(p.deathLast!==undefined&&(!p.characterId||!['success','failure','natural-20','natural-1','stabilize','reset','dead'].includes(p.deathLast.result)||p.deathLast.roll!==null&&(!Number.isSafeInteger(p.deathLast.roll)||p.deathLast.roll<1||p.deathLast.roll>20)))throw new Error('Letzter Todesrettungswurf ungültig.');
     if(p.concentrationChecks!==undefined&&(!Array.isArray(p.concentrationChecks)||!p.concentrating||p.concentrationChecks.length>100||p.concentrationChecks.some(check=>!Number.isSafeInteger(check.damage)||check.damage<1||check.damage>1000000||check.dc!==concentrationDc(check.damage))))throw new Error('Offene Konzentrationsprüfungen ungültig.');
