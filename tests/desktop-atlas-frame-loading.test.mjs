@@ -158,3 +158,12 @@ for(const failure of ['reply','transport'])test(`a failed selection refresh afte
  f.ui.setActive(true);await f.ui.select(road);f.ui.dirty=true;await f.ui.finish();
  assert.equal(writes,1);assert.equal(f.ui.hasDraft(),false);assert.equal(f.document.querySelector('#land-object').value,'');assert.equal(f.document.querySelector('#land-selection').children.length,0);assert.match(f.document.querySelector('#land-status').textContent,/Gespeichert.*erneut auswählen/);assert.deepEqual(f.errors,[]);
 });
+
+test('a docked location inspector retains its own text reads, focus and write lock',async t=>{
+ const f=fixture(t);f.set([]);const root=f.document.querySelector('#land-selection'),dock=f.document.createElement('aside');f.document.body.append(dock);dock.append(root);
+ const record={...ref('place'),kind:'place',assetId:undefined,locationId:'location',width:0},doc={id:'location',name:'Furt',sections:[{id:'prose',title:'Beschreibung',markdown:'  Original\r\n'}, {id:'note',title:'Notizen',markdown:'Unverändert.'}]};
+ f.window.campaign={atlasLandscapeObject:async()=>({ok:true,value:record}),deskContent:async()=>({ok:true,value:{location:doc,revision:4,unavailable:false}}),landscapeFind:async()=>({ok:true,value:[record]})};
+ await f.ui.selectId(record.id);assert.equal(f.ui.panel.contains(root),false);f.document.querySelector('#land-name').value='Neue Furt';root.querySelector('[data-section-title="prose"]').value='Zum Vorlesen';root.querySelector('[data-section-body="prose"]').value='  Überarbeitet\r\nWortlaut bleibt.\r\n';
+ let release,sent;f.host.write=async a=>{sent=structuredClone(a);await new Promise(r=>release=r);return true;};const saving=f.ui.finish();await new Promise(r=>setImmediate(r));assert.equal(sent.kind,'landscape-place');assert.equal(sent.expectedLocationRevision,4);assert.equal(sent.document.sections[0].markdown,'  Überarbeitet\r\nWortlaut bleibt.\r\n');assert.equal(sent.document.sections[1].markdown,'Unverändert.');assert.equal(sent.document.name,'Neue Furt');assert([...root.querySelectorAll('input,textarea,button')].every(n=>n.disabled));await f.ui.finish();release();await saving;
+ let focused;const proto=f.window.HTMLTextAreaElement.prototype,oldFocus=proto.focus,oldScroll=proto.scrollIntoView;proto.focus=function(){focused=this;};proto.scrollIntoView=()=>{};t.after(()=>{proto.focus=oldFocus;proto.scrollIntoView=oldScroll;});await f.ui.openLocation('location','note');assert.equal(focused.dataset.sectionBody,'note');assert.equal(focused.value,'Unverändert.');assert.equal(f.errors.length,0);
+});

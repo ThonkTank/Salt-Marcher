@@ -1,6 +1,6 @@
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
-import { formatDistance, hexPolygon, hexSize } from "./atlas-landscape";
+import { formatDistance, hexPolygon, hexSize, LANDSCAPE_PLACE_FONT_PX } from "./atlas-landscape";
 import { terrainColors } from "./world-model";
 export function drawLandscape(
   root: AtlasPaint,
@@ -61,7 +61,7 @@ export function drawLandscape(
         landscapeNode("circle", {x: p.x - b.x, y: p.y - b.y, radius: mpp * 5, style: {fill: "#5b4338", stroke: "#f5efdb", lineWidth: mpp * 1.5}}),
       );
       g.append(
-        landscapeNode("text", {x: p.x - b.x, y: p.y - b.y - mpp * 10, style: {fontSize: mpp * 13, textAlign: 'center', stroke: "#f4efdf", lineWidth: mpp * 3, fill: "#263e32"}}, r.name),
+        landscapeNode("text", {x: p.x - b.x, y: p.y - b.y - mpp * 10, style: {fontSize: mpp * LANDSCAPE_PLACE_FONT_PX, textAlign: 'center', stroke: "#f4efdf", lineWidth: mpp * 3, fill: "#263e32"}}, r.name),
       );
     }
   }
