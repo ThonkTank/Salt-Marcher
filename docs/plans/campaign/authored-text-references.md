@@ -34,6 +34,17 @@ IDs; Creature-/Itemziele behalten den zugehörigen Katalog-/Definitionsbezug.
 Quelle, Snapshot und opaque Erweiterungsbodies bleiben erhalten. NPC-Rohentwürfe
 und ungeklärte Commands folgen ihrem bestehenden Recoveryvertrag.
 
+## Vorhandene Quellen im Raum-Key verknüpfen
+
+Verknüpfte Notizen und Inhalte stehen direkt beim GM-Raumtext. Die ausklappbare
+Suche findet vorhandene Notizen, Orte und Spielabende; höchstens acht Treffer
+bleiben gleichzeitig als Auswahl sichtbar. Ein Treffer oder Enter verknüpft das
+Original über den vorhandenen Key-Writer. Bereits gebundene IDs werden nicht
+nochmals angeboten. Der Suchbegriff bleibt beim Raumwechsel, wird beim Wechsel
+der Kampagnenaktivierung geleert; entfernte Treffer haben keine Schreibautorität.
+[Native Aufgabe und Obsidian-Gegenprobe](../../reference/gm-ux-qa/room-rule-reuse-20261018/README.md)
+prüfen zentrale Korrektur, beide Raumverwendungen, individuelle Ergänzung und Fresh.
+
 ## Markierte Texte als Weltwissen übernehmen
 
 Eine nichtleere Auswahl im GM- oder Vorlesetext zeigt die Übernahmeaktion direkt
