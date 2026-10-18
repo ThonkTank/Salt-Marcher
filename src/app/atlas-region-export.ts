@@ -5,6 +5,7 @@ import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { drawLandscape, drawLandscapeGrid } from "./atlas-landscape-view";
 import { atlasFrame, frameMatrix } from "./campaign-atlas-model";
 import { cityPaint } from "./city-model";
+import { centerInRoom } from "./dungeon-model";
 import { elementPaint } from "./drawing-model";
 export function atlasRegionPaint(
   data: AtlasRenderView,
@@ -127,14 +128,14 @@ export function atlasRegionPaint(
         }),
       );
       if (room.polygons[0]?.outer[0]) {
-        const p = room.polygons[0].outer[0];
+        const p = centerInRoom(room);
         g.append(
           landscapeNode(
             "text",
             {
               x: p.x,
               y: p.y,
-              style: { fontSize: Math.max(0.3, mpp * 11), fill: "#293d34" },
+              style: { fontSize: Math.max(0.3, mpp * 16), textAlign:"center", textBaseline:"middle", fill: "#203648", stroke:"white", lineWidth:3*mpp, lineJoin:"round" },
             },
             [room.number, room.name].filter(Boolean).join(" · "),
           ),

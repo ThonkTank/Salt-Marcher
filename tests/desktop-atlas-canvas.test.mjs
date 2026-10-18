@@ -6,7 +6,7 @@ import { parseHTML } from "linkedom";
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
+      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {atlasRegionPaint} from './src/app/atlas-region-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-canvas-test.cjs",
@@ -14,7 +14,7 @@ buildSync({
   platform: "node",
   format: "cjs",
 });
-const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, atlasExportTiles, CampaignAtlasWorkbench } = createRequire(
+const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -536,7 +536,7 @@ test('oversized encoded output is rejected before reading or sending bytes',asyn
 
 test('one GM export freezes floor, grid, scale, reference, box, size and format before asynchronous reads',async t=>{
  const f=fixture(t),controls=f.document.createElement('div');
- controls.innerHTML='<input id="atlas-export-size" value="1025"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><p id="atlas-save-status"></p>';
+ controls.innerHTML='<input id="atlas-export-size" value="1025"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p>';
  f.document.body.append(controls);f.document.querySelector('#atlas-export-grid').checked=true;f.document.querySelector('#atlas-export-reference').checked=false;
  const box={x:0,y:0,width:1025,height:2},created=[],copies=[],queries=[],errors=[],encodings=[],create=f.document.createElement.bind(f.document);let strokes=0,saved=0;
  f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){
@@ -590,4 +590,30 @@ test('a new source recovers from the previous scene failure without hiding an un
 test('changing source with no Canvas context preserves a visible working retry',async t=>{
  const f=fixture(t,{available:false});f.canvas.context('new',f.canvas.view);assert.equal(f.document.querySelector('.map-canvas-state').hidden,false);assert.equal(f.root.dataset.canvasState,'unavailable');
  f.canvas.render(root=>root.append(rect('new')));f.available(true);f.document.querySelector('.map-canvas-state button').click();await settle();assert.equal(f.canvas.ready,true);
+});
+
+
+test('a cropped room keeps its complete key centered, independently of polygon winding and export tile boundaries',()=>{
+ const outer=[{x:12,y:6},{x:0,y:6},{x:0,y:0},{x:12,y:0}],options={grid:false,level:0,references:false,floorId:'ground',roofs:false};
+ for(const points of [outer,[...outer].reverse()]){
+  const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[{id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:points,holes:[]}]}]},geometry:{drawing:{elements:[]}}};
+  for(const box of [{x:-1,y:-1,width:14,height:8},{x:5,y:-1,width:7,height:8}]){
+   const scene=atlasRegionPaint(data,[],box,512,new Map(),options),labels=scene.children.flatMap(n=>n.children).filter(n=>n.kind==='text');
+   assert.equal(labels.length,1);assert.equal(labels[0].text,'1 · Zollhaus');
+   assert.deepEqual({x:labels[0].geometry.x,y:labels[0].geometry.y},{x:6,y:3});
+   assert.equal(labels[0].style.textAlign,'center');assert.equal(labels[0].style.textBaseline,'middle');assert(labels[0].style.fontSize>=16*box.width/512);
+  }
+ }
+});
+
+test('output range commits on release, preserves author data, supports two corners and cancels only its unfinished selection',async t=>{
+ const f=fixture(t),area=f.document.createElement('p');area.id='atlas-output-area';f.document.body.append(area);
+ const initial={x:-2,y:-3,width:30,height:20};let draws=0;
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{dataset:{}},svg:f.root,camera:{view:initial,ready:true},exportOpen:true,exportChoosing:true,exporting:false,exportBox:null,exportCorner:null,exportDrag:null,point:e=>({x:e.clientX,y:e.clientY}),geometryCurrent:()=>true,render:()=>draws++,suppressClick(){},opts:{status(){throw Error('Unexpected write or navigation');}},family:'interior',draft:[{x:99,y:88}]});
+ const event=(x,y)=>({button:0,pointerId:7,clientX:x,clientY:y});
+ ui.down(event(12,6));ui.move(event(-1,-1));await ui.up(event(-1,-1));
+ assert.deepEqual(ui.exportBox,{x:-1,y:-1,width:13,height:7});assert.equal(ui.exportChoosing,false);assert.match(area.textContent,/Gewählter Bereich/);
+ const confirmed=ui.exportBox;ui.exportChoosing=true;ui.down(event(100,100));await ui.up(event(100,100));assert.deepEqual(ui.exportCorner,{x:100,y:100});
+ ui.cancel();assert.equal(ui.exportBox,confirmed);assert.equal(ui.exportChoosing,false);assert.deepEqual(ui.draft,[{x:99,y:88}]);
+ ui.exportChoosing=true;ui.down(event(0,0));await ui.up(event(0,0));ui.down(event(4,2));await ui.up(event(4,2));assert.deepEqual(ui.exportBox,{x:0,y:0,width:4,height:2});assert.equal(ui.exportCorner,null);assert(draws>0);
 });
