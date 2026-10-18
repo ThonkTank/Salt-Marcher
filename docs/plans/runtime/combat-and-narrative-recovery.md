@@ -196,12 +196,17 @@ Echte Storegegenfälle prüfen zwei Masken mit abwechselnden Erfolgen/Fehlschlä
 kanonische Progressbytes, Heilung/Undo/Reopen, unveränderte abgeschlossene History
 und beendete Konzentration bei offener Prüfung. Native Bedienung prüft den
 entsprechenden Todesrettungs-/Heilungsweg und die gesperrte alte Undoaktion.
-Dies ersetzt nicht die vollständige Mehrgruppen-Selection und Reconciliation
-von NPC-Quellen oder den ursprünglichen Resolutionablauf. Als nächste Anschlüsse
-bleiben Sourcegruppen-IDs/Revisionsbasis und aktuelle Scene-Party für Evaluation,
-Start und Verstärkung gemeinsam zu binden; verworfene oder fremde Gruppen dürfen
-keine Runtime erzeugen. Rewardpolicy und einmaliger Abschluss benötigen danach
-einen gemeinsamen Restart-/Scenewechselnachweis, unabhängig von Gesundheitsproben.
+Die Mehrgruppenauswahl liest inzwischen über
+`storage/scene-encounter-selection.ts::readSceneEncounterSelection` einen
+transaktionalen Stand aus Fokus, Szenenparty und vorbereiteten Gruppen; fremde
+Progressions- und Beuteleser sind keine Voraussetzung. `combat-selection-ui.ts`
+bewertet diese Auswahl, `storage/combat.ts` prüft Party-/Fokus- und Gruppenbasis
+vor der Übernahme erneut. Verstärkung verwendet dort denselben Gruppenprüfweg.
+[Store-/DOM-Gegenfälle](../../../tests/desktop-scene-encounter-selection.test.mjs)
+prüfen Auswahl, veraltete Basis, einzelne Figuren und unabhängige Lesefehler.
+Vollständige NPC-Reconciliation, Rewardpolicy und einmaliger Abschluss benötigen
+weiter ihren gemeinsamen Restart-/Scenewechselnachweis; Gesundheitsproben und
+Auswahltests ersetzen diese Abnahme nicht.
 
 ## Nachbereitung und bestehende Schätze
 
