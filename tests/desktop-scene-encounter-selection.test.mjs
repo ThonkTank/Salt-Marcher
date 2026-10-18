@@ -29,17 +29,17 @@ test('stale group facts, changed Party XP, foreign groups and an empty selection
  const foreign=x.store.executeProgress(x.cmd({kind:'group-create',title:'Fremde Gruppe',encounterId:null,expectedEncounterRevision:null})).groupId;before=x.store.db.serialize();assert.throws(()=>x.create(x.action([x.store.groupView(x.w.token,foreign)])),/nicht zum fokussierten/);assert.ok(x.store.db.serialize().equals(before));assert.throws(()=>x.create(x.action([])),/Szenengruppen auswählen/);assert.ok(x.store.db.serialize().equals(before));
 });
 test('selection UI updates difficulty immediately and submits a complete group snapshot, without persistence during checkbox changes',async t=>{
- const x=fixture(t),old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><section id="root"></section></body></html>');Object.assign(globalThis,{window,document});const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};window.campaign={};for(const name of ['live','progress','scenePreparation','groupView'])window.campaign[name]=async(...args)=>response(()=>x.store[name](...args));let action;
+ const x=fixture(t),old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><section id="root"></section></body></html>');Object.assign(globalThis,{window,document});const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};window.campaign={};for(const name of ['live','progress','scenePreparation','groupView','sceneEncounterSelection'])window.campaign[name]=async(...args)=>response(()=>x.store[name](...args));let action;
  const panel=new CombatSelectionPanel(document.getElementById('root'),()=>({workspace:x.w,scene:x.scene,current:()=>true}),async a=>{action=a;return true;},()=>false);t.after(()=>{panel.reset();Object.assign(globalThis,old);});await panel.read();
  const before=x.store.db.serialize(),boxes=[...document.querySelectorAll('#combat-selection-groups > article > label > input')];assert.equal(boxes.length,2);assert.equal(document.getElementById('combat-selection-prepare').disabled,true);
  boxes[0].checked=true;boxes[0].onchange();assert.equal(document.getElementById('combat-selection-prepare').disabled,false);const first=document.getElementById('combat-selection-result').textContent;boxes[1].checked=true;boxes[1].onchange();assert.notEqual(document.getElementById('combat-selection-result').textContent,first);assert.match(document.getElementById('combat-selection-result').textContent,/250 angepasste XP/);assert.ok(x.store.db.serialize().equals(before));document.getElementById('combat-selection-prepare').click();await until(()=>!!action);assert.equal(action.sceneSelection.groups.length,2);assert.equal(action.sceneSelection.partyBasis,x.action().sceneSelection.partyBasis);
 });
 test('late selection replies after a Scene switch cannot publish or enable initiative',async t=>{
- const x=fixture(t),old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><section id="root"></section></body></html>');Object.assign(globalThis,{window,document});let release;window.campaign={live:()=>new Promise(r=>release=r),progress:async()=>({ok:true,value:x.store.progress(x.w.token)}),scenePreparation:async()=>({ok:true,value:x.store.scenePreparation(x.w.token,x.scene.id)})};let current=true,writes=0;const panel=new CombatSelectionPanel(document.getElementById('root'),()=>({workspace:x.w,scene:x.scene,current:()=>current}),async()=>{writes++;return true;},()=>false);t.after(()=>{panel.reset();Object.assign(globalThis,old);});const task=panel.read();current=false;panel.reset();release({ok:true,value:x.store.live(x.w.token)});await task;assert.equal(document.querySelectorAll('#combat-selection-groups input').length,0);assert.equal(document.getElementById('combat-selection-prepare').disabled,true);assert.equal(writes,0);
+ const x=fixture(t),old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><section id="root"></section></body></html>');Object.assign(globalThis,{window,document});let release;window.campaign={sceneEncounterSelection:()=>new Promise(r=>release=r)};let current=true,writes=0;const panel=new CombatSelectionPanel(document.getElementById('root'),()=>({workspace:x.w,scene:x.scene,current:()=>current}),async()=>{writes++;return true;},()=>false);t.after(()=>{panel.reset();Object.assign(globalThis,old);});const task=panel.read();current=false;panel.reset();release({ok:true,value:x.store.sceneEncounterSelection(x.w.token,x.scene.id)});await task;assert.equal(document.querySelectorAll('#combat-selection-groups input').length,0);assert.equal(document.getElementById('combat-selection-prepare').disabled,true);assert.equal(writes,0);
 });
 
 function selectionUi(t,x,commit=async()=>true){
- const old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><section id="root"></section></body></html>');Object.assign(globalThis,{window,document});const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};window.campaign={};for(const name of ['live','progress','scenePreparation','groupView'])window.campaign[name]=async(...args)=>response(()=>x.store[name](...args));
+ const old={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML('<html><body><section id="root"></section></body></html>');Object.assign(globalThis,{window,document});const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};window.campaign={};for(const name of ['live','progress','scenePreparation','groupView','sceneEncounterSelection'])window.campaign[name]=async(...args)=>response(()=>x.store[name](...args));
  const panel=new CombatSelectionPanel(document.getElementById('root'),()=>({workspace:x.w,scene:x.scene,current:()=>true}),commit,()=>false);t.after(()=>{panel.reset();Object.assign(globalThis,old);});return{panel,document};
 }
 test('a first wave selects individual physical actors in the encounter entry and keeps that selection on refresh',async t=>{
@@ -61,4 +61,88 @@ test('invalid first-wave actor IDs and stale full-group facts reject without par
 });
 test('an empty wave cannot prepare and restoring one member immediately restores the live preview',async t=>{
  const x=fixture(t),ui=selectionUi(t,x);await ui.panel.read();const group=x.groups().find(g=>g.actors.length===2),select=ui.document.querySelector(`[data-group-id="${group.id}"] > label > input`);select.checked=true;select.onchange();const actors=[...ui.document.querySelectorAll(`[data-owner-group-id="${group.id}"]`)];for(const box of actors){box.checked=false;box.onchange();}assert.equal(ui.document.getElementById('combat-selection-prepare').disabled,true);actors[0].checked=true;actors[0].onchange();assert.equal(ui.document.getElementById('combat-selection-prepare').disabled,false);assert.match(ui.document.getElementById('combat-selection-result').textContent,/1 Gegner · 50 Basis-XP/);
+});
+
+test('an unrelated inactive progress record cannot block the focused Scene encounter selection',async t=>{
+ const x=fixture(t),command=x.action(),ui=selectionUi(t,x);
+ x.store.db.prepare('UPDATE character_progress SET checksum=? WHERE campaign_id=? AND id=?').run('damaged-inactive',x.cam.id,x.heroes[3].id);
+ const before=x.store.db.serialize();
+ await ui.panel.read();
+ assert.equal(ui.document.querySelectorAll('#combat-selection-groups > article > label > input').length,2,'only the assigned Party progress belongs to this read');
+ assert.match(ui.document.getElementById('combat-selection-party').textContent,/Ada.*Borin.*Cora/);
+ assert.ok(x.store.db.serialize().equals(before));
+ // The existing command already reads only assigned progress; the preview must agree.
+ assert.equal(x.create(command).combat.phase,'preparing');
+});
+
+test('selection uses one compact read basis, with the unchanged command preconditions and no extra reads on checkbox edits',async t=>{
+ const x=fixture(t),before=x.store.db.serialize(),value=x.store.sceneEncounterSelection(x.w.token,x.scene.id),old=x.action();
+ assert.equal(value.sceneId,x.scene.id);assert.equal(value.membershipRevision,x.scene.membershipRevision);
+ assert.equal(value.partyBasis,old.sceneSelection.partyBasis);assert.equal(value.focusRevision,old.sceneSelection.expectedFocusRevision);assert.equal(value.rosterRevision,old.sceneSelection.expectedRosterRevision);
+ assert.deepEqual(value.groups.map(g=>({id:g.id,revision:g.revision,basis:g.basis})),old.sceneSelection.groups);
+ assert.equal(value.party.length,3);assert.equal(JSON.stringify(value).includes('Eigene Notizen'),false);
+ assert.ok(value.groups.every(g=>!('notes' in g)&&g.plan.sources.every(s=>Object.keys(s).sort().join(',')==='id,xp')&&g.actors.every(a=>!('gmNotes' in a)&&!('readAloud' in a))));
+ assert.ok(x.store.db.serialize().equals(before));
+ const ui=selectionUi(t,x);let reads=0;window.campaign.sceneEncounterSelection=async()=>{reads++;return{ok:true,value};};
+ for(const name of ['live','progress','scenePreparation','groupView'])window.campaign[name]=async()=>{throw Error('Unneeded '+name);};
+ await ui.panel.read();assert.equal(reads,1);
+ const boxes=[...ui.document.querySelectorAll('#combat-selection-groups > article > label > input')];
+ for(const box of boxes){box.checked=true;box.onchange();}
+ assert.equal(reads,1);assert.match(ui.document.getElementById('combat-selection-result').textContent,/250 angepasste XP/);
+});
+
+test('a damaged unrelated treasure does not block group selection or its existing combat command',async t=>{
+ const x=fixture(t),old=x.action(),id=x.store.executeProgress(x.cmd({kind:'treasure',title:'Unabhängiger Fund',sceneId:null,items:[{name:'Seil',category:'equipment',quantity:1,valueGold:'1'}]})).treasureId;
+ x.store.db.prepare('UPDATE treasure SET checksum=? WHERE campaign_id=? AND id=?').run('damaged-unrelated',x.cam.id,id);
+ assert.throws(()=>x.store.scenePreparation(x.w.token,x.scene.id),/nicht verfügbar|beschädigt/,'the general source must still report corruption');
+ const before=x.store.db.serialize(),selection=x.store.sceneEncounterSelection(x.w.token,x.scene.id);
+ assert.equal(selection.groups.length,2);assert.ok(x.store.db.serialize().equals(before));
+ assert.equal(x.create(old).combat.participants.length,6);
+ assert.throws(()=>x.store.treasure(x.w.token,id),/nicht verfügbar|beschädigt/,'the damaged record must not be repaired or concealed');
+});
+
+test('a needed assigned progress record remains an explicit error, and the same read can recover',async t=>{
+ const x=fixture(t),ui=selectionUi(t,x);await ui.panel.read();
+ const id=x.heroes[0].id,row=x.store.db.prepare('SELECT checksum FROM character_progress WHERE campaign_id=? AND id=?').get(x.cam.id,id);
+ x.store.db.prepare('UPDATE character_progress SET checksum=? WHERE campaign_id=? AND id=?').run('damaged-needed',x.cam.id,id);
+ await ui.panel.read();assert.match(ui.document.getElementById('combat-selection-status').textContent,/nicht verfügbar|beschädigt/);assert.match(ui.document.getElementById('combat-selection-party').textContent,/nicht verfügbar/);assert.match(ui.document.getElementById('combat-selection-groups').textContent,/nicht geladen/);assert.equal(ui.document.getElementById('combat-selection-thresholds').textContent,'');assert.equal(ui.document.getElementById('combat-selection-result').textContent,'Bewertung nicht verfügbar.');assert.equal(ui.document.getElementById('combat-selection-prepare').disabled,true);assert.equal(ui.document.querySelectorAll('#combat-selection-groups > article').length,0);
+ x.store.db.prepare('UPDATE character_progress SET checksum=? WHERE campaign_id=? AND id=?').run(row.checksum,x.cam.id,id);
+ await ui.panel.read();assert.equal(ui.document.querySelectorAll('#combat-selection-groups > article').length,2);
+});
+
+test('a location or membership change cannot publish a response under the old visible Scene context',async t=>{
+ const x=fixture(t),value=x.store.sceneEncounterSelection(x.w.token,x.scene.id),ui=selectionUi(t,x);
+ for(const changed of [{...value,locationId:'other-place'},{...value,membershipRevision:value.membershipRevision+1},{...value,sceneId:'foreign-scene'}]){
+  window.campaign.sceneEncounterSelection=async()=>({ok:true,value:changed});await ui.panel.read();
+  assert.match(ui.document.getElementById('combat-selection-status').textContent,/Szene geändert/);assert.equal(ui.document.getElementById('combat-selection-prepare').disabled,true);
+ }
+});
+
+test('another active Scene has neither XP authority nor a read dependency for this selection',t=>{
+ const x=fixture(t),live=x.store.live(x.w.token);
+ x.store.executeLive(x.cmd({kind:'move',sceneId:x.scene.id,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,expectedClockRevision:x.scene.clock.revision,expectedSceneMembershipRevision:x.scene.membershipRevision,memberIds:[x.heroes[2].id],target:{kind:'new',title:'Andere Gruppe',expectedContentRevision:x.scene.revision}}));
+ const split=x.store.live(x.w.token),other=split.scenes.find(s=>s.id!==x.scene.id);
+ x.store.executeLive(x.cmd({kind:'focus',sceneId:x.scene.id,expectedRevision:split.focusRevision}));
+ x.store.db.prepare('UPDATE character_progress SET checksum=? WHERE campaign_id=? AND id=?').run('damaged-other-scene',x.cam.id,x.heroes[2].id);
+ const frame=x.store.sceneEncounterSelection(x.w.token,x.scene.id);
+ assert.deepEqual(frame.party.map(p=>p.name),['Ada','Borin']);assert.equal(frame.groups.length,2);
+ assert.throws(()=>x.store.sceneEncounterSelection(x.w.token,other.id),/Fokussierte Szene/);
+ const action={kind:'create',sceneId:frame.sceneId,title:'Am ursprünglichen Tor',includeParty:true,expectedMembershipRevision:frame.membershipRevision,sceneSelection:{expectedFocusRevision:frame.focusRevision,expectedRosterRevision:frame.rosterRevision,partyBasis:frame.partyBasis,groups:frame.groups.map(g=>({id:g.id,revision:g.revision,basis:g.basis}))}};
+ const combat=x.create(action).combat;
+ assert.deepEqual(combat.participants.filter(p=>p.characterId).map(p=>p.name),['Ada','Borin']);
+});
+
+test('an unavailable unselected group remains visible without blocking a healthy group',async t=>{
+ const x=fixture(t),groups=x.groups(),bad=groups.find(g=>g.actors.length===1),healthy=groups.find(g=>g.id!==bad.id),action=x.action([healthy]);
+ x.store.db.prepare('UPDATE world_note SET checksum=? WHERE campaign_id=? AND id=?').run('damaged-unselected-group',x.cam.id,bad.actors[0].id);
+ const before=x.store.db.serialize(),frame=x.store.sceneEncounterSelection(x.w.token,x.scene.id);
+ assert.deepEqual(frame.groups.map(g=>g.id),[healthy.id]);assert.equal(frame.unavailableGroups[0].id,bad.id);assert.equal(frame.unavailableGroups[0].title,bad.title);assert.match(frame.unavailableGroups[0].problem,/beschädigt/);
+ assert.ok(x.store.db.serialize().equals(before));
+ const ui=selectionUi(t,x);await ui.panel.read();assert.match(ui.document.getElementById('combat-selection-groups').textContent,/Gruppe nicht verfügbar/);assert.equal(ui.document.querySelectorAll('[data-unavailable-group-id]').length,1);
+ const box=ui.document.querySelector('#combat-selection-groups > article > label > input');box.checked=true;box.onchange();assert.equal(ui.document.getElementById('combat-selection-prepare').disabled,false);
+ assert.equal(x.create(action).combat.participants.length,5);
+ x.store.db.prepare('UPDATE world_note SET checksum=? WHERE campaign_id=? AND id=?').run('damaged-second-group',x.cam.id,healthy.actors[0].id);
+ await ui.panel.read();assert.equal(ui.document.querySelectorAll('[data-unavailable-group-id]').length,2);assert.doesNotMatch(ui.document.getElementById('combat-selection-groups').textContent,/Keine Gruppen/);assert.match(ui.document.getElementById('combat-selection-party').textContent,/Ada/);assert.equal(ui.document.getElementById('combat-selection-prepare').disabled,true);
+ x.store.db.prepare('UPDATE prepared_group SET checksum=? WHERE campaign_id=? AND id=?').run('damaged-header',x.cam.id,bad.id);
+ assert.equal(x.store.sceneEncounterSelection(x.w.token,x.scene.id).unavailableGroups.find(g=>g.id===bad.id).title,undefined,'a corrupt header cannot supply a trusted display name');
 });

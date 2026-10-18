@@ -15,7 +15,7 @@ import {applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../prog
 import { assessEncounter } from '../encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry,readGenerationRun,acceptGeneration } from './generation';
-import {readWorldActor,readPreparedGroup,scenePreparation} from './session';
+import {readWorldActor,readPreparedGroup,scenePreparedGroupIds} from './session';
 import {groupView} from './groups';
 import {groupCombatBasis} from '../groups-contracts';
 import type { Creature } from '../../features/catalog/creature-catalog';
@@ -41,7 +41,7 @@ function addNamedActor(db:any,cam:string,state:CombatState,actorId:string,locati
 function reinforcePreparedGroup(db:any,cam:string,state:CombatState,a:Extract<CombatCommand['action'],{kind:'add-prepared-group'}>){
  const scene=readLiveScene(db,cam,state.sceneId),group=groupView(db,cam,a.preparedGroupId);
  if(group.revision!==a.expectedPreparedRevision||groupCombatBasis(group)!==a.expectedRosterBasis)throw new Error('Gruppe oder Figuren seit Vorschau geändert. Gruppe erneut ansehen.');
- if(!scenePreparation(db,cam,scene.id).groups.some(g=>g.id===group.id)||group.locationId&&group.locationId!==scene.locationId)throw new Error('Gruppe gehört nicht zum aktuellen Szenenort oder vorbereiteten Besuch.');
+ if(!scenePreparedGroupIds(db,cam,scene.id).includes(group.id)||group.locationId&&group.locationId!==scene.locationId)throw new Error('Gruppe gehört nicht zum aktuellen Szenenort oder vorbereiteten Besuch.');
  if(!Array.isArray(a.worldActorIds)||!a.worldActorIds.length||a.worldActorIds.length>200||new Set(a.worldActorIds).size!==a.worldActorIds.length||a.worldActorIds.some(id=>!group.actors.some(actor=>actor.id===id)))throw new Error('Wähle eindeutige Figuren dieser Gruppe.');
  if(!Number.isSafeInteger(a.initiative)||Math.abs(a.initiative)>1000000)throw new Error('Initiative benötigt eine gültige ganze Zahl.');
  const selected=group.actors.filter(actor=>a.worldActorIds.includes(actor.id));
@@ -214,7 +214,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
         if(!Array.isArray(basis.groups)||!basis.groups.length||basis.groups.length>1000||new Set(basis.groups.map(g=>g.id)).size!==basis.groups.length)throw new Error('Eindeutige Szenengruppen auswählen.');
         const currentParty=sceneEncounterParty(live,[...progress.values()],scene.id);
         if(currentParty.basis!==basis.partyBasis)throw new Error('Party oder XP seit Bewertung geändert. Auswahl neu lesen.');
-        const available=new Set(scenePreparation(db,cam,scene.id).groups.map(g=>g.id));
+        const available=new Set(scenePreparedGroupIds(db,cam,scene.id));
         const groups=basis.groups.map(b=>{if(!available.has(b.id))throw new Error('Gruppe gehört nicht zum fokussierten Szenenort oder Besuch.');const g=groupView(db,cam,b.id);if(g.revision!==b.revision||groupCombatBasis(g)!==b.basis)throw new Error('Szenengruppe seit Bewertung geändert. Auswahl neu lesen.');return g;});
         const chosen=groups.map((g,i)=>selectedSceneGroup(g,basis.groups[i]!.worldActorIds));
         const evaluation=assessSceneGroups(currentParty.party,chosen,scene.locationId);if(evaluation.issue)throw new Error(evaluation.issue);

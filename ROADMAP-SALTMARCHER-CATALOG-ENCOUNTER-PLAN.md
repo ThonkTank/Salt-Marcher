@@ -1054,6 +1054,28 @@ Schwierigkeit. Fehlende Level bleiben unbekannt. Bewertung und Auswahl schreiben
 weder Gruppen noch Kampfstand. Leere oder nicht verfügbare Gruppen bleiben mit
 Grund gesperrt; ohne zugewiesene Party oder Gegner gibt es keine Übernahme.
 
+Der Auswahlreader `sceneEncounterSelection` liefert Party, Gruppen und ihre
+unveränderten Command-Basiskennungen aus einer gemeinsamen SQLite-Lesetransaktion.
+Die frühere Kette aus Live-, vollständigem Progress-, Vorbereitungs- und einzelnen
+Gruppenreads entfällt. Fortschritt wird nur für die zugeordneten aktiven Figuren
+gelesen. Auswahlfakten enthalten Kreatur-ID/XP und relevante NPC-Werte; vollständige
+Statblocks und verfasste Gruppen-/NPC-Texte bleiben in ihren bestehenden Lesern.
+Die bisherige Live-Strukturprüfung und die Validierung benötigter Gruppenquellen
+bleiben erhalten; dies ist keine vollständige Optimierung ihrer internen Reads.
+
+`scenePreparedGroupIds` bestimmt die identischen Gruppenbindungen für Vorbereitung,
+Auswahl und Combat-Writer. Auswahl, Übernahme und Verstärkung benötigen deshalb
+keine Beutesammlung oder Vorschau des nächsten Besuchs. Ein Fehler in benötigtem
+Partyfortschritt sperrt weiterhin sichtbar. Einzelne unlesbare Gruppen bleiben
+mit ID und Fehler als nicht verfügbare Einträge sichtbar, erhalten aber keine
+auswählbaren Teilnehmer oder Command-Basis. Gesunde Gruppen können weiter in die
+Initiative übernommen werden. Ein Lesefehler ist kein bestätigter Leerstand. Fehler in
+unabhängiger Beute oder inaktivem Fortschritt werden durch deren eigene Leser
+weiter gemeldet, blockieren aber diese Gruppenauswahl nicht. Kein Speicherschema,
+Autorencommand oder Receiptformat ändert sich. Fokus, Mitgliedschaft und Ort binden
+Antworten an den sichtbaren Kontext; verspätete Antworten und Fehler dürfen keine
+Initiative aus einem veralteten Stand freigeben.
+
 „Auswahl in Initiative übernehmen“ übergibt alle ausgewählten Gruppen gemeinsam
 an den vorhandenen Combat-Writer. Fokus-/Roster-/Szenenmitgliedschaft, Party-XP
 und vollständige Gruppen-/NPC-Basis werden vor Mutation geprüft. Fremde oder
@@ -1080,3 +1102,11 @@ Vorlage/Katalog/Generator und sofortiger Abgleich sämtlicher Gruppenstruktur-
 Verstärkung werden weiterverwendet; ihre Grenzen werden dadurch nicht erweitert.
 Native Belege dieses Ablaufs ersetzen keine OS-, Accessibility- oder vollständige
 ursprüngliche Runtime-Abnahme.
+
+Die Live-Session-Originalquelle verlangt außerdem den direkten gemeinsamen
+Gruppeneditor und den abschließenden Scene-Desktop. Die heutige orts-/besuchsgebundene
+Gruppenauswahl samt separatem Gruppenbereich erfüllt diese Lieferungen noch nicht.
+Der gezielte native Readercheck `tools/test-desktop-scene-selection-read.mjs` prüft
+Lesefehler, erneutes Lesen, gemeinsame Übernahme und Initiative-Wiederaufnahme nach
+Neustart bei 100/200 Prozent; er ersetzt weder jene Lieferungen noch eine
+Großgruppen-/Speicherqualifikation.
