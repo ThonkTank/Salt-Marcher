@@ -845,6 +845,18 @@ vollständige Quellenabdeckung, tatsächliche Zeichenkommandos und sichtbarer
 Viewport werden geprüft. Fensterbilder stammen aus Electron `capturePage`;
 Playwrights Ausschnitt kann bei nativer200%-Skalierung die falsche Bildfläche erfassen.
 
+Eine erneute lokale Lastserie am kombinierten Stand vom18.10.2026 erreicht
+bei100000 Landschaftsflächen die Öffnungsziele nicht durchgehend:
+3,22s bei100%,2,24s bei200%; Zoom-p95 im ersten Fall18,04ms,
+Hover-p95 im zweiten21,24ms. Die Vorschau bleibt mit16,46–18,36ms
+unter50ms. Der Host war gleichzeitig belastet (Load1 etwa13,75);
+das erklärt die Abweichung noch nicht kausal. Frühere schnellere Läufe
+werden dadurch nicht zu einer allgemeinen Leistungsabnahme. Der Vergleich
+mit eingefrorenem Main und identischen Fixturekopien sowie die physische
+Hardwarequalifikation bleiben erforderlich. Diese Serie ist kein Beleg für
+eine durchgehende Einhaltung von2s/16ms und rechtfertigt keinen vorsorglichen
+Rendererwechsel. Die Funktions-/Wiederverwendungsnachweise bleiben getrennt.
+
 Offener Abschluss, ohne Umfangsverkleinerung:
 
 1. Tatsächliche Compositorpräsentation neben CPU messen. B01 OffscreenCanvas/
