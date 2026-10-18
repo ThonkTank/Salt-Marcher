@@ -74,7 +74,7 @@ export class LandscapeWorkbench {
   private background:{key:unknown[];node:AtlasPaint;box:LandscapeBox;selectedSlot:number}|null=null;
   private assetFence='';
   records: LandscapeRecord[] = [];
-  private raster: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[] | undefined;
+  private raster: import("./landscape-raster").LandscapeRaster[] | undefined;
   exportBox: LandscapeBox | null = null;
   private token = "";
   private key = "";
@@ -101,11 +101,11 @@ export class LandscapeWorkbench {
   } | null = null;
   private lastPoint: Point = { x: 0, y: 0 };
   constructor(
-    private svg: HTMLCanvasElement,
+    svg: HTMLCanvasElement,
     private host: {
       box: () => LandscapeBox;
       hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
-      point?:(e:MouseEvent)=>Point;
+      point:(e:MouseEvent)=>Point;
       refresh?:()=>Promise<unknown>;
       choose?: (point:Point)=>Promise<void>;
       current?:()=>boolean;
@@ -155,7 +155,7 @@ export class LandscapeWorkbench {
     html("land-finish").onclick = () =>
       void this.finish().catch((e) => this.host.error(e));
     html("land-cancel").onclick = () => this.cancel();
-    html("land-reload").onclick = () => void (async()=>{await (this.host.refresh?this.host.refresh():this.load(this.host.box(),true));if(this.selected?.assetId&&!this.assets.has(this.selected.assetId))await this.selectId(this.selected.id);})().catch(e=>this.host.error(e));
+    html("land-reload").onclick = () => void (async()=>{await (this.host.refresh?this.host.refresh():this.load(true));if(this.selected?.assetId&&!this.assets.has(this.selected.assetId))await this.selectId(this.selected.id);})().catch(e=>this.host.error(e));
     html("land-reference").onclick = () =>
       void this.importReference().catch((e) => this.host.error(e));
     html("land-grid").onchange = () => this.host.redraw();
@@ -328,12 +328,7 @@ export class LandscapeWorkbench {
   }
   private hit(e:MouseEvent,keys:string[]){return this.host.hit(e,keys);}
   private point(e: MouseEvent) {
-    if(this.host.point)return this.host.point(e);
-    const b = this.host.box(),
-      p = new DOMPoint(e.clientX, e.clientY).matrixTransform(
-        (this.svg as unknown as SVGSVGElement).getScreenCTM()!.inverse(),
-      );
-    return { x: p.x + b.x, y: p.y + b.y };
+    return this.host.point(e);
   }
   private say(s: string) {
     html("land-status").textContent = s;
@@ -430,7 +425,7 @@ export class LandscapeWorkbench {
     return record.points[0];
   }
   invalidate(revision:number){if(Number.isSafeInteger(revision)&&revision>=this.minimumRevision){this.minimumRevision=revision;this.request++;this.key="";}}
-  async load(box = this.host.box(), force = false) {
+  async load(force = false) {
     const data = this.host.data();
     if (!data || !this.token || data.revision<this.minimumRevision) return;
     const token=this.token;
@@ -459,62 +454,12 @@ export class LandscapeWorkbench {
       }
       return;
     }
-    const key=JSON.stringify([token,data.revision,box]);if(!force&&this.key===key)return;this.key=key;
-    const n=++this.request;
-    const mpp=box.width/Math.max(1,this.svg.clientWidth);
-    const r = await window.campaign.landscapeRegion(token, box,mpp,false);
-    if (n !== this.request || token !== this.token) return;
-    if (!r.ok) {
-      this.records=[];this.raster=undefined;html("land-reload").hidden=false;
-      this.say("Ansicht nicht verfügbar. Ansicht erneut laden.");
-      this.host.error(new Error(r.error));
-      this.host.redraw();
-      return;
-    }
-    let raster: import("./landscape-raster").LandscapeRaster | undefined;
-    {
-      const current=Array.isArray(this.raster)?undefined:this.raster, pixelsPerMeter=512/Math.max(box.width,box.height);
-      const covers=current&&current.revision===r.value.revision&&current.box.x<=box.x&&current.box.y<=box.y&&current.box.x+current.box.width>=box.x+box.width&&current.box.y+current.box.height>=box.y+box.height&&current.width/current.box.width>=pixelsPerMeter/1.5;
-      if(covers)raster=current;
-      else {
-        // Reuse a buffered, aligned loading unit during small camera moves.
-        // Double its pixels as well as its extent; author geometry is unchanged.
-        const buffered={x:Math.floor(box.x/(box.width/2))*(box.width/2)-box.width/2,y:Math.floor(box.y/(box.height/2))*(box.height/2)-box.height/2,width:box.width*2,height:box.height*2};
-        const aspect=box.width/box.height,width=Math.max(1,Math.round(1024*Math.min(1,aspect))),height=Math.max(1,Math.round(1024*Math.min(1,1/aspect)));
-        const image=await window.campaign.landscapeRaster(token,buffered,width,height);
-        if(n!==this.request||token!==this.token)return;
-        if(!image.ok||image.value.revision!==r.value.revision){this.records=[];this.raster=undefined;html('land-reload').hidden=false;this.say('Übersicht nicht verfügbar. Ansicht erneut laden.');this.host.error(new Error(image.ok?'Atlasstand geändert. Übersicht erneut laden.':image.error));this.host.redraw();return;}
-        raster=image.value;
-      }
-    }
-    this.records = r.value.records;
-    this.raster = raster;
-    html("land-reload").hidden = true;
-    const select = html<HTMLSelectElement>("land-object");
-    select.replaceChildren(new Option("Auf der Karte auswählen", ""));
-    for (const record of this.records.filter((r) => r.kind !== "patch"))
-      select.add(
-        new Option(
-          record.name ||
-            (
-              {
-                reference: "Bildvorlage",
-                river: "Fluss",
-                road: "Weg",
-                place: "Ort",
-              } as Record<string, string>
-            )[record.kind],
-          record.id,
-        ),
-      );
-    select.value = this.selected?.id ?? "";
-    const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));for(const id of this.assets.keys())if(!visibleAssets.has(id)&&id!==this.calibration?.record.assetId)this.assets.delete(id);
-    for (const record of this.records)
-      if (record.visible!==false&&record.assetId && !this.assets.has(record.assetId)) {
-        const a = await window.campaign.referenceAsset(token, record.assetId);
-        if (token !== this.token || n !== this.request) return;
-        if (a.ok) this.rememberAsset(record.assetId, a.value);
-      }
+    // The shared Atlas frame owns loading, cancellation and source identity.
+    // Never reconstruct a second landscape view from independent reads.
+    this.request++;
+    this.records=[];this.raster=undefined;this.background=null;this.publishedLayer=undefined;this.key="";this.objectOptions();
+    html("land-reload").hidden=false;
+    this.say("Landschaftsframe nicht verfügbar. Ansicht erneut laden.");
     this.host.redraw();
   }
   private rememberAsset(id:string,data:string){
@@ -657,7 +602,7 @@ export class LandscapeWorkbench {
       this.doc = null;
       html("land-selection").replaceChildren();
       this.key = "";
-      await this.load(this.host.box(), true);
+      await this.load(true);
       this.say("Gespeichert");
       return r;
     } finally {

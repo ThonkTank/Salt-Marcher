@@ -42,10 +42,6 @@ export interface LandscapeRecord {
   visible?: boolean;
   locked?: boolean;
 }
-export interface LandscapeRegion {
-  revision: number;
-  records: LandscapeRecord[];
-}
 export type LandscapeAction =
   | {
       kind: "landscape-batch";
