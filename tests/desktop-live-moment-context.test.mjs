@@ -449,6 +449,15 @@ test('reactivating the same workspace invalidates its previous live failure',asy
 for(const saveFirst of [false,true])test(`a live read cannot overwrite ${saveFirst?'a confirmed save':'newer unsaved scene text'}`,async t=>{
  const x=await setup(t),read=x.window.campaign.live,oldView=await read(x.w.token);let release;const held=new Promise(r=>release=r);x.releases.push(()=>release(oldView));x.window.campaign.live=()=>held;const text='  Neuere Sceneprosa\r\n';const edit=()=>{x.el('running-notes').value=text;x.el('running-notes').oninput();};if(saveFirst)edit();const loading=x.ui.openLive();await settle();if(saveFirst)assert.equal(await x.ui.flushLive(),true);else edit();release(oldView);await loading;await settle();assert.equal(x.el('running-notes').value,text);assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,text);const fresh=new x.CampaignStore(path.join(x.root,'store.sqlite'));try{assert.equal(fresh.live(fresh.activate(x.w.campaign.id).token).scene.notes,text);}finally{fresh.close();}
 });
+test('a refresh retains same-scene prose and its original revision instead of overwriting concurrent content',async t=>{
+ const x=await setup(t),local='Eigene noch offene Szenennotiz',other='Anderswo bestätigte Szenennotiz';
+ x.el('running-notes').value=local;x.el('running-notes').oninput();
+ const scene=x.store.live(x.w.token).scene;
+ x.store.executeLive(x.command({kind:'scene-content',sceneId:scene.id,expectedRevision:scene.revision,title:scene.title,notes:other,readAloud:scene.readAloud,locationId:scene.locationId}));
+ await x.ui.openLive();assert.equal(x.el('running-notes').value,local);
+ assert.equal(await x.ui.flushLive(),false,'the original revision must still protect concurrent server content');
+ assert.equal(x.store.live(x.w.token).scene.notes,other);assert.equal(x.el('running-notes').value,local);assert.equal(x.el('live-reconcile').hidden,false);
+});
 test('a current live load failure stays visible and can be explicitly retried',async t=>{
  const x=await setup(t),read=x.window.campaign.live;x.window.campaign.live=async()=>({ok:false,error:'Aktuelle Scene nicht verfügbar'});await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,true);assert.ok(x.messages.some(m=>m.error&&m.text==='Aktuelle Scene nicht verfügbar'));x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('scene-focus').value,x.scene.id);
 });

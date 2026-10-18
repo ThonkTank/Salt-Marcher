@@ -150,11 +150,14 @@ export async function openLive(planId?: string, visitId?: string) {
     let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     if(recap.readError&&!live.recapDraftError&&!recap.dirty){recap.text=live.recapDraft??{summary:'',handoff:''};recap.basis=live.recapDraft??null;get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     recap.readError=live.recapDraftError;showRecapSave();
+    const dirtyScene=!!sceneDraft&&!!data?.scene&&!equal(content(sceneDraft),content(data.scene));
+    const priorCharacter=originalCharacter(),dirtyCharacter=!!characterDraft&&!!priorCharacter&&!equal(characterDraft.profile,priorCharacter.profile);
     data = live; sources = null;liveSourcesLoading=true;liveSourcesProblem='Vorbereitung wird geladen…';narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
-    characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
+    characterDraft = dirtyCharacter&&characterDraft?.id===selected ? { ...originalCharacter()!, profile:characterDraft!.profile, profileRevision:characterDraft!.profileRevision } : originalCharacter() ? structuredClone(originalCharacter()!) : null;
     // Reopen an existing table without initializing a group or starting a new evening.
     resumed = !!live.scene;
-    sceneDraft = live.scene ? structuredClone(live.scene) : null;
+    // A confirmed refresh must not replace an edited draft of the same owner.
+    sceneDraft = dirtyScene&&sceneDraft?.id===live.scene?.id ? { ...live.scene!, ...content(sceneDraft!), revision:sceneDraft!.revision } : live.scene ? structuredClone(live.scene) : null;
     render();
     const material=acceptLiveSources(owner,sourceRun,preparation);
     if(planId&&(!await material||!current()))return false;
