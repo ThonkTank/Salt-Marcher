@@ -18,6 +18,6 @@ await build({ entryPoints: ['src/app/renderer.ts'], outfile: '.build/desktop/ui/
 await build({entryPoints:['src/app/preset-settings-ui.ts'],outfile:'.build/desktop/ui/preset-settings.js',bundle:true,platform:'browser',format:'esm'});
 await copyFile('src/app/preset-settings.css','.build/desktop/ui/preset-settings.css');
 for (const file of ['index.html', 'app.css','player-display.html','player.css']) await copyFile(`src/app/${file}`, `.build/desktop/ui/${file}`);
-await writeFile('.build/desktop/ui/app.css', (await readFile('src/app/app.css','utf8'))+'\n'+(await readFile('src/app/key-notes.css','utf8'))+'\n'+(await readFile('src/app/markdown-view.css','utf8')));
+await writeFile('.build/desktop/ui/app.css', (await readFile('src/app/app.css','utf8'))+'\n'+(await readFile('src/app/key-notes.css','utf8'))+'\n'+(await readFile('src/app/markdown-view.css','utf8'))+'\n'+(await readFile('src/app/atlas-workspace.css','utf8')));
 await writeFile('.build/desktop/build-info.json', JSON.stringify({ applicationVersion }) + '\n');
 console.log('Desktop build ready: .build/desktop/main.cjs');
