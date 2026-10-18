@@ -328,6 +328,22 @@ keine Mechanik/GMprosa. Statischer Spielerexport verwendet ein ausdrücklich
 gewähltes Veröffentlichungsprofil und ist kein Live-Knowledgesnapshot.
 Leakprüfung umfasst DTO, IPC, Assets, DOM, Fehler, Protokolle und Neustart.
 
+### Atlasoberfläche ändern
+
+| Änderung | Zuständiger Einstieg |
+| --- | --- |
+| Leisten, umgehängte Controls, Kontextpanel | [AtlasWorkspaceLayout](src/app/atlas-workspace-layout.ts); Originalcontrols mit ihren Handlern verschieben, nicht kopieren. |
+| Breiten, Anordnung, responsive Darstellung | [atlas-workspace.css](src/app/atlas-workspace.css); der [Desktopbuild](tools/build-desktop.mjs) hängt sie an `app.css` an. |
+| Werkzeug-/Navigationswechsel und offene Eingaben | [CampaignAtlasWorkbench](src/app/campaign-atlas-ui.ts): `new AtlasWorkspaceLayout` verbindet `prepare`/`tool`/`navigation` mit Flush und `setFamily`. Layout ruft diese Fachgrenze auf. |
+| Kartenfläche nach Paneländerung | [AtlasCanvas.resizeViewport](src/app/atlas-canvas.ts) erhält Weltmittelpunkt und Meter pro CSS-Pixel ohne Historyeintrag. |
+
+Prüfweg: [Kameraregressionen](tests/desktop-atlas-canvas.test.mjs) für Größenwechsel;
+[Layoutprobe](tools/test-desktop-atlas-layout.mjs) für den nativen Editorablauf
+mit synthetischem Profil, Close und frischem Öffnen. Letztere nach
+`npm run desktop:runtime` und `npm run build:desktop` mit
+`node tools/test-desktop-atlas-layout.mjs` starten. Ein Lauf belegt seine
+geprüften Fälle; Bedienqualität und Produktabnahme bleiben gesondert.
+
 ## Erweiterungen, externe Anbindungen und Auslieferung
 
 Interne Fachmodule sind normale versionierte Komponenten. Neue Content-/Masken-
