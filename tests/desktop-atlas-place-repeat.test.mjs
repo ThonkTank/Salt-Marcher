@@ -13,7 +13,9 @@ const {CampaignStore}=require('../.build/place-repeat-store.cjs'),{LandscapeWork
 function setup(t){
  const dir=mkdtempSync(tmpdir()+'/place-repeat-'),store=new CampaignStore(dir+'/campaign.sqlite'),cam=store.create('Waldpass'),w=store.activate(cam.id);
  const {window,document}=parseHTML('<div id="atlas-tool-fields"></div><input id="atlas-new-name"><select id="atlas-hex-level"><option value="0">0</option></select><canvas id="map"></canvas>');
- const previous={window:globalThis.window,document:globalThis.document,DOMPoint:globalThis.DOMPoint};Object.assign(globalThis,{window,document,DOMPoint:class{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return this;}}});
+ const previous={window:globalThis.window,document:globalThis.document,DOMPoint:globalThis.DOMPoint,Option:globalThis.Option};Object.assign(globalThis,{window,document,DOMPoint:class{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return this;}},Option:function(text,value){const option=document.createElement('option');option.textContent=text;option.value=value;return option;}});
+ Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.getAttribute('data-value')??this.querySelector('option')?.value??'';},set(value){this.setAttribute('data-value',value);}});
+ window.HTMLSelectElement.prototype.add=function(option){this.append(option);};
  window.campaign={deskContent:async(token,ref)=>({ok:true,value:store.deskContent(token,ref)})};
  const svg=document.getElementById('map');
  const box={x:0,y:0,width:30000,height:20000},commands=[];
@@ -32,6 +34,7 @@ function setup(t){
 test('consecutive place clicks create distinct canonical locations without rewriting the previously inspected place',async t=>{
  const x=setup(t);x.name('Fährdorf');x.click(100,100);await x.view.finish();
  const first=x.view.records[0],original=x.store.deskContent(x.w.token,{kind:'location',id:first.locationId});
+ assert.equal(x.document.getElementById('land-object').value,first.id,'the newly inspected canonical place appears in the object list');
  x.name('Alter Wachturm');x.click(19000,100);assert.match(x.document.getElementById('land-status').textContent,/Ortspunkt gesetzt/);assert.equal(x.document.getElementById('land-selection').children.length,0);await x.view.finish();
  assert.equal(x.view.records.length,2);assert.equal(x.commands[1].expectedRevision,null);assert.notEqual(x.commands[1].record.id,first.id);
  assert.deepEqual(x.store.deskContent(x.w.token,{kind:'location',id:first.locationId}),original);
