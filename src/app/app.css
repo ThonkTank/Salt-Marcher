@@ -256,7 +256,7 @@ button.text-reference-inline {display:inline;padding:0;border:0;border-bottom:1p
 .live-context>#live-party{flex-basis:100%;font-size:.85rem;margin:0}.live-context>#live-clock{margin:0}.live-context>#time-controls{margin:.25rem 0}.live-context>#time-controls[open]{flex-basis:100%}
 .live-desk-columns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(18rem,1fr);gap:1.5rem;align-items:start}
 .live-desk-writing,.live-desk-reference{min-width:0}
-.live-scene-writing{padding:.75rem 0}.live-scene-writing>label:first-child{margin-top:0}
+.live-scene-writing{padding:.25rem 0}.live-scene-writing>label:first-child{margin-top:0}
 .live-scene-writing #running-read-aloud{font-family:"Noto Serif",serif;background:#f5f8f2;min-height:5rem}
 .live-scene-writing #running-notes{min-height:10rem}
 .live-desk-reference{padding:.75rem 0 .75rem 1rem;border-left:1px solid var(--line)}
@@ -265,9 +265,9 @@ button.text-reference-inline {display:inline;padding:0;border:0;border-bottom:1p
 .live-desk-reference #scene-desk{padding:1rem 0;border:0;border-top:1px solid var(--line);margin-top:1rem;background:transparent}
 .live-desk-reference #scene-desk h3{margin-bottom:.35rem}
 .live-desk-reference #desk-refresh{font-size:.85rem}.live-desk-reference #desk-search-form{display:grid;grid-template-columns:minmax(0,1fr) auto}.live-desk-reference #desk-search-kind{grid-column:1/-1}
-#live-session-panel{margin:.5rem 0 1rem;padding:.5rem 0;border-bottom:1px solid var(--line)}
+#live-session-panel{margin:.25rem 0;padding:.25rem 0;border-bottom:1px solid var(--line)}
 #live-session-panel>.toolbar h3{margin:0 auto 0 0}#live-session-status:empty,#live-session-result:empty{display:none}
-#live-session-status{margin:.35rem 0}#running-editor #live-recap-details{margin:.5rem 0}
+#live-session-status{margin:.25rem 0}#live-session-result{margin:.25rem 0}#running-editor #live-recap-details{margin:.25rem 0}
 #live-session-end{font-weight:600}#live-moment-panel{margin-top:.5rem}
 #live-workspace.packet-at-desk{display:grid}
 #live-workspace.packet-at-desk .live-desk-columns{grid-template-columns:minmax(0,1fr)}

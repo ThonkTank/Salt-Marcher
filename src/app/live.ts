@@ -77,6 +77,7 @@ async function saveRecap(w:WorkspaceGeometry,state:RecapWork):Promise<boolean>{
  state.basis=text;state.error='';if(equal(state.text,text))state.dirty=false;if(context?.campaign.id===w.campaign.id)showRecapSave();}return true;})();
  state.saving=task;try{return await task;}finally{if(state.saving===task)state.saving=undefined;}
 }
+let readAloudOwner: string | null = null;
 let selected: string | null = null, characterDraft: Character | null = null, sceneDraft: LiveScene | null = null;
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
 let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
@@ -311,7 +312,7 @@ async function createNewCharacter(active:boolean){
     if(active&&current()){
       const joined=await execute({kind:'membership',characterId:ack.character.id,expectedRevision:ack.character.membershipRevision,expectedRosterRevision:data!.rosterRevision,active:true,targetSceneId:basis.sceneId,expectedFocusRevision:basis.focusRevision});
       if(context?.token!==basis.token)return;
-      if(joined?.character?.active&&current()){get('character-result').textContent=name+' ist heute dabei.';await openPartyHealth(ack.character.id,basis.token,basis.sceneId!);return;}
+      if(joined?.character?.active&&current()){get('character-result').textContent=name+' ist heute dabei.';tell(name+' ist heute dabei. HP und Zustände kannst du an der Figur ergänzen.');get('live-party-new').focus({preventScroll:true});return;}
     }
     if(context?.token!==basis.token)return;
     get('character-result').textContent=active?'Figur im Roster angelegt; Aktivierung nicht bestätigt. Prüfe den Speicherstatus und aktiviere sie anschließend gezielt.':'Figur im Roster angelegt. Du kannst sie hier für heute aktivieren oder ihr Profil ergänzen.';
@@ -476,7 +477,7 @@ export async function useLiveReferenceReadAloud(text:string,title:string,expecte
  if(!token||!current()||!await ensureLiveRuntime()||!current()||!await flushLive()||!current())throw new Error('Die laufende Gruppe hat sich geändert. Schnellsuche neu öffnen.');
  useKnowledgeReadAloud(text,title);if(!await flushLive())throw new Error('Vorlesetext konnte noch nicht gespeichert werden. Eingabe bleibt offen.');
 }
-function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
+function useKnowledgeReadAloud(text:string,title:string){if(!sceneDraft)return;sceneDraft={...sceneDraft,readAloud:text};get<HTMLTextAreaElement>('running-read-aloud').value=text;get<HTMLDetailsElement>('running-read-aloud-details').open=true;schedule();get<HTMLTextAreaElement>('running-read-aloud').focus();tell('Vorlesetext aus „'+title+'“ übernommen – wird automatisch gespeichert.');}
 function loadLiveNarrative(noteId:string){if(!context||narrativeCache.has(noteId)||narrativeProblems.has(noteId)||narrativeLoading.has(noteId))return;const token=context.token,generation=narrativeGeneration;narrativeLoading.add(noteId);void window.campaign.narrative(token,noteId).then(result=>{if(context?.token!==token||generation!==narrativeGeneration)return;if(result.ok)narrativeCache.set(noteId,result.value);else narrativeProblems.set(noteId,result.error);}).catch(error=>{if(context?.token===token&&generation===narrativeGeneration)narrativeProblems.set(noteId,(error as Error).message);}).finally(()=>{if(generation===narrativeGeneration){narrativeLoading.delete(noteId);renderLiveKnowledge();}});}
 function narrativeFacts(view:NarrativeView){const state=view.state,location=state.locationId?sources?.locations.find(row=>row.document.id===state.locationId)?.document.name??'Ort nicht verfügbar':'Ohne Ortsbindung',contributors=state.contributors.map(id=>data?.roster.find(character=>character.id===id)?.profile.name??'Unbekannte Figur');return(state.status==='closed'?'Abgeschlossen':'Offen')+' · '+location+(contributors.length?' · Beteiligte: '+contributors.join(', '):'')+(state.poolXp?' · '+state.poolXp+' XP vorgemerkt':'')+(view.award?' · Belohnung vergeben':'');}
 function renderLiveKnowledge(){
@@ -497,6 +498,13 @@ function renderScene() {
   if(preparedNotesSceneId!==data?.scene?.id){preparedNotesSceneId=data?.scene?.id??null;preparedNoteIds.clear();}
   get('live-focus-bar').hidden = !resumed || !sceneDraft;
   get('running-editor').hidden = !resumed || !sceneDraft; get('live-start-hint').hidden = resumed; get('live-continue').hidden = resumed;
+  get('live-play-heading').hidden = resumed;
+  const proseOwner = context && sceneDraft ? context.token + ':' + sceneDraft.id : null;
+  const readAloud = get<HTMLTextAreaElement>('running-read-aloud'), nextReadAloud = sceneDraft?.readAloud ?? '';
+  if (readAloudOwner !== proseOwner || !readAloud.value.trim() && nextReadAloud.trim()) {
+    get<HTMLDetailsElement>('running-read-aloud-details').open = !!nextReadAloud.trim();
+    readAloudOwner = proseOwner;
+  }
   get<HTMLInputElement>('running-title').value = sceneDraft?.title ?? ''; get<HTMLTextAreaElement>('running-notes').value = sceneDraft?.notes ?? ''; get<HTMLTextAreaElement>('running-read-aloud').value=sceneDraft?.readAloud??'';
   get<HTMLButtonElement>('running-player-location').disabled=!sceneDraft?.locationId;
   renderLiveMomentDraft();
