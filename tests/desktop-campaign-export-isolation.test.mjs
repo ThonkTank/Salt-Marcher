@@ -51,3 +51,10 @@ test('independent acceptance records local creation once without importing sourc
   const fresh=new CampaignStore(path.join(x.root,'usage-target.sqlite'));try{assert.deepEqual(fresh.campaignOverview().find(c=>c.id===copy.id),usage);}finally{fresh.close();}
  }finally{target.close();}
 });
+
+test('export dialog identity is activation-bound and does not require reading damaged campaign content',async t=>{
+ const x=fixture(t);x.store.db.prepare("UPDATE world_note SET checksum='damaged' WHERE id=?").run(x.id);
+ const original=x.store.db.serialize();assert.deepEqual(x.store.campaignIdentity(x.w.token),x.cam);assert(x.store.db.serialize().equals(original),'choosing an export destination must not repair or copy campaign content');
+ await assert.rejects(x.store.campaignSnapshot(x.w.token,path.join(x.root,'damaged.sqlite')),/Notiz/);noCandidates(x.root);
+ const next=x.store.activate(x.cam.id);assert.throws(()=>x.store.campaignIdentity(x.w.token),/früheren Kampagnenaktivierung/);assert.deepEqual(x.store.campaignIdentity(next.token),x.cam);
+});
