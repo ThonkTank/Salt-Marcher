@@ -1285,3 +1285,17 @@ test('cancelling an image frame retains the prior frame and leaving the campaign
   x.click('atlas-export-frame');await until(()=>!!s.atlas.exportFrameDraft);s.atlas.activate(x.current());assert.equal(s.atlas.exportFrameDraft,null);
  }finally{await s.close();}
 });
+
+for(const mode of ['cancel','stale','floor','reverse'])test(`shared room rectangle preserves gesture ownership (${mode})`,async()=>{
+ const x=await setup(),s=await interiorSurface(x);try{
+  const f=s.atlas.frame(s.atlas.scopeId),a={x:f.x-4,y:f.y-3},b={x:f.x+4,y:f.y+3};
+  s.tool('room-rectangle');x.enter('drawing-room-name','Owned rectangle');
+  s.point('pointerdown',mode==='reverse'?b:a);s.point('pointermove',mode==='reverse'?a:b);
+  if(mode==='cancel')s.atlas.cancel();if(mode==='stale')s.atlas.geometryCurrent=()=>false;if(mode==='floor')s.atlas.floorId='another-floor';
+  s.point('pointerup',mode==='reverse'?a:b);await x.drain();await settle();
+  const rooms=x.store.campaignAtlas(x.current().token).workspace.rooms;
+  if(mode==='reverse'){assert.equal(rooms.length,1);assert.equal(rooms[0].name,'Owned rectangle');assert.equal(s.atlas.family,'interior');assert.equal(s.atlas.geometryCurrent(),true,'the room commit must publish the new source fence');}
+  else assert.equal(rooms.length,0);
+  assert.equal(s.atlas.rectangleDrag,null);
+ }finally{await s.close();}
+});

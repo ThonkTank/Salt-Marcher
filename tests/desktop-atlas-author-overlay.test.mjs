@@ -90,3 +90,10 @@ test('an object-only interior paints its geometry instead of reducing it to an e
  const f=fixture(t);f.ui.selection=null;f.ui.opts.roomDraft=()=>null;f.ui.data.region.raster=undefined;f.ui.data.region.scopeBounds={local:{x:1,y:2,width:4,height:1}};f.ui.data.geometry.drawing={elements:[{id:'wall',kind:'wall',scopeId:'local',floorId:'ground',archived:false,points:[{x:1,y:2},{x:5,y:2}],color:'#123456',width:.2,height:6}]};
  const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true');assert(all(base).some(n=>n.data.kind==='element'&&n.data.id==='wall'));
 });
+
+test('landscape callers receive the original save failure instead of losing the reason in a null acknowledgement',async t=>{
+ const f=fixture(t),messages=[],status=f.document.createElement('p'),previousEvent=global.Event;t.after(()=>global.Event=previousEvent);global.Event=f.document.defaultView.Event;status.id='atlas-save-status';f.document.body.append(status);
+ f.ui.owner={token:'token',campaign:{id:'campaign'}};f.ui.render=()=>{};f.ui.error=e=>messages.push(e.message);window.campaign={executeAtlasCommit:async()=>({ok:false,error:'Atlas inzwischen geändert. Ausschnitt erneut laden.'})};
+ await assert.rejects(()=>f.ui.write({kind:'undo'},false,true),/Atlas inzwischen geändert/);assert.equal(f.ui.busy,false);assert.equal(messages.length,1);
+ assert.equal(await f.ui.write({kind:'undo'}),null,'other author paths keep their existing nullable failure contract');assert.equal(f.ui.busy,false);
+});

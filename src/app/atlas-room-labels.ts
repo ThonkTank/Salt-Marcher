@@ -12,5 +12,5 @@ export function appendAtlasRoomLabels(root:PaintTarget,room:RoomGeometry,mpp:num
  const points=vertices.map(project);
  if((Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x)))/mpp<=60)return;
  let at;try{at=project(centerInRoom(room));}catch{return;}
- appendPaint(root,atlasPaint('text',{x:at.x,y:at.y-8*mpp,pointer:false,data:{roomName:room.id},style:{fontSize:12*mpp,textAlign:'center',stroke:'#f2eee3',lineWidth:3*mpp,fill:'#283d3b'}},room.name.slice(0,40)));
+ appendPaint(root,atlasPaint('text',{x:at.x,y:at.y-8*mpp,pointer:false,data:{roomName:room.id},style:{fontSize:12*mpp,textAlign:'center',stroke:'#f2eee3',lineWidth:3*mpp,lineJoin:'round',fill:'#283d3b'}},room.name.slice(0,40)));
 }
