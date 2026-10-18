@@ -5,7 +5,7 @@ import {renderDungeonPace,dungeonPaceDirty,dungeonPaceDraft,acceptDungeonPace,cl
 import {drawDungeonContents} from './dungeon-content-live-ui';
 import type {DungeonMovement} from './volume-contracts';
 import type {WorkspaceGeometry} from './contracts';
-import type {DungeonView,DungeonPose,DungeonPreview,DungeonAction,DungeonSenseAction,DungeonTraceRules} from './dungeon-contracts';
+import type {DungeonView,DungeonPose,DungeonPreview,DungeonAction,DungeonSenseAction,DungeonTraceRules,DungeonCommand} from './dungeon-contracts';
 import {centerInRoom} from './dungeon-model';
 import {trackAt} from './track-model';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
@@ -35,37 +35,76 @@ function paintField(id:string,next:FieldValue){
 function dirtyFields(ids?:readonly string[]){return(!ids&&dungeonPaceDirty())||(ids??[...traceFields,...senseFields]).some(id=>fieldBase.has(id)&&fieldValue(id)!==fieldBase.get(id));}
 function owner(){return{generation,token:workspace?.token,sceneId:data?.sceneId};}
 type Owner=ReturnType<typeof owner>;
+interface Attempt {command:DungeonCommand;fields:Map<string,FieldValue>;track:TrackFields|null;after?:((o:Owner)=>void);outcome?:'applied'|'not-applied'}
+let uncertain:Attempt|null=null;
+function recoveryNotice(text='Ausgang des Dungeonauftrags unbekannt. Speicherstand klären; weitere Änderungen sind gesperrt.'){
+ el('dungeon-reconcile').hidden=!uncertain;dungeonTravelReadState(contextReady&&!uncertain,text);
+}
+
 function current(o:Owner){return generation===o.generation&&workspace?.token===o.token&&data?.sceneId===o.sceneId;}
-function run(fn:(o:Owner)=>Promise<boolean>){
- if(job||!contextReady)return Promise.resolve(false);const o=owner();
+function run(fn:(o:Owner)=>Promise<boolean>,recovery=false){
+ if(job||!recovery&&(!contextReady||uncertain))return Promise.resolve(false);const o=owner();
  const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o))status(e.message,true);return false;}).finally(()=>{if(job===task)job=null;});
  job=task;return task;
 }
 function invalidatePreview(){routeIntent++;preview=null;el('dungeon-preview').textContent='';el<HTMLButtonElement>('dungeon-confirm').disabled=true;}
+function acceptReply(attempt:Attempt,value:DungeonView,o:Owner,recovered=false){
+ const captured=attempt.command.action;
+ if(value.sceneId!==o.sceneId){contextReady=false;playback.stop();dungeonTravelReadState(false,'Fokusgruppe geändert. Offene Eingaben behalten und anschließend aktualisieren.');status('Aktion für die ursprüngliche Gruppe gespeichert. Der Fokus hat gewechselt; offene Eingaben behalten und anschließend aktualisieren.',true);return false;}
+ if(captured.kind==='pace-settings'&&value.travelPace&&(!recovered||value.travelPace.settings.revision===captured.settings.revision+1&&canonicalJson({...value.travelPace.settings,revision:captured.settings.revision})===canonicalJson(captured.settings)))acceptDungeonPace(captured.settings,value.travelPace);
+ data=value;confirmedFields=attempt.fields;
+ if(captured.kind==='track-correct'&&attempt.track){
+  const draft=trackDrafts.get(captured.id),track=data.tracks.find(t=>t.id===captured.id);
+  if(draft&&track){const base={publicText:track.publicText,dc:String(track.dc),hidden:track.hidden??false};if(sameTrack(draft.values,attempt.track)||sameTrack(draft.values,base))trackDrafts.delete(captured.id);else draft.base=base;}
+ }
+ try{draw();}finally{confirmedFields=null;}
+ if(current(o))attempt.after?.(o);
+ return true;
+}
 function perform(a:DungeonAction,after?:(o:Owner)=>void){
- const captured=structuredClone(a);
- const fields=a.kind==='trace-rules'?traceFields:a.kind==='senses'?senseFields:[];
- const submitted=new Map(fields.map(id=>[id,fieldValue(id)]));
- const submittedTrack=a.kind==='track-correct'?{...(trackDrafts.get(a.id)?.values??{publicText:a.publicText,dc:String(a.dc),hidden:a.hidden})}:null;
+ const captured=structuredClone(a),fields=a.kind==='trace-rules'?traceFields:a.kind==='senses'?senseFields:[];
+ const submitted=new Map(fields.map(id=>[id,fieldValue(id)])),track=a.kind==='track-correct'?{...(trackDrafts.get(a.id)?.values??{publicText:a.publicText,dc:String(a.dc),hidden:a.hidden})}:null;
  return run(async o=>{
   const w=workspace;if(!w)return false;
   ++readRequest;invalidatePreview();
-  const result=await window.campaign.executeDungeon({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:captured});
+  const attempt:Attempt={command:{commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:captured},fields:submitted,track,after};
+  let result;
+  try{result=await window.campaign.executeDungeon(attempt.command);}
+  catch(error){
+   if(current(o)){uncertain=attempt;contextReady=false;playback.stop();recoveryNotice();status('Ausgang des Dungeonauftrags unbekannt. Speicherstand klären. '+(error as Error).message,true);}
+   return false;
+  }
   if(!current(o))return false;
   if(!result.ok)throw new Error(result.error);
-  if(result.value.sceneId!==o.sceneId){status('Aktion für die ursprüngliche Gruppe gespeichert. Der Fokus hat gewechselt; offene Eingaben behalten und anschließend aktualisieren.',true);return false;}
-  if(captured.kind==='pace-settings'&&result.value.travelPace)acceptDungeonPace(captured.settings,result.value.travelPace);
-  data=result.value;confirmedFields=submitted;
-  if(captured.kind==='track-correct'&&submittedTrack){
-   const draft=trackDrafts.get(captured.id),track=data.tracks.find(t=>t.id===captured.id);
-   if(draft&&track){const base={publicText:track.publicText,dc:String(track.dc),hidden:track.hidden??false};if(sameTrack(draft.values,submittedTrack)||sameTrack(draft.values,base))trackDrafts.delete(captured.id);else draft.base=base;}
-  }
-  try{draw();}finally{confirmedFields=null;}
-  if(current(o))after?.(o);
-  return true;
+  return acceptReply(attempt,result.value,o);
  });
 }
-function playbackFrame():PlaybackFrame|null{const j=data?.journey;if(!workspace||!data?.travelPace||!j||j.status!=='active'||document.hidden||dungeonPaceDirty())return null;return{key:workspace.token+':'+data.sceneId+':'+j.id,revision:j.revision,nextIndex:j.revision,seconds:3600};}
+async function reconcileDungeon(){
+ const attempt=uncertain;if(!attempt)return;
+ await run(async o=>{
+  if(!attempt.outcome){
+   const result=await window.campaign.dungeonCommandState(attempt.command);
+   if(!current(o)||uncertain!==attempt)return false;
+   if(!result.ok)throw new Error(result.error);
+   if(!['applied','not-applied','conflict'].includes(result.value.outcome))throw new Error('Unbekannte Antwort auf den Dungeonauftrag. Ursprünglichen Auftrag erhalten.');
+   if(result.value.outcome==='conflict')throw new Error('Dungeonauftragskennung gehört zu anderem Inhalt. Ursprünglichen Auftrag erhalten.');
+   attempt.outcome=result.value.outcome;
+  }
+  const result=await window.campaign.dungeon(attempt.command.token);
+  if(!current(o)||uncertain!==attempt)return false;
+  if(!result.ok)throw new Error((attempt.outcome==='applied'?'Speicherung bestätigt. ':'Nicht gespeichert. ')+'Dungeonansicht erneut laden: '+result.error);
+  if(result.value.sceneId!==o.sceneId){
+   uncertain=null;el('dungeon-reconcile').hidden=true;
+   await openDungeon(liveContext??undefined);
+   status(attempt.outcome==='applied'?'Auftrag der ursprünglichen Gruppe gespeichert. Neuen Gruppenkontext prüfen; offene Eingaben bleiben erhalten.':'Ursprünglicher Auftrag nicht gespeichert. Neuen Gruppenkontext prüfen; offene Eingaben bleiben erhalten.');return true;
+  }
+  uncertain=null;contextReady=true;recoveryNotice('');
+  if(attempt.outcome==='applied')acceptReply(attempt,result.value,o,true);else{data=result.value;draw();}
+  status(attempt.outcome==='applied'?'Dungeonauftrag gespeichert. Bestätigter Stand geladen; Wiedergabe bleibt angehalten.':'Dungeonauftrag wurde nicht gespeichert. Eingaben bleiben erhalten; bei Bedarf erneut ausdrücklich ausführen.');return true;
+ },true);
+}
+
+function playbackFrame():PlaybackFrame|null{const j=data?.journey;if(uncertain||!contextReady||!workspace||!data?.travelPace||!j||j.status!=='active'||document.hidden||dungeonPaceDirty())return null;return{key:workspace.token+':'+data.sceneId+':'+j.id,revision:j.revision,nextIndex:j.revision,seconds:3600};}
 const playback=journeyPlayback({read:playbackFrame,step:async basis=>{const frame=playbackFrame(),j=data?.journey;if(!frame||!j||frame.key!==basis.key||frame.revision!==basis.revision)return false;return await perform({kind:'round',sceneId:j.request.sceneId,id:j.id,expectedRevision:j.revision,expectedSettingsRevision:data!.travelPace!.settings.revision});},changed:renderPlayback});
 function renderPlayback(){if(!document.getElementById('dungeon-play'))return;const j=data?.journey,round=data?.travelPace?.settings.explorationRoundSeconds??600,elapsed=j?.segmentElapsedSeconds??0;el('dungeon-round-status').textContent='Erkundungsrunde '+round+' s · '+(playback.running?'Wiedergabe '+playback.speed+'× läuft':j?.status==='active'?'Wiedergabe pausiert':'Wiedergabe angehalten')+(elapsed?' · Unterwegs zum nächsten Rasterpunkt: '+elapsed+' / '+j!.segmentSeconds[j!.nextIndex]+' s':'');el('dungeon-play').textContent=playback.running?'Wiedergabe anhalten':'Wiedergabe starten';el<HTMLButtonElement>('dungeon-play').disabled=!(j?.status==='active')||dungeonPaceDirty();el<HTMLButtonElement>('dungeon-round-step').disabled=!(j?.status==='active')||dungeonPaceDirty()||playback.busy;}
 async function explicitTravel(action:(j:NonNullable<DungeonView['journey']>)=>DungeonAction){const o=owner();playback.stop();await playback.settled();if(!current(o)||!data?.journey)return;await perform(action(data.journey));}
@@ -141,7 +180,7 @@ function drawTraceRules(){
 }
 function drawTarget(){if(data&&target)el('dungeon-target').textContent='Ziel '+target.x.toFixed(2)+', '+target.y.toFixed(2)+' m · Höhe '+target.z.toFixed(2)+' m';}
 export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>void=()=>{}){navigateCombat=combatNavigation;
- status=notify;
+ status=notify;el('dungeon-reconcile').onclick=()=>void reconcileDungeon();
  document.addEventListener('visibilitychange',()=>{if(document.hidden)playback.stop();});
  window.addEventListener('blur',()=>playback.stop());
  const bind=(id:string,create:()=>DungeonAction|null)=>{el(id).onclick=()=>{const a=create();if(a)perform(a);};};
@@ -155,7 +194,7 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
   drawTraceRules();
  };
  el('dungeon-input-discard').onclick=()=>{
-  if(job){status('Laufende Aktion abwarten.',true);return;}
+  if(job||uncertain){status('Laufende Aktion abwarten oder Speicherstand klären.',true);return;}
   fieldBase.clear();trackDrafts.clear();clearDungeonPace();if(!contextReady){void openDungeon(liveContext??undefined).catch(e=>status(e.message,true));return;}renderDungeonPace(data?.travelPace,invalidatePreview,true);draw();
  };
  bind('dungeon-trace-rules-save',()=>{
@@ -228,10 +267,11 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
  el('dungeon-edit').onclick=()=>el('atlas-tab').click();
 }
 export function activateDungeon(w:WorkspaceGeometry){
- playback.stop();contextReady=false;liveContext=null;dungeonTravelReadState(false,'Dungeonkontext noch nicht geladen.');generation++;readRequest++;routeIntent++;job=null;workspace=w;data=null;target=null;preview=null;traceStart=null;fieldBase.clear();trackDrafts.clear();confirmedFields=null;clearDungeonPace();
+ playback.stop();uncertain=null;el('dungeon-reconcile').hidden=true;contextReady=false;liveContext=null;dungeonTravelReadState(false,'Dungeonkontext noch nicht geladen.');generation++;readRequest++;routeIntent++;job=null;workspace=w;data=null;target=null;preview=null;traceStart=null;fieldBase.clear();trackDrafts.clear();confirmedFields=null;clearDungeonPace();
  el('dungeon-trace-start-label').textContent='';
 }
 export async function openDungeon(expectedSceneId?:string){
+ if(uncertain){recoveryNotice();return;}
  playback.stop();if(!workspace)return;contextReady=false;dungeonTravelReadState(false,'Dungeonkontext wird geladen …');invalidatePreview();const w=workspace,o=owner(),request=++readRequest;
  const result=await window.campaign.dungeon(w.token);
  if(!current(o)||request!==readRequest)return;
@@ -244,8 +284,9 @@ export async function openDungeon(expectedSceneId?:string){
  data=result.value;contextReady=true;liveContext=data.sceneId;dungeonTravelReadState(true);invalidatePreview();draw();
 }
 export async function flushDungeon(){
+ if(uncertain){status('Ausgang des Dungeonauftrags zuerst mit Speicherstand klären prüfen.',true);return false;}
  playback.stop();await playback.settled();const o=owner(),pending=job;if(pending&&!await pending)return false;
- if(!current(o))return false;
+ if(!current(o)||uncertain)return false;
  if(dirtyFields()||trackDrafts.size){status('Offene Dungeon-Einstellungen zuerst anwenden oder verwerfen.',true);return false;}
  return true;
 }

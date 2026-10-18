@@ -291,6 +291,31 @@ Unklare überlagerte Treffer sind ausdrücklich wählbar, keine unsichtbare
 global feste City-vor-Dungeon-Priorität. Fehler bewahrt die offene Eingabe und
 die ursprüngliche Zielbindung. Ein stale Generatorresultat wird nie angewandt.
 
+Dungeonreisen verwenden die vorhandenen transaktionalen `dungeon_receipt`-
+Belege auch nach verlorener IPC-Antwort: Die UI hält den ursprünglichen Auftrag
+mit Kennung und Inhalt fest, stoppt Wiedergabe und sperrt weitere Dungeonwrites
+sowie Verlassen. „Speicherstand klären“ fragt über den bewachten Read
+`dungeonCommandState` ausschließlich den Beleg ab, danach den aktuellen
+`DungeonView`. Gespeichert, nicht gespeichert und widersprüchliche Kennung sind
+verschiedene Ergebnisse; eine Wiederholung der Reise findet dabei nicht statt.
+Ein fehlgeschlagener Status-/Viewread behält den Auftrag. Ein bereits bestätigtes
+Belegergebnis benötigt nur noch einen erneuten Viewread. Neuere Eingaben und
+ihre Revisionsbindung bleiben erhalten; eine neue Fokusgruppe erhält keine
+Schreibbefugnis aus dem alten Gruppenstand.
+
+Dieser Pfad gilt für die gemeinsamen `executeDungeon`-Aktionen. Er ändert keine
+Belegformate oder Datenbestände. Andere Autorenprotokolle einschließlich der
+älteren direkten Featureaktivierung bleiben eigene Verträge. Teilrunden und
+bestätigte Reisezeit kommen nach Neustart aus SQLite; Wiedergabe startet nicht
+selbst. Der unklare UI-Auftrag selbst ist nur bis zum Beenden im Speicher.
+Die aktuelle Ansicht lädt weiterhin den vollständigen `DungeonView`; begrenzte
+Reads und die Größen-/Laufzeitqualifikation bleiben davon getrennte Arbeit.
+Regressionen in `desktop-dungeon-pace.test.mjs` prüfen die Antwortverluste samt
+Lesefehlern, Revisionskonflikten und neueren Eingaben. Der native Ablauf
+`tools/test-desktop-dungeon-recovery.mjs` prüft gespeicherte Runde → verlorene
+Antwort → lesende Klärung → normales Schließen → Neustart → exakte Ankunft
+bei 100 % und 200 %, einschließlich unveränderter Autoreninhalte.
+
 ## Größen, Abfragen und Umsetzung
 
 Sparse Records/Chunks und lokale Indizes sind von Anfang an nötig, damit
