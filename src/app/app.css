@@ -355,6 +355,7 @@ body.has-workspace{padding-left:210px}body>header{position:sticky;top:0;z-index:
 #generation-tools>summary{cursor:pointer;font-weight:600;padding:.75rem;border-top:1px solid var(--line)}
 #live-workspace{scroll-margin-top:var(--workspace-content-offset)}
 #combat-panel{scroll-margin-top:calc(var(--workspace-content-offset) + var(--live-sticky-height))}
+#combat-attack-effect{scroll-margin-top:calc(var(--workspace-content-offset) + var(--live-sticky-height,0px))}
 .combat-desk{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1rem;align-items:start}
 .combat-roster,.combat-detail{min-width:0}#combat-table{font-size:.88rem;margin:.25rem 0}
 #combat-table th,#combat-table td{padding:.4rem .3rem;overflow-wrap:anywhere}
