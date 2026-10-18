@@ -606,6 +606,7 @@ test('rotated house room labels remain on the screen axes at projected room posi
   assert.ok(Math.abs(Number(number.getAttribute('y'))-(projected.y-Number(s.svg.dataset.atlasOriginY)))<1e-7);
   const box={x:frame.x-15,y:frame.y-15,width:30,height:30},mpp=box.width/2048,atlas=x.store.campaignAtlas(x.current().token),options={grid:false,level:0,references:false,floorId:'ground',roofs:false,scopeId:room.scopeId,labelUnitsPerPixel:box.width/660};
   const exported=x.ui.atlasRegionSVG(atlas,[],box,2048,new Map(),options),exportLabels=exported.querySelector('[data-atlas-room-labels="'+room.scopeId+'"]'),exportName=exportLabels.querySelector('[data-room-name]'),exportNumber=exportLabels.querySelector('[data-room-number]');
+  assert.equal(exported.lastElementChild,exportLabels,'Room labels must paint after the filled room geometry, not underneath it');
   assert.equal(exportLabels.getAttribute('transform'),null);assert.equal(exportName.textContent,'Taproom');assert.equal(Number(exportName.getAttribute('font-size')),12*options.labelUnitsPerPixel);
   assert.ok(Math.abs(Number(exportNumber.getAttribute('x'))-(projected.x-box.x))<1e-7);assert.ok(Math.abs(Number(exportNumber.getAttribute('y'))-(projected.y-box.y))<1e-7);
   assert.equal(exported.querySelector('[data-city-unit="'+u.id+'"]').querySelector('text'),null);
@@ -1236,4 +1237,51 @@ test('a failed house-clearance read cannot autosave a broadened exact-selection 
   const city=x.store.city(x.current().token,x.cityIds.one),road=city.units.find(u=>u.kind==='road');await x.ui.openCityReference(city.header.id,road.id,true,true);const before=x.store.db.serialize();
   x.window.campaign.city=async()=>({ok:false,error:'Reader unavailable'});x.enter('city-unit-width','132');await settle();assert.equal(await x.ui.flushCity(),false);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.document.getElementById('city-unit-width').value,'132');assert(x.messages.some(m=>m.message==='Reader unavailable'));
  }finally{await x.cleanup();}
+});
+
+
+test('direct room selection retains the camera and room-edit history never restores a stale city task',async()=>{
+ const x=await setup(),s=await interiorSurface(x);
+ try{
+  const f=s.atlas.frame(s.atlas.scopeId);await s.rectangle('Archive for printing',{x:f.x-4,y:f.y-3},{x:f.x+4,y:f.y+3});
+  const original=x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.name==='Archive for printing');
+  await s.atlas.navigate('room',original.id);s.atlas.camera.set({x:f.x-12,y:f.y-9,width:24,height:18},false);await s.atlas.refresh();
+  const camera={...s.atlas.camera.view};
+  await s.atlas.chooseAt({x:f.x,y:f.y},'geometry',{kind:'room',id:original.id});
+  assert.deepEqual(s.atlas.camera.view,camera,'A visible room click must not refit the camera');
+  assert.equal(s.atlas.cityId,x.cityIds.one,'The stale city is retained only as context, not as the active task');
+  x.document.getElementById('drawing-append').checked=true;s.tool('room-rectangle');
+  s.point('pointerdown',{x:f.x+2,y:f.y-3});s.point('pointermove',{x:f.x+8,y:f.y+3});s.point('pointerup',{x:f.x+8,y:f.y+3});
+  const room=()=>x.store.campaignAtlas(x.current().token).workspace.rooms.find(r=>r.id===original.id);
+  await until(()=>room().revision>original.revision);await x.drain();await settle();const enlarged=structuredClone(room().polygons);assert.notDeepEqual(enlarged,original.polygons);
+  await s.atlas.history('undo');assert.equal(s.atlas.family,'interior');assert.deepEqual(room().polygons,original.polygons);
+  await s.atlas.history('redo');assert.equal(s.atlas.family,'interior');assert.deepEqual(room().polygons,enlarged);assert.equal(s.atlas.selection.id,original.id);
+ }finally{await s.close();}
+});
+
+
+for(const family of ['navigation','interior','terrain'])test('choosing an image frame keeps '+family+' tools and writes no authored geometry',async()=>{
+ const x=await setup(),s=await interiorSurface(x),get=id=>x.document.getElementById(id);
+ try{
+  const f=s.atlas.frame(s.atlas.scopeId);await s.rectangle('Frame room',{x:f.x-4,y:f.y-3},{x:f.x+4,y:f.y+3});
+  await s.atlas.setFamily(family,false);if(family==='terrain'){get('land-tool').value='paint';get('land-tool').onchange();}
+  await s.atlas.refresh();const before=x.store.db.serialize(),view={...s.atlas.camera.view},a={x:f.x-6,y:f.y-5},b={x:f.x+6,y:f.y+5};
+  x.click('atlas-export-frame');await until(()=>!!s.atlas.exportFrameDraft);assert.equal(get('atlas-export-png').disabled,true);
+  const click=async p=>{s.point('pointerdown',p);s.point('pointerup',p);s.point('click',p);await settle();};
+  await click(a);assert.deepEqual(s.atlas.exportFrameDraft.first,a);await click(b);
+  assert.equal(s.atlas.exportFrameDraft,null);assert.equal(s.atlas.family,family);assert.deepEqual(s.atlas.camera.view,view);assert.deepEqual(s.atlas.landscape.exportBox,{x:a.x,y:a.y,width:b.x-a.x,height:b.y-a.y});
+  assert.equal(get('atlas-export-png').disabled,false);assert.equal(get('atlas-export-frame-clear').hidden,false);assert.ok(x.store.db.serialize().equals(before));
+  x.click('atlas-export-frame-clear');assert.equal(s.atlas.landscape.exportBox,null);assert.equal(get('atlas-export-frame-clear').hidden,true);assert.ok(x.store.db.serialize().equals(before));
+ }finally{await s.close();}
+});
+
+test('cancelling an image frame retains the prior frame and leaving the campaign clears unfinished choice',async()=>{
+ const x=await setup(),s=await placeSurface(x),get=id=>x.document.getElementById(id);
+ try{
+  const before=x.store.db.serialize(),box={x:1,y:2,width:3,height:4};s.atlas.landscape.exportBox={...box};
+  x.click('atlas-export-frame');await until(()=>!!s.atlas.exportFrameDraft);await s.point(20,30);
+  const escape=new x.window.Event('keydown');escape.key='Escape';s.svg.dispatchEvent(escape);await settle();
+  assert.equal(s.atlas.exportFrameDraft,null);assert.deepEqual(s.atlas.landscape.exportBox,box);assert.equal(get('atlas-export-png').disabled,false);assert.ok(x.store.db.serialize().equals(before));
+  x.click('atlas-export-frame');await until(()=>!!s.atlas.exportFrameDraft);s.atlas.activate(x.current());assert.equal(s.atlas.exportFrameDraft,null);
+ }finally{await s.close();}
 });

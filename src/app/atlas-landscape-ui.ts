@@ -163,7 +163,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointerdown",
       (e) => {
-        if (!this.active || e.button !== 0 || e.altKey || this.saving) return;
+        if (svg.dataset.exportFraming==='true' || !this.active || e.button !== 0 || e.altKey || this.saving) return;
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
           this.tool === "select" && !this.host.choose &&
@@ -211,7 +211,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointermove",
       (e) => {
-        if (this.pointer !== e.pointerId) return;
+        if (svg.dataset.exportFraming==='true' || this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
         const p = this.point(e);
@@ -256,7 +256,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointerup",
       (e) => {
-        if (this.pointer !== e.pointerId) return;
+        if (svg.dataset.exportFraming==='true' || this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
         this.pointer = null;
@@ -277,7 +277,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "click",
       (e) => {
-        if (!this.active || this.saving || e.altKey) return;
+        if (svg.dataset.exportFraming==='true' || !this.active || this.saving || e.altKey) return;
         if (this.tool === "select") {
           if (
             this.hit(e, ["landscapeId","landVertex"])
@@ -315,7 +315,7 @@ export class LandscapeWorkbench {
       true,
     );
     svg.addEventListener("keydown", (e) => {
-      if (!this.active) return;
+      if (svg.dataset.exportFraming==='true' || !this.active) return;
       if (e.key === "Escape") {
         e.preventDefault();
         this.cancel();

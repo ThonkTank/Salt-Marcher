@@ -117,7 +117,7 @@ export function atlasRegionPaint(
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
-    const labels=landscapeNode('group',{data:{atlasRoomLabels:b.ownerId}});scene.append(labels);
+    const labels=landscapeNode('group',{data:{atlasRoomLabels:b.ownerId}});
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
@@ -141,7 +141,7 @@ export function atlasRegionPaint(
         elementPaint(e, data.workspace.rooms, data.geometry.drawing.elements),
       );
     }
-    scene.append(g);
+    scene.append(g,labels);
   }
   return scene;
 }
