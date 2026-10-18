@@ -6,7 +6,7 @@ import { drawLandscape, drawLandscapeGrid } from "./atlas-landscape-view";
 import { atlasFrame, frameMatrix } from "./campaign-atlas-model";
 import { cityPaint } from "./city-model";
 import { centerInRoom } from "./dungeon-model";
-import { elementPaint } from "./drawing-model";
+import { elementPaint, roomFacePaint } from "./drawing-model";
 export function atlasRegionPaint(
   data: AtlasRenderView,
   records: LandscapeRecord[],
@@ -116,17 +116,7 @@ export function atlasRegionPaint(
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
-      g.append(
-        landscapeNode("polygons", {
-          polygons: room.polygons,
-          style: {
-            fill: "#ded7bd",
-            stroke: "#3f5146",
-            lineWidth: Math.max(0.12, mpp * 0.7),
-            fillRule: "evenodd",
-          },
-        }),
-      );
+      g.append(roomFacePaint(room,mpp,data.geometry.drawing.styles?.find(s=>s.id===room.id)));
       if (room.polygons[0]?.outer[0]) {
         const p = centerInRoom(room);
         g.append(
