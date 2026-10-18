@@ -742,3 +742,17 @@ test('own text receipts keep incomplete reward input recoverable without replaci
  const n=x.store.narrative(x.workspace.token,x.ids.borin);assert.equal(n.draft.noteRevision,2);assert.equal(n.draft.poolXp,'-');assert.equal(n.draft.status,'closed');assert.equal(n.state.status,'open');assert.equal(x.el('narrative-editor').querySelector('[aria-label="Narrativer Status"]'),select);assert.equal(pool.value,'-');
  await x.ui.openPreparedNote(x.ids.ada);await x.ui.openPreparedNote(x.ids.borin);assert.equal(x.el('narrative-editor').querySelector('[aria-label="Quest-XP-Pool"]').value,'-');assert.ok(!narrativeButton(x,'Geprüften Entwurf auf aktuellen Stand übernehmen'));
 });
+
+
+test('writing a private update keeps optional public text discoverable and preserves both audiences across note switches',async t=>{
+ const x=await fixture(t);x.store.changePreparation(x.command({kind:'note',expectedRevision:1,note:{...x.original,readAloud:''}}));await x.activate();await x.ui.openPreparedNote(x.ids.borin);
+ const publicArea=x.el('note-read-aloud'),privateArea=x.el('note-gm'),details=x.el('note-read-aloud-details');
+ assert.equal(details.open,false);assert.equal(x.el('note-text-tools').open,undefined);
+ assert.equal(x.el('note-thread-open').closest('details'),null);
+ privateArea.value='Neue Spur bleibt privat';privateArea.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
+ await x.ui.openPreparedNote(x.ids.ada);assert.equal(details.open,true);assert.equal(publicArea.value,'  Original\r\n');
+ await x.ui.openPreparedNote(x.ids.borin);assert.equal(details.open,false);assert.equal(privateArea.value,'Neue Spur bleibt privat');assert.equal(publicArea.value,'');
+ details.open=true;publicArea.value='  Zum Vorlesen\r\n';publicArea.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
+ await x.ui.openPreparedNote(x.ids.ada);await x.ui.openPreparedNote(x.ids.borin);assert.equal(details.open,true);assert.equal(publicArea.value,'  Zum Vorlesen\r\n');assert.equal(privateArea.value,'Neue Spur bleibt privat');
+ const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.equal(saved.readAloud,'  Zum Vorlesen\r\n');assert.equal(saved.gmNotes,'Neue Spur bleibt privat');
+});

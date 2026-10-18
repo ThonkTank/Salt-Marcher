@@ -401,6 +401,7 @@ async function renderNotes(initialLocationId?:string) {
   const shown = noteDraft ?? row.note;
   get<HTMLInputElement>('note-title').value = shown.title;
   get<HTMLTextAreaElement>('note-read-aloud').value = shown.readAloud;
+  get<HTMLDetailsElement>('note-read-aloud-details').open = !!shown.readAloud;
   get<HTMLTextAreaElement>('note-gm').value = shown.gmNotes;
   get('note-kind').textContent = ({ note: 'Notiz', npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht', rule: 'Regel' })[row.note.kind];
   for (const id of ['note-title', 'note-read-aloud', 'note-gm']) get<HTMLInputElement>(id).disabled = row.trashed || draftProblems.has(draftKey('note', row.note.id));
@@ -548,7 +549,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
      use:async(target,selection,live)=>{const valid=()=>current()&&live();if(!valid())return false;if(target.planId&&target.visitId){await openPreparedVisit(target.planId,target.visitId,valid);if(!valid())return false;return linkVisitNoteThread(owner.token,target.planId,target.visitId,selection,valid);}const ids=[...selection.entries.map(e=>e.id),...(selection.includeRoot?[selection.rootId]:[])];const made=await prepareNextVisit(target.planId,{title:target.title,notes:'',locationId:null,noteIds:ids,newPlan:!target.planId,newPlanName:target.planName,noteThread:selection},valid);return !!made;}
     };}
   });
-  const threadButton=document.createElement('button');threadButton.id='note-thread-open';threadButton.type='button';threadButton.textContent='Notizmappe öffnen…';get('note-text-reference').after(threadButton);threadButton.onclick=()=>void noteThread!.open().catch(error=>tell(error.message,true));
+  const threadButton=document.createElement('button');threadButton.id='note-thread-open';threadButton.type='button';threadButton.textContent='Notizmappe öffnen…';get('note-text-tools').after(threadButton);threadButton.onclick=()=>void noteThread!.open().catch(error=>tell(error.message,true));
   get('note-text-reference').onclick=()=>{void insertNoteTextReference();};
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
   get('world-new').onclick = () => { get<HTMLDialogElement>('world-dialog').showModal(); get('world-name').focus(); };
@@ -753,7 +754,7 @@ export async function createNarrativeAtLocation(locationId:string,name:string,ki
  if(context!==w||context?.token!==w.token)throw new Error('Notiz in früherer Kampagne gespeichert.');
  if(!await flushNarrative())throw new Error('Notiz angelegt; offene Ortsbindung im narrativen Bereich abschließen.');
  const saved=unwrap(await window.campaign.narrative(w.token,note.id));if(context?.token!==w.token||saved.state.locationId!==locationId)throw new Error('Notiz angelegt; Ortsbindung im narrativen Bereich prüfen.');
- get('note-title').scrollIntoView({block:'center'});get('note-read-aloud').focus();return note.id;
+ get<HTMLDetailsElement>('note-read-aloud-details').open=true;get('note-title').scrollIntoView({block:'center'});get('note-read-aloud').focus();return note.id;
 }
 export async function openPreparedNote(id:string,stillCurrent=()=>true) {
   const token = context?.token,request=preparationLoad,current=()=>context?.token===token&&preparationLoad===request&&stillCurrent();
