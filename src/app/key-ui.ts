@@ -207,7 +207,24 @@ function drawReferences(){
   }else line.append(document.createTextNode(label));
   line.append(document.createTextNode(' '));remove.type='button';remove.textContent='Entfernen';remove.onclick=()=>{draft!.references=draft!.references.filter(r=>r!==ref);drawReferences();};line.append(remove);list.append(line);
  }
- optionList('key-reference-target',references.map((r,i)=>({id:String(i),name:referenceKindLabel(r.kind)+': '+r.label})),null,'Kampagneninhalt auswählen');
+ drawReferenceMatches();
+}
+function drawReferenceMatches(){
+ const list=el('key-reference-matches');list.replaceChildren();
+ const terms=field('key-reference-query').value.normalize('NFKC').trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+ if(!draft||!terms.length){el('key-reference-search-status').textContent='Vorhandene Notiz, Ort oder Spielabend suchen. Enter verknüpft den ersten Treffer.';return;}
+ const matches=references.filter(ref=>!draft!.references.some(r=>r.id===ref.id)&&terms.every(term=>(ref.label+' '+referenceKindLabel(ref.kind)).normalize('NFKC').toLocaleLowerCase().includes(term)));
+ el('key-reference-search-status').textContent=matches.length>8?'8 Treffer angezeigt. Suchbegriff genauer eingeben.':matches.length?matches.length+' passende Inhalte. Auswahl verknüpft das Original mit diesem Raum.':'Keine weiteren passenden Inhalte. Bereits verknüpfte Originale stehen oben.';
+ const o=owner(),id=draft.id;
+ for(const ref of matches.slice(0,8)){
+  const button=document.createElement('button');button.type='button';button.textContent=referenceKindLabel(ref.kind)+': '+ref.label;button.dataset.referenceId=ref.id;
+  button.onclick=()=>{
+   if(!el<HTMLDialogElement>('key-dialog').open||!button.isConnected||!owns(o)||draft?.id!==id||editorLocked||composing||draft.references.some(r=>r.id===ref.id))return;
+   draft.references.push({...ref});drawReferences();editVersion++;blocked=false;schedule();
+   // Continue searching or switch rooms without traversing the removed result.
+   field('key-reference-query').focus({preventScroll:true});
+  };list.append(button);
+ }
 }
 function primaryFields(){field('key-read-aloud').value=textBlock('public')?.text??'';field('key-gm-notes').value=textBlock('gm')?.text??'';}
 function drawBlocks(){if(!draft)return;const list=el('key-blocks');list.replaceChildren();for(const[bIndex,b]of draft.blocks.entries()){const card=document.createElement('fieldset'),legend=document.createElement('legend'),kind=document.createElement('select'),visibility=document.createElement('select'),text=document.createElement('textarea'),suppressed=document.createElement('input'),template=document.createElement('select');legend.textContent='Block '+(bIndex+1);for(const[id,label]of [['text','Eigene Prosa'],['geometry','Geometriefakten'],['attributes','Beschreibungseigenschaften'],['exits','Ausgänge'],['legacy','Vorhandener Raumkey'],['template','Verknüpfte Vorlage']]){const o=document.createElement('option');o.value=id!;o.textContent=label!;kind.append(o);}kind.value=b.kind;kind.onchange=()=>{b.kind=kind.value as KeyBlock['kind'];if(b.kind==='template'&&!b.templateId){const choices=records().filter(t=>t.kind==='template'&&t.scopeId===scopeId);if(choices.length===1)b.templateId=choices[0]!.id;}primaryFields();drawBlocks();preview();};for(const[id,label]of [['public','Vorlesbar'],['gm','Nur GM'],['secret','Bis zur Entdeckung verborgen']]){const o=document.createElement('option');o.value=id!;o.textContent=label!;visibility.append(o);}visibility.value=b.visibility;visibility.onchange=()=>{b.visibility=visibility.value as KeyBlock['visibility'];primaryFields();preview();};text.value=b.text;text.rows=4;text.dataset.blockId=b.id;text.setAttribute('aria-label','Prosa Block '+(bIndex+1));text.hidden=b.kind!=='text';text.oninput=()=>{b.text=editTextareaText(b.text,text.value);if(b===textBlock('public'))field('key-read-aloud').value=b.text;if(b===textBlock('gm'))field('key-gm-notes').value=b.text;preview();};suppressed.value=b.suppressed.join(', ');suppressed.placeholder='Unterdrückte Fakten: size, height oder Attributnamen';suppressed.hidden=!['geometry','attributes'].includes(b.kind);suppressed.oninput=()=>{b.suppressed=suppressed.value.split(',').map(s=>s.trim()).filter(Boolean);preview();};const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Textvorlage wählen';template.append(placeholder);for(const t of records().filter(t=>t.kind==='template'&&t.scopeId===scopeId)){const o=document.createElement('option');o.value=t.id;o.textContent=t.name;template.append(o);}template.value=b.templateId??'';template.hidden=b.kind!=='template';template.onchange=()=>{b.templateId=template.value||null;preview();};card.append(legend,kind,visibility,text,suppressed,template);for(const[direction,label]of [[-1,'Nach oben'],[1,'Nach unten']] as const){const move=document.createElement('button');move.textContent=label;move.disabled=bIndex+direction<0||bIndex+direction>=draft.blocks.length;move.onclick=()=>{const index=draft!.blocks.indexOf(b),swap=draft!.blocks[index+direction];if(!swap)return;draft!.blocks[index+direction]=b;draft!.blocks[index]=swap;drawBlocks();preview();};card.append(move);}const remove=document.createElement('button');remove.textContent='Block entfernen';remove.onclick=()=>{draft!.blocks=draft!.blocks.filter(candidate=>candidate!==b);primaryFields();drawBlocks();preview();};card.append(remove);if(b.kind==='template'){const detach=document.createElement('button');detach.textContent='Vorlage lösen – Inhalt behalten';detach.onclick=()=>{const children=expandedKeyBlocks({...draft!,blocks:[b]},records()).map(c=>structuredClone(c));draft!.blocks.splice(draft!.blocks.indexOf(b),1,...children);primaryFields();drawBlocks();preview();};card.append(detach);}if(b.visibility==='secret'){for(const[prop,label]of [['searchMethod','Suchmethode'],['dc','Such-DC'],['discoveryNotes','Private Entdeckungshinweise'],['revealedText','Vorlesetext nach Entdeckung']] as const){const l=document.createElement('label'),input=prop==='dc'?document.createElement('input'):document.createElement('textarea');l.textContent=label;if(prop==='dc'){(input as HTMLInputElement).type='number';}input.value=b[prop]===null?'':String(b[prop]);input.oninput=()=>{if(prop==='dc')b.dc=input.value===''?null:Number(input.value);else b[prop]=input.value;preview();};l.append(input);card.append(l);}}list.append(card);}}
@@ -314,7 +331,7 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
   const target=event.target as HTMLElement;
   // Controls can redraw and detach themselves before this listener runs.
   const contentEdit=event.composedPath().some(node=>['key-blocks','key-references','key-original'].includes((node as HTMLElement).id));
-  if(type!=='click'&&editing.has(target.id)||contentEdit||type==='click'&&['key-add-block','key-reference-add'].includes(target.id)){
+  if(type!=='click'&&editing.has(target.id)||contentEdit||type==='click'&&['key-add-block'].includes(target.id)){
    editVersion++;blocked=false;schedule();
   }
  });
@@ -334,7 +351,9 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
  el('key-reload').onclick=()=>{void reload();};
  el('key-map').onclick=()=>{const id=roomId;if(!id)return;void moveEditor(async()=>{keyReturn=null;const leave=keyLeave;keyLeave=null;leave?.();el<HTMLDialogElement>('key-dialog').close();await (notes?.map??navigate)(id);}).catch(reportFailure);};
  el('key-add-block').onclick=()=>{if(draft){draft.blocks.push(block());drawBlocks();}};
- el('key-reference-add').onclick=()=>{if(select('key-reference-target').value==='')return;const ref=references[Number(select('key-reference-target').value)];if(draft&&ref&&!draft.references.some(r=>r.id===ref.id)){draft.references.push({...ref});drawReferences();}};
+ field('key-reference-query').oninput=()=>drawReferenceMatches();
+ field('key-reference-query').onkeydown=event=>{if(event.key==='Enter'&&!event.isComposing&&!composing){event.preventDefault();el('key-reference-matches').querySelector<HTMLButtonElement>('button')?.click();}};
+
  el('key-owner').onchange=()=>{const id=select('key-owner').value;void moveEditor(()=>{if(id==='@room'){if(roomId)openRoom(roomId);return;}draft=structuredClone(id==='@dungeon'?records().find(r=>r.kind==='dungeon'&&r.scopeId===scopeId)??blank('dungeon',scopeId):records().find(r=>r.id===id)??null);drawForm();establishBase();}).then(okay=>{if(okay)drawOwners();}).catch(reportFailure);};
  el('key-create-owner').onclick=()=>{const kind=select('key-new-kind').value as KeyContent['kind'],name=field('key-new-name').value||'Neuer Inhalt';void moveEditor(()=>{draft=blank(kind);draft.name=name;if(kind==='surface')draft.surface={roomId:roomId??'',fragments:[]};drawForm();establishBase(true);schedule();}).catch(reportFailure);};
  el('key-template-from-room').onclick=()=>{
@@ -355,13 +374,13 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
  for(const id of ['key-search','key-filter-level','key-filter-group','key-filter'])el(id).addEventListener('input',()=>{listPage=0;drawList(id==='key-search'&&field('key-search').value==='');});
  el('key-list-prev').onclick=()=>{listPage=Math.max(0,listPage-1);drawList();};
  el('key-list-next').onclick=()=>{listPage++;drawList();};
- el('key-search').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing){const first=el('key-room-list').querySelector<HTMLButtonElement>('button');if(first){event.preventDefault();first.click();}}});
+ el('key-search').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.isComposing&&!composing){const first=el('key-room-list').querySelector<HTMLButtonElement>('button');if(first){event.preventDefault();first.click();}}});
  for(const[visibility,id]of [['public','key-read-aloud'],['gm','key-gm-notes']] as const)el(id).addEventListener('input',()=>{if(!draft)return;let b=textBlock(visibility);if(!b){b=block('text',visibility);draft.blocks.unshift(b);}b.text=editTextareaText(b.text,field(id).value);});
  for(const id of ['key-name','key-read-aloud','key-gm-notes','key-attributes','key-heading','key-audience','key-discovered','key-level','key-group'])el(id).addEventListener('input',preview);
  el('key-select-visible').onclick=()=>{for(const room of matchedRooms)picked.add(room.id);for(const input of el('key-room-list').querySelectorAll<HTMLInputElement>('input')){input.checked=true;if(input.dataset.roomId)picked.add(input.dataset.roomId);}updateSelectionCount();};
  el('key-select-none').onclick=()=>{picked.clear();drawList();};
  el('key-batch-apply').onclick=applyBatch;}
-export function activateKeys(){composing=false;noteCapture?.reset();planContext?.reset();searchIndex=null;searchData=null;searchReferences=null;noteContext?.reset();invalidateKeyCopy();generation++;transition++;readVersion++;editVersion++;pending=null;roomId=null;scopeId='';preparedBatch=null;if(timer)clearTimeout(timer);timer=null;blocked=false;editorLocked=false;draft=null;legacyDraft.clear();data=null;geometry=null;acknowledged=null;baseSignature='';baseRoomRevision=null;baseKeyRevision=null;matchedRooms=[];listPage=0;picked.clear();el<HTMLDialogElement>('key-dialog').close();}
+export function activateKeys(){field('key-reference-query').value='';el<HTMLDetailsElement>('key-reference-picker').open=false;composing=false;noteCapture?.reset();planContext?.reset();searchIndex=null;searchData=null;searchReferences=null;noteContext?.reset();invalidateKeyCopy();generation++;transition++;readVersion++;editVersion++;pending=null;roomId=null;scopeId='';preparedBatch=null;if(timer)clearTimeout(timer);timer=null;blocked=false;editorLocked=false;draft=null;legacyDraft.clear();data=null;geometry=null;acknowledged=null;baseSignature='';baseRoomRevision=null;baseKeyRevision=null;matchedRooms=[];listPage=0;picked.clear();el<HTMLDialogElement>('key-dialog').close();}
 export function setKeyReferenceStatus(text:string,error=false){noteContext?.setStatus(text,error);}
 export async function flushKeys():Promise<boolean>{
  if(composing){tell('Texteingabe zuerst abschließen.',true);return false;}
