@@ -92,3 +92,25 @@ test('an unavailable bounded preview never falls back to loading the complete or
  await f.ui.load();assert.equal(originals,0);assert.equal(f.ui.assets.size,0);assert.equal(f.document.querySelector('#land-reload').hidden,false);assert.match(f.document.querySelector('#land-status').textContent,/nicht verfügbar/);
  f.window.campaign.referenceAssetPreview=async()=>({ok:true,value:'bounded-preview'});await f.ui.load(true);assert.equal(f.ui.assets.get('large'),'bounded-preview');assert.equal(originals,0);
 });
+
+test('line and selection tools hide irrelevant palettes but keep manual grid level and terrain painting reachable',t=>{
+ const f=fixture(t),palette=f.document.createElement('label');palette.innerHTML='<select id="atlas-terrain"><option value="plain">Ebene</option></select>';f.document.body.append(palette);
+ const hex=f.document.querySelector('#atlas-hex-level'),levelLabel=f.document.createElement('label');hex.replaceWith(levelLabel);levelLabel.append(hex);
+ f.document.querySelector('#land-auto-level').checked=true;f.ui.setActive(true);
+ const tool=f.document.querySelector('#land-tool'),choose=value=>{tool.value=value;tool.dispatchEvent(new f.window.Event('change'));};
+ choose('road');assert.equal(palette.hidden,true);assert.equal(levelLabel.hidden,true);assert.equal(f.document.querySelector('#land-width').closest('label').hidden,false);
+ const auto=f.document.querySelector('#land-auto-level');auto.checked=false;auto.onchange();assert.equal(levelLabel.hidden,false);
+ choose('hex');assert.equal(palette.hidden,false);assert.equal(levelLabel.hidden,false);
+ f.document.querySelector('#land-field').value='elevationM';f.document.querySelector('#land-field').onchange();assert.equal(palette.hidden,true);assert.equal(f.document.querySelector('#land-value-field').hidden,false);
+ f.ui.setActive(false);assert.equal(palette.hidden,false);assert.equal(levelLabel.hidden,false);
+});
+
+for(const kind of ['road','river'])test(`${kind} endpoint drag commits on release, keeps other geometry, and does not write on click or cancellation`,async t=>{
+ const f=fixture(t),road={...ref('line'),kind,assetId:undefined,points:[{x:1,y:2},{x:8,y:2}],width:1},writes=[];
+ f.set([road]);f.host.write=async a=>{writes.push(structuredClone(a));return true;};await f.ui.select(road);f.ui.setActive(true);
+ const canvas=f.document.querySelector('canvas');canvas.setPointerCapture=()=>{};canvas.hasPointerCapture=()=>false;f.host.hit=()=>({data:{landVertex:'1'}});
+ const pointer=(type,x,y=2)=>{const e=new f.window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{button:0,pointerId:4,clientX:x,clientY:y});canvas.dispatchEvent(e);};
+ pointer('pointerdown',8);pointer('pointerup',8);await new Promise(r=>setImmediate(r));assert.equal(writes.length,0,'selecting a handle is not an edit');
+ pointer('pointerdown',8);pointer('pointermove',5);assert.equal(writes.length,0,'preview stays a draft');pointer('pointercancel',5);assert.equal(writes.length,0,'an interrupted drag must never save');
+ pointer('pointerdown',5);pointer('pointermove',4);pointer('pointerup',4);await new Promise(r=>setImmediate(r));assert.equal(writes.length,1);assert.deepEqual(writes[0].record.points,[{x:1,y:2},{x:4,y:2}]);assert.equal(writes[0].expectedRevision,0);
+});
