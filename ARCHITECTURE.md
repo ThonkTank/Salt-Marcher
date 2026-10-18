@@ -302,7 +302,7 @@ Quell-IDs, Queue/Cues und sichere Positionen sind portable Runtimewerte.
 
 ## Darstellung, Suche und Spieleranzeige
 
-Ein Kamera-/Auswahl-/Werkzeugzustand führt alle Atlasdetails. Zoom ändert
+Kamera, Werkzeugauswahl und Objektauswahl führen die Atlasdetails getrennt vom Layoutzustand. `AtlasWorkspaceLayout` ordnet bestehende Controls einer festen Befehlsleiste, dem linken Werkzeugbereich und dem optionalen rechten Kontext zu; fachliche Ereignisse und Speichergrenzen bleiben bei ihren bisherigen Eigentümern. Größenänderungen der Kartenfläche erhalten Mittelpunkt und Meter pro CSS-Pixel ohne Ansichtsverlauf. Die Spielleitungssteuerung bleibt außerhalb des Editors. Zoom ändert
 Darstellung und Abfragetiefe, keine Autorenwerte und keinen Pflichtmodus.
 Räumliche Abfragen liefern nur sichtbare/betroffene Records und abgeleitete
 Geometrie; Render/Hit/Export konsumieren denselben bestätigten Stand und

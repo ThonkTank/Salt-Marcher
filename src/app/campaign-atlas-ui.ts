@@ -51,6 +51,7 @@ import {
   atlasDrawingPoint,
   atlasDrawingRectangle,
   atlasDrawingSnapPoint,
+  selectedDrawingElementId,
   atlasDrawingDraft,
   atlasDrawingUndoPoint,
   drawingOverlay,
@@ -109,7 +110,7 @@ export class CampaignAtlasWorkbench {
   private pendingTravel:
     | import("./atlas-travel-contracts").AtlasTravelCommand
     | null = null;
-  private family: Family = "navigation";
+  private family: Family = "terrain";
   private selection: Selection = null;
   private cityId: string | null = null;
   private scopeId: string | null = null;
@@ -161,6 +162,7 @@ export class CampaignAtlasWorkbench {
   private creation: "city" | "dungeon" | null = null;
   constructor(
     private opts: {
+      exit?: () => Promise<void>;
       selectRoom: (id: string) => Promise<void>;
       roomDraft: () => Room | null;
       flush: () => Promise<boolean>;
@@ -222,7 +224,7 @@ export class CampaignAtlasWorkbench {
     get("atlas-export-cancel").onclick=()=>{this.exportCancelled=true;if(this.owner){void window.campaign.cancelAtlasRegion(this.owner.token,'export');}};
     this.reference=new AtlasReferenceUI(this.svg,{
       view:()=>this.camera.view,point:e=>this.camera.point(e),set:box=>this.camera.set(box,true),redraw:()=>this.camera.redrawOverlay(),
-      closed:()=>{this.layout?.comparison(false);get('atlas-edit-panel').hidden=this.exportOpen;get('atlas-reference-open').setAttribute('aria-expanded','false');}
+      closed:()=>{this.layout?.comparison(false);get('atlas-reference-open').setAttribute('aria-expanded','false');}
     });
     get('atlas-panel').prepend(this.reference.panel);
     get('atlas-reference-open').setAttribute('aria-expanded','false');
@@ -232,21 +234,19 @@ export class CampaignAtlasWorkbench {
       if(this.root.dataset.roomDraw==='true'){this.error(Error('Begonnenen Atlaszug abschließen oder verwerfen.'));return;}
       if(this.exportOpen)await this.setOutput(false);
       await this.setFamily('navigation',false);
-      this.camera.stopZoom();this.layout.comparison(true);this.reference.open();get('atlas-edit-panel').hidden=true;
+      this.camera.stopZoom();this.reference.open();this.layout.comparison(true);
       get('atlas-reference-open').setAttribute('aria-expanded','true');
     })().catch(e=>this.error(e));
-    this.landscape=new LandscapeWorkbench(this.svg,{hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),box:()=>this.camera.view,redraw:()=>this.scheduleRender(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready});
+    this.landscape=new LandscapeWorkbench(this.svg,{selected:id=>this.layout?.selectionChanged('landscape:'+id,true),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),box:()=>this.camera.view,redraw:()=>this.scheduleRender(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready});
     this.hitDialog.id='atlas-hit-candidates';this.hitDialog.addEventListener('close',()=>this.hitVersion++);this.root.append(this.hitDialog);
     this.root.querySelectorAll<HTMLInputElement>('#atlas-hex-level,#atlas-terrain').forEach(n=>n.addEventListener('change',()=>{if(n.id==='atlas-hex-level')get<HTMLInputElement>('land-auto-level').checked=false;this.render();}));
-    new ResizeObserver(()=>{const b=this.camera.view,aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight);if(aspect>0)this.camera.set({...b,height:b.width/aspect},true);}).observe(this.svg);
-    const names: Record<Family, string> = {
-      navigation: "Navigation",
-      terrain: "Landschaft",
-      city: "Stadt",
-      interior: "Innenräume",
-      decoration: "Ausstattung",
-      travel: "Erkunden",
-    };
+    let viewport:{width:number;height:number}|null=null;
+    new ResizeObserver(()=>{
+      const width=this.svg.clientWidth,height=this.svg.clientHeight;
+      if(width<=0||height<=0){viewport=null;return;}
+      this.camera.resizeViewport(viewport??{width,height}, {width,height});viewport={width,height};
+    }).observe(this.svg);
+    const names = {terrain:"Landschaft",city:"Stadt",interior:"Dungeon"};
     for (const [id, name] of Object.entries(names)) {
       const b = document.createElement("button");
       b.type = "button";
@@ -455,8 +455,20 @@ export class CampaignAtlasWorkbench {
       )
         this.cancel();
     });
-    this.layout = new AtlasWorkspaceLayout(this.root);
-    this.root.querySelector('.atlas-dock-body')!.prepend(this.reference.panel);
+    this.layout = new AtlasWorkspaceLayout(this.root,{
+      exit:async()=>{if(this.opts.exit)await this.opts.exit();else get('campaign-screen-open').click();},
+      prepare:async()=>await this.flush()&&await this.opts.flush(),
+      error:e=>this.error(e),
+      navigation:async pan=>{if(!await this.flush()||!await this.opts.flush())return;await this.setFamily('navigation',false);this.root.dataset.panMode=String(pan);this.layout.sync();},
+      tool:async(family,id,value)=>{
+        if(!await this.flush()||!await this.opts.flush())return false;
+        if(this.exportOpen)await this.setOutput(false);
+        await this.setFamily(family,false);if(this.family!==family)return false;
+        const input=get<HTMLSelectElement>(id);input.value=value;input.dispatchEvent(new Event('change',{bubbles:true}));
+        if(id==='drawing-tool'&&value==='room-rectangle'&&!get('atlas-room-draw').hidden)get('atlas-room-draw').click();
+        this.render();return input.value===value;
+      }
+    });
     this.svg.addEventListener("keydown", (e) => {
       if(e.code==="Space"){e.preventDefault();this.spacePan=true;return;}
       if(e.defaultPrevented)return;
@@ -598,6 +610,7 @@ export class CampaignAtlasWorkbench {
     }
   }
   async open() {
+    if(!this.liveDocked&&this.family==='travel')this.family='terrain';
     this.root.hidden=false;this.layout?.setActive(!this.liveDocked);const owner=this.owner;if(!owner)return;
     if(this.opening?.owner===owner)return this.opening.task;
     const task=(async()=>{await this.refresh();if(this.owner!==owner||this.root.hidden)return;await this.setFamily(this.family,false);})();
@@ -790,11 +803,11 @@ export class CampaignAtlasWorkbench {
   }
   private async setOutput(open:boolean){
     if(this.reference.active)this.reference.close();
-    if(open&&!(await this.opts.flush()))return;
+    if(open&&(!(await this.flush())||!(await this.opts.flush())))return;
     if(this.exporting)return;
     this.root.dataset.output=String(open);
     this.exportOpen=open;this.exportChoosing=false;this.exportDrag=null;this.exportCorner=null;
-    get('atlas-edit-panel').hidden=open;get('atlas-output').hidden=!open;
+    get('atlas-output').hidden=!open;this.layout?.output(open);
     get('atlas-output-open').setAttribute('aria-pressed',String(open));
     this.landscape.setActive(!open&&this.family==='terrain');
     this.baseGeometry=null;this.render();this.exportAreaStatus();
@@ -814,14 +827,15 @@ export class CampaignAtlasWorkbench {
     if (this.root.dataset.roomDraw === "true" && (this.draft.length || this.roomDrag)) { this.opts.status("Raumzug zuerst abschließen oder abbrechen.",true); return; }
     if (this.landscape.hasDraft()) { this.opts.status("Landschaftszug zuerst abschließen oder abbrechen.",true); return; }
     this.creation=null;delete this.root.dataset.placing;this.root.dataset.panMode="false";
+    this.layout?.beforeTool();
     this.family = f;
     this.landscape.setActive(!this.exportOpen&&f==="terrain");
     for (const b of get("atlas-families").querySelectorAll<HTMLButtonElement>(
       "button",
     ))
-      b.setAttribute("aria-pressed", String(b.dataset.family === f));
+      b.setAttribute("aria-pressed", String(b.dataset.family === (f==='decoration'?'interior':f==='navigation'?this.root.dataset.editorSection:f)));
     get("atlas-tool-fields").dataset.family = f;
-    this.dockDrawingTools(f === "interior" || f === "decoration");
+    this.dockDrawingTools(f === "interior" || f === "decoration" || (f === "navigation" && this.root.dataset.editorSection === "interior"));
     this.layout?.setFamily(f);
     this.root.dataset.family = f;
     if(f==='interior'||f==='decoration')await reloadDrawing();
@@ -912,7 +926,7 @@ export class CampaignAtlasWorkbench {
     const exact=await window.campaign.drawingElement(owner.token,id);if(this.owner!==owner)return;if(!exact.ok)throw new Error(exact.error);
     if(exact.value.roomId)await this.opts.selectRoom(exact.value.roomId);if(this.owner!==owner)return;
     await this.setFamily('decoration',false);this.syncDrawingFloor();await selectElement(id);
-    this.focus(r.value.point,Math.max(30,r.value.box.width*2),Math.max(30,r.value.box.height*2));await this.refresh();
+    this.focus(r.value.point,Math.max(30,r.value.box.width*2),Math.max(30,r.value.box.height*2));await this.refresh();this.layout?.showPane('selection');
   }
   private focus(p: Point, width: number, height=width) {
     const ratio = Math.max(1,this.svg.clientHeight) / Math.max(1, this.svg.clientWidth);
@@ -1830,7 +1844,7 @@ export class CampaignAtlasWorkbench {
     }
   }
   private renderPanel(data:AtlasRenderView){
-    const key=[data,this.owner?.token,this.family,this.selection?.kind,this.selection?.id,this.scopeId,this.floorId,this.busy,this.pendingTravel,pendingAtlasWrite(this.owner?.token??''),this.bindingDirty,get('atlas-placement').contains(document.activeElement),this.opts.roomDraft()?.name,get<HTMLSelectElement>('drawing-tool').value];
+    const key=[data,this.landscape.selectionId,selectedDrawingElementId(),this.owner?.token,this.family,this.selection?.kind,this.selection?.id,this.scopeId,this.floorId,this.busy,this.pendingTravel,pendingAtlasWrite(this.owner?.token??''),this.bindingDirty,get('atlas-placement').contains(document.activeElement),this.opts.roomDraft()?.name,get<HTMLSelectElement>('drawing-tool').value];
     if(this.panelKey?.length===key.length&&this.panelKey.every((v,i)=>v===key[i]))return;
     this.panelKey=key;
     get("atlas-recover").hidden =
@@ -1887,7 +1901,9 @@ export class CampaignAtlasWorkbench {
             : null;
     get("atlas-selection-title").textContent = get<HTMLSelectElement>("drawing-tool").value === "door" && ["interior","decoration"].includes(this.family) ? "Türen setzen" : title || "Deine Kampagnenwelt";
     this.root.dataset.citySelected=String(!!this.cityId);
-    this.layout?.selectionChanged(!!this.selection);
+    const elementId=['interior','decoration'].includes(this.family)?selectedDrawingElementId():null;
+    const selectedKey=this.family==='terrain'?(this.landscape.selectionId?'landscape:'+this.landscape.selectionId:null):elementId?'element:'+elementId:this.selection?this.selection.kind+':'+this.selection.id:null;
+    this.layout?.selectionChanged(selectedKey);
     get("atlas-create-dungeon").hidden=!["navigation","interior","decoration"].includes(this.family);
     get("atlas-create-city").hidden=!["navigation","city"].includes(this.family);
     const floor = get<HTMLSelectElement>("atlas-floor"),

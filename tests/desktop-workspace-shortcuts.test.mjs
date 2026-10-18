@@ -28,3 +28,5 @@ test('late tutorial status cannot reopen help or advertise it again after the us
  const x=setup(t);let finishRead;x.window.campaign.tutorial=state=>state?Promise.resolve({ok:true,value:{state}}):new Promise(r=>finishRead=r);
  const loading=x.ui.initTutorial();x.el('help').click();x.el('tutorial-skip').click();finishRead({ok:true,value:{state:'new'}});await loading;assert.equal(x.dialog.open,false);assert.equal(x.el('help').textContent,'Hilfe');
 });
+
+test('Atlas editor blocks party shortcuts while the runtime workspace retains them',t=>{const x=setup(t);x.document.body.classList.add('atlas-workspace');x.key(x.document.body,{key:'p',altKey:true});assert.equal(x.partyOpens(),0);x.document.body.classList.remove('atlas-workspace');x.key(x.document.body,{key:'p',altKey:true});assert.equal(x.partyOpens(),1);});

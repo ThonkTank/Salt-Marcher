@@ -705,3 +705,16 @@ test('camera overlay repaints the current metric view while new scene images are
  f.releases.get('wait:overlay')();await settle();f.flush();
  assert.equal(overlays.at(-1).box.width,160);
 });
+
+
+test('panel resizing preserves world centre and CSS-pixel scale without adding history',t=>{
+ const f=fixture(t),before=f.canvas.view;
+ f.canvas.resizeViewport({width:800,height:450},{width:460,height:450});
+ const narrow=f.canvas.view;
+ assert.equal(narrow.width/460,before.width/800);
+ assert.equal(narrow.x+narrow.width/2,before.x+before.width/2);
+ assert.equal(narrow.y+narrow.height/2,before.y+before.height/2);
+ f.canvas.previous();assert.deepEqual(f.canvas.view,narrow);
+ f.canvas.resizeViewport({width:460,height:450},{width:800,height:450});
+ assert.deepEqual(f.canvas.view,before);
+});

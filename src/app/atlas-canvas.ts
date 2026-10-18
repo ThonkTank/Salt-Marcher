@@ -500,6 +500,12 @@ export class AtlasCanvas {
     this.refreshControls();
     if (notify) this.options.changed?.(this.view, reason);
   }
+  /** Resizing presentation keeps its world centre and CSS-pixel scale, without history. */
+  resizeViewport(previous:{width:number;height:number}, next:{width:number;height:number}) {
+    if(Math.min(previous.width,previous.height,next.width,next.height)<=0)return;
+    const box=this.view,mpp=box.width/previous.width;
+    this.set({x:box.x+box.width/2-next.width*mpp/2,y:box.y+box.height/2-next.height*mpp/2,width:next.width*mpp,height:next.height*mpp},true,'set',true);
+  }
   /** Opaque presentation contexts never contain adopter-owned map data. At most 32 are cached. */
   context(key: string, initial: CanvasBox, restore = true) {
     if (key === this.contextKey) return false;

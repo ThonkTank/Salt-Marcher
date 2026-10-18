@@ -88,6 +88,7 @@ export class LandscapeWorkbench {
   private brushStrokes: Point[][] = [];
   private pointer: number | null = null;
   private selected: LandscapeRecord | null = null;
+  get selectionId(){return this.selected&&this.inspectorRoot.dataset.selectionId===this.selected.id?this.selected.id:null;}
   private vertex = 0;
   private dragging = false;
   private lineDragChanged = false;
@@ -109,6 +110,7 @@ export class LandscapeWorkbench {
       hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
       point:(e:MouseEvent)=>Point;
       refresh?:()=>Promise<unknown>;
+      selected?:(id:string)=>void;
       choose?: (point:Point)=>Promise<void>;
       current?:()=>boolean;
       redraw: () => void;
@@ -369,7 +371,7 @@ export class LandscapeWorkbench {
   }
   hasDraft() {
     return (
-      this.points.length > 0 ||
+      (this.tool !== "measure" && this.points.length > 0) ||
       this.dirty ||
       !!this.calibration ||
       this.pointer !== null ||
@@ -583,6 +585,7 @@ export class LandscapeWorkbench {
   drawOverlay(root: AtlasPaint, box: LandscapeBox, mpp: number): boolean {
     const input = html<HTMLSelectElement>('atlas-hex-level');
     const draft = this.hasDraft();
+    html('land-finish').hidden = html('land-cancel').hidden = !draft;
     input.disabled = draft;
     html<HTMLInputElement>('land-auto-level').disabled = draft;
     const auto = html<HTMLInputElement>('land-auto-level').checked && !draft;
@@ -615,7 +618,7 @@ export class LandscapeWorkbench {
     return t<1;
   }
   private sayIfIdle(s: string) {
-    if (!this.hasDraft() && !this.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
+    if (!(this.tool === "measure" && this.points.length) && !this.hasDraft() && !this.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
   }
   recovered() {
     this.cancel();
@@ -819,13 +822,16 @@ export class LandscapeWorkbench {
     }
     this.inspector();
     this.objectOptions();
+    this.host.selected?.(record.id);
     this.host.redraw();
   }
   private inspector() {
     const root = html("land-selection");
     root.replaceChildren();
+    delete root.dataset.selectionId;
     const r = this.selected;
     if (!r) return;
+    root.dataset.selectionId=r.id;
     const label = (title: string, id: string, value: string, type = "text") => {
       const l = document.createElement("label");
       l.textContent = title;

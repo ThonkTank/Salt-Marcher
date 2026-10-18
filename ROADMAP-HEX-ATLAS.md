@@ -65,12 +65,12 @@ Die Oberfläche beantwortet in dieser Reihenfolge: **Wo bin ich? Was will ich tu
 
 | Fester Bereich | Inhalt und Verhalten |
 | --- | --- |
-| Obere Leiste | Gemeinsame kompakte Anwendungs-/Atlasleiste: Bereichsmenü, Kampagne, Suche, Undo/Redo, Speicherstatus, Party, Musik und Ausgabe. Produktnavigation, Meldungen und Musiktransport reservieren keine zusätzlichen dauerhaften Flächen. |
-| Hauptseitenleiste | Eine linke, einklappbare und verstellbare Werkzeugleiste. Gruppen Navigation, Landschaft, Stadt, Innenräume, Ausstattung und Erkunden erschließen benannte Werkzeuge. Werkzeugvorgaben und Auswahleigenschaften sind getrennte Ansichten. |
-| Karte | Füllt den verbleibenden Fensterraum ohne Außenränder. Ortskontext, Geschoss/Ansicht und Maßstab liegen kompakt am Rand. Ein maximierter Kartenarbeitsplatz erhält Kamera, Auswahl und Entwürfe. |
-| Zusatzbereich | Bibliothek, Raumbeschreibung und Bebauungsvorschau öffnen bei Bedarf rechts. Auf schmalen Fenstern verwenden sie die Hauptseitenleiste. Normale Objektauswahl benötigt keine zweite Spalte. Schließen verwirft keine Arbeit. |
+| Obere Leiste | Feste Befehlsleiste mit Atlasmenü, Undo/Redo, Auswahl/Hand, Ansichtsverlauf, Zoom/Weltübersicht, Suche, Größenvergleich, Ansicht, Import/Export und Speicherstatus. Ab 1200 CSS-Pixeln einzeilig, darunter zweizeilig. |
+| Hauptseitenleiste | Links Landschaft, Stadt und Dungeon mit dauerhaft sichtbaren Werkzeugen und passenden Grundeinstellungen. Innenräume und Ausstattung gehören zu Dungeon. Standardbreite 240 Pixel, verstellbar zwischen 200 und 300 Pixeln. |
+| Karte | Füllt den verbleibenden Fensterraum. Maßstab und sichtbare Ausdehnung sind nicht bedienbare Anzeigen. Seitenleistenänderungen erhalten Mittelpunkt und Meter pro Bildschirmpixel ohne Ansichtsverlauf oder Autorenänderung. |
+| Zusatzbereich | Rechts Eigenschaften, Bibliothek, Raumbeschreibung, Bebauung, Analyse, Vergleich, Kalibrierung oder Export. Standardbreite 340 Pixel, verstellbar zwischen 280 und 480 Pixeln. Bei weniger als 560 Pixeln verbleibender Kartenbreite überlagert die Leiste die Karte. Manuelles Schließen bleibt beim Zoomen/Nachladen bestehen; Eingaben bleiben geschützt. |
 | Rückmeldung | Normale Meldungen und Speicherzustand erscheinen kompakt im Kopf. Fehler und unklare Schreibvorgänge behalten ihre sichtbaren Klärungszugänge; keine pauschale Unterdrückung von Recoverymeldungen. |
-| Aufgabenbezogene Erweiterungen | Vorhandene Stadt-, Raum-, Analyse- und Reiseaktionen bleiben gezielt erreichbar. Kein vollständiges älteres Fachpanel hinter einem universellen Detailszugang. Die gemeinsame Kamera, Schreibautorität und Historie bleiben erhalten. |
+| Aufgabenbezogene Erweiterungen | Vorhandene Stadt-, Raum- und Analyseaktionen bleiben gezielt erreichbar. Party, Reisen, Spielzeit, Musik und Spieleranzeige bleiben ausschließlich in den Spielleitungsbereichen. Die gemeinsame Kamera, Schreibautorität und Historie bleiben erhalten. |
 
 Work liefert diese Ordnung zuerst mit den bereits nutzbaren Aktionen; ungebaute Funktionen werden nicht als scheinbar fertige Schaltflächen angeboten. Eine konkret fehlende Voraussetzung wird am betroffenen Zugang erklärt. In Efficient kommen die benötigten Optionen hinzu; Beautiful vereinheitlicht Gestaltung und Rückmeldungen. Die Regeln für Entwurf, Textfokus, Werkzeugwechsel und Speicherung stehen ausschließlich bei der [gemeinsamen Bedienung](#gemeinsame-bedienung).
 
@@ -224,7 +224,7 @@ Der Atlas soll sich wie ein Zeicheneditor anfühlen: Werkzeug wählen, Wirkung a
 
 ### Gemeinsame Bedienung
 
-Eine feste Werkzeugleiste gruppiert **Navigation, Landschaft, Stadt, Innenräume und Ausstattung**. Diese Gruppen ordnen die Werkzeuge und wechseln keinen Editor oder Kartenmodus. Zoom verändert weder Werkzeug noch dessen Einstellungen. Die Hauptseitenleiste zeigt klar getrennt **Werkzeug** und **Auswahl**; Name und Key sind direkt erreichbar. Eine zweite Seite wird nur für die jeweilige Aufgabe geöffnet. Die Karte bleibt beim Bearbeiten sichtbar.
+Die feste Befehlsleiste enthält Navigation und Verwaltung. Links gruppiert die Werkzeugleiste **Landschaft, Stadt und Dungeon**. Diese Gruppen wechseln keinen Editor oder Kartenmodus. Zoom verändert weder Werkzeug noch dessen Einstellungen. Objektauswahl ersetzt die Werkzeugliste nicht; Eigenschaften und erweiterte Optionen erscheinen im rechten Kontextbereich. Die Karte bleibt beim Bearbeiten sichtbar.
 
 **Ein einfacher Standardweg:** Zum Korrigieren „Auswahl“ wählen und das Objekt anklicken; zum Anlegen das Fachwerkzeug wählen. Ein neuer Raum beginnt als Rechteck im gewählten Geschoss, ein Fluss/eine Straße als Punktzug, ein Asset als Einzelplatzierung und eine Siedlung mit vorgegebener Fläche/Straße. Weitere Formen und bereits verfügbare Fähigkeiten bleiben erreichbar. Im Panel stehen zuerst die für diese Aktion nötigen Felder; zusätzliche vorhandene Einstellungen werden über „Mehr Optionen“ erreichbar, ohne neue Kartenmodi. Ein Normalfall verlangt weder Graphentwurf noch Vorlage oder Generatorparameterstudium.
 
