@@ -411,7 +411,7 @@ test('the shared map observes both accepted and invalidated Hex evaluations with
   const before=x.store.db.serialize();x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);
   assert.deepEqual(observed.at(-1),[{q:0,r:0},{q:1,r:0}]);
   x.document.getElementById('travel-route-clear').click();assert.deepEqual(observed.at(-1),[]);
-  x.enter('travel-q','2');x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.equal(observed.at(-1).at(-1).q,2);
+  x.enter('travel-q','2');x.enter('travel-r','0');x.preview();await until(()=>x.document.getElementById('travel-preview-dialog').open);assert.equal(observed.at(-1).at(-1).q,2);
   x.enter('travel-factor','2');assert.deepEqual(observed.at(-1),[]);assert.equal(x.document.getElementById('travel-preview-accept').disabled,true);
   assert.equal(reads,0);assert.equal(x.sent.length,0);assert.ok(x.store.db.serialize().equals(before));
  }finally{x.cleanup();}
