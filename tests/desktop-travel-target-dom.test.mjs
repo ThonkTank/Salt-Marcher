@@ -485,3 +485,19 @@ test('the shared Atlas does not rebuild the hidden legacy Hex scene while travel
   assert.equal(x.document.getElementById('travel-q').value,'2');assert.ok(x.store.db.serialize().equals(before));
  }finally{x.cleanup();}
 });
+
+for(const clear of ['clear','remove-last'])test(`empty route stays empty after ${clear} and unrelated travel settings`,async()=>{
+ const x=await travelFixture();try{
+  const get=id=>x.document.getElementById(id),requests=[],original=x.window.campaign.previewTravel;
+  x.window.campaign.previewTravel=async(...args)=>{requests.push(structuredClone(args[1]));return original(...args);};
+  if(clear==='clear')get('travel-route-clear').click();else get('travel-stops').lastElementChild.querySelector('button:last-child').click();
+  await tick();await tick();
+  assert.equal(get('travel-stops').children.length,0);
+  assert.equal(get('travel-q').value,'');assert.equal(get('travel-r').value,'');
+  x.enter('travel-factor','2');assert.equal(get('travel-stops').children.length,0);
+  x.preview();await tick();await tick();assert.equal(requests.length,0);assert.equal(get('journey-play').disabled,true);
+  x.ui.atlasWorldTarget({q:0,r:0});assert.equal(get('travel-q').value,'0');assert.equal(get('travel-r').value,'0');
+  x.ui.atlasWorldTarget({q:2,r:0});x.preview();await until(()=>get('travel-preview-dialog').open);
+  assert.deepEqual(requests.at(-1).destination,{q:2,r:0});assert.deepEqual(requests.at(-1).waypoints,[]);assert.equal(x.writes,0);
+ }finally{x.cleanup();}
+});
