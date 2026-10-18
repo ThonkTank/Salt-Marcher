@@ -1,3 +1,4 @@
+import {openDesktopKeyReferences} from './qa-key-entry.mjs';
 import {createRequire} from 'node:module';
 import {readFile,writeFile,mkdtemp,mkdir,appendFile,stat} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
@@ -44,7 +45,7 @@ let stage='launch',closed=true;const results={};
 const assert=(await import('node:assert/strict')).default;
 async function chooseRoom(name){await page.locator('#key-search').fill(name);const number=name==='Torhalle'?1:2;await page.locator('#key-room-list button').filter({hasText:new RegExp('^(?:Ohne Geometrie · )?'+number+'[.] '+name)}).click();}
 async function openKey(name){await tab('#atlas-tab');if(await page.locator('#campaign-atlas').isVisible()){await page.locator('#atlas-families button[data-family=interior]').click();if(await page.locator('#atlas-advanced').getAttribute('open')===null)await page.locator('#atlas-advanced > summary').click();}await page.locator('#key-open').click();await chooseRoom(name);}
-async function refs(){if(!await page.locator('#key-references').isVisible())await page.locator('#key-dialog summary').filter({hasText:'Kampagnenreferenzen'}).click();}
+async function refs(){if(!await page.locator('#key-references').isVisible())await openDesktopKeyReferences(page);}
 async function readSource(note){await refs();await page.locator('#key-references').getByRole('button',{name:note.title,exact:true}).click();assert.equal(await page.locator('#note-gm').inputValue(),note.gmNotes.replace(/\r\n/g,'\n'));await page.locator('#key-reference-return').click();await page.locator('#key-reference-panel').waitFor({state:'hidden'});}
 async function authorRoom(name){await page.locator('#key-read-aloud').fill(roomText[name].public);await page.locator('#key-gm-notes').fill(roomText[name].private);await page.waitForFunction(()=>document.querySelector('#key-save-status').dataset.state==='saved');await refs();}
 async function chooseVisit(name){await page.locator('#scene-list button').filter({hasText:name}).click();await page.waitForFunction(name=>document.querySelector('#scene-title').value===name,name);}

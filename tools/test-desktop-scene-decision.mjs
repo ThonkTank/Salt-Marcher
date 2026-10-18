@@ -1,3 +1,4 @@
+import {openDesktopKeyReferences} from './qa-key-entry.mjs';
 import {createRequire} from 'node:module';
 import {readFile,writeFile,mkdtemp,mkdir,stat,copyFile} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
@@ -24,7 +25,7 @@ async function launch(){app=await _electron.launch({executablePath:root+'/node_m
 async function tab(id){if(!await page.locator(id).isVisible())await page.locator('#workspace-nav-summary').click();await page.locator(id).click();}
 async function key(){await tab('#atlas-tab');await openDesktopKeyFromAtlas(page);await page.locator('#key-dialog').waitFor({state:'visible'});}
 async function room(name){await page.locator('#key-room-list').getByRole('button',{name:new RegExp(name)}).click();await page.waitForFunction(t=>document.getElementById('key-name').value===t,name);}
-async function referencePanel(){if(!await page.locator('#key-reference-target').isVisible())await page.locator('#key-dialog summary').filter({hasText:'Kampagnenreferenzen'}).click();}
+async function referencePanel(){await openDesktopKeyReferences(page);}
 async function back(){await page.locator('#key-reference-return').click();await page.locator('#key-reference-panel').waitFor({state:'hidden'});}
 async function note(){await referencePanel();await page.locator('#key-references').getByRole('button',{name:title,exact:true}).click();await page.waitForFunction(t=>document.getElementById('note-title').value===t,title);}
 async function packet(prefix,expected){await tab('#preparation-tab');await page.locator('#preparation-planning').click();await page.locator('#plans').selectOption({label:'Unter vier Augen'});await page.locator('#session-packet-open').click();await page.waitForFunction(t=>document.getElementById('session-packet-dialog').innerText.includes(t),expected);const text=await page.locator('#session-packet-dialog').innerText();for(const t of [title,decision,publicLine,'Siv die Fährfrau','Der Schrank in der Salzscheune'])if(!text.includes(t))throw Error('Packet incomplete: '+t);await writeFile(out+'/'+prefix+'-evening.txt',text);await page.locator('#session-packet-content .packet-runway button').filter({hasText:title+' · Notiz'}).click();await page.waitForFunction(t=>{const e=[...document.querySelectorAll('#session-packet-content h4')].find(e=>e.textContent===t)?.closest('.packet-block');return !!e&&e.getBoundingClientRect().top>=0&&e.getBoundingClientRect().top<innerHeight;},title+' · Notiz');await shot(prefix+'-evening');await page.locator('#session-packet-close').click();}
