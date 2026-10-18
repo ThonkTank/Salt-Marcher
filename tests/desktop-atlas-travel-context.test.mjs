@@ -200,12 +200,14 @@ test('a press rejected during saving cannot become a selection after saving comp
 });
 
 
-test('wheel bursts retain their scene between separated input events and read only the settled view',async t=>{
+test('long wheel gestures start bounded reads before input settles without cancelling in-flight frames',async t=>{
  const original={setTimeout:global.setTimeout,clearTimeout:global.clearTimeout};t.after(()=>Object.assign(global,original));let now=0,id=0;const jobs=new Map(),reads=[];
  global.setTimeout=(run,delay)=>{jobs.set(++id,{run,at:now+delay});return id;};global.clearTimeout=id=>jobs.delete(id);
  const advance=ms=>{now+=ms;for(const [id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.run();}};
  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>false,refresh:async keepScene=>reads.push(keepScene),request:0});
- ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[],'A normal gap within a wheel burst must not rebuild the scene.');ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[]);advance(40);assert.deepEqual(reads,[true]);assert.equal(jobs.size,0);assert.equal(ui.root.dataset.regionState,'loading');
+ ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[]);ui.scheduleRegion(true);advance(40);assert.deepEqual(reads,[true],'continuous input must not starve loading');assert.equal(jobs.size,0);assert.equal(ui.root.dataset.regionState,'loading');
+ ui.regionReading=ui.request;ui.scheduleRegion(true);advance(200);assert.deepEqual(reads,[true],'at most one camera request can be in flight');assert.equal(ui.request,0,'camera movement must not discard an in-flight reply');
+ ui.scheduleRegion(false);assert.equal(ui.request,1,'a source/filter change must invalidate the earlier reply');advance(60);assert.deepEqual(reads,[true,false]);
 });
 
 test('camera refresh preserves a checked local route only after the identical source is confirmed',async t=>{
@@ -221,4 +223,22 @@ test('leaving the Atlas revokes a late complete region response before reopening
  const x=fixture(t),before=x.ui.data;let release;window.campaign.atlasRegion=()=>new Promise(r=>release=r);
  const pending=x.ui.refresh(true);x.ui.hide();release({ok:true,value:{...before,revision:999,region:{fence:'late',coverage:{mode:'detail',unreadable:0}}}});await pending;
  assert.equal(x.ui.data,before);assert.equal(x.ui.loadedRegionQuery,null);assert.equal(x.ui.root.hidden,true);
+});
+
+test('camera reads predict the zoom destination while authoring still requires the displayed scale',t=>{
+ const x=fixture(t);delete x.ui.regionQuery;
+ x.document.body.insertAdjacentHTML('beforeend','<input id="atlas-slice-enabled" type="checkbox"><input id="atlas-slice" value="0"><input id="atlas-roofs" type="checkbox"><input id="atlas-perception" type="checkbox">');
+ Object.defineProperties(x.ui.svg,{clientWidth:{value:100},clientHeight:{value:80}});
+ x.ui.camera={view:{x:0,y:0,width:100,height:80},destination:{x:-50,y:-40,width:200,height:160}};
+ x.ui.scopeId='local';x.ui.floorId='ground';
+ const q=x.ui.regionQuery(true);assert.deepEqual(q.box,{x:-150,y:-120,width:400,height:320});
+ x.ui.loadedRegionQuery=q;assert(x.ui.geometryCoversView());assert.equal(x.ui.geometryCurrent(),false,'a preview is not permission to author stale geometry');
+ x.ui.camera.view=x.ui.camera.destination;assert(x.ui.geometryCurrent());
+ x.ui.floorId='other';assert.equal(x.ui.geometryCoversView(),false,'different floors never share a preview');
+});
+
+test('settling at a prefetched scale republishes constant-pixel author handles once',()=>{
+ let renders=0;const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{regionState:'loading'}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>true,scheduleRender:()=>renders++});
+ ui.scheduleRegion(true);assert.equal(renders,1);assert.equal(ui.root.dataset.regionState,'ready');
+ ui.scheduleRegion(true);assert.equal(renders,1,'an unchanged camera does not rebuild the scene repeatedly');
 });

@@ -20,7 +20,7 @@ const prefix=process.env.ATLAS_PACKAGE?[]:[root+'/.build/desktop/main.cjs'];
 const result={baseline,profile,executable,source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),runtimeHashes:Object.fromEntries(await Promise.all(['ui/renderer.js','ui/app.css'].map(async file=>[file,createHash('sha256').update(await readFile(root+'/.build/desktop/'+file)).digest('hex')]))),frames:[],errors:[]};let app;
 try{
  app=await _electron.launch({executablePath:executable,args:[...prefix,'--data-dir',profile,'--ozone-platform=x11'],timeout:60000});
- if(process.env.ATLAS_PACKAGE)assert.equal(await app.evaluate(({app})=>app.getVersion()),'0.162.0');
+ if(process.env.ATLAS_PACKAGE)assert.equal(await app.evaluate(({app})=>app.getVersion()),require(root+'/package.json').version);
  const page=await app.firstWindow();page.on('pageerror',e=>{result.errors.push(e.stack??e.message);console.error(e.stack);});
  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
  await page.locator('.campaign-card').filter({hasText:'Atlaswerkstatt'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
@@ -44,14 +44,32 @@ try{
   assert(await page.locator('#room-name').isVisible());
   assert.equal(await page.locator('#atlas-families button').count(),3);
   assert(await page.locator('[data-tool-buttons="drawing-tool"]').isVisible());
+  const tools=await page.locator('[data-tool-buttons="drawing-tool"]').evaluate(n=>({height:n.getBoundingClientRect().height,columns:getComputedStyle(n).gridTemplateColumns.split(' ').length}));
+  assert.equal(tools.columns,1);
+  assert(await page.locator('#atlas-tool-rail').evaluate(n=>n.scrollWidth<=n.clientWidth),'rail must not overflow horizontally');
+  assert(await page.locator('#atlas-families button .atlas-tool-label').evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().height<24)),'family captions remain readable');
+  assert.equal(await page.locator('#atlas-tool-rail').evaluate(n=>n.getBoundingClientRect().width),76);
+  assert(await page.locator('#atlas-tool-settings').isHidden());
+  assert(await page.locator('[data-tool-buttons="drawing-tool"] button').evaluateAll(nodes=>nodes.every(n=>{const a=n.querySelector('.atlas-tool-icon').getBoundingClientRect(),b=n.querySelector('.atlas-tool-label').getBoundingClientRect();return b.top>=a.bottom&&b.height>0;})),'every tool has a visible caption below its icon');
+  assert.equal(await page.locator('#atlas-scale').count(),0);
+  assert(await page.locator('#atlas-terrain').isHidden());assert(await page.locator('#atlas-hex-level').isHidden());
+
   await page.locator('#campaign-map').focus();await page.keyboard.press('Alt+p');assert.equal(await page.locator('#party-popover').evaluate(n=>n.matches(':popover-open')),false);
   const camera=()=>page.locator('#campaign-map').evaluate(n=>{const b=JSON.parse(n.dataset.atlasView),r=n.getBoundingClientRect();return{cx:b.x+b.width/2,cy:b.y+b.height/2,mpp:b.width/r.width};});
+  const beforeTools=await camera();
+  await page.locator('[data-tool-select="drawing-tool"][data-tool-value="select"]').click();await atlasCanvasReady(page);
+  assert(await page.locator('#atlas-tool-settings').isVisible());
+  const drawer=await page.locator('#atlas-tool-settings').boundingBox();assert.equal(drawer.x,76);assert(drawer.width>=200&&drawer.width<=300);
+  const openedTools=await camera();for(const k of ['cx','cy','mpp'])assert(Math.abs(beforeTools[k]-openedTools[k])<1e-7,k);
+  await frame('tool-settings-left');
+  await page.locator('#atlas-tool-settings-close').click();await atlasCanvasReady(page);
+  const closedTools=await camera();for(const k of ['cx','cy','mpp'])assert(Math.abs(beforeTools[k]-closedTools[k])<1e-7,k);
   const stable=await camera();
   const history=await page.getByRole('button',{name:'Vorige Ansicht',exact:true}).isDisabled();
   await page.locator('#atlas-secondary-close').click();await atlasCanvasReady(page);
   const closed=await camera();for(const k of ['cx','cy','mpp'])assert(Math.abs(stable[k]-closed[k])<1e-7,k);
   assert.equal(await page.getByRole('button',{name:'Vorige Ansicht',exact:true}).isDisabled(),history);
-  await page.getByRole('button',{name:'Vergrößern',exact:true}).click();await atlasCanvasReady(page);assert(await page.locator('#atlas-secondary').isHidden());
+  await page.getByRole('button',{name:'Vergrößern',exact:true}).click();await atlasCanvasReady(page);assert(await page.locator('#atlas-secondary').isHidden());assert(await page.locator('#atlas-tool-settings').isHidden());
   await page.getByRole('button',{name:'Vorige Ansicht',exact:true}).click();await atlasCanvasReady(page);
   await page.locator('#atlas-context-toggle').click();await atlasCanvasReady(page);
   const beforeResize=await camera();await page.locator('#atlas-details-width').focus();await page.keyboard.press('ArrowLeft');await atlasCanvasReady(page);
@@ -70,12 +88,14 @@ try{
   await page.locator('#atlas-view').click();await page.locator('#atlas-focus-map').click();await page.keyboard.press('Escape');const max=await frame('maximized');assert(max.ratio>=.90);await page.locator('#atlas-view').click();await page.locator('#atlas-tools-toggle').click();await page.keyboard.press('Escape');
   await page.locator('button[data-family="terrain"]').click();
   await page.locator('[data-tool-select="land-tool"][data-tool-value="river"]').click();
+  await page.locator('#land-width').fill('31');await page.locator('#atlas-tool-settings-close').click();
+  await page.locator('[data-tool-select="land-tool"][data-tool-value="river"]').click();assert.equal(await page.locator('#land-width').inputValue(),'31');
   const box=await page.locator('#campaign-map').boundingBox();await page.mouse.click(box.x+box.width*.4,box.y+box.height*.5);await page.mouse.click(box.x+box.width*.6,box.y+box.height*.55);
   await page.locator('#campaign-map').press('Enter');await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert');await frame('river');
   const before=await page.locator('#campaign-map').getAttribute('data-atlas-view');await page.locator('#campaign-map').focus();await page.keyboard.down('Space');await page.mouse.move(box.x+box.width*.5,box.y+box.height*.5);await page.mouse.down();await page.mouse.move(box.x+box.width*.5+35,box.y+box.height*.5+20,{steps:4});await page.mouse.up();await page.keyboard.up('Space');await atlasCanvasReady(page);assert.notEqual(await page.locator('#campaign-map').getAttribute('data-atlas-view'),before);
   // Exercise the re-arranged city controls, generated preview, room authoring and export.
   await page.locator('button[data-family="city"]').click();
-  await page.locator('#atlas-new-name').fill('Eichenfurt');await page.locator('#atlas-create-city').click();
+  await page.locator('#atlas-create-city').click();await page.locator('#atlas-new-name').fill('Eichenfurt');
   let map=await page.locator('#campaign-map').boundingBox();await page.mouse.click(map.x+map.width*.6,map.y+map.height*.6);
   await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.family==='city'&&document.querySelector('#atlas-selection-title').textContent==='Eichenfurt');await atlasCanvasReady(page);
   await page.locator('[data-tool-select="city-tool"][data-tool-value="road"]').click();

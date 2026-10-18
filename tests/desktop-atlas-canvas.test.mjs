@@ -718,3 +718,33 @@ test('panel resizing preserves world centre and CSS-pixel scale without adding h
  f.canvas.resizeViewport({width:460,height:450},{width:800,height:450});
  assert.deepEqual(f.canvas.view,before);
 });
+
+for(const pinch of [false,true])test(`touchpad ${pinch?'pinch':'scroll'} stays monotonic with early frame timestamps and moving input`,async t=>{
+ const f=fixture(t),cancel=global.cancelAnimationFrame;t.after(()=>global.cancelAnimationFrame=cancel);global.cancelAnimationFrame=()=>{};
+ f.canvas.options.smoothZoom=true;f.window.matchMedia=()=>({matches:false});
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();
+ const start=f.canvas.view;let previous=start.width;
+ const wheel=delta=>{const e=new f.window.Event('wheel',{cancelable:true});Object.assign(e,{deltaY:delta,deltaMode:0,ctrlKey:pinch,clientX:107,clientY:75});f.root.dispatchEvent(e);assert(e.defaultPrevented);};
+ for(const delta of [12,8,6,3,1,.25]){
+  wheel(delta);
+  for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt-2);
+  assert(f.canvas.view.width>=previous,'an early animation timestamp must never reverse zoom');
+  for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+16);
+  assert(f.canvas.view.width>=previous);previous=f.canvas.view.width;
+ }
+ assert(f.canvas.destination.width>f.canvas.view.width,'loading can anticipate the target');
+ for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+200);
+ assert(f.canvas.view.width>=previous);const out=f.canvas.view;
+ wheel(-10);for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+16);
+ assert(f.canvas.view.width<out.width,'intentional reversal responds immediately');
+ f.canvas.stopZoom();f.canvas.previous();assert.deepEqual(f.canvas.view,start,'one continuous gesture has one history entry');
+});
+
+test('a direction reversal does not finish an outstanding zoom in the old direction',t=>{
+ const f=fixture(t),cancel=global.cancelAnimationFrame;t.after(()=>global.cancelAnimationFrame=cancel);global.cancelAnimationFrame=()=>{};
+ f.canvas.options.smoothZoom=true;f.window.matchMedia=()=>({matches:false});
+ f.canvas.zoom(2);const displayed=f.canvas.view;
+ f.canvas.zoom(.9,undefined,true);
+ for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+200);
+ assert.equal(f.canvas.view.width,displayed.width*.9);
+});
