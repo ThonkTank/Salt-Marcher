@@ -137,6 +137,13 @@ export function atlasExportScale(box:CanvasBox,width:number,height:number){
   if(width<256||height<100)return undefined;
   const scene=atlasPaint('group'),mpp=box.width/width*Math.max(1,Math.min(width/1024,height/100));
   drawScale(scene,box,mpp);
+  // Canvas silently drops huge world-unit fonts at world-map zoom. Keep glyph
+  // metrics small and put the world scaling in the text node transform instead.
+  for(const text of scene.children.filter(n=>n.kind==='text')){
+    text.geometry.matrix=[mpp,0,0,mpp,text.geometry.x??0,text.geometry.y??0];
+    text.geometry.x=text.geometry.y=0;
+    text.style.fontSize=(text.style.fontSize??11*mpp)/mpp;
+  }
   // Contrast stays independent of the terrain under the printed legend.
   scene.children.unshift(atlasPaint('rect',{x:12*mpp,y:box.height-64*mpp,width:Math.min(box.width-24*mpp,260*mpp),height:44*mpp,style:{fill:'#fff',fillOpacity:.9}}));
   return scene;
