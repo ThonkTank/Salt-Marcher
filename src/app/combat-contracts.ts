@@ -5,6 +5,9 @@ import {checkedHealth,type FinishRewards,type CombatReward,type CharacterHealth,
 import type { Creature } from '../features/catalog/creature-catalog';
 import type { EncounterAssessment, EncounterParty } from './encounter-contracts';
 export const combatConditions=[['Blind','Blinded'],['Bezaubert','Charmed'],['Taub','Deafened'],['Verängstigt','Frightened'],['Gepackt','Grappled'],['Handlungsunfähig','Incapacitated'],['Unsichtbar','Invisible'],['Gelähmt','Paralyzed'],['Versteinert','Petrified'],['Vergiftet','Poisoned'],['Liegend','Prone'],['Festgesetzt','Restrained'],['Betäubt','Stunned'],['Bewusstlos','Unconscious']] as const;
+const conditionParts=(text:string)=>text.split(/\s*[,;\n]\s*/).map(part=>part.trim()).filter(Boolean);
+export function hasCombatCondition(text:string,label:string,source:string){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]);return conditionParts(text).some(part=>aliases.has(part.toLocaleLowerCase()));}
+export function setCombatCondition(text:string,label:string,source:string,active:boolean){const aliases=new Set([label.toLocaleLowerCase('de'),source.toLocaleLowerCase('en')]),parts=conditionParts(text).filter(part=>!aliases.has(part.toLocaleLowerCase()));if(active)parts.push(label);return parts.join(', ');}
 export interface Combatant {role?:import('./npc-contracts').NpcRole;
   id: string; characterId: string | null; groupId: string; groupName?: string; name: string;
   initiative: number; initiativeBonus: number; armorClass: number;
