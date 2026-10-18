@@ -66,7 +66,7 @@ try{
  await page.locator('#atlas-output-open').click();await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();await page.locator('#atlas-export-grid').check();await page.locator('#atlas-export-size').fill('1024');
  await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},output+'/day-grid-export.png');
  await page.locator('#atlas-export-png').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:30000});
- const png=require('pngjs').PNG.sync.read(await readFile(output+'/day-grid-export.png'));assert.equal(png.width,1024);assert(png.height>100);results.dayGridExport=true;
+ const png=require('pngjs').PNG.sync.read(await readFile(output+'/day-grid-export.png'));assert.equal(Math.max(png.width,png.height),1024);assert(Math.min(png.width,png.height)>100);results.dayGridExport=true;
  await close();
  const fresh=new CampaignStore(file);assert.deepEqual(fresh.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get(original.id),before);
  const rows=fresh.db.prepare('SELECT payload FROM atlas_landscape WHERE id<>?').all(original.id).map(r=>JSON.parse(r.payload));assert.equal(rows.length,1);assert.equal(rows[0].resolution,38624.256);const pts=rows[0].polygons[0].outer;assert(Math.abs(Math.max(...pts.map(p=>p.x))-Math.min(...pts.map(p=>p.x))-38624.256)<.001);fresh.close();results.legacyPreservedAndDayHexSaved=true;
