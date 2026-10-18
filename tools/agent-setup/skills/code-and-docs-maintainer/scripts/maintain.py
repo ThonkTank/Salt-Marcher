@@ -11,7 +11,8 @@ import tempfile
 
 
 MODES = ('current', 'prune', 'find-code', 'read-code', 'bridge', 'entrypoints')
-CODE = {'.ts', '.tsx', '.js', '.mjs', '.cjs', '.py', '.sh', '.css', '.html', '.sql'}
+CODE = set('ts tsx js jsx mjs cjs py sh bash css scss html sql java kt kts swift '
+           'c h cc cpp hpp cs go rs rb php dart vue svelte scala ex exs yaml yml toml'.split())
 DOCS = {'.md', '.markdown', '.rst', '.adoc'}
 
 
@@ -39,7 +40,9 @@ def inventory(repo, sha):
         mode, kind, blob = metadata.decode().split()
         path = raw_path.decode('utf-8')
         suffix = PurePosixPath(path).suffix.lower()
-        category = 'docs' if suffix in DOCS else 'code' if suffix in CODE else 'reference'
+        config = PurePosixPath(path).name in ('Makefile', 'Dockerfile', 'package.json') or (
+            PurePosixPath(path).name.startswith('tsconfig') and suffix == '.json')
+        category = 'docs' if suffix in DOCS else 'code' if suffix.lstrip('.') in CODE or config else 'reference'
         if mode not in ('100644', '100755') or kind != 'blob':
             category = 'reference'
         result[path] = {'blob': blob, 'kind': category, 'mode': mode}

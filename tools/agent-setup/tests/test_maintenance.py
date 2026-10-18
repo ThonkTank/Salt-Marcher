@@ -168,6 +168,16 @@ class MaintenanceTests(unittest.TestCase):
         self.cli('park', '--reason', 'External block')
         self.assertEqual(self.cli('status')['blocked'][0]['need']['question'], 'Real lookup barrier')
 
+    def test_code_inventory_supports_other_projects_and_build_configuration(self):
+        for path in ['app/Main.kt', 'src/Main.java', '.github/workflows/check.yml', 'package.json']:
+            self.write(path, '{}\n')
+        self.commit()
+        for _ in range(2):
+            self.cli('finish', '--outcome', 'no-work', '--evidence', 'Checked without changes')
+        paths = {row['path'] for row in self.cli('next', '--limit', '50')['files']}
+        self.assertTrue({'app/Main.kt', 'src/Main.java', '.github/workflows/check.yml', 'package.json'} <= paths)
+        self.assertNotIn('catalog.json', paths)
+
 
 if __name__ == '__main__':
     unittest.main()
