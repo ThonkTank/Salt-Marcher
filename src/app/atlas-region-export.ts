@@ -1,3 +1,5 @@
+import {paintElement} from './atlas-paint-svg';
+import {appendAtlasRoomLabels} from './atlas-room-labels';
 import { atlasPaint as landscapeNode } from "./atlas-paint";
 import { regionValue } from "./atlas-region-contracts";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
@@ -18,11 +20,13 @@ export function atlasRegionPaint(
     references: boolean;
     floorId: string;
     roofs: boolean;
+    scopeId?:string|null;
+    labelUnitsPerPixel?:number;
     rasters?: import("./landscape-raster").LandscapeRaster[];
   },
 ) {
   const scene = landscapeNode("group", {}),
-    mpp = box.width / width;
+    mpp = box.width / width,scope=options.scopeId!==undefined?options.scopeId:data.region?.scopeId,labelMpp=options.labelUnitsPerPixel??mpp;
   scene.append(
     landscapeNode("rect", {
       width: box.width,
@@ -53,6 +57,7 @@ export function atlasRegionPaint(
     );
     return scene;
   }
+  const interiorOf=(id:string)=>regionValue(data.region?.interiors,id)??data.bindings.find(b=>b.kind==='dungeon'&&b.parent==='building'&&b.parentId===id)?.ownerId;
   for (const city of data.cities) {
     const binding = data.bindings.find(
       (b) => b.kind === "city" && b.ownerId === city.header.id,
@@ -75,22 +80,23 @@ export function atlasRegionPaint(
       const cityScene = cityPaint(city);
       for (const element of cityScene.children) {
         const id = element.data.cityUnit,
-          interior = id && regionValue(data.region?.interiors, id);
+          interior = id && interiorOf(id);
         if (
           interior &&
-          (!options.roofs || mpp <= 0.4 || interior === data.region?.scopeId)
+          (!options.roofs || interior === scope)
         )
           for (const polygon of element.children.filter(
             (n) => n.kind === "polygon",
           )) {
             polygon.style.fill = null;
             if (
-              interior === data.region?.scopeId &&
+              interior === scope &&
               options.floorId !== "ground"
             )
               polygon.geometry.hidden = true;
           }
       }
+      for(const element of cityScene.children){if(element.data.cityUnit&&interiorOf(element.data.cityUnit)===scope&&scope)element.children.splice(0,element.children.length,...element.children.filter(n=>n.kind!=='text'));for(const label of [element,...element.children].filter(n=>n.kind==='text'))label.style.fontSize=Math.min(label.style.fontSize??6,12*labelMpp);}
       g.append(cityScene);
     }
     scene.append(g);
@@ -99,8 +105,7 @@ export function atlasRegionPaint(
     if (
       b.parent === "building" &&
       options.roofs &&
-      mpp > 0.4 &&
-      b.ownerId !== data.region?.scopeId
+      b.ownerId !== scope
     )
       continue;
     const floor = data.region
@@ -112,6 +117,7 @@ export function atlasRegionPaint(
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
+    const labels=landscapeNode('group',{data:{atlasRoomLabels:b.ownerId}});
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
@@ -126,20 +132,7 @@ export function atlasRegionPaint(
           },
         }),
       );
-      if (room.polygons[0]?.outer[0]) {
-        const p = room.polygons[0].outer[0];
-        g.append(
-          landscapeNode(
-            "text",
-            {
-              x: p.x,
-              y: p.y,
-              style: { fontSize: Math.max(0.3, mpp * 11), fill: "#293d34" },
-            },
-            [room.number, room.name].filter(Boolean).join(" · "),
-          ),
-        );
-      }
+      appendAtlasRoomLabels(labels,room,labelMpp,p=>{const c=Math.cos(f.angle),s=Math.sin(f.angle);return{x:f.x+p.x*c-p.y*s-box.x,y:f.y+p.x*s+p.y*c-box.y};});
     }
     for (const e of data.geometry.drawing.elements.filter(
       (e) => e.scopeId === b.ownerId && e.floorId === floor,
@@ -148,7 +141,10 @@ export function atlasRegionPaint(
         elementPaint(e, data.workspace.rooms, data.geometry.drawing.elements),
       );
     }
-    scene.append(g);
+    scene.append(g,labels);
   }
   return scene;
 }
+
+/** Explicit vector adapter for historical document interfaces, never used by Canvas painting. */
+export function atlasRegionSVG(...args:Parameters<typeof atlasRegionPaint>){const p=atlasRegionPaint(...args);p.geometry.size={width:args[2].width,height:args[2].height};return paintElement(p,document) as SVGSVGElement;}

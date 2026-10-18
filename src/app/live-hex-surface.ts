@@ -2,7 +2,7 @@
 export interface LiveAtlasSurface {mount(map:HTMLElement,navigation:HTMLElement,console:HTMLElement):void;show(visible:boolean):void;unmount():void;focus():void}
 let atlasSurface:LiveAtlasSurface|null=null;
 export function setLiveAtlasSurface(surface:LiveAtlasSurface|null){atlasSurface=surface;}
-export function liveHexSurface(){
+export function liveHexSurface(openMap?:()=>Promise<void>){
  const get=(id:string)=>document.getElementById(id)!;
  const writing=document.querySelector<HTMLElement>('.live-desk-writing')!;
  const tabs=document.createElement('div');tabs.id='live-center-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Szenenmitte');
@@ -10,7 +10,7 @@ export function liveHexSurface(){
  const map=document.createElement('section');map.id='live-center-map';map.setAttribute('role','tabpanel');map.hidden=true;
  const toolbar=document.createElement('div');toolbar.id='live-center-tools';toolbar.append(tabs);
  writing.append(toolbar,scene,map);
- let center:'scene'|'map'='scene',docked=false,shared:LiveAtlasSurface|null=null;
+ let center:'scene'|'map'='scene',docked=false,opening=false,shared:LiveAtlasSurface|null=null;
  const sceneTab=document.createElement('button'),mapTab=document.createElement('button');
  for(const [button,id,label]of [[sceneTab,'scene','Szene'],[mapTab,'map','Karte']] as const){button.type='button';button.id='live-center-'+id+'-tab';button.textContent=label;button.setAttribute('role','tab');button.setAttribute('aria-controls','live-center-'+id);button.onclick=()=>show(id);tabs.append(button);get('live-center-'+id).setAttribute('aria-labelledby',button.id);}
  const reference=document.querySelector<HTMLElement>('.live-desk-reference')!,panel=get('live-world-panel'),panelHome=document.createComment('world panel home');panel.before(panelHome);
@@ -27,8 +27,26 @@ export function liveHexSurface(){
  const navigation=document.createElement('details'),navigationTitle=document.createElement('summary');navigation.id='live-travel-navigation';navigationTitle.textContent='Kartenansicht und Gruppe platzieren';navigation.append(navigationTitle);host.append(navigation);
  const nodes=[get('world-map-select').closest<HTMLElement>('.world-map-selection')!,get('world-current'),get('world-map-modes'),travel];
  const homes=[...nodes,...camera,canvas].map(node=>{const marker=document.createComment('hex surface home');node.before(marker);return{node,marker};});
- function paint(){scene.hidden=docked&&center==='map';map.hidden=!docked||center!=='map';sceneTab.setAttribute('aria-selected',String(!scene.hidden));mapTab.setAttribute('aria-selected',String(!map.hidden));mapTab.disabled=!docked;open.hidden=!docked||center==='map';writing.classList.toggle('live-map-center-open',!map.hidden);shared?.show(!map.hidden);}
- function show(next:'scene'|'map'){if(next==='map'&&!docked)return;center=next;paint();}
+ function fitMap(){
+  if(map.hidden||typeof map.getBoundingClientRect!=='function')return;
+  const top=map.getBoundingClientRect().top,mini=document.getElementById('music-mini'),bottom=mini?.getBoundingClientRect?.().top;
+  if(!Number.isFinite(top)||!window.innerHeight)return;
+  const edge=bottom&&bottom>top?Math.min(window.innerHeight,bottom):window.innerHeight;
+  map.style.setProperty('--live-map-height',Math.max(220,edge-top-8)+'px');
+ }
+ let fitQueued=false;
+ function scheduleFit(){
+  if(fitQueued)return;fitQueued=true;
+  const run=()=>{fitQueued=false;if(!map.hidden)fitMap();};
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);else run();
+ }
+ window.addEventListener('resize',()=>scheduleFit());
+ window.addEventListener('scroll',()=>scheduleFit(),{passive:true});
+ function paint(){scene.hidden=docked&&center==='map';map.hidden=!docked||center!=='map';sceneTab.setAttribute('aria-selected',String(!scene.hidden));mapTab.setAttribute('aria-selected',String(!map.hidden));mapTab.disabled=!docked&&(!openMap||opening);open.hidden=!docked||center==='map';writing.classList.toggle('live-map-center-open',!map.hidden);shared?.show(!map.hidden);if(!map.hidden)scheduleFit();}
+ function show(next:'scene'|'map'){
+  if(next==='map'&&!docked&&!openMap)return;center=next;paint();
+  if(next==='map'&&!docked&&openMap&&!opening){opening=true;paint();void openMap().finally(()=>{opening=false;paint();});}
+ }
  paint();
  return{show,get center(){return center;},dock(on:boolean){
   if(on!==docked){docked=on;weather.open=!on;if(on){reference.prepend(panel);panel.scrollTop=0;host.append(...nodes,navigation);navigation.append(...camera);shared=atlasSurface;if(shared)shared.mount(map,navigation,host);else map.append(canvas);}else{shared?.unmount();shared=null;panelHome.before(panel);for(const {node,marker}of homes)marker.before(node);}}

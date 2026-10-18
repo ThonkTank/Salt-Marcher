@@ -164,7 +164,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointerdown",
       (e) => {
-        if (!this.active || e.button !== 0 || e.altKey || this.saving) return;
+        if (svg.dataset.exportFraming==='true' || !this.active || e.button !== 0 || e.altKey || this.saving) return;
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
           this.tool === "select" && !this.host.choose &&
@@ -213,7 +213,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointermove",
       (e) => {
-        if (this.pointer !== e.pointerId) return;
+        if (svg.dataset.exportFraming==='true' || this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
         const p = this.point(e);
@@ -262,7 +262,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointerup",
       (e) => {
-        if (this.pointer !== e.pointerId) return;
+        if (svg.dataset.exportFraming==='true' || this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
         const commitLine = this.dragging && this.lineDragChanged &&
@@ -287,7 +287,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "click",
       (e) => {
-        if (!this.active || this.saving || e.altKey) return;
+        if (svg.dataset.exportFraming==='true' || !this.active || this.saving || e.altKey) return;
         if (this.tool === "select") {
           if (
             this.hit(e, ["landscapeId","landVertex"])
@@ -325,7 +325,7 @@ export class LandscapeWorkbench {
       true,
     );
     svg.addEventListener("keydown", (e) => {
-      if (!this.active) return;
+      if (svg.dataset.exportFraming==='true' || !this.active) return;
       if (e.key === "Escape") {
         e.preventDefault();
         this.cancel();
@@ -390,11 +390,10 @@ export class LandscapeWorkbench {
     const hex = document.getElementById("atlas-hex-level")?.closest("label");
     if (hex) hex.hidden = this.active && this.tool !== "hex" && html<HTMLInputElement>("land-auto-level").checked;
     const name = document.getElementById("atlas-new-name")?.closest("label");
-    if (name) {
-      name.hidden = this.active && !["place", "river", "road"].includes(this.tool);
-      name.firstChild!.textContent = this.active
-        ? this.tool === "place" ? "Name für neuen Ort" : "Name für neuen Verlauf"
-        : "Name";
+    if (name && this.active) {
+      name.hidden = !["place", "river", "road"].includes(this.tool);
+      name.firstChild!.textContent = this.tool === "place"
+        ? "Name für neuen Ort" : "Name für neuen Verlauf";
     }
   }
   setActive(active: boolean) {
@@ -493,13 +492,15 @@ export class LandscapeWorkbench {
     if(token!==this.token||generation!==this.selectionRequest||frame!==this.host.data()?.region?.fence)return;
     if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.select(response.value);
   }
-  draw(root: AtlasPaint, box: LandscapeBox, mpp: number) {
+  draw(root: AtlasPaint, box: LandscapeBox, mpp: number,locationMarkers?:ReadonlySet<string>) {
     const landscapeNode=atlasPaint;
-    const key=[this.records,this.raster,this.selected?.id,this.selected?.resolution,this.selected?.order,mpp,...[...this.assets].flat(),...this.unavailableAssets];
+    const records=this.selected?[...this.records.filter(r=>r.id!==this.selected!.id),this.selected]:this.records;
+    const shown=locationMarkers?records.filter(r=>r.kind!=='place'||!r.locationId||!locationMarkers.has(r.locationId)):records;
+    const key=[this.records,this.raster,locationMarkers?[...locationMarkers].sort().join('|'):'',this.selected?.id,this.selected?.resolution,this.selected?.order,mpp,...[...this.assets].flat(),...this.unavailableAssets];
     let background=this.background;
     if(!background||background.key.length!==key.length||!background.key.every((v,i)=>v===key[i])){
       const node=atlasPaint('group',{retainGeometry:true});
-      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id),this.selected]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      drawLandscape(node,shown,box,mpp,this.assets,true,this.raster,this.unavailableAssets);
       this.background=background={key,node,box:{...box},selectedSlot:this.selected?node.children.findIndex(n=>n.data.landscapeId===this.selected!.id):-1};
     }
     const retained=atlasPaint('group',{matrix:[1,0,0,1,background.box.x-box.x,background.box.y-box.y],data:{atlasLandscapeBase:'true'}});
@@ -511,6 +512,7 @@ export class LandscapeWorkbench {
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
     }
     retained.append(node);root.append(retained);
+
     const auto = html<HTMLInputElement>("land-auto-level").checked,
       level = auto
         ? Math.max(

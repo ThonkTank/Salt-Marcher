@@ -1,4 +1,7 @@
 import { AtlasPaint, atlasPaint } from "./atlas-paint";
+import {drawLandscape} from './atlas-landscape-view';
+import {hexPolygon,type LandscapeRecord} from './atlas-landscape';
+import {paintElement} from './atlas-paint-svg';
 import { AtlasCanvasScene } from "./atlas-canvas-scene";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
@@ -9,14 +12,18 @@ import {
   atlasHexPoint,
   localToAtlas,
 } from "./campaign-atlas-model";
+import {atlasPartyPoint} from './atlas-runtime-model';
 import { terrainColors } from "./world-model";
 /** Public output uses only the public projection, never hidden GM nodes. */
 export function publicAtlasPaint(
   a: AtlasRenderView,
   box: CanvasBox,
   frame?: PlayerFrame,
+  landscape:LandscapeRecord[]=[],
+  mpp=box.width/1000,
+  rasters:import("./landscape-raster").LandscapeRaster[]=[],
 ) {
-  const scene = atlasPaint("group");
+  const scene = atlasPaint("group",{size:{width:box.width,height:box.height}});
   const add = (...args: Parameters<typeof atlasPaint>) => {
     const node = atlasPaint(...args);
     scene.append(node);
@@ -116,9 +123,21 @@ export function publicAtlasPaint(
           cell.label,
         );
     }
+    const visible=map.cells.filter(c=>c.visible);
+    if(visible.length&&(landscape.length||rasters.length)){
+      const polygons=visible.map(c=>({outer:hexPolygon(c.q,c.r,map.hexMeters).outer.map(p=>({x:p.x-box.x,y:p.y-box.y})),holes:[]}));
+      const current=atlasPaint('group',{clip:{polygons,id:'visible-landscape'}});
+      drawLandscape(current,landscape.filter(r=>r.kind!=='reference'&&r.kind!=='place').map(r=>({...r,name:''})),box,mpp,new Map(),false,rasters);
+      scene.append(current);
+    }
     // Remembered cells deliberately keep their public snapshot. Current GM
     // contours must not replace unseen terrain, even inside a known hex.
-    const p = atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
+    for(const marker of map.markers){
+      const p=atlasHexPoint(marker.q,marker.r,map.hexMeters);
+      add('circle',{x:p.x-box.x,y:p.y-box.y,radius:map.hexMeters/70,opacity:marker.visible?1:.55,style:{fill:'#39766a'}});
+      if(marker.label)add('text',{x:p.x-box.x,y:p.y-box.y-map.hexMeters/40,style:{fontSize:map.hexMeters/15,textAlign:'center',fill:'#203532'}},marker.label);
+    }
+    const p = atlasPartyPoint(a) ?? atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
     add("circle", {
       x: p.x - box.x,
       y: p.y - box.y,
@@ -131,6 +150,8 @@ export function publicAtlasPaint(
     );
   return scene;
 }
+/** Legacy vector output adapter; the screen and raster writer use Paint directly. */
+export function publicAtlasSVG(...args:Parameters<typeof publicAtlasPaint>){const p=publicAtlasPaint(...args);p.geometry.size={width:args[1].width,height:args[1].height};return paintElement(p,document) as SVGSVGElement;}
 /** A scene is drawn directly; GM scenes stream through one reusable tile surface. */
 export async function atlasImage(
   source:

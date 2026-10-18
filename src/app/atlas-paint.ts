@@ -52,6 +52,7 @@ export interface PaintOptions {
   pointer?: boolean;
   hidden?: boolean;
   hud?: boolean;
+  clip?: {path?:string;polygons?:Polygon[];rule?:CanvasFillRule;id?:string};
   maskCuts?: { polygons: Polygon[]; alpha: number }[];
   size?: { width: number; height: number };
   style?: PaintStyle;

@@ -20,6 +20,8 @@ export function polygonMarkupPath(polygons: Polygon[]) {
     .map(r => "M" + r.map(p => p.x + "," + p.y).join("L") + "Z")
     .join(" ");
 }
+function clipMarkup(n:AtlasPaint){const c=n.geometry.clip;return c?`<defs><clipPath id="${escapeXML(c.id??"paint-clip")}"><path d="${escapeXML(c.polygons?polygonMarkupPath(c.polygons):c.path??'')}" clip-rule="${c.rule??"nonzero"}"/></clipPath></defs>`:"";}
+
 function attributes(n: AtlasPaint) {
   const p = n.geometry,
     a: Record<string, string | number> = {};
@@ -42,7 +44,8 @@ function attributes(n: AtlasPaint) {
   if (p.source !== undefined) a.href = p.source;
   if (p.matrix) a.transform = "matrix(" + p.matrix.join(" ") + ")";
   if (p.opacity !== undefined) a.opacity = p.opacity;
-  if (p.pointer === false) a["pointer-events"] = "none";
+  if (p.pointer !== undefined) a["pointer-events"] = p.pointer ? "auto" : "none";
+  if(p.clip)a["clip-path"]=`url(#${p.clip.id??"paint-clip"})`;
   if (p.hidden) a.visibility = "hidden";
   if (p.size)
     Object.assign(a, {
@@ -93,12 +96,13 @@ export function paintMarkup(n: AtlasPaint): string {
     a = Object.entries(attributes(n))
       .map(([k, v]) => ` ${k}="${escapeXML(v)}"`)
       .join("");
-  return `<${name}${a}>${n.title ? "<title>" + escapeXML(n.title) + "</title>" : ""}${escapeXML(n.text)}${n.children.map(paintMarkup).join("")}</${name}>`;
+  return `<${name}${a}>${n.title ? "<title>" + escapeXML(n.title) + "</title>" : ""}${clipMarkup(n)}${escapeXML(n.text)}${n.children.map(paintMarkup).join("")}</${name}>`;
 }
 export function paintElement(n: AtlasPaint, doc: Document): SVGElement {
   const e = doc.createElementNS(ns, tag(n));
   for (const [k, v] of Object.entries(attributes(n)))
     e.setAttribute(k, String(v));
+  if(n.geometry.clip){const defs=doc.createElementNS(ns,"defs"),clip=doc.createElementNS(ns,"clipPath"),path=doc.createElementNS(ns,"path");clip.setAttribute("id",n.geometry.clip.id??"paint-clip");path.setAttribute("d",n.geometry.clip.polygons?polygonMarkupPath(n.geometry.clip.polygons):n.geometry.clip.path??'');path.setAttribute("clip-rule",n.geometry.clip.rule??"nonzero");clip.append(path);defs.append(clip);e.append(defs);}
   if (n.title) {
     const t = doc.createElementNS(ns, "title");
     t.textContent = n.title;

@@ -8,17 +8,18 @@ import {parseHTML} from 'linkedom';
 await build({entryPoints:['src/app/campaign-atlas-ui.ts'],outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
 export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
 export function drawingOverlay(root){globalThis.atlasOverlayCalls++;root.append(globalThis.atlasDraftNode);}
-export const selectElement=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},reloadDrawing=()=>{};`}));}}]});
+export const selectElement=()=>{},atlasDrawingRectangle=()=>{},cancelDrawingGesture=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},reloadDrawing=()=>{};`}));}}]});
 const {CampaignAtlasWorkbench}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
 function fixture(t){
  const previous={window:global.window,document:global.document,atlasAuthorDraft:global.atlasAuthorDraft,atlasOverlayCalls:global.atlasOverlayCalls,atlasDraftNode:global.atlasDraftNode,atlasAuthorPoints:global.atlasAuthorPoints};t.after(()=>Object.assign(global,previous));
- const ids=['recover','placement','scale','undo','redo','connect-entrance','local-console','create-tools','floor-field','building-interior','selection-title','room-draw'];
- const {window,document}=parseHTML('<html><body>'+ids.map(id=>`<div id="atlas-${id}"></div>`).join('')+'<label><input id="atlas-slice-enabled"></label><label><input id="atlas-slice"></label><label><input id="atlas-roofs"></label><input id="atlas-perception"><select id="atlas-floor"></select><select id="drawing-tool"><option value="room-polygon">Polygon</option></select></body></html>');Object.assign(global,{window,document,atlasAuthorDraft:{floor:{scopeId:'local',floorId:'ground'}},atlasOverlayCalls:0,atlasAuthorPoints:[]});
+ const ids=['to-party','recover','placement','scale','undo','redo','connect-entrance','local-console','create-tools','floor-field','building-interior','selection-title','create-place','drawing-tools','interior-context','interior-house-name','hint','place-actions','place-summary','place-read','place-edit','view-status','view-refresh'];
+ const {window,document}=parseHTML('<html><body>'+ids.map(id=>`<div id="atlas-${id}"></div>`).join('')+'<label><input id="atlas-new-name"></label><label><input id="atlas-slice-enabled"></label><label><input id="atlas-slice"></label><label><input id="atlas-roofs"></label><input id="atlas-perception"><select id="atlas-floor"></select><select id="drawing-tool"><option value="room-polygon">Polygon</option></select></body></html>');Object.assign(global,{window,document,atlasAuthorDraft:{floor:{scopeId:'local',floorId:'ground'}},atlasOverlayCalls:0,atlasAuthorPoints:[]});
  const original={name:'Autorenraum',number:'1',id:'room',scopeId:'local',floorId:'ground',revision:7,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},binding={id:'bind',kind:'dungeon',ownerId:'local',parent:'world',parentId:null,x:-100,y:50,angle:Math.PI/2,revision:0};
+
  let output,current=true;
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},svg:{clientWidth:100,dataset:{}},camera:{view:{x:-110,y:40,width:20,height:20},render:draw=>{output={children:[],data:{mapScene:'true'},append(...nodes){this.children.push(...nodes);}};draw(output);}},family:'interior',scopeId:'local',floorId:'ground',selection:{kind:'room',id:'room'},draft:[],landscape:{draw(){}},opts:{roomDraft:()=>original},geometryCurrent:()=>current,selectedBinding:()=>null,renderTravel(){},drawTerrain(){},drawInteriorRuntime(){},drawParty(){}});
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},svg:{clientWidth:100,dataset:{}},camera:{view:{x:-110,y:40,width:20,height:20},render:draw=>{output={children:[],data:{mapScene:'true'},append(...nodes){this.children.push(...nodes);}};draw(output);}},family:'interior',scopeId:'local',floorId:'ground',selection:{kind:'room',id:'room'},draft:[],landscape:{draw(){},setActive(){}},opts:{roomDraft:()=>original},geometryCurrent:()=>current,selectedBinding:()=>null,renderTravel(){},drawTerrain(){},drawInteriorRuntime(){},drawParty(){}});
  // A raster region intentionally contains no author contours or display rooms.
- Object.defineProperty(ui,'data',{value:{campaignId:'campaign',revision:5,canUndo:true,canRedo:false,cities:[],bindings:[binding],workspace:{rooms:[],floors:[]},entrances:[],terrain:{hexMeters:100},region:{box:{x:-120,y:30,width:40,height:40},raster:{box:{x:-110,y:40,width:20,height:20},data:'raster'},frames:{bind:{x:-100,y:50,angle:Math.PI/2}}},geometry:{position:null}},writable:true});
+ Object.defineProperty(ui,'data',{value:{campaignId:'campaign',revision:5,canUndo:true,canRedo:false,cities:[],places:[],bindings:[binding],workspace:{rooms:[],floors:[]},entrances:[],terrain:{hexMeters:100},region:{box:{x:-120,y:30,width:40,height:40},raster:{box:{x:-110,y:40,width:20,height:20},data:'raster'},frames:{bind:{x:-100,y:50,angle:Math.PI/2}}},geometry:{position:null}},writable:true});
  global.atlasDraftNode={kind:'polyline',geometry:{points:[{x:2,y:3},{x:4,y:5}]},style:{},data:{editorOnly:'true'},children:[]};
  return{ui,original,document,render(){ui.render();return output;},current(value){current=value;}};
 }
@@ -88,36 +89,6 @@ test('an active point tool owns the press instead of dragging an existing room g
 test('an object-only interior paints its geometry instead of reducing it to an empty dungeon marker',t=>{
  const f=fixture(t);f.ui.selection=null;f.ui.opts.roomDraft=()=>null;f.ui.data.region.raster=undefined;f.ui.data.region.scopeBounds={local:{x:1,y:2,width:4,height:1}};f.ui.data.geometry.drawing={elements:[{id:'wall',kind:'wall',scopeId:'local',floorId:'ground',archived:false,points:[{x:1,y:2},{x:5,y:2}],color:'#123456',width:.2,height:6}]};
  const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true');assert(all(base).some(n=>n.data.kind==='element'&&n.data.id==='wall'));
-});
-
-function rectangleGesture(t){
- const f=fixture(t),writes=[],selected=[],captures=[];
- for(const id of ['atlas-new-name','atlas-draft-cancel','drawing-cancel']){const n=f.document.createElement(id==='atlas-new-name'?'input':'button');n.id=id;f.document.body.append(n);}
- f.document.getElementById('atlas-new-name').value='Zollhaus';
- Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>selected.push(id),status(){}},error:e=>{throw e;}});
- f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
- const event=(x,y)=>({button:0,pointerId:3,clientX:x,clientY:y,altKey:false});
- return{...f,writes,selected,captures,event};
-}
-for(const reverse of [false,true])test(`room rectangle drag previews and commits once in a rotated frame (${reverse?'reverse':'forward'})`,async t=>{
- const f=rectangleGesture(t),a=f.event(-100,50),b=f.event(-106,62),[start,end]=reverse?[b,a]:[a,b];
- f.ui.down(start);f.ui.move(end);assert.equal(f.writes.length,0);assert(f.ui.roomDrag.moved);assert.deepEqual(f.captures,[3]);
- await f.ui.up(end);assert.equal(f.writes.length,1);const action=f.writes[0];assert.equal(action.kind,'room-create');assert.equal(action.scopeId,'local');assert.equal(action.floorId,'ground');assert.equal(action.name,'Zollhaus');
- const points=action.polygons[0].outer;assert(Math.abs(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))-12)<1e-9);assert(Math.abs(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y))-6)<1e-9);
- assert.deepEqual(f.selected,['created','refreshed'],'next editing commands must use the frame published after room selection');assert.equal(f.ui.roomDrag,null);assert.equal(f.ui.root.dataset.roomDraw,'false');assert.equal(f.ui.ignoreClick,true);await f.ui.click(end);assert.equal(f.writes.length,1,'the synthetic release click cannot draw a second room');
-});
-test('stationary room presses keep two-click authoring and an invalid second corner remains correctable',async t=>{
- const f=rectangleGesture(t),a=f.event(-100,50),b=f.event(-106,62);f.ui.camera.hitAt=()=>null;
- f.ui.down(a);await f.ui.up(a);await f.ui.click(a);assert.equal(f.writes.length,0);assert.equal(f.ui.draft.length,1);
- await assert.rejects(()=>f.ui.click(a),/Raum benötigt eine Fläche/);assert.equal(f.ui.draft.length,1);
- f.ui.down(b);await f.ui.up(b);await f.ui.click(b);assert.equal(f.writes.length,1);
-});
-test('cancelled, stale and switched-floor room gestures cannot write into another context',async t=>{
- for(const mode of ['cancel','stale','floor']){
- const f=rectangleGesture(t),a=f.event(-100,50),b=f.event(-106,62);f.ui.down(a);f.ui.move(b);
- if(mode==='cancel')f.ui.cancel();if(mode==='stale')f.current(false);if(mode==='floor')f.ui.floorId='upper';
- await f.ui.up(b);assert.equal(f.writes.length,0,mode);assert.equal(f.ui.roomDrag,null,mode);
- }
 });
 
 test('landscape callers receive the original save failure instead of losing the reason in a null acknowledgement',async t=>{

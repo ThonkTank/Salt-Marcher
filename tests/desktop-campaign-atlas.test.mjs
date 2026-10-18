@@ -441,13 +441,14 @@ test("multiple towns share one hex and imported geometry joins the same history 
   x.write({
     kind: "city-create",
     name: "Fährhafen",
-    x: 1200,
-    y: 2200,
+    x: 1010,
+    y: 2010,
     width: 200,
     height: 200,
   });
   assert.equal(x.read().cities.length, 2);
   assert.equal(x.store.world(x.w.token).maps.length, 1);
+  const anchors=x.store.world(x.w.token).places;assert.equal(anchors.length,2);assert.deepEqual(anchors.map(p=>[p.q,p.r]),[[anchors[0].q,anchors[0].r],[anchors[0].q,anchors[0].r]]);
   const original = {
       id: "source-room",
       scopeId: "source-scope",
@@ -587,4 +588,21 @@ test("default rooms from the key editor also use the common durable history", (t
   x.write({ kind: "redo" });
   assert.equal(x.read().workspace.rooms.length, 1);
   assert.equal(x.read().geometry.drawing.volumes.length, 1);
+});
+
+test('precise Atlas places share coarse hexes and keep canonical prose through history, restart and copy',async t=>{
+ const x=fixture(t),initial=x.read(),make=(name,point)=>({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,action:{kind:'location-create',mapId:initial.terrain.id,expectedMapRevision:initial.terrain.revision,point,document:{kind:'location',version:1,id:randomUUID(),name,type:'poi',sections:[{id:randomUUID(),title:'Beschreibung',markdown:'Description\n\nSecond paragraph'},{id:randomUUID(),title:'Notizen',markdown:'  Private GM prose\r\n'}],detailMaps:[],keyLinks:[]}}});
+ const first=make('Kapelle',{x:1000.25,y:2000.75}),second=make('Wegstein',{x:1010.25,y:2010.75});x.store.executeAtlas(first);x.store.executeAtlas(first);x.store.executeAtlas(second);
+ let a=x.read();assert.equal(a.places.length,2);assert.deepEqual(a.places.find(p=>p.locationId===first.action.document.id).point,first.action.point);assert.deepEqual(a.places.map(p=>[p.q,p.r]),[[a.places[0].q,a.places[0].r],[a.places[0].q,a.places[0].r]]);assert.equal(x.store.preparation(x.w.token).locations.length,2);
+ x.write({kind:'undo'});assert.equal(x.read().places.length,1);assert.equal(x.store.preparation(x.w.token).locations.length,1);x.write({kind:'redo'});assert.equal(x.read().places.length,2);
+ const binding=x.read().bindings.find(b=>b.kind==='location'&&b.ownerId===first.action.document.id);x.write({kind:'bind',binding:{...binding,x:10000,y:10000},expectedRevision:binding.revision});a=x.read();assert.deepEqual(a.places.find(p=>p.locationId===first.action.document.id).point,{x:10000,y:10000});assert.notDeepEqual([a.places[0].q,a.places[0].r],[a.places[1].q,a.places[1].r]);x.write({kind:'undo'});assert.deepEqual(x.read().places.find(p=>p.locationId===first.action.document.id).point,first.action.point);
+ assert.throws(()=>x.write({kind:'bind',binding:{...x.read().bindings.find(b=>b.ownerId===first.action.document.id),ownerId:second.action.document.id},expectedRevision:x.read().bindings.find(b=>b.ownerId===first.action.document.id).revision}),/Identität/);
+ x.fresh();assert.deepEqual(x.read().places.find(p=>p.locationId===first.action.document.id).point,first.action.point);assert.equal(x.store.preparation(x.w.token).locations.find(p=>p.document.id===first.action.document.id).document.sections[1].markdown,'  Private GM prose\r\n');
+ const snapshot=tmpdir()+'/'+randomUUID()+'.sqlite',filename=tmpdir()+'/'+randomUUID()+'.sqlite';await x.store.campaignSnapshot(x.w.token,snapshot);const copyStore=new CampaignStore(filename);t.after(()=>{copyStore.close();rmSync(snapshot,{force:true});rmSync(filename,{force:true});});const copy=copyStore.acceptCampaignSnapshot(snapshot,'Independent place copy',{}),w=copyStore.activate(copy.id),copied=copyStore.campaignAtlas(w.token);assert.equal(copied.places.length,2);assert.ok(copied.places.every(p=>!a.places.some(old=>old.locationId===p.locationId)));assert.ok(copied.bindings.filter(b=>b.kind==='location').every(b=>copied.places.some(p=>p.locationId===b.ownerId)));
+});
+
+test('late precise-place failure and stale map revisions cannot leave an orphan location or binding',t=>{
+ const x=fixture(t),a=x.read(),action={kind:'location-create',mapId:a.terrain.id,expectedMapRevision:a.terrain.revision,point:{x:20,y:30},document:{kind:'location',version:1,id:randomUUID(),name:'Rollback chapel',type:'poi',sections:[],detailMaps:[],keyLinks:[]}};
+ x.store.db.exec("CREATE TRIGGER late_location_binding BEFORE INSERT ON atlas_binding WHEN NEW.kind='location' BEGIN SELECT RAISE(ABORT,'late binding failure');END");assert.throws(()=>x.write(action),/late binding failure/);assert.equal(x.read().places.length,0);assert.equal(x.store.preparation(x.w.token).locations.length,0);x.store.db.exec('DROP TRIGGER late_location_binding');
+ assert.throws(()=>x.write({...action,expectedMapRevision:a.terrain.revision+1}),/Karte.*geändert/);assert.equal(x.store.preparation(x.w.token).locations.length,0);
 });

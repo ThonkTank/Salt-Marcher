@@ -111,6 +111,7 @@ class Path {
   lineTo(...a) {
     this.commands.push(["line", ...a]);
   }
+  addPath(path,matrix){this.commands.push(["add",path,matrix]);}
   closePath() { this.commands.push(["close"]); }
 }
 const settle = () => new Promise((r) => setImmediate(r));
@@ -420,6 +421,17 @@ test("marker titles survive outside semantic selection and the surface clears ho
   f.pointer("pointerup", 11, 21, 1);
 });
 
+
+test('visible-cell clips constrain painted output, semantic hits and tooltips through transformed groups',t=>{
+ const f=fixture(t),root=atlasPaint('group'),visible=atlasPaint('group',{matrix:[1,0,0,1,100,200],clip:{path:'M0 0 L10 0 L10 10 L0 10 Z'}}),paint=atlasPaint('rect',{width:20,height:20,style:{fill:'green'},data:{atlasObject:'true',id:'current-landscape'},title:'Current terrain'});
+ visible.append(paint);root.append(visible);const scene=new AtlasCanvasScene(root),cut=scene.commands[0].clips[0];
+ assert.equal(scene.commands.length,1);assert.equal(cut.matrix.e,100);assert.equal(cut.matrix.f,200);
+ f.ctx.isPointInPath=(path,x,y)=>path!==cut.path||x>=0&&x<10&&y>=0&&y<10;
+ assert.equal(scene.hit(f.ctx,{x:105,y:205},['atlasObject']),paint);
+ assert.equal(scene.hit(f.ctx,{x:115,y:205},['atlasObject']),null);
+ assert.equal(scene.tooltip(f.ctx,{x:115,y:205}),'');
+ scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});assert.ok(f.calls.some(([name,path,rule])=>name==='clip'&&path===cut.path&&rule==='nonzero'));
+});
 
 test("camera changes revoke hits and hover until the matching bitmap is actually painted", async t => {
   const f=fixture(t),marker=rect("room");marker.title="Room";

@@ -189,8 +189,8 @@ test('a delayed click after a geometry drag stays suppressed until the next actu
 });
 
 test('a visible drawing glyph joins the candidate picker even beyond the canonical point-pick radius',async()=>{
- const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({data:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async(p,layer,id)=>chosen.push({p,layer,id})});
- await ui.click({button:0,altKey:false});assert.deepEqual(chosen,[{p:{x:20,y:0},layer:'all',id:'glyph'}],'a glyph must not silently outrank overlapping rooms and landscape');
+ const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({data:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async(p,layer,preferred,visualElementId)=>chosen.push({p,layer,preferred,visualElementId})});
+ await ui.click({button:0,altKey:false});assert.deepEqual(chosen,[{p:{x:20,y:0},layer:'all',preferred:{kind:'element',id:'glyph'},visualElementId:'glyph'}],'a glyph must not silently outrank overlapping rooms and landscape');
 });
 
 test('a press rejected during saving cannot become a selection after saving completes',async()=>{

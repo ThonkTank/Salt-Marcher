@@ -19,6 +19,7 @@ export interface PaintHit {
 type Command = {
   node: AtlasPaint;
   matrix: DOMMatrix;
+  clips:{path:Path2D;matrix:DOMMatrix;rule:CanvasFillRule}[];
   path?: Path2D;
   hitPath?: Path2D;
   style: PaintStyle;
@@ -90,12 +91,13 @@ export class AtlasCanvasScene {
       hud: boolean,
       title: string,
       ancestry: PaintHit[],
-      retained: boolean,
+      clips: Command["clips"], retained: boolean,
     ) => {
       const g = node.geometry;
       retained=retained||!!g.retainGeometry;
       if (g.hidden) return;
       matrix = g.matrix ? matrix.multiply(new DOMMatrix(g.matrix)) : matrix;
+      if(g.clip)clips=[...clips,{path:g.clip.polygons?polygonPath(g.clip.polygons):new Path2D(g.clip.path??''),matrix,rule:g.clip.rule??"nonzero"}];
       style = { ...style, ...node.style };
       alpha *= g.opacity ?? 1;
       pointer = pointer && g.pointer !== false;
@@ -113,7 +115,7 @@ export class AtlasCanvasScene {
         this.commands.push({
           node,
           matrix,
-          ...compiled,
+          clips, ...compiled,
           style,
           alpha,
           pointer,
@@ -125,7 +127,7 @@ export class AtlasCanvasScene {
         if (node.kind === "image" && g.source) {this.images.add(g.source);if(!g.optionalImage)this.requiredImages.add(g.source);}
       }
       for (const child of node.children)
-        visit(child, matrix, style, alpha, pointer, hud, title, ancestry, retained);
+        visit(child, matrix, style, alpha, pointer, hud, title, ancestry,clips,retained);
     };
     visit(
       root,
@@ -136,7 +138,7 @@ export class AtlasCanvasScene {
       false,
       "",
       [],
-      false,
+      [], false,
     );
   }
   dispose() {
@@ -160,6 +162,7 @@ export class AtlasCanvasScene {
       ).multiply(c.matrix);
       ctx.save();
       try {
+        for(const clip of c.clips){ctx.setTransform(view.multiply(clip.matrix));ctx.clip(clip.path,clip.rule);}
         ctx.setTransform(matrix);
         ctx.globalAlpha = c.alpha;
         ctx.fillStyle = s.fill ?? "transparent";
@@ -266,6 +269,7 @@ export class AtlasCanvasScene {
         const c = this.commands[i]!,
           path = c.hitPath ?? c.path;
         if (!c.pointer || !path || !accept(c)) continue;
+        if(c.clips.some(clip=>{const at=new DOMPoint(p.x,p.y).matrixTransform(clip.matrix.inverse());return !ctx.isPointInPath(clip.path,at.x,at.y,clip.rule);}))continue;
         const at = new DOMPoint(p.x, p.y).matrixTransform(c.matrix.inverse());
         this.strokeStyle(ctx, c);
         if (
