@@ -79,7 +79,7 @@ import {installDungeonSenses,evaluateDungeonSenses} from './dungeon-senses';
 import {installAutonomyResources} from './autonomy-resources';
 import {installNpcDungeonSchema} from './npc-dungeon';
 import {installAutonomyDungeonSchema} from './autonomy-dungeon';
-import {installDungeonPlaySchema,dungeonDisplay,dungeonView,previewDungeon,executeDungeon,validateDungeonPlay,dungeonGeometry,dungeonGeometryBasis} from './dungeon-play';
+import {installDungeonPlaySchema,dungeonCommandState,dungeonDisplay,dungeonView,previewDungeon,executeDungeon,validateDungeonPlay,dungeonGeometry,dungeonGeometryBasis} from './dungeon-play';
 import type {DungeonCommand,DungeonRequest} from '../dungeon-contracts';
 import {installDrawingSchema,roomMapStyle,drawingView,executeDrawing,drawingHistory,rebaseDrawingRoomHistory,activateDungeonFeature,advanceDungeonFeatures,validateDrawing} from './drawing';
 import type {DrawingCommand} from '../drawing-contracts';
@@ -1054,6 +1054,7 @@ export class CampaignStore {
     })();
   }
   dungeon(token:string){const cam=this.guard(token),view=dungeonView(this.db,cam);return this.graphShadow?{...view,...dungeonGeometry(this.graphShadow.db,cam),drawing:{...drawingView(this.graphShadow.db,cam),graphPreview:this.graphShadow.state()}}:view;}
+  dungeonCommandState(command:DungeonCommand){this.guard(command.token,command.campaignId);return dungeonCommandState(this.db,command);}
   previewDungeon(token:string,r:DungeonRequest){return previewDungeon(this.db,this.guard(token),r);}
   executeDungeon(c:DungeonCommand){if(this.graphShadow)throw new Error('Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen. Dungeon-Leiten nutzt die bestätigte Geometrie.');return executeDungeon(this.db,c,()=>{this.guard(c.token,c.campaignId);},command=>this.executeLive(command),command=>this.executeCombat(command),command=>this.executeProgress(command));}
   previewPath(token:string,p:DungeonPath):PathPreview{if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.previewPath(token,p));const cam=this.guard(token);return previewDungeonPath(this.db,cam,p,dungeonGeometry(this.db,cam));}
