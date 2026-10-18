@@ -122,7 +122,6 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   ): Promise<
     Result<{ id: string; width: number; height: number } | null>
   >;
-  referenceAsset(token: string, id: string): Promise<Result<string>>;
   referenceAssetPreview(token:string,id:string,size:number):Promise<Result<string>>;
   exportAtlasPNG(
     token: string,

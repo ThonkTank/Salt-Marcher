@@ -82,3 +82,10 @@ test('a confirmed edit revokes pending frame images and waits for a matching map
  await f.ui.load();assert.equal(calls,1,'old map revision must not restart image loading');
  f.set([ref('fresh')]);f.host.data().revision=1;f.host.data().region.fence='updated-source';f.window.campaign.referenceAssetPreview=async()=>{calls++;return{ok:true,value:'fresh-image'};};await f.ui.load();assert.equal(calls,2);assert.deepEqual(f.ui.records.map(r=>r.id),['fresh']);assert.equal(f.ui.assets.get('fresh'),'fresh-image');assert.deepEqual(f.errors,[]);
 });
+
+
+test('an unavailable bounded preview never falls back to loading the complete original image',async t=>{
+ const f=fixture(t);f.set([ref('large')]);let originals=0;f.window.campaign={referenceAsset:async()=>{originals++;return{ok:true,value:'complete-original'};}};
+ await f.ui.load();assert.equal(originals,0);assert.equal(f.ui.assets.size,0);assert.equal(f.document.querySelector('#land-reload').hidden,false);assert.match(f.document.querySelector('#land-status').textContent,/nicht verfügbar/);
+ f.window.campaign.referenceAssetPreview=async()=>({ok:true,value:'bounded-preview'});await f.ui.load(true);assert.equal(f.ui.assets.get('large'),'bounded-preview');assert.equal(originals,0);
+});
