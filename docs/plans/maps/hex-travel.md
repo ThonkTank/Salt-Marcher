@@ -12,6 +12,61 @@ teilweise aus dem früheren Mehrkartenaufbau. Sie beschreiben lokale Teilbelege,
 keine erneute Abnahme der aktuellen Workbench; die aktuellen Integrationsgrenzen
 und nächsten Schritte stehen unter „Reisekontext im gemeinsamen Atlas“.
 
+## Standardpfad vom Reisestand zur sichtbaren Konsole
+
+**Wie entsteht das Ergebnis?** Die Spielleitung wählt „Reise“ für die bereits
+fokussierte Scene. `world-ui.openWorld` lädt Karten-/Orts-/Gruppenprojektionen;
+`reloadScene` liest den geprüften `SceneWorld` mit Position, Uhr, Journey,
+Wetter und Hinweisen. Konsole und gemeinsame Karte projizieren diesen Stand.
+`renderLiveWorld` bedient daneben die Live-Wetteranzeige; die Agenda ist eine
+separate, auf einen Tag begrenzte Kalenderprojektion. Bewegung, Zeit und
+Persistenz bleiben ausschließlich bei den revisionierten Providercommands und
+Receipts. Das bloße Öffnen schreibt nichts und wechselt die Szenenmitte nicht.
+
+**Welcher Weg ist dafür angemessen?** Ein bestätigter Providerread wird an alle
+betroffenen Anzeigen weitergereicht. Zeichenfunktionen erzeugen keine Reads.
+Die begrenzte Agenda wird ausdrücklich einmal geladen und als ganzes Ergebnis
+ersetzt. Owner, Fokus, Revisionen und Antwortgeneration entziehen alten Antworten
+die Wirkung; fehlende oder verschieden datierte Daten bleiben sichtbar offen.
+Kein zusätzlicher Store, Cache, Providerregistry oder persistenter UI-Laufstand.
+
+**Nutzen wir ihn?** Beim Öffnen und Retry las `openWorld` bereits den SceneWorld;
+der nachfolgende Live-Aufbau las denselben Provider erneut. Außerdem starteten
+sowohl Wetterzeichnung als auch deren Aufrufer eine Agendaabfrage. Die Antworten
+konnten anschließend dieselben Termine zweimal an dieselbe Liste anhängen.
+Diese Umwege sind entfernt: `openWorld` reicht seine bestätigte Antwort weiter,
+und der Live-Controller kann sie ohne zweiten Read übernehmen. Der zu Beginn
+gebundene Fokus wird nicht aus einem weiteren Live-Read neu ausgewählt.
+`paintLiveWeather` zeichnet ausschließlich; bestätigte Datenübergänge lösen die
+Agenda ausdrücklich aus. Die Agenda ersetzt ihren Inhalt nach der aktuellen
+Antwort und besitzt eine eigene Antwortgeneration, auch für konkurrierende
+Aktualisierungen derselben Scene. Scene-ID, Uhrrevision/-instant und Ortsbindung
+müssen zur dargestellten Livebasis passen. Ältere Membershipstände dürfen einen
+neueren Gruppenstand nicht zurücksetzen.
+Wenn der gemeinsame Atlas die sichtbare Karte besitzt, wird seine verborgene
+Legacy-Hexfläche nicht zusätzlich aufgebaut. Die eigenständig geöffnete alte
+Weltfläche behält ihren bisherigen Zeichenpfad; Reiseeingaben bleiben geteilt.
+
+**Notwendige Grenzen und offene Alternativen.** Karten-/Ortsbearbeitung und
+Live-Wetter behalten getrennte Owner, weil die frühere Editorfläche auch einen
+anderen ausgewählten Gruppenkontext zeigen kann. Sie teilen jedoch den bereits
+gelesenen Stand beim bewussten Öffnen der fokussierten Reisekonsole. SceneWorld
+und Agenda sind weiterhin zwei unterschiedliche Providerreads, kein atomarer
+Gesamtframe. Eine inzwischen abweichende Uhr oder Ortsbindung wird deshalb
+abgewiesen und verlangt erneutes Laden. Eine gemeinsame begrenzte Providerprojektion
+ist erst sinnvoll, wenn reale Nutzungs-/Messbelege den zusätzlichen Schnittstellen-
+und Pflegeaufwand rechtfertigen. Die noch breiten `world`-/`preparation`-/`live`-
+Eröffnungsprojektionen sind damit nicht als Großbestandslösung abgenommen.
+
+Gezielte Gegenproben zählen beim Öffnen/Retry einen SceneWorld- und einen
+Agendaread, prüfen einzelne statt doppelte Termine, verspätete Antworten,
+Providerfehler, andere Uhr/Orte und erhaltene Datenbytes. Die bestehenden Reise-,
+Wetter- und Atlasfälle prüfen außerdem Entwürfe, Fokuswechsel, Start/Checkpoint
+und Wiederaufnahme. Der native Ablauf `tools/test-desktop-live-travel-reads.mjs`
+zählt reale IPC-Aufrufe, öffnet die gemeinsame Karte ausdrücklich, reist bis
+Ankunft und öffnet den Stand nach Neustart bei200% erneut. Das ist ein begrenzter
+Ablaufbeleg und keine vollständige Provider-/Großrouten-/Plattformabnahme.
+
 ## Vorhandener Ablauf und Datenregeln
 
 `world-ui.ts` besitzt die bestehende Karten-/Reisekonsole. Geordnete Wegpunkte

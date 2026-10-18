@@ -416,3 +416,72 @@ test('the shared map observes both accepted and invalidated Hex evaluations with
   assert.equal(reads,0);assert.equal(x.sent.length,0);assert.ok(x.store.db.serialize().equals(before));
  }finally{x.cleanup();}
 });
+
+
+test('focused travel loads one provider frame and one agenda, shared by the console and weather',async()=>{
+ const x=await travelFixture();try{
+  const get=id=>x.document.getElementById(id);let frames=0,agendas=0;const read=x.window.campaign.sceneWorld;
+  x.window.campaign.sceneWorld=async(...args)=>{frames++;return read(...args);};
+  x.window.campaign.agenda=async(token,query)=>{agendas++;return{ok:true,value:x.store.agenda(token,query)};};
+  const before=x.store.db.serialize();x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);await tick();
+  assert.equal(frames,1);assert.equal(agendas,1,'drawing weather must not start a second agenda request');
+  assert.equal(get('live-agenda-upcoming').querySelectorAll('p').length,1);assert.match(get('live-agenda-upcoming').textContent,/Markt/);
+  frames=agendas=0;get('live-travel-toggle').click();await until(()=>!get('live-travel-toggle').disabled);await tick();await tick();
+  assert.equal(frames,1,'opening must reuse the confirmed frame returned by openWorld');assert.equal(agendas,1);
+  assert.equal(get('live-center-map').hidden,true,'selecting travel alone keeps the scene in the center');
+  assert.match(get('live-travel-context').textContent,/Figuren/);assert.ok(x.store.db.serialize().equals(before));
+  frames=agendas=0;get('live-travel-retry').click();await until(()=>agendas>0);await tick();
+  assert.equal(frames,1);assert.equal(agendas,1);assert.ok(x.store.db.serialize().equals(before));
+  const context=get('live-travel-context').textContent;frames=agendas=0;await x.ui.renderLiveWorld('obsolete-token',x.scene.id);
+  assert.equal(frames,0);assert.equal(agendas,0);assert.equal(get('live-travel-context').textContent,context);
+ }finally{x.cleanup();}
+});
+
+test('superseded agenda responses cannot append duplicate or stale events to the focused console',async()=>{
+ const x=await travelFixture();try{
+  const replies=[];x.window.campaign.agenda=()=>new Promise(resolve=>replies.push(resolve));
+  const get=id=>x.document.getElementById(id),value=x.store.agenda(x.w.token,{sceneId:x.scene.id,search:'',location:'current',horizonDays:1,includePast:false,after:null});
+  x.ui.setWorldSurface('live');await x.ui.renderLiveWorld(x.w.token,x.scene.id);assert.equal(replies.length,1);
+  await x.ui.renderLiveWorld(x.w.token,x.scene.id);assert.equal(replies.length,2);
+  replies[1]({ok:true,value});await tick();const shown=get('live-agenda-upcoming').textContent;
+  replies[0]({ok:true,value:{...value,items:value.items.map(i=>({...i,event:{...i.event,name:'Veraltetes Ereignis'}}))}});await tick();
+  assert.equal(get('live-agenda-upcoming').textContent,shown);assert.equal(get('live-agenda-upcoming').querySelectorAll('p').length,1);
+  x.window.campaign.sceneWorld=async()=>({ok:false,error:'Provider ausgefallen'});await x.ui.renderLiveWorld(x.w.token,x.scene.id);
+  assert.doesNotMatch(get('live-agenda-upcoming').textContent,/Markt/);assert.match(get('live-agenda-upcoming').textContent,/nicht verfügbar/);
+ }finally{x.cleanup();}
+});
+
+
+test('a reused older frame cannot regress live membership or leave the agenda permanently loading',async()=>{
+ const x=await travelFixture();try{
+  x.window.campaign.agenda=async(token,query)=>({ok:true,value:x.store.agenda(token,query)});
+  x.ui.setWorldSurface('live');const older=x.store.sceneWorld(x.w.token,x.scene.id);await x.ui.renderLiveWorld(x.w.token,x.scene.id);
+  const command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action}),pc=x.store.executeLive(command({kind:'create-character',profile:{name:'Nachzügler'}})).character,live=x.store.live(x.w.token);
+  x.store.executeLive(command({kind:'membership',characterId:pc.id,expectedRevision:pc.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));
+  await x.ui.renderLiveWorld(x.w.token,x.scene.id);await tick();
+  await x.ui.renderLiveWorld(x.w.token,x.scene.id,older);await tick();
+  const agenda=x.document.getElementById('live-agenda-upcoming');assert.equal(agenda.getAttribute('aria-busy'),'false');assert.match(agenda.textContent,/Markt/);
+  x.document.getElementById('live-travel-toggle').click();await until(()=>!x.document.getElementById('live-travel-toggle').disabled);await tick();assert.match(x.document.getElementById('live-travel-context').textContent,/2 Figuren/);
+ }finally{x.cleanup();}
+});
+
+test('agenda entries with another clock or location are explicit unavailable data rather than a mixed live context',async()=>{
+ const x=await travelFixture();try{
+  const value=x.store.agenda(x.w.token,{sceneId:x.scene.id,search:'',location:'current',horizonDays:1,includePast:false,after:null});
+  for(const scene of [{...value.scene,clockRevision:value.scene.clockRevision+1},{...value.scene,locationId:'another-place'}]){
+   x.window.campaign.agenda=async()=>({ok:true,value:{...value,scene}});await x.ui.renderLiveWorld(x.w.token,x.scene.id);await tick();
+   const root=x.document.getElementById('live-agenda-upcoming');assert.match(root.textContent,/Gruppenstand.*verschieden/);assert.doesNotMatch(root.textContent,/Markt/);assert.equal(root.getAttribute('aria-busy'),'false');
+  }
+ }finally{x.cleanup();}
+});
+
+
+test('the shared Atlas does not rebuild the hidden legacy Hex scene while travel inputs change',async()=>{
+ const x=await travelFixture();try{
+  const map=x.document.getElementById('world-map'),scene=map.firstChild;assert.ok(scene);
+  const before=x.store.db.serialize();x.ui.setWorldSurface('atlas');x.enter('travel-q','2');x.enter('travel-r','1');
+  assert.equal(map.firstChild,scene,'the Atlas owns the visible scene; legacy drawing is unnecessary');
+  x.ui.setWorldSurface('world');await x.ui.openWorld();assert.notEqual(map.firstChild,scene,'the standalone legacy surface can still rebuild when explicitly opened');
+  assert.equal(x.document.getElementById('travel-q').value,'2');assert.ok(x.store.db.serialize().equals(before));
+ }finally{x.cleanup();}
+});
