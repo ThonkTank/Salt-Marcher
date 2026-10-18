@@ -1172,8 +1172,7 @@ export class CampaignAtlasWorkbench {
     const scope = this.scopeId;
     if (!scope) return;
     const local = atlasToLocal(p, this.frame(scope));
-    this.brushQueue = this.brushQueue
-      .then(() => atlasDrawingPoint(local))
+    this.brushQueue = atlasDrawingPoint(local, this.brushQueue)
       .then(() => {
         this.render();
       })
