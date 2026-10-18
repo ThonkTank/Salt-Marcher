@@ -1131,6 +1131,7 @@ export class CampaignStore {
     this.chronicleRead?.close();this.chronicleRead=null;this.active={campaignId:receipt.campaignId,token:randomUUID()};return projection?this.workspaceShell():this.workspace();
   }
   campaignOverview(){return this.db.transaction(()=>campaignOverview(this.db))();}
+  campaignIdentity(token:string):Campaign{return this.db.prepare('SELECT id,name,revision FROM campaign WHERE id=?').get(this.guard(token));}
   campaignFence(id:string,revision:number){const r=this.db.prepare('SELECT revision,trashed FROM campaign_lifecycle WHERE campaign_id=?').get(id);if(!r||r.trashed||r.revision!==revision)throw new Error('Quellkampagne wurde gelöscht oder ihr Lebenszyklus geändert.');}
   async campaignSnapshot(token:string,filename:string){
     const id=this.guard(token),fence=this.db.prepare('SELECT revision FROM campaign_lifecycle WHERE campaign_id=?').get(id).revision,candidate=filename+'.snapshot-'+randomUUID();
