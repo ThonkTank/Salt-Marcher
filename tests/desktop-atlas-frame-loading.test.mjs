@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {buildSync} from 'esbuild';import {createRequire} from 'node:module';import {parseHTML} from 'linkedom';
-buildSync({stdin:{contents:"export {LandscapeWorkbench} from './src/app/atlas-landscape-ui';export {AtlasPaint} from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/atlas-frame-loading.cjs',bundle:true,platform:'node',format:'cjs'});const {LandscapeWorkbench,AtlasPaint}=createRequire(import.meta.url)('../.build/atlas-frame-loading.cjs');
+buildSync({stdin:{contents:"export {LandscapeWorkbench} from './src/app/atlas-landscape-ui';export {AtlasPaint} from './src/app/atlas-paint';export {HEX_METERS,contains} from './src/app/atlas-landscape';",resolveDir:process.cwd()},outfile:'.build/atlas-frame-loading.cjs',bundle:true,platform:'node',format:'cjs'});const {LandscapeWorkbench,AtlasPaint,HEX_METERS,contains}=createRequire(import.meta.url)('../.build/atlas-frame-loading.cjs');
 function fixture(t){const {window,document}=parseHTML('<html><body><div id="atlas-tool-fields"></div><select id="atlas-hex-level"><option value="0">0</option></select><svg></svg></body></html>'),previous={window:global.window,document:global.document,Option:global.Option};Object.assign(global,{window,document,Option:function(text,value){const o=document.createElement('option');o.textContent=text;o.value=value;return o;}});t.after(()=>Object.assign(global,previous));Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.getAttribute('data-value')??this.querySelector('option')?.value??'';},set(v){this.setAttribute('data-value',v);}});window.HTMLSelectElement.prototype.add=function(o){this.append(o);};let data;const errors=[],host={box:()=>({x:0,y:0,width:10,height:10}),redraw(){},write:async()=>{},error:e=>errors.push(e),data:()=>data},ui=new LandscapeWorkbench(document.querySelector('svg'),host);ui.context('token');return{ui,scene:new AtlasPaint('group'),window,document,errors,host,set(r){data={revision:0,region:{fence:'source',landscape:{state:'ready',records:r,tiles:[],coverage:{complete:true,mode:'detail',objects:r.length,references:r.filter(x=>x.kind==='reference').length}}}};}};}
 const ref=id=>({id,revision:0,kind:'reference',name:id,points:[{x:0,y:0}],polygons:[],resolution:1,width:1,assetId:id,imageWidth:1,imageHeight:1,values:{}});
 test('selecting an exact object does not cancel pending frame images; a different region at the same source replaces its layer',async t=>{
@@ -39,4 +39,33 @@ test('a selected reference keeps its original slot below terrain and updates wit
  const f=fixture(t),reference=ref('a'),road={...ref('road'),kind:'road',points:[{x:0,y:0},{x:10,y:10}],assetId:undefined};f.set([reference,road]);f.window.campaign={referenceAssetPreview:async()=>({ok:true,value:'image:a'})};await f.ui.load();f.ui.selected=structuredClone(reference);
  const draw=()=>{const r=new AtlasPaint('group');f.ui.draw(r,{x:0,y:0,width:10,height:10},.1);return r.children.find(n=>n.data.atlasLandscapeBase==='true').children[0];};
  const first=draw();f.ui.selected.width=2;const next=draw();assert.equal(first.children[1],next.children[1]);assert.equal(next.children[0].data.landscapeId,'a');assert.equal(next.children[1].data.landscapeId,'road');assert.equal(next.children[0].children[0].geometry.width,2);
+});
+
+test('Hex fill previews and commits every cell between sparse pointer samples, with no write before confirmation',async t=>{
+ const f=fixture(t);f.set([]);const writes=[];f.host.write=async action=>{writes.push(action);return true;};
+ f.ui.setActive(true);const tool=f.document.querySelector('#land-tool');tool.value='hex';tool.dispatchEvent(new f.window.Event('change'));
+ f.host.hit=()=>null;f.host.point=e=>({x:e.clientX,y:e.clientY});const canvas=f.document.querySelector('svg');canvas.setPointerCapture=()=>{};canvas.hasPointerCapture=()=>false;
+ const pointer=(type,x)=>{const e=new f.window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{button:0,pointerId:1,clientX:x,clientY:0});canvas.dispatchEvent(e);};
+ const palette=f.document.createElement('select');palette.id='atlas-terrain';palette.append(new Option('Wald','forest'));f.document.body.append(palette);
+ f.document.querySelector('#land-radius').value='1000000';f.document.querySelector('#land-auto-level').checked=false;
+ pointer('pointerdown',-4*HEX_METERS);pointer('pointermove',4*HEX_METERS);pointer('pointermove',0);pointer('pointerup',0);
+ f.ui.draw(f.scene,{x:-5*HEX_METERS,y:-HEX_METERS,width:10*HEX_METERS,height:2*HEX_METERS},10);
+ assert.equal(writes.length,0);const preview=f.scene.children.find(n=>n.data.landHexDraft==='true');
+ await f.ui.finish();assert.equal(writes.length,1);const patch=writes[0].record;assert.equal(patch.polygons.length,9,'Fast motion and retracing must produce nine unique adjacent cells');
+ assert.equal(patch.values.terrain,'forest');for(let q=-4;q<=4;q++)assert(contains({x:q*HEX_METERS,y:0},patch.polygons),'Missing intermediate hex '+q);
+ assert(!contains({x:5*HEX_METERS,y:0},patch.polygons));
+ assert(preview,'Show the actual hex footprint, not a thin pointer path');
+ const relativePatch=patch.polygons.map(p=>({...p,outer:p.outer.map(v=>({x:v.x+5*HEX_METERS,y:v.y+HEX_METERS}))}));
+ assert.deepEqual(preview.geometry.polygons,relativePatch,'Preview and saved geometry must be identical');
+});
+
+
+test('an oversized Hex draft fails visibly without saving or discarding its points',async t=>{
+ const f=fixture(t);f.set([]);let writes=0;f.host.write=async()=>{writes++;return true;};f.ui.tool='hex';f.ui.points=[{x:0,y:0},{x:6000*HEX_METERS,y:0}];
+ f.document.querySelector('#land-auto-level').checked=false;
+ f.ui.draw(f.scene,{x:0,y:0,width:HEX_METERS,height:HEX_METERS},10);
+ assert.match(f.document.querySelector('#land-status').textContent,/5.000 Hexes/);
+ await assert.rejects(f.ui.finish(),/5.000 Hexes/);assert.equal(writes,0);assert(f.ui.hasDraft());
+ f.ui.cancel();assert.equal(f.ui.hasDraft(),false);
+
 });

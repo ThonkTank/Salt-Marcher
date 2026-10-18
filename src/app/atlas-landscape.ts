@@ -1,5 +1,6 @@
 import type { Point, Polygon } from "./contracts";
 import type { AtlasCell, Terrain } from "./world-contracts";
+import { atlasHexAt, atlasHexPoint } from "./campaign-atlas-model";
 export const HEX_METERS = 4828.032;
 export const EARTH_WIDTH = 40000000,
   EARTH_HEIGHT = 20000000;
@@ -88,6 +89,35 @@ export function hexPolygon(q: number, r: number, size: number): Polygon {
     }),
     holes: [],
   };
+}
+/** One bounded axial footprint shared by the draft and the authored patch. */
+export function hexStrokePolygons(points: Point[], size: number): Polygon[] {
+  if (
+    !Number.isFinite(size) || size <= 0 ||
+    points.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y))
+  )
+    throw new Error("Hexmaßstab und Strichpunkte prüfen.");
+  const cells = new Map<string, Polygon>();
+  for (let i = 0; i < points.length; i++) {
+    const from = atlasHexAt(points[Math.max(0, i - 1)]!, size),
+      to = atlasHexAt(points[i]!, size),
+      count = (Math.abs(to.q - from.q) + Math.abs(to.r - from.r) +
+        Math.abs(to.q + to.r - from.q - from.r)) / 2;
+    if (!Number.isSafeInteger(count) || count > 5000)
+      throw new Error("Hexstrich zu groß. In Abschnitten von höchstens 5.000 Hexes malen.");
+    const a = atlasHexPoint(from.q, from.r, size),
+      b = atlasHexPoint(to.q, to.r, size);
+    for (let step = 0; step <= count; step++) {
+      const t = count ? step / count : 0,
+        h = atlasHexAt({x: a.x + (b.x-a.x)*t, y: a.y + (b.y-a.y)*t}, size),
+        key = h.q + "," + h.r;
+      if (cells.has(key)) continue;
+      if (cells.size === 5000)
+        throw new Error("Hexstrich zu groß. In Abschnitten von höchstens 5.000 Hexes malen.");
+      cells.set(key, hexPolygon(h.q, h.r, size));
+    }
+  }
+  return [...cells.values()];
 }
 export function contains(p: Point, polys: Polygon[]) {
   const ring = (a: Point[]) => {

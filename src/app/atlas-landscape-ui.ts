@@ -6,7 +6,7 @@ import type { Point, Polygon } from "./contracts";
 import {
   emptyRecord,
   hexSize,
-  hexPolygon,
+  hexStrokePolygons,
   distance,
   formatDistance,
   type LandscapeBox,
@@ -232,12 +232,13 @@ export class LandscapeWorkbench {
             html<HTMLInputElement>("land-y").value = String(p.y);
           }
           this.dirty = true;
-        } else if (
-          !this.points.length ||
-          Math.hypot(p.x - this.points.at(-1)!.x, p.y - this.points.at(-1)!.y) >
-            Math.max(1, Number(html<HTMLInputElement>("land-radius").value) / 3)
-        ) {
-          if (this.points.length < 1000) this.points.push(p);
+        } else {
+          const previous = this.points.at(-1), size = hexSize(Number(html<HTMLSelectElement>("atlas-hex-level").value));
+          const a = previous && atlasHexAt(previous, size), b = atlasHexAt(p, size);
+          const changed = !previous || (this.tool === "hex"
+            ? a!.q !== b.q || a!.r !== b.r
+            : Math.hypot(p.x - previous.x, p.y - previous.y) > Math.max(1, Number(html<HTMLInputElement>("land-radius").value) / 3));
+          if (changed && this.points.length < 1000) this.points.push(p);
         }
         this.host.redraw();
       },
@@ -548,7 +549,12 @@ export class LandscapeWorkbench {
     const pts =
       this.calibration?.points ??
       (this.points.length ? this.points : this.measurement);
-    if (pts.length) {
+    if (pts.length && this.tool === "hex") {
+      try {
+        const polygons = hexStrokePolygons(pts, hexSize(Number(html<HTMLSelectElement>("atlas-hex-level").value)));
+        root.append(landscapeNode("polygons", {polygons: polygons.map(p => ({outer: p.outer.map(v => ({x:v.x-box.x,y:v.y-box.y})), holes: []})), pointer:false, opacity:0.6, style:{fill:"#d46e38",stroke:"#d46e38",lineWidth:mpp}, data:{editorOnly:"true",landHexDraft:"true"}}));
+      } catch (error) { this.say((error as Error).message); }
+    } else if (pts.length) {
       root.append(
         landscapeNode("polyline", {points: pts.map(p=>({x:p.x-box.x,y:p.y-box.y})), opacity: 0.6, style: {fill: null, stroke: "#d46e38", lineWidth: ["paint", "reset"].includes(this.tool)
             ? Number(html<HTMLInputElement>("land-radius").value) * 2
@@ -703,12 +709,7 @@ export class LandscapeWorkbench {
     if (["paint", "hex", "reset"].includes(this.tool)) {
       let polygons: Polygon[];
       if (this.tool === "hex") {
-        const unique = new Map<string, Polygon>();
-        for (const p of this.points) {
-          const h = atlasHexAt(p, res);
-          unique.set(h.q + "," + h.r, hexPolygon(h.q, h.r, res));
-        }
-        polygons = [...unique.values()];
+        polygons = hexStrokePolygons(this.points, res);
       } else {
         const radius = Number(html<HTMLInputElement>("land-radius").value);
         if (!Number.isFinite(radius) || radius <= 0)
