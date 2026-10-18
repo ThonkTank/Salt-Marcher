@@ -794,6 +794,9 @@ Die Prüfung hat zusätzliche Lücken geschlossen:
   `tools/test-desktop-region-export.mjs` prüft den nativen Ablauf vom Anlegen
   dreier Orte und Verläufe über Messung/Korrektur/Undo bis PNG und Neustart.
   Die Beschriftungsprüfung umfasst horizontale und vertikale 512-Pixel-Grenzen.
+  Der Ortsinspektor behält seinen eigenen DOM-Knoten auch im Auswahldock;
+  Abschnittslesen, Abschnittsfokus und Schreibsperre folgen diesem Knoten.
+  Seine Lage im Werkzeugpanel ist keine Voraussetzung zum Speichern von Prosa.
 - Der Writer baut keinen unbenötigten Landschaftsindex beim Appstart. Im
   Bereichsworker werden schmale, sortierte Schlüssel in vollständigen Seiten
   zu 128 Datensätzen nachgelesen und in expliziter Schlüsselreihenfolge gestreamt;
