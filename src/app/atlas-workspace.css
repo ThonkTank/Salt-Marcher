@@ -64,7 +64,7 @@ body.atlas-workspace #campaign-atlas .atlas-stage{grid-column:2;grid-row:1;posit
 #campaign-atlas .atlas-editor-hint{font-size:11px;color:#657580}
 #campaign-atlas #atlas-drawing-tools .drawing-toolbar{display:block;padding:0}
 #campaign-atlas #atlas-room-draw,#campaign-atlas #map-hint{display:none}
-#campaign-atlas #atlas-tool-fields>#atlas-create-tools{display:contents}
+#campaign-atlas #atlas-tool-fields>#atlas-create-tools{display:none!important}
 #campaign-atlas #atlas-secondary #drawing-tool-options{display:block}
 #campaign-atlas #atlas-secondary #drawing-tool-options summary{display:none}
 #campaign-atlas #atlas-secondary #atlas-hex-level{display:block}
