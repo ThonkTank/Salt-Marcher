@@ -38,8 +38,8 @@ for(const field of ['group','member','exclude'])test(`acknowledged ${field} sett
 buildSync({entryPoints:['src/app/dungeon-ui.ts'],outfile:'.build/dungeon-pace-panel.cjs',bundle:true,platform:'node',format:'cjs'});
 async function panel(t){
  const x=fixture(t),{parseHTML}=await import('linkedom'),{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
- const previous={window:globalThis.window,document:globalThis.document,Event:globalThis.Event,ResizeObserver:globalThis.ResizeObserver};
- Object.assign(globalThis,{window,document,Event:window.Event,ResizeObserver:class{observe(){}}});t.after(()=>Object.assign(globalThis,previous));
+ const previous={window:globalThis.window,document:globalThis.document,Event:globalThis.Event};
+ Object.assign(globalThis,{window,document,Event:window.Event});t.after(()=>Object.assign(globalThis,previous));
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{configurable:true,writable:true,value:select.options[0]?.value??''});
  const statuses=[],sent=[],tick=()=>new Promise(r=>setImmediate(r));
  const until=async predicate=>{for(let i=0;i<100;i++){if(predicate())return;await tick();}throw Error('Dungeon panel did not settle');};
@@ -94,6 +94,9 @@ test('the actual Dungeon controls work beside the Scene with room text, exact po
  await x.ui.openDungeon();assert.equal(x.get('dungeon-sense-score').value,'18');assert.equal(x.get('dungeon-travel-controls').inert,false);
  x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);x.get('dungeon-confirm').click();await x.until(()=>x.sent.length===3);await x.ui.flushDungeon();assert.ok(x.view().journey);
  const before=x.view().instantMs;x.get('dungeon-place').click();await x.until(()=>x.sent.length===4);await x.ui.flushDungeon();assert.equal(x.view().instantMs,before,'explicit placement adds no time');assert.match(x.get('dungeon-position-facts').textContent,/22\.86/);
+ await x.ui.atlasDungeonTarget(x.room.id,{x:41.91,y:2.286});assert.match(x.get('dungeon-target').textContent,/41\.91, 2\.29/);
+ x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);assert.equal(x.ui.atlasDungeonState().preview.request.destination.x,41.91);assert.equal(document.getElementById('dungeon-map'),null);
+ x.get('dungeon-confirm').click();await x.until(()=>x.sent.length===5);await x.ui.flushDungeon();assert.equal(x.view().journey.request.destination.x,41.91);
 });
 
 test('a delayed or changed live focus revokes old Dungeon commands and preserves pending settings until discard',async t=>{
