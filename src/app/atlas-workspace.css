@@ -113,3 +113,5 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas #atlas-tool-palette>.atlas-tool-buttons{order:1;margin-bottom:4px}
 #campaign-atlas #atlas-tool-palette>button{order:2;margin:2px 0;text-align:left;min-height:32px}
 #campaign-atlas #atlas-tool-palette>:is(#atlas-create-city,#atlas-create-dungeon){order:0}
+
+#campaign-atlas[data-element-selected=true] #atlas-workspace-selection :is(#key-open,#empty,#editor,details:has(#drawing-dx),details:has(#drawing-floor-name)){display:none}
