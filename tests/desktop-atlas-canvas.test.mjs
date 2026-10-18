@@ -550,3 +550,11 @@ test('one GM export freezes floor, grid, scale, reference, box, size and format 
  },exportAtlasPNG:async(token,bytes,audience,format,fence)=>{assert(bytes instanceof Uint8Array);assert.equal(format,'png');assert.equal(fence,'f');saved++;return{ok:true,value:{cancelled:false}};}};
  await ui.exportPNG();assert.deepEqual(errors,[]);assert.equal(saved,1);assert.equal(queries.length,4);assert(queries.slice(1).every(q=>q.references===false));assert.deepEqual(encodings,[{width:1025,height:2,type:'image/png'}]);assert.equal(copies.length,3);assert(copies.every(n=>n>0),'All tiles use the originally selected grid/level');assert(queries.every(q=>q.floorId==='ground'));assert.deepEqual(queries.slice(1).map(q=>q.box.x),[0,512,1024]);assert.equal(f.document.querySelector('#atlas-save-status').textContent,'Atlas-PNG gespeichert');assert(created.every(c=>c.width===0&&c.height===0));
 });
+
+
+test('explicitly retained local paths survive rebase; dynamic paths and context caches remain independent',t=>{
+ fixture(t);const cache=new WeakMap(),base=atlasPaint('group',{retainGeometry:true}),fixed=atlasPaint('path',{path:'M0 0L10 0L10 10Z'}),dynamic=atlasPaint('path',{path:'M1 1L2 2'}),wrap=atlasPaint('group');base.append(fixed);wrap.append(base,dynamic);
+ const first=new AtlasCanvasScene(wrap,cache);base.geometry.matrix=[1,0,0,1,20,-10];dynamic.geometry.path='M3 3L4 4';const next=new AtlasCanvasScene(wrap,cache);
+ assert.equal(next.commands[0].path,first.commands[0].path);assert.equal(next.commands[0].matrix.e,20);assert.equal(next.commands[0].matrix.f,-10);assert.notEqual(next.commands[1].path,first.commands[1].path);assert.equal(next.pathReuses,1);assert.equal(next.pathBuilds,1);
+ assert.notEqual(new AtlasCanvasScene(wrap,new WeakMap()).commands[0].path,first.commands[0].path,'a different presentation context owns a different path cache');
+});

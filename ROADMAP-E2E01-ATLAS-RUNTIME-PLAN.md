@@ -761,6 +761,50 @@ Das ergänzt die Funktionsabnahme; physische16GiB und Präsentationslatenz bleib
 weiterhin gesondert offen. Extrem kleine Objekte benötigen für unterscheidbare
 Einzelgriffe weiterhin einen geeigneten Zoom; Raster selbst sperrt diese nicht.
 
+Die Gegenprüfung vom 18.10.2026 schließt die verbliebene Wiederverwendungslücke
+und eine Auswahlumgehung:
+
+- Karte und Seitenpanel haben getrennte Aktualisierungsschlüssel. Entwurfs-
+  und Griffbewegungen ersetzen keine unveränderten Geschoss-/Eingangsoptionen.
+  Bestätigte Stadt-/Dungeonhintergründe und Landschaftsebenen behalten ihre
+  Zeichenobjekte; Verschieben innerhalb des Puffers setzt nur eine zusätzliche
+  Translation. Maßstab, Quellenantwort, Auswahl und Sichtfilter invalidieren
+  den betroffenen Hintergrund. Aktive Stadtgenerierung, Gebäudeziehen,
+  Dungeon-Reisevorschau und Wissensmaskierung verwenden konservativ weiterhin
+  den vollständigen betroffenen Aufbau; diese Übergänge sind keine vorzeitig
+  als unveränderlich behandelten Daten.
+- Nur ausdrücklich unveränderliche Teilbäume teilen ihre lokalen Path2D-Objekte
+  über Szenenveröffentlichungen. Matrizen, Stil, Trefferhierarchie und Reihenfolge
+  werden für jede Veröffentlichung neu bestimmt. Der schwache Cache gehört
+  genau einer Canvasinstanz und wird bei Kontextwechsel oder Zeichenfehler
+  verworfen. Es entsteht kein unbeschränkter globaler Pfadcache. Bestehende
+  Transport-, Bild- und Backingstorebudgets bleiben erhalten.
+- Eine genaue Raumvorschau ersetzt einen einzelnen Platz im ursprünglichen
+  Zeichenablauf. Raumfüllungen bleiben unter den zugehörigen Objekten;
+  ausgewählte Referenzbilder bleiben unter Landschaft und Wegen. Die übrigen
+  Konturen bleiben unverändert. Tests prüfen Identität, Translation und diese
+  Reihenfolge statt lediglich gleiche Elementzahlen.
+- Während eines neuen Quellen-/Filterreads wird die letzte bestätigte Szene
+  vollständig erhalten und über den Ladezustand gesperrt. Zeichnen interpretiert
+  alte Geometrie nicht mehr unter neuen Geschoss-/Schnitt-/Dachfiltern.
+  Atlasverlassen widerruft auch verspätete vollständige Bereichsantworten.
+- Ein direkt getroffenes Zeichnungsglyph öffnet nicht mehr still sein Objekt.
+  Die vorhandene Kandidatenabfrage vereinigt seine genaue Quellen-ID mit den
+  übrigen geometrischen und Landschaftstreffern. Das erhält die Erreichbarkeit
+  großer Glyphen außerhalb des logischen Ankerradius, ohne Überlappungen zu
+  überspringen. Worker/Main/Preload und Controller führen die optionale ID
+  gemeinsam; Quelle, Floor-/Dach-/Bindingfilter, Seitengrenzen und Archivierung
+  gelten weiter. Detailpayloads werden erst nach der bewussten Auswahl gelesen.
+
+Der erweiterte native Autorenlauf prüft zusätzlich den Klick auf ein großes
+Objekt außerhalb seines Ankerradius: Kandidaten enthalten Objekt und die
+überlappenden Räume. Drei echte Entwurfspunkte behalten Hintergrundpfade und
+identische Geschossoptionen; `pathBuilds`/`pathReuses` zählen lokale geometrische
+Pfade, keine GPUarbeit. Rasterwechsel, Verwerfen, Originalgriff, Save/Undo/Redo
+und frischer Prozess bleiben Teil desselben Ablaufs bei100% und200%.
+Die unten genannten Hardware-/Präsentationsabnahmen bleiben offen; auch diese
+Korrektur erklärt das gesamte Renderingpaket nicht für vollständig abgenommen.
+
 Reproduzierbarer nativer Vergleich: `tools/measure-atlas-runtime.mjs` über
 `tools/ui-session.py` nach `build:desktop`. Derselbe Fixturebestand kann mit
 `ATLAS_BASELINE_FIXTURES` in eigene Profile kopiert werden; `ATLAS_RUNTIME_DIR`

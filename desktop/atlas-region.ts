@@ -53,5 +53,5 @@ export class AtlasRegionService {
  }
  focus(source:AtlasRegionSource,kind:'room'|'city'|'building'|'element'|'scope',id:string):Promise<AtlasObjectFocus>{return this.enqueue(source,{kind:'focus',objectKind:kind,id});}
  hit(source:AtlasRegionSource,query:AtlasRegionQuery,point:{x:number;y:number}):Promise<AtlasObjectFocus|null>{return this.enqueue(source,{kind:'hit',query,point});}
- candidates(source:AtlasRegionSource,query:AtlasRegionQuery,point:{x:number;y:number},offset=0,layer:'geometry'|'landscape'|'all'='geometry'):Promise<AtlasHitPage>{return this.enqueue(source,{kind:'candidates',query,point,offset,layer});}
+ candidates(source:AtlasRegionSource,query:AtlasRegionQuery,point:{x:number;y:number},offset=0,layer:'geometry'|'landscape'|'all'='geometry',visualElementId?:string):Promise<AtlasHitPage>{return this.enqueue(source,{kind:'candidates',query,point,offset,layer,visualElementId});}
 }

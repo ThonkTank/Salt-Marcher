@@ -233,21 +233,35 @@ export class AtlasRegionReader {
   const child=kind==='building'?this.sql("SELECT owner_id FROM atlas_binding WHERE campaign_id=? AND parent='building' AND parent_id=?").get(this.campaign,id):null;
   return{kind:kind==='room'?'room':kind==='element'?'element':s.value.kind==='building'?'building':'city-unit',id,...(child?{interiorScopeId:child.owner_id}:{}),...(kind==='room'||kind==='element'?{scopeId:r.scope,floorId:r.floor}:{cityId:r.owner}),box,point:{x:box.x+box.width/2,y:box.y+box.height/2},revision:source.revision};
  }
- candidatesAt(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point,offset=0,layer:'geometry'|'landscape'|'all'='geometry'):AtlasHitPage{
+ candidatesAt(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point,offset=0,layer:'geometry'|'landscape'|'all'='geometry',visualElementId?:string):AtlasHitPage{
   validateRegion(q);if(!p||!Number.isFinite(p.x+p.y)||!overlap({x:p.x,y:p.y,width:0,height:0},q.box)||!Number.isSafeInteger(offset)||offset<0)throw new Error('Kartenauswahl prüfen.');
   if(q.fence!==undefined&&q.fence!==source.fence)throw new Error('Atlas inzwischen geändert.');
   const landscapeHits=(offset:number):AtlasHitPage=>{try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');return this.landscape.hits(source,q,p,offset);}catch{return{items:[],total:0,next:null,fence:source.fence,unavailable:['landscape']};}};
   if(layer==='landscape')return landscapeHits(offset);
   if(layer==='all'){
-   const geometry=this.candidatesAt(source,q,p,offset,'geometry'),landscape=landscapeHits(Math.max(0,offset-geometry.total)),items=[...geometry.items,...landscape.items].slice(0,40),total=geometry.total+landscape.total;
+   const geometry=this.candidatesAt(source,q,p,offset,'geometry',visualElementId),landscape=landscapeHits(Math.max(0,offset-geometry.total)),items=[...geometry.items,...landscape.items].slice(0,40),total=geometry.total+landscape.total;
    return{items,total,next:offset+items.length<total?offset+items.length:null,fence:source.fence,...(geometry.unavailable||landscape.unavailable?{unavailable:[...(geometry.unavailable??[]),...(landscape.unavailable??[])]}:{})};
   }
   const items:AtlasHit[]=[];let matched=0,more=false;const radius=q.box.width/q.width*8;this.readFaults=0;this.countFaults=true;
-  this.visit(q,(s,f,kind,b)=>{
-   if(kind==='city-paper')return;const local=inverse(p,f),touch=s.polygons?inside(local,s.polygons):s.points?.some((v,i,a)=>i?distance(local,a[i-1]!,v)<=Math.max((s.stroke??0)/2,q.box.width/q.width*3):a.length===1&&Math.hypot(local.x-v.x,local.y-v.y)<=radius);
-   if(!touch||matched++<offset)return;if(items.length>=40){more=true;return;}
+  const emit=(s:Shape,_f:Frame,kind:string,b:AtlasBinding)=>{
+   if(matched++<offset)return;if(items.length>=40){more=true;return;}
    const focus=kind==='city-marker'?this.focus(source,'city',b.ownerId):kind==='scope-marker'?this.focus(source,'scope',b.ownerId):kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
    items.push({...focus,name:(kind==='room'?s.value.number+'. ':'')+(s.value.name||({room:'Raum',element:'Objekt','city-marker':'Stadt','scope-marker':'Dungeon',unit:'Stadtelement'}[kind]??'Objekt'))});
+  };
+  // A rendered glyph can extend beyond its logical anchor's point-pick radius.
+  // Union that exact source ID with all canonical overlaps; never auto-prioritize it.
+  // Re-run the regular floor/roof/binding visibility path before including it.
+  let visual=false;
+  if(visualElementId){
+   const row=this.sql('SELECT 1 FROM temp.region_shape WHERE key=?').get('element:'+visualElementId);
+   if(row){const focus=this.focus(source,'element',visualElementId);
+    if(overlap(focus.box,q.box))this.visit(q,(s,f,k,b)=>{if(k==='element'&&s.value.id===visualElementId){visual=true;emit(s,f,k,b);}},undefined,focus.box);
+   }
+  }
+  this.visit(q,(s,f,kind,b)=>{
+   if(kind==='city-paper'||visual&&kind==='element'&&s.value.id===visualElementId)return;
+   const local=inverse(p,f),touch=s.polygons?inside(local,s.polygons):s.points?.some((v,i,a)=>i?distance(local,a[i-1]!,v)<=Math.max((s.stroke??0)/2,q.box.width/q.width*3):a.length===1&&Math.hypot(local.x-v.x,local.y-v.y)<=radius);
+   if(touch)emit(s,f,kind,b);
   },undefined,{x:p.x-radius,y:p.y-radius,width:radius*2,height:radius*2});return{items,next:more?offset+items.length:null,fence:source.fence,total:matched,...(this.readFaults||this.sql('SELECT 1 FROM temp.region_problem LIMIT 1').get()?{unavailable:['geometry'] as ('geometry')[]}: {})};
  }
  hit(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point):AtlasObjectFocus|null{

@@ -105,6 +105,9 @@ export class CampaignAtlasWorkbench {
   private draft: Point[] = [];
   private lastPoint: Point = { x: 0, y: 0 };
   private renderQueued = false;
+  private panelKey:unknown[]|null=null;
+  private baseGeometry:{key:unknown[];node:AtlasPaint;origin:Point;authorSlot:number[]|null}|null=null;
+  private entranceOptions='';
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private drag: {
     id: number;
@@ -483,6 +486,7 @@ export class CampaignAtlasWorkbench {
     },factor=>this.camera.zoom(factor),mounted=>{if(mounted)void openDungeon().catch(error=>this.error(error));else stopDungeonPlayback();});
   }
   hide() {
+    this.request++;this.hitVersion++;this.hitDialog.close();
     if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}this.loadedRegionQuery=null;
     if(this.owner)void window.campaign.cancelAtlasRegion(this.owner.token);
     this.previewRequest++;
@@ -501,7 +505,7 @@ export class CampaignAtlasWorkbench {
     this.owner = w;
     this.searchRequest++;get('atlas-search-results').replaceChildren();
     this.landscape.context(w.token);
-    this.data = null;
+    this.data = null;this.baseGeometry=null;this.panelKey=null;this.entranceOptions='';
     this.request++;
     this.selection = null;
     this.cityId = null;
@@ -948,7 +952,7 @@ export class CampaignAtlasWorkbench {
     }
   }
 
-  private async chooseAt(point:Point,layer:'geometry'|'landscape'|'all'='all'){
+  private async chooseAt(point:Point,layer:'geometry'|'landscape'|'all'='all',visualElementId?:string){
     const owner=this.owner,query=this.loadedRegionQuery,fence=this.data?.region?.fence,version=++this.hitVersion;
     if(!owner||!query||!fence||!this.geometryCurrent())return;
     const valid=()=>this.owner===owner&&this.data?.region?.fence===fence&&this.hitVersion===version&&this.geometryCurrent();
@@ -960,7 +964,7 @@ export class CampaignAtlasWorkbench {
       else await this.navigate(hit.kind==='room'?'room':'city',hit.cityId??hit.id,hit.cityId?hit.id:undefined);
     };
     const page=async(offset:number)=>{
-      const reply=await window.campaign.atlasRegionCandidates(owner.token,query,point,fence,offset,layer);
+      const reply=await window.campaign.atlasRegionCandidates(owner.token,query,point,fence,offset,layer,visualElementId);
       if(!valid())return;if(!reply.ok)throw new Error(reply.error);const result=reply.value;
       const unavailable=[...new Set([...(result.unavailable??[]),...(layer!=='geometry'&&this.data?.region?.landscape?.state==='error'?['landscape' as const]:[])])],incomplete=!!unavailable.length;
       if(result.total===1&&offset===0&&!incomplete){await choose(result.items[0]!);return;}
@@ -990,7 +994,7 @@ export class CampaignAtlasWorkbench {
     try {
       if (this.family === "terrain") return;
       const selecting=this.root.dataset.roomDraw!=='true'&&this.entranceDraft===null&&(this.family==='navigation'||this.family==='interior'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='decoration'&&get<HTMLSelectElement>('drawing-tool').value==='select'||this.family==='city'&&get<HTMLSelectElement>('city-tool').value==='select');
-      if(selecting&&this.geometryCurrent()){if(kind==='element'&&id){await this.navigateElement(id);return;}await this.chooseAt(p);return;}
+      if(selecting&&this.geometryCurrent()){await this.chooseAt(p,'all',kind==='element'?id:undefined);return;}
       if(!target&&this.data?.region?.raster&&this.owner&&this.loadedRegionQuery){
         if(!this.geometryCurrent()){this.opts.status('Kartenausschnitt wird geladen.');return;}
         const owner=this.owner,r=await window.campaign.atlasRegionHit(owner.token,this.loadedRegionQuery,p,this.data.region.fence);
@@ -1440,6 +1444,9 @@ export class CampaignAtlasWorkbench {
     });
     if (!this.entranceId && near.length === 1) this.entranceId = near[0]!.id;
     const choices = get<HTMLSelectElement>("atlas-entrance-choice");
+    const optionsKey=JSON.stringify([this.entranceId,near.map(e=>[e.id,this.data!.workspace.rooms.find(r=>r.id===e.roomId)?.name??'Eingang'])]);
+    if(this.entranceOptions!==optionsKey){
+      this.entranceOptions=optionsKey;
     choices.replaceChildren();
     const empty = document.createElement("option");
     empty.value = "";
@@ -1454,6 +1461,7 @@ export class CampaignAtlasWorkbench {
       choices.append(o);
     }
     choices.value = this.entranceId ?? "";
+    }
     get("atlas-entrance-field").hidden = near.length < 2;
     const e = this.data.entrances.find((e) => e.id === this.entranceId);
     get("atlas-local-entrance").hidden = !e;
@@ -1641,9 +1649,10 @@ export class CampaignAtlasWorkbench {
       this.error(e);
     }
   }
-  private render() {
-    const data = this.data;
-    if (!data || this.root.hidden) return;
+  private renderPanel(data:AtlasRenderView){
+    const key=[data,this.owner?.token,this.family,this.selection?.kind,this.selection?.id,this.scopeId,this.floorId,this.busy,this.pendingTravel,pendingAtlasWrite(this.owner?.token??''),this.bindingDirty,get('atlas-placement').contains(document.activeElement),this.opts.roomDraft()?.name];
+    if(this.panelKey?.length===key.length&&this.panelKey.every((v,i)=>v===key[i]))return;
+    this.panelKey=key;
     get("atlas-recover").hidden =
       !this.pendingTravel &&
       (!this.owner || !pendingAtlasWrite(this.owner.token));
@@ -1664,20 +1673,11 @@ export class CampaignAtlasWorkbench {
         (selectedBinding.angle * 180) / Math.PI,
       );
     }
-    const box = this.camera.view;
-    this.svg.dataset.atlasOriginX = String(box.x);
-    this.svg.dataset.atlasOriginY = String(box.y);
-    const mpp = box.width / Math.max(1, this.svg.clientWidth);
-    get("atlas-scale").textContent =
-      (mpp >= 1000
-        ? (mpp / 1000).toFixed(2) + " km"
-        : mpp.toFixed(mpp < 1 ? 3 : 1) + " m") + " / Pixel";
     get<HTMLButtonElement>("atlas-undo").disabled = this.busy || !data.canUndo;
     get<HTMLButtonElement>("atlas-redo").disabled = this.busy || !data.canRedo;
     get("atlas-connect-entrance").hidden =
       this.selection?.kind !== "room" || this.family !== "interior";
     get("atlas-local-console").hidden = this.family !== "travel";
-    this.renderTravel();
     get("atlas-create-tools").hidden = this.family === "travel";
     get("atlas-floor-field").hidden = !this.scopeId;
     for (const id of ["atlas-slice-enabled", "atlas-slice", "atlas-roofs"])
@@ -1687,7 +1687,7 @@ export class CampaignAtlasWorkbench {
       (data.bindings.some((b) => b.parentId === this.selection?.id)||!!(this.selection&&regionValue(data.region?.interiors,this.selection.id)));
     const title =
       this.selection?.kind === "room"
-        ? data.workspace.rooms.find((r) => r.id === this.selection!.id)?.name
+        ? (this.opts.roomDraft()?.id===this.selection.id?this.opts.roomDraft()?.name:null) ?? data.workspace.rooms.find((r) => r.id === this.selection!.id)?.name
         : this.selection?.kind === "building" ||
             this.selection?.kind === "city-unit"
           ? data.cities
@@ -1714,9 +1714,30 @@ export class CampaignAtlasWorkbench {
     }
     if (old && floors.some((f) => f.id === old) && this.floorId === old)
       floor.value = old;
+  }
+  private render() {
+    const data=this.data;
+    if(!data||this.root.hidden)return;
+    this.renderPanel(data);this.renderTravel();
+    const box = this.camera.view;
+    this.svg.dataset.atlasOriginX = String(box.x);
+    this.svg.dataset.atlasOriginY = String(box.y);
+    const mpp = box.width / Math.max(1, this.svg.clientWidth);
+    get("atlas-scale").textContent =
+      (mpp >= 1000
+        ? (mpp / 1000).toFixed(2) + " km"
+        : mpp.toFixed(mpp < 1 ? 3 : 1) + " m") + " / Pixel";
+    // Keep the last confirmed scene intact while a new filter/source is loading.
+    // In particular, never interpret old contours under new floor/roof/slice controls.
+    if(!this.geometryCurrent())return;
     this.camera.render((root) => {
       this.drawTerrain(root, box, mpp);
       this.landscape.draw(root,box,mpp);
+      const draft=this.opts.roomDraft(),cacheable=!this.drag&&!atlasCityState()&&!atlasDungeonState().preview&&!get<HTMLInputElement>('atlas-perception').checked;
+      const key=[data,this.scopeId,this.floorId,this.family,this.selection?.kind,this.selection?.id,get<HTMLInputElement>('atlas-roofs').checked,get<HTMLInputElement>('atlas-slice-enabled').checked,get<HTMLInputElement>('atlas-slice').value,get<HTMLInputElement>('atlas-perception').checked,mpp,draft?.id,draft?.name,draft?.number,draft?.polygons];
+      let base=this.baseGeometry;
+      if(!cacheable||!base||!base.key.every((v,i)=>v===key[i])){
+        const root=shape('group',{retainGeometry:true,data:{mapScene:'true'}});
       for (const citySaved of data.cities) {
         const binding = data.bindings.find(
           (b) => b.kind === "city" && b.ownerId === citySaved.header.id,
@@ -1876,6 +1897,12 @@ export class CampaignAtlasWorkbench {
       }
       for (const binding of data.bindings.filter((b) => b.kind === "dungeon"))
         if(!data.region?.raster)this.drawInterior(root, binding, box, mpp);
+      if(data.region?.raster){const r=data.region.raster;const image=shape("image", {x: r.box.x-box.x, y: r.box.y-box.y, width: r.box.width, height: r.box.height, source: r.data});image.geometry.pointer=false;root.append(image);for(const b of data.bindings.filter(b=>b.kind==='dungeon')){const floor=data.geometry.position?.scopeId===b.ownerId?data.geometry.position.floorId:b.ownerId===this.scopeId?this.floorId:'ground',g=shape("group", {matrix: frameMatrix(this.relative(atlasFrame(data,b)))});this.drawInteriorRuntime(g,b,floor,mpp,[]);root.append(g);}}
+        base={key,node:root,origin:{x:box.x,y:box.y},authorSlot:this.authorFaceSlot(root)};
+        this.baseGeometry=cacheable?base:null;
+      }
+      const retained=shape('group',{matrix:[1,0,0,1,base.origin.x-box.x,base.origin.y-box.y],data:{atlasBase:'true'}});
+      retained.append(base.authorSlot?this.withAuthorFace(base.node,base.authorSlot,mpp):base.node);root.append(retained);
       if (this.draft.length && this.scopeId) {
         const f = this.frame(this.scopeId),
           p = localToAtlas(this.draft[0]!, f);
@@ -1883,7 +1910,7 @@ export class CampaignAtlasWorkbench {
           shape("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#c65d28"}}),
         );
       }
-      if(data.region?.raster){const r=data.region.raster;const image=shape("image", {x: r.box.x-box.x, y: r.box.y-box.y, width: r.box.width, height: r.box.height, source: r.data});image.geometry.pointer=false;root.append(image);for(const b of data.bindings.filter(b=>b.kind==='dungeon')){const floor=data.geometry.position?.scopeId===b.ownerId?data.geometry.position.floorId:b.ownerId===this.scopeId?this.floorId:'ground',g=shape("group", {matrix: frameMatrix(this.relative(atlasFrame(data,b)))});this.drawInteriorRuntime(g,b,floor,mpp,[]);root.append(g);}}
+
       this.drawInteriorAuthor(root,mpp);
       const travel = atlasWorldTravelState(),
         route = atlasWorldRoute(data,travel.preview);
@@ -2053,6 +2080,7 @@ export class CampaignAtlasWorkbench {
     if (!shown.length) return;
     const g = shape("group", {matrix: frameMatrix(this.relative(f))});
     for (const saved of shown) {
+      if(this.authorRoom(saved)){g.append(shape('group',{data:{authorRoomFace:saved.id}}));continue;}
       let room =
         this.opts.roomDraft()?.id === saved.id ? this.opts.roomDraft()! : saved;
       if (this.vertexDrag?.room.id === saved.id) {
@@ -2096,7 +2124,38 @@ export class CampaignAtlasWorkbench {
             : []
         : room.polygons;
       if (!polygons.length) continue;
-      const path = shape("path", {path: roomPath(polygons), style: {fill: this.selection?.id === room.id ? "#e8d8ac" : "#e2dac4", stroke: "#3d4b45", lineWidth: Math.max(0.07, Math.min(0.18, mpp)), fillRule: "evenodd"}});
+      if(!this.authorRoom(room))this.drawRoomFace(g,{...room,polygons},mpp);
+    }
+    for (const e of data.geometry.drawing.elements.filter(
+      (e) => e.scopeId === b.ownerId && e.floorId === floor && !e.archived,
+    )) {
+      const node = elementPaint(e, shown, data.geometry.drawing.elements);
+      node.data.atlasObject='true';node.data.kind='element';node.data.id=e.id;
+      g.append(node);
+    }
+    this.drawInteriorRuntime(g,b,floor,mpp,shown);
+    root.append(g);
+  }
+  private authorRoom(room:import('./contracts').RoomGeometry){
+    return this.family==='interior' && this.selection?.kind==='room' && this.selection.id===room.id &&
+      this.opts.roomDraft()?.id===room.id && room.scopeId===this.scopeId && room.floorId===this.floorId &&
+      !get<HTMLInputElement>('atlas-slice-enabled').checked && !get<HTMLInputElement>('atlas-perception').checked;
+  }
+  private authorFaceSlot(node:AtlasPaint):number[]|null{
+    if(node.data.authorRoomFace)return [];
+    for(let i=0;i<node.children.length;i++){const child=this.authorFaceSlot(node.children[i]!);if(child)return [i,...child];}
+    return null;
+  }
+  /** Clone only the ancestry of the dynamic face; retain all other immutable paths.
+   * The slot preserves painter order, so the room fill cannot cover its objects. */
+  private withAuthorFace(node:AtlasPaint,slot:number[],mpp:number):AtlasPaint{
+    const copy=shape(node.kind,node.geometry,node.text);copy.title=node.title;
+    if(slot.length){copy.append(...node.children);const index=slot[0]!;copy.children[index]=this.withAuthorFace(node.children[index]!,slot.slice(1),mpp);}
+    else{const original=this.opts.roomDraft();if(original){const room=this.vertexDrag?.room.id===original.id?structuredClone(this.vertexDrag.room):original;if(this.vertexDrag?.room.id===room.id)room.polygons[this.vertexDrag.polygon]!.outer[this.vertexDrag.vertex]={...this.vertexDrag.point};this.drawRoomFace(copy,room,mpp);}}
+    return copy;
+  }
+  private drawRoomFace(g:AtlasPaint,room:import('./contracts').RoomGeometry,mpp:number){
+      const path = shape("path", {path: roomPath(room.polygons), style: {fill: this.selection?.id === room.id ? "#e8d8ac" : "#e2dac4", stroke: "#3d4b45", lineWidth: Math.max(0.07, Math.min(0.18, mpp)), fillRule: "evenodd"}});
       path.data.atlasObject = "true";
       path.data.kind = "room";
       path.data.id = room.id;
@@ -2118,16 +2177,6 @@ export class CampaignAtlasWorkbench {
           },
           mpp,
         );
-    }
-    for (const e of data.geometry.drawing.elements.filter(
-      (e) => e.scopeId === b.ownerId && e.floorId === floor && !e.archived,
-    )) {
-      const node = elementPaint(e, shown, data.geometry.drawing.elements);
-      node.data.atlasObject='true';node.data.kind='element';node.data.id=e.id;
-      g.append(node);
-    }
-    this.drawInteriorRuntime(g,b,floor,mpp,shown);
-    root.append(g);
   }
   /** Exact author data and open drafts outlive the background's detail/raster choice. */
   private drawInteriorAuthor(root: AtlasPaint, mpp: number) {

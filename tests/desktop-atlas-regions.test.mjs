@@ -190,3 +190,19 @@ test('sample-grid rejection is pixel-identical to the full source stream across 
  f.store.db.transaction(()=>{for(let i=0;i<2000;i++){const x=rand()*64-32,y=rand()*64-32,size=i%3===0?.01:rand()*2+.001;landscape(f,{id:'sample'+i,revision:0,kind:'patch',name:'sample',points:[],polygons:[{outer:[{x,y},{x:x+size,y},{x:x+size,y:y+size},{x,y:y+size}],holes:i%5===0?[[{x:x+size*.2,y:y+size*.2},{x:x+size*.8,y:y+size*.2},{x:x+size*.8,y:y+size*.8},{x:x+size*.2,y:y+size*.8}]]:[]}],resolution:i%3+1,width:0,values:{terrain:i%2?'water':'forest'}});}})();
  const q=query({x:-17,y:-11,width:32,height:24}),r=await f.read(q),db=new Database(f.store.filename,{readonly:true});t.after(()=>db.close());const unfiltered=new AtlasRegionReader(db);unfiltered.landscape.sampleMath=false;await unfiltered.sync(f.source);const expected=unfiltered.read(f.source,q);assert.deepEqual(r.landscape.tiles,expected.landscape.tiles);assert.deepEqual(r.landscape.coverage,expected.landscape.coverage);
 });
+
+
+test('exact glyph union preserves overlapping hits, paging, source fence and floor/archive filters',async t=>{
+ const f=fixture(t,45),{newElement}=require('../.build/atlas-region-drawing-model.cjs');
+ const polygons=room(0).polygons,payload=JSON.stringify({polygons,sections:[]});f.store.db.prepare('UPDATE room SET payload=?,checksum=?').run(payload,hash(payload));
+ const element={...newElement('feature','local','ground','r0',[{x:20,y:0}]),name:'Großes Glyph',width:20,height:20};
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element,expectedRevision:null}});
+ const q=query();await f.read(q);let page=f.reader.candidatesAt(f.source,q,{x:1,y:1},0,'all',element.id);
+ assert.equal(page.total,46);assert.equal(page.items[0].id,element.id);assert.equal(page.items[0].name,element.name);assert.equal(page.next,40);
+ const second=f.reader.candidatesAt(f.source,q,{x:1,y:1},40,'all',element.id);assert.equal(second.items.length,6);assert.equal(second.next,null);assert.equal(new Set([...page.items,...second.items].map(h=>h.id)).size,46);
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:20,y:0},0,'all',element.id).items.filter(h=>h.id===element.id).length,1,'canonical and glyph hits are unioned once');
+ assert.throws(()=>f.reader.candidatesAt(f.source,{...q,fence:'old'}, {x:1,y:1},0,'all',element.id),/geändert/);
+ const hidden={...q,floorId:'upper'};assert.equal(f.reader.candidatesAt(f.source,hidden,{x:1,y:1},0,'all',element.id).total,0);
+ f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...element,archived:true},expectedRevision:0}});await f.read(q);
+ assert.equal(f.reader.candidatesAt(f.source,q,{x:1,y:1},0,'all',element.id).total,45,'an archived/stale glyph cannot return');
+});

@@ -43,6 +43,7 @@ export class AtlasCanvas {
   private cameraVersion = 0;
   private painted: { generation: number; cameraVersion: number; width: number; height: number } | null = null;
   private compiled: AtlasCanvasScene | null = null;
+  private paths:import("./atlas-canvas-scene").AtlasPathCache=new WeakMap();
   private generation = 0;
   private animation = 0;
   private decoded = new Map<string, ImageBitmap>();
@@ -481,6 +482,7 @@ export class AtlasCanvas {
     this.pending = null;
     this.compiled?.dispose();
     this.compiled = null;
+    this.paths=new WeakMap();
     this.painted = null;
     this.clearImages();
     this.ctx?.resetTransform();
@@ -593,7 +595,9 @@ export class AtlasCanvas {
       const scene = new AtlasPaint("group");
       scene.data.mapScene = "true";
       draw(scene);
-      const compiled = new AtlasCanvasScene(scene);
+      const compiled = new AtlasCanvasScene(scene,this.paths);
+      this.root.dataset.pathBuilds=String(compiled.pathBuilds);
+      this.root.dataset.pathReuses=String(compiled.pathReuses);
       if (compiled.images.size > 32)
         throw Error("Zu viele Kartenbilder in einem Ausschnitt.");
       this.pending = {
@@ -664,6 +668,7 @@ export class AtlasCanvas {
     this.pending = null;
     this.compiled?.dispose();
     this.compiled = null;
+    this.paths=new WeakMap();
     this.painted = null;
     this.failed = true;
     this.cancel();

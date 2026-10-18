@@ -14,7 +14,7 @@ function fixture(t){
  const previous={window:global.window,document:global.document,atlasAuthorDraft:global.atlasAuthorDraft,atlasOverlayCalls:global.atlasOverlayCalls,atlasDraftNode:global.atlasDraftNode};t.after(()=>Object.assign(global,previous));
  const ids=['recover','placement','scale','undo','redo','connect-entrance','local-console','create-tools','floor-field','building-interior','selection-title'];
  const {window,document}=parseHTML('<html><body>'+ids.map(id=>`<div id="atlas-${id}"></div>`).join('')+'<label><input id="atlas-slice-enabled"></label><label><input id="atlas-slice"></label><label><input id="atlas-roofs"></label><input id="atlas-perception"><select id="atlas-floor"></select></body></html>');Object.assign(global,{window,document,atlasAuthorDraft:{floor:{scopeId:'local',floorId:'ground'}},atlasOverlayCalls:0});
- const original={id:'room',scopeId:'local',floorId:'ground',revision:7,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},binding={id:'bind',kind:'dungeon',ownerId:'local',parent:'world',parentId:null,x:-100,y:50,angle:Math.PI/2,revision:0};
+ const original={name:'Autorenraum',number:'1',id:'room',scopeId:'local',floorId:'ground',revision:7,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},binding={id:'bind',kind:'dungeon',ownerId:'local',parent:'world',parentId:null,x:-100,y:50,angle:Math.PI/2,revision:0};
  let output,current=true;
  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},svg:{clientWidth:100,dataset:{}},camera:{view:{x:-110,y:40,width:20,height:20},render:draw=>{output={children:[],data:{mapScene:'true'},append(...nodes){this.children.push(...nodes);}};draw(output);}},family:'interior',scopeId:'local',floorId:'ground',selection:{kind:'room',id:'room'},draft:[],landscape:{draw(){}},opts:{roomDraft:()=>original},geometryCurrent:()=>current,selectedBinding:()=>null,renderTravel(){},drawTerrain(){},drawInteriorRuntime(){},drawParty(){}});
  // A raster region intentionally contains no author contours or display rooms.
@@ -30,8 +30,8 @@ test('raster background preserves exact room grips and the open draft above the 
  const grips=all(author).filter(n=>n.data.atlasVertex!==undefined);assert.equal(grips.length,4);assert.deepEqual(grips.map(n=>({x:n.geometry.x,y:n.geometry.y})),f.original.polygons[0].outer);assert.equal(atlasOverlayCalls,1);assert(author.children.includes(atlasDraftNode));assert.deepEqual(f.original,before);
  f.ui.vertexDrag={room:structuredClone(f.original),polygon:0,vertex:1,point:{x:12,y:4}};const moved=f.render();assert.deepEqual(all(moved).find(n=>n.data.atlasVertex==='1').geometry.x,12);assert.deepEqual(f.original,before,'preview must not mutate the author source');
 });
-test('author overlay retains the draft during loading but revokes grips, and respects floor/slice/perception context',t=>{
- const f=fixture(t);f.current(false);let scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasVertex!==undefined).length,0);assert(all(scene).includes(atlasDraftNode));
+test('loading retains the confirmed scene instead of drawing old data under new filters, and respects confirmed floor/slice/perception context',t=>{
+ const f=fixture(t);let scene=f.render();const confirmed=scene;f.current(false);f.document.getElementById('atlas-slice-enabled').checked=true;scene=f.render();assert.equal(scene,confirmed,'loading must retain the complete confirmed scene');assert(all(scene).includes(atlasDraftNode));
  f.current(true);f.document.getElementById('atlas-slice-enabled').checked=true;scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasVertex!==undefined).length,0);
  f.document.getElementById('atlas-slice-enabled').checked=false;f.ui.floorId='upper';scene=f.render();assert.equal(all(scene).filter(n=>n.data.editorOnly==='true').length,0,'a ground-floor draft must not appear upstairs');
  f.ui.floorId='ground';f.document.getElementById('atlas-perception').checked=true;scene=f.render();assert.equal(all(scene).filter(n=>n.data.editorOnly==='true').length,0,'GM author contours must not overlay party knowledge');
@@ -57,4 +57,21 @@ test('a detailed original retains bounded, exact-index grips instead of rebuildi
 test('close zoom keeps distinct original vertices reachable with constant-pixel grips',t=>{
  const f=fixture(t);f.ui.camera.view={x:-100.02,y:49.98,width:.04,height:.04};f.ui.data.region.box={x:-100.04,y:49.96,width:.08,height:.08};f.original.polygons[0].outer=[{x:0,y:0},{x:.004,y:0},{x:.004,y:.004},{x:0,y:.004}];
  const grips=all(f.render()).filter(n=>n.data.atlasVertex!==undefined);assert.equal(grips.length,4);for(const g of grips)assert.equal(g.geometry.radius/(.04/100),4);
+});
+
+test('draft and vertex previews retain background nodes and floor controls; buffered pan rebases them',t=>{
+ const f=fixture(t);const first=f.render(),base=first.children.find(n=>n.data.atlasBase==='true'),node=base.children[0];
+ const floor=f.document.getElementById('atlas-floor');const sentinel=f.document.createElement('option');floor.append(sentinel);
+ f.ui.vertexDrag={room:structuredClone(f.original),polygon:0,vertex:1,point:{x:12,y:4}};
+ const moved=f.render();assert.equal(moved.children.find(n=>n.data.atlasBase==='true').children[0],node);assert.equal(floor.firstChild,sentinel,'pointer previews must not rebuild the panel');
+ f.ui.camera.view={...f.ui.camera.view,x:-108,y:42};const pan=f.render().children.find(n=>n.data.atlasBase==='true');assert.equal(pan.children[0],node);assert.deepEqual(pan.geometry.matrix,[1,0,0,1,-2,-2]);
+ f.ui.floorId='upper';assert.notEqual(f.render().children.find(n=>n.data.atlasBase==='true').children[0],node,'confirmed context changes invalidate background geometry');
+});
+test('detail preview replaces only its face slot and preserves object painter order',t=>{
+ const f=fixture(t);f.ui.data.region.raster=undefined;f.ui.drawInterior=root=>{
+  const room={kind:'group',geometry:{},style:{},data:{authorRoomFace:'room'},children:[],append(...n){this.children.push(...n);}};
+  root.append(room,{kind:'rect',geometry:{x:1,y:2,width:1,height:1},style:{},data:{id:'glyph'},children:[]});
+ };
+ const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true').children[0],first=all(base).find(n=>n.kind==='path'&&n.data.id==='room');assert(first);assert(all(base).indexOf(first)<all(base).findIndex(n=>n.data.id==='glyph'),'objects must stay above the selected fill');
+ f.ui.vertexDrag={room:structuredClone(f.original),polygon:0,vertex:1,point:{x:12,y:4}};const changed=f.render().children.find(n=>n.data.atlasBase==='true').children[0];assert.equal(changed.children[1],base.children[1]);assert.notEqual(all(changed).find(n=>n.kind==='path').geometry.path,first.geometry.path);assert.equal(f.original.polygons[0].outer[1].x,9);
 });

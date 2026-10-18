@@ -188,9 +188,9 @@ test('a delayed click after a geometry drag stays suppressed until the next actu
  ui.suppressClick();ui.down({button:1});assert.equal(ui.ignoreClick,false,'a new pointer press starts an independent gesture even if no click followed the drag');
 });
 
-test('a visible drawing glyph selects its exact source ID even beyond the canonical point-pick radius',async()=>{
- const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({data:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async()=>chosen.push('point-radius')});
- await ui.click({button:0,altKey:false});assert.deepEqual(chosen,['glyph'],'visual glyph hit must keep the existing exact-ID navigation/read path');
+test('a visible drawing glyph joins the candidate picker even beyond the canonical point-pick radius',async()=>{
+ const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({data:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async(p,layer,id)=>chosen.push({p,layer,id})});
+ await ui.click({button:0,altKey:false});assert.deepEqual(chosen,[{p:{x:20,y:0},layer:'all',id:'glyph'}],'a glyph must not silently outrank overlapping rooms and landscape');
 });
 
 test('a press rejected during saving cannot become a selection after saving completes',async()=>{
@@ -215,4 +215,10 @@ test('camera refresh preserves a checked local route only after the identical so
  assert.equal(x.ui.localPreview,preview);assert.equal(x.get('start').disabled,false);
  window.campaign.atlasRegion=async()=>({ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'new-source',coverage:{mode:'detail',unreadable:0}}}});await x.ui.refresh(true);
  assert.equal(x.ui.localPreview,null);assert.equal(x.get('start').disabled,true,'A source change must revoke the old checked route');assert.equal(x.sent.length,0);
+});
+
+test('leaving the Atlas revokes a late complete region response before reopening',async t=>{
+ const x=fixture(t),before=x.ui.data;let release;window.campaign.atlasRegion=()=>new Promise(r=>release=r);
+ const pending=x.ui.refresh(true);x.ui.hide();release({ok:true,value:{...before,revision:999,region:{fence:'late',coverage:{mode:'detail',unreadable:0}}}});await pending;
+ assert.equal(x.ui.data,before);assert.equal(x.ui.loadedRegionQuery,null);assert.equal(x.ui.root.hidden,true);
 });
