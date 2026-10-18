@@ -30,7 +30,7 @@ try{for(const scale of [1,2]){
  const binding=db.prepare("SELECT * FROM atlas_binding WHERE kind='dungeon' ORDER BY rowid DESC LIMIT 1").get(),world=p=>({x:binding.x+p.x,y:binding.y+p.y});
  const screen=async p=>atlasCanvasPoint(page,world(p),false);
  const choose=async name=>{await page.locator('#atlas-search').fill(name);await page.locator('#atlas-search-results button').filter({hasText:name}).click();await page.waitForFunction(n=>document.querySelector('#room-name')?.value===n,name);await atlasCanvasReady(page);};
- const tool=async name=>{await page.getByRole('button',{name,exact:true}).click();};
+ const tool=async name=>{await page.getByRole('button',{name,exact:true}).click();if(await page.locator('#atlas-secondary').isVisible())await page.locator('#atlas-secondary-close').click();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await atlasCanvasReady(page);};
  for(const [index,name,left,right]of[[0,'Torhalle',-15.24,-6.096],[1,'Wachstube',-6.096,3.048],[2,'Archiv',3.048,12.192]]){
   await tool('Raumrechteck');assert.equal(await page.locator('#atlas-new-name').isVisible(),false,'Only the owning room-name field is offered');await page.locator('#drawing-room-name').fill(name);
   const a=await screen({x:left,y:-4.572}),z=await screen({x:right,y:4.572});
@@ -54,4 +54,4 @@ try{for(const scale of [1,2]){
  const saved={rooms:rooms(),doors:doors()};db.close();db=null;await close();await launch();await choose('Torhalle');db=new Database(profile+'/workbench.sqlite',{readonly:true});assert.deepEqual({rooms:rooms(),doors:doors()},saved);db.close();db=null;await close();proxy.kill();proxy=null;assert.deepEqual(errors,[]);results.push({scale,profile,rooms:3,doors:2,dragAndTwoClick:true,nameAndGrid:true,resizeUndoRedo:true,exportUpdated:true,reopened:true});
  }
  await writeFile(out+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),launches,results},null,2));console.log(JSON.stringify({launches,results}));
-}catch(e){if(page)await page.screenshot({path:out+'/failure.png'}).catch(()=>{});throw e;}finally{db?.close();if(app)await app.close().catch(()=>{});proxy?.kill();}
+}catch(e){console.error(e);if(page)await page.screenshot({path:out+'/failure.png'}).catch(()=>{});throw e;}finally{db?.close();if(app){const proc=app.process(),timer=setTimeout(()=>proc.kill('SIGKILL'),5000);try{await app.close().catch(()=>{});}finally{clearTimeout(timer);}}proxy?.kill();}
