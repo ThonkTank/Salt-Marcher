@@ -123,11 +123,11 @@ test('condition shortcuts cannot adopt unrelated raw values and resume after exp
 
 test('HP cells reuse the target editor and Enter applies one damage command to that individual',async t=>{
  const x=await uiFixture(t),target=x.combat.participants[1],amount=x.el('fighter-amount');let focused=false;
- const scrolls=[];amount.scrollIntoView=options=>scrolls.push(options.block);amount.focus=()=>{focused=true;};amount.select=()=>{};amount.reportValidity=()=>Number(amount.value)>0;
+ x.el('fighter-condition-panel').open=true;const scrolls=[];amount.scrollIntoView=options=>scrolls.push(options.block);amount.focus=()=>{focused=true;};amount.select=()=>{};amount.reportValidity=()=>Number(amount.value)>0;
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];
  assert.equal(cells.length,3);assert.match(cells[1].getAttribute('aria-label'),/Goblin B.*7 \/ 7/);
  cells[1].onclick();await until(()=>focused);assert.equal(x.writes.length,0);
- assert.equal(x.el('combat-selected-name').textContent,target.name);assert.deepEqual(scrolls,['nearest']);
+ assert.equal(x.el('combat-selected-name').textContent,target.name);assert.deepEqual(scrolls,['nearest']);assert.equal(x.el('fighter-condition-panel').open,false);
  amount.value='3';
  const enter=(repeat=false)=>{const e=new window.Event('keydown',{cancelable:true});e.key='Enter';e.repeat=repeat;amount.dispatchEvent(e);};
  enter();enter();await until(()=>x.writes.length===1&&!x.el('fighter-damage').disabled);
@@ -143,7 +143,7 @@ test('roster condition entry opens the individual shortcuts without a write and 
  const x=await uiFixture(t),target=x.combat.participants[1],root=x.el('fighter-condition-shortcuts'),scrolls=[];
  root.scrollIntoView=options=>scrolls.push(options.block);
  const entry=x.el('combat-rows').querySelectorAll('.combat-conditions')[1];assert.ok(entry,'condition entry available in each roster row');
- entry.onclick();await until(()=>scrolls.length===1);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);assert.deepEqual(scrolls,['nearest']);
+ entry.onclick();await until(()=>scrolls.length===1);assert.equal(x.el('fighter-condition-panel').open,true);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);assert.deepEqual(scrolls,['nearest']);
  const oldEvent=globalThis.Event;globalThis.Event=window.Event;t.after(()=>{globalThis.Event=oldEvent;});
  const form=x.el('combat-participant-form');form.requestSubmit=()=>form.onsubmit({preventDefault(){}});
  [...root.querySelectorAll('button')].find(b=>b.textContent==='Festgesetzt').onclick();await until(()=>x.writes.length===1&&!x.el('fighter-hp').disabled);
@@ -307,4 +307,36 @@ test('catalog handoff creates one complete preparation and resolves a lost reply
 test('failed initial catalog handoff preserves the selected finished combat instead of storing an empty replacement',async t=>{
  const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);window.requestAnimationFrame=()=>0;const before=x.store.db.serialize();
  await x.ui.addCatalogCreature('missing',2,true);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.combat(x.w.token,x.scene.id).combat.id,x.combat.id);assert.match(x.el('combat-status').textContent,/Abgeschlossen/);
+});
+
+
+test('unknown PC armor stays unknown through catalog combat, edits, undo and reopening',t=>{
+ const x=fixture(t),hero=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Mira'}})).character;
+ const live=x.store.live(x.w.token);
+ x.store.executeLive(x.command({kind:'membership',characterId:hero.id,expectedRevision:hero.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));
+ const scene=x.store.live(x.w.token).scenes.find(s=>s.id===x.scene.id);
+ x.execute({kind:'create',sceneId:x.scene.id,title:'Offene RK',includeParty:true,expectedMembershipRevision:scene.membershipRevision,catalogCreature:{creatureId:x.creature.id,count:2,grouped:true}});
+ const actor=()=>x.combat.participants.find(p=>p.characterId===hero.id);assert.equal(actor().armorClass,null);assert.equal(actor().healthKnown,false);
+ x.execute({kind:'edit',participantId:actor().id,changes:{conditions:'Festgesetzt'}});assert.equal(actor().armorClass,null);
+ for(const value of [-1,1.5,1000001,undefined]){const before=x.store.db.serialize();assert.throws(()=>x.execute({kind:'edit',participantId:actor().id,changes:{armorClass:value}}),/Rüstungsklasse/);assert(before.equals(x.store.db.serialize()));}
+ x.execute({kind:'start'});assert.equal(actor().armorClass,null,'unknown armor must not block manual combat');
+ const pc=actor().id;x.execute({kind:'edit',participantId:pc,changes:{armorClass:14}});assert.equal(actor().armorClass,14);
+ x.execute({kind:'undo'});assert.equal(actor().armorClass,null);
+ const id=x.combat.id;x.store.close();x.store=new CampaignStore(x.file);x.w=x.store.activate(x.campaign.id);x.combat=x.store.combat(x.w.token,x.scene.id,id).combat;assert.equal(actor().armorClass,null);assert(x.combat.participants.filter(p=>!p.characterId).every(p=>p.armorClass===15));
+});
+
+test('an unknown armor cell opens its blank editable value and unrelated edits preserve it',async t=>{
+ const x=await uiFixture(t),target=x.combat.participants[0];x.execute({kind:'edit',participantId:target.id,changes:{armorClass:null}});await x.ui.openExistingCombat(x.combat.id);
+ const armor=x.el('combat-rows').querySelector('.combat-armor');assert.equal(armor.textContent,'offen');const input=x.el('fighter-ac');let focused=false;input.scrollIntoView=()=>{};input.focus=()=>{focused=true;};input.select=()=>{};armor.onclick();await until(()=>focused);assert.equal(x.el('fighter-values').open,true);assert.equal(input.value,'');assert.equal(input.hasAttribute('required'),false);
+ const form=x.el('combat-participant-form');form.onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!input.disabled);assert.equal(x.writes[0].action.changes.armorClass,null);
+ input.value='14';form.onsubmit({preventDefault(){}});await until(()=>x.writes.length===2&&!input.disabled);assert.equal(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants[0].armorClass,14);
+});
+
+test('an attack cannot roll against unknown armor and can select a known target instead',async t=>{
+ const x=await uiFixture(t),target=x.combat.participants[2];x.execute({kind:'edit',participantId:target.id,changes:{armorClass:null}});await x.ui.openExistingCombat(x.combat.id);
+ x.el('combat-attack-effect').scrollIntoView=()=>{};x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-hp').disabled);
+ const attack=[...x.el('fighter-statblock-content').querySelectorAll('button')].find(button=>button.textContent.startsWith('Angriff '));assert(attack);attack.onclick();await until(()=>!x.el('combat-attack-effect').hidden);
+ const select=x.el('combat-attack-target'),roll=x.el('combat-attack-roll');select.value=target.id;select.onchange();assert(roll.disabled);assert.match(select.textContent,/RK offen/);assert.match(roll.title,/zuerst eintragen/);
+ const before=x.store.db.serialize();roll.onclick();await tick();assert.equal(x.writes.length,0);assert(before.equals(x.store.db.serialize()));assert.match(x.messages.at(-1)[0],/Rüstungsklasse/);
+ select.value=x.combat.participants[1].id;select.onchange();assert.equal(roll.disabled,false);
 });

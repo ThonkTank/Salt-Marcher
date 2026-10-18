@@ -22,7 +22,7 @@ function renderCombat(root:HTMLElement,combat:CombatState) {
   paragraph(root,'Kampf · '+(combat.phase==='retired'?'archiviert ohne Kampfergebnis':combat.phase==='finished'?'abgeschlossen':'gespeicherter Stand')+' · Runde '+combat.round);
   if(combat.outcome)paragraph(root,'Ergebnis: '+combat.outcome);if(combat.notes)paragraph(root,combat.notes);
   paragraph(root,combat.participants.length?'Teilnehmer:':'Keine Teilnehmer.','caption');
-  for(const p of combat.participants)paragraph(root,p.name+' · Initiative '+p.initiative+' · RK '+p.armorClass+' · '+(p.healthKnown===false?'HP offen':p.hp+' / '+p.maxHp+' HP')+([p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).length?' · '+[p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).join(' · '):''));
+  for(const p of combat.participants)paragraph(root,p.name+' · Initiative '+p.initiative+' · RK '+(p.armorClass??'offen')+' · '+(p.healthKnown===false?'HP offen':p.hp+' / '+p.maxHp+' HP')+([p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).length?' · '+[p.conditions,p.concentrating?'Konzentration':''].filter(Boolean).join(' · '):''));
 }
 function renderChase(root:HTMLElement,chase:ChaseState) {
   root.replaceChildren();const heading=document.createElement('h4');heading.textContent=chase.title;root.append(heading);
