@@ -248,3 +248,13 @@ test('an interior containing only authored objects is visible outside the origin
  const moved=query({x:-310,y:40,width:50,height:50}),after=await f.read(moved);assert(after.drawing.elements.some(e=>e.id===wall.id),'element-only edits must update the scope extent too');
 
 });
+
+test('authored room colors follow their target identity through selected reads, region projection and Undo/Redo',async t=>{
+ const f=fixture(t,1),style={id:'r0',scopeId:'local',revision:0,ceilingMeters:3.048,fill:'#3f7c9e',wall:'#8b2e4b',publicLabel:'Zollhaus',secret:false};
+ f.store.atlasDrawingCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'style',style,expectedRevision:null}});
+ const profile=f.store.db.prepare('SELECT id,target_id FROM drawing_profile WHERE campaign_id=?').get(f.campaign.id);assert.notEqual(profile.id,style.id);assert.equal(profile.target_id,style.id);
+ assert.deepEqual(f.store.drawingMap(f.shell.token,style.id).styles,[style]);
+ const region=await f.read();assert.deepEqual(region.drawing.styles,[style]);assert.deepEqual(f.store.atlasRegionView(f.shell.token,region).geometry.drawing.styles,[style]);
+ f.store.executeAtlasCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'undo'}});assert.deepEqual((await f.read()).drawing.styles,[]);
+ f.store.executeAtlasCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'redo'}});const restored=await f.read();assert.equal(restored.drawing.styles[0].fill,style.fill);assert.equal(restored.drawing.styles[0].wall,style.wall);
+});
