@@ -37,6 +37,7 @@ export function validateColor(r:LandscapeRecord){
     !['round','soft','textured'].includes(p.tip)||![p.opacity,p.flow].every(v=>Number.isFinite(v)&&v>=.1&&v<=1)||
     !Number.isFinite(p.radius)||p.radius<=0||!Number.isSafeInteger(p.seed)||p.seed<0||p.seed>0xffffffff||typeof p.fill!=='boolean'||
     Object.keys(r.values).length||(!p.fill&&!r.points.length))throw Error('Farbpinsel prüfen.');
+  if(!p.fill){let count=0;for(const stroke of p.strokes??[r.points]){if(stroke.length)count++;for(let i=1;i<stroke.length;i++)count+=Math.max(1,Math.ceil(Math.hypot(stroke[i]!.x-stroke[i-1]!.x,stroke[i]!.y-stroke[i-1]!.y)/(p.radius*.5)));}if(count>4000)throw Error('Farbzug zu lang. In kürzeren Abschnitten malen.');}
 }
 export interface ColorPart {polygons:Polygon[];color:string;opacity:number}
 /** Numeric feather bands are identical in the Canvas and overview raster. */

@@ -201,7 +201,7 @@ export function bounds(record: LandscapeRecord): LandscapeBox {
     for(const v of [{x:w,y:0},{x:w,y:h},{x:0,y:h}])include({x:p.x+v.x*Math.cos(a)-v.y*Math.sin(a),y:p.y+v.x*Math.sin(a)+v.y*Math.cos(a)});
   }
   const pad =
-      record.kind === "river" || record.kind === "road" ? record.width * (record.line ? .8 : .5) : 0,
+      record.kind === "river" || record.kind === "road" ? record.width * (record.line ? 1 : .5) : 0,
     x = minX - pad,
     y = minY - pad;
   return {
