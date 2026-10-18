@@ -63,6 +63,24 @@ test('Hex fill previews and commits every cell between sparse pointer samples, w
 });
 
 
+test('automatic Hex grid follows the draft size through zoom and resumes after cancellation',t=>{
+ const f=fixture(t);f.set([]);f.ui.setActive(true);
+ f.document.querySelector('#land-auto-level').checked=true;
+ f.document.querySelector('#land-grid').checked=true;
+ const tool=f.document.querySelector('#land-tool');tool.value='hex';tool.onchange();
+ const draw=width=>{const scene=new AtlasPaint('group');f.ui.draw(scene,{x:-width/2,y:-width/2,width,height:width},width/800);return scene;};
+ const gridWidth=scene=>{const points=scene.children.find(n=>n.data.landscapeGrid==='true').geometry.points;return Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x));};
+ assert(Math.abs(gridWidth(draw(12*HEX_METERS))-HEX_METERS)<.001);
+ f.ui.points=[{x:0,y:0}];
+ const zoomed=draw(36*HEX_METERS);
+ assert.equal(f.document.querySelector('#atlas-hex-level').value,'0');
+ const footprint=zoomed.children.find(n=>n.data.landHexDraft==='true').geometry.polygons[0].outer;
+ assert(Math.abs(gridWidth(zoomed)-(Math.max(...footprint.map(p=>p.x))-Math.min(...footprint.map(p=>p.x))))<.001,'Visible grid and authored footprint must use one Hex size');
+ f.ui.cancel();
+ assert(Math.abs(gridWidth(draw(36*HEX_METERS))-3*HEX_METERS)<.001,'Automatic grid resumes when no draft is open');
+ assert.equal(f.document.querySelector('#atlas-hex-level').value,'1');
+});
+
 test('an oversized Hex draft fails visibly without saving or discarding its points',async t=>{
  const f=fixture(t);f.set([]);let writes=0;f.host.write=async()=>{writes++;return true;};f.ui.tool='hex';f.ui.points=[{x:0,y:0},{x:6000*HEX_METERS,y:0}];
  f.document.querySelector('#land-auto-level').checked=false;

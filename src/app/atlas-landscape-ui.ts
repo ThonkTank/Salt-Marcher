@@ -511,7 +511,8 @@ export class LandscapeWorkbench {
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
     }
     retained.append(node);root.append(retained);
-    const auto = html<HTMLInputElement>("land-auto-level").checked,
+    // An open draft owns its Hex size; the camera only chooses it between edits.
+    const auto = html<HTMLInputElement>("land-auto-level").checked && !this.hasDraft(),
       level = auto
         ? Math.max(
             0,
@@ -527,7 +528,7 @@ export class LandscapeWorkbench {
     if (html<HTMLInputElement>("land-grid").checked)
       drawLandscapeGrid(root, box, level, mpp);
     const hud=landscapeNode("group", {hud:true});drawScale(hud,box,mpp);root.append(hud);
-    if (auto && !this.hasDraft())
+    if (auto)
       html<HTMLSelectElement>("atlas-hex-level").value = String(level);
     if (this.active && auto)
       this.sayIfIdle(
