@@ -31,7 +31,8 @@ const distance=(p:Point,a:Point,b:Point)=>{const dx=b.x-a.x,dy=b.y-a.y,t=Math.ma
 // The index's generous stroke bounds supply candidates, never the exact answer.
 const touches=(s:Shape,p:Point,mpp:number)=>{
  if(['terrain','water','roof'].includes(s.value.kind)&&s.points)return inside(p,[{outer:s.points,holes:[]}]);
- if(['wall','door','path','stairs'].includes(s.value.kind)&&s.points)return s.points.some((v,i,a)=>i>0&&distance(p,a[i-1]!,v)<=Math.max(s.value.kind==='door'?.11:s.value.width/2,mpp*3));
+ if(s.value.kind==='door'&&s.points?.length){const a=s.points[0]!,b=s.points[1]??a;if(Math.hypot(p.x-(a.x+b.x)/2,p.y-(a.y+b.y)/2)<=Math.max(.15,mpp*3))return true;}
+ if(['wall','door','path','stairs'].includes(s.value.kind)&&s.points&&s.points.length>1)return s.points.some((v,i,a)=>i>0&&distance(p,a[i-1]!,v)<=Math.max(s.value.kind==='door'?.11:s.value.width/2,mpp*3));
  if(s.value.kind==='object'&&s.points?.length===1){
   const e=s.value,a=s.points[0]!,dx=p.x-a.x,dy=p.y-a.y;
   if(e.variant==='barrel'||e.variant==='pillar')return (dx/(e.width/2))**2+(dy/(e.height/2))**2<=1;
