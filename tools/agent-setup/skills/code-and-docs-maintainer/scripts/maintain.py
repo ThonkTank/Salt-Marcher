@@ -232,6 +232,7 @@ def run(args):
         state['active'].pop('blocker', None)
     elif command == 'finish':
         clean(repo)
+        published = None
         if args.outcome == 'complete':
             if not active or not args.published:
                 raise ValueError('Completion needs an active task and its published commit')
@@ -245,7 +246,7 @@ def run(args):
             raise ValueError('Do not skip committed work or an active check/publication as no-work')
         state['last_completed'] = {'mode': state['mode'], 'outcome': args.outcome,
                                    'evidence': args.evidence, 'revision': sha,
-                                   'published': args.published}
+                                   'published': published}
         state['active'] = None
         state['mode'] = MODES[(MODES.index(state['mode']) + 1) % len(MODES)]
     write_state(path, state)

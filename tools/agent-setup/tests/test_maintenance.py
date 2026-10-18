@@ -87,6 +87,7 @@ class MaintenanceTests(unittest.TestCase):
         self.cli('finish', '--outcome', 'complete', '--published', 'HEAD',
                  '--integrated-ref', 'HEAD', '--evidence', 'Passende Prüfung und Integration')
         self.assertEqual(self.cli('status')['mode'], 'prune')
+        self.assertEqual(self.cli('status')['last_completed']['published'], self.git('rev-parse', 'HEAD'))
 
     def test_unpublished_commit_cannot_be_reported_as_complete_or_no_work(self):
         baseline = self.git('rev-parse', 'HEAD')
