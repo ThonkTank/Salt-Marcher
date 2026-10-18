@@ -125,15 +125,34 @@ test('line and selection tools hide irrelevant palettes but keep manual grid lev
 
 for(const kind of ['road','river'])test(`${kind} endpoint drag commits on release, keeps other geometry, and does not write on click or cancellation`,async t=>{
  const f=fixture(t),road={...ref('line'),kind,assetId:undefined,points:[{x:1,y:2},{x:8,y:2}],width:1},writes=[];
- f.set([road]);f.host.write=async a=>{writes.push(structuredClone(a));return true;};await f.ui.select(road);f.ui.setActive(true);
+ let latest=road;f.set([road]);f.host.write=async a=>{writes.push(structuredClone(a));latest={...structuredClone(a.record),revision:latest.revision+1};f.set([latest]);return true;};f.window.campaign={atlasLandscapeObject:async()=>({ok:true,value:latest})};await f.ui.select(road);f.ui.setActive(true);
  const canvas=f.document.querySelector('canvas');canvas.setPointerCapture=()=>{};canvas.hasPointerCapture=()=>false;f.host.hit=()=>({data:{landVertex:'1'}});
  const pointer=(type,x,y=2)=>{const e=new f.window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{button:0,pointerId:4,clientX:x,clientY:y});canvas.dispatchEvent(e);};
  pointer('pointerdown',8);pointer('pointerup',8);await new Promise(r=>setImmediate(r));assert.equal(writes.length,0,'selecting a handle is not an edit');
  pointer('pointerdown',8);pointer('pointermove',5);assert.equal(writes.length,0,'preview stays a draft');pointer('pointercancel',5);assert.equal(writes.length,0,'an interrupted drag must never save');
  pointer('pointerdown',5);pointer('pointermove',4);pointer('pointerup',4);await new Promise(r=>setImmediate(r));assert.equal(writes.length,1);assert.deepEqual(writes[0].record.points,[{x:1,y:2},{x:4,y:2}]);assert.equal(writes[0].expectedRevision,0);
+ assert.equal(f.document.querySelector('#land-object').value,road.id,'saved line remains selected in its object list');
+ pointer('pointerdown',4);pointer('pointermove',3);pointer('pointerup',3);await new Promise(r=>setImmediate(r));
+ assert.equal(writes.length,2,'a second handle drag needs no reselection');assert.equal(writes[1].expectedRevision,1,'second drag uses the confirmed revision');assert.deepEqual(writes[1].record.points,[{x:1,y:2},{x:3,y:2}]);
  let picked=0;canvas.addEventListener('click',()=>picked++);f.host.hit=()=>null;
  const release=new f.window.Event('click',{bubbles:true,cancelable:true});canvas.dispatchEvent(release);
  assert.equal(picked,0,'release click cannot clear the saved landscape selection through the Atlas picker');assert.equal(release.defaultPrevented,true);
  pointer('pointerdown',12);pointer('pointerup',12);canvas.dispatchEvent(new f.window.Event('click',{bubbles:true,cancelable:true}));
  assert.equal(picked,1,'a new ordinary click still reaches the Atlas picker');
+});
+
+// The ruler does not author persistent geometry; other drafts still need a decision.
+test('leaving a measurement needs no explicit finish while an authored line remains protected',t=>{
+ const f=fixture(t);f.set([]);const tool=f.document.querySelector('#land-tool');f.ui.setActive(true);
+ tool.value='measure';tool.onchange();f.ui.points=[{x:0,y:0},{x:3,y:4}];
+ tool.value='select';tool.onchange();assert.equal(tool.value,'select');assert.equal(f.ui.hasDraft(),false);
+ tool.value='road';tool.onchange();f.ui.points=[{x:0,y:0},{x:3,y:4}];
+ tool.value='select';tool.onchange();assert.equal(tool.value,'road');assert.equal(f.ui.hasDraft(),true);assert.match(f.document.querySelector('#land-status').textContent,/abschließen/);
+});
+
+for(const failure of ['reply','transport'])test(`a failed selection refresh after a confirmed line edit never reuses its old revision (${failure})`,async t=>{
+ const f=fixture(t),road={...ref('saved-road'),kind:'road',assetId:undefined,points:[{x:1,y:2},{x:8,y:2}],width:1};let writes=0;
+ f.set([road]);f.host.write=async()=>{writes++;return true;};f.window.campaign={atlasLandscapeObject:async()=>{if(failure==='transport')throw Error('offline');return{ok:false,error:'unavailable'};}};
+ f.ui.setActive(true);await f.ui.select(road);f.ui.dirty=true;await f.ui.finish();
+ assert.equal(writes,1);assert.equal(f.ui.hasDraft(),false);assert.equal(f.document.querySelector('#land-object').value,'');assert.equal(f.document.querySelector('#land-selection').children.length,0);assert.match(f.document.querySelector('#land-status').textContent,/Gespeichert.*erneut auswählen/);assert.deepEqual(f.errors,[]);
 });
