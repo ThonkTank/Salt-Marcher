@@ -81,6 +81,7 @@ interface NoteMapFrame {
   collectOpen: boolean;
   loaded: number;
   scroll: number;
+  preparing: boolean;
 }
 /** A reading projection of one existing note and its direct note references, with existing writers. */
 export class NoteThreadDialog {
@@ -109,6 +110,10 @@ export class NoteThreadDialog {
   private planName = node("input");
   private use = node("button", "Auswahl für den Spielabend verwenden");
   private choice = node("p");
+  private target = node("section");
+  private sourceChoices = node("div");
+  private rootChoice = label("Übersichtsnotiz ebenfalls verknüpfen", this.includeRoot);
+  private preparing = false;
   private owner: NoteThreadSource | null = null;
   private root: Note | null = null;
   private epoch = 0;
@@ -232,16 +237,23 @@ export class NoteThreadDialog {
       this.candidates,
       this.add,
     );
-    const target = node("section");
+    const target = this.target;
     target.className = "note-thread-target";
-    target.append(
-      node("h3", "Für einen Spielabend vorbereiten"),
-      label("Übersichtsnotiz ebenfalls verknüpfen", this.includeRoot),
-      this.choice,
+    this.sourceChoices.id = "note-thread-source-choices";
+    const destinations = node("div");
+    destinations.className = "note-thread-destinations";
+    destinations.append(
       label("Spielabend", this.plan),
       label("Besuch", this.visit),
       label("Name des neuen Spielabends", this.planName),
       label("Titel des neuen Besuchs", this.visitTitle),
+    );
+    target.append(
+      node("h3", "Für einen Spielabend vorbereiten"),
+      this.rootChoice,
+      this.sourceChoices,
+      this.choice,
+      destinations,
       this.use,
     );
     this.reading.append(
@@ -333,17 +345,28 @@ export class NoteThreadDialog {
   private current(epoch: number) {
     return epoch === this.epoch && !!this.owner?.current() && this.dialog.open;
   }
-  async open() {
+  async open(preparing = false) {
     if (this.dialog.open) {
-      if (this.editing === this.rootId) { await this.finishEditing(); return; }
-      await this.openNested();
+      if (this.editing === this.rootId) {
+        if (await this.finishEditing() && preparing) this.placeTarget(true);
+        return;
+      }
+      await this.openNested(preparing);
       return;
     }
     const epoch = ++this.epoch, owner = await this.options.prepare();
     if (epoch !== this.epoch || !owner?.current()) return;
-    await this.showMap(owner);
+    await this.showMap(owner, undefined, preparing);
   }
-  private async showMap(owner: NoteThreadSource, frame?: NoteMapFrame) {
+  private placeTarget(preparing: boolean) {
+    this.preparing = preparing;
+    if (preparing) this.reading.prepend(this.target, this.status);
+    else this.reading.append(this.target, this.status);
+    this.sourceChoices.hidden = !preparing;
+    this.controls();
+    if (preparing) this.dialog.scrollTop = 0;
+  }
+  private async showMap(owner: NoteThreadSource, frame?: NoteMapFrame, preparing = false) {
     this.owner = owner;
     this.root = frame?.root ?? null;
     this.entries.clear(); this.picked.clear(); this.sourceLinks.clear();
@@ -356,6 +379,7 @@ export class NoteThreadDialog {
     this.candidates.replaceChildren(); this.sources.replaceChildren(); this.body.replaceChildren();
     this.searchStatus.textContent = ""; this.status.textContent = "";
     this.reading.hidden = false; this.editor.hidden = true;
+    this.placeTarget(frame?.preparing ?? preparing);
     this.stale = false; this.loading = false;
     if (!this.dialog.open) this.dialog.showModal();
     this.parentButton.hidden = !this.parents.length;
@@ -379,7 +403,7 @@ export class NoteThreadDialog {
     this.dialog.scrollTop = frame?.scroll ?? 0;
     this.heading.focus({ preventScroll: true });
   }
-  private async openNested() {
+  private async openNested(preparing = false) {
     if (!this.editing || this.editing === this.rootId || this.busy || this.loading || this.stale || !this.root || !this.owner?.current() || this.owner.blocked()) return;
     const epoch = this.epoch, id = this.editing;
     if (this.parents.some(f => f.owner.id === id)) {
@@ -391,10 +415,10 @@ export class NoteThreadDialog {
       const owner = await this.options.prepare();
       if (!this.current(epoch) || this.editing !== id) return;
       if (!owner?.current() || owner.id !== id) throw Error("Eingabe noch nicht übernommen. Original bleibt geöffnet; Speicherstatus prüfen.");
-      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, loaded: this.entries.size, scroll: this.readingScroll };
+      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, loaded: this.entries.size, scroll: this.readingScroll, preparing: this.preparing };
       this.restoreEditor?.(); this.restoreEditor = null; this.editing = null; this.inspection = null;
       this.parents.push(parent); this.epoch++; this.request++; this.searchRequest++; this.busy = false;
-      await this.showMap(owner);
+      await this.showMap(owner, undefined, preparing);
     } catch (error) { if (this.current(epoch)) this.feedback((error as Error).message, true); }
     finally { if (epoch === this.epoch) { this.busy = false; this.controls(); } }
   }
@@ -449,10 +473,12 @@ export class NoteThreadDialog {
     this.more.disabled = this.busy || this.loading;
     this.planName.parentElement!.hidden = !!this.plan.value;
     this.visitTitle.parentElement!.hidden = !!this.visit.value;
+    this.plan.parentElement!.hidden = this.preparing && this.plan.options.length === 1;
+    this.visit.parentElement!.hidden = this.preparing && this.visit.options.length === 1;
     this.add.disabled = blocked || !this.additions.size;
     this.use.disabled =
       blocked || !this.root || (!this.picked.size && !this.includeRoot.checked);
-    for (const box of this.sources.querySelectorAll<HTMLInputElement>(
+    for (const box of this.reading.querySelectorAll<HTMLInputElement>(
       "input[data-thread-source]",
     )) {
       const e = this.entries.get(box.value);
@@ -464,7 +490,7 @@ export class NoteThreadDialog {
     this.choice.textContent =
       this.picked.size +
       Number(this.includeRoot.checked) +
-      " Originalnotizen werden verknüpft; vorhandene Besuchsnotizen bleiben erhalten. Die Quelltexte werden nicht in den Plan kopiert.";
+      " Originalnotizen ausgewählt. Vorhandene Besuchsnotizen bleiben erhalten.";
   }
   private async load(
     append: boolean,
@@ -510,6 +536,8 @@ export class NoteThreadDialog {
         this.entries.clear();
         this.picked.clear();
         this.sources.replaceChildren();
+        this.sourceChoices.replaceChildren();
+        this.rootChoice.replaceChildren(this.includeRoot, node("span", "Übersicht: " + this.root.title));
         this.body.replaceChildren(node("h3", this.root.title));
         if (this.root.readAloud)
           this.body.append(
@@ -602,6 +630,18 @@ export class NoteThreadDialog {
         this.controls();
       }
     };
+    const compact = node("input");
+    compact.type = "checkbox";
+    compact.dataset.threadSource = "true";
+    compact.value = e.id;
+    compact.onchange = () => {
+      if (this.current(epoch) && compact.isConnected && !compact.disabled && this.entries.get(e.id) === e) {
+        box.checked = compact.checked;
+        box.onchange!(new Event("change"));
+      }
+    };
+    const state = e.trashed ? "Papierkorb" : {open: "Offen", closed: "Geschlossen", unknown: "Status nicht lesbar", untracked: ""}[e.status];
+    this.sourceChoices.append(label(e.title + " · " + (e.kind ? kinds[e.kind] : "Quelle") + (state ? " · " + state : ""), compact));
     const canInspect = !!e.trashed && e.revision !== null && e.kind !== null;
     const edit = node("button", canInspect ? "Original im Papierkorb ansehen…" : "Notiz bearbeiten…");
     edit.type = "button";

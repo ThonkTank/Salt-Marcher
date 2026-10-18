@@ -551,6 +551,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     };}
   });
   const threadButton=document.createElement('button');threadButton.id='note-thread-open';threadButton.type='button';threadButton.textContent='Notizmappe öffnen…';get('note-text-tools').after(threadButton);threadButton.onclick=()=>void noteThread!.open().catch(error=>tell(error.message,true));
+  const prepareThread=document.createElement('button');prepareThread.id='note-thread-prepare';prepareThread.type='button';prepareThread.textContent='Für Spielabend verwenden…';get('note-back').after(prepareThread);prepareThread.onclick=()=>void noteThread!.open(true).catch(error=>tell(error.message,true));
   get('note-text-reference').onclick=()=>{void insertNoteTextReference();};
   get('note-back').onclick = () => { const search = get('world-search'); search.focus({ preventScroll: true }); search.scrollIntoView({ block: 'center' }); };
   get('world-new').onclick = () => { get<HTMLDialogElement>('world-dialog').showModal(); get('world-name').focus(); };
