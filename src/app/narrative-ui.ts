@@ -30,6 +30,11 @@ let draftVersion = 0,
 let displayedNoteRevision:number|null=null;
 let resumeOwner:(()=>Promise<void>)|null=null;
 export function captureNarrativeOwner(){return resumeOwner;}
+let ownNoteReceipt:((w:WorkspaceGeometry,before:WorldNoteV1,next:WorldNoteV1)=>Promise<boolean>)|null=null;
+/** Advance only the note basis of this editor's acknowledged write, never a refreshed foreign revision. */
+export async function acceptNarrativeNoteReceipt(w:WorkspaceGeometry,before:WorldNoteV1,next:WorldNoteV1){
+  return ownNoteReceipt?ownNoteReceipt(w,before,next):true;
+}
 function markDirty() {
   dirty = true;
   draftVersion++;
@@ -69,6 +74,7 @@ export async function showNarrative(
     if(persistHook&&!await persistHook())return;
     if(ownerKey!==key||request!==prior)return;
   }
+  ownNoteReceipt=null;
   resumeOwner=panel.hidden?null:()=>showNarrative(w,note,trashed,drain,tell,panel,onSaved);
   const n = ++request;
   if (panel.hidden) {
@@ -133,6 +139,16 @@ export async function showNarrative(
       return ok && current() && savedVersion !== draftVersion ? persist() : ok;
     });
   }
+  ownNoteReceipt=async(owner,before,next)=>{
+    if(!current()||owner.token!==w!.token||owner.campaign.id!==w!.campaign.id||before.id!==note!.id||next.id!==before.id||next.revision!==before.revision+1)return true;
+    // A recovered/stale draft must still go through the visible review action.
+    if(!data||!raw||displayedNoteRevision!==before.revision||data.noteRevision!==before.revision||raw.noteRevision!==before.revision||raw.revision!==data.state.revision)return true;
+    if(!await persist()||!current())return false;
+    if(raw.noteRevision!==before.revision||data.noteRevision!==before.revision)return true;
+    note=next;displayedNoteRevision=next.revision;data.noteRevision=next.revision;raw.noteRevision=next.revision;
+    if(dirty){savedVersion=-1;return persist();}
+    return true;
+  };
   const draftStatus = document.createElement("p");
   persistHook = persist;
   const current = () => ownerKey === key && request === n;
@@ -183,7 +199,13 @@ export async function showNarrative(
     if (persistHook && !(await persistHook())) return false;
     if (action.kind === "narrative-state" || action.kind === "narrative-award")
       action.draftWriteId = writeId ?? undefined;
+    const drainedNoteRevision=displayedNoteRevision;
     if (!current() || pending || !(await drain()) || !current()) return false;
+    if(action.kind==='narrative-state'||action.kind==='narrative-award'){
+      // drain may acknowledge our own visible text; only that receipt can move this basis.
+      if(action.expectedNoteRevision===drainedNoteRevision&&displayedNoteRevision!==drainedNoteRevision)action.expectedNoteRevision=displayedNoteRevision!;
+      action.draftWriteId=writeId??undefined;
+    }
     pending = true;
     try {
       if (
