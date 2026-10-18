@@ -336,7 +336,7 @@ test('an attack cannot roll against unknown armor and can select a known target 
  const x=await uiFixture(t),target=x.combat.participants[2];x.execute({kind:'edit',participantId:target.id,changes:{armorClass:null}});await x.ui.openExistingCombat(x.combat.id);
  x.el('combat-attack-effect').scrollIntoView=()=>{};x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-hp').disabled);
  const attack=[...x.el('fighter-statblock-content').querySelectorAll('button')].find(button=>button.textContent.startsWith('Angriff '));assert(attack);attack.onclick();await until(()=>!x.el('combat-attack-effect').hidden);
- const select=x.el('combat-attack-target'),roll=x.el('combat-attack-roll');select.value=target.id;select.onchange();assert(roll.disabled);assert.match(select.textContent,/RK offen/);assert.match(roll.title,/zuerst eintragen/);
+ const select=x.el('combat-attack-target'),roll=x.el('combat-attack-roll');select.value=target.id;select.onchange();assert(roll.disabled);assert.match(select.textContent,/RK offen/);assert.match(roll.title,/zuerst eintragen/);assert.match(x.el('combat-attack-hint').textContent,/Ziel-RK noch offen.*RK-Spalte/);
  const before=x.store.db.serialize();roll.onclick();await tick();assert.equal(x.writes.length,0);assert(before.equals(x.store.db.serialize()));assert.match(x.messages.at(-1)[0],/Rüstungsklasse/);
- select.value=x.combat.participants[1].id;select.onchange();assert.equal(roll.disabled,false);
+ select.value=x.combat.participants[1].id;select.onchange();assert.equal(roll.disabled,false);assert.doesNotMatch(x.el('combat-attack-hint').textContent,/Ziel-RK noch offen/);
 });
