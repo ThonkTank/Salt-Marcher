@@ -61,7 +61,6 @@ export type CompositionMetrics = Readonly<{
   monsterCount: number
   statblockCount: number
   initiativeSlots: number
-  effectiveMonsterCount: number
   xpMultiplier: number
 }>
 
@@ -89,9 +88,7 @@ export type EncounterCandidate = Readonly<{
   statblockCount: number
   statblockSlots: readonly number[]
   initiativeSlots: number
-  effectiveMonsterCount: number
   xpMultiplier: number
-  maxCr: number
   softFit: boolean
   softDistance: number
   tuningDistance: number
@@ -290,9 +287,7 @@ function candidate(
   const {
     adjustedXp,
     delta,
-    effectiveMonsterCount,
     initiativeSlots,
-    maxCr,
     monsterCount,
     softDistance,
     statblockCount,
@@ -328,9 +323,7 @@ function candidate(
     statblockCount,
     statblockSlots,
     initiativeSlots,
-    effectiveMonsterCount,
     xpMultiplier,
-    maxCr,
     softFit: diagnostics.length === 0,
     softDistance,
     tuningDistance,
@@ -345,9 +338,7 @@ type CandidateEvaluation = Readonly<{
   statblockCount: number
   statblockSlots: readonly number[]
   initiativeSlots: number
-  effectiveMonsterCount: number
   xpMultiplier: number
-  maxCr: number
   softDistance: number
   tuningDistance: number
 }>
@@ -414,21 +405,10 @@ function evaluateCandidate(
   const { config, fixed } = context
   let rawXp = context.fixedRawXp
   let monsterCount = context.fixedMonsterCount
-  let maximumUnitXp = 1
-  for (const unit of fixed.units)
-    maximumUnitXp = Math.max(maximumUnitXp, unit.unitXp)
   for (const block of blocks) {
     rawXp += block.cr.xp * block.quantity
     monsterCount += block.quantity
-    maximumUnitXp = Math.max(maximumUnitXp, block.cr.xp)
   }
-  let effectiveMonsterCount = 0
-  for (const unit of fixed.units)
-    effectiveMonsterCount +=
-      unit.quantity * Math.sqrt(unit.unitXp / maximumUnitXp)
-  for (const block of blocks)
-    effectiveMonsterCount +=
-      block.quantity * Math.sqrt(block.cr.xp / maximumUnitXp)
   const xpMultiplier = encounterXpMultiplier(monsterCount,context.partySize)
   const adjustedXp = Math.round(rawXp * xpMultiplier)
   const statblockCount =
@@ -441,11 +421,9 @@ function evaluateCandidate(
     rangeDistance(statblockCount, config.composition.statblocks) +
     rangeDistance(monsterCount, context.monsterRange) +
     rangeDistance(initiativeSlots, context.initiativeRange)
-  let maxCr = 0
   let minimumBlockXp = Number.POSITIVE_INFINITY
   let maximumBlockXp = 1
   for (const block of blocks) {
-    maxCr = Math.max(maxCr, block.cr.code)
     minimumBlockXp = Math.min(minimumBlockXp, block.cr.xp)
     maximumBlockXp = Math.max(maximumBlockXp, block.cr.xp)
   }
@@ -476,9 +454,7 @@ function evaluateCandidate(
     statblockCount,
     statblockSlots,
     initiativeSlots,
-    effectiveMonsterCount,
     xpMultiplier,
-    maxCr,
     softDistance,
     tuningDistance: amountDistance + diversityDistance + balanceDistance
   }
@@ -509,7 +485,6 @@ function encounterComposition(
       monsterCount: selected.monsterCount,
       statblockCount: selected.statblockCount,
       initiativeSlots: selected.initiativeSlots,
-      effectiveMonsterCount: selected.effectiveMonsterCount,
       xpMultiplier: selected.xpMultiplier
     },
     diagnostics: selected.diagnostics,
