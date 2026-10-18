@@ -71,6 +71,7 @@ export class LandscapeWorkbench {
   readonly panel = document.createElement("section");
   readonly assets = new Map<string, string>();
   private unavailableAssets=new Set<string>();
+  private background:{key:unknown[];node:AtlasPaint;box:LandscapeBox;selectedSlot:number}|null=null;
   private assetFence='';
   records: LandscapeRecord[] = [];
   private raster: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[] | undefined;
@@ -374,7 +375,7 @@ export class LandscapeWorkbench {
     if (this.token === token) return;
     this.token = token;
     this.cancel();
-    this.records = [];
+    this.records = [];this.background=null;
     this.raster = undefined;this.minimumRevision=0;
     this.assets.clear();this.unavailableAssets.clear();this.assetFence='';
     this.key = "";
@@ -507,10 +508,22 @@ export class LandscapeWorkbench {
   }
   draw(root: AtlasPaint, box: LandscapeBox, mpp: number) {
     const landscapeNode=atlasPaint;
-    const records = this.selected
-      ? [...this.records.filter(r=>r.id!==this.selected!.id),this.selected]
-      : this.records;
-    drawLandscape(root, records, box, mpp, this.assets,true,this.raster,this.unavailableAssets);
+    const key=[this.records,this.raster,this.selected?.id,this.selected?.resolution,this.selected?.order,mpp,...[...this.assets].flat(),...this.unavailableAssets];
+    let background=this.background;
+    if(!background||background.key.length!==key.length||!background.key.every((v,i)=>v===key[i])){
+      const node=atlasPaint('group',{retainGeometry:true});
+      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id),this.selected]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      this.background=background={key,node,box:{...box},selectedSlot:this.selected?node.children.findIndex(n=>n.data.landscapeId===this.selected!.id):-1};
+    }
+    const retained=atlasPaint('group',{matrix:[1,0,0,1,background.box.x-box.x,background.box.y-box.y],data:{atlasLandscapeBase:'true'}});
+    let node=background.node;
+    if(this.selected&&background.selectedSlot>=0){
+      // Keep the original painter slot, especially for references below terrain.
+      const selected=atlasPaint('group');drawLandscape(selected,[this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      node=atlasPaint('group',{retainGeometry:true});node.append(...background.node.children);
+      node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
+    }
+    retained.append(node);root.append(retained);
     const auto = html<HTMLInputElement>("land-auto-level").checked,
       level = auto
         ? Math.max(

@@ -19,12 +19,26 @@ test('a rejected reference preview leaves a local outline and does not stop othe
  const f=fixture(t);let broken=true;const requests=[];
  f.window.campaign={referenceAssetPreview:async(token,id)=>{requests.push(id);if(id==='bad'&&broken)throw Error('controlled preview transport failure');return{ok:true,value:'image:'+id};}};
  f.set([ref('bad'),ref('good')]);await f.ui.load();assert.deepEqual(requests,['bad','good']);assert(f.ui.assets.has('good'));assert.equal(f.ui.assets.has('bad'),false);assert.match(f.document.querySelector('#land-status').textContent,/nicht verfügbar/);
- f.ui.draw(f.scene,{x:0,y:0,width:10,height:10},.1);assert.equal(f.scene.children.flatMap(n=>n.children).find(n=>n.data.referenceState==='unavailable')?.data.referenceId,'bad');
+ f.ui.draw(f.scene,{x:0,y:0,width:10,height:10},.1);assert.equal(descendants(f.scene).find(n=>n.data.referenceState==='unavailable')?.data.referenceId,'bad');
  broken=false;await f.ui.load(undefined,true);assert(f.ui.assets.has('bad'));assert.equal(f.errors.length,0);
 });
 
 test('reference previews reuse the same source but cannot survive a new source fence under the same asset ID',async t=>{
  const f=fixture(t);let calls=0;f.window.campaign={referenceAssetPreview:async()=>({ok:true,value:'preview:'+ ++calls})};f.set([ref('same')]);await f.ui.load();assert.equal(f.ui.assets.get('same'),'preview:1');f.set([ref('same')]);await f.ui.load();assert.equal(calls,1);f.host.data().region.fence='new-source';await f.ui.load();assert.equal(calls,2);assert.equal(f.ui.assets.get('same'),'preview:2');
+});
+
+const descendants=n=>[n,...n.children.flatMap(descendants)];
+test('landscape background reuses geometry across draft paints and buffered pan, while new source images invalidate it',async t=>{
+ const f=fixture(t);f.set([ref('a')]);f.window.campaign={referenceAssetPreview:async()=>({ok:true,value:'image:a'})};await f.ui.load();
+ const scene=()=>new AtlasPaint('group'),box={x:0,y:0,width:10,height:10};let root=scene();f.ui.draw(root,box,.1);const base=root.children.find(n=>n.data.atlasLandscapeBase==='true').children[0];
+ f.ui.points=[{x:1,y:2},{x:3,y:4}];root=scene();f.ui.draw(root,{...box,x:2,y:-3},.1);const retained=root.children.find(n=>n.data.atlasLandscapeBase==='true');assert.equal(retained.children[0],base);assert.deepEqual(retained.geometry.matrix,[1,0,0,1,-2,3]);assert(descendants(root).some(n=>n.data.editorOnly==='true'));
+ f.ui.assets.set('a','replacement');root=scene();f.ui.draw(root,box,.1);assert.notEqual(root.children.find(n=>n.data.atlasLandscapeBase==='true').children[0],base,'new decoded source must not keep old reference geometry');
+});
+
+test('a selected reference keeps its original slot below terrain and updates without rebuilding other paths',async t=>{
+ const f=fixture(t),reference=ref('a'),road={...ref('road'),kind:'road',points:[{x:0,y:0},{x:10,y:10}],assetId:undefined};f.set([reference,road]);f.window.campaign={referenceAssetPreview:async()=>({ok:true,value:'image:a'})};await f.ui.load();f.ui.selected=structuredClone(reference);
+ const draw=()=>{const r=new AtlasPaint('group');f.ui.draw(r,{x:0,y:0,width:10,height:10},.1);return r.children.find(n=>n.data.atlasLandscapeBase==='true').children[0];};
+ const first=draw();f.ui.selected.width=2;const next=draw();assert.equal(first.children[1],next.children[1]);assert.equal(next.children[0].data.landscapeId,'a');assert.equal(next.children[1].data.landscapeId,'road');assert.equal(next.children[0].children[0].geometry.width,2);
 });
 
 test('Hex fill previews and commits every cell between sparse pointer samples, with no write before confirmation',async t=>{
@@ -53,4 +67,5 @@ test('an oversized Hex draft fails visibly without saving or discarding its poin
  assert.match(f.document.querySelector('#land-status').textContent,/5.000 Hexes/);
  await assert.rejects(f.ui.finish(),/5.000 Hexes/);assert.equal(writes,0);assert(f.ui.hasDraft());
  f.ui.cancel();assert.equal(f.ui.hasDraft(),false);
+
 });

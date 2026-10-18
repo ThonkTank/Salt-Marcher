@@ -30,6 +30,8 @@ export interface PaintStyle {
   strokeOpacity?: number;
 }
 export interface PaintOptions {
+  /** Immutable local geometry: share compiled paths across scene publications. */
+  retainGeometry?: boolean;
   x?: number;
   y?: number;
   x2?: number;

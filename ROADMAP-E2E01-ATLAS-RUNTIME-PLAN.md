@@ -694,7 +694,7 @@ kein Stilwechsel und keine vollständige Phase1-/Phase2-Produktabnahme.
 ### Abschlussprüfung des Renderingpakets: Funktion und Geschwindigkeit
 
 Das beauftragte Paket „vollständig anzeigen, präzise bedienen, flüssig
-navigieren“ ist funktional angeschlossen. Lokale native Funktions- und CPU-/
+navigieren“ ist funktional angeschlossen. Lokale native Funktions- und Taskzeit-/
 Speicherbelege ersetzen seine vollständige Hardware-/Präsentationsabnahme nicht. Der spätere ausdrückliche Canvas2D-Auftrag ersetzt
 seine ursprüngliche SVG-Arbeitsrichtung. Er ersetzt keine der fachlichen
 Anforderungen oder Messziele. Keine persistente Geometrieprojektion,
@@ -761,6 +761,79 @@ Das ergänzt die Funktionsabnahme; physische16GiB und Präsentationslatenz bleib
 weiterhin gesondert offen. Extrem kleine Objekte benötigen für unterscheidbare
 Einzelgriffe weiterhin einen geeigneten Zoom; Raster selbst sperrt diese nicht.
 
+Die Gegenprüfung vom 18.10.2026 schließt die verbliebene Wiederverwendungslücke
+und eine Auswahlumgehung:
+
+- Karte und Seitenpanel haben getrennte Aktualisierungsschlüssel. Entwurfs-
+  und Griffbewegungen ersetzen keine unveränderten Geschoss-/Eingangsoptionen.
+  Bestätigte Stadt-/Dungeonhintergründe und Landschaftsebenen behalten ihre
+  Zeichenobjekte; Verschieben innerhalb des Puffers setzt nur eine zusätzliche
+  Translation. Maßstab, Quellenantwort, Auswahl und Sichtfilter invalidieren
+  den betroffenen Hintergrund. Aktive Stadtgenerierung, Gebäudeziehen,
+  Dungeon-Reisevorschau und Wissensmaskierung verwenden konservativ weiterhin
+  den vollständigen betroffenen Aufbau; diese Übergänge sind keine vorzeitig
+  als unveränderlich behandelten Daten.
+- Nur ausdrücklich unveränderliche Teilbäume teilen ihre lokalen Path2D-Objekte
+  über Szenenveröffentlichungen. Matrizen, Stil, Trefferhierarchie und Reihenfolge
+  werden für jede Veröffentlichung neu bestimmt. Der schwache Cache gehört
+  genau einer Canvasinstanz und wird bei Kontextwechsel oder Zeichenfehler
+  verworfen. Es entsteht kein unbeschränkter globaler Pfadcache. Bestehende
+  Transport-, Bild- und Backingstorebudgets bleiben erhalten.
+- Eine genaue Raumvorschau ersetzt einen einzelnen Platz im ursprünglichen
+  Zeichenablauf. Raumfüllungen bleiben unter den zugehörigen Objekten;
+  ausgewählte Referenzbilder bleiben unter Landschaft und Wegen. Die übrigen
+  Konturen bleiben unverändert. Tests prüfen Identität, Translation und diese
+  Reihenfolge statt lediglich gleiche Elementzahlen.
+- Während eines neuen Quellen-/Filterreads wird die letzte bestätigte Szene
+  vollständig erhalten und über den Ladezustand gesperrt. Zeichnen interpretiert
+  alte Geometrie nicht mehr unter neuen Geschoss-/Schnitt-/Dachfiltern.
+  Atlasverlassen widerruft auch verspätete vollständige Bereichsantworten.
+  Ein Canvas-Kontextwechsel verwirft den gespeicherten Szenenaufbau der alten
+  Campaign. Wiederherstellung/Retry bitten die Atlasoberfläche um ihren aktuell
+  bestätigten Frame; sie spielen keinen alten Callback unter einer inzwischen
+  anderen Kamera oder einem neuen Sichtfilter ab. Bei noch laufendem Read
+  bleibt die Oberfläche bis zu dessen bestätigter Antwort gesperrt. Fehler der
+  vorherigen Szene sperren keine gesunde neue Quelle; bei tatsächlich fehlendem
+  Canvas-Kontext bleibt der sichtbare Wiederholungsweg erhalten.
+- Ein direkt getroffenes Zeichnungsglyph öffnet nicht mehr still sein Objekt.
+  Die vorhandene Kandidatenabfrage vereinigt seine genaue Quellen-ID mit den
+  übrigen geometrischen und Landschaftstreffern. Das erhält die Erreichbarkeit
+  großer Glyphen außerhalb des logischen Ankerradius, ohne Überlappungen zu
+  überspringen. Worker/Main/Preload und Controller führen die optionale ID
+  gemeinsam; Quelle, Floor-/Dach-/Bindingfilter, Seitengrenzen und Archivierung
+  gelten weiter. Detailpayloads werden erst nach der bewussten Auswahl gelesen.
+
+Eine zusätzliche Rasterprobe schließt den Ankerpunktfehler großer Objekte:
+Truhen/Betten und vergleichbare Rechteckobjekte werden gegen Breite, Höhe und
+Originaldrehung geprüft; Fässer/Säulen gegen ihre Ellipse. Das gilt gemeinsam
+für Trefferseiten und den vorhandenen Einzeltrefferweg, auch ohne sichtbare
+Einzelglyph-ID. Die großzügige Indexhülle ist weiterhin nur Kandidatensuche.
+Ein1600-Räume-Rasterfall prüft Treffer abseits des Ankers und Gegenpunkte
+innerhalb der Indexhülle, aber außerhalb der tatsächlichen Kontur. Aktive
+Punktwerkzeuge besitzen außerdem ihre Eingabe: Raster-Hitfallback und
+bestehende Raumgriffe/Partymarker dürfen keinen Polygon-/Objekt-/Eingangszug
+übernehmen. Der native Ablauf ergänzt nach dem Rasterwechsel einen vierten
+Entwurfspunkt, bevor er verwirft; Sichtbarkeit allein genügt nicht als Nachweis
+fortsetzbarer Bearbeitung.
+
+Auch ein Dungeon ohne Raumflächen behält seine freien Objekte: Ableitbare
+Geschossgrenzen umfassen Räume und Zeichnungselemente und werden bei
+Element-/Volumenänderungen erneuert. Detaildarstellung zeichnet vorhandene
+Elemente auch bei leerer Raumliste. Ein negativer, objektbasierter Dungeon
+prüft freie Wand und gefüllte Wasserfläche sowie deren spätere Verschiebung.
+Gefüllte Terrain-/Wasser-/Dachobjekte und gedrehte Rechteckkörper behalten auch
+in der Rasterprojektion ihre Flächen; horizontale Wandtreffer verwenden die
+Wandbreite, niemals die vertikale Höhe als Dicke.
+
+Der erweiterte native Autorenlauf prüft zusätzlich den Klick auf ein großes
+Objekt außerhalb seines Ankerradius: Kandidaten enthalten Objekt und die
+überlappenden Räume, sowohl im Detail als auch nach dem Rasterwechsel. Drei echte Entwurfspunkte behalten Hintergrundpfade und
+identische Geschossoptionen; `pathBuilds`/`pathReuses` zählen lokale geometrische
+Pfade, keine GPUarbeit. Rasterwechsel, Verwerfen, Originalgriff, Save/Undo/Redo
+und frischer Prozess bleiben Teil desselben Ablaufs bei100% und200%.
+Die unten genannten Hardware-/Präsentationsabnahmen bleiben offen; auch diese
+Korrektur erklärt das gesamte Renderingpaket nicht für vollständig abgenommen.
+
 Reproduzierbarer nativer Vergleich: `tools/measure-atlas-runtime.mjs` über
 `tools/ui-session.py` nach `build:desktop`. Derselbe Fixturebestand kann mit
 `ATLAS_BASELINE_FIXTURES` in eigene Profile kopiert werden; `ATLAS_RUNTIME_DIR`
@@ -784,7 +857,7 @@ Die lokale Vergleichsserie vom 17.10.2026 ergibt für die Landschaft etwa
 2,82–2,87 s → 1,08–1,16 s bei warmer Wiederöffnung. Kleine Karte, Stadt und
 Dungeon-Grundriss öffnen danach in etwa 0,57–1,53 s. Appbereitschaft wird
 separat erfasst und nicht aus der gesamten Startzeit herausgerechnet.
-Die gemessene Renderer-CPU für Pan/Hover bleibt unter 16 ms p95,
+Die damals gemessene verstrichene Renderer-Taskzeit für Pan/Hover bleibt unter16ms p95,
 Vorschauen in der abschließenden Serie unter13ms p95. Zoom erreichte vor
 der nachfolgenden Korrektur bei Landschaft/Dungeon rund16–23ms p95. Das Profil zeigte
 mehrfache Reads/Renderaufbauten innerhalb einer Radfolge. Kameraaufträge
@@ -793,17 +866,42 @@ Szene; Quellen-/Filteränderungen behalten ihren eigenen Ladeweg. Veraltete
 Autorenhits bleiben gesperrt. Der unmittelbare Nachlauf senkt Zoom auf etwa4–6ms
 p95; die abschließende Serie mit veränderten Endmaßstäben bestätigt
 3,2–5,9ms p95 für Zoom. Das Nachladen nach einer solchen Folge dauert
-32–481ms; seine gesamte CPUarbeit über diesen Zeitraum wird separat erfasst
-und ist keine einzelne Framezeit. Diese CPUwerte
+32–481ms; seine gesamte Taskzeit über diesen Zeitraum wird separat erfasst
+und ist keine einzelne Framezeit. Diese Taskzeitwerte
 umfassen zwei Animationsframes nach echter Eingabe; sie beweisen weder
 Compositorpräsentation noch GPUlaufzeit. Platzhalter gelten nicht als nutzbar:
 vollständige Quellenabdeckung, tatsächliche Zeichenkommandos und sichtbarer
 Viewport werden geprüft. Fensterbilder stammen aus Electron `capturePage`;
 Playwrights Ausschnitt kann bei nativer200%-Skalierung die falsche Bildfläche erfassen.
 
+Eine erneute lokale Lastserie am kombinierten Stand vom18.10.2026 erreicht
+bei100000 Landschaftsflächen die Öffnungsziele nicht durchgehend:
+3,22s bei100%,2,24s bei200%; Zoom-p95 im ersten Fall18,04ms,
+Hover-p95 im zweiten21,24ms. Die Vorschau liegt in dieser ersten Serie mit16,46–18,36ms
+unter50ms; der Wiederholungslauf überschreitet die Grenze mit83,85ms
+bei100%. Diese Werte sind verstrichene Taskdauer, keine reineCPUzeit. Der Host war gleichzeitig belastet (Load1 etwa13,75);
+das erklärt die Abweichung noch nicht kausal. Frühere schnellere Läufe
+werden dadurch nicht zu einer allgemeinen Leistungsabnahme. Der Vergleich
+mit eingefrorenem Main und identischen Fixturekopien sowie die physische
+Hardwarequalifikation bleiben erforderlich. Diese Serie ist kein Beleg für
+eine durchgehende Einhaltung von2s/16ms und rechtfertigt keinen vorsorglichen
+Rendererwechsel. Die Funktions-/Wiederverwendungsnachweise bleiben getrennt.
+
+Die Methodenprüfung stellt außerdem klar: `Performance.enable` verwendet
+standardmäßig `timeTicks`. `TaskDuration` war deshalb verstrichene Taskzeit,
+nicht die in älteren Belegbezeichnungen behauptete reineCPUzeit. Das bestehende
+Messwerkzeug setzt die Domäne nun ausdrücklich und speichert daneben
+`ThreadTime` als Renderer-CPUzeit; Eingabe- und Nachladefenster führen beide
+Werte. Getrennte CPU-/Taskziele und eine ausdrücklich ungemessene
+Präsentationslatenz verhindern einen gemeinsamen falschen Erfolgswert.
+Alte Rohbelege bleiben unverändert; ihre `cpu`-Felder sind historische
+Fehlbezeichnungen und dürfen nicht als Thread-CPUwerte verglichen werden.
+Grundlage: [CDP-Zeitdomänen](https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/master/json/browser_protocol.json)
+und [Chromium-Metrikimplementierung](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/core/inspector/inspector_performance_agent.cc).
+
 Offener Abschluss, ohne Umfangsverkleinerung:
 
-1. Tatsächliche Compositorpräsentation neben CPU messen. B01 OffscreenCanvas/
+1. Tatsächliche Compositorpräsentation neben CPU- und verstrichener Taskzeit messen. B01 OffscreenCanvas/
    Pixi erst bei belegtem Zeichenengpass vergleichen; SQL-/Projektionsarbeit
    wird dadurch nicht beseitigt. Einzelne lange Konturen und Medien separat
    belasten, statt deren Kosten aus der Rechteck-/Kachelszene abzuleiten.

@@ -72,12 +72,15 @@ function pathFor(n: AtlasPaint) {
   }
   return p;
 }
+export type AtlasPathCache = WeakMap<AtlasPaint, {path?:Path2D;cuts?:Command["cuts"]}>;
 export class AtlasCanvasScene {
+  pathBuilds=0;
+  pathReuses=0;
   private maskSurface: HTMLCanvasElement | null = null;
   readonly commands: Command[] = [];
   readonly images = new Set<string>();
   readonly requiredImages = new Set<string>();
-  constructor(readonly root: AtlasPaint) {
+  constructor(readonly root: AtlasPaint, cache:AtlasPathCache=new WeakMap()) {
     const visit = (
       node: AtlasPaint,
       matrix: DOMMatrix,
@@ -87,8 +90,10 @@ export class AtlasCanvasScene {
       hud: boolean,
       title: string,
       ancestry: PaintHit[],
+      retained: boolean,
     ) => {
       const g = node.geometry;
+      retained=retained||!!g.retainGeometry;
       if (g.hidden) return;
       matrix = g.matrix ? matrix.multiply(new DOMMatrix(g.matrix)) : matrix;
       style = { ...style, ...node.style };
@@ -98,25 +103,29 @@ export class AtlasCanvasScene {
       title = node.title || title;
       ancestry = [node, ...ancestry];
       if (node.kind !== "group") {
+        let compiled=retained?cache.get(node):undefined;
+        if(compiled){if(compiled.path)this.pathReuses++;}
+        else{
+          compiled={path:pathFor(node),cuts:g.maskCuts?.map(c=>({path:polygonPath(c.polygons),alpha:c.alpha}))};
+          if(compiled.path)this.pathBuilds++;
+          if(retained)cache.set(node,compiled);
+        }
         this.commands.push({
           node,
           matrix,
-          path: pathFor(node),
+          ...compiled,
           style,
           alpha,
           pointer,
           hud,
           title,
           ancestry,
-          cuts: g.maskCuts?.map((c) => ({
-            path: polygonPath(c.polygons),
-            alpha: c.alpha,
-          })),
+
         });
         if (node.kind === "image" && g.source) {this.images.add(g.source);if(!g.optionalImage)this.requiredImages.add(g.source);}
       }
       for (const child of node.children)
-        visit(child, matrix, style, alpha, pointer, hud, title, ancestry);
+        visit(child, matrix, style, alpha, pointer, hud, title, ancestry, retained);
     };
     visit(
       root,
@@ -127,6 +136,7 @@ export class AtlasCanvasScene {
       false,
       "",
       [],
+      false,
     );
   }
   dispose() {
