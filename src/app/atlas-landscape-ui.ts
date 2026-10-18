@@ -150,7 +150,7 @@ export class LandscapeWorkbench {
           ? "temperate / cold / arid / tropical"
           : "Höhe in Metern";
     };
-    html("land-field").onchange = property;
+    html("land-field").onchange = () => { property(); this.toolFields(); };
     property();
     html("land-finish").onclick = () =>
       void this.finish().catch((e) => this.host.error(e));
@@ -159,7 +159,7 @@ export class LandscapeWorkbench {
     html("land-reference").onclick = () =>
       void this.importReference().catch((e) => this.host.error(e));
     html("land-grid").onchange = () => this.host.redraw();
-    html("land-auto-level").onchange = () => this.host.redraw();
+    html("land-auto-level").onchange = () => { this.toolFields(); this.host.redraw(); };
     svg.addEventListener(
       "pointerdown",
       (e) => {
@@ -375,6 +375,10 @@ export class LandscapeWorkbench {
       ["land-object", this.tool === "select"],
     ] as const)
       html(id).closest("label")!.hidden = !visible;
+    const terrain = document.getElementById("atlas-terrain")?.closest("label");
+    if (terrain) terrain.hidden = this.active && !(brush && html<HTMLSelectElement>("land-field").value === "terrain");
+    const hex = document.getElementById("atlas-hex-level")?.closest("label");
+    if (hex) hex.hidden = this.active && this.tool !== "hex" && html<HTMLInputElement>("land-auto-level").checked;
     const name = document.getElementById("atlas-new-name")?.closest("label");
     if (name) {
       name.hidden = this.active && !["place", "river", "road"].includes(this.tool);
