@@ -1,3 +1,4 @@
+import { wheelZoomFactor, zoomBox } from "./atlas-navigation-scale";
 import { AtlasPaint, AtlasCanvasScene } from "./atlas-canvas-scene";
 /** Atlas presentation only. One Canvas2D surface, retained paths and bounded decoded images. */
 import type { CanvasBox } from "./passive-map-canvas";
@@ -35,6 +36,9 @@ export class AtlasCanvas {
   private future: CanvasBox[] = [];
   private views = new Map<string, SavedView>();
   private wheelAt = 0;
+  private zoomFrame = 0;
+  private zoomTarget: CanvasBox | null = null;
+  private zoomGeneration = 0;
   private sceneOrigin = { x: 0, y: 0 };
   private sceneVersion = 0;
   private tooltipPoint: { clientX: number; clientY: number } | null = null;
@@ -69,6 +73,9 @@ export class AtlasCanvas {
       prepareCamera?: () => void;
       /** Hosts with source/filter state rebuild the current confirmed frame on recovery. */
       redraw?: () => void;
+      /** Current camera overlays are independent of asynchronously loaded geometry. */
+      overlay?: (scene: AtlasPaint, box: CanvasBox, mpp: number) => boolean | void;
+      smoothZoom?: boolean;
       locked?: () => boolean;
       changed?: (box: CanvasBox, reason: CameraReason) => void;
     },
@@ -94,6 +101,8 @@ export class AtlasCanvas {
       this.controls.append(button);
       return button;
     };
+    action("+ Vergrößern", () => this.zoom(1 / 1.4));
+    action("− Verkleinern", () => this.zoom(1.4));
     this.back = action("← Vorige Ansicht", () => this.previous());
     this.forward = action("Nächste Ansicht →", () => this.next());
     this.resetButton = action("Ansicht zurücksetzen", () => this.reset());
@@ -128,6 +137,7 @@ export class AtlasCanvas {
           e.stopImmediatePropagation();
           return;
         }
+        this.stopZoom();
         this.suppressClick = false;
         this.tooltipPoint = null;
         root.title = "";
@@ -229,7 +239,7 @@ export class AtlasCanvas {
           : undefined;
         const burst = Date.now() - this.wheelAt < 300;
         this.zoom(
-          e.deltaY > 0 ? 1.2 : 1 / 1.2,
+          wheelZoomFactor(e.deltaY, e.deltaMode, root.clientHeight),
           p && this.options.relative
             ? { x: p.x + this.box.x, y: p.y + this.box.y }
             : p,
@@ -420,6 +430,15 @@ export class AtlasCanvas {
       x: this.box.x - this.sceneOrigin.x,
       y: this.box.y - this.sceneOrigin.y,
     });
+    if (this.options.overlay) {
+      const overlay = new AtlasPaint("group");
+      const mpp = Math.max(this.box.width / rect.width, this.box.height / rect.height);
+      const again = this.options.overlay(overlay, this.view, mpp);
+      const scene = new AtlasCanvasScene(overlay);
+      try { scene.draw(ctx, new DOMMatrix().translate((w-this.box.width*scale)/2,(h-this.box.height*scale)/2).scale(scale), new Map(), {x:0,y:0}); }
+      finally { scene.dispose(); }
+      if (again) this.redrawOverlay();
+    }
     if (ctx.isContextLost?.()) throw Error("Zeichenfläche beim Zeichnen verloren.");
     // Drawing is synchronous inside this animation frame. Authorize hits only after it completes.
     this.painted = { generation: this.publishedGeneration, cameraVersion: this.cameraVersion, ...rect };
@@ -473,7 +492,7 @@ export class AtlasCanvas {
         };
       }
     }
-    this.wheelAt = 0;
+    if (reason !== "zoom") this.stopZoom();
     const before = this.box;
     this.box = { ...box };
     if (!this.drag && !coalesce) this.remember(before);
@@ -538,24 +557,45 @@ export class AtlasCanvas {
     coalesce = false,
   ) {
     if (!Number.isFinite(factor) || factor <= 0) return;
+    const base = this.zoomTarget ?? this.box;
     const width = Math.min(
-        (typeof this.options.maxWidth === "function"
-          ? this.options.maxWidth()
-          : this.options.maxWidth) ?? 1e12,
-        Math.max(this.options.minWidth ?? 0.001, this.box.width * factor),
-      ),
-      ratio = width / this.box.width;
-    this.set(
-      {
-        x: anchor.x - (anchor.x - this.box.x) * ratio,
-        y: anchor.y - (anchor.y - this.box.y) * ratio,
-        width,
-        height: this.box.height * ratio,
-      },
-      true,
-      "zoom",
-      coalesce,
-    );
+      (typeof this.options.maxWidth === "function" ? this.options.maxWidth() : this.options.maxWidth) ?? 1e12,
+      Math.max(this.options.minWidth ?? 0.001, base.width * factor));
+    // Keep the current pointer's world point fixed, even when a previous target
+    // has not yet been reached and the user moves the pointer during a burst.
+    const target = zoomBox(this.box, width, anchor);
+    const smooth = this.options.smoothZoom && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!smooth) { this.set(target, true, "zoom", coalesce); return; }
+    const before = this.view;
+    this.zoomTarget = target;
+    if (!coalesce && !this.zoomFrame) {
+      // remember() compares against the current box, so record the gesture now.
+      this.box = target; this.remember(before); this.box = before;
+    }
+    const generation = ++this.zoomGeneration;
+    if (this.zoomFrame) cancelAnimationFrame(this.zoomFrame);
+    const started = performance.now();
+    const tick = (now: number) => {
+      if (generation !== this.zoomGeneration) return;
+      this.zoomFrame = 0;
+      const t = Math.min(1, (now-started)/160), eased = 1-(1-t)**3;
+      const box = zoomBox(before, before.width * (target.width/before.width)**eased, anchor);
+      this.set(box, true, "zoom", true);
+      if (t < 1) this.zoomFrame = requestAnimationFrame(tick);
+      else this.zoomTarget = null;
+    };
+    this.zoomFrame = requestAnimationFrame(tick);
+  }
+  stopZoom() {
+    this.zoomGeneration++;
+    if (this.zoomFrame) cancelAnimationFrame(this.zoomFrame);
+    this.zoomFrame = 0; this.zoomTarget = null; this.wheelAt = 0;
+  }
+  redrawOverlay() {
+    if (!this.animation) this.animation = requestAnimationFrame(() => {
+      this.animation = 0;
+      try { this.paint(); } catch (error) { this.fail(error); }
+    });
   }
   reset() {
     this.cancel();
@@ -575,6 +615,7 @@ export class AtlasCanvas {
     this.history(this.future, this.past);
   }
   private history(from: CanvasBox[], to: CanvasBox[]) {
+    this.stopZoom();
     if (this.drag || this.options.locked?.()) return;
     const box = from.pop();
     if (!box) return;
@@ -586,6 +627,7 @@ export class AtlasCanvas {
     this.options.changed?.(this.view, "history");
   }
   cancel() {
+    this.stopZoom();
     const drag = this.drag;
     this.drag = null;
     if (drag?.moved) this.remember(drag.box);

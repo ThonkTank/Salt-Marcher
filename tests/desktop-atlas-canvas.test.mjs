@@ -611,7 +611,7 @@ test('a cropped room keeps its complete key centered, independently of polygon w
 test('output range commits on release, preserves author data, supports two corners and cancels only its unfinished selection',async t=>{
  const f=fixture(t),area=f.document.createElement('p');area.id='atlas-output-area';f.document.body.append(area);
  const initial={x:-2,y:-3,width:30,height:20};let draws=0;
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{dataset:{}},svg:f.root,camera:{view:initial,ready:true},exportOpen:true,exportChoosing:true,exporting:false,exportBox:null,exportCorner:null,exportDrag:null,point:e=>({x:e.clientX,y:e.clientY}),geometryCurrent:()=>true,render:()=>draws++,suppressClick(){},opts:{status(){throw Error('Unexpected write or navigation');}},family:'interior',draft:[{x:99,y:88}]});
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{dataset:{}},svg:f.root,camera:{view:initial,ready:true,stopZoom(){}},reference:{active:false},exportOpen:true,exportChoosing:true,exporting:false,exportBox:null,exportCorner:null,exportDrag:null,point:e=>({x:e.clientX,y:e.clientY}),geometryCurrent:()=>true,render:()=>draws++,suppressClick(){},opts:{status(){throw Error('Unexpected write or navigation');}},family:'interior',draft:[{x:99,y:88}]});
  const event=(x,y)=>({button:0,pointerId:7,clientX:x,clientY:y});
  ui.down(event(12,6));ui.move(event(-1,-1));await ui.up(event(-1,-1));
  assert.deepEqual(ui.exportBox,{x:-1,y:-1,width:13,height:7});assert.equal(ui.exportChoosing,false);assert.match(area.textContent,/Gewählter Bereich/);
@@ -664,12 +664,44 @@ test('export scale uses world meters and is drawn once after streamed tiles with
  f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
  f.ctx.drawImage=()=>events.push('tile');f.ctx.clearRect=()=>events.push('clear');f.ctx.fillText=text=>events.push(text);
  const box={x:-15000,y:-9000,width:30000,height:18000},overlay=atlasExportScale(box,1024,614);
- const bar=overlay.children.find(n=>n.kind==='polyline');assert.equal(bar.geometry.points[2].x-bar.geometry.points[1].x,5000,'a five-kilometer bar occupies exactly five thousand world meters');
+ const bar=overlay.children.find(n=>n.kind==='polyline');assert.equal(bar.geometry.points[5].x-bar.geometry.points[1].x,30000/1024*160,'a fixed 160-pixel bar spans its actual world distance');
  const read=async(part,width,height)=>({ok:true,value:{campaignId:'c',revision:1,box:part,width,height,scene:atlasPaint('rect',{width:part.width,height:part.height,style:{fill:'green'}})}});
  await atlasImage(atlasExportTiles(box,1024,614,'c',1,read,()=>true),1024,614,box,'png',()=>true,overlay);
- assert.equal(events.filter(e=>e==='5.00 km · 3.107 Meilen').length,1);assert.equal(events.at(-1),'5.00 km · 3.107 Meilen');assert(events.lastIndexOf('clear')<events.lastIndexOf('tile'),'legend composition must preserve the completed map');
+ assert.equal(events.filter(e=>e==='4,69 km · 2,91 Meilen').length,1);assert.equal(events.at(-1),'4,69 km · 2,91 Meilen');assert(events.lastIndexOf('clear')<events.lastIndexOf('tile'),'legend composition must preserve the completed map');
  const world=atlasExportScale({x:0,y:0,width:20000000,height:12000000},2048,1229),label=world.children.find(n=>n.kind==='text');
  assert.equal(label.style.fontSize,11,'world-scale labels use browser-safe glyph metrics');
  assert.equal(label.geometry.matrix[0],20000000/1024,'the transform preserves printed label size');
  assert.equal(atlasExportScale(box,8192,50),undefined,'an extremely shallow output has no space for a legible scale');
+});
+
+
+test('smooth wheel gestures preserve anchors, coalesce history and cancel on navigation',async t=>{
+ const f=fixture(t),oldCancel=global.cancelAnimationFrame;t.after(()=>global.cancelAnimationFrame=oldCancel);global.cancelAnimationFrame=()=>{};
+ f.canvas.options.smoothZoom=true;f.window.matchMedia=()=>({matches:false});
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();
+ const before=f.canvas.view,anchor={x:180,y:250},start=performance.now();
+ f.canvas.zoom(.8,anchor);assert.deepEqual(f.canvas.view,before,'animation starts from current frame');
+ for(const callback of f.frames.splice(0))callback(start+80);
+ const midway=f.canvas.view;assert(midway.width<before.width&&midway.width>before.width*.8);
+ f.canvas.zoom(.8,anchor,true);
+ for(const callback of f.frames.splice(0))callback(performance.now()+200);
+ assert(Math.abs(f.canvas.view.width-before.width*.64)<1e-8);
+ assert(Math.abs((anchor.x-f.canvas.view.x)/f.canvas.view.width-(anchor.x-before.x)/before.width)<1e-12);
+ f.canvas.previous();assert.deepEqual(f.canvas.view,before,'one back action undoes entire burst');
+ f.canvas.zoom(.5,anchor);f.canvas.set({x:1,y:2,width:100,height:50});
+ for(const callback of f.frames.splice(0))callback(performance.now()+300);
+ assert.deepEqual(f.canvas.view,{x:1,y:2,width:100,height:50},'old animation cannot overwrite another navigation');
+ f.window.matchMedia=()=>({matches:true});f.canvas.zoom(.5);assert.equal(f.canvas.view.width,50,'reduced motion applies immediately');
+});
+
+test('camera overlay repaints the current metric view while new scene images are still loading',async t=>{
+ const f=fixture(t),overlays=[];
+ f.canvas.options.overlay=(_root,box,mpp)=>overlays.push({box,mpp})&&false;
+ f.canvas.render(root=>root.append(rect('old')));await settle();f.flush();
+ f.canvas.render(root=>root.append(atlasPaint('image',{source:'wait:overlay',width:20,height:20})));
+ await settle();f.canvas.zoom(.5);f.flush();
+ assert.equal(overlays.at(-1).box.width,160);assert.equal(overlays.at(-1).mpp,.5);
+ assert.equal(f.canvas.ready,false,'loading geometry must not authorize stale hits');
+ f.releases.get('wait:overlay')();await settle();f.flush();
+ assert.equal(overlays.at(-1).box.width,160);
 });

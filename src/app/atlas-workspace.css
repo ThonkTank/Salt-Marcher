@@ -129,3 +129,10 @@ body.atlas-workspace #campaign-atlas[data-maximized=true]{grid-template-rows:min
 #campaign-atlas[data-task=generation] #city-preview-summary{font-size:13px;line-height:1.5;margin:4px 0}
 #campaign-atlas[data-task=generation] #city-preview-actions{position:sticky;bottom:0;z-index:3;background:white;padding:8px 0;border-top:1px solid var(--line)}
 #campaign-atlas #city-preview-accept{width:100%;background:var(--selected);font-weight:600}
+
+/* Comparing real dimensions is a temporary navigation tool in the same dock. */
+#campaign-atlas[data-comparing=true] :is(#atlas-families,.atlas-dock-tabs,#atlas-workspace-tools,#atlas-workspace-selection,#atlas-edit-panel,#atlas-secondary){display:none!important}
+#campaign-atlas[data-comparing=true] .atlas-layout{grid-template-columns:var(--atlas-dock-width,280px) minmax(0,1fr)}
+#campaign-atlas .atlas-map-context #atlas-scale{position:absolute;top:36px;left:0;max-width:calc(100% - 16px);font-size:11px;white-space:normal;font-variant-numeric:tabular-nums}
+#campaign-atlas #atlas-reference-panel{min-width:0}
+#campaign-atlas #atlas-reference-source{overflow-wrap:anywhere}

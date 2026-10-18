@@ -1,0 +1,55 @@
+import {createRequire} from 'node:module';
+import {mkdtemp,mkdir,writeFile,readFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import path from 'node:path';
+const root=process.cwd(),require=createRequire(root+'/package.json'),{_electron}=require('playwright-core');
+const output=path.join(root,'.build/atlas-navigation-native');await mkdir(output,{recursive:true});
+require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/navigation-native-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore}=require(root+'/.build/navigation-native-store.cjs');
+const profile=await mkdtemp('/tmp/saltmarcher-atlas-navigation-'),file=profile+'/workbench.sqlite';
+const seed=new CampaignStore(file),campaign=seed.create('Atlasnavigation prüfen'),w=seed.activate(campaign.id);
+const original={id:randomUUID(),revision:0,kind:'patch',name:'Geschützter alter Wald',points:[],polygons:[{outer:[{x:1000,y:1000},{x:6000,y:1000},{x:6000,y:6000},{x:1000,y:6000}],holes:[]}],resolution:14484.096,width:0,values:{terrain:'forest'}};
+seed.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action:{kind:'landscape-put',record:original,expectedRevision:null}});
+seed.tutorial('skipped');const before=seed.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get(original.id);seed.close();
+const executable=process.env.ATLAS_PACKAGE?path.join(process.env.ATLAS_PACKAGE,'electron'):path.join(root,'node_modules/electron/dist/electron');
+const prefix=process.env.ATLAS_PACKAGE?[]:[path.join(root,'.build/desktop/main.cjs')];
+const errors=[],results={profile,executable};let app,closed=true;
+async function launch(){app=await _electron.launch({executablePath:executable,args:[...prefix,'--data-dir',profile],timeout:30000});closed=false;const page=await app.firstWindow();if(process.env.ATLAS_PACKAGE)assert.equal(await app.evaluate(({app})=>app.getVersion()),'0.161.0');page.on('pageerror',e=>errors.push(e.stack));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:'Fortsetzen',exact:true}).click();await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);if(await page.locator('#campaign-atlas').isHidden())await page.getByRole('button',{name:'Atlas',exact:true}).filter({visible:true}).click();await ready(page);return page;}
+async function ready(page){await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.regionState==='ready'&&['loaded','empty'].includes(document.querySelector('#campaign-map').dataset.canvasState),null,{timeout:30000});}
+async function view(page){return page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.atlasView));}
+async function close(){const exit=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});closed=true;}
+async function reference(page,name){await page.locator('#atlas-reference-open').click();await page.locator('#atlas-reference-search').fill(name);await page.locator('#atlas-reference-results button').filter({hasText:new RegExp('^'+name+' ·')}).first().click();}
+try{
+ let page=await launch();const canvas=page.locator('#campaign-map'),bounds=await canvas.boundingBox(),v0=await view(page);
+ await page.mouse.move(bounds.x+bounds.width*.3,bounds.y+bounds.height*.3);await page.mouse.wheel(0,-160);await ready(page);
+ const v1=await view(page);assert(v1.width<v0.width);assert.match(await page.locator('#atlas-scale').innerText(),/^Sichtbar:/);
+ const ax=v0.x+v0.width*.3,ay=v0.y+v0.height*.3;assert(Math.abs((ax-v1.x)/v1.width-.3)<.01);assert(Math.abs((ay-v1.y)/v1.height-.3)<.01);
+ await page.getByRole('button',{name:'← Vorige Ansicht',exact:true}).click();await ready(page);assert(Math.abs((await view(page)).width-v0.width)<1e-6);results.zoomAnchorAndHistory=true;
+ await reference(page,'Deutschland');await page.screenshot({path:output+'/germany-before-focus.png'});
+ await page.locator('#atlas-reference-show').click();await ready(page);
+ const b=await canvas.boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2+45,b.y+b.height/2+20,{steps:5});await page.mouse.up();
+ await page.locator('#atlas-reference-focus').click();await ready(page);assert(await page.locator('#atlas-reference-panel').isHidden());const germany=await view(page);assert(germany.width>=639000&&germany.height>=867000);await page.screenshot({path:output+'/germany-focused.png'});
+ for(const name of ['Europa','Berlin','Rügen']){
+  await reference(page,name);await page.locator('#atlas-reference-focus').click();await ready(page);results[name]=await view(page);
+ }
+ await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').setSize(800,1100));
+ await reference(page,'Deutschland');await page.locator('#atlas-reference-focus').click();await ready(page);const portrait=await view(page);assert(portrait.width>=639000&&portrait.height>=867000);await page.screenshot({path:output+'/portrait.png'});
+ await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').setSize(1440,900));await ready(page);
+ await reference(page,'Deutschland');await page.locator('#atlas-reference-search').press('Escape');assert(await page.locator('#atlas-reference-panel').isHidden());
+ await page.locator('#atlas-families button[data-family="terrain"]').click();await page.locator('#land-auto-level').uncheck();await page.locator('#atlas-hex-level').selectOption('day');await page.locator('#land-tool').selectOption('hex');await ready(page);
+ const cb=await canvas.boundingBox();await page.mouse.click(cb.x+cb.width/2,cb.y+cb.height/2);await page.waitForFunction(()=>document.querySelector('#atlas-hex-level').disabled);assert(await page.locator('#land-auto-level').isDisabled());
+ await page.locator('#atlas-reference-open').click();assert(await page.locator('#atlas-reference-panel').isHidden(),'pending drawing blocks comparison');
+ await page.locator('#land-finish').click();await page.waitForFunction(()=>!document.querySelector('#atlas-hex-level').disabled);await ready(page);
+ await page.screenshot({path:output+'/day-grid.png'});
+ await page.locator('#atlas-output-open').click();await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();await page.locator('#atlas-export-grid').check();await page.locator('#atlas-export-size').fill('1024');
+ await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},output+'/day-grid-export.png');
+ await page.locator('#atlas-export-png').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:30000});
+ const png=require('pngjs').PNG.sync.read(await readFile(output+'/day-grid-export.png'));assert.equal(png.width,1024);assert(png.height>100);results.dayGridExport=true;
+ await close();
+ const fresh=new CampaignStore(file);assert.deepEqual(fresh.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get(original.id),before);
+ const rows=fresh.db.prepare('SELECT payload FROM atlas_landscape WHERE id<>?').all(original.id).map(r=>JSON.parse(r.payload));assert.equal(rows.length,1);assert.equal(rows[0].resolution,38624.256);const pts=rows[0].polygons[0].outer;assert(Math.abs(Math.max(...pts.map(p=>p.x))-Math.min(...pts.map(p=>p.x))-38624.256)<.001);fresh.close();results.legacyPreservedAndDayHexSaved=true;
+ page=await launch();await page.screenshot({path:output+'/restart.png'});await close();assert.deepEqual(errors,[]);results.restart=true;
+ await writeFile(output+'/result.json',JSON.stringify({complete:true,results,errors},null,2));console.log(JSON.stringify({complete:true,output,results}));
+}catch(error){if(app&&!closed){await(await app.firstWindow()).screenshot({path:output+'/failure.png'}).catch(()=>{});}throw error;}
+finally{if(app&&!closed)await app.close().catch(()=>{});}

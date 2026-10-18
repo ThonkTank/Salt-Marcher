@@ -42,7 +42,7 @@ Alte Testbestände ohne Atlaswurzel werden nicht in ein Mehrkartenmodell migrier
 
 ## Eine Region vorbereiten (0.157)
 
-Die kleinste Hexstufe misst **3 Meilen / 4828,032 m zwischen gegenüberliegenden Kanten**. Weitere Stufen wachsen mit Faktor drei. Hexstufe und Kamera sind unabhängig: Städte und Räume bleiben in Metern bearbeitbar. **Weltübersicht** zoomt bis zu einer erdgroßen Referenzfläche von 40.000 × 20.000 km; je Fensterformat erscheint zusätzlicher Rand. Die Welt bleibt verschiebbar.
+Die kleinste Hexstufe misst **3 Meilen / 4828,032 m zwischen gegenüberliegenden Kanten**. Weitere Anzeige- und Zeichenstufen entsprechen 1 Tag (24 Meilen), 1 Woche (168), 1 Monat (720), 3 Monaten (2.160) und 12 Monaten (8.640). Grundlage sind 3 Meilen/Stunde, 8 Reisestunden/Tag, 7 Tage/Woche und 30 Tage/Monat. Diese Größenreferenzen verändern die tatsächliche Reiseberechnung nicht. Bestehende Hexflächen behalten ihre Geometrie und Auflösung. Hexstufe und Kamera sind unabhängig: Städte und Räume bleiben in Metern bearbeitbar. **Weltübersicht** zoomt bis zu einer erdgroßen Referenzfläche von 40.000 × 20.000 km; je Fensterformat erscheint zusätzlicher Rand. Die Welt bleibt verschiebbar.
 
 Unter **Landschaft → Region vorbereiten**:
 
@@ -58,3 +58,33 @@ Landschaftsflächen und Verläufe werden räumlich indiziert gelesen. Lokale Rei
 Schema 46 übernimmt vorhandene Landschaftszellen als explizite Flächen mit ihren ursprünglichen metrischen Ausdehnungen. Eine neue Faktor-3-Abstufung verschiebt diese Flächen nicht. Die bisherige Autorenhistorie wird bei dieser einmaligen Landschaftsumstellung beendet; laufende Autorenarbeit und spätere Änderungen verwenden wieder die gemeinsame Historie. Über vollständige Versionswechsel fortgesetzte Undo-Historien sind kein zugesagtes Format. Schema-45-Kampagnenpakete bleiben über eine Arbeitskopie importierbar; Originalpakete werden nicht verändert.
 
 Offen bleiben der vollständige Biom-/Symbolkatalog, Heightmaps, automatische Brücken, zusätzliche Landschafts- und Stilwerkzeuge sowie die umfassende Großwelt- und Plattformabnahme.
+
+## Maßstab und geografische Vergleiche
+
+Die feste Leiste unten zeigt die Entfernung über 160 Bildschirmpixel, in kleinen
+Fenstern höchstens ein Drittel der Kartenbreite. Meter/Kilometer und Meilen
+folgen dem Zoom unmittelbar; oben stehen sichtbare Breite und Höhe. Mausrad und
+Trackpad zoomen um den Mauszeiger, die Plus-/Minustasten um die Ansichtsmitte.
+**Vorige Ansicht** nimmt eine zusammenhängende Zoomgeste zurück. Reduzierte
+Bewegung in den Systemeinstellungen schaltet die Übergangsanimation aus.
+
+**Größe vergleichen** bietet 346 offline verfügbare Länder/Gebiete, Bundesländer,
+Städte, Inseln, Kontinente und die Weltreferenz. Namen suchen oder Kategorie
+wählen. Der Rahmen hat die angezeigte geografische Breite und Höhe; es ist kein
+flächengleiches Quadrat. Rahmen ziehen oder mit Pfeiltasten verschieben
+(Shift für größere Schritte); mittlere Maustaste verschiebt die Kartenansicht.
+**Rahmen vollständig anzeigen** macht einen außerhalb der Ansicht liegenden
+Rahmen sichtbar. **Bereich fokussieren** passt den Ausschnitt mit Rand an und
+schließt den Vergleich. **Abbrechen** oder Escape entfernt die Vorschau ohne
+Kartenänderung. Begonnene Zeichnungen müssen vorher abgeschlossen oder
+verworfen werden.
+
+Maße sind gerundete Näherungen aus dokumentierten geografischen Grenzen.
+Überseegebiete erscheinen getrennt; bei Städten sind abweichende Gebiete im
+Namen angegeben. Quellen und Datenstand stehen in der Auswahl unter
+**Maße und Quellen**, Attribution auch in `NOTICE.md`.
+
+Die automatische Hexgröße richtet sich nach der sichtbaren Größe der Felder;
+benachbarte Reisestufen werden kurz überblendet. Manuelle Auswahl fixiert die
+Größe. Während eines Zeichenentwurfs bleibt die Hexgröße gesperrt. Bildausgaben
+verwenden genau die ausgewählte Größe ohne Übergangsüberblendung.
