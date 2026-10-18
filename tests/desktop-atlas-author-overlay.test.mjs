@@ -94,7 +94,7 @@ function rectangleGesture(t){
  const f=fixture(t),writes=[],selected=[],captures=[];
  for(const id of ['atlas-new-name','atlas-draft-cancel','drawing-cancel']){const n=f.document.createElement(id==='atlas-new-name'?'input':'button');n.id=id;f.document.body.append(n);}
  f.document.getElementById('atlas-new-name').value='Zollhaus';
- Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>selected.push(id),status(){}},error:e=>{throw e;}});
+ Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>selected.push(id),status(){}},error:e=>{throw e;}});
  f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
  const event=(x,y)=>({button:0,pointerId:3,clientX:x,clientY:y,altKey:false});
  return{...f,writes,selected,captures,event};
@@ -104,7 +104,7 @@ for(const reverse of [false,true])test(`room rectangle drag previews and commits
  f.ui.down(start);f.ui.move(end);assert.equal(f.writes.length,0);assert(f.ui.roomDrag.moved);assert.deepEqual(f.captures,[3]);
  await f.ui.up(end);assert.equal(f.writes.length,1);const action=f.writes[0];assert.equal(action.kind,'room-create');assert.equal(action.scopeId,'local');assert.equal(action.floorId,'ground');assert.equal(action.name,'Zollhaus');
  const points=action.polygons[0].outer;assert(Math.abs(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))-12)<1e-9);assert(Math.abs(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y))-6)<1e-9);
- assert.deepEqual(f.selected,['created']);assert.equal(f.ui.roomDrag,null);assert.equal(f.ui.root.dataset.roomDraw,'false');assert.equal(f.ui.ignoreClick,true);await f.ui.click(end);assert.equal(f.writes.length,1,'the synthetic release click cannot draw a second room');
+ assert.deepEqual(f.selected,['created','refreshed'],'next editing commands must use the frame published after room selection');assert.equal(f.ui.roomDrag,null);assert.equal(f.ui.root.dataset.roomDraw,'false');assert.equal(f.ui.ignoreClick,true);await f.ui.click(end);assert.equal(f.writes.length,1,'the synthetic release click cannot draw a second room');
 });
 test('stationary room presses keep two-click authoring and an invalid second corner remains correctable',async t=>{
  const f=rectangleGesture(t),a=f.event(-100,50),b=f.event(-106,62);f.ui.camera.hitAt=()=>null;

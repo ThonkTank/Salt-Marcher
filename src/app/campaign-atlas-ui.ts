@@ -1173,6 +1173,8 @@ export class CampaignAtlasWorkbench {
       const id = (result.result as {id:string}).id;
       await this.opts.selectRoom(id);
       this.selection = {kind:"room",id};
+      // Selecting the new room persists its context and changes the source fence.
+      await this.refresh();
     } else this.draft = [a];
   }
   private suppressClick() {
