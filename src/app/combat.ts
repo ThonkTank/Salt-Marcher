@@ -382,8 +382,8 @@ function render() {
   const mobs=combat?combatMobs(combat):[],drawn=new Set<string>(),ownerToken=workspace?.token,ownerGeneration=generation;
   const mobByMember=new Map(mobs.flatMap(mob=>mob.members.map(actor=>[actor.id,mob] as const)));
   const current=()=>workspace?.token===ownerToken&&generation===ownerGeneration&&view?.combat?.id===combat?.id&&view?.combat?.revision===combat?.revision&&!blocked();
-  const openHealth=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;const target=get<HTMLInputElement>('fighter-amount');if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'center'});}})();};
-  const openConditions=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;const target=get('fighter-condition-shortcuts');target.scrollIntoView({block:'center'});target.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});})().catch(error=>tell((error as Error).message,true));};
+  const openHealth=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;const target=get<HTMLInputElement>('fighter-amount');if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'nearest'});}})();};
+  const openConditions=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;const target=get('fighter-condition-shortcuts');target.scrollIntoView({block:'nearest'});target.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});})().catch(error=>tell((error as Error).message,true));};
   const order=combat?combatOrder(combat):[],turnIndex=combat?.phase==='running'?order.findIndex(p=>p.id===combat.turnId):-1;
   for (const p of order) {
     const mob=mobByMember.get(p.id);
@@ -405,7 +405,7 @@ function render() {
           if(generation!==gen||view?.combat?.id!==id||selected!==p.id)return;
           const target=get<HTMLInputElement>(initiative?'fighter-initiative':p.healthKnown===false?'fighter-hp':'fighter-amount');
           if(initiative||p.healthKnown===false)get<HTMLDetailsElement>('fighter-values').open=true;
-          if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'center'});}
+          if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'nearest'});}
         })();};td.append(health);
       }else if(index===3){
         const conditions=document.createElement('button');conditions.type='button';conditions.className='combat-value combat-conditions';conditions.dataset.combatReadonly=String(!editableCombat(combat!));conditions.textContent=text==='—'?'Zustände…':text;conditions.setAttribute('aria-label',p.name+' · Zustände bearbeiten · '+text);conditions.onclick=()=>openConditions(p.id);td.append(conditions);
