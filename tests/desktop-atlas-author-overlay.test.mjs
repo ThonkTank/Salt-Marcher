@@ -126,3 +126,39 @@ test('landscape callers receive the original save failure instead of losing the 
  await assert.rejects(()=>f.ui.write({kind:'undo'},false,true),/Atlas inzwischen geändert/);assert.equal(f.ui.busy,false);assert.equal(messages.length,1);
  assert.equal(await f.ui.write({kind:'undo'}),null,'other author paths keep their existing nullable failure contract');assert.equal(f.ui.busy,false);
 });
+
+test('a wall grip previews and commits both endpoints in one shape write, preserving source, holes and room identity',async t=>{
+ const f=fixture(t),source=f.original;
+ source.polygons[0].holes=[[{x:3,y:3},{x:4,y:3},{x:4,y:4}]];
+ const before=structuredClone(source),writes=[];
+ Object.assign(f.ui,{brushId:null,owner:{campaign:{id:'campaign'},token:'token'},suppressClick(){},write:async action=>writes.push(action),render(){}});
+ f.ui.vertexDrag={id:4,room:structuredClone(source),polygon:0,vertex:1,edge:true,start:{x:9,y:5},point:{x:12,y:6}};
+ const preview=f.ui.roomPreview(source);
+ assert.deepEqual(preview.polygons[0].outer,[{x:1,y:2},{x:12,y:2},{x:12,y:8},{x:1,y:8}]);
+ assert.deepEqual(preview.polygons[0].holes,before.polygons[0].holes);assert.deepEqual(source,before);
+ await f.ui.up({pointerId:4});assert.equal(writes.length,1);
+ const command=writes[0].command;assert.equal(command.action.kind,'shape');assert.equal(command.action.roomId,'room');assert.equal(command.action.expectedRevision,7);assert.deepEqual(command.action.polygons,preview.polygons);
+});
+test('wall handles use local edge normals and preserve nonadjacent vertices; no movement creates no history entry',async t=>{
+ const f=fixture(t),writes=[];f.original.polygons[0].outer=[{x:0,y:0},{x:4,y:4},{x:4,y:8},{x:0,y:8}];
+ f.ui.vertexDrag={id:3,room:structuredClone(f.original),polygon:0,vertex:0,edge:true,start:{x:2,y:2},point:{x:4,y:2}};
+ const p=f.ui.roomPreview(f.original).polygons[0].outer;
+ for(const [i,want] of [[0,{x:1,y:-1}],[1,{x:5,y:3}]]){assert(Math.abs(p[i].x-want.x)<1e-9);assert(Math.abs(p[i].y-want.y)<1e-9);}
+ assert.deepEqual(p.slice(2),f.original.polygons[0].outer.slice(2));
+ Object.assign(f.ui,{brushId:null,suppressClick(){},write:async a=>writes.push(a),render(){}});
+ f.ui.vertexDrag.point={x:2,y:2};await f.ui.up({pointerId:3});assert.equal(writes.length,0);
+});
+test('wall handles are available on room edges but absent in stale, slice or public contexts',t=>{
+ const f=fixture(t);let scene=f.render(),edges=all(scene).filter(n=>n.data.atlasEdge!==undefined);assert.equal(edges.length,4);
+ assert.deepEqual(edges.map(n=>({x:n.geometry.x,y:n.geometry.y})),[{x:5,y:2},{x:9,y:5},{x:5,y:8},{x:1,y:5}]);
+ f.document.getElementById('atlas-slice-enabled').checked=true;scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasEdge!==undefined).length,0);
+ f.document.getElementById('atlas-slice-enabled').checked=false;f.document.getElementById('atlas-perception').checked=true;scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasEdge!==undefined).length,0);
+ f.current(false);f.ui.svg.dataset.atlasGeometryStale='true';f.ui.camera.ready=true;f.ui.camera.hitAt=()=>{throw Error('stale handles must not be hit');};f.ui.down({button:0,altKey:false,pointerId:9});assert.equal(f.ui.vertexDrag,undefined);
+});
+test('core drawing controls dock before details without cloning handlers and return intact to their source',t=>{
+ const f=fixture(t),doc=f.document,source=doc.createElement('section'),target=doc.createElement('section');target.id='atlas-drawing-tools';doc.body.append(source,target);
+ const ids=['map-hint','drawing-toolbar','drawing-path-status','drawing-tool-options'];
+ const nodes=ids.map(id=>{const n=doc.createElement('div');n.id=id;source.append(n);return n;});const tail=doc.createElement('p');source.append(tail);let clicks=0;nodes[0].onclick=()=>clicks++;
+ f.ui.drawingDock=[];f.ui.dockDrawingTools(true);assert.equal(target.children.length,nodes.length);nodes.forEach((n,i)=>assert.equal(target.children[i],n));assert.equal(target.hidden,false);nodes[0].click();assert.equal(clicks,1);
+ f.ui.dockDrawingTools(false);assert.equal(source.children.length,nodes.length+1);[...nodes,tail].forEach((n,i)=>assert.equal(source.children[i],n));assert.equal(target.hidden,true);f.ui.dockDrawingTools(true);assert.equal(target.children.length,nodes.length);nodes.forEach((n,i)=>assert.equal(target.children[i],n));
+});
