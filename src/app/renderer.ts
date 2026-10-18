@@ -541,7 +541,7 @@ async function drainActivation(): Promise<void> {
         if (queuedActivation !== null) continue;
         renderList(); updateHistory();
         const view = readWorkspaceView(viewStorage, next.campaign.id);
-        if(entryCommandId)await reopenView('live');else await reopenView(view.tab, view.scrollY, view.liveNotesTop, view.liveCombat);
+        await reopenView(view.tab, view.scrollY, view.liveNotesTop, view.liveCombat);
         if (queuedActivation !== null) continue;
         if (preparationHasDrafts()) status('Vorbereitung enthält offene oder gesperrte Entwürfe.', true);
         else if (!roomDraftReadFailed && (!draft || !selected() || same(draft, selected()!) && el('points').dataset.changed !== 'true')) status('Gespeichert.');

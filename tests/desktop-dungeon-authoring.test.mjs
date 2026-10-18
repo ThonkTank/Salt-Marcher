@@ -7,8 +7,8 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
-buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/dungeon-authoring-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore}=createRequire(import.meta.url)('../.build/dungeon-authoring-store.cjs');
+buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {newElement} from './src/app/drawing-model';",resolveDir:process.cwd()},outfile:'.build/dungeon-authoring-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,newElement}=createRequire(import.meta.url)('../.build/dungeon-authoring-store.cjs');
 function fixture(t){
  const dir=mkdtempSync(path.join(tmpdir(),'dungeon-author-')),store=new CampaignStore(path.join(dir,'workbench.sqlite'));
  const rooms=['Torhalle','Wachstube','Keller'].map((name,i)=>({id:randomUUID(),scopeId:'local',floorId:i===0?'ground':'upper',number:String(i+1),name,revision:0,polygons:[{outer:[{x:i*12,y:0},{x:i*12+6,y:0},{x:i*12+6,y:6},{x:i*12,y:6}],holes:[]}],sections:[{id:randomUUID(),kind:'markdown',markdown:'  Original '+name+'\r\n'}]}));
@@ -63,4 +63,16 @@ test('editing a room on an archived floor returns its complete saved author row 
  const x=fixture(t),room=x.rooms[1];x.store.db.prepare("INSERT INTO drawing_hidden VALUES(?,'upper','local','floor',1,1)").run(x.campaign.id);
  const result=x.store.atlasDrawingCommit({commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,action:{kind:'key-batch',rooms:[{id:room.id,expectedRevision:0,keyRevision:null}],patch:{gmNotes:{mode:'replace',text:'Erhalten im Archiv'}}}});
  assert(!result.workspace.rooms.some(r=>r.id===room.id));assert.deepEqual(result.view.hiddenRooms.find(r=>r.id===room.id).sections,room.sections);assert(result.view.keyContent.find(k=>k.id===room.id).blocks.some(b=>b.text==='Erhalten im Archiv'));
+});
+
+test('direct door authoring rejects a stale wall atomically and keeps placement undoable and idempotent',t=>{
+ const x=fixture(t),r=x.rooms[0],e=newElement('door',r.scopeId,r.floorId,r.id,[{x:6,y:3}]);e.anchor={roomId:r.id,polygon:0,edge:1,t:.5};
+ const action={kind:'element',element:e,expectedRevision:null,expectedRoom:{id:r.id,revision:0}};
+ x.send({kind:'shape',roomId:r.id,expectedRevision:0,polygons:[{outer:[{x:0,y:0},{x:7,y:0},{x:7,y:6},{x:0,y:6}],holes:[]}]});
+ const before=x.store.db.serialize();assert.throws(()=>x.send(action),/Raumwand inzwischen geändert/);assert.deepEqual(x.store.db.serialize(),before);
+ action.expectedRoom.revision=x.store.atlasRoom(x.w.token,r.id).revision;
+ const command={commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,action};x.store.atlasDrawingCommit(command);x.store.atlasDrawingCommit(command);
+ assert.equal(x.store.drawing(x.w.token).elements.filter(n=>n.id===e.id).length,1);
+ x.store.executeAtlasCommit({commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,action:{kind:'undo'}});assert.equal(x.store.drawing(x.w.token).elements.some(n=>n.id===e.id),false);assert.equal(x.store.atlasRoom(x.w.token,r.id).polygons[0].outer[1].x,7);
+ x.store.executeAtlasCommit({commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,action:{kind:'redo'}});assert.equal(x.store.drawing(x.w.token).elements.filter(n=>n.id===e.id).length,1);
 });
