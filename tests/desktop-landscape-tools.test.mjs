@@ -87,3 +87,9 @@ test('flow accumulates within a stroke while opacity caps the whole stroke',()=>
  const render=(opacity,flow)=>{const r=brush('ground-color',[{x:-60,y:0},{x:60,y:0},{x:-60,y:0}]).record;r.paint={...r.paint,tip:'round',opacity,flow};r.polygons=brushFootprint(r.points,100);const image=new LandscapeRasterizer({x:-200,y:-200,width:400,height:400},40,40);image.paintColor(r);return image.finish()[(20*40+20)*4+3];};
  assert(render(.5,1)<=128);assert(render(1,.5)>render(.5,1));assert(render(1,.1)<render(1,1));
 });
+
+test('archive restore rejects unknown curve/brush versions before publishing a campaign',async t=>{
+ const f=fixture(t);f.write({kind:'landscape-put',record:line(),expectedRevision:null});const copy=f.dir+'/future.sqlite';await f.store.campaignSnapshot(f.token,copy);
+ const Database=require('better-sqlite3'),db=new Database(copy);db.prepare("UPDATE atlas_landscape SET payload=json_set(payload,'$.line.version',99)").run();db.close();
+ const before=f.store.list();assert.throws(()=>f.store.acceptCampaignSnapshot(copy,'Zukunft',{}),/prüfen/);assert.deepEqual(f.store.list(),before);
+});
